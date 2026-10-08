@@ -13,5 +13,6 @@ if (!fs.existsSync(path.join(core, "tests/helpers/register.mjs"))) {
 }
 for (const f of ["fakeCtx.mjs", "builtinChecks.mjs"]) fs.copyFileSync(path.join(core, "tests/helpers", f), path.join(here, "tests/helpers", f));
 const files = fs.readdirSync(path.join(here, "tests")).filter((f) => f.endsWith(".test.mjs")).map((f) => path.join(here, "tests", f));
-const r = spawnSync(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--import", path.join(core, "tests/helpers/register.mjs"), "--test", ...files], { cwd: core, stdio: "inherit" });
+const r = spawnSync(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--import", path.join(core, "tests/helpers/register.mjs"), "--test", ...files], { cwd: core, stdio: "inherit", env: { ...process.env, CURIOSA_EXTRAS_DIR: here } } // Curiosa lit les modules livrés dans CURIOSA_EXTRAS_DIR (ici : ce dépôt, comme son instantané `extras/`)
+);
 process.exit(r.status ?? 1);

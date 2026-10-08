@@ -8,8 +8,8 @@
   "version": "1.0.0",
   "main": "index.mjs",
   "description": {
-    "en": "A transparent browser source for OBS that rotates cards fed by other modules (promo codes, articles, announcements…).",
-    "fr": "Une source navigateur transparente pour OBS qui fait défiler des cartes alimentées par d'autres modules (codes promo, articles, annonces…)."
+    "en": "A transparent browser source for OBS that rotates cards from your site (promo codes, articles, announcements…).",
+    "fr": "Une source navigateur transparente pour OBS qui fait défiler des cartes issues de votre site (codes promo, articles, annonces…)."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",

@@ -8,8 +8,8 @@
   "version": "1.0.0",
   "main": "index.mjs",
   "description": {
-    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book (the Contacts module, enabled for you).",
-    "fr": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses (le module Contacts, activé pour vous)."
+    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+    "fr": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses."
   },
   "author": "Helldog136",
   "privacy": {

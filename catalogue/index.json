@@ -16,7 +16,7 @@
     {
       "id": "contact-form",
       "name": "Formulaire de contact",
-      "description": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses (le module Contacts, activé pour vous).",
+      "description": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contact-form",
       "ref": "master",
@@ -148,7 +148,7 @@
     {
       "id": "ticker-overlay",
       "name": "Overlay défilant (OBS)",
-      "description": "Une source navigateur transparente pour OBS qui fait défiler des cartes alimentées par d'autres modules (codes promo, articles, annonces…).",
+      "description": "Une source navigateur transparente pour OBS qui fait défiler des cartes issues de votre site (codes promo, articles, annonces…).",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/ticker-overlay",
       "ref": "master",
