@@ -1,13 +1,17 @@
 // Génère catalogue/index.json (le Catalogue de Curiosa le relit) à partir des module.json du dépôt.
 //   node scripts/build-index.mjs            écrit le fichier
 //   node scripts/build-index.mjs --check    échoue s'il n'est pas à jour (utilisé par la CI)
-// REF épingle l'étiquette ou le commit proposé à l'installation (défaut : master). REPO : adresse de ce dépôt.
+// Chaque entrée est ÉPINGLÉE sur l'étiquette de la version de ce dépôt (v<version de package.json>) : ce qu'un site installe depuis le Catalogue est exactement
+// ce qui a été relu pour cette version, jamais une branche qui bouge. Publier une nouvelle version = monter package.json, régénérer l'index, étiqueter.
+// REF force une autre référence (étiquette ou commit) ; REPO : adresse de ce dépôt.
 import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const repo = process.env.REPO ?? "https://github.com/helldog136/curiosa-extras";
-const ref = process.env.REF ?? "master";
+const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+const ref = process.env.REF ?? `v${version}`;
+if (!/^(v\d+\.\d+\.\d+|[0-9a-f]{7,40})$/.test(ref)) { console.error(`Référence « ${ref} » refusée : une étiquette vX.Y.Z ou un commit, jamais une branche.`); process.exit(1); }
 const pick = (v) => (typeof v === "string" ? v : v?.fr ?? v?.en ?? Object.values(v ?? {})[0] ?? "");
 const modules = [];
 for (const group of ["modules", "examples"]) {

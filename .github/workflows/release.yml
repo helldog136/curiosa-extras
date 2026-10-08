@@ -1,0 +1,31 @@
+name: Release
+# Une version = package.json + CHANGELOG.md + un index de Catalogue épinglé sur l'étiquette vX.Y.Z.
+# Le push sur master étiquette (si l'étiquette n'existe pas) et publie la release, avec la section du CHANGELOG comme texte.
+on:
+  push:
+    branches: [master]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Version et index
+        id: v
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          # l'index doit pointer l'étiquette de CETTE version (sinon le Catalogue installerait autre chose que ce qui est relu)
+          node scripts/build-index.mjs --check
+          grep -q "\"ref\": \"v$v\"" catalogue/index.json
+          node scripts/notes.mjs "$v" > "$RUNNER_TEMP/notes.md"
+      - name: Étiqueter et publier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${{ steps.v.outputs.version }}"
+          if gh release view "$tag" >/dev/null 2>&1; then echo "$tag est déjà publiée : montez la version dans package.json pour publier."; exit 0; fi
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file "$RUNNER_TEMP/notes.md"

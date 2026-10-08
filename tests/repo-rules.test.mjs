@@ -146,3 +146,11 @@ test("modules suggérés (catalogue/suggested.json) : des modules qui existent, 
   }
   for (const m of manifests) assert.ok(!("starter" in m) && !("always" in (m.onboarding ?? {})) && !("preselected" in (m.onboarding ?? {})), `${m.id} : drapeaux d'assistant retirés (la suggestion est dans suggested.json)`);
 });
+
+test("index du Catalogue épinglé : chaque entrée pointe l'étiquette de la version du dépôt (jamais une branche), et le CHANGELOG a sa section", () => {
+  const version = JSON.parse(read("package.json")).version;
+  const index = JSON.parse(read("catalogue/index.json"));
+  assert.ok(index.modules.length > 0);
+  for (const e of index.modules) assert.equal(e.ref, `v${version}`, `${e.id} : ref épinglée sur v${version}`);
+  assert.match(read("CHANGELOG.md"), new RegExp(`^## ${version.replace(/\./g, "\\.")}$`, "m"), `CHANGELOG.md : section « ## ${version} »`);
+});
