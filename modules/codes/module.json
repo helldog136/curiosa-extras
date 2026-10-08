@@ -18,7 +18,6 @@
     "sections"
   ],
   "icon": "🏷️",
-  "starter": true,
   "description": {
     "en": "Partner offers with a code, a link and an expiry date.",
     "fr": "Les offres de vos partenaires : code, lien et date d'expiration."

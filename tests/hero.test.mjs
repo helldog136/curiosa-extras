@@ -12,7 +12,7 @@ test("hero : manifeste valide, section « hero » déclarée et implémentée, o
   assertDefinitionMatchesManifest(m, hero.definition);
   assertSettingsSane(m);
   assert.deepEqual(m.sections.map((s) => s.id), ["hero"]);
-  assert.deepEqual(m.onboarding, { always: true, home: { section: "hero" } });
+  assert.deepEqual(m.onboarding, { home: { section: "hero" } });
   assert.ok(m.onboarding.home.section === m.sections[0].id, "l'onboarding pointe vers une section existante");
   assert.deepEqual(hero.locales, {});
   assertLocalesParity(hero.locales);

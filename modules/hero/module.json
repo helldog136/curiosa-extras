@@ -15,7 +15,6 @@
   "license": "Curiosa License 1.0",
   "icon": "🏁",
   "onboarding": {
-    "always": true,
     "home": {
       "section": "hero"
     }

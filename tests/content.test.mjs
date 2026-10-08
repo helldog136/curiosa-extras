@@ -96,8 +96,6 @@ test("contenu : onboarding — sections d'accueil existantes (« latest ») et c
   }
   assert.equal(blog.manifest.onboarding.home.count, 3);
   assert.equal(links.manifest.onboarding.collectsLinks, true);
-  assert.equal(links.manifest.onboarding.preselected, true);
-  assert.equal(blog.manifest.onboarding.preselected, true);
 });
 
 test("contenu : l'article d'exemple du blog est bilingue, sans balise HTML ni script", () => {
@@ -109,9 +107,8 @@ test("contenu : l'article d'exemple du blog est bilingue, sans balise HTML ni sc
   }
 });
 
-test("contenu : « starter » pour blog/links/codes/pages, pas pour collection ; page d'accueil en avant", () => {
-  for (const m of [blog, links, codes, pages]) assert.equal(m.manifest.starter, true, m.manifest.id);
-  assert.ok(!collection.manifest.starter);
+test("contenu : aucun drapeau d'assistant dans les manifestes (la suggestion vit dans catalogue/suggested.json) ; la collection vierge n'a pas d'accueil prévu", () => {
+  for (const m of [blog, links, codes, pages]) assert.ok(!("starter" in m.manifest) && !("preselected" in (m.manifest.onboarding ?? {})), m.manifest.id);
   assert.ok(!collection.manifest.onboarding);
 });
 

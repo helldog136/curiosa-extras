@@ -135,3 +135,14 @@ test("l'index du Catalogue (catalogue/index.json) est valide : chaque entrée pa
   assert.equal(kept.length, index.modules.length, "toutes les entrées sont valides");
   for (const e of kept) assert.ok(fs.existsSync(path.join(root, e.subdir, "module.json")), `${e.id} : dossier ${e.subdir} introuvable`);
 });
+
+test("modules suggérés (catalogue/suggested.json) : des modules qui existent, sans dépendance, et le manifeste ne porte aucun drapeau d'assistant", () => {
+  const suggested = JSON.parse(read("catalogue/suggested.json"));
+  assert.ok(Array.isArray(suggested) && suggested.length > 0);
+  for (const id of suggested) {
+    const m = manifests.find((x) => x.id === id && x.dir.startsWith("modules/"));
+    assert.ok(m, `${id} : module introuvable dans modules/`);
+    assert.deepEqual(m.requires ?? [], [], `${id} : un module suggéré à l'assistant ne doit pas exiger un autre module`);
+  }
+  for (const m of manifests) assert.ok(!("starter" in m) && !("always" in (m.onboarding ?? {})) && !("preselected" in (m.onboarding ?? {})), `${m.id} : drapeaux d'assistant retirés (la suggestion est dans suggested.json)`);
+});
