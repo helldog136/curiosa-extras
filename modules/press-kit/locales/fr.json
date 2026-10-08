@@ -1,0 +1,18 @@
+{
+  "title": "Kit presse",
+  "intro": "Tout ce qu'il faut pour parler de {name} : qui nous sommes, notre logo, nos couleurs et notre police. Utilisez-les librement pour nous présenter.",
+  "about": "Qui sommes-nous",
+  "short": "Description courte (à copier)",
+  "long": "Description longue (à copier)",
+  "visuals": "Logo",
+  "logo": "Logo",
+  "logo.wide": "Logo horizontal",
+  "logo.square": "Icône",
+  "logo.wideDark": "Logo horizontal (fond sombre)",
+  "logo.squareDark": "Icône (fond sombre)",
+  "colors": "Couleurs",
+  "colorsHelp": "Cliquez sur un code pour le copier.",
+  "typography": "Typographie",
+  "contact": "Contact",
+  "languages": "Disponible en"
+}

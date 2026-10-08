@@ -1,0 +1,83 @@
+{
+  "apiVersion": 2,
+  "id": "alerts-overlay",
+  "name": {
+    "en": "Alerts overlay (OBS)",
+    "fr": "Overlay alertes (OBS)"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Anything that can send an HTTP request can push an alert: Streamer.bot, a webhook relay, a script.",
+    "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Tout ce qui sait envoyer une requête HTTP peut pousser une alerte : Streamer.bot, un relais de webhook, un script."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🔔",
+  "main": "index.mjs",
+  "type": "overlay",
+  "instances": "multiple",
+  "permissions": [
+    "overlay",
+    "routes",
+    "admin"
+  ],
+  "settings": [
+    {
+      "key": "pushToken",
+      "type": "secret",
+      "label": {
+        "en": "Push token",
+        "fr": "Jeton d'envoi"
+      },
+      "help": {
+        "en": "Whatever sends alerts must present it: Authorization: Bearer <token>. Without a token, nothing can push (except the test button).",
+        "fr": "Ce qui envoie les alertes doit le présenter : Authorization: Bearer <jeton>. Sans jeton, rien ne peut pousser (sauf le bouton de test)."
+      }
+    },
+    {
+      "key": "visual",
+      "type": "select",
+      "default": "neon",
+      "group": "appearance",
+      "label": {
+        "en": "Look",
+        "fr": "Style"
+      },
+      "options": [
+        {
+          "value": "neon",
+          "label": {
+            "en": "Neon",
+            "fr": "Néon"
+          }
+        },
+        {
+          "value": "plain",
+          "label": {
+            "en": "Plain",
+            "fr": "Sobre"
+          }
+        }
+      ]
+    },
+    {
+      "key": "accentColor",
+      "type": "color",
+      "default": "theme:accent",
+      "group": "appearance",
+      "label": {
+        "en": "Accent color",
+        "fr": "Couleur d'accent"
+      }
+    },
+    {
+      "key": "durationSeconds",
+      "type": "number",
+      "default": 6,
+      "label": {
+        "en": "Seconds on screen",
+        "fr": "Secondes à l'écran"
+      }
+    }
+  ]
+}

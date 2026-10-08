@@ -1,0 +1,34 @@
+{
+  "apiVersion": 2,
+  "id": "collection",
+  "name": {
+    "en": "Custom collection",
+    "fr": "Collection personnalisée"
+  },
+  "version": "1.0.0",
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "instances": "multiple",
+  "sections": [],
+  "consumes": [],
+  "provides": [],
+  "settings": [],
+  "permissions": [
+    "pages",
+    "sections"
+  ],
+  "icon": "🗂️",
+  "description": {
+    "en": "A blank content module: choose its display, fields and behavior yourself.",
+    "fr": "Un module de contenu vierge : choisissez vous-même affichage, champs et comportement."
+  },
+  "content": {
+    "display": "cards",
+    "clickAction": "detail",
+    "features": [
+      "summary",
+      "body"
+    ],
+    "showInNav": true
+  }
+}

@@ -1,0 +1,23 @@
+name: Tests
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: helldog136/Curiosa
+          # dev teste contre dev, master contre master
+          ref: ${{ github.base_ref || github.ref_name }}
+          path: core
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci --ignore-scripts && npx prisma generate
+        working-directory: core
+      - run: node scripts/build-index.mjs --check
+      - run: node scripts/test.mjs
+        env: { CURIOSA_DIR: core }

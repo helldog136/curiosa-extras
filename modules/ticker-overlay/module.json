@@ -1,0 +1,133 @@
+{
+  "apiVersion": 2,
+  "id": "ticker-overlay",
+  "name": {
+    "en": "Ticker overlay (OBS)",
+    "fr": "Overlay défilant (OBS)"
+  },
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "description": {
+    "en": "A transparent browser source for OBS that rotates cards fed by other modules (promo codes, articles, announcements…).",
+    "fr": "Une source navigateur transparente pour OBS qui fait défiler des cartes alimentées par d'autres modules (codes promo, articles, annonces…)."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "📺",
+  "type": "overlay",
+  "instances": "multiple",
+  "sections": [],
+  "provides": [],
+  "consumes": [
+    {
+      "topic": "core.entry",
+      "label": {
+        "en": "Entries of your blogs, codes, links…",
+        "fr": "Entrées de vos blogs, codes, liens…"
+      },
+      "tags": true
+    },
+    {
+      "topic": "overlay.item",
+      "label": {
+        "en": "Items offered by other modules",
+        "fr": "Éléments proposés par d'autres modules"
+      },
+      "schema": [
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "text",
+          "type": "string"
+        },
+        {
+          "key": "image",
+          "type": "url"
+        },
+        {
+          "key": "url",
+          "type": "url"
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "overlay",
+    "routes",
+    "topics"
+  ],
+  "settings": [
+    {
+      "key": "interval",
+      "type": "number",
+      "default": 8,
+      "label": {
+        "en": "Seconds per card",
+        "fr": "Secondes par carte"
+      }
+    },
+    {
+      "key": "textColor",
+      "type": "color",
+      "group": "appearance",
+      "default": "theme:fg",
+      "label": {
+        "en": "Text color",
+        "fr": "Couleur du texte"
+      }
+    },
+    {
+      "key": "cardColor",
+      "type": "color",
+      "group": "appearance",
+      "default": "theme:surface",
+      "label": {
+        "en": "Card color",
+        "fr": "Couleur de la carte"
+      }
+    },
+    {
+      "key": "position",
+      "type": "select",
+      "group": "appearance",
+      "default": "bottom-left",
+      "label": {
+        "en": "Position",
+        "fr": "Position"
+      },
+      "options": [
+        {
+          "value": "bottom-left",
+          "label": {
+            "en": "Bottom left",
+            "fr": "Bas gauche"
+          }
+        },
+        {
+          "value": "bottom-right",
+          "label": {
+            "en": "Bottom right",
+            "fr": "Bas droite"
+          }
+        },
+        {
+          "value": "top-left",
+          "label": {
+            "en": "Top left",
+            "fr": "Haut gauche"
+          }
+        },
+        {
+          "value": "top-right",
+          "label": {
+            "en": "Top right",
+            "fr": "Haut droite"
+          }
+        }
+      ]
+    }
+  ]
+}

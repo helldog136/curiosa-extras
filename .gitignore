@@ -1,0 +1,4 @@
+node_modules/
+# recopiés depuis Curiosa avant chaque lancement des tests (voir scripts/test.mjs)
+tests/helpers/fakeCtx.mjs
+tests/helpers/builtinChecks.mjs

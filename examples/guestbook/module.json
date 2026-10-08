@@ -1,0 +1,124 @@
+{
+  "apiVersion": 2,
+  "id": "guestbook",
+  "name": { "en": "Guestbook", "fr": "Livre d'or" },
+  "version": "1.0.0",
+  "description": {
+    "en": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework.",
+    "fr": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📖",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "multiple",
+  "page": true,
+  "basePath": "guestbook",
+  "permissions": ["slots", "routes", "storage", "sections", "pages", "topics", "mcp", "admin", "mail"],
+
+  "settings": [
+    {
+      "key": "title", "type": "text", "translatable": true,
+      "label": { "en": "Page title", "fr": "Titre de la page" },
+      "help": { "en": "One title per language. Empty = the default title.", "fr": "Un titre par langue. Vide = le titre par défaut." }
+    },
+    {
+      "key": "intro", "type": "textarea", "translatable": true,
+      "label": { "en": "Introduction (Markdown)", "fr": "Introduction (Markdown)" }
+    },
+    {
+      "key": "autoApprove", "type": "boolean", "default": false,
+      "label": { "en": "Publish messages without moderation", "fr": "Publier les messages sans modération" },
+      "help": { "en": "Off (recommended): a new message waits for your approval.", "fr": "Désactivé (recommandé) : un nouveau message attend votre validation." }
+    },
+    {
+      "key": "notify", "type": "boolean", "default": true,
+      "label": { "en": "Email me each new message", "fr": "Me prévenir par e-mail à chaque message" },
+      "help": { "en": "Sent to the site's contact address. Needs the email server set in Settings.", "fr": "Envoyé à l'adresse de contact du site. Demande le serveur d'e-mail réglé dans les Réglages." }
+    },
+    {
+      "key": "footerLink", "type": "boolean", "default": false,
+      "label": { "en": "Add a link in the page footer", "fr": "Ajouter un lien dans le pied de page" }
+    },
+    {
+      "key": "style", "type": "select", "default": "cards",
+      "label": { "en": "Message style", "fr": "Style des messages" },
+      "options": [
+        { "value": "cards", "label": { "en": "Cards", "fr": "Cartes" } },
+        { "value": "plain", "label": { "en": "Plain", "fr": "Simple" } }
+      ]
+    },
+    {
+      "key": "accent", "type": "color", "default": "theme:accent", "group": "appearance",
+      "label": { "en": "Accent color", "fr": "Couleur d'accent" },
+      "help": { "en": "Follows the site theme until you pick your own.", "fr": "Suit le thème du site tant que vous n'en choisissez pas une." }
+    },
+    {
+      "key": "banner", "type": "image", "group": "appearance",
+      "label": { "en": "Banner image (optional)", "fr": "Image de bannière (facultatif)" }
+    },
+    {
+      "key": "maxLength", "type": "number", "default": 500, "advanced": true,
+      "label": { "en": "Maximum message length", "fr": "Longueur maximale d'un message" }
+    },
+    {
+      "key": "perPage", "type": "number", "default": 10, "advanced": true,
+      "label": { "en": "Messages per page", "fr": "Messages par page" }
+    },
+    {
+      "key": "rateLimit", "type": "number", "default": 5, "advanced": true,
+      "label": { "en": "Messages per hour and visitor", "fr": "Messages par heure et par visiteur" }
+    },
+    {
+      "key": "accessCode", "type": "secret", "advanced": true,
+      "label": { "en": "Invitation code (optional)", "fr": "Code d'invitation (facultatif)" },
+      "help": { "en": "If set, visitors must type it to sign. Never shown again once saved.", "fr": "S'il est défini, les visiteurs doivent le saisir pour signer. Jamais réaffiché une fois enregistré." }
+    }
+  ],
+
+  "sections": [
+    { "id": "latest", "size": "small", "label": { "en": "Latest message", "fr": "Dernier message" } },
+    {
+      "id": "recent", "size": "medium", "label": { "en": "Recent messages", "fr": "Messages récents" },
+      "options": [
+        { "key": "count", "type": "number", "default": 3, "label": { "en": "How many messages", "fr": "Combien de messages" } }
+      ]
+    }
+  ],
+
+  "provides": [
+    { "topic": "feed.item", "label": { "en": "Approved messages in the RSS feed", "fr": "Messages validés dans le flux RSS" } },
+    { "topic": "guestbook.message", "label": { "en": "Approved messages (for other modules)", "fr": "Messages validés (pour d'autres modules)" } }
+  ],
+
+  "mcp": [
+    {
+      "name": "guestbook_list", "readOnly": true,
+      "description": "List the guestbook messages, newest first. Optional filter by status (pending, approved or all).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["pending", "approved", "all"], "description": "Which messages to list (default: all)." },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100, "description": "How many messages at most (default: 20)." }
+        }
+      }
+    },
+    {
+      "name": "guestbook_approve", "default": false,
+      "description": "Approve a pending message so that it appears on the site.",
+      "input": {
+        "type": "object", "required": ["id"],
+        "properties": { "id": { "type": "string", "maxLength": 100, "description": "Message identifier (from guestbook_list)." } }
+      }
+    },
+    {
+      "name": "guestbook_delete", "destructive": true, "default": false,
+      "description": "Permanently delete a message. This cannot be undone.",
+      "input": {
+        "type": "object", "required": ["id"],
+        "properties": { "id": { "type": "string", "maxLength": 100, "description": "Message identifier (from guestbook_list)." } }
+      }
+    }
+  ]
+}

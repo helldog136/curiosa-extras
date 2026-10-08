@@ -1,0 +1,168 @@
+{
+  "apiVersion": 2,
+  "id": "discord-announcer",
+  "name": {
+    "en": "Discord announcements",
+    "fr": "Annonces Discord"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link.",
+    "fr": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📣",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "consumes": [
+    {
+      "topic": "core.entry",
+      "label": {
+        "en": "Published entries (blog, promo codes…)",
+        "fr": "Entrées publiées (blog, codes promo…)"
+      },
+      "tags": true
+    },
+    {
+      "topic": "feed.item",
+      "label": {
+        "en": "Items offered to the RSS feed by other modules",
+        "fr": "Éléments proposés au flux RSS par d'autres modules"
+      },
+      "tags": false,
+      "schema": [
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "summary",
+          "type": "string"
+        },
+        {
+          "key": "publishedAt",
+          "type": "string"
+        },
+        {
+          "key": "topics",
+          "type": "string[]"
+        }
+      ]
+    },
+    {
+      "topic": "stream.live",
+      "label": {
+        "en": "Your live stream (Twitch…)",
+        "fr": "Votre live (Twitch…)"
+      },
+      "tags": false,
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "startedAt",
+          "type": "string"
+        },
+        {
+          "key": "game",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "admin",
+    "storage",
+    "topics"
+  ],
+  "settings": [
+    {
+      "key": "webhookUrl",
+      "type": "secret",
+      "label": {
+        "en": "Discord webhook URL",
+        "fr": "URL du webhook Discord"
+      },
+      "help": {
+        "en": "Discord → channel settings → Integrations → Webhooks. It contains the sending token: it is never shown again.",
+        "fr": "Discord → paramètres du salon → Intégrations → Webhooks. Elle contient le jeton d'envoi : elle n'est jamais réaffichée."
+      }
+    },
+    {
+      "key": "mention",
+      "type": "text",
+      "default": "",
+      "label": {
+        "en": "Mention (optional)",
+        "fr": "Mention (facultatif)"
+      },
+      "help": {
+        "en": "For example @everyone or <@&role-id>. Pings only go out when this is filled in.",
+        "fr": "Par exemple @everyone ou <@&id-du-rôle>. Un ping ne part que si ce champ est rempli."
+      }
+    },
+    {
+      "key": "prefix",
+      "type": "text",
+      "default": "📰",
+      "label": {
+        "en": "Icon before each announcement",
+        "fr": "Icône avant chaque annonce"
+      }
+    },
+    {
+      "key": "freshHours",
+      "type": "number",
+      "default": 24,
+      "advanced": true,
+      "label": {
+        "en": "Only announce what is newer than (hours)",
+        "fr": "N'annoncer que ce qui date de moins de (heures)"
+      },
+      "help": {
+        "en": "Older items are marked as seen without being announced, so connecting the webhook never floods the channel with your history.",
+        "fr": "Les éléments plus anciens sont notés comme vus sans être annoncés : brancher le webhook n'inonde jamais le salon avec votre historique."
+      }
+    },
+    {
+      "key": "liveCooldownHours",
+      "type": "number",
+      "default": 2,
+      "advanced": true,
+      "label": {
+        "en": "Hours between two live announcements",
+        "fr": "Heures entre deux annonces de live"
+      },
+      "help": {
+        "en": "A connection drop often restarts the stream: two lives closer than this count as the same one.",
+        "fr": "Une coupure de connexion relance souvent le stream : deux lives plus proches que cela comptent pour le même."
+      }
+    }
+  ]
+}

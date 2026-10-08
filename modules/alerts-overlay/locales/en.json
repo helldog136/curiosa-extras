@@ -1,0 +1,14 @@
+{
+  "adminTitle": "Alerts",
+  "adminHelp": "In OBS, add a browser source on the overlay address. To push an alert from another tool:",
+  "testTitle": "Send a test alert",
+  "testSubmit": "Send",
+  "testMessage": "This is a test alert",
+  "okTest": "Test alert sent.",
+  "kind_follow": "New follow",
+  "kind_sub": "New sub",
+  "kind_raid": "Raid",
+  "kind_test": "Test",
+  "kind_alert": "Alert",
+  "noToken": "No push token set: only the test alert works."
+}

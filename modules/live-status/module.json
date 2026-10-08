@@ -1,0 +1,63 @@
+{
+  "apiVersion": 2,
+  "id": "live-status",
+  "name": {
+    "en": "Twitch live status",
+    "fr": "Statut live Twitch"
+  },
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "description": {
+    "en": "Shows your Twitch player on the home page and a banner when you are live.",
+    "fr": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "🔴",
+  "consumes": [],
+  "provides": [],
+  "instances": "single",
+  "sections": [
+    {
+      "id": "player",
+      "label": {
+        "en": "Twitch player",
+        "fr": "Lecteur Twitch"
+      }
+    }
+  ],
+  "permissions": [
+    "slots",
+    "sections"
+  ],
+  "settings": [
+    {
+      "key": "channel",
+      "type": "text",
+      "label": {
+        "en": "Twitch channel",
+        "fr": "Chaîne Twitch"
+      },
+      "help": {
+        "en": "Login name, e.g. mychannel",
+        "fr": "Identifiant, ex. machaine"
+      }
+    },
+    {
+      "key": "clientId",
+      "type": "text",
+      "label": {
+        "en": "Twitch client id (optional, enables the live banner)",
+        "fr": "Client id Twitch (optionnel, active la bannière live)"
+      }
+    },
+    {
+      "key": "clientSecret",
+      "type": "secret",
+      "label": {
+        "en": "Twitch client secret",
+        "fr": "Client secret Twitch"
+      }
+    }
+  ]
+}

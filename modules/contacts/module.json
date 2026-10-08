@@ -1,0 +1,191 @@
+{
+  "apiVersion": 2,
+  "id": "contacts",
+  "name": {
+    "en": "Contacts",
+    "fr": "Contacts"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Your private address book: people, organisations, notes.",
+    "fr": "Votre carnet d'adresses privé : personnes, organisations, notes."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📇",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "offers": [
+    {
+      "service": "contact.store",
+      "label": {
+        "en": "Contacts (address book)",
+        "fr": "Contacts (carnet d'adresses)"
+      }
+    }
+  ],
+  "permissions": [
+    "admin",
+    "storage",
+    "mcp"
+  ],
+  "mcp": [
+    {
+      "name": "contacts_list",
+      "readOnly": true,
+      "description": "List contacts, newest first. Contacts created by the website form start as 'to_review': research the person or organisation, complete the card, then mark it 'active' (or delete it if it is spam).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "to_review",
+              "active"
+            ]
+          },
+          "search": {
+            "type": "string",
+            "description": "Text to look for in name, organisation or email."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "contact_get",
+      "readOnly": true,
+      "description": "Read one contact with its notes.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "contact_create",
+      "description": "Create a contact (status 'active', source 'agent').",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "organisation": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "others": {
+            "type": "string",
+            "description": "Other channels (Discord, LinkedIn…), one per line."
+          },
+          "relation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "contact_update",
+      "description": "Update fields of a contact (only the given fields change). Set status to 'active' once verified.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "organisation": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "others": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "to_review",
+              "active"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "contact_note",
+      "description": "Add a dated note to a contact.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "contact_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Delete a contact and its notes (spam, duplicates). Disabled unless an administrator grants it to the token.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  ]
+}

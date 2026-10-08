@@ -1,0 +1,114 @@
+{
+  "apiVersion": 2,
+  "id": "announcement-banner",
+  "name": {
+    "en": "Announcement banner",
+    "fr": "Bannière d'annonce"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows a banner at the top of every page, a note section for the home page, and offers its text to overlays (topic overlay.item). Example module.",
+    "fr": "Affiche une bannière en haut de chaque page, une section « note » pour l'accueil, et propose son texte aux overlays (sujet overlay.item). Module d'exemple."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📣",
+  "main": "index.mjs",
+  "permissions": [
+    "slots",
+    "sections",
+    "topics"
+  ],
+  "settings": [
+    {
+      "key": "enabled",
+      "type": "boolean",
+      "label": {
+        "en": "Show the banner",
+        "fr": "Afficher la bannière"
+      },
+      "default": true
+    },
+    {
+      "key": "text",
+      "type": "text",
+      "translatable": true,
+      "label": {
+        "en": "Banner text",
+        "fr": "Texte de la bannière"
+      },
+      "help": {
+        "en": "One text per language. Empty = nothing shown in that language.",
+        "fr": "Un texte par langue. Vide = rien dans cette langue."
+      }
+    },
+    {
+      "key": "link",
+      "type": "url",
+      "label": {
+        "en": "Link (optional)",
+        "fr": "Lien (facultatif)"
+      }
+    },
+    {
+      "key": "tone",
+      "type": "select",
+      "label": {
+        "en": "Style",
+        "fr": "Style"
+      },
+      "default": "info",
+      "options": [
+        {
+          "value": "info",
+          "label": {
+            "en": "Accent",
+            "fr": "Accent"
+          }
+        },
+        {
+          "value": "success",
+          "label": {
+            "en": "Green",
+            "fr": "Vert"
+          }
+        },
+        {
+          "value": "warning",
+          "label": {
+            "en": "Amber",
+            "fr": "Ambre"
+          }
+        }
+      ]
+    },
+    {
+      "key": "homeText",
+      "type": "textarea",
+      "translatable": true,
+      "label": {
+        "en": "Home page note (Markdown)",
+        "fr": "Note sur l'accueil (Markdown)"
+      }
+    }
+  ],
+  "instances": "multiple",
+  "sections": [
+    {
+      "id": "note",
+      "label": {
+        "en": "Note",
+        "fr": "Note"
+      }
+    }
+  ],
+  "provides": [
+    {
+      "topic": "overlay.item",
+      "label": {
+        "en": "Banner text as an overlay item",
+        "fr": "Texte de la bannière comme élément d'overlay"
+      }
+    }
+  ]
+}

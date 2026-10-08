@@ -1,0 +1,14 @@
+{
+  "adminTitle": "Alertes",
+  "adminHelp": "Dans OBS, ajoutez une source navigateur sur l'adresse de l'overlay. Pour pousser une alerte depuis un autre outil :",
+  "testTitle": "Envoyer une alerte de test",
+  "testSubmit": "Envoyer",
+  "testMessage": "Ceci est une alerte de test",
+  "okTest": "Alerte de test envoyée.",
+  "kind_follow": "Nouveau follow",
+  "kind_sub": "Nouveau sub",
+  "kind_raid": "Raid",
+  "kind_test": "Test",
+  "kind_alert": "Alerte",
+  "noToken": "Aucun jeton d'envoi défini : seule l'alerte de test fonctionne."
+}

@@ -1,0 +1,9 @@
+{
+  "name": "curiosa-extras",
+  "private": true,
+  "description": "Modules pour Curiosa : fonctionnalités de base (blog, liens, codes promo, pages, bandeau, contact…), modules pour créateurs et exemples.",
+  "scripts": {
+    "test": "node scripts/test.mjs",
+    "check": "node scripts/check-index.mjs"
+  }
+}

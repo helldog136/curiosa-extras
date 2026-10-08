@@ -1,0 +1,47 @@
+{
+  "apiVersion": 2,
+  "id": "links",
+  "name": {
+    "en": "Social links",
+    "fr": "Réseaux sociaux"
+  },
+  "version": "1.0.0",
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "instances": "multiple",
+  "sections": [],
+  "consumes": [],
+  "provides": [],
+  "settings": [],
+  "permissions": [
+    "pages",
+    "sections"
+  ],
+  "icon": "🔗",
+  "starter": true,
+  "description": {
+    "en": "A list of links with icons — your social networks, your channels. Add one list per channel if you have several.",
+    "fr": "Une liste de liens avec icônes — vos réseaux, vos chaînes. Ajoutez une liste par chaîne si vous en avez plusieurs."
+  },
+  "content": {
+    "display": "links",
+    "clickAction": "external",
+    "features": [
+      "icon",
+      "summary",
+      "url",
+      "tags"
+    ],
+    "basePath": "links",
+    "showInNav": false,
+    "allowGoLinks": true
+  },
+  "onboarding": {
+    "preselected": true,
+    "collectsLinks": true,
+    "home": {
+      "section": "latest",
+      "count": 20
+    }
+  }
+}

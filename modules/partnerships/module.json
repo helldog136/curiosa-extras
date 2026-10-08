@@ -1,0 +1,412 @@
+{
+  "apiVersion": 2,
+  "id": "partnerships",
+  "name": {
+    "en": "Partnerships (internal)",
+    "fr": "Partenariats (interne)"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Your private partnership pipeline: brands you approach, status, follow-ups, journal and contacts. Has no public page.",
+    "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances, journal et contacts. N'a aucune page publique."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🤝",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "provides": [
+    {
+      "topic": "partnership.partner",
+      "label": {
+        "en": "Partners (for linking)",
+        "fr": "Partenaires (pour s'y référer)"
+      }
+    }
+  ],
+  "permissions": [
+    "admin",
+    "storage",
+    "topics",
+    "mcp"
+  ],
+  "settings": [
+    {
+      "key": "followUpDays",
+      "type": "number",
+      "default": 14,
+      "advanced": true,
+      "label": {
+        "en": "Days without news before a follow-up is due",
+        "fr": "Jours sans nouvelle avant qu'une relance soit due"
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "partners_list",
+      "readOnly": true,
+      "description": "List partnerships with status, chances and whether a follow-up is due. Optionally filter by status or search text.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "a_contacter",
+              "envoye",
+              "discussion",
+              "accepte",
+              "publie",
+              "refuse_marque",
+              "decline",
+              "sans_reponse",
+              "termine"
+            ]
+          },
+          "q": {
+            "type": "string",
+            "maxLength": 120
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "partner_get",
+      "readOnly": true,
+      "description": "Read one partnership with its full file, journal entries and contacts.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "partner_create",
+      "description": "Create a partnership file (status a_contacter or discussion only). Fill what you know; the owner completes it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "brand"
+        ],
+        "properties": {
+          "brand": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "a_contacter",
+              "discussion"
+            ]
+          },
+          "chances": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "sector": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "contact": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "brief": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "mail": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "products": {
+            "type": "string",
+            "maxLength": 3000
+          },
+          "benefits": {
+            "type": "string",
+            "maxLength": 3000
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "partner_update",
+      "description": "Update the prospecting fields of a partnership.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "a_contacter",
+              "envoye",
+              "discussion",
+              "accepte",
+              "publie",
+              "refuse_marque",
+              "decline",
+              "sans_reponse",
+              "termine"
+            ]
+          },
+          "chances": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "sector": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "contact": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "brief": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "mail": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "products": {
+            "type": "string",
+            "maxLength": 3000
+          },
+          "benefits": {
+            "type": "string",
+            "maxLength": 3000
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "partner_log",
+      "description": "Add a dated journal entry to a partnership (exchange, decision, next step).",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "date": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "link": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "contacts_list",
+      "readOnly": true,
+      "description": "List the contacts (people) of the address book, optionally for one partnership.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "partner_id": {
+            "type": "string",
+            "maxLength": 60
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "contact_create",
+      "description": "Add a contact (person). It is created as 'to review' until the owner checks it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "organization": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "partner_id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "contact_update",
+      "description": "Update a contact.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "organization": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "partner_id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        }
+      },
+      "default": true
+    },
+    {
+      "name": "partner_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Permanently delete a partnership file together with its journal and contacts. Irreversible. Off by default: an administrator must grant it to a token.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          }
+        }
+      }
+    },
+    {
+      "name": "contact_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Permanently delete a contact. Irreversible. Off by default: an administrator must grant it to a token.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          }
+        }
+      }
+    }
+  ]
+}

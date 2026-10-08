@@ -1,0 +1,18 @@
+{
+  "title": "Press kit",
+  "intro": "Everything you need to talk about {name}: who we are, our logo, colors and font. Feel free to use them to present us.",
+  "about": "About",
+  "short": "Short description (copy)",
+  "long": "Long description (copy)",
+  "visuals": "Logo",
+  "logo": "Logo",
+  "logo.wide": "Horizontal logo",
+  "logo.square": "Icon",
+  "logo.wideDark": "Horizontal logo (dark background)",
+  "logo.squareDark": "Icon (dark background)",
+  "colors": "Colors",
+  "colorsHelp": "Click a code to copy it.",
+  "typography": "Typography",
+  "contact": "Contact",
+  "languages": "Available in"
+}

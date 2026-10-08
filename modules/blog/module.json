@@ -1,0 +1,60 @@
+{
+  "apiVersion": 2,
+  "id": "blog",
+  "name": {
+    "en": "Blog",
+    "fr": "Blog"
+  },
+  "version": "1.0.0",
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "instances": "multiple",
+  "sections": [],
+  "consumes": [],
+  "provides": [],
+  "settings": [],
+  "permissions": [
+    "pages",
+    "sections"
+  ],
+  "icon": "📰",
+  "starter": true,
+  "description": {
+    "en": "Articles with cover, summary and Markdown content. Add as many blogs as you like.",
+    "fr": "Des articles avec image, résumé et contenu Markdown. Ajoutez autant de blogs que vous voulez."
+  },
+  "content": {
+    "display": "cards",
+    "clickAction": "detail",
+    "features": [
+      "cover",
+      "summary",
+      "body",
+      "featured",
+      "tags"
+    ],
+    "basePath": "blog",
+    "showInNav": true
+  },
+  "onboarding": {
+    "preselected": true,
+    "home": {
+      "section": "latest",
+      "count": 3
+    },
+    "sample": {
+      "title": {
+        "en": "Welcome to your new site",
+        "fr": "Bienvenue sur votre nouveau site"
+      },
+      "summary": {
+        "en": "This first article was created for you. Edit or delete it from the admin.",
+        "fr": "Ce premier article a été créé pour vous. Modifiez-le ou supprimez-le depuis l'admin."
+      },
+      "body": {
+        "en": "Everything on this site — texts, links, colors, languages — is editable from the admin.\n\n- Add articles, promo codes or any entries to your collections\n- Create redirects such as /twitch\n- Install modules to add features",
+        "fr": "Tout ce qui s'affiche ici — textes, liens, couleurs, langues — se modifie depuis l'admin.\n\n- Ajoutez des articles, des codes promo ou n'importe quelles entrées à vos collections\n- Créez des redirections comme /twitch\n- Installez des modules pour ajouter des fonctionnalités"
+      }
+    }
+  }
+}

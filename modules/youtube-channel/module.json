@@ -1,0 +1,95 @@
+{
+  "apiVersion": 2,
+  "id": "youtube-channel",
+  "name": {
+    "en": "YouTube channel",
+    "fr": "Chaîne YouTube"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, and your videos in the site's RSS feed. Works with just the channel id; an API key adds Shorts detection and exact durations.",
+    "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, et vos vidéos dans le flux RSS du site. Fonctionne avec le seul identifiant de chaîne ; une clé d'API ajoute la détection des Shorts et les durées exactes."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "▶️",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "provides": [
+    {
+      "topic": "feed.item",
+      "label": {
+        "en": "Videos (RSS feed, Discord…)",
+        "fr": "Vidéos (flux RSS, Discord…)"
+      }
+    },
+    {
+      "topic": "maze.poster",
+      "label": {
+        "en": "Videos as posters",
+        "fr": "Vidéos en affiches"
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "featured",
+      "label": {
+        "en": "Featured video",
+        "fr": "Vidéo mise en avant"
+      },
+      "size": "large"
+    }
+  ],
+  "permissions": [
+    "sections",
+    "topics"
+  ],
+  "settings": [
+    {
+      "key": "channelId",
+      "type": "text",
+      "label": {
+        "en": "Channel id",
+        "fr": "Identifiant de chaîne"
+      },
+      "help": {
+        "en": "Starts with UC (YouTube Studio → Settings → Channel → Advanced settings).",
+        "fr": "Commence par UC (YouTube Studio → Paramètres → Chaîne → Paramètres avancés)."
+      }
+    },
+    {
+      "key": "apiKey",
+      "type": "secret",
+      "advanced": true,
+      "label": {
+        "en": "API key (optional)",
+        "fr": "Clé d'API (facultatif)"
+      },
+      "help": {
+        "en": "Enables Shorts detection and exact durations. Without it, the public feed is used.",
+        "fr": "Active la détection des Shorts et les durées exactes. Sans elle, le flux public est utilisé."
+      }
+    },
+    {
+      "key": "maxAgeDays",
+      "type": "number",
+      "default": 30,
+      "label": {
+        "en": "Feature videos newer than (days)",
+        "fr": "Mettre en avant les vidéos de moins de (jours)"
+      }
+    },
+    {
+      "key": "includeShorts",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Allow Shorts to be featured",
+        "fr": "Autoriser la mise en avant des Shorts"
+      }
+    }
+  ]
+}

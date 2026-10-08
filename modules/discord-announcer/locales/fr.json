@@ -1,0 +1,18 @@
+{
+  "adminTitle": "Annonces Discord",
+  "notConfigured": "Aucun webhook configuré : rien n'est envoyé. Renseignez-le dans les réglages de l'instance.",
+  "configured": "Webhook configuré. Les nouveautés sont annoncées automatiquement (vérification chaque minute).",
+  "testTitle": "Envoyer un message de test",
+  "testSubmit": "Envoyer le test",
+  "testMessage": "✅ Test de {site} : les annonces Discord fonctionnent.",
+  "okTest": "Message de test envoyé.",
+  "errTest": "Échec de l'envoi : {error}",
+  "errNoWebhook": "Aucun webhook valide configuré.",
+  "logTitle": "Journal des envois",
+  "colDate": "Date",
+  "colSubject": "Annonce",
+  "colResult": "Résultat",
+  "resultOk": "envoyé",
+  "resultFailed": "échec ({status}) · {attempts} tentative(s) : {error}",
+  "noLog": "Aucune annonce envoyée pour l'instant."
+}

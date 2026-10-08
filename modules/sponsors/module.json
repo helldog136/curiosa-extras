@@ -1,0 +1,105 @@
+{
+  "apiVersion": 2,
+  "id": "sponsors",
+  "name": {
+    "en": "Sponsors",
+    "fr": "Sponsors"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your sponsors and their promo codes on the site, with the mandatory partnership mention.",
+    "fr": "Affiche vos sponsors et leurs codes promo sur le site, avec la mention de partenariat obligatoire."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "💸",
+  "main": "index.mjs",
+  "type": "content",
+  "instances": "multiple",
+  "content": {
+    "display": "codes",
+    "clickAction": "detail",
+    "features": [
+      "cover",
+      "summary",
+      "body",
+      "url",
+      "code",
+      "expiresAt",
+      "tags"
+    ],
+    "basePath": "sponsors",
+    "showInNav": true,
+    "allowGoLinks": true,
+    "fieldSchema": [
+      {
+        "key": "partner",
+        "label": "Partner",
+        "type": "ref",
+        "topic": "partnership.partner"
+      }
+    ]
+  },
+  "consumes": [
+    {
+      "topic": "partnership.partner",
+      "label": {
+        "en": "Partners you can link a sponsor to",
+        "fr": "Partenaires auxquels lier un sponsor"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "status",
+          "type": "string"
+        },
+        {
+          "key": "url",
+          "type": "url"
+        },
+        {
+          "key": "logo",
+          "type": "url"
+        }
+      ]
+    }
+  ],
+  "provides": [
+    {
+      "topic": "sponsor.card",
+      "label": {
+        "en": "Sponsor cards (for overlays)",
+        "fr": "Cartes de sponsors (pour les overlays)"
+      }
+    }
+  ],
+  "permissions": [
+    "pages",
+    "slots",
+    "topics"
+  ],
+  "settings": [
+    {
+      "key": "disclosure",
+      "type": "text",
+      "translatable": true,
+      "label": {
+        "en": "Partnership mention",
+        "fr": "Mention de partenariat"
+      },
+      "help": {
+        "en": "Shown on every sponsor page and above the list. Advertising rules require it: keep it clear.",
+        "fr": "Affichée sur chaque page de sponsor et au-dessus de la liste. La réglementation sur la publicité l'exige : gardez-la claire."
+      }
+    }
+  ]
+}

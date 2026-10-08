@@ -1,0 +1,163 @@
+{
+  "apiVersion": 2,
+  "id": "sponsor-ticker",
+  "name": {
+    "en": "Sponsor ticker overlay (OBS)",
+    "fr": "Overlay sponsors (OBS)"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "A lower-third for OBS that periodically shows one of your sponsors with its promo code and a QR code.",
+    "fr": "Un bandeau pour OBS qui affiche périodiquement l'un de vos sponsors avec son code promo et un QR code."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "💬",
+  "main": "index.mjs",
+  "type": "overlay",
+  "instances": "multiple",
+  "consumes": [
+    {
+      "topic": "sponsor.card",
+      "label": {
+        "en": "Sponsors (from the Sponsors module)",
+        "fr": "Sponsors (du module Sponsors)"
+      },
+      "tags": true,
+      "schema": [
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "text",
+          "type": "string"
+        },
+        {
+          "key": "url",
+          "type": "url"
+        },
+        {
+          "key": "code",
+          "type": "string"
+        },
+        {
+          "key": "logo",
+          "type": "url"
+        },
+        {
+          "key": "publishedAt",
+          "type": "string"
+        },
+        {
+          "key": "tags",
+          "type": "string[]"
+        }
+      ]
+    },
+    {
+      "topic": "core.entry",
+      "label": {
+        "en": "Entries of any promo-code or article list",
+        "fr": "Entrées de n'importe quelle liste de codes ou d'articles"
+      },
+      "tags": true
+    }
+  ],
+  "permissions": [
+    "overlay",
+    "routes",
+    "topics"
+  ],
+  "settings": [
+    {
+      "key": "visual",
+      "type": "select",
+      "default": "neon",
+      "label": {
+        "en": "Look",
+        "fr": "Style"
+      },
+      "options": [
+        {
+          "value": "neon",
+          "label": {
+            "en": "Neon",
+            "fr": "Néon"
+          }
+        },
+        {
+          "value": "cine",
+          "label": {
+            "en": "Cinema",
+            "fr": "Ciné"
+          }
+        },
+        {
+          "value": "broadcast",
+          "label": {
+            "en": "Broadcast",
+            "fr": "Broadcast"
+          }
+        }
+      ],
+      "group": "appearance"
+    },
+    {
+      "key": "accentColor",
+      "type": "color",
+      "default": "theme:accent",
+      "label": {
+        "en": "Accent color",
+        "fr": "Couleur d'accent"
+      },
+      "group": "appearance"
+    },
+    {
+      "key": "periodSeconds",
+      "type": "number",
+      "default": 90,
+      "label": {
+        "en": "Seconds between two appearances",
+        "fr": "Secondes entre deux apparitions"
+      }
+    },
+    {
+      "key": "holdSeconds",
+      "type": "number",
+      "default": 10,
+      "label": {
+        "en": "Seconds on screen",
+        "fr": "Secondes à l'écran"
+      }
+    },
+    {
+      "key": "showQr",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Show a QR code",
+        "fr": "Afficher un QR code"
+      }
+    },
+    {
+      "key": "devMode",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "Developer mode",
+        "fr": "Mode développeur"
+      },
+      "help": {
+        "en": "Lets the URL control chance: ?dev=1 (appears after 0.5 s, repeats every 4 s), ?seed=42 (same order every time).",
+        "fr": "Permet à l'URL de piloter le hasard : ?dev=1 (apparaît après 0,5 s, se répète toutes les 4 s), ?seed=42 (même ordre à chaque fois)."
+      }
+    }
+  ]
+}

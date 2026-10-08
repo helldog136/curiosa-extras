@@ -1,0 +1,137 @@
+{
+  "apiVersion": 2,
+  "id": "game-suggestions",
+  "name": {
+    "en": "Game suggestions",
+    "fr": "Suggestions de jeux"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played, covers fetched from RAWG.",
+    "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués, des jaquettes récupérées via RAWG."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎮",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "suggestions",
+  "permissions": [
+    "pages",
+    "routes",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "settings": [
+    {
+      "key": "title",
+      "type": "text",
+      "label": {
+        "en": "Page title",
+        "fr": "Titre de la page"
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "label": {
+        "en": "Introduction (Markdown)",
+        "fr": "Introduction (Markdown)"
+      }
+    },
+    {
+      "key": "rawgApiKey",
+      "type": "secret",
+      "advanced": true,
+      "label": {
+        "en": "RAWG API key (optional)",
+        "fr": "Clé d'API RAWG (facultatif)"
+      },
+      "help": {
+        "en": "rawg.io/apidocs — adds a cover to each suggestion. Without it, suggestions simply have no image.",
+        "fr": "rawg.io/apidocs — ajoute une jaquette à chaque suggestion. Sans elle, les suggestions n'ont simplement pas d'image."
+      }
+    },
+    {
+      "key": "rateLimit",
+      "type": "number",
+      "default": 5,
+      "advanced": true,
+      "label": {
+        "en": "Suggestions per hour and visitor",
+        "fr": "Suggestions par heure et par visiteur"
+      }
+    },
+    {
+      "key": "maxVotesPerMonth",
+      "type": "number",
+      "default": 3,
+      "advanced": true,
+      "label": {
+        "en": "\"Play it again\" votes per visitor and month",
+        "fr": "Votes « rejoue-le » par visiteur et par mois"
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "game_suggestions_list",
+      "readOnly": true,
+      "description": "List game suggestions, newest first. Optional filter by status.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "planned",
+              "accepted",
+              "rejected",
+              "already_played",
+              "finished"
+            ],
+            "description": "Only this status."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many at most (default 30)."
+          }
+        }
+      }
+    },
+    {
+      "name": "game_suggestions_set_status",
+      "description": "Change the status of a game suggestion.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Suggestion id."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "planned",
+              "accepted",
+              "rejected",
+              "already_played",
+              "finished"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      }
+    }
+  ]
+}

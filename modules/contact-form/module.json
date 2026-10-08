@@ -1,0 +1,77 @@
+{
+  "apiVersion": 2,
+  "id": "contact-form",
+  "name": {
+    "en": "Contact form",
+    "fr": "Formulaire de contact"
+  },
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "description": {
+    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book (the Contacts module, enabled for you).",
+    "fr": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses (le module Contacts, activé pour vous)."
+  },
+  "author": "Helldog136",
+  "privacy": {
+    "en": "If you write through the contact form, your name, e-mail address and message are saved in the site team's private address book, only to answer you. They are neither published nor passed on to third parties. To have them erased, write to the site's contact.",
+    "fr": "Si vous écrivez par le formulaire de contact, votre nom, votre adresse e-mail et votre message sont enregistrés dans le carnet d'adresses privé de l'équipe du site, uniquement pour vous répondre. Ils ne sont ni publiés ni transmis à des tiers. Pour les faire effacer, écrivez au contact du site."
+  },
+  "license": "Curiosa License 1.0",
+  "icon": "✉️",
+  "consumes": [],
+  "provides": [],
+  "requires": [
+    {
+      "service": "contact.store",
+      "label": {
+        "en": "An address book (Contacts module)",
+        "fr": "Un carnet d'adresses (module Contacts)"
+      }
+    }
+  ],
+  "defaultEnabled": false,
+  "instances": "multiple",
+  "sections": [
+    {
+      "id": "form",
+      "label": {
+        "en": "Contact form",
+        "fr": "Formulaire de contact"
+      }
+    }
+  ],
+  "permissions": [
+    "slots",
+    "routes",
+    "sections",
+    "mail"
+  ],
+  "settings": [
+    {
+      "key": "pageSlug",
+      "type": "text",
+      "translatable": true,
+      "label": {
+        "en": "Slug of a page that shows the form under its content (optional)",
+        "fr": "Slug d'une page qui affiche le formulaire sous son contenu (facultatif)"
+      },
+      "help": {
+        "en": "Example: contact. Or place the form's section on the home page instead.",
+        "fr": "Exemple : contact. Ou placez la section du formulaire sur l'accueil."
+      }
+    },
+    {
+      "key": "notify",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Email me each new message",
+        "fr": "Me prévenir par e-mail à chaque message"
+      },
+      "help": {
+        "en": "Sent to the site's contact address. Needs the email server set in Settings; messages are always kept in your contacts.",
+        "fr": "Envoyé à l'adresse de contact du site. Demande le serveur d'e-mail réglé dans les Réglages ; les messages restent toujours dans vos contacts."
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Name",
+  "email": "Email",
+  "message": "Message",
+  "send": "Send",
+  "sent": "Thanks! Your message was sent.",
+  "mailSubject": "New message from {name}",
+  "mailBody": "{name} <{email}> wrote on your site:"
+}

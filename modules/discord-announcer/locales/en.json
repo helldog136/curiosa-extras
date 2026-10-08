@@ -1,0 +1,18 @@
+{
+  "adminTitle": "Discord announcements",
+  "notConfigured": "No webhook configured: nothing is sent. Set it in the instance settings.",
+  "configured": "Webhook configured. New content is announced automatically (checked every minute).",
+  "testTitle": "Send a test message",
+  "testSubmit": "Send the test",
+  "testMessage": "✅ Test from {site}: Discord announcements work.",
+  "okTest": "Test message sent.",
+  "errTest": "Sending failed: {error}",
+  "errNoWebhook": "No valid webhook configured.",
+  "logTitle": "Delivery log",
+  "colDate": "Date",
+  "colSubject": "Announcement",
+  "colResult": "Result",
+  "resultOk": "sent",
+  "resultFailed": "failed ({status}) · {attempts} attempt(s): {error}",
+  "noLog": "Nothing announced yet."
+}
