@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "soundcloud",
+  "name": {
+    "en": "SoundCloud",
+    "fr": "SoundCloud"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your SoundCloud button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre SoundCloud dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "☁️",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "SoundCloud button in the header",
+        "fr": "Bouton SoundCloud dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "SoundCloud profile",
+        "fr": "Profil SoundCloud"
+      },
+      "help": {
+        "en": "Your SoundCloud username or your profile address.",
+        "fr": "Votre identifiant SoundCloud ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

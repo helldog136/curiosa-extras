@@ -2,10 +2,10 @@
   "apiVersion": 2,
   "id": "links",
   "name": {
-    "en": "Social links",
-    "fr": "Réseaux sociaux"
+    "en": "Link list",
+    "fr": "Liste de liens"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "instances": "multiple",
@@ -19,8 +19,8 @@
   ],
   "icon": "🔗",
   "description": {
-    "en": "A list of links with icons — your social networks, your channels. Add one list per channel if you have several.",
-    "fr": "Une liste de liens avec icônes — vos réseaux, vos chaînes. Ajoutez une liste par chaîne si vous en avez plusieurs."
+    "en": "A list of links with icons — your sites, your projects, your favourite pages. Social networks have their own modules.",
+    "fr": "Une liste de liens avec icônes — vos sites, vos projets, vos pages préférées. Les réseaux sociaux ont leurs propres modules."
   },
   "content": {
     "display": "links",

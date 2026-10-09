@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "snapchat",
+  "name": {
+    "en": "Snapchat",
+    "fr": "Snapchat"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Snapchat button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Snapchat dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "👻",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Snapchat button in the header",
+        "fr": "Bouton Snapchat dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Snapchat profile",
+        "fr": "Profil Snapchat"
+      },
+      "help": {
+        "en": "Your Snapchat username or your profile address.",
+        "fr": "Votre identifiant Snapchat ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "github",
+  "name": {
+    "en": "GitHub",
+    "fr": "GitHub"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your GitHub button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "💻",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "GitHub button in the header",
+        "fr": "Bouton GitHub dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "GitHub profile",
+        "fr": "Profil GitHub"
+      },
+      "help": {
+        "en": "Your GitHub username or your profile address.",
+        "fr": "Votre identifiant GitHub ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

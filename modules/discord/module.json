@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "discord",
+  "name": {
+    "en": "Discord",
+    "fr": "Discord"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Discord button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Discord dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "💬",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Discord button in the header",
+        "fr": "Bouton Discord dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Discord profile",
+        "fr": "Profil Discord"
+      },
+      "help": {
+        "en": "Your Discord invite code (e.g. abcDEF) or its full address.",
+        "fr": "Le code de votre invitation Discord (ex. abcDEF) ou son adresse complète."
+      }
+    }
+  ]
+}

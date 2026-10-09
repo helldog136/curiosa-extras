@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "kick",
+  "name": {
+    "en": "Kick",
+    "fr": "Kick"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Kick button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Kick dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🟢",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Kick button in the header",
+        "fr": "Bouton Kick dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Kick profile",
+        "fr": "Profil Kick"
+      },
+      "help": {
+        "en": "Your Kick channel name or its address.",
+        "fr": "Le nom de votre chaîne Kick ou son adresse."
+      }
+    }
+  ]
+}

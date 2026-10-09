@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "threads",
+  "name": {
+    "en": "Threads",
+    "fr": "Threads"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Threads button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Threads dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🧵",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Threads button in the header",
+        "fr": "Bouton Threads dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Threads profile",
+        "fr": "Profil Threads"
+      },
+      "help": {
+        "en": "Your Threads username (without @) or your profile address.",
+        "fr": "Votre identifiant Threads (sans @) ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

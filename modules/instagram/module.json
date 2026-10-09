@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "instagram",
+  "name": {
+    "en": "Instagram",
+    "fr": "Instagram"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Instagram button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Instagram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📸",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Instagram button in the header",
+        "fr": "Bouton Instagram dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Instagram profile",
+        "fr": "Profil Instagram"
+      },
+      "help": {
+        "en": "Your Instagram username (e.g. myname) or your profile address.",
+        "fr": "Votre identifiant Instagram (ex. monpseudo) ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "bandcamp",
+  "name": {
+    "en": "Bandcamp",
+    "fr": "Bandcamp"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Bandcamp button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Bandcamp dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎶",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Bandcamp button in the header",
+        "fr": "Bouton Bandcamp dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Bandcamp profile",
+        "fr": "Profil Bandcamp"
+      },
+      "help": {
+        "en": "The address of your Bandcamp page (e.g. https://myname.bandcamp.com).",
+        "fr": "L'adresse de votre page Bandcamp (ex. https://monnom.bandcamp.com)."
+      }
+    }
+  ]
+}

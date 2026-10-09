@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "tiktok",
+  "name": {
+    "en": "TikTok",
+    "fr": "TikTok"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your TikTok button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre TikTok dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎵",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "TikTok button in the header",
+        "fr": "Bouton TikTok dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "TikTok profile",
+        "fr": "Profil TikTok"
+      },
+      "help": {
+        "en": "Your TikTok username (without @) or your profile address.",
+        "fr": "Votre identifiant TikTok (sans @) ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

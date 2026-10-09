@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "reddit",
+  "name": {
+    "en": "Reddit",
+    "fr": "Reddit"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Reddit button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Reddit dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "👽",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Reddit button in the header",
+        "fr": "Bouton Reddit dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Reddit profile",
+        "fr": "Profil Reddit"
+      },
+      "help": {
+        "en": "Your Reddit username or the address of your profile or community.",
+        "fr": "Votre identifiant Reddit ou l'adresse de votre profil ou de votre communauté."
+      }
+    }
+  ]
+}

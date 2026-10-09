@@ -111,6 +111,11 @@ export default {
   },
 
   exports: {
+    /** Le bouton de la chaîne pour le cœur (en-tête) : rien tant que l'identifiant de chaîne n'est pas réglé. */
+    "social.link"(ctx) {
+      const id = String(ctx.setting("channelId") ?? "").trim();
+      return CHANNEL_RE.test(id) ? [{ label: "YouTube", url: `https://www.youtube.com/channel/${id}`, icon: "youtube" }] : [];
+    },
     // Les Shorts ne s'annoncent pas comme des vidéos : ils ne sont pas proposés.
     async "feed.item"(ctx, { limit }) {
       return (await longVideos(ctx, limit ?? 20)).map((v) => ({ id: `yt:${v.id}`, title: v.title, url: watchUrl(v.id), publishedAt: v.publishedAt, topics: ["video"] }));

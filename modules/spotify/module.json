@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "spotify",
+  "name": {
+    "en": "Spotify",
+    "fr": "Spotify"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Spotify button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Spotify dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎧",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Spotify button in the header",
+        "fr": "Bouton Spotify dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Spotify profile",
+        "fr": "Profil Spotify"
+      },
+      "help": {
+        "en": "The address of your Spotify profile, artist or podcast (Share → Copy link).",
+        "fr": "L'adresse de votre profil, artiste ou podcast Spotify (bouton Partager → Copier le lien)."
+      }
+    }
+  ]
+}

@@ -111,3 +111,17 @@ test("cache : deux lectures rapprochées = une seule requête ; liste vide non f
   globalThis.fetch = async () => { throw new Error("réseau"); };
   assert.deepEqual(await mod.listVideos(CH, null), []);
 });
+
+test("plusieurs instances (une par chaîne) : le manifeste l'autorise", () => {
+  assert.equal(JSON.parse(fs.readFileSync(new URL("../modules/youtube-channel/module.json", import.meta.url), "utf8")).instances, "multiple");
+});
+
+test("réseau social : fournit « social.link » (le bouton de la chaîne) ; rien tant que l'identifiant n'est pas réglé ou s'il est invalide", async () => {
+  const manifest = JSON.parse(fs.readFileSync(new URL("../modules/youtube-channel/module.json", import.meta.url), "utf8"));
+  assert.ok(manifest.provides.some((p) => p.topic === "social.link"));
+  assert.equal(manifest.type, "social");
+  const def = (await import("../modules/youtube-channel/index.mjs")).default;
+  const id = "UC" + "a".repeat(22);
+  assert.deepEqual(await def.exports["social.link"]({ setting: (k) => (k === "channelId" ? id : undefined) }), [{ label: "YouTube", url: `https://www.youtube.com/channel/${id}`, icon: "youtube" }]);
+  for (const bad of ["", "UCcourt", "pas-un-id"]) assert.deepEqual(await def.exports["social.link"]({ setting: () => bad }), [], bad);
+});

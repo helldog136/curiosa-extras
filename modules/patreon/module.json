@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "patreon",
+  "name": {
+    "en": "Patreon",
+    "fr": "Patreon"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Patreon button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Patreon dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🧡",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Patreon button in the header",
+        "fr": "Bouton Patreon dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Patreon profile",
+        "fr": "Profil Patreon"
+      },
+      "help": {
+        "en": "Your Patreon page name or its address.",
+        "fr": "Le nom de votre page Patreon ou son adresse."
+      }
+    }
+  ]
+}
