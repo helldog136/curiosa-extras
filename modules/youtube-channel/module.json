@@ -5,7 +5,7 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, and your videos in the site's RSS feed. Works with just the channel id; an API key adds Shorts detection and exact durations.",
     "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, et vos vidéos dans le flux RSS du site. Fonctionne avec le seul identifiant de chaîne ; une clé d'API ajoute la détection des Shorts et les durées exactes."
@@ -15,7 +15,7 @@
   "icon": "▶️",
   "main": "index.mjs",
   "type": "utility",
-  "instances": "single",
+  "instances": "multiple",
   "page": false,
   "provides": [
     {

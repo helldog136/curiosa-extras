@@ -68,3 +68,24 @@ test("le jeton est transmis en en-tête, jamais dans l'adresse", async () => {
   assert.equal(helix.init.headers.Authorization, "Bearer tok");
   assert.ok(!helix.u.includes("tok") && !helix.u.includes("sec"));
 });
+
+test("plusieurs instances (une par chaîne) : chacune lit SA chaîne, sans mélanger lives ni clips ; le manifeste l'autorise", async () => {
+  assert.equal(manifestJson.instances, "multiple");
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    const u = String(url); calls.push(u);
+    const json = (o) => ({ ok: true, status: 200, json: async () => o });
+    if (u.includes("oauth2/token")) return json({ access_token: "tok", expires_in: 3600 });
+    if (u.includes("/helix/streams")) return json({ data: u.includes("user_login=rascane") ? [{ id: "2", title: "Chez Rascane", started_at: "2030-01-01T10:00:00Z", game_name: "Zelda" }] : [] });
+    return json({});
+  };
+  const mine = ctx({ channel: "helldog136" }), friend = ctx({ channel: "rascane", clientId: "autre", clientSecret: "autre" });
+  assert.deepEqual(await def.exports["stream.live"](mine), [], "ma chaîne est hors ligne");
+  const live = await def.exports["stream.live"](friend);
+  assert.equal(live.length, 1);
+  assert.equal(live[0].url, "https://twitch.tv/rascane");
+  assert.equal(live[0].title, "Chez Rascane");
+  assert.equal(calls.filter((u) => u.includes("oauth2/token")).length, 2, "un jeton par couple d'identifiants");
+  await def.exports["stream.live"](friend); await def.exports["stream.live"](mine);
+  assert.equal(calls.filter((u) => u.includes("oauth2/token")).length, 2, "jetons réutilisés : pas de nouvelle authentification en alternant");
+});

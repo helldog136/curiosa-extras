@@ -111,3 +111,7 @@ test("cache : deux lectures rapprochées = une seule requête ; liste vide non f
   globalThis.fetch = async () => { throw new Error("réseau"); };
   assert.deepEqual(await mod.listVideos(CH, null), []);
 });
+
+test("plusieurs instances (une par chaîne) : le manifeste l'autorise", () => {
+  assert.equal(JSON.parse(fs.readFileSync(new URL("../modules/youtube-channel/module.json", import.meta.url), "utf8")).instances, "multiple");
+});

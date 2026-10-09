@@ -4,8 +4,8 @@
 const LOGIN = /^[a-zA-Z0-9_]{3,25}$/;
 const CLIPS_TTL = 10 * 60_000;
 const LIVE_TTL = 30_000;
-const state = { token: null, ids: new Map(), live: new Map(), clips: new Map() };
-export const resetCache = () => { state.token = null; state.ids.clear(); state.live.clear(); state.clips.clear(); };
+const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map() };
+export const resetCache = () => { state.tokens.clear(); state.ids.clear(); state.live.clear(); state.clips.clear(); };
 
 const get = (url, init = {}) => fetch(url, { signal: AbortSignal.timeout(5000), ...init });
 const cfg = (ctx) => ({ channel: String(ctx.setting("channel") ?? "").trim().toLowerCase(), clientId: String(ctx.setting("clientId") ?? "").trim(), secret: String(ctx.setting("clientSecret") ?? "").trim() });
@@ -13,14 +13,16 @@ const valid = (c) => LOGIN.test(c.channel) && c.clientId && c.secret;
 
 async function token(c) {
   const key = `${c.clientId}|${c.secret}`;
-  if (state.token?.key === key && state.token.expiresAt > Date.now()) return state.token.value;
+  // Un jeton par couple d'identifiants : plusieurs instances (une par chaîne) peuvent avoir des identifiants différents sans se disputer le jeton.
+  const known = state.tokens.get(key);
+  if (known && known.expiresAt > Date.now()) return known.value;
   try {
     const res = await get("https://id.twitch.tv/oauth2/token", { method: "POST", body: new URLSearchParams({ client_id: c.clientId, client_secret: c.secret, grant_type: "client_credentials" }) });
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.access_token) return null;
-    state.token = { key, value: json.access_token, expiresAt: Date.now() + ((json.expires_in ?? 3600) - 60) * 1000 };
-    return state.token.value;
+    state.tokens.set(key, { value: json.access_token, expiresAt: Date.now() + ((json.expires_in ?? 3600) - 60) * 1000 });
+    return json.access_token;
   } catch { return null; }
 }
 const headers = (c, t) => ({ "Client-Id": c.clientId, Authorization: `Bearer ${t}` });

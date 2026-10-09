@@ -5,7 +5,7 @@
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: shows when you are live and offers your latest clips.",
     "fr": "Facilite la mise en avant de votre chaîne Twitch : indique quand vous êtes en direct et propose vos derniers clips."
@@ -15,7 +15,7 @@
   "icon": "🟣",
   "main": "index.mjs",
   "type": "utility",
-  "instances": "single",
+  "instances": "multiple",
   "page": false,
   "provides": [
     {
