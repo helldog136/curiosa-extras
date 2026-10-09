@@ -24,7 +24,7 @@ test("hero : réglages — title/text traduisibles, showLogo vrai par défaut", 
   assert.equal(by.title.translatable, true);
   assert.equal(by.text.translatable, true);
   assert.equal(by.showLogo.default, true);
-  assert.deepEqual(Object.keys(settingsDefaults(m)).sort(), ["showLogo", "videoSound"]);
+  assert.deepEqual(Object.keys(settingsDefaults(m)).sort(), ["showLogo", "text", "title", "videoSound"]);
   assert.equal(by.video.type, "video");
   assert.equal(by.videoSound.default, false);
 });
@@ -97,4 +97,34 @@ test("hero : ligne d'accroche et bouton — recopiés ; le lien du bouton doit �
   [b] = await hero.definition.sections.hero(fakeCtx({ settings: { buttonLabel: "", buttonUrl: "/x", showLogo: false }, site: { name: "S", tagline: "", logo: "" } }));
   assert.equal(b.button, undefined, "sans libellé, pas de bouton");
   assert.equal("eyebrow" in b, false);
+});
+
+test("hero : manifeste 1.0.1 — défauts du site, lien du bouton de type link, groupes facultatifs cohérents", async () => {
+  const m = await assertValidManifest(hero.manifest);
+  assert.equal(m.version, "1.0.1");
+  const by = Object.fromEntries(m.settings.map((s) => [s.key, s]));
+  assert.equal(by.title.default, "site:name");
+  assert.equal(by.text.default, "site:tagline");
+  assert.equal(by.buttonUrl.type, "link");
+  const keys = new Set(m.settings.map((s) => s.key));
+  const seen = new Set();
+  assert.deepEqual(m.optionalGroups.map((g) => g.id), ["button", "background"]);
+  for (const g of m.optionalGroups) {
+    for (const f of g.fields) { assert.ok(keys.has(f), `${g.id} : ${f} inconnu`); assert.ok(!seen.has(f), `${f} dans deux groupes`); seen.add(f); }
+    for (const r of g.required) assert.ok(g.fields.includes(r), `${g.id} : ${r} requis hors du groupe`);
+  }
+  assert.deepEqual(m.optionalGroups[0].fields, ["buttonLabel", "buttonUrl"]);
+  assert.deepEqual(m.optionalGroups[1].fields, ["video", "poster", "videoSound"]);
+});
+
+test("hero : tant que non réglés, ni bouton ni vidéo ; texte seul ou lien seul → pas de bouton ; vidéo absente → ni son ni affiche", async () => {
+  const site = { name: "S", tagline: "T", logo: "" };
+  let [b] = await hero.definition.sections.hero(fakeCtx({ settings: { showLogo: false, videoSound: true, poster: "/uploads/p.png" }, site }));
+  for (const k of ["button", "video", "videoSound", "videoPoster"]) assert.equal(k in b, false, k);
+  [b] = await hero.definition.sections.hero(fakeCtx({ settings: { buttonLabel: "Go", showLogo: false }, site }));
+  assert.equal(b.button, undefined);
+  [b] = await hero.definition.sections.hero(fakeCtx({ settings: { buttonUrl: "mailto:a@b.fr", showLogo: false }, site }));
+  assert.equal(b.button, undefined);
+  [b] = await hero.definition.sections.hero(fakeCtx({ settings: { buttonLabel: "Écrire", buttonUrl: "mailto:a@b.fr", showLogo: false }, site }));
+  assert.deepEqual(b.button, { label: "Écrire", href: "mailto:a@b.fr" });
 });

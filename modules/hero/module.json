@@ -5,7 +5,7 @@
     "en": "Home banner",
     "fr": "Bandeau d'accueil"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.mjs",
   "description": {
     "en": "Big title and intro for the top of the home page. Place its section where you want it.",
@@ -44,9 +44,10 @@
         "fr": "Titre"
       },
       "help": {
-        "en": "Empty = the site name.",
-        "fr": "Vide = le nom du site."
-      }
+        "en": "Shown in big letters. Follows the site name until you change it.",
+        "fr": "Affiché en grand. Suit le nom du site tant que vous ne le changez pas."
+      },
+      "default": "site:name"
     },
     {
       "key": "text",
@@ -57,9 +58,10 @@
         "fr": "Introduction"
       },
       "help": {
-        "en": "Empty = the site tagline.",
-        "fr": "Vide = l'accroche du site."
-      }
+        "en": "Follows the site tagline until you change it.",
+        "fr": "Suit l'accroche du site tant que vous ne la changez pas."
+      },
+      "default": "site:tagline"
     },
     {
       "key": "eyebrow",
@@ -77,34 +79,26 @@
       "label": {
         "en": "Button text",
         "fr": "Texte du bouton"
-      },
-      "help": {
-        "en": "Empty = no button.",
-        "fr": "Vide = pas de bouton."
       }
     },
     {
       "key": "buttonUrl",
-      "type": "text",
+      "type": "link",
       "label": {
-        "en": "Button link",
-        "fr": "Lien du bouton"
-      },
-      "help": {
-        "en": "A page of the site (/contact) or an https://… address.",
-        "fr": "Une page du site (/contact) ou une adresse https://…"
+        "en": "Where the button leads",
+        "fr": "Où mène le bouton"
       }
     },
     {
       "key": "video",
       "type": "video",
       "label": {
-        "en": "Background video",
-        "fr": "Vidéo de fond"
+        "en": "Video",
+        "fr": "Vidéo"
       },
       "help": {
-        "en": "MP4 or WebM, 50 MB at most. It only plays while it is on screen. Keep it short and light (a few seconds in a loop).",
-        "fr": "MP4 ou WebM, 50 Mo au plus. Elle ne joue que lorsqu'elle est à l'écran. Préférez une vidéo courte et légère (quelques secondes en boucle)."
+        "en": "MP4 or WebM, 50 MB at most. Keep it short and light (a few seconds in a loop). It only plays while on screen.",
+        "fr": "MP4 ou WebM, 50 Mo au plus. Courte et légère (quelques secondes en boucle). Elle ne joue que lorsqu'elle est à l'écran."
       }
     },
     {
@@ -140,6 +134,54 @@
         "en": "Show the logo",
         "fr": "Afficher le logo"
       }
+    }
+  ],
+  "optionalGroups": [
+    {
+      "id": "button",
+      "label": {
+        "en": "Button",
+        "fr": "Bouton"
+      },
+      "addLabel": {
+        "en": "Add a button",
+        "fr": "Ajouter un bouton"
+      },
+      "removeLabel": {
+        "en": "Remove the button",
+        "fr": "Retirer le bouton"
+      },
+      "fields": [
+        "buttonLabel",
+        "buttonUrl"
+      ],
+      "required": [
+        "buttonLabel",
+        "buttonUrl"
+      ]
+    },
+    {
+      "id": "background",
+      "label": {
+        "en": "Background video",
+        "fr": "Vidéo de fond"
+      },
+      "addLabel": {
+        "en": "Add a background video for this section",
+        "fr": "Ajouter une vidéo de fond pour cette section"
+      },
+      "removeLabel": {
+        "en": "Remove the video",
+        "fr": "Retirer la vidéo"
+      },
+      "fields": [
+        "video",
+        "poster",
+        "videoSound"
+      ],
+      "required": [
+        "video"
+      ]
     }
   ]
 }
