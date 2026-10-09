@@ -89,3 +89,10 @@ test("plusieurs instances (une par chaîne) : chacune lit SA chaîne, sans méla
   await def.exports["stream.live"](friend); await def.exports["stream.live"](mine);
   assert.equal(calls.filter((u) => u.includes("oauth2/token")).length, 2, "jetons réutilisés : pas de nouvelle authentification en alternant");
 });
+
+test("réseau social : fournit « social.link » (le bouton de la chaîne) ; rien tant que la chaîne n'est pas réglée ou si elle est invalide", async () => {
+  assert.ok(manifestJson.provides.some((p) => p.topic === "social.link"));
+  assert.equal(manifestJson.type, "social");
+  assert.deepEqual(await def.exports["social.link"](ctx({ channel: "Rascane" })), [{ label: "Twitch · rascane", url: "https://twitch.tv/rascane", icon: "twitch" }]);
+  for (const bad of ["", "  ", "a", "pas valide!", "../x"]) assert.deepEqual(await def.exports["social.link"](ctx({ channel: bad })), [], JSON.stringify(bad));
+});

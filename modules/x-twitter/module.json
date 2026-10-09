@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "x-twitter",
+  "name": {
+    "en": "X (Twitter)",
+    "fr": "X (Twitter)"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your X (Twitter) button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre X (Twitter) dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🐦",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "X (Twitter) button in the header",
+        "fr": "Bouton X (Twitter) dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "X (Twitter) profile",
+        "fr": "Profil X (Twitter)"
+      },
+      "help": {
+        "en": "Your X username (without @) or your profile address.",
+        "fr": "Votre identifiant X (sans @) ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

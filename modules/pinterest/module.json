@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "pinterest",
+  "name": {
+    "en": "Pinterest",
+    "fr": "Pinterest"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Pinterest button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Pinterest dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📌",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Pinterest button in the header",
+        "fr": "Bouton Pinterest dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Pinterest profile",
+        "fr": "Profil Pinterest"
+      },
+      "help": {
+        "en": "Your Pinterest username or your profile address.",
+        "fr": "Votre identifiant Pinterest ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

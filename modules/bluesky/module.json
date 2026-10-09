@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "bluesky",
+  "name": {
+    "en": "Bluesky",
+    "fr": "Bluesky"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Bluesky button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Bluesky dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🦋",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Bluesky button in the header",
+        "fr": "Bouton Bluesky dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Bluesky profile",
+        "fr": "Profil Bluesky"
+      },
+      "help": {
+        "en": "Your Bluesky handle (e.g. name.bsky.social) or your profile address.",
+        "fr": "Votre identifiant Bluesky (ex. nom.bsky.social) ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

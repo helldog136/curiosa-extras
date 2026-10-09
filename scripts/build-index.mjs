@@ -18,7 +18,7 @@ for (const group of ["modules", "examples"]) {
   for (const id of fs.readdirSync(path.join(root, group)).sort()) {
     const m = JSON.parse(fs.readFileSync(path.join(root, group, id, "module.json"), "utf8"));
     if (m.content) continue; // les modules « à contenu » de base sont proposés par l'assistant de départ, pas par le Catalogue
-    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, apiVersion: m.apiVersion, author: m.author, icon: m.icon });
+    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}) });
   }
 }
 const out = JSON.stringify({ version: 1, modules }, null, 2) + "\n";

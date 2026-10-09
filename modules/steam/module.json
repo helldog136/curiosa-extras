@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "steam",
+  "name": {
+    "en": "Steam",
+    "fr": "Steam"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Steam button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Steam dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎮",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Steam button in the header",
+        "fr": "Bouton Steam dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Steam profile",
+        "fr": "Profil Steam"
+      },
+      "help": {
+        "en": "Your Steam custom ID or your profile address.",
+        "fr": "Votre identifiant Steam personnalisé ou l'adresse de votre profil."
+      }
+    }
+  ]
+}

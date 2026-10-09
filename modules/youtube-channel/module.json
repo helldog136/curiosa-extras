@@ -14,10 +14,17 @@
   "license": "MIT",
   "icon": "▶️",
   "main": "index.mjs",
-  "type": "utility",
+  "type": "social",
   "instances": "multiple",
   "page": false,
   "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "YouTube button in the header",
+        "fr": "Bouton YouTube dans l'en-tête"
+      }
+    },
     {
       "topic": "feed.item",
       "label": {

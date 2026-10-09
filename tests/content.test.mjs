@@ -18,7 +18,7 @@ test("dépôt : identifiants uniques, les 10 modules de base (ex-livrés avec le
     assert.ok(ids.includes(id), id);
   }
   assert.ok(!ids.includes("blocks"), "« Blocs de page » est une fonction du cœur, plus un module (migration automatique)");
-  assert.equal(ids.length, 23, "10 modules de base + 11 modules + 2 exemples");
+  assert.equal(ids.length, 43, "10 modules de base + 11 modules + 20 réseaux sociaux + 2 exemples");
 });
 
 test("dépôt : chaque module a manifeste valide, sections/permissions cohérentes, pas de MCP orphelin", async () => {

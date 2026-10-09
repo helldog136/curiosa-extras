@@ -7,11 +7,41 @@
       "description": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Tout ce qui sait envoyer une requête HTTP peut pousser une alerte : Streamer.bot, un relais de webhook, un script.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔"
+    },
+    {
+      "id": "bandcamp",
+      "name": "Bandcamp",
+      "description": "Affiche le bouton de votre Bandcamp dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/bandcamp",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🎶",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "bluesky",
+      "name": "Bluesky",
+      "description": "Affiche le bouton de votre Bluesky dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/bluesky",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🦋",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "contact-form",
@@ -19,7 +49,7 @@
       "description": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contact-form",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -31,11 +61,26 @@
       "description": "Votre carnet d'adresses privé : personnes, organisations, notes.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contacts",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📇"
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "description": "Affiche le bouton de votre Discord dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/discord",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "💬",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "discord-announcer",
@@ -43,11 +88,26 @@
       "description": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📣"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "description": "Affiche le bouton de votre Facebook dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/facebook",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "👥",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "game-suggestions",
@@ -55,11 +115,26 @@
       "description": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués, des jaquettes récupérées via RAWG.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "description": "Affiche le bouton de votre GitHub dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/github",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "💻",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "hero",
@@ -67,11 +142,56 @@
       "description": "Grand titre et introduction pour le haut de l'accueil. Placez sa section où vous voulez.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/hero",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🏁"
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram",
+      "description": "Affiche le bouton de votre Instagram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/instagram",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "📸",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "kick",
+      "name": "Kick",
+      "description": "Affiche le bouton de votre Kick dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/kick",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🟢",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "kofi",
+      "name": "Ko-fi",
+      "description": "Affiche le bouton de votre Ko-fi dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/kofi",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "☕",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "live-status",
@@ -79,11 +199,26 @@
       "description": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔴"
+    },
+    {
+      "id": "mastodon",
+      "name": "Mastodon",
+      "description": "Affiche le bouton de votre Mastodon dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/mastodon",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🐘",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "maze-overlay",
@@ -91,7 +226,7 @@
       "description": "Un labyrinthe 3D rétro pour OBS. Le personnage se promène dans les couloirs et s'arrête devant des affiches faites avec le contenu de votre site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/maze-overlay",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -103,11 +238,44 @@
       "description": "Votre suivi privé des partenariats : marques démarchées, statut, relances, journal et contacts. N'a aucune page publique.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/partnerships",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "🤝"
+      "icon": "🤝",
+      "provides": [
+        "partnership.partner"
+      ]
+    },
+    {
+      "id": "patreon",
+      "name": "Patreon",
+      "description": "Affiche le bouton de votre Patreon dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/patreon",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🧡",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "pinterest",
+      "name": "Pinterest",
+      "description": "Affiche le bouton de votre Pinterest dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/pinterest",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "📌",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "planning",
@@ -115,11 +283,14 @@
       "description": "Affiche vos prochains streams, jour par jour, lus depuis un Google Agenda (ou n'importe quel flux iCal).",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "📅"
+      "icon": "📅",
+      "provides": [
+        "planning.slot"
+      ]
     },
     {
       "id": "press-kit",
@@ -127,11 +298,56 @@
       "description": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, logo, couleurs, police, contact. Elle n'affiche que ce que vous réglez dans Réglages — rien à entretenir ici.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/press-kit",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📰"
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "description": "Affiche le bouton de votre Reddit dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/reddit",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "👽",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "snapchat",
+      "name": "Snapchat",
+      "description": "Affiche le bouton de votre Snapchat dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/snapchat",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "👻",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "soundcloud",
+      "name": "SoundCloud",
+      "description": "Affiche le bouton de votre SoundCloud dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/soundcloud",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "☁️",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "sponsor-ticker",
@@ -139,11 +355,71 @@
       "description": "Un bandeau pour OBS qui affiche périodiquement l'un de vos sponsors avec son code promo et un QR code.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/sponsor-ticker",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬"
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "description": "Affiche le bouton de votre Spotify dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/spotify",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🎧",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "steam",
+      "name": "Steam",
+      "description": "Affiche le bouton de votre Steam dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/steam",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🎮",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "description": "Affiche le bouton de votre Telegram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/telegram",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "✈️",
+      "provides": [
+        "social.link"
+      ]
+    },
+    {
+      "id": "threads",
+      "name": "Threads",
+      "description": "Affiche le bouton de votre Threads dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/threads",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🧵",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "ticker-overlay",
@@ -151,11 +427,26 @@
       "description": "Une source navigateur transparente pour OBS qui fait défiler des cartes issues de votre site (codes promo, articles, annonces…).",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/ticker-overlay",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📺"
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok",
+      "description": "Affiche le bouton de votre TikTok dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/tiktok",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🎵",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "twitch-channel",
@@ -163,11 +454,31 @@
       "description": "Facilite la mise en avant de votre chaîne Twitch : indique quand vous êtes en direct et propose vos derniers clips.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.1",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "🟣"
+      "icon": "🟣",
+      "provides": [
+        "social.link",
+        "stream.live",
+        "maze.poster"
+      ]
+    },
+    {
+      "id": "x-twitter",
+      "name": "X (Twitter)",
+      "description": "Affiche le bouton de votre X (Twitter) dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/x-twitter",
+      "ref": "v1.1.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🐦",
+      "provides": [
+        "social.link"
+      ]
     },
     {
       "id": "youtube-channel",
@@ -175,11 +486,16 @@
       "description": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, et vos vidéos dans le flux RSS du site. Fonctionne avec le seul identifiant de chaîne ; une clé d'API ajoute la détection des Shorts et les durées exactes.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-channel",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.1",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "▶️"
+      "icon": "▶️",
+      "provides": [
+        "social.link",
+        "feed.item",
+        "maze.poster"
+      ]
     },
     {
       "id": "announcement-banner",
@@ -187,11 +503,14 @@
       "description": "Affiche une bannière en haut de chaque page, une section « note » pour l'accueil, et propose son texte aux overlays (sujet overlay.item). Module d'exemple.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/announcement-banner",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "📣"
+      "icon": "📣",
+      "provides": [
+        "overlay.item"
+      ]
     },
     {
       "id": "guestbook",
@@ -199,11 +518,15 @@
       "description": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/guestbook",
-      "ref": "v1.0.1",
+      "ref": "v1.1.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "📖"
+      "icon": "📖",
+      "provides": [
+        "feed.item",
+        "guestbook.message"
+      ]
     }
   ]
 }

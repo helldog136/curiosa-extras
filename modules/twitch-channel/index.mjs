@@ -69,6 +69,11 @@ export async function recentClips(c) {
 
 export default {
   exports: {
+    /** Le bouton de la chaîne pour le cœur (en-tête) : rien tant que la chaîne n'est pas réglée. */
+    "social.link"(ctx) {
+      const channel = String(ctx.setting("channel") ?? "").trim().toLowerCase();
+      return LOGIN.test(channel) ? [{ label: `Twitch · ${channel}`, url: `https://twitch.tv/${channel}`, icon: "twitch" }] : [];
+    },
     async "stream.live"(ctx) {
       const c = cfg(ctx);
       const s = await currentStream(c);

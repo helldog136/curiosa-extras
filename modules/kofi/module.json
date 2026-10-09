@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "kofi",
+  "name": {
+    "en": "Ko-fi",
+    "fr": "Ko-fi"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Ko-fi button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Ko-fi dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "☕",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Ko-fi button in the header",
+        "fr": "Bouton Ko-fi dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Ko-fi profile",
+        "fr": "Profil Ko-fi"
+      },
+      "help": {
+        "en": "Your Ko-fi username or your page address.",
+        "fr": "Votre identifiant Ko-fi ou l'adresse de votre page."
+      }
+    }
+  ]
+}

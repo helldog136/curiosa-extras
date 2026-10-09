@@ -1,0 +1,44 @@
+{
+  "apiVersion": 2,
+  "id": "facebook",
+  "name": {
+    "en": "Facebook",
+    "fr": "Facebook"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Shows your Facebook button in the site header. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Facebook dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "👥",
+  "main": "index.mjs",
+  "type": "social",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Facebook button in the header",
+        "fr": "Bouton Facebook dans l'en-tête"
+      }
+    }
+  ],
+  "permissions": [],
+  "settings": [
+    {
+      "key": "profile",
+      "type": "text",
+      "label": {
+        "en": "Facebook profile",
+        "fr": "Profil Facebook"
+      },
+      "help": {
+        "en": "Your Facebook page name or your profile address.",
+        "fr": "Le nom de votre page Facebook ou l'adresse de votre profil."
+      }
+    }
+  ]
+}
