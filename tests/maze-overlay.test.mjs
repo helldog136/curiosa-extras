@@ -400,7 +400,7 @@ test("tracé : validation — taille bornée, un chiffre 0-3 par case, au moins 
   for (const [v, err] of [[form(4, 5, grid5), "errTooBig"], [form(42, 5, grid5), "errTooBig"], [form("x", 5, grid5), "errTooBig"], [form(5, 5, grid5.slice(1)), "errInvalid"], [form(5, 5, "9".repeat(25)), "errInvalid"], [form(5, 5, "a".repeat(25)), "errInvalid"], [form(5, 5, "0".repeat(25)), "errNoPath"], [{}, "errTooBig"]]) assert.equal(parseMap(v).error, err, JSON.stringify(v).slice(0, 60));
 });
 
-test("tracé : enregistrer, relire par la route /map, remplacer (un seul tracé), revenir à l'automatique", async () => {
+test("tracé : enregistrer, relire par la route /map, remplacer (un seul tracé), enregistrer `auto` supprime le tracé", async () => {
   const c = mazeCtx();
   assert.deepEqual(await (await def.routes.map(new Request("https://x.test/m/maze/map"), c)).json(), { grid: null });
   assert.equal((await P.saveMap(c, form(5, 5, grid5))).ok, "Layout saved.");
@@ -410,30 +410,77 @@ test("tracé : enregistrer, relire par la route /map, remplacer (un seul tracé)
   assert.ok((await P.saveMap(c, form(5, 5, "0".repeat(25)))).error, "tracé sans chemin refusé");
   await P.saveMap(c, form(6, 5, grid5 + "1".repeat(5)));
   assert.equal(await c.api.store.count("map"), 1, "un seul tracé par instance");
-  assert.equal((await P.clear(c)).ok, "Back to the automatic layout.");
+  assert.equal((await P.saveMap(c, { auto: "true" })).ok, "Back to the automatic layout.");
+  assert.equal(await c.api.store.count("map"), 0);
+  assert.equal((await P.saveMap(c, { auto: "true" })).ok, "Back to the automatic layout.", "sans tracé : sans effet, sans erreur");
+});
+
+test("tracé : `auto` prime sur la grille postée, mais seule la valeur exacte « true » compte ; les validations de la grille sont conservées", async () => {
+  const c = mazeCtx();
+  await P.saveMap(c, form(5, 5, grid5));
+  assert.ok((await P.saveMap(c, { ...form(5, 5, "0".repeat(25)), auto: "false" })).error, "auto≠true : la grille est validée (aucun chemin)");
+  assert.equal(await c.api.store.count("map"), 1, "refus : le tracé enregistré est intact");
+  assert.ok((await P.saveMap(c, { ...form(4, 5, grid5), auto: "" })).error);
+  assert.ok((await P.saveMap(c, {})).error, "ni grille ni auto : refus");
+  assert.equal(await c.api.store.count("map"), 1);
+  assert.equal((await P.saveMap(c, { ...form(5, 5, grid5), auto: "true" })).ok, "Back to the automatic layout.");
   assert.equal(await c.api.store.count("map"), 0);
 });
 
-test("tracé : « générer » crée un tracé jouable à retoucher (portails et affiches compris) à la taille réglée", async () => {
+test("tracé : « générer » RENVOIE un tracé jouable (portails et affiches compris) à la taille réglée, sans rien enregistrer", async () => {
   const c = mazeCtx({ size: "small" });
-  assert.equal((await P.generate(c)).redirect, "?");
-  const { grid } = await (await def.routes.map(new Request("https://x.test/m/maze/map"), c)).json();
-  assert.equal(grid.width, 11 * 0 + 15);   // petit : 7 cellules → 15 cases
-  assert.ok(grid.walls.includes(1));
-  assert.ok(grid.walls.includes(2) || grid.walls.includes(3), "affiches ou portails présents");
-  assert.ok(grid.walls.every((n) => n >= 0 && n <= 3));
+  const res = await P.generate(c);
+  assert.equal(res.redirect, undefined);
+  assert.equal(res.ok, undefined);
+  const { grid } = res;
+  assert.equal(grid.width, 15);   // petit : 7 cellules → 15 cases
+  assert.equal(grid.cells.length, grid.width * grid.height);
+  assert.match(grid.cells, /^[0-3]+$/);
+  assert.ok(grid.cells.includes("1"));
+  assert.ok(grid.cells.includes("2") || grid.cells.includes("3"), "affiches ou portails présents");
+  const { parseMap } = await import("../modules/maze-overlay/index.mjs");
+  assert.ok(!parseMap(grid).error, "le tracé généré passe la validation d'enregistrement");
+  assert.equal(await c.api.store.count("map"), 0, "rien n'est persisté par la génération");
+  await P.saveMap(c, form(5, 5, grid5));
+  await P.generate(c);
+  const kept = await (await def.routes.map(new Request("https://x.test/m/maze/map"), c)).json();
+  assert.equal(kept.grid.walls.join(""), grid5, "générer ne touche pas au tracé enregistré");
+  assert.equal(P.clear, undefined, "l'ancien « clear » destructif a disparu");
 });
 
-test("tracé : panneau d'admin — sans tracé : explication + « générer » ; avec tracé : éditeur de grille, palette de 4 pinceaux, « revenir à l'automatique »", async () => {
+test("tracé : panneau d'admin — un seul éditeur (aucun formulaire séparé) ; sans tracé il démarre en mode automatique, avec tracé il affiche le tracé enregistré", async () => {
   const c = mazeCtx();
   const none = await def.adminPanel(c);
-  assert.ok(!none.some((b) => b.type === "gridEditor"));
-  assert.deepEqual(none.filter((b) => b.type === "adminForm").map((b) => b.action), ["generate"]);
+  assert.deepEqual(none.filter((b) => b.type === "adminForm"), [], "plus de boutons « generate »/« clear » séparés");
+  const e0 = none.find((b) => b.type === "gridEditor");
+  assert.deepEqual([e0.action, e0.generateAction, e0.autoActive, e0.generateLabel, e0.width, e0.cells.length], ["saveMap", "generate", true, "Generate a random layout to edit", 15, 225]);
   await P.saveMap(c, form(5, 5, grid5));
   const some = await def.adminPanel(c);
+  assert.deepEqual(some.filter((b) => b.type === "adminForm"), []);
   const editor = some.find((b) => b.type === "gridEditor");
   assert.deepEqual([editor.action, editor.width, editor.height, editor.cells, editor.palette.map((p) => p.value)], ["saveMap", 5, 5, grid5, ["0", "1", "2", "3"]]);
-  assert.deepEqual(some.filter((b) => b.type === "adminForm").map((b) => b.action), ["generate", "clear"]);
+  assert.deepEqual([editor.autoActive, editor.generateAction, editor.generateLabel, editor.autoLabel], [false, "generate", "Generate a new random layout", "Delete the layout and randomize at every display"]);
+  assert.match(editor.autoNotice, /Nothing changes until you save/);
+  assert.ok(editor.labels.generateError);
+  assert.equal(some.filter((b) => b.type === "markdown").length, 1);
+  assert.match(some.find((b) => b.type === "markdown").text, /Custom layout in use/);
+  assert.match(none.find((b) => b.type === "markdown").text, /No custom layout/);
+});
+
+test("tracé : textes fr — libellés demandés par le propriétaire", () => {
+  const fr = loadMessages("fr");
+  assert.equal(fr.generateAgain, "Générer un nouveau tracé au hasard");
+  assert.equal(fr.generate, "Générer un tracé au hasard à retoucher");
+  assert.equal(fr.clear, "Supprimer le tracé et randomiser à chaque affichage");
+  assert.equal(fr.autoNotice, "Le labyrinthe sera généré au hasard à chaque affichage. Rien n'est changé tant que vous n'avez pas enregistré.");
+  assert.equal(fr.saved, "Tracé enregistré.");
+  assert.equal(fr.cleared, "Retour au tracé automatique.");
+  assert.equal(fr.lblReset, "Annuler les modifications");
+});
+
+test("manifeste : le tracé dépend des nouvelles propriétés du bloc gridEditor → cœur 0.1.10 minimum", () => {
+  assert.equal(manifestJson.minCore, "0.1.10");
+  assert.equal(manifestJson.version, "1.0.1");
 });
 
 test("tracé : la page de l'overlay le réclame au démarrage (route /map), main.js retombe sur un tracé automatique s'il est invalide", () => {

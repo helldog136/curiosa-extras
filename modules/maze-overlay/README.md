@@ -47,4 +47,12 @@ Tous les tirages passent par `web/random.js` (jamais `Math.random` directement).
 
 ## Tracé personnalisé (éditeur de carte)
 
-Par défaut, le labyrinthe est généré au hasard à chaque chargement. Dans l'admin de l'instance (section *Tracé du labyrinthe*), vous pouvez **générer un tracé de départ** puis le retoucher à la main avec l'éditeur de grille : choisissez un pinceau (mur, chemin, emplacement d'affiche, portail), cliquez ou glissez sur les cases, redimensionnez (5 à 41), puis enregistrez. Tant qu'un tracé est enregistré, c'est toujours lui qui s'affiche ; *Revenir au tracé automatique* le supprime. Un tracé sans aucune case de chemin est refusé. L'éditeur est le bloc générique `gridEditor` du cœur.
+Par défaut, le labyrinthe est généré au hasard à chaque chargement. Dans l'admin de l'instance (section *Tracé du labyrinthe*), l'éditeur de grille permet de dessiner son propre tracé : choisissez un pinceau (mur, chemin, emplacement d'affiche, portail), cliquez ou glissez sur les cases, redimensionnez (5 à 41), puis **Enregistrer le tracé**. Tant qu'un tracé est enregistré, c'est toujours lui qui s'affiche. Un tracé sans aucune case de chemin est refusé.
+
+Rien n'est enregistré avant *Enregistrer le tracé* (ni la barre flottante, ni l'avertissement en quittant la page ne sont oubliés) :
+
+- **Générer un nouveau tracé au hasard** met un tracé aléatoire dans l'éditeur, à retoucher ou à garder.
+- **Supprimer le tracé et randomiser à chaque affichage** met la grille de côté ; l'enregistrement supprime alors le tracé enregistré et le labyrinthe redevient aléatoire à chaque affichage.
+- **Annuler les modifications** revient au tracé enregistré.
+
+Ces fonctions reposent sur les propriétés `generateAction`, `autoLabel`, `autoNotice` et `autoActive` du bloc générique `gridEditor` : le module demande donc le cœur 0.1.10 (`minCore`). L'action `generate` renvoie un tracé sans l'enregistrer ; `saveMap` reçoit soit une grille, soit `auto: "true"`.

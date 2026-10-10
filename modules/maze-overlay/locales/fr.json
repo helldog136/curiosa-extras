@@ -9,10 +9,9 @@
   "paintPortal": "Portail",
   "save": "Enregistrer le tracé",
   "generate": "Générer un tracé au hasard à retoucher",
-  "generateAgain": "Remplacer par un nouveau tracé au hasard",
-  "clear": "Revenir au tracé automatique",
+  "generateAgain": "Générer un nouveau tracé au hasard",
+  "clear": "Supprimer le tracé et randomiser à chaque affichage",
   "saved": "Tracé enregistré.",
-  "generated": "Tracé généré : retouchez-le puis enregistrez.",
   "cleared": "Retour au tracé automatique.",
   "errInvalid": "Tracé invalide (taille ou contenu).",
   "errNoPath": "Il faut au moins une case « chemin » praticable.",
@@ -22,5 +21,7 @@
   "lblFill": "Tout remplir",
   "lblBorder": "Cadre",
   "lblReset": "Annuler les modifications",
-  "lblHint": "Choisissez un pinceau puis cliquez ou glissez sur les cases."
+  "lblHint": "Choisissez un pinceau puis cliquez ou glissez sur les cases.",
+  "autoNotice": "Le labyrinthe sera généré au hasard à chaque affichage. Rien n'est changé tant que vous n'avez pas enregistré.",
+  "generateError": "Impossible de générer un tracé."
 }
