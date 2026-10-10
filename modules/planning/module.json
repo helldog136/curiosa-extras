@@ -6,6 +6,7 @@
     "fr": "Planning des streams"
   },
   "version": "1.1.0",
+  "minCore": "0.1.10",
   "description": {
     "en": "Shows your upcoming streams, day by day, read from a Google Calendar (or any iCal feed).",
     "fr": "Affiche vos prochains streams, jour par jour, lus depuis un Google Agenda (ou n'importe quel flux iCal)."
