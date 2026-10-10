@@ -99,6 +99,18 @@
       }
     },
     {
+      "key": "channelUrl",
+      "type": "url",
+      "label": {
+        "en": "Channel link (“Watch on Twitch” button)",
+        "fr": "Lien de votre chaîne (bouton « Regarder sur Twitch »)"
+      },
+      "help": {
+        "en": "Optional, e.g. https://twitch.tv/mychannel. Without it, the button is not shown.",
+        "fr": "Facultatif, ex. https://twitch.tv/machaine. Sans lien, le bouton n'est pas affiché."
+      }
+    },
+    {
       "key": "days",
       "type": "number",
       "default": 7,

@@ -399,14 +399,191 @@ const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const coverImg = (url) => `<img src="${esc(url)}" alt="" loading="lazy" width="44" height="58" style="width:44px;height:58px;object-fit:cover;border-radius:6px;flex-shrink:0">`;
 
 /** Un créneau avec ses jaquettes (petites, à gauche) : comme sur la page de l'ancien site. */
-function slotHtml(slot, ctx, tz, covers, prefix = "") {
+function slotHtml(slot, ctx, tz, covers, prefix = "", vis = null) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
   const games = extractGameNames(slot.description);
-  const imgs = covers.length ? `<span style="display:flex;gap:4px;flex-shrink:0">${covers.map(coverImg).join("")}</span>` : "";
+  const imgs = covers.length ? `<span style="display:flex;gap:4px;flex-shrink:0">${covers.map(coverImg).join("")}</span>` : vis ? placeholderHtml(vis, true) : "";
   return `<div style="display:flex;gap:12px;align-items:center;margin:8px 0">${imgs}<div style="min-width:0;overflow-wrap:anywhere">${prefix ? `<span style="color:var(--v-muted)">${esc(prefix)} · </span>` : ""}<strong>${esc(when)}</strong> — ${esc(slot.title)}` +
     `${games.length ? `<div style="color:var(--v-muted);font-style:italic;font-size:.9em">${games.map(esc).join(", ")}</div>` : ""}</div></div>`;
 }
 const anyCover = (slots, covers) => slots.some((s) => coversOf(s, covers).length > 0);
+
+/* ───────────────────────────── Cartes de l'accueil (« prochain stream », « prochains streams ») ─────────────────────────────
+ * HTML + classes `cpl-*` du module, uniquement avec les variables de thème du cœur (--v-*) : clair, sombre, avec ou sans couleur
+ * secondaire. Les valeurs entre parenthèses de var() ne sont qu'un secours si le thème n'est pas chargé. La mise en page
+ * s'adapte à la largeur de la case (container query), pas à celle de l'écran. Aucune animation sans prefers-reduced-motion. */
+
+const CARD_CSS = `
+.cpl{container-type:inline-size;width:100%;font-family:var(--v-font,inherit);color:var(--v-fg,inherit)}
+.cpl *{box-sizing:border-box}
+.cpl p,.cpl h3,.cpl ul{margin:0;padding:0}
+.cpl ul{list-style:none}
+.cpl-card,.cpl-list{position:relative;overflow:hidden;background:var(--v-surface,#1c1c1f);border:1px solid var(--v-line,#333);border-radius:1rem;box-shadow:0 1px 2px color-mix(in srgb,var(--v-fg,#000) 12%,transparent),0 10px 28px -14px color-mix(in srgb,var(--v-fg,#000) 35%,transparent)}
+.cpl-card::before,.cpl-list::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--v-gradient,var(--v-accent,#e8a23b))}
+.cpl-card{display:flex;gap:1rem;align-items:flex-start;padding:1.25rem 1rem 1rem}
+.cpl-covers{display:flex;flex:0 0 auto;padding-left:.75rem}
+.cpl-covers img{display:block;width:5.25rem;aspect-ratio:3/4;object-fit:cover;border-radius:.6rem;border:2px solid var(--v-surface,#1c1c1f);box-shadow:0 4px 12px -4px color-mix(in srgb,var(--v-fg,#000) 45%,transparent);background:var(--v-line,#333);margin-left:-.75rem}
+.cpl-covers img+img{margin-left:-2.5rem}
+.cpl-body{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:.4rem;overflow-wrap:anywhere}
+.cpl-ph{--cpl-twitch:#9146ff;--cpl-on:#fff;position:relative;display:flex;flex:0 0 auto;align-items:center;justify-content:center;width:5.25rem;aspect-ratio:3/4;overflow:hidden;border-radius:.6rem;border:2px solid var(--v-surface,#1c1c1f);color:var(--cpl-on);font-weight:800;font-size:2.25rem;line-height:1;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--cpl-on) 7%,transparent) 0 .5rem,transparent .5rem 1rem),linear-gradient(160deg,var(--cpl-twitch),color-mix(in srgb,var(--cpl-twitch) 72%,black))}
+.cpl-ph img{display:block;width:72%;height:auto;max-height:72%;object-fit:contain}
+.cpl-ph-disc{display:flex;align-items:center;justify-content:center;width:70%;aspect-ratio:1;border-radius:50%;background:var(--cpl-on);padding:12%}
+.cpl-ph-disc img{width:100%;max-height:100%}
+.cpl-ph-s{width:2.5rem;border-radius:.4rem;border-width:0;font-size:1.1rem}
+.cpl-badge{display:inline-block;padding:.15rem .6rem;border-radius:999px;background:var(--v-accent,#e8a23b);color:var(--v-accent-fg,#111);font-size:.78rem;font-weight:700;letter-spacing:.02em;line-height:1.4}
+[data-accent2] .cpl-badge{background:var(--v-accent2,#e8a23b);color:var(--v-accent2-fg,#111)}
+.cpl-title{font-size:1.25rem;font-weight:700;line-height:1.25}
+.cpl-when{display:flex;flex-wrap:wrap;align-items:baseline;gap:.1rem .75rem}
+.cpl-hour{font-size:1.75rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.cpl-day{color:var(--v-muted,#aaa);font-size:1rem}
+.cpl-games,.cpl-also{color:var(--v-muted,#aaa);font-size:.9rem}
+.cpl-btn,.cpl-link{display:inline-flex;align-items:center;gap:.4rem;font-weight:600;text-decoration:none}
+.cpl-btn{margin-top:.35rem;padding:.55rem 1rem;border-radius:.65rem;background:var(--v-accent,#e8a23b);color:var(--v-accent-fg,#111);min-height:2.75rem}
+[data-accent2] .cpl-btn{background:var(--v-accent2,#e8a23b);color:var(--v-accent2-fg,#111)}
+.cpl-link{color:var(--v-fg,inherit);text-decoration:underline;text-underline-offset:.2em}
+.cpl-btn:focus-visible,.cpl-link:focus-visible{outline:2px solid var(--v-fg,currentColor);outline-offset:3px}
+@media (prefers-reduced-motion:no-preference){.cpl-btn{transition:transform .15s ease,filter .15s ease}.cpl-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}}
+.cpl-empty{display:block;padding:1.5rem 1rem 1.25rem;border-style:dashed;text-align:center}
+.cpl-empty-t{font-size:1.1rem;font-weight:700}
+.cpl-empty-s{color:var(--v-muted,#aaa);margin:.25rem 0 1rem}
+.cpl-list{padding-top:4px}
+.cpl-row{display:flex;gap:.75rem;align-items:center;padding:.75rem 1rem}
+.cpl-row+.cpl-row{border-top:1px solid var(--v-line,#333)}
+.cpl-tile{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;width:3.25rem;padding:.3rem 0;border:1px solid var(--v-line,#333);border-radius:.6rem;background:color-mix(in srgb,var(--v-fg,#fff) 6%,var(--v-surface,#1c1c1f));line-height:1.15}
+.cpl-tw{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--v-muted,#aaa)}
+.cpl-td{font-size:1.25rem;font-weight:800}
+.cpl-thumb{flex:0 0 auto;width:2.5rem;aspect-ratio:3/4;object-fit:cover;border-radius:.4rem;background:var(--v-line,#333)}
+.cpl-info{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:.15rem;overflow-wrap:anywhere}
+.cpl-row .cpl-title{font-size:1rem}
+.cpl-meta{color:var(--v-muted,#aaa);font-size:.9rem}
+.cpl-meta time{color:var(--v-fg,inherit);font-weight:700}
+.cpl-foot{padding:.75rem 1rem;border-top:1px solid var(--v-line,#333)}
+@container (min-width:30rem){.cpl-card{gap:1.5rem;padding:1.5rem 1.5rem 1.25rem}.cpl-covers img,.cpl-ph:not(.cpl-ph-s){width:7.5rem}.cpl-ph:not(.cpl-ph-s){font-size:3rem}.cpl-covers img+img{margin-left:-3.5rem}.cpl-title{font-size:1.5rem}.cpl-hour{font-size:2.25rem}.cpl-row{padding:.85rem 1.25rem}.cpl-foot{padding:.75rem 1.25rem}}
+`.replace(/\n/g, "");
+
+const wallDay = (w) => Date.UTC(w.y, w.m - 1, w.d);
+
+/** « En cours » · « Dans 40 min » · « Dans 3 h » · « Aujourd'hui » · « Demain » · « Dans 4 jours » ; rien au-delà d'une semaine. */
+export function relativeLabel(slot, now, tz, t) {
+  if (!slot.allDay && slot.start.getTime() <= now.getTime() && slot.end.getTime() >= now.getTime()) return t("relLive");
+  if (slot.allDay && slot.start.getTime() <= now.getTime() && slot.end.getTime() > now.getTime()) return t("relToday");
+  const diff = Math.round((wallDay(wallDateNow(tz, slot.start)) - wallDay(wallDateNow(tz, now))) / 86_400_000);
+  if (diff < 0) return null;
+  if (diff === 0) {
+    if (slot.allDay) return t("relToday");
+    const mins = Math.max(1, Math.ceil((slot.start.getTime() - now.getTime()) / 60_000));
+    if (mins < 60) return t("relMinutes", { n: mins });
+    const hours = Math.floor(mins / 60);
+    return hours < 6 ? t("relHours", { n: hours }) : t("relToday");
+  }
+  if (diff === 1) return t("relTomorrow");
+  return diff <= 6 ? t("relDays", { n: diff }) : null;
+}
+
+const isoOf = (slot, tz) => { if (!slot.allDay) return slot.start.toISOString(); const w = wallDateNow(tz, slot.start); return `${w.y}-${String(w.m).padStart(2, "0")}-${String(w.d).padStart(2, "0")}`; };
+const gameCovers = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((name) => ({ name, url: covers.get(name) })).filter((g) => g.url));
+const safeHttps = (v) => { const u = String(v ?? "").trim(); return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : null; };
+const planningHref = (ctx) => { const b = ctx.instance?.basePath; return b === null || b === undefined ? null : b ? `/${b}` : "/"; };
+const wrapCards = (inner) => `<div class="cpl"><style>${CARD_CSS}</style>${inner}</div>`;
+
+/** Le logo du site à poser sur le mauve Twitch : la variante « fond sombre » (logo clair) si elle existe, sinon le logo principal sur un disque blanc. */
+const logoUrl = (v) => (typeof v === "string" && /^(https:\/\/[^\s"'<>]+|\/(?!\/)[^\s"'<>]*)$/.test(v.trim()) ? v.trim() : null);
+export async function brandVisual(ctx) {
+  let b = null;
+  try { b = typeof ctx.api?.brand === "function" ? await ctx.api.brand(ctx.locale) : null; } catch { b = null; }
+  const logos = Array.isArray(b?.logos) ? b.logos : [];
+  const of = (kind) => logoUrl(logos.find((l) => l?.kind === kind)?.src);
+  const light = of("squareDark") ?? of("wideDark");
+  const plain = logoUrl(b?.logo) ?? of("square") ?? of("wide");
+  const name = String(b?.name ?? "").trim();
+  return { src: light ?? plain, light: !!light, initial: (name ? [...name][0].toUpperCase() : "▶") };
+}
+
+/** Visuel de repli d'un stream sans jeu : mêmes proportions que la jaquette. Décoratif (le titre dit déjà tout). */
+function placeholderHtml(vis, small = false) {
+  const inner = vis?.src
+    ? (vis.light ? `<img src="${esc(vis.src)}" alt="" loading="lazy" width="120" height="120">` : `<span class="cpl-ph-disc"><img src="${esc(vis.src)}" alt="" loading="lazy" width="120" height="120"></span>`)
+    : `<span>${esc(vis?.initial ?? "▶")}</span>`;
+  return `<span class="cpl-ph${small ? " cpl-ph-s" : ""}" aria-hidden="true">${inner}</span>`;
+}
+
+function badgeHtml(label) { return label ? `<p><span class="cpl-badge">${esc(label)}</span></p>` : ""; }
+
+/** La grande carte du prochain stream. `others` : les autres créneaux du même jour. */
+function nextCardHtml(slot, others, ctx, tz, covers, now, vis) {
+  const t = ctx.t;
+  const gc = gameCovers(slot, covers).slice(0, 3);
+  const games = extractGameNames(slot.description);
+  const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(slot.start);
+  const hour = slot.allDay ? t("allDay") : fmtTime(slot.start, ctx.locale, tz);
+  const channel = safeHttps(ctx.setting("channelUrl"));
+  const imgs = !gc.length ? placeholderHtml(vis) : `<span class="cpl-covers">${gc.map((g) => `<img src="${esc(g.url)}" alt="${esc(t("coverAlt", { game: g.name }))}" loading="lazy" width="120" height="160">`).join("")}</span>`;
+  const also = others.length ? `<p class="cpl-also">${esc(t("alsoToday"))} ${others.map((o) => `<time datetime="${esc(isoOf(o, tz))}">${esc(o.allDay ? t("allDay") : fmtTime(o.start, ctx.locale, tz))}</time> ${esc(o.title)}`).join(" · ")}</p>` : "";
+  return wrapCards(`<article class="cpl-card">${imgs}<div class="cpl-body">${badgeHtml(relativeLabel(slot, now, tz, t))}` +
+    `<h3 class="cpl-title">${esc(slot.title)}</h3>` +
+    `<p class="cpl-when"><time class="cpl-hour" datetime="${esc(isoOf(slot, tz))}">${esc(hour)}</time><span class="cpl-day">${esc(day)}</span></p>` +
+    `${games.length ? `<p class="cpl-games">${esc(t("gamesLabel"))} ${games.map(esc).join(", ")}</p>` : ""}${also}` +
+    `${channel ? `<a class="cpl-btn" href="${esc(channel)}" target="_blank" rel="noopener noreferrer">${esc(t("watch"))}</a>` : ""}` +
+    `</div></article>`);
+}
+
+/** Une liste de créneaux à venir (une ligne par stream : jour, jaquette, titre, heure). */
+function upcomingListHtml(slots, ctx, tz, covers, now, vis) {
+  const t = ctx.t;
+  const href = planningHref(ctx);
+  const rows = slots.map((s) => {
+    const wd = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", timeZone: tz }).format(s.start);
+    const dn = new Intl.DateTimeFormat(ctx.locale, { day: "numeric", timeZone: tz }).format(s.start);
+    const gc = gameCovers(s, covers)[0];
+    const games = s.allDay ? [] : extractGameNames(s.description);
+    const hour = s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz);
+    const rel = relativeLabel(s, now, tz, t);
+    return `<li class="cpl-row"><time class="cpl-tile" datetime="${esc(isoOf(s, tz))}"><span class="cpl-tw">${esc(wd)}</span><span class="cpl-td">${esc(dn)}</span></time>` +
+      `${gc ? `<img class="cpl-thumb" src="${esc(gc.url)}" alt="${esc(t("coverAlt", { game: gc.name }))}" loading="lazy" width="40" height="54">` : placeholderHtml(vis, true)}` +
+      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}</span></div>` +
+      `${rel ? `<span class="cpl-badge">${esc(rel)}</span>` : ""}</li>`;
+  }).join("");
+  return wrapCards(`<div class="cpl-list"><ul>${rows}</ul>${href ? `<div class="cpl-foot"><a class="cpl-link" href="${esc(href)}">${esc(t("fullPlanning"))}</a></div>` : ""}</div>`);
+}
+
+/* ───────────────────────────── Aide à la saisie : tutoriel d'admin et SKILL.md pour une IA ───────────────────────────── */
+
+const TUTO_CSS = `.cpt{margin:1rem 0}.cpt *{box-sizing:border-box}.cpt summary,.cpt .cpt-dl{display:inline-flex;align-items:center;min-height:2.75rem;padding:.55rem 1rem;border:1px solid color-mix(in srgb,currentColor 35%,transparent);border-radius:.65rem;font-weight:600;cursor:pointer;text-decoration:none;color:inherit}.cpt summary:hover,.cpt .cpt-dl:hover{background:color-mix(in srgb,currentColor 8%,transparent)}.cpt summary:focus-visible,.cpt .cpt-dl:focus-visible{outline:2px solid currentColor;outline-offset:3px}.cpt-body{margin-top:1rem;max-width:60rem;line-height:1.5}.cpt-body h4{margin:1.25rem 0 .4rem;font-size:1.05rem}.cpt-body ol,.cpt-body ul{margin:.25rem 0;padding-left:1.4rem}.cpt-body li{margin:.25rem 0}.cpt-row{padding:.75rem 0;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.cpt-row dt{font-weight:700}.cpt-row dd{margin:.15rem 0 0}.cpt-row .cpt-k{display:block;opacity:.75;font-size:.9rem}.cpt-ex{margin:.5rem 0;padding:.75rem 1rem;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:.75rem}.cpt-ex dt{font-weight:700}.cpt-ex dd{margin:0 0 .4rem}.cpt-help{margin:.5rem 0 0;opacity:.8;font-size:.9rem}`;
+
+const TUTO_FIELDS = ["Title", "When", "End", "Game", "Desc", "Place", "AllDay", "Repeat", "Cancel"];
+
+/** Le tutoriel « Comment remplir mon agenda Google ? » (repliable) et le bouton de téléchargement du SKILL.md. Tout ce qui est dit ici est ce que le module lit. */
+export function tutorialHtml(ctx, tz) {
+  const t = (k, v) => esc(ctx.t(k, v));
+  const rows = TUTO_FIELDS.map((f) => `<dl class="cpt-row"><dt>${t(`tuto${f}What`)}</dt><dd><span class="cpt-k">${t("tutoColWhere")}</span>${t(`tuto${f}Where`)}</dd><dd><span class="cpt-k">${t("tutoColDoes")}</span>${t(`tuto${f}Does`, { tz })}</dd></dl>`).join("");
+  const li = (prefix, n) => Array.from({ length: n }, (_, i) => `<li>${t(`${prefix}${i + 1}`)}</li>`).join("");
+  const ex = (title, when, place, desc) => `<dl class="cpt-ex"><dt>${t("tutoExFieldTitle")}</dt><dd>${esc(title)}</dd><dt>${t("tutoExFieldWhen")}</dt><dd>${esc(when)}</dd><dt>${t("tutoExFieldPlace")}</dt><dd>${esc(place)}</dd><dt>${t("tutoExFieldDesc")}</dt><dd>${esc(desc)}</dd></dl>`;
+  const href = `/m/${encodeURIComponent(ctx.instance.key)}/skill?lang=${encodeURIComponent(ctx.locale)}`;
+  return `<div class="cpt"><style>${TUTO_CSS}</style>` +
+    `<details><summary>${t("tutoBtn")}</summary><div class="cpt-body"><p>${t("tutoIntro")}</p>${rows}` +
+    `<h4>${t("tutoStepsTitle")}</h4><ol>${li("tutoStep", 5)}</ol>` +
+    `<h4>${t("tutoExampleTitle")}</h4>${ex(ctx.t("tutoExTitle"), ctx.t("tutoExWhen"), ctx.t("tutoExPlace"), ctx.t("tutoExDesc"))}<p>${t("tutoExNoGameTitle")}</p>${ex(ctx.t("tutoExTitle"), ctx.t("tutoExWhen"), ctx.t("tutoExPlace"), ctx.t("tutoExNoGameDesc"))}` +
+    `<h4>${t("tutoErrTitle")}</h4><ul>${li("tutoErr", 5)}</ul></div></details>` +
+    `<p style="margin-top:.75rem"><a class="cpt-dl" href="${esc(href)}" download="SKILL.md">${t("skillBtn")}</a></p><p class="cpt-help">${t("skillHelp")}</p></div>`;
+}
+
+const oneLine = (v, max = 80) => String(v ?? "").replace(/[\u0000-\u001f\u007f`<>]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+
+/** Le SKILL.md : généré à partir des réglages réels (fuseau, nom du site). Aucun secret : ni l'adresse du calendrier, ni aucune clé. */
+export async function skillMarkdown(ctx) {
+  const tz = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
+  let site = "";
+  try { site = oneLine((await ctx.api.site(ctx.locale))?.name); } catch { site = ""; }
+  const vars = { site: site || "ce site", tz };
+  // L'en-tête YAML : chaînes JSON (guillemets doubles, échappées) = YAML valide quel que soit le nom du site.
+  return `---\nname: ${ctx.t("skillName")}\ndescription: ${JSON.stringify(oneLine(ctx.t("skillDesc", vars), 400))}\n---\n\n${ctx.t("skillBody", vars)}\n`;
+}
+
+function emptyCardHtml(ctx) {
+  const t = ctx.t;
+  const href = planningHref(ctx);
+  return wrapCards(`<div class="cpl-card cpl-empty"><p class="cpl-empty-t">${esc(t("noStream"))}</p><p class="cpl-empty-s">${esc(t("noStreamHint"))}</p>${href ? `<a class="cpl-link" href="${esc(href)}">${esc(t("fullPlanning"))}</a>` : ""}</div>`);
+}
 
 /** Une semaine (lundi → dimanche) de créneaux, passés compris : pour l'image à partager. */
 async function loadWeek(ctx, weekOffset) {
@@ -472,91 +649,8 @@ export function weekImage(ctx, week, site, covers = new Map()) {
   return { width: WIDTH, height, tree };
 }
 
-export default {
-  // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
-  routes: {
-    async image(request, ctx) {
-      const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
-      const week = await loadWeek(ctx, offset);
-      if (!week) return new Response("Calendar not available", { status: 404 });
-      const site = await ctx.api.site(ctx.locale);
-      const shown = week.days.flatMap((d) => d.streams.slice(0, 2));
-      const { covers } = await coversForSlots(ctx, shown);
-      let res;
-      // Une jaquette que le générateur d'images n'arrive pas à charger ne doit pas coûter l'image entière : on la refait sans jaquettes.
-      try { res = await ctx.api.png(weekImage(ctx, week, site, covers)); } catch (e) { if (!covers.size) throw e; res = await ctx.api.png(weekImage(ctx, week, site)); }
-      res.headers.set("Cache-Control", "public, max-age=300");
-      return res;
-    },
-  },
-
-  async page(ctx) {
-    const days = clampDays(ctx.setting("days"));
-    const { configured, ok, slots, timeZone } = await loadSlots(ctx, days);
-    const tz = timeZone ?? "UTC";
-    const blocks = [];
-    if (!configured || !ok) {
-      blocks.push({ type: "markdown", text: ctx.t("notConfigured") });
-      return { title: ctx.t("title"), blocks };
-    }
-    blocks.push({ type: "markdown", text: ctx.t("intro", { days, tz }) });
-    const { covers } = await coversForSlots(ctx, slots);
-    for (const day of buildDays(wallDateNow(tz), days, slots, tz)) {
-      blocks.push({ type: "heading", text: fmtDay(day.wall, ctx.locale, tz) });
-      blocks.push(anyCover(day.streams, covers)
-        ? { type: "html", html: day.streams.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers))).join("") }
-        : { type: "markdown", text: day.streams.length ? day.streams.map((s) => `- ${slotLine(s, ctx, tz)}`).join("\n") : `*${ctx.t("none")}*` });
-    }
-    return { title: ctx.t("title"), blocks };
-  },
-
-  sections: {
-    // Le prochain stream, seul : pour une petite case de l'accueil.
-    async next(ctx) {
-      const { ok, slots, timeZone } = await loadSlots(ctx, 30);
-      if (!ok || slots.length === 0) return null;
-      const tz = timeZone ?? "UTC";
-      const s = slots[0];
-      const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(s.start);
-      const { covers } = await coversForSlots(ctx, [s]);
-      if (anyCover([s], covers)) return [{ type: "heading", text: ctx.t("nextUp") }, { type: "html", html: slotHtml(s, ctx, tz, coversOf(s, covers), day) }];
-      return [{ type: "heading", text: ctx.t("nextUp") }, { type: "markdown", text: `**${day}**\n\n${slotLine(s, ctx, tz)}` }];
-    },
-
-    // Miniature des X prochains jours : un jour par ligne, les créneaux à la suite.
-    async days(ctx, options) {
-      const count = Math.min(7, Math.max(1, Math.trunc(Number(options.count)) || 3));
-      const { ok, slots, timeZone } = await loadSlots(ctx, count);
-      if (!ok) return null;
-      const tz = timeZone ?? "UTC";
-      const rows = buildDays(wallDateNow(tz), count, slots, tz).map((day) => {
-        const label = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", timeZone: tz }).format(zonedTimeToUtc(day.wall.y, day.wall.m, day.wall.d, 12, 0, 0, tz));
-        return `- **${label}** · ${day.streams.length ? day.streams.map((s) => slotLine(s, ctx, tz)).join(" · ") : ctx.t("noneToday")}`;
-      });
-      return [{ type: "heading", text: ctx.t("daysTitle") }, { type: "markdown", text: rows.join("\n") }];
-    },
-
-    async upcoming(ctx, options) {
-      const count = Math.min(20, Math.max(1, Math.trunc(Number(options.count)) || 5));
-      const { ok, slots, timeZone } = await loadSlots(ctx, 30);
-      if (!ok || slots.length === 0) return null;
-      const tz = timeZone ?? "UTC";
-      const shown = slots.slice(0, count);
-      const dayOf = (s) => new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start);
-      const { covers } = await coversForSlots(ctx, shown);
-      if (anyCover(shown, covers)) return [{ type: "heading", text: ctx.t("nextTitle") }, { type: "html", html: shown.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), dayOf(s))).join("") }];
-      return [{ type: "heading", text: ctx.t("nextTitle") }, { type: "markdown", text: shown.map((s) => `- ${dayOf(s)} · ${slotLine(s, ctx, tz)}`).join("\n") }];
-    },
-  },
-
-  exports: {
-    async "planning.slot"(ctx, { limit }) {
-      const { slots } = await loadSlots(ctx, 30);
-      return slots.slice(0, limit).map((s) => ({ title: s.title, text: extractGameNames(s.description).join(", ") || undefined, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: extractGameNames(s.description) }));
-    },
-  },
-
-  async adminPanel(ctx) {
+/** L'état du calendrier et les prochains créneaux (haut du panneau d'admin). */
+async function adminStatusBlocks(ctx) {
     const t = ctx.t;
     const url = String(ctx.setting("icsUrl") ?? "").trim();
     const days = clampDays(ctx.setting("days"));
@@ -588,6 +682,108 @@ export default {
     }
     blocks.push({ type: "adminForm", action: "refresh", submitLabel: t("refresh"), fields: [] });
     return blocks;
+}
+
+export default {
+  // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
+  routes: {
+    // SKILL.md pour une IA (« Télécharger le skill »). Public : le contenu est généré à partir du fuseau et du nom du site, jamais de secret.
+    async skill(request, ctx) {
+      if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+      return new Response(request.method === "HEAD" ? null : await skillMarkdown(ctx), { headers: { "Content-Type": "text/markdown; charset=utf-8", "Content-Disposition": 'attachment; filename="SKILL.md"', "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" } });
+    },
+    async image(request, ctx) {
+      const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
+      const week = await loadWeek(ctx, offset);
+      if (!week) return new Response("Calendar not available", { status: 404 });
+      const site = await ctx.api.site(ctx.locale);
+      const shown = week.days.flatMap((d) => d.streams.slice(0, 2));
+      const { covers } = await coversForSlots(ctx, shown);
+      let res;
+      // Une jaquette que le générateur d'images n'arrive pas à charger ne doit pas coûter l'image entière : on la refait sans jaquettes.
+      try { res = await ctx.api.png(weekImage(ctx, week, site, covers)); } catch (e) { if (!covers.size) throw e; res = await ctx.api.png(weekImage(ctx, week, site)); }
+      res.headers.set("Cache-Control", "public, max-age=300");
+      return res;
+    },
+  },
+
+  async page(ctx) {
+    const days = clampDays(ctx.setting("days"));
+    const { configured, ok, slots, timeZone } = await loadSlots(ctx, days);
+    const tz = timeZone ?? "UTC";
+    const blocks = [];
+    if (!configured || !ok) {
+      blocks.push({ type: "markdown", text: ctx.t("notConfigured") });
+      return { title: ctx.t("title"), blocks };
+    }
+    blocks.push({ type: "markdown", text: ctx.t("intro", { days, tz }) });
+    const { covers } = await coversForSlots(ctx, slots);
+    let vis;   // logo du site : chargé seulement si un jour mêle streams avec et sans jaquette
+    for (const day of buildDays(wallDateNow(tz), days, slots, tz)) {
+      blocks.push({ type: "heading", text: fmtDay(day.wall, ctx.locale, tz) });
+      const mixed = anyCover(day.streams, covers) && day.streams.some((s) => !coversOf(s, covers).length);
+      if (mixed) vis ??= await brandVisual(ctx);
+      blocks.push(anyCover(day.streams, covers)
+        ? { type: "html", html: (mixed ? `<style>${CARD_CSS}</style>` : "") + day.streams.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), "", mixed ? vis : null)).join("") }
+        : { type: "markdown", text: day.streams.length ? day.streams.map((s) => `- ${slotLine(s, ctx, tz)}`).join("\n") : `*${ctx.t("none")}*` });
+    }
+    return { title: ctx.t("title"), blocks };
+  },
+
+  sections: {
+    // Le prochain stream, seul : une carte (jaquette, heure, indication relative, bouton vers la chaîne). Calendrier lisible mais vide : carte « rien de prévu ».
+    async next(ctx) {
+      const { ok, slots, timeZone } = await loadSlots(ctx, 30);
+      if (!ok) return null;
+      const heading = { type: "heading", text: ctx.t("nextUp") };
+      if (slots.length === 0) return [heading, { type: "html", html: emptyCardHtml(ctx) }];
+      const tz = timeZone ?? "UTC";
+      const s = slots[0];
+      const sameDay = (o) => { const a = wallDateNow(tz, s.start), b = wallDateNow(tz, o.start); return a.y === b.y && a.m === b.m && a.d === b.d; };
+      const others = slots.slice(1).filter(sameDay).slice(0, 4);
+      const { covers } = await coversForSlots(ctx, [s]);
+      const vis = gameCovers(s, covers).length ? null : await brandVisual(ctx);
+      return [heading, { type: "html", html: nextCardHtml(s, others, ctx, tz, covers, new Date(), vis) }];
+    },
+
+    // Miniature des X prochains jours : un jour par ligne, les créneaux à la suite.
+    async days(ctx, options) {
+      const count = Math.min(7, Math.max(1, Math.trunc(Number(options.count)) || 3));
+      const { ok, slots, timeZone } = await loadSlots(ctx, count);
+      if (!ok) return null;
+      const tz = timeZone ?? "UTC";
+      const rows = buildDays(wallDateNow(tz), count, slots, tz).map((day) => {
+        const label = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", timeZone: tz }).format(zonedTimeToUtc(day.wall.y, day.wall.m, day.wall.d, 12, 0, 0, tz));
+        return `- **${label}** · ${day.streams.length ? day.streams.map((s) => slotLine(s, ctx, tz)).join(" · ") : ctx.t("noneToday")}`;
+      });
+      return [{ type: "heading", text: ctx.t("daysTitle") }, { type: "markdown", text: rows.join("\n") }];
+    },
+
+    async upcoming(ctx, options) {
+      const count = Math.min(20, Math.max(1, Math.trunc(Number(options.count)) || 5));
+      const { ok, slots, timeZone } = await loadSlots(ctx, 30);
+      if (!ok) return null;
+      const heading = { type: "heading", text: ctx.t("nextTitle") };
+      if (slots.length === 0) return [heading, { type: "html", html: emptyCardHtml(ctx) }];
+      const tz = timeZone ?? "UTC";
+      const shown = slots.slice(0, count);
+      const { covers } = await coversForSlots(ctx, shown);
+      const vis = shown.some((x) => !gameCovers(x, covers).length) ? await brandVisual(ctx) : null;
+      return [heading, { type: "html", html: upcomingListHtml(shown, ctx, tz, covers, new Date(), vis) }];
+    },
+  },
+
+  exports: {
+    async "planning.slot"(ctx, { limit }) {
+      const { slots } = await loadSlots(ctx, 30);
+      return slots.slice(0, limit).map((s) => ({ title: s.title, text: extractGameNames(s.description).join(", ") || undefined, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: extractGameNames(s.description) }));
+    },
+  },
+
+  async adminPanel(ctx) {
+    const blocks = await adminStatusBlocks(ctx);
+    const tz = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
+    return [...blocks, { type: "html", html: tutorialHtml(ctx, tz) }];
   },
 
   adminActions: {

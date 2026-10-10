@@ -9,13 +9,28 @@ d'un site existant.
 - **MCP** : `planning_upcoming` (lecture seule, accordée par défaut).
 - **Admin** : état du calendrier, prochains créneaux, bouton « Actualiser maintenant ».
 
+## Les morceaux d'accueil
+
+- **« Prochain stream »** : une carte encadrée (bordure, arrondi, relief, filet aux couleurs du thème) : à gauche la **jaquette** du jeu (jusqu'à 3, superposées), puis une pastille d'état (« En cours », « Dans 40 min », « Dans 3 h », « Aujourd'hui », « Demain », « Dans 4 jours »), le **titre**, l'**heure** en grand et le jour, le jeu, les autres streams du même jour et, si vous renseignez « Lien de votre chaîne », un bouton « Regarder sur Twitch ». Les balises `<time>` sont sémantiques, les jaquettes ont un texte alternatif, aucune animation sans `prefers-reduced-motion`.
+- **« Prochains streams »** : une liste dans une carte, une ligne par stream (tuile de jour, vignette, titre, heure, jeu, pastille d'état) et un lien « Voir le planning complet » (si l'instance a une page publique).
+- **Rien de prévu** (agenda lisible mais vide) : une carte « Pas de stream planifié pour l'instant » avec le lien vers le planning complet. Agenda non réglé ou illisible : la section disparaît.
+- **Stream sans jeu** (soirée caritative, discussion…) : pas de ligne « Jeu : » dans la description, donc ni nom de jeu ni appel à RAWG ; à la place de la jaquette, un visuel aux mêmes proportions : le **logo du site** (variante « fond sombre » si elle existe, sinon le logo principal sur un disque blanc) sur le **mauve Twitch** `#9146FF` (seule couleur fixe du module, c'est la couleur de marque de Twitch) ; sans logo, l'initiale du nom du site. Le même visuel sert dans la liste et, pour un jour qui mêle streams avec et sans jeu, sur la page publique. L'image PNG à partager ne l'utilise pas encore (elle n'affiche rien pour un stream sans jaquette).
+- Les couleurs viennent des variables de thème du site (`--v-surface`, `--v-line`, `--v-fg`, `--v-muted`, `--v-accent`, `--v-gradient`…) : la carte suit toutes les palettes, claires ou sombres, avec ou sans couleur secondaire. La mise en page suit la largeur de la case, pas celle de l'écran.
+
+## Aide à la saisie dans l'admin
+
+Dans la page de l'instance, sous l'état du calendrier :
+
+- **« Comment remplir mon agenda Google ? »** (bloc repliable) : où écrire le titre (titre de l'événement), le jeu (une ligne `Jeu : Nom` dans la description ; aucune ligne = pas de jeu), l'heure et la durée (début et fin), ce que deviennent le lieu (non lu), le reste de la description (ignoré), « toute la journée », les répétitions et les suppressions ; comment obtenir l'adresse secrète iCal ; deux exemples remplis ; les erreurs fréquentes (fuseau, jeu dans le titre, événement à la journée, délai de Google).
+- **« Télécharger le skill pour mon IA »** : un fichier `SKILL.md` (en-tête `name:` / `description:`) généré à partir du fuseau et du nom du site de l'instance : rôle, règles de remplissage exactes, modèle, exemples (stream de jeu, événement caritatif sans jeu, stream récurrent), liste de contrôle, interdits, questions à poser à l'humain. Servi par la route `/m/<clé>/skill` (publique, GET/HEAD seulement) : il ne contient jamais l'adresse du calendrier ni aucune clé.
+
 ## Configurer
 
 Dans Google Agenda : *Paramètres → votre agenda → « Adresse secrète au format iCal »*, à coller dans le réglage de l'instance
 (elle n'est plus jamais réaffichée). **Utilisez un agenda dédié** : tout ce qu'il contient devient public.
 
 Pour afficher le jeu d'un créneau, écrivez dans la **description** de l'événement une ligne `Jeu : Nom du jeu` (plusieurs jeux :
-séparés par une virgule ou « + », trois maximum). Rien n'est deviné depuis le titre.
+séparés par une virgule ou « + », trois maximum). Rien n'est deviné depuis le titre. Le **lieu** de l'événement n'est pas lu.
 
 ## Sécurité
 

@@ -40,18 +40,26 @@ export default ({
         },
     },
     sections: {
+        // Le lecteur de Twitch affiche, hors ligne, un gros panneau « {chaîne} est hors ligne » : sur l'accueil, il tombe juste sous le prochain
+        // stream et fait doublon. Avec les identifiants Twitch (on SAIT si la chaîne est en direct), il n'apparaît donc qu'en direct ; le réglage
+        // « Quand l'afficher » = « toujours » rétablit l'ancien comportement. Sans identifiants, rien ne dit si la chaîne est en direct : lecteur affiché comme avant.
         player(ctx) {
             const channel = ctx.setting("channel") ?? "";
             if (!CHANNEL_RE.test(channel))
                 return null;
             const parent = new URL(ctx.api.siteUrl).hostname;
-            return [
+            const embed = [
                 {
                     type: "embed",
                     title: `Twitch — ${channel}`,
                     src: `https://player.twitch.tv/?channel=${channel}&parent=${parent}&muted=true`,
                 },
             ];
+            const clientId = ctx.setting("clientId");
+            const secret = ctx.setting("clientSecret");
+            if (ctx.setting("playerWhen") === "always" || !clientId || !secret)
+                return embed;
+            return isLive(channel, clientId, secret).then((live) => (live ? embed : null));
         },
     },
 });
