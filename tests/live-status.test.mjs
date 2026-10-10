@@ -31,7 +31,7 @@ test("live-status : manifeste valide, section « player », slots/sections, secr
   assertSettingsSane(m);
   assert.deepEqual(m.sections.map((s) => s.id), ["player"]);
   assert.equal(m.instances, "single");
-  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["channel", "text"], ["clientId", "text"], ["clientSecret", "secret"]]);
+  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["channel", "text"], ["clientId", "text"], ["clientSecret", "secret"], ["playerWhen", "select"]]);
   assert.ok(!m.permissions.includes("routes") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(def.slots), ["layout.banner"]);
 });
@@ -107,4 +107,26 @@ test("bannière : le secret n'apparaît ni dans la bannière ni dans les en-têt
   const out = await banner(fakeCtx({ settings: settings(uniq(), { clientSecret: "TOP-SECRET" }) }));
   assert.ok(!JSON.stringify(out).includes("TOP-SECRET"));
   for (const c of calls.filter((x) => x.url.includes("helix"))) assert.ok(!JSON.stringify(c.init.headers).includes("TOP-SECRET"));
+});
+
+test("player : avec les identifiants Twitch, le lecteur n'apparaît qu'en direct (sinon c'est le gros panneau « hors ligne » de Twitch)", async () => {
+  const ch = uniq();
+  stubTwitch({ live: false });
+  assert.equal(await def.sections.player(fakeCtx({ settings: settings(ch) })), null, "hors ligne : rien");
+  const ch2 = uniq();
+  stubTwitch({ live: true });
+  const [b] = await def.sections.player(fakeCtx({ settings: settings(ch2) }));
+  assert.equal(b.type, "embed");
+  assert.ok(b.src.includes(`channel=${ch2}`));
+});
+
+test("player : réglage « toujours », identifiants absents ou Twitch injoignable → comportement documenté, sans appel réseau quand il est inutile", async () => {
+  const calls = stubTwitch({ live: false });
+  const always = def.sections.player(fakeCtx({ settings: settings(uniq(), { playerWhen: "always" }) }));
+  assert.equal(always[0].type, "embed");
+  const noCreds = def.sections.player(fakeCtx({ settings: { channel: uniq() } }));
+  assert.equal(noCreds[0].type, "embed", "sans identifiants on ne peut pas savoir : lecteur comme avant");
+  assert.equal(calls.length, 0);
+  stubTwitch({ fail: true });
+  assert.equal(await def.sections.player(fakeCtx({ settings: settings(uniq()) })), null, "Twitch injoignable : pas de lecteur");
 });

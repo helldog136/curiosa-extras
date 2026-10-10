@@ -26,6 +26,8 @@ for (const file of fs.readdirSync(webDir).filter((f) => /^[a-z-]+\.js$/.test(f))
 // Un seul tracé par instance (collection « map »). Les cases : 0 mur · 1 chemin · 2 emplacement d'affiche · 3 portail.
 const MAP = "map";
 const MAP_MIN = 5, MAP_MAX = 41;
+/** Côté de la grille vide affichée (mise de côté) tant qu'aucun tracé n'est enregistré. */
+const BLANK_SIZE = 15;
 
 /** Valide un tracé posté : taille bornée, un chiffre 0-3 par case, au moins une case de chemin. Renvoie { width, height, cells } ou un code d'erreur. */
 export function parseMap(values) {
@@ -98,20 +100,26 @@ export default {
     const t = ctx.t;
     const m = await savedMap(ctx);
     const blocks = [{ type: "heading", text: t("mapTitle") }, { type: "markdown", text: `${t(m ? "mapCustom" : "mapAuto")}\n\n${t("mapPoster")}` }];
-    if (m) {
-      blocks.push({
-        type: "gridEditor", action: "saveMap", submitLabel: t("save"), width: m.width, height: m.height, cells: m.cells, minSize: MAP_MIN, maxSize: MAP_MAX,
-        palette: [{ value: "0", label: t("paintWall"), color: "#1e1611" }, { value: "1", label: t("paintPath"), color: "#f4f0ea" }, { value: "2", label: t("paintPoster"), color: "#cd853f" }, { value: "3", label: t("paintPortal"), color: "#2563eb" }],
-        labels: { width: t("lblWidth"), height: t("lblHeight"), fillAll: t("lblFill"), border: t("lblBorder"), reset: t("lblReset"), hint: t("lblHint") },
-      });
-    }
-    blocks.push({ type: "adminForm", action: "generate", submitLabel: t(m ? "generateAgain" : "generate"), fields: [] });
-    if (m) blocks.push({ type: "adminForm", action: "clear", submitLabel: t("clear"), fields: [] });
+    // L'éditeur est toujours là. Sans tracé enregistré, il démarre en mode « automatique » (grille de départ vide mise de côté) ;
+    // ses deux boutons ne changent rien tant qu'on n'a pas enregistré.
+    blocks.push({
+      type: "gridEditor", action: "saveMap", submitLabel: t("save"), minSize: MAP_MIN, maxSize: MAP_MAX,
+      width: m ? m.width : BLANK_SIZE, height: m ? m.height : BLANK_SIZE, cells: m ? m.cells : "0".repeat(BLANK_SIZE * BLANK_SIZE),
+      palette: [{ value: "0", label: t("paintWall"), color: "#1e1611" }, { value: "1", label: t("paintPath"), color: "#f4f0ea" }, { value: "2", label: t("paintPoster"), color: "#cd853f" }, { value: "3", label: t("paintPortal"), color: "#2563eb" }],
+      generateAction: "generate", generateLabel: t(m ? "generateAgain" : "generate"),
+      autoLabel: t("clear"), autoNotice: t("autoNotice"), autoActive: !m,
+      labels: { width: t("lblWidth"), height: t("lblHeight"), fillAll: t("lblFill"), border: t("lblBorder"), reset: t("lblReset"), hint: t("lblHint"), generateError: t("generateError") },
+    });
     return blocks;
   },
 
   adminActions: {
+    // Seul « Enregistrer » persiste. `auto: "true"` (mode automatique de l'éditeur) supprime le tracé enregistré ; sinon, une grille validée.
     async saveMap(ctx, values) {
+      if (values?.auto === "true") {
+        for (const r of await ctx.api.store.list(MAP, { limit: 10 })) await ctx.api.store.remove(r.id);
+        return { ok: ctx.t("cleared") };
+      }
       const parsed = parseMap(values);
       if (parsed.error) return { error: ctx.t(parsed.error) };
       const { width, height, cells } = parsed;
@@ -120,19 +128,11 @@ export default {
       else await ctx.api.store.add(MAP, { width, height, cells });
       return { ok: ctx.t("saved") };
     },
-    // Un tracé aléatoire (de la taille choisie dans les réglages) comme point de départ à retoucher.
+    // Génère un tracé aléatoire (de la taille choisie dans les réglages) et le RENVOIE pour l'éditeur : rien n'est enregistré ici.
     async generate(ctx) {
       const { generateMaze } = await import("./web/generate.js");
       const grid = generateMaze(["small", "medium", "large"].includes(ctx.setting("size")) ? ctx.setting("size") : "medium");
-      const data = { width: grid.width, height: grid.height, cells: toCells(grid) };
-      const current = await savedMap(ctx);
-      if (current) await ctx.api.store.update(current.id, data);
-      else await ctx.api.store.add(MAP, data);
-      return { ok: ctx.t("generated"), redirect: "?" };
-    },
-    async clear(ctx) {
-      for (const r of await ctx.api.store.list(MAP, { limit: 10 })) await ctx.api.store.remove(r.id);
-      return { ok: ctx.t("cleared"), redirect: "?" };
+      return { grid: { width: grid.width, height: grid.height, cells: toCells(grid) } };
     },
   },
 

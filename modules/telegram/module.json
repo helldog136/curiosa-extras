@@ -5,7 +5,8 @@
     "en": "Telegram",
     "fr": "Telegram"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "telegram",
   "description": {
     "en": "Shows your Telegram button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Telegram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."

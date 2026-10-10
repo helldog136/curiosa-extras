@@ -5,7 +5,8 @@
     "en": "Twitch live status",
     "fr": "Statut live Twitch"
   },
-  "version": "1.0.0",
+  "version": "1.0.2",
+  "platform": "twitch",
   "main": "index.mjs",
   "description": {
     "en": "Shows your Twitch player on the home page and a banner when you are live.",
@@ -58,6 +59,35 @@
         "en": "Twitch client secret",
         "fr": "Client secret Twitch"
       }
+    },
+    {
+      "key": "playerWhen",
+      "type": "select",
+      "default": "auto",
+      "label": {
+        "en": "When to show the player",
+        "fr": "Quand afficher le lecteur"
+      },
+      "help": {
+        "en": "“Only when live” needs the client id and secret above (otherwise the player is always shown). Offline, Twitch's player is a big white panel.",
+        "fr": "« Seulement en direct » demande le client id et le secret ci-dessus (sinon le lecteur est toujours affiché). Hors ligne, le lecteur de Twitch est un grand panneau blanc."
+      },
+      "options": [
+        {
+          "value": "auto",
+          "label": {
+            "en": "Only when live",
+            "fr": "Seulement en direct"
+          }
+        },
+        {
+          "value": "always",
+          "label": {
+            "en": "Always",
+            "fr": "Toujours"
+          }
+        }
+      ]
     }
   ]
 }

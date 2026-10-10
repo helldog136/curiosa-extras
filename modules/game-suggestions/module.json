@@ -5,7 +5,8 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "minCore": "0.1.10",
   "description": {
     "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played, covers fetched from RAWG.",
     "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués, des jaquettes récupérées via RAWG."
@@ -23,7 +24,8 @@
     "routes",
     "storage",
     "admin",
-    "mcp"
+    "mcp",
+    "rawg"
   ],
   "settings": [
     {
@@ -47,12 +49,12 @@
       "type": "secret",
       "advanced": true,
       "label": {
-        "en": "RAWG API key (optional)",
-        "fr": "Clé d'API RAWG (facultatif)"
+        "en": "RAWG API key (older Curiosa versions only)",
+        "fr": "Clé d'API RAWG (anciennes versions de Curiosa seulement)"
       },
       "help": {
-        "en": "rawg.io/apidocs — adds a cover to each suggestion. Without it, suggestions simply have no image.",
-        "fr": "rawg.io/apidocs — ajoute une jaquette à chaque suggestion. Sans elle, les suggestions n'ont simplement pas d'image."
+        "en": "Not needed: the RAWG key is now entered once for all modules in Admin → Settings. This field is only used if your Curiosa is too old to offer it.",
+        "fr": "Inutile : la clé RAWG se saisit désormais une fois pour tous les modules dans Admin → Réglages. Ce champ ne sert que si votre version de Curiosa est trop ancienne pour l'offrir."
       }
     },
     {

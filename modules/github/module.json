@@ -5,7 +5,8 @@
     "en": "GitHub",
     "fr": "GitHub"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "github",
   "description": {
     "en": "Shows your GitHub button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."

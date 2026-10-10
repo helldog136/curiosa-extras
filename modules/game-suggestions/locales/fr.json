@@ -28,5 +28,20 @@
   "okStatus": "Statut mis à jour.",
   "okDeleted": "Suggestion supprimée.",
   "errNotFound": "Suggestion introuvable.",
-  "setTo": "→ {status}"
+  "setTo": "→ {status}",
+  "colCover": "Jaquette",
+  "coversTitle": "Jaquettes",
+  "coversAll": "Toutes les suggestions ont une jaquette.",
+  "coversMissing": "{n} suggestion(s) sans jaquette. Le module les cherche tout seul, quelques-unes à la fois ; le bouton lance la recherche tout de suite.",
+  "coversNoKeyHint": "{n} suggestion(s) sans jaquette, mais aucune clé RAWG n'est enregistrée : saisissez-la dans [Réglages](/admin/settings).",
+  "coversLast": "Dernière recherche automatique : {date} (UTC) — {found} trouvée(s), {none} sans résultat.",
+  "coversDeniedHint": "RAWG refuse la clé enregistrée : vérifiez-la dans [Réglages](/admin/settings). La recherche reprend dans 24 h, ou quand vous cliquez sur le bouton.",
+  "coversButton": "Rechercher les jaquettes manquantes",
+  "coversNoKey": "Aucune clé RAWG : saisissez-la dans [Réglages](/admin/settings), puis relancez la recherche.",
+  "coversDenied": "RAWG refuse la clé (fausse, désactivée ou expirée). Vérifiez-la dans [Réglages](/admin/settings), puis relancez la recherche.",
+  "coversBusy": "RAWG demande de patienter (trop de demandes). Réessayez dans une ou deux heures.",
+  "coversDown": "RAWG est injoignable pour le moment. Rien n'a été modifié : réessayez plus tard.",
+  "coversPartial": " Déjà trouvées avant l'arrêt : {found}.",
+  "coversDone": "Recherche terminée : {found} jaquette(s) trouvée(s), {none} sans résultat sur RAWG.",
+  "coversMore": " Il en reste {left} à essayer : relancez la recherche."
 }

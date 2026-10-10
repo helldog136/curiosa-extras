@@ -5,7 +5,8 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "minCore": "0.1.10",
   "description": {
     "en": "Shows your upcoming streams, day by day, read from a Google Calendar (or any iCal feed).",
     "fr": "Affiche vos prochains streams, jour par jour, lus depuis un Google Agenda (ou n'importe quel flux iCal)."
@@ -81,7 +82,8 @@
     "sections",
     "admin",
     "topics",
-    "mcp"
+    "mcp",
+    "rawg"
   ],
   "settings": [
     {
@@ -94,6 +96,18 @@
       "help": {
         "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Never shown again once saved.",
         "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Jamais réaffichée une fois enregistrée."
+      }
+    },
+    {
+      "key": "channelUrl",
+      "type": "url",
+      "label": {
+        "en": "Channel link (“Watch on Twitch” button)",
+        "fr": "Lien de votre chaîne (bouton « Regarder sur Twitch »)"
+      },
+      "help": {
+        "en": "Optional, e.g. https://twitch.tv/mychannel. Without it, the button is not shown.",
+        "fr": "Facultatif, ex. https://twitch.tv/machaine. Sans lien, le bouton n'est pas affiché."
       }
     },
     {

@@ -9,10 +9,9 @@
   "paintPortal": "Portal",
   "save": "Save the layout",
   "generate": "Generate a random layout to edit",
-  "generateAgain": "Replace with a new random layout",
-  "clear": "Back to the automatic layout",
+  "generateAgain": "Generate a new random layout",
+  "clear": "Delete the layout and randomize at every display",
   "saved": "Layout saved.",
-  "generated": "Layout generated: edit it, then save.",
   "cleared": "Back to the automatic layout.",
   "errInvalid": "Invalid layout (size or content).",
   "errNoPath": "At least one walkable \"path\" cell is required.",
@@ -22,5 +21,7 @@
   "lblFill": "Fill everything",
   "lblBorder": "Frame",
   "lblReset": "Undo changes",
-  "lblHint": "Pick a brush, then click or drag over the cells."
+  "lblHint": "Pick a brush, then click or drag over the cells.",
+  "autoNotice": "The maze will be generated randomly at every display. Nothing changes until you save.",
+  "generateError": "Could not generate a layout."
 }

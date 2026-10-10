@@ -5,7 +5,8 @@
     "en": "Bluesky",
     "fr": "Bluesky"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "bluesky",
   "description": {
     "en": "Shows your Bluesky button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Bluesky dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
