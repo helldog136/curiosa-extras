@@ -24,5 +24,11 @@
   "noneToday": "—",
   "imageTitle": "Planning",
   "imageEmpty": "Rien de prévu pour l'instant",
-  "imageEmptyHint": "Repasse bientôt pour le prochain live !"
+  "imageEmptyHint": "Repasse bientôt pour le prochain live !",
+  "coversTitle": "Jaquettes des jeux",
+  "coversNoKey": "Aucune clé RAWG : les jeux s'affichent sans jaquette. Saisissez-la dans [Réglages](/admin/settings).",
+  "coversDenied": "RAWG refuse la clé : les jeux s'affichent sans jaquette. Vérifiez-la dans [Réglages](/admin/settings).",
+  "coversDown": "RAWG est injoignable pour le moment : les jeux s'affichent sans jaquette, et la recherche sera retentée.",
+  "coversOk": "{found} jaquette(s) trouvée(s) pour {total} jeu(x) à venir.",
+  "coversNone": "RAWG ne connaît pas : {games}. Vérifiez l'orthographe dans la description de l'événement (ligne « Jeu : … »)."
 }

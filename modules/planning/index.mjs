@@ -5,7 +5,10 @@
 // modules, action MCP. Un seul fichier, sans dépendance. La logique pure (lecteur iCal, fuseaux, grille de jours,
 // noms de jeux, garde-fous d'URL) est exportée pour être testée ; le module lui-même est l'export par défaut.
 //
-// Non repris de la version d'origine : les jaquettes de jeux (API RAWG) et l'export PNG du planning.
+// Jaquettes : pour chaque jeu nommé dans la description d'un événement, la jaquette est demandée au service RAWG du cœur
+// (`ctx.api.rawg`, permission `rawg` ; la clé se règle dans Admin → Réglages, le module ne la voit jamais) et montrée sur la page,
+// les morceaux d'accueil, l'admin et l'image PNG de la semaine (`/m/<clé>/image`, pour un panneau Twitch). Au mieux : sans clé,
+// clé refusée ou RAWG injoignable, on affiche simplement le nom du jeu. Le cache et la limite de demandes sont ceux du cœur.
 
 /* ───────────────────────────── Fuseaux et dates de calendrier ───────────────────────────── */
 
@@ -297,6 +300,42 @@ export function isPublicHttpsUrl(value) {
   return host.includes(".");
 }
 
+/* ───────────────────────────── Jaquettes (service RAWG du cœur) ───────────────────────────── */
+
+const STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };
+
+/** Une jaquette via le cœur. Jamais d'exception ; https seulement. `status` : found · none · no_key · denied (clé refusée) · down (injoignable). */
+export async function coverFor(ctx, title) {
+  const svc = ctx.api?.rawg;
+  if (!svc || typeof svc.cover !== "function") return { status: "no_key", url: null };   // cœur sans service RAWG : comme « pas de clé »
+  try {
+    const r = await svc.cover(title);
+    const url = typeof r?.url === "string" && /^https:\/\//.test(r.url) ? r.url : null;
+    const status = STATUS[r?.status] ?? "down";
+    return status === "found" && !url ? { status: "none", url: null } : { status, url: status === "found" ? url : null };
+  } catch { return { status: "down", url: null }; }
+}
+
+const MAX_LOOKUPS = 30;
+
+/**
+ * Jaquettes des jeux de ces créneaux. Renvoie { covers: Map(nom -> url), states: Map(nom -> status) }.
+ * Les événements « toute la journée » n'ont pas de jeu. Cache et cadence : ceux du cœur (au plus 30 jeux différents par appel).
+ */
+export async function coversForSlots(ctx, slots) {
+  const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => extractGameNames(s.description)))].slice(0, MAX_LOOKUPS);
+  const covers = new Map(), states = new Map();
+  if (!names.length) return { covers, states };
+  let configured = false;
+  try { configured = !!(await ctx.api?.rawg?.configured?.()); } catch { configured = false; }
+  if (!configured) { for (const n of names) states.set(n, "no_key"); return { covers, states }; }
+  await Promise.all(names.map(async (n) => { const r = await coverFor(ctx, n); states.set(n, r.status); if (r.url) covers.set(n, r.url); }));
+  return { covers, states };
+}
+
+/** Les jaquettes d'un créneau, dans l'ordre des jeux (ceux sans jaquette sont simplement omis). */
+const coversOf = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((n) => covers.get(n)).filter(Boolean));
+
 /* ───────────────────────────── Lecture du calendrier ───────────────────────────── */
 
 const CACHE_MS = 5 * 60_000;
@@ -356,6 +395,19 @@ function slotLine(slot, ctx, tz) {
   return `**${when}** — ${escMd(slot.title)}${games.length ? ` · _${games.map(escMd).join(", ")}_` : ""}`;
 }
 
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const coverImg = (url) => `<img src="${esc(url)}" alt="" loading="lazy" width="44" height="58" style="width:44px;height:58px;object-fit:cover;border-radius:6px;flex-shrink:0">`;
+
+/** Un créneau avec ses jaquettes (petites, à gauche) : comme sur la page de l'ancien site. */
+function slotHtml(slot, ctx, tz, covers, prefix = "") {
+  const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
+  const games = extractGameNames(slot.description);
+  const imgs = covers.length ? `<span style="display:flex;gap:4px;flex-shrink:0">${covers.map(coverImg).join("")}</span>` : "";
+  return `<div style="display:flex;gap:12px;align-items:center;margin:8px 0">${imgs}<div style="min-width:0;overflow-wrap:anywhere">${prefix ? `<span style="color:var(--v-muted)">${esc(prefix)} · </span>` : ""}<strong>${esc(when)}</strong> — ${esc(slot.title)}` +
+    `${games.length ? `<div style="color:var(--v-muted);font-style:italic;font-size:.9em">${games.map(esc).join(", ")}</div>` : ""}</div></div>`;
+}
+const anyCover = (slots, covers) => slots.some((s) => coversOf(s, covers).length > 0);
+
 /** Une semaine (lundi → dimanche) de créneaux, passés compris : pour l'image à partager. */
 async function loadWeek(ctx, weekOffset) {
   const url = String(ctx.setting("icsUrl") ?? "").trim();
@@ -368,30 +420,56 @@ async function loadWeek(ctx, weekOffset) {
   return { timeZone, range, days: buildDays(range.startWall, 7, slots, timeZone) };
 }
 
-/** L'arborescence de l'image « semaine du X au Y » (voir ctx.api.png) : mêmes couleurs que le site. */
-export function weekImage(ctx, week, site) {
+/**
+ * L'arborescence de l'image « semaine du X au Y » (voir ctx.api.png) : 900 px de large, mêmes couleurs que le site, une ligne par jour
+ * en zigzag, au plus 2 streams par jour, jaquettes (3 au plus par stream) à gauche de l'heure et du titre — comme l'image de l'ancien site.
+ * Un stream sans jaquette garde le nom de son jeu en petit sous le titre. `covers` : Map(nom du jeu -> adresse https).
+ */
+export function weekImage(ctx, week, site, covers = new Map()) {
   const c = ctx.theme, tz = week.timeZone;
   const box = (style, ...children) => ({ type: "div", props: { style: { display: "flex", ...style }, children } });
   const day = (d) => new Intl.DateTimeFormat(ctx.locale, { weekday: "long", timeZone: tz }).format(zonedTimeToUtc(d.wall.y, d.wall.m, d.wall.d, 12, 0, 0, tz));
   const short = (d) => new Intl.DateTimeFormat(ctx.locale, { day: "numeric", month: "short", timeZone: tz }).format(zonedTimeToUtc(d.wall.y, d.wall.m, d.wall.d, 12, 0, 0, tz));
   const label = `${short({ wall: week.range.startWall })} – ${short({ wall: week.range.endWall })}`;
   const empty = week.days.every((d) => d.streams.length === 0);
-  const ROW = 96;
-  const rows = week.days.map((d) => box({ height: ROW, alignItems: "center", gap: 14 },
-    box({ width: 200, flexDirection: "column", flexShrink: 0 }, box({ fontSize: 30, fontWeight: 700, color: c.fg }, day(d)), box({ fontSize: 22, color: c.muted }, short(d))),
-    box({ flex: 1, height: ROW - 10, overflow: "hidden", alignItems: "center", backgroundColor: c.surface, borderRadius: 18, padding: "0 20px", flexDirection: "column", justifyContent: "center" },
-      ...(d.streams.length
-        ? d.streams.slice(0, 2).map((s) => box({ fontSize: 24, color: c.fg, width: 600, overflow: "hidden", height: 30 }, `${s.allDay ? ctx.t("allDay") : fmtTime(s.start, ctx.locale, tz)} · ${s.title}${extractGameNames(s.description).length ? ` · ${extractGameNames(s.description).join(", ")}` : ""}`.slice(0, 80)))
-        : [box({ fontSize: 22, color: c.muted }, ctx.t("none"))]))));
-  const height = empty ? 480 : 32 * 2 + 110 + 7 * ROW + 40;
-  const tree = box({ width: "100%", height: "100%", flexDirection: "column", backgroundColor: c.bg, padding: 32 },
-    box({ justifyContent: "space-between", alignItems: "flex-start", height: 96 },
-      box({ flexDirection: "column" }, box({ fontSize: 56, fontWeight: 700, color: c.fg }, ctx.t("imageTitle")), box({ fontSize: 26, color: c.accent }, label)),
-      box({ fontSize: 28, fontWeight: 700, color: c.fg }, String(site.name).slice(0, 30))),
+  const WIDTH = 900, PAD = 32, HEADER = 100, GAP = 16, LABEL = 170, INNER_GAP = 14, ROW_GAP = 10, PAD_X = 20, PAD_Y = 14, STREAM_GAP = 14, COVER_GAP = 6, COVER_ROW_GAP = 14, FOOTER = 50, EMPTY = 220;
+  const BOX_WIDTH = WIDTH - PAD * 2 - LABEL - INNER_GAP;
+  const ROW = Math.max(1, ...week.days.map((d) => Math.min(2, d.streams.length))) >= 2 ? 270 : 150;
+  const height = empty ? PAD * 2 + HEADER + GAP + EMPTY + FOOTER + 24 : PAD * 2 + HEADER + GAP + week.days.length * ROW + (week.days.length - 1) * ROW_GAP + FOOTER + 24;
+  const page = typeof ctx.instance.basePath === "string" && ctx.instance.basePath ? `/${ctx.instance.basePath}` : "";
+  const footer = `${String(ctx.api.siteUrl ?? "").replace(/^https?:\/\//, "")}${page}`.slice(0, 80);
+
+  const stream = (s, coverH) => {
+    const list = coversOf(s, covers).slice(0, MAX_GAMES_PER_STREAM);
+    const coverW = Math.round(coverH * (40 / 54));
+    const textW = BOX_WIDTH - PAD_X * 2 - (list.length ? list.length * coverW + (list.length - 1) * COVER_GAP + COVER_ROW_GAP : 0);
+    const games = list.length || s.allDay ? "" : extractGameNames(s.description).join(", ");
+    return box({ alignItems: "center", gap: COVER_ROW_GAP },
+      ...(list.length ? [box({ gap: COVER_GAP, flexShrink: 0 }, ...list.map((src) => ({ type: "img", props: { src, width: coverW, height: coverH, style: { borderRadius: 6, objectFit: "cover" } } })))] : []),
+      box({ flexDirection: "column", justifyContent: "center", gap: 2, width: textW, ...(list.length ? { height: coverH } : {}) },
+        box({ fontSize: 24, color: c.accent, fontWeight: 700 }, s.allDay ? ctx.t("allDay") : fmtTime(s.start, ctx.locale, tz)),
+        box({ fontSize: 32, color: c.fg, lineHeight: 1.25, height: 32 * 1.25 * 2, overflow: "hidden" }, String(s.title).slice(0, 90)),
+        ...(games ? [box({ fontSize: 22, color: c.muted }, games.slice(0, 60))] : [])));
+  };
+  const rows = week.days.map((d, i) => {
+    const content = ROW - PAD_Y * 2;
+    const shown = d.streams.slice(0, 2);
+    const coverH = Math.round(shown.length === 2 ? (content - STREAM_GAP) / 2 : content);
+    const label_ = box({ flexDirection: "column", justifyContent: "center", width: LABEL, height: ROW, flexShrink: 0 }, box({ fontSize: 34, color: c.fg, fontWeight: 700 }, day(d)), box({ fontSize: 24, color: c.muted }, short(d)));
+    const card = box({ width: BOX_WIDTH, height: ROW, overflow: "hidden", alignItems: "center", backgroundColor: c.surface, borderRadius: 20, padding: `${PAD_Y}px ${PAD_X}px` },
+      shown.length ? box({ flexDirection: "column", gap: STREAM_GAP, width: "100%" }, ...shown.map((s) => stream(s, coverH))) : box({ fontSize: 28, color: c.muted }, ctx.t("none")));
+    return box({ gap: INNER_GAP, alignItems: "center" }, ...(i % 2 === 0 ? [label_, card] : [card, label_]));
+  });
+  const logo = site.logo ? [{ type: "img", props: { src: site.logo, width: 56, height: 56, style: { borderRadius: 28, objectFit: "cover" } } }] : [];
+  const tree = box({ width: "100%", height: "100%", flexDirection: "column", backgroundColor: c.bg, padding: PAD },
+    box({ justifyContent: "space-between", alignItems: "flex-start", height: HEADER },
+      box({ flexDirection: "column" }, box({ fontSize: 60, fontWeight: 700, color: c.fg }, ctx.t("imageTitle")), box({ fontSize: 28, color: c.accent, marginTop: 4 }, label)),
+      box({ alignItems: "center", gap: 14 }, box({ fontSize: 30, fontWeight: 700, color: c.fg }, String(site.name).slice(0, 30)), ...logo)),
     empty
-      ? box({ flexDirection: "column", alignItems: "center", justifyContent: "center", height: 260, marginTop: 16, backgroundColor: c.surface, borderRadius: 20, gap: 10 }, box({ fontSize: 32, fontWeight: 700, color: c.fg }, ctx.t("imageEmpty")), box({ fontSize: 24, color: c.muted }, ctx.t("imageEmptyHint")))
-      : box({ flexDirection: "column", marginTop: 14 }, ...rows));
-  return { width: 900, height, tree };
+      ? box({ flexDirection: "column", alignItems: "center", justifyContent: "center", height: EMPTY, marginTop: GAP, backgroundColor: c.surface, borderRadius: 20, gap: 10 }, box({ fontSize: 32, color: c.fg, fontWeight: 700 }, ctx.t("imageEmpty")), box({ fontSize: 24, color: c.muted }, ctx.t("imageEmptyHint")))
+      : box({ flexDirection: "column", gap: ROW_GAP, marginTop: GAP }, ...rows),
+    box({ marginTop: "auto", paddingTop: 24, fontSize: 22, color: c.accent, fontWeight: 700 }, footer));
+  return { width: WIDTH, height, tree };
 }
 
 export default {
@@ -401,7 +479,12 @@ export default {
       const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
       const week = await loadWeek(ctx, offset);
       if (!week) return new Response("Calendar not available", { status: 404 });
-      const res = await ctx.api.png(weekImage(ctx, week, await ctx.api.site(ctx.locale)));
+      const site = await ctx.api.site(ctx.locale);
+      const shown = week.days.flatMap((d) => d.streams.slice(0, 2));
+      const { covers } = await coversForSlots(ctx, shown);
+      let res;
+      // Une jaquette que le générateur d'images n'arrive pas à charger ne doit pas coûter l'image entière : on la refait sans jaquettes.
+      try { res = await ctx.api.png(weekImage(ctx, week, site, covers)); } catch (e) { if (!covers.size) throw e; res = await ctx.api.png(weekImage(ctx, week, site)); }
       res.headers.set("Cache-Control", "public, max-age=300");
       return res;
     },
@@ -417,9 +500,12 @@ export default {
       return { title: ctx.t("title"), blocks };
     }
     blocks.push({ type: "markdown", text: ctx.t("intro", { days, tz }) });
+    const { covers } = await coversForSlots(ctx, slots);
     for (const day of buildDays(wallDateNow(tz), days, slots, tz)) {
       blocks.push({ type: "heading", text: fmtDay(day.wall, ctx.locale, tz) });
-      blocks.push({ type: "markdown", text: day.streams.length ? day.streams.map((s) => `- ${slotLine(s, ctx, tz)}`).join("\n") : `*${ctx.t("none")}*` });
+      blocks.push(anyCover(day.streams, covers)
+        ? { type: "html", html: day.streams.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers))).join("") }
+        : { type: "markdown", text: day.streams.length ? day.streams.map((s) => `- ${slotLine(s, ctx, tz)}`).join("\n") : `*${ctx.t("none")}*` });
     }
     return { title: ctx.t("title"), blocks };
   },
@@ -432,6 +518,8 @@ export default {
       const tz = timeZone ?? "UTC";
       const s = slots[0];
       const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(s.start);
+      const { covers } = await coversForSlots(ctx, [s]);
+      if (anyCover([s], covers)) return [{ type: "heading", text: ctx.t("nextUp") }, { type: "html", html: slotHtml(s, ctx, tz, coversOf(s, covers), day) }];
       return [{ type: "heading", text: ctx.t("nextUp") }, { type: "markdown", text: `**${day}**\n\n${slotLine(s, ctx, tz)}` }];
     },
 
@@ -453,11 +541,11 @@ export default {
       const { ok, slots, timeZone } = await loadSlots(ctx, 30);
       if (!ok || slots.length === 0) return null;
       const tz = timeZone ?? "UTC";
-      const lines = slots.slice(0, count).map((s) => {
-        const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start);
-        return `- ${day} · ${slotLine(s, ctx, tz)}`;
-      });
-      return [{ type: "heading", text: ctx.t("nextTitle") }, { type: "markdown", text: lines.join("\n") }];
+      const shown = slots.slice(0, count);
+      const dayOf = (s) => new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start);
+      const { covers } = await coversForSlots(ctx, shown);
+      if (anyCover(shown, covers)) return [{ type: "heading", text: ctx.t("nextTitle") }, { type: "html", html: shown.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), dayOf(s))).join("") }];
+      return [{ type: "heading", text: ctx.t("nextTitle") }, { type: "markdown", text: shown.map((s) => `- ${dayOf(s)} · ${slotLine(s, ctx, tz)}`).join("\n") }];
     },
   },
 
@@ -482,6 +570,22 @@ export default {
     blocks.push({ type: "markdown", text: t("adminOk", { n: slots.filter((s) => s.start.getTime() <= Date.now() + days * 86_400_000).length, days }) });
     blocks.push({ type: "heading", text: t("adminNext") });
     blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, extractGameNames(s.description).join(", ")]) });
+    // Jaquettes : un message clair plutôt qu'un manque silencieux (clé absente, refusée, RAWG injoignable, jeux inconnus de RAWG).
+    const next = slots.slice(0, 20);
+    const { covers, states } = await coversForSlots(ctx, next);
+    if (states.size) {
+      const all = [...states.entries()];
+      const has = (st) => all.some(([, v]) => v === st);
+      const lost = all.filter(([n, v]) => v === "none" && !covers.has(n)).map(([n]) => n);
+      blocks.push({ type: "heading", text: t("coversTitle") });
+      if (has("no_key")) blocks.push({ type: "markdown", text: t("coversNoKey") });
+      else if (has("denied")) blocks.push({ type: "markdown", text: `⚠️ ${t("coversDenied")}` });
+      else if (has("down") && !covers.size) blocks.push({ type: "markdown", text: `⚠️ ${t("coversDown")}` });
+      else blocks.push({ type: "markdown", text: t("coversOk", { found: covers.size, total: states.size }) });
+      if (lost.length) blocks.push({ type: "markdown", text: t("coversNone", { games: lost.map(escMd).join(", ") }) });
+      const withCovers = next.filter((s) => coversOf(s, covers).length > 0);
+      if (withCovers.length) blocks.push({ type: "html", html: withCovers.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start))).join("") });
+    }
     blocks.push({ type: "adminForm", action: "refresh", submitLabel: t("refresh"), fields: [] });
     return blocks;
   },

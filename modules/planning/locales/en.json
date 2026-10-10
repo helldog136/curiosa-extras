@@ -24,5 +24,11 @@
   "noneToday": "—",
   "imageTitle": "Schedule",
   "imageEmpty": "Nothing planned yet",
-  "imageEmptyHint": "Come back soon for the next stream!"
+  "imageEmptyHint": "Come back soon for the next stream!",
+  "coversTitle": "Game covers",
+  "coversNoKey": "No RAWG key: games are shown without a cover. Enter it in [Settings](/admin/settings).",
+  "coversDenied": "RAWG refuses the key: games are shown without a cover. Check it in [Settings](/admin/settings).",
+  "coversDown": "RAWG cannot be reached right now: games are shown without a cover, and the search will be tried again.",
+  "coversOk": "{found} cover(s) found for {total} upcoming game(s).",
+  "coversNone": "RAWG does not know: {games}. Check the spelling in the event description (the “Jeu: …” line)."
 }

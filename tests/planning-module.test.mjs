@@ -14,7 +14,7 @@ const calendar = (...events) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${events.join
 const messages = { nextUp: "Prochain stream", daysTitle: "Cette semaine", noneToday: "—", title: "Planning", intro: "Prochains {days} jours ({tz})", none: "Rien", notConfigured: "Pas configuré", nextTitle: "Prochains streams", allDay: "Toute la journée",
   adminStatus: "État", adminNotSet: "Adresse absente", badUrl: "Adresse refusée", adminHint: "…{hint}", adminError: "Illisible", adminOk: "{n} sur {days} jours", adminNext: "À venir", refresh: "Rafraîchir", refreshed: "Rafraîchi",
   date: "Date", time: "Heure", slot: "Créneau", games: "Jeux" };
-const ctxWith = (settings = {}, over = {}) => fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "UTC", ...settings }, messages, locale: "fr", ...over });
+const ctxWith = (settings = {}, over = {}) => fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "UTC", ...settings }, messages, locale: "fr", rawgConfigured: false, ...over });
 
 const realFetch = globalThis.fetch;
 let fetched;

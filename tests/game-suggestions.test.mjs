@@ -13,7 +13,7 @@ const def = mod.default;
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });
 let n = 0;
-const ctx = (settings = {}) => fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: readJson("locales/en.json"), settings });
+const ctx = (settings = {}) => { const c = fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: readJson("locales/en.json"), settings }); delete c.api.rawg; return c; };   // ancien comportement (réglage du module) ; le service du cœur est testé dans rawg-covers.test.mjs
 const formReq = (url, fields, headers = {}) => { const fd = new FormData(); for (const [k, v] of Object.entries(fields)) fd.set(k, v); return new Request(url, { method: "POST", body: fd, headers }); };
 const suggest = (c, fields, ip = "1.1.1.1") => def.routes.suggest(formReq("https://x.test/m/k/suggest", fields, { "x-forwarded-for": ip }), c);
 const add = (c, data) => c.api.store.add("games", { title: "Jeu", status: "proposed", replayVotes: 0, ...data });

@@ -22,10 +22,12 @@ séparés par une virgule ou « + », trois maximum). Rien n'est deviné depuis 
 L'adresse doit être en `https://` et publique : localhost, réseaux privés et adresses de lien local sont refusés (le serveur
 télécharge l'adresse : pas de requête vers le réseau interne). Téléchargement limité à 8 s et 5 Mo, mis en cache 5 minutes.
 
-## Non repris de la version d'origine
+## Jaquettes des jeux (RAWG)
 
-Les jaquettes de jeux (API RAWG) et l'export PNG du planning pour le panneau Twitch.
+Pour chaque jeu écrit dans la description d'un événement, le module demande sa jaquette à RAWG **par le service du cœur** et l'affiche sur la page publique, dans les morceaux d'accueil « prochain stream » et « prochains streams », dans l'admin et sur l'image à partager. La clé d'API RAWG (gratuite, [rawg.io/apidocs](https://rawg.io/apidocs)) se saisit **une seule fois, dans Admin → Réglages**, pour tous les modules : le planning n'a pas de réglage de clé, et ne la voit jamais. Il faut une version de Curiosa qui offre ce service (permission `rawg`) ; sinon, ou sans clé, ou si RAWG refuse la clé ou ne répond pas, seul le nom du jeu s'affiche, et l'admin du module dit clairement lequel de ces cas c'est. Le cache et la cadence des demandes sont ceux du cœur.
 
 ## Image à partager (PNG)
 
-`https://votre-site/m/<clé>/image` : la semaine en cours (lundi → dimanche) en image PNG aux couleurs du site, prête pour un panneau Twitch ou un réseau social. `?week=1` pour la semaine suivante (jusqu'à 8). Générée par le service du cœur `ctx.api.png`, mise en cache 5 minutes.
+`https://votre-site/m/<clé>/image` : la semaine en cours (lundi → dimanche) en image PNG de 900 px de large aux couleurs du site, prête pour un panneau Twitch (« image + lien depuis une URL ») ou un réseau social. Une ligne par jour, deux streams au plus par jour, avec la jaquette des jeux (trois au plus par stream) à côté de l'heure et du titre. `?week=1` pour la semaine suivante (jusqu'à 8). Générée par le service du cœur `ctx.api.png` (aucune dépendance native dans le module), mise en cache 5 minutes ; pour la télécharger : ouvrez l'adresse dans le navigateur et enregistrez l'image.
+
+Différence avec l'ancien site : pas de page d'admin dédiée avec bouton « Enregistrer l'image » ni de choix de semaine en un clic — l'adresse `?week=N` en tient lieu, et la route est publique (comme l'ancienne adresse destinée à l'extension Twitch).

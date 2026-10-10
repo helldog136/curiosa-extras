@@ -28,5 +28,20 @@
   "okStatus": "Status updated.",
   "okDeleted": "Suggestion deleted.",
   "errNotFound": "Suggestion not found.",
-  "setTo": "→ {status}"
+  "setTo": "→ {status}",
+  "colCover": "Cover",
+  "coversTitle": "Covers",
+  "coversAll": "Every suggestion has a cover.",
+  "coversMissing": "{n} suggestion(s) without a cover. The module looks for them on its own, a few at a time; the button starts the search right now.",
+  "coversNoKeyHint": "{n} suggestion(s) without a cover, but no RAWG key is saved: enter it in [Settings](/admin/settings).",
+  "coversLast": "Last automatic search: {date} (UTC) — {found} found, {none} with no result.",
+  "coversDeniedHint": "RAWG refuses the saved key: check it in [Settings](/admin/settings). The search resumes in 24 hours, or when you click the button.",
+  "coversButton": "Look for missing covers",
+  "coversNoKey": "No RAWG key: enter it in [Settings](/admin/settings), then run the search again.",
+  "coversDenied": "RAWG refuses the key (wrong, disabled or expired). Check it in [Settings](/admin/settings), then run the search again.",
+  "coversBusy": "RAWG asks you to wait (too many requests). Try again in an hour or two.",
+  "coversDown": "RAWG cannot be reached right now. Nothing was changed: try again later.",
+  "coversPartial": " Found before stopping: {found}.",
+  "coversDone": "Search finished: {found} cover(s) found, {none} with no result on RAWG.",
+  "coversMore": " {left} left to try: run the search again."
 }
