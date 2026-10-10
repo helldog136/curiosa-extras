@@ -5,7 +5,8 @@
     "en": "Spotify",
     "fr": "Spotify"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "spotify",
   "description": {
     "en": "Shows your Spotify button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Spotify dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."

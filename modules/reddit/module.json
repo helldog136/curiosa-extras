@@ -5,7 +5,8 @@
     "en": "Reddit",
     "fr": "Reddit"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "reddit",
   "description": {
     "en": "Shows your Reddit button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Reddit dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."

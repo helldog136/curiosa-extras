@@ -5,7 +5,8 @@
     "en": "Twitch live status",
     "fr": "Statut live Twitch"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "twitch",
   "main": "index.mjs",
   "description": {
     "en": "Shows your Twitch player on the home page and a banner when you are live.",

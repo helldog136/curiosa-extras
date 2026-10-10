@@ -5,7 +5,8 @@
     "en": "Mastodon",
     "fr": "Mastodon"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "mastodon",
   "description": {
     "en": "Shows your Mastodon button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Mastodon dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."

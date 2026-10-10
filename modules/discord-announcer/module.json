@@ -5,7 +5,8 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "discord",
   "description": {
     "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link.",
     "fr": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier."

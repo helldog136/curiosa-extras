@@ -5,7 +5,8 @@
     "en": "Steam",
     "fr": "Steam"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "steam",
   "description": {
     "en": "Shows your Steam button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Steam dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."

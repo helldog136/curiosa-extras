@@ -5,7 +5,8 @@
     "en": "Kick",
     "fr": "Kick"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "platform": "kick",
   "description": {
     "en": "Shows your Kick button in the site header. Add one per account if you have several.",
     "fr": "Affiche le bouton de votre Kick dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
