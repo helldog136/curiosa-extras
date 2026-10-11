@@ -43,6 +43,13 @@ const BOB_AMPLITUDE_Y = 0.05;
 const BOB_AMPLITUDE_X = 0.025;
 const BOB_EASE_MOVING = 10;
 const BOB_EASE_IDLE = 6;
+// Chien de garde (voir watchdog) : secondes SIMULÉES (somme des dt, donc insensibles à une mise en veille de
+// l'onglet) sans que le marcheur ait avancé d'une demi-case hors arrêt volontaire, ou qu'un arrêt dure bien
+// au-delà de sa durée prévue, avant de replanifier sa route.
+const WATCHDOG_STUCK_SECONDS = 12;
+const WATCHDOG_MIN_PROGRESS = 0.5;
+const WATCHDOG_WALL_SECONDS = 1;
+const WATCHDOG_LOOK_MARGIN_SECONDS = 15;
 function angleOf(dir) {
     return Math.atan2(dir.y, dir.x);
 }
@@ -197,6 +204,14 @@ export class MazeEngine {
     focusedItem = null;
     running = false;
     lastTime = 0;
+    // Chien de garde et boucle d'animation (voir watchdog/tick) : jamais lus par le déplacement normal.
+    wdAnchor = { x: 0, y: 0 };
+    wdStuck = 0;
+    wdInWall = 0;
+    wdStateTime = 0;
+    wdState = "wander";
+    wdGaveUp = false;
+    loopErrorLogged = false;
     rafId = 0;
     wallBottom = new Float32Array(0);
     wallZ = new Float32Array(0);
@@ -216,7 +231,15 @@ export class MazeEngine {
         this.ctx = ctx;
         this.ctx.imageSmoothingEnabled = false;
         this.buildRoomInfos();
-        const start = randomOpenCell(this.grid);
+        let start = randomOpenCell(this.grid);
+        if (this.openDirections(start, -1).length === 0) {
+            // Case de chemin isolée (aucun voisin praticable) : le marcheur n'y bougerait jamais.
+            const movable = this.movableCells();
+            if (movable.length > 0)
+                start = movable[(random() * movable.length) | 0];
+            else
+                this.wdGaveUp = true; // aucune case d'où partir dans tout le tracé : le marcheur reste en place
+        }
         this.pos = { x: start.x + 0.5, y: start.y + 0.5 };
         this.cellFrom = { ...start };
         const firstDir = this.openDirections(start, -1);
@@ -225,6 +248,7 @@ export class MazeEngine {
         // la spline ne courbe donc pas avant d'avoir un vrai virage à amorcer.
         this.beginSegment(start, dirIndex, { x: 0, y: 0 });
         this.camAngle = this.headingAngle;
+        this.wdAnchor = { x: this.pos.x, y: this.pos.y };
         this.scheduleNextStop();
         for (let y = 0; y < this.grid.height; y++) {
             for (let x = 0; x < this.grid.width; x++) {
@@ -256,13 +280,36 @@ export class MazeEngine {
         const loop = (now) => {
             if (!this.running)
                 return;
-            const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-            this.lastTime = now;
-            this.update(dt, now / 1000);
-            this.render();
+            this.tick(now);
             this.rafId = requestAnimationFrame(loop);
         };
         this.rafId = requestAnimationFrame(loop);
+    }
+    // Un tour de la boucle d'animation. Une exception (quelle qu'en soit l'origine) ne doit jamais l'arrêter :
+    // elle est journalisée UNE seule fois, le marcheur est remis sur une route valide et le tour suivant
+    // reprend normalement (start() replanifie toujours le tour suivant).
+    tick(now) {
+        try {
+            let dt = (now - this.lastTime) / 1000;
+            if (!(dt > 0))
+                dt = 0;
+            dt = Math.min(dt, 0.1);
+            this.lastTime = now;
+            this.update(dt, now / 1000);
+            this.render();
+        }
+        catch (error) {
+            if (!this.loopErrorLogged) {
+                this.loopErrorLogged = true;
+                console.error("[maze-overlay] erreur dans la boucle d'animation (reprise automatique)", error);
+            }
+            try {
+                this.recoverWalker();
+            }
+            catch {
+                /* rien de plus à tenter ce tour-ci : le suivant réessaiera */
+            }
+        }
     }
     stop() {
         this.running = false;
@@ -501,15 +548,23 @@ export class MazeEngine {
         // anti-répétition que pickNextDirection, à l'échelle de la salle.
         const availableExits = room.exits.filter((e) => !(e.x === entry.x && e.y === entry.y));
         const pool = availableExits.length > 0 ? availableExits : room.exits;
+        if (pool.length === 0) {
+            // Salle sans aucune sortie (zone fermée dessinée à la main, point de départ ou arrivée de
+            // portail à l'intérieur) : rien à viser pour en ressortir, on continue d'errer à l'intérieur.
+            const others = room.cells.filter((c) => c.x !== fromCell.x || c.y !== fromCell.y);
+            setTarget(others[(random() * others.length) | 0] ?? fromCell);
+            this.roomTargetKind = "random";
+            return;
+        }
         const memoryKey = `${roomIdx},${entry.x},${entry.y}`;
         const lastExitKey = this.roomJunctionMemory.get(memoryKey);
         const weights = pool.map((e) => (`${e.x},${e.y}` === lastExitKey ? REPEAT_DECISION_PENALTY : 1));
         const total = weights.reduce((sum, w) => sum + w, 0);
-        let roll = random() * total;
+        let pick = random() * total;
         let chosen = pool[pool.length - 1];
         for (let i = 0; i < pool.length; i++) {
-            roll -= weights[i];
-            if (roll <= 0) {
+            pick -= weights[i];
+            if (pick <= 0) {
                 chosen = pool[i];
                 break;
             }
@@ -527,8 +582,17 @@ export class MazeEngine {
     // "la caméra touche le mur du portail" dans update(), avant même d'avoir
     // eu le temps de s'en éloigner d'un seul pixel — boucle infinie.
     teleportThroughPortal() {
-        const destination = this.portalCells[(random() * this.portalCells.length) | 0];
-        const outOptions = this.openDirections(destination, -1);
+        let destination = this.portalCells[(random() * this.portalCells.length) | 0];
+        let outOptions = this.openDirections(destination, -1);
+        if (outOptions.length === 0) {
+            // Portail muré de partout (aucune case praticable autour) : en ressortir ferait réapparaître le
+            // marcheur dans un mur — on en tire un autre qui a une issue.
+            const usable = this.portalCells.filter((c) => this.openDirections(c, -1).length > 0);
+            if (usable.length > 0) {
+                destination = usable[(random() * usable.length) | 0];
+                outOptions = this.openDirections(destination, -1);
+            }
+        }
         const outDir = outOptions.length > 0 ? outOptions[(random() * outOptions.length) | 0] : 0;
         const outVec = MOVE_DIRECTIONS[outDir];
         const emergeCell = { x: destination.x + outVec.x, y: destination.y + outVec.y };
@@ -541,7 +605,7 @@ export class MazeEngine {
         // portail, qui doit lui aussi aller droit devant plutôt que de tourner
         // immédiatement.
         this.postPortalStraightSteps = POST_PORTAL_STRAIGHT_STEPS;
-        const nextDir = this.decideNextDir(emergeCell, reverseIndex(outDir));
+        const nextDir = this.departureDir(emergeCell, reverseIndex(outDir));
         // Point de contrôle "derrière" virtuel (côté portail, sens inverse de
         // la sortie) — avec P0 de ce côté, la tangente de la spline à u=0 est
         // déjà perpendiculaire au mur (voire légèrement amorcée vers le
@@ -623,6 +687,20 @@ export class MazeEngine {
             this.postPortalStraightSteps = 0;
         }
         return this.pickNextDirection(cell, cameFromDir);
+    }
+    // Direction d'un départ RÉEL depuis `cell` (fin d'un arrêt, demi-tour après un point erré, sortie de
+    // portail) — contrairement au calcul anticipé de beginSegment, qui n'est qu'un point de contrôle de la
+    // spline. Si la cible de la salle est déjà la case où l'on se trouve (affiche ou point erré posé sur une
+    // case de sortie, sortie unique d'un cul-de-sac…), le chemin est vide et pickRoomDirection ne sait que
+    // renvoyer 0 (le nord, souvent un mur) : on ressort alors par la sortie visée, ou on retire une cible.
+    departureDir(cell, cameFromDir) {
+        for (let i = 0; i < 2 && this.activeRoom >= 0 && this.roomTarget && this.roomTarget.x === cell.x && this.roomTarget.y === cell.y; i++) {
+            if (this.roomTargetKind === "exit")
+                return this.roomTargetExitDir;
+            this.roomVisitedPoster = true;
+            this.pickNewRoomTarget(this.activeRoom, cell);
+        }
+        return this.decideNextDir(cell, cameFromDir);
     }
     // Une diagonale n'est retenue que si la case cible ET les deux cases
     // orthogonales adjacentes sont ouvertes — sinon le personnage couperait
@@ -775,7 +853,119 @@ export class MazeEngine {
             this.bobX += (0 - this.bobX) * Math.min(1, dt * BOB_EASE_IDLE);
         }
     }
+    // Cases de chemin depuis lesquelles on peut réellement partir quelque part.
+    movableCells() {
+        const cells = [];
+        for (let y = 0; y < this.grid.height; y++) {
+            for (let x = 0; x < this.grid.width; x++) {
+                if (this.isPathCell(x, y) && this.openDirections({ x, y }, -1).length > 0)
+                    cells.push({ x, y });
+            }
+        }
+        return cells;
+    }
+    // Remet le marcheur sur une route valide, quelle que soit la cause du blocage : repart de la case de chemin
+    // la plus proche de lui (ou, à défaut, d'une case de chemin tirée au hasard) dans une direction praticable,
+    // état « salle » oublié (il sera redécidé en arrivant). Sans saut visible quand il est déjà sur une case
+    // valide : seul le segment en cours est replanifié. Ce chemin n'est jamais emprunté en marche normale.
+    recoverWalker() {
+        this.wdStuck = 0;
+        this.wdInWall = 0;
+        this.wdStateTime = 0;
+        if (this.state !== "wander") {
+            this.state = "wander";
+            if (this.focusedItem) {
+                this.focusedItem = null;
+                this.opts.onFocusChange(null);
+            }
+            this.scheduleNextStop();
+        }
+        this.activeRoom = -1;
+        this.roomTarget = null;
+        this.roomPath = [];
+        this.postPortalStraightSteps = 0;
+        this.portalFlash = 0;
+        let cell = null;
+        const here = { x: Math.floor(this.pos.x), y: Math.floor(this.pos.y) };
+        const near = [here, this.cellFrom, this.cellTo];
+        for (const c of near) {
+            if (c && Number.isFinite(c.x) && Number.isFinite(c.y) && this.isPathCell(c.x, c.y) && this.openDirections(c, -1).length > 0) {
+                cell = { x: c.x, y: c.y };
+                break;
+            }
+        }
+        let jumped = false;
+        if (!cell) {
+            const movable = this.movableCells();
+            if (movable.length === 0) {
+                // Aucune case d'où partir dans tout le tracé : rien à faire, on n'insiste pas.
+                this.wdGaveUp = true;
+                this.wdAnchor = { x: this.pos.x, y: this.pos.y };
+                return;
+            }
+            cell = movable[(random() * movable.length) | 0];
+            jumped = true;
+        }
+        const dirs = this.openDirections(cell, -1);
+        const dir = dirs[(random() * dirs.length) | 0];
+        if (jumped || !Number.isFinite(this.pos.x) || !Number.isFinite(this.pos.y) || Math.floor(this.pos.x) !== cell.x || Math.floor(this.pos.y) !== cell.y) {
+            this.pos = { x: cell.x + 0.5, y: cell.y + 0.5 };
+        }
+        this.beginSegment(cell, dir, { x: 0, y: 0 });
+        if (jumped || !Number.isFinite(this.camAngle))
+            this.camAngle = this.headingAngle;
+        this.wdAnchor = { x: this.pos.x, y: this.pos.y };
+    }
+    // Chien de garde, appelé à chaque image après le déplacement : si le marcheur n'a pas avancé d'une demi-case
+    // pendant WATCHDOG_STUCK_SECONDS secondes simulées en marchant (les arrêts devant une affiche ne comptent
+    // pas), ou si un arrêt s'éternise, ou si sa position/son cap n'est plus un nombre, on replanifie.
+    watchdog(dt) {
+        if (this.wdGaveUp)
+            return;
+        if (!Number.isFinite(this.pos.x) || !Number.isFinite(this.pos.y) || !Number.isFinite(this.camAngle) || !Number.isFinite(this.headingAngle)) {
+            this.recoverWalker();
+            return;
+        }
+        if (this.state !== this.wdState) {
+            this.wdState = this.state;
+            this.wdStateTime = 0;
+        }
+        if (this.state === "wander") {
+            // Le marcheur ne doit jamais rester plus d'une seconde dans une case non praticable (le garde-fou de
+            // step() ne le ramène qu'au centre de la case de départ du segment, qui peut elle-même être un mur).
+            if (!isOpen(this.grid, Math.floor(this.pos.x), Math.floor(this.pos.y))) {
+                if ((this.wdInWall += dt) > WATCHDOG_WALL_SECONDS) {
+                    this.recoverWalker();
+                    return;
+                }
+            }
+            else {
+                this.wdInWall = 0;
+            }
+            if (Math.hypot(this.pos.x - this.wdAnchor.x, this.pos.y - this.wdAnchor.y) > WATCHDOG_MIN_PROGRESS) {
+                this.wdAnchor = { x: this.pos.x, y: this.pos.y };
+                this.wdStuck = 0;
+            }
+            else if ((this.wdStuck += dt) > WATCHDOG_STUCK_SECONDS) {
+                this.recoverWalker();
+            }
+            return;
+        }
+        // Arrêt volontaire : l'ancre suit, pour qu'une reprise ne compte pas la durée de l'arrêt.
+        this.wdAnchor = { x: this.pos.x, y: this.pos.y };
+        this.wdStuck = 0;
+        if ((this.wdStateTime += dt) > this.opts.lookHoldSeconds + WATCHDOG_LOOK_MARGIN_SECONDS)
+            this.recoverWalker();
+    }
     update(dt, nowSeconds) {
+        if (this.wdGaveUp) {
+            this.pos = { x: this.cellFrom.x + 0.5, y: this.cellFrom.y + 0.5 };
+            return;
+        }
+        this.step(dt, nowSeconds);
+        this.watchdog(dt);
+    }
+    step(dt, nowSeconds) {
         this.camAngle = stepAngleTowards(this.camAngle, this.headingAngle, this.turnRadPerSec * dt);
         this.updateBob(dt);
         this.portalFlash = Math.max(0, this.portalFlash - dt / PORTAL_FLASH_SECONDS);
@@ -836,7 +1026,7 @@ export class MazeEngine {
                         // demi-tour immédiat vers une sortie, sans s'arrêter.
                         this.roomVisitedPoster = true;
                         this.pickNewRoomTarget(this.activeRoom, arrivedCell);
-                        this.beginSegment(arrivedCell, this.decideNextDir(arrivedCell, this.cameFromDir));
+                        this.beginSegment(arrivedCell, this.departureDir(arrivedCell, this.cameFromDir));
                         return;
                     }
                     // "exit" : la cible EST la case de sortie — dernier pas vers
@@ -885,7 +1075,7 @@ export class MazeEngine {
                 if (this.activeRoom >= 0) {
                     this.pickNewRoomTarget(this.activeRoom, this.cellFrom);
                 }
-                this.beginSegment(this.cellFrom, this.decideNextDir(this.cellFrom, this.cameFromDir));
+                this.beginSegment(this.cellFrom, this.departureDir(this.cellFrom, this.cameFromDir));
             }
         }
     }
