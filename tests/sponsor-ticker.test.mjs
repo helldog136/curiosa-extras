@@ -48,7 +48,9 @@ test("langues : chaque clé ctx.t(\"…\") utilisée statiquement par le code ex
 });
 
 import vm from "node:vm";
-const def = (await import("../modules/sponsor-ticker/index.mjs")).default;
+const mod = await import("../modules/sponsor-ticker/index.mjs");
+const def = mod.default;
+const { fitTitle, fitScale, shortDomain, onAccent } = mod;
 
 const overlayOf = (settings = {}, query = "", opts = {}) => {
   const ctx = ctxFor("en", { key: "ticker", name: "Mon ticker", settings, ...opts });
@@ -226,4 +228,126 @@ test("items : sponsors d'abord puis entrées ; limites de collecte demandées (6
 test("items : une URL dangereuse n'est jamais transformée en lien cliquable (seul le nom de domaine est affiché)", async () => {
   const { body } = await itemsOf({ "sponsor.card": [{ id: "1", name: "X", url: "javascript:alert(1)" }] });
   assert.ok(!/^javascript:/i.test(String(body.items[0].url)));
+});
+
+// ── textes longs, légende du QR, mise à l'échelle (1.0.1) ─────────────────────────────────────────────
+const cssOf = (settings = {}) => overlayOf(settings).out.css;
+const rule = (css, selector) => css.match(new RegExp(`(?:^|[}\\n])\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\{([^}]*)\\}`))?.[1] ?? "";
+
+test("titre : plus jamais « une seule ligne + points de suspension » — 2 lignes puis seulement les points de suspension", () => {
+  const name = rule(cssOf(), ".ticker-name");
+  assert.ok(!/white-space:nowrap/.test(name), "le titre peut passer à la ligne");
+  assert.match(name, /-webkit-line-clamp:2/);
+  assert.match(name, /overflow-wrap:anywhere/, "un mot sans espace très long ne déborde pas");
+  assert.match(name, /font-size:22px/, "taille de départ inchangée");
+  assert.match(rule(cssOf(), ".ticker-blurb"), /-webkit-line-clamp:2/, "le résumé garde 2 lignes");
+  assert.match(rule(cssOf(), ".ticker-code"), /overflow-wrap:anywhere/, "un code long passe à la ligne");
+});
+
+test("fitTitle : 22 px s'il tient, réduit jusqu'à 18 px sur une ligne, puis 2 lignes (16 px au plus bas)", () => {
+  assert.deepEqual(fitTitle(168, 430), { size: 22, lines: 1 });
+  assert.deepEqual(fitTitle(430, 430), { size: 22, lines: 1 });
+  assert.deepEqual(fitTitle(499, 430), { size: 18.5, lines: 1 }, "« InstantGaming — Achète tes jeux moins cher »");
+  assert.deepEqual(fitTitle(827, 430), { size: 19, lines: 2 });
+  assert.deepEqual(fitTitle(600, 430), { size: 22, lines: 2 }, "2 lignes sans réduire quand 1,7 ligne suffit");
+  assert.deepEqual(fitTitle(5000, 430), { size: 16, lines: 2 }, "jamais sous 16 px : au-delà, c'est l'ellipsis");
+  for (const bad of [0, NaN, -3, undefined]) assert.deepEqual(fitTitle(bad, 430), { size: 22, lines: 1 });
+  for (let n = 100; n < 4000; n += 37) { const t = fitTitle(n, 330); assert.ok(t.size >= 16 && t.size <= 22 && (t.lines === 1 || t.size >= 16)); }
+});
+
+test("shortDomain : sans « www. », entier jusqu'à 22 caractères, sinon coupé au milieu en gardant la fin", () => {
+  assert.equal(shortDomain("https://www.instant-gaming.com/fr/?igr=x"), "instant-gaming.com");
+  assert.equal(shortDomain("https://WWW.Acme.test/x"), "acme.test");
+  assert.equal(shortDomain("https://instant-gaming.com"), "instant-gaming.com", "18 caractères : plus coupé à 74 px");
+  assert.equal(shortDomain("https://sub.www.acme.test"), "sub.www.acme.test", "seul le « www. » initial");
+  const long = shortDomain("https://un-nom-de-domaine-vraiment-tres-long-exemple.com/x");
+  assert.equal(long.length, 22);
+  assert.match(long, /^un-nom-de-do\u2026emple\.com$/);
+  for (const bad of ["", "pas une url", null, undefined, "/relatif"]) assert.equal(shortDomain(bad), "");
+});
+
+test("fitScale : 1 quand la carte tient, sinon assez petit pour tenir avec 2 % de marge de chaque côté", () => {
+  assert.equal(fitScale(340, 96, 1920, 1080), 1, "1920×1080 : carte à sa taille");
+  assert.equal(fitScale(680, 96, 1920, 1080), 1);
+  const s = fitScale(680, 96, 340, 100);
+  assert.ok(s < 0.5 && s > 0.45, String(s));
+  assert.ok(680 * s <= 340 * 0.96 && 96 * s <= 100 * 0.96, "tient en largeur et en hauteur");
+  assert.ok(fitScale(300, 300, 1920, 100) < 0.33, "limitée par la hauteur");
+  for (const [w, h] of [[1920, 1080], [1280, 720], [800, 200], [600, 150], [340, 100], [200, 60]]) for (const cw of [300, 600, 700, 1000]) {
+    const k = fitScale(cw, 110, w, h);
+    assert.ok(k > 0 && k <= 1 && cw * k <= w * 0.96 + 1e-9 && 110 * k <= h * 0.96 + 1e-9, `${w}×${h} carte ${cw}`);
+  }
+  for (const bad of [0, NaN, undefined]) assert.equal(fitScale(bad, 96, 340, 100), 1);
+});
+
+test("carte à l'échelle : le conteneur ne rétrécit pas, la mise à l'échelle passe par --tk-s, y compris pendant le glissement", () => {
+  const css = cssOf();
+  assert.match(rule(css, ".ticker-slider"), /flex:none/, "sinon la carte est écrasée et son contenu rogné");
+  assert.match(rule(css, ".ticker-slider"), /transform:translateX\(135%\) scale\(var\(--tk-s,1\)\)/);
+  assert.match(rule(css, ".ticker-slider.on"), /transform:translateX\(0\) scale\(var\(--tk-s,1\)\)/);
+  assert.match(overlayOf().out.script, /function fit\(card\)/);
+  assert.match(overlayOf().out.script, /addEventListener\("resize"/);
+  assert.match(overlayOf().out.script, /fit\(cur\);slider\.classList\.add\("on"\)/, "mesurée avant d'apparaître");
+  assert.match(css, /overflow:hidden;font-family/, "aucune barre de défilement dans la source navigateur");
+});
+
+test("script : les aides pures sont recopiées telles quelles dans la page et la syntaxe reste valide", () => {
+  const { out } = overlayOf();
+  for (const fn of [fitTitle, fitScale, shortDomain]) assert.ok(out.script.includes(fn.toString()), fn.name);
+  assert.doesNotThrow(() => new vm.Script(out.script));
+  assert.ok(!/<\/script/i.test(out.script));
+  // la fonction embarquée donne les mêmes résultats que celle testée ici
+  const box = { URL };
+  vm.runInNewContext(`${shortDomain.toString()};${fitScale.toString()};${fitTitle.toString()};out={d:shortDomain("https://www.un-nom-de-domaine-vraiment-tres-long-exemple.com"),s:fitScale(680,96,340,100),t:fitTitle(827,430)}`, box);
+  assert.deepEqual(JSON.parse(JSON.stringify(box.out)), { d: shortDomain("https://www.un-nom-de-domaine-vraiment-tres-long-exemple.com"), s: fitScale(680, 96, 340, 100), t: fitTitle(827, 430) });
+  assert.match(out.script, /shortDomain\(s\.url\)/);
+  assert.ok(!out.script.includes("function domain("), "plus de légende coupée à 74 px");
+});
+
+test("légende du QR : plus de largeur fixe de 74 px, mais une limite large ; ellipsis seulement en dernier recours", () => {
+  const dom = rule(cssOf(), ".ticker-domain");
+  assert.ok(!/max-width:74px/.test(dom));
+  assert.match(dom, /max-width:150px/);
+  assert.match(dom, /text-overflow:ellipsis/);
+});
+
+test("rendu par défaut à 1920×1080 : mêmes tailles, mêmes polices, même hauteur qu'avant pour des textes courts", () => {
+  const css = cssOf();
+  assert.match(rule(css, ".ticker-card"), /min-height:96px;padding-right:26px;clip-path:polygon\(3\.5% 0,100% 0,96\.5% 100%,0 100%\)/, "hauteur 96 px au minimum (elle ne grandit que si le texte l'exige)");
+  assert.match(rule(css, ".ticker-text-col"), /gap:5px;flex:none;max-width:430px;padding:10px 0/);
+  assert.match(rule(css, ".ticker-badge"), /font-size:12px;letter-spacing:\.18em/);
+  assert.match(rule(css, ".ticker-name"), /font-weight:700;font-size:22px;letter-spacing:\.02em/);
+  assert.match(rule(css, ".ticker-blurb"), /font-size:13px;line-height:1\.28/);
+  assert.match(rule(css, ".ticker-qr"), /width:62px;height:62px/);
+  assert.match(rule(css, ".ticker-domain"), /font-size:9\.5px/);
+  assert.match(rule(css, ".ticker-logo"), /width:60px;height:60px/);
+  assert.match(css, /#tk-stage\{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2vh 2vw/);
+  // titre court : aucune réduction, aucune mise à l'échelle
+  assert.deepEqual(fitTitle(168, 430), { size: 22, lines: 1 });
+  assert.equal(fitScale(363, 105, 1920, 1080), 1);
+  assert.match(css, /prefers-reduced-motion/);
+});
+
+test("texte posé sur l'accent : celui du thème, sauf accent choisi à la main (alors noir ou blanc selon le contraste)", () => {
+  assert.match(overlayOf().out.html, /--tk-on-accent:#111111/);
+  assert.match(overlayOf({ accentColor: "#2244cc" }).out.html, /--tk-on-accent:#ffffff/);
+  assert.match(overlayOf({ accentColor: "#f5e663" }).out.html, /--tk-on-accent:#111111/);
+  assert.match(overlayOf({ accentColor: "rouge" }).out.html, /--tk-on-accent:#111111/, "couleur invalide : thème");
+  assert.equal(onAccent("#000000"), "#ffffff");
+  assert.equal(onAccent("#ffffff"), "#111111");
+  const b = cssOf();
+  assert.ok(!/rgba\(10,10,10/.test(b), "plus de noir figé sur l'accent (badge, séparateur, légende)");
+});
+
+test("échappement : noms, textes, codes et domaines venus du serveur ne passent jamais par innerHTML", () => {
+  const { out } = overlayOf();
+  const s = out.script;
+  assert.equal([...s.matchAll(/innerHTML/g)].length, 1, "seul le QR généré par le cœur");
+  for (const field of ["s.name", "s.text", '"CODE "+s.code', "dm"]) assert.ok(s.includes(field), field);
+  assert.match(s, /el\("div","ticker-name",s\.name\)/);
+  assert.match(s, /el\("div","ticker-blurb",s\.text\)/);
+  assert.match(s, /el\("div","ticker-code","CODE "\+s\.code\)/);
+  assert.match(s, /el\("div","ticker-domain",dm\)/);
+  assert.equal(shortDomain("https://<img src=x onerror=alert(1)>.test"), "", "URL invalide : pas de légende");
+  assert.ok(!shortDomain("https://a.test/<script>").includes("<"));
 });

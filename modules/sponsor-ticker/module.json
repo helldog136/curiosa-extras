@@ -5,7 +5,7 @@
     "en": "Sponsor ticker overlay (OBS)",
     "fr": "Overlay sponsors (OBS)"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "A lower-third for OBS that periodically shows one of your sponsors with its promo code and a QR code.",
     "fr": "Un bandeau pour OBS qui affiche périodiquement l'un de vos sponsors avec son code promo et un QR code."
