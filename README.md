@@ -21,5 +21,9 @@ CURIOSA_DIR=../Curiosa npm test
 ```
 Les tests passent par le chargeur du cœur : un module ne doit utiliser que l'API publique des modules.
 
+## Soutenir le projet
+
+Ces modules sont gratuits. Si vous les aimez, un pourboire est possible sur [helldog136.be/tip-me](https://helldog136.be/tip-me) ; c'est entièrement volontaire, rien n'en dépend.
+
 ## Licence
 Chaque module déclare la sienne dans son `module.json`. Les modules de base portent la Curiosa License 1.0 (voir le cœur).

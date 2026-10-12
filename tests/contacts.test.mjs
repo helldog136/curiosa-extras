@@ -7,14 +7,14 @@ import { parseManifest } from "@/core/modules/manifest";
 const DIR = new URL("../modules/contacts", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${DIR}/${p}`, "utf8"));
 const manifestJson = readJson("module.json");
-const source = fs.readFileSync(`${DIR}/index.mjs`, "utf8");
+const source = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8")).join("\n"); // le code tient en plusieurs fichiers
 const def = (await import("../modules/contacts/index.mjs")).default;
 const ctx = () => fakeCtx({ key: "contacts", messages: readJson("locales/en.json") });
 const svc = def.services["contact.store"];
 
 test("manifeste valide, offre contact.store, parité en/fr, clés ctx.t existantes, actions MCP implémentées, aucune destructive par défaut", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store"]);
+  assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store", "contact.book"]);
   const en = readJson("locales/en.json");
   assert.deepEqual(Object.keys(readJson("locales/fr.json")).sort(), Object.keys(en).sort());
   for (const m of source.matchAll(/\bt\("([A-Za-z0-9_]+)"/g)) assert.ok(m[1] in en, m[1]);

@@ -9,7 +9,7 @@ const readJson = (p) => JSON.parse(fs.readFileSync(`${DIR}/${p}`, "utf8"));
 const manifestJson = readJson("module.json");
 const localeFiles = () => (fs.existsSync(`${DIR}/locales`) ? fs.readdirSync(`${DIR}/locales`).filter((f) => f.endsWith(".json")) : []);
 const loadMessages = (lang) => (fs.existsSync(`${DIR}/locales/${lang}.json`) ? readJson(`locales/${lang}.json`) : {});
-const source = fs.readFileSync(`${DIR}/index.mjs`, "utf8");
+const source = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8")).join("\n"); // le code tient en plusieurs fichiers
 /** Contexte factice avec les vrais textes du module (langue donnée). */
 const ctxFor = (lang = "en", opts = {}) => fakeCtx({ locale: lang, messages: loadMessages(lang), ...opts });
 
@@ -61,21 +61,21 @@ test("manifeste : MCP déclarés = MCP implémentés, aucun sujet/section/slot f
   assert.ok(!def.slots && !def.sections && !def.routes && !def.overlay, "aucun rendu public");
   assert.ok(manifestJson.permissions.includes("admin") && manifestJson.permissions.includes("storage") && manifestJson.permissions.includes("mcp") && manifestJson.permissions.includes("topics"));
   assert.equal(typeof def.adminPanel, "function");
-  for (const name of ["savePartner", "deletePartner", "addJournal", "deleteJournal", "saveContact", "deleteContact"]) assert.equal(typeof def.adminActions[name], "function", name);
+  for (const name of ["savePartner", "deletePartner", "addJournal", "deleteJournal", "linkContact", "createContact", "unlinkContact", "mergeRun", "mergeUndo", "mergeResolve", "mergeDismiss"]) assert.equal(typeof def.adminActions[name], "function", name);
 });
 
 test("manifeste : suppressions MCP destructives et désactivées par défaut, le reste activé", () => {
-  for (const name of ["partner_delete", "contact_delete"]) {
+  for (const name of ["partner_delete"]) {
     const a = manifestJson.mcp.find((x) => x.name === name);
     assert.equal(a.destructive, true, name);
     assert.equal(a.default, false, `${name} doit être OFF par défaut`);
     assert.ok(!a.readOnly);
   }
-  for (const a of manifestJson.mcp.filter((x) => !["partner_delete", "contact_delete"].includes(x.name))) {
+  for (const a of manifestJson.mcp.filter((x) => !["partner_delete"].includes(x.name))) {
     assert.equal(a.default, true, a.name);
     assert.ok(!a.destructive, a.name);
   }
-  for (const name of ["partners_list", "partner_get", "contacts_list"]) assert.equal(manifestJson.mcp.find((x) => x.name === name).readOnly, true, name);
+  for (const name of ["partners_list", "partner_get"]) assert.equal(manifestJson.mcp.find((x) => x.name === name).readOnly, true, name);
 });
 
 test("manifeste : statuts MCP = statuts du code et réglage followUpDays", () => {
@@ -199,17 +199,6 @@ test("admin journal : ajout validé (fiche existante, texte non vide), lien sûr
   assert.equal(await ctx.api.store.count("journal"), 1);
 });
 
-test("admin contacts : nom obligatoire, champs tronqués, statut actif, suppression", async () => {
-  const ctx = ctxFor();
-  assert.deepEqual(await def.adminActions.saveContact(ctx, { name: "  " }), { error: "A brand name is required." });
-  const r = await def.adminActions.saveContact(ctx, { partnerId: "p1", name: "Alice", email: "a@x.test", phone: "1".repeat(200), role: "CEO" });
-  assert.equal(r.ok, "Saved.");
-  const [c] = await ctx.api.store.list("contacts");
-  assert.equal(c.data.status, "active"); assert.equal(c.data.phone.length, 60); assert.equal(c.data.partnerId, "p1");
-  await def.adminActions.deleteContact(ctx, { id: c.id });
-  assert.equal(await ctx.api.store.count("contacts"), 0);
-});
-
 // ── panneau d'admin ───────────────────────────────────────────────────────────
 test("adminPanel : vue d'ensemble vide → message, mention privée et formulaire de création", async () => {
   const blocks = await def.adminPanel(ctxFor("en"), { query: {} });
@@ -239,13 +228,12 @@ test("adminPanel : tri par urgence, compteur des fiches ouvertes, relance due si
   assert.equal(table.rows[2][3], isoDaysAgo(30));
 });
 
-test("adminPanel : fiche détaillée (journal trié, contacts à relire, actions de suppression dangereuses)", async () => {
+test("adminPanel : fiche détaillée (journal trié, contacts liés (voir contacts-link.test), actions de suppression dangereuses)", async () => {
   const ctx = ctxFor("en");
   const p = await ctx.api.store.add("partners", { brand: "Acme", status: "discussion", chances: 0, url: "https://acme.test", brief: "Note" });
   await ctx.api.store.add("journal", { partnerId: p, date: "2026-01-01", author: "admin", text: "Premier" });
   await ctx.api.store.add("journal", { partnerId: p, date: "2026-03-01", author: "agent:x", text: "Second", link: "https://l.test" });
   await ctx.api.store.add("journal", { partnerId: "autre", date: "2026-02-01", author: "admin", text: "Autre" });
-  await ctx.api.store.add("contacts", { partnerId: p, name: "Bob", status: "to_review", email: "b@x.test" });
   const blocks = await def.adminPanel(ctx, { query: { partner: p } });
   assert.ok(blocks.some((b) => b.type === "heading" && b.text === "Acme"));
   const md = blocks.find((b) => b.type === "markdown" && b.text.includes("Status")).text;
@@ -254,13 +242,11 @@ test("adminPanel : fiche détaillée (journal trié, contacts à relire, actions
   const journal = tables.find((t) => t.columns[0] === "Date");
   assert.deepEqual(journal.rows.map((r) => r[2]), ["Second\nhttps://l.test", "Premier"], "plus récent d'abord, sans l'entrée d'un autre partenaire");
   assert.ok(journal.rowActions[0].danger && journal.rowActions[0].confirm);
-  const people = tables.find((t) => t.columns[0] === "Name");
-  assert.equal(people.rows[0][0], "Bob (to review)");
   const top = tables[0];
   const del = top.rowActions.find((a) => a.action === "deletePartner");
   assert.ok(del.danger && del.confirm, "suppression de fiche confirmée et dangereuse");
   const actions = find(blocks, "adminForm").map((f) => f.action);
-  assert.deepEqual(actions, ["addJournal", "saveContact"]);
+  assert.deepEqual(actions, ["addJournal"], "sans module Contacts : pas de formulaire de liaison");
   for (const f of find(blocks, "adminForm")) assert.equal(f.fields.find((x) => x.name === "partnerId").value, p);
 });
 
@@ -378,68 +364,35 @@ test("relance : date de journal illisible ignorée sans plantage", async () => {
   assert.match(row.lastActivity, /^\d{4}-\d{2}-\d{2}$/);
 });
 
-test("MCP partner_get : fiche + journal + contacts liés uniquement ; inconnu → erreur exposée", async () => {
+test("MCP partner_get : fiche + journal uniquement les siens ; inconnu → erreur exposée ; sans Contacts : liens conservés, pas d'exception", async () => {
   const ctx = ctxFor();
-  const p = await ctx.api.store.add("partners", { brand: "A", status: "publie" });
+  const p = await ctx.api.store.add("partners", { brand: "A", status: "publie", contactIds: ["c1"] });
   await ctx.api.store.add("journal", { partnerId: p, date: "2026-01-01", text: "oui" });
   await ctx.api.store.add("journal", { partnerId: "x", date: "2026-01-01", text: "non" });
-  await ctx.api.store.add("contacts", { partnerId: p, name: "Bob" });
-  await ctx.api.store.add("contacts", { partnerId: "x", name: "Eve" });
   const r = await def.mcp.partner_get(ctx, { id: p });
   assert.equal(r.brand, "A"); assert.equal(r.id, p);
   assert.deepEqual(r.journal.map((j) => j.text), ["oui"]);
-  assert.deepEqual(r.contacts.map((c) => c.name), ["Bob"]);
+  assert.deepEqual([r.contactsAvailable, r.contacts], [false, [{ id: "c1", name: null, role: null, email: null, unavailable: true }]]);
   await assert.rejects(() => def.mcp.partner_get(ctx, { id: "nope" }), (e) => e.expose && e.message === "partnership not found");
 });
 
-test("MCP contacts : création « à relire », liste filtrée, mise à jour partielle et tronquée", async () => {
+test("MCP partner_delete : supprime la fiche et son journal (et ses anciens contacts avant fusion), jamais une personne de Contacts ; inconnu → erreur", async () => {
   const ctx = ctxFor();
-  const r = await def.mcp.contact_create(ctx, { name: " Bob ", email: "b@x.test", partner_id: "p1", notes: "n".repeat(6000), role: "R" }, actor);
-  assert.equal(r.status, "to_review");
-  await def.mcp.contact_create(ctx, { name: "Eve" }, actor);
-  const d = (await ctx.api.store.get(r.id)).data;
-  assert.equal(d.name, "Bob"); assert.equal(d.notes.length, 5000); assert.equal(d.updatedBy, "agent:claude"); assert.equal(d.partnerId, "p1");
-  assert.deepEqual((await def.mcp.contacts_list(ctx, { partner_id: "p1" })).map((c) => c.name), ["Bob"]);
-  assert.equal((await def.mcp.contacts_list(ctx, {})).length, 2);
-  assert.deepEqual(await def.mcp.contact_update(ctx, { id: r.id, role: "CEO", partner_id: "p2" }, actor), { id: r.id });
-  const u = (await ctx.api.store.get(r.id)).data;
-  assert.equal(u.role, "CEO"); assert.equal(u.partnerId, "p2"); assert.equal(u.name, "Bob", "le reste est conservé");
-  await assert.rejects(() => def.mcp.contact_update(ctx, { id: "nope" }, actor), (e) => e.expose && /contact not found/.test(e.message));
-});
-
-test("MCP contact_create : un contact sans nom est refusé", async () => {
-  const ctx = ctxFor();
-  await def.mcp.contact_create(ctx, { name: "  " }, actor).catch(() => {});
-  assert.equal(await ctx.api.store.count("contacts"), 0);
-});
-
-test("MCP partner_delete / contact_delete : suppriment en cascade ; inconnu → erreur, rien n'est supprimé", async () => {
-  const ctx = ctxFor();
-  const a = await ctx.api.store.add("partners", { brand: "A" });
+  const a = await ctx.api.store.add("partners", { brand: "A", contactIds: ["c1"] });
   const b = await ctx.api.store.add("partners", { brand: "B" });
   await ctx.api.store.add("journal", { partnerId: a, text: "x", date: "2026-01-01" });
-  const c = await ctx.api.store.add("contacts", { partnerId: a, name: "n" });
+  await ctx.api.store.add("contacts", { partnerId: a, name: "n" });
   await ctx.api.store.add("contacts", { partnerId: b, name: "m" });
   await assert.rejects(() => def.mcp.partner_delete(ctx, { id: "nope" }), (e) => e.expose);
   assert.equal(await ctx.api.store.count("partners"), 2);
   assert.deepEqual(await def.mcp.partner_delete(ctx, { id: a }), { deleted: a });
   assert.equal(await ctx.api.store.count("journal"), 0);
   assert.equal(await ctx.api.store.count("contacts"), 1);
-  assert.equal(await ctx.api.store.get(c), null);
-  const m = (await ctx.api.store.list("contacts"))[0];
-  await assert.rejects(() => def.mcp.contact_delete(ctx, { id: "nope" }), (e) => e.expose);
-  assert.deepEqual(await def.mcp.contact_delete(ctx, { id: m.id }), { deleted: m.id });
 });
 
-test("stockage : les collections utilisées sont partners / journal / contacts uniquement", async () => {
-  const ctx = ctxFor();
-  const p = await ctx.api.store.add("partners", { brand: "A" });
-  await def.mcp.partner_log(ctx, { id: p, text: "x" }, actor);
-  await def.mcp.contact_create(ctx, { name: "n" }, actor);
-  assert.equal(await ctx.api.store.count("journal"), 1);
-  assert.equal(await ctx.api.store.count("contacts"), 1);
-  assert.equal(await ctx.api.store.count("partners"), 1);
-  assert.ok(!/store\.(add|list)\("(?!partners|journal|contacts)/.test(source) );
+test("stockage : les collections utilisées sont partners / journal / contacts (ancien) / legacyContacts / meta uniquement", async () => {
+  const used = new Set([...source.matchAll(/(?:store\.(?:add|list)|all\(ctx,)\s*\(?\s*"([A-Za-z]+)"/g)].map((m) => m[1]));
+  assert.deepEqual([...used].sort(), ["contacts", "journal", "legacyContacts", "meta", "partners"]);
 });
 
 test("le texte saisi n'est jamais interprété : transmis tel quel (échappement par le rendu du cœur), pas d'appel réseau", async () => {

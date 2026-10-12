@@ -65,7 +65,7 @@ test("les réglages avancés ne sont jamais obligatoires pour le mode simple", (
 test("les modules qui déclarent des actions MCP les implémentent ; les actions irréversibles sont désactivées par défaut", () => {
   for (const m of manifests) {
     if (!m.mcp) continue;
-    const code = read(`${m.dir}/${m.main}`);
+    const code = walk(path.join(root, m.dir)).filter((f) => /\.(mjs|js)$/.test(f)).map((f) => fs.readFileSync(f, "utf8")).join("\n"); // le code d'un module peut tenir en plusieurs fichiers
     for (const action of m.mcp) {
       assert.ok(new RegExp(`\\b${action.name}\\b`).test(code), `${m.id}.${action.name} n'est pas implémentée`);
       if (/delete|remove|publish|destroy|purge/.test(action.name)) {
@@ -83,7 +83,7 @@ test("le formulaire de contact déclare ce qu'il collecte (politique de confiden
   const hero = read("modules/hero/index.mjs");
   assert.ok(manifests.find((m) => m.id === "hero").settings.some((s) => s.type === "video"), "hero : réglage de type video");
   assert.match(hero, /\^\\\/uploads\\\/\[0-9a-f-\]\{36\}\\\.\(mp4\|webm\)\$/, "jamais d'adresse externe");
-  assert.match(read("modules/contacts/index.mjs"), /async adminBadge[\s\S]*to_review/);
+  assert.match(read("modules/contacts/admin.mjs"), /async adminBadge[\s\S]*to_review/);
 });
 
 // Les descriptions du catalogue : celles des modules (les exemples pour développeurs sont hors règle).

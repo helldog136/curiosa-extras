@@ -5,10 +5,10 @@
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": {
-    "en": "Your private partnership pipeline: brands you approach, status, follow-ups, journal and contacts. Has no public page.",
-    "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances, journal et contacts. N'a aucune page publique."
+    "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
+    "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -48,7 +48,7 @@
     {
       "name": "partners_list",
       "readOnly": true,
-      "description": "List partnerships with status, chances and whether a follow-up is due. Optionally filter by status or search text.",
+      "description": "List the partnership files (brands being approached) with status, chances and whether a follow-up is due. Use it to find a brand; people are not listed here: they live in the Contacts module (contacts_list).",
       "input": {
         "type": "object",
         "properties": {
@@ -77,7 +77,7 @@
     {
       "name": "partner_get",
       "readOnly": true,
-      "description": "Read one partnership with its full file, journal entries and contacts.",
+      "description": "Read one partnership file: its fields, its journal and the people linked to it (id, name, role, email). The people themselves are kept in the Contacts module: use contact_get there for their phone, notes and full card.",
       "input": {
         "type": "object",
         "required": [
@@ -94,7 +94,7 @@
     },
     {
       "name": "partner_create",
-      "description": "Create a partnership file (status a_contacter or discussion only). Fill what you know; the owner completes it.",
+      "description": "Create a partnership file for a brand (status a_contacter or discussion only). To add a person to it, create or find them in the Contacts module first (contacts_list, contact_create), then call partner_link_contact.",
       "input": {
         "type": "object",
         "required": [
@@ -131,7 +131,8 @@
           },
           "contact": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Generic way to reach the brand (switchboard, website form). Not for people: use the Contacts module."
           },
           "brief": {
             "type": "string",
@@ -159,7 +160,7 @@
     },
     {
       "name": "partner_update",
-      "description": "Update the prospecting fields of a partnership.",
+      "description": "Update the prospecting fields of a partnership file (status, chances, brief…). The 'contact' field is only for a generic way to reach the brand; people are attached with partner_link_contact, not typed here.",
       "input": {
         "type": "object",
         "required": [
@@ -207,7 +208,8 @@
           },
           "contact": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Generic way to reach the brand (switchboard, website form). Not for people: use the Contacts module."
           },
           "brief": {
             "type": "string",
@@ -235,7 +237,7 @@
     },
     {
       "name": "partner_log",
-      "description": "Add a dated journal entry to a partnership (exchange, decision, next step).",
+      "description": "Add a dated journal entry to a partnership file (exchange, decision, next step). Notes about a person, whatever the brand, go to the Contacts module (contact_note).",
       "input": {
         "type": "object",
         "required": [
@@ -264,119 +266,58 @@
       "default": true
     },
     {
-      "name": "contacts_list",
-      "readOnly": true,
-      "description": "List the contacts (people) of the address book, optionally for one partnership.",
-      "input": {
-        "type": "object",
-        "properties": {
-          "partner_id": {
-            "type": "string",
-            "maxLength": 60
-          }
-        }
-      },
-      "default": true
-    },
-    {
-      "name": "contact_create",
-      "description": "Add a contact (person). It is created as 'to review' until the owner checks it.",
+      "name": "partner_link_contact",
+      "default": true,
+      "description": "Attach a person who already exists in the Contacts module to a partnership file (does nothing if already attached). Find or create the person in Contacts first (contacts_list, contact_create); never retype their details here. Reversible with partner_unlink_contact.",
       "input": {
         "type": "object",
         "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 120
-          },
-          "role": {
-            "type": "string",
-            "maxLength": 120
-          },
-          "organization": {
-            "type": "string",
-            "maxLength": 120
-          },
-          "email": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 60
-          },
-          "relation": {
-            "type": "string",
-            "maxLength": 300
-          },
-          "partner_id": {
-            "type": "string",
-            "maxLength": 60
-          },
-          "notes": {
-            "type": "string",
-            "maxLength": 5000
-          }
-        }
-      },
-      "default": true
-    },
-    {
-      "name": "contact_update",
-      "description": "Update a contact.",
-      "input": {
-        "type": "object",
-        "required": [
-          "id"
+          "id",
+          "contact_id"
         ],
         "properties": {
           "id": {
             "type": "string",
-            "maxLength": 60
+            "maxLength": 60,
+            "description": "Partnership file id."
           },
-          "name": {
+          "contact_id": {
             "type": "string",
-            "maxLength": 120
-          },
-          "role": {
-            "type": "string",
-            "maxLength": 120
-          },
-          "organization": {
-            "type": "string",
-            "maxLength": 120
-          },
-          "email": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 60
-          },
-          "relation": {
-            "type": "string",
-            "maxLength": 300
-          },
-          "partner_id": {
-            "type": "string",
-            "maxLength": 60
-          },
-          "notes": {
-            "type": "string",
-            "maxLength": 5000
+            "maxLength": 80,
+            "description": "Contact id from the Contacts module."
           }
         }
-      },
-      "default": true
+      }
+    },
+    {
+      "name": "partner_unlink_contact",
+      "default": true,
+      "description": "Detach a person from a partnership file. The person is NOT deleted: they stay in the Contacts module. To delete a person, use contact_delete there.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "contact_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Partnership file id."
+          },
+          "contact_id": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Contact id to detach."
+          }
+        }
+      }
     },
     {
       "name": "partner_delete",
       "destructive": true,
       "default": false,
-      "description": "Permanently delete a partnership file together with its journal and contacts. Irreversible. Off by default: an administrator must grant it to a token.",
+      "description": "Permanently delete a partnership file together with its journal. The people linked to it are NOT deleted: they stay in the Contacts module. Irreversible. Off by default: an administrator must grant it to a token.",
       "input": {
         "type": "object",
         "required": [
@@ -389,23 +330,14 @@
           }
         }
       }
-    },
+    }
+  ],
+  "requires": [
     {
-      "name": "contact_delete",
-      "destructive": true,
-      "default": false,
-      "description": "Permanently delete a contact. Irreversible. Off by default: an administrator must grant it to a token.",
-      "input": {
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "maxLength": 60
-          }
-        }
+      "service": "contact.book",
+      "label": {
+        "en": "The address book (Contacts module): people live there, partnerships only link to them",
+        "fr": "Le carnet d'adresses (module Contacts) : les personnes y vivent, les partenariats ne font que s'y référer"
       }
     }
   ]
