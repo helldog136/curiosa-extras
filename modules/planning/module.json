@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "minCore": "0.1.10",
   "description": {
     "en": "Shows your upcoming streams, day by day, read from a Google Calendar (or any iCal feed).",
@@ -76,6 +76,30 @@
       }
     }
   ],
+  "consumes": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Your Twitch channel link (from the Twitch channel module)",
+        "fr": "Le lien de votre chaîne (fourni par la Chaîne Twitch)"
+      },
+      "schema": [
+        {
+          "key": "label",
+          "type": "string"
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "icon",
+          "type": "string"
+        }
+      ]
+    }
+  ],
   "permissions": [
     "pages",
     "routes",
@@ -106,8 +130,8 @@
         "fr": "Lien de votre chaîne (bouton « Regarder sur Twitch »)"
       },
       "help": {
-        "en": "Optional, e.g. https://twitch.tv/mychannel. Without it, the button is not shown.",
-        "fr": "Facultatif, ex. https://twitch.tv/machaine. Sans lien, le bouton n'est pas affiché."
+        "en": "Optional. Not needed if the Twitch channel module is installed with your channel: its link is used. Without any link, the button is not shown.",
+        "fr": "Facultatif. Inutile si la Chaîne Twitch est installée avec votre chaîne : son lien est repris. Sans lien, le bouton n'est pas affiché."
       }
     },
     {

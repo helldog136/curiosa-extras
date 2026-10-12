@@ -96,3 +96,166 @@ test("réseau social : fournit « social.link » (le bouton de la chaîne) ; rie
   assert.deepEqual(await def.exports["social.link"](ctx({ channel: "Rascane" })), [{ label: "Twitch · rascane", url: "https://twitch.tv/rascane", icon: "twitch" }]);
   for (const bad of ["", "  ", "a", "pas valide!", "../x"]) assert.deepEqual(await def.exports["social.link"](ctx({ channel: bad })), [], JSON.stringify(bad));
 });
+
+// ── Service `twitch.live` : le seul client de l'API Twitch pour tous les consommateurs ───────────────────────────────────────────────
+const svc = def.services["twitch.live"];
+const call = (name, c, args) => svc[name](c, args);
+const countOf = (calls, part) => calls.filter((c) => c.u.includes(part)).length;
+
+test("manifeste : offre le service twitch.live (lecture seule : channel, status), garde stream.live, permissions storage/admin déclarées", () => {
+  assert.deepEqual(manifestJson.offers.map((o) => o.service), ["twitch.live"]);
+  assert.deepEqual(manifestJson.offers[0].readOnly, ["channel", "status"]);
+  assert.ok(manifestJson.provides.some((p) => p.topic === "stream.live"));
+  assert.ok(!manifestJson.requires, "le fournisseur ne dépend de personne");
+  assert.ok(manifestJson.permissions.includes("storage") && manifestJson.permissions.includes("admin") && manifestJson.permissions.includes("topics"));
+  assert.deepEqual(Object.keys(def.services["twitch.live"]).sort(), ["adopt", "channel", "status"]);
+});
+
+test("service channel() : chaîne, adresse, état des identifiants, sans aucun appel réseau", async () => {
+  const calls = mockTwitch();
+  assert.deepEqual(await call("channel", ctx()), { channel: "machaine", url: "https://twitch.tv/machaine", configured: true, ready: true, missing: [] });
+  assert.deepEqual(await call("channel", ctx({ clientId: "", clientSecret: "" })), { channel: "machaine", url: "https://twitch.tv/machaine", configured: false, ready: false, missing: ["clientId", "clientSecret"] });
+  assert.deepEqual((await call("channel", ctx({ channel: "pas valide" }))).missing, ["channel"]);
+  assert.equal(calls.length, 0);
+});
+
+test("service status() : en direct (titre, jeu, spectateurs, début, miniature https) puis hors ligne", async () => {
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    const json = (o) => ({ ok: true, status: 200, json: async () => o });
+    if (u.includes("oauth2/token")) return json({ access_token: "tok", expires_in: 3600 });
+    return json({ data: [{ id: "42", title: "Soirée <b>", started_at: "2030-01-01T10:00:00Z", game_name: "Zelda", viewer_count: 12, thumbnail_url: "https://static-cdn.jtvnw.net/live_{width}x{height}.jpg" }] });
+  };
+  assert.deepEqual(await call("status", ctx()), { configured: true, known: true, live: true, channel: "machaine", url: "https://twitch.tv/machaine", id: "42", title: "Soirée <b>", game: "Zelda", viewers: 12, startedAt: "2030-01-01T10:00:00Z", thumbnail: "https://static-cdn.jtvnw.net/live_440x248.jpg" });
+  mod.resetCache(); mockTwitch({ live: false });
+  assert.deepEqual(await call("status", ctx()), { configured: true, known: true, live: false, channel: "machaine", url: "https://twitch.tv/machaine" });
+});
+
+test("service status() : une miniature non https est écartée ; sans identifiants → configured:false, known:false, aucun appel", async () => {
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, json: async () => (String(url).includes("oauth2") ? { access_token: "t" } : { data: [{ id: "1", title: "t", thumbnail_url: "javascript:x" }] }) });
+  assert.equal((await call("status", ctx())).thumbnail, null);
+  const calls = mockTwitch();
+  const r = await call("status", ctx({ clientSecret: "" }));
+  assert.deepEqual([r.configured, r.known, r.live, r.error], [false, false, false, "config"]);
+  assert.equal(calls.length, 0);
+});
+
+test("un SEUL jeton et UN SEUL appel Helix pour le service, stream.live et plusieurs consommateurs, y compris simultanés", async () => {
+  const calls = mockTwitch();
+  const c = ctx();
+  await Promise.all([call("status", c), call("status", c), def.exports["stream.live"](c), call("status", ctx())]);
+  await call("status", c);
+  assert.equal(countOf(calls, "oauth2/token"), 1);
+  assert.equal(countOf(calls, "/helix/streams"), 1);
+});
+
+test("service status() : une autre chaîne (args.channel) avec les identifiants de l'instance ; instances = chaînes distinctes, jeton partagé", async () => {
+  const calls = mockTwitch();
+  const mine = ctx({ channel: "helldog136" });
+  assert.equal((await call("status", mine, { channel: "Rascane" })).channel, "rascane");
+  assert.equal((await call("status", mine, { channel: "pas valide" })).channel, "helldog136", "chaîne invalide ignorée");
+  await call("status", ctx({ channel: "rascane" }));
+  assert.equal(countOf(calls, "oauth2/token"), 1);
+  assert.equal(countOf(calls, "user_login=rascane"), 1, "même chaîne demandée par deux instances : un appel");
+});
+
+test("erreurs : réseau coupé, 401, 429 → jamais d'exception, error explicite, pas de harcèlement (cache d'erreur), jeton refusé oublié", async () => {
+  for (const [label, handler, error] of [
+    ["réseau", async () => { throw new Error("coupé"); }, "network"],
+    ["401 à l'authentification", async () => ({ ok: false, status: 401, json: async () => ({}) }), "auth"],
+    ["429 à l'authentification", async () => ({ ok: false, status: 429, json: async () => ({}) }), "rate"],
+  ]) {
+    mod.resetCache(); const seen = [];
+    globalThis.fetch = async (u, i) => { seen.push(String(u)); return handler(u, i); };
+    const r = await call("status", ctx());
+    assert.deepEqual([r.known, r.live, r.error], [false, false, error], label);
+    await call("status", ctx());
+    assert.equal(seen.length, 1, `${label} : une seconde demande immédiate ne rappelle pas Twitch`);
+  }
+  mod.resetCache(); let streams = 0;
+  globalThis.fetch = async (u) => { const s = String(u); if (s.includes("oauth2")) return { ok: true, status: 200, json: async () => ({ access_token: "t", expires_in: 3600 }) }; streams++; return { ok: false, status: 429, json: async () => ({}) }; };
+  assert.equal((await call("status", ctx())).error, "rate");
+  await call("status", ctx());
+  assert.equal(streams, 1);
+  mod.resetCache(); const t401 = [];
+  globalThis.fetch = async (u) => { const s = String(u); t401.push(s); if (s.includes("oauth2")) return { ok: true, status: 200, json: async () => ({ access_token: "t", expires_in: 3600 }) }; return { ok: false, status: 401, json: async () => ({}) }; };
+  assert.equal((await call("status", ctx())).error, "auth");
+  assert.equal(t401.filter((s) => s.includes("oauth2")).length, 1);
+  assert.deepEqual((await def.exports["stream.live"](ctx())), [], "stream.live reste vide, sans erreur");
+});
+
+test("https : tous les appels vont vers id.twitch.tv / api.twitch.tv en https, le secret n'est jamais dans une adresse ni dans la réponse du service", async () => {
+  const calls = mockTwitch();
+  const r = await call("status", ctx({ clientSecret: "TOP-SECRET" }));
+  await def.exports["maze.poster"](ctx({ clientSecret: "TOP-SECRET" }), {});
+  for (const c of calls) { assert.match(c.u, /^https:\/\/(id|api)\.twitch\.tv\//); assert.ok(!c.u.includes("TOP-SECRET")); }
+  assert.ok(!JSON.stringify(r).includes("TOP-SECRET") && !JSON.stringify(await call("channel", ctx({ clientSecret: "TOP-SECRET" }))).includes("TOP-SECRET"));
+});
+
+// ── Reprise des identifiants d'un autre module ─────────────────────────────────────────────────────────────────────────────────────
+const empty = (extra = {}) => fakeCtx({ key: "tw", settings: extra });
+
+test("status({ legacy }) : les identifiants d'un consommateur ne servent que si l'instance n'a pas les siens", async () => {
+  const calls = mockTwitch();
+  const legacy = { channel: "Ancienne", clientId: "old-id", clientSecret: "old-sec" };
+  const r = await call("status", empty(), { legacy });
+  assert.deepEqual([r.known, r.live, r.channel, r.configured], [true, true, "ancienne", true]);
+  assert.equal(calls.find((c) => c.u.includes("/helix/streams")).init.headers["Client-Id"], "old-id");
+  mod.resetCache(); const calls2 = mockTwitch();
+  await call("status", ctx(), { legacy });
+  assert.equal(calls2.find((c) => c.u.includes("/helix/streams")).init.headers["Client-Id"], "cid", "les siens d'abord");
+  mod.resetCache(); const calls3 = mockTwitch();
+  assert.equal((await call("status", empty(), { legacy: { channel: "ok_chan", clientId: "has space", clientSecret: "x" } })).configured, false);
+  assert.equal(calls3.length, 0);
+});
+
+test("adopt : copie les champs vides une seule fois, n'écrase jamais (réglage ou reprise), idempotent, ne renvoie jamais une valeur", async () => {
+  mockTwitch();
+  const c = empty();
+  const incoming = { channel: "Ma_Chaine", clientId: "old-id", clientSecret: "old-SECRET" };
+  const r1 = await call("adopt", c, incoming);
+  assert.deepEqual(r1, { adopted: ["channel", "clientId", "clientSecret"], ready: true });
+  assert.ok(!JSON.stringify(r1).includes("old-SECRET"));
+  assert.deepEqual(await call("adopt", c, incoming), { adopted: [], ready: true }, "deuxième fois : rien");
+  assert.deepEqual(await call("adopt", c, { channel: "autre_chaine", clientId: "autre", clientSecret: "autre" }), { adopted: [], ready: true }, "jamais d'écrasement d'une reprise");
+  assert.equal(await c.api.store.count("adopted"), 1);
+  assert.deepEqual(await call("channel", c), { channel: "ma_chaine", url: "https://twitch.tv/ma_chaine", configured: true, ready: true, missing: [] });
+  assert.equal((await def.exports["social.link"](c))[0].url, "https://twitch.tv/ma_chaine");
+  // des réglages déjà saisis ne sont pas écrasés
+  const own = empty({ channel: "saisie", clientId: "mon-id" });
+  assert.deepEqual(await call("adopt", own, incoming), { adopted: ["clientSecret"], ready: true }, "chaîne et client id saisis : intacts ; seul le secret manquant est repris");
+  assert.equal((await call("channel", own)).channel, "saisie");
+  // valeurs invalides ignorées
+  assert.deepEqual(await call("adopt", empty(), { channel: "pas valide", clientId: "a b", clientSecret: 42 }), { adopted: [], ready: false });
+  assert.deepEqual(await call("adopt", empty(), null), { adopted: [], ready: false });
+});
+
+test("les réglages saisis ont toujours le dessus sur une reprise, champ par champ", async () => {
+  mockTwitch();
+  const c = empty();
+  await call("adopt", c, { channel: "reprise", clientId: "id-repris", clientSecret: "sec-repris" });
+  const typed = fakeCtx({ key: "tw", settings: { channel: "saisie" } });
+  typed.api.store = c.api.store;
+  assert.equal((await call("channel", typed)).channel, "saisie");
+  assert.equal((await call("channel", typed)).ready, true, "identifiants repris pour le reste");
+});
+
+test("admin : une reprise est signalée sans jamais afficher de valeur ; « oublier » rend la main aux réglages", async () => {
+  const c = empty();
+  assert.deepEqual(await def.adminPanel(c), []);
+  await call("adopt", c, { channel: "ma_chaine", clientId: "old-id", clientSecret: "old-SECRET" });
+  const blocks = await def.adminPanel(c);
+  const dump = JSON.stringify(blocks);
+  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "forgetAdopted"));
+  for (const v of ["ma_chaine", "old-id", "old-SECRET"]) assert.ok(!dump.includes(v), v);
+  assert.ok(Object.keys(def.adminActions).includes("forgetAdopted"));
+  assert.equal((await def.adminActions.forgetAdopted(c)).redirect, "?");
+  assert.deepEqual(await def.adminPanel(c), []);
+  assert.equal((await call("channel", c)).channel, null);
+});
+
+test("locales de la Chaîne Twitch : en et fr alignées, textes de l'admin présents", async () => {
+  const en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8")), fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8"));
+  assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
+  for (const k of ["adoptedNote", "forget", "forgotten"]) assert.ok(k in fr);
+});

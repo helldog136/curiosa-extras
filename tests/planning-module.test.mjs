@@ -508,3 +508,22 @@ test("route de téléchargement : SKILL.md en pièce jointe (GET/HEAD seulement)
   assert.equal((await def.routes.skill(new Request("https://example.test/x", { method: "HEAD" }), ctx)).status, 200);
   for (const method of ["POST", "PUT", "DELETE"]) assert.equal((await def.routes.skill(new Request("https://example.test/x", { method, body: "a" }), ctx)).status, 405, method);
 });
+
+test("carte « prochain stream » : le lien de la chaîne vient d'abord de la Chaîne Twitch (sujet social.link), l'ancien réglage sert de repli", async () => {
+  const fs = await import("node:fs");
+  const m = JSON.parse(fs.readFileSync(new URL("../modules/planning/module.json", import.meta.url), "utf8"));
+  assert.ok(m.consumes.some((c) => c.topic === "social.link"));
+  const ev = vevent("1", hours(2), hours(3), "X");
+  const withTopic = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
+  withTopic.api.topics.collect = async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }, { label: "Twitch · neuf", url: "https://twitch.tv/neuf", icon: "twitch" }];
+  assert.match(await next(withTopic, ev), /href="https:\/\/twitch\.tv\/neuf"/);
+  const noTwitch = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
+  noTwitch.api.topics.collect = async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }];
+  assert.match(await next(noTwitch, ev), /href="https:\/\/twitch\.tv\/ancien"/);
+  const broken = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
+  broken.api.topics.collect = async () => { throw new Error("boom"); };
+  assert.match(await next(broken, ev), /href="https:\/\/twitch\.tv\/ancien"/);
+  const unsafe = ctxWith();
+  unsafe.api.topics.collect = async () => [{ icon: "twitch", url: "javascript:alert(1)" }];
+  assert.ok(!(await next(unsafe, ev)).includes("cpl-btn\""));
+});

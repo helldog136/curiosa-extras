@@ -5,7 +5,7 @@
     "en": "Twitch live status",
     "fr": "Statut live Twitch"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
@@ -29,35 +29,48 @@
   ],
   "permissions": [
     "slots",
-    "sections"
+    "sections",
+    "storage",
+    "admin"
   ],
   "settings": [
     {
       "key": "channel",
       "type": "text",
       "label": {
-        "en": "Twitch channel",
-        "fr": "Chaîne Twitch"
+        "en": "Twitch channel (former setting)",
+        "fr": "Chaîne Twitch (ancien réglage)"
       },
       "help": {
-        "en": "Login name, e.g. mychannel",
-        "fr": "Identifiant, ex. machaine"
-      }
+        "en": "Now set in the Twitch channel module. Only used until its credentials are filled in.",
+        "fr": "Se règle maintenant dans la Chaîne Twitch. Utilisé seulement tant que celle-ci n'a pas ses identifiants."
+      },
+      "advanced": true
     },
     {
       "key": "clientId",
       "type": "text",
       "label": {
-        "en": "Twitch client id (optional, enables the live banner)",
-        "fr": "Client id Twitch (optionnel, active la bannière live)"
+        "en": "Twitch client id (former setting)",
+        "fr": "Client id Twitch (ancien réglage)"
+      },
+      "advanced": true,
+      "help": {
+        "en": "Now set in the Twitch channel module. Only used until its credentials are filled in.",
+        "fr": "Se règle maintenant dans la Chaîne Twitch. Utilisé seulement tant que celle-ci n'a pas ses identifiants."
       }
     },
     {
       "key": "clientSecret",
       "type": "secret",
       "label": {
-        "en": "Twitch client secret",
-        "fr": "Client secret Twitch"
+        "en": "Twitch client secret (former setting)",
+        "fr": "Client secret Twitch (ancien réglage)"
+      },
+      "advanced": true,
+      "help": {
+        "en": "Now set in the Twitch channel module. Never shown.",
+        "fr": "Se règle maintenant dans la Chaîne Twitch. Jamais affiché."
       }
     },
     {
@@ -69,8 +82,8 @@
         "fr": "Quand afficher le lecteur"
       },
       "help": {
-        "en": "“Only when live” needs the client id and secret above (otherwise the player is always shown). Offline, Twitch's player is a big white panel.",
-        "fr": "« Seulement en direct » demande le client id et le secret ci-dessus (sinon le lecteur est toujours affiché). Hors ligne, le lecteur de Twitch est un grand panneau blanc."
+        "en": "“Only when live” needs the Twitch channel module to have its client id and secret: without them the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
+        "fr": "« Seulement en direct » demande que la Chaîne Twitch ait son client id et son secret : sans eux, le lecteur n'est pas affiché (hors ligne, celui de Twitch est un grand panneau blanc). « Toujours » l'affiche quoi qu'il arrive."
       },
       "options": [
         {
@@ -88,6 +101,11 @@
           }
         }
       ]
+    }
+  ],
+  "requires": [
+    {
+      "service": "twitch.live"
     }
   ]
 }
