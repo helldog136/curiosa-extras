@@ -2,7 +2,8 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
 const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
-const { key, mergeState, planMerge, countPlan, reportLine, runMerge, undoMerge, loadLegacy, legacyBackup } = await import(`./merge.mjs${v}`);
+// MIGRATION TEMPORAIRE — à supprimer en 1.5.0 : seul `unmergedFor` (merge.mjs) vient de la fusion.
+const { mergeState, unmergedFor } = await import(`./merge.mjs${v}`);
 
 export default {
   // ── Actions MCP (déclarées dans module.json) ────────────────────────────────────
@@ -32,10 +33,7 @@ export default {
         out.contactsAvailable = true;
         out.contacts = [...links.cards.map(person), ...links.missing.map((id) => ({ id, name: null, role: null, email: null, missing: true }))];
       }
-      // Avant la fusion, les anciens contacts de la fiche ne sont pas encore dans Contacts : on les montre pour ne rien cacher à l'assistant.
-      const state = await mergeState(ctx);
-      const old = state.pending.filter((i) => i.partnerId === p.id);
-      if (old.length) out.unmergedContacts = old.map((i) => ({ name: i.name, role: i.role || null, email: i.email || i.rawEmail || null, phone: i.phone || null }));
+      Object.assign(out, unmergedFor(await mergeState(ctx), p.id)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
       return out;
     },
     async partner_create(ctx, a, actor) {

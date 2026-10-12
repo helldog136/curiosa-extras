@@ -11,6 +11,7 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const data = await import(`./data.mjs${v}`);
 const { all, safeUrl } = data;
+// MIGRATION TEMPORAIRE — à supprimer en 1.5.0
 const merge = await import(`./merge.mjs${v}`);
 const { default: admin } = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
@@ -28,5 +29,5 @@ export default {
   ...admin, // adminPanel, adminActions
   ...tools, // mcp
 
-  backup: { readable: merge.legacyBackup },
+  backup: { readable: merge.legacyBackupIfActive }, // MIGRATION TEMPORAIRE — à supprimer en 1.5.0 (puis : plus de sauvegarde lisible),
 };

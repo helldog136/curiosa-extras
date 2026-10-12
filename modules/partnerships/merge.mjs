@@ -1,3 +1,6 @@
+// MIGRATION TEMPORAIRE — à supprimer en 1.5.0 (ou quand plus aucun site n'a d'anciens contacts).
+// Ce fichier contient TOUTE la fusion de l'ancien carnet (lecture, plan, exécution, annulation, page d'admin, bandeaux, sauvegarde lisible).
+// Pour la retirer : supprimer ce fichier, les lignes marquées « MIGRATION TEMPORAIRE » de admin.mjs, tools.mjs et index.mjs, et les textes merge*/why_*/old*/banner*/pending* des locales.
 // Partenariats — la fusion de l'ancien carnet avec le module Contacts : lecture de l'ancien carnet, plan (aperçu), exécution, annulation.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
@@ -190,4 +193,137 @@ export async function legacyBackup(ctx) {
   const head = ["id", "partner", "name", "role", "organisation", "email", "phone", "relation", "notes", "status"];
   const rows = items.map((i) => [i.id, partners.get(i.partnerId) ?? i.partnerId, i.name, i.role, i.organisation, i.email || i.rawEmail, i.phone, i.relation, i.notes, i.status].map(cell).join(","));
   return [{ path: "legacy-contacts.csv", content: `\uFEFF${[head.map(cell).join(","), ...rows].join("\r\n")}\r\n` }];
+}
+
+// ── Visibilité : rien de lié à la fusion ne s'affiche quand il n'y a aucune fusion à faire ───────────────────────
+export const MERGE_DAYS = 30;
+/** Y a-t-il quelque chose à montrer ? Oui : des anciens contacts pas encore fusionnés, des cas en attente, ou une fusion faite il y a moins de 30 jours (pour pouvoir l'annuler). */
+export function migrationActive(state, now = Date.now()) {
+  if (!state.items.length) return false;
+  if (!state.meta) return true;
+  const at = Date.parse(state.meta.data.at);
+  return state.pending.length > 0 || !Number.isFinite(at) || now - at < MERGE_DAYS * 86_400_000;
+}
+export function mergeNotices(t, state) {
+  if (!state.items.length) return [];
+  if (!state.meta) return [{ type: "markdown", text: `**📇 ${t("bannerTitle")}** ${t("bannerText", { n: state.items.length })} [${t("bannerLink")}](?merge=1)` }];
+  if (state.pending.length) return [{ type: "markdown", text: `**📇 ${t("pendingTitle")}** ${t("pendingText", { n: state.pending.length })} [${t("pendingLink")}](?merge=1)` }];
+  return [];
+}
+export function mergeFooter(t, state) {
+  if (!state.meta || !migrationActive(state)) return [];
+  return [{ type: "markdown", text: `*${t("mergeFooter", { date: String(state.meta.data.at).slice(0, 10) })}* [${t("mergeFooterLink")}](?merge=1)` }];
+}
+/** Anciens contacts d'UNE fiche pas encore repris (lecture seule). */
+export function legacySection(ctx, partner, state) {
+  const t = ctx.t, out = [];
+  const old = state.pending.filter((i) => i.partnerId === partner.id);
+  if (old.length) {
+    out.push({ type: "heading", text: t(state.meta ? "oldPendingTitle" : "oldTitle") });
+    out.push({ type: "markdown", text: t(state.meta ? "oldPendingHelp" : "oldHelp") });
+    out.push({ type: "table", columns: [t("name"), t("role"), t("email"), t("phone")], rows: old.map((i) => [i.name + (i.status === "to_review" ? ` (${t("toReview")})` : ""), i.role, i.email || i.rawEmail, i.phone]) });
+  }
+  return out;
+}
+/** Pour l'assistant MCP : les anciens contacts d'une fiche pas encore repris (vide hors besoin). */
+export function unmergedFor(state, partnerId) {
+  const old = state.pending.filter((i) => i.partnerId === partnerId);
+  return old.length ? { unmergedContacts: old.map((i) => ({ name: i.name, role: i.role || null, email: i.email || i.rawEmail || null, phone: i.phone || null })) } : {};
+}
+/** Sauvegarde lisible : seulement tant que la migration est active (la copie `legacyContacts` reste de toute façon dans la sauvegarde complète). */
+export async function legacyBackupIfActive(ctx) {
+  return migrationActive(await mergeState(ctx)) ? legacyBackup(ctx) : [];
+}
+
+// Actions d'admin de la fusion.
+export const mergeActions = {
+    async mergeRun(ctx) {
+      const r = await runMerge(ctx);
+      if (r.error) return { error: ctx.t(r.error) };
+      return { ok: reportLine(ctx.t, r.report), redirect: "?merge=1" };
+    },
+    async mergeUndo(ctx) {
+      return (await undoMerge(ctx)) ? { ok: ctx.t("mergeUndone"), redirect: "?merge=1" } : { error: ctx.t("notFound") };
+    },
+    // Un contact ambigu : « c'est cette personne » (id de ligne « ancien~contact ») ou « ne pas reprendre ».
+    async mergeResolve(ctx, v) {
+      const [legacyId, contactId] = String(v.id ?? "").split("~");
+      const state = await mergeState(ctx);
+      const item = state.meta && state.pending.find((i) => i.id === legacyId);
+      const partner = item?.partnerId ? await ctx.api.store.get(item.partnerId) : null;
+      if (!item || !idOk(contactId)) return { error: ctx.t("notFound") };
+      const got = await book(ctx, "resolve", { ids: [contactId] });
+      if (!got.ok || !got.contacts.length) return { error: ctx.t(got.unavailable ? "noBookText" : "linkMissing") };
+      const meta = state.meta.data;
+      if (partner && partner.data.brand !== undefined) {
+        const ids = linksOf(partner);
+        if (!ids.includes(contactId)) {
+          if (ids.length >= MAX_LINKS) return { error: ctx.t("linkTooMany") };
+          await setLinks(ctx, partner, [...ids, contactId], "merge");
+          (meta.added[partner.id] ??= []).push(contactId);
+        }
+      }
+      meta.mapping[item.id] = contactId;
+      await ctx.api.store.update(state.meta.id, meta);
+      return { ok: ctx.t("saved"), redirect: "?merge=1" };
+    },
+    async mergeDismiss(ctx, v) {
+      const state = await mergeState(ctx);
+      const item = state.meta && state.pending.find((i) => i.id === String(v.id ?? ""));
+      if (!item) return { error: ctx.t("notFound") };
+      state.meta.data.dismissed.push(item.id);
+      await ctx.api.store.update(state.meta.id, state.meta.data);
+      return { ok: ctx.t("saved"), redirect: "?merge=1" };
+    }
+};
+
+/** Page « Fusionner mes contacts avec le module Contacts » : aperçu exact, confirmation, bilan, cas ambigus, annulation. */
+export async function mergePage(ctx, state, hasBook, brandOf) {
+  const t = ctx.t;
+  const out = [{ type: "markdown", text: `[${t("back")}](?)` }, { type: "heading", text: t("mergeTitle") }];
+  if (!hasBook) return [...out, { type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` }];
+  if (!state.items.length) return [...out, { type: "markdown", text: t("mergeNothing") }];
+  out.push({ type: "markdown", text: t("mergeIntro") });
+
+  let plan = [];
+  try { plan = await planMerge(ctx, state.pending); } catch { return [...out, { type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` }]; }
+  const n = countPlan(plan);
+  if (state.meta?.data.report) {
+    const r = state.meta.data.report;
+    out.push({ type: "markdown", text: `**${t("mergeLast", { date: String(state.meta.data.at).slice(0, 10) })}** ${reportLine(t, r)}` });
+  }
+  if (state.pending.length) {
+    const todo = n.link + n.create + n.same;
+    if (!state.meta || todo) out.push(
+      { type: "heading", text: t("mergePreview") },
+      { type: "table", columns: [t("mergeWhat"), t("mergeCount")], rows: [
+        [t("mergeTotal"), String(n.total)],
+        [t("mergeLink"), String(n.link)],
+        [t("mergeCreate"), String(n.create)],
+        ...(n.same ? [[t("mergeSame"), String(n.same)]] : []),
+        [t("mergeAmbiguous"), String(n.ambiguous)],
+        ...(state.items.length > state.pending.length ? [[t("mergeSettled"), String(state.items.length - state.pending.length)]] : []),
+      ] },
+    );
+    const ambiguous = plan.filter((p) => p.kind === "ambiguous");
+    if (ambiguous.length) {
+      const cells = (p) => [`${p.item.name || "—"}${p.item.email ? `\n${p.item.email}` : ""}`, brandOf(p.item.partnerId) || "—", t(`why_${p.reason}`), p.candidates.map((c) => `${c.name}${c.email ? ` <${c.email}>` : ""}${c.organisation ? ` — ${c.organisation}` : ""}`).join("\n") || "—"];
+      const columns = [t("mergeAmbContact"), t("mergeAmbPartner"), t("mergeAmbWhy"), t("mergeAmbCandidates")];
+      out.push({ type: "heading", text: t("mergeAmbTitle", { n: ambiguous.length }) }, { type: "markdown", text: t(state.meta ? "mergeAmbHelpAfter" : "mergeAmbHelp") });
+      if (state.meta) {
+        const single = ambiguous.filter((p) => p.candidates.length === 1), others = ambiguous.filter((p) => p.candidates.length !== 1);
+        if (single.length) out.push({ type: "table", columns, rows: single.map(cells), rowIds: single.map((p) => `${p.item.id}~${p.candidates[0].id}`), rowActions: [{ label: t("mergeResolve"), action: "mergeResolve" }, { label: t("mergeDismiss"), action: "mergeDismiss", confirm: t("mergeDismissConfirm") }] });
+        if (others.length) out.push({ type: "table", columns, rows: others.map(cells), rowIds: others.map((p) => p.item.id), rowActions: [{ label: t("mergeDismiss"), action: "mergeDismiss", confirm: t("mergeDismissConfirm") }] });
+      } else out.push({ type: "table", columns, rows: ambiguous.map(cells) });
+    }
+    if (todo || !state.meta) out.push({ type: "heading", text: t("mergeRunTitle") }, { type: "markdown", text: t("mergeRunHelp") });
+    out.push(todo || !state.meta
+      ? { type: "table", columns: [t("mergeRunTitle")], rows: [[t("mergeRunSummary", { link: n.link, create: n.create, same: n.same, ambiguous: n.ambiguous })]], rowIds: ["merge"], rowActions: [{ label: t("mergeRunButton"), action: "mergeRun", confirm: t("mergeConfirm", { link: n.link, create: n.create, same: n.same, ambiguous: n.ambiguous }) }] }
+      : { type: "markdown", text: `*${t("mergeNothingToDo")}*` });
+  } else out.push({ type: "markdown", text: `✅ ${t("mergeAllDone")}` });
+  if (state.meta) {
+    out.push({ type: "heading", text: t("mergeUndoTitle") }, { type: "markdown", text: t("mergeUndoHelp") });
+    out.push({ type: "table", columns: [t("mergeUndoTitle")], rows: [[t("mergeUndoRow")]], rowIds: ["undo"], rowActions: [{ label: t("mergeUndoButton"), action: "mergeUndo", confirm: t("mergeUndoConfirm"), danger: true }] });
+  }
+  return out;
 }
