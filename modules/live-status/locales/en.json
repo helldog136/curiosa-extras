@@ -1,3 +1,15 @@
 {
-  "live": "{channel} is live now — come say hi!"
+  "live": "{channel} is live now — come say hi!",
+  "adoptBanner": "Twitch credentials are now set in the Twitch channel module. Take yours over here:",
+  "adoptButton": "Take my credentials over to the Twitch channel",
+  "adoptDone": "Your Twitch credentials were taken over by the Twitch channel, which is now used. You may empty the old fields (advanced settings).",
+  "adoptUnavailable": "The Twitch channel module is not available: install and enable it to take your credentials over.",
+  "adoptNothing": "Nothing to take over: the old fields are empty.",
+  "adoptOk": "Taken over by the Twitch channel: {fields}.",
+  "adoptAlready": "Nothing to take over: the Twitch channel already has its credentials.",
+  "field_channel": "channel",
+  "field_clientId": "client id",
+  "field_clientSecret": "client secret",
+  "needCredentials": "Enter your Twitch credentials in the Twitch channel module to show the player only when you are live. Without them, the player is not shown.",
+  "openTwitch": "Open the Twitch channel →"
 }

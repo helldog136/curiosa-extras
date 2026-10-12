@@ -509,14 +509,27 @@ function placeholderHtml(vis, small = false) {
 
 function badgeHtml(label) { return label ? `<p><span class="cpl-badge">${esc(label)}</span></p>` : ""; }
 
+/**
+ * Le lien de la chaîne Twitch : c'est le bouton Twitch que la Chaîne Twitch fournit déjà (sujet `social.link`) — une donnée, un propriétaire.
+ * Repli : l'ancien réglage « Lien de votre chaîne », pour les sites sans Chaîne Twitch.
+ */
+async function channelLink(ctx) {
+  try {
+    const items = await ctx.api.topics.collect("social.link", { limit: 20 });
+    const twitch = safeHttps(items.find((i) => i.icon === "twitch")?.url);
+    if (twitch) return twitch;
+  } catch { /* sujet indisponible : on retombe sur le réglage */ }
+  return safeHttps(ctx.setting("channelUrl"));
+}
+
 /** La grande carte du prochain stream. `others` : les autres créneaux du même jour. */
-function nextCardHtml(slot, others, ctx, tz, covers, now, vis) {
+function nextCardHtml(slot, others, ctx, tz, covers, now, vis, channelHref) {
   const t = ctx.t;
   const gc = gameCovers(slot, covers).slice(0, 3);
   const games = extractGameNames(slot.description);
   const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(slot.start);
   const hour = slot.allDay ? t("allDay") : fmtTime(slot.start, ctx.locale, tz);
-  const channel = safeHttps(ctx.setting("channelUrl"));
+  const channel = channelHref;
   const imgs = !gc.length ? placeholderHtml(vis) : `<span class="cpl-covers">${gc.map((g) => `<img src="${esc(g.url)}" alt="${esc(t("coverAlt", { game: g.name }))}" loading="lazy" width="120" height="160">`).join("")}</span>`;
   const also = others.length ? `<p class="cpl-also">${esc(t("alsoToday"))} ${others.map((o) => `<time datetime="${esc(isoOf(o, tz))}">${esc(o.allDay ? t("allDay") : fmtTime(o.start, ctx.locale, tz))}</time> ${esc(o.title)}`).join(" · ")}</p>` : "";
   return wrapCards(`<article class="cpl-card">${imgs}<div class="cpl-body">${badgeHtml(relativeLabel(slot, now, tz, t))}` +
@@ -743,7 +756,7 @@ export default {
       const others = slots.slice(1).filter(sameDay).slice(0, 4);
       const { covers } = await coversForSlots(ctx, [s]);
       const vis = gameCovers(s, covers).length ? null : await brandVisual(ctx);
-      return [heading, { type: "html", html: nextCardHtml(s, others, ctx, tz, covers, new Date(), vis) }];
+      return [heading, { type: "html", html: nextCardHtml(s, others, ctx, tz, covers, new Date(), vis, await channelLink(ctx)) }];
     },
 
     // Miniature des X prochains jours : un jour par ligne, les créneaux à la suite.
