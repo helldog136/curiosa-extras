@@ -257,7 +257,7 @@ test("carte « prochain stream » : article encadré, <time> sémantiques, titre
   assert.match(html, /<time class="cpl-hour" datetime="\d{4}-\d\d-\d\dT[\d:.]+Z">\d\d:\d\d<\/time>/);
   assert.match(html, /<h3 class="cpl-title">Cap48h<\/h3>/);
   assert.match(html, /cpl-games">gamesLabel Zelda</);
-  assert.match(html, /cpl-badge">relHours</, "dans 3 h");
+  assert.match(html, /cpl-badge">rel(Hours|Tomorrow)</, "« dans 3 h », ou « demain » quand l'événement passe minuit : le test ne dépend plus de l'heure d'exécution");
   assert.ok(!html.includes("<img"), "sans jaquette : aucune image");
   assert.ok(!html.includes("cpl-btn\""), "sans lien de chaîne : pas de bouton");
 });
