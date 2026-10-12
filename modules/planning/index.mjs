@@ -12,37 +12,9 @@
 
 /* ───────────────────────────── Fuseaux et dates de calendrier ───────────────────────────── */
 
-function tzOffsetMillis(utcMillis, timeZone) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", { timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
-      .formatToParts(new Date(utcMillis))
-      .map((p) => [p.type, p.value]),
-  );
-  const asUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
-  return asUtc - utcMillis;
-}
-
-/** Heure murale dans un fuseau -> instant UTC (deux passes : correct autour d'un changement d'heure). */
-export function zonedTimeToUtc(year, month, day, hour, minute, second, timeZone) {
-  const guess = Date.UTC(year, month - 1, day, hour, minute, second);
-  const pass1 = guess - tzOffsetMillis(guess, timeZone);
-  const pass2 = guess - tzOffsetMillis(pass1, timeZone);
-  return new Date(pass2);
-}
-
-/** Date de calendrier « aujourd'hui » dans un fuseau. */
-export function wallDateNow(timeZone, now = new Date()) {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now).map((p) => [p.type, p.value]));
-  return { y: Number(parts.year), m: Number(parts.month), d: Number(parts.day) };
-}
-
-/** 0 = dimanche … 6 = samedi. */
-export const weekdayOf = (y, m, d) => new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-
-export function addDaysToWall(y, m, d, days) {
-  const next = new Date(Date.UTC(y, m - 1, d) + days * 86_400_000);
-  return { y: next.getUTCFullYear(), m: next.getUTCMonth() + 1, d: next.getUTCDate() };
-}
+const V = new URL(import.meta.url).search; // le cœur recharge index.mjs avec ?v=<version> : les fichiers voisins suivent, sinon une mise à jour à chaud mélangerait anciens et nouveaux fichiers
+const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`./dates.mjs${V}`);
+export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
 
 function addMonthsToWall(y, m, d, months) {
   const total = y * 12 + (m - 1) + months;
@@ -185,7 +157,7 @@ export function parseIcs(text, opts) {
 
   const results = [];
   for (const master of masters) {
-    if (master.status === "CANCELLED") continue;
+    if (master.status === "CANCELLED" && !opts.keepCancelled) continue;
     const start = parseIcsDate(master.dtstart, opts.timeZone);
     if (!start) continue;
     const end = master.dtend ? parseIcsDate(master.dtend, opts.timeZone) : null;
@@ -210,13 +182,13 @@ export function parseIcs(text, opts) {
     for (const occStart of starts) {
       const override = overrideByOriginal.get(occStart.getTime());
       if (override) {
-        if (override.status === "CANCELLED") continue;
+        if (override.status === "CANCELLED") { if (opts.keepCancelled) results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay, cancelled: true }); continue; }
         const oStart = parseIcsDate(override.dtstart, opts.timeZone);
         if (!oStart) continue;
         const oEnd = override.dtend ? parseIcsDate(override.dtend, opts.timeZone) : null;
         results.push({ uid: master.uid, title: override.summary, description: override.description, start: oStart.date, end: oEnd ? oEnd.date : new Date(oStart.date.getTime() + durationMs), allDay: oStart.allDay });
       } else {
-        results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay });
+        results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay, ...(master.status === "CANCELLED" ? { cancelled: true } : {}) });
       }
     }
   }
@@ -225,23 +197,8 @@ export function parseIcs(text, opts) {
 
 /* ───────────────────────────── Planning : noms de jeux, grille de jours ───────────────────────────── */
 
-export const MAX_GAMES_PER_STREAM = 3;
-
-const decodeEntities = (s) => s.replace(/&lt;br\s*\/?&gt;/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-
-/**
- * Convention à écrire dans la description d'un événement : une ligne « Jeu : <nom> » (ou « Game : »), ou plusieurs
- * jeux séparés par une virgule ou « + ». Rien n'est deviné depuis le titre : mieux vaut ne rien afficher qu'un mauvais jeu.
- */
-export function extractGameNames(description) {
-  if (!description) return [];
-  const matches = [...decodeEntities(description).matchAll(/^[ \t]*(?:Jeux?|Games?)\s*:\s*(.+)$/gim)];
-  return matches
-    .flatMap((m) => (m[1] ?? "").split(/,|\s+\+\s+/))
-    .map((n) => n.trim())
-    .filter((n) => n.length >= 2)
-    .slice(0, MAX_GAMES_PER_STREAM);
-}
+const { MAX_GAMES_PER_STREAM, extractGameNames } = await import(`./games.mjs${V}`);
+export { MAX_GAMES_PER_STREAM, extractGameNames };
 
 /** `count` jours consécutifs à partir de `startWall`, chacun avec ses créneaux (début dans la journée, dans le fuseau). */
 export function buildDays(startWall, count, events, timeZone) {
@@ -369,7 +326,7 @@ export async function fetchIcs(url, fetchImpl = fetch) {
 }
 export const clearIcsCache = () => cache.clear();
 
-async function loadSlots(ctx, days) {
+async function loadSlots(ctx, days, { cancelled = false } = {}) {
   const url = String(ctx.setting("icsUrl") ?? "").trim();
   if (!url || !isPublicHttpsUrl(url)) return { configured: !!url, ok: false, slots: [] };
   const timeZone = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
@@ -377,7 +334,7 @@ async function loadSlots(ctx, days) {
   if (text === null) return { configured: true, ok: false, slots: [], timeZone };
   const now = Date.now();
   const windowEnd = new Date(now + days * 86_400_000);
-  const slots = parseIcs(text, { timeZone, windowEnd }).filter((e) => e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
+  const slots = parseIcs(text, { timeZone, windowEnd, keepCancelled: cancelled }).filter((e) => e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
   return { configured: true, ok: true, slots, timeZone };
 }
 
@@ -461,24 +418,9 @@ const CARD_CSS = `
 @container (min-width:30rem){.cpl-card{gap:1.5rem;padding:1.5rem 1.5rem 1.25rem}.cpl-covers img,.cpl-ph:not(.cpl-ph-s){width:7.5rem}.cpl-ph:not(.cpl-ph-s){font-size:3rem}.cpl-covers img+img{margin-left:-3.5rem}.cpl-title{font-size:1.5rem}.cpl-hour{font-size:2.25rem}.cpl-row{padding:.85rem 1.25rem}.cpl-foot{padding:.75rem 1.25rem}}
 `.replace(/\n/g, "");
 
-const wallDay = (w) => Date.UTC(w.y, w.m - 1, w.d);
-
-/** « En cours » · « Dans 40 min » · « Dans 3 h » · « Aujourd'hui » · « Demain » · « Dans 4 jours » ; rien au-delà d'une semaine. */
-export function relativeLabel(slot, now, tz, t) {
-  if (!slot.allDay && slot.start.getTime() <= now.getTime() && slot.end.getTime() >= now.getTime()) return t("relLive");
-  if (slot.allDay && slot.start.getTime() <= now.getTime() && slot.end.getTime() > now.getTime()) return t("relToday");
-  const diff = Math.round((wallDay(wallDateNow(tz, slot.start)) - wallDay(wallDateNow(tz, now))) / 86_400_000);
-  if (diff < 0) return null;
-  if (diff === 0) {
-    if (slot.allDay) return t("relToday");
-    const mins = Math.max(1, Math.ceil((slot.start.getTime() - now.getTime()) / 60_000));
-    if (mins < 60) return t("relMinutes", { n: mins });
-    const hours = Math.floor(mins / 60);
-    return hours < 6 ? t("relHours", { n: hours }) : t("relToday");
-  }
-  if (diff === 1) return t("relTomorrow");
-  return diff <= 6 ? t("relDays", { n: diff }) : null;
-}
+const { relativeLabel } = await import(`./relative.mjs${V}`);
+const { appearanceBlocks, wantsCancelled, previewBlocks, densify } = await import(`./appearances/entry.mjs${V}`);   // apparences au choix : voir appearances/
+export { relativeLabel };
 
 const isoOf = (slot, tz) => { if (!slot.allDay) return slot.start.toISOString(); const w = wallDateNow(tz, slot.start); return `${w.y}-${String(w.m).padStart(2, "0")}-${String(w.d).padStart(2, "0")}`; };
 const gameCovers = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((name) => ({ name, url: covers.get(name) })).filter((g) => g.url));
@@ -722,7 +664,7 @@ export default {
 
   async page(ctx) {
     const days = clampDays(ctx.setting("days"));
-    const { configured, ok, slots, timeZone } = await loadSlots(ctx, days);
+    const { configured, ok, slots, timeZone } = await loadSlots(ctx, days, { cancelled: wantsCancelled(ctx) });
     const tz = timeZone ?? "UTC";
     const blocks = [];
     if (!configured || !ok) {
@@ -730,6 +672,8 @@ export default {
       return { title: ctx.t("title"), blocks };
     }
     blocks.push({ type: "markdown", text: ctx.t("intro", { days, tz }) });
+    const custom = await appearanceBlocks(ctx, "page", { slots, tz, days, covers: async () => (await coversForSlots(ctx, slots)).covers, brand: () => brandVisual(ctx) });
+    if (custom) return { title: ctx.t("title"), blocks: [...blocks, ...custom] };   // apparence choisie par le propriétaire ; sinon le rendu d'origine ci-dessous
     const { covers } = await coversForSlots(ctx, slots);
     let vis;   // logo du site : chargé seulement si un jour mêle streams avec et sans jaquette
     for (const day of buildDays(wallDateNow(tz), days, slots, tz)) {
@@ -756,7 +700,7 @@ export default {
       const others = slots.slice(1).filter(sameDay).slice(0, 4);
       const { covers } = await coversForSlots(ctx, [s]);
       const vis = gameCovers(s, covers).length ? null : await brandVisual(ctx);
-      return [heading, { type: "html", html: nextCardHtml(s, others, ctx, tz, covers, new Date(), vis, await channelLink(ctx)) }];
+      return [heading, { type: "html", html: densify(ctx, nextCardHtml(s, others, ctx, tz, covers, new Date(), vis, await channelLink(ctx))) }];
     },
 
     // Miniature des X prochains jours : un jour par ligne, les créneaux à la suite.
@@ -777,6 +721,8 @@ export default {
       const { ok, slots, timeZone } = await loadSlots(ctx, 30);
       if (!ok) return null;
       const heading = { type: "heading", text: ctx.t("nextTitle") };
+      const custom = await appearanceBlocks(ctx, "upcoming", { slots, tz: timeZone ?? "UTC", count, override: options.appearance, covers: async () => (await coversForSlots(ctx, slots.slice(0, count))).covers, brand: () => brandVisual(ctx) });
+      if (custom) return [heading, ...custom];
       if (slots.length === 0) return [heading, { type: "html", html: emptyCardHtml(ctx) }];
       const tz = timeZone ?? "UTC";
       const shown = slots.slice(0, count);
@@ -796,7 +742,7 @@ export default {
   async adminPanel(ctx) {
     const blocks = await adminStatusBlocks(ctx);
     const tz = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-    return [...blocks, { type: "html", html: tutorialHtml(ctx, tz) }];
+    return [...blocks, ...(await previewBlocks(ctx, tz)), { type: "html", html: tutorialHtml(ctx, tz) }];
   },
 
   adminActions: {
