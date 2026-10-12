@@ -5,10 +5,10 @@
     "en": "Contacts",
     "fr": "Contacts"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": {
-    "en": "Your private address book: people, organisations, notes.",
-    "fr": "Votre carnet d'adresses privé : personnes, organisations, notes."
+    "en": "Your private address book: people, organisations, notes. Each person lives here once; the rest of the site only links to them.",
+    "fr": "Votre carnet d'adresses privé : personnes, organisations, notes. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -24,6 +24,18 @@
         "en": "Contacts (address book)",
         "fr": "Contacts (carnet d'adresses)"
       }
+    },
+    {
+      "service": "contact.book",
+      "label": {
+        "en": "Contacts (read, search, create, correct, annotate)",
+        "fr": "Contacts (lire, chercher, créer, corriger, annoter)"
+      },
+      "readOnly": [
+        "get",
+        "find",
+        "resolve"
+      ]
     }
   ],
   "permissions": [
@@ -35,7 +47,7 @@
     {
       "name": "contacts_list",
       "readOnly": true,
-      "description": "List contacts, newest first. Contacts created by the website form start as 'to_review': research the person or organisation, complete the card, then mark it 'active' (or delete it if it is spam).",
+      "description": "List people in THE address book (every person of the site lives here once: form messages, partners' contacts, manual entries). Use it to look someone up by name, organisation or email before creating a contact; the partnership files only link to these people (partner_get (Partnerships module) shows who is linked to a brand). Contacts created by the website form start as 'to_review': research the person, complete the card, then mark it 'active' (or delete it if it is spam).",
       "input": {
         "type": "object",
         "properties": {
@@ -61,7 +73,7 @@
     {
       "name": "contact_get",
       "readOnly": true,
-      "description": "Read one contact with its notes.",
+      "description": "Read one person of the address book with all their notes. Use it for the details behind a contact id, including the ones linked to a partnership file (partner_get (Partnerships module) only gives name, role and email).",
       "input": {
         "type": "object",
         "properties": {
@@ -76,7 +88,7 @@
     },
     {
       "name": "contact_create",
-      "description": "Create a contact (status 'active', source 'agent').",
+      "description": "Create a NEW person in the address book (status 'active', source 'agent'). Always search with contacts_list first: this is the only place where people are created, never duplicate someone. To attach a person to a brand, create it here, then call partner_link_contact (Partnerships module).",
       "input": {
         "type": "object",
         "properties": {
@@ -106,11 +118,12 @@
         "required": [
           "name"
         ]
-      }
+      },
+      "default": true
     },
     {
       "name": "contact_update",
-      "description": "Update fields of a contact (only the given fields change). Set status to 'active' once verified.",
+      "description": "Change fields of a person already in the address book (only the given fields change); set status to 'active' once verified. For the brand a person belongs to, do not write it here: use partner_link_contact (Partnerships module) / partner_unlink_contact.",
       "input": {
         "type": "object",
         "properties": {
@@ -153,7 +166,7 @@
     },
     {
       "name": "contact_note",
-      "description": "Add a dated note to a contact.",
+      "description": "Add a dated note to a person of the address book (exchange, preference, what you learned). Notes about a brand's negotiation go to the partnership journal instead (partner_log (Partnerships module)).",
       "input": {
         "type": "object",
         "properties": {
@@ -168,13 +181,14 @@
           "id",
           "text"
         ]
-      }
+      },
+      "default": true
     },
     {
       "name": "contact_delete",
       "destructive": true,
       "default": false,
-      "description": "Delete a contact and its notes (spam, duplicates). Disabled unless an administrator grants it to the token.",
+      "description": "Permanently delete a person and their notes from the address book (spam, true duplicates). Irreversible, and brands that link to this person lose the link. Disabled unless an administrator grants it to the token.",
       "input": {
         "type": "object",
         "properties": {
