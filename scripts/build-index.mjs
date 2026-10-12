@@ -13,12 +13,14 @@ const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf
 const ref = process.env.REF ?? `v${version}`;
 if (!/^(v\d+\.\d+\.\d+|[0-9a-f]{7,40})$/.test(ref)) { console.error(`Référence « ${ref} » refusée : une étiquette vX.Y.Z ou un commit, jamais une branche.`); process.exit(1); }
 const pick = (v) => (typeof v === "string" ? v : v?.fr ?? v?.en ?? Object.values(v ?? {})[0] ?? "");
+// Services offerts / requis : le cœur choisit et annonce un fournisseur AVANT de télécharger le module (« installe aussi… »). Clé `needs` pour ne pas
+// la confondre avec `requires: { core }` (version minimale du cœur). Le manifeste du module fait toujours foi à l'installation.
+const services = (list, field) => (Array.isArray(list) ? list.map((x) => (typeof x === "string" ? { service: x } : x)).filter((x) => x?.service).map((x) => (Number.isInteger(x[field]) && x[field] > 1 ? { service: x.service, [field]: x[field] } : x.service)) : []);
 const modules = [];
 for (const group of ["modules", "examples"]) {
   for (const id of fs.readdirSync(path.join(root, group)).sort()) {
     const m = JSON.parse(fs.readFileSync(path.join(root, group, id, "module.json"), "utf8"));
-    if (m.content) continue; // les modules « à contenu » de base sont proposés par l'assistant de départ, pas par le Catalogue
-    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}) });
+    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}) });
   }
 }
 const out = JSON.stringify({ version: 1, modules }, null, 2) + "\n";
