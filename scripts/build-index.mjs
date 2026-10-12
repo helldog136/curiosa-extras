@@ -15,7 +15,10 @@ if (!/^(v\d+\.\d+\.\d+|[0-9a-f]{7,40})$/.test(ref)) { console.error(`Référence
 const pick = (v) => (typeof v === "string" ? v : v?.fr ?? v?.en ?? Object.values(v ?? {})[0] ?? "");
 // Services offerts / requis : le cœur choisit et annonce un fournisseur AVANT de télécharger le module (« installe aussi… »). Clé `needs` pour ne pas
 // la confondre avec `requires: { core }` (version minimale du cœur). Le manifeste du module fait toujours foi à l'installation.
-const services = (list, field) => (Array.isArray(list) ? list.map((x) => (typeof x === "string" ? { service: x } : x)).filter((x) => x?.service).map((x) => (Number.isInteger(x[field]) && x[field] > 1 ? { service: x.service, [field]: x[field] } : x.service)) : []);
+const services = (list, field) => (Array.isArray(list) ? list.map((x) => (typeof x === "string" ? { service: x } : x)).filter((x) => x?.service).map((x) => {
+  const o = { service: x.service, ...(Number.isInteger(x[field]) && x[field] > 1 ? { [field]: x[field] } : {}), ...(field === "version" && x.each === true ? { each: true } : {}) };   // `each` : chaque instance répond pour elle-même (offres seulement)
+  return Object.keys(o).length === 1 ? o.service : o;
+}) : []);
 const modules = [];
 for (const group of ["modules", "examples"]) {
   for (const id of fs.readdirSync(path.join(root, group)).sort()) {

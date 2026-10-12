@@ -1,11 +1,12 @@
 {
   "apiVersion": 2,
+  "minCore": "0.1.14",
   "id": "twitch-channel",
   "name": {
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status and latest clips.",
@@ -28,7 +29,8 @@
       "readOnly": [
         "channel",
         "status"
-      ]
+      ],
+      "each": true
     }
   ],
   "provides": [
@@ -90,6 +92,19 @@
       "label": {
         "en": "Twitch client secret",
         "fr": "Client secret Twitch"
+      }
+    },
+    {
+      "key": "useCredentialsOf",
+      "type": "text",
+      "advanced": true,
+      "label": {
+        "en": "Use the credentials of another channel (optional)",
+        "fr": "Utiliser les identifiants d'une autre chaîne (facultatif)"
+      },
+      "help": {
+        "en": "Same Twitch application for several channels? Type here the channel (login) of another Twitch channel instance that already has its client id and secret: they are reused, only where empty here, without being shown. What you type in this instance always wins.",
+        "fr": "Même application Twitch pour plusieurs chaînes ? Saisissez ici la chaîne (identifiant) d'une autre Chaîne Twitch qui a déjà son client id et son secret : ils sont repris, seulement là où ils sont vides ici, sans jamais être affichés. Ce que vous saisissez dans cette instance prévaut toujours."
       }
     }
   ]

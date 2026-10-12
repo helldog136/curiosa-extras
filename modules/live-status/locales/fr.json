@@ -11,5 +11,10 @@
   "field_clientId": "client id",
   "field_clientSecret": "client secret",
   "needCredentials": "Renseignez les identifiants Twitch dans la Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans eux, le lecteur n'est pas affiché.",
-  "openTwitch": "Ouvrir la Chaîne Twitch →"
+  "openTwitch": "Ouvrir la Chaîne Twitch →",
+  "liveMany": "Chaînes en direct",
+  "watch": "Regarder",
+  "viewersOne": "{count} spectateur",
+  "viewersMany": "{count} spectateurs",
+  "playerChoice": "Choisir la chaîne à regarder"
 }
