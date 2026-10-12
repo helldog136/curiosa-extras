@@ -10,24 +10,34 @@ const { setModuleEnabled, uninstallModule } = await import("@/core/modules/insta
 const R = await import("@/core/modules/registry");
 const Dep = await import("@/core/modules/dependencies");
 const { createInstance } = await import("@/core/instanceService");
-const { provisionBundled } = await import("@/core/modules/starter");
+const fs = await import("node:fs");
+const { fileURLToPath } = await import("node:url");
+const repoModules = (id) => fileURLToPath(new URL(`../modules/${id}`, import.meta.url));
 const cfModule = await loadModule("modules/contact-form");
 const cf = { manifest: cfModule.manifest, definition: cfModule.definition };
 
 beforeEach(() => db.reset());
 after(() => db.close());
 
-test("formulaire de contact → carnet : activer le formulaire installe et active le module Contacts livré ; un message devient un contact à vérifier", async () => {
-  assert.equal(await provisionBundled("contact-form"), true, "copié depuis l'instantané extras/ de Curiosa");
-  await db.prisma.module.update({ where: { id: "contact-form" }, data: { enabled: false } });
+// Installe un module depuis ce dépôt, sans réseau : ses fichiers sont copiés où le cœur les cherche, et sa ligne enregistrée
+// (la cascade d'installation du fournisseur depuis le catalogue est testée par le cœur lui-même).
+async function installFromRepo(id, enabled) {
+  const dest = R.moduleDir(id);
+  fs.rmSync(dest, { recursive: true, force: true });
+  fs.cpSync(repoModules(id), dest, { recursive: true });
+  const { version } = JSON.parse(fs.readFileSync(`${repoModules(id)}/module.json`, "utf8"));
+  await db.prisma.module.create({ data: { id, source: "git", version, enabled } });
+  R.forgetModule?.(id);
+}
+
+test("formulaire de contact → carnet : le formulaire dépend du carnet (Contacts) ; un message devient un contact à vérifier", async () => {
+  await installFromRepo("contact-form", false);
+  await installFromRepo("contacts", true);
   const row = await db.prisma.module.findUnique({ where: { id: "contact-form" } });
-  assert.equal(row.enabled, false, "désactivé au départ : il a besoin du carnet");
-  assert.equal(await db.prisma.module.findUnique({ where: { id: "contacts" } }), null);
+  assert.equal(row.enabled, false, "désactivé au départ");
 
   const on = await setModuleEnabled("contact-form", true);
   assert.equal(on.ok, true, JSON.stringify(on));
-  const book = await db.prisma.module.findUnique({ where: { id: "contacts" } });
-  assert.deepEqual([book.source, book.enabled], ["bundled", true], "fournisseur livré installé et activé d'office");
 
   await createInstance(db.prisma, { manifest: (await R.getModule("contacts")).manifest, nickname: "carnet", names: { fr: "Carnet" } });
   const form = await createInstance(db.prisma, { manifest: cf.manifest, nickname: "contact", names: { fr: "Contact" } });
