@@ -13,40 +13,64 @@ export function legacyOf(ctx) {
 }
 export const hasLegacy = (l) => !!(l.channel || l.clientId || l.clientSecret);
 
-/** Ce que sait la Chaîne Twitch (sans appel réseau) : { channel, ready, missing… } ou null si le service est absent. */
+/** Ce que sait la première Chaîne Twitch (celle où va la reprise des identifiants) : { channel, ready, missing… } ou null si le service est absent. */
 export async function providerInfo(ctx) {
   const r = await ctx.api.services.call(SERVICE, "channel", {});
   return r.ok && r.value && typeof r.value === "object" ? r.value : null;
 }
 
-/**
- * La chaîne à présenter et, si demandé, son état :
- *   { channel, live, known, configured, status }
- *   `channel` : la chaîne (null si on n'en connaît aucune) ; `status` : la réponse du service ou null ;
- *   `configured` : Twitch peut dire si la chaîne est en direct (sinon on ne sait pas : voir le lecteur) ;
- *   `live` : en direct (false si on ne sait pas). Ne lève jamais.
- */
-export async function liveSource(ctx, { status = true } = {}) {
-  const legacy = legacyOf(ctx);
-  const info = await providerInfo(ctx);
-  const channel = info?.channel || legacy.channel || null;
-  const legacyReady = !!(legacy.channel && legacy.clientId && legacy.clientSecret);
-  const none = { channel, live: false, known: false, configured: !!info?.ready || legacyReady, status: null };
-  if (!channel || !status) return none;
-  let args = null;
-  if (info?.ready) args = {};
-  else if (legacyReady && info) args = { legacy };   // mode hérité : le service fait l'appel avec nos anciens réglages
-  if (!args) return { ...none, configured: false };
-  const r = await ctx.api.services.call(SERVICE, "status", args);
-  if (!r.ok || !r.value || typeof r.value !== "object") return none;
-  const s = r.value;
-  return { channel: s.channel || channel, live: s.live === true, known: s.known === true, configured: s.configured === true, status: s };
+/** Interroge TOUTES les instances du service (cœur 0.1.14+), sinon (vieux cœur : pas de `callAll`) l'unique réponse de `call`. → [{ instance, name, value }] des réponses valides. */
+async function askAll(ctx, method, args) {
+  const svc = ctx.api.services;
+  if (typeof svc.callAll === "function") {
+    try {
+      return (await svc.callAll(SERVICE, method, args)).filter((r) => r.ok && r.value && typeof r.value === "object").map((r) => ({ instance: r.instance, name: r.name, value: r.value }));
+    } catch { return []; }
+  }
+  const r = await svc.call(SERVICE, method, args);
+  return r.ok && r.value && typeof r.value === "object" ? [{ instance: "", name: undefined, value: r.value }] : [];
 }
 
-/** Peut-on savoir si la chaîne est en direct ? Oui si la Chaîne Twitch a ses identifiants, ou si les anciens réglages de ce module sont complets (mode hérité). */
+/** Réglage facultatif « Chaînes à annoncer » : liste de chaînes séparées par des virgules ou espaces ; vide = toutes. */
+const onlyOf = (ctx) => new Set(text(ctx.setting("channels")).toLowerCase().split(/[\s,;]+/).filter((c) => CHANNEL_RE.test(c)));
+const shortName = (v, channel) => (typeof v === "string" && v.trim().toLowerCase() === channel ? v.trim() : channel);
+
+/**
+ * LES chaînes à présenter, dans l'ordre de création des instances de la Chaîne Twitch :
+ *   [{ channel, name, live, known, configured, status }]   (`name` : nom d'affichage sûr ; `status` : la réponse du service ou null)
+ * Sans `status`, aucun appel d'état (juste les chaînes connues). Chaîne Twitch absente : la chaîne de l'ancien réglage, s'il y en a une. Ne lève jamais.
+ */
+export async function liveSources(ctx, { status = true } = {}) {
+  const legacy = legacyOf(ctx);
+  const legacyReady = !!(legacy.channel && legacy.clientId && legacy.clientSecret);
+  const infos = await askAll(ctx, "channel", {});
+  let list;
+  if (!infos.length) {
+    list = legacy.channel ? [{ channel: legacy.channel, configured: legacyReady, live: false, known: false, status: null }] : [];
+  } else {
+    list = infos.map((i) => ({ instance: i.instance, channel: i.value.channel || (infos.length === 1 ? legacy.channel : "") || "", ready: !!i.value.ready, configured: !!i.value.ready || (infos.length === 1 && legacyReady), live: false, known: false, status: null }));
+    const anyReady = list.some((x) => x.ready);
+    if (status && (anyReady || legacyReady)) {
+      // Au moins une chaîne a ses identifiants : chacune répond pour elle-même. Sinon (mode hérité) un seul appel, avec les anciens réglages.
+      let answers;
+      if (anyReady) answers = await askAll(ctx, "status", {});
+      else { const r = await ctx.api.services.call(SERVICE, "status", { legacy }); answers = r.ok && r.value && typeof r.value === "object" ? [{ instance: infos[0].instance, value: r.value }] : []; }
+      list.forEach((x, n) => {
+        const s = (anyReady && infos.length > 1 && answers.find((a) => a.instance === x.instance)?.value) || (anyReady && infos.length === 1 ? answers[0]?.value : null) || (!anyReady && n === 0 ? answers[0]?.value : null);
+        if (!s) return;
+        Object.assign(x, { channel: s.channel || x.channel, live: s.live === true, known: s.known === true, configured: s.configured === true, status: s });
+      });
+    }
+  }
+  const only = onlyOf(ctx);
+  return list.filter((x) => CHANNEL_RE.test(x.channel ?? "") && (!only.size || only.has(x.channel.toLowerCase())))
+    .map((x) => ({ channel: x.channel, name: shortName(x.status?.displayName, x.channel.toLowerCase()), live: x.live, known: x.known, configured: x.configured, status: x.status }));
+}
+
+/** Peut-on savoir si une chaîne est en direct ? Oui si une Chaîne Twitch a ses identifiants, ou si les anciens réglages de ce module sont complets (mode hérité). null : Chaîne Twitch absente. */
 export async function canTellLive(ctx) {
   const l = legacyOf(ctx);
-  const info = await providerInfo(ctx);
-  if (!info) return null;   // Chaîne Twitch absente : un autre message s'en occupe
-  return !!(info.ready || (l.channel && l.clientId && l.clientSecret));
+  const infos = await askAll(ctx, "channel", {});
+  if (!infos.length) return null;   // Chaîne Twitch absente : un autre message s'en occupe
+  return !!(infos.some((i) => i.value.ready) || (l.channel && l.clientId && l.clientSecret));
 }

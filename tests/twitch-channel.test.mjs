@@ -259,3 +259,96 @@ test("locales de la Chaîne Twitch : en et fr alignées, textes de l'admin prés
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
   for (const k of ["adoptedNote", "forget", "forgotten"]) assert.ok(k in fr);
 });
+
+// ── Plusieurs chaînes : chaque instance répond pour la sienne (service « each »), identifiants partageables ────────────────────────────
+const inst = (key, settings = {}) => fakeCtx({ key, settings });
+const typed = (key, channel) => inst(key, { channel, clientId: "cid", clientSecret: "SEC-RET" });
+
+test("manifeste : l'offre twitch.live est « each », minCore 0.1.14, version 1.2.0, réglage facultatif des identifiants d'une autre chaîne", () => {
+  const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
+  assert.deepEqual(manifestJson.offers[0], { ...manifestJson.offers[0], service: "twitch.live", each: true });
+  assert.equal(manifestJson.minCore, "0.1.14");
+  assert.equal(manifestJson.version, "1.2.0");
+  const s = manifestJson.settings.find((x) => x.key === "useCredentialsOf");
+  assert.ok(s && s.type === "text" && s.advanced);
+});
+
+test("chaque instance répond pour SA chaîne : status() et channel() sans argument, aucun « maître », jeton unique pour les mêmes identifiants (même simultanés)", async () => {
+  const calls = mockTwitch();
+  const a = typed("a", "helldog136"), b = typed("b", "rascane");
+  const [ra, rb] = await Promise.all([call("status", a), call("status", b)]);
+  assert.deepEqual([ra.channel, rb.channel], ["helldog136", "rascane"]);
+  assert.deepEqual([(await call("channel", a)).channel, (await call("channel", b)).channel], ["helldog136", "rascane"]);
+  assert.equal(countOf(calls, "oauth2/token"), 1, "un seul jeton");
+  assert.equal(countOf(calls, "/helix/streams"), 2, "une requête par chaîne");
+  assert.ok(!source.includes("master") && !source.includes("maître") || !/ctx\.api\.services/.test(source), "aucun appel de service vers une autre instance");
+});
+
+test("status() : nom d'affichage de la chaîne quand Twitch le donne (texte court), sinon absent", async () => {
+  globalThis.fetch = async (u) => ({ ok: true, status: 200, json: async () => (String(u).includes("oauth2") ? { access_token: "t" } : { data: [{ id: "1", title: "t", user_name: "Helldog136" }] }) });
+  assert.equal((await call("status", typed("a", "helldog136"))).displayName, "Helldog136");
+  mod.resetCache();
+  globalThis.fetch = async (u) => ({ ok: true, status: 200, json: async () => (String(u).includes("oauth2") ? { access_token: "t" } : { data: [{ id: "1", title: "t", user_name: "x".repeat(80) }] }) });
+  assert.equal("displayName" in (await call("status", typed("a", "helldog136"))), false);
+});
+
+test("identifiants partagés : une chaîne sans client id/secret reprend ceux de l'autre chaîne (champ par champ), un seul jeton, secret jamais exposé", async () => {
+  const calls = mockTwitch();
+  const donor = typed("a", "helldog136");
+  const friend = inst("b", { channel: "rascane", useCredentialsOf: "Helldog136" });
+  assert.equal((await call("channel", friend)).ready, false, "tant que la chaîne donneuse n'a pas été lue (ordre de lecture) : pas prête");
+  await call("channel", donor);
+  const info = await call("channel", friend);
+  assert.deepEqual(info, { channel: "rascane", url: "https://twitch.tv/rascane", configured: true, ready: true, missing: [] });
+  const r = await call("status", friend);
+  assert.deepEqual([r.channel, r.known], ["rascane", true]);
+  await call("status", donor);
+  assert.equal(countOf(calls, "oauth2/token"), 1);
+  const dump = JSON.stringify([info, r, await def.adminPanel(friend), await def.adminPanel(donor)]);
+  assert.ok(!dump.includes("SEC-RET") && !dump.includes("cid"), "secret et client id jamais exposés");
+  for (const c of calls) assert.ok(!c.u.includes("SEC-RET"));
+});
+
+test("identifiants partagés : ce qui est saisi dans l'instance prévaut champ par champ ; la copie gardée survit à un redémarrage ; « oublier » rend la main", async () => {
+  mockTwitch();
+  const donor = typed("a", "helldog136");
+  await call("channel", donor);
+  const own = inst("b", { channel: "rascane", clientId: "mon-id", useCredentialsOf: "helldog136" });
+  const calls = mockTwitch();
+  await call("status", own);
+  const h = calls.find((c) => c.u.includes("/helix/streams")).init.headers;
+  assert.equal(h["Client-Id"], "mon-id", "client id saisi gardé");
+  assert.equal(await own.api.store.count("borrowed"), 1);
+  // « redémarrage » : la mémoire est vide, la copie gardée sert
+  mod.resetCache();
+  assert.equal((await call("channel", own)).ready, true);
+  assert.match((await def.adminPanel(own))[0].text, /share_copy|helldog136/);
+  // la chaîne donneuse change son secret : la copie est mise à jour dès qu'elle est relue
+  await call("channel", inst("a", { channel: "helldog136", clientId: "cid", clientSecret: "NOUVEAU" }));
+  await call("channel", own);
+  assert.equal((await own.api.store.list("borrowed"))[0].data.clientSecret, "NOUVEAU");
+  await def.adminActions.forgetAdopted(own);
+  assert.equal(await own.api.store.count("borrowed"), 0);
+});
+
+test("identifiants partagés : chaîne inconnue ou identique à la sienne → rien n'est inventé, avertissement dans l'admin", async () => {
+  const none = inst("b", { channel: "rascane", useCredentialsOf: "introuvable" });
+  assert.equal((await call("channel", none)).ready, false);
+  assert.equal((await def.adminPanel(none))[0].tone, "warning");
+  const self = inst("c", { channel: "rascane", useCredentialsOf: "rascane" });
+  assert.equal((await def.adminPanel(self))[0].tone, "warning");
+  assert.equal((await call("channel", inst("d", { channel: "rascane", useCredentialsOf: "pas valide!" }))).ready, false);
+});
+
+test("reprise (adopt) avec plusieurs instances : elle ne remplit que les champs vides de l'instance appelée et n'écrase pas une chaîne déjà réglée", async () => {
+  mockTwitch();
+  const first = inst("a"), second = typed("b", "rascane");
+  await call("adopt", first, { channel: "Ancienne", clientId: "o", clientSecret: "p" });
+  assert.equal((await call("channel", first)).channel, "ancienne");
+  assert.deepEqual(await call("adopt", second, { channel: "Ancienne", clientId: "o", clientSecret: "p" }), { adopted: [], ready: true });
+  assert.equal((await call("channel", second)).channel, "rascane");
+});
+
+test("locales : textes du partage d'identifiants présents en fr et en", () => {
+  for (const l of ["fr", "en"]) { const j = JSON.parse(fs.readFileSync(`${DIR}/locales/${l}.json`, "utf8")); for (const k of ["share_live", "share_copy", "share_none", "share_self"]) assert.ok(j[k], `${l}.${k}`); }
+});

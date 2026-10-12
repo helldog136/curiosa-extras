@@ -11,5 +11,10 @@
   "field_clientId": "client id",
   "field_clientSecret": "client secret",
   "needCredentials": "Enter your Twitch credentials in the Twitch channel module to show the player only when you are live. Without them, the player is not shown.",
-  "openTwitch": "Open the Twitch channel →"
+  "openTwitch": "Open the Twitch channel →",
+  "liveMany": "Channels live now",
+  "watch": "Watch",
+  "viewersOne": "{count} viewer",
+  "viewersMany": "{count} viewers",
+  "playerChoice": "Choose the channel to watch"
 }

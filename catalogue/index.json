@@ -263,15 +263,18 @@
     {
       "id": "live-status",
       "name": "Statut live Twitch",
-      "description": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct.",
+      "description": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct, quelle que soit la chaîne.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
       "ref": "v1.3.2",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔴",
+      "requires": {
+        "core": "0.1.14"
+      },
       "needs": [
         "twitch.live"
       ]
@@ -573,7 +576,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.3.2",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -583,8 +586,14 @@
         "stream.live",
         "maze.poster"
       ],
+      "requires": {
+        "core": "0.1.14"
+      },
       "offers": [
-        "twitch.live"
+        {
+          "service": "twitch.live",
+          "each": true
+        }
       ]
     },
     {

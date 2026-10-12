@@ -15,10 +15,18 @@ export const valid = (c) => LOGIN.test(c.channel) && hasCredentials(c);
 const tokenKey = (c) => `${c.clientId}|${c.secret}`;
 const headers = (c, t) => ({ "Client-Id": c.clientId, Authorization: `Bearer ${t}` });
 
-/** Jeton d'application. Renvoie { token } ou { error: "auth" | "rate" | "network" }. */
+/** Jeton d'application. Renvoie { token } ou { error: "auth" | "rate" | "network" }. Deux chaînes aux mêmes identifiants, demandées en même temps, partagent la même demande. */
 async function token(c) {
   const known = state.tokens.get(tokenKey(c));
   if (known && known.expiresAt > Date.now()) return { token: known.value };
+  const k = `token|${tokenKey(c)}`;
+  const pending = state.inflight.get(k);
+  if (pending) return pending;
+  const run = fetchToken(c).finally(() => state.inflight.delete(k));
+  state.inflight.set(k, run);
+  return run;
+}
+async function fetchToken(c) {
   try {
     const res = await get("https://id.twitch.tv/oauth2/token", { method: "POST", body: new URLSearchParams({ client_id: c.clientId, client_secret: c.secret, grant_type: "client_credentials" }) });
     if (res.status === 429) return { error: "rate" };
@@ -32,6 +40,9 @@ async function token(c) {
 
 const thumb = (u) => { const s = String(u ?? "").replace("{width}", "440").replace("{height}", "248"); return /^https:\/\//.test(s) ? s : null; };
 
+/** Nom d'affichage de la chaîne (casse d'origine) : texte court, sinon rien. */
+const shortName = (v) => { const s = typeof v === "string" ? v.trim() : ""; return s && s.length <= 40 ? s : null; };
+
 async function fetchStatus(c) {
   const t = await token(c);
   if (t.error) return { error: t.error };
@@ -41,7 +52,7 @@ async function fetchStatus(c) {
     if (res.status === 429) return { error: "rate" };
     if (!res.ok) return { error: "network" };
     const s = (await res.json()).data?.[0];
-    return { stream: s ? { id: String(s.id), title: String(s.title ?? ""), startedAt: s.started_at, game: s.game_name?.trim() || null, viewers: Number.isFinite(s.viewer_count) ? s.viewer_count : null, thumbnail: thumb(s.thumbnail_url) } : null };
+    return { stream: s ? { id: String(s.id), title: String(s.title ?? ""), startedAt: s.started_at, game: s.game_name?.trim() || null, viewers: Number.isFinite(s.viewer_count) ? s.viewer_count : null, thumbnail: thumb(s.thumbnail_url), displayName: shortName(s.user_name) } : null };
   } catch { return { error: "network" }; }
 }
 

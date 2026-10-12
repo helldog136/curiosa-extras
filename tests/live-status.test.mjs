@@ -40,12 +40,13 @@ test("live-status : manifeste valide, dépend du service twitch.live, n'en offre
   const m = await assertValidManifest(manifest);
   assertDefinitionMatchesManifest(m, def);
   assertSettingsSane(m);
-  assert.equal(m.version, "1.1.0");
+  assert.equal(m.version, "1.2.0");
+  assert.equal(m.minCore, "0.1.14");
   assert.deepEqual(m.sections.map((s) => s.id), ["player"]);
   assert.equal(m.instances, "single");
   assert.deepEqual(m.requires.map((r) => r.service), ["twitch.live"]);
   assert.ok(!m.offers && !(m.provides ?? []).length && !(m.consumes ?? []).length);
-  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["channel", "text"], ["clientId", "text"], ["clientSecret", "secret"], ["playerWhen", "select"]]);
+  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["channel", "text"], ["clientId", "text"], ["clientSecret", "secret"], ["playerWhen", "select"], ["channels", "text"]]);
   for (const k of ["channel", "clientId", "clientSecret"]) assert.equal(m.settings.find((s) => s.key === k).advanced, true, `${k} : ancien réglage, masqué en version simple`);
   assert.deepEqual(m.permissions.sort(), ["admin", "sections", "slots", "storage"]);
   assert.deepEqual(Object.keys(def.slots), ["layout.banner"]);
@@ -272,4 +273,180 @@ test("reprise : rien à reprendre (anciens champs vides) → erreur simple, aucu
 test("textes d'admin de la reprise : tous présents en fr et en", () => {
   for (const l of ["fr", "en"]) for (const k of ["adoptBanner", "adoptButton", "adoptDone", "adoptUnavailable", "adoptNothing", "adoptOk", "adoptAlready", "field_channel", "field_clientId", "field_clientSecret", "needCredentials", "openTwitch"]) assert.ok(locales[l][k], `${l}.${k}`);
   assert.match(locales.fr.adoptBanner, /Les identifiants Twitch se règlent maintenant dans la Chaîne Twitch\. Reprenez-les ici/);
+});
+
+// ── Plusieurs chaînes Twitch (une instance par chaîne) : Statut live les annonce TOUTES ─────────────────────────────────────────────────
+const bind = (pctx) => Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](pctx, args)]));
+/** N instances du vrai fournisseur (ordre de création = ordre du tableau) ; le consommateur a `callAll` (nouveau cœur) ou seulement `call` (vieux cœur : oldCore). */
+function wireMany(chans, { own = {}, oldCore = false, messages = {}, ...rest } = {}) {
+  const pctxs = chans.map((c, i) => fakeCtx({ key: c.key ?? `tw${i}`, settings: { clientId: "cid", clientSecret: "sec", ...c.settings } }));
+  const methods = pctxs.map((p) => bind(p));
+  const ctx = fakeCtx({ key: "live-status", settings: own, services: { "twitch.live": methods[0] }, serviceInstances: { "twitch.live": chans.map((c, i) => ({ instance: pctxs[i].instance.key, name: c.name, methods: methods[i] })) },
+    messages: { live: "{channel} est en direct", liveMany: "En direct", watch: "Regarder", viewersOne: "{count} spectateur", viewersMany: "{count} spectateurs", playerChoice: "Chaîne", ...messages }, ...rest });
+  if (oldCore) delete ctx.api.services.callAll;
+  return { ctx, pctxs };
+}
+/** Faux Helix par chaîne : lives = { login: { title, game, viewers, name } } ; errors = { login: 401 | 429 | "net" }. */
+function fakeHelix({ lives = {}, errors = {} } = {}) {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    const u = String(url); calls.push({ url: u, init });
+    if (u.startsWith("https://id.twitch.tv/")) return Response.json({ access_token: "tok", expires_in: 3600 });
+    const login = new URL(u).searchParams.get("user_login");
+    const e = errors[login];
+    if (e === "net") throw new Error("coupé");
+    if (e) return new Response("{}", { status: e });
+    const l = lives[login];
+    return Response.json({ data: l ? [{ id: `id-${login}`, title: l.title ?? "Soirée", game_name: l.game ?? "Zelda", viewer_count: l.viewers ?? 3, user_name: l.name ?? login }] : [] });
+  };
+  return calls;
+}
+const two = [{ name: "Twitch Helldog136", settings: { channel: "helldog136" } }, { name: "Twitch Rascane", settings: { channel: "rascane" } }];
+
+test("manifeste : minCore 0.1.14, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
+  assert.equal(manifest.minCore, "0.1.14");
+  const s = manifest.settings.find((x) => x.key === "channels");
+  assert.equal(s.type, "text");
+  assert.ok(!s.advanced && !s.default);
+});
+
+test("2 chaînes, une seule en direct : exactement l'affichage d'une chaîne (bannière simple, lecteur simple)", async () => {
+  fakeHelix({ lives: { rascane: {} } });
+  const { ctx } = wireMany(two);
+  assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "rascane est en direct", href: "https://twitch.tv/rascane" }]);
+  const [p] = await player(ctx);
+  assert.equal(p.type, "embed");
+  assert.equal(new URL(p.src).searchParams.get("channel"), "rascane");
+});
+
+test("aucune des deux en direct : rien (bannière et lecteur) ; « toujours » : lecteur de la PREMIÈRE chaîne seulement", async () => {
+  fakeHelix();
+  const { ctx } = wireMany(two);
+  assert.equal(await banner(ctx), null);
+  assert.equal(await player(ctx), null);
+  const a = wireMany(two, { own: { playerWhen: "always" } }).ctx;
+  const [p] = await player(a);
+  assert.equal(p.type, "embed");
+  assert.equal(new URL(p.src).searchParams.get("channel"), "helldog136");
+});
+
+test("les deux en direct : bannière = une ligne par chaîne (nom, titre, jeu, spectateurs, Regarder), dans l'ordre de création", async () => {
+  fakeHelix({ lives: { helldog136: { title: "Soirée A", game: "Zelda", viewers: 12, name: "Helldog136" }, rascane: { title: "Soirée B", game: "Celeste", viewers: 1, name: "Rascane" } } });
+  const [b] = await banner(wireMany(two).ctx);
+  assert.equal(b.type, "html");
+  const rows = [...b.html.matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1]);
+  assert.equal(rows.length, 2);
+  assert.match(rows[0], /Helldog136.*Soirée A.*Zelda · 12 spectateurs.*href="https:\/\/twitch\.tv\/helldog136".*Regarder/);
+  assert.match(rows[1], /Rascane.*Soirée B.*Celeste · 1 spectateur<.*href="https:\/\/twitch\.tv\/rascane"/);
+  assert.ok(b.html.indexOf("Helldog136") < b.html.indexOf("Rascane"));
+});
+
+test("les deux en direct : lecteur de la première avec une pastille par chaîne (boutons radio, étiquettes, première cochée), un lecteur par chaîne", async () => {
+  fakeHelix({ lives: { helldog136: { name: "Helldog136" }, rascane: { name: "Rascane" } } });
+  const [p] = await player(wireMany(two, { siteUrl: "https://www.exemple.fr" }).ctx);
+  assert.equal(p.type, "html");
+  assert.equal([...p.html.matchAll(/type="radio"/g)].length, 2);
+  assert.equal([...p.html.matchAll(/ checked/g)].length, 1);
+  assert.match(p.html, /id="lsp-live-status-0" checked><label class="p" for="lsp-live-status-0">Helldog136<\/label>/);
+  assert.match(p.html, /for="lsp-live-status-1">Rascane<\/label>/);
+  const srcs = [...p.html.matchAll(/<iframe src="([^"]+)"/g)].map((m) => new URL(m[1].replaceAll("&amp;", "&")));
+  assert.deepEqual(srcs.map((u) => u.searchParams.get("channel")), ["helldog136", "rascane"]);
+  for (const u of srcs) { assert.equal(u.origin, "https://player.twitch.tv"); assert.equal(u.searchParams.get("parent"), "www.exemple.fr"); assert.equal(u.searchParams.get("muted"), "true"); }
+  assert.ok(!/<script/i.test(p.html), "aucun script");
+  assert.match(p.html, /#lsp-live-status \.r0:checked~\.w0\{display:block\}/);
+});
+
+test("échappement : titre, jeu et nom d'affichage hostiles ne produisent jamais de balise ; nom d'affichage qui n'est pas la chaîne → on garde la chaîne", async () => {
+  const evil = '<img src=x onerror=alert(1)>"\'&';
+  fakeHelix({ lives: { helldog136: { title: evil, game: evil, name: "Helldog136" }, rascane: { title: evil, game: evil, name: evil } } });
+  const { ctx } = wireMany(two);
+  const [b] = await banner(ctx);
+  const [p] = await player(ctx);
+  for (const html of [b.html, p.html]) {
+    assert.ok(!/<img/i.test(html) && !html.includes("onerror=alert(1)>") && !html.includes('"\''), html);
+  }
+  assert.match(b.html, /&lt;img src=x onerror=alert\(1\)&gt;&quot;&#39;&amp;/);
+  assert.ok(!b.html.includes(evil) && !p.html.includes(evil));
+  assert.match(p.html, />rascane<\/label>/, "nom d'affichage qui n'est pas la chaîne écarté");
+});
+
+test("une instance en erreur (401, 429, réseau) n'empêche pas l'autre ; l'erreur n'affiche rien", async () => {
+  for (const err of [401, 429, "net"]) {
+    tw.resetCache();
+    fakeHelix({ lives: { rascane: {} }, errors: { helldog136: err } });
+    const { ctx } = wireMany(two);
+    assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "rascane est en direct", href: "https://twitch.tv/rascane" }], String(err));
+    assert.equal((await player(ctx))[0].type, "embed");
+  }
+  tw.resetCache();
+  // un fournisseur qui plante (callAll renvoie ok:false) ne gêne pas les autres
+  fakeHelix({ lives: { rascane: {} } });
+  const { ctx, pctxs } = wireMany(two);
+  const real = ctx.api.services.callAll;
+  ctx.api.services.callAll = async (...a) => (await real(...a)).map((r, i) => (i === 0 ? { instance: r.instance, ok: false, error: "failed" } : r));
+  assert.equal((await banner(ctx))[0].href, "https://twitch.tv/rascane");
+  assert.ok(pctxs.length === 2);
+});
+
+test("un seul jeton pour deux chaînes aux mêmes identifiants, une requête Helix par chaîne, même pour bannière + lecteur + visiteurs simultanés", async () => {
+  const calls = fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  const { ctx } = wireMany(two);
+  await Promise.all([banner(ctx), player(ctx), banner(ctx)]);
+  assert.equal(calls.filter((c) => c.url.includes("oauth2")).length, 1);
+  assert.equal(streamCalls(calls), 2);
+});
+
+test("« Chaînes à annoncer » : vide = toutes ; sinon seulement celles listées (bannière et lecteur)", async () => {
+  fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  const only = wireMany(two, { own: { channels: " Rascane, inconnue " } }).ctx;
+  assert.equal((await banner(only))[0].href, "https://twitch.tv/rascane");
+  assert.equal(new URL((await player(only))[0].src).searchParams.get("channel"), "rascane");
+  assert.equal((await banner(wireMany(two, { own: { channels: "nobody_here" } }).ctx)), null);
+  assert.equal((await banner(wireMany(two).ctx))[0].type, "html");
+});
+
+test("vieux cœur sans callAll : repli sur l'appel unique (première chaîne), aucune exception", async () => {
+  fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  const { ctx } = wireMany(two, { oldCore: true });
+  assert.equal(typeof ctx.api.services.callAll, "undefined");
+  assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "helldog136 est en direct", href: "https://twitch.tv/helldog136" }]);
+  assert.equal((await player(ctx))[0].type, "embed");
+  assert.equal(await banner(wireMany(two, { oldCore: true, withProvider: false }).ctx).catch(() => "x") !== "x", true);
+});
+
+test("un callAll qui lève → pas d'exception (repli sur rien)", async () => {
+  const { ctx } = wireMany(two);
+  ctx.api.services.callAll = async () => { throw new Error("boom"); };
+  assert.equal(await banner(ctx), null);
+  assert.equal(await player(ctx), null);
+});
+
+test("mode hérité avec plusieurs chaînes sans identifiants : un seul appel (anciens réglages), fait par la première ; les identifiants repris vont dans la première", async () => {
+  const calls = fakeHelix({ lives: { ancienne: {} } });
+  const { ctx, pctxs } = wireMany([{ settings: { clientId: "", clientSecret: "" } }, { settings: { channel: "rascane", clientId: "", clientSecret: "" } }], { own: { channel: "Ancienne", clientId: "old-id", clientSecret: "old-SECRET" } });
+  assert.equal((await banner(ctx))[0].href, "https://twitch.tv/ancienne");
+  assert.equal(streamCalls(calls), 1);
+  await def.adminActions.adopt(ctx, {});
+  assert.equal((await svc.channel(pctxs[0])).ready, true, "la première chaîne reçoit la reprise");
+  assert.equal((await svc.channel(pctxs[1])).ready, false, "la deuxième n'est pas touchée");
+  assert.equal(await pctxs[1].api.store.count("adopted"), 0);
+});
+
+test("aucun secret ni jeton dans ce que présente Statut live ; aucun appel réseau de live-status lui-même", async () => {
+  const calls = fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  const { ctx } = wireMany(two);
+  const dump = JSON.stringify([await banner(ctx), await player(ctx), await def.adminPanel(ctx)]);
+  for (const v of ["sec", "tok", "cid", "Bearer", "oauth"]) assert.ok(!dump.includes(v), v);
+  assert.ok(calls.every((c) => /^https:\/\/(id|api)\.twitch\.tv\//.test(c.url)), "les appels viennent du fournisseur");
+  const src = fs.readFileSync(new URL("../modules/live-status/view.mjs", import.meta.url), "utf8");
+  assert.ok(!/fetch\(|twitch\.tv\/helix|oauth2|Bearer/.test(src));
+});
+
+test("textes des plusieurs chaînes : tous présents en fr et en, toutes les clés utilisées par le code existent", () => {
+  for (const l of ["fr", "en"]) for (const k of ["liveMany", "watch", "viewersOne", "viewersMany", "playerChoice"]) assert.ok(locales[l][k], `${l}.${k}`);
+  assert.match(locales.fr.viewersMany, /\{count\}/);
+  const used = new Set();
+  for (const f of ["index", "source", "adopt", "view"]) for (const m of fs.readFileSync(new URL(`../modules/live-status/${f}.mjs`, import.meta.url), "utf8").matchAll(/ctx\.t\(\s*(?:"([A-Za-z_]+)"|c === 1 \? "([A-Za-z]+)" : "([A-Za-z]+)")/g)) [m[1], m[2], m[3]].filter(Boolean).forEach((k) => used.add(k));
+  for (const k of used) for (const l of ["fr", "en"]) assert.ok(locales[l][k], `clé « ${k} » manquante en ${l}`);
+  assert.ok(used.size >= 8);
 });

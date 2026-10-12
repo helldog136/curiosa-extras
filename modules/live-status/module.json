@@ -1,16 +1,17 @@
 {
   "apiVersion": 2,
+  "minCore": "0.1.14",
   "id": "live-status",
   "name": {
     "en": "Twitch live status",
     "fr": "Statut live Twitch"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
-    "en": "Shows your Twitch player on the home page and a banner when you are live.",
-    "fr": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct."
+    "en": "Shows your Twitch player on the home page and a banner when you are live, whichever of your channels it is.",
+    "fr": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct, quelle que soit la chaîne."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -101,6 +102,18 @@
           }
         }
       ]
+    },
+    {
+      "key": "channels",
+      "type": "text",
+      "label": {
+        "en": "Channels to announce (optional)",
+        "fr": "Chaînes à annoncer (facultatif)"
+      },
+      "help": {
+        "en": "Leave empty to announce all your Twitch channels. Otherwise type their logins separated by commas (for example mychannel, myfriend).",
+        "fr": "Laissez vide pour annoncer toutes vos chaînes Twitch. Sinon, saisissez leurs identifiants séparés par des virgules (par exemple machaine, monami)."
+      }
     }
   ],
   "requires": [

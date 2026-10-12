@@ -4,5 +4,9 @@
   "forgotten": "Credentials taken over forgotten. Only the settings on this page count now.",
   "field_channel": "channel",
   "field_clientId": "client id",
-  "field_clientSecret": "client secret"
+  "field_clientSecret": "client secret",
+  "share_live": "Client id and secret shared with channel “{channel}” (where empty here). They are never shown.",
+  "share_copy": "Client id and secret shared with channel “{channel}” (saved copy). They are never shown.",
+  "share_none": "The credentials of channel “{channel}” are not known yet: check that a Twitch channel instance has that channel with its client id and secret, then open a site page and reload.",
+  "share_self": "“{channel}” is this instance's own channel: type the OTHER channel to take the credentials from."
 }

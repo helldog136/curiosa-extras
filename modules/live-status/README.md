@@ -14,6 +14,16 @@ Rien ne casse : tant que la Chaîne Twitch n'a pas ses identifiants, les anciens
 - **Dès que la Chaîne Twitch est configurée** (par la reprise ou en saisissant ses champs), elle prend le dessus. Les anciens champs ne servent plus : vous pouvez les vider.
 - **Revenir en arrière** : les anciens champs ne sont jamais effacés par la reprise. Dans l'admin de la Chaîne Twitch, « Oublier les identifiants repris » supprime la copie : tant que ses propres champs sont vides, ce module reprend ses anciens réglages.
 - **Pourquoi un bouton** : un module n'a pas le droit d'écrire dans les réglages d'un autre. La copie passe par une méthode du service (`adopt`) qui range les valeurs reprises dans le stockage de la Chaîne Twitch ; ses réglages saisis ont toujours le dessus, champ par champ.
-- Si plusieurs Chaînes Twitch existent (une par chaîne), c'est la **maître** du service (page *Modules* → services offerts par plusieurs modules, sinon la première par clé) qui est présentée.
+- Avec plusieurs Chaînes Twitch, la reprise va dans la **première** (par ordre de création), uniquement dans ses champs vides ; voir le README de la Chaîne Twitch pour partager les identifiants entre chaînes.
+
+## Plusieurs chaînes (version 1.2.0, Curiosa 0.1.14 ou plus)
+
+Une Chaîne Twitch par chaîne : Statut live les interroge **toutes** (`callAll("twitch.live", "status")`) et ne parle toujours pas à Twitch.
+
+- **Une seule en direct** : exactement l'affichage d'avant (bannière d'une ligne, lecteur de cette chaîne).
+- **Plusieurs en direct** : la bannière a **une ligne par chaîne** (nom, titre, jeu, spectateurs, bouton « Regarder ») ; le lecteur montre la **première** chaîne en direct (ordre de création des instances) avec une **pastille par chaîne** pour passer de l'une à l'autre (boutons radio en HTML/CSS, sans script, accessibles au clavier).
+- **Aucune en direct** : rien. Avec « Toujours », le lecteur de la première chaîne.
+- Réglage facultatif **Chaînes à annoncer** : identifiants séparés par des virgules ; vide = toutes.
+- **Vieux cœur** (sans `callAll`) : repli sur l'appel unique d'avant (première chaîne seulement). Le module exige pourtant Curiosa 0.1.14 à l'installation.
 
 Module de base de Curiosa (Curiosa License 1.0). Il s'active depuis l'admin, dans **Fonctionnalités**; ses réglages sont sur sa page.
