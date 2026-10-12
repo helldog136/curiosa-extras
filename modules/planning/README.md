@@ -9,6 +9,28 @@ d'un site existant.
 - **MCP** : `planning_upcoming` (lecture seule, accordée par défaut).
 - **Admin** : état du calendrier, prochains créneaux, bouton « Actualiser maintenant ».
 
+## Apparences au choix (réglage « Apparence du planning »)
+
+Le même agenda, présenté de six manières (plus l'affichage d'origine, **choix par défaut** : rien ne change tant que vous ne choisissez pas). L'admin de l'instance montre, sous l'état du calendrier, un **aperçu réel** de chaque choix avec des streams d'exemple.
+
+| Apparence | Ce que ça donne | Inspiration |
+|---|---|---|
+| **Liste simple** (défaut) | Le rendu d'origine : un titre par jour, puis les streams. | — |
+| **Liste classique** | Agenda sobre : un jour par rangée, heure à gauche, jaquette, titre et jeux. | Apple Calendrier, Dieter Rams |
+| **Liste en alternance** | L'en-tête de jour passe de gauche à droite d'un jour à l'autre, en cases arrondies ; jusqu'à 3 jaquettes ; semaine vide = un seul message ; en colonne sur mobile. | L'ancien site Helldog136 |
+| **Semaine en grille** | 7 colonnes (premier jour de la semaine au choix), créneaux empilés ; liste verticale sur mobile. | Vue semaine d'un agenda |
+| **Timeline** | Rail vertical, points datés, vignettes, aéré ; les jours vides se résument en une ligne. | Linear, Stripe |
+| **Affiches** | Cartes verticales : jaquette pleine hauteur, dégradé, date en pastille, titre dessus ; sans jeu, logo du site sur mauve Twitch. | Apple TV, Netflix, Spotify |
+| **À la une + à suivre** | Le prochain stream en grand (« Dans 3 h » ou « En cours », bouton vers la chaîne), puis la suite en liste compacte. | Apple TV « À suivre » |
+
+Captures décrites : toutes les apparences ont été vérifiées dans le vrai site (page `/planning` et accueil, 390 px et 1280 px, palette claire avec accent secondaire et palette sombre).
+
+**Options communes** : densité (confortable/compacte), jaquettes, indications relatives (« Dans 3 h »), format de l'heure (24 h/12 h), premier jour de la semaine, rappel du fuseau, style des en-têtes de jour (texte/pastille/court), heure de fin, afficher les streams annulés (barrés, avec « Annulé »). Le nombre de jours reste le réglage « Jours affichés » (7, 14, 30…). **Options propres** : liste classique (masquer les jours vides), alternance (côté du premier jour), semaine (semaines du calendrier ou 7 jours glissants), timeline (montrer les jours vides), à la une (nombre de « à suivre »).
+
+**Où ça s'applique** : page publique et section « Prochains streams » (celle-ci peut avoir sa propre apparence, option « Apparence » du morceau ; « Comme la page » par défaut). La carte « Prochain stream » garde son rendu et suit la densité. L'image PNG du panneau Twitch (`/m/<clé>/image`) garde son gabarit.
+
+**Architecture** (`modules/planning/`) : `index.mjs` (lecteur iCal, jaquettes, module), `dates.mjs`, `games.mjs`, `relative.mjs`, puis `appearances/` : `options.mjs` (réglages et défauts), `model.mjs` (regroupement par jour/semaine, en cours, annulé, fuseau), `kit.mjs` (outils et style de base), `layouts/*.mjs` (une apparence = `render(model, options, ctx) → { html, css }`, pure), `registry.mjs`, `preview.mjs`, `entry.mjs` (seul point d'appel d'`index.mjs`). Les fichiers voisins sont chargés avec le même `?v=` que `index.mjs` pour qu'une mise à jour à chaud ne mélange pas d'anciens fichiers.
+
 ## Les morceaux d'accueil
 
 - **« Prochain stream »** : une carte encadrée (bordure, arrondi, relief, filet aux couleurs du thème) : à gauche la **jaquette** du jeu (jusqu'à 3, superposées), puis une pastille d'état (« En cours », « Dans 40 min », « Dans 3 h », « Aujourd'hui », « Demain », « Dans 4 jours »), le **titre**, l'**heure** en grand et le jour, le jeu, les autres streams du même jour et, si vous renseignez « Lien de votre chaîne », un bouton « Regarder sur Twitch ». Les balises `<time>` sont sémantiques, les jaquettes ont un texte alternatif, aucune animation sans `prefers-reduced-motion`.
