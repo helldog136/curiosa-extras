@@ -520,7 +520,7 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
 test("planning : plus de réglage de clé, permission rawg déclarée (pas de storage), version montée, textes alignés", () => {
   const m = readJson("planning/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.1.0");
+  assert.equal(m.version, "1.3.0");
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"));
   assert.ok(m.permissions.includes("rawg") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(readJson("planning/locales/fr.json")).sort(), Object.keys(readJson("planning/locales/en.json")).sort());

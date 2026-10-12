@@ -1,0 +1,8 @@
+{
+  "adoptedNote": "Credentials were taken over from another Twitch module ({fields}). They are never displayed. What you type in the settings always takes precedence.",
+  "forget": "Forget the credentials taken over",
+  "forgotten": "Credentials taken over forgotten. Only the settings on this page count now.",
+  "field_channel": "channel",
+  "field_clientId": "client id",
+  "field_clientSecret": "client secret"
+}

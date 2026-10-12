@@ -5,11 +5,11 @@
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "twitch",
   "description": {
-    "en": "Makes your Twitch channel easier to showcase: shows when you are live and offers your latest clips.",
-    "fr": "Facilite la mise en avant de votre chaîne Twitch : indique quand vous êtes en direct et propose vos derniers clips."
+    "en": "Makes your Twitch channel easier to showcase: header button, live status and latest clips.",
+    "fr": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct et derniers clips."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -18,6 +18,19 @@
   "type": "social",
   "instances": "multiple",
   "page": false,
+  "offers": [
+    {
+      "service": "twitch.live",
+      "label": {
+        "en": "Twitch channel status (live or not)",
+        "fr": "État de la chaîne Twitch (en direct ou non)"
+      },
+      "readOnly": [
+        "channel",
+        "status"
+      ]
+    }
+  ],
   "provides": [
     {
       "topic": "social.link",
@@ -42,7 +55,9 @@
     }
   ],
   "permissions": [
-    "topics"
+    "topics",
+    "storage",
+    "admin"
   ],
   "settings": [
     {
@@ -53,8 +68,8 @@
         "fr": "Chaîne Twitch (identifiant)"
       },
       "help": {
-        "en": "For example mychannel",
-        "fr": "Par exemple machaine"
+        "en": "For example mychannel. Shared with the other Twitch modules: type it only here.",
+        "fr": "Par exemple machaine. Partagée avec les autres modules Twitch : à saisir ici seulement."
       }
     },
     {
@@ -65,8 +80,8 @@
         "fr": "Client id Twitch"
       },
       "help": {
-        "en": "From dev.twitch.tv/console (an application of your own).",
-        "fr": "Depuis dev.twitch.tv/console (une application à vous)."
+        "en": "From dev.twitch.tv/console (an application of your own). Type it only here.",
+        "fr": "Depuis dev.twitch.tv/console (une application à vous). À saisir ici seulement."
       }
     },
     {

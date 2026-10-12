@@ -5,11 +5,11 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "1.1.0",
+  "version": "1.3.0",
   "minCore": "0.1.10",
   "description": {
-    "en": "Shows your upcoming streams, day by day, read from a Google Calendar (or any iCal feed).",
-    "fr": "Affiche vos prochains streams, jour par jour, lus depuis un Google Agenda (ou n'importe quel flux iCal)."
+    "fr": "Affiche vos prochains streams, lus depuis un Google Agenda (ou n'importe quel flux iCal), dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
+    "en": "Shows your upcoming streams, read from a Google Calendar (or any iCal feed), in the look you choose: list, zigzag, week, timeline, posters…"
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -35,6 +35,73 @@
             "en": "How many",
             "fr": "Combien"
           }
+        },
+        {
+          "key": "appearance",
+          "type": "select",
+          "default": "inherit",
+          "label": {
+            "en": "Look",
+            "fr": "Apparence"
+          },
+          "options": [
+            {
+              "value": "inherit",
+              "label": {
+                "en": "Same as the schedule page",
+                "fr": "Comme la page du planning"
+              }
+            },
+            {
+              "value": "original",
+              "label": {
+                "en": "Simple list (original look)",
+                "fr": "Liste simple (affichage d'origine)"
+              }
+            },
+            {
+              "value": "classic",
+              "label": {
+                "en": "Classic list",
+                "fr": "Liste classique"
+              }
+            },
+            {
+              "value": "alternating",
+              "label": {
+                "en": "Alternating list",
+                "fr": "Liste en alternance"
+              }
+            },
+            {
+              "value": "week",
+              "label": {
+                "en": "Week grid",
+                "fr": "Semaine en grille"
+              }
+            },
+            {
+              "value": "timeline",
+              "label": {
+                "en": "Timeline",
+                "fr": "Timeline"
+              }
+            },
+            {
+              "value": "posters",
+              "label": {
+                "en": "Posters",
+                "fr": "Affiches"
+              }
+            },
+            {
+              "value": "hero",
+              "label": {
+                "en": "Spotlight + up next",
+                "fr": "À la une + à suivre"
+              }
+            }
+          ]
         }
       ],
       "size": "large"
@@ -76,6 +143,30 @@
       }
     }
   ],
+  "consumes": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Your Twitch channel link (from the Twitch channel module)",
+        "fr": "Le lien de votre chaîne (fourni par la Chaîne Twitch)"
+      },
+      "schema": [
+        {
+          "key": "label",
+          "type": "string"
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "icon",
+          "type": "string"
+        }
+      ]
+    }
+  ],
   "permissions": [
     "pages",
     "routes",
@@ -106,8 +197,8 @@
         "fr": "Lien de votre chaîne (bouton « Regarder sur Twitch »)"
       },
       "help": {
-        "en": "Optional, e.g. https://twitch.tv/mychannel. Without it, the button is not shown.",
-        "fr": "Facultatif, ex. https://twitch.tv/machaine. Sans lien, le bouton n'est pas affiché."
+        "en": "Optional. Not needed if the Twitch channel module is installed with your channel: its link is used. Without any link, the button is not shown.",
+        "fr": "Facultatif. Inutile si la Chaîne Twitch est installée avec votre chaîne : son lien est repris. Sans lien, le bouton n'est pas affiché."
       }
     },
     {
@@ -132,6 +223,348 @@
       "help": {
         "en": "IANA name, e.g. Europe/Paris, America/Montreal.",
         "fr": "Nom IANA, ex. Europe/Paris, America/Montreal."
+      }
+    },
+    {
+      "key": "appearance",
+      "type": "select",
+      "default": "original",
+      "group": "appearance",
+      "label": {
+        "en": "Schedule look",
+        "fr": "Apparence du planning"
+      },
+      "help": {
+        "en": "How to show your streams, on the schedule page and in the “Next streams” home section. A preview of each choice is shown further down this page. “Simple list” is the look from before.",
+        "fr": "Comment présenter vos streams, sur la page du planning et dans la section d'accueil « Prochains streams ». L'aperçu de chaque choix est affiché plus bas, sur cette page. « Liste simple » est l'affichage d'avant."
+      },
+      "options": [
+        {
+          "value": "original",
+          "label": {
+            "en": "Simple list (original look)",
+            "fr": "Liste simple (affichage d'origine)"
+          }
+        },
+        {
+          "value": "classic",
+          "label": {
+            "en": "Classic list",
+            "fr": "Liste classique"
+          }
+        },
+        {
+          "value": "alternating",
+          "label": {
+            "en": "Alternating list",
+            "fr": "Liste en alternance"
+          }
+        },
+        {
+          "value": "week",
+          "label": {
+            "en": "Week grid",
+            "fr": "Semaine en grille"
+          }
+        },
+        {
+          "value": "timeline",
+          "label": {
+            "en": "Timeline",
+            "fr": "Timeline"
+          }
+        },
+        {
+          "value": "posters",
+          "label": {
+            "en": "Posters",
+            "fr": "Affiches"
+          }
+        },
+        {
+          "value": "hero",
+          "label": {
+            "en": "Spotlight + up next",
+            "fr": "À la une + à suivre"
+          }
+        }
+      ]
+    },
+    {
+      "key": "density",
+      "type": "select",
+      "default": "comfortable",
+      "group": "appearance",
+      "label": {
+        "en": "Density",
+        "fr": "Densité"
+      },
+      "help": {
+        "en": "Compact fits more streams on screen. Also applies to the home “Next stream” card.",
+        "fr": "Compacte : plus de streams à l'écran. S'applique aussi à la carte « Prochain stream » de l'accueil."
+      },
+      "options": [
+        {
+          "value": "comfortable",
+          "label": {
+            "en": "Comfortable",
+            "fr": "Confortable"
+          }
+        },
+        {
+          "value": "compact",
+          "label": {
+            "en": "Compact",
+            "fr": "Compacte"
+          }
+        }
+      ]
+    },
+    {
+      "key": "showCovers",
+      "type": "boolean",
+      "default": true,
+      "group": "appearance",
+      "label": {
+        "en": "Show game covers",
+        "fr": "Afficher les jaquettes des jeux"
+      }
+    },
+    {
+      "key": "showRelative",
+      "type": "boolean",
+      "default": true,
+      "group": "appearance",
+      "label": {
+        "en": "Show “In 3 h”, “Tomorrow”…",
+        "fr": "Afficher « Dans 3 h », « Demain »…"
+      }
+    },
+    {
+      "key": "hourFormat",
+      "type": "select",
+      "default": "24",
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Time format",
+        "fr": "Format de l'heure"
+      },
+      "options": [
+        {
+          "value": "24",
+          "label": {
+            "en": "24-hour (21:30)",
+            "fr": "24 heures (21:30)"
+          }
+        },
+        {
+          "value": "12",
+          "label": {
+            "en": "12-hour (9:30 PM)",
+            "fr": "12 heures (9:30 PM)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "weekStart",
+      "type": "select",
+      "default": "1",
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "First day of the week",
+        "fr": "Premier jour de la semaine"
+      },
+      "help": {
+        "fr": "Pour l'apparence « Semaine en grille ».",
+        "en": "For the “Week grid” look."
+      },
+      "options": [
+        {
+          "value": "1",
+          "label": {
+            "en": "Monday",
+            "fr": "Lundi"
+          }
+        },
+        {
+          "value": "0",
+          "label": {
+            "en": "Sunday",
+            "fr": "Dimanche"
+          }
+        },
+        {
+          "value": "6",
+          "label": {
+            "en": "Saturday",
+            "fr": "Samedi"
+          }
+        }
+      ]
+    },
+    {
+      "key": "showTimezone",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Show the time zone under the schedule",
+        "fr": "Rappeler le fuseau horaire sous le planning"
+      }
+    },
+    {
+      "key": "dayStyle",
+      "type": "select",
+      "default": "text",
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Day heading style",
+        "fr": "Style des en-têtes de jour"
+      },
+      "options": [
+        {
+          "value": "text",
+          "label": {
+            "en": "Text (Monday 12 October)",
+            "fr": "Texte (Lundi 12 octobre)"
+          }
+        },
+        {
+          "value": "tile",
+          "label": {
+            "en": "Tile (MON 12 OCT)",
+            "fr": "Pastille (LUN 12 OCT)"
+          }
+        },
+        {
+          "value": "short",
+          "label": {
+            "en": "Short (Mon 12 Oct)",
+            "fr": "Court (Lun. 12 oct.)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "showEnd",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Also show the end time",
+        "fr": "Afficher aussi l'heure de fin"
+      }
+    },
+    {
+      "key": "showCancelled",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Show cancelled streams (struck through)",
+        "fr": "Montrer les streams annulés (barrés)"
+      },
+      "help": {
+        "en": "An event marked “cancelled” stays visible, struck through, with a “Cancelled” label. No effect with “Simple list”.",
+        "fr": "Un événement marqué « annulé » dans l'agenda reste visible, barré, avec la mention « Annulé ». Sans effet avec « Liste simple »."
+      }
+    },
+    {
+      "key": "classicHideEmpty",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Classic list: hide days without a stream",
+        "fr": "Liste classique : masquer les jours sans stream"
+      }
+    },
+    {
+      "key": "altFirstSide",
+      "type": "select",
+      "default": "left",
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Alternating list: side of the first day",
+        "fr": "Liste en alternance : côté du premier jour"
+      },
+      "options": [
+        {
+          "value": "left",
+          "label": {
+            "en": "Left",
+            "fr": "Gauche"
+          }
+        },
+        {
+          "value": "right",
+          "label": {
+            "en": "Right",
+            "fr": "Droite"
+          }
+        }
+      ]
+    },
+    {
+      "key": "weekMode",
+      "type": "select",
+      "default": "calendar",
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Week grid: weeks",
+        "fr": "Semaine en grille : semaines"
+      },
+      "help": {
+        "en": "Calendar: starts on the first day of the week. Rolling: seven days from today.",
+        "fr": "Calendrier : commence le premier jour de la semaine. Glissantes : sept jours à partir d'aujourd'hui."
+      },
+      "options": [
+        {
+          "value": "calendar",
+          "label": {
+            "en": "Calendar weeks",
+            "fr": "Semaines du calendrier"
+          }
+        },
+        {
+          "value": "rolling",
+          "label": {
+            "en": "Seven days from today",
+            "fr": "Sept jours à partir d'aujourd'hui"
+          }
+        }
+      ]
+    },
+    {
+      "key": "timelineEmpty",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Timeline: also show days without a stream",
+        "fr": "Timeline : montrer aussi les jours sans stream"
+      }
+    },
+    {
+      "key": "heroUpNext",
+      "type": "number",
+      "default": 5,
+      "advanced": true,
+      "group": "appearance",
+      "label": {
+        "en": "Spotlight: how many “up next” streams",
+        "fr": "À la une : combien de streams « à suivre »"
       }
     }
   ],

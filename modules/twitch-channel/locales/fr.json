@@ -1,0 +1,8 @@
+{
+  "adoptedNote": "Des identifiants ont été repris depuis un autre module Twitch ({fields}). Ils ne sont jamais affichés. Ce que vous saisissez dans les réglages a toujours le dessus.",
+  "forget": "Oublier les identifiants repris",
+  "forgotten": "Identifiants repris oubliés. Seuls les réglages de cette page comptent maintenant.",
+  "field_channel": "chaîne",
+  "field_clientId": "client id",
+  "field_clientSecret": "client secret"
+}

@@ -1,8 +1,9 @@
-// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés), page de fusion.
+// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés). (La page de fusion, temporaire, est dans merge.mjs.)
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
 const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
-const { key, mergeState, planMerge, countPlan, reportLine, runMerge, undoMerge, loadLegacy, legacyBackup } = await import(`./merge.mjs${v}`);
+// MIGRATION TEMPORAIRE — à supprimer en 1.5.0 (ou quand plus aucun site n'a d'anciens contacts) : tout ce qui touche à la fusion vient de merge.mjs.
+const { mergeState, mergeNotices, mergeFooter, legacySection, mergeActions, mergePage } = await import(`./merge.mjs${v}`);
 
 export default {
   // ── Panneau d'admin ───────────────────────────────────────────────────────────
@@ -40,15 +41,14 @@ export default {
     // Bandeaux : module Contacts absent, fusion à faire / à finir.
     const notices = [];
     if (!hasBook) notices.push({ type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` });
-    if (!state.meta && state.items.length) notices.push({ type: "markdown", text: `**📇 ${t("bannerTitle")}** ${t("bannerText", { n: state.items.length })} [${t("bannerLink")}](?merge=1)` });
-    else if (state.meta && state.pending.length) notices.push({ type: "markdown", text: `**📇 ${t("pendingTitle")}** ${t("pendingText", { n: state.pending.length })} [${t("pendingLink")}](?merge=1)` });
+    notices.push(...mergeNotices(t, state)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
 
     // Modification d'une fiche
     const editing = query.edit && partners.find((p) => p.id === query.edit);
     if (editing) return [...blocks, partnerForm(editing)];
 
     // Fusion des contacts
-    if (query.merge) return [...blocks, ...(await mergePage(ctx, state, hasBook, brandOf))];
+    if (query.merge) return /* MIGRATION TEMPORAIRE — à supprimer en 1.5.0 */ [...blocks, ...(await mergePage(ctx, state, hasBook, brandOf))];
 
     // Fiche détaillée : journal + contacts liés
     const open = query.partner && partners.find((p) => p.id === query.partner);
@@ -83,7 +83,7 @@ export default {
       { type: "adminForm", action: "importPartners", title: t("importTitle"), submitLabel: t("importSubmit"), fields: [{ name: "csv", label: t("importCsv"), kind: "textarea", required: true }] },
       { type: "markdown", text: t("importHelp") },
     );
-    if (state.meta) blocks.push({ type: "markdown", text: `*${t("mergeFooter", { date: String(state.meta.data.at).slice(0, 10) })}* [${t("mergeFooterLink")}](?merge=1)` });
+    blocks.push(...mergeFooter(t, state)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
     return blocks;
   },
 
@@ -169,45 +169,8 @@ export default {
       return { ok: ctx.t("unlinked") };
     },
 
-    // FUSION avec le module Contacts (voir runMerge) : aperçu sur la page, exécution sur confirmation.
-    async mergeRun(ctx) {
-      const r = await runMerge(ctx);
-      if (r.error) return { error: ctx.t(r.error) };
-      return { ok: reportLine(ctx.t, r.report), redirect: "?merge=1" };
-    },
-    async mergeUndo(ctx) {
-      return (await undoMerge(ctx)) ? { ok: ctx.t("mergeUndone"), redirect: "?merge=1" } : { error: ctx.t("notFound") };
-    },
-    // Un contact ambigu : « c'est cette personne » (id de ligne « ancien~contact ») ou « ne pas reprendre ».
-    async mergeResolve(ctx, v) {
-      const [legacyId, contactId] = String(v.id ?? "").split("~");
-      const state = await mergeState(ctx);
-      const item = state.meta && state.pending.find((i) => i.id === legacyId);
-      const partner = item?.partnerId ? await ctx.api.store.get(item.partnerId) : null;
-      if (!item || !idOk(contactId)) return { error: ctx.t("notFound") };
-      const got = await book(ctx, "resolve", { ids: [contactId] });
-      if (!got.ok || !got.contacts.length) return { error: ctx.t(got.unavailable ? "noBookText" : "linkMissing") };
-      const meta = state.meta.data;
-      if (partner && partner.data.brand !== undefined) {
-        const ids = linksOf(partner);
-        if (!ids.includes(contactId)) {
-          if (ids.length >= MAX_LINKS) return { error: ctx.t("linkTooMany") };
-          await setLinks(ctx, partner, [...ids, contactId], "merge");
-          (meta.added[partner.id] ??= []).push(contactId);
-        }
-      }
-      meta.mapping[item.id] = contactId;
-      await ctx.api.store.update(state.meta.id, meta);
-      return { ok: ctx.t("saved"), redirect: "?merge=1" };
-    },
-    async mergeDismiss(ctx, v) {
-      const state = await mergeState(ctx);
-      const item = state.meta && state.pending.find((i) => i.id === String(v.id ?? ""));
-      if (!item) return { error: ctx.t("notFound") };
-      state.meta.data.dismissed.push(item.id);
-      await ctx.api.store.update(state.meta.id, state.meta.data);
-      return { ok: ctx.t("saved"), redirect: "?merge=1" };
-    },
+    // MIGRATION TEMPORAIRE — à supprimer en 1.5.0 : ...mergeActions (voir merge.mjs)
+    ...mergeActions,
   }
 };
 
@@ -231,72 +194,15 @@ async function contactsSection(ctx, partner, state, hasBook) {
     if (open.length) out.push({ type: "markdown", text: `${t("openInContacts")} ${open.join(" · ")}` });
   } else out.push({ type: "markdown", text: t("noLinkedContacts") });
 
-  // Anciens contacts de cette fiche, pas encore repris dans Contacts (lecture seule).
-  const old = state.pending.filter((i) => i.partnerId === partner.id);
-  if (old.length) {
-    out.push({ type: "heading", text: t(state.meta ? "oldPendingTitle" : "oldTitle") });
-    out.push({ type: "markdown", text: t(state.meta ? "oldPendingHelp" : "oldHelp") });
-    out.push({ type: "table", columns: [t("name"), t("role"), t("email"), t("phone")], rows: old.map((i) => [i.name + (i.status === "to_review" ? ` (${t("toReview")})` : ""), i.role, i.email || i.rawEmail, i.phone]) });
-  }
+  out.push(...legacySection(ctx, partner, state)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
   if (hasBook) {
     const linked = new Set(ids);
     const found = await book(ctx, "find", { limit: 200 });
-    const options = found.ok ? found.contacts.filter((c) => !linked.has(c.id)).sort((a, b) => key(a.name).localeCompare(key(b.name))).map((c) => ({ value: c.id, label: `${c.name}${c.organisation ? ` — ${c.organisation}` : ""}${c.email ? ` (${c.email})` : ""}` })) : [];
+    const options = found.ok ? found.contacts.filter((c) => !linked.has(c.id)).sort((a, b) => String(a.name).localeCompare(String(b.name))).map((c) => ({ value: c.id, label: `${c.name}${c.organisation ? ` — ${c.organisation}` : ""}${c.email ? ` (${c.email})` : ""}` })) : [];
     out.push(
       { type: "adminForm", action: "linkContact", title: t("linkTitle"), submitLabel: t("linkSubmit"), fields: [{ name: "partnerId", kind: "hidden", value: partner.id }, { name: "contactId", label: t("linkPick"), kind: "select", options: [{ value: "", label: t("linkPickNone") }, ...options] }, { name: "search", label: t("linkSearch"), help: t("linkSearchHelp") }] },
       { type: "adminForm", action: "createContact", title: t("contactAdd"), submitLabel: t("contactAdd"), fields: [{ name: "partnerId", kind: "hidden", value: partner.id }, { name: "name", label: t("name"), required: true }, { name: "role", label: t("role") }, { name: "organisation", label: t("organization") }, { name: "email", label: t("email"), kind: "email", help: t("contactAddHelp") }, { name: "phone", label: t("phone") }] },
     );
-  }
-  return out;
-}
-
-/** Page « Fusionner mes contacts avec le module Contacts » : aperçu exact, confirmation, bilan, cas ambigus, annulation. */
-async function mergePage(ctx, state, hasBook, brandOf) {
-  const t = ctx.t;
-  const out = [{ type: "markdown", text: `[${t("back")}](?)` }, { type: "heading", text: t("mergeTitle") }];
-  if (!hasBook) return [...out, { type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` }];
-  if (!state.items.length) return [...out, { type: "markdown", text: t("mergeNothing") }];
-  out.push({ type: "markdown", text: t("mergeIntro") });
-
-  let plan = [];
-  try { plan = await planMerge(ctx, state.pending); } catch { return [...out, { type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` }]; }
-  const n = countPlan(plan);
-  if (state.meta?.data.report) {
-    const r = state.meta.data.report;
-    out.push({ type: "markdown", text: `**${t("mergeLast", { date: String(state.meta.data.at).slice(0, 10) })}** ${reportLine(t, r)}` });
-  }
-  if (state.pending.length) {
-    const todo = n.link + n.create + n.same;
-    if (!state.meta || todo) out.push(
-      { type: "heading", text: t("mergePreview") },
-      { type: "table", columns: [t("mergeWhat"), t("mergeCount")], rows: [
-        [t("mergeTotal"), String(n.total)],
-        [t("mergeLink"), String(n.link)],
-        [t("mergeCreate"), String(n.create)],
-        ...(n.same ? [[t("mergeSame"), String(n.same)]] : []),
-        [t("mergeAmbiguous"), String(n.ambiguous)],
-        ...(state.items.length > state.pending.length ? [[t("mergeSettled"), String(state.items.length - state.pending.length)]] : []),
-      ] },
-    );
-    const ambiguous = plan.filter((p) => p.kind === "ambiguous");
-    if (ambiguous.length) {
-      const cells = (p) => [`${p.item.name || "—"}${p.item.email ? `\n${p.item.email}` : ""}`, brandOf(p.item.partnerId) || "—", t(`why_${p.reason}`), p.candidates.map((c) => `${c.name}${c.email ? ` <${c.email}>` : ""}${c.organisation ? ` — ${c.organisation}` : ""}`).join("\n") || "—"];
-      const columns = [t("mergeAmbContact"), t("mergeAmbPartner"), t("mergeAmbWhy"), t("mergeAmbCandidates")];
-      out.push({ type: "heading", text: t("mergeAmbTitle", { n: ambiguous.length }) }, { type: "markdown", text: t(state.meta ? "mergeAmbHelpAfter" : "mergeAmbHelp") });
-      if (state.meta) {
-        const single = ambiguous.filter((p) => p.candidates.length === 1), others = ambiguous.filter((p) => p.candidates.length !== 1);
-        if (single.length) out.push({ type: "table", columns, rows: single.map(cells), rowIds: single.map((p) => `${p.item.id}~${p.candidates[0].id}`), rowActions: [{ label: t("mergeResolve"), action: "mergeResolve" }, { label: t("mergeDismiss"), action: "mergeDismiss", confirm: t("mergeDismissConfirm") }] });
-        if (others.length) out.push({ type: "table", columns, rows: others.map(cells), rowIds: others.map((p) => p.item.id), rowActions: [{ label: t("mergeDismiss"), action: "mergeDismiss", confirm: t("mergeDismissConfirm") }] });
-      } else out.push({ type: "table", columns, rows: ambiguous.map(cells) });
-    }
-    if (todo || !state.meta) out.push({ type: "heading", text: t("mergeRunTitle") }, { type: "markdown", text: t("mergeRunHelp") });
-    out.push(todo || !state.meta
-      ? { type: "table", columns: [t("mergeRunTitle")], rows: [[t("mergeRunSummary", { link: n.link, create: n.create, same: n.same, ambiguous: n.ambiguous })]], rowIds: ["merge"], rowActions: [{ label: t("mergeRunButton"), action: "mergeRun", confirm: t("mergeConfirm", { link: n.link, create: n.create, same: n.same, ambiguous: n.ambiguous }) }] }
-      : { type: "markdown", text: `*${t("mergeNothingToDo")}*` });
-  } else out.push({ type: "markdown", text: `✅ ${t("mergeAllDone")}` });
-  if (state.meta) {
-    out.push({ type: "heading", text: t("mergeUndoTitle") }, { type: "markdown", text: t("mergeUndoHelp") });
-    out.push({ type: "table", columns: [t("mergeUndoTitle")], rows: [[t("mergeUndoRow")]], rowIds: ["undo"], rowActions: [{ label: t("mergeUndoButton"), action: "mergeUndo", confirm: t("mergeUndoConfirm"), danger: true }] });
   }
   return out;
 }
