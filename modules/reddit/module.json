@@ -5,11 +5,11 @@
     "en": "Reddit",
     "fr": "Reddit"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "platform": "reddit",
   "description": {
-    "en": "Shows your Reddit button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Reddit dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Reddit button in the site header and shares your follower count. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Reddit dans l'en-tête du site et partage le nombre de vos abonnés. Ajoutez-en un par compte si vous en avez plusieurs."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -25,9 +25,18 @@
         "en": "Reddit button in the header",
         "fr": "Bouton Reddit dans l'en-tête"
       }
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "Reddit followers",
+        "fr": "Abonnés Reddit"
+      }
     }
   ],
-  "permissions": [],
+  "permissions": [
+    "admin"
+  ],
   "settings": [
     {
       "key": "profile",
@@ -39,6 +48,19 @@
       "help": {
         "en": "Your Reddit username or the address of your profile or community.",
         "fr": "Votre identifiant Reddit ou l'adresse de votre profil ou de votre communauté."
+      }
+    },
+    {
+      "key": "trackStats",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Follow my statistics",
+        "fr": "Suivre mes statistiques"
+      },
+      "help": {
+        "en": "Counts the followers of your community or profile for the site's statistics. This number is public: nothing to set up.",
+        "fr": "Compte les abonnés de votre communauté ou de votre profil pour les statistiques du site. Ce chiffre est public : rien à régler."
       }
     }
   ]

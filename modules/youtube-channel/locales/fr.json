@@ -1,5 +1,18 @@
 {
   "watch": "Lire la vidéo : {title}",
   "views": "{n} vues",
-  "none": "Aucune vidéo récente."
+  "none": "Aucune vidéo récente.",
+  "stat_followers": "Abonnés YouTube",
+  "stat_content": "Vidéos YouTube",
+  "stat_views": "Vues YouTube",
+  "stats_title": "Vos statistiques YouTube",
+  "col_stat": "Chiffre suivi",
+  "col_value": "Actuellement",
+  "stats_note": "YouTube arrondit le nombre d'abonnés (par exemple 1 230 000 pour 1 234 567) : c'est normal.",
+  "err_hidden": "YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio.",
+  "err_auth": "La clé YouTube est refusée : vérifiez-la dans Réglages.",
+  "err_rate": "YouTube a atteint sa limite de demandes pour aujourd'hui : rien à faire, cela reprendra tout seul.",
+  "err_network": "YouTube ne répond pas pour le moment : rien à faire, on réessaie automatiquement.",
+  "err_config_key": "Ajoutez votre clé YouTube dans Réglages pour suivre vos statistiques (gratuite, voir le guide de ce module).",
+  "err_config_channel": "YouTube ne trouve pas cette chaîne : vérifiez l'identifiant de chaîne dans Réglages (il commence par UC)."
 }

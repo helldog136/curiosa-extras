@@ -5,11 +5,11 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "platform": "discord",
   "description": {
-    "en": "Shows your Discord button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Discord dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Discord button in the site header and shares your member count. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -25,9 +25,18 @@
         "en": "Discord button in the header",
         "fr": "Bouton Discord dans l'en-tête"
       }
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "Discord members",
+        "fr": "Membres Discord"
+      }
     }
   ],
-  "permissions": [],
+  "permissions": [
+    "admin"
+  ],
   "settings": [
     {
       "key": "profile",
@@ -39,6 +48,31 @@
       "help": {
         "en": "Your Discord invite code (e.g. abcDEF) or its full address.",
         "fr": "Le code de votre invitation Discord (ex. abcDEF) ou son adresse complète."
+      }
+    },
+    {
+      "key": "trackStats",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Follow my statistics",
+        "fr": "Suivre mes statistiques"
+      },
+      "help": {
+        "en": "Counts your server's members for the site's statistics (an approximate number, read from the invitation link).",
+        "fr": "Compte les membres de votre serveur pour les statistiques du site (un nombre approximatif, lu à partir du lien d'invitation)."
+      }
+    },
+    {
+      "key": "invite",
+      "type": "text",
+      "label": {
+        "en": "Invitation link (optional)",
+        "fr": "Lien d'invitation (facultatif)"
+      },
+      "help": {
+        "en": "Only if the button above is not already an invitation: paste a Discord invitation link that never expires, so the members can be counted.",
+        "fr": "Seulement si le profil ci-dessus n'est pas déjà une invitation : collez un lien d'invitation Discord sans date de fin, pour compter vos membres."
       }
     }
   ]

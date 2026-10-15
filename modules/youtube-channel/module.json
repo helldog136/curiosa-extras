@@ -5,11 +5,11 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "youtube",
   "description": {
-    "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, and your videos in the site's RSS feed. Works with just the channel id; an API key adds Shorts detection and exact durations.",
-    "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, et vos vidéos dans le flux RSS du site. Fonctionne avec le seul identifiant de chaîne ; une clé d'API ajoute la détection des Shorts et les durées exactes."
+    "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, your videos in the site's RSS feed, and your subscriber, video and view counts. Works with just the channel id; a YouTube key adds the counts, Shorts detection and exact durations.",
+    "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos abonnés, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; une clé YouTube ajoute les chiffres, la détection des Shorts et les durées exactes."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -39,6 +39,13 @@
         "en": "Videos as posters",
         "fr": "Vidéos en affiches"
       }
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "YouTube subscribers, videos and views",
+        "fr": "Abonnés, vidéos et vues YouTube"
+      }
     }
   ],
   "sections": [
@@ -53,7 +60,8 @@
   ],
   "permissions": [
     "sections",
-    "topics"
+    "topics",
+    "admin"
   ],
   "settings": [
     {
@@ -71,14 +79,26 @@
     {
       "key": "apiKey",
       "type": "secret",
-      "advanced": true,
       "label": {
-        "en": "API key (optional)",
-        "fr": "Clé d'API (facultatif)"
+        "en": "YouTube key (optional)",
+        "fr": "Clé YouTube (facultatif)"
       },
       "help": {
-        "en": "Enables Shorts detection and exact durations. Without it, the public feed is used.",
-        "fr": "Active la détection des Shorts et les durées exactes. Sans elle, le flux public est utilisé."
+        "en": "Needed to follow your statistics (subscribers, videos, views). Also adds Shorts detection and exact durations. Free: create it on console.cloud.google.com (service “YouTube Data v3”). See this module's guide.",
+        "fr": "Nécessaire pour suivre vos statistiques (abonnés, vidéos, vues). Ajoute aussi la détection des Shorts et les durées exactes. Gratuite : à créer sur console.cloud.google.com (service « YouTube Data v3 »). Voir le guide de ce module."
+      }
+    },
+    {
+      "key": "trackStats",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Follow my statistics",
+        "fr": "Suivre mes statistiques"
+      },
+      "help": {
+        "en": "Counts your subscribers, videos and views for the site's statistics. Needs the YouTube key above; the subscriber count must be public on your channel.",
+        "fr": "Compte vos abonnés, vos vidéos et vos vues pour les statistiques du site. Demande la clé YouTube ci-dessus ; le nombre d'abonnés doit être public sur votre chaîne."
       }
     },
     {

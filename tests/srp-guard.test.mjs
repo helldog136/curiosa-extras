@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { assertNoSrpViolations, findSrpViolations } from "./helpers/builtinChecks.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const mods = ["modules", "examples"].flatMap((group) => fs.readdirSync(path.join(root, group), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => {
@@ -53,4 +54,44 @@ test("SRP : Contacts possède les personnes, Partenariats ne garde que des réf�
   const writes = [...partnerships.code.matchAll(/store\.add\("([A-Za-z]+)"/g)].map((m) => m[1]);
   assert.deepEqual([...new Set(writes)].sort(), ["contacts", "journal", "legacyContacts", "meta", "partners"]);
   for (const m of mods) if (m.id !== "contacts") assert.ok(!/store\.(?:add|list)\("notes"/.test(m.code) || m.id === "contacts", `${m.id} ne réimplémente pas les notes de Contacts`);
+});
+
+// ── Statistiques des réseaux (« social.stat ») : chaque module publie SES chiffres, un seul parle à chaque plateforme ──────────────────
+
+test("SRP : aucun secret n'est demandé en double par deux modules sans lien de service (clé YouTube, secret Twitch… un seul propriétaire)", () => {
+  assertNoSrpViolations(mods.map((m) => m.manifest));
+  // la règle voit bien une duplication (garde de la garde)
+  const dup = findSrpViolations([{ id: "a", settings: [{ key: "clientSecret", type: "secret" }] }, { id: "b", settings: [{ key: "clientSecret", type: "secret" }] }]);
+  assert.deepEqual(dup.map((v) => v.rule), ["secret"]);
+});
+
+test("SRP : seul le module Chaîne Twitch parle à Twitch (adresses, jetons, connexion) ; les autres passent par son service", () => {
+  for (const m of mods) {
+    if (m.id === "twitch-channel") continue;
+    assert.ok(!/(?:id|api)\.twitch\.tv|oauth2\/(?:token|authorize|revoke|validate)|helix\//.test(m.code), `${m.id} parle à Twitch : passez par le service twitch.live`);
+    assert.ok(!/twitchConnection|twitchPending|refresh_token/.test(m.code), `${m.id} touche aux jetons Twitch`);
+  }
+});
+
+test("SRP : chaque plateforme n'est appelée que par SON module (YouTube, Bluesky, Mastodon, GitHub, Discord, Reddit) ; aucun fournisseur de chiffres n'appelle un autre", () => {
+  const owner = { "googleapis.com": "youtube-channel", "youtube.com/feeds": "youtube-channel", "public.api.bsky.app": "bluesky", "api.github.com": "github", "discord.com/api": "discord", "reddit.com/": "reddit" };
+  for (const m of mods) {
+    for (const [host, id] of Object.entries(owner)) {
+      if (m.id === id) continue;
+      // les URL de profil (boutons) d'autres modules peuvent citer reddit.com… : on ne regarde que les appels réseau (fetch/get)
+      const calls = [...m.code.matchAll(/\b(?:fetch|get|getPublic)\(\s*[`"']([^`"']*)/g)].map((x) => x[1]);
+      assert.ok(!calls.some((c) => c.includes(host)), `${m.id} appelle ${host}, qui appartient à ${id}`);
+    }
+  }
+});
+
+test("SRP : les fournisseurs de « social.stat » déclarent le sujet, l'implémentent, et ne le consomment pas (le collecteur est un autre module)", () => {
+  const providers = mods.filter((m) => (m.manifest.provides ?? []).some((p) => p.topic === "social.stat"));
+  assert.deepEqual(providers.map((m) => m.id).sort(), ["bluesky", "discord", "github", "mastodon", "reddit", "twitch-channel", "youtube-channel"]);
+  for (const m of providers) {
+    assert.ok(/"social\.stat"/.test(m.code), `${m.id} : exports["social.stat"] absent`);
+    assert.ok(!(m.manifest.consumes ?? []).some((c) => c.topic === "social.stat"), `${m.id} ne consomme pas ses propres chiffres`);
+    assert.ok(!/topics\.collect\(\s*["']social\.stat/.test(m.code), m.id);
+    assert.equal(new Set(m.manifest.provides.map((p) => p.topic)).size, m.manifest.provides.length, `${m.id} : sujet déclaré deux fois`);
+  }
 });

@@ -44,17 +44,18 @@
     {
       "id": "bluesky",
       "name": "Bluesky",
-      "description": "Affiche le bouton de votre Bluesky dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Bluesky dans l'en-tête du site et partage le nombre de vos abonnés et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bluesky",
       "ref": "v1.3.3",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "platform": "bluesky",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🦋",
       "provides": [
-        "social.link"
+        "social.link",
+        "social.stat"
       ]
     },
     {
@@ -115,17 +116,18 @@
     {
       "id": "discord",
       "name": "Discord",
-      "description": "Affiche le bouton de votre Discord dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
       "ref": "v1.3.3",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
       "provides": [
-        "social.link"
+        "social.link",
+        "social.stat"
       ]
     },
     {
@@ -175,17 +177,18 @@
     {
       "id": "github",
       "name": "GitHub",
-      "description": "Affiche le bouton de votre GitHub dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre GitHub dans l'en-tête du site et partage le nombre de vos abonnés. Ajoutez-en un par compte si vous en avez plusieurs.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/github",
       "ref": "v1.3.3",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "platform": "github",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💻",
       "provides": [
-        "social.link"
+        "social.link",
+        "social.stat"
       ]
     },
     {
@@ -282,17 +285,18 @@
     {
       "id": "mastodon",
       "name": "Mastodon",
-      "description": "Affiche le bouton de votre Mastodon dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Mastodon dans l'en-tête du site et partage le nombre de vos abonnés et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mastodon",
       "ref": "v1.3.3",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "platform": "mastodon",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🐘",
       "provides": [
-        "social.link"
+        "social.link",
+        "social.stat"
       ]
     },
     {
@@ -405,17 +409,18 @@
     {
       "id": "reddit",
       "name": "Reddit",
-      "description": "Affiche le bouton de votre Reddit dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Reddit dans l'en-tête du site et partage le nombre de vos abonnés. Ajoutez-en un par compte si vous en avez plusieurs.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/reddit",
       "ref": "v1.3.3",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "platform": "reddit",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "👽",
       "provides": [
-        "social.link"
+        "social.link",
+        "social.stat"
       ]
     },
     {
@@ -572,11 +577,11 @@
     {
       "id": "twitch-channel",
       "name": "Chaîne Twitch",
-      "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct et derniers clips.",
+      "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, le nombre de vos followers et de vos abonnés payants.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.3.3",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -584,7 +589,8 @@
       "provides": [
         "social.link",
         "stream.live",
-        "maze.poster"
+        "maze.poster",
+        "social.stat"
       ],
       "requires": {
         "core": "0.1.14"
@@ -615,11 +621,11 @@
     {
       "id": "youtube-channel",
       "name": "Chaîne YouTube",
-      "description": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, et vos vidéos dans le flux RSS du site. Fonctionne avec le seul identifiant de chaîne ; une clé d'API ajoute la détection des Shorts et les durées exactes.",
+      "description": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos abonnés, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; une clé YouTube ajoute les chiffres, la détection des Shorts et les durées exactes.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-channel",
       "ref": "v1.3.3",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -627,7 +633,8 @@
       "provides": [
         "social.link",
         "feed.item",
-        "maze.poster"
+        "maze.poster",
+        "social.stat"
       ]
     },
     {
