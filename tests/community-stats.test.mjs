@@ -346,7 +346,28 @@ test("MCP community_stats_list : valeurs, origine, fraîcheur, évolutions 7/30 
     assert.deepEqual(later.stats.map((s) => [s.platform, s.status, s.problem ?? null, s.origin]), [["tiktok", "manual", null, "manual"], ["twitch", "no_data", "hidden", "automatic"], ["youtube", "not_shared_anymore", null, "automatic"]]);
     assert.equal(later.stats[1].value, 1120, "dernier chiffre connu, signalé par le statut");
   } finally { Date.now = realNow; }
-  assert.match((await def.mcp.community_stats_list(make().ctx, {})).note, /No statistic yet/);
+  assert.match((await def.mcp.community_stats_list(make().ctx, {})).note, /No reading yet/);
+});
+
+test("MCP community_stats_list : jamais de liste vide muette (aucun relevé, réseaux muets, filtre trop strict) et unité de chaque chiffre", async () => {
+  const fresh = make();
+  const never = await def.mcp.community_stats_list(fresh.ctx, {});
+  assert.equal(never.count, 0);
+  assert.match(never.note, /Mettre à jour maintenant/, "dit comment déclencher un relevé");
+  assert.match(never.note, /No reading yet/);
+  // Un relevé a eu lieu, mais aucun réseau ne partage ses chiffres.
+  const quiet = make({ items: [] });
+  await collectNow(quiet.ctx, { now: NOW, force: true });
+  assert.match((await def.mcp.community_stats_list(quiet.ctx, {})).note, /no network shares figures.*Suivre mes statistiques/s);
+  // Des statistiques existent, mais le filtre n'en laisse aucune : on dit lesquelles existent.
+  const some = make({ items: [item({ value: 10 })] });
+  await collectNow(some.ctx, { now: NOW, force: true });
+  const filtered = await def.mcp.community_stats_list(some.ctx, { metric: "views" });
+  assert.equal(filtered.count, 0);
+  assert.match(filtered.note, /No statistic matches this filter.*twitch.*followers/s);
+  const ok = await def.mcp.community_stats_list(some.ctx, {});
+  assert.equal(ok.note, undefined);
+  assert.equal(ok.stats[0].unit, "people");
 });
 
 test("MCP community_stats_history : plage bornée, points datés avec origine et jeton, amincissement régulier, id inconnu refusé", async () => {

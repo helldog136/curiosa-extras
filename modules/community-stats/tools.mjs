@@ -1,7 +1,7 @@
 // Statistiques de la communauté — les outils pour les assistants (MCP). Aucun secret, aucune adresse privée n'en sort.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
 const { METRICS, fail, clean, platformSlug } = await import(`./model.mjs${v}`);
-const { loadStats, readPoints } = await import(`./stats.mjs${v}`);
+const { loadStats, readPoints, readRun } = await import(`./stats.mjs${v}`);
 const { changesOf } = await import(`./evolution.mjs${v}`);
 const { setManual } = await import(`./manual.mjs${v}`);
 
@@ -19,7 +19,7 @@ async function describe(ctx, stat, now) {
   const { week, month } = await changesOf(ctx, stat);
   return {
     id: stat.id, platform: stat.platform, account: stat.account, metric: stat.metric, label: stat.label,
-    value: stat.lastValue ?? null,
+    value: stat.lastValue ?? null, unit: UNITS[stat.metric] ?? null,
     origin: stat.source === "manual" ? "manual" : "automatic",
     status: statusOf(stat),
     ...(stat.state === "error" ? { problem: stat.error } : {}),
@@ -28,6 +28,21 @@ async function describe(ctx, stat, now) {
     change7d: change(week), change30d: change(month),
     shownOnSite: stat.visible === true,
   };
+}
+
+const UNITS = { followers: "people", paying: "people", content: "posts", views: "views" };
+
+/** Pourquoi la liste est vide, et quoi faire : jamais une liste vide muette. `all` = toutes les statistiques connues (avant filtre). */
+async function emptyNote(ctx, args, platform) {
+  const all = await loadStats(ctx);
+  if (all.length) {
+    const platforms = [...new Set(all.map((s) => s.platform))].sort();
+    const metrics = METRICS.filter((m) => all.some((s) => s.metric === m));
+    return `No statistic matches this filter${platform ? ` (platform "${platform}")` : ""}${args?.metric ? ` (metric "${args.metric}")` : ""}. Statistics exist for platforms: ${platforms.join(", ")}; kinds of figure: ${metrics.join(", ")}. Call again without a filter or with one of these values.`;
+  }
+  const run = (await readRun(ctx)).data;
+  if (!run.lastRunAt) return "No reading yet: the site has not taken any reading since the module was installed (it is taken automatically within about 15 minutes, then once per chosen period). Ask the owner to open 'Statistiques de la communauté' in the admin and click 'Mettre à jour maintenant' (Update now), then ask again. Figures typed by hand can also be recorded with community_stats_set_manual.";
+  return `A reading was taken ${new Date(run.lastRunAt).toISOString()} but no network shares figures: the owner must open the module of each network (Twitch, YouTube, Bluesky, Mastodon, GitHub, Discord, Reddit…) and tick 'Suivre mes statistiques' (Follow my statistics), then click 'Mettre à jour maintenant' (Update now) in 'Statistiques de la communauté'. For Instagram, TikTok, X or Facebook, record the figure by hand with community_stats_set_manual (ask the owner for it).`;
 }
 
 export default {
@@ -40,7 +55,8 @@ export default {
         .sort((a, b) => a.platform.localeCompare(b.platform) || a.account.localeCompare(b.account) || METRICS.indexOf(a.metric) - METRICS.indexOf(b.metric));
       const out = [];
       for (const s of stats) out.push(await describe(ctx, s, now));
-      return { count: out.length, note: out.length ? undefined : "No statistic yet: the social modules have not shared figures, and no manual account exists.", metrics: { followers: "free audience", paying: "paying audience (paid subscribers, members, patrons)", content: "number of posts/videos", views: "cumulative views" }, stats: out };
+      const note = out.length ? undefined : await emptyNote(ctx, args, platform);
+      return { count: out.length, ...(note ? { note } : {}), metrics: { followers: "free audience", paying: "paying audience (paid subscribers, members, patrons)", content: "number of posts/videos", views: "cumulative views" }, stats: out };
     },
 
     async community_stats_history(ctx, args) {
