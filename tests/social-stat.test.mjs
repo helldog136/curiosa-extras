@@ -130,7 +130,9 @@ for (const id of ids) {
     const noProfile = Object.fromEntries(Object.keys(P.settings).map((k) => [k, ""]));
     assert.deepEqual(await statOf(id, ctxOf(id, noProfile)), []);
     assert.deepEqual(await statOf(id, ctxOf(id, { trackStats: false })), []);
-    assert.deepEqual(await def(id).adminPanel(ctxOf(id, { trackStats: false })), []);
+    const panel = await def(id).adminPanel(ctxOf(id, { trackStats: false }));
+    if (id === "youtube-channel") assert.deepEqual(panel.map((b) => b.type), ["html"], "seul le guide de la clé est montré tant que le suivi est décoché");
+    else assert.deepEqual(panel, []);
     assert.equal(calls.length, 0);
     if (id !== "youtube-channel") assert.ok((await statOf(id, ctxOf(id))).length > 0, "sans réglage enregistré, le suivi est actif");
     assert.ok((await statOf(id, ctxOf(id, { trackStats: true }))).length > 0);
@@ -406,7 +408,7 @@ test("aucun fournisseur n'écrit dans les journaux, ne stocke rien, n'appelle qu
     assert.ok(!/console\.(log|info|warn|error|debug)/.test(src), id);
     assert.ok(!/ctx\.api\.store|localStorage/.test(src), `${id} : les chiffres ne sont gardés qu'en mémoire`);
     const hosts = new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]).filter((h) => !/^(www\.)?(example|schema|bsky\.app|github\.com|discord\.(gg|com)|reddit\.com|youtube\.com|i\.ytimg\.com)$/.test(h) && !/\bexemple\b/.test(h)));
-    for (const h of hosts) assert.ok(h.endsWith(PLATFORMS[id].host) || h === PLATFORMS[id].host || /googleapis|youtube|ytimg/.test(h) && id === "youtube-channel", `${id} appelle ${h}`);
+    for (const h of hosts) assert.ok(h.endsWith(PLATFORMS[id].host) || h === PLATFORMS[id].host || /googleapis|youtube|ytimg/.test(h) && id === "youtube-channel" || h === "console.cloud.google.com" && id === "youtube-channel" /* lien du guide, jamais un appel */, `${id} appelle ${h}`);
   }
 });
 
