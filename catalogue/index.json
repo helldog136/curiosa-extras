@@ -82,6 +82,21 @@
       "icon": "🗂️"
     },
     {
+      "id": "community-stats",
+      "name": "Statistiques de la communauté",
+      "description": "Garde les chiffres de vos réseaux (abonnés, abonnés payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/community-stats",
+      "ref": "v1.3.3",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "📊",
+      "requires": {
+        "core": "0.1.16"
+      }
+    },
+    {
       "id": "contact-form",
       "name": "Formulaire de contact",
       "description": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses.",

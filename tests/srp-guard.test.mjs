@@ -54,3 +54,13 @@ test("SRP : Contacts possède les personnes, Partenariats ne garde que des réf�
   assert.deepEqual([...new Set(writes)].sort(), ["contacts", "journal", "legacyContacts", "meta", "partners"]);
   for (const m of mods) if (m.id !== "contacts") assert.ok(!/store\.(?:add|list)\("notes"/.test(m.code) || m.id === "contacts", `${m.id} ne réimplémente pas les notes de Contacts`);
 });
+
+test("SRP : Statistiques de la communauté collecte et garde les chiffres, sans en fournir ; chaque module de réseau reste propriétaire des siens", () => {
+  const stats = mods.find((m) => m.id === "community-stats");
+  assert.ok(stats, "module présent");
+  assert.deepEqual((stats.manifest.consumes ?? []).map((c) => c.topic), ["social.stat"]);
+  assert.deepEqual(stats.manifest.provides ?? [], [], "il ne republie rien : les chiffres restent à leur propriétaire");
+  assert.ok((stats.manifest.mcp ?? []).every((t) => t.name.startsWith("community_stats_") && t.default === false));
+  for (const m of mods) if (m.id !== "community-stats") assert.ok(!(m.manifest.mcp ?? []).some((t) => t.name.startsWith("community_stats_")), `${m.id} n'expose pas d'outil de statistiques de la communauté`);
+  for (const m of mods) if (m.id !== "community-stats") assert.ok(!/communityStats|communitySamples|communityRun/.test(m.code), `${m.id} n'écrit pas dans les collections de Statistiques de la communauté`);
+});

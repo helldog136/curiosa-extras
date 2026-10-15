@@ -14,6 +14,19 @@ Chaque module est un dossier autonome (`module.json`, `index.mjs`, `locales/`, `
 ## Branches
 Même cycle que le cœur : `dev` reçoit le travail, la fusion de `dev` dans `master` publie. Les versions du cœur embarquent un instantané de `master` pour l'assistant de première installation.
 
+## Les chiffres des réseaux : le contrat `social.stat`
+Le module *Statistiques de la communauté* relève, garde et sert (admin, assistant) les chiffres des réseaux de la personne. Chaque module de réseau **possède ses chiffres** et les publie sur le sujet `social.stat` ; Statistiques de la communauté ne fait que les collecter (aucun cumul inventé, aucun affichage public pour l'instant). Un fournisseur déclare `provides: [{ "topic": "social.stat" }]` et implémente `exports["social.stat"](ctx, { locale, limit, tags })`, qui renvoie des éléments :
+
+```js
+{ id: "twitch-channel:emma:followers", // stable : "<module>:<clé d'instance>:<type de chiffre>" ("manual" est réservé)
+  platform: "twitch", account: "emma_live", accountKey: "emma",
+  metric: "followers", // followers (audience gratuite) | paying (audience payante) | content (nombre de contenus) | views (vues cumulées)
+  label: "Followers Twitch", value: 1250, // entier >= 0 ; ABSENT quand `error` est présent, jamais une valeur périmée
+  asOf: "2026-10-14T10:00:00Z", url: "https://…", // url facultative
+  error: undefined /* ou "auth" | "rate" | "network" | "hidden" | "config" */ }
+```
+Un élément invalide est écarté seul ; un élément avec `error` ne produit jamais de point d'historique. Le détail (limites de taille, stockage, volumes) est dans `modules/community-stats/README.md`.
+
 ## Tests
 ```
 git clone https://github.com/helldog136/Curiosa ../Curiosa && (cd ../Curiosa && npm ci)

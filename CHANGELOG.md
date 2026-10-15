@@ -4,6 +4,12 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*Changements depuis la 1.3.3.*
+
+- **Le site peut maintenant tenir à jour les chiffres de vos réseaux.** Vos abonnés, publications et vues sont notés régulièrement, avec leur évolution, pour vous et pour votre IA ; rien n'est montré sur votre site sans votre accord. Nouveau : Statistiques de la communauté ; il faut Curiosa 0.1.16 ou plus.
+
 ## 1.3.3
 
 *Changements depuis la 1.3.2.*
