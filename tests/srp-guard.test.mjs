@@ -61,8 +61,8 @@ test("SRP : Statistiques de la communauté collecte et garde les chiffres, sans 
   assert.ok(stats, "module présent");
   assert.deepEqual((stats.manifest.consumes ?? []).map((c) => c.topic), ["social.stat"]);
   assert.deepEqual(stats.manifest.provides ?? [], [], "il ne republie rien : les chiffres restent à leur propriétaire");
-  assert.ok((stats.manifest.mcp ?? []).every((t) => t.name.startsWith("community_stats_") && t.default === false));
-  for (const m of mods) if (m.id !== "community-stats") assert.ok(!(m.manifest.mcp ?? []).some((t) => t.name.startsWith("community_stats_")), `${m.id} n'expose pas d'outil de statistiques de la communauté`);
+  assert.ok((stats.manifest.mcp ?? []).every((t) => (t.name.startsWith("community_stats_") || t.name === "stats_set_manual") && t.default === false));
+  for (const m of mods) if (m.id !== "community-stats") assert.ok(!(m.manifest.mcp ?? []).some((t) => t.name.startsWith("community_stats_") || t.name === "stats_set_manual"), `${m.id} n'expose pas d'outil de statistiques de la communauté`);
   for (const m of mods) if (m.id !== "community-stats") assert.ok(!/communityStats|communitySamples|communityRun/.test(m.code), `${m.id} n'écrit pas dans les collections de Statistiques de la communauté`);
 });
 

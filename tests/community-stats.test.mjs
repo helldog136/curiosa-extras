@@ -44,12 +44,12 @@ test("manifeste : valide, 1.0.0, minCore 0.1.16, instance unique, plateforme neu
 });
 
 test("MCP : trois outils, TOUS désactivés par défaut, aucun destructif ; la lecture est en lecture seule, l'écriture ne l'est pas ; bornes déclarées", () => {
-  assert.deepEqual(manifestJson.mcp.map((a) => a.name), ["community_stats_list", "community_stats_history", "community_stats_set_manual"]);
+  assert.deepEqual(manifestJson.mcp.map((a) => a.name), ["community_stats_list", "community_stats_history", "stats_set_manual"]);
   for (const a of manifestJson.mcp) { assert.strictEqual(a.default, false, a.name); assert.ok(!a.destructive, a.name); assert.equal(typeof def.mcp[a.name], "function"); assert.ok(a.description.length > 150, "description écrite pour une IA"); }
   assert.equal(manifestJson.mcp.find((a) => a.name === "community_stats_list").readOnly, true);
   assert.equal(manifestJson.mcp.find((a) => a.name === "community_stats_history").readOnly, true);
-  assert.ok(!manifestJson.mcp.find((a) => a.name === "community_stats_set_manual").readOnly);
-  const set = manifestJson.mcp.find((a) => a.name === "community_stats_set_manual").input;
+  assert.ok(!manifestJson.mcp.find((a) => a.name === "stats_set_manual").readOnly);
+  const set = manifestJson.mcp.find((a) => a.name === "stats_set_manual").input;
   assert.deepEqual(set.required, ["platform", "account", "metric", "value"]);
   assert.equal(set.properties.value.minimum, 0); assert.equal(set.properties.value.maximum, MAX_VALUE); assert.equal(set.properties.value.type, "integer");
   assert.deepEqual(set.properties.metric.enum, ["followers", "paying", "content", "views"]);
@@ -384,22 +384,22 @@ test("MCP community_stats_history : plage bornée, points datés avec origine et
     const clamped = await def.mcp.community_stats_history(ctx, { id, days: 99999, limit: 99999 });
     assert.equal(clamped.days, 1830); assert.ok(clamped.points.length <= 500);
     await assert.rejects(def.mcp.community_stats_history(ctx, { id: "nope" }), (e) => e.expose === true);
-    await def.mcp.community_stats_set_manual(ctx, { platform: "Facebook", account: "Emma", metric: "views", value: 12 }, { name: "Claude perso" });
+    await def.mcp.stats_set_manual(ctx, { platform: "Facebook", account: "Emma", metric: "views", value: 12 }, { name: "Claude perso" });
     const m = await def.mcp.community_stats_history(ctx, { id: "manual:facebook:emma:views" });
     assert.deepEqual(m.points.map((p) => [p.origin, p.by, p.value]), [["manual", "Claude perso", 12]]);
   } finally { Date.now = realNow; }
 });
 
-test("MCP community_stats_set_manual : compte manuel seulement, entier ≥ 0, nom du jeton dans l'historique, refus exposé pour un compte automatique", async () => {
+test("MCP stats_set_manual : compte manuel seulement, entier ≥ 0, nom du jeton dans l'historique, refus exposé pour un compte automatique", async () => {
   const { ctx } = make({ items: [item()] });
   await collectNow(ctx, { now: Date.now() });
-  const r = await def.mcp.community_stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4200 }, { name: "Jeton Claude" });
+  const r = await def.mcp.stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4200 }, { name: "Jeton Claude" });
   assert.deepEqual([r.id, r.value, r.origin, r.shownOnSite], ["manual:instagram:emma:followers", 4200, "manual", false]);
   assert.equal((await pointsOf(ctx, r.id))[0][3], "Jeton Claude");
-  await def.mcp.community_stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4201 }, undefined);
+  await def.mcp.stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4201 }, undefined);
   assert.equal((await pointsOf(ctx, r.id))[0][3], "assistant", "jeton inconnu");
-  await assert.rejects(def.mcp.community_stats_set_manual(ctx, { platform: "Twitch", account: "emma_live", metric: "followers", value: 5 }, { name: "x" }), (e) => e.expose === true && /already read automatically/.test(e.message));
-  await assert.rejects(def.mcp.community_stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: -4 }, {}), (e) => e.expose === true);
+  await assert.rejects(def.mcp.stats_set_manual(ctx, { platform: "Twitch", account: "emma_live", metric: "followers", value: 5 }, { name: "x" }), (e) => e.expose === true && /already read automatically/.test(e.message));
+  await assert.rejects(def.mcp.stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: -4 }, {}), (e) => e.expose === true);
 });
 
 test("admin : état vide chaleureux, avec l'action à faire ; aucun jargon dans la page", async () => {

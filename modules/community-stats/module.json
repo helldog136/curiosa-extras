@@ -244,7 +244,7 @@
       }
     },
     {
-      "name": "community_stats_set_manual",
+      "name": "stats_set_manual",
       "default": false,
       "description": "Record a figure typed by hand for a network the site cannot read by itself (Instagram, TikTok, X, Facebook…). Creates the account the first time. Refused for an account that is read automatically. The entry is marked 'typed by hand' with its date and the name of this token in the history; a second entry in the same period replaces the first. Ask the owner for the figure: never guess it.",
       "input": {

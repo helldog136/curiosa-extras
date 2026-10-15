@@ -41,8 +41,8 @@ async function emptyNote(ctx, args, platform) {
     return `No statistic matches this filter${platform ? ` (platform "${platform}")` : ""}${args?.metric ? ` (metric "${args.metric}")` : ""}. Statistics exist for platforms: ${platforms.join(", ")}; kinds of figure: ${metrics.join(", ")}. Call again without a filter or with one of these values.`;
   }
   const run = (await readRun(ctx)).data;
-  if (!run.lastRunAt) return "No reading yet: the site has not taken any reading since the module was installed (it is taken automatically within about 15 minutes, then once per chosen period). Ask the owner to open 'Statistiques de la communauté' in the admin and click 'Mettre à jour maintenant' (Update now), then ask again. Figures typed by hand can also be recorded with community_stats_set_manual.";
-  return `A reading was taken ${new Date(run.lastRunAt).toISOString()} but no network shares figures: the owner must open the module of each network (Twitch, YouTube, Bluesky, Mastodon, GitHub, Discord, Reddit…) and tick 'Suivre mes statistiques' (Follow my statistics), then click 'Mettre à jour maintenant' (Update now) in 'Statistiques de la communauté'. For Instagram, TikTok, X or Facebook, record the figure by hand with community_stats_set_manual (ask the owner for it).`;
+  if (!run.lastRunAt) return "No reading yet: the site has not taken any reading since the module was installed (it is taken automatically within about 15 minutes, then once per chosen period). Ask the owner to open 'Statistiques de la communauté' in the admin and click 'Mettre à jour maintenant' (Update now), then ask again. Figures typed by hand can also be recorded with stats_set_manual.";
+  return `A reading was taken ${new Date(run.lastRunAt).toISOString()} but no network shares figures: the owner must open the module of each network (Twitch, YouTube, Bluesky, Mastodon, GitHub, Discord, Reddit…) and tick 'Suivre mes statistiques' (Follow my statistics), then click 'Mettre à jour maintenant' (Update now) in 'Statistiques de la communauté'. For Instagram, TikTok, X or Facebook, record the figure by hand with stats_set_manual (ask the owner for it).`;
 }
 
 export default {
@@ -74,7 +74,7 @@ export default {
       };
     },
 
-    async community_stats_set_manual(ctx, args, actor) {
+    async stats_set_manual(ctx, args, actor) {
       const stat = await setManual(ctx, args, { now: Date.now(), by: clean(actor?.name, 60) ?? "assistant" });
       return { id: stat.id, platform: stat.platform, account: stat.account, metric: stat.metric, value: stat.lastValue, recordedAt: iso(stat.lastAt), origin: "manual", shownOnSite: stat.visible === true };
     },

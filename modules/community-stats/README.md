@@ -26,7 +26,7 @@ Accordez-lui l'accès à ces outils (administration → API & MCP → accès du 
 |---|---|
 | `community_stats_list` | Les chiffres actuels, leur origine (automatique ou saisi à la main), leur fraîcheur, l'évolution sur 7 et 30 jours. Filtres : `platform`, `metric`. Lecture seule. |
 | `community_stats_history` | L'historique d'UN chiffre (`id` pris dans la liste), sur 1 à 1830 jours, au plus 500 points. Lecture seule. |
-| `community_stats_set_manual` | Note à la main un chiffre pour un réseau sans lecture automatique. Refusé pour un compte lu automatiquement. Le nom du jeton est gardé dans l'historique. |
+| `stats_set_manual` | Note à la main un chiffre pour un réseau sans lecture automatique. Refusé pour un compte lu automatiquement. Le nom du jeton est gardé dans l'historique. |
 
 Exemples de questions : « Combien d'abonnés ai-je gagnés ce mois-ci ? », « Quel réseau progresse le plus vite ? », « Mon nombre de vues YouTube a-t-il baissé depuis mars ? », « Note que j'ai 4 200 abonnés sur Instagram. » Les types de chiffres : `followers` (audience gratuite), `paying` (audience payante), `content` (publications), `views` (vues). Quand `status` vaut `no_data`, le chiffre est le dernier connu et `problem` dit pourquoi il manque.
 
