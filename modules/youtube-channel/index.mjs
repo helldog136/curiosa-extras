@@ -146,14 +146,27 @@ function statItems(ctx, r) {
 /** Le message de l'état d'un chiffre, pour la personne qui gère le site : ce qui se passe et quoi faire. */
 const whyNot = (ctx, item, r) => ctx.t(item.error === "config" ? (r.reason === "key" ? "err_config_key" : "err_config_channel") : `err_${item.error}`);
 
+/** Le guide « Comment créer ma clé YouTube ? » (repliable) : les étapes dans la console Google, en mots simples. Aucun secret ; le lien ouvre la console dans un nouvel onglet. */
+export function keyGuideHtml(ctx) {
+  const t = (k) => esc(ctx.t(k));
+  const li = (prefix, n) => Array.from({ length: n }, (_, i) => `<li style="margin:.35rem 0">${t(`${prefix}${i + 1}`)}</li>`).join("");
+  return `<details style="margin:1rem 0;border:1px solid var(--v-border,#8884);border-radius:.75rem;padding:.25rem 1rem">` +
+    `<summary style="cursor:pointer;min-height:2.75rem;display:flex;align-items:center;font-weight:600">${t("guide_title")}</summary>` +
+    `<div style="padding-bottom:.75rem"><p>${t("guide_intro")}</p><ol style="padding-left:1.25rem">${li("guide_step", 6)}</ol>` +
+    `<p><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" style="font-weight:600">${t("guide_open")}</a></p>` +
+    `<h4 style="margin:1rem 0 .25rem;font-weight:600">${t("guide_err_title")}</h4><ul style="padding-left:1.25rem">${li("guide_err", 3)}</ul>` +
+    `<p style="color:var(--v-muted,#888)">${t("guide_note")}</p></div></details>`;
+}
+
 export default {
   async adminPanel(ctx) {
-    if (ctx.setting("trackStats") !== true) return [];
+    const guideBlock = { type: "html", html: keyGuideHtml(ctx) };
+    if (ctx.setting("trackStats") !== true) return [guideBlock];
     const { channelId, apiKey } = cfg(ctx);
-    if (!CHANNEL_RE.test(channelId)) return [{ type: "banner", tone: "warning", text: ctx.t("err_config_channel") }];
+    if (!CHANNEL_RE.test(channelId)) return [guideBlock, { type: "banner", tone: "warning", text: ctx.t("err_config_channel") }];
     const r = await channelStats(channelId, apiKey);
     const rows = statItems(ctx, r).map((i) => [i.label, i.error ? whyNot(ctx, i, r) : i.value.toLocaleString(ctx.locale)]);
-    return [{ type: "heading", text: ctx.t("stats_title") }, { type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows }, { type: "markdown", text: ctx.t("stats_note") }];
+    return [guideBlock, { type: "heading", text: ctx.t("stats_title") }, { type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows }, { type: "markdown", text: ctx.t("stats_note") }];
   },
   sections: {
     async featured(ctx) {

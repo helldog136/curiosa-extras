@@ -6,6 +6,8 @@
 // Le fichier voisin est importé avec la même « version » que celui-ci : après une mise à jour, jamais d'ancien helix.mjs resté en mémoire.
 const helix = await import(new URL(`./helix.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const connect = await import(new URL(`./connect.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const live = await import(new URL(`./live.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const analytics = await import(new URL(`./analytics.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const { LOGIN, hasCredentials, valid, liveStatus, recentClips } = helix;
 export const { currentStream } = helix;
 export { recentClips };
@@ -76,7 +78,39 @@ async function statsOf(ctx) {
   return { creds, results: await Promise.all(connect.wantedMetrics(ctx).map(async (metric) => ({ metric, result: await helix.userStat(conn, metric) }))) };
 }
 
+const LIVE_METRICS = ["avg_viewers", "peak_viewers", "hours_streamed", "hours_watched", "followers_gained"];
+/**
+ * Les chiffres de PÉRIODE (30 jours glissants) tirés de l'enregistreur de directs : directs commencés dans les 30 derniers jours.
+ * Entiers >= 0 ; les durées sont en MINUTES (hours_streamed, hours_watched : le nom est celui du contrat, l'unité est la minute, dite dans le libellé).
+ */
+async function liveItems(ctx, creds, results) {
+  const d = await live.trackingState(ctx);
+  if (!d.since) return [];   // pas encore de première mesure : rien à publier
+  const { sessions } = await live.listSessions(ctx, { since: Date.now() - 30 * 86_400_000, limit: 400 });
+  const fig = live.periodFigures(sessions);
+  const folErr = results.find((r) => r.metric === "followers")?.result.error;
+  const asOf = new Date(d.lastOkAt ?? d.since).toISOString();
+  const wantsFollowers = ctx.setting("statsFollowers") !== false;
+  return LIVE_METRICS.filter((m) => m !== "followers_gained" || wantsFollowers).map((metric) => {
+    const error = metric === "followers_gained" && folErr && sessions.length && !fig.knownFollowers ? folErr : null;
+    return { id: `twitch-channel:${ctx.instance.key}:${metric}`, platform: "twitch", account: creds.channel, accountKey: ctx.instance.key, metric, label: ctx.t(`stat_${metric}`),
+      ...(error ? {} : { value: fig[metric] }), asOf, url: urlOf(creds.channel), ...(error ? { error } : {}) };
+  });
+}
+
 export default {
+  mcp: analytics.tools(credentials),
+  /** L'enregistreur de directs : repasse chaque minute, mais ne mesure qu'à son rythme (2 minutes en direct, 4 hors direct) ; rien du tout si « Suivre mes statistiques » est décoché. */
+  tasks: {
+    "record-lives": {
+      everyMinutes: 1,
+      run: async (ctx) => {
+        if (ctx.setting("trackStats") !== true) return;
+        const creds = await credentials(ctx);
+        await live.trackNow(ctx, creds, connect.liveConn(ctx, creds));
+      },
+    },
+  },
   exports: {
     /** Le bouton de la chaîne pour le cœur (en-tête) : rien tant que la chaîne n'est pas réglée. */
     async "social.link"(ctx) {
@@ -100,7 +134,8 @@ export default {
         id: `twitch-channel:${ctx.instance.key}:${metric}`, platform: "twitch", account: creds.channel, accountKey: ctx.instance.key, metric, label: ctx.t(`stat_${metric}`),
         ...(result.error ? {} : { value: result.value }), asOf: new Date(result.at ?? Date.now()).toISOString(), url: urlOf(creds.channel), ...(result.error ? { error: result.error } : {}),
       }));
-      return Number.isInteger(args?.limit) && args.limit > 0 ? out.slice(0, args.limit) : out;
+      const all = [...out, ...(await liveItems(ctx, creds, results))];
+      return Number.isInteger(args?.limit) && args.limit > 0 ? all.slice(0, args.limit) : all;
     },
     async "maze.poster"(ctx, { limit }) {
       return (await recentClips(await credentials(ctx))).slice(0, limit ?? 10).map((x) => ({ title: x.title, url: x.url, ...(x.image ? { image: x.image } : {}), kind: "clip" }));
@@ -168,7 +203,10 @@ export default {
     const base = await sharePanel(ctx);
     if (ctx.setting("trackStats") !== true) return base;
     const creds = await credentials(ctx);
-    return [...base, ...(await connect.panel(ctx, creds, async () => (await statsOf(ctx))?.results ?? []))];
+    const results = (await statsOf(ctx))?.results ?? [];
+    const connection = await connect.panel(ctx, creds, async () => results);
+    const connected = !!results.find((r) => r.metric === "followers" && !r.result.error);
+    return [...base, ...connection, ...(await analytics.panel(ctx, creds, connected))];
   },
   adminActions: {
     async forgetAdopted(ctx) {
@@ -176,6 +214,7 @@ export default {
       return { ok: ctx.t("forgotten"), redirect: "?" };
     },
     disconnect: (ctx) => connect.disconnect(ctx),
+    async eraseLive(ctx) { await live.eraseAll(ctx); return { ok: ctx.t("live_erased"), redirect: "?" }; },
   },
 };
 

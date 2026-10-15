@@ -13,6 +13,20 @@
   "err_auth": "La clé YouTube est refusée : vérifiez-la dans Réglages.",
   "err_rate": "YouTube a atteint sa limite de demandes pour aujourd'hui : rien à faire, cela reprendra tout seul.",
   "err_network": "YouTube ne répond pas pour le moment : rien à faire, on réessaie automatiquement.",
-  "err_config_key": "Ajoutez votre clé YouTube dans Réglages pour suivre vos statistiques (gratuite, voir le guide de ce module).",
-  "err_config_channel": "YouTube ne trouve pas cette chaîne : vérifiez l'identifiant de chaîne dans Réglages (il commence par UC)."
+  "err_config_key": "Ajoutez votre clé YouTube dans Réglages pour suivre vos statistiques (gratuite : le guide « Comment créer ma clé YouTube ? » est en haut de cette page).",
+  "err_config_channel": "YouTube ne trouve pas cette chaîne : vérifiez l'identifiant de chaîne dans Réglages (il commence par UC).",
+  "guide_title": "Comment créer ma clé YouTube ? (gratuite, environ 5 minutes)",
+  "guide_intro": "Cette clé permet à votre site de lire le nombre de vos abonnés, de vos vidéos et de vos vues. Elle ne donne aucun accès à votre compte YouTube.",
+  "guide_step1": "Ouvrez la console Google (bouton ci-dessous) et connectez-vous avec le compte Google de votre choix.",
+  "guide_step2": "En haut de la page, cliquez sur le nom du projet, puis sur « Nouveau projet ». Donnez-lui un nom (par exemple « Mon site »), créez-le et vérifiez qu'il est bien sélectionné.",
+  "guide_step3": "Menu « API et services » puis « Bibliothèque ». Cherchez « YouTube Data API v3 », ouvrez-la et cliquez sur « Activer ». C'est l'étape qu'on oublie le plus souvent.",
+  "guide_step4": "Menu « API et services » puis « Identifiants ». Cliquez sur « Créer des identifiants », puis « Clé API ». Google affiche la clé : copiez-la.",
+  "guide_step5": "Conseillé : cliquez sur « Restreindre la clé », et dans « Restrictions relatives aux API » choisissez seulement « YouTube Data API v3 ». Laissez les restrictions d'application sur « Aucune » : c'est votre site qui appelle YouTube, pas un navigateur.",
+  "guide_step6": "Collez la clé dans le champ « Clé YouTube » de cette page, enregistrez, puis cochez « Suivre mes statistiques ».",
+  "guide_open": "Ouvrir la console Google ↗",
+  "guide_err_title": "Si YouTube refuse la clé",
+  "guide_err1": "Vérifiez que « YouTube Data API v3 » est bien activée sur le projet qui contient la clé (étape 3).",
+  "guide_err2": "Vérifiez qu'aucune restriction d'adresse de site n'est posée sur la clé.",
+  "guide_err3": "Patientez quelques minutes : une clé toute neuve peut mettre un peu de temps à fonctionner.",
+  "guide_note": "Ne partagez jamais cette clé : quelqu'un pourrait épuiser votre quota gratuit. Il est largement suffisant pour ce module."
 }

@@ -125,3 +125,20 @@ test("réseau social : fournit « social.link » (le bouton de la chaîne) ; rie
   assert.deepEqual(await def.exports["social.link"]({ setting: (k) => (k === "channelId" ? id : undefined) }), [{ label: "YouTube", url: `https://www.youtube.com/channel/${id}`, icon: "youtube" }]);
   for (const bad of ["", "UCcourt", "pas-un-id"]) assert.deepEqual(await def.exports["social.link"]({ setting: () => bad }), [], bad);
 });
+
+test("guide de la clé YouTube : toujours présent dans le panneau (avec ou sans suivi des statistiques), repliable, lien sûr, textes fr/en complets et sans secret", async () => {
+  for (const track of [false, true]) {
+    const blocks = await def.adminPanel(ctx({ trackStats: track, channelId: "", apiKey: "" }));
+    const html = blocks.find((b) => b.type === "html")?.html ?? "";
+    assert.ok(html.startsWith("<details"), `guide replié présent (suivi ${track})`);
+    assert.ok(html.includes('rel="noopener noreferrer"') && html.includes('target="_blank"'), "le lien vers la console s'ouvre dans un nouvel onglet, sans fuite");
+    assert.ok(html.includes("https://console.cloud.google.com/"));
+    assert.equal((html.match(/<li /g) ?? []).length, 9, "6 étapes et 3 pistes de dépannage");
+  }
+  const fr = readJson("locales/fr.json");
+  const en = readJson("locales/en.json");
+  const keys = (o) => Object.keys(o).filter((k) => k.startsWith("guide_")).sort();
+  assert.deepEqual(keys(fr), keys(en));
+  assert.equal(keys(fr).length, 14);
+  assert.match(fr.err_config_key, /Comment créer ma clé YouTube/);
+});

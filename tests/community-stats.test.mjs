@@ -28,9 +28,9 @@ function make({ items = [], settings = {}, locale = "fr", messages } = {}) {
 const statOf = async (ctx, id) => (await loadStats(ctx)).find((s) => s.id === id);
 const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
-test("manifeste : valide, 1.0.0, minCore 0.1.16, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
+test("manifeste : valide, 1.1.0, minCore 0.1.16, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.0.0"); assert.equal(manifestJson.minCore, "0.1.16"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.1.0"); assert.equal(manifestJson.minCore, "0.1.16"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });
@@ -44,12 +44,12 @@ test("manifeste : valide, 1.0.0, minCore 0.1.16, instance unique, plateforme neu
 });
 
 test("MCP : trois outils, TOUS désactivés par défaut, aucun destructif ; la lecture est en lecture seule, l'écriture ne l'est pas ; bornes déclarées", () => {
-  assert.deepEqual(manifestJson.mcp.map((a) => a.name), ["community_stats_list", "community_stats_history", "community_stats_set_manual"]);
+  assert.deepEqual(manifestJson.mcp.map((a) => a.name), ["community_stats_list", "community_stats_history", "stats_set_manual"]);
   for (const a of manifestJson.mcp) { assert.strictEqual(a.default, false, a.name); assert.ok(!a.destructive, a.name); assert.equal(typeof def.mcp[a.name], "function"); assert.ok(a.description.length > 150, "description écrite pour une IA"); }
   assert.equal(manifestJson.mcp.find((a) => a.name === "community_stats_list").readOnly, true);
   assert.equal(manifestJson.mcp.find((a) => a.name === "community_stats_history").readOnly, true);
-  assert.ok(!manifestJson.mcp.find((a) => a.name === "community_stats_set_manual").readOnly);
-  const set = manifestJson.mcp.find((a) => a.name === "community_stats_set_manual").input;
+  assert.ok(!manifestJson.mcp.find((a) => a.name === "stats_set_manual").readOnly);
+  const set = manifestJson.mcp.find((a) => a.name === "stats_set_manual").input;
   assert.deepEqual(set.required, ["platform", "account", "metric", "value"]);
   assert.equal(set.properties.value.minimum, 0); assert.equal(set.properties.value.maximum, MAX_VALUE); assert.equal(set.properties.value.type, "integer");
   assert.deepEqual(set.properties.metric.enum, ["followers", "paying", "content", "views"]);
@@ -346,7 +346,28 @@ test("MCP community_stats_list : valeurs, origine, fraîcheur, évolutions 7/30 
     assert.deepEqual(later.stats.map((s) => [s.platform, s.status, s.problem ?? null, s.origin]), [["tiktok", "manual", null, "manual"], ["twitch", "no_data", "hidden", "automatic"], ["youtube", "not_shared_anymore", null, "automatic"]]);
     assert.equal(later.stats[1].value, 1120, "dernier chiffre connu, signalé par le statut");
   } finally { Date.now = realNow; }
-  assert.match((await def.mcp.community_stats_list(make().ctx, {})).note, /No statistic yet/);
+  assert.match((await def.mcp.community_stats_list(make().ctx, {})).note, /No reading yet/);
+});
+
+test("MCP community_stats_list : jamais de liste vide muette (aucun relevé, réseaux muets, filtre trop strict) et unité de chaque chiffre", async () => {
+  const fresh = make();
+  const never = await def.mcp.community_stats_list(fresh.ctx, {});
+  assert.equal(never.count, 0);
+  assert.match(never.note, /Mettre à jour maintenant/, "dit comment déclencher un relevé");
+  assert.match(never.note, /No reading yet/);
+  // Un relevé a eu lieu, mais aucun réseau ne partage ses chiffres.
+  const quiet = make({ items: [] });
+  await collectNow(quiet.ctx, { now: NOW, force: true });
+  assert.match((await def.mcp.community_stats_list(quiet.ctx, {})).note, /no network shares figures.*Suivre mes statistiques/s);
+  // Des statistiques existent, mais le filtre n'en laisse aucune : on dit lesquelles existent.
+  const some = make({ items: [item({ value: 10 })] });
+  await collectNow(some.ctx, { now: NOW, force: true });
+  const filtered = await def.mcp.community_stats_list(some.ctx, { metric: "views" });
+  assert.equal(filtered.count, 0);
+  assert.match(filtered.note, /No statistic matches this filter.*twitch.*followers/s);
+  const ok = await def.mcp.community_stats_list(some.ctx, {});
+  assert.equal(ok.note, undefined);
+  assert.equal(ok.stats[0].unit, "people");
 });
 
 test("MCP community_stats_history : plage bornée, points datés avec origine et jeton, amincissement régulier, id inconnu refusé", async () => {
@@ -363,22 +384,22 @@ test("MCP community_stats_history : plage bornée, points datés avec origine et
     const clamped = await def.mcp.community_stats_history(ctx, { id, days: 99999, limit: 99999 });
     assert.equal(clamped.days, 1830); assert.ok(clamped.points.length <= 500);
     await assert.rejects(def.mcp.community_stats_history(ctx, { id: "nope" }), (e) => e.expose === true);
-    await def.mcp.community_stats_set_manual(ctx, { platform: "Facebook", account: "Emma", metric: "views", value: 12 }, { name: "Claude perso" });
+    await def.mcp.stats_set_manual(ctx, { platform: "Facebook", account: "Emma", metric: "views", value: 12 }, { name: "Claude perso" });
     const m = await def.mcp.community_stats_history(ctx, { id: "manual:facebook:emma:views" });
     assert.deepEqual(m.points.map((p) => [p.origin, p.by, p.value]), [["manual", "Claude perso", 12]]);
   } finally { Date.now = realNow; }
 });
 
-test("MCP community_stats_set_manual : compte manuel seulement, entier ≥ 0, nom du jeton dans l'historique, refus exposé pour un compte automatique", async () => {
+test("MCP stats_set_manual : compte manuel seulement, entier ≥ 0, nom du jeton dans l'historique, refus exposé pour un compte automatique", async () => {
   const { ctx } = make({ items: [item()] });
   await collectNow(ctx, { now: Date.now() });
-  const r = await def.mcp.community_stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4200 }, { name: "Jeton Claude" });
+  const r = await def.mcp.stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4200 }, { name: "Jeton Claude" });
   assert.deepEqual([r.id, r.value, r.origin, r.shownOnSite], ["manual:instagram:emma:followers", 4200, "manual", false]);
   assert.equal((await pointsOf(ctx, r.id))[0][3], "Jeton Claude");
-  await def.mcp.community_stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4201 }, undefined);
+  await def.mcp.stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: 4201 }, undefined);
   assert.equal((await pointsOf(ctx, r.id))[0][3], "assistant", "jeton inconnu");
-  await assert.rejects(def.mcp.community_stats_set_manual(ctx, { platform: "Twitch", account: "emma_live", metric: "followers", value: 5 }, { name: "x" }), (e) => e.expose === true && /already read automatically/.test(e.message));
-  await assert.rejects(def.mcp.community_stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: -4 }, {}), (e) => e.expose === true);
+  await assert.rejects(def.mcp.stats_set_manual(ctx, { platform: "Twitch", account: "emma_live", metric: "followers", value: 5 }, { name: "x" }), (e) => e.expose === true && /already read automatically/.test(e.message));
+  await assert.rejects(def.mcp.stats_set_manual(ctx, { platform: "Instagram", account: "@emma", metric: "followers", value: -4 }, {}), (e) => e.expose === true);
 });
 
 test("admin : état vide chaleureux, avec l'action à faire ; aucun jargon dans la page", async () => {
@@ -499,4 +520,60 @@ test("addPoint : jamais deux points dans la même période, même à cheval sur 
   await addPoint(ctx, stat, t1 - 20 * DAY, 5, week);
   const sorted = await readPoints(ctx, stat, 0);
   assert.deepEqual(sorted.map((p) => p[0]), [...sorted.map((p) => p[0])].sort((a, b) => a - b));
+});
+
+// ── Chiffres de période (30 jours glissants) publiés par Chaîne Twitch : avg_viewers, peak_viewers, hours_streamed, hours_watched, followers_gained ──
+
+const PERIOD = { avg_viewers: 150, peak_viewers: 240, hours_streamed: 750, hours_watched: 17680, followers_gained: 40 };   // les durées sont en MINUTES
+const periodItems = () => Object.entries(PERIOD).map(([metric, value]) => item({ id: `twitch-channel:emma:${metric}`, metric, value, label: `Twitch ${metric}` }));
+
+test("période : la liste fermée accepte les cinq chiffres de direct, refuse un nom inconnu, un identifiant qui ne correspond pas, un décimal, un négatif", () => {
+  for (const [metric, value] of Object.entries(PERIOD)) assert.equal(validateItem(item({ id: `twitch-channel:emma:${metric}`, metric, value, label: "x" })).ok, true, metric);
+  assert.equal(validateItem(item({ id: "twitch-channel:emma:avg_viewers", metric: "avg_viewers", value: 0 })).ok, true, "zéro = aucun direct mesuré");
+  assert.equal(validateItem(item({ id: "twitch-channel:emma:revenue", metric: "revenue" })).ok, false);
+  assert.equal(validateItem(item({ id: "twitch-channel:emma:avg_viewers", metric: "peak_viewers" })).ok, false);
+  assert.equal(validateItem(item({ id: "twitch-channel:emma:avg_viewers", metric: "avg_viewers", value: 10.5 })).ok, false);
+  assert.equal(validateItem(item({ id: "twitch-channel:emma:avg_viewers", metric: "avg_viewers", value: -1 })).ok, false);
+  assert.equal(validateItem(item({ id: "twitch-channel:emma:followers_gained", metric: "followers_gained", value: undefined, error: "auth" })).ok, true, "pas de chiffre pour cause d'autorisation");
+});
+
+test("période : gardés dans l'historique comme les autres ; la saisie à la main reste réservée aux quatre chiffres d'origine", async () => {
+  const { ctx } = make({ items: periodItems() });
+  const r = await collectNow(ctx, { now: NOW });
+  assert.deepEqual([r.status, r.stored, r.rejected], ["done", 5, 0]);
+  assert.deepEqual(await pointsOf(ctx, "twitch-channel:emma:hours_streamed"), [[Math.floor(NOW / 1000), 750]]);
+  await assert.rejects(setManual(ctx, { platform: "Instagram", account: "@emma", metric: "avg_viewers", value: 5 }, { now: NOW }), (e) => e.code === "metric");
+  const form = JSON.stringify(await def.adminPanel(ctx, { query: {}, now: NOW }));
+  assert.ok(!/"value":"avg_viewers"/.test(form), "le formulaire de saisie n'offre pas les chiffres de direct");
+});
+
+test("période : la page d'administration parle simplement (durées en heures et minutes, pas de comparaison hebdomadaire inventée)", async () => {
+  const { ctx } = make({ items: periodItems() });
+  await collectNow(ctx, { now: NOW });
+  const text = JSON.stringify(await def.adminPanel(ctx, { query: {}, now: NOW + 3600_000 }));
+  assert.match(text, /Spectateurs moyens \(30 jours\) : 150/);
+  assert.match(text, /Pic de spectateurs \(30 jours\) : 240/);
+  assert.match(text, /Temps de direct \(30 jours\) : 12 h 30/);
+  assert.match(text, /Temps regardé par vos spectateurs \(30 jours\) : 294 h 40/);
+  assert.match(text, /Followers gagnés en direct \(30 jours\) : 40/);
+  assert.match(text, /Calculé sur vos directs des 30 derniers jours, mesurés par votre site\./);
+  const short = JSON.stringify(await def.adminPanel(make({ items: [item({ id: "twitch-channel:emma:hours_streamed", metric: "hours_streamed", value: 45 })] }).ctx, { query: {}, now: NOW }));
+  assert.ok(!/45 min/.test(short), "avant la première collecte rien n'est affiché");
+  const m = make({ items: [item({ id: "twitch-channel:emma:hours_streamed", metric: "hours_streamed", value: 45 })], locale: "en" });
+  await collectNow(m.ctx, { now: NOW });
+  assert.match(JSON.stringify(await def.adminPanel(m.ctx, { query: {}, now: NOW })), /Time live \(30 days\) : 45 min/);
+  for (const k of ["metric_avg_viewers", "metric_peak_viewers", "metric_hours_streamed", "metric_hours_watched", "metric_followers_gained", "periodNote", "durHm", "durM"]) assert.ok(fr[k] && en[k], k);
+});
+
+test("période : l'IA voit l'unité (minutes, spectateurs, personnes) ; le filtre de métrique accepte les nouveaux chiffres", async () => {
+  const { ctx } = make({ items: periodItems() });
+  await collectNow(ctx, { now: NOW });
+  const all = await def.mcp.community_stats_list(ctx, {});
+  const by = Object.fromEntries(all.stats.map((s) => [s.metric, s]));
+  assert.deepEqual([by.hours_streamed.unit, by.hours_watched.unit, by.avg_viewers.unit, by.peak_viewers.unit, by.followers_gained.unit], ["minutes", "minutes", "viewers", "viewers", "people"]);
+  assert.equal(by.hours_streamed.value, 750);
+  assert.equal((await def.mcp.community_stats_list(ctx, { metric: "peak_viewers" })).count, 1);
+  const tool = manifestJson.mcp.find((t) => t.name === "community_stats_list");
+  for (const k of Object.keys(PERIOD)) assert.ok(tool.input.properties.metric.enum.includes(k), k);
+  assert.ok(tool.description.length <= 1000);
 });

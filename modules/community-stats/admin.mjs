@@ -1,6 +1,6 @@
 // Statistiques de la communauté — la page d'administration : vos chiffres, ce que vous montrez, la mise à jour, les comptes saisis à la main.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
-const { METRICS, DAY, periodKey, platformName, platformLabel } = await import(`./model.mjs${v}`);
+const { METRICS, AUTO_METRICS, PERIOD_METRICS, MINUTE_METRICS, DAY, periodKey, platformName, platformLabel } = await import(`./model.mjs${v}`);
 const { loadStats, getStat, saveStat, removeStat, readRun } = await import(`./stats.mjs${v}`);
 const { changesOf, evolutionPhrase, formatValue, ago, dateText, reasonText } = await import(`./evolution.mjs${v}`);
 const { collectNow } = await import(`./collect.mjs${v}`);
@@ -8,24 +8,28 @@ const { setManual, staleManual } = await import(`./manual.mjs${v}`);
 
 const OTHER = "__other";
 const MANUAL_NETWORKS = ["Instagram", "TikTok", "X", "Facebook", "Threads", "Snapchat", "Pinterest", "LinkedIn", "Telegram"];
-const sorted = (stats) => [...stats].sort((a, b) => platformName(a).localeCompare(platformName(b)) || a.account.localeCompare(b.account) || METRICS.indexOf(a.metric) - METRICS.indexOf(b.metric));
+const sorted = (stats) => [...stats].sort((a, b) => platformName(a).localeCompare(platformName(b)) || a.account.localeCompare(b.account) || AUTO_METRICS.indexOf(a.metric) - AUTO_METRICS.indexOf(b.metric));
+/** Un chiffre en mots simples : une durée (stockée en minutes) devient « 12 h 30 » ; le reste est un nombre. */
+const figureText = (ctx, metric, n) => (MINUTE_METRICS.includes(metric) ? (n >= 60 ? ctx.t("durHm", { h: formatValue(ctx, Math.floor(n / 60)), m: String(n % 60).padStart(2, "0") }) : ctx.t("durM", { m: n })) : formatValue(ctx, n));
 const title = (ctx, s) => `${platformName(s)} · ${s.account}`;
 
 /** Le texte d'une carte : le chiffre, l'évolution en phrases, l'origine, et — s'il manque — pourquoi et quoi faire. */
 async function describe(ctx, s, now) {
   const t = ctx.t;
   const known = s.lastValue != null;
-  const figure = [title(ctx, s), `${t(`metric_${s.metric}`)} : ${known ? formatValue(ctx, s.lastValue) : "—"}`, t(s.visible ? "onSiteYes" : "onSiteNo")].join("\n");
+  const period = PERIOD_METRICS.includes(s.metric);
+  const figure = [title(ctx, s), `${t(`metric_${s.metric}`)} : ${known ? figureText(ctx, s.metric, s.lastValue) : "—"}`, t(s.visible ? "onSiteYes" : "onSiteNo")].join("\n");
   const lines = [];
   const broken = s.source === "auto" && s.state !== "ok";
-  if (known) {
+  if (known && period) lines.push(t("periodNote"));
+  else if (known) {
     const { week, month } = await changesOf(ctx, s);
     if (!week && !month) lines.push(evolutionPhrase(ctx, null, s.metric));
     if (week) lines.push(evolutionPhrase(ctx, week, s.metric));
     if (month) lines.push(evolutionPhrase(ctx, month, s.metric));
   }
   if (broken) {
-    if (known) lines.push(t("lastKnown", { value: formatValue(ctx, s.lastValue), when: ago(ctx, s.lastAt, now) }));
+    if (known) lines.push(t("lastKnown", { value: figureText(ctx, s.metric, s.lastValue), when: ago(ctx, s.lastAt, now) }));
     lines.push(t(known ? "noFigureSince" : "noFigureYet", { date: dateText(ctx, s.since ?? s.lastAt ?? now) }));
     lines.push(reasonText(ctx, s));
   } else if (known) lines.push(t(s.source === "manual" ? "originManual" : "originAuto", { when: ago(ctx, s.lastAt, now) }));

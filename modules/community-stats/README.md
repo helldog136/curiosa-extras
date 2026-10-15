@@ -2,7 +2,7 @@
 
 Le site tient à jour **les chiffres de vos réseaux** : abonnés, abonnés payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 abonnés cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre, et cet affichage n'existe pas encore dans cette version (voir « Ce qui viendra »).
 
-**Il faut Curiosa 0.1.16 ou plus.**
+**Il faut Curiosa 0.1.16 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (spectateurs moyens, pic, temps de direct et regardé, followers gagnés).
 
 ## Pour commencer : rien à régler
 1. Installez et activez ce module.
@@ -26,9 +26,9 @@ Accordez-lui l'accès à ces outils (administration → API & MCP → accès du 
 |---|---|
 | `community_stats_list` | Les chiffres actuels, leur origine (automatique ou saisi à la main), leur fraîcheur, l'évolution sur 7 et 30 jours. Filtres : `platform`, `metric`. Lecture seule. |
 | `community_stats_history` | L'historique d'UN chiffre (`id` pris dans la liste), sur 1 à 1830 jours, au plus 500 points. Lecture seule. |
-| `community_stats_set_manual` | Note à la main un chiffre pour un réseau sans lecture automatique. Refusé pour un compte lu automatiquement. Le nom du jeton est gardé dans l'historique. |
+| `stats_set_manual` | Note à la main un chiffre pour un réseau sans lecture automatique. Refusé pour un compte lu automatiquement. Le nom du jeton est gardé dans l'historique. |
 
-Exemples de questions : « Combien d'abonnés ai-je gagnés ce mois-ci ? », « Quel réseau progresse le plus vite ? », « Mon nombre de vues YouTube a-t-il baissé depuis mars ? », « Note que j'ai 4 200 abonnés sur Instagram. » Les types de chiffres : `followers` (audience gratuite), `paying` (audience payante), `content` (publications), `views` (vues). Quand `status` vaut `no_data`, le chiffre est le dernier connu et `problem` dit pourquoi il manque.
+Exemples de questions : « Combien d'abonnés ai-je gagnés ce mois-ci ? », « Quel réseau progresse le plus vite ? », « Mon nombre de vues YouTube a-t-il baissé depuis mars ? », « Note que j'ai 4 200 abonnés sur Instagram. » Les types de chiffres : `followers` (audience gratuite), `paying` (audience payante), `content` (publications), `views` (vues), et pour les directs Twitch `avg_viewers`, `peak_viewers`, `hours_streamed` et `hours_watched` (en minutes), `followers_gained` ; l'unité est dans le champ `unit`. Quand `status` vaut `no_data`, le chiffre est le dernier connu et `problem` dit pourquoi il manque.
 
 ## Contrat pour les modules de réseaux (pour les développeurs)
 Chaque module de réseau **possède ses chiffres** et les publie ; ce module les collecte. Pour participer, un module déclare dans son `module.json` `provides: [{ "topic": "social.stat" }]` (permission `topics`) et implémente `exports["social.stat"](ctx, { locale, limit, tags })`, qui renvoie un tableau d'éléments :
@@ -39,12 +39,25 @@ Chaque module de réseau **possède ses chiffres** et les publie ; ce module les
 | `platform` | texte | identifiant de la plateforme (`twitch`, `youtube`…), minuscules, 31 caractères au plus |
 | `account` | texte | nom lisible du compte (120 caractères au plus) |
 | `accountKey` | texte | clé d'instance |
-| `metric` | texte | `followers` (audience gratuite), `paying` (audience payante : abonnés, membres, mécènes), `content` (nombre de contenus), `views` (vues cumulées) ; doit être le dernier morceau de `id` |
+| `metric` | texte | `followers` (audience gratuite), `paying` (audience payante : abonnés, membres, mécènes), `content` (nombre de contenus), `views` (vues cumulées) ; et, pour un module qui mesure lui-même ses directs, les **chiffres de période** ci-dessous. Doit être le dernier morceau de `id` |
 | `label` | texte | libellé humain de la statistique, ex. « Followers Twitch » (120 caractères au plus) |
 | `value` | nombre | entier de 0 à 1 000 000 000 000. **Absent** quand `error` est présent : jamais une valeur périmée |
 | `asOf` | date ISO 8601 | moment de la lecture |
 | `url` | adresse | facultative, http(s) seulement, 500 caractères au plus |
 | `error` | texte | facultatif : `auth` (autorisation à redonner), `rate` (trop de demandes), `network` (réseau injoignable), `hidden` (le réseau cache ce chiffre), `config` (module mal réglé) |
+
+### Chiffres de période (30 jours glissants)
+Liste fermée, pour un module qui **mesure lui-même** une activité (aujourd'hui : *Chaîne Twitch*, ses directs). Chacun est un entier >= 0 ; `0` veut dire « rien de mesuré sur la période » :
+
+| `metric` | Sens | Unité (champ `unit` pour l'IA) |
+|---|---|---|
+| `avg_viewers` | spectateurs moyens par direct, pondérés par le temps | `viewers` |
+| `peak_viewers` | le plus haut pic d'un direct | `viewers` |
+| `hours_streamed` | temps de direct | **minutes** entières (le nom est celui du contrat) |
+| `hours_watched` | spectateurs × temps (temps regardé par l'audience) | **minutes** entières |
+| `followers_gained` | followers gagnés pendant les directs (net, jamais négatif dans ce chiffre) | `people` |
+
+Pourquoi des minutes : un entier, sans arrondi qui ferait disparaître un petit direct, et une durée sans ambiguïté pour une IA (qui lit `unit`). La page d'administration les écrit en « 12 h 30 » ; elle ne compare pas ces chiffres semaine après semaine (ce sont déjà des totaux glissants) mais les garde dans l'historique comme les autres. Ils ne se saisissent pas à la main.
 
 Règles : un élément invalide est écarté seul (les autres passent) ; un élément avec `error` ne produit **jamais** de point dans l'historique (la raison est gardée, le dernier chiffre connu aussi) ; une statistique qui n'est plus transmise garde son historique et son réglage, et est signalée comme « ne partage plus ». Le cœur ne laisse passer que 200 éléments par collecte et ne dit pas qui a échoué : un module qui ne peut pas lire son chiffre doit renvoyer l'élément avec `error` plutôt que de ne rien renvoyer.
 

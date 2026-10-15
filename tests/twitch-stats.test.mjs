@@ -48,15 +48,15 @@ const SECRETS = (extra = []) => ["SEC-RET", ...extra];
 
 // ── Manifeste, réglages, textes ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
-test("manifeste : valide, 1.3.0, fournit social.stat, déclare routes + storage, réglages sûrs par défaut (éteint tant que le compte n'est pas connecté)", () => {
+test("manifeste : valide, 1.4.0, fournit social.stat, déclare routes + storage, réglages sûrs par défaut (éteint tant que le compte n'est pas connecté)", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.3.0");
+  assert.equal(manifest.version, "1.4.0");
   assert.ok(manifest.provides.some((p) => p.topic === "social.stat" && p.label.fr && p.label.en));
   for (const p of ["routes", "storage", "admin", "topics"]) assert.ok(manifest.permissions.includes(p), p);
   const s = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));
   assert.deepEqual([s.trackStats.default, s.statsFollowers.default, s.statsPaying.default], [false, true, false]);
   assert.ok(!s.trackStats.advanced && !s.statsFollowers.advanced && !s.statsPaying.advanced, "visibles en mode simple");
-  assert.equal(manifest.minCore, "0.1.14", "pas plus haut que nécessaire");
+  assert.equal(manifest.minCore, "0.1.17", "Curiosa 0.1.17 ou plus");
   assert.ok(!manifest.settings.some((x) => /token|jeton|access|refresh/i.test(x.key)), "aucun jeton dans les réglages");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["twitch.live", true]]);
 });
@@ -290,7 +290,7 @@ test("Twitch injoignable pendant la connexion : message « ne répond pas », on
   const { res } = await connectAs(ctx);
   assert.equal(res.status, 303);
   assert.equal(await ctx.api.store.count("twitchConnection"), 1);
-  assert.equal((await def.adminPanel(ctx)).filter((b) => b.type === "banner").length, 1, "plus de message d'erreur une fois connecté");
+  assert.equal((await def.adminPanel(ctx)).filter((b) => b.type === "banner" && b.tone === "warning").length, 0, "plus de message d'erreur une fois connecté");
 });
 
 test("une instance = une connexion : se reconnecter remplace la précédente (une seule donnée), l'ancienne est révoquée", async () => {
@@ -547,7 +547,7 @@ test("jetons uniquement dans le stockage privé de l'instance : ni réglage, ni 
   assert.ok(!/console\.(log|info|warn|error|debug)/.test(code), "le module n'écrit jamais dans les journaux");
   assert.ok(!/localStorage|document\.cookie|Set-Cookie/i.test(code));
   // un autre module n'a aucun moyen de lire ce stockage : pas de service, d'export ni d'outil qui rende un jeton
-  assert.ok(!(manifest.mcp ?? []).length);
+  assert.ok((manifest.mcp ?? []).length === 3 && manifest.mcp.every((t) => t.readOnly === true && t.default === false && /^twitch_/.test(t.name)), "seuls les trois outils de lecture des directs, jamais accordés d'office");
   for (const o of manifest.offers) assert.ok(!/token|jeton|access|refresh/i.test(JSON.stringify(o.readOnly ?? [])));
   assert.deepEqual(Object.keys(def.services["twitch.live"]).sort(), ["adopt", "channel", "status"]);
 });

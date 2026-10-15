@@ -1,16 +1,16 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.14",
+  "minCore": "0.1.17",
   "id": "twitch-channel",
   "name": {
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "platform": "twitch",
   "description": {
-    "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your follower and paying subscriber counts.",
-    "fr": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, le nombre de vos followers et de vos abonnés payants."
+    "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
+    "fr": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnés payants. Mesure aussi vos directs (spectateurs moyens et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -58,8 +58,8 @@
     {
       "topic": "social.stat",
       "label": {
-        "en": "Twitch followers and paying subscribers",
-        "fr": "Followers et abonnés payants Twitch"
+        "en": "Twitch followers, paying subscribers and 30-day live figures",
+        "fr": "Followers, abonnés payants et chiffres de vos directs (30 jours) Twitch"
       }
     }
   ],
@@ -67,7 +67,8 @@
     "topics",
     "storage",
     "admin",
-    "routes"
+    "routes",
+    "mcp"
   ],
   "settings": [
     {
@@ -111,8 +112,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your followers and paying subscribers for the site's statistics. Twitch must authorize it: once this is on and saved, a short guide and a “Connect my Twitch channel” button appear at the top of this page.",
-        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site. Twitch doit l'autoriser : une fois ceci activé et enregistré, un court guide et le bouton « Connecter ma chaîne Twitch » apparaissent en haut de cette page."
+        "en": "Counts your followers and paying subscribers for the site's statistics, and measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured by your site every 2 minutes while you are live, from the day this is switched on: Twitch gives no history. Twitch must authorize the follower count: once this is on and saved, a short guide and a “Connect my Twitch channel” button appear at the top of this page.",
+        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site, et mesure vos directs : spectateurs, heures de live, followers par jeu, vues de vos vidéos. Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ceci est activé : Twitch ne fournit pas l'historique. Twitch doit autoriser le comptage des followers : une fois ceci activé et enregistré, un court guide et le bouton « Connecter ma chaîne Twitch » apparaissent en haut de cette page."
       }
     },
     {
@@ -148,6 +149,256 @@
       "help": {
         "en": "Same Twitch application for several channels? Type here the channel (login) of another Twitch channel instance that already has its client id and secret: they are reused, only where empty here, without being shown. What you type in this instance always wins.",
         "fr": "Même application Twitch pour plusieurs chaînes ? Saisissez ici la chaîne (identifiant) d'une autre Chaîne Twitch qui a déjà son client id et son secret : ils sont repris, seulement là où ils sont vides ici, sans jamais être affichés. Ce que vous saisissez dans cette instance prévaut toujours."
+      }
+    },
+    {
+      "key": "liveEveryMinutes",
+      "type": "select",
+      "default": "2",
+      "advanced": true,
+      "label": {
+        "en": "How often to measure during a live",
+        "fr": "Fréquence de mesure pendant un direct"
+      },
+      "help": {
+        "fr": "Toutes les 2 minutes convient très bien : le site interroge Twitch à peine plus d'une fois par mesure, très loin de sa limite. Hors direct, il vérifie seulement toutes les 4 minutes.",
+        "en": "Every 2 minutes is just fine: the site asks Twitch about once per measurement, far below its limit. Outside a live, it only checks every 4 minutes."
+      },
+      "options": [
+        {
+          "value": "1",
+          "label": {
+            "fr": "Toutes les minutes",
+            "en": "Every minute"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "fr": "Toutes les 2 minutes",
+            "en": "Every 2 minutes"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "fr": "Toutes les 3 minutes",
+            "en": "Every 3 minutes"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "fr": "Toutes les 5 minutes",
+            "en": "Every 5 minutes"
+          }
+        }
+      ]
+    },
+    {
+      "key": "rawDays",
+      "type": "select",
+      "default": "90",
+      "advanced": true,
+      "label": {
+        "en": "How long to keep the detailed measurements",
+        "fr": "Garder le détail des mesures"
+      },
+      "help": {
+        "en": "The detail (one line per measurement) takes room, so it is erased after this. The summary of each live is kept much longer.",
+        "fr": "Le détail (une ligne par mesure) prend de la place : il est effacé au-delà. Le résumé de chaque direct est gardé bien plus longtemps."
+      },
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "fr": "30 jours",
+            "en": "30 days"
+          }
+        },
+        {
+          "value": "90",
+          "label": {
+            "fr": "90 jours",
+            "en": "90 days"
+          }
+        },
+        {
+          "value": "180",
+          "label": {
+            "fr": "6 mois",
+            "en": "6 months"
+          }
+        },
+        {
+          "value": "365",
+          "label": {
+            "fr": "1 an",
+            "en": "1 year"
+          }
+        }
+      ]
+    },
+    {
+      "key": "keepYears",
+      "type": "select",
+      "default": "5",
+      "advanced": true,
+      "label": {
+        "en": "How long to keep the summary of each live",
+        "fr": "Garder le résumé de chaque direct"
+      },
+      "help": {
+        "en": "A summary weighs about 2 KB: 5 years of daily lives fit in a few MB.",
+        "fr": "Un résumé pèse environ 2 Ko : 5 ans de directs quotidiens tiennent dans quelques Mo."
+      },
+      "options": [
+        {
+          "value": "1",
+          "label": {
+            "fr": "1 an",
+            "en": "1 year"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "fr": "2 ans",
+            "en": "2 years"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "fr": "5 ans",
+            "en": "5 years"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "fr": "10 ans",
+            "en": "10 years"
+          }
+        }
+      ]
+    }
+  ],
+  "mcp": [
+    {
+      "name": "twitch_streams",
+      "readOnly": true,
+      "default": false,
+      "description": "Lives of this Twitch channel measured by the site itself (Twitch gives no history: measures start the day tracking was switched on). One entry per live, most recent first: start, end, duration in minutes, peak viewers, average viewers (weighted by time), viewerHours (hours watched by the audience), followers gained during the live (null if the channel is not connected), games played with the same figures per game, and 'approximate' when a measurement gap or a restart of the site makes the figures less precise. Use it for 'how did my last streams go?'. An empty answer says since when the site measures.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650,
+            "description": "Look back this many days (default 30)."
+          },
+          "since": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Alternative to days: only lives started after this ISO date."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "At most this many lives (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "twitch_games",
+      "readOnly": true,
+      "default": false,
+      "description": "Games ranked by what they bring on this Twitch channel, over a period: number of lives, hours live, average and peak viewers, viewerHours, followers gained and followers gained per live hour. Sorted by followers per hour by default. Use it for 'which game makes me gain the most followers?'. followersPerHour needs the channel to be connected and at least 1 hour of live time on the game. Measures exist only since tracking was switched on.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650,
+            "description": "Look back this many days (default 90)."
+          },
+          "since": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Alternative to days: only lives started after this ISO date."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "followers_per_hour",
+              "hours_live",
+              "viewer_hours",
+              "peak_viewers",
+              "average_viewers",
+              "streams"
+            ],
+            "description": "Sort order, best first (default followers_per_hour)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "At most this many games (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "twitch_videos",
+      "readOnly": true,
+      "default": false,
+      "description": "Videos of this Twitch channel with their view counts: replays (archive), highlights, uploads, or clips (type 'clip'; 'all' means the three kinds of videos, not clips). Title, date, duration in minutes, views, url. Sorted by views by default; 300 videos and 100 clips at most; refreshed every 30 minutes (viewsAsOf says when). Use it for 'which of my videos are the most viewed?'.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "archive",
+              "highlight",
+              "upload",
+              "clip"
+            ],
+            "description": "Kind (default all videos)."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "views",
+              "date",
+              "duration"
+            ],
+            "description": "Sort order (default views)."
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650,
+            "description": "Only videos published in the last days (default: all)."
+          },
+          "since": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Alternative to days: only after this ISO date."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "At most this many (default 20)."
+          }
+        }
       }
     }
   ]
