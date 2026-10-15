@@ -21,10 +21,13 @@ Le module *Statistiques de la communauté* relève, garde et sert (admin, assist
 { id: "twitch-channel:emma:followers", // stable : "<module>:<clé d'instance>:<type de chiffre>" ("manual" est réservé)
   platform: "twitch", account: "emma_live", accountKey: "emma",
   metric: "followers", // followers (audience gratuite) | paying (audience payante) | content (nombre de contenus) | views (vues cumulées)
+                        // + chiffres de PÉRIODE (30 jours glissants, mesurés par le module lui-même) : avg_viewers | peak_viewers | hours_streamed | hours_watched | followers_gained
   label: "Followers Twitch", value: 1250, // entier >= 0 ; ABSENT quand `error` est présent, jamais une valeur périmée
   asOf: "2026-10-14T10:00:00Z", url: "https://…", // url facultative
   error: undefined /* ou "auth" | "rate" | "network" | "hidden" | "config" */ }
 ```
+**Chiffres de période** (version 1.4.0 de *Chaîne Twitch*, 1.1.0 de *Statistiques de la communauté*) : `avg_viewers` (spectateurs moyens par direct, pondérés par le temps), `peak_viewers` (meilleur pic), `hours_streamed` (temps de direct) et `hours_watched` (spectateurs × temps) **en MINUTES entières malgré leur nom** (l'unité est dite dans le libellé et dans le champ `unit` côté assistant), `followers_gained` (followers gagnés pendant les directs, net, jamais négatif dans ce chiffre). Même forme que les autres : `id` `<module>:<clé>:<chiffre>`, entier >= 0, `asOf`, libellé humain (« Spectateurs moyens par direct (30 jours) »). `0` veut dire « aucun direct mesuré sur la période ». Liste fermée : un autre nom est rejeté. Un module qui publie des chiffres de période doit les mesurer lui-même (le collecteur n'invente rien) et dire à la personne, en mots simples, ce qui est mesuré et ses limites.
+
 Un élément invalide est écarté seul ; un élément avec `error` ne produit jamais de point d'historique. Le détail (limites de taille, stockage, volumes) est dans `modules/community-stats/README.md`.
 
 ## Tests

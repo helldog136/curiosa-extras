@@ -8,6 +8,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 *Changements depuis la 1.4.0.*
 
+- **Le site mesure maintenant vos directs Twitch et les vues de vos vidéos.** Il note les spectateurs moyens, le pic, les heures de live et regardées et les followers gagnés par jeu, à partir de l'activation du suivi (déjà active si « Suivre mes statistiques » était coché). Il faut Curiosa 0.1.17 ou plus.
 - **Un guide pour créer votre clé YouTube.** Le module Chaîne YouTube explique pas à pas, en haut de sa page, comment obtenir la clé gratuite dont il a besoin pour suivre vos abonnés, avec le lien vers la console Google et les pistes si la clé est refusée.
 
 ## 1.4.0

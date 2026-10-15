@@ -99,5 +99,13 @@
   "deleted": "Deleted.",
   "notFound": "Not found: the page may already be up to date.",
   "back": "← Back",
-  "footerAdvanced": "How often numbers are updated and how long the history is kept are set in this module's settings, in advanced mode."
+  "footerAdvanced": "How often numbers are updated and how long the history is kept are set in this module's settings, in advanced mode.",
+  "metric_avg_viewers": "Average viewers (30 days)",
+  "metric_peak_viewers": "Peak viewers (30 days)",
+  "metric_hours_streamed": "Time live (30 days)",
+  "metric_hours_watched": "Time watched by your viewers (30 days)",
+  "metric_followers_gained": "Followers gained while live (30 days)",
+  "periodNote": "Worked out from your lives of the last 30 days, measured by your site.",
+  "durHm": "{h} h {m}",
+  "durM": "{m} min"
 }

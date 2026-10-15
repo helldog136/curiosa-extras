@@ -7,7 +7,8 @@ const LIVE_TTL = 30_000;
 const FAIL_TTL = 20_000;   // après une erreur : on ne harcèle pas Twitch à chaque affichage de page
 const RATE_TTL = 60_000;   // après un 429
 const STAT_TTL = 5 * 60_000;   // followers / abonnés payants : une requête par chaîne et par statistique toutes les 5 minutes
-const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map() };
+const LIST_TTL = 30 * 60_000;   // vidéos et clips (vues par vidéo) : une série de requêtes par chaîne toutes les 30 minutes
+const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map(), backoff: new Map(), videos: new Map(), topClips: new Map(), games: new Map() };
 // Le fichier voisin est importé avec la même « version » que celui-ci (jamais d'ancien oauth.mjs resté en mémoire après une mise à jour).
 const oauth = await import(new URL(`./oauth.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 export const { SCOPES } = oauth;
@@ -157,11 +158,11 @@ async function fetchUserStat(conn, metric) {
  * Une statistique de la chaîne : { value, at } ou { error: "auth" | "rate" | "network" | "config", reason?, at } ; `at` : quand Twitch a répondu ; ne lève jamais, ne rend JAMAIS une valeur périmée.
  * `metric` : "followers" | "paying". Une requête par chaîne et par statistique (5 min ; 20 s après une erreur, 60 s après un « trop de requêtes »).
  */
-export async function userStat(conn, metric) {
+export async function userStat(conn, metric, { maxAge } = {}) {
   if (!valid(conn)) return { error: "config", reason: "credentials" };
   const k = `${conn.channel}|${metric}`;
   const hit = state.stats.get(k);
-  if (hit && hit.until > Date.now()) return hit.value;
+  if (hit && hit.until > Date.now() && (maxAge == null || Date.now() - hit.value.at <= maxAge)) return hit.value;   // maxAge : l'enregistreur de directs veut un chiffre récent, pas celui d'il y a 5 minutes
   const pending = state.inflight.get(`stat|${k}`);
   if (pending) return pending;
   const run = fetchUserStat(conn, metric).catch(() => ({ error: "network" })).then((found) => {
@@ -174,3 +175,125 @@ export async function userStat(conn, metric) {
 }
 /** À appeler quand la connexion change (connexion, déconnexion) : les anciennes réponses ne servent plus. */
 export const forgetStats = (channel) => { for (const k of [...state.stats.keys()]) if (!channel || k.startsWith(`${channel}|`)) state.stats.delete(k); };
+
+/* ───────────── Directs, vidéos et clips (jeton d'APPLICATION) : l'enregistreur de directs et « vues par vidéo » ───────────── */
+
+/** Un appel Helix avec le jeton d'application : { json } ou { error: "config" | "auth" | "rate" | "network" }. Un 401 renouvelle le jeton une fois ; un 429 suspend TOUS les appels de cette application 60 s. */
+async function appGet(c, pathAndQuery) {
+  if (!valid(c)) return { error: "config" };
+  if ((state.backoff.get(tokenKey(c)) ?? 0) > Date.now()) return { error: "rate" };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const t = await token(c);
+    if (t.error) { if (t.error === "rate") state.backoff.set(tokenKey(c), Date.now() + RATE_TTL); return { error: t.error }; }
+    try {
+      const res = await get(`https://api.twitch.tv/helix/${pathAndQuery}`, { headers: headers(c, t.token) });
+      if (res.status === 401) { state.tokens.delete(tokenKey(c)); if (attempt === 0) continue; return { error: "auth" }; }
+      if (res.status === 429) { state.backoff.set(tokenKey(c), Date.now() + RATE_TTL); return { error: "rate" }; }
+      if (!res.ok) return { error: "network" };
+      return { json: await res.json() };
+    } catch { return { error: "network" }; }
+  }
+  return { error: "auth" };
+}
+
+/** Numéro Twitch de la chaîne (gardé en mémoire : il ne change pas). */
+async function channelId(c) {
+  const known = state.ids.get(c.channel);
+  if (known) return { id: known };
+  const r = await appGet(c, `users?login=${encodeURIComponent(c.channel)}`);
+  if (r.error) return r;
+  const id = r.json.data?.[0]?.id;
+  if (!id) return { error: "network" };
+  state.ids.set(c.channel, String(id));
+  return { id: String(id) };
+}
+
+/**
+ * L'état EXACT de la chaîne pour l'enregistreur (jamais servi par le cache de 30 s) :
+ * { stream: { id, title, startedAt, game, gameId, viewers, language } } | { stream: null } (hors ligne) | { error }. Une réponse sans nombre de spectateurs valide est une erreur, pas un zéro.
+ */
+export async function streamNow(c) {
+  const who = await channelId(c);
+  if (who.error) return who;
+  const r = await appGet(c, `streams?user_id=${encodeURIComponent(who.id)}&first=1`);
+  if (r.error) return r;
+  const s = r.json.data?.find((x) => x.type === "live") ?? r.json.data?.[0];
+  if (!s) return { stream: null };
+  if (!Number.isInteger(s.viewer_count) || s.viewer_count < 0 || !s.started_at || !Number.isFinite(Date.parse(s.started_at))) return { error: "network" };
+  return { stream: { id: String(s.id), title: String(s.title ?? "").slice(0, 140), startedAt: s.started_at, game: String(s.game_name ?? "").trim().slice(0, 100) || null, gameId: String(s.game_id ?? "") || null, viewers: s.viewer_count, language: /^[a-z]{2,3}(-[a-z]{2,4})?$/i.test(s.language ?? "") ? s.language : null } };
+}
+
+const SEC = (d) => { const m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(String(d ?? "")); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : null; };
+const TYPES = new Set(["archive", "highlight", "upload"]);
+export const MAX_VIDEOS = 300, MAX_CLIPS = 100;
+
+/** Les vidéos de la chaîne (rediffusions, temps forts, mises en ligne) avec leurs vues : { items, at, error? }. Trois pages de 100 au plus ; 30 minutes de cache ; en cas d'erreur, les dernières vidéos connues et leur date. */
+export async function channelVideos(c) {
+  if (!valid(c)) return { items: [], at: null, error: "config" };
+  const hit = state.videos.get(c.channel);
+  if (hit && hit.until > Date.now()) return hit.value;
+  const k = `videos|${c.channel}`;
+  if (state.inflight.has(k)) return state.inflight.get(k);
+  const run = (async () => {
+    const who = await channelId(c);
+    let error = who.error, items = [];
+    if (!error) {
+      let after = "";
+      for (let page = 0; page < MAX_VIDEOS / 100 && items.length < MAX_VIDEOS; page++) {
+        const r = await appGet(c, `videos?user_id=${encodeURIComponent(who.id)}&first=100${after ? `&after=${encodeURIComponent(after)}` : ""}`);
+        if (r.error) { error = r.error; break; }
+        for (const x of r.json.data ?? []) {
+          if (items.length >= MAX_VIDEOS) break;
+          if (!TYPES.has(x.type) || !/^https:\/\/(www\.)?twitch\.tv\//.test(x.url ?? "") || !Number.isInteger(x.view_count) || x.view_count < 0) continue;
+          items.push({ id: String(x.id), title: String(x.title ?? "").slice(0, 140), publishedAt: x.published_at ?? x.created_at, durationSec: SEC(x.duration), views: x.view_count, type: x.type, url: x.url });
+        }
+        after = r.json.pagination?.cursor ?? "";
+        if (!after) break;
+      }
+    }
+    const prev = hit?.value;
+    const value = error ? { items: prev?.items ?? [], at: prev?.at ?? null, error } : { items, at: Date.now() };
+    state.videos.set(c.channel, { value, until: Date.now() + (error === "rate" ? RATE_TTL : error ? FAIL_TTL : LIST_TTL) });
+    return value;
+  })().finally(() => state.inflight.delete(k));
+  state.inflight.set(k, run);
+  return run;
+}
+
+/** Noms de jeux à partir de leurs numéros (un appel pour tous les inconnus, 100 au plus). */
+async function gameNames(c, ids) {
+  const unknown = [...new Set(ids.filter((i) => i && !state.games.has(i)))].slice(0, 100);
+  if (unknown.length) {
+    const r = await appGet(c, `games?${unknown.map((i) => `id=${encodeURIComponent(i)}`).join("&")}`);
+    if (!r.error) for (const g of r.json.data ?? []) state.games.set(String(g.id), String(g.name ?? "").slice(0, 100));
+  }
+  return (id) => state.games.get(id) ?? null;
+}
+
+/** Les clips les plus regardés de la chaîne (100 au plus, une page) : { items, at, error? }, 30 minutes de cache. */
+export async function channelClips(c) {
+  if (!valid(c)) return { items: [], at: null, error: "config" };
+  const hit = state.topClips.get(c.channel);
+  if (hit && hit.until > Date.now()) return hit.value;
+  const k = `topclips|${c.channel}`;
+  if (state.inflight.has(k)) return state.inflight.get(k);
+  const run = (async () => {
+    const who = await channelId(c);
+    let error = who.error, items = [];
+    if (!error) {
+      const r = await appGet(c, `clips?broadcaster_id=${encodeURIComponent(who.id)}&first=${MAX_CLIPS}`);
+      if (r.error) error = r.error;
+      else {
+        const raw = (r.json.data ?? []).filter((x) => /^https:\/\/(clips|www)\.twitch\.tv\//.test(x.url ?? "") && Number.isInteger(x.view_count) && x.view_count >= 0).slice(0, MAX_CLIPS);
+        const name = await gameNames(c, raw.map((x) => String(x.game_id ?? "")));
+        items = raw.map((x) => ({ id: String(x.id ?? x.url), title: String(x.title ?? "").slice(0, 140), publishedAt: x.created_at, views: x.view_count, game: name(String(x.game_id ?? "")), url: x.url, durationSec: Number.isFinite(x.duration) ? Math.round(x.duration) : null }));
+      }
+    }
+    const prev = hit?.value;
+    const value = error ? { items: prev?.items ?? [], at: prev?.at ?? null, error } : { items, at: Date.now() };
+    state.topClips.set(c.channel, { value, until: Date.now() + (error === "rate" ? RATE_TTL : error ? FAIL_TTL : LIST_TTL) });
+    return value;
+  })().finally(() => state.inflight.delete(k));
+  state.inflight.set(k, run);
+  return run;
+}

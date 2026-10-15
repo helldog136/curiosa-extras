@@ -105,3 +105,17 @@ test("SRP : les fournisseurs de « social.stat » déclarent le sujet, l'implém
     assert.equal(new Set(m.manifest.provides.map((p) => p.topic)).size, m.manifest.provides.length, `${m.id} : sujet déclaré deux fois`);
   }
 });
+
+test("SRP : les collections de l'enregistreur de directs (twitchLive…) appartiennent au seul module Chaîne Twitch, qui n'écrit nulle part ailleurs que dans les siennes ; les outils twitch_* ne sont déclarés que par lui", () => {
+  const twitch = mods.find((m) => m.id === "twitch-channel");
+  const own = new Set([...twitch.code.matchAll(/(?:store\.(?:add|list|count)|\ball|\bfirst)\(\s*(?:ctx,\s*)?"([A-Za-z]+)"/g)].map((x) => x[1]));
+  for (const c of ["twitchLiveState", "twitchLiveSessions", "twitchLiveDays", "twitchLiveLists"]) assert.ok(twitch.code.includes(`"${c}"`), c);
+  for (const m of mods) if (m.id !== "twitch-channel") assert.ok(!/twitchLive|twitchConnection/.test(m.code), `${m.id} touche aux données Twitch`);
+  for (const c of own) assert.match(c, /^(twitch[A-Z][A-Za-z]*|adopted|borrowed)$/, `collection « ${c} » : préfixe twitch… attendu`);
+  for (const m of mods) if (m.id !== "twitch-channel") assert.ok(!(m.manifest.mcp ?? []).some((t) => /^twitch_/.test(t.name)), `${m.id} n'expose pas d'outil twitch_`);
+  assert.deepEqual((twitch.manifest.mcp ?? []).map((t) => t.name), ["twitch_streams", "twitch_games", "twitch_videos"]);
+  assert.ok(twitch.manifest.mcp.every((t) => t.default === false && t.readOnly === true));
+  // les chiffres de période sont publiés par le module Twitch, collectés (jamais calculés) par Statistiques de la communauté
+  const stats = mods.find((m) => m.id === "community-stats");
+  assert.ok(!/helix|twitchLive|streamNow/.test(stats.code), "le collecteur ne parle pas à Twitch et ne lit pas ses directs");
+});

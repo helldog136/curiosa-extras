@@ -1,6 +1,11 @@
 // Statistiques de la communauté — vocabulaire fixe, réglages, validation d'un chiffre reçu d'un module de réseau.
 export const TOPIC = "social.stat";
 export const METRICS = ["followers", "paying", "content", "views"]; // abonnés, abonnés payants, publications, vues
+// Chiffres de PÉRIODE (30 jours glissants), publiés par un module qui mesure lui-même (Chaîne Twitch : ses directs). Entiers >= 0 ; les durées sont en MINUTES entières
+// (hours_streamed, hours_watched : le nom est celui du contrat, l'unité est la minute). Jamais saisis à la main.
+export const PERIOD_METRICS = ["avg_viewers", "peak_viewers", "hours_streamed", "hours_watched", "followers_gained"];
+export const MINUTE_METRICS = ["hours_streamed", "hours_watched"];
+export const AUTO_METRICS = [...METRICS, ...PERIOD_METRICS]; // tout ce qu'un module de réseau peut publier (liste fermée)
 export const ERRORS = ["auth", "rate", "network", "hidden", "config"];
 export const DAY = 86_400_000;
 export const MAX_VALUE = 1_000_000_000_000; // un chiffre de réseau social ne dépasse jamais mille milliards
@@ -26,7 +31,7 @@ export function clean(value, max) {
   return s.length >= 1 && s.length <= max ? s : null;
 }
 
-const ID_RE = /^([a-z][a-z0-9-]{1,39}):([A-Za-z0-9][A-Za-z0-9_.-]{0,63}):(followers|paying|content|views)$/;
+const ID_RE = /^([a-z][a-z0-9-]{1,39}):([A-Za-z0-9][A-Za-z0-9_.-]{0,63}):(followers|paying|content|views|avg_viewers|peak_viewers|hours_streamed|hours_watched|followers_gained)$/;
 const PLATFORM_RE = /^[a-z][a-z0-9-]{0,30}$/;
 const KEY_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 
@@ -48,7 +53,7 @@ export function validateItem(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, reason: "shape" };
   const m = typeof raw.id === "string" ? ID_RE.exec(raw.id) : null;
   if (!m || m[1] === "manual") return { ok: false, reason: "id" };
-  if (!METRICS.includes(raw.metric) || raw.metric !== m[3]) return { ok: false, reason: "metric" };
+  if (!AUTO_METRICS.includes(raw.metric) || raw.metric !== m[3]) return { ok: false, reason: "metric" };
   if (typeof raw.platform !== "string" || !PLATFORM_RE.test(raw.platform)) return { ok: false, reason: "platform" };
   const account = clean(raw.account, 120), label = clean(raw.label, 120);
   if (!account || !label) return { ok: false, reason: "text" };
