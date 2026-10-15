@@ -5,7 +5,7 @@
     "fr": "Statistiques de la communauté",
     "en": "Community statistics"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minCore": "0.1.16",
   "description": {
     "fr": "Garde les chiffres de vos réseaux (abonnés, abonnés payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
@@ -191,7 +191,7 @@
       "name": "community_stats_list",
       "readOnly": true,
       "default": false,
-      "description": "List the community statistics of the owner's social channels: one entry per account and kind of figure, with the current value, its origin (automatic reading or typed by hand), its freshness, and the change over the last 7 and 30 days (absolute and percent; null without enough history; percent is null when the starting value was 0). followers = free audience (subscribers, followers, members), paying = paying audience (paid subscribers, members, patrons), content = number of posts or videos, views = cumulative views. Use it for questions like 'how many followers did I gain this month?'. status 'no_data': the network is not giving the figure right now (see problem; value is the last known one, dated by lastValueAt); 'not_shared_anymore': the network stopped sharing it. Do not add figures of different networks together unless asked, and say so then: audiences overlap. Empty result: read 'note'.",
+      "description": "List the community statistics of the owner's social channels: one entry per account and kind of figure, with the current value, its origin (automatic reading or typed by hand), its freshness, and the change over the last 7 and 30 days (absolute and percent; null without enough history; percent is null when the starting value was 0). followers = free audience (subscribers, followers, members), paying = paying audience (paid subscribers, members, patrons), content = number of posts or videos, views = cumulative views. Twitch 30 days: avg_viewers, peak_viewers, hours_streamed/watched (minutes), followers_gained. Use it for questions like 'how many followers did I gain this month?'. status 'no_data': the network is not giving the figure right now (see problem; value is the last known one, dated by lastValueAt); 'not_shared_anymore': the network stopped sharing it. Do not add figures of different networks together unless asked, and say so then: audiences overlap. Empty result: read 'note'.",
       "input": {
         "type": "object",
         "properties": {
@@ -206,7 +206,12 @@
               "followers",
               "paying",
               "content",
-              "views"
+              "views",
+              "avg_viewers",
+              "peak_viewers",
+              "hours_streamed",
+              "hours_watched",
+              "followers_gained"
             ],
             "description": "Only this kind of figure."
           }

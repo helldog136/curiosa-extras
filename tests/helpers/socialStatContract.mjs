@@ -1,6 +1,6 @@
 // Contrat du sujet « social.stat » (fournisseurs : un module par plateforme ; consommateur : le collecteur de statistiques).
 // Une fonction de validation PARTAGÉE par tous les tests des fournisseurs : un seul endroit dit ce qu'est un élément valide.
-export const METRICS = ["followers", "paying", "content", "views"];
+export const METRICS = ["followers", "paying", "content", "views", "avg_viewers", "peak_viewers", "hours_streamed", "hours_watched", "followers_gained"];
 export const ERRORS = ["auth", "rate", "network", "hidden", "config"];
 const KEYS = new Set(["id", "platform", "account", "accountKey", "metric", "label", "value", "asOf", "url", "error"]);
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
@@ -13,7 +13,7 @@ export function problemsOf(item, expect = {}) {
   for (const k of ["id", "platform", "account", "accountKey", "label", "asOf"]) text(k);
   for (const k of Object.keys(item)) if (!KEYS.has(k)) p.push(`champ inconnu « ${k} »`);
   if (!METRICS.includes(item.metric)) p.push(`metric « ${item.metric} » hors contrat`);
-  if (typeof item.id === "string" && !/^[a-z0-9-]+:[^:\s]+:(followers|paying|content|views)$/.test(item.id)) p.push(`id « ${item.id} » : <module>:<clé d'instance>:<métrique>`);
+  if (typeof item.id === "string" && !/^[a-z0-9-]+:[^:\s]+:(followers|paying|content|views|avg_viewers|peak_viewers|hours_streamed|hours_watched|followers_gained)$/.test(item.id)) p.push(`id « ${item.id} » : <module>:<clé d'instance>:<métrique>`);
   if (typeof item.id === "string" && typeof item.accountKey === "string" && item.id !== `${expect.module ?? item.id.split(":")[0]}:${item.accountKey}:${item.metric}`) p.push("id ≠ <module>:<accountKey>:<metric>");
   if (expect.platform && item.platform !== expect.platform) p.push(`platform « ${item.platform} » ≠ « ${expect.platform} »`);
   if (typeof item.platform === "string" && !/^[a-z][a-z0-9-]{0,30}$/.test(item.platform)) p.push("platform mal formée");

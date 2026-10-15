@@ -1,6 +1,6 @@
 // Statistiques de la communauté — les outils pour les assistants (MCP). Aucun secret, aucune adresse privée n'en sort.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
-const { METRICS, fail, clean, platformSlug } = await import(`./model.mjs${v}`);
+const { AUTO_METRICS: METRICS, fail, clean, platformSlug } = await import(`./model.mjs${v}`);
 const { loadStats, readPoints, readRun } = await import(`./stats.mjs${v}`);
 const { changesOf } = await import(`./evolution.mjs${v}`);
 const { setManual } = await import(`./manual.mjs${v}`);
@@ -30,7 +30,7 @@ async function describe(ctx, stat, now) {
   };
 }
 
-const UNITS = { followers: "people", paying: "people", content: "posts", views: "views" };
+const UNITS = { followers: "people", paying: "people", content: "posts", views: "views", avg_viewers: "viewers", peak_viewers: "viewers", hours_streamed: "minutes", hours_watched: "minutes", followers_gained: "people" };
 
 /** Pourquoi la liste est vide, et quoi faire : jamais une liste vide muette. `all` = toutes les statistiques connues (avant filtre). */
 async function emptyNote(ctx, args, platform) {
@@ -56,7 +56,7 @@ export default {
       const out = [];
       for (const s of stats) out.push(await describe(ctx, s, now));
       const note = out.length ? undefined : await emptyNote(ctx, args, platform);
-      return { count: out.length, ...(note ? { note } : {}), metrics: { followers: "free audience", paying: "paying audience (paid subscribers, members, patrons)", content: "number of posts/videos", views: "cumulative views" }, stats: out };
+      return { count: out.length, ...(note ? { note } : {}), metrics: { followers: "free audience", paying: "paying audience (paid subscribers, members, patrons)", content: "number of posts/videos", views: "cumulative views", avg_viewers: "average viewers per live over the last 30 days (time-weighted)", peak_viewers: "highest viewer count of a live in the last 30 days", hours_streamed: "time spent live over the last 30 days, in MINUTES", hours_watched: "viewers x time over the last 30 days (audience watch time), in MINUTES", followers_gained: "net followers gained during lives over the last 30 days" }, stats: out };
     },
 
     async community_stats_history(ctx, args) {
