@@ -1,6 +1,6 @@
 {
   "name": "curiosa-extras",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "private": true,
   "description": "Modules pour Curiosa : fonctionnalités de base (blog, liens, codes promo, pages, bandeau, contact…), modules pour créateurs et exemples.",
   "scripts": {

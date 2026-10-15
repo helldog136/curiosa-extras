@@ -5,8 +5,8 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "1.3.0",
-  "minCore": "0.1.10",
+  "version": "1.3.1",
+  "minCore": "0.1.22",
   "description": {
     "fr": "Affiche vos prochains streams, lus depuis un Google Agenda (ou n'importe quel flux iCal), dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
     "en": "Shows your upcoming streams, read from a Google Calendar (or any iCal feed), in the look you choose: list, zigzag, week, timeline, posters…"
@@ -199,7 +199,8 @@
       "help": {
         "en": "Optional. Not needed if the Twitch channel module is installed with your channel: its link is used. Without any link, the button is not shown.",
         "fr": "Facultatif. Inutile si la Chaîne Twitch est installée avec votre chaîne : son lien est repris. Sans lien, le bouton n'est pas affiché."
-      }
+      },
+      "optional": true
     },
     {
       "key": "days",

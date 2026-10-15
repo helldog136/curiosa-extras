@@ -5,7 +5,7 @@
     "en": "Contact form",
     "fr": "Formulaire de contact"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.mjs",
   "description": {
     "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
@@ -58,7 +58,8 @@
       "help": {
         "en": "Example: contact. Or place the form's section on the home page instead.",
         "fr": "Exemple : contact. Ou placez la section du formulaire sur l'accueil."
-      }
+      },
+      "optional": true
     },
     {
       "key": "notify",
@@ -73,5 +74,6 @@
         "fr": "Envoyé à l'adresse de contact du site. Demande le serveur d'e-mail réglé dans les Réglages ; les messages restent toujours dans vos contacts."
       }
     }
-  ]
+  ],
+  "minCore": "0.1.22"
 }

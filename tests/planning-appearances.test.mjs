@@ -117,7 +117,7 @@ test("manifeste : chaque réglage d'apparence a un défaut égal à celui du cod
   const m = JSON.parse(read("module.json"));
   const { parseManifest } = await import("@/core/modules/manifest");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.3.0");
+  assert.equal(m.version, "1.3.1");
   for (const key of Object.keys(DEFAULTS)) {
     const s = m.settings.find((x) => x.key === key);
     assert.ok(s, key);

@@ -5,7 +5,7 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "discord",
   "description": {
     "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link.",
@@ -126,7 +126,8 @@
       "help": {
         "en": "For example @everyone or <@&role-id>. Pings only go out when this is filled in.",
         "fr": "Par exemple @everyone ou <@&id-du-rôle>. Un ping ne part que si ce champ est rempli."
-      }
+      },
+      "optional": true
     },
     {
       "key": "prefix",
@@ -165,5 +166,6 @@
         "fr": "Une coupure de connexion relance souvent le stream : deux lives plus proches que cela comptent pour le même."
       }
     }
-  ]
+  ],
+  "minCore": "0.1.22"
 }

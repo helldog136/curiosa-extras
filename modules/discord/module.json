@@ -5,7 +5,7 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "discord",
   "description": {
     "en": "Shows your Discord button in the site header and shares your member count. Add one per account if you have several.",
@@ -73,7 +73,9 @@
       "help": {
         "en": "Only if the button above is not already an invitation: paste a Discord invitation link that never expires, so the members can be counted.",
         "fr": "Seulement si le profil ci-dessus n'est pas déjà une invitation : collez un lien d'invitation Discord sans date de fin, pour compter vos membres."
-      }
+      },
+      "optional": true
     }
-  ]
+  ],
+  "minCore": "0.1.22"
 }
