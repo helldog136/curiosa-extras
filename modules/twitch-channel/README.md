@@ -19,3 +19,32 @@ Un seul jeton par couple d'identifiants, un seul appel par chaîne (30 s ; 20 s 
 **Reprise depuis Statut live (migration)** : avec plusieurs chaînes, la reprise va dans la **première** Chaîne Twitch (par ordre de création), uniquement dans ses champs vides ; les autres sont intactes (utilisez le réglage ci-dessus pour partager).
 
 Identifiants repris d'un autre module : ils ne sont jamais affichés ; l'admin le signale et propose « Oublier les identifiants repris ». Ce que vous saisissez dans les réglages a toujours le dessus.
+
+## Statistiques et connexion de votre chaîne (1.3.0)
+
+**Suivre mes statistiques** (désactivé par défaut : il demande votre autorisation) compte vos **followers** et, si vous êtes affilié ou partenaire, vos **abonnés payants**. Le module les publie (sujet `social.stat`) ; un autre module les collecte et garde l'historique. Les cases *Compter mes followers* / *Compter mes abonnés payants* choisissent ce que Twitch doit autoriser : **le minimum** (followers → lecture des followers ; abonnés payants → lecture des abonnements, rien d'autre). Cocher une case après coup demande de reconnecter la chaîne (le panneau le dit).
+
+### Connecter ma chaîne Twitch (une fois)
+Le panneau du module, une fois « Suivre mes statistiques » activé et enregistré, guide pas à pas : 1. ouvrir votre application sur dev.twitch.tv/console (type *Confidential*), 2. y ajouter l'**adresse de retour affichée** (bouton *Copier*) dans les adresses de redirection, 3. coller l'identifiant et le secret de l'application dans les réglages, 4. cliquer **Connecter ma chaîne Twitch** puis *Autoriser* chez Twitch. Ensuite : « Connectée en tant que … depuis le … » et **Déconnecter**. Une instance = une connexion ; avec plusieurs chaînes, ajoutez l'adresse de retour de chacune dans la même application Twitch (Twitch accepte plusieurs adresses). Il faut le compte de la chaîne : un autre compte est refusé, avec un message qui dit lequel.
+
+C'est **votre** application Twitch : aucune application centrale de Curiosa, aucun secret partagé. Si la connexion est perdue (mot de passe Twitch changé, accès retiré, application recréée), le panneau montre « Twitch demande de nouveau votre autorisation » avec le bouton ; les chiffres sont alors publiés avec l'erreur `auth` et sans valeur.
+
+### Ce qui est lu, et les limites de Twitch
+- `GET /helix/channels/followers` (`total`) avec la portée `moderator:read:followers`, et `GET /helix/subscriptions` (`total`) avec `channel:read:subscriptions` : une requête par chaîne et par chiffre toutes les 5 minutes (20 s après une erreur, 60 s après un « trop de requêtes »), un seul jeton d'application, quel que soit le nombre de consommateurs.
+- Les **abonnements ne sont disponibles que pour les affiliés et partenaires** : sinon l'erreur `config` et le message *« Les abonnements ne sont disponibles que pour les affiliés et partenaires Twitch »*. Twitch peut compter votre propre chaîne parmi les abonnés : un écart de 1 est possible.
+- Aucune valeur n'est jamais inventée ni périmée : sans connexion ou en cas d'erreur, l'élément porte `error` (`auth`, `rate`, `network`, `config`) et pas de `value`.
+
+### Sécurité de la connexion
+Flux « code d'autorisation » avec le secret de **votre** application, côté serveur uniquement.
+
+| Risque | Réponse |
+|---|---|
+| **Vol ou invention du `state`** (CSRF : faire connecter à l'administrateur le compte de quelqu'un d'autre) | 256 bits aléatoires, créés seulement dans le panneau d'administration (réservé aux administrateurs), gardés dans le stockage de CETTE instance, **à usage unique** (supprimés avant tout appel à Twitch), **10 minutes**. Un `state` inconnu, forgé, rejoué, expiré ou d'une autre instance reçoit la même réponse neutre (400), sans rien écrire ni appeler Twitch ; au-delà de 20 essais invalides en 10 minutes, 429. Limite connue : une route de module ne sait pas **qui** est connecté (le cœur ne le lui dit pas), donc le `state` n'est pas lié à la session de l'administrateur. Il est compensé : un `state` volé ne sert à rien sans compte Twitch **de la chaîne** (le compte autorisé doit être celui de la chaîne réglée, sinon refus et jetons révoqués). |
+| **Rejeu du code** | Twitch ne l'accepte qu'une fois ; notre `state` aussi. |
+| **Redirection ouverte** | L'adresse de retour est fixe (`<site>/m/<clé>/oauth/callback`) et envoyée telle quelle à Twitch, qui n'accepte que celle enregistrée. Après le rappel, la redirection va toujours vers la page d'administration de l'instance : rien de ce que contient la requête ne choisit la destination. |
+| **Secrets dans les journaux** | Aucun appel `console.*` dans le module ; les jetons passent dans le corps ou l'en-tête des requêtes vers Twitch, jamais dans une adresse ; aucune erreur ne les cite. Les réponses du rappel portent `Cache-Control: no-store` et `Referrer-Policy: no-referrer`. |
+| **Jeton lisible par un autre module** | Les jetons (accès et renouvellement) sont dans le **stockage de l'instance** : le cœur le réserve à l'instance (`createStore(instanceId)` filtre chaque lecture par instance : une autre instance, même du même module, ne voit rien). Ils ne sont jamais un réglage, ni dans le service `twitch.live`, ni dans un export, ni dans un outil d'assistant. Le stockage fait partie de la sauvegarde du site (chiffrée) : protégez-la. |
+| **Jeton qui traîne** | Renouvelé automatiquement avant son expiration et à la réception d'un 401 (une seule tentative, fusionnée entre appels simultanés) ; échec définitif → « À reconnecter ». **Déconnecter** révoque les deux jetons chez Twitch puis les efface. Mauvais compte, autorisation incomplète : jetons révoqués aussitôt. |
+| **PKCE** | Non utilisé : Twitch ne le documente pas pour ce flux, et le secret de l'application protège déjà l'échange. |
+
+Risques restants : un administrateur dont la session est volée peut connecter ou déconnecter (comme n'importe quelle action d'administration) ; la sauvegarde contient les jetons (chiffrée) ; l'adresse de retour doit être en https (sauf `localhost` pour des essais).

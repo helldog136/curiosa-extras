@@ -8,6 +8,9 @@ const CHANNEL_RE = /^UC[\w-]{22}$/;
 const SHORT_MAX_SECONDS = 60;
 const TTL = 10 * 60_000;
 const cache = new Map();
+const statsCache = new Map();    // identifiant|clé → { value, until } : la dernière réponse, valable jusqu'à `until` (jamais servie après)
+const statsPending = new Map();  // appels en cours (deux demandes simultanées partagent le même)
+const STATS_TTL = 10 * 60_000, STATS_FAIL_TTL = 60_000, STATS_RATE_TTL = 10 * 60_000;
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 const unxml = (t) => t.replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10))).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
@@ -47,6 +50,47 @@ export async function viaApi(channelId, apiKey) {
   } catch { return []; }
 }
 
+/**
+ * Chiffres de la chaîne : { stats: { followers?, hidden?, content?, views? }, at } ou { error: "auth" | "rate" | "network" | "config", reason?, at } ; ne lève jamais.
+ * `channels.list?part=statistics` avec la clé d'API du module (1 unité de quota). Sans clé : { error: "config", reason: "key" } sans aucune requête.
+ * L'abonnement n'est PAS exact : YouTube l'arrondit à 3 chiffres significatifs (1 234 567 devient 1 230 000) et ne le donne pas si la chaîne le cache (`hidden`).
+ */
+function statsError(status, body) {
+  const reason = String(body?.error?.errors?.[0]?.reason ?? body?.error?.status ?? "");
+  if (status === 429 || /quota|rateLimit|dailyLimit|RESOURCE_EXHAUSTED/i.test(reason)) return { error: "rate" };
+  if (status === 400 || status === 401 || status === 403) return { error: "auth" };   // clé inconnue, refusée, service non activé, restrictions de la clé
+  if (status === 404) return { error: "config", reason: "channel" };
+  return { error: "network" };
+}
+async function fetchStats(channelId, apiKey) {
+  try {
+    const res = await get(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${encodeURIComponent(channelId)}&key=${encodeURIComponent(apiKey)}`);
+    if (!res.ok) return statsError(res.status, await res.json().catch(() => ({})));
+    const item = ((await res.json()).items ?? [])[0];
+    if (!item) return { error: "config", reason: "channel" };   // YouTube ne connaît pas cet identifiant
+    const n = (v) => (/^\d{1,15}$/.test(String(v ?? "")) ? Number(v) : undefined);
+    const st = item.statistics ?? {};
+    const hidden = st.hiddenSubscriberCount === true || n(st.subscriberCount) === undefined;
+    return { stats: { ...(hidden ? { hidden: true } : { followers: n(st.subscriberCount) }), content: n(st.videoCount), views: n(st.viewCount) } };
+  } catch { return { error: "network" }; }
+}
+export async function channelStats(channelId, apiKey) {
+  if (!CHANNEL_RE.test(channelId ?? "")) return { error: "config", reason: "channel", at: Date.now() };
+  if (!apiKey) return { error: "config", reason: "key", at: Date.now() };
+  const k = `${channelId}|${apiKey}`;
+  const hit = statsCache.get(k);
+  if (hit && hit.until > Date.now()) return hit.value;
+  const pending = statsPending.get(k);
+  if (pending) return pending;
+  const run = fetchStats(channelId, apiKey).then((found) => {
+    const value = { ...found, at: Date.now() };
+    statsCache.set(k, { value, until: Date.now() + (value.error === "rate" ? STATS_RATE_TTL : value.error ? STATS_FAIL_TTL : STATS_TTL) });
+    return value;
+  }).finally(() => statsPending.delete(k));
+  statsPending.set(k, run);
+  return run;
+}
+
 /** Vidéos récentes de la chaîne (10 min de cache ; une liste vide n'est jamais figée dans le cache). */
 export async function listVideos(channelId, apiKey) {
   if (!CHANNEL_RE.test(channelId ?? "")) return [];
@@ -57,7 +101,7 @@ export async function listVideos(channelId, apiKey) {
   if (items.length) { cache.set(key, { items, at: Date.now() }); return items; }
   return hit?.items ?? [];
 }
-export const resetCache = () => cache.clear();
+export const resetCache = () => { cache.clear(); statsCache.clear(); statsPending.clear(); };
 
 /** Sans clé d'API on ignore la durée : /shorts/<id> répond 200 pour un vrai Short, redirige pour une vidéo classique. */
 export async function isShort(video) {
@@ -87,7 +131,30 @@ async function longVideos(ctx, limit) {
   return out;
 }
 
+const METRICS = ["followers", "content", "views"];
+function statItems(ctx, r) {
+  const { channelId } = cfg(ctx);
+  return METRICS.map((metric) => {
+    const error = r.error ?? (r.stats.hidden && metric === "followers" ? "hidden" : null);
+    if (!error && r.stats[metric] === undefined) return null;   // YouTube n'a pas donné ce chiffre : on ne le publie pas
+    return {
+      id: `youtube-channel:${ctx.instance.key}:${metric}`, platform: "youtube", account: ctx.instance.name || "YouTube", accountKey: ctx.instance.key, metric, label: ctx.t(`stat_${metric}`),
+      ...(error ? {} : { value: r.stats[metric] }), asOf: new Date(r.at).toISOString(), url: `https://www.youtube.com/channel/${channelId}`, ...(error ? { error } : {}),
+    };
+  }).filter(Boolean);
+}
+/** Le message de l'état d'un chiffre, pour la personne qui gère le site : ce qui se passe et quoi faire. */
+const whyNot = (ctx, item, r) => ctx.t(item.error === "config" ? (r.reason === "key" ? "err_config_key" : "err_config_channel") : `err_${item.error}`);
+
 export default {
+  async adminPanel(ctx) {
+    if (ctx.setting("trackStats") !== true) return [];
+    const { channelId, apiKey } = cfg(ctx);
+    if (!CHANNEL_RE.test(channelId)) return [{ type: "banner", tone: "warning", text: ctx.t("err_config_channel") }];
+    const r = await channelStats(channelId, apiKey);
+    const rows = statItems(ctx, r).map((i) => [i.label, i.error ? whyNot(ctx, i, r) : i.value.toLocaleString(ctx.locale)]);
+    return [{ type: "heading", text: ctx.t("stats_title") }, { type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows }, { type: "markdown", text: ctx.t("stats_note") }];
+  },
   sections: {
     async featured(ctx) {
       const { channelId, apiKey } = cfg(ctx);
@@ -119,6 +186,14 @@ export default {
     // Les Shorts ne s'annoncent pas comme des vidéos : ils ne sont pas proposés.
     async "feed.item"(ctx, { limit }) {
       return (await longVideos(ctx, limit ?? 20)).map((v) => ({ id: `yt:${v.id}`, title: v.title, url: watchUrl(v.id), publishedAt: v.publishedAt, topics: ["video"] }));
+    },
+    /** Abonnés, vidéos et vues pour « social.stat ». Jamais de valeur inventée ni périmée : `error` et pas de `value`. Désactivé (rien) tant que « Suivre mes statistiques » n'est pas coché. */
+    async "social.stat"(ctx, args) {
+      if (ctx.setting("trackStats") !== true) return [];
+      const { channelId } = cfg(ctx);
+      if (!CHANNEL_RE.test(channelId)) return [];
+      const items = statItems(ctx, await channelStats(channelId, cfg(ctx).apiKey));
+      return Number.isInteger(args?.limit) && args.limit > 0 ? items.slice(0, args.limit) : items;
     },
     async "maze.poster"(ctx, { limit }) {
       return (await longVideos(ctx, limit ?? 10)).map((v) => ({ title: v.title, url: watchUrl(v.id), image: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`, kind: "video" }));

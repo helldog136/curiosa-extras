@@ -1,0 +1,292 @@
+{
+  "apiVersion": 2,
+  "id": "community-stats",
+  "name": {
+    "fr": "Statistiques de la communauté",
+    "en": "Community statistics"
+  },
+  "version": "1.0.0",
+  "minCore": "0.1.16",
+  "description": {
+    "fr": "Garde les chiffres de vos réseaux (abonnés, abonnés payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
+    "en": "Keeps the numbers of your networks (followers, paying followers, posts, views) and how they evolve, for you and for your AI. Nothing is shown on your site without your say-so."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📊",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "consumes": [
+    {
+      "topic": "social.stat",
+      "label": {
+        "fr": "Les chiffres de vos réseaux (fournis par vos modules de réseaux)",
+        "en": "The numbers of your networks (provided by your network modules)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "platform",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "account",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "accountKey",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "metric",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "label",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "value",
+          "type": "number"
+        },
+        {
+          "key": "asOf",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "url"
+        },
+        {
+          "key": "error",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "admin",
+    "storage",
+    "topics",
+    "mcp"
+  ],
+  "settings": [
+    {
+      "key": "period",
+      "type": "select",
+      "default": "1d",
+      "advanced": true,
+      "label": {
+        "fr": "À quelle fréquence noter vos chiffres ?",
+        "en": "How often should your numbers be noted?"
+      },
+      "help": {
+        "fr": "Une fois par jour convient très bien : vous n'avez rien à régler. Plus c'est fréquent, plus l'historique est détaillé (et plus il prend de place).",
+        "en": "Once a day is just fine: there is nothing to set. The more often, the more detailed the history (and the more room it takes)."
+      },
+      "options": [
+        {
+          "value": "1h",
+          "label": {
+            "fr": "Toutes les heures",
+            "en": "Every hour"
+          }
+        },
+        {
+          "value": "6h",
+          "label": {
+            "fr": "Toutes les 6 heures",
+            "en": "Every 6 hours"
+          }
+        },
+        {
+          "value": "12h",
+          "label": {
+            "fr": "Toutes les 12 heures",
+            "en": "Every 12 hours"
+          }
+        },
+        {
+          "value": "1d",
+          "label": {
+            "fr": "Une fois par jour (conseillé)",
+            "en": "Once a day (recommended)"
+          }
+        },
+        {
+          "value": "1w",
+          "label": {
+            "fr": "Une fois par semaine",
+            "en": "Once a week"
+          }
+        }
+      ]
+    },
+    {
+      "key": "retention",
+      "type": "select",
+      "default": "2y",
+      "advanced": true,
+      "label": {
+        "fr": "Combien de temps garder l'historique ?",
+        "en": "How long should the history be kept?"
+      },
+      "help": {
+        "fr": "Au-delà, les anciens chiffres sont effacés. Le dernier chiffre de chaque compte est toujours gardé.",
+        "en": "Older numbers are erased after that. The latest number of each account is always kept."
+      },
+      "options": [
+        {
+          "value": "3m",
+          "label": {
+            "fr": "3 mois",
+            "en": "3 months"
+          }
+        },
+        {
+          "value": "1y",
+          "label": {
+            "fr": "1 an",
+            "en": "1 year"
+          }
+        },
+        {
+          "value": "2y",
+          "label": {
+            "fr": "2 ans (conseillé)",
+            "en": "2 years (recommended)"
+          }
+        },
+        {
+          "value": "5y",
+          "label": {
+            "fr": "5 ans",
+            "en": "5 years"
+          }
+        },
+        {
+          "value": "forever",
+          "label": {
+            "fr": "Pour toujours",
+            "en": "Forever"
+          }
+        }
+      ]
+    }
+  ],
+  "mcp": [
+    {
+      "name": "community_stats_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the community statistics of the owner's social channels: one entry per account and kind of figure, with the current value, its origin (automatic reading or typed by hand), its freshness, and the change over the last 7 and 30 days (absolute and percent; null without enough history; percent is null when the starting value was 0). followers = free audience (subscribers, followers, members), paying = paying audience (paid subscribers, members, patrons), content = number of posts or videos, views = cumulative views. Use it for questions like 'how many followers did I gain this month?'. status 'no_data': the network is not giving the figure right now (see problem; value is the last known one, dated by lastValueAt); 'not_shared_anymore': the network stopped sharing it. Do not add figures of different networks together unless asked, and say so then: audiences overlap.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "maxLength": 31,
+            "description": "Only this network, e.g. twitch, youtube, instagram."
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "followers",
+              "paying",
+              "content",
+              "views"
+            ],
+            "description": "Only this kind of figure."
+          }
+        }
+      }
+    },
+    {
+      "name": "community_stats_history",
+      "readOnly": true,
+      "default": false,
+      "description": "History of ONE statistic (take its id from community_stats_list): dated values over the last days, oldest first. Use it to draw a curve or compare two dates. Long histories are thinned evenly (thinned: true) to at most 'limit' points, first and last kept.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1830,
+            "description": "How many days back (default 90)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 500,
+            "description": "Most points returned (default 200)."
+          }
+        }
+      }
+    },
+    {
+      "name": "community_stats_set_manual",
+      "default": false,
+      "description": "Record a figure typed by hand for a network the site cannot read by itself (Instagram, TikTok, X, Facebook…). Creates the account the first time. Refused for an account that is read automatically. The entry is marked 'typed by hand' with its date and the name of this token in the history; a second entry in the same period replaces the first. Ask the owner for the figure: never guess it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "platform",
+          "account",
+          "metric",
+          "value"
+        ],
+        "properties": {
+          "platform": {
+            "type": "string",
+            "maxLength": 31,
+            "description": "Network name, e.g. Instagram."
+          },
+          "account": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Account name, e.g. @emma."
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "followers",
+              "paying",
+              "content",
+              "views"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "date": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Day of the figure (YYYY-MM-DD) or ISO time. Default: now. Never in the future."
+          }
+        }
+      }
+    }
+  ]
+}

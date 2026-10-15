@@ -1,4 +1,5 @@
-// Modules « réseau social » : chacun fournit SEULEMENT son bouton au cœur (sujet social.link) à partir d'un identifiant ou d'une adresse de profil.
+// Modules « réseau social » : chacun fournit son bouton au cœur (sujet social.link) à partir d'un identifiant ou d'une adresse de profil ; ceux qui lisent leurs chiffres
+// publiquement (Bluesky, Mastodon, GitHub, Discord, Reddit) fournissent aussi « social.stat » (voir social-stat.test.mjs).
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -8,17 +9,18 @@ import { parseManifest } from "@/core/modules/manifest";
 const root = new URL("../modules/", import.meta.url).pathname;
 const ids = fs.readdirSync(root).filter((id) => JSON.parse(fs.readFileSync(`${root}${id}/module.json`, "utf8")).type === "social");
 const load = async (id) => ({ manifest: JSON.parse(fs.readFileSync(`${root}${id}/module.json`, "utf8")), mod: await import(`../modules/${id}/index.mjs`) });
+const STAT_PROVIDERS = ["bluesky", "mastodon", "github", "discord", "reddit"];   // + youtube-channel et twitch-channel (déjà « -channel »)
 const link = (def, profile) => def.default.exports["social.link"]({ setting: (k) => (k === "profile" ? profile : undefined) });
 
-test("réseaux : une vingtaine de modules, chacun valide, à instances multiples, et ne fournissant que « social.link »", async () => {
+test("réseaux : une vingtaine de modules, chacun valide, à instances multiples, et ne fournissant que « social.link » (+ « social.stat » pour ceux qui lisent leurs chiffres)", async () => {
   assert.ok(ids.length >= 20, ids.join(","));
   for (const id of ids) {
     const { manifest } = await load(id);
     const r = parseManifest(manifest); assert.ok(r.ok, `${id} : ${r.ok ? "" : r.error}`);
     assert.equal(manifest.instances, "multiple", id);
-    assert.deepEqual(manifest.provides.map((p) => p.topic), id === "twitch-channel" || id === "youtube-channel" ? manifest.provides.map((p) => p.topic) : ["social.link"], id);
+    assert.deepEqual(manifest.provides.map((p) => p.topic), id === "twitch-channel" || id === "youtube-channel" ? manifest.provides.map((p) => p.topic) : STAT_PROVIDERS.includes(id) ? ["social.link", "social.stat"] : ["social.link"], id);
     assert.ok(manifest.provides.some((p) => p.topic === "social.link"), id);
-    assert.deepEqual(manifest.permissions ?? [], id.endsWith("-channel") ? manifest.permissions : [], `${id} : aucune permission nécessaire`);
+    assert.deepEqual(manifest.permissions ?? [], id.endsWith("-channel") ? manifest.permissions : STAT_PROVIDERS.includes(id) ? ["admin"] : [], `${id} : aucune permission nécessaire (hors panneau d'admin des statistiques)`);
   }
 });
 

@@ -1,0 +1,10 @@
+{
+  "stats_title": "Your statistics",
+  "col_stat": "Number followed",
+  "col_value": "Currently",
+  "stat_followers": "Reddit followers",
+  "err_hidden": "Reddit does not show this number: this community or profile is private. Make it public, or untick “Follow my statistics”.",
+  "err_rate": "Reddit is limiting requests for now: nothing to do, we try again in a while.",
+  "err_network": "Reddit is not answering right now: nothing to do, we try again automatically.",
+  "err_config_account": "Reddit cannot find this account or community: check the address in Settings."
+}

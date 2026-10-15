@@ -6,11 +6,11 @@
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "platform": "twitch",
   "description": {
-    "en": "Makes your Twitch channel easier to showcase: header button, live status and latest clips.",
-    "fr": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct et derniers clips."
+    "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your follower and paying subscriber counts.",
+    "fr": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, le nombre de vos followers et de vos abonnés payants."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -54,12 +54,20 @@
         "en": "Latest clips as posters",
         "fr": "Derniers clips en affiches"
       }
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "Twitch followers and paying subscribers",
+        "fr": "Followers et abonnés payants Twitch"
+      }
     }
   ],
   "permissions": [
     "topics",
     "storage",
-    "admin"
+    "admin",
+    "routes"
   ],
   "settings": [
     {
@@ -78,8 +86,8 @@
       "key": "clientId",
       "type": "text",
       "label": {
-        "en": "Twitch client id",
-        "fr": "Client id Twitch"
+        "en": "Twitch application ID (client id)",
+        "fr": "Identifiant de l'application Twitch"
       },
       "help": {
         "en": "From dev.twitch.tv/console (an application of your own). Type it only here.",
@@ -90,8 +98,43 @@
       "key": "clientSecret",
       "type": "secret",
       "label": {
-        "en": "Twitch client secret",
-        "fr": "Client secret Twitch"
+        "en": "Twitch application secret",
+        "fr": "Secret de l'application Twitch"
+      }
+    },
+    {
+      "key": "trackStats",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Follow my statistics",
+        "fr": "Suivre mes statistiques"
+      },
+      "help": {
+        "en": "Counts your followers and paying subscribers for the site's statistics. Twitch must authorize it: once this is on and saved, a short guide and a “Connect my Twitch channel” button appear at the top of this page.",
+        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site. Twitch doit l'autoriser : une fois ceci activé et enregistré, un court guide et le bouton « Connecter ma chaîne Twitch » apparaissent en haut de cette page."
+      }
+    },
+    {
+      "key": "statsFollowers",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Count my followers",
+        "fr": "Compter mes followers"
+      }
+    },
+    {
+      "key": "statsPaying",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Count my paying subscribers",
+        "fr": "Compter mes abonnés payants"
+      },
+      "help": {
+        "en": "Only for Twitch affiliates and partners. Ticking it changes what Twitch is asked to authorize: reconnect your channel afterwards.",
+        "fr": "Réservé aux affiliés et partenaires Twitch. Cocher cette case change ce que Twitch doit autoriser : reconnectez votre chaîne ensuite."
       }
     },
     {
