@@ -103,8 +103,8 @@ const call = (name, c, args) => svc[name](c, args);
 const countOf = (calls, part) => calls.filter((c) => c.u.includes(part)).length;
 
 test("manifeste : offre le service twitch.live (lecture seule : channel, status), garde stream.live, permissions storage/admin déclarées", () => {
-  assert.deepEqual(manifestJson.offers.map((o) => o.service), ["twitch.live"]);
-  assert.deepEqual(manifestJson.offers[0].readOnly, ["channel", "status"]);
+  assert.deepEqual(manifestJson.offers.map((o) => o.service), ["twitch.api", "twitch.live"]);
+  assert.deepEqual(manifestJson.offers.find((o) => o.service === "twitch.live").readOnly, ["channel", "status"]);
   assert.ok(manifestJson.provides.some((p) => p.topic === "stream.live"));
   assert.ok(!manifestJson.requires, "le fournisseur ne dépend de personne");
   assert.ok(manifestJson.permissions.includes("storage") && manifestJson.permissions.includes("admin") && manifestJson.permissions.includes("topics"));
@@ -264,11 +264,11 @@ test("locales de la Chaîne Twitch : en et fr alignées, textes de l'admin prés
 const inst = (key, settings = {}) => fakeCtx({ key, settings });
 const typed = (key, channel) => inst(key, { channel, clientId: "cid", clientSecret: "SEC-RET" });
 
-test("manifeste : l'offre twitch.live est « each », minCore 0.1.17, version 1.4.0, réglage facultatif des identifiants d'une autre chaîne", () => {
+test("manifeste : l'offre twitch.live est « each », minCore 0.1.17, version 1.5.0, réglage facultatif des identifiants d'une autre chaîne", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual(manifestJson.offers[0], { ...manifestJson.offers[0], service: "twitch.live", each: true });
+  for (const o of manifestJson.offers) assert.equal(o.each, true, o.service);
   assert.equal(manifestJson.minCore, "0.1.17");
-  assert.equal(manifestJson.version, "1.4.0");
+  assert.equal(manifestJson.version, "1.5.0");
   const s = manifestJson.settings.find((x) => x.key === "useCredentialsOf");
   assert.ok(s && s.type === "text" && s.advanced);
 });

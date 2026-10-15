@@ -89,5 +89,7 @@
   "live_erase": "Erase the measurements",
   "live_eraseConfirm": "Erase all the measurements of your lives? This is final.",
   "live_erased": "Measurements erased. Tracking starts again from zero.",
-  "live_videosPending": "The views of your videos will arrive in a few minutes."
+  "live_videosPending": "The views of your videos will arrive in a few minutes.",
+  "conn_why_chat": "For your chat bot to read the messages and answer them, Twitch must first ask for your consent. It takes a minute, once.",
+  "extras_note": "This permission is also used by your chat bot: reading the chat messages and answering them."
 }

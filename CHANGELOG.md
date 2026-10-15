@@ -4,6 +4,14 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+- **Nouveau : le Bot Twitch.** Votre site répond aux commandes tapées dans votre chat Twitch : `!planning`, `!jeu`, `!titre`, `!followers` et `!uptime` sont prêtes, et vous créez les vôtres (nom, réponse, autres noms, qui peut s'en servir, attente entre deux réponses). Les réponses peuvent contenir le jeu, le titre, la durée du direct, le nombre de followers, le prochain stream ou le pseudo de la personne. Il faut Curiosa 0.1.22 ou plus ; Chaîne Twitch s'installe avec lui.
+- **Des commandes pour vos partenaires et vos réseaux.** Si Sponsors est installé, chaque partenaire peut avoir sa commande (`!tesla` donne l'adresse de sa page). Si vous avez installé des modules de réseaux (YouTube, TikTok, Instagram, Discord, X…), chacun peut avoir la sienne (`!youtube`, `!tiktok`…), et `!reseaux` donne tous les liens d'un coup. Sans ces modules, rien ne change et la page du bot l'explique.
+- **Un arrêt d'urgence et un journal.** Un gros bouton en haut de la page coupe toutes les réponses tout de suite ; un court journal dit, pour chaque commande, si le bot a répondu ou pourquoi il s'est tu. Par défaut le bot ne répond que pendant vos directs, ne répond jamais à lui-même ni aux autres bots, et se retient s'il y a trop de messages d'un coup.
+- **Votre IA peut lister, créer et modifier des commandes** (rien n'est accordé d'office, rien ne se supprime).
+- **Chaîne Twitch 1.5.0 : elle prépare le terrain pour le bot.** Elle peut demander à Twitch l'autorisation de lire et d'écrire dans votre chat (un bouton, une seule fois) et parler à Twitch à la place d'autres modules sans jamais leur montrer vos accès. Rien ne change pour vous si vous n'installez pas le bot.
+
 ## 1.5.0
 
 *Changements depuis la 1.4.0.*

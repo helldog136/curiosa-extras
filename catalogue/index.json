@@ -590,13 +590,33 @@
       ]
     },
     {
+      "id": "twitch-bot",
+      "name": "Bot Twitch",
+      "description": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/twitch-bot",
+      "ref": "v1.5.0",
+      "version": "1.0.0",
+      "platform": "twitch",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🤖",
+      "requires": {
+        "core": "0.1.22"
+      },
+      "needs": [
+        "twitch.api",
+        "twitch.live"
+      ]
+    },
+    {
       "id": "twitch-channel",
       "name": "Chaîne Twitch",
       "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnés payants. Mesure aussi vos directs (spectateurs moyens et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.5.0",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -611,6 +631,10 @@
         "core": "0.1.17"
       },
       "offers": [
+        {
+          "service": "twitch.api",
+          "each": true
+        },
         {
           "service": "twitch.live",
           "each": true
