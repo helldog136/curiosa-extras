@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.14",
+  "minCore": "0.1.22",
   "id": "live-status",
   "name": {
     "en": "Twitch live status",
     "fr": "Statut live Twitch"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
@@ -113,7 +113,8 @@
       "help": {
         "en": "Leave empty to announce all your Twitch channels. Otherwise type their logins separated by commas (for example mychannel, myfriend).",
         "fr": "Laissez vide pour annoncer toutes vos chaînes Twitch. Sinon, saisissez leurs identifiants séparés par des virgules (par exemple machaine, monami)."
-      }
+      },
+      "optional": true
     }
   ],
   "requires": [

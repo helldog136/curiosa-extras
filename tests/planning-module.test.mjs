@@ -278,7 +278,10 @@ test("carte « prochain stream » : bouton vers la chaîne seulement avec une ad
 });
 
 test("carte « prochain stream » : plusieurs streams le même jour → les autres listés dans la carte, un autre jour → absent", async () => {
-  const html = await next(ctxWith(), vevent("1", hours(1), hours(2), "Premier"), vevent("2", hours(1.5), hours(2.5), "Deuxieme"), vevent("3", hours(80), hours(81), "Lointain"));
+  // Les deux premiers streams doivent tomber le MÊME jour (UTC) quelle que soit l'heure du test : on part de midi, au moins 2 h plus tard.
+  const noon = new Date(); noon.setUTCHours(12, 0, 0, 0); if (noon.getTime() - Date.now() < 2 * 3_600_000) noon.setUTCDate(noon.getUTCDate() + 1);
+  const at = (h) => new Date(noon.getTime() + h * 3_600_000);
+  const html = await next(ctxWith(), vevent("1", at(0), at(1), "Premier"), vevent("2", at(0.5), at(1.5), "Deuxieme"), vevent("3", at(80), at(81), "Lointain"));
   assert.match(html, /cpl-also">alsoToday <time[^>]*>[\d:]+<\/time> Deuxieme</);
   assert.ok(!html.includes("Lointain"));
 });

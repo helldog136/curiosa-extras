@@ -264,11 +264,11 @@ test("locales de la Chaîne Twitch : en et fr alignées, textes de l'admin prés
 const inst = (key, settings = {}) => fakeCtx({ key, settings });
 const typed = (key, channel) => inst(key, { channel, clientId: "cid", clientSecret: "SEC-RET" });
 
-test("manifeste : l'offre twitch.live est « each », minCore 0.1.17, version 1.4.0, réglage facultatif des identifiants d'une autre chaîne", () => {
+test("manifeste : l'offre twitch.live est « each », minCore 0.1.22, version 1.4.1, réglage facultatif des identifiants d'une autre chaîne", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.deepEqual(manifestJson.offers[0], { ...manifestJson.offers[0], service: "twitch.live", each: true });
-  assert.equal(manifestJson.minCore, "0.1.17");
-  assert.equal(manifestJson.version, "1.4.0");
+  assert.equal(manifestJson.minCore, "0.1.22");
+  assert.equal(manifestJson.version, "1.4.1");
   const s = manifestJson.settings.find((x) => x.key === "useCredentialsOf");
   assert.ok(s && s.type === "text" && s.advanced);
 });

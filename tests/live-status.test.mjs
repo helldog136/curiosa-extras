@@ -40,8 +40,8 @@ test("live-status : manifeste valide, dépend du service twitch.live, n'en offre
   const m = await assertValidManifest(manifest);
   assertDefinitionMatchesManifest(m, def);
   assertSettingsSane(m);
-  assert.equal(m.version, "1.2.0");
-  assert.equal(m.minCore, "0.1.14");
+  assert.equal(m.version, "1.2.1");
+  assert.equal(m.minCore, "0.1.22");
   assert.deepEqual(m.sections.map((s) => s.id), ["player"]);
   assert.equal(m.instances, "single");
   assert.deepEqual(m.requires.map((r) => r.service), ["twitch.live"]);
@@ -303,8 +303,8 @@ function fakeHelix({ lives = {}, errors = {} } = {}) {
 }
 const two = [{ name: "Twitch Helldog136", settings: { channel: "helldog136" } }, { name: "Twitch Rascane", settings: { channel: "rascane" } }];
 
-test("manifeste : minCore 0.1.14, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
-  assert.equal(manifest.minCore, "0.1.14");
+test("manifeste : minCore 0.1.22, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
+  assert.equal(manifest.minCore, "0.1.22");
   const s = manifest.settings.find((x) => x.key === "channels");
   assert.equal(s.type, "text");
   assert.ok(!s.advanced && !s.default);

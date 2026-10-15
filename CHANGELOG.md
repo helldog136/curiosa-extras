@@ -4,6 +4,12 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.5.1
+
+*Changements depuis la 1.5.0.*
+
+- **Les champs facultatifs ne sont plus marqués « à remplir ».** Dans Discord, les annonces Discord, le statut du live, Planning, le formulaire de contact, la Chaîne Twitch et la Chaîne YouTube, un réglage qui dit « facultatif » le reste vraiment : le laisser vide ne met plus l'extension « À configurer ». Il faut Curiosa 0.1.22 ou plus.
+
 ## 1.5.0
 
 *Changements depuis la 1.4.0.*

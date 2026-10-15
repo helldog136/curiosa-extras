@@ -50,13 +50,13 @@ const SECRETS = (extra = []) => ["SEC-RET", ...extra];
 
 test("manifeste : valide, 1.4.0, fournit social.stat, déclare routes + storage, réglages sûrs par défaut (éteint tant que le compte n'est pas connecté)", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.4.0");
+  assert.equal(manifest.version, "1.4.1");
   assert.ok(manifest.provides.some((p) => p.topic === "social.stat" && p.label.fr && p.label.en));
   for (const p of ["routes", "storage", "admin", "topics"]) assert.ok(manifest.permissions.includes(p), p);
   const s = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));
   assert.deepEqual([s.trackStats.default, s.statsFollowers.default, s.statsPaying.default], [false, true, false]);
   assert.ok(!s.trackStats.advanced && !s.statsFollowers.advanced && !s.statsPaying.advanced, "visibles en mode simple");
-  assert.equal(manifest.minCore, "0.1.17", "Curiosa 0.1.17 ou plus");
+  assert.equal(manifest.minCore, "0.1.22", "Curiosa 0.1.22 ou plus");
   assert.ok(!manifest.settings.some((x) => /token|jeton|access|refresh/i.test(x.key)), "aucun jeton dans les réglages");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["twitch.live", true]]);
 });

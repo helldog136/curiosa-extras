@@ -67,8 +67,8 @@ test("manifestes : valides, fournissent social.stat (libellé fr + en), version 
     const p = manifest.provides.find((x) => x.topic === "social.stat");
     assert.ok(p?.label?.fr && p.label.en, id);
     const [a, b] = [manifest.version, before[id]].map((v) => v.split(".").map(Number));
-    assert.ok(a[0] === b[0] && a[1] === b[1] + 1 && a[2] === 0, `${id} : ${before[id]} → ${manifest.version} (mineure)`);
-    assert.equal(manifest.minCore, undefined, `${id} : pas d'exigence de cœur nouvelle`);
+    assert.ok(a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] > b[2])), `${id} : ${before[id]} → ${manifest.version} (version montée)`);
+    assert.ok(!manifest.minCore || manifest.minCore === "0.1.22", `${id} : seule exigence de cœur permise : 0.1.22 (réglages facultatifs)`);
     const switches = manifest.settings.filter((s) => s.type === "boolean" && /statistiques/i.test(s.label.fr));
     assert.equal(switches.length, 1, id);
     assert.equal(switches[0].key, "trackStats");

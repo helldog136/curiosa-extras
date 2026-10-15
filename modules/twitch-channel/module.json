@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.17",
+  "minCore": "0.1.22",
   "id": "twitch-channel",
   "name": {
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -149,7 +149,8 @@
       "help": {
         "en": "Same Twitch application for several channels? Type here the channel (login) of another Twitch channel instance that already has its client id and secret: they are reused, only where empty here, without being shown. What you type in this instance always wins.",
         "fr": "Même application Twitch pour plusieurs chaînes ? Saisissez ici la chaîne (identifiant) d'une autre Chaîne Twitch qui a déjà son client id et son secret : ils sont repris, seulement là où ils sont vides ici, sans jamais être affichés. Ce que vous saisissez dans cette instance prévaut toujours."
-      }
+      },
+      "optional": true
     },
     {
       "key": "liveEveryMinutes",
