@@ -1,0 +1,10 @@
+{
+  "stats_title": "Vos statistiques",
+  "col_stat": "Chiffre suivi",
+  "col_value": "Actuellement",
+  "stat_followers": "Abonnés Reddit",
+  "err_hidden": "Reddit ne montre pas ce chiffre : cette communauté ou ce profil est privé. Rendez-le public, ou décochez « Suivre mes statistiques ».",
+  "err_rate": "Reddit limite les demandes pour le moment : rien à faire, on réessaie dans un moment.",
+  "err_network": "Reddit ne répond pas pour le moment : rien à faire, on réessaie automatiquement.",
+  "err_config_account": "Reddit ne trouve pas ce compte ou cette communauté : vérifiez l'adresse dans Réglages."
+}

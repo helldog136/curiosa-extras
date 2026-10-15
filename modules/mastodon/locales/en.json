@@ -1,0 +1,11 @@
+{
+  "stats_title": "Your statistics",
+  "col_stat": "Number followed",
+  "col_value": "Currently",
+  "stat_followers": "Mastodon followers",
+  "stat_content": "Mastodon posts",
+  "err_hidden": "This Mastodon server does not show its numbers publicly. Ask its administrator, or untick “Follow my statistics”.",
+  "err_rate": "This Mastodon server is limiting requests for now: nothing to do, it will resume by itself.",
+  "err_network": "This Mastodon server is not answering right now: nothing to do, we try again automatically.",
+  "err_config_account": "This Mastodon server cannot find this account: check your profile address in Settings."
+}

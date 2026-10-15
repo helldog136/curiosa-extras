@@ -6,7 +6,11 @@ const CLIPS_TTL = 10 * 60_000;
 const LIVE_TTL = 30_000;
 const FAIL_TTL = 20_000;   // après une erreur : on ne harcèle pas Twitch à chaque affichage de page
 const RATE_TTL = 60_000;   // après un 429
-const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map(), inflight: new Map() };
+const STAT_TTL = 5 * 60_000;   // followers / abonnés payants : une requête par chaîne et par statistique toutes les 5 minutes
+const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map() };
+// Le fichier voisin est importé avec la même « version » que celui-ci (jamais d'ancien oauth.mjs resté en mémoire après une mise à jour).
+const oauth = await import(new URL(`./oauth.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+export const { SCOPES } = oauth;
 export const resetCache = () => { for (const m of Object.values(state)) m.clear(); };
 
 const get = (url, init = {}) => fetch(url, { signal: AbortSignal.timeout(5000), ...init });
@@ -99,3 +103,74 @@ export async function recentClips(c) {
     return items;
   } catch { return hit?.items ?? []; }
 }
+
+/* ───────────── Statistiques de la chaîne (jeton d'UTILISATEUR, obtenu par la connexion du compte) ───────────── */
+
+/**
+ * `conn` : { key (instance), channel, clientId, secret, load(), save(doc) } — `load` rend le document de connexion ({ access, refresh, expiresAt, scopes, userId, clientId, status }) ou null,
+ * `save` le remplace. Ce fichier ne sait pas où il est gardé (c'est le stockage privé de l'instance, voir connect.mjs) et n'écrit jamais un jeton ailleurs.
+ */
+async function userToken(conn, usedAccess) {
+  const doc = await conn.load();
+  if (!doc || !doc.access || doc.status === "reconnect" || doc.clientId !== conn.clientId) return { error: "auth" };
+  if (usedAccess ? doc.access !== usedAccess : doc.expiresAt - Date.now() > 120_000) return { token: doc.access, doc };   // encore valable (ou déjà renouvelé par un autre appel)
+  const k = `refresh|${conn.key}`;   // renouvellement fusionné : tous les appels simultanés d'une instance attendent le même
+  let run = state.inflight.get(k);
+  if (!run) { run = renewTokens(conn, usedAccess).finally(() => state.inflight.delete(k)); state.inflight.set(k, run); }
+  return run;
+}
+async function renewTokens(conn, usedAccess) {
+  const doc = await conn.load();
+  if (!doc) return { error: "auth" };
+  if (usedAccess && doc.access !== usedAccess) return { token: doc.access, doc };
+  const r = await oauth.refreshTokens({ clientId: conn.clientId, secret: conn.secret, refresh: doc.refresh });
+  if (r.error === "invalid") { await conn.save({ ...doc, status: "reconnect" }); return { error: "auth" }; }   // Twitch ne reconnaît plus l'autorisation : il faut reconnecter
+  if (r.error) return { error: r.error };
+  const next = { ...doc, access: r.tokens.access, refresh: r.tokens.refresh, expiresAt: r.tokens.expiresAt, status: "ok" };
+  await conn.save(next);
+  return { token: next.access, doc: next };
+}
+
+const STAT_PATH = { followers: "channels/followers", paying: "subscriptions" };
+async function fetchUserStat(conn, metric) {
+  let t = await userToken(conn);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (t.error) return { error: t.error };
+    if (!Array.isArray(t.doc.scopes) || !t.doc.scopes.includes(oauth.SCOPES[metric])) return { error: "auth" };
+    const res = await get(`https://api.twitch.tv/helix/${STAT_PATH[metric]}?broadcaster_id=${encodeURIComponent(t.doc.userId)}&first=1`, { headers: headers(conn, t.token) });
+    if (res.status === 401) {
+      if (attempt === 0) { t = await userToken(conn, t.token); continue; }   // une seule nouvelle tentative, après renouvellement
+      await conn.save({ ...t.doc, status: "reconnect" });
+      return { error: "auth" };
+    }
+    if (res.status === 429) return { error: "rate" };
+    if (metric === "paying" && (res.status === 403 || res.status === 400)) return { error: "config", reason: "affiliate" };   // pas affilié ni partenaire
+    if (res.status === 403) return { error: "auth" };
+    if (!res.ok) return { error: "network" };
+    const total = (await res.json()).total;
+    return Number.isInteger(total) && total >= 0 ? { value: total } : { error: "network" };
+  }
+  return { error: "auth" };
+}
+
+/**
+ * Une statistique de la chaîne : { value, at } ou { error: "auth" | "rate" | "network" | "config", reason?, at } ; `at` : quand Twitch a répondu ; ne lève jamais, ne rend JAMAIS une valeur périmée.
+ * `metric` : "followers" | "paying". Une requête par chaîne et par statistique (5 min ; 20 s après une erreur, 60 s après un « trop de requêtes »).
+ */
+export async function userStat(conn, metric) {
+  if (!valid(conn)) return { error: "config", reason: "credentials" };
+  const k = `${conn.channel}|${metric}`;
+  const hit = state.stats.get(k);
+  if (hit && hit.until > Date.now()) return hit.value;
+  const pending = state.inflight.get(`stat|${k}`);
+  if (pending) return pending;
+  const run = fetchUserStat(conn, metric).catch(() => ({ error: "network" })).then((found) => {
+    const value = { ...found, at: Date.now() };
+    state.stats.set(k, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : STAT_TTL) });
+    return value;
+  }).finally(() => state.inflight.delete(`stat|${k}`));
+  state.inflight.set(`stat|${k}`, run);
+  return run;
+}
+/** À appeler quand la connexion change (connexion, déconnexion) : les anciennes réponses ne servent plus. */
+export const forgetStats = (channel) => { for (const k of [...state.stats.keys()]) if (!channel || k.startsWith(`${channel}|`)) state.stats.delete(k); };

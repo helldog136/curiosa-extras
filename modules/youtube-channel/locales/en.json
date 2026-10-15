@@ -1,5 +1,18 @@
 {
   "watch": "Watch the video: {title}",
   "views": "{n} views",
-  "none": "No recent video."
+  "none": "No recent video.",
+  "stat_followers": "YouTube subscribers",
+  "stat_content": "YouTube videos",
+  "stat_views": "YouTube views",
+  "stats_title": "Your YouTube statistics",
+  "col_stat": "Number followed",
+  "col_value": "Currently",
+  "stats_note": "YouTube rounds the subscriber count (for example 1,230,000 for 1,234,567): this is normal.",
+  "err_hidden": "YouTube hides your subscriber count: make it public in YouTube Studio.",
+  "err_auth": "The YouTube key is refused: check it in Settings.",
+  "err_rate": "YouTube has reached its request limit for today: nothing to do, it will resume by itself.",
+  "err_network": "YouTube is not answering right now: nothing to do, we try again automatically.",
+  "err_config_key": "Add your YouTube key in Settings to follow your statistics (free, see this module's guide).",
+  "err_config_channel": "YouTube cannot find this channel: check the channel id in Settings (it starts with UC)."
 }

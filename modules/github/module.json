@@ -5,11 +5,11 @@
     "en": "GitHub",
     "fr": "GitHub"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "platform": "github",
   "description": {
-    "en": "Shows your GitHub button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your GitHub button in the site header and shares your follower count. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site et partage le nombre de vos abonnés. Ajoutez-en un par compte si vous en avez plusieurs."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -25,9 +25,18 @@
         "en": "GitHub button in the header",
         "fr": "Bouton GitHub dans l'en-tête"
       }
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "GitHub followers",
+        "fr": "Abonnés GitHub"
+      }
     }
   ],
-  "permissions": [],
+  "permissions": [
+    "admin"
+  ],
   "settings": [
     {
       "key": "profile",
@@ -39,6 +48,19 @@
       "help": {
         "en": "Your GitHub username or your profile address.",
         "fr": "Votre identifiant GitHub ou l'adresse de votre profil."
+      }
+    },
+    {
+      "key": "trackStats",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Follow my statistics",
+        "fr": "Suivre mes statistiques"
+      },
+      "help": {
+        "en": "Counts your followers for the site's statistics. This number is public: nothing to set up.",
+        "fr": "Compte vos abonnés pour les statistiques du site. Ce chiffre est public : rien à régler."
       }
     }
   ]

@@ -1,0 +1,12 @@
+{
+  "stats_title": "Your statistics",
+  "col_stat": "Number followed",
+  "col_value": "Currently",
+  "stat_followers": "Discord members",
+  "stats_note": "Discord gives an approximate number of members.",
+  "err_hidden": "Discord does not give the member count for this invitation: create one that never expires and paste it in Settings.",
+  "err_rate": "Discord is limiting requests for now: nothing to do, it will resume by itself.",
+  "err_network": "Discord is not answering right now: nothing to do, we try again automatically.",
+  "err_config_invite": "Add your Discord's invitation link in Settings to count your members.",
+  "err_config_expired": "This Discord invitation no longer exists: create one that never expires and paste it in Settings."
+}

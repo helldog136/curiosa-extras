@@ -5,11 +5,11 @@
     "en": "Bluesky",
     "fr": "Bluesky"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "platform": "bluesky",
   "description": {
-    "en": "Shows your Bluesky button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Bluesky dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Bluesky button in the site header and shares your follower and post counts. Add one per account if you have several.",
+    "fr": "Affiche le bouton de votre Bluesky dans l'en-tête du site et partage le nombre de vos abonnés et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -25,9 +25,18 @@
         "en": "Bluesky button in the header",
         "fr": "Bouton Bluesky dans l'en-tête"
       }
+    },
+    {
+      "topic": "social.stat",
+      "label": {
+        "en": "Bluesky followers and posts",
+        "fr": "Abonnés et publications Bluesky"
+      }
     }
   ],
-  "permissions": [],
+  "permissions": [
+    "admin"
+  ],
   "settings": [
     {
       "key": "profile",
@@ -39,6 +48,19 @@
       "help": {
         "en": "Your Bluesky handle (e.g. name.bsky.social) or your profile address.",
         "fr": "Votre identifiant Bluesky (ex. nom.bsky.social) ou l'adresse de votre profil."
+      }
+    },
+    {
+      "key": "trackStats",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Follow my statistics",
+        "fr": "Suivre mes statistiques"
+      },
+      "help": {
+        "en": "Counts your followers and posts for the site's statistics. These numbers are public: nothing to set up.",
+        "fr": "Compte vos abonnés et vos publications pour les statistiques du site. Ces chiffres sont publics : rien à régler."
       }
     }
   ]

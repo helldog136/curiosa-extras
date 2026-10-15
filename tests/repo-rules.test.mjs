@@ -44,7 +44,6 @@ test("le kit presse ne stocke rien : il lit l'identité du cœur (ctx.api.brand)
 });
 
 // Exception EXPLIQUÉE : sujets déjà utilisés ici et pas encore dans le tableau « Sujets connus » du cœur (0.1.16). À retirer dès que le cœur les documente.
-const NOT_YET_IN_CORE_DOC = new Set(["social.stat"]); // « Les chiffres de vos réseaux » : Statistiques de la communauté (consommateur) et les modules de réseaux (fournisseurs)
 
 test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés dans docs/MODULES.md du cœur", () => {
   const doc = fs.readFileSync(path.join(core, "docs/MODULES.md"), "utf8");
@@ -55,9 +54,9 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
     if (main) for (const m of read(`${dir}/${main}`).matchAll(/\btopic: "([^"]+)"/g)) used.add(m[1]);
   }
   assert.ok(used.size >= 5, "des sujets doivent être trouvés");
+  // Sujets que le cœur publié (0.1.16) ne liste pas encore dans son tableau : une entrée = une exception expliquée, à retirer quand le cœur les documente.
   for (const topic of used) {
     assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
-    if (NOT_YET_IN_CORE_DOC.has(topic) && !doc.includes(`\`${topic}\``)) continue;
     assert.ok(doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
   }
 });
