@@ -10,12 +10,47 @@ const TTL = 10 * 60_000;
 const cache = new Map();
 const statsCache = new Map();    // identifiant|clé → { value, until } : la dernière réponse, valable jusqu'à `until` (jamais servie après)
 const statsPending = new Map();  // appels en cours (deux demandes simultanées partagent le même)
+const shortCache = new Map();    // identifiant de vidéo → { value, until } : « est-ce un Short ? » (sans clé d'API il faut interroger YouTube, un appel par vidéo)
+const shortPending = new Map();
+const SHORT_UNKNOWN_TTL = 60_000;   // YouTube n'a pas répondu : on compte la vidéo comme classique, mais on ne réessaie pas à chaque visite
 const STATS_TTL = 10 * 60_000, STATS_FAIL_TTL = 60_000, STATS_RATE_TTL = 10 * 60_000;
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 const unxml = (t) => t.replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10))).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const seconds = (iso) => { const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
-const get = (url, init = {}) => fetch(url, { signal: AbortSignal.timeout(5000), ...init });
+/**
+ * Les délais (en millisecondes), dans un objet pour que les tests puissent les raccourcir.
+ *   requestMs : un appel réseau (signal d'abandon) ; la borne dure est 20 % plus longue, lecture du corps comprise (une réponse qui ignorerait le signal ne bloque pas pour autant) ;
+ *   sharedMs  : un travail partagé par plusieurs demandes ; passé ce délai tout le monde reçoit une erreur « network » et l'entrée partagée est retirée ;
+ *   shortsMs  : tout le contrôle « Short ou non » d'une liste de vidéos, d'un bout à l'autre ; concurrency : combien de contrôles en même temps.
+ */
+export const timing = { requestMs: 5000, sharedMs: 15000, shortsMs: 5000, concurrency: 4 };
+/** Attend `p` au plus `ms`, sinon refuse. Le minuteur est libéré dans tous les cas et ne retient pas le processus. */
+function within(p, ms) {
+  let timer;
+  const late = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("timeout")), ms); timer.unref?.(); });
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
+}
+/** fetch avec signal d'abandon ET borne dure. Ne rend que { ok, status, json(), text() }, lecture du corps bornée elle aussi. */
+async function get(url, init = {}) {
+  const hard = Math.round(timing.requestMs * 1.2);
+  const res = await within(fetch(url, { signal: AbortSignal.timeout(timing.requestMs), ...init }), hard);
+  return { ok: res.ok, status: res.status, json: () => within(res.json(), hard), text: () => within(res.text(), hard) };
+}
+/**
+ * Un travail partagé entre demandes simultanées, JAMAIS éternel : si `make` ne se termine pas dans `ms`, tout le monde reçoit `fallback()` et l'entrée est retirée
+ * (sinon chaque demande suivante attendrait la même promesse jusqu'au redémarrage). `record` range le résultat ; un travail resté en arrière-plan n'écrit rien.
+ */
+function share(map, k, make, fallback, record = (v) => v, ms = timing.sharedMs) {
+  const pending = map.get(k);
+  if (pending) return pending;
+  let timer;
+  const expiry = new Promise((resolve) => { timer = setTimeout(() => resolve(fallback()), ms); timer.unref?.(); });
+  const work = Promise.resolve().then(make).catch(() => fallback());
+  const run = Promise.race([work, expiry]).then(record).finally(() => { clearTimeout(timer); if (map.get(k) === run) map.delete(k); });
+  map.set(k, run);
+  return run;
+}
 
 export async function viaFeed(channelId) {
   try {
@@ -80,15 +115,11 @@ export async function channelStats(channelId, apiKey) {
   const k = `${channelId}|${apiKey}`;
   const hit = statsCache.get(k);
   if (hit && hit.until > Date.now()) return hit.value;
-  const pending = statsPending.get(k);
-  if (pending) return pending;
-  const run = fetchStats(channelId, apiKey).then((found) => {
+  return share(statsPending, k, () => fetchStats(channelId, apiKey), () => ({ error: "network" }), (found) => {
     const value = { ...found, at: Date.now() };
     statsCache.set(k, { value, until: Date.now() + (value.error === "rate" ? STATS_RATE_TTL : value.error ? STATS_FAIL_TTL : STATS_TTL) });
     return value;
-  }).finally(() => statsPending.delete(k));
-  statsPending.set(k, run);
-  return run;
+  });
 }
 
 /** Vidéos récentes de la chaîne (10 min de cache ; une liste vide n'est jamais figée dans le cache). */
@@ -101,15 +132,49 @@ export async function listVideos(channelId, apiKey) {
   if (items.length) { cache.set(key, { items, at: Date.now() }); return items; }
   return hit?.items ?? [];
 }
-export const resetCache = () => { cache.clear(); statsCache.clear(); statsPending.clear(); };
+export const resetCache = () => { cache.clear(); statsCache.clear(); statsPending.clear(); shortCache.clear(); shortPending.clear(); };
 
-/** Sans clé d'API on ignore la durée : /shorts/<id> répond 200 pour un vrai Short, redirige pour une vidéo classique. */
+/**
+ * Sans clé d'API on ignore la durée : /shorts/<id> répond 200 pour un vrai Short, redirige pour une vidéo classique.
+ * La réponse est gardée 10 minutes par vidéo ; si YouTube ne répond pas, la vidéo compte comme classique et on ne réessaie qu'au bout d'une minute.
+ */
 export async function isShort(video) {
   if (video.durationSeconds !== null && video.durationSeconds !== undefined) return video.durationSeconds <= SHORT_MAX_SECONDS;
-  try {
-    const res = await get(`https://www.youtube.com/shorts/${encodeURIComponent(video.id)}`, { method: "HEAD", redirect: "manual", headers: { Cookie: "SOCS=CAI" } });
-    return res.status === 200;
-  } catch { return false; }
+  const hit = shortCache.get(video.id);
+  if (hit && hit.until > Date.now()) return hit.value;
+  const unknown = () => ({ value: false, unknown: true });
+  const r = await share(shortPending, video.id, async () => {
+    try {
+      const res = await get(`https://www.youtube.com/shorts/${encodeURIComponent(video.id)}`, { method: "HEAD", redirect: "manual", headers: { Cookie: "SOCS=CAI" } });
+      return res.status === 429 || res.status >= 500 ? unknown() : { value: res.status === 200 };
+    } catch { return unknown(); }
+  }, unknown, (found) => {
+    shortCache.set(video.id, { value: found.value, until: Date.now() + (found.unknown ? SHORT_UNKNOWN_TTL : TTL) });
+    return found;
+  });
+  return r.value;
+}
+
+/**
+ * « Short ou non » pour une liste de vidéos : { identifiant → booléen }. Les contrôles se font en parallèle (`timing.concurrency` à la fois) et l'ensemble a une borne globale
+ * (`timing.shortsMs`) : passé ce délai, les vidéos non contrôlées comptent comme classiques (et ne sont pas redemandées avant une minute). Ne lève jamais.
+ */
+export async function shortFlags(videos) {
+  const flags = new Map(), queue = [...videos];
+  let stopped = false, timer;
+  const worker = async () => { while (!stopped && queue.length) { const v = queue.shift(); const short = await isShort(v); if (!stopped) flags.set(v.id, short); } };
+  const pool = Promise.all(Array.from({ length: Math.min(Math.max(1, timing.concurrency), queue.length) }, worker));
+  const deadline = new Promise((resolve) => { timer = setTimeout(resolve, timing.shortsMs); timer.unref?.(); });
+  await Promise.race([pool, deadline]);
+  clearTimeout(timer);
+  stopped = true;
+  for (const v of videos) {
+    if (flags.has(v.id)) continue;
+    flags.set(v.id, false);
+    const hit = shortCache.get(v.id);
+    if (!hit || hit.until <= Date.now()) shortCache.set(v.id, { value: false, until: Date.now() + SHORT_UNKNOWN_TTL });
+  }
+  return flags;
 }
 
 /** Les plus vues d'abord (à égalité la plus récente), parmi celles de moins de `maxAgeDays` jours. */
@@ -123,12 +188,9 @@ const cfg = (ctx) => ({ channelId: String(ctx.setting("channelId") ?? "").trim()
 
 async function longVideos(ctx, limit) {
   const { channelId, apiKey } = cfg(ctx);
-  const out = [];
-  for (const v of await listVideos(channelId, apiKey)) {
-    if (out.length >= limit) break;
-    if (!(await isShort(v))) out.push(v);
-  }
-  return out;
+  const videos = await listVideos(channelId, apiKey);
+  const flags = await shortFlags(videos);
+  return videos.filter((v) => !flags.get(v.id)).slice(0, limit);
 }
 
 const METRICS = ["followers", "content", "views"];
@@ -173,11 +235,9 @@ export default {
       const { channelId, apiKey } = cfg(ctx);
       const maxAge = Math.min(3650, Math.max(1, Number(ctx.setting("maxAgeDays")) || 30));
       const includeShorts = ctx.setting("includeShorts") === true;
-      let video = null;
-      for (const c of rank(await listVideos(channelId, apiKey), maxAge).slice(0, 5)) {
-        if (!includeShorts && (await isShort(c))) continue;
-        video = c; break;
-      }
+      const candidates = rank(await listVideos(channelId, apiKey), maxAge).slice(0, 5);
+      const flags = includeShorts ? new Map() : await shortFlags(candidates);
+      const video = candidates.find((c) => !flags.get(c.id)) ?? null;
       if (!video) return null;
       const title = esc(video.title);
       return [{

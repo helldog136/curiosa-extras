@@ -28,6 +28,7 @@ export function profile(value) {
  * Une réponse est gardée 60 min (erreur : 5 min, limite de débit : 30 min) et n'est JAMAIS servie après son délai ; deux demandes simultanées partagent le même appel. */
 const TTL = 60 * 60_000, FAIL_TTL = 5 * 60_000, RATE_TTL = 30 * 60_000;
 const memo = new Map(), pending = new Map();
+export const timing = { sharedMs: 15000 };   // millisecondes ; un objet pour que les tests puissent le raccourcir
 export const resetCache = () => { memo.clear(); pending.clear(); };
 const MAX_BYTES = 200_000;
 
@@ -53,11 +54,15 @@ function lookup(key, load) {
   if (hit && hit.until > Date.now()) return hit.value;
   const running = pending.get(key);
   if (running) return running;
-  const run = load().catch(() => ({ error: "network" })).then((found) => {
+  // Jamais éternel : si l'appel (lecture du corps comprise) ne se termine pas dans `timing.sharedMs`, tout le monde reçoit « network » et l'entrée partagée est retirée
+  // (sinon chaque demande suivante attendrait la même promesse jusqu'au redémarrage). Le minuteur est libéré et ne retient pas le processus.
+  let timer;
+  const expiry = new Promise((resolve) => { timer = setTimeout(() => resolve({ error: "network" }), timing.sharedMs); timer.unref?.(); });
+  const run = Promise.race([Promise.resolve().then(load).catch(() => ({ error: "network" })), expiry]).then((found) => {
     const value = { ...found, at: Date.now() };
     memo.set(key, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : TTL) });
     return value;
-  }).finally(() => pending.delete(key));
+  }).finally(() => { clearTimeout(timer); if (pending.get(key) === run) pending.delete(key); });
   pending.set(key, run);
   return run;
 }

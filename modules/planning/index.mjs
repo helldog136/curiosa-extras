@@ -298,10 +298,18 @@ const coversOf = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.des
 const CACHE_MS = 5 * 60_000;
 const cache = new Map(); // url -> { at, text }
 
-/** Télécharge le calendrier (cache court, délai borné). Ne lève jamais : `null` si illisible. */
+/** Millisecondes, dans un objet pour que les tests puissent les raccourcir. totalMs : tout le téléchargement, redirections comprises (jusqu'à 4 appels de 8 s chacun sans cette borne). */
+export const icsTiming = { totalMs: 10_000 };
+
+/** Télécharge le calendrier (cache court, délai borné). Ne lève jamais : `null` si illisible ou trop long. */
 export async function fetchIcs(url, fetchImpl = fetch) {
   const hit = cache.get(url);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.text;
+  let timer;
+  const late = new Promise((resolve) => { timer = setTimeout(() => resolve(null), icsTiming.totalMs); timer.unref?.(); });
+  try { return await Promise.race([download(url, fetchImpl), late]); } finally { clearTimeout(timer); }
+}
+async function download(url, fetchImpl) {
   try {
     // Redirections suivies à la main : chaque étape doit rester une adresse https publique (sinon une
     // adresse publique pourrait renvoyer vers le réseau interne).

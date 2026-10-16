@@ -5,6 +5,13 @@ const { loadStats, saveStat, newStat, addPoint, purge, readRun, writeRun } = awa
 
 export const MIN_GAP_MS = 120_000; // « Mettre à jour maintenant » : au plus une fois toutes les 2 minutes
 let running = false; // jamais deux passages en même temps dans ce processus
+/** Millisecondes, dans un objet pour que les tests puissent les raccourcir. collectMs : le temps laissé aux modules de réseaux pour répondre ; au-delà le passage échoue proprement (et libère le verrou ci-dessus). */
+export const limits = { collectMs: 60_000 };
+function bounded(p, ms) {
+  let timer;
+  const late = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("timeout")), ms); timer.unref?.(); });
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
+}
 
 /**
  * Un passage : demande leurs chiffres aux modules de réseaux, les contrôle un par un et écrit UN point par statistique et par période.
@@ -22,7 +29,7 @@ export async function collectNow(ctx, { now = Date.now(), force = false } = {}) 
     if (!force && run.data.lastBucket === bucket) return { status: "skipped" };
     if (force && run.data.lastForcedAt && now - run.data.lastForcedAt < MIN_GAP_MS) return { status: "tooSoon" };
     let items;
-    try { items = await ctx.api.topics.collect(TOPIC, { limit: MAX_ITEMS }); }
+    try { items = await bounded(Promise.resolve().then(() => ctx.api.topics.collect(TOPIC, { limit: MAX_ITEMS })), limits.collectMs); }
     catch { await writeRun(ctx, run, { ...run.data, lastTryAt: now, lastError: "collect", ...(force ? { lastForcedAt: now } : {}) }); return { status: "failed" }; }
     if (!Array.isArray(items)) items = [];
 

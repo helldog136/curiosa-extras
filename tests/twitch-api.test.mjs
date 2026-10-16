@@ -30,10 +30,10 @@ async function connectMain(ctx, who) {
   return { link, res: await callback(new Request(tw.approve(link, who)), ctx) };
 }
 
-test("manifeste : offre twitch.api en « each » (une chaîne par instance), version 1.5.0 ; textes ajoutés en fr et en", () => {
+test("manifeste : offre twitch.api en « each » (une chaîne par instance), version 1.5.1 ; textes ajoutés en fr et en", () => {
   const o = manifest.offers.find((x) => x.service === "twitch.api");
   assert.ok(o && o.each === true && o.label.fr && o.label.en);
-  assert.equal(manifest.version, "1.5.0");
+  assert.equal(manifest.version, "1.5.1");
   for (const k of ["conn_why_chat", "extras_note"]) { assert.ok(fr[k] && en[k], k); }
   assert.deepEqual(Object.keys(api).sort(), ["account", "connectLink", "disconnect", "request", "wantScopes"]);
 });
