@@ -5,7 +5,7 @@
     "en": "Contacts",
     "fr": "Contacts"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": {
     "en": "Your private address book: people, organisations, notes. Each person lives here once; the rest of the site only links to them.",
     "fr": "Votre carnet d'adresses privé : personnes, organisations, notes. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer."
@@ -119,7 +119,7 @@
           "name"
         ]
       },
-      "default": true
+      "default": false
     },
     {
       "name": "contact_update",
@@ -182,7 +182,7 @@
           "text"
         ]
       },
-      "default": true
+      "default": false
     },
     {
       "name": "contact_delete",

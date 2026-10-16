@@ -4,6 +4,34 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.6.0
+
+*Changements depuis la 1.5.1.*
+
+### Nouveautés
+
+- **Nouveau : le Bot Twitch.** Votre site répond aux commandes tapées dans votre chat Twitch : `!planning`, `!jeu`, `!titre`, `!followers` et `!uptime` sont prêtes, et vous créez les vôtres (nom, réponse, autres noms, qui peut s'en servir, attente entre deux réponses). Les réponses peuvent contenir le jeu, le titre, la durée du direct, le nombre de followers, le prochain stream ou le pseudo de la personne. Il faut Curiosa 0.1.22 ou plus ; Chaîne Twitch s'installe avec lui.
+- **Des commandes pour vos partenaires et vos réseaux.** Si Sponsors est installé, chaque partenaire peut avoir sa commande (`!tesla` donne l'adresse de sa page). Si vous avez installé des modules de réseaux (YouTube, TikTok, Instagram, Discord, X…), chacun peut avoir la sienne (`!youtube`, `!tiktok`…), et `!reseaux` donne tous les liens d'un coup. Sans ces modules, rien ne change et la page du bot l'explique.
+- **Un arrêt d'urgence et un journal.** Un gros bouton en haut de la page coupe toutes les réponses tout de suite ; un court journal dit, pour chaque commande, si le bot a répondu ou pourquoi il s'est tu. Par défaut le bot ne répond que pendant vos directs, ne répond jamais à lui-même ni aux autres bots, et se retient s'il y a trop de messages d'un coup.
+- **Votre IA peut lister, créer et modifier des commandes** (rien n'est accordé d'office, rien ne se supprime).
+- **Chaîne Twitch 1.5.0 : elle prépare le terrain pour le bot.** Elle peut demander à Twitch l'autorisation de lire et d'écrire dans votre chat (un bouton, une seule fois) et parler à Twitch à la place d'autres modules sans jamais leur montrer vos accès. Rien ne change pour vous si vous n'installez pas le bot.
+- **Une vérification automatique de chaque module.** Tous les modules (et les deux exemples) passent maintenant une même série de contrôles : fichier de description, langues, réglages, sécurité, vie privée, textes en mots simples. Un défaut est repéré avant que vous ne le voyiez. Les défauts trouvés à la mise en place sont tous corrigés ci-dessous.
+
+### Améliorations
+
+- **Livre d'or : la vie privée est annoncée.** La page de confidentialité de votre site dit maintenant que les noms et messages des visiteurs sont enregistrés, et comment les faire retirer. Les champs « Image de bannière » et « Code d'invitation », qui sont facultatifs, ne sont plus comptés « à remplir ». Il faut Curiosa 0.1.22 ou plus.
+- **Suggestions de jeux : la vie privée est annoncée.** Votre page de confidentialité explique ce que les visiteurs laissent quand ils proposent un jeu ou votent (nom ou pseudo, note, un petit cookie pour les votes).
+- **Bannière d'annonce : le lien est vraiment facultatif**, et sa description est plus claire. Il faut Curiosa 0.1.22 ou plus.
+- **Contacts et Partenariats : votre IA n'écrit plus sans votre accord.** Créer ou compléter un contact, créer ou modifier un partenaire, tenir son journal, lier ou détacher un contact : ces outils ne sont plus donnés d'office à votre IA, vous les accordez vous-même dans son accès. La lecture reste possible. Si votre IA les utilisait, recochez-les.
+- **Overlay alertes : des mots plus simples.** La description n'emploie plus de terme technique, et le réglage « Jeton d'envoi » est rangé dans les réglages avancés.
+- **Annonces Discord : une aide plus claire** pour l'adresse du lien Discord, sans terme technique.
+
+### Pour les développeurs
+
+- `npm test` lance la suite de conformité du cœur (dossier `testsupport/`, Curiosa 0.1.23) sur chaque dossier de `modules/` et `examples/` : une exigence = un test nommé. Aucun défaut connu n'est toléré (le tableau `KNOWN` de `tests/conformance.test.mjs` est vide). Un nouveau module est contrôlé sans rien écrire.
+- Tests retirés car la suite les couvre : `optional-settings`, et des contrôles de `repo-rules`, `srp-guard` et des tests de modules (manifeste valide, langues, réglages, correspondance code/manifeste).
+- Le test du Planning « carte prochain stream » ne dépend plus de l'heure.
+
 ## 1.5.1
 
 *Changements depuis la 1.5.0.*

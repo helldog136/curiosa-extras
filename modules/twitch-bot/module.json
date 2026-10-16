@@ -1,0 +1,196 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.1.22",
+  "id": "twitch-bot",
+  "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
+  "version": "1.0.0",
+  "platform": "twitch",
+  "description": {
+    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
+    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🤖",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "multiple",
+  "page": false,
+  "requires": [
+    { "service": "twitch.api" },
+    { "service": "twitch.live" }
+  ],
+  "consumes": [
+    {
+      "topic": "social.stat",
+      "label": { "en": "Your Twitch follower count (from the Twitch channel module)", "fr": "Votre nombre de followers Twitch (fourni par la Chaîne Twitch)" },
+      "schema": [
+        { "key": "id", "type": "string", "required": true },
+        { "key": "platform", "type": "string", "required": true },
+        { "key": "account", "type": "string", "required": true },
+        { "key": "metric", "type": "string", "required": true },
+        { "key": "value", "type": "number" },
+        { "key": "error", "type": "string" }
+      ]
+    },
+    {
+      "topic": "planning.slot",
+      "label": { "en": "Your next streams (from the Planning module, if installed)", "fr": "Vos prochains streams (fournis par le Planning, s'il est installé)" },
+      "schema": [
+        { "key": "title", "type": "string" },
+        { "key": "start", "type": "datetime", "required": true },
+        { "key": "end", "type": "datetime" },
+        { "key": "allDay", "type": "boolean" }
+      ]
+    },
+    {
+      "topic": "social.link",
+      "label": { "en": "Your social network links (from the network modules, if installed)", "fr": "Les liens de vos réseaux (fournis par les modules de réseaux, s'ils sont installés)" },
+      "schema": [
+        { "key": "label", "type": "string" },
+        { "key": "url", "type": "url", "required": true },
+        { "key": "icon", "type": "string" }
+      ]
+    }
+  ],
+  "permissions": ["routes", "storage", "admin", "topics", "mcp"],
+  "privacy": {
+    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page.",
+    "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot."
+  },
+  "settings": [
+    {
+      "key": "onlyWhenLive",
+      "type": "boolean",
+      "default": true,
+      "label": { "en": "Answer only while I am live", "fr": "Répondre seulement quand je suis en direct" },
+      "help": { "en": "Untick it to answer all the time, even when your stream is off.", "fr": "Décochez pour répondre tout le temps, même quand votre stream est éteint." }
+    },
+    {
+      "key": "timezone",
+      "type": "text",
+      "default": "UTC",
+      "label": { "en": "Your time zone (for the time of your next stream)", "fr": "Votre fuseau horaire (pour l'heure de votre prochain stream)" },
+      "help": { "en": "For example Europe/Paris or America/Montreal. Without it, times are given in UTC and say so.", "fr": "Par exemple Europe/Paris ou America/Montreal. Sans cela, les heures sont données en UTC et le disent." }
+    },
+    {
+      "key": "replyAs",
+      "type": "select",
+      "default": "own",
+      "advanced": true,
+      "label": { "en": "Account that answers in the chat", "fr": "Compte qui répond dans le chat" },
+      "help": { "en": "By default your own account answers. Choose “A separate bot account” to have another Twitch account answer: you will connect it on this page.", "fr": "Par défaut, c'est votre propre compte qui répond. Choisissez « Un compte bot séparé » pour qu'un autre compte Twitch réponde : vous le connecterez sur cette page." },
+      "options": [
+        { "value": "own", "label": { "en": "My own account", "fr": "Mon propre compte" } },
+        { "value": "bot", "label": { "en": "A separate bot account", "fr": "Un compte bot séparé" } }
+      ]
+    },
+    {
+      "key": "channel",
+      "type": "text",
+      "advanced": true,
+      "optional": true,
+      "label": { "en": "Twitch channel to serve (optional)", "fr": "Chaîne Twitch à servir (facultatif)" },
+      "help": { "en": "Only useful if the site has several Twitch channels: type the channel name. Empty = the first one.", "fr": "Utile seulement si le site a plusieurs chaînes Twitch : saisissez le nom de la chaîne. Vide = la première." }
+    },
+    {
+      "key": "prefix",
+      "type": "text",
+      "default": "!",
+      "advanced": true,
+      "label": { "en": "Start of a command", "fr": "Début d'une commande" },
+      "help": { "en": "The sign before the command name. “!” by default. 1 to 3 characters, no letter, no digit, never “/” or “.”.", "fr": "Le signe qui précède le nom de la commande. « ! » par défaut. 1 à 3 caractères, ni lettre ni chiffre, jamais « / » ni « . »." }
+    },
+    {
+      "key": "cooldownGlobal",
+      "type": "number",
+      "default": 20,
+      "advanced": true,
+      "label": { "en": "Default wait between two answers of a command (seconds)", "fr": "Attente par défaut entre deux réponses d'une commande (secondes)" },
+      "help": { "en": "Everyone together: a command answers at most once per this delay. Each command can have its own.", "fr": "Tout le monde ensemble : une commande répond au plus une fois par ce délai. Chaque commande peut avoir le sien." }
+    },
+    {
+      "key": "cooldownUser",
+      "type": "number",
+      "default": 60,
+      "advanced": true,
+      "label": { "en": "Default wait for each person (seconds)", "fr": "Attente par défaut pour chaque personne (secondes)" },
+      "help": { "en": "The same person must wait this long before the same command answers them again.", "fr": "Une même personne doit attendre ce délai avant que la même commande lui réponde de nouveau." }
+    },
+    {
+      "key": "maxPer30s",
+      "type": "number",
+      "default": 12,
+      "advanced": true,
+      "label": { "en": "Answers allowed per 30 seconds, all commands together", "fr": "Réponses permises par tranche de 30 secondes, toutes commandes confondues" },
+      "help": { "en": "From 1 to 18. Twitch limits what a chat account may send: stay well under it.", "fr": "De 1 à 18. Twitch limite ce qu'un compte peut envoyer dans le chat : restez bien en dessous." }
+    },
+    {
+      "key": "toleranceMinutes",
+      "type": "number",
+      "default": 10,
+      "advanced": true,
+      "label": { "en": "Age beyond which a message from Twitch is refused (minutes)", "fr": "Âge au-delà duquel un message de Twitch est refusé (minutes)" },
+      "help": { "en": "From 1 to 10. Protects against messages replayed later. Lower it only if your server's clock is very accurate.", "fr": "De 1 à 10. Protège contre les messages rejoués plus tard. Ne baissez que si l'horloge de votre serveur est très juste." }
+    },
+    {
+      "key": "ignoredBots",
+      "type": "textarea",
+      "advanced": true,
+      "optional": true,
+      "label": { "en": "Other bots to ignore (optional)", "fr": "Autres bots à ignorer (facultatif)" },
+      "help": { "en": "Usernames separated by commas. The usual chat bots are already ignored.", "fr": "Pseudos séparés par des virgules. Les bots de chat courants sont déjà ignorés." }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "bot_commands_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the chat commands of the Twitch bot of this site: custom ones, ready-made ones (planning, game, title, followers, uptime), partner commands and social network commands, plus the command prefix and whether the emergency switch has muted the bot. For each command: kind, name, aliases, reply text (with {variables}), enabled, who may use it (everyone, subscribers, mods, owner), state (on, off, hidden when something is missing, missing when the source is gone) and the delays in seconds (null = the default). Use it to answer 'what commands does my bot have?' before changing anything.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "kind": { "type": "string", "enum": ["custom", "builtin", "partner", "network", "group"], "description": "Only this kind of command." }
+        }
+      }
+    },
+    {
+      "name": "bot_command_create",
+      "default": false,
+      "description": "Create a custom chat command. 'name' has no prefix (for 'merch' viewers type !merch). 'text' is the reply; it may contain these variables only: {followers} {jeu} {titre} {uptime} {prochain_stream} {utilisateur} (game, title, time since the live started, next stream, the name of the person typing). It cannot start with / or . or the prefix, and is cut at 500 characters. Names and aliases must not collide with another command. Refused with an explanation otherwise. The command is enabled unless 'enabled' is false.",
+      "input": {
+        "type": "object",
+        "required": ["name", "text"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 26, "description": "Command name without the prefix, letters/digits/-/_ only, 25 characters at most." },
+          "text": { "type": "string", "maxLength": 450, "description": "The reply, with optional {variables}." },
+          "aliases": { "type": "array", "items": { "type": "string" }, "description": "Other names for the same command (5 at most)." },
+          "role": { "type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it (default everyone)." },
+          "enabled": { "type": "boolean", "description": "Default true." },
+          "delayAllSeconds": { "type": "integer", "minimum": 0, "maximum": 3600, "description": "Minimum seconds between two answers of this command, everyone together." },
+          "delayPerPersonSeconds": { "type": "integer", "minimum": 0, "maximum": 3600, "description": "Minimum seconds before the same person gets this command answered again." }
+        }
+      }
+    },
+    {
+      "name": "bot_command_update",
+      "default": false,
+      "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages.",
+      "input": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 26, "description": "Current name or alias, without the prefix." },
+          "newName": { "type": "string", "maxLength": 26, "description": "New name, without the prefix." },
+          "text": { "type": "string", "maxLength": 450, "description": "New reply text." },
+          "aliases": { "type": "array", "items": { "type": "string" }, "description": "The complete list of aliases (replaces the old one)." },
+          "role": { "type": "string", "enum": ["everyone", "subscribers", "mods", "owner"] },
+          "enabled": { "type": "boolean" },
+          "delayAllSeconds": { "type": "integer", "minimum": 0, "maximum": 3600 },
+          "delayPerPersonSeconds": { "type": "integer", "minimum": 0, "maximum": 3600 }
+        }
+      }
+    }
+  ]
+}

@@ -166,7 +166,7 @@ test("MCP : descriptions qui disent quand utiliser l'outil et quand passer par P
   assert.match(by.contact_create.description, /partner_link_contact/);
   assert.match(by.contact_create.description, /contacts_list/, "chercher avant de créer");
   assert.match(by.contact_note.description, /partner_log/);
-  assert.deepEqual([by.contact_create.default, by.contact_note.default, by.contact_update.default, by.contact_delete.default], [true, true, undefined, false]);
+  assert.deepEqual([by.contact_create.default, by.contact_note.default, by.contact_update.default, by.contact_delete.default], [false, false, undefined, false]);
   assert.equal(by.contact_delete.destructive, true);
 });
 

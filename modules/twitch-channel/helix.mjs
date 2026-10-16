@@ -196,6 +196,62 @@ async function appGet(c, pathAndQuery) {
   return { error: "auth" };
 }
 
+/* ───────────── Appels généraux, pour le service `twitch.api` (le module ne laisse JAMAIS un jeton sortir : il fait l'appel lui-même) ───────────── */
+
+const API = "https://api.twitch.tv/helix/";
+const readJson = async (res) => { try { return await res.json(); } catch { return null; } };
+function target(path, query) {
+  const u = new URL(`${API}${path}`);
+  for (const [k, v] of Object.entries(query ?? {})) for (const x of [].concat(v)) u.searchParams.append(k, String(x));
+  return u.href;
+}
+const init = (c, tokenValue, { method, body }) => ({ method, headers: { ...headers(c, tokenValue), ...(body === undefined ? {} : { "Content-Type": "application/json" }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+const answer = async (res) => (res.status >= 500 ? { error: "network" } : { status: res.status, json: await readJson(res) });
+
+/**
+ * Un appel Helix avec le jeton d'APPLICATION : { status, json } (Twitch a répondu, y compris 4xx : à l'appelant d'interpréter) ou { error: "config" | "auth" | "rate" | "network" }.
+ * Un 401 renouvelle le jeton une fois ; un 429 suspend tous les appels de cette application 60 s.
+ */
+export async function appCall(c, req) {
+  if (!valid(c)) return { error: "config" };
+  if ((state.backoff.get(tokenKey(c)) ?? 0) > Date.now()) return { error: "rate" };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const t = await token(c);
+    if (t.error) { if (t.error === "rate") state.backoff.set(tokenKey(c), Date.now() + RATE_TTL); return { error: t.error }; }
+    try {
+      const res = await get(target(req.path, req.query), init(c, t.token, req));
+      if (res.status === 401) { state.tokens.delete(tokenKey(c)); if (attempt === 0) continue; return { error: "auth" }; }
+      if (res.status === 429) { state.backoff.set(tokenKey(c), Date.now() + RATE_TTL); return { error: "rate" }; }
+      return await answer(res);
+    } catch { return { error: "network" }; }
+  }
+  return { error: "auth" };
+}
+
+/**
+ * Un appel Helix avec le jeton d'UTILISATEUR de la connexion `conn` (voir userToken) : même forme que appCall, plus { error: "scope" } si l'autorisation donnée ne couvre pas `req.scopes`.
+ * Un 401 renouvelle le jeton une fois, puis demande de reconnecter ; un 429 n'est pas retenté (l'appelant a sa propre cadence).
+ */
+export async function userCall(conn, req) {
+  if (!hasCredentials(conn)) return { error: "config" };
+  let t = await userToken(conn);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (t.error) return { error: t.error };
+    if ((req.scopes ?? []).some((s) => !Array.isArray(t.doc.scopes) || !t.doc.scopes.includes(s))) return { error: "scope" };
+    try {
+      const res = await get(target(req.path, req.query), init(conn, t.token, req));
+      if (res.status === 401) {
+        if (attempt === 0) { t = await userToken(conn, t.token); continue; }
+        await conn.save({ ...t.doc, status: "reconnect" });
+        return { error: "auth" };
+      }
+      if (res.status === 429) return { error: "rate" };
+      return await answer(res);
+    } catch { return { error: "network" }; }
+  }
+  return { error: "auth" };
+}
+
 /** Numéro Twitch de la chaîne (gardé en mémoire : il ne change pas). */
 async function channelId(c) {
   const known = state.ids.get(c.channel);

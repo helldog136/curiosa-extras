@@ -1,9 +1,8 @@
-// Garde SRP (une responsabilité par module, un propriétaire par donnée) : ce qui doit rester vrai quand on ajoute un module.
+// Garde SRP propre à ce dépôt (Contacts/Partenariats, statistiques, Twitch…). Les règles générales (noms d'outils, services, secrets, collections en double) sont dans la suite de conformité : exigence srp.single.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { assertNoSrpViolations, findSrpViolations } from "./helpers/builtinChecks.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const mods = ["modules", "examples"].flatMap((group) => fs.readdirSync(path.join(root, group), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => {
@@ -12,36 +11,6 @@ const mods = ["modules", "examples"].flatMap((group) => fs.readdirSync(path.join
   const code = fs.readdirSync(dir).filter((f) => /\.m?js$/.test(f)).map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
   return { id: manifest.id, manifest, code };
 }));
-
-// Listes blanches : une entrée = une exception EXPLIQUÉE, à retirer quand la cause disparaît. Vides aujourd'hui sur dev.
-// (Si un autre module viole une règle avant d'être corrigé par sa propre branche : l'ajouter ici avec le commentaire « à retirer quand <branche> est fusionnée ».)
-const SAME_TOOL_NAME_OK = new Map(); // nom d'outil MCP → raison
-const SAME_COLLECTION_OK = new Map(); // nom de collection → raison
-
-test("SRP : aucun nom d'outil MCP n'est déclaré par deux modules (une IA ne doit jamais hésiter entre deux outils du même nom)", () => {
-  const owners = new Map();
-  for (const m of mods) for (const t of m.manifest.mcp ?? []) owners.set(t.name, [...(owners.get(t.name) ?? []), m.id]);
-  for (const [name, who] of owners) if (who.length > 1) assert.ok(SAME_TOOL_NAME_OK.has(name), `outil « ${name} » déclaré par ${who.join(" et ")} : un seul propriétaire, ou une exception expliquée dans la liste blanche`);
-});
-
-test("SRP : une collection de données de même nom n'existe que dans un module, ou chez un fournisseur et son consommateur", () => {
-  const collections = (code) => new Set([...code.matchAll(/(?:store\.(?:add|list|count)|\ball)\(\s*(?:ctx,\s*)?"([A-Za-z]+)"/g)].map((x) => x[1]));
-  const offeredBy = (service) => mods.filter((m) => (m.manifest.offers ?? []).some((o) => o.service === service)).map((m) => m.id);
-  const related = (a, b) => [[a, b], [b, a]].some(([x, y]) => (x.manifest.requires ?? []).some((r) => offeredBy(r.service).includes(y.id)));
-  const seen = new Map();
-  for (const m of mods) for (const c of collections(m.code)) seen.set(c, [...(seen.get(c) ?? []), m]);
-  for (const [name, who] of seen) {
-    for (let i = 0; i < who.length; i++) for (let j = i + 1; j < who.length; j++) {
-      assert.ok(SAME_COLLECTION_OK.has(name) || related(who[i], who[j]), `collection « ${name} » utilisée par ${who[i].id} et ${who[j].id}, qui ne sont ni fournisseur ni consommateur l'un de l'autre`);
-    }
-  }
-});
-
-test("SRP : un service n'est offert que par un seul module du dépôt (le cœur gère les doublons d'installation, pas ce dépôt)", () => {
-  const owners = new Map();
-  for (const m of mods) for (const o of m.manifest.offers ?? []) owners.set(o.service, [...(owners.get(o.service) ?? []), m.id]);
-  for (const [service, who] of owners) assert.equal(who.length, 1, `service « ${service} » offert par ${who.join(" et ")}`);
-});
 
 test("SRP : Contacts possède les personnes, Partenariats ne garde que des références (aucune coordonnée, aucun outil qui écrit dans le carnet)", () => {
   const contacts = mods.find((m) => m.id === "contacts"), partnerships = mods.find((m) => m.id === "partnerships");
@@ -67,13 +36,6 @@ test("SRP : Statistiques de la communauté collecte et garde les chiffres, sans 
 });
 
 // ── Statistiques des réseaux (« social.stat ») : chaque module publie SES chiffres, un seul parle à chaque plateforme ──────────────────
-
-test("SRP : aucun secret n'est demandé en double par deux modules sans lien de service (clé YouTube, secret Twitch… un seul propriétaire)", () => {
-  assertNoSrpViolations(mods.map((m) => m.manifest));
-  // la règle voit bien une duplication (garde de la garde)
-  const dup = findSrpViolations([{ id: "a", settings: [{ key: "clientSecret", type: "secret" }] }, { id: "b", settings: [{ key: "clientSecret", type: "secret" }] }]);
-  assert.deepEqual(dup.map((v) => v.rule), ["secret"]);
-});
 
 test("SRP : seul le module Chaîne Twitch parle à Twitch (adresses, jetons, connexion) ; les autres passent par son service", () => {
   for (const m of mods) {

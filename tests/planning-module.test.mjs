@@ -402,7 +402,10 @@ test("sans jeu : la liste « prochains streams » garde la même mise en page (v
 });
 
 test("page publique : un jour qui mêle streams avec et sans jeu → vignette de repli pour ceux sans jeu ; jour sans aucune jaquette → texte comme avant", async () => {
-  serve(calendar(vevent("1", hours(2), hours(3), "Avec", ["DESCRIPTION:Jeu: Celeste"]), vevent("2", hours(2.5), hours(3.5), "Sans <b>jeu</b>")));
+  // Les deux streams doivent tomber le MÊME jour quelle que soit l'heure du test (sinon ils sont rangés dans deux jours) : on part de midi UTC, au moins 2 h plus tard.
+  const noon = new Date(); noon.setUTCHours(12, 0, 0, 0); if (noon.getTime() - Date.now() < 2 * 3_600_000) noon.setUTCDate(noon.getUTCDate() + 1);
+  const at = (h) => new Date(noon.getTime() + h * 3_600_000);
+  serve(calendar(vevent("1", at(0), at(1), "Avec", ["DESCRIPTION:Jeu: Celeste"]), vevent("2", at(0.5), at(1.5), "Sans <b>jeu</b>")));
   const page = await def.page(withCovers({ brand: brandOf() }));
   const html = page.blocks.filter((b) => b.type === "html").map((b) => b.html).join("");
   assert.match(html, /cpl-ph cpl-ph-s/);

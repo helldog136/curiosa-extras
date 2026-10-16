@@ -1,14 +1,15 @@
 {
   "apiVersion": 2,
+  "minCore": "0.1.22",
   "id": "announcement-banner",
   "name": {
     "en": "Announcement banner",
     "fr": "Bannière d'annonce"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
-    "en": "Shows a banner at the top of every page, a note section for the home page, and offers its text to overlays (topic overlay.item). Example module.",
-    "fr": "Affiche une bannière en haut de chaque page, une section « note » pour l'accueil, et propose son texte aux overlays (sujet overlay.item). Module d'exemple."
+    "en": "Shows a banner at the top of every page, a note section for the home page, and offers its announcements to other modules, such as overlays. Example module.",
+    "fr": "Affiche une bannière en haut de chaque page, une section « note » pour l'accueil, et propose ses annonces aux autres modules, comme les overlays. Module d'exemple."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -48,7 +49,8 @@
       "label": {
         "en": "Link (optional)",
         "fr": "Lien (facultatif)"
-      }
+      },
+      "optional": true
     },
     {
       "key": "tone",

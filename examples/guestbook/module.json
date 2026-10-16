@@ -1,13 +1,18 @@
 {
   "apiVersion": 2,
+  "minCore": "0.1.22",
   "id": "guestbook",
   "name": { "en": "Guestbook", "fr": "Livre d'or" },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework.",
     "fr": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
   },
   "author": "Helldog136",
+  "privacy": {
+    "en": "If you sign the guestbook, your name and message are saved, and shown publicly once approved. To have them removed, write to the site's contact.",
+    "fr": "Si vous signez le livre d'or, votre nom et votre message sont enregistrés, puis affichés publiquement une fois validés. Pour les faire retirer, écrivez au contact du site."
+  },
   "license": "MIT",
   "icon": "📖",
   "main": "index.mjs",
@@ -56,7 +61,8 @@
     },
     {
       "key": "banner", "type": "image", "group": "appearance",
-      "label": { "en": "Banner image (optional)", "fr": "Image de bannière (facultatif)" }
+      "label": { "en": "Banner image (optional)", "fr": "Image de bannière (facultatif)" },
+      "optional": true
     },
     {
       "key": "maxLength", "type": "number", "default": 500, "advanced": true,
@@ -73,7 +79,8 @@
     {
       "key": "accessCode", "type": "secret", "advanced": true,
       "label": { "en": "Invitation code (optional)", "fr": "Code d'invitation (facultatif)" },
-      "help": { "en": "If set, visitors must type it to sign. Never shown again once saved.", "fr": "S'il est défini, les visiteurs doivent le saisir pour signer. Jamais réaffiché une fois enregistré." }
+      "help": { "en": "If set, visitors must type it to sign. Never shown again once saved.", "fr": "S'il est défini, les visiteurs doivent le saisir pour signer. Jamais réaffiché une fois enregistré." },
+      "optional": true
     }
   ],
 

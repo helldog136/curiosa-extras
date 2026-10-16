@@ -10,7 +10,7 @@ Votre carnet d'adresses **privé** : personnes, organisations, e-mail, télépho
   - `update({ id, … })` : corrige les champs donnés (un e-mail déjà porté par une autre fiche est refusé : `email_taken`) ; `note({ id, text, author })` : ajoute une note datée.
 - **Règle de dédoublonnage** (création) : avec un e-mail valide, **même adresse** (majuscules ignorées) ; sans e-mail, **même nom et même organisation** (majuscules, accents et espaces multiples ignorés ; deux organisations vides sont identiques). Un même nom avec une autre organisation reste une autre personne.
 - **Sauvegarde lisible** : un fichier `contacts.csv` (avec les notes) dans chaque sauvegarde.
-- **Outils MCP** : `contacts_list`, `contact_get`, `contact_create`, `contact_note` (ces deux derniers accordés d'office aux jetons : ils ne font qu'ajouter), `contact_update` (à accorder), `contact_delete` (destructif, jamais d'office). Leurs descriptions disent à l'assistant quand les utiliser et quand passer par Partenariats (`partner_link_contact` pour rattacher une personne à une marque).
+- **Outils MCP** : `contacts_list`, `contact_get`, `contact_create`, `contact_note`, `contact_update` (ces trois-là écrivent : aucun n'est accordé d'office, c'est votre accès IA qui les accorde explicitement), `contact_delete` (destructif, jamais d'office). Leurs descriptions disent à l'assistant quand les utiliser et quand passer par Partenariats (`partner_link_contact` pour rattacher une personne à une marque).
 - **Permissions** : admin, stockage, MCP. Rien n'est envoyé hors du serveur.
 
 Plusieurs carnets peuvent coexister (voir *Modules → Services offerts par plusieurs modules* : un maître reçoit, des répliques copient les nouveaux contacts).

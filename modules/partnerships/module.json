@@ -5,7 +5,7 @@
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
     "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
@@ -156,7 +156,7 @@
           }
         }
       },
-      "default": true
+      "default": false
     },
     {
       "name": "partner_update",
@@ -233,7 +233,7 @@
           }
         }
       },
-      "default": true
+      "default": false
     },
     {
       "name": "partner_log",
@@ -263,11 +263,11 @@
           }
         }
       },
-      "default": true
+      "default": false
     },
     {
       "name": "partner_link_contact",
-      "default": true,
+      "default": false,
       "description": "Attach a person who already exists in the Contacts module to a partnership file (does nothing if already attached). Find or create the person in Contacts first (contacts_list, contact_create); never retype their details here. Reversible with partner_unlink_contact.",
       "input": {
         "type": "object",
@@ -291,7 +291,7 @@
     },
     {
       "name": "partner_unlink_contact",
-      "default": true,
+      "default": false,
       "description": "Detach a person from a partnership file. The person is NOT deleted: they stay in the Contacts module. To delete a person, use contact_delete there.",
       "input": {
         "type": "object",

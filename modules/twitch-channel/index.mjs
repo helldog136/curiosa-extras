@@ -1,6 +1,7 @@
 // Chaîne Twitch — module communautaire de Curiosa. Porté de l'ancien site (Helix, client-credentials).
 // C'est LE module qui connaît Twitch : identifiants, jeton, appels et caches sont ici (helix.mjs) et nulle part ailleurs.
 // Il les met à disposition des autres modules : le SERVICE `twitch.live` (pour ceux qui en dépendent, comme « Statut live ») et les sujets
+// `twitch.api` (parler à Twitch au nom de la chaîne SANS jamais rendre un jeton : voir access.mjs), les sujets
 // `social.link` (bouton), `stream.live` (live en cours, vide sinon), `maze.poster` (derniers clips) et `social.stat` (followers, abonnés payants : demande la connexion du compte, voir connect.mjs).
 // Sans identifiants valides, tout est vide plutôt qu'en erreur (sauf `social.stat`, qui dit pourquoi il n'a pas de chiffre).
 // Le fichier voisin est importé avec la même « version » que celui-ci : après une mise à jour, jamais d'ancien helix.mjs resté en mémoire.
@@ -8,6 +9,7 @@ const helix = await import(new URL(`./helix.mjs${new URL(import.meta.url).search
 const connect = await import(new URL(`./connect.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const live = await import(new URL(`./live.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const analytics = await import(new URL(`./analytics.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const access = await import(new URL(`./access.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const { LOGIN, hasCredentials, valid, liveStatus, recentClips } = helix;
 export const { currentStream } = helix;
 export { recentClips };
@@ -143,6 +145,7 @@ export default {
   },
 
   services: {
+    "twitch.api": access.service(credentials),
     "twitch.live": {
       /** { channel, url, configured, ready, missing } — la chaîne de cette instance et si Twitch est utilisable ; ne fait aucun appel réseau. */
       async channel(ctx) {
@@ -201,10 +204,13 @@ export default {
 
   async adminPanel(ctx) {
     const base = await sharePanel(ctx);
-    if (ctx.setting("trackStats") !== true) return base;
+    const tracking = ctx.setting("trackStats") === true;
+    // La connexion de la chaîne sert aux statistiques ET aux modules qui demandent d'autres autorisations (le Bot Twitch : lire et écrire dans le chat).
+    if (!tracking && !(await connect.extraScopes(ctx, "main")).length) return base;
     const creds = await credentials(ctx);
-    const results = (await statsOf(ctx))?.results ?? [];
+    const results = tracking ? (await statsOf(ctx))?.results ?? [] : [];
     const connection = await connect.panel(ctx, creds, async () => results);
+    if (!tracking) return [...base, ...connection];
     const connected = !!results.find((r) => r.metric === "followers" && !r.result.error);
     return [...base, ...connection, ...(await analytics.panel(ctx, creds, connected))];
   },

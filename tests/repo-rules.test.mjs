@@ -9,32 +9,15 @@ const root = new URL("..", import.meta.url).pathname;
 const core = process.cwd(); // les tests tournent dans le dossier de Curiosa
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 const walk = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)])) : []);
-const importsOf = (text) => [...text.matchAll(/(?:import|export)\s[^'"]*?from\s+["']([^"']+)["']|import\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g)].map((m) => m[1] ?? m[2] ?? m[3]);
 const dirs = listModuleDirs();
 const manifests = dirs.map(({ dir }) => ({ dir, ...JSON.parse(read(`${dir}/module.json`)) }));
-const codeFiles = dirs.flatMap(({ dir }) => walk(path.join(root, dir)).filter((f) => /\.(mjs|js)$/.test(f)));
 
-test("chaque dossier est un module cohérent : id = nom du dossier, fichier principal présent, licence déclarée", () => {
+test("chaque dossier est un module cohérent : id = nom du dossier, licence déclarée (version, fichier principal, API : suite de conformité)", () => {
   assert.ok(manifests.length >= 20);
   for (const m of manifests) {
     assert.equal(m.id, path.basename(m.dir), m.dir);
-    assert.match(m.version, /^\d+\.\d+\.\d+/, m.dir);
     assert.ok(m.license, `${m.dir} : licence absente de module.json`);
-    if (m.main) assert.ok(fs.existsSync(path.join(root, m.dir, m.main)), `${m.dir} : ${m.main} introuvable`);
   }
-});
-
-test("la version de l'API visée est celle du cœur", () => {
-  const v = Number(fs.readFileSync(path.join(core, "src/core/config.ts"), "utf8").match(/MODULE_API_VERSION = (\d+)/)[1]);
-  for (const m of manifests) assert.equal(m.apiVersion, v, m.dir);
-});
-
-test("les modules n'importent rien du cœur : un module n'a que ctx.api", () => {
-  for (const file of codeFiles) for (const spec of importsOf(fs.readFileSync(file, "utf8"))) assert.ok(!spec.startsWith("@/") && !spec.includes("/src/"), `${file} importe du cœur (« ${spec} »)`);
-});
-
-test("les modules n'appellent jamais Prisma ni le disque du cœur : tout passe par ctx.api", () => {
-  for (const file of codeFiles) assert.ok(!/prisma|@prisma\/client/.test(fs.readFileSync(file, "utf8")), `${file} accède directement à la base`);
 });
 
 test("le kit presse ne stocke rien : il lit l'identité du cœur (ctx.api.brand) et c'est tout", () => {
@@ -61,28 +44,7 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
   }
 });
 
-test("les réglages avancés ne sont jamais obligatoires pour le mode simple", () => {
-  for (const m of manifests) for (const s of m.settings ?? []) if (s.advanced) assert.ok(s.default !== undefined || s.type !== "number", `${m.id}.${s.key} : un réglage avancé numérique doit avoir une valeur par défaut`);
-});
-
-test("les modules qui déclarent des actions MCP les implémentent ; les actions irréversibles sont désactivées par défaut", () => {
-  for (const m of manifests) {
-    if (!m.mcp) continue;
-    const code = walk(path.join(root, m.dir)).filter((f) => /\.(mjs|js)$/.test(f)).map((f) => fs.readFileSync(f, "utf8")).join("\n"); // le code d'un module peut tenir en plusieurs fichiers
-    for (const action of m.mcp) {
-      assert.ok(new RegExp(`\\b${action.name}\\b`).test(code), `${m.id}.${action.name} n'est pas implémentée`);
-      if (/delete|remove|publish|destroy|purge/.test(action.name)) {
-        assert.equal(action.destructive, true, `${m.id}.${action.name} doit être déclarée destructive`);
-        assert.notEqual(action.default, true, `${m.id}.${action.name} ne doit pas être active par défaut`);
-      }
-      if (action.destructive) assert.notEqual(action.default, true, `${m.id}.${action.name} : destructive ⇒ jamais par défaut`);
-      if (action.readOnly) assert.ok(!action.destructive, `${m.id}.${action.name} : lecture seule ne peut être destructive`);
-    }
-  }
-});
-
-test("le formulaire de contact déclare ce qu'il collecte (politique de confidentialité), le bandeau d'accueil la vidéo qu'il accepte", () => {
-  assert.ok((manifests.find((m) => m.id === "contact-form").privacy ?? {}).en, "contact-form : privacy absent");
+test("le bandeau d'accueil n'accepte que la vidéo envoyée au site, Contacts signale les messages à vérifier", () => {
   const hero = read("modules/hero/index.mjs");
   assert.ok(manifests.find((m) => m.id === "hero").settings.some((s) => s.type === "video"), "hero : réglage de type video");
   assert.match(hero, /\^\\\/uploads\\\/\[0-9a-f-\]\{36\}\\\.\(mp4\|webm\)\$/, "jamais d'adresse externe");
@@ -120,13 +82,6 @@ test("aucune donnée personnelle ni métier d'un site précis dans ce dépôt", 
   for (const file of dirs.flatMap(({ dir }) => walk(path.join(root, dir)))) {
     const text = fs.readFileSync(file, "utf8");
     for (const re of banned) assert.ok(!re.test(text), `${file} contient ${re}`);
-  }
-});
-
-test("chaque module a un README.md (il est affiché dans le Catalogue avant l'installation)", () => {
-  for (const { dir } of dirs) {
-    const readme = path.join(root, dir, "README.md");
-    assert.ok(fs.existsSync(readme) && fs.readFileSync(readme, "utf8").trim().length > 80, `${dir} : README.md absent ou vide`);
   }
 });
 

@@ -6,7 +6,7 @@
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.4.1",
+  "version": "1.5.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -20,6 +20,14 @@
   "instances": "multiple",
   "page": false,
   "offers": [
+    {
+      "service": "twitch.api",
+      "label": {
+        "en": "Talk to Twitch for your channel (chat bot)",
+        "fr": "Parler à Twitch pour votre chaîne (bot du chat)"
+      },
+      "each": true
+    },
     {
       "service": "twitch.live",
       "label": {
