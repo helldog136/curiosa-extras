@@ -5,7 +5,7 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "platform": "youtube",
   "description": {
     "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, your videos in the site's RSS feed, and your subscriber, video and view counts. Works with just the channel id; a YouTube key adds the counts, Shorts detection and exact durations.",

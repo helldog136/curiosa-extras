@@ -5,7 +5,7 @@
     "en": "Reddit",
     "fr": "Reddit"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "reddit",
   "description": {
     "en": "Shows your Reddit button in the site header and shares your follower count. Add one per account if you have several.",

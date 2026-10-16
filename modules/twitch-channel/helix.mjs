@@ -11,10 +11,27 @@ const LIST_TTL = 30 * 60_000;   // vidéos et clips (vues par vidéo) : une sér
 const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map(), backoff: new Map(), videos: new Map(), topClips: new Map(), games: new Map() };
 // Le fichier voisin est importé avec la même « version » que celui-ci (jamais d'ancien oauth.mjs resté en mémoire après une mise à jour).
 const oauth = await import(new URL(`./oauth.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-export const { SCOPES } = oauth;
+export const { SCOPES, timing } = oauth;
 export const resetCache = () => { for (const m of Object.values(state)) m.clear(); };
 
-const get = (url, init = {}) => fetch(url, { signal: AbortSignal.timeout(5000), ...init });
+const get = oauth.request;   // signal d'abandon de 5 s ET borne dure (lecture du corps comprise)
+
+/**
+ * Un travail partagé entre demandes simultanées, JAMAIS éternel : si `make` ne se termine pas dans `timing.sharedMs`, tout le monde reçoit `fallback()`
+ * et l'entrée est retirée (sinon chaque demande suivante attendrait la même promesse jusqu'au redémarrage). `record` range le résultat (cache) ;
+ * un travail resté en arrière-plan qui finirait plus tard n'écrit rien. Le minuteur est libéré et ne retient pas le processus.
+ */
+function share(k, make, fallback, record = (v) => v, ms = timing.sharedMs) {
+  const pending = state.inflight.get(k);
+  if (pending) return pending;
+  let timer;
+  const expiry = new Promise((resolve) => { timer = setTimeout(() => resolve(fallback()), ms); timer.unref?.(); });
+  const work = Promise.resolve().then(make).catch(() => fallback());
+  const run = Promise.race([work, expiry]).then(record).finally(() => { clearTimeout(timer); if (state.inflight.get(k) === run) state.inflight.delete(k); });
+  state.inflight.set(k, run);
+  return run;
+}
+const NETWORK = () => ({ error: "network" });
 export const hasCredentials = (c) => !!(c.clientId && c.secret);
 export const valid = (c) => LOGIN.test(c.channel) && hasCredentials(c);
 const tokenKey = (c) => `${c.clientId}|${c.secret}`;
@@ -24,12 +41,7 @@ const headers = (c, t) => ({ "Client-Id": c.clientId, Authorization: `Bearer ${t
 async function token(c) {
   const known = state.tokens.get(tokenKey(c));
   if (known && known.expiresAt > Date.now()) return { token: known.value };
-  const k = `token|${tokenKey(c)}`;
-  const pending = state.inflight.get(k);
-  if (pending) return pending;
-  const run = fetchToken(c).finally(() => state.inflight.delete(k));
-  state.inflight.set(k, run);
-  return run;
+  return share(`token|${tokenKey(c)}`, () => fetchToken(c), NETWORK);
 }
 async function fetchToken(c) {
   try {
@@ -69,14 +81,10 @@ export async function liveStatus(c) {
   if (!valid(c)) return { error: "config" };
   const hit = state.live.get(c.channel);
   if (hit && hit.until > Date.now()) return hit.value;
-  const pending = state.inflight.get(c.channel);
-  if (pending) return pending;
-  const run = fetchStatus(c).then((value) => {
+  return share(c.channel, () => fetchStatus(c), NETWORK, (value) => {
     state.live.set(c.channel, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : LIVE_TTL) });
     return value;
-  }).finally(() => state.inflight.delete(c.channel));
-  state.inflight.set(c.channel, run);
-  return run;
+  });
 }
 
 /** Le live en cours ({ id, title, startedAt, game, … }) ou null (hors ligne, identifiants invalides ou erreur). */
@@ -116,9 +124,7 @@ async function userToken(conn, usedAccess) {
   if (!doc || !doc.access || doc.status === "reconnect" || doc.clientId !== conn.clientId) return { error: "auth" };
   if (usedAccess ? doc.access !== usedAccess : doc.expiresAt - Date.now() > 120_000) return { token: doc.access, doc };   // encore valable (ou déjà renouvelé par un autre appel)
   const k = `refresh|${conn.key}`;   // renouvellement fusionné : tous les appels simultanés d'une instance attendent le même
-  let run = state.inflight.get(k);
-  if (!run) { run = renewTokens(conn, usedAccess).finally(() => state.inflight.delete(k)); state.inflight.set(k, run); }
-  return run;
+  return share(k, () => renewTokens(conn, usedAccess), NETWORK);
 }
 async function renewTokens(conn, usedAccess) {
   const doc = await conn.load();
@@ -163,15 +169,11 @@ export async function userStat(conn, metric, { maxAge } = {}) {
   const k = `${conn.channel}|${metric}`;
   const hit = state.stats.get(k);
   if (hit && hit.until > Date.now() && (maxAge == null || Date.now() - hit.value.at <= maxAge)) return hit.value;   // maxAge : l'enregistreur de directs veut un chiffre récent, pas celui d'il y a 5 minutes
-  const pending = state.inflight.get(`stat|${k}`);
-  if (pending) return pending;
-  const run = fetchUserStat(conn, metric).catch(() => ({ error: "network" })).then((found) => {
+  return share(`stat|${k}`, () => fetchUserStat(conn, metric), NETWORK, (found) => {
     const value = { ...found, at: Date.now() };
     state.stats.set(k, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : STAT_TTL) });
     return value;
-  }).finally(() => state.inflight.delete(`stat|${k}`));
-  state.inflight.set(`stat|${k}`, run);
-  return run;
+  });
 }
 /** À appeler quand la connexion change (connexion, déconnexion) : les anciennes réponses ne servent plus. */
 export const forgetStats = (channel) => { for (const k of [...state.stats.keys()]) if (!channel || k.startsWith(`${channel}|`)) state.stats.delete(k); };
@@ -288,9 +290,9 @@ export async function channelVideos(c) {
   if (!valid(c)) return { items: [], at: null, error: "config" };
   const hit = state.videos.get(c.channel);
   if (hit && hit.until > Date.now()) return hit.value;
-  const k = `videos|${c.channel}`;
-  if (state.inflight.has(k)) return state.inflight.get(k);
-  const run = (async () => {
+  const prev = hit?.value;
+  const failed = (error) => ({ items: prev?.items ?? [], at: prev?.at ?? null, error });
+  return share(`videos|${c.channel}`, async () => {
     const who = await channelId(c);
     let error = who.error, items = [];
     if (!error) {
@@ -307,13 +309,11 @@ export async function channelVideos(c) {
         if (!after) break;
       }
     }
-    const prev = hit?.value;
-    const value = error ? { items: prev?.items ?? [], at: prev?.at ?? null, error } : { items, at: Date.now() };
-    state.videos.set(c.channel, { value, until: Date.now() + (error === "rate" ? RATE_TTL : error ? FAIL_TTL : LIST_TTL) });
+    return error ? failed(error) : { items, at: Date.now() };
+  }, () => failed("network"), (value) => {
+    state.videos.set(c.channel, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : LIST_TTL) });
     return value;
-  })().finally(() => state.inflight.delete(k));
-  state.inflight.set(k, run);
-  return run;
+  }, timing.sharedMs * 3);   // jusqu'à trois pages de 100 : un peu plus de temps, mais une borne quand même (tâche de fond, pas une page)
 }
 
 /** Noms de jeux à partir de leurs numéros (un appel pour tous les inconnus, 100 au plus). */
@@ -331,9 +331,9 @@ export async function channelClips(c) {
   if (!valid(c)) return { items: [], at: null, error: "config" };
   const hit = state.topClips.get(c.channel);
   if (hit && hit.until > Date.now()) return hit.value;
-  const k = `topclips|${c.channel}`;
-  if (state.inflight.has(k)) return state.inflight.get(k);
-  const run = (async () => {
+  const prev = hit?.value;
+  const failed = (error) => ({ items: prev?.items ?? [], at: prev?.at ?? null, error });
+  return share(`topclips|${c.channel}`, async () => {
     const who = await channelId(c);
     let error = who.error, items = [];
     if (!error) {
@@ -345,11 +345,9 @@ export async function channelClips(c) {
         items = raw.map((x) => ({ id: String(x.id ?? x.url), title: String(x.title ?? "").slice(0, 140), publishedAt: x.created_at, views: x.view_count, game: name(String(x.game_id ?? "")), url: x.url, durationSec: Number.isFinite(x.duration) ? Math.round(x.duration) : null }));
       }
     }
-    const prev = hit?.value;
-    const value = error ? { items: prev?.items ?? [], at: prev?.at ?? null, error } : { items, at: Date.now() };
-    state.topClips.set(c.channel, { value, until: Date.now() + (error === "rate" ? RATE_TTL : error ? FAIL_TTL : LIST_TTL) });
+    return error ? failed(error) : { items, at: Date.now() };
+  }, () => failed("network"), (value) => {
+    state.topClips.set(c.channel, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : LIST_TTL) });
     return value;
-  })().finally(() => state.inflight.delete(k));
-  state.inflight.set(k, run);
-  return run;
+  });
 }

@@ -6,7 +6,25 @@
 // à l'adresse de retour exacte et à la vérification du compte connecté (voir connect.mjs).
 export const SCOPES = { followers: "moderator:read:followers", paying: "channel:read:subscriptions" };
 const ID = "https://id.twitch.tv/oauth2";
-const post = (path, body) => fetch(`${ID}/${path}`, { method: "POST", body: new URLSearchParams(body), signal: AbortSignal.timeout(5000) });
+/**
+ * Les délais (en millisecondes). Un objet pour que les tests puissent les raccourcir ; helix.mjs le réexporte.
+ *   requestMs : un appel réseau (signal d'abandon) ; la borne dure est 20 % plus longue (une réponse qui ignorerait le signal ne bloque pas pour autant) ;
+ *   sharedMs  : un travail partagé par plusieurs demandes (jeton, état du direct, listes…) : passé ce délai, tout le monde reçoit « network » et le travail n'est plus partagé.
+ */
+export const timing = { requestMs: 5000, sharedMs: 15000 };
+/** Attend `p` au plus `ms`, sinon refuse. Le minuteur est libéré dans tous les cas et ne retient pas le processus. */
+export function within(p, ms) {
+  let timer;
+  const late = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("timeout")), ms); timer.unref?.(); });
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
+}
+/** fetch avec signal d'abandon ET borne dure, y compris pour la lecture du corps. Ne rend que { ok, status, json(), text() }. */
+export async function request(url, init = {}) {
+  const ms = timing.requestMs, hard = Math.round(ms * 1.2);
+  const res = await within(fetch(url, { signal: AbortSignal.timeout(ms), ...init }), hard);
+  return { ok: res.ok, status: res.status, json: () => within(res.json(), hard), text: () => within(res.text(), hard) };
+}
+const post = (path, body) => request(`${ID}/${path}`, { method: "POST", body: new URLSearchParams(body) });
 const failure = (status) => (status === 429 ? "rate" : status >= 500 ? "network" : "refused");
 const readJson = async (res) => { try { return await res.json(); } catch { return {}; } };
 
@@ -50,7 +68,7 @@ export async function refreshTokens({ clientId, secret, refresh }) {
 /** À qui appartient ce jeton ? { login, userId, scopes, clientId } ou { error }. */
 export async function validate(access) {
   try {
-    const res = await fetch(`${ID}/validate`, { headers: { Authorization: `OAuth ${access}` }, signal: AbortSignal.timeout(5000) });
+    const res = await request(`${ID}/validate`, { headers: { Authorization: `OAuth ${access}` } });
     if (!res.ok) return { error: failure(res.status) };
     const j = await readJson(res);
     if (typeof j.login !== "string" || typeof j.user_id !== "string") return { error: "refused" };

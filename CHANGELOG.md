@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.7.1
+
+*Changements depuis la 1.7.0. Aucune nouveauté : cette version corrige un blocage possible de la page d'accueil.*
+
+### Améliorations
+
+- **Chaîne Twitch et Chaîne YouTube ne peuvent plus bloquer votre page d'accueil si Twitch ou YouTube cessent de répondre.** Avant, quand l'un des deux ne répondait plus du tout, une demande restée en attente pouvait faire patienter toutes les suivantes : la page d'accueil n'affichait plus rien (erreur 504) jusqu'au redémarrage du site. Maintenant, chaque attente a une limite : passé quelques secondes, le module abandonne, affiche ce qu'il sait déjà (ou rien) et réessaie plus tard, tout seul.
+- **Chaîne YouTube : la bannière de la dernière vidéo s'affiche plus vite.** Savoir si une vidéo est un Short demandait un appel à YouTube par vidéo, l'un après l'autre. Ils se font maintenant plusieurs à la fois, avec une limite de temps pour l'ensemble, et la réponse est gardée 10 minutes. Ce que vos visiteurs voient ne change pas.
+- **Bluesky, Mastodon, GitHub, Discord et Reddit : même protection.** Si l'un de ces réseaux ne répond plus, vos chiffres de communauté s'affichent en erreur au lieu de rester bloqués.
+- **Statistiques de la communauté et Planning : même protection.** Un réseau qui ne répond pas ne bloque plus la mise à jour des chiffres ni l'affichage du calendrier.
+
+### Pour les développeurs
+
+- `twitch-channel` 1.5.1 : `helix.mjs` partage ses travaux en cours (jeton, état du direct, renouvellement, statistiques, vidéos, clips) par `share()`, qui retire l'entrée de `state.inflight` à l'expiration (`timing.sharedMs`, 15 s ; 45 s pour les vidéos) et pas seulement à la fin ; le résultat d'un travail resté en arrière-plan n'est jamais écrit. `oauth.mjs` exporte `timing` et `request()` : signal d'abandon (`requestMs`, 5 s) ET borne dure de 20 % en plus, lecture du corps comprise ; tous les appels de `helix.mjs` et d'`oauth.mjs` passent par elle. L'enregistreur de directs ne reste plus « busy » à cause d'un Twitch muet.
+- `youtube-channel` 1.1.2 : mêmes `timing`, `get` et `share` ; `isShort` garde sa réponse par vidéo (10 min, « inconnu » 1 min) ; `shortFlags()` contrôle les vidéos en parallèle (4 à la fois) sous une borne globale (`timing.shortsMs`, 5 s) ; `longVideos` et `featured` s'en servent ; `statsPending` est borné.
+- `bluesky`, `discord` 1.1.2, `github`, `mastodon`, `reddit` 1.1.1 : `lookup()` borne sa promesse partagée (`timing.sharedMs`) et retire l'entrée à l'expiration.
+- `community-stats` 1.1.1 : `collectNow` borne la collecte (`limits.collectMs`, 60 s) pour que le verrou `running` se libère. `planning` 1.3.2 : `fetchIcs` a une borne globale (`icsTiming.totalMs`, 10 s) redirections comprises.
+- Tests `tests/hang-*.test.mjs` : un `fetch` « trou noir » (qui ne se termine jamais, signal d'abandon ignoré), des délais raccourcis et l'horloge simulée ; chacun échoue sans le correctif.
+
 ## 1.7.0
 
 *Changements depuis la 1.6.0.*

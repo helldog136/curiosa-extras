@@ -5,7 +5,7 @@
     "fr": "Statistiques de la communauté",
     "en": "Community statistics"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.1.16",
   "description": {
     "fr": "Garde les chiffres de vos réseaux (abonnés, abonnés payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
