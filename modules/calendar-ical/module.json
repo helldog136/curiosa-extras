@@ -1,0 +1,126 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.1.16",
+  "id": "calendar-ical",
+  "name": {
+    "en": "iCal calendar",
+    "fr": "Calendrier iCal"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Reads a Google Calendar (or any online calendar in iCal format) so your site can show its events.",
+    "fr": "Lit un Google Agenda (ou tout calendrier en ligne au format iCal) pour que votre site puisse en montrer les évènements."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🗓️",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "multiple",
+  "page": false,
+  "offers": [
+    {
+      "service": "calendar.provider",
+      "label": {
+        "en": "An online calendar (events for the site)",
+        "fr": "Un calendrier en ligne (évènements pour le site)"
+      },
+      "readOnly": [
+        "describe"
+      ],
+      "each": true
+    }
+  ],
+  "provides": [
+    {
+      "topic": "calendar.event",
+      "label": {
+        "en": "Events of this online calendar",
+        "fr": "Évènements de ce calendrier en ligne"
+      }
+    }
+  ],
+  "permissions": [
+    "topics",
+    "admin"
+  ],
+  "settings": [
+    {
+      "key": "url",
+      "type": "secret",
+      "label": {
+        "en": "Calendar address (iCal, secret)",
+        "fr": "Adresse du calendrier (iCal, secrète)"
+      },
+      "help": {
+        "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Never shown again once saved: whoever has it can read your calendar.",
+        "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Jamais réaffichée une fois enregistrée : qui la possède peut lire votre agenda."
+      }
+    },
+    {
+      "key": "label",
+      "type": "text",
+      "label": {
+        "en": "Name of this calendar (optional)",
+        "fr": "Nom de ce calendrier (facultatif)"
+      },
+      "help": {
+        "en": "Shown next to each event when the schedule is set to show its sources, e.g. “Streams” or “Charity events”.",
+        "fr": "Montré à côté de chaque évènement quand le planning est réglé pour afficher ses sources, par exemple « Streams » ou « Soirées caritatives »."
+      }
+    },
+    {
+      "key": "color",
+      "type": "color",
+      "label": {
+        "en": "Colour of this calendar (optional)",
+        "fr": "Couleur de ce calendrier (facultatif)"
+      },
+      "help": {
+        "en": "A small dot of this colour tells the calendars apart.",
+        "fr": "Une petite pastille de cette couleur permet de distinguer les calendriers."
+      }
+    },
+    {
+      "key": "tags",
+      "type": "text",
+      "advanced": true,
+      "label": {
+        "en": "Tags (optional)",
+        "fr": "Étiquettes (facultatif)"
+      },
+      "help": {
+        "en": "Separated by commas, e.g. “streams, weekend”. A schedule can then pick its sources by tag.",
+        "fr": "Séparées par des virgules, par exemple « streams, week-end ». Un planning peut alors choisir ses sources par étiquette."
+      }
+    },
+    {
+      "key": "timezone",
+      "type": "text",
+      "default": "UTC",
+      "advanced": true,
+      "label": {
+        "en": "Time zone of the calendar",
+        "fr": "Fuseau horaire du calendrier"
+      },
+      "help": {
+        "en": "IANA name, e.g. Europe/Paris. Used for events written without a time zone and for all-day events.",
+        "fr": "Nom IANA, ex. Europe/Paris. Sert aux évènements écrits sans fuseau et aux évènements « toute la journée »."
+      }
+    },
+    {
+      "key": "cacheMinutes",
+      "type": "number",
+      "default": 5,
+      "advanced": true,
+      "label": {
+        "en": "Minutes between two reads of the calendar",
+        "fr": "Minutes entre deux lectures du calendrier"
+      },
+      "help": {
+        "en": "From 1 to 120. Google updates its feed with a delay anyway.",
+        "fr": "De 1 à 120. Google met de toute façon son flux à jour avec un délai."
+      }
+    }
+  ]
+}

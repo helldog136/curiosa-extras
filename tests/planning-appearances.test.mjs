@@ -1,7 +1,8 @@
-import test, { beforeEach, afterEach } from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { fakeCtx as baseCtx } from "./helpers/fakeCtx.mjs";
+import { feedOptions } from "./helpers/icalFeed.mjs";
 
 const dir = new URL("../modules/planning/", import.meta.url);
 const read = (p) => fs.readFileSync(new URL(p, dir), "utf8");
@@ -117,7 +118,7 @@ test("manifeste : chaque réglage d'apparence a un défaut égal à celui du cod
   const m = JSON.parse(read("module.json"));
   const { parseManifest } = await import("@/core/modules/manifest");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.3.0");
+  assert.equal(m.version, "2.0.0");
   for (const key of Object.keys(DEFAULTS)) {
     const s = m.settings.find((x) => x.key === key);
     assert.ok(s, key);
@@ -152,18 +153,18 @@ const ics = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 const ev = (uid, s, e, sum, extra = []) => ["BEGIN:VEVENT", `UID:${uid}`, `DTSTART:${ics(s)}`, `DTEND:${ics(e)}`, `SUMMARY:${sum}`, ...extra, "END:VEVENT"].join("\r\n");
 const cal = (...e) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${e.join("\r\n")}\r\nEND:VCALENDAR\r\n`;
 const hrs = (n) => new Date(Date.now() + n * 3_600_000);
-const real = globalThis.fetch;
-const serve = (body) => { globalThis.fetch = async () => new Response(body, { status: 200 }); };
-beforeEach(() => mod.clearIcsCache());
-afterEach(() => { globalThis.fetch = real; });
-const ctxWith = (settings = {}) => fakeCtx({ settings: { icsUrl: "https://calendar.example.com/x.ics", days: 7, timezone: "Europe/Paris", ...settings }, messages: fr, locale: "fr", rawgConfigured: false });
+// Le Planning consomme le sujet « calendar.event » : un faux Calendrier iCal (sans réseau) lui sert `feed.text`.
+const feed = { text: "" };
+const serve = (body) => { feed.text = body; };
+beforeEach(() => { feed.text = ""; });
+const ctxWith = (settings = {}) => baseCtx({ ...feedOptions(() => [{ text: feed.text }]), settings: { days: 7, timezone: "Europe/Paris", ...settings }, messages: fr, locale: "fr", rawgConfigured: false });
 const calendar = () => cal(ev("1", hrs(3), hrs(4), "Premier"), ev("2", hrs(30), hrs(31), "Second", ["DESCRIPTION:Jeu: Zelda"]), ev("c", hrs(5), hrs(6), "Annulé ici", ["STATUS:CANCELLED"]));
 
 test("par défaut (ou réglage inconnu) : la page garde le rendu d'origine — titres de jour + listes Markdown", async () => {
   serve(calendar());
   const base = await def.page(ctxWith());
   for (const s of [{ appearance: "original" }, { appearance: "inconnue" }, { appearance: 42 }, { appearance: "" }]) {
-    mod.clearIcsCache(); serve(calendar());
+    serve(calendar());
     assert.deepEqual(await def.page(ctxWith(s)), base, JSON.stringify(s));
   }
   assert.equal(base.blocks[0].type, "markdown");
@@ -174,20 +175,20 @@ test("par défaut (ou réglage inconnu) : la page garde le rendu d'origine — t
 
 test("page : chaque apparence rend un bloc html thémé, annulés seulement si demandé", async () => {
   for (const id of registered()) {
-    mod.clearIcsCache(); serve(calendar());
+    serve(calendar());
     const page = await def.page(ctxWith({ appearance: id }));
     assert.equal(page.blocks[0].type, "markdown");
     const html = page.blocks.find((b) => b.type === "html").html;
     assert.match(html, new RegExp(`class="pa pa-${id}"`));
     assert.ok(!html.includes("Annulé ici"), id);
-    mod.clearIcsCache(); serve(calendar());
+    serve(calendar());
     const withC = (await def.page(ctxWith({ appearance: id, showCancelled: true }))).blocks.find((b) => b.type === "html").html;
     assert.ok(withC.includes("Annulé ici"), id);
   }
 });
 
 test("page : options communes (12 h, jaquettes, indications relatives, fuseau, densité)", async () => {
-  mod.clearIcsCache(); serve(calendar());
+  serve(calendar());
   const html = (await def.page(ctxWith({ appearance: "classic", hourFormat: "12", showRelative: false, showTimezone: true, density: "compact", showEnd: true }))).blocks.find((b) => b.type === "html").html;
   assert.match(html, /\b(AM|PM)\b/);
   assert.ok(!/Demain|Dans \d/.test(html.replace(/<style>[\s\S]*?<\/style>/, "")) || true);
@@ -198,7 +199,7 @@ test("page : options communes (12 h, jaquettes, indications relatives, fuseau, d
 
 test("page : un agenda illisible ou absurde ne lève jamais d'exception, toutes apparences", async () => {
   for (const id of registered()) for (const body of ["pas un agenda", "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART:n'importe quoi\r\nEND:VEVENT\r\nEND:VCALENDAR", ""]) {
-    mod.clearIcsCache(); serve(body);
+    serve(body);
     const page = await def.page(ctxWith({ appearance: id }));
     assert.ok(Array.isArray(page.blocks) && page.blocks.length >= 1);
   }
@@ -210,15 +211,15 @@ test("section « prochains streams » : suit l'apparence du module, surchargeabl
   serve(calendar());
   const asHtml = async (settings, options) => (await def.sections.upcoming(ctxWith(settings), options))[1].html;
   assert.match(await asHtml({ appearance: "timeline" }, { count: 3 }), /pa-timeline/);
-  mod.clearIcsCache(); serve(calendar());
+  serve(calendar());
   assert.match(await asHtml({ appearance: "timeline" }, { count: 3, appearance: "posters" }), /pa-posters/);
-  mod.clearIcsCache(); serve(calendar());
+  serve(calendar());
   assert.match(await asHtml({ appearance: "timeline" }, { count: 3, appearance: "inherit" }), /pa-timeline/);
-  mod.clearIcsCache(); serve(calendar());
+  serve(calendar());
   assert.match(await asHtml({}, { count: 3, appearance: "hero" }), /pa-hero/, "surcharge utilisable même quand le module reste en liste simple");
-  mod.clearIcsCache(); serve(calendar());
+  serve(calendar());
   assert.match(await asHtml({}, { count: 3, appearance: "inherit" }), /cpl-list/, "défaut : liste d'origine");
-  mod.clearIcsCache(); serve(cal());
+  serve(cal());
   assert.match(await asHtml({ appearance: "classic" }, {}), /pa-empty/, "état vide soigné");
 });
 
@@ -226,7 +227,7 @@ test("section « prochain stream » : inchangée par défaut ; densité compacte
   serve(calendar());
   const plain = (await def.sections.next(ctxWith()))[1].html;
   assert.ok(!plain.includes("pa-dense"));
-  mod.clearIcsCache(); serve(calendar());
+  serve(calendar());
   assert.match((await def.sections.next(ctxWith({ density: "compact" })))[1].html, /pa-dense/);
 });
 

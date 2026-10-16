@@ -4,7 +4,7 @@
 // `social.link` (bouton), `stream.live` (live en cours, vide sinon) et `maze.poster` (derniers clips). Sans identifiants valides, tout est vide plutôt qu'en erreur.
 // Le fichier voisin est importé avec la même « version » que celui-ci : après une mise à jour, jamais d'ancien helix.mjs resté en mémoire.
 const helix = await import(new URL(`./helix.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { LOGIN, hasCredentials, valid, liveStatus, recentClips } = helix;
+const { LOGIN, hasCredentials, valid, liveStatus, recentClips, schedule, scheduleStatus } = helix;
 export const { currentStream } = helix;
 export { recentClips };
 
@@ -63,6 +63,10 @@ const urlOf = (channel) => (LOGIN.test(channel) ? `https://twitch.tv/${channel}`
 const missing = (c) => [!LOGIN.test(c.channel) && "channel", !c.clientId && "clientId", !c.secret && "clientSecret"].filter(Boolean);
 
 /** Un identifiant reçu d'un autre module : texte court sans espace, sinon on l'ignore. */
+const providesSchedule = (ctx) => ctx.setting("provideSchedule") === true || ctx.setting("provideSchedule") === "true";
+const hexColor = (v) => (/^#[0-9a-fA-F]{6}$|^#[0-9a-fA-F]{3}$/.test(text(v)) ? text(v) : null);
+const DAY = 86_400_000;
+
 const plain = (v) => (typeof v === "string" && /^\S{1,200}$/.test(v.trim()) ? v.trim() : "");
 
 export default {
@@ -77,12 +81,38 @@ export default {
       const s = await currentStream(c);
       return s ? [{ id: s.id, title: s.title, url: urlOf(c.channel), startedAt: s.startedAt, game: s.game ?? undefined }] : [];
     },
+    /**
+     * Le planning de diffusion que Twitch publie pour la chaîne, en évènements neutres (sujet `calendar.event`). Seulement si l'option
+     * « Fournir mon planning Twitch comme calendrier » est cochée (désactivée par défaut). Jamais d'erreur : sans planning ou en cas de panne, une liste vide.
+     */
+    async "calendar.event"(ctx, { limit, tags, from, to } = {}) {
+      if (!providesSchedule(ctx) || (Array.isArray(tags) && tags.length)) return [];   // pas d'étiquettes sur cette source
+      const c = await credentials(ctx);
+      const r = await schedule(c);
+      if (r.error) return [];
+      const lo = from instanceof Date ? from.getTime() : -Infinity, hi = to instanceof Date ? to.getTime() : Infinity;
+      const label = (r.displayName || c.channel).slice(0, 60), color = hexColor(ctx.setting("calendarColor"));
+      return r.segments
+        .filter((s) => (s.end ? Date.parse(s.end) : Date.parse(s.start)) >= lo && Date.parse(s.start) <= hi)
+        .sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
+        .slice(0, Math.min(200, Math.max(1, Math.trunc(Number(limit)) || 50)))
+        .map((s) => ({ id: `${s.id}`, title: s.title || ctx.t("scheduleUntitled"), start: s.start, ...(s.end ? { end: s.end } : {}), allDay: false, status: s.canceled ? "cancelled" : "confirmed", ...(s.category ? { category: s.category } : {}), url: urlOf(c.channel) ?? undefined, sourceLabel: label, ...(color ? { color } : {}) }))
+        .map((i) => (i.url ? i : Object.fromEntries(Object.entries(i).filter(([k]) => k !== "url"))));
+    },
     async "maze.poster"(ctx, { limit }) {
       return (await recentClips(await credentials(ctx))).slice(0, limit ?? 10).map((x) => ({ title: x.title, url: x.url, ...(x.image ? { image: x.image } : {}), kind: "clip" }));
     },
   },
 
   services: {
+    "calendar.provider": {
+      /** { kind, label, color?, active, state } — décrit cette source ; ne fait aucun appel réseau. Active seulement si l'option est cochée et la chaîne prête. */
+      async describe(ctx) {
+        const c = await credentials(ctx);
+        const st = scheduleStatus(c);
+        return { kind: "twitch", label: (st.displayName || (LOGIN.test(c.channel) ? c.channel : "")) || null, color: hexColor(ctx.setting("calendarColor")), active: providesSchedule(ctx) && valid(c), state: st.state, ...(st.error ? { error: st.error } : {}) };
+      },
+    },
     "twitch.live": {
       /** { channel, url, configured, ready, missing } — la chaîne de cette instance et si Twitch est utilisable ; ne fait aucun appel réseau. */
       async channel(ctx) {

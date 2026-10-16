@@ -52,9 +52,12 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
     if (main) for (const m of read(`${dir}/${main}`).matchAll(/\btopic: "([^"]+)"/g)) used.add(m[1]);
   }
   assert.ok(used.size >= 5, "des sujets doivent être trouvés");
+  // Sujets dont le contrat est écrit dans CE dépôt (README.md) en attendant la ligne du tableau « Sujets connus » du cœur : à retirer de la liste quand elle y est.
+  const OWN_CONTRACT = new Set(["calendar.event"]);
+  for (const topic of OWN_CONTRACT) assert.ok(read("README.md").includes(`\`${topic}\``), `le contrat de ${topic} doit être documenté dans README.md`);
   for (const topic of used) {
     assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
-    assert.ok(doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
+    assert.ok(doc.includes(`\`${topic}\``) || OWN_CONTRACT.has(topic), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
   }
 });
 

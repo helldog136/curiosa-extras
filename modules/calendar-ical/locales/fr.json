@@ -1,0 +1,19 @@
+{
+  "untitled": "(Sans titre)",
+  "allDay": "Toute la journée",
+  "adminStatus": "État de la dernière lecture",
+  "adminNotSet": "Aucune adresse enregistrée. Collez l'adresse secrète de votre agenda dans les réglages ci-dessus, puis enregistrez.",
+  "adminSaved": "Adresse enregistrée (site : {host}). Elle n'est plus jamais réaffichée.",
+  "adminOk": "Calendrier lu : {n} évènement(s) dans les 30 prochains jours ({cancelled} annulé(s) non compté(s)).",
+  "adminStale": "La dernière lecture a échoué ({reason}) : on garde la copie précédente en attendant.",
+  "colWhen": "Quand",
+  "colTitle": "Évènement",
+  "testBtn": "Tester l'adresse",
+  "testOk": "L'adresse fonctionne : {n} évènement(s) à venir dans les 30 prochains jours.",
+  "err_url": "Cette adresse n'est pas autorisée : utilisez une adresse publique en https://.",
+  "err_network": "Le calendrier n'a pas pu être joint (service indisponible, ou trop lent).",
+  "err_http": "Le service du calendrier a refusé la demande (code {status}) : adresse erronée, ou agenda devenu privé. Recopiez l'adresse secrète complète.",
+  "err_format": "Cette adresse ne donne pas un calendrier iCal : vérifiez que c'est bien l'« Adresse secrète au format iCal » (elle finit par .ics).",
+  "err_size": "Ce calendrier est trop volumineux (5 Mo au plus).",
+  "err_config": "Aucune adresse enregistrée."
+}

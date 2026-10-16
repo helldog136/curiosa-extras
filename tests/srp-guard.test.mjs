@@ -39,7 +39,24 @@ test("SRP : une collection de données de même nom n'existe que dans un module,
 test("SRP : un service n'est offert que par un seul module du dépôt (le cœur gère les doublons d'installation, pas ce dépôt)", () => {
   const owners = new Map();
   for (const m of mods) for (const o of m.manifest.offers ?? []) owners.set(o.service, [...(owners.get(o.service) ?? []), m.id]);
-  for (const [service, who] of owners) assert.equal(who.length, 1, `service « ${service} » offert par ${who.join(" et ")}`);
+  // Un service « each » (chaque instance répond pour SA propre chose) est voulu chez plusieurs modules : c'est le cas de `calendar.provider`
+  // (Calendrier iCal, Évènements saisis à la main, Chaîne Twitch). Tout fournisseur doit alors le déclarer « each » — sinon c'est un doublon.
+  const eachEverywhere = (service) => mods.filter((m) => (m.manifest.offers ?? []).some((o) => o.service === service)).every((m) => m.manifest.offers.find((o) => o.service === service).each === true);
+  for (const [service, who] of owners) assert.ok(who.length === 1 || eachEverywhere(service), `service « ${service} » offert par ${who.join(" et ")}`);
+});
+
+test("SRP : les trois fournisseurs de calendrier offrent `calendar.provider` en « each » et fournissent `calendar.event` ; le Planning n'en connaît aucun", () => {
+  const providers = ["calendar-ical", "calendar-manual", "twitch-channel"];
+  for (const id of providers) {
+    const m = mods.find((x) => x.id === id);
+    assert.deepEqual(m.manifest.offers.find((o) => o.service === "calendar.provider")?.each, true, id);
+    assert.ok(m.manifest.provides.some((p) => p.topic === "calendar.event"), id);
+    assert.ok(!/planning/i.test(m.code.replace(/^\s*\/\/.*$/gm, "")) || id === "twitch-channel", `${id} ne connaît pas le Planning`);
+  }
+  const planning = mods.find((m) => m.id === "planning");
+  assert.deepEqual(planning.manifest.requires, [{ service: "calendar.provider" }]);
+  assert.ok(!providers.some((id) => new RegExp(`\\b${id}\\b`).test(planning.code.replace(/^\s*\/\/.*$/gm, "").replace(/seedInstance\("calendar-ical"/, ""))), "le Planning ne nomme un fournisseur que pour semer l'instance iCal de la migration");
+
 });
 
 test("SRP : Contacts possède les personnes, Partenariats ne garde que des références (aucune coordonnée, aucun outil qui écrit dans le carnet)", () => {

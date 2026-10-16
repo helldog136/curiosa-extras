@@ -58,6 +58,54 @@
       ]
     },
     {
+      "id": "calendar-ical",
+      "name": "Calendrier iCal",
+      "description": "Lit un Google Agenda (ou tout calendrier en ligne au format iCal) pour que votre site puisse en montrer les évènements.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/calendar-ical",
+      "ref": "v1.3.3",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🗓️",
+      "provides": [
+        "calendar.event"
+      ],
+      "requires": {
+        "core": "0.1.16"
+      },
+      "offers": [
+        {
+          "service": "calendar.provider",
+          "each": true
+        }
+      ]
+    },
+    {
+      "id": "calendar-manual",
+      "name": "Évènements saisis à la main",
+      "description": "Pour ceux qui n'ont pas de calendrier en ligne : écrivez vos évènements ici (date, heure, lieu, lien, répétition chaque semaine) et votre site peut les montrer.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/calendar-manual",
+      "ref": "v1.3.3",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "✍️",
+      "provides": [
+        "calendar.event"
+      ],
+      "requires": {
+        "core": "0.1.16"
+      },
+      "offers": [
+        {
+          "service": "calendar.provider",
+          "each": true
+        }
+      ]
+    },
+    {
       "id": "codes",
       "name": "Codes promo",
       "description": "Les offres de vos partenaires : code, lien et date d'expiration.",
@@ -375,11 +423,11 @@
     {
       "id": "planning",
       "name": "Planning des streams",
-      "description": "Affiche vos prochains streams, lus depuis un Google Agenda (ou n'importe quel flux iCal), dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
+      "description": "Affiche vos prochains streams, tirés de vos agendas en ligne, de ce que vous saisissez à la main ou de votre planning Twitch, dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.3.3",
-      "version": "1.3.0",
+      "version": "2.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -387,8 +435,11 @@
         "planning.slot"
       ],
       "requires": {
-        "core": "0.1.10"
-      }
+        "core": "0.1.16"
+      },
+      "needs": [
+        "calendar.provider"
+      ]
     },
     {
       "id": "press-kit",
@@ -576,7 +627,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.3.3",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -584,7 +635,8 @@
       "provides": [
         "social.link",
         "stream.live",
-        "maze.poster"
+        "maze.poster",
+        "calendar.event"
       ],
       "requires": {
         "core": "0.1.14"
@@ -592,6 +644,10 @@
       "offers": [
         {
           "service": "twitch.live",
+          "each": true
+        },
+        {
+          "service": "calendar.provider",
           "each": true
         }
       ]

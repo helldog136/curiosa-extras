@@ -43,7 +43,7 @@ export function buildModel(input) {
   const slots = (Array.isArray(rawSlots) ? rawSlots : []).filter((s) => s && s.start instanceof Date && !Number.isNaN(s.start.getTime())).map((s) => {
     const end = s.end instanceof Date && !Number.isNaN(s.end.getTime()) ? s.end : new Date(s.start.getTime() + 3_600_000);
     const w = wallDateNow(tz, s.start);
-    const games = s.allDay ? [] : extractGameNames(s.description);
+    const games = s.allDay ? [] : Array.isArray(s.games) ? s.games : extractGameNames(s.description);
     const cancelled = !!s.cancelled;
     const live = !cancelled && !s.allDay && s.start.getTime() <= nowMs && end.getTime() >= nowMs;
     const rel = cancelled || !opts.relative ? null : (() => { const r = relativeLabel({ ...s, end }, now, tz, t); return live ? null : r; })();
@@ -52,6 +52,7 @@ export function buildModel(input) {
       iso: s.allDay ? wallKey(w) : s.start.toISOString(), isoEnd: s.allDay ? wallKey(wallDateNow(tz, new Date(end.getTime() - 1))) : end.toISOString(),
       timeText: s.allDay ? t("allDay") : fm.time(s.start), endText: s.allDay ? "" : fm.time(end),
       startMs: s.start.getTime(), endMs: end.getTime(), dayKey: wallKey(w),
+      source: s.source ?? null,
       games, covers: games.map((name) => ({ name, url: covers.get(name) })).filter((c) => typeof c.url === "string" && (/^https:\/\//.test(c.url) || (allowData && /^data:image\/svg\+xml/.test(c.url)))),
     };
   }).sort((a, b) => a.startMs - b.startMs);

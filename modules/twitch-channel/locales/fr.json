@@ -8,5 +8,6 @@
   "share_live": "Client id et secret communs avec la chaîne « {channel} » (là où ils sont vides ici). Ils ne sont jamais affichés.",
   "share_copy": "Client id et secret communs avec la chaîne « {channel} » (copie gardée). Ils ne sont jamais affichés.",
   "share_none": "Les identifiants de la chaîne « {channel} » ne sont pas encore connus : vérifiez qu'une Chaîne Twitch a cette chaîne avec son client id et son secret, puis ouvrez une page du site et rechargez.",
-  "share_self": "« {channel} » est la chaîne de cette instance : indiquez l'AUTRE chaîne dont reprendre les identifiants."
+  "share_self": "« {channel} » est la chaîne de cette instance : indiquez l'AUTRE chaîne dont reprendre les identifiants.",
+  "scheduleUntitled": "Stream"
 }

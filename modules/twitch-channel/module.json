@@ -6,7 +6,7 @@
     "en": "Twitch channel",
     "fr": "Chaîne Twitch"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status and latest clips.",
@@ -31,6 +31,17 @@
         "status"
       ],
       "each": true
+    },
+    {
+      "service": "calendar.provider",
+      "label": {
+        "en": "The Twitch broadcast schedule as a calendar",
+        "fr": "Le planning de diffusion Twitch, comme calendrier"
+      },
+      "readOnly": [
+        "describe"
+      ],
+      "each": true
     }
   ],
   "provides": [
@@ -53,6 +64,13 @@
       "label": {
         "en": "Latest clips as posters",
         "fr": "Derniers clips en affiches"
+      }
+    },
+    {
+      "topic": "calendar.event",
+      "label": {
+        "en": "Your Twitch broadcast schedule",
+        "fr": "Votre planning de diffusion Twitch"
       }
     }
   ],
@@ -105,6 +123,32 @@
       "help": {
         "en": "Same Twitch application for several channels? Type here the channel (login) of another Twitch channel instance that already has its client id and secret: they are reused, only where empty here, without being shown. What you type in this instance always wins.",
         "fr": "Même application Twitch pour plusieurs chaînes ? Saisissez ici la chaîne (identifiant) d'une autre Chaîne Twitch qui a déjà son client id et son secret : ils sont repris, seulement là où ils sont vides ici, sans jamais être affichés. Ce que vous saisissez dans cette instance prévaut toujours."
+      }
+    },
+    {
+      "key": "provideSchedule",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Provide my Twitch schedule as a calendar",
+        "fr": "Fournir mon planning Twitch comme calendrier"
+      },
+      "help": {
+        "en": "Off by default. When on, the schedule you publish on Twitch can be picked as a source by the stream schedule of your site.",
+        "fr": "Désactivé par défaut. Une fois coché, le planning que vous publiez sur Twitch peut être choisi comme source par le planning des streams de votre site."
+      }
+    },
+    {
+      "key": "calendarColor",
+      "type": "color",
+      "advanced": true,
+      "label": {
+        "en": "Colour of this calendar (optional)",
+        "fr": "Couleur de ce calendrier (facultatif)"
+      },
+      "help": {
+        "en": "A small dot of this colour tells the calendars apart.",
+        "fr": "Une petite pastille de cette couleur permet de distinguer les calendriers."
       }
     }
   ]

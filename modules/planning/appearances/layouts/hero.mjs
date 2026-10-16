@@ -1,7 +1,7 @@
 // Apparence « À la une + à suivre » : le prochain stream en grand (jaquette, « Dans X h » ou « En cours », bouton vers la chaîne), puis la suite en
 // liste compacte (Apple TV « À suivre »). Le « compte à rebours » est le texte « Dans 3 h » calculé à l'affichage : pas de script. Fonction pure.
 const V = new URL(import.meta.url).search;
-const { esc, timeTag, statusChips, gamesHtml, artHtml, whenText, emptyHtml, footHtml, minify, chip } = await import(`../kit.mjs${V}`);
+const { esc, timeTag, statusChips, gamesHtml, sourceHtml, artHtml, whenText, emptyHtml, footHtml, minify, chip } = await import(`../kit.mjs${V}`);
 
 function heroHtml(s, day, model) {
   const t = model.t, l = day.label;
@@ -16,7 +16,7 @@ function heroHtml(s, day, model) {
 function rowHtml(s, day, model) {
   const l = day.label, chips = statusChips(s, model.t);
   return `<li class="pa-hr-row${s.cancelled ? " pa-cancelled" : ""}"><time class="pa-hr-date" datetime="${esc(day.key)}"><span>${esc(l.weekdayShort)}</span><b>${esc(l.dayNum)}</b></time>${artHtml(s, model, { fallback: true })}` +
-    `<div class="pa-hr-txt"><p class="pa-title">${esc(s.title)}</p><p class="pa-hr-meta">${timeTag(s, whenText(s, model.opts.showEnd))}${s.games.length ? ` · ${s.games.map(esc).join(", ")}` : ""}</p></div>${chips}</li>`;
+    `<div class="pa-hr-txt"><p class="pa-title">${esc(s.title)}</p><p class="pa-hr-meta">${timeTag(s, whenText(s, model.opts.showEnd))}${s.games.length ? ` · ${s.games.map(esc).join(", ")}` : ""}</p>${sourceHtml(s)}</div>${chips}</li>`;
 }
 
 export function render(model, options = {}) {

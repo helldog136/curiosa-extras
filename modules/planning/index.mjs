@@ -1,199 +1,20 @@
 // Planning des streams — module communautaire de Curiosa, porté d'un planning existant.
 //
-// Lit un calendrier iCal (adresse secrète d'un Google Agenda), en tire les créneaux à venir et les montre :
-// page publique jour par jour, section d'accueil « prochains streams », sujet `planning.slot` pour d'autres
-// modules, action MCP. Un seul fichier, sans dépendance. La logique pure (lecteur iCal, fuseaux, grille de jours,
-// noms de jeux, garde-fous d'URL) est exportée pour être testée ; le module lui-même est l'export par défaut.
+// CONSOMME des calendriers : les évènements viennent du sujet `calendar.event`, que fournissent les modules de calendrier (Calendrier iCal,
+// évènements saisis à la main, planning Twitch de la Chaîne Twitch…) ; l'administrateur choisit ses sources dans « Sources de données ».
+// Ce module ne parle ni iCal ni réseau : il INTERPRÈTE les évènements bruts (ligne « Jeu : » de la description, sinon catégorie ; annulations)
+// et les montre : page publique jour par jour, sections d'accueil, sujet `planning.slot`, action MCP, image PNG de la semaine.
 //
-// Jaquettes : pour chaque jeu nommé dans la description d'un événement, la jaquette est demandée au service RAWG du cœur
-// (`ctx.api.rawg`, permission `rawg` ; la clé se règle dans Admin → Réglages, le module ne la voit jamais) et montrée sur la page,
-// les morceaux d'accueil, l'admin et l'image PNG de la semaine (`/m/<clé>/image`, pour un panneau Twitch). Au mieux : sans clé,
-// clé refusée ou RAWG injoignable, on affiche simplement le nom du jeu. Le cache et la limite de demandes sont ceux du cœur.
+// Jaquettes : pour chaque jeu, la jaquette est demandée au service RAWG du cœur (`ctx.api.rawg`, permission `rawg` ; la clé se règle dans
+// Admin → Réglages, le module ne la voit jamais). Au mieux : sans clé, clé refusée ou RAWG injoignable, on affiche simplement le nom du jeu.
 
 /* ───────────────────────────── Fuseaux et dates de calendrier ───────────────────────────── */
+
+import { createHash } from "node:crypto";
 
 const V = new URL(import.meta.url).search; // le cœur recharge index.mjs avec ?v=<version> : les fichiers voisins suivent, sinon une mise à jour à chaud mélangerait anciens et nouveaux fichiers
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`./dates.mjs${V}`);
 export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
-
-function addMonthsToWall(y, m, d, months) {
-  const total = y * 12 + (m - 1) + months;
-  const dt = new Date(Date.UTC(Math.floor(total / 12), (total % 12), d)); // le débordement de jour est absorbé, comme Google Agenda
-  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
-}
-
-const compareWall = (a, b) => a.y - b.y || a.m - b.m || a.d - b.d;
-
-/* ───────────────────────────── Lecteur iCal (sous-ensemble de la RFC 5545) ───────────────────────────── */
-// Taillé pour Google Agenda : VEVENT, RRULE simples (DAILY/WEEKLY[BYDAY]/MONTHLY/YEARLY, COUNT, UNTIL, INTERVAL),
-// EXDATE, RECURRENCE-ID (occurrence modifiée ou annulée). Volontairement pas une implémentation complète.
-
-const WEEKDAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-
-// Une ligne repliée continue sur la suivante, qui commence par une espace ou une tabulation.
-const unfold = (text) => text.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");
-const unescapeText = (v) => v.replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\;/g, ";").replace(/\\\\/g, "\\");
-
-function parseLine(line) {
-  const colon = line.indexOf(":");
-  if (colon === -1) return null;
-  const [name, ...paramParts] = line.slice(0, colon).split(";");
-  const params = {};
-  for (const part of paramParts) {
-    const eq = part.indexOf("=");
-    if (eq !== -1) params[part.slice(0, eq).toUpperCase()] = part.slice(eq + 1);
-  }
-  return { name: (name ?? "").toUpperCase(), params, value: line.slice(colon + 1) };
-}
-
-function parseIcsDate(prop, defaultTimeZone) {
-  const value = prop.value.trim();
-  const allDay = prop.params.VALUE === "DATE" || /^\d{8}$/.test(value);
-  const m = allDay ? value.match(/^(\d{4})(\d{2})(\d{2})$/) : value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/);
-  if (!m) return null;
-  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  if (allDay) return { date: zonedTimeToUtc(year, month, day, 0, 0, 0, defaultTimeZone), allDay: true };
-  const [hour, minute, second] = [Number(m[4]), Number(m[5]), Number(m[6])];
-  if (m[7] === "Z") return { date: new Date(Date.UTC(year, month - 1, day, hour, minute, second)), allDay: false };
-  return { date: zonedTimeToUtc(year, month, day, hour, minute, second, prop.params.TZID || defaultTimeZone), allDay: false };
-}
-
-function wallParts(prop) {
-  const m = prop.value.trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
-  return m ? { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]), h: Number(m[4] ?? "0"), mi: Number(m[5] ?? "0"), s: Number(m[6] ?? "0") } : null;
-}
-
-function parseRRule(value, defaultTimeZone) {
-  const parts = {};
-  for (const kv of value.split(";")) {
-    const [k, v] = kv.split("=");
-    if (k) parts[k.toUpperCase()] = v ?? "";
-  }
-  if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(parts.FREQ)) return null;
-  const rrule = { freq: parts.FREQ, interval: Number(parts.INTERVAL) || 1 };
-  if (parts.COUNT) rrule.count = Number(parts.COUNT);
-  if (parts.UNTIL) {
-    const parsed = parseIcsDate({ name: "UNTIL", params: {}, value: parts.UNTIL }, defaultTimeZone);
-    if (parsed) rrule.until = parsed.date;
-  }
-  if (parts.BYDAY) rrule.byDay = parts.BYDAY.split(",").map((c) => WEEKDAY_CODES.indexOf(c.replace(/^[+-]?\d+/, "").toUpperCase())).filter((i) => i !== -1);
-  return rrule;
-}
-
-// Dates de calendrier candidates d'une règle, plafonnées : jamais de boucle infinie sur une règle sans COUNT ni UNTIL.
-function* candidateWallDates(rrule, dtstart) {
-  const MAX = 2000;
-  if (rrule.freq === "WEEKLY" && rrule.byDay && rrule.byDay.length > 0) {
-    const days = [...rrule.byDay].sort((a, b) => a - b);
-    let { y, m, d } = addDaysToWall(dtstart.y, dtstart.m, dtstart.d, -weekdayOf(dtstart.y, dtstart.m, dtstart.d));
-    for (let i = 0; i < MAX; i++) {
-      for (const wd of days) {
-        const occ = addDaysToWall(y, m, d, wd);
-        if (compareWall(occ, dtstart) >= 0) yield occ;
-      }
-      ({ y, m, d } = addDaysToWall(y, m, d, 7 * rrule.interval));
-    }
-    return;
-  }
-  let cur = { y: dtstart.y, m: dtstart.m, d: dtstart.d };
-  for (let i = 0; i < MAX; i++) {
-    yield cur;
-    if (rrule.freq === "DAILY") cur = addDaysToWall(cur.y, cur.m, cur.d, rrule.interval);
-    else if (rrule.freq === "WEEKLY") cur = addDaysToWall(cur.y, cur.m, cur.d, 7 * rrule.interval);
-    else if (rrule.freq === "MONTHLY") cur = addMonthsToWall(cur.y, cur.m, cur.d, rrule.interval);
-    else cur = addMonthsToWall(cur.y, cur.m, cur.d, 12 * rrule.interval);
-  }
-}
-
-function expandRRule(rrule, dtstart, timeZone, windowEnd, exdates) {
-  const results = [];
-  let n = 0;
-  for (const { y, m, d } of candidateWallDates(rrule, dtstart)) {
-    n++;
-    if (rrule.count && n > rrule.count) break;
-    const occurrence = zonedTimeToUtc(y, m, d, dtstart.h, dtstart.mi, dtstart.s, timeZone);
-    if (rrule.until && occurrence.getTime() > rrule.until.getTime()) break;
-    if (occurrence.getTime() > windowEnd.getTime()) break;
-    if (!exdates.has(occurrence.getTime())) results.push(occurrence);
-  }
-  return results;
-}
-
-/** Texte iCal -> événements datés (récurrences développées jusqu'à `windowEnd`), triés par début. */
-export function parseIcs(text, opts) {
-  const lines = unfold(String(text)).split("\n").filter((l) => l.length > 0);
-  const rawEvents = [];
-  let current = null;
-  for (const line of lines) {
-    if (line === "BEGIN:VEVENT") current = [];
-    else if (line === "END:VEVENT") {
-      if (current) rawEvents.push(current);
-      current = null;
-    } else if (current) {
-      const prop = parseLine(line);
-      if (prop) current.push(prop);
-    }
-  }
-
-  const masters = [];
-  const overrides = new Map();
-  for (const props of rawEvents) {
-    const get = (name) => props.find((p) => p.name === name) ?? null;
-    const uid = get("UID")?.value ?? "";
-    const dtstart = get("DTSTART");
-    if (!uid || !dtstart) continue;
-    const summary = unescapeText(get("SUMMARY")?.value ?? "(Sans titre)");
-    const descriptionRaw = get("DESCRIPTION")?.value;
-    const description = descriptionRaw ? unescapeText(descriptionRaw) : null;
-    const dtend = get("DTEND");
-    const status = get("STATUS")?.value.toUpperCase() ?? null;
-    const recurrenceId = get("RECURRENCE-ID");
-    if (recurrenceId) {
-      overrides.set(uid, [...(overrides.get(uid) ?? []), { recurrenceId, summary, description, dtstart, dtend, status }]);
-    } else {
-      masters.push({ uid, summary, description, dtstart, dtend, rrule: get("RRULE")?.value ?? null, exdates: props.filter((p) => p.name === "EXDATE"), status });
-    }
-  }
-
-  const results = [];
-  for (const master of masters) {
-    if (master.status === "CANCELLED" && !opts.keepCancelled) continue;
-    const start = parseIcsDate(master.dtstart, opts.timeZone);
-    if (!start) continue;
-    const end = master.dtend ? parseIcsDate(master.dtend, opts.timeZone) : null;
-    const durationMs = end ? end.date.getTime() - start.date.getTime() : 60 * 60 * 1000;
-
-    const overrideByOriginal = new Map();
-    for (const o of overrides.get(master.uid) ?? []) {
-      const parsed = parseIcsDate(o.recurrenceId, opts.timeZone);
-      if (parsed) overrideByOriginal.set(parsed.date.getTime(), o);
-    }
-
-    let starts = [start.date];
-    if (master.rrule) {
-      const rrule = parseRRule(master.rrule, opts.timeZone);
-      const wall = wallParts(master.dtstart);
-      if (rrule && wall) {
-        const ex = new Set(master.exdates.map((p) => parseIcsDate(p, opts.timeZone)?.date.getTime()).filter((t) => t !== undefined));
-        starts = expandRRule(rrule, wall, opts.timeZone, opts.windowEnd, ex);
-      }
-    }
-
-    for (const occStart of starts) {
-      const override = overrideByOriginal.get(occStart.getTime());
-      if (override) {
-        if (override.status === "CANCELLED") { if (opts.keepCancelled) results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay, cancelled: true }); continue; }
-        const oStart = parseIcsDate(override.dtstart, opts.timeZone);
-        if (!oStart) continue;
-        const oEnd = override.dtend ? parseIcsDate(override.dtend, opts.timeZone) : null;
-        results.push({ uid: master.uid, title: override.summary, description: override.description, start: oStart.date, end: oEnd ? oEnd.date : new Date(oStart.date.getTime() + durationMs), allDay: oStart.allDay });
-      } else {
-        results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay, ...(master.status === "CANCELLED" ? { cancelled: true } : {}) });
-      }
-    }
-  }
-  return results.sort((a, b) => a.start.getTime() - b.start.getTime());
-}
 
 /* ───────────────────────────── Planning : noms de jeux, grille de jours ───────────────────────────── */
 
@@ -234,29 +55,6 @@ export function isValidTimeZone(tz) {
   }
 }
 
-/**
- * Adresse de calendrier acceptable : https uniquement, sans identifiants, et jamais une machine locale ou privée
- * (le serveur va la télécharger : pas de requête vers le réseau interne).
- */
-export function isPublicHttpsUrl(value) {
-  let url;
-  try {
-    url = new URL(String(value).trim());
-  } catch {
-    return false;
-  }
-  if (url.protocol !== "https:" || url.username || url.password) return false;
-  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false;
-  if (host.includes(":")) return !/^(::1?$|f[cd]|fe80)/.test(host); // IPv6 : pas de boucle locale / privée / lien local
-  const ip = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ip) {
-    const [a, b] = [Number(ip[1]), Number(ip[2])];
-    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224) return false;
-  }
-  return host.includes(".");
-}
-
 /* ───────────────────────────── Jaquettes (service RAWG du cœur) ───────────────────────────── */
 
 const STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };
@@ -280,7 +78,7 @@ const MAX_LOOKUPS = 30;
  * Les événements « toute la journée » n'ont pas de jeu. Cache et cadence : ceux du cœur (au plus 30 jeux différents par appel).
  */
 export async function coversForSlots(ctx, slots) {
-  const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => extractGameNames(s.description)))].slice(0, MAX_LOOKUPS);
+  const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => gamesOf(s)))].slice(0, MAX_LOOKUPS);
   const covers = new Map(), states = new Map();
   if (!names.length) return { covers, states };
   let configured = false;
@@ -291,52 +89,78 @@ export async function coversForSlots(ctx, slots) {
 }
 
 /** Les jaquettes d'un créneau, dans l'ordre des jeux (ceux sans jaquette sont simplement omis). */
-const coversOf = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((n) => covers.get(n)).filter(Boolean));
+const coversOf = (slot, covers) => (slot.allDay ? [] : gamesOf(slot).map((n) => covers.get(n)).filter(Boolean));
 
-/* ───────────────────────────── Lecture du calendrier ───────────────────────────── */
+/* ───────────────────────────── Lecture des sources (sujet calendar.event) ───────────────────────────── */
 
-const CACHE_MS = 5 * 60_000;
-const cache = new Map(); // url -> { at, text }
+const TOPIC = "calendar.event";
+const MAX_EVENTS = 200;
+const hexColor = (v) => (/^#[0-9a-fA-F]{6}$|^#[0-9a-fA-F]{3}$/.test(String(v ?? "").trim()) ? String(v).trim() : null);
 
-/** Télécharge le calendrier (cache court, délai borné). Ne lève jamais : `null` si illisible. */
-export async function fetchIcs(url, fetchImpl = fetch) {
-  const hit = cache.get(url);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.text;
+/** ISO 8601 d'un évènement -> Date. Une date seule (journée entière) vaut minuit dans le fuseau du planning ; sans décalage, l'heure est lue en UTC (convention du cœur). */
+function isoToDate(v, tz) {
+  if (typeof v !== "string") return null;
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
+  if (day) return zonedTimeToUtc(Number(day[1]), Number(day[2]), Number(day[3]), 0, 0, 0, tz);
+  const t = Date.parse(/(Z|[+-]\d{2}:?\d{2})$/.test(v) ? v : `${v.replace(" ", "T")}Z`);
+  return Number.isFinite(t) ? new Date(t) : null;
+}
+
+/**
+ * Un évènement neutre du sujet `calendar.event` -> créneau du planning. C'est ICI que le texte est interprété :
+ * le jeu vient de la ligne « Jeu : … » de la description, sinon de la catégorie ; « annulé » vient du statut.
+ */
+export function slotFromEvent(item, tz) {
+  const start = isoToDate(item?.start, tz);
+  if (!start) return null;
+  const allDay = item.allDay === true;
+  let end = item.end ? isoToDate(item.end, tz) : null;
+  if (!end || end.getTime() < start.getTime()) end = new Date(start.getTime() + (allDay ? 86_400_000 : 3_600_000));
+  const description = typeof item.description === "string" ? item.description : null;
+  const named = extractGameNames(description);
+  const category = typeof item.category === "string" ? item.category.trim().slice(0, 100) : "";
+  const label = typeof item.sourceLabel === "string" ? item.sourceLabel.trim().slice(0, 60) : "";
+  const color = hexColor(item.color);
+  return {
+    uid: String(item.id ?? ""), title: String(item.title ?? ""), description, start, end, allDay, cancelled: item.status === "cancelled",
+    games: named.length ? named : category ? [category] : [], ...(label || color ? { source: { label, color } } : {}),
+  };
+}
+/** Les jeux d'un créneau (déjà calculés ; sinon lus dans la description). */
+const gamesOf = (slot) => (Array.isArray(slot.games) ? slot.games : extractGameNames(slot.description));
+
+const timeZoneOf = (ctx) => (isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC");
+const flag = (v) => v === true || v === "true" || v === 1 || v === "1";
+
+/** Les sources de calendrier actives (une entrée par instance fournisseuse). Ne lève jamais. */
+export async function sourcesOf(ctx) {
   try {
-    // Redirections suivies à la main : chaque étape doit rester une adresse https publique (sinon une
-    // adresse publique pourrait renvoyer vers le réseau interne).
-    let current = url;
-    let res = null;
-    for (let hop = 0; hop <= 3; hop++) {
-      if (!isPublicHttpsUrl(current)) return null;
-      res = await fetchImpl(current, { signal: AbortSignal.timeout(8000), redirect: "manual" });
-      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
-      if (!location) break;
-      current = new URL(location, current).toString();
-      res = null;
-    }
-    if (!res || !res.ok) return null;
-    const text = await res.text();
-    if (!text.includes("BEGIN:VCALENDAR")) return null;
-    cache.set(url, { at: Date.now(), text: text.slice(0, 5_000_000) });
-    return text;
-  } catch {
-    return null;
-  }
+    const all = await ctx.api.services.callAll("calendar.provider", "describe", {});
+    return all.filter((e) => e.ok && e.value && typeof e.value === "object" && e.value.active !== false).map((e) => ({ instance: e.instance, name: e.name, ...e.value }));
+  } catch { return []; }
 }
-export const clearIcsCache = () => cache.clear();
 
-async function loadSlots(ctx, days, { cancelled = false } = {}) {
-  const url = String(ctx.setting("icsUrl") ?? "").trim();
-  if (!url || !isPublicHttpsUrl(url)) return { configured: !!url, ok: false, slots: [] };
-  const timeZone = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-  const text = await fetchIcs(url);
-  if (text === null) return { configured: true, ok: false, slots: [], timeZone };
-  const now = Date.now();
-  const windowEnd = new Date(now + days * 86_400_000);
-  const slots = parseIcs(text, { timeZone, windowEnd, keepCancelled: cancelled }).filter((e) => e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
-  return { configured: true, ok: true, slots, timeZone };
+/**
+ * Les créneaux de [from, to] (défaut : de maintenant à `days` jours), de toutes les sources choisies par l'administrateur, fusionnés et triés.
+ * { configured (au moins une source), ok (collecte réussie), slots, timeZone, sources }. Ne lève jamais.
+ */
+async function loadSlots(ctx, days, { cancelled = false, from, to } = {}) {
+  const timeZone = timeZoneOf(ctx);
+  const sources = await sourcesOf(ctx);
+  if (!sources.length) return { configured: false, ok: false, slots: [], timeZone, sources };
+  const lo = from ?? new Date(), hi = to ?? new Date(lo.getTime() + days * 86_400_000);
+  let items;
+  try { items = await ctx.api.topics.collect(TOPIC, { from: lo, to: hi, limit: MAX_EVENTS }); } catch { return { configured: true, ok: false, slots: [], timeZone, sources }; }
+  const showSource = flag(ctx.setting("showSource"));
+  const slots = (Array.isArray(items) ? items : []).map((i) => slotFromEvent(i, timeZone)).filter(Boolean)
+    .filter((e) => (cancelled || !e.cancelled) && e.end.getTime() >= lo.getTime() && e.start.getTime() <= hi.getTime())
+    .map((e) => { if (!showSource) delete e.source; return e; })
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+  return { configured: true, ok: true, slots, timeZone, sources };
 }
+
+/** Clé de graine : un hachage de l'adresse (jamais l'adresse en clair), stable d'une exécution à l'autre. */
+export const seedKeyOf = (url) => `ical-${createHash("sha256").update(`planning-ics:${String(url).trim()}`).digest("hex").slice(0, 16)}`;
 
 const clampDays = (v, def = 7) => Math.min(60, Math.max(1, Math.trunc(Number(v)) || def));
 
@@ -346,10 +170,16 @@ const fmtTime = (d, locale, tz) => new Intl.DateTimeFormat(locale, { hour: "2-di
 const fmtDay = (wall, locale, tz) => new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(zonedTimeToUtc(wall.y, wall.m, wall.d, 12, 0, 0, tz));
 const escMd = (s) => String(s).replace(/([\\`*_[\]<>])/g, "\\$1");
 
+/** Pastille de source en ligne (rond de SA couleur + nom) pour le rendu d'origine ; vide sans `source` (réglage « Montrer la source » désactivé). */
+function sourceDot(src) {
+  if (!src || (!src.label && !src.color)) return "";
+  return `<span style="display:inline-flex;align-items:center;gap:.35em;margin-left:.5em;font-size:.8em;color:var(--v-muted,#aaa);white-space:nowrap"><i aria-hidden="true" style="display:inline-block;width:.65em;height:.65em;border-radius:50%;background:${src.color ?? "var(--v-muted,#888)"}"></i>${src.label ? esc(src.label) : ""}</span>`;
+}
+
 function slotLine(slot, ctx, tz) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
-  const games = extractGameNames(slot.description);
-  return `**${when}** — ${escMd(slot.title)}${games.length ? ` · _${games.map(escMd).join(", ")}_` : ""}`;
+  const games = gamesOf(slot);
+  return `**${when}** — ${escMd(slot.title)}${games.length ? ` · _${games.map(escMd).join(", ")}_` : ""}${slot.source?.label ? ` · ● ${escMd(slot.source.label)}` : ""}`;
 }
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -358,9 +188,9 @@ const coverImg = (url) => `<img src="${esc(url)}" alt="" loading="lazy" width="4
 /** Un créneau avec ses jaquettes (petites, à gauche) : comme sur la page de l'ancien site. */
 function slotHtml(slot, ctx, tz, covers, prefix = "", vis = null) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
-  const games = extractGameNames(slot.description);
+  const games = gamesOf(slot);
   const imgs = covers.length ? `<span style="display:flex;gap:4px;flex-shrink:0">${covers.map(coverImg).join("")}</span>` : vis ? placeholderHtml(vis, true) : "";
-  return `<div style="display:flex;gap:12px;align-items:center;margin:8px 0">${imgs}<div style="min-width:0;overflow-wrap:anywhere">${prefix ? `<span style="color:var(--v-muted)">${esc(prefix)} · </span>` : ""}<strong>${esc(when)}</strong> — ${esc(slot.title)}` +
+  return `<div style="display:flex;gap:12px;align-items:center;margin:8px 0">${imgs}<div style="min-width:0;overflow-wrap:anywhere">${prefix ? `<span style="color:var(--v-muted)">${esc(prefix)} · </span>` : ""}<strong>${esc(when)}</strong> — ${esc(slot.title)}${sourceDot(slot.source)}` +
     `${games.length ? `<div style="color:var(--v-muted);font-style:italic;font-size:.9em">${games.map(esc).join(", ")}</div>` : ""}</div></div>`;
 }
 const anyCover = (slots, covers) => slots.some((s) => coversOf(s, covers).length > 0);
@@ -423,7 +253,7 @@ const { appearanceBlocks, wantsCancelled, previewBlocks, densify } = await impor
 export { relativeLabel };
 
 const isoOf = (slot, tz) => { if (!slot.allDay) return slot.start.toISOString(); const w = wallDateNow(tz, slot.start); return `${w.y}-${String(w.m).padStart(2, "0")}-${String(w.d).padStart(2, "0")}`; };
-const gameCovers = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((name) => ({ name, url: covers.get(name) })).filter((g) => g.url));
+const gameCovers = (slot, covers) => (slot.allDay ? [] : gamesOf(slot).map((name) => ({ name, url: covers.get(name) })).filter((g) => g.url));
 const safeHttps = (v) => { const u = String(v ?? "").trim(); return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : null; };
 const planningHref = (ctx) => { const b = ctx.instance?.basePath; return b === null || b === undefined ? null : b ? `/${b}` : "/"; };
 const wrapCards = (inner) => `<div class="cpl"><style>${CARD_CSS}</style>${inner}</div>`;
@@ -468,14 +298,14 @@ async function channelLink(ctx) {
 function nextCardHtml(slot, others, ctx, tz, covers, now, vis, channelHref) {
   const t = ctx.t;
   const gc = gameCovers(slot, covers).slice(0, 3);
-  const games = extractGameNames(slot.description);
+  const games = gamesOf(slot);
   const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(slot.start);
   const hour = slot.allDay ? t("allDay") : fmtTime(slot.start, ctx.locale, tz);
   const channel = channelHref;
   const imgs = !gc.length ? placeholderHtml(vis) : `<span class="cpl-covers">${gc.map((g) => `<img src="${esc(g.url)}" alt="${esc(t("coverAlt", { game: g.name }))}" loading="lazy" width="120" height="160">`).join("")}</span>`;
   const also = others.length ? `<p class="cpl-also">${esc(t("alsoToday"))} ${others.map((o) => `<time datetime="${esc(isoOf(o, tz))}">${esc(o.allDay ? t("allDay") : fmtTime(o.start, ctx.locale, tz))}</time> ${esc(o.title)}`).join(" · ")}</p>` : "";
   return wrapCards(`<article class="cpl-card">${imgs}<div class="cpl-body">${badgeHtml(relativeLabel(slot, now, tz, t))}` +
-    `<h3 class="cpl-title">${esc(slot.title)}</h3>` +
+    `<h3 class="cpl-title">${esc(slot.title)}</h3>${slot.source ? `<p class="cpl-also">${sourceDot(slot.source).replace("margin-left:.5em;", "")}</p>` : ""}` +
     `<p class="cpl-when"><time class="cpl-hour" datetime="${esc(isoOf(slot, tz))}">${esc(hour)}</time><span class="cpl-day">${esc(day)}</span></p>` +
     `${games.length ? `<p class="cpl-games">${esc(t("gamesLabel"))} ${games.map(esc).join(", ")}</p>` : ""}${also}` +
     `${channel ? `<a class="cpl-btn" href="${esc(channel)}" target="_blank" rel="noopener noreferrer">${esc(t("watch"))}</a>` : ""}` +
@@ -490,12 +320,12 @@ function upcomingListHtml(slots, ctx, tz, covers, now, vis) {
     const wd = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", timeZone: tz }).format(s.start);
     const dn = new Intl.DateTimeFormat(ctx.locale, { day: "numeric", timeZone: tz }).format(s.start);
     const gc = gameCovers(s, covers)[0];
-    const games = s.allDay ? [] : extractGameNames(s.description);
+    const games = s.allDay ? [] : gamesOf(s);
     const hour = s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz);
     const rel = relativeLabel(s, now, tz, t);
     return `<li class="cpl-row"><time class="cpl-tile" datetime="${esc(isoOf(s, tz))}"><span class="cpl-tw">${esc(wd)}</span><span class="cpl-td">${esc(dn)}</span></time>` +
       `${gc ? `<img class="cpl-thumb" src="${esc(gc.url)}" alt="${esc(t("coverAlt", { game: gc.name }))}" loading="lazy" width="40" height="54">` : placeholderHtml(vis, true)}` +
-      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}</span></div>` +
+      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}${sourceDot(s.source)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}</span></div>` +
       `${rel ? `<span class="cpl-badge">${esc(rel)}</span>` : ""}</li>`;
   }).join("");
   return wrapCards(`<div class="cpl-list"><ul>${rows}</ul>${href ? `<div class="cpl-foot"><a class="cpl-link" href="${esc(href)}">${esc(t("fullPlanning"))}</a></div>` : ""}</div>`);
@@ -542,14 +372,11 @@ function emptyCardHtml(ctx) {
 
 /** Une semaine (lundi → dimanche) de créneaux, passés compris : pour l'image à partager. */
 async function loadWeek(ctx, weekOffset) {
-  const url = String(ctx.setting("icsUrl") ?? "").trim();
-  if (!url || !isPublicHttpsUrl(url)) return null;
-  const timeZone = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-  const text = await fetchIcs(url);
-  if (text === null) return null;
+  const timeZone = timeZoneOf(ctx);
   const range = getWeekRange(weekOffset, timeZone);
-  const slots = parseIcs(text, { timeZone, windowEnd: range.end }).filter((e) => e.end >= range.start && e.start <= range.end);
-  return { timeZone, range, days: buildDays(range.startWall, 7, slots, timeZone) };
+  const r = await loadSlots(ctx, 7, { from: range.start, to: range.end });
+  if (!r.configured || !r.ok) return null;
+  return { timeZone, range, days: buildDays(range.startWall, 7, r.slots, timeZone) };
 }
 
 /**
@@ -575,7 +402,7 @@ export function weekImage(ctx, week, site, covers = new Map()) {
     const list = coversOf(s, covers).slice(0, MAX_GAMES_PER_STREAM);
     const coverW = Math.round(coverH * (40 / 54));
     const textW = BOX_WIDTH - PAD_X * 2 - (list.length ? list.length * coverW + (list.length - 1) * COVER_GAP + COVER_ROW_GAP : 0);
-    const games = list.length || s.allDay ? "" : extractGameNames(s.description).join(", ");
+    const games = list.length || s.allDay ? "" : gamesOf(s).join(", ");
     return box({ alignItems: "center", gap: COVER_ROW_GAP },
       ...(list.length ? [box({ gap: COVER_GAP, flexShrink: 0 }, ...list.map((src) => ({ type: "img", props: { src, width: coverW, height: coverH, style: { borderRadius: 6, objectFit: "cover" } } })))] : []),
       box({ flexDirection: "column", justifyContent: "center", gap: 2, width: textW, ...(list.length ? { height: coverH } : {}) },
@@ -604,21 +431,21 @@ export function weekImage(ctx, week, site, covers = new Map()) {
   return { width: WIDTH, height, tree };
 }
 
-/** L'état du calendrier et les prochains créneaux (haut du panneau d'admin). */
+/** Les sources de calendrier et les prochains créneaux (haut du panneau d'admin). */
 async function adminStatusBlocks(ctx) {
     const t = ctx.t;
-    const url = String(ctx.setting("icsUrl") ?? "").trim();
     const days = clampDays(ctx.setting("days"));
     const blocks = [{ type: "heading", text: t("adminStatus") }];
-    if (!url) return [...blocks, { type: "markdown", text: t("adminNotSet") }];
-    if (!isPublicHttpsUrl(url)) return [...blocks, { type: "markdown", text: t("badUrl") }];
-    const { ok, slots, timeZone } = await loadSlots(ctx, Math.max(days, 14));
+    const { configured, ok, slots, timeZone, sources } = await loadSlots(ctx, Math.max(days, 14));
+    if (!configured) return [...blocks, { type: "markdown", text: t("adminNoSource") }];
     const tz = timeZone ?? "UTC";
-    blocks.push({ type: "markdown", text: t("adminHint", { hint: url.slice(-6) }) });
-    if (!ok) return [...blocks, { type: "markdown", text: `⚠️ ${t("adminError")}` }, { type: "adminForm", action: "refresh", submitLabel: t("refresh"), fields: [] }];
+    blocks.push({ type: "table", columns: [t("srcName"), t("srcKind"), t("srcState")], rows: sources.map((x) => [x.label || x.name || x.instance, t(`kind_${x.kind}`), x.state === "error" ? `⚠️ ${t("srcError")}` : x.state === "stale" ? `⚠️ ${t("srcStale")}` : t("srcOk")]) });
+    blocks.push({ type: "markdown", text: t("adminChoose") });
+    if (!ok) return [...blocks, { type: "markdown", text: `⚠️ ${t("adminError")}` }];
     blocks.push({ type: "markdown", text: t("adminOk", { n: slots.filter((s) => s.start.getTime() <= Date.now() + days * 86_400_000).length, days }) });
+    if (!slots.length) return [...blocks, { type: "markdown", text: t("adminEmpty") }];
     blocks.push({ type: "heading", text: t("adminNext") });
-    blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, extractGameNames(s.description).join(", ")]) });
+    blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, gamesOf(s).join(", ")]) });
     // Jaquettes : un message clair plutôt qu'un manque silencieux (clé absente, refusée, RAWG injoignable, jeux inconnus de RAWG).
     const next = slots.slice(0, 20);
     const { covers, states } = await coversForSlots(ctx, next);
@@ -635,7 +462,6 @@ async function adminStatusBlocks(ctx) {
       const withCovers = next.filter((s) => coversOf(s, covers).length > 0);
       if (withCovers.length) blocks.push({ type: "html", html: withCovers.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start))).join("") });
     }
-    blocks.push({ type: "adminForm", action: "refresh", submitLabel: t("refresh"), fields: [] });
     return blocks;
 }
 
@@ -668,7 +494,7 @@ export default {
     const tz = timeZone ?? "UTC";
     const blocks = [];
     if (!configured || !ok) {
-      blocks.push({ type: "markdown", text: ctx.t("notConfigured") });
+      blocks.push({ type: "markdown", text: ctx.t(configured ? "notReadable" : "notConfigured") });
       return { title: ctx.t("title"), blocks };
     }
     blocks.push({ type: "markdown", text: ctx.t("intro", { days, tz }) });
@@ -735,7 +561,28 @@ export default {
   exports: {
     async "planning.slot"(ctx, { limit }) {
       const { slots } = await loadSlots(ctx, 30);
-      return slots.slice(0, limit).map((s) => ({ title: s.title, text: extractGameNames(s.description).join(", ") || undefined, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: extractGameNames(s.description) }));
+      return slots.slice(0, limit).map((s) => ({ title: s.title, text: gamesOf(s).join(", ") || undefined, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: gamesOf(s) }));
+    },
+  },
+
+  /**
+   * Version 2.0.0 : le Planning ne lit plus d'adresse iCal lui-même. Pour chaque ancienne adresse, le cœur sème UNE instance du Calendrier iCal
+   * (adresse comprise : elle y reste un secret) ; l'ancien réglage n'est effacé qu'après un semis confirmé (le cœur l'impose), jamais avant.
+   * Par défaut un Planning lit TOUTES les sources de calendrier : l'instance semée l'alimente donc sans autre réglage.
+   * Idempotent : la graine (dérivée d'un hachage de l'adresse, jamais l'adresse) ne sème qu'une fois.
+   */
+  migrations: {
+    2: async (ctx) => {
+      const url = String(ctx.setting("icsUrl") ?? "").trim();
+      if (!url) return;
+      const tr = (k, fallback) => { const v = ctx.t?.(k); return typeof v === "string" && v && v !== k ? v : fallback; };
+      const tz = String(ctx.setting("timezone") ?? "").trim();
+      await ctx.seedInstance("calendar-ical", {
+        nickname: tr("seedNickname", "Agenda iCal"),
+        settings: { url, ...(isValidTimeZone(tz) ? { timezone: tz } : {}) },
+        seedKey: seedKeyOf(url),
+      });
+      await ctx.clearSetting("icsUrl");   // seulement après le semis (créé, ou déjà semé)
     },
   },
 
@@ -745,19 +592,13 @@ export default {
     return [...blocks, ...(await previewBlocks(ctx, tz)), { type: "html", html: tutorialHtml(ctx, tz) }];
   },
 
-  adminActions: {
-    async refresh(ctx) {
-      clearIcsCache();
-      return { ok: ctx.t("refreshed") };
-    },
-  },
 
   mcp: {
     async planning_upcoming(ctx, args) {
       const days = clampDays(args.days);
       const { ok, slots } = await loadSlots(ctx, days);
-      if (!ok) throw Object.assign(new Error("the calendar is not configured or cannot be read"), { expose: true });
-      return slots.map((s) => ({ title: s.title, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: extractGameNames(s.description) }));
+      if (!ok) throw Object.assign(new Error("no calendar source is chosen or it cannot be read"), { expose: true });
+      return slots.map((s) => ({ title: s.title, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: gamesOf(s) }));
     },
   },
 };

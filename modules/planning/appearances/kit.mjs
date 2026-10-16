@@ -52,7 +52,20 @@ export function artHtml(slot, model, { fallback = false, cls = "" } = {}) {
 
 /** Noms des jeux (texte), avec une étiquette lisible par les lecteurs d'écran. */
 export function gamesHtml(slot, t, cls = "pa-games") {
-  return slot.games.length ? `<p class="${cls}">${srOnly(t("gamesLabel"))} ${slot.games.map(esc).join(", ")}</p>` : "";
+  return (slot.games.length ? `<p class="${cls}">${srOnly(t("gamesLabel"))} ${slot.games.map(esc).join(", ")}</p>` : "") + sourceHtml(slot);
+}
+
+/**
+ * Pastille de la source du créneau (calendrier d'origine) : petit rond de SA couleur + son nom. Vide si le réglage « Montrer la source » est
+ * désactivé (le créneau n'a alors pas de `source`) ou si la source n'a ni nom ni couleur. Styles en ligne : identique dans toutes les apparences.
+ * La couleur n'est jamais seule : le nom est du texte ; le rond est décoratif.
+ */
+export function sourceHtml(slot) {
+  const src = slot.source;
+  if (!src || (!src.label && !src.color)) return "";
+  const color = /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(String(src.color ?? "")) ? src.color : null;
+  const dot = `<i aria-hidden="true" style="display:inline-block;flex:none;width:.65em;height:.65em;border-radius:50%;background:${color ?? "var(--pa-muted,currentColor)"}"></i>`;
+  return `<p class="pa-src" style="display:flex;align-items:center;gap:.4em;margin:.2rem 0 0;font-size:.8em;opacity:.85">${dot}${src.label ? `<span>${esc(src.label)}</span>` : ""}</p>`;
 }
 
 /** En-tête d'un jour dans l'un des trois styles : text · tile · short. */

@@ -4,6 +4,16 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.4.0
+
+*Changements depuis la 1.3.3.*
+
+- **Planning : plusieurs calendriers dans le même planning.** Vous pouvez mélanger un Google Agenda, des évènements écrits à la main et votre planning Twitch, et choisir ceux que le planning affiche. Il faut Curiosa 0.1.16 ou plus.
+- **Vos réglages existants sont repris tout seuls.** L'adresse de votre agenda passe dans un nouveau module Calendrier iCal et le planning montre les mêmes streams qu'avant, sans rien à refaire.
+- **Nouveau : Évènements saisis à la main.** Pour ceux qui n'ont pas de calendrier en ligne : on écrit ses évènements dans l'admin, avec une répétition chaque semaine si besoin.
+- **Chaîne Twitch peut fournir votre planning Twitch.** Une case à cocher (désactivée au départ) le rend disponible pour le planning de votre site. Rien ne change tant que vous ne la cochez pas.
+- **Montrer la source de chaque stream.** Un petit rond de la couleur du calendrier et son nom peuvent s'afficher à côté de chaque stream, quelle que soit l'apparence choisie (désactivé au départ).
+
 ## 1.3.3
 
 *Changements depuis la 1.3.2.*

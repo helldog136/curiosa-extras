@@ -3,6 +3,7 @@ import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { feedOptions } from "./helpers/icalFeed.mjs";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
@@ -414,16 +415,16 @@ test("repli : cœur sans ctx.api.rawg et sans réglage → « clé absente » ; 
 
 /* ───────────── planning (service RAWG du cœur) ───────────── */
 
-const URL_OK = "https://calendar.example.com/ical/secret-token/basic.ics";
 const ics = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 const hours = (h) => new Date(Date.now() + h * 3_600_000);
 const vevent = (uid, start, summary, extra = []) => ["BEGIN:VEVENT", `UID:${uid}`, `DTSTART:${ics(start)}`, `DTEND:${ics(new Date(start.getTime() + 3_600_000))}`, `SUMMARY:${summary}`, ...extra, "END:VEVENT"].join("\r\n");
 const calendar = (...ev) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${ev.join("\r\n")}\r\nEND:VCALENDAR\r\n`;
-const plCtx = (svc, settings = {}, over = {}) => { const c = fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "UTC", ...settings }, messages: plMsg, locale: "fr", ...over }); if (svc) c.api.rawg = svc; else delete c.api.rawg; return c; };
+const feed = { text: "" };   // le Planning consomme `calendar.event` : un faux Calendrier iCal (sans réseau) lui sert ce texte
+const plCtx = (svc, settings = {}, over = {}) => { const c = fakeCtx({ ...feedOptions(() => [{ text: feed.text }]), settings: { days: 7, timezone: "UTC", ...settings }, messages: plMsg, locale: "fr", ...over }); if (svc) c.api.rawg = svc; else delete c.api.rawg; return c; };
 const realFetch = globalThis.fetch;
 /** Le seul réseau du planning est le calendrier : toute demande à RAWG en direct ferait échouer le test. */
-const calendarOnly = (ical) => { const urls = []; globalThis.fetch = async (u) => { urls.push(String(u)); assert.ok(!String(u).includes("rawg"), "le planning ne parle pas à RAWG directement"); return new Response(ical, { status: 200 }); }; return urls; };
-beforeEach(() => { plMod.clearIcsCache(); });
+const calendarOnly = (ical) => { const urls = []; feed.text = ical; globalThis.fetch = async (u) => { urls.push(String(u)); assert.fail("le planning ne fait aucune requête réseau directe (ni calendrier ni RAWG)"); }; return urls; };
+beforeEach(() => { feed.text = ""; });
 afterEach(() => { globalThis.fetch = realFetch; });
 
 test("planning : la jaquette du jeu apparaît sur la page publique (image à gauche, texte échappé) ; sans jaquette le rendu texte d'avant", async () => {
@@ -433,7 +434,6 @@ test("planning : la jaquette du jeu apparaît sur la page publique (image à gau
   assert.equal((html.match(/<img /g) ?? []).length, 1, "Hades est inconnu de RAWG : omis");
   assert.ok(html.includes("Soirée &lt;b&gt;") && !html.includes("<b>"));
   assert.ok(html.includes("Celeste, Hades"), "les noms des jeux restent affichés");
-  plMod.clearIcsCache();
   assert.ok(!(await pl.page(plCtx(service({ Celeste: "none" })))).blocks.some((b) => b.type === "html"));
 });
 
@@ -452,11 +452,10 @@ test("planning : clé non configurée, cœur sans service ou « toute la journé
   const off = service({ Celeste: "found" }, { configured: false });
   assert.ok((await pl.page(plCtx(off))).blocks.some((b) => b.type === "markdown" && /_Celeste_/.test(b.text)));
   assert.equal(off.calls.length, 0);
-  plMod.clearIcsCache();
   assert.ok((await pl.page(plCtx(null))).blocks.some((b) => b.type === "markdown" && /_Celeste_/.test(b.text)), "cœur sans ctx.api.rawg : pas d'erreur");
   const day = new Date(); day.setUTCHours(0, 0, 0, 0);
   const allDay = ["BEGIN:VEVENT", "UID:9", `DTSTART;VALUE=DATE:${ics(day).slice(0, 8)}`, "SUMMARY:Férié", "DESCRIPTION:Jeu: Celeste", "END:VEVENT"].join("\r\n");
-  calendarOnly(calendar(allDay)); plMod.clearIcsCache();
+  calendarOnly(calendar(allDay));
   const on = service({ Celeste: "found" }); await pl.page(plCtx(on));
   assert.equal(on.calls.length, 0);
 });
@@ -472,7 +471,7 @@ test("planning : un service qui plante ou répond n'importe quoi ne casse jamais
 
 test("planning : panneau d'admin — clé absente (avec lien), clé refusée, RAWG injoignable, jeux inconnus : chaque cas a son message", async () => {
   const cal = calendar(vevent("1", hours(2), "S", ["DESCRIPTION:Jeu: Celeste\\, Fantôme"]));
-  const text = async (svc) => { plMod.clearIcsCache(); return JSON.stringify(await pl.adminPanel(plCtx(svc))); };
+  const text = async (svc) => { return JSON.stringify(await pl.adminPanel(plCtx(svc))); };
   calendarOnly(cal);
   const none = await text(service({}, { configured: false })); assert.match(none, /Aucune clé RAWG/); assert.match(none, /\/admin\/settings/);
   assert.match(await text(service({ Celeste: "refused", "Fantôme": "refused" })), /RAWG refuse la clé/);
@@ -491,11 +490,9 @@ test("planning : image PNG avec jaquettes (https, 3 par stream au plus), sans ja
   assert.equal((flat.match(/"type":"img"/g) ?? []).length, 3, "trois jaquettes au plus");
   assert.ok(flat.includes(IMG));
   assert.equal(c.calls.png[0].width, 900);
-  plMod.clearIcsCache();
   const bare = plCtx(service({}, { configured: false })); await pl.routes.image(new Request("https://x.test/m/planning/image"), bare);
   const flatBare = JSON.stringify(bare.calls.png[0].tree);
   assert.ok(!flatBare.includes('"type":"img"') && flatBare.includes("A1, B2, C3"));
-  plMod.clearIcsCache();
   const flaky = plCtx(service({ A1: "found" })); const png = flaky.api.png; let first = true;
   flaky.api.png = async (spec) => { if (first) { first = false; throw new Error("image illisible"); } return png(spec); };
   const res = await pl.routes.image(new Request("https://x.test/m/planning/image"), flaky);
@@ -508,11 +505,10 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
   calendarOnly(calendar(vevent("1", today, "Un")));
   const one = plCtx(); await pl.routes.image(new Request("https://x.test/m/planning/image"), one);
   const h1 = one.calls.png[0].height;
-  plMod.clearIcsCache();
   calendarOnly(calendar(vevent("1", today, "Un"), vevent("2", new Date(today.getTime() + 3_600_000), "Deux")));
   const two = plCtx(); await pl.routes.image(new Request("https://x.test/m/planning/image"), two);
   assert.equal(two.calls.png[0].height - h1, 7 * (270 - 150));
-  plMod.clearIcsCache(); calendarOnly(calendar());
+  calendarOnly(calendar());
   const empty = plCtx(); await pl.routes.image(new Request("https://x.test/m/planning/image"), empty);
   assert.equal(empty.calls.png[0].height, 32 * 2 + 100 + 16 + 220 + 50 + 24);
 });
@@ -520,7 +516,7 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
 test("planning : plus de réglage de clé, permission rawg déclarée (pas de storage), version montée, textes alignés", () => {
   const m = readJson("planning/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.3.0");
+  assert.equal(m.version, "2.0.0");
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"));
   assert.ok(m.permissions.includes("rawg") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(readJson("planning/locales/fr.json")).sort(), Object.keys(readJson("planning/locales/en.json")).sort());

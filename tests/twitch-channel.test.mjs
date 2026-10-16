@@ -103,8 +103,9 @@ const call = (name, c, args) => svc[name](c, args);
 const countOf = (calls, part) => calls.filter((c) => c.u.includes(part)).length;
 
 test("manifeste : offre le service twitch.live (lecture seule : channel, status), garde stream.live, permissions storage/admin déclarées", () => {
-  assert.deepEqual(manifestJson.offers.map((o) => o.service), ["twitch.live"]);
+  assert.deepEqual(manifestJson.offers.map((o) => o.service), ["twitch.live", "calendar.provider"]);
   assert.deepEqual(manifestJson.offers[0].readOnly, ["channel", "status"]);
+  assert.deepEqual(manifestJson.offers[1].readOnly, ["describe"]);
   assert.ok(manifestJson.provides.some((p) => p.topic === "stream.live"));
   assert.ok(!manifestJson.requires, "le fournisseur ne dépend de personne");
   assert.ok(manifestJson.permissions.includes("storage") && manifestJson.permissions.includes("admin") && manifestJson.permissions.includes("topics"));
@@ -264,11 +265,11 @@ test("locales de la Chaîne Twitch : en et fr alignées, textes de l'admin prés
 const inst = (key, settings = {}) => fakeCtx({ key, settings });
 const typed = (key, channel) => inst(key, { channel, clientId: "cid", clientSecret: "SEC-RET" });
 
-test("manifeste : l'offre twitch.live est « each », minCore 0.1.14, version 1.2.0, réglage facultatif des identifiants d'une autre chaîne", () => {
+test("manifeste : l'offre twitch.live est « each », minCore 0.1.14, version 1.3.0, réglage facultatif des identifiants d'une autre chaîne", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.deepEqual(manifestJson.offers[0], { ...manifestJson.offers[0], service: "twitch.live", each: true });
   assert.equal(manifestJson.minCore, "0.1.14");
-  assert.equal(manifestJson.version, "1.2.0");
+  assert.equal(manifestJson.version, "1.3.0");
   const s = manifestJson.settings.find((x) => x.key === "useCredentialsOf");
   assert.ok(s && s.type === "text" && s.advanced);
 });
@@ -351,4 +352,89 @@ test("reprise (adopt) avec plusieurs instances : elle ne remplit que les champs 
 
 test("locales : textes du partage d'identifiants présents en fr et en", () => {
   for (const l of ["fr", "en"]) { const j = JSON.parse(fs.readFileSync(`${DIR}/locales/${l}.json`, "utf8")); for (const k of ["share_live", "share_copy", "share_none", "share_self"]) assert.ok(j[k], `${l}.${k}`); }
+});
+
+// ── Planning de diffusion Twitch : fournisseur du sujet `calendar.event` (version 1.3.0) ─────────────────────────────────
+
+const seg = (id, start, end, over = {}) => ({ id, start_time: start, end_time: end, title: `Stream ${id}`, canceled_until: null, category: { id: "1", name: "Celeste" }, is_recurring: false, ...over });
+/** Faux Twitch avec planning : `pages` = liste de segments par page (la page n suit le curseur c<n>), `status` force un code HTTP sur /schedule. */
+function mockSchedule({ pages = [[]], status = 200, name = "MaChaîne" } = {}) {
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    const u = String(url); calls.push(u);
+    const json = (o, st = 200) => ({ ok: st >= 200 && st < 300, status: st, json: async () => o });
+    if (u.includes("id.twitch.tv/oauth2/token")) return json({ access_token: "tok", expires_in: 3600 });
+    if (u.includes("/helix/users")) return json({ data: [{ id: "777" }] });
+    if (u.includes("/helix/schedule")) {
+      if (status !== 200) return json({}, status);
+      const after = new URL(u).searchParams.get("after");
+      const n = after ? Number(after.slice(1)) : 0;
+      return json({ data: { segments: pages[n] ?? [], broadcaster_name: name, vacation: null }, pagination: pages[n + 1] ? { cursor: `c${n + 1}` } : {} });
+    }
+    return json({}, 404);
+  };
+  return calls;
+}
+const on = (settings = {}) => ctx({ provideSchedule: true, ...settings });
+const sched = (c, o = {}) => def.exports["calendar.event"](c, { limit: 200, ...o });
+
+test("planning Twitch : désactivé par défaut (aucune requête, liste vide) ; manifeste, option, couleur et service", async () => {
+  const calls = mockSchedule({ pages: [[seg("a", "2030-01-02T19:00:00Z", "2030-01-02T21:00:00Z")]] });
+  assert.deepEqual(await sched(ctx()), []);
+  assert.deepEqual(await sched(ctx({ provideSchedule: false })), []);
+  assert.equal(calls.length, 0);
+  const opt = manifestJson.settings.find((s) => s.key === "provideSchedule");
+  assert.deepEqual([opt.type, opt.default], ["boolean", false]);
+  assert.ok(manifestJson.provides.some((p) => p.topic === "calendar.event"));
+  const offer = manifestJson.offers.find((o) => o.service === "calendar.provider");
+  assert.equal(offer.each, true);
+  assert.ok(parseManifest(manifestJson).ok);
+  const d = await def.services["calendar.provider"].describe(ctx());
+  assert.equal(d.active, false); assert.equal(d.kind, "twitch");
+  assert.equal((await def.services["calendar.provider"].describe(on())).active, true);
+  assert.equal(calls.length, 0, "describe ne fait aucun appel réseau");
+});
+
+test("planning Twitch : segments → évènements (début, fin, titre, catégorie = jeu, annulé, étiquette = nom de la chaîne, couleur)", async () => {
+  mockSchedule({ pages: [[seg("a", "2030-01-02T19:00:00Z", "2030-01-02T21:00:00Z", { is_recurring: true }), seg("b", "2030-01-03T19:00:00Z", null, { canceled_until: "2030-01-03T21:00:00Z", category: null, title: "" })]] });
+  const items = await sched(on({ calendarColor: "#9146ff" }));
+  assert.deepEqual(items, [
+    { id: "a", title: "Stream a", start: "2030-01-02T19:00:00.000Z", end: "2030-01-02T21:00:00.000Z", allDay: false, status: "confirmed", category: "Celeste", url: "https://twitch.tv/machaine", sourceLabel: "MaChaîne", color: "#9146ff" },
+    { id: "b", title: "scheduleUntitled", start: "2030-01-03T19:00:00.000Z", allDay: false, status: "cancelled", url: "https://twitch.tv/machaine", sourceLabel: "MaChaîne", color: "#9146ff" },
+  ]);
+  const { conform } = await import("@/core/services/topics");
+  const schema = JSON.parse(fs.readFileSync(new URL("../modules/planning/module.json", import.meta.url), "utf8")).consumes.find((c) => c.topic === "calendar.event").schema;
+  assert.ok(items.every((i) => conform(i, schema)));
+  assert.equal((await def.services["calendar.provider"].describe(on())).label, "MaChaîne");
+});
+
+test("planning Twitch : plage et limite respectées, étiquettes demandées = rien, une requête par chaîne (cache), pagination bornée", async () => {
+  const many = Array.from({ length: 6 }, (_, p) => Array.from({ length: 25 }, (_, i) => seg(`s${p}-${i}`, new Date(Date.UTC(2030, 0, 1 + p * 25 + i, 19)).toISOString(), new Date(Date.UTC(2030, 0, 1 + p * 25 + i, 21)).toISOString())));
+  const calls = mockSchedule({ pages: many });
+  const all = await sched(on());
+  assert.equal(all.length, 100, "4 pages de 25 au plus");
+  assert.equal(countOf(calls.map((u) => ({ u })), "/helix/schedule"), 4);
+  assert.equal((await sched(on(), { limit: 3 })).length, 3);
+  assert.deepEqual((await sched(on(), { from: new Date("2030-01-03T00:00:00Z"), to: new Date("2030-01-04T23:59:00Z") })).map((i) => i.id), ["s0-2", "s0-3"]);
+  assert.deepEqual(await sched(on(), { tags: ["streams"] }), []);
+  assert.equal(countOf(calls.map((u) => ({ u })), "/helix/schedule"), 4, "tout vient du cache : toujours 4 requêtes pour la chaîne");
+});
+
+test("planning Twitch : chaîne sans planning (404) = liste vide sans erreur ; 429 puis 401 : vide, pas de harcèlement, jeton oublié sur 401", async () => {
+  mockSchedule({ status: 404 });
+  assert.deepEqual(await sched(on()), []);
+  mod.resetCache();
+  let calls = mockSchedule({ status: 429 });
+  assert.deepEqual(await sched(on()), []);
+  await sched(on());
+  assert.equal(countOf(calls.map((u) => ({ u })), "/helix/schedule"), 1, "60 s sans nouvelle demande après un 429");
+  mod.resetCache();
+  calls = mockSchedule({ status: 401 });
+  assert.deepEqual(await sched(on()), []);
+  await sched(on());
+  assert.equal(countOf(calls.map((u) => ({ u })), "/helix/schedule"), 1);
+  assert.equal((await def.services["calendar.provider"].describe(on())).state, "error");
+  mod.resetCache();
+  mockSchedule({ pages: [[seg("a", "2030-01-02T19:00:00Z", "2030-01-02T21:00:00Z")]] });
+  assert.deepEqual(await sched(on({ clientSecret: "" })), [], "identifiants incomplets : vide, aucune erreur");
 });

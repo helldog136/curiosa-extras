@@ -1,0 +1,100 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.1.16",
+  "id": "calendar-manual",
+  "name": {
+    "en": "Hand-written events",
+    "fr": "Évènements saisis à la main"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "For those without an online calendar: write your events here (date, time, place, link, weekly repeat) and your site can show them.",
+    "fr": "Pour ceux qui n'ont pas de calendrier en ligne : écrivez vos évènements ici (date, heure, lieu, lien, répétition chaque semaine) et votre site peut les montrer."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "✍️",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "multiple",
+  "page": false,
+  "offers": [
+    {
+      "service": "calendar.provider",
+      "label": {
+        "en": "A hand-written calendar (events for the site)",
+        "fr": "Un calendrier saisi à la main (évènements pour le site)"
+      },
+      "readOnly": [
+        "describe"
+      ],
+      "each": true
+    }
+  ],
+  "provides": [
+    {
+      "topic": "calendar.event",
+      "label": {
+        "en": "Events written by hand",
+        "fr": "Évènements saisis à la main"
+      }
+    }
+  ],
+  "permissions": [
+    "topics",
+    "storage",
+    "admin"
+  ],
+  "settings": [
+    {
+      "key": "label",
+      "type": "text",
+      "label": {
+        "en": "Name of this calendar (optional)",
+        "fr": "Nom de ce calendrier (facultatif)"
+      },
+      "help": {
+        "en": "Shown next to each event when the schedule is set to show its sources, e.g. “Special evenings”.",
+        "fr": "Montré à côté de chaque évènement quand le planning est réglé pour afficher ses sources, par exemple « Soirées spéciales »."
+      }
+    },
+    {
+      "key": "color",
+      "type": "color",
+      "label": {
+        "en": "Colour of this calendar (optional)",
+        "fr": "Couleur de ce calendrier (facultatif)"
+      },
+      "help": {
+        "en": "A small dot of this colour tells the calendars apart.",
+        "fr": "Une petite pastille de cette couleur permet de distinguer les calendriers."
+      }
+    },
+    {
+      "key": "tags",
+      "type": "text",
+      "advanced": true,
+      "label": {
+        "en": "Tags (optional)",
+        "fr": "Étiquettes (facultatif)"
+      },
+      "help": {
+        "en": "Separated by commas, e.g. “streams, weekend”. A schedule can then pick its sources by tag.",
+        "fr": "Séparées par des virgules, par exemple « streams, week-end ». Un planning peut alors choisir ses sources par étiquette."
+      }
+    },
+    {
+      "key": "timezone",
+      "type": "text",
+      "default": "UTC",
+      "label": {
+        "en": "Time zone of the times you type",
+        "fr": "Fuseau horaire des heures que vous saisissez"
+      },
+      "help": {
+        "en": "IANA name, e.g. Europe/Paris, America/Montreal. Daylight saving time is handled.",
+        "fr": "Nom IANA, ex. Europe/Paris, America/Montreal. L'heure d'été est gérée."
+      }
+    }
+  ]
+}

@@ -5,11 +5,11 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "1.3.0",
-  "minCore": "0.1.10",
+  "version": "2.0.0",
+  "minCore": "0.1.16",
   "description": {
-    "fr": "Affiche vos prochains streams, lus depuis un Google Agenda (ou n'importe quel flux iCal), dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
-    "en": "Shows your upcoming streams, read from a Google Calendar (or any iCal feed), in the look you choose: list, zigzag, week, timeline, posters…"
+    "fr": "Affiche vos prochains streams, tirés de vos agendas en ligne, de ce que vous saisissez à la main ou de votre planning Twitch, dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
+    "en": "Shows your upcoming streams, taken from your online calendars, from what you type by hand or from your Twitch schedule, in the look you choose: list, zigzag, week, timeline, posters…"
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -145,6 +145,67 @@
   ],
   "consumes": [
     {
+      "topic": "calendar.event",
+      "label": {
+        "en": "Calendars that feed this schedule (online calendar, hand-written events, Twitch schedule…)",
+        "fr": "Les calendriers qui alimentent ce planning (calendrier en ligne, évènements saisis à la main, planning Twitch…)"
+      },
+      "tags": true,
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "start",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "end",
+          "type": "datetime"
+        },
+        {
+          "key": "allDay",
+          "type": "boolean"
+        },
+        {
+          "key": "description",
+          "type": "string"
+        },
+        {
+          "key": "location",
+          "type": "string"
+        },
+        {
+          "key": "url",
+          "type": "url"
+        },
+        {
+          "key": "status",
+          "type": "string"
+        },
+        {
+          "key": "category",
+          "type": "string"
+        },
+        {
+          "key": "color",
+          "type": "string"
+        },
+        {
+          "key": "sourceLabel",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "topic": "social.link",
       "label": {
         "en": "Your Twitch channel link (from the Twitch channel module)",
@@ -177,18 +238,6 @@
     "rawg"
   ],
   "settings": [
-    {
-      "key": "icsUrl",
-      "type": "secret",
-      "label": {
-        "en": "Calendar address (iCal, secret)",
-        "fr": "Adresse du calendrier (iCal, secrète)"
-      },
-      "help": {
-        "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Never shown again once saved.",
-        "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Jamais réaffichée une fois enregistrée."
-      }
-    },
     {
       "key": "channelUrl",
       "type": "url",
@@ -328,6 +377,20 @@
       "label": {
         "en": "Show game covers",
         "fr": "Afficher les jaquettes des jeux"
+      }
+    },
+    {
+      "key": "showSource",
+      "type": "boolean",
+      "default": false,
+      "group": "appearance",
+      "label": {
+        "en": "Show the source of each stream",
+        "fr": "Montrer la source de chaque stream"
+      },
+      "help": {
+        "en": "A small dot in the colour of its calendar, with its name, next to each stream. Useful when several calendars feed this schedule.",
+        "fr": "Une petite pastille de la couleur de son calendrier, avec son nom, à côté de chaque stream. Utile quand plusieurs calendriers alimentent ce planning."
       }
     },
     {
@@ -583,6 +646,21 @@
             "maximum": 60
           }
         }
+      }
+    }
+  ],
+  "dataVersion": 2,
+  "requires": [
+    {
+      "service": "calendar.provider"
+    }
+  ],
+  "seeds": [
+    {
+      "module": "calendar-ical",
+      "reason": {
+        "fr": "Reprendre l'adresse de votre agenda dans un Calendrier iCal",
+        "en": "Carry your calendar address over to an iCal calendar"
       }
     }
   ]

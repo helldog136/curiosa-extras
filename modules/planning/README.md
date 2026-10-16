@@ -1,13 +1,18 @@
 # Planning des streams — module communautaire de Curiosa
 
-Vos prochains streams, jour par jour, lus depuis un **Google Agenda** (ou n'importe quel flux iCal). Porté du planning
-d'un site existant.
+Vos prochains streams, jour par jour, tirés de **vos calendriers** : un Google Agenda (module *Calendrier iCal*), des évènements saisis à la main (module *Évènements saisis à la main*), le planning publié sur Twitch (module *Chaîne Twitch*), seuls ou **plusieurs ensemble**. Porté du planning d'un site existant.
+
+**Version 2.0.0 (Curiosa 0.1.16 ou plus).** Le planning ne lit plus d'adresse lui-même : il consomme le sujet `calendar.event` (contrat dans le README du dépôt). **Brancher un calendrier** : installez un module de calendrier (le Catalogue en installe un tout seul si aucun n'est présent), puis, dans la page de ce planning, section « Sources de données », cochez les calendriers à afficher (tous sont cochés par défaut, y compris ceux ajoutés plus tard) ; vous pouvez aussi filtrer par étiquette. **Aucun dédoublonnage** : si deux sources donnent le même stream, il apparaît deux fois, c'est à vous de choisir vos sources. Sans aucune source, l'admin dit « Ajoutez une source de calendrier ».
+
+**Reprise automatique.** Un planning qui avait une adresse iCal la voit reprise : le cœur crée une instance de *Calendrier iCal* avec cette adresse (elle reste secrète) et le planning efface son ancien réglage, une fois cela confirmé. Si plusieurs plannings avaient la même adresse, vérifiez ensuite dans leurs « Sources de données » qu'ils ne montrent pas deux fois le même calendrier.
+
+**Ce que le planning interprète** (les fournisseurs livrent des évènements bruts) : la ligne `Jeu : …` de la description, sinon la **catégorie** de l'évènement (le jeu d'un stream Twitch) ; les évènements **annulés** ; les journées entières. **Montrer la source** (désactivé par défaut) : une petite pastille de la couleur du calendrier et son nom, dans toutes les apparences.
 
 - **Page publique** `/planning` : les *N* prochains jours (7 par défaut, réglage avancé), heure du fuseau choisi.
 - **Section d'accueil** « Prochains streams » (à placer depuis *Page d'accueil*).
 - **Sujet `planning.slot`** : d'autres modules (overlay, bot…) peuvent lire les prochains créneaux.
 - **MCP** : `planning_upcoming` (lecture seule, accordée par défaut).
-- **Admin** : état du calendrier, prochains créneaux, bouton « Actualiser maintenant ».
+- **Admin** : sources de calendrier et leur état, prochains créneaux.
 
 ## Apparences au choix (réglage « Apparence du planning »)
 
@@ -29,7 +34,7 @@ Captures décrites : toutes les apparences ont été vérifiées dans le vrai si
 
 **Où ça s'applique** : page publique et section « Prochains streams » (celle-ci peut avoir sa propre apparence, option « Apparence » du morceau ; « Comme la page » par défaut). La carte « Prochain stream » garde son rendu et suit la densité. L'image PNG du panneau Twitch (`/m/<clé>/image`) garde son gabarit.
 
-**Architecture** (`modules/planning/`) : `index.mjs` (lecteur iCal, jaquettes, module), `dates.mjs`, `games.mjs`, `relative.mjs`, puis `appearances/` : `options.mjs` (réglages et défauts), `model.mjs` (regroupement par jour/semaine, en cours, annulé, fuseau), `kit.mjs` (outils et style de base), `layouts/*.mjs` (une apparence = `render(model, options, ctx) → { html, css }`, pure), `registry.mjs`, `preview.mjs`, `entry.mjs` (seul point d'appel d'`index.mjs`). Les fichiers voisins sont chargés avec le même `?v=` que `index.mjs` pour qu'une mise à jour à chaud ne mélange pas d'anciens fichiers.
+**Architecture** (`modules/planning/`) : `index.mjs` (lecture des sources, jaquettes, module), `dates.mjs`, `games.mjs`, `relative.mjs`, puis `appearances/` : `options.mjs` (réglages et défauts), `model.mjs` (regroupement par jour/semaine, en cours, annulé, fuseau), `kit.mjs` (outils et style de base), `layouts/*.mjs` (une apparence = `render(model, options, ctx) → { html, css }`, pure), `registry.mjs`, `preview.mjs`, `entry.mjs` (seul point d'appel d'`index.mjs`). Les fichiers voisins sont chargés avec le même `?v=` que `index.mjs` pour qu'une mise à jour à chaud ne mélange pas d'anciens fichiers.
 
 ## Les morceaux d'accueil
 
@@ -43,21 +48,18 @@ Captures décrites : toutes les apparences ont été vérifiées dans le vrai si
 
 Dans la page de l'instance, sous l'état du calendrier :
 
-- **« Comment remplir mon agenda Google ? »** (bloc repliable) : où écrire le titre (titre de l'événement), le jeu (une ligne `Jeu : Nom` dans la description ; aucune ligne = pas de jeu), l'heure et la durée (début et fin), ce que deviennent le lieu (non lu), le reste de la description (ignoré), « toute la journée », les répétitions et les suppressions ; comment obtenir l'adresse secrète iCal ; deux exemples remplis ; les erreurs fréquentes (fuseau, jeu dans le titre, événement à la journée, délai de Google).
+- **« Comment brancher mon calendrier ? »** (bloc repliable) : où écrire le titre (titre de l'événement), le jeu (une ligne `Jeu : Nom` dans la description ; aucune ligne = pas de jeu), l'heure et la durée (début et fin), ce que deviennent le lieu (non lu), le reste de la description (ignoré), « toute la journée », les répétitions et les suppressions ; comment obtenir l'adresse secrète iCal ; deux exemples remplis ; les erreurs fréquentes (fuseau, jeu dans le titre, événement à la journée, délai de Google).
 - **« Télécharger le skill pour mon IA »** : un fichier `SKILL.md` (en-tête `name:` / `description:`) généré à partir du fuseau et du nom du site de l'instance : rôle, règles de remplissage exactes, modèle, exemples (stream de jeu, événement caritatif sans jeu, stream récurrent), liste de contrôle, interdits, questions à poser à l'humain. Servi par la route `/m/<clé>/skill` (publique, GET/HEAD seulement) : il ne contient jamais l'adresse du calendrier ni aucune clé.
 
 ## Configurer
 
-Dans Google Agenda : *Paramètres → votre agenda → « Adresse secrète au format iCal »*, à coller dans le réglage de l'instance
-(elle n'est plus jamais réaffichée). **Utilisez un agenda dédié** : tout ce qu'il contient devient public.
+Branchez un calendrier (voir plus haut), puis écrivez vos streams dedans. Dans **Google Agenda** : *Paramètres → votre agenda → « Adresse secrète au format iCal »*, à coller dans le *Calendrier iCal* ; **utilisez un agenda dédié** (tout ce qu'il contient devient public). L'aide « Comment brancher mon calendrier ? » est dans l'admin du planning.
 
-Pour afficher le jeu d'un créneau, écrivez dans la **description** de l'événement une ligne `Jeu : Nom du jeu` (plusieurs jeux :
-séparés par une virgule ou « + », trois maximum). Rien n'est deviné depuis le titre. Le **lieu** de l'événement n'est pas lu.
+Pour afficher le jeu d'un créneau, écrivez dans la **description** de l'évènement une ligne `Jeu : Nom du jeu` (plusieurs jeux : séparés par une virgule ou « + », trois maximum). Rien n'est deviné depuis le titre. Sans ligne `Jeu :`, la **catégorie** de l'évènement sert de jeu (évènements saisis à la main ou planning Twitch). Le **lieu** n'est pas lu.
 
 ## Sécurité
 
-L'adresse doit être en `https://` et publique : localhost, réseaux privés et adresses de lien local sont refusés (le serveur
-télécharge l'adresse : pas de requête vers le réseau interne). Téléchargement limité à 8 s et 5 Mo, mis en cache 5 minutes.
+Le planning ne télécharge rien et ne connaît aucune adresse de calendrier (les adresses secrètes vivent dans le *Calendrier iCal*, qui refuse tout ce qui n'est pas une adresse https publique). Les titres et textes des évènements sont toujours échappés.
 
 ## Jaquettes des jeux (RAWG)
 

@@ -1,27 +1,28 @@
-import test, { beforeEach, afterEach } from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { fakeCtx as baseCtx } from "./helpers/fakeCtx.mjs";
+import { icsDate, hoursFromNow, vevent, calendar, feedOptions } from "./helpers/icalFeed.mjs";
 
 const mod = await import("../modules/planning/index.mjs");
 const def = mod.default;
 const URL_OK = "https://calendar.example.com/ical/secret-token/basic.ics";
 
-const ics = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-const hours = (n) => new Date(Date.now() + n * 3_600_000);
-const vevent = (uid, start, end, summary, extra = []) => ["BEGIN:VEVENT", `UID:${uid}`, `DTSTART:${ics(start)}`, `DTEND:${ics(end)}`, `SUMMARY:${summary}`, ...extra, "END:VEVENT"].join("\r\n");
-const calendar = (...events) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${events.join("\r\n")}\r\nEND:VCALENDAR\r\n`;
+const hours = hoursFromNow;
+const ics = icsDate;
+// Le Planning ne lit plus d'iCal : un faux fournisseur (le Calendrier iCal, sans réseau) lui sert `feed.text`. `icsUrl: ""` = aucune source.
+const feed = { text: "" };
+const fakeCtx = (o = {}) => { const { icsUrl, ...settings } = o.settings ?? {}; return baseCtx({ ...feedOptions(() => (icsUrl === "" ? [] : [{ text: feed.text }])), ...o, settings }); };
 
 const messages = { nextUp: "Prochain stream", daysTitle: "Cette semaine", noneToday: "—", title: "Planning", intro: "Prochains {days} jours ({tz})", none: "Rien", notConfigured: "Pas configuré", nextTitle: "Prochains streams", allDay: "Toute la journée",
-  adminStatus: "État", adminNotSet: "Adresse absente", badUrl: "Adresse refusée", adminHint: "…{hint}", adminError: "Illisible", adminOk: "{n} sur {days} jours", adminNext: "À venir", refresh: "Rafraîchir", refreshed: "Rafraîchi",
+  adminStatus: "État", adminNoSource: "Ajoutez une source", adminEmpty: "Rien à venir", adminChoose: "Choisir", adminError: "Illisible", adminOk: "{n} sur {days} jours", adminNext: "À venir", srcName: "Source", srcKind: "Type", srcState: "État", srcOk: "Active", srcError: "Illisible", srcStale: "Ancienne copie", kind_ical: "iCal",
   date: "Date", time: "Heure", slot: "Créneau", games: "Jeux" };
 const rows = (html) => html.split("<li ").slice(1);
 const ctxWith = (settings = {}, over = {}) => fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "UTC", ...settings }, messages, locale: "fr", rawgConfigured: false, ...over });
 
-const realFetch = globalThis.fetch;
-let fetched;
-const serve = (body, status = 200) => { fetched = []; globalThis.fetch = async (u) => { fetched.push(String(u)); return new Response(body, { status }); }; };
-beforeEach(() => { mod.clearIcsCache(); fetched = []; });
-afterEach(() => { globalThis.fetch = realFetch; });
+/** Remplace seulement la réponse du sujet « social.link » (le lien de la chaîne) : les évènements restent ceux du fournisseur. */
+const socialOnly = (ctx, fn) => { const base = ctx.api.topics.collect; ctx.api.topics.collect = async (t, o) => (t === "social.link" ? fn() : base(t, o)); };
+const serve = (body, status = 200) => { feed.text = status === 200 ? body : ""; };
+beforeEach(() => { feed.text = ""; });
 
 test("section « prochains streams » : lignes triées, jeux nommés, limitée au nombre demandé", async () => {
   serve(calendar(
@@ -39,17 +40,12 @@ test("section « prochains streams » : lignes triées, jeux nommés, limitée a
   assert.match(lines[1], /Deuxième/);
 });
 
-test("section : calendrier lisible mais vide → carte « pas de stream planifié » ; adresse absente ou refusée → aucun bloc (la section disparaît)", async () => {
+test("section : calendrier lisible mais vide → carte « pas de stream planifié » ; aucune source de calendrier → aucun bloc (la section disparaît)", async () => {
   serve(calendar());
   const empty = await def.sections.upcoming(ctxWith(), {});
   assert.equal(empty[1].type, "html");
   assert.match(empty[1].html, /noStream/);
-  assert.equal(await def.sections.upcoming(ctxWith({ icsUrl: "" }), {}), null);
-  for (const bad of ["http://calendar.example.com/x.ics", "https://127.0.0.1/x.ics", "https://localhost/x.ics"]) {
-    fetched = []; serve(calendar(vevent("1", hours(2), hours(3), "X")));
-    assert.equal(await def.sections.upcoming(ctxWith({ icsUrl: bad }), {}), null, bad);
-    assert.deepEqual(fetched, [], "aucun appel réseau vers une adresse refusée");
-  }
+  assert.equal(await def.sections.upcoming(ctxWith({ icsUrl: "" }), {}), null, "aucune source : la section disparaît");
 });
 
 test("section : le nombre demandé est borné entre 1 et 20, valeur absurde → 5", async () => {
@@ -78,10 +74,11 @@ test("section : un événement déjà terminé n'apparaît pas, un événement e
 test("page : non configurée → message, calendrier illisible → message, jamais d'exception", async () => {
   const page = await def.page(ctxWith({ icsUrl: "" }));
   assert.deepEqual(page.blocks, [{ type: "markdown", text: "Pas configuré" }]);
-  serve("<html>erreur</html>");
-  assert.deepEqual((await def.page(ctxWith())).blocks, [{ type: "markdown", text: "Pas configuré" }]);
+  serve("<html>erreur</html>");   // la source existe mais ne donne rien (le fournisseur a signalé son erreur de son côté) : la page reste affichable
+  assert.equal((await def.page(ctxWith())).blocks.filter((b) => b.type === "heading").length, 7);
+  const failing = ctxWith(); failing.api.topics.collect = async () => { throw new Error("boom"); };
+  assert.deepEqual((await def.page(failing)).blocks, [{ type: "markdown", text: "notReadable" }]);
   serve("nope", 500);
-  mod.clearIcsCache();
   assert.equal((await def.page(ctxWith())).title, "Planning");
 });
 
@@ -128,41 +125,52 @@ test("MCP planning_upcoming : renvoie les créneaux, erreur lisible si le calend
   const out = await def.mcp.planning_upcoming(ctxWith(), {});
   assert.deepEqual(out.map((s) => s.title), ["A"], "7 jours par défaut");
   assert.deepEqual((await def.mcp.planning_upcoming(ctxWith(), { days: 30 })).map((s) => s.title), ["A", "Loin"]);
-  await assert.rejects(() => def.mcp.planning_upcoming(ctxWith({ icsUrl: "" }), {}), (e) => e.expose === true && /not configured/.test(e.message));
+  await assert.rejects(() => def.mcp.planning_upcoming(ctxWith({ icsUrl: "" }), {}), (e) => e.expose === true && /no calendar source/.test(e.message));
 });
 
-test("MCP : ne révèle jamais l'adresse secrète du calendrier", async () => {
+test("MCP et admin : ne révèlent jamais l'adresse secrète d'un fournisseur (le Planning n'en voit aucune)", async () => {
   serve(calendar(vevent("1", hours(2), hours(3), "A")));
   const out = JSON.stringify(await def.mcp.planning_upcoming(ctxWith(), {}));
-  assert.ok(!out.includes("secret-token"));
+  assert.ok(!out.includes("secret-token") && !out.includes("https://"));
   const panel = JSON.stringify(await def.adminPanel(ctxWith()));
-  assert.ok(!panel.includes("secret-token"), "l'admin n'affiche qu'un indice de la fin de l'adresse");
+  assert.ok(!panel.includes("secret-token"));
 });
 
-test("admin : état selon la configuration, tableau des prochains créneaux, bouton de rafraîchissement", async () => {
-  assert.match((await def.adminPanel(ctxWith({ icsUrl: "" })))[1].text, /absente/);
-  assert.match((await def.adminPanel(ctxWith({ icsUrl: "http://x.test/a.ics" })))[1].text, /refusée/);
-  serve("<html>");
-  const broken = await def.adminPanel(ctxWith());
-  assert.ok(broken.some((b) => b.type === "markdown" && /Illisible/.test(b.text)));
-  assert.ok(broken.some((b) => b.type === "adminForm" && b.action === "refresh"));
-  mod.clearIcsCache();
+test("admin : sources listées (type, état), message « Ajoutez une source » sans source, tableau des prochains créneaux", async () => {
+  const none = await def.adminPanel(ctxWith({ icsUrl: "" }));
+  assert.match(none[1].text, /Ajoutez une source/);
+  assert.ok(!none.some((b) => b.type === "table"), "aucune source : pas de tableau");
+  serve(calendar());
+  const empty = await def.adminPanel(ctxWith());
+  assert.ok(empty.some((b) => b.type === "table" && b.rows.length === 1), "la source est listée");
+  assert.ok(empty.some((b) => b.type === "markdown" && /Rien à venir/.test(b.text)));
   serve(calendar(vevent("1", hours(2), hours(3), "A", ["DESCRIPTION:Jeu: Zelda"])));
   const ok = await def.adminPanel(ctxWith());
-  const table = ok.find((b) => b.type === "table");
+  const table = ok.filter((b) => b.type === "table")[1];
   assert.equal(table.rows.length, 1);
   assert.deepEqual([table.rows[0][2], table.rows[0][3]], ["A", "Zelda"]);
-  assert.ok(ok.some((b) => b.type === "adminForm" && b.action === "refresh"));
+  // une source en erreur est signalée
+  const broken = baseCtx({ ...feedOptions(() => [{ text: "", state: "error", label: "Mon agenda" }]), settings: { days: 7, timezone: "UTC" }, messages, locale: "fr", rawgConfigured: false });
+  const rows = (await def.adminPanel(broken)).find((b) => b.type === "table").rows;
+  assert.match(rows[0][2], /Illisible/);
+  assert.equal(rows[0][0], "Mon agenda");
 });
 
-test("admin : « rafraîchir » vide le cache et le prochain affichage recharge l'adresse", async () => {
-  serve(calendar(vevent("1", hours(2), hours(3), "Ancien")));
-  await def.sections.upcoming(ctxWith(), {});
-  await def.sections.upcoming(ctxWith(), {});
-  assert.equal(fetched.length, 1, "mis en cache");
-  assert.deepEqual(await def.adminActions.refresh(ctxWith(), {}), { ok: "Rafraîchi" });
-  serve(calendar(vevent("1", hours(2), hours(3), "Nouveau")));
-  assert.match((await def.sections.upcoming(ctxWith(), {}))[1].html, /Nouveau/);
+test("plus aucun code iCal ni réseau dans le Planning : il ne fait que consommer le sujet calendar.event", async () => {
+  const fs = await import("node:fs");
+  const dir = new URL("../modules/planning/", import.meta.url);
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(new URL(`${e.name}/`, d)) : e.name.endsWith(".mjs") ? [new URL(e.name, d)] : []));
+  for (const f of walk(dir)) {
+    const code = fs.readFileSync(f, "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const re of [/BEGIN:VEVENT|VCALENDAR|RRULE|EXDATE|RECURRENCE-ID/, /\bfetch\s*\(/, /\bparseIcs\b|\bfetchIcs\b|isPublicHttpsUrl|clearIcsCache/, /icsUrl.*(?:setting|get)\(/])
+      assert.ok(!re.test(code.replace(/ctx\.setting\("icsUrl"\)/g, "")), `${f.pathname.split("/modules/")[1]} : ${re}`);
+  }
+  const m = JSON.parse(fs.readFileSync(new URL("module.json", dir), "utf8"));
+  assert.ok(!m.settings.some((x) => x.key === "icsUrl"), "l'ancien réglage d'adresse est supprimé");
+  assert.deepEqual(m.requires, [{ service: "calendar.provider" }]);
+  assert.deepEqual(m.seeds.map((x) => x.module), ["calendar-ical"]);
+  assert.equal(m.dataVersion, 2);
+  assert.equal(m.minCore, "0.1.16");
 });
 
 test("déclarations : tout ce que le manifeste annonce est implémenté, et réciproquement", async () => {
@@ -175,6 +183,7 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   assert.deepEqual(m.sections.map((s) => s.id).sort(), Object.keys(def.sections).sort());
   assert.deepEqual(m.mcp.map((a) => a.name).sort(), Object.keys(def.mcp).sort());
   assert.deepEqual(m.provides.map((p) => p.topic).sort(), Object.keys(def.exports).sort());
+  assert.deepEqual(m.consumes.map((c) => c.topic).sort(), ["calendar.event", "social.link"]);
   assert.equal(typeof def.page, "function");
   assert.equal(typeof def.adminPanel, "function");
   for (const lang of ["en", "fr"]) {
@@ -185,7 +194,7 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   const fr = Object.keys(JSON.parse(fs.readFileSync(new URL("../modules/planning/locales/fr.json", import.meta.url), "utf8"))).sort();
   assert.deepEqual(en, fr);
   const settingKeys = new Set(m.settings.map((s) => s.key));
-  for (const k of ["icsUrl", "days", "timezone", "channelUrl"]) assert.ok(settingKeys.has(k), k);
+  for (const k of ["showSource", "days", "timezone", "channelUrl"]) assert.ok(settingKeys.has(k), k);
 });
 
 test("morceau « prochain stream » : le premier créneau à venir, carte vide s'il n'y en a pas, rien si pas d'agenda", async () => {
@@ -196,7 +205,6 @@ test("morceau « prochain stream » : le premier créneau à venir, carte vide s
   assert.match(blocks[1].html, /Zelda/);
   assert.ok(!blocks[1].html.includes("Plus tard"));
   serve(calendar());
-  mod.clearIcsCache();
   assert.match((await def.sections.next(ctxWith(), {}))[1].html, /noStream/);
   assert.equal(await def.sections.next(ctxWith({ icsUrl: "" }), {}), null);
 });
@@ -248,7 +256,7 @@ test("image PNG de la semaine : route qui passe par ctx.api.png, créneaux de la
 
 const COVER = "https://media.example.test/celeste.jpg";
 const withCovers = (over = {}) => ctxWith({}, { rawgConfigured: true, rawgCover: { status: "found", url: COVER }, ...over });
-const next = async (ctx, ...ev) => { serve(calendar(...ev)); mod.clearIcsCache(); return (await def.sections.next(ctx, {}))[1].html; };
+const next = async (ctx, ...ev) => { serve(calendar(...ev)); return (await def.sections.next(ctx, {}))[1].html; };
 
 test("carte « prochain stream » : article encadré, <time> sémantiques, titre, heure, jeu, indication relative", async () => {
   const html = await next(ctxWith(), vevent("1", hours(3.5), hours(5), "Cap48h", ["DESCRIPTION:Jeu: Zelda"]));
@@ -286,7 +294,7 @@ test("carte « prochain stream » : plusieurs streams le même jour → les autr
 test("carte : échappement HTML des titres, jeux, et adresses — aucune injection", async () => {
   const evil = '<img src=x onerror=alert(1)> "q" \'s\' &amp;';
   const ev = vevent("1", hours(2), hours(3), evil, [`DESCRIPTION:Jeu: <b>Jeu</b> "x"`]);
-  for (const html of [await next(withCovers({ rawgCover: { status: "found", url: 'https://x.test/a.jpg" onerror="alert(1)' } }), ev), (await (async () => { serve(calendar(ev)); mod.clearIcsCache(); return (await def.sections.upcoming(withCovers(), {}))[1].html; })())]) {
+  for (const html of [await next(withCovers({ rawgCover: { status: "found", url: 'https://x.test/a.jpg" onerror="alert(1)' } }), ev), (await (async () => { serve(calendar(ev)); return (await def.sections.upcoming(withCovers(), {}))[1].html; })())]) {
     assert.ok(!/<img src=x/.test(html) && !html.includes("<b>Jeu</b>"), html);
     assert.ok(!/ onerror="/.test(html.replace(/&quot;/g, "")), html);
     assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt; &quot;q&quot; &#39;s&#39; &amp;amp;"));
@@ -294,7 +302,7 @@ test("carte : échappement HTML des titres, jeux, et adresses — aucune injecti
 });
 
 test("carte : états vides — calendrier vide : carte soignée avec lien vers le planning ; sans page publique : pas de lien", async () => {
-  serve(calendar()); mod.clearIcsCache();
+  serve(calendar());
   const withPage = (await def.sections.next(fakeCtx({ settings: { icsUrl: URL_OK, timezone: "UTC" }, messages, locale: "fr", basePath: "planning" }), {}))[1].html;
   assert.match(withPage, /cpl-empty-t">noStream</);
   assert.match(withPage, /<a class="cpl-link" href="\/planning">fullPlanning<\/a>/);
@@ -403,8 +411,7 @@ test("page publique : un jour qui mêle streams avec et sans jeu → vignette de
   const page = await def.page(withCovers({ brand: brandOf() }));
   const html = page.blocks.filter((b) => b.type === "html").map((b) => b.html).join("");
   assert.match(html, /cpl-ph cpl-ph-s/);
-  assert.ok(html.includes("Sans &lt;b&gt;jeu&lt;/b&gt;") && !html.includes("<b>jeu"));
-  mod.clearIcsCache(); serve(calendar(noGame));
+  assert.ok(html.includes("Sans &lt;b&gt;jeu&lt;/b&gt;") && !html.includes("<b>jeu")); serve(calendar(noGame));
   const plainPage = await def.page(withCovers({ brand: brandOf() }));
   assert.ok(!plainPage.blocks.some((b) => b.type === "html"));
 });
@@ -415,13 +422,13 @@ const fsMod = await import("node:fs");
 const locale = (lang) => JSON.parse(fsMod.readFileSync(new URL(`../modules/planning/locales/${lang}.json`, import.meta.url), "utf8"));
 const realCtx = (lang = "fr", over = {}, opts = {}) => fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "Europe/Brussels", ...over }, messages: locale(lang), locale: lang, rawgConfigured: false, ...opts });
 
-test("tutoriel : bloc repliable « Comment remplir mon agenda Google ? » + bouton de téléchargement, ajoutés après l'état du calendrier", async () => {
+test("tutoriel : bloc repliable « Comment brancher mon calendrier ? » + bouton de téléchargement, ajoutés après l'état du calendrier", async () => {
   serve(calendar(vevent("1", hours(2), hours(3), "X")));
   const blocks = await def.adminPanel(realCtx("fr", {}, { key: "planning" }));
   assert.equal(blocks[0].type, "heading", "l'état du calendrier reste en tête");
   const html = blocks.at(-1).html;
   assert.equal(blocks.at(-1).type, "html");
-  assert.match(html, /<details><summary>Comment remplir mon agenda Google \?<\/summary>/);
+  assert.match(html, /<details><summary>Comment brancher mon calendrier \?<\/summary>/);
   assert.match(html, /href="\/m\/planning\/skill\?lang=fr" download="SKILL\.md">Télécharger le skill pour mon IA</);
   for (const needle of ["Jeu :", "Europe/Brussels", "Intégrer l&#39;agenda", "Adresse secrète au format iCal", "Toute la journée", "Fuseau horaire"]) assert.ok(html.includes(needle), needle);
   assert.ok(!html.includes("secret-token"), "jamais l'adresse du calendrier");
@@ -429,7 +436,7 @@ test("tutoriel : bloc repliable « Comment remplir mon agenda Google ? » + bout
   const none = await def.adminPanel(realCtx("fr", { icsUrl: "" }));
   assert.match(none.at(-1).html, /<details>/);
   const en = (await def.adminPanel(realCtx("en"))).at(-1).html;
-  assert.match(en, /How do I fill in my Google Calendar\?/);
+  assert.match(en, /How do I connect my calendar\?/);
   assert.match(en, /Download the skill for my AI/);
 });
 
@@ -444,7 +451,8 @@ test("tutoriel : l'exemple suivi à la lettre est bien lu par le module (titre, 
   // Événement tel que Google l'exporte pour l'exemple du tutoriel : titre, lieu vide, description « Jeu : Celeste », 21:00 → 23:30 (heure de Bruxelles).
   const ical = calendar(["BEGIN:VEVENT", "UID:ex1", "DTSTART;TZID=Europe/Brussels:20991010T210000", "DTEND;TZID=Europe/Brussels:20991010T233000", "SUMMARY:Soirée découverte", "LOCATION:", "DESCRIPTION:Jeu : Celeste", "END:VEVENT"].join("\r\n"),
     ["BEGIN:VEVENT", "UID:ex2", "DTSTART;TZID=Europe/Brussels:20991017T140000", "DTEND;TZID=Europe/Brussels:20991018T140000", "SUMMARY:Cap48h", "DESCRIPTION:Merci à toutes et à tous !\\nJeu en vrac : pas une ligne Jeu", "END:VEVENT"].join("\r\n"));
-  const ev = mod.parseIcs(ical, { timeZone: "Europe/Brussels", windowEnd: new Date("2100-01-01T00:00:00Z") });
+  const icalMod = await import("../modules/calendar-ical/index.mjs");   // le lecteur iCal vit dans le Calendrier iCal : ici on vérifie seulement que l'exemple du tutoriel est bien compris par la chaîne complète
+  const ev = icalMod.parseIcs(ical, { timeZone: "Europe/Brussels", windowEnd: new Date("2100-01-01T00:00:00Z") });
   assert.equal(ev.length, 2);
   assert.equal(ev[0].title, "Soirée découverte");
   assert.deepEqual(mod.extractGameNames(ev[0].description), ["Celeste"]);
@@ -453,7 +461,7 @@ test("tutoriel : l'exemple suivi à la lettre est bien lu par le module (titre, 
   assert.deepEqual(mod.extractGameNames(ev[1].description), [], "pas de ligne « Jeu : » = pas de jeu");
   for (const [d, names] of [["Jeu : AA, BB + CC", ["AA", "BB", "CC"]], ["Jeu: AA\\nJeu: BB", ["AA", "BB"]], ["Game : Zelda", ["Zelda"]], ["Notes\\nJeu : Celeste", ["Celeste"]], ["Je joue à Celeste", []], ["Jeu : x", []]]) assert.deepEqual(mod.extractGameNames(d.replace(/\\n/g, "\n")), names, d);
   // Toute la journée : affichée sans heure ni jaquette ; annulé : retiré ; lieu : ignoré.
-  const more = mod.parseIcs(calendar(["BEGIN:VEVENT", "UID:a", "DTSTART;VALUE=DATE:20991010", "DTEND;VALUE=DATE:20991011", "SUMMARY:Journée", "END:VEVENT", "BEGIN:VEVENT", "UID:c", "DTSTART:20991012T100000Z", "DTEND:20991012T110000Z", "SUMMARY:Annulé", "STATUS:CANCELLED", "END:VEVENT"].join("\r\n")), { timeZone: "UTC", windowEnd: new Date("2100-01-01T00:00:00Z") });
+  const more = icalMod.parseIcs(calendar(["BEGIN:VEVENT", "UID:a", "DTSTART;VALUE=DATE:20991010", "DTEND;VALUE=DATE:20991011", "SUMMARY:Journée", "END:VEVENT", "BEGIN:VEVENT", "UID:c", "DTSTART:20991012T100000Z", "DTEND:20991012T110000Z", "SUMMARY:Annulé", "STATUS:CANCELLED", "END:VEVENT"].join("\r\n")), { timeZone: "UTC", windowEnd: new Date("2100-01-01T00:00:00Z") });
   assert.deepEqual(more.map((e) => [e.title, e.allDay]), [["Journée", true]]);
 });
 
@@ -515,15 +523,15 @@ test("carte « prochain stream » : le lien de la chaîne vient d'abord de la Ch
   assert.ok(m.consumes.some((c) => c.topic === "social.link"));
   const ev = vevent("1", hours(2), hours(3), "X");
   const withTopic = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
-  withTopic.api.topics.collect = async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }, { label: "Twitch · neuf", url: "https://twitch.tv/neuf", icon: "twitch" }];
+  socialOnly(withTopic, async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }, { label: "Twitch · neuf", url: "https://twitch.tv/neuf", icon: "twitch" }]);
   assert.match(await next(withTopic, ev), /href="https:\/\/twitch\.tv\/neuf"/);
   const noTwitch = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
-  noTwitch.api.topics.collect = async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }];
+  socialOnly(noTwitch, async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }]);
   assert.match(await next(noTwitch, ev), /href="https:\/\/twitch\.tv\/ancien"/);
   const broken = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
-  broken.api.topics.collect = async () => { throw new Error("boom"); };
+  socialOnly(broken, async () => { throw new Error("boom"); });
   assert.match(await next(broken, ev), /href="https:\/\/twitch\.tv\/ancien"/);
   const unsafe = ctxWith();
-  unsafe.api.topics.collect = async () => [{ icon: "twitch", url: "javascript:alert(1)" }];
+  socialOnly(unsafe, async () => [{ icon: "twitch", url: "javascript:alert(1)" }]);
   assert.ok(!(await next(unsafe, ev)).includes("cpl-btn\""));
 });

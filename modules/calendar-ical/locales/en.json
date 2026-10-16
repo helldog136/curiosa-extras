@@ -1,0 +1,19 @@
+{
+  "untitled": "(Untitled)",
+  "allDay": "All day",
+  "adminStatus": "Status of the last read",
+  "adminNotSet": "No address saved. Paste the secret address of your calendar in the settings above, then save.",
+  "adminSaved": "Address saved (site: {host}). It is never shown again.",
+  "adminOk": "Calendar read: {n} event(s) in the next 30 days ({cancelled} cancelled, not counted).",
+  "adminStale": "The last read failed ({reason}): the previous copy is kept for now.",
+  "colWhen": "When",
+  "colTitle": "Event",
+  "testBtn": "Test the address",
+  "testOk": "The address works: {n} upcoming event(s) in the next 30 days.",
+  "err_url": "This address is not allowed: use a public https:// address.",
+  "err_network": "The calendar could not be reached (service down, or too slow).",
+  "err_http": "The calendar service refused the request (code {status}): wrong address, or the calendar became private. Copy the complete secret address again.",
+  "err_format": "This address does not give an iCal calendar: check that it is the “Secret address in iCal format” (it ends with .ics).",
+  "err_size": "This calendar is too large (5 MB at most).",
+  "err_config": "No address saved."
+}
