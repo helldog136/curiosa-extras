@@ -4,12 +4,13 @@
 // répondre (délais, rôles, direct en cours, arrêt d'urgence) et répondre. Ce qui appartient aux autres reste chez eux et se lit au moment de répondre :
 //   - les jetons Twitch : Chaîne Twitch (service `twitch.api`, qui fait les appels sans jamais rendre un jeton) ;
 //   - le direct et les followers : Chaîne Twitch (`twitch.live`, `social.stat`) ; le prochain stream : Planning (`planning.slot`) ;
-//   - les fiches des partenaires : Sponsors ; les adresses des réseaux : les modules de réseaux (`social.link`).
+//   - les fiches des partenaires : Sponsors (la commande de chaque partenaire se règle dans sa fiche : voir entry.mjs) ; les adresses des réseaux : les modules de réseaux (`social.link`).
 // Seul Chaîne Twitch est indispensable ; Planning, Sponsors et les réseaux sont facultatifs : sans eux, la fonction correspondante est simplement absente et la page le dit.
 // Les détails de Twitch (signature, abonnement, format des messages) sont tous dans eventsub.mjs.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const webhook = await import(`./webhook.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
+const entry = await import(`./entry.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
 const { ensureListening, diagnose, twitch } = await import(`./listen.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
@@ -40,6 +41,8 @@ export default {
   async adminBadge(ctx) { const c = (await st.readState(ctx)).sub?.code; return c && !["listening", "pending"].includes(c) ? 1 : 0; },
   adminPanel: admin.panel,
   adminActions: admin.actions,
+  // La commande d'un partenaire se règle dans SA fiche (section ajoutée à l'éditeur d'entrée de Sponsors par le cœur, seulement si le bot est installé).
+  entryPanels: { "chat-command": entry.default },
   mcp: tools,
 
   hooks: {

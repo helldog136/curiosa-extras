@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.7.0
+
+*Changements depuis la 1.6.0.*
+
+### Nouveautés
+
+- **Bot Twitch : la commande d'un partenaire se règle dans sa fiche.** Ouvrez la fiche du sponsor : une section « Commande de chat pour ce partenaire » propose la case « Activer la commande dans le chat », le nom de la commande (celui de sa page, que vous pouvez changer), le texte déjà rempli et un aperçu. Elle s'enregistre sans quitter la fiche. Il faut Curiosa 0.1.24 ou plus.
+- **Bot Twitch : la page du bot garde le résumé.** Chaque partenaire y apparaît avec sa commande et son état (active, désactivée, en pause), et « Modifier » ouvre sa fiche directement sur cette section. Une commande dont la fiche n'est plus publiée est dite « en pause » avec ce qui va se passer.
+- **Bot Twitch : on ne remonte plus en haut de la page à chaque clic.** Activer une commande, créer la vôtre, couper les réponses, vider le journal : le message s'affiche à côté du bouton et vous restez où vous étiez. « Modifier » descend jusqu'au formulaire.
+- **Bot Twitch : un lien vers le module du réseau.** Quand vous modifiez la commande d'un réseau, un lien vous mène aux réglages de ce réseau pour changer son adresse.
+
+### Pour les développeurs
+
+- `twitch-bot` 1.1.0 (`minCore` 0.1.24) : première utilisation du point d'extension `entryPanels` du cœur. `module.json` déclare la section (`for: { topic: "sponsor.card" }`), `entry.mjs` la fournit (`render` + action `save`), la donnée reste dans `botConfig` sous l'identifiant de la fiche. Sponsors n'a pas changé et ne connaît pas le bot.
+- Un cœur plus ancien refuse la mise à jour (`minCore`) et garde le bot 1.0.0 avec son formulaire sur la page du bot : pas de code de repli à maintenir. La fonction ne s'active que si Sponsors ET le bot sont installés.
+- Le formulaire de partenaire est retiré de la page du bot (`?edit=partner:…` renvoie vers la fiche). Les actions de la page ne redirigent plus (sauf supprimer et rétablir le texte) ; les liens « Modifier » portent l'ancre `#edit`.
+- `sources.networks` lit `adminPath` dans `ctx.api.instances.list()` (cœur 0.1.24) pour lier vers le module du réseau.
+
 ## 1.6.0
 
 *Changements depuis la 1.5.1.*
