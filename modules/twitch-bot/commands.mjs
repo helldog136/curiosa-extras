@@ -126,7 +126,7 @@ export function catalog(cfg, src, t) {
   const nets = src.networks ?? { items: [] };
   for (const [id, o0] of Object.entries(cfg.networks)) {
     const o = rec(o0), item = nets.items.find((n) => n.key === id);
-    out.push({ key: `network:${id}`, kind: "network", id, label: item?.name ?? o.title ?? id, name: o.name, ...base(o, {}), text: String(o.text ?? ""), enabled: o.enabled === true,
+    out.push({ key: `network:${id}`, kind: "network", id, label: item?.label ?? item?.name ?? o.title ?? id, name: o.name, ...base(o, {}), text: String(o.text ?? ""), enabled: o.enabled === true,
       vars: item ? { reseau: item.name, lien: stripScheme(item.url) } : {}, source: item ?? null, missing: !item });
   }
   const g = rec(cfg.group);

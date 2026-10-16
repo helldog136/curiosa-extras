@@ -7,7 +7,6 @@
   "mute_off_btn": "Switch answers back on",
   "muted_done": "Done: the bot no longer answers anyone.",
   "unmuted_done": "The bot answers commands again.",
-
   "listen_title": "Is the bot listening to your chat?",
   "listen_yes": "The bot is listening to your chat: yes.",
   "listen_no": "The bot is listening to your chat: no.",
@@ -39,7 +38,6 @@
   "check_done": "Check done: read the message at the top of the page to know what to do.",
   "relisten_btn": "Repair listening",
   "relisten_ok": "Listening was restarted. Come back in a minute and click “Check now”.",
-
   "connect_steps": "**For the bot to read and write in your chat, Twitch must first ask for your consent. It is quick, and only once.**\n\n**1.** Click the button below.\n\n**2.** At Twitch, sign in with your channel's account then click “Authorize”. You come back here by yourself.",
   "connect_btn": "Allow the bot at Twitch",
   "connect_bot_steps": "**Connect the account that will answer in your chat.**\n\n**1.** Click the button below.\n\n**2.** At Twitch, sign in with the bot's account (not yours) then click “Authorize”.",
@@ -53,19 +51,15 @@
   "res_expired": "The connection link had expired (10 minutes). Click the button again.",
   "res_wrongAccount": "You signed in at Twitch with the account “{login}”, which is not your channel's. Sign in again with the right account.",
   "res_scope": "A permission is missing at Twitch. Try again and leave all the boxes ticked.",
-
   "bot_title": "Separate bot account",
   "bot_help": "You chose to have another Twitch account answer in your chat. Create that account at Twitch, then connect it with the button that appears above once everything else is ready.",
   "bot_connected": "Bot account connected: {login}.",
   "bot_disconnect": "Disconnect the bot account",
   "bot_disconnected": "The bot account is disconnected.",
-
   "summary_title": "All your commands",
   "summary_help": "This is everything the bot can do, with its state. Type for example {prefix}jeu in your chat to try. To change a command, click “Edit”.",
   "col_command": "Command",
-  "col_kind": "Kind",
   "col_answer": "Answer",
-  "col_who": "Who can use it",
   "col_state": "State",
   "col_partner": "Partner",
   "col_network": "Network",
@@ -89,7 +83,6 @@
   "why_group_empty": "Hidden: no network command is switched on.",
   "why_partner_missing": "Paused: this partner's page cannot be found or is not published.",
   "why_network_missing": "Paused: this network is no longer installed or has no address any more.",
-
   "cmd_planning_text": "Next stream: {prochain_stream}",
   "cmd_jeu_text": "We are playing {jeu}!",
   "cmd_titre_text": "Stream title: {titre}",
@@ -108,7 +101,6 @@
   "dur_hm": "{h} h {m} min",
   "when_at": "{day} at {time}",
   "preview_user": "You",
-
   "new_title": "Add a command",
   "new_btn": "Create the command",
   "created": "Command created.",
@@ -142,7 +134,6 @@
   "edit_group_info": "This command gives, in one go, the addresses of all the networks whose command is switched on. You can switch it off.",
   "partner_gone": "This partner's page cannot be found or is not published: its command is paused. It will disappear if the page does not come back within two weeks.",
   "network_gone": "This network is no longer installed or has no address any more: its command is paused. It will disappear if it does not come back within two weeks.",
-
   "partners_title": "Your partners' commands",
   "partners_absent": "This feature appears when you install the **Sponsors** module: each partner can then have its own chat command (for example !tesla, which gives the address of its page).",
   "partners_none": "The Sponsors module is installed, but no page is published yet. Publish one to give it its command.",
@@ -150,14 +141,10 @@
   "networks_title": "Your networks' commands",
   "networks_none": "No network is connected yet. Install a network module (YouTube, TikTok, Instagram, Discord…) and enter your address in it: it will appear here with its command.",
   "networks_help": "For each network whose address is set, switch its chat command on: “Set up” opens the command name, its other names and its text, already filled in for you.",
-
   "log_title": "What the bot did recently",
   "log_help": "The last 30 recognized commands. If the bot did not answer, the reason is written here.",
   "log_empty": "Nothing yet: the log fills in as soon as a command is typed in your chat.",
-  "log_time": "Time",
-  "log_user": "Who",
-  "log_result": "Result",
-  "log_why": "Answer or reason",
+  "log_why": "Result and reason",
   "log_sent": "Answered",
   "log_refused": "No answer",
   "log_error": "Error",
@@ -179,7 +166,6 @@
   "reason_send_refused": "Twitch refused the message.",
   "reason_send_rate": "Twitch is limiting sending right now.",
   "reason_send_twitch": "Twitch is not answering right now.",
-
   "err_name": "The command name “{value}” is not valid. Use letters, digits, dashes or underscores (25 characters at most), no space.",
   "err_alias": "The other name “{value}” is not valid. Use letters, digits, dashes or underscores, no space, separated by commas.",
   "err_aliases_many": "There are too many other names: 5 at most. Remove some.",
@@ -192,5 +178,6 @@
   "err_role": "Pick who can use the command from the list.",
   "err_too_many": "You reached the maximum number of commands of your own (100). Delete some before adding more.",
   "err_source_missing": "The partner or the network no longer exists (or is no longer published). Nothing was saved.",
-  "err_unknown": "This command does not exist (any more)."
+  "err_unknown": "This command does not exist (any more).",
+  "log_time_user": "Time · who"
 }

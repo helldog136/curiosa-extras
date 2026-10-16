@@ -82,31 +82,41 @@ const record = (ctx, sub) => updateState(ctx, (d) => { d.sub = { ...sub, at: Dat
  * Codes de l'écoute : listening · pending · revoked_fixed… voir les textes `listen_*`. Sûr à rappeler souvent (la tâche planifiée, le bouton « Vérifier »).
  * `renew` : repart de zéro (supprime nos abonnements et change le secret).
  */
-export async function ensureListening(ctx, s, { renew = false } = {}) {
+export async function ensureListening(ctx, s, { renew = false, settle = false } = {}) {
   const d = await diagnose(ctx, s);
   if (d.code !== "ready") { await record(ctx, { code: d.code }); return { code: d.code }; }
   const callback = callbackOf(ctx), ids = { broadcasterId: d.broadcasterId, userId: d.senderId };
+  const mark = (o) => record(ctx, { ...o, who: ids.userId });   // pour quel compte l'écoute a été vérifiée : si le réglage change, la page le revoit
   const secret = await ensureSecret(ctx, { renew });
   const list = await twitch(ctx, d.channel, es.listRequest());
-  if (!list.ok) { const code = FAIL[list.error] ?? "twitch_down"; await record(ctx, { code }); return { code }; }
-  if (list.status === 401 || list.status === 403) { await record(ctx, { code: "need_reconnect" }); return { code: "need_reconnect" }; }
+  if (!list.ok) { const code = FAIL[list.error] ?? "twitch_down"; await mark({ code }); return { code }; }
+  if (list.status === 401 || list.status === 403) { await mark({ code: "need_reconnect" }); return { code: "need_reconnect" }; }
   const cls = es.classify(list.json, { callback, ...ids });
   const drop = renew ? [cls.id, ...cls.stale].filter(Boolean) : cls.stale;
   for (const id of drop) await twitch(ctx, d.channel, es.deleteRequest(id));
   const before = (await readState(ctx)).sub;
-  if (!renew && cls.state === "enabled") { await record(ctx, { code: "listening", since: before?.code === "listening" ? before.since : Date.now() }); return { code: "listening" }; }
+  if (!renew && cls.state === "enabled") { await mark({ code: "listening", since: before?.code === "listening" ? before.since : Date.now() }); return { code: "listening" }; }
   if (!renew && cls.state === "pending") {
     const age = before?.code === "pending" && before.pendingSince ? Date.now() - before.pendingSince : 0;
-    if (age < 10 * 60_000) { await record(ctx, { code: "pending", pendingSince: before?.pendingSince ?? Date.now() }); return { code: "pending" }; }
+    if (age < 10 * 60_000) { await mark({ code: "pending", pendingSince: before?.pendingSince ?? Date.now() }); return { code: "pending" }; }
     await twitch(ctx, d.channel, es.deleteRequest(cls.id));
   }
   const failure = cls.state === "failed" ? es.failureCode(cls.status) : null;
   const made = await twitch(ctx, d.channel, es.createRequest({ ...ids, callback, secret }));
-  if (!made.ok) { const code = FAIL[made.error] ?? "twitch_down"; await record(ctx, { code }); return { code }; }
+  if (!made.ok) { const code = FAIL[made.error] ?? "twitch_down"; await mark({ code }); return { code }; }
   const r = es.readCreate(made);
-  if (r.ok || r.code === "exists") { await record(ctx, { code: "pending", pendingSince: Date.now(), ...(failure ? { failure } : {}) }); return { code: "pending" }; }
+  if (r.ok || r.code === "exists") {
+    // Twitch vérifie l'adresse du site juste après avoir accepté la demande : quand quelqu'un attend devant l'écran, on lui laisse quelques secondes pour que la réponse soit « oui » tout de suite.
+    if (settle) for (let i = 0; i < 4; i++) {
+      await new Promise((ok) => setTimeout(ok, 600));
+      const again = await twitch(ctx, d.channel, es.listRequest());
+      if (again.ok && es.classify(again.json, { callback, ...ids }).state === "enabled") { await mark({ code: "listening", since: Date.now(), ...(failure ? { failure } : {}) }); return { code: "listening" }; }
+    }
+    await mark({ code: "pending", pendingSince: Date.now(), ...(failure ? { failure } : {}) });
+    return { code: "pending" };
+  }
   const code = r.code === "denied" ? "need_reconnect" : r.code === "refused" ? "refused" : "twitch_down";
-  await record(ctx, { code, ...(r.detail ? { detail: r.detail } : {}), ...(failure ? { failure } : {}) });
+  await mark({ code, ...(r.detail ? { detail: r.detail } : {}), ...(failure ? { failure } : {}) });
   return { code };
 }
 

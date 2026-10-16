@@ -13,7 +13,8 @@ async function cached(ctx, name, load, ttl = TTL) {
   if (hit && hit.until > Date.now()) return hit.value;
   let value;
   try { value = await load(); } catch { value = null; }
-  cache.set(k, { value, until: Date.now() + ttl });
+  // Une lecture qui n'a rien donné (module qui démarre, chiffre pas encore relevé) n'est gardée que quelques secondes : on ne reste pas « indisponible » un quart de minute pour rien.
+  cache.set(k, { value, until: Date.now() + (value === null || value === undefined ? 3_000 : ttl) });
   return value;
 }
 

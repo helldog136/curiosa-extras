@@ -52,10 +52,10 @@ export async function context(ctx, { declare = true } = {}) {
 
 /* ───────────── Arrêt d'urgence ───────────── */
 
-function emergency(ctx, muted, since) {
+function emergency(ctx, muted, since, timeZone) {
   const t = ctx.t;
   if (muted) {
-    const when = since ? ` ${t("mute_since", { date: new Date(since).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short" }) })}` : "";
+    const when = since ? ` ${t("mute_since", { date: new Date(since).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone }) })}` : "";
     return [
       { type: "banner", tone: "warning", text: t("mute_on", { when }) },
       { type: "adminForm", action: "unmute", submitLabel: t("mute_off_btn"), fields: [] },
@@ -87,7 +87,7 @@ async function listenBlocks(ctx, ctxInfo, state) {
   if (res && res.code) out.push({ type: "banner", tone: "warning", text: t(`res_${res.code}`, { login: res.login ?? "" }) });
   if (botRes && botRes.code && s.replyAs === "bot") out.push({ type: "banner", tone: "warning", text: t(`res_${botRes.code}`, { login: botRes.login ?? "" }) });
   if (code === "listening") {
-    const last = state.lastMessageAt ? new Date(state.lastMessageAt).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short" }) : null;
+    const last = state.lastMessageAt ? new Date(state.lastMessageAt).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone: s.timeZone }) : null;
     out.push({ type: "banner", tone: "success", text: t("listen_yes") });
     out.push({ type: "markdown", text: [last ? t("listen_last", { when: last }) : t("listen_nomsg"), s.onlyWhenLive ? t("listen_live_only") : t("listen_always")].join(" ") });
     return out;
@@ -104,13 +104,13 @@ async function listenBlocks(ctx, ctxInfo, state) {
 function listenActions(ctx, code) {
   const t = ctx.t;
   const out = [{ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] }];
-  if (code !== "listening" && code !== "unknown") out.push({ type: "adminForm", action: "relisten", submitLabel: t("relisten_btn"), fields: [] });
+  if (["revoked", "refused", "pending", "twitch_down", "twitch_busy"].includes(code)) out.push({ type: "adminForm", action: "relisten", submitLabel: t("relisten_btn"), fields: [] });
   return out;
 }
 
 /* ───────────── Résumé des commandes ───────────── */
 
-const kindLabel = (t, c) => t(`kind_${c.kind}`);
+const kindLabel = (t, c) => (c.kind === "partner" || c.kind === "network" ? `${t(`kind_${c.kind}`)} (${c.label})` : t(`kind_${c.kind}`));
 const roleLabel = (t, r) => t(`role_${r}`);
 function stateLabel(t, c) {
   if (c.state === "on") return t("state_on");
@@ -125,8 +125,9 @@ function summary(ctx, info) {
   return [
     { type: "heading", text: t("summary_title") },
     { type: "markdown", text: t("summary_help", { prefix: s.prefix }) },
-    { type: "table", columns: [t("col_command"), t("col_kind"), t("col_answer"), t("col_who"), t("col_state")],
-      rows: rows.map((c) => [words(s.prefix, c), kindLabel(t, c), cut(c.text, 90), roleLabel(t, c.role), stateLabel(t, c)]),
+    // Trois colonnes seulement : sur un téléphone, un tableau plus large cache l'état et les boutons. Le type et « qui peut l'utiliser » (quand ce n'est pas tout le monde) suivent le nom.
+    { type: "table", columns: [t("col_command"), t("col_answer"), t("col_state")],
+      rows: rows.map((c) => [`${words(s.prefix, c)} · ${kindLabel(t, c)}${c.role === "everyone" ? "" : ` · ${roleLabel(t, c.role)}`}`, cut(c.text, 90), stateLabel(t, c)]),
       rowIds: rows.map((c) => c.key),
       rowActions: [{ label: t("act_edit"), href: "?edit={id}" }, { label: t("act_toggle"), action: "toggle" }] },
   ];
@@ -141,8 +142,8 @@ function partnersSection(ctx, info) {
   if (!sources.partners.items.length) return [...out, { type: "markdown", text: t("partners_none") }];
   out.push({ type: "markdown", text: t("partners_help") });
   const rows = sources.partners.items;
-  out.push({ type: "table", columns: [t("col_partner"), t("col_command"), t("col_state")],
-    rows: rows.map((p) => { const c = list.find((x) => x.key === `partner:${p.id}`); return [p.title, c ? words(s.prefix, c) : "—", c ? stateLabel(t, c) : t("state_not_set")]; }),
+  out.push({ type: "table", columns: [t("col_partner"), t("col_state")],   // deux colonnes : le bouton « Configurer » reste visible sur un téléphone
+    rows: rows.map((p) => { const c = list.find((x) => x.key === `partner:${p.id}`); return [p.title, c ? `${words(s.prefix, c)} · ${stateLabel(t, c)}` : t("state_not_set")]; }),
     rowIds: rows.map((p) => `partner:${p.id}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}" }] });
   return out;
 }
@@ -153,8 +154,8 @@ function networksSection(ctx, info) {
   if (!sources.networks.items.length) return [...out, { type: "markdown", text: t("networks_none") }];
   out.push({ type: "markdown", text: t("networks_help") });
   const rows = sources.networks.items;
-  out.push({ type: "table", columns: [t("col_network"), t("col_command"), t("col_state")],
-    rows: rows.map((n) => { const c = list.find((x) => x.key === `network:${n.key}`); return [n.name, c ? words(s.prefix, c) : "—", c ? stateLabel(t, c) : t("state_not_set")]; }),
+  out.push({ type: "table", columns: [t("col_network"), t("col_state")],
+    rows: rows.map((n) => { const c = list.find((x) => x.key === `network:${n.key}`); return [n.label, c ? `${words(s.prefix, c)} · ${stateLabel(t, c)}` : t("state_not_set")]; }),
     rowIds: rows.map((n) => `network:${n.key}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}" }] });
   return out;
 }
@@ -226,8 +227,9 @@ async function logBlocks(ctx, s) {
   const out = [{ type: "heading", text: t("log_title") }, { type: "markdown", text: t("log_help") }];
   if (!entries.length) return [...out, { type: "markdown", text: t("log_empty") }];
   const when = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
-  out.push({ type: "table", columns: [t("log_time"), t("log_user"), t("col_command"), t("log_result"), t("log_why")],
-    rows: entries.map((e) => [when(e.at), e.user, `${s.prefix}${e.command}`, t(`log_${e.result}`), e.result === "sent" ? cut(e.text ?? "", 70) : `${t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`]) });
+  // Trois colonnes (l'heure et la personne ensemble, le résultat devant la réponse ou la raison) : tout reste lisible sur un téléphone.
+  out.push({ type: "table", columns: [t("log_time_user"), t("col_command"), t("log_why")],
+    rows: entries.map((e) => [`${when(e.at)} · ${e.user}`, `${s.prefix}${e.command}`, `${t(`log_${e.result}`)} : ${e.result === "sent" ? cut(e.text ?? "", 70) : `${t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`}`]) });
   out.push({ type: "adminForm", action: "clearLog", submitLabel: t("log_clear"), fields: [] });
   return out;
 }
@@ -248,9 +250,16 @@ function botAccountBlocks(ctx, info) {
 export async function panel(ctx, { query }) {
   const t = ctx.t;
   const info = await context(ctx);
-  const state = await st.readState(ctx);
+  let state = await st.readState(ctx);
+  // Tout est prêt mais l'écoute n'est pas (ou plus) vérifiée : on la vérifie à l'ouverture de la page (au plus une fois toutes les 2 minutes, et 5 secondes après un « en attente »), pour ne pas faire cliquer pour rien.
+  const sub = state.sub ?? {};
+  const age = Date.now() - (sub.at ?? 0);
+  if (info.d.code === "ready" && (sub.code === "pending" ? age > 5_000 : sub.code !== "listening" ? age > 120_000 : !!sub.who && sub.who !== info.d.senderId)) {   // « en attente » : Twitch a eu le temps de vérifier, on regarde où on en est
+    await ensureListening(ctx, info.s, { settle: true }).catch(() => {});
+    state = await st.readState(ctx);
+  }
   const blocks = [];
-  blocks.push(...emergency(ctx, state.muted === true, state.mutedAt));
+  blocks.push(...emergency(ctx, state.muted === true, state.mutedAt, info.s.timeZone));
   blocks.push({ type: "heading", text: t("listen_title") });
   blocks.push(...(await listenBlocks(ctx, info, state)));
   blocks.push(...listenActions(ctx, info.d.code !== "ready" ? info.d.code : state.sub?.code ?? "unknown"));
@@ -273,11 +282,11 @@ export const actions = {
   async mute(ctx) { await st.setMuted(ctx, true); return { ok: ctx.t("muted_done"), redirect: "?" }; },
   async unmute(ctx) { await st.setMuted(ctx, false); return { ok: ctx.t("unmuted_done"), redirect: "?" }; },
   async check(ctx) {
-    const r = await ensureListening(ctx, settingsOf(ctx));
+    const r = await ensureListening(ctx, settingsOf(ctx), { settle: true });
     return r.code === "listening" ? { ok: ctx.t("check_ok"), redirect: "?" } : { ok: ctx.t("check_done"), redirect: "?" };
   },
   async relisten(ctx) {
-    const r = await ensureListening(ctx, settingsOf(ctx), { renew: true });
+    const r = await ensureListening(ctx, settingsOf(ctx), { renew: true, settle: true });
     return { ok: ctx.t(r.code === "pending" || r.code === "listening" ? "relisten_ok" : "check_done"), redirect: "?" };
   },
   async save(ctx, v) {

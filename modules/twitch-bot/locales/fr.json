@@ -59,9 +59,7 @@
   "summary_title": "Toutes vos commandes",
   "summary_help": "Voici tout ce que le bot sait faire, avec son état. Tapez par exemple {prefix}jeu dans votre chat pour essayer. Pour changer une commande, cliquez sur « Modifier ».",
   "col_command": "Commande",
-  "col_kind": "Type",
   "col_answer": "Réponse",
-  "col_who": "Qui peut l'utiliser",
   "col_state": "État",
   "col_partner": "Partenaire",
   "col_network": "Réseau",
@@ -146,10 +144,7 @@
   "log_title": "Ce que le bot a fait récemment",
   "log_help": "Les 30 dernières commandes reconnues. Si le bot n'a pas répondu, la raison est écrite ici.",
   "log_empty": "Rien pour l'instant : le journal se remplit dès qu'une commande est tapée dans votre chat.",
-  "log_time": "Heure",
-  "log_user": "Qui",
-  "log_result": "Résultat",
-  "log_why": "Réponse ou raison",
+  "log_why": "Résultat et raison",
   "log_sent": "Répondu",
   "log_refused": "Pas de réponse",
   "log_error": "Erreur",
@@ -183,5 +178,6 @@
   "err_role": "Choisissez qui peut utiliser la commande dans la liste.",
   "err_too_many": "Vous avez atteint le nombre maximum de commandes à vous (100). Supprimez-en avant d'en ajouter.",
   "err_source_missing": "Le partenaire ou le réseau n'existe plus (ou n'est plus publié). Rien n'a été enregistré.",
-  "err_unknown": "Cette commande n'existe pas (ou plus)."
+  "err_unknown": "Cette commande n'existe pas (ou plus).",
+  "log_time_user": "Heure · qui"
 }

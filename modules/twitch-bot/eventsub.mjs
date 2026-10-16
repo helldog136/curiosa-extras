@@ -111,12 +111,14 @@ export const deleteRequest = (id) => ({ as: "app", method: "DELETE", path: "even
  */
 export function classify(json, { callback, broadcasterId, userId }) {
   const rows = Array.isArray(json?.data) ? json.data : [];
-  const ours = rows.filter((s) => s?.type === TYPE && s.transport?.method === "webhook" && s.transport?.callback === callback
-    && String(s.condition?.broadcaster_user_id) === String(broadcasterId) && String(s.condition?.user_id) === String(userId));
+  // Tout ce qui pointe vers NOTRE adresse est à nous. Ce qui concerne un autre compte ou une autre chaîne (réglage changé depuis) est périmé : à supprimer, sinon chaque message arriverait deux fois.
+  const mine = rows.filter((s) => s?.type === TYPE && s.transport?.method === "webhook" && s.transport?.callback === callback);
+  const same = (s) => String(s.condition?.broadcaster_user_id) === String(broadcasterId) && String(s.condition?.user_id) === String(userId);
+  const ours = mine.filter(same), foreign = mine.filter((s) => !same(s)).map((s) => String(s.id));
   const good = ours.find((s) => s.status === "enabled");
   const pending = ours.find((s) => s.status === "webhook_callback_verification_pending");
   const keep = good ?? pending;
-  const stale = ours.filter((s) => s !== keep).map((s) => String(s.id));
+  const stale = [...ours.filter((s) => s !== keep).map((s) => String(s.id)), ...foreign];
   if (good) return { state: "enabled", id: String(good.id), status: good.status, stale };
   if (pending) return { state: "pending", id: String(pending.id), status: pending.status, stale };
   if (ours.length) return { state: "failed", status: String(ours[0].status ?? ""), stale };

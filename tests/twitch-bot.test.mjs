@@ -153,7 +153,8 @@ test("abonnement : corps de création, adresse de rappel, classement des abonnem
   assert.deepEqual([failed.state, failed.stale], ["failed", ["a"]]);
   assert.deepEqual(cl([sub("a", "enabled"), sub("b", "enabled"), sub("c", "authorization_revoked")]).stale, ["b", "c"], "les doublons et les abonnements en panne sont à supprimer");
   assert.equal(cl([sub("z", "enabled", { transport: { method: "webhook", callback: "https://autre.example.org/x" } })]).state, "missing", "l'abonnement d'un autre site n'est pas le nôtre");
-  assert.equal(cl([sub("z", "enabled", { condition: { broadcaster_user_id: "100", user_id: "999" } })]).state, "missing", "un autre compte n'est pas le nôtre");
+  const other = cl([sub("z", "enabled", { condition: { broadcaster_user_id: "100", user_id: "999" } })]);
+  assert.deepEqual([other.state, other.stale], ["missing", ["z"]], "un autre compte n'est pas le nôtre : son abonnement (réglage changé depuis) est périmé et supprimé, sinon chaque message arriverait deux fois");
   assert.deepEqual(["authorization_revoked", "user_removed", "notification_failures_exceeded", "webhook_callback_verification_failed", "version_removed"].map(es.failureCode), ["revoked", "revoked", "unreachable", "unreachable", "other"]);
   assert.deepEqual(es.readCreate({ status: 202, json: { data: [{ id: "x" }] } }), { ok: true, id: "x" });
   assert.equal(es.readCreate({ status: 409 }).code, "exists"); assert.equal(es.readCreate({ status: 403 }).code, "denied"); assert.equal(es.readCreate({ status: 400, json: { message: "bad" } }).code, "refused"); assert.equal(es.readCreate({ status: 502 }).code, "twitch");
@@ -805,8 +806,13 @@ test("page : « Le bot écoute : oui / non », avec pourquoi et quoi faire, en m
     assert.equal(banner.tone, "warning"); assert.ok(banner.text.startsWith(fr.listen_no), key); assert.ok(banner.text.includes(fr[key]), key);
     assert.equal(b.filter((x) => x.type === "html" && x.html.includes("data-twitch-connect")).length, button ? 1 : 0, key);
     if (button) assert.match(b.find((x) => x.type === "html").html, /id\.twitch\.tv\/oauth2\/authorize\?main=1/);
-    assert.equal(formsOf(b, "check").length, 1); assert.equal(formsOf(b, "relisten").length, 1, "réparer l'écoute quand ça ne marche pas");
+    assert.equal(formsOf(b, "check").length, 1); assert.equal(formsOf(b, "relisten").length, 0, "« Réparer l'écoute » ne sert que quand l'abonnement lui-même est en cause");
   }
+  const rev = world();
+  await S.updateState(rev.ctx, (d) => { d.sub = { code: "revoked", detail: "authorization_revoked", at: Date.now() }; });
+  const rb = await A.panel(rev.ctx, { query: {} });
+  assert.match(bannerOf(rb)[0].text, /Twitch a arrêté d'envoyer les messages du chat/);
+  assert.equal(formsOf(rb, "relisten").length, 1);
   const creds = await A.panel(world({ tw: { ready: false } }).ctx, { query: {} });
   assert.match(textOf(creds), /\[Chaîne Twitch\]\(\/admin\/instances\/tw1\)/, "le lien mène à la page où régler l'application Twitch");
   const guide = await A.panel(world({ tw: { mainStatus: "none" } }).ctx, { query: {} });
@@ -841,19 +847,20 @@ test("page : le résumé liste TOUTES les commandes (à vous, toutes prêtes, pa
   SRC.resetSources();
   const b = await A.panel(ctx, { query: {} });
   const t = table(b, fr.col_command);
-  const rows = Object.fromEntries(t.rows.map((r) => [r[0].split("  ")[0], r]));
+  const rows = Object.fromEntries(t.rows.map((r) => [r[0].split(/ {2}| · /)[0], r]));
   assert.deepEqual(Object.keys(rows), ["!merch", "!planning", "!jeu", "!titre", "!followers", "!uptime", "!tesla", "!tiktok", "!reseaux"]);
-  assert.deepEqual([rows["!merch"][1], rows["!merch"][3], rows["!merch"][4]], [fr.kind_custom, fr.role_mods, fr.state_on]);
-  assert.deepEqual([rows["!jeu"][1], rows["!jeu"][0]], [fr.kind_builtin, "!jeu  !game"]);
-  assert.equal(rows["!uptime"][4], fr.state_off);
-  assert.deepEqual([rows["!tesla"][1], rows["!tesla"][4]], [fr.kind_partner, fr.state_on]);
-  assert.deepEqual([rows["!tiktok"][0], rows["!tiktok"][1]], ["!tiktok  !tik-tok", fr.kind_network]);
-  assert.equal(rows["!reseaux"][4], fr.state_on);
+  assert.deepEqual(t.columns, [fr.col_command, fr.col_answer, fr.col_state], "trois colonnes : lisible sur un téléphone");
+  assert.deepEqual([rows["!merch"][0], rows["!merch"][2]], [`!merch · ${fr.kind_custom} · ${fr.role_mods}`, fr.state_on]);
+  assert.equal(rows["!jeu"][0], `!jeu  !game · ${fr.kind_builtin}`, "tout le monde : le rôle n'est pas répété");
+  assert.equal(rows["!uptime"][2], fr.state_off);
+  assert.deepEqual([rows["!tesla"][0], rows["!tesla"][2]], [`!tesla · ${fr.kind_partner} (Tesla)`, fr.state_on]);
+  assert.equal(rows["!tiktok"][0], `!tiktok  !tik-tok · ${fr.kind_network} (TikTok · emma)`);
+  assert.equal(rows["!reseaux"][2], fr.state_on);
   assert.deepEqual(t.rowIds, ["custom:" + t.rowIds[0].slice(7), "builtin:planning", "builtin:jeu", "builtin:titre", "builtin:followers", "builtin:uptime", "partner:p1", "network:tt", "group:reseaux"]);
   assert.deepEqual(t.rowActions.map((a) => a.label), [fr.act_edit, fr.act_toggle]);
   assert.equal(t.rowActions[0].href, "?edit={id}", "chaque commande (partenaire et réseau compris) s'ouvre sur sa configuration");
   const noPlanning = await A.panel(world().ctx, { query: {} });
-  assert.match(table(noPlanning, fr.col_command).rows.find((r) => r[0].startsWith("!planning"))[4], /Masquée : le module Planning n'est pas installé/);
+  assert.match(table(noPlanning, fr.col_command).rows.find((r) => r[0].startsWith("!planning"))[2], /Masquée : le module Planning n'est pas installé/);
 });
 
 test("page : partenaires — explication si Sponsors est absent ; sinon la liste des fiches publiées avec « Configurer »", async () => {
@@ -865,7 +872,7 @@ test("page : partenaires — explication si Sponsors est absent ; sinon la liste
   const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla"), entry("p2", "nordvpn", "NordVPN")] });
   const b = await A.panel(ctx, { query: {} });
   const t = table(b, fr.col_partner);
-  assert.deepEqual(t.rows, [["Tesla", "—", fr.state_not_set], ["NordVPN", "—", fr.state_not_set]]);
+  assert.deepEqual(t.rows, [["Tesla", fr.state_not_set], ["NordVPN", fr.state_not_set]]);
   assert.deepEqual(t.rowIds, ["partner:p1", "partner:p2"]);
   assert.equal(t.rowActions[0].label, fr.act_configure);
 });
@@ -894,7 +901,7 @@ test("page : réseaux — explication sans module de réseau ; sinon liste avec 
   assert.match(textOf(await A.panel(world().ctx, { query: {} })), /Aucun réseau n'est branché/);
   const { ctx } = world({ links: [link("y", "youtube-channel", "YouTube", "https://www.youtube.com/@emma"), link("y2", "youtube-channel", "YouTube", "https://www.youtube.com/@emma2")] });
   const b = await A.panel(ctx, { query: {} });
-  assert.deepEqual(table(b, fr.col_network).rows.map((r) => r[0]), ["YouTube", "YouTube"]);
+  assert.deepEqual(table(b, fr.col_network).rows.map((r) => r[0]), ["YouTube", "YouTube"], "deux comptes d'un même réseau : leur libellé complet les distingue quand le module le donne");
   const e1 = Object.fromEntries(formsOf(await A.panel(ctx, { query: { edit: "network:y" } }), "save")[0].fields.map((x) => [x.name, x]));
   assert.deepEqual([e1.name.value, e1.aliases.value, e1.text.value], ["youtube", "yt", "Retrouvez-moi sur {reseau} : {lien}"]);
   assert.equal(Object.fromEntries(formsOf(await A.panel(ctx, { query: { edit: "network:y2" } }), "save")[0].fields.map((x) => [x.name, x])).name.value, "youtube", "avant activation, les deux proposent le même nom : le 2e est vérifié à l'enregistrement");
@@ -953,9 +960,10 @@ test("journal : les 30 dernières lignes ; réponse envoyée ou raison du refus 
   await C.saveCommand(ctx, { kind: "builtin", id: "titre" }, { role: "mods" }, env(ctx));
   await say(ctx, "!titre", { login: "curieux" }, NOW + 100_000);
   const b = await A.panel(ctx, { query: {} });
-  const t = table(b, fr.log_time);
-  assert.deepEqual(t.rows[0].slice(1), ["curieux", "!titre", fr.log_refused, fr.reason_role]);
-  assert.deepEqual(t.rows[1].slice(2, 4), ["!jeu", fr.log_sent]);
+  const t = table(b, fr.log_time_user);
+  assert.match(t.rows[0][0], / · curieux$/);
+  assert.deepEqual(t.rows[0].slice(1), ["!titre", `${fr.log_refused} : ${fr.reason_role}`]);
+  assert.deepEqual([t.rows[1][1], t.rows[1][2].startsWith(`${fr.log_sent} : `)], ["!jeu", true]);
   assert.ok(textOf(b).includes(fr.log_help));
   assert.equal(JSON.stringify(await ctx.api.store.list("botLog")).includes("Viewer"), false, "le nom d'affichage n'est pas gardé");
 });
@@ -1059,4 +1067,37 @@ test("README en langage métier ; neutralité (règles locales du dépôt princi
   assert.ok(!/\beval\(|new Function|from "@\/|prisma/.test(source));
   const sec = ["clientSecret", "access_token", "refresh_token"];
   for (const k of sec) assert.ok(!source.includes(k), `le bot ne manipule jamais « ${k} » : les jetons restent à Chaîne Twitch`);
+});
+
+test("page : tout est prêt mais l'écoute n'est pas vérifiée → vérifiée à l'ouverture (pas de clic) ; pas plus d'une fois toutes les 2 minutes ; rien tenté si quelque chose manque", async () => {
+  const { ctx, tw } = world();
+  const b = await A.panel(ctx, { query: {} });
+  assert.equal(tw.subs.length, 1, "l'abonnement a été créé à l'ouverture de la page");
+  assert.ok(tw.calls.some((c) => c.method === "POST"));
+  assert.equal(bannerOf(b)[0].text, fr.listen_no + " " + fr.listen_pending.replace("{detail}", ""), "Twitch n'a pas encore vérifié : « en attente », pas « non »");
+  const posts = tw.calls.filter((c) => c.method === "POST").length;
+  await A.panel(ctx, { query: {} });
+  assert.equal(tw.calls.filter((c) => c.method === "POST").length, posts, "pas de nouvelle création pour une page rouverte");
+  tw.subs[0].status = "enabled";   // Twitch a fini de vérifier ; 5 secondes plus tard, la page rouverte le constate (plus « en attente »)
+  await S.updateState(ctx, (d) => { d.sub.at = Date.now() - 6_000; });
+  const again = await A.panel(ctx, { query: {} });
+  assert.deepEqual(bannerOf(again).map((x) => x.tone), ["success"]);
+  assert.equal(tw.calls.filter((c) => c.method === "POST").length, posts, "toujours aucune nouvelle création");
+  const blocked = world({ tw: { mainStatus: "none" } });
+  await A.panel(blocked.ctx, { query: {} });
+  assert.equal(blocked.tw.calls.filter((c) => c.path === "eventsub/subscriptions").length, 0, "rien n'est tenté tant que l'autorisation manque");
+});
+
+test("changer de compte qui répond (mode avancé) : la page le constate, supprime l'ancien abonnement et en crée un pour le compte bot — jamais deux écoutes en parallèle", async () => {
+  const { ctx, tw } = world();
+  const settings = (await import("../modules/twitch-bot/settings.mjs")).settingsOf;
+  await L.ensureListening(ctx, settings(ctx));
+  tw.subs[0].status = "enabled";
+  await L.ensureListening(ctx, settings(ctx));
+  assert.deepEqual(tw.subs.map((s) => s.condition.user_id), ["100"]);
+  const orig = ctx.setting;
+  ctx.setting = (k) => (k === "replyAs" ? "bot" : orig(k));
+  Object.assign(tw, { botStatus: "ok", botScopes: [...es.SCOPES.bot] });
+  await A.panel(ctx, { query: {} });
+  assert.deepEqual(tw.subs.map((s) => s.condition.user_id), ["555"], "l'abonnement de l'ancien compte est supprimé, celui du compte bot est créé");
 });
