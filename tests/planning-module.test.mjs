@@ -314,7 +314,7 @@ test("carte « prochains streams » : une ligne par stream avec tuile de jour, <
   assert.match(list[0], /cpl-tile" datetime="[^"]+"><span class="cpl-tw">[^<]+<\/span><span class="cpl-td">\d+<\/span>/);
   assert.match(list[0], /<img class="cpl-thumb"[^>]+alt="coverAlt"/);
   assert.ok(!list[1].includes("<img"), "un stream sans jeu n'a pas de jaquette");
-  assert.match(list[0], /cpl-badge">relHours?|cpl-badge">relMinutes/);
+  assert.match(list[0], /cpl-badge">rel(Hours?|Minutes|Today|Tomorrow)</, "dans 1 h, ou « aujourd'hui » / « demain » quand le stream passe minuit : le test ne dépend pas de l'heure d'exécution");
   assert.match(html, /<a class="cpl-link" href="\/fake">fullPlanning<\/a>/);
 });
 
