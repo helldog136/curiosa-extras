@@ -2,7 +2,7 @@
 
 Votre site **répond aux commandes tapées dans votre chat Twitch** : quelqu'un écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
 
-**Il faut Curiosa 0.1.22 ou plus, et la fonctionnalité « Chaîne Twitch » en version 1.5.0 ou plus** (elle s'installe toute seule avec le bot). Le bot n'a besoin ni de Planning, ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque.
+**Il faut Curiosa 0.1.24 ou plus, et la fonctionnalité « Chaîne Twitch » en version 1.5.0 ou plus** (elle s'installe toute seule avec le bot). Le bot n'a besoin ni de Planning, ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque.
 
 ## Pour commencer
 1. **Installez le bot.** « Chaîne Twitch » s'installe avec lui. Si ce n'est pas déjà fait, suivez son guide (en haut de sa page) pour renseigner l'application Twitch de votre chaîne : c'est la même pour tout ce qui touche à Twitch, vous ne la saisissez qu'une fois.
@@ -19,9 +19,10 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 - **Un aperçu** de la réponse s'affiche quand vous modifiez une commande.
 
 ## Vos partenaires et vos réseaux
-- **Partenaires** (si le module Sponsors est installé) : pour chaque fiche publiée, activez sa commande dans le chat. Le nom proposé est celui de sa page (`!tesla`), le texte aussi : « Découvrez mon parrainage Tesla : example.org/sponsors/tesla ». Le titre et l'adresse viennent de la fiche, ils sont à jour tout seuls. Une fois enregistré, le nom est à vous : il ne change plus si la page change. Si la fiche disparaît, la commande se met en pause, puis s'efface après deux semaines.
+- **Partenaires** (si le module Sponsors est installé) : la commande d'un partenaire se règle **dans sa fiche** (la page où vous modifiez le sponsor), dans la section « Commande de chat pour ce partenaire » : case « Activer la commande dans le chat », nom de la commande, texte et aperçu, avec son propre bouton « Enregistrer » (la page ne se recharge pas). Sur la page du bot, la rubrique des partenaires garde le résumé (la commande et son état) et « Modifier » ouvre la fiche sur cette section. Le nom proposé est celui de sa page (`!tesla`), le texte aussi : « Découvrez mon parrainage Tesla : example.org/sponsors/tesla ». Le titre et l'adresse viennent de la fiche, ils sont à jour tout seuls. Une fois enregistré, le nom est à vous : il ne change plus si la page change. Si la fiche disparaît, la commande se met en pause, puis s'efface après deux semaines.
 - **Réseaux sociaux** (si vous avez installé leurs modules et indiqué vos adresses) : `!youtube`, `!tiktok` (aussi `!tik-tok`), `!instagram`, `!discord`, `!x` (aussi `!twitter`)… Texte proposé : « Retrouvez-moi sur YouTube : youtube.com/@vous ». Deux comptes d'un même réseau : `!youtube` et `!youtube2`. Une commande **`!reseaux`** donne d'un coup tous les liens des réseaux activés (vous pouvez la désactiver).
-- Toutes ces commandes se règlent **sur la page du bot** : un résumé les montre toutes, avec leur état et un bouton « Modifier » (ou « Configurer »).
+- Les commandes des réseaux, les vôtres et les commandes toutes prêtes se règlent **sur la page du bot** : un résumé les montre avec leur état et un bouton « Modifier » (ou « Configurer »). La page ne remonte plus en haut quand vous cliquez : le message s'affiche à côté du bouton.
+- Une fiche pas encore publiée peut déjà avoir sa commande réglée : elle attend la publication. Sans le bot, la fiche du partenaire ne montre aucune section en plus.
 
 ## Les protections
 - Le bot **répond seulement pendant vos directs** (vous pouvez le changer).

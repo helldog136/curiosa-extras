@@ -1,7 +1,7 @@
 // La page d'administration du bot : arrêt d'urgence, « le bot écoute ? », résumé de toutes les commandes, édition, partenaires, réseaux, journal.
 // Pensée pour une personne qui n'est pas technicienne : des phrases, pas de jargon, et chaque problème dit quoi faire.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { ROLES, catalog, loadConfig, proposePartner, proposeNetwork, saveCommand, saveSourced, removeCustom } = await import(`./commands.mjs${v}`);
+const { ROLES, catalog, loadConfig, proposeNetwork, saveCommand, saveSourced, removeCustom } = await import(`./commands.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
@@ -12,6 +12,14 @@ const { preview } = await import(`./engine.mjs${v}`);
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (v, n) => { const s = String(v ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 const SERVICE = "twitch.api";
+
+/** La section que ce module ajoute à la fiche d'un partenaire (déclarée dans `entryPanels` de module.json) : son identifiant et son adresse dans la fiche. */
+export const PANEL_ID = "chat-command";
+const panelAnchor = (ctx) => `panel-${ctx.instance.key}-${PANEL_ID}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+/** Le lien « Modifier » d'un partenaire : sa fiche, ouverte sur la section de la commande (la fiche ajoute elle-même l'étiquette du contenu dans l'adresse). */
+const partnerHref = (ctx) => `/admin/entries/{id}#${panelAnchor(ctx)}`;
+/** Pour que « Modifier » d'une ligne amène sur le formulaire (en dessous des états) et non en haut de la page. */
+const EDIT_ANCHOR = { type: "html", html: '<div id="edit" style="scroll-margin-top:5rem"></div>' };
 
 /** Le bouton « Autoriser chez Twitch » : un lien (adresse construite par Chaîne Twitch) habillé aux couleurs de l'administration. */
 const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
@@ -110,18 +118,19 @@ function listenActions(ctx, code) {
 
 /* ───────────── Résumé des commandes ───────────── */
 
-const kindLabel = (t, c) => (c.kind === "partner" || c.kind === "network" ? `${t(`kind_${c.kind}`)} (${c.label})` : t(`kind_${c.kind}`));
+const kindLabel = (t, c) => (c.kind === "network" ? `${t("kind_network")} (${c.label})` : t(`kind_${c.kind}`));
 const roleLabel = (t, r) => t(`role_${r}`);
-function stateLabel(t, c) {
+export function stateLabel(t, c) {
   if (c.state === "on") return t("state_on");
   if (c.state === "off") return t("state_off");
   return t(`why_${c.why}`);
 }
-const words = (prefix, c) => [c.name, ...c.aliases].map((w) => `${prefix}${w}`).join("  ");
+export const words = (prefix, c) => [c.name, ...c.aliases].map((w) => `${prefix}${w}`).join("  ");
 
 function summary(ctx, info) {
   const t = ctx.t, { s, list } = info;
-  const rows = list;
+  // Les commandes des partenaires ont leur propre rubrique plus bas (leur réglage est dans la fiche du partenaire, pas ici).
+  const rows = list.filter((c) => c.kind !== "partner");
   return [
     { type: "heading", text: t("summary_title") },
     { type: "markdown", text: t("summary_help", { prefix: s.prefix }) },
@@ -129,7 +138,7 @@ function summary(ctx, info) {
     { type: "table", columns: [t("col_command"), t("col_answer"), t("col_state")],
       rows: rows.map((c) => [`${words(s.prefix, c)} · ${kindLabel(t, c)}${c.role === "everyone" ? "" : ` · ${roleLabel(t, c.role)}`}`, cut(c.text, 90), stateLabel(t, c)]),
       rowIds: rows.map((c) => c.key),
-      rowActions: [{ label: t("act_edit"), href: "?edit={id}" }, { label: t("act_toggle"), action: "toggle" }] },
+      rowActions: [{ label: t("act_edit"), href: "?edit={id}#edit" }, { label: t("act_toggle"), action: "toggle" }] },
   ];
 }
 
@@ -139,12 +148,16 @@ function partnersSection(ctx, info) {
   const t = ctx.t, { sources, list, s } = info;
   const out = [{ type: "heading", text: t("partners_title") }];
   if (!sources.partners.installed) return [...out, { type: "markdown", text: t("partners_absent") }];
-  if (!sources.partners.items.length) return [...out, { type: "markdown", text: t("partners_none") }];
+  const paused = list.filter((c) => c.kind === "partner" && c.missing);
+  if (!sources.partners.items.length && !paused.length) return [...out, { type: "markdown", text: t("partners_none") }];
   out.push({ type: "markdown", text: t("partners_help") });
   const rows = sources.partners.items;
-  out.push({ type: "table", columns: [t("col_partner"), t("col_state")],   // deux colonnes : le bouton « Configurer » reste visible sur un téléphone
+  // « Modifier » mène à la fiche du partenaire, sur la section de sa commande : c'est là que se règle la commande (une seule place, pas de doublon).
+  if (rows.length) out.push({ type: "table", columns: [t("col_partner"), t("col_state")],   // deux colonnes : le bouton « Modifier » reste visible sur un téléphone
     rows: rows.map((p) => { const c = list.find((x) => x.key === `partner:${p.id}`); return [p.title, c ? `${words(s.prefix, c)} · ${stateLabel(t, c)}` : t("state_not_set")]; }),
-    rowIds: rows.map((p) => `partner:${p.id}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}" }] });
+    rowIds: rows.map((p) => p.id), rowActions: [{ label: t("act_edit"), href: partnerHref(ctx) }] });
+  // Une commande dont la fiche n'est plus publiée (ou a disparu) : en pause, puis retirée toute seule.
+  if (paused.length) out.push({ type: "markdown", text: t("partners_paused", { list: paused.map((c) => `${s.prefix}${c.name} (${c.label})`).join(", ") }) });
   return out;
 }
 
@@ -156,18 +169,18 @@ function networksSection(ctx, info) {
   const rows = sources.networks.items;
   out.push({ type: "table", columns: [t("col_network"), t("col_state")],
     rows: rows.map((n) => { const c = list.find((x) => x.key === `network:${n.key}`); return [n.label, c ? `${words(s.prefix, c)} · ${stateLabel(t, c)}` : t("state_not_set")]; }),
-    rowIds: rows.map((n) => `network:${n.key}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}" }] });
+    rowIds: rows.map((n) => `network:${n.key}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}#edit" }] });
   return out;
 }
 
 /* ───────────── Formulaires ───────────── */
 
-const roleOptions = (t) => ROLES.map((r) => ({ value: r, label: roleLabel(t, r) }));
-const delayFields = (t, c) => [
+export const roleOptions = (t) => ROLES.map((r) => ({ value: r, label: roleLabel(t, r) }));
+export const delayFields = (t, c) => [
   { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: c?.cdGlobal ?? "", help: t("f_cd_help") },
   { name: "cdUser", label: t("f_cd_user"), kind: "number", value: c?.cdUser ?? "" },
 ];
-const varsHelp = (t, kind) => t("f_text_help", { vars: allowedFor(kind).map((v) => `{${v}}`).join(" ") });
+export const varsHelp = (t, kind) => t("f_text_help", { vars: allowedFor(kind).map((v) => `{${v}}`).join(" ") });
 
 function createForm(ctx, s) {
   const t = ctx.t;
@@ -187,28 +200,28 @@ async function editBlocks(ctx, info, key, query) {
   const t = ctx.t, { s, sources, list } = info;
   const [kind, ...rest] = String(key).split(":");
   const id = rest.join(":");
+  // Un ancien lien vers la configuration d'un partenaire : elle se fait maintenant dans la fiche du partenaire.
+  if (kind === "partner") return [{ type: "markdown", text: t("edit_partner_moved", { href: partnerHref(ctx).replace("{id}", encodeURIComponent(id)) }) }];
   let c = list.find((x) => x.key === key);
-  const out = [];
+  const out = [EDIT_ANCHOR];
   let proposal = null, item = null;
-  if (!c && kind === "partner") { item = sources.partners.items.find((p) => p.id === id); if (item) proposal = proposePartner(item, list, t); }
   if (!c && kind === "network") { item = sources.networks.items.find((n) => n.key === id); if (item) proposal = proposeNetwork(item, list, t); }
   if (!c && !proposal) return [{ type: "banner", tone: "warning", text: t("edit_unknown") }];
-  const view = c ?? { kind, id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: {}, label: item?.title ?? item?.name ?? id };
-  if (c?.missing) return [{ type: "banner", tone: "warning", text: t(c.kind === "partner" ? "partner_gone" : "network_gone") }];
+  const view = c ?? { kind, id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: {}, label: item?.name ?? id };
+  if (c?.missing) return [{ type: "banner", tone: "warning", text: t("network_gone") }];
   const source = c?.source ?? item;
   out.push({ type: "heading", text: t("edit_title", { command: `${s.prefix}${view.name}` }) });
-  if (kind === "partner" && source) out.push({ type: "markdown", text: t("edit_partner_info", { title: source.title, address: source.address, href: `/admin/entries/${source.id}?c=${source.instance}` }) });
-  if (kind === "network" && source) out.push({ type: "markdown", text: t("edit_network_info", { name: source.name, address: source.url }) });
+  if (kind === "network" && source) out.push({ type: "markdown", text: t("edit_network_info", { name: source.name, address: source.url }) + (source.adminPath ? ` ${t("edit_network_module", { href: source.adminPath })}` : "") });
   if (kind === "builtin" && view.state && view.state !== "on" && view.state !== "off") out.push({ type: "banner", tone: "warning", text: t(`why_${view.why}`) });
   if (kind === "group") out.push({ type: "markdown", text: t("edit_group_info") });
   // Aperçu : ce que répondrait la commande avec les données du moment (rien n'est envoyé).
   try {
-    const sample = { ...view, vars: view.vars && Object.keys(view.vars).length ? view.vars : kind === "partner" && source ? { partenaire: source.title, adresse: source.address } : kind === "network" && source ? { reseau: source.name, lien: String(source.url).replace(/^https?:\/\//i, "") } : {} };
+    const sample = { ...view, vars: view.vars && Object.keys(view.vars).length ? view.vars : kind === "network" && source ? { reseau: source.name, lien: String(source.url).replace(/^https?:\/\//i, "") } : {} };
     out.push({ type: "markdown", text: t("edit_preview", { text: (await preview(ctx, sample, { channel: info.d.channel ?? null, sources, list })).replace(/([\\`*_[\]<>])/g, "\\$1") }) });
   } catch { /* l'aperçu est un plus */ }
   out.push({ type: "adminForm", action: "save", submitLabel: t("save_btn"), cancelHref: "?", fields: [
     { name: "key", kind: "hidden", value: key },
-    { name: "enabled", label: t(kind === "partner" || kind === "network" ? "f_enabled_chat" : "f_enabled"), kind: "checkbox", value: view.enabled ? "on" : "" },
+    { name: "enabled", label: t(kind === "network" ? "f_enabled_chat" : "f_enabled"), kind: "checkbox", value: view.enabled ? "on" : "" },
     { name: "name", label: t("f_name", { prefix: s.prefix }), value: view.name, required: true, help: t("f_name_help", { prefix: s.prefix }) },
     { name: "aliases", label: t("f_aliases"), value: view.aliases.join(", "), help: t("f_aliases_help") },
     { name: "text", label: t("f_text"), kind: "textarea", value: view.text, required: true, help: varsHelp(t, kind) },
@@ -278,28 +291,33 @@ export async function panel(ctx, { query }) {
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };
 const fieldsFrom = (v) => ({ enabled: v.enabled === "on", name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
 
+/**
+ * Les actions NE redirigent PAS (sauf deux cas ci-dessous) : une redirection recharge la page et ramène tout en haut. Le cœur rafraîchit la page à la place, et le message
+ * de réussite ou d'erreur s'affiche sous le bouton cliqué : la personne reste où elle est.
+ * Exceptions : supprimer une commande et rétablir un texte d'origine reviennent à la page de cette commande (sa configuration change ou disparaît sous les yeux).
+ */
 export const actions = {
-  async mute(ctx) { await st.setMuted(ctx, true); return { ok: ctx.t("muted_done"), redirect: "?" }; },
-  async unmute(ctx) { await st.setMuted(ctx, false); return { ok: ctx.t("unmuted_done"), redirect: "?" }; },
+  async mute(ctx) { await st.setMuted(ctx, true); return { ok: ctx.t("muted_done") }; },
+  async unmute(ctx) { await st.setMuted(ctx, false); return { ok: ctx.t("unmuted_done") }; },
   async check(ctx) {
     const r = await ensureListening(ctx, settingsOf(ctx), { settle: true });
-    return r.code === "listening" ? { ok: ctx.t("check_ok"), redirect: "?" } : { ok: ctx.t("check_done"), redirect: "?" };
+    return r.code === "listening" ? { ok: ctx.t("check_ok") } : { ok: ctx.t("check_done") };
   },
   async relisten(ctx) {
     const r = await ensureListening(ctx, settingsOf(ctx), { renew: true, settle: true });
-    return { ok: ctx.t(r.code === "pending" || r.code === "listening" ? "relisten_ok" : "check_done"), redirect: "?" };
+    return { ok: ctx.t(r.code === "pending" || r.code === "listening" ? "relisten_ok" : "check_done") };
   },
   async save(ctx, v) {
     const info = await context(ctx, { declare: false });
     const { kind, id } = parseKey(v.key);
     const fields = fieldsFrom(v);
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, fields, info.env) : await saveCommand(ctx, { kind, id }, fields, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("saved"), redirect: "?" };
+    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("saved") };
   },
   async create(ctx, v) {
     const info = await context(ctx, { declare: false });
     const r = await saveCommand(ctx, { kind: "custom" }, { ...fieldsFrom(v), enabled: true }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("created"), redirect: "?" };
+    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("created") };
   },
   async toggle(ctx, v) {
     const info = await context(ctx, { declare: false });
@@ -307,7 +325,7 @@ export const actions = {
     const c = info.list.find((x) => x.key === v.id);
     if (!c) return { error: ctx.t("err_unknown") };
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, { enabled: !c.enabled }, info.env) : await saveCommand(ctx, { kind, id }, { enabled: !c.enabled }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t(c.enabled ? "toggled_off" : "toggled_on", { command: `${info.s.prefix}${c.name}` }), redirect: "?" };
+    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t(c.enabled ? "toggled_off" : "toggled_on", { command: `${info.s.prefix}${c.name}` }) };
   },
   async remove(ctx, v) {
     const r = await removeCustom(ctx, v.id);
@@ -319,12 +337,12 @@ export const actions = {
     const c = info.list.find((x) => x.key === v.key);
     if (!c || (kind !== "builtin" && kind !== "group")) return { error: ctx.t("err_unknown") };
     const r = await saveCommand(ctx, { kind, id }, { text: c.defaultText }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${v.key}` };
+    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${v.key}#edit` };
   },
-  async clearLog(ctx) { await st.clearLog(ctx); return { ok: ctx.t("log_cleared"), redirect: "?" }; },
+  async clearLog(ctx) { await st.clearLog(ctx); return { ok: ctx.t("log_cleared") }; },
   async disconnectBot(ctx) {
     const info = await context(ctx, { declare: false });
     if (info.d.channel) await ctx.api.services.callAll(SERVICE, "disconnect", { channel: info.d.channel, slot: "bot" });
-    return { ok: ctx.t("bot_disconnected"), redirect: "?" };
+    return { ok: ctx.t("bot_disconnected") };
   },
 };

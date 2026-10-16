@@ -40,6 +40,7 @@ function world(o = {}) {
   const instances = [
     ...(o.sponsors ? [{ key: "sponsors", module: "sponsors", basePath: "sponsors", name: "Sponsors" }] : []),
     ...(o.planning ? [{ key: "planning", module: "planning", basePath: "planning", name: "Planning" }] : []),
+    ...(o.instances ?? []),
   ];
   const settings = { onlyWhenLive: true, timezone: "Europe/Paris", ...o.settings };
   const topics = {
@@ -455,7 +456,7 @@ test("arrêt d'urgence : effet immédiat sur le message suivant, sans rien perdr
   const { ctx, tw } = world();
   await say(ctx, "!jeu", {}, NOW);
   assert.equal(tw.chat.length, 1);
-  assert.deepEqual(await A.actions.mute(ctx), { ok: fr.muted_done, redirect: "?" });
+  assert.deepEqual(await A.actions.mute(ctx), { ok: fr.muted_done }, "aucune redirection : la page ne remonte pas en haut");
   const r = await say(ctx, "!titre", {}, NOW + 1);
   assert.deepEqual([r.result, r.reason], ["refused", "muted"]);
   assert.equal(tw.chat.length, 1);
@@ -837,7 +838,7 @@ test("page : le compte bot séparé n'apparaît qu'en mode avancé (réglage) ; 
   assert.match((await A.actions.disconnectBot(ok.ctx)).ok, /déconnecté/);
 });
 
-test("page : le résumé liste TOUTES les commandes (à vous, toutes prêtes, partenaires, réseaux, groupée) avec leur état, et un lien de modification par ligne", async () => {
+test("page : le résumé liste les commandes (à vous, toutes prêtes, réseaux, groupée) avec leur état, et un lien de modification par ligne ; celles des partenaires ont leur rubrique", async () => {
   const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla")], links: [link("tt", "tiktok", "TikTok · emma", "https://www.tiktok.com/@emma")] });
   const e = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
   await C.saveCommand(ctx, { kind: "custom" }, { name: "merch", text: "Boutique : example.org/shop", role: "mods" }, e);
@@ -848,22 +849,24 @@ test("page : le résumé liste TOUTES les commandes (à vous, toutes prêtes, pa
   const b = await A.panel(ctx, { query: {} });
   const t = table(b, fr.col_command);
   const rows = Object.fromEntries(t.rows.map((r) => [r[0].split(/ {2}| · /)[0], r]));
-  assert.deepEqual(Object.keys(rows), ["!merch", "!planning", "!jeu", "!titre", "!followers", "!uptime", "!tesla", "!tiktok", "!reseaux"]);
+  assert.deepEqual(Object.keys(rows), ["!merch", "!planning", "!jeu", "!titre", "!followers", "!uptime", "!tiktok", "!reseaux"], "pas de ligne partenaire ici : leur résumé est dans la rubrique des partenaires");
   assert.deepEqual(t.columns, [fr.col_command, fr.col_answer, fr.col_state], "trois colonnes : lisible sur un téléphone");
   assert.deepEqual([rows["!merch"][0], rows["!merch"][2]], [`!merch · ${fr.kind_custom} · ${fr.role_mods}`, fr.state_on]);
   assert.equal(rows["!jeu"][0], `!jeu  !game · ${fr.kind_builtin}`, "tout le monde : le rôle n'est pas répété");
   assert.equal(rows["!uptime"][2], fr.state_off);
-  assert.deepEqual([rows["!tesla"][0], rows["!tesla"][2]], [`!tesla · ${fr.kind_partner} (Tesla)`, fr.state_on]);
   assert.equal(rows["!tiktok"][0], `!tiktok  !tik-tok · ${fr.kind_network} (TikTok · emma)`);
   assert.equal(rows["!reseaux"][2], fr.state_on);
-  assert.deepEqual(t.rowIds, ["custom:" + t.rowIds[0].slice(7), "builtin:planning", "builtin:jeu", "builtin:titre", "builtin:followers", "builtin:uptime", "partner:p1", "network:tt", "group:reseaux"]);
+  assert.deepEqual(t.rowIds, ["custom:" + t.rowIds[0].slice(7), "builtin:planning", "builtin:jeu", "builtin:titre", "builtin:followers", "builtin:uptime", "network:tt", "group:reseaux"]);
   assert.deepEqual(t.rowActions.map((a) => a.label), [fr.act_edit, fr.act_toggle]);
-  assert.equal(t.rowActions[0].href, "?edit={id}", "chaque commande (partenaire et réseau compris) s'ouvre sur sa configuration");
+  assert.equal(t.rowActions[0].href, "?edit={id}#edit", "chaque commande s'ouvre sur sa configuration, la page descend jusqu'au formulaire au lieu de rester en haut");
+  assert.ok(b.some((x) => x.type === "html" && x.html.includes('id="edit"')) === false, "l'ancre n'existe que quand un formulaire est ouvert");
+  const pt = table(b, fr.col_partner);
+  assert.deepEqual(pt.rows, [[ "Tesla", `!tesla · ${fr.state_on}` ]], "le résumé du partenaire : son nom et l'état de sa commande");
   const noPlanning = await A.panel(world().ctx, { query: {} });
   assert.match(table(noPlanning, fr.col_command).rows.find((r) => r[0].startsWith("!planning"))[2], /Masquée : le module Planning n'est pas installé/);
 });
 
-test("page : partenaires — explication si Sponsors est absent ; sinon la liste des fiches publiées avec « Configurer »", async () => {
+test("page : partenaires — explication si Sponsors est absent ; sinon la liste des fiches publiées avec « Modifier » vers la FICHE (plus de formulaire ici)", async () => {
   const absent = await A.panel(world().ctx, { query: {} });
   assert.match(textOf(absent), /apparaît quand vous installez le module \*\*Sponsors\*\*/);
   assert.ok(!absent.some((b) => b.type === "table" && b.columns[0] === fr.col_partner));
@@ -873,28 +876,131 @@ test("page : partenaires — explication si Sponsors est absent ; sinon la liste
   const b = await A.panel(ctx, { query: {} });
   const t = table(b, fr.col_partner);
   assert.deepEqual(t.rows, [["Tesla", fr.state_not_set], ["NordVPN", fr.state_not_set]]);
-  assert.deepEqual(t.rowIds, ["partner:p1", "partner:p2"]);
-  assert.equal(t.rowActions[0].label, fr.act_configure);
+  assert.deepEqual(t.rowIds, ["p1", "p2"], "l'identifiant de la fiche : le lien y mène");
+  assert.deepEqual(t.rowActions, [{ label: fr.act_edit, href: "/admin/entries/{id}#panel-bot-chat-command" }], "un seul bouton : la fiche, ouverte sur la section de la commande (l'ancre est celle que le cœur donne à la section)");
+  assert.match(textOf(b), /Commande de chat pour ce partenaire/);
+  assert.equal(formsOf(b, "save").length, 0, "plus aucun formulaire de partenaire sur la page du bot");
+  // Un ancien lien « ?edit=partner:… » ne casse rien : il renvoie vers la fiche.
+  const old = await A.panel(ctx, { query: { edit: "partner:p1" } });
+  assert.match(textOf(old), /\[Ouvrir la fiche\]\(\/admin\/entries\/p1#panel-bot-chat-command\)/);
+  assert.equal(formsOf(old, "save").length, 0);
 });
 
-test("page : modifier un partenaire → cadre avec case « Activer la commande dans le chat », NOM (= identifiant de sa page) et TEXTE pré-remplis, lien vers sa fiche, aperçu", async () => {
-  const { ctx, tw } = world({ sponsors: [entry("p1", "tesla", "Tesla")] });
-  const b = await A.panel(ctx, { query: { edit: "partner:p1" } });
-  const form = formsOf(b, "save")[0];
-  const f = Object.fromEntries(form.fields.map((x) => [x.name, x]));
-  assert.deepEqual([f.key.value, f.enabled.kind, f.enabled.label, f.enabled.value, f.name.value, f.text.value], ["partner:p1", "checkbox", fr.f_enabled_chat, "", "tesla", "Découvrez mon parrainage {partenaire} : {adresse}"]);
-  assert.ok(f.text.help.includes("{partenaire}") && f.text.help.includes("{adresse}") && f.text.help.includes("{jeu}"));
-  assert.match(textOf(b), /\[Voir sa fiche\]\(\/admin\/entries\/p1\?c=sponsors\)/);
+test("page : une commande de partenaire dont la fiche n'est plus publiée est dite « en pause » dans la rubrique, avec ce qui va se passer", async () => {
+  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla"), entry("p2", "nordvpn", "NordVPN")] });
+  const e = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
+  await C.saveSourced(ctx, "partner", "p1", { enabled: true }, e);
+  await C.saveSourced(ctx, "partner", "p2", { enabled: true, name: "nord" }, e);
+  const gone = world({ sponsors: [entry("p2", "nordvpn", "NordVPN")] });
+  await gone.ctx.api.store.add("botConfig", (await C.loadConfig(ctx)).data);
+  SRC.resetSources();
+  const b = await A.panel(gone.ctx, { query: {} });
+  assert.deepEqual(table(b, fr.col_partner).rows, [["NordVPN", `!nord · ${fr.state_on}`]]);
+  assert.match(textOf(b), /En pause \(la fiche n'est plus publiée ou a disparu\) : !tesla \(Tesla\)\. Ces commandes sont retirées toutes seules au bout de deux semaines/);
+});
+
+/* ───────────── La section dans la fiche du partenaire ───────────── */
+
+const target = (o = {}) => ({ id: "p1", title: "Tesla", slug: "tesla", path: "/sponsors/tesla", instance: "sponsors", published: true, ...o });
+const panelDef = def.entryPanels["chat-command"];
+const formOf = (blocks) => blocks.find((b) => b.type === "adminForm");
+const fieldsOf = (blocks) => Object.fromEntries(formOf(blocks).fields.map((x) => [x.name, x]));
+
+test("fiche du partenaire : la section est déclarée (par sujet, jamais par nom de module), à la bonne place du manifeste, avec son code et ses actions", () => {
+  assert.equal(manifest.entryPanels.length, 1);
+  const decl = manifest.entryPanels[0];
+  assert.deepEqual([decl.id, decl.for], ["chat-command", { topic: "sponsor.card" }]);
+  for (const l of ["fr", "en"]) assert.ok(decl.title[l].length > 10 && decl.help[l].length > 30);
+  assert.equal(typeof panelDef.render, "function");
+  assert.deepEqual(Object.keys(panelDef.actions), ["save"]);
+  assert.ok(manifest.permissions.includes("admin"));
+  assert.ok(parseManifest(manifest).ok);
+});
+
+test("fiche du partenaire : case « Activer la commande dans le chat », NOM (= identifiant de sa page) et TEXTE pré-remplis et modifiables, aperçu, lien vers le bot", async () => {
+  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla")] });
+  const b = await panelDef.render(ctx, target(), { advanced: false });
+  const f = fieldsOf(b);
+  assert.deepEqual(Object.keys(f), ["enabled", "name", "text"], "version simple : trois champs, pas de jargon");
+  assert.deepEqual([f.enabled.kind, f.enabled.label, f.enabled.value, f.name.value, f.text.value], ["checkbox", fr.f_enabled_chat, "", "tesla", "Découvrez mon parrainage {partenaire} : {adresse}"]);
+  assert.equal(f.name.label, "Nom de la commande (sans le !)");
+  assert.ok(f.text.help.includes("{partenaire}") && f.text.help.includes("{adresse}"));
+  assert.equal(formOf(b).action, "save");
   assert.match(textOf(b), /Aperçu de la réponse.*Découvrez mon parrainage Tesla : site\.example\.org\/sponsors\/tesla/);
-  assert.equal(form.cancelHref, "?");
-  const saved = await A.actions.save(ctx, { key: "partner:p1", enabled: "on", name: "parrain", aliases: "", text: "Chez {partenaire} : {adresse}", role: "everyone", cdGlobal: "", cdUser: "" });
-  assert.deepEqual(saved, { ok: fr.saved, redirect: "?" });
+  assert.deepEqual(b.at(-1).items[0].label, fr.entry_open_bot);
+  assert.ok(b.at(-1).items[0].href.startsWith("/admin/instances/"));
+  assert.ok(!b.some((x) => x.type === "banner" && x.tone === "info"), "fiche publiée : pas de remarque");
+});
+
+test("fiche du partenaire : le mode avancé ajoute autres noms, qui peut l'utiliser et attentes", async () => {
+  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla")] });
+  const f = fieldsOf(await panelDef.render(ctx, target(), { advanced: true }));
+  assert.deepEqual(Object.keys(f), ["enabled", "name", "text", "aliases", "role", "cdGlobal", "cdUser"]);
+  assert.equal(f.role.options.length, 4);
+});
+
+test("fiche du partenaire : enregistrer active la commande, qui répond avec les informations de la fiche ; la section se relit avec ce qui a été enregistré", async () => {
+  const { ctx, tw } = world({ sponsors: [entry("p1", "tesla", "Tesla")] });
+  const saved = await panelDef.actions.save(ctx, target(), { enabled: "on", name: "parrain", text: "Chez {partenaire} : {adresse}" });
+  assert.deepEqual(saved, { ok: fr.saved });
   await say(ctx, "!parrain");
   assert.deepEqual(sent(tw), ["Chez Tesla : site.example.org/sponsors/tesla"]);
-  const again = await A.panel(ctx, { query: { edit: "partner:p1" } });
-  assert.equal(Object.fromEntries(formsOf(again, "save")[0].fields.map((x) => [x.name, x])).enabled.value, "on");
-  const unknown = await A.panel(ctx, { query: { edit: "partner:fantome" } });
-  assert.equal(bannerOf(unknown).some((x) => x.text === fr.edit_unknown), true);
+  const again = fieldsOf(await panelDef.render(ctx, target(), { advanced: false }));
+  assert.deepEqual([again.enabled.value, again.name.value, again.text.value], ["on", "parrain", "Chez {partenaire} : {adresse}"]);
+  // décocher met la commande en pause sans rien perdre
+  assert.deepEqual(await panelDef.actions.save(ctx, target(), { name: "parrain", text: "Chez {partenaire} : {adresse}" }), { ok: fr.saved });
+  SRC.resetSources();
+  assert.equal((await listOf(ctx, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" })).find((c) => c.key === "partner:p1").state, "off");
+  assert.equal(fieldsOf(await panelDef.render(ctx, target(), { advanced: false })).enabled.value, "");
+  // la page du bot montre l'état et mène à la fiche
+  SRC.resetSources();
+  assert.deepEqual(table(await A.panel(ctx, { query: {} }), fr.col_partner).rows, [["Tesla", `!parrain · ${fr.state_off}`]]);
+});
+
+test("fiche du partenaire : les erreurs disent quoi faire et ne laissent rien d'enregistré (nom pris, nom invalide, variable inconnue)", async () => {
+  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla"), entry("p2", "nordvpn", "NordVPN")] });
+  assert.match((await panelDef.actions.save(ctx, target({ id: "p1" }), { enabled: "on", name: "jeu", text: "x" })).error, /« jeu » est déjà pris par la commande « jeu »/);
+  assert.match((await panelDef.actions.save(ctx, target({ id: "p1" }), { enabled: "on", name: "a b", text: "x" })).error, /n'est pas valable/);
+  assert.match((await panelDef.actions.save(ctx, target({ id: "p1" }), { enabled: "on", name: "tesla", text: "Salut {pseudo}" })).error, /ne connaît pas : \{pseudo\}/);
+  assert.match((await panelDef.actions.save(ctx, target({ id: "p1" }), { enabled: "on", name: "tesla", text: "/ban" })).error, /ne peut pas commencer par \//);
+  assert.deepEqual((await C.loadConfig(ctx)).data.partners, {}, "un refus ne laisse rien d'enregistré");
+  assert.equal((await panelDef.actions.save(ctx, target({ id: "p1" }), { enabled: "on", name: "tesla", text: "Voir {adresse}" })).ok, fr.saved);
+  assert.match((await panelDef.actions.save(ctx, target({ id: "p2", slug: "nordvpn", title: "NordVPN", path: "/sponsors/nordvpn" }), { enabled: "on", name: "tesla", text: "x" })).error, /« tesla » est déjà pris/);
+});
+
+test("fiche du partenaire : une fiche en brouillon peut être réglée — la commande attend sa publication ; une fiche qui n'est pas d'un sponsor n'a pas de section", async () => {
+  const { ctx } = world({ sponsors: [] });
+  const draft = target({ id: "d1", title: "Brouillon", slug: "brouillon", path: "/sponsors/brouillon", published: false });
+  const b = await panelDef.render(ctx, draft, { advanced: false });
+  assert.equal(b[0].tone, "info");
+  assert.equal(b[0].text, fr.entry_unpublished);
+  assert.deepEqual(await panelDef.actions.save(ctx, draft, { enabled: "on", name: "brouillon", text: "Voir {adresse}" }), { ok: fr.entry_saved_unpublished });
+  assert.equal((await listOf(ctx)).find((c) => c.key === "partner:d1").state, "missing", "pas dans les fiches publiées : en pause jusqu'à la publication");
+  const out = await say(ctx, "!brouillon");
+  assert.deepEqual([out.result, out.reason], ["refused", "missing"], "le bot ne répond pas tant que la fiche n'est pas publiée");
+  // une fiche d'un autre contenu : rien à montrer (le cœur masque la section) et rien à enregistrer
+  assert.deepEqual(await panelDef.render(ctx, target({ instance: "blog" }), { advanced: false }), []);
+  assert.match((await panelDef.actions.save(ctx, target({ instance: "blog" }), { enabled: "on", name: "x", text: "y" })).error, /n'existe pas/);
+});
+
+test("fiche du partenaire : si le bot n'écoute pas encore, la section le dit et mène à la page du bot ; la section est en anglais aussi", async () => {
+  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla")], tw: { mainStatus: "none" } });
+  const b = await panelDef.render(ctx, target(), { advanced: false });
+  const banner = b.find((x) => x.type === "banner" && x.tone === "warning");
+  assert.equal(banner.text, fr.entry_bot_not_ready);
+  assert.equal(banner.href, `/admin/instances/${ctx.instance.id}`);
+  // une éditrice : pas de lien vers la page du bot (elle lui est fermée), mais à qui s'adresser
+  const ed = await panelDef.render(ctx, target(), { advanced: false, role: "editor" });
+  const edBanner = ed.find((x) => x.type === "banner" && x.tone === "warning");
+  assert.equal(edBanner.text, fr.entry_bot_not_ready_editor);
+  assert.equal(edBanner.href, undefined);
+  assert.ok(!ed.some((x) => x.type === "links"), "aucun lien d'administration pour une éditrice");
+  assert.ok((await panelDef.render(ctx, target(), { advanced: false, role: "owner" })).some((x) => x.type === "links"));
+  const en_ = world({ sponsors: [entry("p1", "tesla", "Tesla")], locale: "en" });
+  const e = await panelDef.render(en_.ctx, target(), { advanced: true });
+  assert.equal(formOf(e).submitLabel, en.save_btn);
+  assert.equal(fieldsOf(e).enabled.label, en.f_enabled_chat);
+  assert.match(textOf(e), /Preview of the answer/);
 });
 
 test("page : réseaux — explication sans module de réseau ; sinon liste avec « Configurer » ; modifier un réseau propose nom, autres noms et texte", async () => {
@@ -912,6 +1018,27 @@ test("page : réseaux — explication sans module de réseau ; sinon liste avec 
   assert.match(clash.error, /« youtube » est déjà pris par la commande « youtube »/);
 });
 
+test("page : modifier un réseau mène aussi à la page de réglages du module du réseau (adresse donnée par le cœur) ; sans elle, pas de lien", async () => {
+  const { ctx } = world({ links: [link("y", "youtube-channel", "YouTube", "https://www.youtube.com/@emma")], instances: [{ id: "i9", key: "y", module: "youtube-channel", basePath: null, name: "YouTube", adminPath: "/admin/instances/i9" }] });
+  assert.match(textOf(await A.panel(ctx, { query: { edit: "network:y" } })), /\[Modifier l'adresse dans le module de ce réseau\]\(\/admin\/instances\/i9\)/);
+  const bare = world({ links: [link("y", "youtube-channel", "YouTube", "https://www.youtube.com/@emma")] });
+  assert.ok(!textOf(await A.panel(bare.ctx, { query: { edit: "network:y" } })).includes("Modifier l'adresse dans le module"));
+});
+
+test("page : aucune action ne redirige (la page resterait en haut après chaque clic) sauf supprimer et rétablir le texte, qui reviennent à la page de la commande", async () => {
+  const { ctx } = world();
+  const results = {
+    mute: await A.actions.mute(ctx), unmute: await A.actions.unmute(ctx), check: await A.actions.check(ctx), relisten: await A.actions.relisten(ctx),
+    toggle: await A.actions.toggle(ctx, { id: "builtin:titre" }), clearLog: await A.actions.clearLog(ctx), disconnectBot: await A.actions.disconnectBot(ctx),
+    create: await A.actions.create(ctx, { name: "merch", text: "Boutique", role: "everyone" }),
+    save: await A.actions.save(ctx, { key: "builtin:jeu", enabled: "on", name: "jeu", aliases: "game", text: "Mon {jeu}", role: "everyone" }),
+  };
+  for (const [name, r] of Object.entries(results)) assert.ok(r.ok && r.redirect === undefined, `${name} : un message, pas de redirection (${JSON.stringify(r)})`);
+  assert.ok(A.actions.resetText.toString().includes("redirect") && A.actions.remove.toString().includes("redirect"));
+  // les textes d'erreur restent affichés sous le bouton cliqué : une erreur n'a jamais de redirection non plus
+  assert.deepEqual(Object.keys(await A.actions.create(ctx, { name: "merch", text: "x", role: "everyone" })), ["error"]);
+});
+
 test("page : créer une commande — le formulaire est là, une erreur dit quoi faire (nom pris, variable inconnue), succès confirmé", async () => {
   const { ctx } = world();
   const b = await A.panel(ctx, { query: {} });
@@ -920,7 +1047,7 @@ test("page : créer une commande — le formulaire est là, une erreur dit quoi 
   assert.equal(form.fields.find((f) => f.name === "role").options.length, 4);
   assert.match(form.fields[1].help, /\{followers\} \{jeu\} \{titre\} \{uptime\} \{prochain_stream\} \{utilisateur\}/);
   const v = { name: "merch", aliases: "", text: "Boutique", role: "everyone", cdGlobal: "", cdUser: "" };
-  assert.deepEqual(await A.actions.create(ctx, v), { ok: fr.created, redirect: "?" });
+  assert.deepEqual(await A.actions.create(ctx, v), { ok: fr.created });
   assert.match((await A.actions.create(ctx, v)).error, /« merch » est déjà pris par la commande « merch »\. Choisissez un autre nom/);
   assert.match((await A.actions.create(ctx, { ...v, name: "autre", text: "Salut {pseudo}" })).error, /ne connaît pas : \{pseudo\}.*\{followers\} \{jeu\}/);
   assert.match((await A.actions.create(ctx, { ...v, name: "x y" })).error, /n'est pas valable/);
@@ -938,7 +1065,7 @@ test("page : activer / désactiver, supprimer, rétablir le texte d'origine, vid
   assert.match((await A.actions.toggle(ctx, { id: "builtin:rien" })).error, /n'existe pas/);
   await A.actions.save(ctx, { key: "builtin:jeu", enabled: "on", name: "jeu", aliases: "game", text: "Mon texte {jeu}", role: "everyone" });
   assert.equal((await listOf(ctx)).find((c) => c.id === "jeu").text, "Mon texte {jeu}");
-  assert.deepEqual(await A.actions.resetText(ctx, { key: "builtin:jeu" }), { ok: fr.reset_done, redirect: "?edit=builtin:jeu" });
+  assert.deepEqual(await A.actions.resetText(ctx, { key: "builtin:jeu" }), { ok: fr.reset_done, redirect: "?edit=builtin:jeu#edit" });
   assert.equal((await listOf(ctx)).find((c) => c.id === "jeu").text, fr.cmd_jeu_text);
   await A.actions.create(ctx, { name: "tmp", text: "x", role: "everyone" });
   const id = (await C.loadConfig(ctx)).data.custom[0].id;
@@ -1012,9 +1139,9 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 /* ───────────── Manifeste, textes, règles du dépôt ───────────── */
 
-test("manifeste : valide, 1.0.0, minCore 0.1.22, plateforme Twitch, dépend de Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
+test("manifeste : valide, 1.1.0, minCore 0.1.24 (le cœur qui apporte les sections d'éditeur), plateforme Twitch, dépend de Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances], ["twitch-bot", "1.0.0", "0.1.22", "twitch", "multiple"]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances], ["twitch-bot", "1.1.0", "0.1.24", "twitch", "multiple"]);
   assert.deepEqual(manifest.requires.map((x) => x.service).sort(), ["twitch.api", "twitch.live"]);
   assert.deepEqual(manifest.consumes.map((x) => x.topic).sort(), ["planning.slot", "social.link", "social.stat"]);
   assert.ok(!manifest.requires.some((x) => /sponsor|planning|social/.test(x.service)), "Sponsors, Planning et les réseaux ne sont jamais requis");

@@ -68,15 +68,17 @@ export const partners = (ctx) => cached(ctx, "partners", async () => {
 /* ───────────── Réseaux sociaux ───────────── */
 
 const NAME_FROM_LABEL = (label) => String(label ?? "").split("·")[0].trim().slice(0, 40);
-/** { items: [{ key (instance du module de réseau), module, name, label, url }], ok } — un lien par module de réseau actif ET réglé (un module sans adresse ne fournit rien). */
+/** { items: [{ key (instance du module de réseau), module, name, label, url, adminPath }], ok } — un lien par module de réseau actif ET réglé (un module sans adresse ne fournit rien). */
 export const networks = (ctx) => cached(ctx, "networks", async () => {
   const links = await ctx.api.topics.collect("social.link", { limit: 100 });
+  // Où régler l'adresse de chaque réseau : la page de réglages de son instance (le cœur la donne, `adminPath`) ; absente = simplement pas de lien.
+  const adminPaths = new Map((await ctx.api.instances.list().catch(() => [])).map((i) => [i.key, typeof i.adminPath === "string" && i.adminPath.startsWith("/admin/") ? i.adminPath : null]));
   const items = [];
   for (const l of links) {
     const instance = l.source?.instance;
     if (!instance || !/^https:\/\//i.test(l.url ?? "")) continue;
     const name = NAME_FROM_LABEL(l.label) || String(l.source?.name ?? instance);
-    items.push({ key: String(instance), module: String(l.source?.module ?? ""), name, label: String(l.label ?? name), url: String(l.url) });
+    items.push({ key: String(instance), module: String(l.source?.module ?? ""), name, label: String(l.label ?? name), url: String(l.url), adminPath: adminPaths.get(String(instance)) ?? null });
   }
   return { ok: true, items };
 }).then((v) => v ?? { ok: false, items: [] });

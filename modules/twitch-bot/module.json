@@ -1,9 +1,9 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.1.24",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -51,6 +51,17 @@
         { "key": "url", "type": "url", "required": true },
         { "key": "icon", "type": "string" }
       ]
+    }
+  ],
+  "entryPanels": [
+    {
+      "id": "chat-command",
+      "for": { "topic": "sponsor.card" },
+      "title": { "en": "Chat command for this partner", "fr": "Commande de chat pour ce partenaire" },
+      "help": {
+        "en": "Let your Twitch chat get this partner's link with a command. This part saves on its own with its own button, apart from the page's Save button.",
+        "fr": "Permettez à votre chat Twitch d'obtenir le lien de ce partenaire avec une commande. Cette partie s'enregistre toute seule avec son propre bouton, à part du bouton Enregistrer de la page."
+      }
     }
   ],
   "permissions": ["routes", "storage", "admin", "topics", "mcp"],
