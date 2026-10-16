@@ -5,7 +5,7 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
   "platform": "discord",
   "description": {
     "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link.",
@@ -111,8 +111,8 @@
         "fr": "URL du webhook Discord"
       },
       "help": {
-        "en": "Discord → channel settings → Integrations → Webhooks. It contains the sending token: it is never shown again.",
-        "fr": "Discord → paramètres du salon → Intégrations → Webhooks. Elle contient le jeton d'envoi : elle n'est jamais réaffichée."
+        "en": "Discord → channel settings → Integrations → Webhooks. It lets the site post in your channel, so it is kept secret and never shown again.",
+        "fr": "Discord → paramètres du salon → Intégrations → Webhooks. Elle permet au site d'écrire dans votre salon : elle reste secrète et n'est jamais réaffichée."
       }
     },
     {

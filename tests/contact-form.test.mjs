@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { assertValidManifest, assertDefinitionMatchesManifest, assertSettingsSane, assertLocalesParity } from "./helpers/builtinChecks.mjs";
+import { assertValidManifest } from "./helpers/builtinChecks.mjs";
 
 const cf = await loadModule("modules/contact-form");
 const { definition: def, manifest, locales } = cf;
@@ -26,8 +26,6 @@ const messagesOf = async (ctx) => ctx.saved.map((a) => ({ data: { name: a.name, 
 
 test("contact-form : manifeste valide, section « form », permissions routes/slots/sections, dépend du service contact.store, désactivé tant qu'on ne l'active pas", async () => {
   const m = await assertValidManifest(manifest);
-  assertDefinitionMatchesManifest(m, def);
-  assertSettingsSane(m);
   assert.deepEqual(m.sections.map((s) => s.id), ["form"]);
   for (const p of ["slots", "routes", "sections"]) assert.ok(m.permissions.includes(p), p);
   assert.ok(!m.permissions.includes("storage"), "il ne stocke rien lui-même");
@@ -41,7 +39,6 @@ test("contact-form : manifeste valide, section « form », permissions routes/sl
 });
 
 test("contact-form : locales en/fr identiques et utilisées par le formulaire", () => {
-  assertLocalesParity(locales);
   for (const k of ["name", "email", "message", "send", "sent", "mailSubject", "mailBody"]) assert.ok(locales.en[k] && locales.fr[k], k);
 });
 

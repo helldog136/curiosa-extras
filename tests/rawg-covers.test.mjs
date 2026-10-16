@@ -290,7 +290,7 @@ test("admin : colonne jaquette, compteur des manquantes, bouton ; rien d'affich�
 test("game-suggestions : manifeste valide, version montée, permission rawg, ancien réglage rawgApiKey gardé en repli (secret, avancé), textes fr/en alignés", () => {
   const m = readJson("game-suggestions/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.1.0");
+  assert.equal(m.version, "1.1.1");
   const k = m.settings.find((s) => s.key === "rawgApiKey");
   assert.deepEqual([k.type, k.advanced], ["secret", true]);
   assert.deepEqual(m.permissions, ["pages", "routes", "storage", "admin", "mcp", "rawg"]);

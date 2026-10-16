@@ -89,5 +89,7 @@
   "live_erase": "Effacer les mesures",
   "live_eraseConfirm": "Effacer toutes les mesures de vos directs ? C'est définitif.",
   "live_erased": "Mesures effacées. Le suivi repart de zéro.",
-  "live_videosPending": "Les vues de vos vidéos arrivent dans quelques minutes."
+  "live_videosPending": "Les vues de vos vidéos arrivent dans quelques minutes.",
+  "conn_why_chat": "Pour que le bot de votre chat puisse lire les messages et y répondre, Twitch doit d'abord vous demander votre accord. Cela prend une minute, une seule fois.",
+  "extras_note": "Cette autorisation sert aussi au bot de votre chat : lire les messages du chat et y répondre."
 }

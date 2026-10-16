@@ -17,7 +17,7 @@ export function fakeTwitch(opts = {}) {
     return json({ access_token: a, refresh_token: r, expires_in: s.accessTtl, scope: g.scopes, token_type: "bearer" });
   };
   const api = {
-    log, revoked, state: s, access, refresh,
+    log, revoked, state: s, access, refresh, subs: [], chat: [],
     /** L'utilisateur clique « Autoriser » sur la page de Twitch : renvoie l'adresse de retour (avec code et state). Refuse comme Twitch une adresse non enregistrée. */
     approve(authorizeUrl, who = {}) {
       const u = new URL(authorizeUrl);
@@ -65,9 +65,37 @@ export function fakeTwitch(opts = {}) {
         for (const m of [access, refresh]) if (m.has(body.token)) m.get(body.token).valid = false;
         return new Response(null, { status: 200 });
       }
+      if (u.hostname === "api.twitch.tv" && String(init.headers?.Authorization ?? "") === "Bearer app_tok") {
+        // Jeton d'application : abonnements EventSub (webhook) — voir twitch-api.test.mjs / twitch-bot.test.mjs
+        if (init.headers?.["Client-Id"] !== s.clientId) return json({ status: 401, message: "Invalid OAuth token" }, 401);
+        if (u.pathname === "/helix/eventsub/subscriptions") {
+          if (init.method === "GET") { const type = u.searchParams.get("type"); return json({ data: api.subs.filter((x) => !type || x.type === type).map(({ secret, ...pub }) => pub), total: api.subs.length, pagination: {} }); }
+          if (init.method === "DELETE") { const i = api.subs.findIndex((x) => x.id === u.searchParams.get("id")); if (i < 0) return json({ status: 404 }, 404); api.subs.splice(i, 1); return new Response(null, { status: 204 }); }
+          if (init.method === "POST") {
+            const b = JSON.parse(init.body);
+            if (s.eventsubDenied) return json({ status: 403, message: "subscription missing proper authorization" }, 403);
+            if (api.subs.some((x) => x.type === b.type && x.transport.callback === b.transport.callback && JSON.stringify(x.condition) === JSON.stringify(b.condition) && x.status === "enabled")) return json({ status: 409, message: "subscription already exists" }, 409);
+            const sub = { id: `sub${++n}`, status: "webhook_callback_verification_pending", type: b.type, version: b.version, condition: b.condition, transport: { method: b.transport.method, callback: b.transport.callback }, secret: b.transport.secret };
+            api.subs.push(sub);
+            return json({ data: [{ ...sub, secret: undefined }], total: 1, total_cost: 1, max_total_cost: 10000 }, 202);
+          }
+        }
+        if (u.pathname === "/helix/users") return json({ data: [{ id: s.userId, login: s.login }] });
+        return json({}, 404);
+      }
       if (u.hostname === "api.twitch.tv") {
         const t = access.get(String(init.headers?.Authorization ?? "").replace(/^Bearer /, ""));
         if (!t?.valid || init.headers?.["Client-Id"] !== s.clientId) return json({ status: 401, message: "Invalid OAuth token" }, 401);
+        if (u.pathname === "/helix/chat/messages" && init.method === "POST") {
+          if (!t.scopes.includes("user:write:chat")) return json({ status: 401, message: "Missing scope: user:write:chat" }, 401);
+          const b = JSON.parse(init.body);
+          if (b.sender_id !== t.userId) return json({ status: 400, message: "sender mismatch" }, 400);
+          if (typeof b.message !== "string" || !b.message || [...b.message].length > 500) return json({ status: 400, message: "bad message" }, 400);
+          if (s.chatDown) return json({ status: 503 }, 503);
+          const id = `chatmsg${++n}`;
+          api.chat.push({ id, broadcaster: b.broadcaster_id, sender: b.sender_id, message: b.message, as: t.login });
+          return json({ data: [{ message_id: id, is_sent: !s.chatDropped, ...(s.chatDropped ? { drop_reason: { code: "msg_duplicate", message: "dup" } } : {}) }] });
+        }
         if (u.pathname === "/helix/channels/followers") {
           if (!t.scopes.includes("moderator:read:followers")) return json({ status: 401, message: "Missing scope: moderator:read:followers" }, 401);
           return u.searchParams.get("broadcaster_id") === t.userId ? json({ total: s.followers, data: [], pagination: {} }) : json({}, 403);

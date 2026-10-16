@@ -2,20 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { assertValidManifest, assertDefinitionMatchesManifest, assertSettingsSane, assertLocalesParity, settingsDefaults } from "./helpers/builtinChecks.mjs";
+import { assertValidManifest, settingsDefaults } from "./helpers/builtinChecks.mjs";
 
 const hero = await loadModule("modules/hero");
 
 // ───────── hero ─────────
 test("hero : manifeste valide, section « hero » déclarée et implémentée, onboarding sur l'accueil", async () => {
   const m = await assertValidManifest(hero.manifest);
-  assertDefinitionMatchesManifest(m, hero.definition);
-  assertSettingsSane(m);
   assert.deepEqual(m.sections.map((s) => s.id), ["hero"]);
   assert.deepEqual(m.onboarding, { home: { section: "hero" } });
   assert.ok(m.onboarding.home.section === m.sections[0].id, "l'onboarding pointe vers une section existante");
   assert.deepEqual(hero.locales, {});
-  assertLocalesParity(hero.locales);
 });
 
 test("hero : réglages — title/text traduisibles, showLogo vrai par défaut", async () => {

@@ -166,9 +166,9 @@ test("MCP : outils de personnes retirés (contacts_list, contact_create/update/d
   assert.deepEqual(Object.keys(def.mcp).sort(), [...names].sort());
 });
 
-test("MCP : lier / délier = écritures non destructives accordées d'office (réversibles, ne touchent pas aux personnes) ; descriptions qui orientent l'assistant", () => {
+test("MCP : lier / délier = écritures non destructives (réversibles, ne touchent pas aux personnes)  ; descriptions qui orientent l'assistant", () => {
   const by = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
-  for (const n of ["partner_link_contact", "partner_unlink_contact"]) { assert.equal(by[n].default, true, n); assert.ok(!by[n].destructive && !by[n].readOnly, n); assert.deepEqual(by[n].input.required, ["id", "contact_id"]); }
+  for (const n of ["partner_link_contact", "partner_unlink_contact"]) { assert.equal(by[n].default, false, n); assert.ok(!by[n].destructive && !by[n].readOnly, n); assert.deepEqual(by[n].input.required, ["id", "contact_id"]); }
   assert.match(by.partner_link_contact.description, /Contacts/);
   assert.match(by.partner_unlink_contact.description, /NOT deleted/);
   assert.match(by.partner_get.description, /contact_get/);

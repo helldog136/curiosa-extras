@@ -64,14 +64,15 @@ test("manifeste : MCP déclarés = MCP implémentés, aucun sujet/section/slot f
   for (const name of ["savePartner", "deletePartner", "addJournal", "deleteJournal", "linkContact", "createContact", "unlinkContact", "mergeRun", "mergeUndo", "mergeResolve", "mergeDismiss"]) assert.equal(typeof def.adminActions[name], "function", name);
 });
 
-test("manifeste : suppressions MCP destructives et désactivées par défaut, le reste activé", () => {
+test("manifeste : suppressions MCP destructives et désactivées par défaut, les écritures non accordées d'office, seules les lectures activées", () => {
   for (const name of ["partner_delete"]) {
     const a = manifestJson.mcp.find((x) => x.name === name);
     assert.equal(a.destructive, true, name);
     assert.equal(a.default, false, `${name} doit être OFF par défaut`);
     assert.ok(!a.readOnly);
   }
-  for (const a of manifestJson.mcp.filter((x) => !["partner_delete"].includes(x.name))) {
+  for (const name of ["partner_create", "partner_update", "partner_log", "partner_link_contact", "partner_unlink_contact"]) assert.equal(manifestJson.mcp.find((x) => x.name === name).default, false, `${name} écrit : l'accès IA l'accorde explicitement`);
+  for (const a of manifestJson.mcp.filter((x) => !["partner_delete", "partner_create", "partner_update", "partner_log", "partner_link_contact", "partner_unlink_contact"].includes(x.name))) {
     assert.equal(a.default, true, a.name);
     assert.ok(!a.destructive, a.name);
   }

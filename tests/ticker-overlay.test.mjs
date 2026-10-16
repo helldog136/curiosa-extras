@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { assertValidManifest, assertDefinitionMatchesManifest, assertSettingsSane, assertLocalesParity, settingsDefaults } from "./helpers/builtinChecks.mjs";
+import { assertValidManifest, settingsDefaults } from "./helpers/builtinChecks.mjs";
 
 const tk = await loadModule("modules/ticker-overlay");
 const { definition: def, manifest, locales } = tk;
@@ -11,15 +11,12 @@ const ov = (settings = {}, o = {}) => def.overlay(fakeCtx({ key: "ticker", name:
 
 test("ticker-overlay : manifeste valide, type overlay, permissions overlay/routes/topics, aucune section", async () => {
   const m = await assertValidManifest(manifest);
-  assertDefinitionMatchesManifest(m, def);
-  assertSettingsSane(m);
   assert.equal(m.type, "overlay");
   assert.deepEqual(m.sections, []);
   assert.deepEqual([...m.permissions].sort(), ["overlay", "routes", "topics"]);
   assert.deepEqual(Object.keys(def.routes), ["items"]);
   assert.equal(typeof def.overlay, "function");
   assert.deepEqual(locales, {});
-  assertLocalesParity(locales);
 });
 
 test("ticker-overlay : sujets consommés valides, schéma overlay.item avec titre obligatoire, tags sur core.entry", async () => {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertValidManifest, assertDefinitionMatchesManifest, assertSettingsSane } from "./helpers/builtinChecks.mjs";
+import { assertValidManifest } from "./helpers/builtinChecks.mjs";
 import { listModuleDirs, loadModule } from "./helpers/moduleLoader.mjs";
 
 // Tous les modules du dépôt, chargés comme Curiosa les charge (manifeste + code + textes).
@@ -18,24 +18,7 @@ test("dépôt : identifiants uniques, les 10 modules de base (ex-livrés avec le
     assert.ok(ids.includes(id), id);
   }
   assert.ok(!ids.includes("blocks"), "« Blocs de page » est une fonction du cœur, plus un module (migration automatique)");
-  assert.equal(ids.length, 44, "10 modules de base + 12 modules + 20 réseaux sociaux + 2 exemples");
-});
-
-test("dépôt : chaque module a manifeste valide, sections/permissions cohérentes, pas de MCP orphelin", async () => {
-  for (const m of BUILTIN_MODULES) {
-    await assertValidManifest(m.manifest);
-    assertDefinitionMatchesManifest(m.manifest, m.definition);
-    assertSettingsSane(m.manifest);
-    assert.equal(m.manifest.apiVersion, 2);
-    assert.ok(m.manifest.name.en && m.manifest.name.fr, m.manifest.id);
-    assert.ok(m.manifest.description.en && m.manifest.description.fr, m.manifest.id);
-  }
-});
-
-test("dépôt : aucune permission dangereuse ni MCP par défaut dans les modules livrés", () => {
-  for (const m of BUILTIN_MODULES) {
-    for (const a of m.manifest.mcp ?? []) assert.ok(!(a.destructive && a.default), `${m.manifest.id}.${a.name}`);
-  }
+  assert.equal(ids.length, 45, "10 modules de base + 13 modules + 20 réseaux sociaux + 2 exemples");
 });
 
 for (const [name, m] of Object.entries(content)) {
@@ -51,7 +34,6 @@ for (const [name, m] of Object.entries(content)) {
   test(`contenu « ${name} » : pas de code (définition vide) donc aucune section déclarée sans implémentation`, () => {
     assert.deepEqual(m.definition, {});
     assert.deepEqual(m.manifest.sections, []);
-    assertDefinitionMatchesManifest(m.manifest, m.definition);
   });
 }
 

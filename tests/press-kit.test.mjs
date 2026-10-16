@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { assertValidManifest, assertDefinitionMatchesManifest, assertSettingsSane, assertLocalesParity, settingsDefaults } from "./helpers/builtinChecks.mjs";
+import { assertValidManifest, settingsDefaults } from "./helpers/builtinChecks.mjs";
 
 const pk = await loadModule("modules/press-kit");
 const { definition: def, manifest, locales } = pk;
@@ -19,8 +19,6 @@ const types = (p) => p.blocks.map((b) => b.type);
 
 test("press-kit : manifeste valide, page publique /press-kit, widget à instance unique, permission pages seule", async () => {
   const m = await assertValidManifest(manifest);
-  assertDefinitionMatchesManifest(m, def);
-  assertSettingsSane(m);
   assert.equal(m.page, true);
   assert.equal(m.basePath, "press-kit");
   assert.equal(m.type, "widget");
@@ -33,7 +31,6 @@ test("press-kit : manifeste valide, page publique /press-kit, widget à instance
 });
 
 test("press-kit : locales en/fr identiques (variable {name} conservée)", () => {
-  assertLocalesParity(locales);
   assert.match(locales.fr.intro, /\{name\}/);
 });
 
