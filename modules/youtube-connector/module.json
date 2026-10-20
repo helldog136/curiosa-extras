@@ -1,0 +1,62 @@
+{
+  "apiVersion": 2,
+  "id": "youtube-connector",
+  "name": {
+    "en": "YouTube connector",
+    "fr": "Connecteur YouTube"
+  },
+  "version": "1.0.0",
+  "platform": "youtube",
+  "description": {
+    "en": "Keeps your site's YouTube key in one place, entered once and never shown again. Reads channel names, pictures and subscriber counts, while watching YouTube's daily allowance so the site never runs out.",
+    "fr": "Garde la clé YouTube de votre site à un seul endroit, saisie une fois et jamais réaffichée. Lit le nom, la photo et le nombre d'abonnés des chaînes, en surveillant la limite du jour de YouTube pour que le site ne tombe jamais à court."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🔌",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "storage",
+    "admin"
+  ],
+  "offers": [
+    {
+      "service": "youtube.api",
+      "version": 1,
+      "readOnly": ["request", "channels", "status"]
+    }
+  ],
+  "settings": [
+    {
+      "key": "apiKey",
+      "type": "secret",
+      "optional": true,
+      "label": {
+        "en": "YouTube key",
+        "fr": "Clé YouTube"
+      },
+      "help": {
+        "en": "Free: create it in a few minutes on console.cloud.google.com (service “YouTube Data v3”). Entered once for the whole site, never shown again.",
+        "fr": "Gratuite : créez-la en quelques minutes sur console.cloud.google.com (service « YouTube Data v3 »). Saisie une fois pour tout le site, jamais réaffichée."
+      }
+    },
+    {
+      "key": "dailyBudget",
+      "type": "number",
+      "default": 9000,
+      "advanced": true,
+      "label": {
+        "en": "Daily allowance used by the site",
+        "fr": "Part de la limite du jour utilisée par le site"
+      },
+      "help": {
+        "en": "YouTube gives 10,000 units a day. The site stops before this number (1,000 of them are kept for what you do in the administration). Between 100 and 10,000.",
+        "fr": "YouTube donne 10 000 unités par jour. Le site s'arrête avant ce nombre (dont 1 000 gardées pour ce que vous faites dans l'administration). Entre 100 et 10 000."
+      }
+    }
+  ],
+  "minCore": "0.2.0"
+}

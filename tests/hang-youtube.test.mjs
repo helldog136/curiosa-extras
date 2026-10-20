@@ -1,10 +1,15 @@
-// Chaîne YouTube 1.1.2 : un réseau « trou noir » (un fetch qui ne se termine jamais) ne doit plus bloquer la page d'accueil.
-// Avant le correctif : « Short ou non » interrogeait YouTube vidéo par vidéo, en série, sans mémoire (15 vidéos × 5 s = 75 s), et les chiffres partagés pouvaient rester bloqués.
-import test, { afterEach, beforeEach, mock } from "node:test";
+// Chaîne YouTube : un réseau « trou noir » (une réponse qui ne vient jamais) ne doit jamais bloquer la page d'accueil.
+// Depuis la 1.2.0, tout passe par ctx.api.net (délai dur) et par le service youtube.api (borne dure côté module) : ces tests vérifient les bornes de bout en bout.
+import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeConnector, connectorApi } from "./helpers/fakeYoutube.mjs";
 
+const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
+const { fakeFetch, netReplies } = kit;
 const DIR = new URL("../modules/youtube-channel", import.meta.url).pathname;
 const mod = await import("../modules/youtube-channel/index.mjs");
 const def = mod.default;
@@ -12,31 +17,32 @@ const CH = "UC" + "a".repeat(22);
 const realFetch = globalThis.fetch;
 const HUNG = Symbol("hung");
 const within = (p, ms = 1500) => { let t; return Promise.race([p, new Promise((r) => { t = setTimeout(() => r(HUNG), ms); })]).finally(() => clearTimeout(t)); };
-const blackHole = () => new Promise(() => {});
-const timing = mod.timing ?? {};   // (avant le correctif ce réglage n'existait pas : les tests doivent alors échouer sur le blocage lui-même)
+const timing = mod.timing;
 const saved = { ...timing };
-beforeEach(() => { mod.resetCache(); Object.assign(timing, { requestMs: 60_000, sharedMs: 60_000, shortsMs: 150, concurrency: 4 }); });
-afterEach(() => { globalThis.fetch = realFetch; Object.assign(timing, saved); mock.timers.reset(); });
+beforeEach(() => { mod.resetCache(); connectorApi.resetState(); Object.assign(timing, { requestMs: 60_000, serviceMs: 60_000, shortsMs: 150, concurrency: 4 }); });
+afterEach(() => { globalThis.fetch = realFetch; Object.assign(timing, saved); });
 
-const ctx = (settings = {}) => fakeCtx({ key: "yt", messages: JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8")), settings: { channelId: CH, ...settings } });
+const ctx = (settings = {}, opts = {}) => fakeCtx({ key: "yt", messages: JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8")), settings: { channelId: CH, ...settings }, ...opts });
 const ids = Array.from({ length: 15 }, (_, i) => `vid${String(i).padStart(8, "0")}`);
 const entry = (id, i) => `<entry><yt:videoId>${id}</yt:videoId><title>Video ${i}</title><published>${new Date(Date.now() - (i + 1) * 3_600_000).toISOString()}</published><media:group><media:community><media:statistics views="${1000 - i}"/></media:community></media:group></entry>`;
 const FEED = `<feed>${ids.map(entry).join("")}</feed>`;
 /** Le flux répond ; les contrôles « Short » (HEAD) passent par `head(id)`. */
 function mockYoutube(head) {
   const log = { heads: [], inflight: 0, maxInflight: 0 };
-  globalThis.fetch = async (url, init = {}) => {
-    const u = String(url);
-    if (u.includes("/feeds/videos.xml")) return { ok: true, status: 200, text: async () => FEED };
-    const m = /shorts\/([\w-]+)/.exec(u);
-    if (m) {
-      log.heads.push(m[1]); log.inflight++; log.maxInflight = Math.max(log.maxInflight, log.inflight);
-      try { return await head(m[1]); } finally { log.inflight--; }
-    }
-    return { ok: false, status: 404 };
-  };
+  globalThis.fetch = fakeFetch({
+    "*": async (url) => {
+      if (url.includes("/feeds/videos.xml")) return { text: FEED };
+      const m = /shorts\/([\w-]+)/.exec(url);
+      if (m) {
+        log.heads.push(m[1]); log.inflight++; log.maxInflight = Math.max(log.maxInflight, log.inflight);
+        try { return await head(m[1]); } finally { log.inflight--; }
+      }
+      return { status: 404, text: "" };
+    },
+  });
   return log;
 }
+const blackHole = () => new Promise(() => {});
 
 test("feed.item : des contrôles « Short » qui ne répondent jamais n'empêchent pas la réponse (borne globale), limités à 4 à la fois", async () => {
   const log = mockYoutube(blackHole);
@@ -68,7 +74,8 @@ test("vidéo mise en avant : bornée aussi quand YouTube ne répond pas à « Sh
 
 test("quand tout répond : même résultat qu'avant, un seul contrôle par vidéo pendant 10 minutes, en parallèle", async () => {
   const shorts = new Set([ids[1], ids[4]]);
-  const log = mockYoutube(async (id) => { await new Promise((r) => setTimeout(r, 5)); return { ok: shorts.has(id), status: shorts.has(id) ? 200 : 303 }; });
+  timing.shortsMs = 5000;
+  const log = mockYoutube(async (id) => { await new Promise((r) => setTimeout(r, 5)); return { status: shorts.has(id) ? 200 : 303, text: "" }; });
   const items = await def.exports["feed.item"](ctx(), { limit: 20 });
   assert.deepEqual(items.map((x) => x.id), ids.filter((i) => !shorts.has(i)).map((i) => `yt:${i}`), "les Shorts sont retirés, l'ordre est conservé");
   assert.equal(log.heads.length, 15);
@@ -78,25 +85,35 @@ test("quand tout répond : même résultat qu'avant, un seul contrôle par vidé
   assert.equal(log.heads.length, 15, "le résultat est gardé : aucun nouvel appel");
 });
 
-test("chiffres de la chaîne : un appel qui ne se termine jamais rend « network » et ne bloque pas la suite", async () => {
-  timing.sharedMs = 150;
-  globalThis.fetch = blackHole;
-  const key = "KEY";
-  const r = await within(mod.channelStats(CH, key));
+test("chiffres de la chaîne : un fournisseur de youtube.api qui ne répond jamais rend « network » dans la borne et ne bloque pas la suite", async () => {
+  timing.serviceMs = 150;
+  const hung = ctx({ trackStats: true }, { services: { "youtube.api": { channels: blackHole } } });
+  const r = await within(def.exports["social.stat"](hung, { limit: 10 }));
   assert.notEqual(r, HUNG);
-  assert.equal(r.error, "network");
-  await new Promise((res) => setTimeout(res, 30));
-  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ items: [{ statistics: { subscriberCount: "10", videoCount: "3", viewCount: "99" } }] }) });
-  mock.timers.enable({ apis: ["Date"], now: Date.now() + 120_000 });   // l'erreur retenue une minute est périmée
-  const ok = await within(mod.channelStats(CH, key));
-  assert.notEqual(ok, HUNG, "ne doit plus attendre l'ancienne promesse");
-  assert.equal(ok.stats?.followers, 10);
+  assert.ok(r.every((i) => i.error === "network"));
 });
 
-test("lecture du flux : un corps de réponse qui ne se termine jamais est borné par la borne dure", async () => {
-  Object.assign(timing, { requestMs: 25 });
-  globalThis.fetch = async () => ({ ok: true, status: 200, text: blackHole });
-  assert.deepEqual(await within(mod.viaFeed(CH)), []);
-  globalThis.fetch = blackHole;
-  assert.deepEqual(await within(mod.viaFeed(CH)), []);
+test("chiffres de la chaîne : YouTube muet (trou noir) derrière le vrai connecteur → réponse bornée, puis tout repart quand YouTube revient", async () => {
+  connectorApi.LIMITS.timeoutMs = 600;
+  try {
+    globalThis.fetch = fakeFetch({ "*": netReplies.silence() });
+    const c = makeConnector();
+    const me = ctx({ trackStats: true }, { services: c.services });
+    const t0 = Date.now();
+    const r = await within(def.exports["social.stat"](me, { limit: 10 }), 3000);
+    assert.notEqual(r, HUNG);
+    assert.ok(Date.now() - t0 < 2000);
+    assert.ok(r.every((i) => i.error === "network"), JSON.stringify(r));
+  } finally { connectorApi.LIMITS.timeoutMs = 8000; }
+});
+
+test("lecture du flux : une réponse qui ne vient jamais est bornée par le délai (et par le temps restant d'une page publique)", async () => {
+  Object.assign(timing, { requestMs: 200 });
+  globalThis.fetch = fakeFetch({ "*": netReplies.silence() });
+  assert.deepEqual(await within(mod.viaFeed(ctx(), CH)), []);
+  Object.assign(timing, { requestMs: 60_000 });
+  const page = ctx({}, { netBudgetMs: 800 });
+  const t0 = Date.now();
+  assert.equal(await within(def.sections.featured(page), 3000), null);
+  assert.ok(Date.now() - t0 < 1500, "dans le temps de la page");
 });
