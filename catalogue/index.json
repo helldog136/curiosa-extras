@@ -744,11 +744,11 @@
     {
       "id": "youtube-channel",
       "name": "Chaîne YouTube",
-      "description": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos abonnés, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; une clé YouTube ajoute les chiffres, la détection des Shorts et les durées exactes.",
+      "description": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos abonnés, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; la clé YouTube du site, saisie une fois pour tout le site, ajoute les chiffres, la détection des Shorts et les durées exactes.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-channel",
       "ref": "v1.10.0",
-      "version": "1.1.2",
+      "version": "1.2.0",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -760,8 +760,30 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.1.22"
-      }
+        "core": "0.2.0"
+      },
+      "needs": [
+        "youtube.api"
+      ]
+    },
+    {
+      "id": "youtube-connector",
+      "name": "Connecteur YouTube",
+      "description": "Garde la clé YouTube de votre site à un seul endroit, saisie une fois et jamais réaffichée. Lit le nom, la photo et le nombre d'abonnés des chaînes, en surveillant la limite du jour de YouTube pour que le site ne tombe jamais à court.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/youtube-connector",
+      "ref": "v1.10.0",
+      "version": "1.0.0",
+      "platform": "youtube",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🔌",
+      "requires": {
+        "core": "0.2.0"
+      },
+      "offers": [
+        "youtube.api"
+      ]
     },
     {
       "id": "announcement-banner",

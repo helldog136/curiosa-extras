@@ -4,6 +4,26 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*Livraison « Connexions ». Il faut Curiosa 0.2.0 ou plus pour les modules cités ici.*
+
+### Nouveautés
+
+- **Nouveau module « Connecteur YouTube ».** Votre clé YouTube est rangée **à un seul endroit** pour tout le site : vous la saisissez une fois, elle n'est plus jamais affichée ni écrite dans un journal. La page du connecteur dit en une phrase où créer la clé gratuite, combien de la limite du jour de YouTube a déjà servi, et, si elle est atteinte, quand cela reprend (« La limite YouTube du jour est épuisée, reprise demain à 9 h »).
+- **Le site ne tombe plus à court de la limite YouTube.** Chaque demande à YouTube est comptée ; le connecteur s'arrête avant la fin (9 000 sur 10 000 par défaut, dont 1 000 gardées pour ce que vous faites dans l'administration). Une même réponse sert 10 minutes, et si YouTube ne répond plus, le site montre les dernières données connues avec leur date.
+
+### Améliorations
+
+- **« Chaîne YouTube » : plus de clé à saisir ici.** Si vous en aviez mis une, elle est remise au connecteur à la mise à jour, puis effacée de « Chaîne YouTube » seulement quand le connecteur confirme l'avoir : rien à retaper. Sans connecteur, la page de « Chaîne YouTube » propose de l'installer en un clic ; votre clé reste gardée, masquée, en attendant, et la vidéo mise en avant continue de marcher avec le flux public.
+- **« Chaîne YouTube » ne bloque plus jamais la page d'accueil** quand YouTube est lent : chaque demande a un délai, plus court encore dans une page publique.
+
+### Pour les développeurs
+
+- Nouveau module `youtube-connector` 1.0.0 (`type: "integration"`, `instances: "single"`, `minCore: "0.2.0"`) : offre `youtube.api` version 1 (contrat 11.2). Méthodes `request({ endpoint, params, priority?, timeoutMs? })` (liste fermée : `channels.list`, `playlistItems.list`, `videos.list`, 1 unité chacun ; `search.list` exclu), `channels({ ids?, handles? })` (1 à 50 par appel : nom, photo, abonnés), `adopt({ apiKey })` (jamais de valeur renvoyée, idempotent), `status()`. Tout passe par `ctx.api.net` ; la clé voyage dans l'en-tête `x-goog-api-key`, jamais dans l'adresse. Compteur d'unités du jour dans le stockage (remise à zéro à minuit `America/Los_Angeles`), budget `dailyBudget` (9 000, dont `min(1000, budget/9)` réservées à `priority: "interactive"`), refus `quota` sans réseau avant l'épuisement ou après un 403 `quotaExceeded`, pause de 10 min sur clé refusée, cache de 10 min, repli daté (`stale`, `at`), bloc `netHealth`. Aucune tâche.
+- `youtube-channel` 1.2.0 (`minCore: "0.2.0"`, `dataVersion: 2`) : `apiKey` passe en `legacySettings` (secret), `requires: [{ service: "youtube.api", min: 1, optional: true }]`, migration 2 et ouverture du panneau : `adopt` puis `ctx.legacy.clear("apiKey")` seulement après `ready: true`. Sans fournisseur : bloc `suggestInstall` (service `youtube.api`). Flux RSS et contrôles « Short » par `ctx.api.net` ; `channelId` déclaré `refersTo: "external"`. Les fonctions exportées prennent maintenant `ctx` en premier argument (`listVideos(ctx, id)`, `viaFeed`, `viaApi`, `isShort`, `shortFlags`, `channelStats`).
+- Tests : `youtube-connector` (faux YouTube : 403 `quotaExceeded`, 429, silence, JSON tronqué, disjoncteur, compteur d'unités, budget et réserve, clé refusée, `channels`, `adopt`, aucune fuite de la clé dans les retours, blocs, journaux et console), `youtube-channel` (migration rejouée deux fois, reprise en échec → rien d'effacé, `suggestInstall`), `hang-youtube` et `social-stat` passés sur le vrai connecteur. Aide de test `tests/helpers/fakeYoutube.mjs`.
+
 ## 1.10.0
 
 *Changements depuis la 1.9.0. « Raid Twitch » sait maintenant servir une grande communauté : jusqu'à 2 000 chaînes, avec un bouton « au hasard » quand la liste est très longue.*
