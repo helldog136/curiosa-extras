@@ -763,7 +763,10 @@
         "core": "0.2.0"
       },
       "needs": [
-        "youtube.api"
+        {
+          "service": "youtube.api",
+          "optional": true
+        }
       ]
     },
     {
