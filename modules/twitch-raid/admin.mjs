@@ -7,7 +7,8 @@ const search = await import(`./search.mjs${v}`);
 const { MAX_PARTNERS, FULL_VIEW_MAX, PASTE_MAX, PAGE_SIZE, oneLine, splitList, modeFor, filterPartners, pageOf, rowId, parseRowId } = await import(`./pure.mjs${v}`);
 
 const SERVICE = "twitch.api";
-export const settingsOf = (ctx) => ({ channel: oneLine(ctx.setting("channel"), 40).toLowerCase() });
+/** `channel` : la valeur brute du réglage (l'id d'une instance de Ma Chaîne Twitch, ou un pseudo tapé avant le choix) ; channel.mjs la traduit en pseudo. */
+export const settingsOf = (ctx) => ({ channel: oneLine(ctx.setting("channel"), 200) });
 export const dockUrl = (ctx, secret) => `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}/m/${ctx.instance.key}/dock?k=${encodeURIComponent(secret)}`;
 
 /** Attend `p` au plus `ms` (la page d'administration ne reste jamais suspendue à un autre module). */

@@ -1,6 +1,6 @@
 // Contrat `twitch.api` : le Connecteur Twitch (version 3) reste un SUR-ENSEMBLE de ce que les modules qui s'en servent appellent aujourd'hui.
 // On fait tourner le vrai code de ces modules (Bot Twitch, Raid Twitch, Statut live par Ma Chaîne Twitch) contre le VRAI Connecteur, branché sur le faux Twitch.
-// Ces modules ne sont pas modifiés par ce lot : s'ils cassent ici, le Connecteur a rompu le contrat.
+// Raid 1.3.0 et Bot 1.2.0 demandent `twitch.api` v3 et passent la chaîne voulue (`account({ channel })`) : voir aussi twitch-connexions-e2e.test.mjs (deux chaînes).
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -31,11 +31,12 @@ afterEach(() => { globalThis.fetch = realFetch; });
 const consumer = (o = {}) => fakeCtx({ siteUrl: "https://site.example.org", locale: "fr", services: { "twitch.api": C.methods, ...(o.services ?? {}) }, serviceInstances: { "twitch.api": [C.instance], ...(o.serviceInstances ?? {}) }, ...o.ctx });
 const approve = async (url, who) => { const r = await C.callback(new Request(tw.approve(url, who))); assert.equal(r.status, 303); };
 
-test("versions : les besoins déclarés aujourd'hui (Raid min 2, Bot min 1, Ma Chaîne Twitch min 3) sont satisfaits par twitch.api v3 ; le service n'est plus « each »", () => {
+test("versions : les besoins déclarés (Raid, Bot et Ma Chaîne Twitch : min 3) sont satisfaits par twitch.api v3 ; le service n'est plus « each »", () => {
   const offer = manifestOf("twitch-connector").offers.find((o) => o.service === "twitch.api");
   for (const id of ["twitch-raid", "twitch-bot", "twitch-channel"]) {
     const need = manifestOf(id).requires.find((r) => r.service === "twitch.api");
     assert.ok((need.min ?? 1) <= offer.version, id);
+    assert.equal(need.min, 3, `${id} : exige le Connecteur (une application, plusieurs chaînes)`);
   }
   assert.equal(offer.each ?? false, false);
   // aucun autre module du dépôt n'offre twitch.api : pas de mélange each / non-each, pas de maître à choisir

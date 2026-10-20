@@ -43,8 +43,8 @@
         "fr": "Quand afficher le lecteur"
       },
       "help": {
-        "en": "“Only when live” needs the Twitch channel module to have its client id and secret: without them the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
-        "fr": "« Seulement en direct » demande que la Chaîne Twitch ait son client id et son secret : sans eux, le lecteur n'est pas affiché (hors ligne, celui de Twitch est un grand panneau blanc). « Toujours » l'affiche quoi qu'il arrive."
+        "en": "“Only when live” needs your site to be connected to Twitch (Twitch connector): without it the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
+        "fr": "« Seulement en direct » demande que votre site soit relié à Twitch (Connecteur Twitch) : sans cela, le lecteur n'est pas affiché (hors ligne, celui de Twitch est un grand panneau blanc). « Toujours » l'affiche quoi qu'il arrive."
       },
       "options": [
         {

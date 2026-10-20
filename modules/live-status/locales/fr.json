@@ -1,10 +1,12 @@
 {
   "live": "{channel} est en direct — viens dire bonjour !",
-  "needCredentials": "Renseignez les identifiants Twitch dans la Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans eux, le lecteur n'est pas affiché.",
-  "openTwitch": "Ouvrir la Chaîne Twitch →",
+  "needCredentials": "Reliez votre site à Twitch dans le Connecteur Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans cela, le lecteur n'est pas affiché.",
+  "openTwitch": "Ouvrir Ma Chaîne Twitch →",
   "liveMany": "Chaînes en direct",
   "watch": "Regarder",
   "viewersOne": "{count} spectateur",
   "viewersMany": "{count} spectateurs",
-  "playerChoice": "Choisir la chaîne à regarder"
+  "playerChoice": "Choisir la chaîne à regarder",
+  "needChannel": "Indiquez votre chaîne dans Ma Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans elle, le lecteur n'est pas affiché.",
+  "openConnector": "Ouvrir le Connecteur Twitch →"
 }

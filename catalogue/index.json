@@ -654,16 +654,19 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.10.0",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤖",
       "requires": {
-        "core": "0.1.24"
+        "core": "0.2.0"
       },
       "needs": [
-        "twitch.api",
+        {
+          "service": "twitch.api",
+          "min": 3
+        },
         "twitch.live"
       ]
     },
@@ -730,7 +733,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
       "ref": "v1.10.0",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -739,13 +742,14 @@
         "stream.partner"
       ],
       "requires": {
-        "core": "0.1.22"
+        "core": "0.2.0"
       },
       "needs": [
         {
           "service": "twitch.api",
-          "min": 2
-        }
+          "min": 3
+        },
+        "twitch.live"
       ]
     },
     {

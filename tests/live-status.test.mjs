@@ -199,17 +199,23 @@ test("échappement : une chaîne hostile venue du fournisseur ne produit ni bann
   assert.ok(!JSON.stringify(await banner(wire().ctx)).includes("<script>"));
 });
 
-test("admin : sans identifiants Twitch, message en langage simple avec lien vers la Chaîne Twitch ; absent avec identifiants ou avec « toujours » ; jamais de bouton de reprise", async () => {
-  const m = { needCredentials: "RENSEIGNEZ" };
-  const blocks = await def.adminPanel(wire({ provider: { channel: "machaine" }, messages: m }).ctx);
-  assert.equal(blocks.find((b) => b.text === "RENSEIGNEZ").type, "banner");
-  assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/twitch-channel)")), "lien vers la Chaîne Twitch");
+test("admin : sans application Twitch (Connecteur) ou sans chaîne (Ma Chaîne Twitch), message en langage simple avec le lien vers l'endroit où cela se règle ; absent si une chaîne est prête ou avec « toujours » ; jamais de bouton de reprise", async () => {
+  const m = { needCredentials: "RELIEZ", needChannel: "INDIQUEZ" };
+  const noApp = await def.adminPanel(wire({ provider: { channel: "machaine" }, messages: m }).ctx);
+  assert.equal(noApp.find((b) => b.text === "RELIEZ").type, "banner");
+  assert.ok(noApp.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/twitch-connector)")), "lien vers le Connecteur Twitch");
+  const noChannel = await def.adminPanel(wire({ provider: { clientId: "cid", clientSecret: "sec" }, messages: m }).ctx);
+  assert.equal(noChannel.find((b) => b.text === "INDIQUEZ").type, "banner");
+  assert.ok(noChannel.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/twitch-channel)")), "lien vers Ma Chaîne Twitch");
+  assert.ok((await def.adminPanel(wire({ provider: {}, messages: m }).ctx)).some((b) => b.text === "RELIEZ"), "ni l'un ni l'autre : d'abord le Connecteur");
   for (const w of [wire({ messages: m }), wire({ provider: {}, own: { playerWhen: "always" }, messages: m })]) {
-    assert.ok(!(await def.adminPanel(w.ctx)).some((b) => b.text === "RENSEIGNEZ"));
+    assert.ok(!(await def.adminPanel(w.ctx)).some((b) => b.text === "RELIEZ" || b.text === "INDIQUEZ"));
   }
+  assert.deepEqual(await def.adminPanel(wire({ withProvider: false, messages: m }).ctx), [], "Ma Chaîne Twitch absente : le cœur propose de l'installer (requires)");
   assert.equal(def.adminActions, undefined, "plus d'action de reprise manuelle");
   assert.ok(!(await def.adminPanel(wire({ provider: {}, legacy: legacyOwn }).ctx)).some((b) => b.type === "adminForm"), "même avec d'anciennes valeurs : pas de bouton");
-  assert.match(locales.fr.needCredentials, /Renseignez les identifiants Twitch dans la Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct/);
+  assert.match(locales.fr.needCredentials, /Reliez votre site à Twitch dans le Connecteur Twitch pour afficher le lecteur seulement quand vous êtes en direct/);
+  assert.match(locales.fr.needChannel, /Indiquez votre chaîne dans Ma Chaîne Twitch/);
 });
 
 // ── Reprise automatique des identifiants d'avant (migration, legacySettings) ──────────────────────────────────────────────────────────
@@ -326,7 +332,7 @@ test("migration 2 avec plusieurs Chaînes Twitch : la chaîne reprise va dans la
 test("textes visibles : ni bouton ni message de reprise manuelle ; les clés qui restent existent en fr et en", () => {
   for (const l of ["fr", "en"]) {
     for (const k of Object.keys(locales[l])) assert.ok(!/^adopt|^field_/.test(k), `${l}.${k} : reprise manuelle retirée`);
-    for (const k of ["needCredentials", "openTwitch"]) assert.ok(locales[l][k], `${l}.${k}`);
+    for (const k of ["needCredentials", "needChannel", "openTwitch", "openConnector"]) assert.ok(locales[l][k], `${l}.${k}`);
   }
 });
 

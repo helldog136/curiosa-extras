@@ -1,4 +1,4 @@
-// D'où vient l'état « en direct » : du service `twitch.live` de la Chaîne Twitch — jamais de Twitch directement.
+// D'où vient l'état « en direct » : du service `twitch.live` de Ma Chaîne Twitch (qui passe par le Connecteur Twitch) — jamais de Twitch directement.
 // Ce module ne connaît ni jeton, ni cache d'API, ni quota : il demande, il présente.
 // Les identifiants Twitch d'un ancien réglage de ce module ne servent plus ici : ils sont repris dans la Chaîne Twitch par la migration (adopt.mjs).
 export const SERVICE = "twitch.live";
@@ -52,9 +52,14 @@ export async function liveSources(ctx, { status = true } = {}) {
     .map((x) => ({ channel: x.channel, name: shortName(x.status?.displayName, x.channel.toLowerCase()), live: x.live, known: x.known, configured: x.configured, status: x.status }));
 }
 
-/** Peut-on savoir si une chaîne est en direct ? Oui si une Chaîne Twitch a ses identifiants. null : Chaîne Twitch absente. */
-export async function canTellLive(ctx) {
+/**
+ * Ce qui manque pour savoir si une chaîne est en direct : null (Ma Chaîne Twitch absente : un autre message s'en occupe), false (rien : une chaîne est prête),
+ * "app" (l'application Twitch du site n'est pas réglée : elle se règle dans le Connecteur Twitch) ou "channel" (aucune chaîne indiquée dans Ma Chaîne Twitch).
+ */
+export async function setupGap(ctx) {
   const infos = await askAll(ctx, "channel", {});
-  if (!infos.length) return null;   // Chaîne Twitch absente : un autre message s'en occupe
-  return infos.some((i) => i.value.ready);
+  if (!infos.length) return null;
+  if (infos.some((i) => i.value.ready)) return false;
+  const missing = infos.flatMap((i) => (Array.isArray(i.value.missing) ? i.value.missing : []));
+  return missing.includes("clientId") || missing.includes("clientSecret") || infos.some((i) => CHANNEL_RE.test(i.value.channel ?? "")) ? "app" : "channel";
 }

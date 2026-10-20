@@ -1,9 +1,9 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.24",
+  "minCore": "0.2.0",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.1.1",
+  "version": "1.2.0",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -17,13 +17,14 @@
   "instances": "multiple",
   "page": false,
   "requires": [
-    { "service": "twitch.api" },
+    { "service": "twitch.api", "min": 3 },
     { "service": "twitch.live" }
   ],
+  "dataVersion": 2,
   "consumes": [
     {
       "topic": "social.stat",
-      "label": { "en": "Your Twitch follower count (from the Twitch channel module)", "fr": "Votre nombre de followers Twitch (fourni par la Chaîne Twitch)" },
+      "label": { "en": "Your Twitch follower count (from My Twitch channel)", "fr": "Votre nombre de followers Twitch (fourni par Ma Chaîne Twitch)" },
       "schema": [
         { "key": "id", "type": "string", "required": true },
         { "key": "platform", "type": "string", "required": true },
@@ -99,11 +100,14 @@
     },
     {
       "key": "channel",
-      "type": "text",
+      "type": "choice",
+      "source": { "kind": "providers", "service": "twitch.live" },
+      "fromText": true,
+      "refersTo": "channel",
       "advanced": true,
       "optional": true,
-      "label": { "en": "Twitch channel to serve (optional)", "fr": "Chaîne Twitch à servir (facultatif)" },
-      "help": { "en": "Only useful if the site has several Twitch channels: type the channel name. Empty = the first one.", "fr": "Utile seulement si le site a plusieurs chaînes Twitch : saisissez le nom de la chaîne. Vide = la première." }
+      "label": { "en": "Twitch channel to serve", "fr": "Chaîne Twitch à servir" },
+      "help": { "en": "Only asked when your site has several Twitch channels: the bot answers in the chat of this one. Leave empty to use the first one.", "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch : le bot répond dans le chat de celle-ci. Laissez vide pour utiliser la première." }
     },
     {
       "key": "prefix",
