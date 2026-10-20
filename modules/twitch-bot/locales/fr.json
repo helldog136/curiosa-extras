@@ -78,7 +78,7 @@
   "state_on": "Active",
   "state_off": "Désactivée",
   "state_not_set": "Pas encore activée",
-  "why_planning_absent": "Masquée : le module Planning n'est pas installé. Ajoutez-le pour que cette commande réponde.",
+  "why_planning_absent": "Masquée : aucun agenda de streams n'est installé. Ajoutez « Agenda en ligne » ou « Streams saisis à la main » pour que cette commande réponde.",
   "why_followers_absent": "Masquée : le nombre de followers n'est pas disponible. Dans « Chaîne Twitch », cochez « Suivre mes statistiques » et connectez votre chaîne.",
   "why_group_empty": "Masquée : aucune commande de réseau n'est activée.",
   "why_partner_missing": "En pause : la fiche de ce partenaire est introuvable ou n'est pas publiée.",

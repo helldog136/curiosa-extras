@@ -12,6 +12,30 @@ const mods = ["modules", "examples"].flatMap((group) => fs.readdirSync(path.join
   return { id: manifest.id, manifest, code };
 }));
 
+test("SRP : les agendas de streams fournissent `planning.slot`, le Planning et le bot le lisent ; seul l'Agenda en ligne lit un agenda iCal et parle à son adresse ; le Planning n'affiche que", () => {
+  const strip = (code) => code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/ .*$/gm, "");
+  const providers = mods.filter((m) => (m.manifest.provides ?? []).some((p) => p.topic === "planning.slot")).map((m) => m.id).sort();
+  assert.deepEqual(providers, ["calendar-ical", "calendar-manual"], "le Planning ne fournit plus planning.slot");
+  const consumers = mods.filter((m) => (m.manifest.consumes ?? []).some((c) => c.topic === "planning.slot")).map((m) => m.id).sort();
+  assert.deepEqual(consumers, ["planning", "twitch-bot"]);
+  for (const id of providers) {
+    const m = mods.find((x) => x.id === id);
+    assert.equal(m.manifest.offers, undefined, `${id} : aucun service (deux agendas n'offrent jamais le même)`);
+    assert.equal(m.manifest.requires, undefined, `${id} : utile seul, il ne dépend de personne`);
+    assert.ok(!/planning(?!\.slot)/i.test(strip(m.code)), `${id} ne connaît pas le Planning`);
+  }
+  const planning = mods.find((m) => m.id === "planning");
+  const code = strip(planning.code);
+  assert.equal(planning.manifest.requires, undefined, "pas de dépendance forte");
+  assert.ok(!/VEVENT|VCALENDAR|RRULE|DTSTART|\bfetch\(/.test(code), "le Planning ne lit aucun agenda et ne parle à aucun réseau");
+  assert.ok(!/\bcalendar-manual\b/.test(code), "le Planning ne nomme pas un agenda");
+  assert.deepEqual([...code.matchAll(/\bcalendar-ical\b/g)].length, 1, "…sauf pour semer l'instance de la migration temporaire");
+  const others = mods.filter((m) => m.id !== "calendar-ical").map((m) => ({ id: m.id, code: strip(m.code) }));
+  for (const m of others) assert.ok(!/VCALENDAR|BEGIN:VEVENT/.test(m.code), `${m.id} ne lit pas l'iCal : c'est l'affaire de l'Agenda en ligne`);
+  const bot = mods.find((m) => m.id === "twitch-bot");
+  assert.equal(bot.manifest.requires.some((r) => /planning|calendar/.test(r.service)), false, "le bot ne dépend d'aucun agenda");
+});
+
 test("SRP : Contacts possède les personnes, Partenariats ne garde que des références (aucune coordonnée, aucun outil qui écrit dans le carnet)", () => {
   const contacts = mods.find((m) => m.id === "contacts"), partnerships = mods.find((m) => m.id === "partnerships");
   assert.ok((partnerships.manifest.requires ?? []).some((r) => r.service === "contact.book"));

@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*Changements depuis la 1.7.1. Le Planning montre vos streams ; deux nouveaux modules les fournissent. Il faut Curiosa 0.1.27 ou plus pour mettre le Planning à jour.*
+
+### Nouveautés
+
+- **« Agenda en ligne » : votre Google Agenda alimente le site.** Collez l'adresse secrète de votre agenda une seule fois, puis écrivez vos streams dans Google Agenda comme d'habitude. Un guide pas à pas et un bouton « Tester l'adresse » sont dans la page du module.
+- **« Streams saisis à la main » : pas d'agenda en ligne ? Pas de problème.** Un petit formulaire pour écrire vos streams (jour, heure, jeux, « chaque semaine », semaines à sauter) directement dans l'administration.
+- **Vous pouvez avoir un seul de ces modules, ou les deux.** Leurs streams s'ajoutent sur le planning, et un stream écrit deux fois n'est montré qu'une fois.
+
+### Améliorations
+
+- **Si vous aviez déjà le Planning, vous n'avez rien à faire.** En se mettant à jour, il reprend l'adresse de votre agenda dans « Agenda en ligne » (installé pour vous) : la page du planning, les blocs d'accueil et le bot du chat montrent exactement les mêmes streams.
+- **Sans agenda, le Planning n'affiche plus d'erreur.** Vos visiteurs voient « Pas de stream planifié », et l'administration vous dit quoi installer.
+- **Le bot Twitch répond à « !planning » avec un seul de ces modules.** Le Planning n'est plus nécessaire. Un stream annulé n'est jamais annoncé.
+- **Les heures suivent par défaut le fuseau de votre agenda.** Le réglage « Fuseau horaire d'affichage » du Planning est facultatif.
+- **Un agenda qui ne répond plus ne ralentit jamais votre site.** La lecture s'arrête au bout de quelques secondes et le site garde la dernière copie reçue.
+
+### Pour les développeurs
+
+- `calendar-ical` 1.0.0 et `calendar-manual` 1.0.0 fournissent le sujet `planning.slot` : `id`, `title`, `start`, `end`, `allDay`, `day`, `games`, `text`, `status`, `timezone` (contrat dans le README de `calendar-ical`). Aucun service, aucune dépendance. Le lecteur d'iCal quitte le Planning (`ical.mjs`), avec un téléchargement borné d'un seul tenant (`fetch.mjs`, `timing.totalMs`).
+- `planning` 2.0.0 (`minCore` 0.1.27) ne fournit plus `planning.slot` : il le consomme. `slots.mjs` met les créneaux au format des apparences (fonctions pures) ; la lecture est bornée (`timing.collectMs`). Les jeux viennent de l'agenda (`games`), plus d'une description.
+- Migration 1 → 2 (`dataVersion` 2, **temporaire, à retirer en 0.3.0**) : `seeds` désigne `calendar-ical`, le lien est un sujet (le cœur doit accepter `seeds` avec `consumes`, 0.1.27). Elle sème une instance avec `{ url, timezone }` puis efface `icsUrl`, déclaré en réglage avancé le temps de la reprise.
+- `twitch-bot` 1.1.1 : `!planning` lit `planning.slot` sans exiger le Planning, ignore les streams annulés, lecture bornée (`timing.collectMs`). Tests : `tests/hang-calendar.test.mjs` (serveur « trou noir »), `planning-slots.test.mjs`, `planning-migration.test.mjs`, `calendar-*.test.mjs`.
+
 ## 1.7.1
 
 *Changements depuis la 1.7.0. Aucune nouveauté : cette version corrige un blocage possible de la page d'accueil.*

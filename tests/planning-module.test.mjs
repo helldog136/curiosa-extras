@@ -1,27 +1,28 @@
-import test, { beforeEach, afterEach } from "node:test";
+// Planning : affichage des streams reçus du sujet `planning.slot` (page, morceaux d'accueil, image, MCP, admin). Les créneaux viennent de VRAIS fournisseurs
+// (l'Agenda en ligne lit un agenda iCal fabriqué ici, sans réseau) : le Planning ne sait pas d'où ils viennent. Horloge simulée : aucun test ne dépend de l'heure du jour.
+import test, { after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { vevent, calendar, feedTopics } from "./helpers/icalFeed.mjs";
+
+mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-14T10:00:00Z") });   // mercredi 14 octobre 2026, 10:00 UTC
+after(() => mock.timers.reset());
 
 const mod = await import("../modules/planning/index.mjs");
 const def = mod.default;
-const URL_OK = "https://calendar.example.com/ical/secret-token/basic.ics";
 
-const ics = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 const hours = (n) => new Date(Date.now() + n * 3_600_000);
-const vevent = (uid, start, end, summary, extra = []) => ["BEGIN:VEVENT", `UID:${uid}`, `DTSTART:${ics(start)}`, `DTEND:${ics(end)}`, `SUMMARY:${summary}`, ...extra, "END:VEVENT"].join("\r\n");
-const calendar = (...events) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${events.join("\r\n")}\r\nEND:VCALENDAR\r\n`;
 
-const messages = { nextUp: "Prochain stream", daysTitle: "Cette semaine", noneToday: "—", title: "Planning", intro: "Prochains {days} jours ({tz})", none: "Rien", notConfigured: "Pas configuré", nextTitle: "Prochains streams", allDay: "Toute la journée",
-  adminStatus: "État", adminNotSet: "Adresse absente", badUrl: "Adresse refusée", adminHint: "…{hint}", adminError: "Illisible", adminOk: "{n} sur {days} jours", adminNext: "À venir", refresh: "Rafraîchir", refreshed: "Rafraîchi",
+const messages = { nextUp: "Prochain stream", daysTitle: "Cette semaine", noneToday: "—", title: "Planning", intro: "Prochains {days} jours ({tz})", none: "Rien", nextTitle: "Prochains streams", allDay: "Toute la journée",
+  adminStatus: "État", adminNoSlots: "Rien à afficher", adminOk: "{n} sur {days} jours", adminNext: "À venir",
   date: "Date", time: "Heure", slot: "Créneau", games: "Jeux" };
 const rows = (html) => html.split("<li ").slice(1);
-const ctxWith = (settings = {}, over = {}) => fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "UTC", ...settings }, messages, locale: "fr", rawgConfigured: false, ...over });
 
-const realFetch = globalThis.fetch;
-let fetched;
-const serve = (body, status = 200) => { fetched = []; globalThis.fetch = async (u) => { fetched.push(String(u)); return new Response(body, { status }); }; };
-beforeEach(() => { mod.clearIcsCache(); fetched = []; });
-afterEach(() => { globalThis.fetch = realFetch; });
+let feed = "";   // l'agenda iCal « en ligne » du moment (texte)
+const serve = (body) => { feed = body; };
+const ctxWith = (settings = {}, over = {}) => fakeCtx({ settings: { days: 7, timezone: "UTC", ...settings }, topics: feedTopics(() => feed), messages, locale: "fr", rawgConfigured: false, ...over });
+/** Même contexte, avec en plus le sujet `social.link` (le lien des réseaux, fourni par la Chaîne Twitch). */
+const withSocial = (ctx, items) => { const orig = ctx.api.topics.collect; ctx.api.topics.collect = async (topic, o) => (topic === "social.link" ? (typeof items === "function" ? items() : items) : orig(topic, o)); return ctx; };
 
 test("section « prochains streams » : lignes triées, jeux nommés, limitée au nombre demandé", async () => {
   serve(calendar(
@@ -39,17 +40,14 @@ test("section « prochains streams » : lignes triées, jeux nommés, limitée a
   assert.match(lines[1], /Deuxième/);
 });
 
-test("section : calendrier lisible mais vide → carte « pas de stream planifié » ; adresse absente ou refusée → aucun bloc (la section disparaît)", async () => {
+test("section : aucun stream (agenda vide, ou pas d'agenda du tout) → carte « pas de stream planifié », jamais d'erreur ni de bloc cassé", async () => {
   serve(calendar());
   const empty = await def.sections.upcoming(ctxWith(), {});
   assert.equal(empty[1].type, "html");
   assert.match(empty[1].html, /noStream/);
-  assert.equal(await def.sections.upcoming(ctxWith({ icsUrl: "" }), {}), null);
-  for (const bad of ["http://calendar.example.com/x.ics", "https://127.0.0.1/x.ics", "https://localhost/x.ics"]) {
-    fetched = []; serve(calendar(vevent("1", hours(2), hours(3), "X")));
-    assert.equal(await def.sections.upcoming(ctxWith({ icsUrl: bad }), {}), null, bad);
-    assert.deepEqual(fetched, [], "aucun appel réseau vers une adresse refusée");
-  }
+  serve("");   // pas d'agenda, ou agenda illisible : le planning ne le sait pas et n'a pas à le savoir
+  assert.match((await def.sections.upcoming(ctxWith(), {}))[1].html, /noStream/);
+  assert.match((await def.sections.next(ctxWith(), {}))[1].html, /noStream/);
 });
 
 test("section : le nombre demandé est borné entre 1 et 20, valeur absurde → 5", async () => {
@@ -75,14 +73,14 @@ test("section : un événement déjà terminé n'apparaît pas, un événement e
   assert.match(text, /relLive/, "indication « en cours »");
 });
 
-test("page : non configurée → message, calendrier illisible → message, jamais d'exception", async () => {
-  const page = await def.page(ctxWith({ icsUrl: "" }));
-  assert.deepEqual(page.blocks, [{ type: "markdown", text: "Pas configuré" }]);
-  serve("<html>erreur</html>");
-  assert.deepEqual((await def.page(ctxWith())).blocks, [{ type: "markdown", text: "Pas configuré" }]);
-  serve("nope", 500);
-  mod.clearIcsCache();
-  assert.equal((await def.page(ctxWith())).title, "Planning");
+test("page : sans stream (agenda vide ou absent) → une page normale, « Rien » chaque jour, jamais d'exception", async () => {
+  for (const body of ["", "<html>erreur</html>", calendar()]) {
+    serve(body);
+    const page = await def.page(ctxWith({ days: 2 }));
+    assert.equal(page.title, "Planning");
+    assert.equal(page.blocks.filter((b) => b.type === "heading").length, 2);
+    assert.equal(page.blocks.filter((b) => b.type === "markdown" && b.text === "*Rien*").length, 2);
+  }
 });
 
 test("page : un bloc par jour (titre + liste), « Rien » pour les jours vides, nombre de jours borné", async () => {
@@ -104,68 +102,53 @@ test("page : un fuseau invalide retombe sur UTC sans casser", async () => {
   assert.match(page.blocks[0].text, /UTC/);
 });
 
-test("export « planning.slot » : éléments au format attendu, limite respectée", async () => {
-  serve(calendar(vevent("1", hours(2), hours(3), "A", ["DESCRIPTION:Jeu: Doom"]), vevent("2", hours(4), hours(5), "B"), vevent("3", hours(6), hours(7), "C")));
-  const items = await def.exports["planning.slot"](ctxWith(), { locale: "fr", limit: 2, tags: [] });
-  assert.equal(items.length, 2);
-  assert.deepEqual(Object.keys(items[0]).sort(), ["allDay", "end", "games", "start", "text", "title"]);
-  assert.equal(items[0].text, "Doom");
-  assert.equal(items[1].text, undefined);
-  assert.ok(!Number.isNaN(Date.parse(items[0].start)));
-  assert.deepEqual(await def.exports["planning.slot"](ctxWith({ icsUrl: "" }), { locale: "fr", limit: 5, tags: [] }), []);
-});
-
-test("export « planning.slot » : conforme au schéma déclaré par un consommateur (titre texte, dates texte)", async () => {
+test("le Planning ne fournit plus `planning.slot` : il le LIT (le fournisseur est un agenda), et le schéma qu'il déclare accepte les créneaux des fournisseurs", async () => {
+  const fs = await import("node:fs");
   const { conform } = await import("@/core/services/topics");
-  serve(calendar(vevent("1", hours(2), hours(3), "A")));
-  const [item] = await def.exports["planning.slot"](ctxWith(), { locale: "fr", limit: 5, tags: [] });
-  const schema = [{ key: "title", type: "string", required: true }, { key: "start", type: "string" }, { key: "end", type: "string" }, { key: "allDay", type: "boolean" }];
-  assert.ok(conform(item, schema));
+  const raw = JSON.parse(fs.readFileSync(new URL("../modules/planning/module.json", import.meta.url), "utf8"));
+  assert.equal(raw.provides, undefined);
+  assert.equal(def.exports, undefined);
+  const schema = raw.consumes.find((c) => c.topic === "planning.slot").schema;
+  serve(calendar(vevent("1", hours(2), hours(3), "A", ["DESCRIPTION:Jeu: Doom"]), "BEGIN:VEVENT\r\nUID:j\r\nDTSTART;VALUE=DATE:20261020\r\nDTEND;VALUE=DATE:20261021\r\nSUMMARY:Journée\r\nEND:VEVENT"));
+  const items = feedTopics(() => feed)["planning.slot"]({ limit: 50 });
+  assert.equal(items.length, 2);
+  for (const item of items) assert.ok(conform(item, schema), JSON.stringify(item));
 });
 
-test("MCP planning_upcoming : renvoie les créneaux, erreur lisible si le calendrier n'est pas utilisable, jours bornés", async () => {
-  serve(calendar(vevent("1", hours(2), hours(3), "A"), vevent("2", hours(24 * 20), hours(24 * 20 + 1), "Loin")));
+test("MCP planning_upcoming : renvoie les créneaux (jours bornés), une liste vide sans agenda — jamais d'erreur", async () => {
+  serve(calendar(vevent("1", hours(2), hours(3), "A", ["DESCRIPTION:Jeu: Doom"]), vevent("2", hours(24 * 20), hours(24 * 20 + 1), "Loin")));
   const out = await def.mcp.planning_upcoming(ctxWith(), {});
-  assert.deepEqual(out.map((s) => s.title), ["A"], "7 jours par défaut");
+  assert.deepEqual(out.map((s) => [s.title, s.games]), [["A", ["Doom"]]], "7 jours par défaut");
   assert.deepEqual((await def.mcp.planning_upcoming(ctxWith(), { days: 30 })).map((s) => s.title), ["A", "Loin"]);
-  await assert.rejects(() => def.mcp.planning_upcoming(ctxWith({ icsUrl: "" }), {}), (e) => e.expose === true && /not configured/.test(e.message));
+  assert.deepEqual(Object.keys(out[0]).sort(), ["allDay", "end", "games", "start", "title"]);
+  serve("");
+  assert.deepEqual(await def.mcp.planning_upcoming(ctxWith(), {}), []);
 });
 
-test("MCP : ne révèle jamais l'adresse secrète du calendrier", async () => {
+test("MCP et admin : rien de secret n'est connu du Planning (l'adresse d'un agenda reste dans l'Agenda en ligne)", async () => {
   serve(calendar(vevent("1", hours(2), hours(3), "A")));
-  const out = JSON.stringify(await def.mcp.planning_upcoming(ctxWith(), {}));
-  assert.ok(!out.includes("secret-token"));
-  const panel = JSON.stringify(await def.adminPanel(ctxWith()));
-  assert.ok(!panel.includes("secret-token"), "l'admin n'affiche qu'un indice de la fin de l'adresse");
+  const out = JSON.stringify(await def.mcp.planning_upcoming(ctxWith(), {})) + JSON.stringify(await def.adminPanel(ctxWith()));
+  assert.ok(!/https?:\/\/[^"]*\.ics|secret|token/i.test(out));
 });
 
-test("admin : état selon la configuration, tableau des prochains créneaux, bouton de rafraîchissement", async () => {
-  assert.match((await def.adminPanel(ctxWith({ icsUrl: "" })))[1].text, /absente/);
-  assert.match((await def.adminPanel(ctxWith({ icsUrl: "http://x.test/a.ics" })))[1].text, /refusée/);
-  serve("<html>");
-  const broken = await def.adminPanel(ctxWith());
-  assert.ok(broken.some((b) => b.type === "markdown" && /Illisible/.test(b.text)));
-  assert.ok(broken.some((b) => b.type === "adminForm" && b.action === "refresh"));
-  mod.clearIcsCache();
+test("admin : sans stream → dit quoi faire (installer et régler un agenda) ; avec des streams → tableau des prochains créneaux ; plus aucun bouton « Actualiser »", async () => {
+  serve("");
+  const none = await def.adminPanel(ctxWith());
+  assert.match(none[1].text, /Rien à afficher/);
+  assert.ok(!none.some((b) => b.type === "adminForm"));
+  const fr = (await import("node:fs")).readFileSync(new URL("../modules/planning/locales/fr.json", import.meta.url), "utf8");
+  const msg = JSON.parse(fr).adminNoSlots;
+  assert.match(msg, /Agenda en ligne/); assert.match(msg, /Streams saisis à la main/); assert.match(msg, /\(\/admin\/extensions\)/);
   serve(calendar(vevent("1", hours(2), hours(3), "A", ["DESCRIPTION:Jeu: Zelda"])));
   const ok = await def.adminPanel(ctxWith());
   const table = ok.find((b) => b.type === "table");
   assert.equal(table.rows.length, 1);
   assert.deepEqual([table.rows[0][2], table.rows[0][3]], ["A", "Zelda"]);
-  assert.ok(ok.some((b) => b.type === "adminForm" && b.action === "refresh"));
+  assert.ok(!ok.some((b) => b.type === "adminForm" && b.action === "refresh"));
+  assert.equal(def.adminActions, undefined);
 });
 
-test("admin : « rafraîchir » vide le cache et le prochain affichage recharge l'adresse", async () => {
-  serve(calendar(vevent("1", hours(2), hours(3), "Ancien")));
-  await def.sections.upcoming(ctxWith(), {});
-  await def.sections.upcoming(ctxWith(), {});
-  assert.equal(fetched.length, 1, "mis en cache");
-  assert.deepEqual(await def.adminActions.refresh(ctxWith(), {}), { ok: "Rafraîchi" });
-  serve(calendar(vevent("1", hours(2), hours(3), "Nouveau")));
-  assert.match((await def.sections.upcoming(ctxWith(), {}))[1].html, /Nouveau/);
-});
-
-test("déclarations : tout ce que le manifeste annonce est implémenté, et réciproquement", async () => {
+test("déclarations : tout ce que le manifeste annonce est implémenté, et réciproquement ; le Planning lit le sujet sans le fournir ni dépendre d'un module", async () => {
   const fs = await import("node:fs");
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fs.readFileSync(new URL("../modules/planning/module.json", import.meta.url), "utf8"));
@@ -174,7 +157,11 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   const m = parsed.manifest;
   assert.deepEqual(m.sections.map((s) => s.id).sort(), Object.keys(def.sections).sort());
   assert.deepEqual(m.mcp.map((a) => a.name).sort(), Object.keys(def.mcp).sort());
-  assert.deepEqual(m.provides.map((p) => p.topic).sort(), Object.keys(def.exports).sort());
+  assert.deepEqual(m.provides, [], "il ne fournit plus planning.slot");
+  assert.ok(m.consumes.some((c) => c.topic === "planning.slot"));
+  assert.equal(m.requires, undefined, "aucune dépendance forte : sans agenda, il affiche « pas de stream planifié »");
+  assert.deepEqual(m.seeds.map((x) => x.module), ["calendar-ical"]);
+  assert.equal(m.dataVersion, 2); assert.deepEqual(Object.keys(def.migrations), ["2"]);
   assert.equal(typeof def.page, "function");
   assert.equal(typeof def.adminPanel, "function");
   for (const lang of ["en", "fr"]) {
@@ -185,10 +172,13 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   const fr = Object.keys(JSON.parse(fs.readFileSync(new URL("../modules/planning/locales/fr.json", import.meta.url), "utf8"))).sort();
   assert.deepEqual(en, fr);
   const settingKeys = new Set(m.settings.map((s) => s.key));
-  for (const k of ["icsUrl", "days", "timezone", "channelUrl"]) assert.ok(settingKeys.has(k), k);
+  for (const k of ["days", "timezone", "channelUrl"]) assert.ok(settingKeys.has(k), k);
+  const legacy = m.settings.find((s) => s.key === "icsUrl");
+  assert.ok(legacy.advanced && legacy.optional, "l'ancien réglage reste déclaré (le temps de la reprise) mais discret : à retirer en 0.3.0");
+  assert.equal(m.settings.find((s) => s.key === "channelUrl").optional, true);
+  assert.equal(m.settings.find((s) => s.key === "timezone").default, undefined, "sans réglage, le fuseau des agendas est utilisé");
 });
-
-test("morceau « prochain stream » : le premier créneau à venir, carte vide s'il n'y en a pas, rien si pas d'agenda", async () => {
+test("morceau « prochain stream » : le premier créneau à venir, carte vide s'il n'y en a pas (agenda vide ou absent)", async () => {
   serve(calendar(vevent("1", hours(30), hours(31), "Plus tard"), vevent("2", hours(3), hours(4), "Bientôt", ["DESCRIPTION:Jeu: Zelda"])));
   const blocks = await def.sections.next(ctxWith(), {});
   assert.equal(blocks[0].type, "heading");
@@ -196,11 +186,10 @@ test("morceau « prochain stream » : le premier créneau à venir, carte vide s
   assert.match(blocks[1].html, /Zelda/);
   assert.ok(!blocks[1].html.includes("Plus tard"));
   serve(calendar());
-  mod.clearIcsCache();
   assert.match((await def.sections.next(ctxWith(), {}))[1].html, /noStream/);
-  assert.equal(await def.sections.next(ctxWith({ icsUrl: "" }), {}), null);
+  serve("");
+  assert.match((await def.sections.next(ctxWith(), {}))[1].html, /noStream/);
 });
-
 test("morceau « prochains jours » : un jour par ligne, nombre de jours borné de 1 à 7, jours vides signalés", async () => {
   serve(calendar(vevent("1", hours(2), hours(3), "Aujourd'hui peut-être")));
   const lines = async (count, settings) => (await def.sections.days(ctxWith(settings), { count }))[1].text.split("\n");
@@ -210,7 +199,8 @@ test("morceau « prochains jours » : un jour par ligne, nombre de jours borné 
   assert.equal((await lines(1)).length, 1);
   assert.ok((await lines(7)).some((l) => l.endsWith("· —")), "jour sans stream");
   assert.ok((await lines(7)).join("\n").includes("peut-être"), "le stream apparaît dans son jour");
-  assert.equal(await def.sections.days(ctxWith({ icsUrl: "" }), {}), null);
+  serve("");
+  assert.ok((await lines(2)).every((l) => l.endsWith("· —")), "sans agenda : des jours vides, jamais d'erreur");
 });
 
 test("morceaux du planning : tailles naturelles recommandées pour l'accueil fluide", async () => {
@@ -220,7 +210,7 @@ test("morceaux du planning : tailles naturelles recommandées pour l'accueil flu
   assert.deepEqual([size.next, size.days, size.upcoming], ["small", "medium", "large"]);
 });
 
-test("image PNG de la semaine : route qui passe par ctx.api.png, créneaux de la semaine, titres tronqués, cache 5 min, 404 sans calendrier", async () => {
+test("image PNG de la semaine : route qui passe par ctx.api.png, créneaux de la semaine, titres tronqués, cache 5 min, jamais d'image cassée sans agenda", async () => {
   const today = new Date(); today.setUTCHours(10, 0, 0, 0);
   serve(calendar(vevent("1", today, new Date(today.getTime() + 3_600_000), "Soirée " + "x".repeat(200), ["DESCRIPTION:Jeu: Zelda"])));
   const c = ctxWith({}, { messages: { ...messages, imageTitle: "Planning", imageEmpty: "Rien", imageEmptyHint: "Bientôt" } });
@@ -233,11 +223,15 @@ test("image PNG de la semaine : route qui passe par ctx.api.png, créneaux de la
   assert.ok(flat.includes("Soirée"), "le créneau du jour est dans l'image");
   assert.ok(!flat.includes("x".repeat(100)), "titre tronqué");
   assert.equal(spec.tree.props.children[0].props.children[0].props.children[0].props.children[0], "Planning");
-  // sans calendrier : 404, aucun rendu
-  const none = ctxWith({ icsUrl: "" });
-  assert.equal((await def.routes.image(new Request("https://x.test/m/planning/image"), none)).status, 404);
-  assert.equal(none.calls.png.length, 0);
-  // semaine vide : l'état vide (une seule boîte « Rien de prévu »)
+  // sans agenda (ou agenda vide) : l'état vide « rien de prévu », jamais une image cassée dans un panneau Twitch
+  serve("");
+  const none = ctxWith({}, { messages: { ...messages, imageTitle: "Planning", imageEmpty: "Rien", imageEmptyHint: "Bientôt" } });
+  assert.equal((await def.routes.image(new Request("https://x.test/m/planning/image"), none)).status, 200);
+  assert.ok(JSON.stringify(none.calls.png[0].tree).includes("Bientôt"));
+  // l'état du cœur qui échoue (sujet indisponible) : 404 propre, aucun rendu
+  const broken = ctxWith(); broken.api.topics.collect = async () => { throw new Error("boum"); };
+  assert.equal((await def.routes.image(new Request("https://x.test/m/planning/image"), broken)).status, 404);
+  assert.equal(broken.calls.png.length, 0);
   serve(calendar());
   const empty = ctxWith({}, { messages: { ...messages, imageTitle: "Planning", imageEmpty: "Rien", imageEmptyHint: "Bientôt" } });
   await def.routes.image(new Request("https://x.test/m/planning/image?week=2"), empty);
@@ -248,7 +242,7 @@ test("image PNG de la semaine : route qui passe par ctx.api.png, créneaux de la
 
 const COVER = "https://media.example.test/celeste.jpg";
 const withCovers = (over = {}) => ctxWith({}, { rawgConfigured: true, rawgCover: { status: "found", url: COVER }, ...over });
-const next = async (ctx, ...ev) => { serve(calendar(...ev)); mod.clearIcsCache(); return (await def.sections.next(ctx, {}))[1].html; };
+const next = async (ctx, ...ev) => { serve(calendar(...ev)); return (await def.sections.next(ctx, {}))[1].html; };
 
 test("carte « prochain stream » : article encadré, <time> sémantiques, titre, heure, jeu, indication relative", async () => {
   const html = await next(ctxWith(), vevent("1", hours(3.5), hours(5), "Cap48h", ["DESCRIPTION:Jeu: Zelda"]));
@@ -289,7 +283,7 @@ test("carte « prochain stream » : plusieurs streams le même jour → les autr
 test("carte : échappement HTML des titres, jeux, et adresses — aucune injection", async () => {
   const evil = '<img src=x onerror=alert(1)> "q" \'s\' &amp;';
   const ev = vevent("1", hours(2), hours(3), evil, [`DESCRIPTION:Jeu: <b>Jeu</b> "x"`]);
-  for (const html of [await next(withCovers({ rawgCover: { status: "found", url: 'https://x.test/a.jpg" onerror="alert(1)' } }), ev), (await (async () => { serve(calendar(ev)); mod.clearIcsCache(); return (await def.sections.upcoming(withCovers(), {}))[1].html; })())]) {
+  for (const html of [await next(withCovers({ rawgCover: { status: "found", url: 'https://x.test/a.jpg" onerror="alert(1)' } }), ev), (await (async () => { serve(calendar(ev)); return (await def.sections.upcoming(withCovers(), {}))[1].html; })())]) {
     assert.ok(!/<img src=x/.test(html) && !html.includes("<b>Jeu</b>"), html);
     assert.ok(!/ onerror="/.test(html.replace(/&quot;/g, "")), html);
     assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt; &quot;q&quot; &#39;s&#39; &amp;amp;"));
@@ -297,8 +291,8 @@ test("carte : échappement HTML des titres, jeux, et adresses — aucune injecti
 });
 
 test("carte : états vides — calendrier vide : carte soignée avec lien vers le planning ; sans page publique : pas de lien", async () => {
-  serve(calendar()); mod.clearIcsCache();
-  const withPage = (await def.sections.next(fakeCtx({ settings: { icsUrl: URL_OK, timezone: "UTC" }, messages, locale: "fr", basePath: "planning" }), {}))[1].html;
+  serve(calendar());
+  const withPage = (await def.sections.next(ctxWith({}, { basePath: "planning" }), {}))[1].html;
   assert.match(withPage, /cpl-empty-t">noStream</);
   assert.match(withPage, /<a class="cpl-link" href="\/planning">fullPlanning<\/a>/);
   const noPage = (await def.sections.upcoming(ctxWith({}, { basePath: null }), {}))[1].html;
@@ -410,109 +404,9 @@ test("page publique : un jour qui mêle streams avec et sans jeu → vignette de
   const html = page.blocks.filter((b) => b.type === "html").map((b) => b.html).join("");
   assert.match(html, /cpl-ph cpl-ph-s/);
   assert.ok(html.includes("Sans &lt;b&gt;jeu&lt;/b&gt;") && !html.includes("<b>jeu"));
-  mod.clearIcsCache(); serve(calendar(noGame));
+  serve(calendar(noGame));
   const plainPage = await def.page(withCovers({ brand: brandOf() }));
   assert.ok(!plainPage.blocks.some((b) => b.type === "html"));
-});
-
-/* ───────────── Aide à la saisie : tutoriel d'admin et SKILL.md ───────────── */
-
-const fsMod = await import("node:fs");
-const locale = (lang) => JSON.parse(fsMod.readFileSync(new URL(`../modules/planning/locales/${lang}.json`, import.meta.url), "utf8"));
-const realCtx = (lang = "fr", over = {}, opts = {}) => fakeCtx({ settings: { icsUrl: URL_OK, days: 7, timezone: "Europe/Brussels", ...over }, messages: locale(lang), locale: lang, rawgConfigured: false, ...opts });
-
-test("tutoriel : bloc repliable « Comment remplir mon agenda Google ? » + bouton de téléchargement, ajoutés après l'état du calendrier", async () => {
-  serve(calendar(vevent("1", hours(2), hours(3), "X")));
-  const blocks = await def.adminPanel(realCtx("fr", {}, { key: "planning" }));
-  assert.equal(blocks[0].type, "heading", "l'état du calendrier reste en tête");
-  const html = blocks.at(-1).html;
-  assert.equal(blocks.at(-1).type, "html");
-  assert.match(html, /<details><summary>Comment remplir mon agenda Google \?<\/summary>/);
-  assert.match(html, /href="\/m\/planning\/skill\?lang=fr" download="SKILL\.md">Télécharger le skill pour mon IA</);
-  for (const needle of ["Jeu :", "Europe/Brussels", "Intégrer l&#39;agenda", "Adresse secrète au format iCal", "Toute la journée", "Fuseau horaire"]) assert.ok(html.includes(needle), needle);
-  assert.ok(!html.includes("secret-token"), "jamais l'adresse du calendrier");
-  // Même contenu sans calendrier réglé
-  const none = await def.adminPanel(realCtx("fr", { icsUrl: "" }));
-  assert.match(none.at(-1).html, /<details>/);
-  const en = (await def.adminPanel(realCtx("en"))).at(-1).html;
-  assert.match(en, /How do I fill in my Google Calendar\?/);
-  assert.match(en, /Download the skill for my AI/);
-});
-
-test("tutoriel : aucune clé de texte manquante ou en trop dans la page rendue (aucune clé brute affichée)", async () => {
-  for (const lang of ["fr", "en"]) {
-    const html = (await def.adminPanel(realCtx(lang))).at(-1).html;
-    assert.ok(!/>tuto[A-Z]\w+</.test(html) && !/>skill[A-Z]\w+</.test(html), lang);
-  }
-});
-
-test("tutoriel : l'exemple suivi à la lettre est bien lu par le module (titre, jeu, heure) ; sans ligne « Jeu : », aucun jeu", async () => {
-  // Événement tel que Google l'exporte pour l'exemple du tutoriel : titre, lieu vide, description « Jeu : Celeste », 21:00 → 23:30 (heure de Bruxelles).
-  const ical = calendar(["BEGIN:VEVENT", "UID:ex1", "DTSTART;TZID=Europe/Brussels:20991010T210000", "DTEND;TZID=Europe/Brussels:20991010T233000", "SUMMARY:Soirée découverte", "LOCATION:", "DESCRIPTION:Jeu : Celeste", "END:VEVENT"].join("\r\n"),
-    ["BEGIN:VEVENT", "UID:ex2", "DTSTART;TZID=Europe/Brussels:20991017T140000", "DTEND;TZID=Europe/Brussels:20991018T140000", "SUMMARY:Cap48h", "DESCRIPTION:Merci à toutes et à tous !\\nJeu en vrac : pas une ligne Jeu", "END:VEVENT"].join("\r\n"));
-  const ev = mod.parseIcs(ical, { timeZone: "Europe/Brussels", windowEnd: new Date("2100-01-01T00:00:00Z") });
-  assert.equal(ev.length, 2);
-  assert.equal(ev[0].title, "Soirée découverte");
-  assert.deepEqual(mod.extractGameNames(ev[0].description), ["Celeste"]);
-  assert.equal(ev[0].start.toISOString(), "2099-10-10T19:00:00.000Z", "21:00 à Bruxelles (été)");
-  assert.equal((ev[0].end - ev[0].start) / 60_000, 150);
-  assert.deepEqual(mod.extractGameNames(ev[1].description), [], "pas de ligne « Jeu : » = pas de jeu");
-  for (const [d, names] of [["Jeu : AA, BB + CC", ["AA", "BB", "CC"]], ["Jeu: AA\\nJeu: BB", ["AA", "BB"]], ["Game : Zelda", ["Zelda"]], ["Notes\\nJeu : Celeste", ["Celeste"]], ["Je joue à Celeste", []], ["Jeu : x", []]]) assert.deepEqual(mod.extractGameNames(d.replace(/\\n/g, "\n")), names, d);
-  // Toute la journée : affichée sans heure ni jaquette ; annulé : retiré ; lieu : ignoré.
-  const more = mod.parseIcs(calendar(["BEGIN:VEVENT", "UID:a", "DTSTART;VALUE=DATE:20991010", "DTEND;VALUE=DATE:20991011", "SUMMARY:Journée", "END:VEVENT", "BEGIN:VEVENT", "UID:c", "DTSTART:20991012T100000Z", "DTEND:20991012T110000Z", "SUMMARY:Annulé", "STATUS:CANCELLED", "END:VEVENT"].join("\r\n")), { timeZone: "UTC", windowEnd: new Date("2100-01-01T00:00:00Z") });
-  assert.deepEqual(more.map((e) => [e.title, e.allDay]), [["Journée", true]]);
-});
-
-test("SKILL.md : en-tête YAML valide (name, description), règles exactes, fuseau et nom du site réels, exemples, liste de contrôle, interdits", async () => {
-  const md = await mod.skillMarkdown(realCtx("fr", {}, { site: { name: "Helldog136", tagline: "", logo: null } }));
-  const m = md.match(/^---\nname: ([a-z0-9-]+)\ndescription: (".*")\n---\n\n# /);
-  assert.ok(m, md.slice(0, 300));
-  assert.equal(m[1], "agenda-planning-streams");
-  const desc = JSON.parse(m[2]);
-  assert.ok(desc.includes("Helldog136") && desc.includes("Europe/Brussels") && !desc.includes("{"));
-  for (const needle of ["## Rôle", "## Quand l'utiliser", "## Règles de remplissage", "`Jeu : `", "aucune** ligne `Jeu :`", "Europe/Brussels", "## Modèle d'une entrée", "**Stream de jeu**", "**Événement caritatif, sans jeu**", "**Stream récurrent**", "## Liste de contrôle", "## À ne jamais faire", "Inventer ou deviner un jeu", "Mettre une heure sans fuseau", "## Informations à demander à l'humain", "Helldog136"]) assert.ok(md.includes(needle), needle);
-  assert.ok(!/\{(site|tz)\}/.test(md), "aucune variable non remplacée");
-  const en = await mod.skillMarkdown(realCtx("en"));
-  assert.match(en, /^---\nname: stream-schedule-calendar\n/);
-  assert.ok(en.includes("Game: Celeste") && en.includes("never guesses the game"));
-});
-
-test("SKILL.md : les exemples respectent le parseur du module (jeu lu pour l'exemple de jeu, aucun jeu pour l'exemple caritatif)", async () => {
-  const md = await mod.skillMarkdown(realCtx("fr"));
-  const blocksOf = [...md.matchAll(/```\n([\s\S]*?)```/g)].map((x) => x[1]);
-  const desc = (b) => (b.match(/^Description : (.*)$/m) ?? [])[1] ?? "";
-  const byTitle = (t) => blocksOf.find((b) => b.includes(`Titre :       ${t}`));
-  assert.deepEqual(mod.extractGameNames(desc(byTitle("Soirée découverte"))), ["Celeste"]);
-  assert.deepEqual(mod.extractGameNames(desc(byTitle("Cap48h : stream caritatif"))), []);
-  assert.deepEqual(mod.extractGameNames(desc(byTitle("Jeudi détente"))), ["Hades", "Celeste"]);
-  // Le modèle : « Jeu : <nom du jeu> » n'est lu que s'il est rempli (≥ 2 caractères) — jamais un jeu fantôme « <nom du jeu> » à l'écran.
-  assert.ok(blocksOf.length >= 4);
-});
-
-test("SKILL.md : aucune donnée secrète (adresse iCal, clé), nom de site hostile neutralisé, jamais d'exception", async () => {
-  const evil = 'Site"\nname: pirate\n---\n`x` <script>alert(1)</script>';
-  const md = await mod.skillMarkdown(realCtx("fr", { icsUrl: "https://calendar.example.com/ical/TOP-SECRET-TOKEN/basic.ics" }, { site: { name: evil, tagline: "", logo: null } }));
-  assert.ok(!md.includes("TOP-SECRET-TOKEN") && !md.includes("calendar.example.com"));
-  assert.ok(!md.includes("<script>") && !md.includes("`x`"));
-  assert.equal(md.split("\n---\n")[0].split("\n").length, 3, "l'en-tête ne contient que --- / name / description : pas d'injection de clé YAML");
-  assert.ok(!/^name: pirate/m.test(md));
-  const broken = realCtx("fr"); broken.api.site = async () => { throw new Error("boum"); };
-  assert.match(await mod.skillMarkdown(broken), /ce site/);
-  const badTz = await mod.skillMarkdown(realCtx("fr", { timezone: "Pas/UnFuseau" }));
-  assert.ok(badTz.includes("UTC") && !badTz.includes("Pas/UnFuseau"));
-});
-
-test("route de téléchargement : SKILL.md en pièce jointe (GET/HEAD seulement), type Markdown, sans secret", async () => {
-  const ctx = realCtx("fr", { icsUrl: "https://calendar.example.com/ical/TOP-SECRET-TOKEN/basic.ics" });
-  const res = await def.routes.skill(new Request("https://example.test/m/planning/skill?lang=fr"), ctx);
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get("content-disposition"), 'attachment; filename="SKILL.md"');
-  assert.match(res.headers.get("content-type"), /^text\/markdown; charset=utf-8/);
-  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
-  const text = await res.text();
-  assert.ok(text.startsWith("---\nname: ") && !text.includes("TOP-SECRET-TOKEN"));
-  assert.equal((await def.routes.skill(new Request("https://example.test/x", { method: "HEAD" }), ctx)).status, 200);
-  for (const method of ["POST", "PUT", "DELETE"]) assert.equal((await def.routes.skill(new Request("https://example.test/x", { method, body: "a" }), ctx)).status, 405, method);
 });
 
 test("carte « prochain stream » : le lien de la chaîne vient d'abord de la Chaîne Twitch (sujet social.link), l'ancien réglage sert de repli", async () => {
@@ -520,16 +414,12 @@ test("carte « prochain stream » : le lien de la chaîne vient d'abord de la Ch
   const m = JSON.parse(fs.readFileSync(new URL("../modules/planning/module.json", import.meta.url), "utf8"));
   assert.ok(m.consumes.some((c) => c.topic === "social.link"));
   const ev = vevent("1", hours(2), hours(3), "X");
-  const withTopic = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
-  withTopic.api.topics.collect = async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }, { label: "Twitch · neuf", url: "https://twitch.tv/neuf", icon: "twitch" }];
+  const withTopic = withSocial(ctxWith({ channelUrl: "https://twitch.tv/ancien" }), [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }, { label: "Twitch · neuf", url: "https://twitch.tv/neuf", icon: "twitch" }]);
   assert.match(await next(withTopic, ev), /href="https:\/\/twitch\.tv\/neuf"/);
-  const noTwitch = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
-  noTwitch.api.topics.collect = async () => [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }];
+  const noTwitch = withSocial(ctxWith({ channelUrl: "https://twitch.tv/ancien" }), [{ label: "YouTube", url: "https://youtube.com/@x", icon: "youtube" }]);
   assert.match(await next(noTwitch, ev), /href="https:\/\/twitch\.tv\/ancien"/);
-  const broken = ctxWith({ channelUrl: "https://twitch.tv/ancien" });
-  broken.api.topics.collect = async () => { throw new Error("boom"); };
+  const broken = withSocial(ctxWith({ channelUrl: "https://twitch.tv/ancien" }), () => { throw new Error("boom"); });
   assert.match(await next(broken, ev), /href="https:\/\/twitch\.tv\/ancien"/);
-  const unsafe = ctxWith();
-  unsafe.api.topics.collect = async () => [{ icon: "twitch", url: "javascript:alert(1)" }];
+  const unsafe = withSocial(ctxWith(), [{ icon: "twitch", url: "javascript:alert(1)" }]);
   assert.ok(!(await next(unsafe, ev)).includes("cpl-btn\""));
 });

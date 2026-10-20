@@ -14,11 +14,11 @@ export function sampleData(t, now = new Date()) {
   const h = (n) => new Date(now.getTime() + n * 3_600_000);
   const g = (i) => t(GAMES[i][0]);
   const slots = [
-    { uid: "s1", title: t("sampleLive"), description: `Jeu: ${g(0)}`, start: h(-0.4), end: h(1.2), allDay: false },
-    { uid: "s2", title: t("sampleA"), description: `Jeu: ${g(1)}, ${g(2)}`, start: h(5), end: h(7), allDay: false },
-    { uid: "s3", title: t("sampleB"), description: `Jeu: ${g(2)}`, start: h(27), end: h(29), allDay: false },
-    { uid: "s4", title: t("sampleC"), description: "", start: h(31), end: h(34), allDay: false },
-    { uid: "s5", title: t("sampleD"), description: `Jeu: ${g(0)}`, start: h(75), end: h(77), allDay: false },
+    { uid: "s1", title: t("sampleLive"), games: [g(0)], start: h(-0.4), end: h(1.2), allDay: false },
+    { uid: "s2", title: t("sampleA"), games: [g(1), g(2)], start: h(5), end: h(7), allDay: false },
+    { uid: "s3", title: t("sampleB"), games: [g(2)], start: h(27), end: h(29), allDay: false },
+    { uid: "s4", title: t("sampleC"), games: [], start: h(31), end: h(34), allDay: false },
+    { uid: "s5", title: t("sampleD"), games: [g(0)], start: h(75), end: h(77), allDay: false },
   ];
   const covers = new Map(GAMES.map(([k, hue]) => [t(k), poster(hue, (hue + 60) % 360)]));
   return { slots, covers };
