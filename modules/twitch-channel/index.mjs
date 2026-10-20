@@ -1,83 +1,83 @@
-// Chaîne Twitch — module communautaire de Curiosa. Porté de l'ancien site (Helix, client-credentials).
-// C'est LE module qui connaît Twitch : identifiants, jeton, appels et caches sont ici (helix.mjs) et nulle part ailleurs.
-// Il les met à disposition des autres modules : le SERVICE `twitch.live` (pour ceux qui en dépendent, comme « Statut live ») et les sujets
-// `twitch.api` (parler à Twitch au nom de la chaîne SANS jamais rendre un jeton : voir access.mjs), les sujets
-// `social.link` (bouton), `stream.live` (live en cours, vide sinon), `maze.poster` (derniers clips) et `social.stat` (followers, abonnés payants : demande la connexion du compte, voir connect.mjs).
-// Sans identifiants valides, tout est vide plutôt qu'en erreur (sauf `social.stat`, qui dit pourquoi il n'a pas de chiffre).
-// Le fichier voisin est importé avec la même « version » que celui-ci : après une mise à jour, jamais d'ancien helix.mjs resté en mémoire.
-const helix = await import(new URL(`./helix.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const connect = await import(new URL(`./connect.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const live = await import(new URL(`./live.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const analytics = await import(new URL(`./analytics.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const access = await import(new URL(`./access.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { LOGIN, hasCredentials, valid, liveStatus, recentClips } = helix;
+// Ma Chaîne Twitch — module communautaire de Curiosa (identifiant technique `twitch-channel`, conservé : sauvegardes, adresses de retour, catalogue).
+// Depuis la 2.0, ce module ne parle plus à Twitch lui-même et ne garde plus aucun identifiant ni autorisation : tout passe par le Connecteur Twitch
+// (service `twitch.api`, exigé), qui possède l'application et les comptes connectés. Ce module garde SA chaîne, ses caches (helix.mjs), ses mesures (live.mjs).
+// Il offre le service `twitch.live` (chaque instance répond pour sa chaîne) et fournit `social.link` (bouton), `stream.live` (live en cours), `maze.poster`
+// (derniers clips) et `social.stat` (followers, abonnés payants, chiffres de vos directs). Sans Connecteur : bouton et lien seulement, et l'administration
+// propose de l'installer (bloc `suggestInstall`, par service, jamais par nom de module).
+// Le fichier voisin est importé avec la même « version » que celui-ci : après une mise à jour, jamais d'ancien fichier resté en mémoire.
+const v = new URL(import.meta.url).search;
+const helix = await import(new URL(`./helix.mjs${v}`, import.meta.url).href);
+const connect = await import(new URL(`./connect.mjs${v}`, import.meta.url).href);
+const live = await import(new URL(`./live.mjs${v}`, import.meta.url).href);
+const analytics = await import(new URL(`./analytics.mjs${v}`, import.meta.url).href);
+const hand = await import(new URL(`./handover.mjs${v}`, import.meta.url).href);
+const { LOGIN, valid, liveStatus, recentClips } = helix;
 export const { currentStream } = helix;
 export { recentClips };
 
-const ADOPTED = "adopted";
-const BORROWED = "borrowed";
-const FIELDS = ["channel", "clientId", "clientSecret"];
-const text = (v) => String(v ?? "").trim();
-
-/**
- * Chaque instance (une par chaîne) connaît ses propres identifiants ; elle ne peut ni lire les réglages ni le stockage d'une autre.
- * Pour que l'application Twitch d'un propriétaire serve plusieurs chaînes sans qu'il ressaisisse le secret, chaque instance dont les identifiants sont
- * complets les « prête » ici, EN MÉMOIRE SEULEMENT (jamais écrits, affichés ni renvoyés) ; une autre instance qui nomme cette chaîne dans son réglage
- * « Utiliser les identifiants d'une autre chaîne » les reprend (champs vides seulement) et en garde une copie dans SON stockage, pour qu'un redémarrage
- * ne dépende pas de l'ordre dans lequel les instances sont lues. Le module (donc cette mémoire) est partagé par toutes ses instances.
- */
-const lent = new Map();   // clé d'instance → { channel, clientId, secret }
-export const resetCache = () => { helix.resetCache(); connect.resetConnect(); lent.clear(); };
-
-const firstDoc = async (ctx, collection) => { try { return (await ctx.api.store.list(collection, { limit: 1 }))[0] ?? null; } catch { return null; } };
-/** Ce que « Statut live » (ancienne version) a fait reprendre : un seul document, jamais affiché. Les réglages saisis ici ont toujours le dessus. */
-const adoptedDoc = (ctx) => firstDoc(ctx, ADOPTED);
-
-/**
- * Identifiants de l'instance, champ par champ : le réglage saisi ici, sinon ceux de l'autre chaîne demandée, sinon la valeur reprise d'un autre module.
- * Renvoie { creds: { channel, clientId, secret }, share: null | { from, state } } ; state : "live" (prêtés à l'instant), "copy" (copie gardée), "none" (introuvables), "self".
- */
-async function resolve(ctx) {
-  const key = ctx.instance.key;
-  const own = { channel: text(ctx.setting("channel")).toLowerCase(), clientId: text(ctx.setting("clientId")), secret: text(ctx.setting("clientSecret")) };
-  const from = text(ctx.setting("useCredentialsOf")).toLowerCase();
-  const wants = LOGIN.test(from);
-  const complete = own.channel && own.clientId && own.secret;
-  if (complete) { lent.set(key, own); return { creds: own, share: wants ? { from, state: from === own.channel ? "self" : "none" } : null }; }
-  const a = (await adoptedDoc(ctx))?.data ?? {};
-  const base = { channel: own.channel || text(a.channel).toLowerCase(), clientId: own.clientId || text(a.clientId), secret: own.secret || text(a.clientSecret) };
-  if (base.channel && base.clientId && base.secret) lent.set(key, base); else lent.delete(key);
-  if (!wants) return { creds: base, share: null };
-  if (from === base.channel) return { creds: base, share: { from, state: "self" } };
-  let b = null, state = "none";
-  const donor = [...lent].find(([k, v]) => k !== key && v.channel === from)?.[1];
-  const doc = await firstDoc(ctx, BORROWED);
-  if (donor) {
-    b = { clientId: donor.clientId, secret: donor.secret }; state = "live";
-    const d = doc?.data ?? {};
-    if (d.from !== from || d.clientId !== b.clientId || d.clientSecret !== b.secret) {
-      try { const data = { from, clientId: b.clientId, clientSecret: b.secret }; if (doc) await ctx.api.store.update(doc.id, data); else await ctx.api.store.add(BORROWED, data); } catch { /* la copie est un plus */ }
-    }
-  } else if (doc?.data?.from === from) {
-    b = { clientId: text(doc.data.clientId), secret: text(doc.data.clientSecret) }; state = "copy";
-  }
-  const creds = { channel: base.channel, clientId: own.clientId || b?.clientId || text(a.clientId), secret: own.secret || b?.secret || text(a.clientSecret) };
-  return { creds, share: { from, state } };
-}
-const credentials = async (ctx) => (await resolve(ctx)).creds;
-const urlOf = (channel) => (LOGIN.test(channel) ? `https://twitch.tv/${channel}` : null);
-const missing = (c) => [!LOGIN.test(c.channel) && "channel", !c.clientId && "clientId", !c.secret && "clientSecret"].filter(Boolean);
-
+const text = (v2) => String(v2 ?? "").trim();
 /** Un identifiant reçu d'un autre module : texte court sans espace, sinon on l'ignore. */
-const plain = (v) => (typeof v === "string" && /^\S{1,200}$/.test(v.trim()) ? v.trim() : "");
+const plain = (x) => (typeof x === "string" && /^\S{1,200}$/.test(x.trim()) ? x.trim() : "");
+const firstDoc = async (ctx, collection) => { try { return (await ctx.api.store.list(collection, { limit: 1 }))[0] ?? null; } catch { return null; } };
+
+/** La chaîne de l'instance : le réglage, sinon celle reprise de « Statut live ». */
+async function channelOf(ctx) {
+  const own = text(ctx.setting("channel")).toLowerCase();
+  if (own) return own;
+  return text((await firstDoc(ctx, hand.ADOPTED))?.data?.channel).toLowerCase();
+}
+
+/**
+ * La chaîne se fait connaître du Connecteur (une fois par processus) : elle devient une chaîne « connue » (choix par défaut des autres modules)
+ * et, pour une installation d'avant la 2.0 dont l'adresse de retour est enregistrée chez Twitch, cette adresse sert à ses liens d'autorisation.
+ */
+const registered = new Map();   // id d'instance → "chaîne|relais"
+async function register(ctx, channel) {
+  if (!LOGIN.test(channel)) return;
+  const relay = (await hand.stateOf(ctx))?.relay === true;
+  const sig = `${channel}|${relay}`;
+  if (registered.get(ctx.instance.id) === sig) return;
+  const r = await connect.call(ctx, "register", { channel, ...(relay ? { redirectUri: connect.redirectOf(ctx) } : {}) });
+  if (r.ok && r.value?.ok) { registered.set(ctx.instance.id, sig); if (registered.size > 200) registered.delete(registered.keys().next().value); }
+}
+
+/**
+ * Le « client » que helix.mjs utilise : la chaîne et deux appels au Connecteur (bornés, ne lèvent jamais).
+ * `wait: false` (sujets lus par d'autres modules, pages) : la chaîne se fait connaître en arrière-plan, sans retenir l'appelant.
+ */
+async function credentials(ctx, { wait = true } = {}) {
+  const channel = await channelOf(ctx);
+  if (LOGIN.test(channel)) { const p = register(ctx, channel).catch(() => {}); if (wait) await p; }
+  return {
+    channel,
+    async call(req) {
+      const r = await connect.call(ctx, "request", { ...req, channel });
+      if (!r.ok) return { error: connect.missingConnector(r) ? "config" : "network" };
+      const x = r.value && typeof r.value === "object" ? r.value : {};
+      return x.ok ? { status: x.status, json: x.json } : { error: ["config", "auth", "rate", "network", "scope"].includes(x.error) ? x.error : "network" };
+    },
+    async account() {
+      const r = await connect.call(ctx, "account", { channel, slot: "main" });
+      return r.ok && r.value?.ok ? r.value : { error: !r.ok && connect.missingConnector(r) ? "config" : "network" };
+    },
+  };
+}
+const urlOf = (channel) => (LOGIN.test(channel) ? `https://twitch.tv/${channel}` : null);
+
+/** L'application Twitch est-elle réglée dans le Connecteur ? { present, ready, missing } — sans appel réseau. */
+async function connectorState(ctx) {
+  const r = await connect.call(ctx, "status", {});
+  if (!r.ok) return { present: !connect.missingConnector(r), ready: false, missing: ["clientId", "clientSecret"] };
+  const missing = Array.isArray(r.value?.missing) ? r.value.missing.filter((f) => f === "clientId" || f === "clientSecret") : [];
+  return { present: true, ready: r.value?.ready === true, missing };
+}
 
 /** { creds, results: [{ metric, result }] } pour cette instance, ou null quand il n'y a rien à suivre (interrupteur éteint, chaîne non réglée). Les réponses viennent du cache de helix.mjs. */
 async function statsOf(ctx) {
   if (ctx.setting("trackStats") !== true) return null;
   const creds = await credentials(ctx);
   if (!LOGIN.test(creds.channel)) return null;
-  const conn = connect.liveConn(ctx, creds);
-  return { creds, results: await Promise.all(connect.wantedMetrics(ctx).map(async (metric) => ({ metric, result: await helix.userStat(conn, metric) }))) };
+  return { creds, results: await Promise.all(connect.wantedMetrics(ctx).map(async (metric) => ({ metric, result: await helix.userStat(creds, metric) }))) };
 }
 
 const LIVE_METRICS = ["avg_viewers", "peak_viewers", "hours_streamed", "hours_watched", "followers_gained"];
@@ -100,6 +100,17 @@ async function liveItems(ctx, creds, results) {
   });
 }
 
+/** Reprise silencieuse pour « Statut live » d'avant : ses identifiants vont au Connecteur s'il n'en a pas (une seule tentative par processus et par instance). */
+const legacyTried = new Set();
+async function adoptLegacy(ctx, legacy) {
+  const clientId = plain(legacy?.clientId), clientSecret = plain(legacy?.clientSecret);
+  if (!clientId || !clientSecret || legacyTried.has(ctx.instance.id)) return;
+  legacyTried.add(ctx.instance.id);
+  await connect.call(ctx, "adopt", { clientId, clientSecret });
+}
+
+export const resetCache = () => { helix.resetCache(); connect.resetConnect(); hand.resetHandover(); registered.clear(); legacyTried.clear(); };
+
 export default {
   mcp: analytics.tools(credentials),
   /** L'enregistreur de directs : repasse chaque minute, mais ne mesure qu'à son rythme (2 minutes en direct, 4 hors direct) ; rien du tout si « Suivre mes statistiques » est décoché. */
@@ -108,19 +119,21 @@ export default {
       everyMinutes: 1,
       run: async (ctx) => {
         if (ctx.setting("trackStats") !== true) return;
+        await hand.retry(ctx);
+        if (!(await connectorState(ctx)).ready) return;   // pas d'application Twitch : rien à mesurer, rien n'est écrit
         const creds = await credentials(ctx);
-        await live.trackNow(ctx, creds, connect.liveConn(ctx, creds));
+        await live.trackNow(ctx, creds, creds);
       },
     },
   },
   exports: {
-    /** Le bouton de la chaîne pour le cœur (en-tête) : rien tant que la chaîne n'est pas réglée. */
+    /** Le bouton de la chaîne pour le cœur (en-tête) : rien tant que la chaîne n'est pas réglée. Aucun appel à Twitch. */
     async "social.link"(ctx) {
-      const { channel } = await credentials(ctx);
+      const channel = await channelOf(ctx);
       return LOGIN.test(channel) ? [{ label: `Twitch · ${channel}`, url: urlOf(channel), icon: "twitch" }] : [];
     },
     async "stream.live"(ctx) {
-      const c = await credentials(ctx);
+      const c = await credentials(ctx, { wait: false });
       const s = await currentStream(c);
       return s ? [{ id: s.id, title: s.title, url: urlOf(c.channel), startedAt: s.startedAt, game: s.game ?? undefined }] : [];
     },
@@ -139,105 +152,126 @@ export default {
       const all = [...out, ...(await liveItems(ctx, creds, results))];
       return Number.isInteger(args?.limit) && args.limit > 0 ? all.slice(0, args.limit) : all;
     },
-    async "maze.poster"(ctx, { limit }) {
-      return (await recentClips(await credentials(ctx))).slice(0, limit ?? 10).map((x) => ({ title: x.title, url: x.url, ...(x.image ? { image: x.image } : {}), kind: "clip" }));
+    async "maze.poster"(ctx, { limit } = {}) {
+      return (await recentClips(await credentials(ctx, { wait: false }))).slice(0, limit ?? 10).map((x) => ({ title: x.title, url: x.url, ...(x.image ? { image: x.image } : {}), kind: "clip" }));
     },
   },
 
   services: {
-    "twitch.api": access.service(credentials),
     "twitch.live": {
-      /** { channel, url, configured, ready, missing } — la chaîne de cette instance et si Twitch est utilisable ; ne fait aucun appel réseau. */
+      /** { channel, url, configured, ready, missing } — la chaîne de cette instance et si Twitch est utilisable (application réglée dans le Connecteur) ; aucun appel réseau. */
       async channel(ctx) {
-        const c = await credentials(ctx);
-        return { channel: LOGIN.test(c.channel) ? c.channel : null, url: urlOf(c.channel), configured: hasCredentials(c), ready: valid(c), missing: missing(c) };
+        const channel = await channelOf(ctx);
+        const st = await connectorState(ctx);
+        return { channel: LOGIN.test(channel) ? channel : null, url: urlOf(channel), configured: st.ready, ready: st.ready && LOGIN.test(channel), missing: [...(LOGIN.test(channel) ? [] : ["channel"]), ...st.missing] };
       },
       /**
-       * L'état de la chaîne : { configured, known, live, channel, url, id, title, game, viewers, startedAt, thumbnail, error? }. Ne lève jamais.
+       * L'état de la chaîne : { configured, known, live, channel, url, id, title, game, viewers, startedAt, thumbnail, displayName?, error? }. Ne lève jamais.
        * `known` : Twitch a répondu (sinon `live` vaut false et `error` dit pourquoi : auth, rate, network, config).
-       * args.channel : une autre chaîne, avec les identifiants de cette instance. Sans argument : SA chaîne (chaque instance répond pour elle-même, aucun « maître »).
-       * args.legacy : { channel, clientId, clientSecret } d'un consommateur qui n'a pas encore été repris — utilisés SEULEMENT si cette instance n'a pas ses propres identifiants.
+       * args.channel : une autre chaîne. Sans argument : SA chaîne (chaque instance répond pour elle-même, aucun « maître »).
+       * args.legacy : { channel, clientId, clientSecret } d'un consommateur pas encore repris : la chaîne sert si l'instance n'en a pas, et les identifiants
+       * sont confiés au Connecteur s'il n'a pas encore d'application (jamais d'écrasement : voir son `adopt`).
        */
       async status(ctx, args) {
         const a = args && typeof args === "object" ? args : {};
-        let c = await credentials(ctx);
-        if (!hasCredentials(c) && a.legacy && typeof a.legacy === "object") {
-          c = { channel: c.channel || text(a.legacy.channel).toLowerCase(), clientId: plain(a.legacy.clientId), secret: plain(a.legacy.clientSecret) };
-        }
+        const c = await credentials(ctx);
+        let st = await connectorState(ctx);
+        if (!st.ready && a.legacy && typeof a.legacy === "object" && st.present) { await adoptLegacy(ctx, a.legacy); st = await connectorState(ctx); }
+        if (!LOGIN.test(c.channel) && a.legacy && typeof a.legacy === "object" && LOGIN.test(text(a.legacy.channel))) c.channel = text(a.legacy.channel).toLowerCase();
         const other = text(a.channel).toLowerCase();
-        if (LOGIN.test(other)) c = { ...c, channel: other };
-        const base = { configured: hasCredentials(c), known: false, live: false, channel: LOGIN.test(c.channel) ? c.channel : null, url: urlOf(c.channel) };
+        if (LOGIN.test(other)) c.channel = other;
+        const base = { configured: st.ready, known: false, live: false, channel: LOGIN.test(c.channel) ? c.channel : null, url: urlOf(c.channel) };
+        if (!st.ready) return { ...base, error: "config" };
         const r = await liveStatus(c);
         if (r.error) return { ...base, error: r.error };
         const s = r.stream;
         return { ...base, known: true, live: !!s, ...(s ? { id: s.id, title: s.title, game: s.game, viewers: s.viewers, startedAt: s.startedAt, thumbnail: s.thumbnail, ...(s.displayName ? { displayName: s.displayName } : {}) } : {}) };
       },
       /**
-       * Reprise des identifiants d'un autre module (« Statut live ») : chaque champ vide ICI est rempli, un champ déjà rempli (réglage ou reprise) n'est JAMAIS écrasé.
-       * Renvoie { adopted: [champs repris], ready } — jamais une valeur. Idempotent. N'importe quel module qui déclare dépendre de ce service peut l'appeler.
+       * Reprise des identifiants d'un autre module (« Statut live ») : la chaîne remplit celle de cette instance si elle est vide ; l'application va au
+       * Connecteur Twitch, qui ne remplit que ses champs vides. Renvoie { adopted: [champs repris], ready } — jamais une valeur. Idempotent.
        */
       async adopt(ctx, args) {
         const a = args && typeof args === "object" ? args : {};
-        const incoming = { channel: LOGIN.test(text(a.channel)) ? text(a.channel).toLowerCase() : "", clientId: plain(a.clientId), clientSecret: plain(a.clientSecret) };
-        const doc = await adoptedDoc(ctx);
-        const had = doc?.data ?? {};
-        const next = { ...had };
         const adopted = [];
-        for (const f of FIELDS) {
-          if (text(ctx.setting(f)) || text(had[f]) || !incoming[f]) continue;
-          next[f] = incoming[f];
-          adopted.push(f);
+        const channel = LOGIN.test(text(a.channel)) ? text(a.channel).toLowerCase() : "";
+        const doc = await firstDoc(ctx, hand.ADOPTED);
+        if (channel && !text(ctx.setting("channel")) && !text(doc?.data?.channel)) {
+          if (doc) await ctx.api.store.update(doc.id, { ...doc.data, channel }); else await ctx.api.store.add(hand.ADOPTED, { channel });
+          adopted.push("channel");
         }
-        if (adopted.length) {
-          if (doc) await ctx.api.store.update(doc.id, next);
-          else await ctx.api.store.add(ADOPTED, next);
+        const clientId = plain(a.clientId), clientSecret = plain(a.clientSecret);
+        if (clientId || clientSecret) {
+          const r = await connect.call(ctx, "adopt", { clientId, clientSecret, channel: (await channelOf(ctx)) || undefined });
+          if (r.ok && Array.isArray(r.value?.adopted)) for (const f of r.value.adopted) if (f === "clientId" || f === "clientSecret") adopted.push(f);
         }
-        return { adopted, ready: valid(await credentials(ctx)) };
+        const now = await channelOf(ctx);
+        return { adopted, ready: LOGIN.test(now) && valid({ channel: now, call: () => null }) && (await connectorState(ctx)).ready };
       },
     },
   },
 
-  // Retour de Twitch après « Connecter ma chaîne Twitch » : /m/<clé>/oauth/callback (voir connect.mjs pour tout ce qui le protège).
+  // Retour de Twitch pour une installation d'avant la 2.0 : /m/<clé>/oauth/callback, relayé au Connecteur (voir connect.mjs).
   routes: {
-    "oauth/callback": (request, ctx) => connect.callback(request, ctx, credentials),
+    [connect.CALLBACK]: (request, ctx) => connect.callback(request, ctx, channelOf),
+  },
+
+  // Passage au Connecteur (voir handover.mjs) : jamais d'échec pour « pas encore prêt » ; rejouable.
+  migrations: {
+    2: async (ctx) => { await hand.handover(ctx); },
+  },
+
+  hooks: {
+    /** Une chaîne retirée n'est plus proposée par défaut aux autres modules (ses autorisations restent dans le Connecteur, qui les gère). */
+    async onInstanceDelete(ctx) {
+      const channel = await channelOf(ctx);
+      if (LOGIN.test(channel)) await connect.call(ctx, "register", { channel, remove: true });
+    },
   },
 
   async adminPanel(ctx) {
-    const base = await sharePanel(ctx);
+    const blocks = [];
+    const st = await connectorState(ctx);
+    if (!st.present) {
+      // Sans Connecteur : bouton et lien seulement (aucun appel à Twitch) ; le cœur propose d'installer un module qui offre le service, s'il en existe un.
+      return [
+        { type: "banner", tone: "warning", text: ctx.t("noConnector") },
+        { type: "suggestInstall", service: connect.SERVICE, min: 3, reason: ctx.t("suggestReason") },
+        ...(await adoptedBlocks(ctx)),
+      ];
+    }
+    const h = await hand.retry(ctx);
+    if (h?.state === "conflict") blocks.push({ type: "banner", tone: "warning", text: ctx.t("handover_conflict") });
+    else if (h?.state === "pending" && h.reason === "incomplete") blocks.push({ type: "banner", tone: "warning", text: ctx.t("handover_incomplete") });
+    blocks.push(...(await adoptedBlocks(ctx)));
+    const channel = await channelOf(ctx);
+    if (!LOGIN.test(channel)) return blocks;
+    await register(ctx, channel);
     const tracking = ctx.setting("trackStats") === true;
-    // La connexion de la chaîne sert aux statistiques ET aux modules qui demandent d'autres autorisations (le Bot Twitch : lire et écrire dans le chat).
-    if (!tracking && !(await connect.extraScopes(ctx, "main")).length) return base;
-    const creds = await credentials(ctx);
-    const results = tracking ? (await statsOf(ctx))?.results ?? [] : [];
-    const connection = await connect.panel(ctx, creds, async () => results);
-    if (!tracking) return [...base, ...connection];
+    const found = tracking ? await statsOf(ctx) : null;
+    const results = found?.results ?? [];
+    const connection = await connect.panel(ctx, channel, async () => results);
+    if (!tracking) return [...blocks, ...connection];
     const connected = !!results.find((r) => r.metric === "followers" && !r.result.error);
-    return [...base, ...connection, ...(await analytics.panel(ctx, creds, connected))];
+    return [...blocks, ...connection, ...(await analytics.panel(ctx, found?.creds ?? (await credentials(ctx)), connected))];
   },
   adminActions: {
     async forgetAdopted(ctx) {
-      for (const c of [ADOPTED, BORROWED]) { const doc = await firstDoc(ctx, c); if (doc) await ctx.api.store.remove(doc.id); }
+      const doc = await firstDoc(ctx, hand.ADOPTED);
+      if (doc) await ctx.api.store.remove(doc.id);
       return { ok: ctx.t("forgotten"), redirect: "?" };
     },
-    disconnect: (ctx) => connect.disconnect(ctx),
+    disconnect: async (ctx) => connect.disconnect(ctx, await channelOf(ctx)),
     async eraseLive(ctx) { await live.eraseAll(ctx); return { ok: ctx.t("live_erased"), redirect: "?" }; },
   },
 };
 
-/** Indices visibles d'une reprise d'identifiants : jamais les valeurs. « Oublier » rend la main aux seuls réglages (retour en arrière). */
-async function sharePanel(ctx) {
-  const { share } = await resolve(ctx);
-  const blocks = [];
-  if (share) {
-    const tone = share.state === "live" || share.state === "copy" ? "info" : "warning";
-    blocks.push({ type: "banner", tone, text: ctx.t(`share_${share.state}`, { channel: share.from }) });
-  }
-  const a = (await adoptedDoc(ctx))?.data ?? {};
-  const fields = FIELDS.filter((f) => text(a[f]));
-  if (!fields.length) return blocks;
+/** Une chaîne reprise d'un autre module : signalée (jamais une valeur), « oublier » rend la main au seul réglage. */
+async function adoptedBlocks(ctx) {
+  const a = (await firstDoc(ctx, hand.ADOPTED))?.data ?? {};
+  if (!text(a.channel) || text(ctx.setting("channel"))) return [];
   return [
-    ...blocks,
-    { type: "banner", tone: "info", text: ctx.t("adoptedNote", { fields: fields.map((f) => ctx.t(`field_${f}`)).join(", ") }) },
+    { type: "banner", tone: "info", text: ctx.t("adoptedNote", { fields: ctx.t("field_channel") }) },
     { type: "adminForm", action: "forgetAdopted", submitLabel: ctx.t("forget"), fields: [] },
   ];
 }

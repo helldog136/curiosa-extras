@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.2.0",
   "id": "twitch-channel",
   "name": {
-    "en": "Twitch channel",
-    "fr": "Chaîne Twitch"
+    "en": "My Twitch channel",
+    "fr": "Ma Chaîne Twitch"
   },
-  "version": "1.7.0",
+  "version": "2.0.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -19,16 +19,17 @@
   "type": "social",
   "instances": "multiple",
   "page": false,
-  "offers": [
+  "requires": [
     {
       "service": "twitch.api",
-      "version": 2,
+      "min": 3,
       "label": {
-        "en": "Talk to Twitch for your channel (chat bot, who is live among a list of channels)",
-        "fr": "Parler à Twitch pour votre chaîne (bot du chat, qui est en direct parmi une liste de chaînes)"
-      },
-      "each": true
-    },
+        "en": "Talk to Twitch (your Twitch application and connected accounts)",
+        "fr": "Parler à Twitch (votre application Twitch et les comptes connectés)"
+      }
+    }
+  ],
+  "offers": [
     {
       "service": "twitch.live",
       "label": {
@@ -93,26 +94,6 @@
       }
     },
     {
-      "key": "clientId",
-      "type": "text",
-      "label": {
-        "en": "Twitch application ID (client id)",
-        "fr": "Identifiant de l'application Twitch"
-      },
-      "help": {
-        "en": "From dev.twitch.tv/console (an application of your own). Type it only here.",
-        "fr": "Depuis dev.twitch.tv/console (une application à vous). À saisir ici seulement."
-      }
-    },
-    {
-      "key": "clientSecret",
-      "type": "secret",
-      "label": {
-        "en": "Twitch application secret",
-        "fr": "Secret de l'application Twitch"
-      }
-    },
-    {
       "key": "trackStats",
       "type": "boolean",
       "default": false,
@@ -121,8 +102,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your followers and paying subscribers for the site's statistics, and measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured by your site every 2 minutes while you are live, from the day this is switched on: Twitch gives no history. Twitch must authorize the follower count: once this is on and saved, a short guide and a “Connect my Twitch channel” button appear at the top of this page.",
-        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site, et mesure vos directs : spectateurs, heures de live, followers par jeu, vues de vos vidéos. Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ceci est activé : Twitch ne fournit pas l'historique. Twitch doit autoriser le comptage des followers : une fois ceci activé et enregistré, un court guide et le bouton « Connecter ma chaîne Twitch » apparaissent en haut de cette page."
+        "en": "Counts your followers and paying subscribers for the site's statistics, and measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured by your site every 2 minutes while you are live, from the day this is switched on: Twitch gives no history. Twitch must authorize the follower count: once this is on and saved, a “Connect my Twitch channel” button appears at the top of this page.",
+        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site, et mesure vos directs : spectateurs, heures de live, followers par jeu, vues de vos vidéos. Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ceci est activé : Twitch ne fournit pas l'historique. Twitch doit autoriser le comptage des followers : une fois ceci activé et enregistré, le bouton « Connecter ma chaîne Twitch » apparaît en haut de cette page."
       }
     },
     {
@@ -146,20 +127,6 @@
         "en": "Only for Twitch affiliates and partners. Ticking it changes what Twitch is asked to authorize: reconnect your channel afterwards.",
         "fr": "Réservé aux affiliés et partenaires Twitch. Cocher cette case change ce que Twitch doit autoriser : reconnectez votre chaîne ensuite."
       }
-    },
-    {
-      "key": "useCredentialsOf",
-      "type": "text",
-      "advanced": true,
-      "label": {
-        "en": "Use the credentials of another channel (optional)",
-        "fr": "Utiliser les identifiants d'une autre chaîne (facultatif)"
-      },
-      "help": {
-        "en": "Same Twitch application for several channels? Type here the channel (login) of another Twitch channel instance that already has its client id and secret: they are reused, only where empty here, without being shown. What you type in this instance always wins.",
-        "fr": "Même application Twitch pour plusieurs chaînes ? Saisissez ici la chaîne (identifiant) d'une autre Chaîne Twitch qui a déjà son client id et son secret : ils sont repris, seulement là où ils sont vides ici, sans jamais être affichés. Ce que vous saisissez dans cette instance prévaut toujours."
-      },
-      "optional": true
     },
     {
       "key": "liveEveryMinutes",
@@ -294,6 +261,27 @@
       ]
     }
   ],
+  "legacySettings": [
+    {
+      "key": "clientId"
+    },
+    {
+      "key": "clientSecret",
+      "secret": true
+    },
+    {
+      "key": "useCredentialsOf"
+    }
+  ],
+  "legacyCollections": [
+    "twitchConnection",
+    "twitchBotConnection",
+    "twitchPending",
+    "twitchResult",
+    "twitchWants",
+    "borrowed"
+  ],
+  "dataVersion": 2,
   "mcp": [
     {
       "name": "twitch_streams",

@@ -1,6 +1,6 @@
 // Faux Helix « en direct » pour les tests de l'enregistreur de directs : une horloge simulée (Date.now) et des réponses scriptées dans le temps.
 // Le jeton d'application (client_credentials) et tout ce qui est « utilisateur » (followers, connexion) sont délégués à fakeTwitch ; ici seulement /users, /streams, /videos, /clips, /games.
-import { fakeTwitch } from "./fakeTwitch.mjs";
+import { fakeTwitch, hdr } from "./fakeTwitch.mjs";
 
 export const T0 = Date.parse("2026-10-15T18:00:00Z");
 export const MIN = 60_000;
@@ -30,14 +30,14 @@ export function fakeLive(opts = {}) {
     },
     offline(channelId = "777") { delete s.streams[channelId]; },
     calls(path) { return log.filter((c) => c.path === `/helix/${path}`); },
-    /** Enregistre un jeton d'utilisateur valable et son document de connexion dans le stockage de l'instance. */
-    async connect(ctx, scopes = ["moderator:read:followers"]) {
-      tw.access.set("at_user", { login: "machaine", userId: "777", scopes, valid: true });
-      await ctx.api.store.add("twitchConnection", { access: "at_user", refresh: "rt_user", expiresAt: T0 + 1e12, scopes, userId: "777", login: "machaine", connectedAt: new Date(T0).toISOString(), clientId: "cid", status: "ok" });
+    /** Enregistre un jeton d'utilisateur valable et sa connexion dans le stockage du CONNECTEUR Twitch (`connectorCtx` : voir helpers/twitchConnector.mjs). */
+    async connect(connectorCtx, scopes = ["moderator:read:followers"], { channel = "machaine", userId = "777" } = {}) {
+      tw.access.set("at_user", { login: channel, userId, scopes, valid: true });
+      await connectorCtx.api.store.add("twitchConnections", { slot: "main", channel, access: "at_user", refresh: "rt_user", expiresAt: T0 + 1e12, scopes, userId, login: channel, connectedAt: new Date(T0).toISOString(), clientId: "cid", status: "ok" });
     },
     async fetch(url, init = {}) {
       const u = new URL(String(url));
-      const bearer = String(init.headers?.Authorization ?? "").replace(/^Bearer /, "");
+      const bearer = String(hdr(init, "Authorization") ?? "").replace(/^Bearer /, "");
       if (u.hostname === "api.twitch.tv" && bearer === "app_tok") {
         const name = u.pathname.replace("/helix/", "");
         log.push({ path: u.pathname, search: u.search, name, at: s.clock });

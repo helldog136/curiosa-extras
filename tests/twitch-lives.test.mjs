@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { fakeLive, T0, MIN, video, clip } from "./helpers/fakeLive.mjs";
+import { connector, connectorModule } from "./helpers/twitchConnector.mjs";
 import { problemsOfList } from "./helpers/socialStatContract.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
@@ -16,12 +17,14 @@ const live = await import("../modules/twitch-channel/live.mjs");
 const helix = await import("../modules/twitch-channel/helix.mjs");
 const def = mod.default;
 const realFetch = globalThis.fetch;
-let L;
-beforeEach(() => { mod.resetCache(); L = fakeLive(); L.install(); });
+let L, C;   // C : le vrai Connecteur Twitch (application « cid »), par qui passent tous les appels
+beforeEach(() => { mod.resetCache(); connectorModule.resetCache(); L = fakeLive(); L.install(); C = connector(); });
 afterEach(() => L.restore(realFetch));
 
-const settings = (extra = {}) => ({ channel: "MaChaine", clientId: "cid", clientSecret: "SEC-RET", trackStats: true, statsFollowers: true, ...extra });
-const mk = (extra = {}, key = "tw", locale = "fr") => fakeCtx({ key, locale, messages: locale === "fr" ? fr : en, settings: settings(extra) });
+const settings = (extra = {}) => ({ channel: "MaChaine", trackStats: true, statsFollowers: true, ...extra });
+const mk = (extra = {}, key = "tw", locale = "fr") => fakeCtx({ key, locale, messages: locale === "fr" ? fr : en, settings: settings(extra), services: { "twitch.api": C.methods } });
+/** Le « client » que Ma Chaîne Twitch donne à helix.mjs : la chaîne et l'appel au Connecteur. */
+const client = (channel = "machaine") => ({ channel, call: async (req) => { const r = await C.methods.request({ ...req, channel }); return r.ok ? { status: r.status, json: r.json } : { error: r.error }; }, account: () => C.methods.account({ channel }) });
 /** Un passage de la tâche planifiée à la minute `min` (horloge simulée). */
 const tick = async (ctx, min) => { L.at(min); await def.tasks["record-lives"].run(ctx); };
 const sessionsOf = async (ctx, opts) => (await live.listSessions(ctx, { limit: 100, ...opts })).sessions;
@@ -57,7 +60,8 @@ test("manifeste : tâche « record-lives » chaque minute (granularité minimale
 });
 
 test("« Suivre mes statistiques » décoché : aucune requête, aucune donnée, aucun chiffre ; chaîne ou identifiants invalides : idem", async () => {
-  for (const extra of [{ trackStats: false }, { channel: "a b!" }, { clientSecret: "" }]) {
+  for (const extra of [{ trackStats: false }, { channel: "a b!" }, { noApp: true }]) {
+    if (extra.noApp) C = connector({ settings: {} });   // Connecteur sans application Twitch
     const ctx = mk(extra);
     L.live("777");
     for (let m = 0; m < 20; m += 2) await tick(ctx, m);
@@ -74,7 +78,7 @@ test("« Suivre mes statistiques » décoché : aucune requête, aucune donnée,
 // ── Sessions ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 test("session simple : début, fin, durée, pic, moyenne pondérée, heures regardées, followers au début et à la fin, fermée après 3 vérifications hors direct", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   await simpleLive(ctx);
   const [s, ...others] = await sessionsOf(ctx);
   assert.equal(others.length, 0);
@@ -94,7 +98,7 @@ test("session simple : début, fin, durée, pic, moyenne pondérée, heures rega
 });
 
 test("plusieurs jeux dans un direct : un segment par jeu (début, fin, durée, moyenne, pic, heures regardées, followers gagnés, followers par heure)", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   const followersAt = (m) => (m <= 60 ? 100 + Math.floor(m / 2) : 130 + Math.floor((m - 60) / 6));
   for (let m = 0; m <= 118; m += 2) {
     L.tw.state.followers = followersAt(m);
@@ -225,7 +229,7 @@ test("fréquence : 2 minutes en direct (1 requête de direct par mesure), 4 minu
   assert.equal(live.rawDaysOf(mk({ rawDays: "x" })), 90); assert.equal(live.keepYearsOf(mk({ keepYears: "50" })), 5);
 });
 
-test("plusieurs chaînes : chacune son suivi, ses sessions et ses chiffres ; un seul jeton d'application pour les mêmes identifiants", async () => {
+test("plusieurs chaînes : chacune son suivi, ses sessions et ses chiffres ; un seul jeton d'application (une application, celle du Connecteur)", async () => {
   const a = mk({}, "a"), b = mk({ channel: "autre" }, "b");
   L.live("777", { viewer_count: 40, id: "A1" }); L.live("888", { viewer_count: 900, id: "B1", game_name: "Chess", game_id: "5" });
   for (const m of [0, 2, 4]) { await tick(a, m); await tick(b, m); }
@@ -242,7 +246,7 @@ test("plusieurs chaînes : chacune son suivi, ses sessions et ses chiffres ; un 
 
 // ── Erreurs : jamais de mesure fausse ──────────────────────────────────────────────────────────────────────────────────────────────
 
-test("429 : aucune mesure, le direct en cours n'est pas fermé, et plus aucune requête pendant 60 secondes", async () => {
+test("429 : aucune mesure, le direct en cours n'est pas fermé, et plus aucune requête pendant la pause (Connecteur : 60 s sans Retry-After)", async () => {
   const ctx = mk();
   for (const m of [0, 2, 4]) { L.live("777", { viewer_count: 30 }); await tick(ctx, m); }
   const before = (await sessionsOf(ctx))[0];
@@ -250,7 +254,7 @@ test("429 : aucune mesure, le direct en cours n'est pas fermé, et plus aucune r
   await tick(ctx, 6);
   assert.equal((await live.trackingState(ctx)).lastError.code, "rate");
   const n = L.log.length;
-  assert.deepEqual(await helix.streamNow({ channel: "machaine", clientId: "cid", secret: "SEC-RET" }), { error: "rate" });
+  assert.deepEqual(await helix.streamNow(client()), { error: "rate" });
   assert.equal(L.log.length, n, "pendant la pause, Twitch n'est pas rappelé");
   const after = (await sessionsOf(ctx))[0];
   assert.deepEqual([after.open, after.samples, after.lastMeasureAt], [true, before.samples, before.lastMeasureAt], "rien n'a été écrit");
@@ -306,7 +310,7 @@ test("followers illisibles (non connectée, 429) : les spectateurs sont mesurés
   assert.equal(items.followers_gained.error, "auth"); assert.ok(!("value" in items.followers_gained));
   assert.equal(items.peak_viewers.value, 30);
   // connectée mais Twitch répond 429 aux followers
-  const c2 = mk({}, "c2"); await L.connect(c2);
+  const c2 = mk({}, "c2"); await L.connect(C.ctx);
   L.tw.state.rateLimited = true;
   L.live("777", { viewer_count: 5 });
   await tick(c2, 60);
@@ -314,7 +318,7 @@ test("followers illisibles (non connectée, 429) : les spectateurs sont mesurés
 });
 
 test("followers : relevés à l'ouverture, au changement de jeu et à la fermeture, sinon au plus toutes les 10 minutes", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   for (let m = 0; m <= 30; m += 2) { L.live("777", { viewer_count: 10 }); await tick(ctx, m); }
   const reads = L.tw.log.filter((c) => c.path === "/helix/channels/followers");
   assert.equal(reads.length, 4, "à 0, 10, 20 et 30 minutes");
@@ -348,7 +352,7 @@ test("conservation réglable : 30 jours de détail et 1 an de résumés", async 
 });
 
 test("taille d'un document : une mesure brute ≈ 35 octets, un résumé de direct à deux jeux ≈ 1 à 2 Ko", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   for (let m = 0; m <= 118; m += 2) { L.live("777", { viewer_count: 123, game_id: m < 60 ? "1" : "509658", game_name: m < 60 ? "Zelda" : "Just Chatting" }); await tick(ctx, m); }
   const day = (await ctx.api.store.list(live.COLLECTIONS.days))[0].data;
   assert.equal(day.points.length, 60);
@@ -418,7 +422,7 @@ test("vidéos : erreur de Twitch = on garde les dernières vues connues, datées
 // ── Outils MCP ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 test("twitch_streams : derniers directs avec unités claires, période, limite bornée, jeux ; réponse vide explicite", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   assert.match((await def.mcp.twitch_streams(ctx, {})).note, /Streams: none measured since|just been switched on|none/);
   await simpleLive(ctx);
   const out = await def.mcp.twitch_streams(ctx, { days: 7, limit: 5000 });
@@ -436,7 +440,7 @@ test("twitch_streams : derniers directs avec unités claires, période, limite b
 });
 
 test("twitch_games : tri (défaut followers par heure), nombre de directs, followers par heure nul sous 1 h", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   const followersAt = (m) => (m <= 60 ? 100 + Math.floor(m / 2) : 130 + Math.floor((m - 60) / 6));
   for (let m = 0; m <= 118; m += 2) {
     L.tw.state.followers = followersAt(m);
@@ -476,7 +480,7 @@ test("twitch_videos : tri par vues par défaut, filtre de type et de période, c
 });
 
 test("aucun secret ni jeton nulle part : panneau, chiffres, outils MCP, état et journaux", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   await simpleLive(ctx);
   L.state.videos = [video(1)]; L.state.clips = [clip(1)];
   await tick(ctx, 40);
@@ -500,7 +504,7 @@ async function twoHourLive(ctx, { lose = false } = {}) {
 }
 
 test("social.stat : cinq chiffres de période (30 jours glissants), entiers ≥ 0, durées en MINUTES, contrat valide, id stable, libellés fr/en", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   await twoHourLive(ctx);
   const items = await stat(ctx);
   assert.deepEqual(problemsOfList(items, { module: "twitch-channel", platform: "twitch" }), []);
@@ -518,7 +522,7 @@ test("social.stat : cinq chiffres de période (30 jours glissants), entiers ≥ 
 });
 
 test("social.stat : directs commencés dans les 30 derniers jours seulement ; gain de followers jamais négatif dans le chiffre, mais vrai dans le détail", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   await twoHourLive(ctx, { lose: true });
   assert.equal(byMetric(await stat(ctx)).followers_gained.value, 0);
   assert.equal((await sessionsOf(ctx))[0].followersGained, -6);
@@ -545,7 +549,7 @@ test("social.stat : sans durée de suivi aucun chiffre de direct ; followers_gai
 // ── Panneau « Mes directs », textes ───────────────────────────────────────────────────────────────────────────────────────────────
 
 test("panneau « Mes directs » : phrase d'honnêteté, suivi actif depuis, derniers directs, meilleur jeu, vidéos les plus vues ; tableaux de 2 colonnes (lisibles sur téléphone)", async () => {
-  const ctx = mk(); await L.connect(ctx);
+  const ctx = mk(); await L.connect(C.ctx);
   L.state.videos = [video(1, { view_count: 10 }), video(2, { view_count: 999 })]; L.state.clips = [clip(1)];
   await twoHourLive(ctx);
   const blocks = await def.adminPanel(ctx);
@@ -577,7 +581,7 @@ test("mots simples : aucun jargon dans les textes de « Mes directs » (fr et en
   const keys = Object.keys(fr).filter((k) => /^(live_|stat_(avg|peak|hours|followers_gained)|col_(live|result|game|video|clip|views)|type_|dur_)/.test(k));
   assert.ok(keys.length > 30);
   for (const k of keys) for (const [l, d] of [["fr", fr], ["en", en]]) assert.ok(!JARGON.test(d[k]), `${l}.${k} : « ${d[k]} »`);
-  const code = ["index", "connect", "helix", "oauth", "live", "analytics"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
+  const code = ["index", "connect", "helix", "handover", "live", "analytics"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
   for (const m of code.matchAll(/\bt\("([a-zA-Z_]+)"/g)) assert.ok(m[1] in fr, m[1]);
   for (const m of code.matchAll(/\bt\(!?[a-z]*\s*\?\s*"([a-zA-Z_]+)"\s*:\s*[a-z.]*\s*\?\s*"([a-zA-Z_]+)"\s*:\s*"([a-zA-Z_]+)"/g)) for (const k of m.slice(1)) assert.ok(k in fr, k);
   for (const k of ["type_archive", "type_highlight", "type_upload", "live_videosPending", "live_videosError", "live_videosNone", "live_bestNone", "live_needConnect"]) assert.ok(fr[k] && en[k], k);

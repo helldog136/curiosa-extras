@@ -1,5 +1,15 @@
 // Faux Twitch pour les tests : répond comme id.twitch.tv et api.twitch.tv (jeton d'application, autorisation, échange du code, renouvellement, validation, révocation, followers, abonnés).
 // Aucun réseau : on remplace `globalThis.fetch` par `twitch.fetch`. Tout ce que le module envoie est gardé dans `twitch.log` (méthode, adresse, corps, en-têtes).
+// Les en-têtes sont lus sans tenir compte de la casse (le client réseau du cœur, ctx.api.net, les écrit en minuscules) ; un corps texte de formulaire est lu comme un formulaire.
+// Pannes (Connecteur Twitch) : `retryAfter` (secondes) accompagne le 429 de `rateLimited` ; `silence` (vrai, ou fonction (url) => vrai) : Twitch ne répond jamais ;
+// `truncated` (fonction (url) => vrai) : réponse 200 au JSON coupé au milieu.
+const hdr = (init, name) => { const h = init?.headers ?? {}; if (typeof h.get === "function") return h.get(name) ?? undefined; const k = Object.keys(h).find((x) => x.toLowerCase() === name.toLowerCase()); return k === undefined ? undefined : h[k]; };
+const bodyOf = (init) => {
+  const b = init?.body;
+  if (b instanceof URLSearchParams) return Object.fromEntries(b);
+  if (typeof b === "string" && /x-www-form-urlencoded/.test(String(hdr(init, "content-type") ?? ""))) return Object.fromEntries(new URLSearchParams(b));
+  return b ?? null;
+};
 export function fakeTwitch(opts = {}) {
   const s = {
     clientId: "cid", clientSecret: "SEC-RET", redirects: new Set(["https://example.test/m/tw/oauth/callback"]),
@@ -34,10 +44,12 @@ export function fakeTwitch(opts = {}) {
     expireAccess(token) { const a = access.get(token); if (a) a.valid = false; },
     async fetch(url, init = {}) {
       const u = new URL(String(url));
-      const body = init.body instanceof URLSearchParams ? Object.fromEntries(init.body) : init.body ?? null;
+      const body = bodyOf(init);
       log.push({ method: init.method ?? "GET", url: String(url), path: u.pathname, search: u.search, body, headers: init.headers ?? {} });
       if (s.down) throw new Error("réseau coupé");
-      if (s.rateLimited && u.hostname === "api.twitch.tv") return json({}, 429);
+      if (s.silence === true || (typeof s.silence === "function" && s.silence(String(url)))) return new Promise((resolve, reject) => { init.signal?.addEventListener?.("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })), { once: true }); });
+      if (typeof s.truncated === "function" && s.truncated(String(url))) return new Response('{"data":[{"id":"1","login":', { status: 200, headers: { "content-type": "application/json" } });
+      if (s.rateLimited && u.hostname === "api.twitch.tv") return new Response("{}", { status: 429, headers: { "content-type": "application/json", ...(s.retryAfter ? { "retry-after": String(s.retryAfter) } : {}) } });
       if (u.hostname === "id.twitch.tv" && u.pathname === "/oauth2/token") {
         if (body.grant_type === "client_credentials") return body.client_secret === s.clientSecret ? json({ access_token: "app_tok", expires_in: 3600 }) : json({ status: 403, message: "invalid client secret" }, 403);
         if (body.client_id !== s.clientId || body.client_secret !== s.clientSecret) return json({ status: 403, message: "invalid client secret" }, 403);
@@ -56,7 +68,7 @@ export function fakeTwitch(opts = {}) {
         return json({}, 400);
       }
       if (u.hostname === "id.twitch.tv" && u.pathname === "/oauth2/validate") {
-        const a = access.get(String(init.headers?.Authorization ?? "").replace(/^OAuth /, ""));
+        const a = access.get(String(hdr(init, "Authorization") ?? "").replace(/^OAuth /, ""));
         return a?.valid ? json({ client_id: s.clientId, login: a.login, user_id: a.userId, scopes: a.scopes, expires_in: 3000 }) : json({ status: 401, message: "invalid access token" }, 401);
       }
       if (u.hostname === "id.twitch.tv" && u.pathname === "/oauth2/revoke") {
@@ -65,9 +77,9 @@ export function fakeTwitch(opts = {}) {
         for (const m of [access, refresh]) if (m.has(body.token)) m.get(body.token).valid = false;
         return new Response(null, { status: 200 });
       }
-      if (u.hostname === "api.twitch.tv" && String(init.headers?.Authorization ?? "") === "Bearer app_tok") {
+      if (u.hostname === "api.twitch.tv" && String(hdr(init, "Authorization") ?? "") === "Bearer app_tok") {
         // Jeton d'application : abonnements EventSub (webhook) — voir twitch-api.test.mjs / twitch-bot.test.mjs
-        if (init.headers?.["Client-Id"] !== s.clientId) return json({ status: 401, message: "Invalid OAuth token" }, 401);
+        if (hdr(init, "Client-Id") !== s.clientId) return json({ status: 401, message: "Invalid OAuth token" }, 401);
         if (u.pathname === "/helix/eventsub/subscriptions") {
           if (init.method === "GET") { const type = u.searchParams.get("type"); return json({ data: api.subs.filter((x) => !type || x.type === type).map(({ secret, ...pub }) => pub), total: api.subs.length, pagination: {} }); }
           if (init.method === "DELETE") { const i = api.subs.findIndex((x) => x.id === u.searchParams.get("id")); if (i < 0) return json({ status: 404 }, 404); api.subs.splice(i, 1); return new Response(null, { status: 204 }); }
@@ -83,7 +95,8 @@ export function fakeTwitch(opts = {}) {
         if (u.pathname === "/helix/users") {
           // Avec `login` (répété) : les chaînes connues de `s.users` = [{ login, name, picture }] (nom affiché, photo de profil). Sans : la chaîne elle-même.
           const wanted = u.searchParams.getAll("login").map((x) => x.toLowerCase());
-          if (wanted.length) return json({ data: (s.users ?? []).filter((x) => wanted.includes(x.login)).map((x, i) => ({ id: `${700 + i}`, login: x.login, display_name: x.name ?? x.login, type: "", broadcaster_type: "", description: "", profile_image_url: x.picture ?? "", offline_image_url: "", view_count: 0, created_at: "2020-01-01T00:00:00Z" })) });
+          // la chaîne elle-même (`s.login`) est toujours connue, avec son numéro `s.userId`
+          if (wanted.length) return json({ data: [...(s.users ?? []).filter((x) => wanted.includes(x.login)).map((x, i) => ({ id: `${700 + i}`, login: x.login, display_name: x.name ?? x.login, type: "", broadcaster_type: "", description: "", profile_image_url: x.picture ?? "", offline_image_url: "", view_count: 0, created_at: "2020-01-01T00:00:00Z" })), ...(wanted.includes(s.login) && !(s.users ?? []).some((x) => x.login === s.login) ? [{ id: s.userId, login: s.login, display_name: s.login }] : [])] });
           return json({ data: [{ id: s.userId, login: s.login }] });
         }
         if (u.pathname === "/helix/streams" && (init.method ?? "GET") === "GET") {
@@ -95,11 +108,15 @@ export function fakeTwitch(opts = {}) {
           if (s.streamsFail?.(wanted)) return json({ status: 503, message: "unavailable" }, 503);
           return json({ data: (s.streams ?? []).filter((x) => wanted.includes(x.login)).slice(0, first).map((x, i) => ({ id: `${9000 + i}`, user_id: `${500 + i}`, user_login: x.login, user_name: x.name ?? x.login, game_id: "1", game_name: x.game ?? "", type: x.type ?? "live", title: x.title ?? "", viewer_count: x.viewers ?? 0, started_at: x.startedAt ?? new Date().toISOString(), language: "fr", thumbnail_url: "https://static-cdn.jtvnw.net/previews-ttv/live_user_x-{width}x{height}.jpg", tags: [], is_mature: false })), pagination: {} });
         }
+        if (u.pathname === "/helix/clips") {
+          // `s.clips` = [{ title, url, thumbnail_url, created_at, view_count, game_id }] : les clips de la chaîne `s.userId`
+          return json({ data: u.searchParams.get("broadcaster_id") === s.userId ? (s.clips ?? []).slice(0, Number(u.searchParams.get("first") ?? 20)) : [], pagination: {} });
+        }
         return json({}, 404);
       }
       if (u.hostname === "api.twitch.tv") {
-        const t = access.get(String(init.headers?.Authorization ?? "").replace(/^Bearer /, ""));
-        if (!t?.valid || init.headers?.["Client-Id"] !== s.clientId) return json({ status: 401, message: "Invalid OAuth token" }, 401);
+        const t = access.get(String(hdr(init, "Authorization") ?? "").replace(/^Bearer /, ""));
+        if (!t?.valid || hdr(init, "Client-Id") !== s.clientId) return json({ status: 401, message: "Invalid OAuth token" }, 401);
         if (u.pathname === "/helix/chat/messages" && init.method === "POST") {
           if (!t.scopes.includes("user:write:chat")) return json({ status: 401, message: "Missing scope: user:write:chat" }, 401);
           const b = JSON.parse(init.body);
@@ -124,3 +141,4 @@ export function fakeTwitch(opts = {}) {
   };
   return api;
 }
+export { hdr };

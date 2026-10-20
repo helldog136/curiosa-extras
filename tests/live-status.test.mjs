@@ -5,9 +5,18 @@ import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { assertValidManifest } from "./helpers/builtinChecks.mjs";
 
-// live-status PRÉSENTE l'état « en direct » ; l'état vient du service twitch.live de la Chaîne Twitch (le vrai fournisseur est branché ici, comme le fait le cœur).
+import { connector, connectorModule } from "./helpers/twitchConnector.mjs";
+
+// live-status PRÉSENTE l'état « en direct » ; l'état vient du service twitch.live de Ma Chaîne Twitch (le vrai fournisseur est branché ici, comme le fait le cœur),
+// qui parle à Twitch par le Connecteur Twitch (vrai lui aussi : son application est celle que l'on donnait autrefois à la Chaîne Twitch).
 const ls = await loadModule("modules/live-status");
-const tw = await import("../modules/twitch-channel/index.mjs");
+const twMod = await import("../modules/twitch-channel/index.mjs");
+const tw = { ...twMod, resetCache: () => { twMod.resetCache(); connectorModule.resetCache(); } };
+/** Ma Chaîne Twitch d'avant (chaîne + application) → Ma Chaîne Twitch 2.0 (la chaîne) + un Connecteur (l'application). */
+function provide(key, { clientId, clientSecret, ...settings } = {}) {
+  const C = connector({ settings: clientId && clientSecret ? { appClientId: clientId, appSecret: clientSecret } : {} });
+  return fakeCtx({ key, settings, services: { "twitch.api": C.methods } });
+}
 const { definition: def, manifest, locales } = ls;
 const svc = tw.default.services["twitch.live"];
 const realFetch = globalThis.fetch;
@@ -29,7 +38,7 @@ const streamCalls = (calls) => calls.filter((c) => c.url.includes("/helix/stream
 
 /** Un couple (fournisseur, consommateur) : le consommateur appelle le vrai service du fournisseur, dont le ctx est celui du fournisseur. */
 function wire({ provider = { channel: "machaine", clientId: "cid", clientSecret: "sec" }, own = {}, withProvider = true, messages = { live: "{channel} est en direct" }, siteUrl, legacy } = {}) {
-  const pctx = fakeCtx({ key: "tw", settings: provider });
+  const pctx = provide("tw", provider);
   const services = withProvider ? { "twitch.live": Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](pctx, args)])) } : {};
   return { ctx: fakeCtx({ key: "live-status", settings: own, services, messages, siteUrl, ...(legacy ? { legacy, migration: true } : {}) }), pctx };
 }
@@ -166,7 +175,7 @@ test("la Chaîne Twitch configurée donne ses identifiants et sa chaîne", async
   const w = wire({ provider: { channel: "nouvelle", clientId: "new-id", clientSecret: "sec" } });
   const [b] = await banner(w.ctx);
   assert.equal(b.href, "https://twitch.tv/nouvelle");
-  assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["Client-Id"], "new-id");
+  assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["client-id"], "new-id");
 });
 
 test("plusieurs instances Twitch : le consommateur suit celle que le cœur désigne (maître) ; l'autre n'est pas touchée", async () => {
@@ -220,7 +229,7 @@ test("migration 2 : copie une fois dans la Chaîne Twitch (champs vides), efface
   assert.equal(await w.pctx.api.store.count("adopted"), 1);
   // l'état en direct vient maintenant de la Chaîne Twitch (identifiants repris), exactement comme après l'ancien bouton
   assert.ok(await banner(w.ctx));
-  assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["Client-Id"], "old-id");
+  assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["client-id"], "old-id");
   noLeak(visible(w.ctx), await def.adminPanel(w.ctx), await w.ctx.api.store.list("adoption"));
 });
 
@@ -303,12 +312,15 @@ test("migration 2 : seulement une partie reprise (chaîne illisible, secret manq
   noLeak(visible(w.ctx));
 });
 
-test("migration 2 avec plusieurs Chaînes Twitch : la reprise va dans la PREMIÈRE seulement, les autres ne sont pas touchées", async () => {
+test("migration 2 avec plusieurs Chaînes Twitch : la chaîne reprise va dans la PREMIÈRE seulement, l'application va au Connecteur (une seule pour le site, donc commune)", async () => {
   const { ctx, pctxs } = wireMany([{ settings: { clientId: "", clientSecret: "" } }, { settings: { channel: "rascane", clientId: "", clientSecret: "" } }], { own: {}, legacy: legacyOwn });
   await def.migrations[2](ctx);
-  assert.equal((await svc.channel(pctxs[0])).ready, true, "la première chaîne reçoit la reprise");
-  assert.equal((await svc.channel(pctxs[1])).ready, false, "la deuxième n'est pas touchée");
+  assert.deepEqual(await svc.channel(pctxs[0]), { channel: "ancienne_chaine", url: "https://twitch.tv/ancienne_chaine", configured: true, ready: true, missing: [] }, "la première chaîne reçoit la reprise");
+  const second = await svc.channel(pctxs[1]);
+  assert.equal(second.channel, "rascane", "la chaîne de la deuxième n'est pas touchée");
+  assert.equal(second.ready, true, "Ma Chaîne Twitch 2.0 : l'application est celle du Connecteur, commune à toutes les chaînes");
   assert.equal(await pctxs[1].api.store.count("adopted"), 0);
+  assert.deepEqual(ctx.calls.legacyCleared.sort(), ["channel", "clientId", "clientSecret"]);
 });
 
 test("textes visibles : ni bouton ni message de reprise manuelle ; les clés qui restent existent en fr et en", () => {
@@ -322,7 +334,10 @@ test("textes visibles : ni bouton ni message de reprise manuelle ; les clés qui
 const bind = (pctx) => Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](pctx, args)]));
 /** N instances du vrai fournisseur (ordre de création = ordre du tableau) ; le consommateur a `callAll` (nouveau cœur) ou seulement `call` (vieux cœur : oldCore). */
 function wireMany(chans, { own = {}, oldCore = false, messages = {}, legacy, ...rest } = {}) {
-  const pctxs = chans.map((c, i) => fakeCtx({ key: c.key ?? `tw${i}`, settings: { clientId: "cid", clientSecret: "sec", ...c.settings } }));
+  // une seule application pour le site : un seul Connecteur, que toutes les chaînes partagent (réglé avec l'application de la première)
+  const first = { clientId: "cid", clientSecret: "sec", ...chans[0]?.settings };
+  const C = connector({ settings: first.clientId && first.clientSecret ? { appClientId: first.clientId, appSecret: first.clientSecret } : {} });
+  const pctxs = chans.map((c, i) => { const { clientId, clientSecret, ...settings } = { ...c.settings }; void clientId; void clientSecret; return fakeCtx({ key: c.key ?? `tw${i}`, settings, services: { "twitch.api": C.methods } }); });
   const methods = pctxs.map((p) => bind(p));
   const ctx = fakeCtx({ key: "live-status", settings: own, services: { "twitch.live": methods[0] }, serviceInstances: { "twitch.live": chans.map((c, i) => ({ instance: pctxs[i].instance.key, name: c.name, methods: methods[i] })) },
     ...(legacy ? { legacy } : {}), messages: { live: "{channel} est en direct", liveMany: "En direct", watch: "Regarder", viewersOne: "{count} spectateur", viewersMany: "{count} spectateurs", playerChoice: "Chaîne", ...messages }, ...rest });
