@@ -81,6 +81,11 @@ export function fakeTwitch(opts = {}) {
           }
         }
         if (u.pathname === "/helix/users") return json({ data: [{ id: s.userId, login: s.login }] });
+        if (u.pathname === "/helix/streams" && (init.method ?? "GET") === "GET") {
+          // Qui est en direct parmi `user_login` (répété) : `s.streams` = [{ login, name, game, title, viewers, startedAt, type? }]. `first` vaut 20 par défaut, comme chez Twitch.
+          const wanted = u.searchParams.getAll("user_login").map((x) => x.toLowerCase()), first = Number(u.searchParams.get("first") ?? 20);
+          return json({ data: (s.streams ?? []).filter((x) => wanted.includes(x.login)).slice(0, first).map((x, i) => ({ id: `${9000 + i}`, user_id: `${500 + i}`, user_login: x.login, user_name: x.name ?? x.login, game_id: "1", game_name: x.game ?? "", type: x.type ?? "live", title: x.title ?? "", viewer_count: x.viewers ?? 0, started_at: x.startedAt ?? new Date().toISOString(), language: "fr", thumbnail_url: "https://static-cdn.jtvnw.net/previews-ttv/live_user_x-{width}x{height}.jpg", tags: [], is_mature: false })), pagination: {} });
+        }
         return json({}, 404);
       }
       if (u.hostname === "api.twitch.tv") {

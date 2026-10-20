@@ -110,5 +110,6 @@ test("index du Catalogue épinglé : chaque entrée pointe l'étiquette de la ve
   const index = JSON.parse(read("catalogue/index.json"));
   assert.ok(index.modules.length > 0);
   for (const e of index.modules) assert.equal(e.ref, `v${version}`, `${e.id} : ref épinglée sur v${version}`);
-  assert.match(read("CHANGELOG.md"), new RegExp(`^## ${version.replace(/\./g, "\\.")}$`, "m"), `CHANGELOG.md : section « ## ${version} »`);
+  // Tant que la version n'est pas publiée, ses notes sont sous « Prochaine version (non publiée) » : le publieur la renomme (scripts/release-check.mjs, lui, exige toujours « ## <version> »).
+  assert.match(read("CHANGELOG.md"), new RegExp(`^## (?:${version.replace(/\./g, "\\.")}|Prochaine version \\(non publiée\\))$`, "m"), `CHANGELOG.md : section « ## ${version} »`);
 });

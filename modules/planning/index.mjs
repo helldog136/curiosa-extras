@@ -1,11 +1,11 @@
 // Planning des streams — module communautaire de Curiosa, porté d'un planning existant.
 //
-// Lit un calendrier iCal (adresse secrète d'un Google Agenda), en tire les créneaux à venir et les montre :
-// page publique jour par jour, section d'accueil « prochains streams », sujet `planning.slot` pour d'autres
-// modules, action MCP. Un seul fichier, sans dépendance. La logique pure (lecteur iCal, fuseaux, grille de jours,
-// noms de jeux, garde-fous d'URL) est exportée pour être testée ; le module lui-même est l'export par défaut.
+// UN rôle : AFFICHER les streams. Page publique jour par jour (au choix : liste, alternance, semaine, timeline, affiches…), morceaux d'accueil
+// « Prochain stream » et « Prochains streams », image de la semaine, action MCP. Il ne lit AUCUN agenda lui-même : les streams lui viennent du sujet
+// `planning.slot`, que fournissent les modules « calendrier » (Agenda en ligne, Streams saisis à la main…), sans qu'il sache lesquels.
+// La logique pure (grille de jours, mise au format des créneaux) est exportée pour être testée ; le module lui-même est l'export par défaut.
 //
-// Jaquettes : pour chaque jeu nommé dans la description d'un événement, la jaquette est demandée au service RAWG du cœur
+// Jaquettes : pour chaque jeu d'un stream, la jaquette est demandée au service RAWG du cœur
 // (`ctx.api.rawg`, permission `rawg` ; la clé se règle dans Admin → Réglages, le module ne la voit jamais) et montrée sur la page,
 // les morceaux d'accueil, l'admin et l'image PNG de la semaine (`/m/<clé>/image`, pour un panneau Twitch). Au mieux : sans clé,
 // clé refusée ou RAWG injoignable, on affiche simplement le nom du jeu. Le cache et la limite de demandes sont ceux du cœur.
@@ -15,190 +15,10 @@
 const V = new URL(import.meta.url).search; // le cœur recharge index.mjs avec ?v=<version> : les fichiers voisins suivent, sinon une mise à jour à chaud mélangerait anciens et nouveaux fichiers
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`./dates.mjs${V}`);
 export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
+const { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone } = await import(`./slots.mjs${V}`);
+export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone };
 
-function addMonthsToWall(y, m, d, months) {
-  const total = y * 12 + (m - 1) + months;
-  const dt = new Date(Date.UTC(Math.floor(total / 12), (total % 12), d)); // le débordement de jour est absorbé, comme Google Agenda
-  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
-}
-
-const compareWall = (a, b) => a.y - b.y || a.m - b.m || a.d - b.d;
-
-/* ───────────────────────────── Lecteur iCal (sous-ensemble de la RFC 5545) ───────────────────────────── */
-// Taillé pour Google Agenda : VEVENT, RRULE simples (DAILY/WEEKLY[BYDAY]/MONTHLY/YEARLY, COUNT, UNTIL, INTERVAL),
-// EXDATE, RECURRENCE-ID (occurrence modifiée ou annulée). Volontairement pas une implémentation complète.
-
-const WEEKDAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-
-// Une ligne repliée continue sur la suivante, qui commence par une espace ou une tabulation.
-const unfold = (text) => text.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");
-const unescapeText = (v) => v.replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\;/g, ";").replace(/\\\\/g, "\\");
-
-function parseLine(line) {
-  const colon = line.indexOf(":");
-  if (colon === -1) return null;
-  const [name, ...paramParts] = line.slice(0, colon).split(";");
-  const params = {};
-  for (const part of paramParts) {
-    const eq = part.indexOf("=");
-    if (eq !== -1) params[part.slice(0, eq).toUpperCase()] = part.slice(eq + 1);
-  }
-  return { name: (name ?? "").toUpperCase(), params, value: line.slice(colon + 1) };
-}
-
-function parseIcsDate(prop, defaultTimeZone) {
-  const value = prop.value.trim();
-  const allDay = prop.params.VALUE === "DATE" || /^\d{8}$/.test(value);
-  const m = allDay ? value.match(/^(\d{4})(\d{2})(\d{2})$/) : value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/);
-  if (!m) return null;
-  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  if (allDay) return { date: zonedTimeToUtc(year, month, day, 0, 0, 0, defaultTimeZone), allDay: true };
-  const [hour, minute, second] = [Number(m[4]), Number(m[5]), Number(m[6])];
-  if (m[7] === "Z") return { date: new Date(Date.UTC(year, month - 1, day, hour, minute, second)), allDay: false };
-  return { date: zonedTimeToUtc(year, month, day, hour, minute, second, prop.params.TZID || defaultTimeZone), allDay: false };
-}
-
-function wallParts(prop) {
-  const m = prop.value.trim().match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
-  return m ? { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]), h: Number(m[4] ?? "0"), mi: Number(m[5] ?? "0"), s: Number(m[6] ?? "0") } : null;
-}
-
-function parseRRule(value, defaultTimeZone) {
-  const parts = {};
-  for (const kv of value.split(";")) {
-    const [k, v] = kv.split("=");
-    if (k) parts[k.toUpperCase()] = v ?? "";
-  }
-  if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(parts.FREQ)) return null;
-  const rrule = { freq: parts.FREQ, interval: Number(parts.INTERVAL) || 1 };
-  if (parts.COUNT) rrule.count = Number(parts.COUNT);
-  if (parts.UNTIL) {
-    const parsed = parseIcsDate({ name: "UNTIL", params: {}, value: parts.UNTIL }, defaultTimeZone);
-    if (parsed) rrule.until = parsed.date;
-  }
-  if (parts.BYDAY) rrule.byDay = parts.BYDAY.split(",").map((c) => WEEKDAY_CODES.indexOf(c.replace(/^[+-]?\d+/, "").toUpperCase())).filter((i) => i !== -1);
-  return rrule;
-}
-
-// Dates de calendrier candidates d'une règle, plafonnées : jamais de boucle infinie sur une règle sans COUNT ni UNTIL.
-function* candidateWallDates(rrule, dtstart) {
-  const MAX = 2000;
-  if (rrule.freq === "WEEKLY" && rrule.byDay && rrule.byDay.length > 0) {
-    const days = [...rrule.byDay].sort((a, b) => a - b);
-    let { y, m, d } = addDaysToWall(dtstart.y, dtstart.m, dtstart.d, -weekdayOf(dtstart.y, dtstart.m, dtstart.d));
-    for (let i = 0; i < MAX; i++) {
-      for (const wd of days) {
-        const occ = addDaysToWall(y, m, d, wd);
-        if (compareWall(occ, dtstart) >= 0) yield occ;
-      }
-      ({ y, m, d } = addDaysToWall(y, m, d, 7 * rrule.interval));
-    }
-    return;
-  }
-  let cur = { y: dtstart.y, m: dtstart.m, d: dtstart.d };
-  for (let i = 0; i < MAX; i++) {
-    yield cur;
-    if (rrule.freq === "DAILY") cur = addDaysToWall(cur.y, cur.m, cur.d, rrule.interval);
-    else if (rrule.freq === "WEEKLY") cur = addDaysToWall(cur.y, cur.m, cur.d, 7 * rrule.interval);
-    else if (rrule.freq === "MONTHLY") cur = addMonthsToWall(cur.y, cur.m, cur.d, rrule.interval);
-    else cur = addMonthsToWall(cur.y, cur.m, cur.d, 12 * rrule.interval);
-  }
-}
-
-function expandRRule(rrule, dtstart, timeZone, windowEnd, exdates) {
-  const results = [];
-  let n = 0;
-  for (const { y, m, d } of candidateWallDates(rrule, dtstart)) {
-    n++;
-    if (rrule.count && n > rrule.count) break;
-    const occurrence = zonedTimeToUtc(y, m, d, dtstart.h, dtstart.mi, dtstart.s, timeZone);
-    if (rrule.until && occurrence.getTime() > rrule.until.getTime()) break;
-    if (occurrence.getTime() > windowEnd.getTime()) break;
-    if (!exdates.has(occurrence.getTime())) results.push(occurrence);
-  }
-  return results;
-}
-
-/** Texte iCal -> événements datés (récurrences développées jusqu'à `windowEnd`), triés par début. */
-export function parseIcs(text, opts) {
-  const lines = unfold(String(text)).split("\n").filter((l) => l.length > 0);
-  const rawEvents = [];
-  let current = null;
-  for (const line of lines) {
-    if (line === "BEGIN:VEVENT") current = [];
-    else if (line === "END:VEVENT") {
-      if (current) rawEvents.push(current);
-      current = null;
-    } else if (current) {
-      const prop = parseLine(line);
-      if (prop) current.push(prop);
-    }
-  }
-
-  const masters = [];
-  const overrides = new Map();
-  for (const props of rawEvents) {
-    const get = (name) => props.find((p) => p.name === name) ?? null;
-    const uid = get("UID")?.value ?? "";
-    const dtstart = get("DTSTART");
-    if (!uid || !dtstart) continue;
-    const summary = unescapeText(get("SUMMARY")?.value ?? "(Sans titre)");
-    const descriptionRaw = get("DESCRIPTION")?.value;
-    const description = descriptionRaw ? unescapeText(descriptionRaw) : null;
-    const dtend = get("DTEND");
-    const status = get("STATUS")?.value.toUpperCase() ?? null;
-    const recurrenceId = get("RECURRENCE-ID");
-    if (recurrenceId) {
-      overrides.set(uid, [...(overrides.get(uid) ?? []), { recurrenceId, summary, description, dtstart, dtend, status }]);
-    } else {
-      masters.push({ uid, summary, description, dtstart, dtend, rrule: get("RRULE")?.value ?? null, exdates: props.filter((p) => p.name === "EXDATE"), status });
-    }
-  }
-
-  const results = [];
-  for (const master of masters) {
-    if (master.status === "CANCELLED" && !opts.keepCancelled) continue;
-    const start = parseIcsDate(master.dtstart, opts.timeZone);
-    if (!start) continue;
-    const end = master.dtend ? parseIcsDate(master.dtend, opts.timeZone) : null;
-    const durationMs = end ? end.date.getTime() - start.date.getTime() : 60 * 60 * 1000;
-
-    const overrideByOriginal = new Map();
-    for (const o of overrides.get(master.uid) ?? []) {
-      const parsed = parseIcsDate(o.recurrenceId, opts.timeZone);
-      if (parsed) overrideByOriginal.set(parsed.date.getTime(), o);
-    }
-
-    let starts = [start.date];
-    if (master.rrule) {
-      const rrule = parseRRule(master.rrule, opts.timeZone);
-      const wall = wallParts(master.dtstart);
-      if (rrule && wall) {
-        const ex = new Set(master.exdates.map((p) => parseIcsDate(p, opts.timeZone)?.date.getTime()).filter((t) => t !== undefined));
-        starts = expandRRule(rrule, wall, opts.timeZone, opts.windowEnd, ex);
-      }
-    }
-
-    for (const occStart of starts) {
-      const override = overrideByOriginal.get(occStart.getTime());
-      if (override) {
-        if (override.status === "CANCELLED") { if (opts.keepCancelled) results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay, cancelled: true }); continue; }
-        const oStart = parseIcsDate(override.dtstart, opts.timeZone);
-        if (!oStart) continue;
-        const oEnd = override.dtend ? parseIcsDate(override.dtend, opts.timeZone) : null;
-        results.push({ uid: master.uid, title: override.summary, description: override.description, start: oStart.date, end: oEnd ? oEnd.date : new Date(oStart.date.getTime() + durationMs), allDay: oStart.allDay });
-      } else {
-        results.push({ uid: master.uid, title: master.summary, description: master.description, start: occStart, end: new Date(occStart.getTime() + durationMs), allDay: start.allDay, ...(master.status === "CANCELLED" ? { cancelled: true } : {}) });
-      }
-    }
-  }
-  return results.sort((a, b) => a.start.getTime() - b.start.getTime());
-}
-
-/* ───────────────────────────── Planning : noms de jeux, grille de jours ───────────────────────────── */
-
-const { MAX_GAMES_PER_STREAM, extractGameNames } = await import(`./games.mjs${V}`);
-export { MAX_GAMES_PER_STREAM, extractGameNames };
+/* ───────────────────────────── Grille de jours ───────────────────────────── */
 
 /** `count` jours consécutifs à partir de `startWall`, chacun avec ses créneaux (début dans la journée, dans le fuseau). */
 export function buildDays(startWall, count, events, timeZone) {
@@ -234,29 +54,6 @@ export function isValidTimeZone(tz) {
   }
 }
 
-/**
- * Adresse de calendrier acceptable : https uniquement, sans identifiants, et jamais une machine locale ou privée
- * (le serveur va la télécharger : pas de requête vers le réseau interne).
- */
-export function isPublicHttpsUrl(value) {
-  let url;
-  try {
-    url = new URL(String(value).trim());
-  } catch {
-    return false;
-  }
-  if (url.protocol !== "https:" || url.username || url.password) return false;
-  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false;
-  if (host.includes(":")) return !/^(::1?$|f[cd]|fe80)/.test(host); // IPv6 : pas de boucle locale / privée / lien local
-  const ip = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ip) {
-    const [a, b] = [Number(ip[1]), Number(ip[2])];
-    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224) return false;
-  }
-  return host.includes(".");
-}
-
 /* ───────────────────────────── Jaquettes (service RAWG du cœur) ───────────────────────────── */
 
 const STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };
@@ -280,7 +77,7 @@ const MAX_LOOKUPS = 30;
  * Les événements « toute la journée » n'ont pas de jeu. Cache et cadence : ceux du cœur (au plus 30 jeux différents par appel).
  */
 export async function coversForSlots(ctx, slots) {
-  const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => extractGameNames(s.description)))].slice(0, MAX_LOOKUPS);
+  const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => gamesOf(s)))].slice(0, MAX_LOOKUPS);
   const covers = new Map(), states = new Map();
   if (!names.length) return { covers, states };
   let configured = false;
@@ -291,59 +88,36 @@ export async function coversForSlots(ctx, slots) {
 }
 
 /** Les jaquettes d'un créneau, dans l'ordre des jeux (ceux sans jaquette sont simplement omis). */
-const coversOf = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((n) => covers.get(n)).filter(Boolean));
+const coversOf = (slot, covers) => (slot.allDay ? [] : gamesOf(slot).map((n) => covers.get(n)).filter(Boolean));
 
-/* ───────────────────────────── Lecture du calendrier ───────────────────────────── */
+/* ───────────────────────────── Lecture des streams (sujet `planning.slot`) ───────────────────────────── */
 
-const CACHE_MS = 5 * 60_000;
-const cache = new Map(); // url -> { at, text }
+const DAY = 86_400_000;
 
-/** Millisecondes, dans un objet pour que les tests puissent les raccourcir. totalMs : tout le téléchargement, redirections comprises (jusqu'à 4 appels de 8 s chacun sans cette borne). */
-export const icsTiming = { totalMs: 10_000 };
+/** Millisecondes, dans un objet pour que les tests puissent les raccourcir. collectMs : la lecture des streams (le cœur borne déjà les pages publiques à 6 s ; l'administration, l'image et MCP ne le sont pas). */
+export const timing = { collectMs: 7000 };
 
-/** Télécharge le calendrier (cache court, délai borné). Ne lève jamais : `null` si illisible ou trop long. */
-export async function fetchIcs(url, fetchImpl = fetch) {
-  const hit = cache.get(url);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.text;
+/**
+ * Les créneaux de la période, tels que les calendriers les donnent. Ne lève jamais et n'attend jamais sans fin : un calendrier qui ne répond pas
+ * (ou une lecture en échec) donne `failed` et une liste vide ; le résultat tardif d'une lecture abandonnée n'est jamais utilisé.
+ */
+async function collectSlots(ctx, from, to) {
   let timer;
-  const late = new Promise((resolve) => { timer = setTimeout(() => resolve(null), icsTiming.totalMs); timer.unref?.(); });
-  try { return await Promise.race([download(url, fetchImpl), late]); } finally { clearTimeout(timer); }
+  const late = new Promise((resolve) => { timer = setTimeout(() => resolve({ items: [], failed: true }), timing.collectMs); timer.unref?.(); });
+  const read = Promise.resolve().then(() => ctx.api.topics.collect("planning.slot", { limit: 200, from, to })).then((items) => ({ items: Array.isArray(items) ? items : [], failed: false }), () => ({ items: [], failed: true }));
+  try { return await Promise.race([read, late]); } finally { clearTimeout(timer); }
 }
-async function download(url, fetchImpl) {
-  try {
-    // Redirections suivies à la main : chaque étape doit rester une adresse https publique (sinon une
-    // adresse publique pourrait renvoyer vers le réseau interne).
-    let current = url;
-    let res = null;
-    for (let hop = 0; hop <= 3; hop++) {
-      if (!isPublicHttpsUrl(current)) return null;
-      res = await fetchImpl(current, { signal: AbortSignal.timeout(8000), redirect: "manual" });
-      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
-      if (!location) break;
-      current = new URL(location, current).toString();
-      res = null;
-    }
-    if (!res || !res.ok) return null;
-    const text = await res.text();
-    if (!text.includes("BEGIN:VCALENDAR")) return null;
-    cache.set(url, { at: Date.now(), text: text.slice(0, 5_000_000) });
-    return text;
-  } catch {
-    return null;
-  }
-}
-export const clearIcsCache = () => cache.clear();
 
+/**
+ * Les streams des `days` prochains jours : en cours ou à venir (annulés seulement si `cancelled`), dans le fuseau d'affichage. Ne lève jamais :
+ * sans calendrier, ou si aucun ne répond à temps, il n'y a simplement rien à montrer (le visiteur voit « pas de stream planifié »).
+ */
 async function loadSlots(ctx, days, { cancelled = false } = {}) {
-  const url = String(ctx.setting("icsUrl") ?? "").trim();
-  if (!url || !isPublicHttpsUrl(url)) return { configured: !!url, ok: false, slots: [] };
-  const timeZone = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-  const text = await fetchIcs(url);
-  if (text === null) return { configured: true, ok: false, slots: [], timeZone };
-  const now = Date.now();
-  const windowEnd = new Date(now + days * 86_400_000);
-  const slots = parseIcs(text, { timeZone, windowEnd, keepCancelled: cancelled }).filter((e) => e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
-  return { configured: true, ok: true, slots, timeZone };
+  const now = Date.now(), windowEnd = new Date(now + days * DAY);
+  const { items } = await collectSlots(ctx, new Date(now - DAY), windowEnd);
+  const timeZone = displayZone(ctx.setting("timezone"), items);
+  const slots = toSlots(items, timeZone).filter((e) => (cancelled || !e.cancelled) && e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
+  return { slots, timeZone };
 }
 
 const clampDays = (v, def = 7) => Math.min(60, Math.max(1, Math.trunc(Number(v)) || def));
@@ -356,7 +130,7 @@ const escMd = (s) => String(s).replace(/([\\`*_[\]<>])/g, "\\$1");
 
 function slotLine(slot, ctx, tz) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
-  const games = extractGameNames(slot.description);
+  const games = gamesOf(slot);
   return `**${when}** — ${escMd(slot.title)}${games.length ? ` · _${games.map(escMd).join(", ")}_` : ""}`;
 }
 
@@ -366,7 +140,7 @@ const coverImg = (url) => `<img src="${esc(url)}" alt="" loading="lazy" width="4
 /** Un créneau avec ses jaquettes (petites, à gauche) : comme sur la page de l'ancien site. */
 function slotHtml(slot, ctx, tz, covers, prefix = "", vis = null) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
-  const games = extractGameNames(slot.description);
+  const games = gamesOf(slot);
   const imgs = covers.length ? `<span style="display:flex;gap:4px;flex-shrink:0">${covers.map(coverImg).join("")}</span>` : vis ? placeholderHtml(vis, true) : "";
   return `<div style="display:flex;gap:12px;align-items:center;margin:8px 0">${imgs}<div style="min-width:0;overflow-wrap:anywhere">${prefix ? `<span style="color:var(--v-muted)">${esc(prefix)} · </span>` : ""}<strong>${esc(when)}</strong> — ${esc(slot.title)}` +
     `${games.length ? `<div style="color:var(--v-muted);font-style:italic;font-size:.9em">${games.map(esc).join(", ")}</div>` : ""}</div></div>`;
@@ -431,7 +205,7 @@ const { appearanceBlocks, wantsCancelled, previewBlocks, densify } = await impor
 export { relativeLabel };
 
 const isoOf = (slot, tz) => { if (!slot.allDay) return slot.start.toISOString(); const w = wallDateNow(tz, slot.start); return `${w.y}-${String(w.m).padStart(2, "0")}-${String(w.d).padStart(2, "0")}`; };
-const gameCovers = (slot, covers) => (slot.allDay ? [] : extractGameNames(slot.description).map((name) => ({ name, url: covers.get(name) })).filter((g) => g.url));
+const gameCovers = (slot, covers) => (slot.allDay ? [] : gamesOf(slot).map((name) => ({ name, url: covers.get(name) })).filter((g) => g.url));
 const safeHttps = (v) => { const u = String(v ?? "").trim(); return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : null; };
 const planningHref = (ctx) => { const b = ctx.instance?.basePath; return b === null || b === undefined ? null : b ? `/${b}` : "/"; };
 const wrapCards = (inner) => `<div class="cpl"><style>${CARD_CSS}</style>${inner}</div>`;
@@ -476,7 +250,7 @@ async function channelLink(ctx) {
 function nextCardHtml(slot, others, ctx, tz, covers, now, vis, channelHref) {
   const t = ctx.t;
   const gc = gameCovers(slot, covers).slice(0, 3);
-  const games = extractGameNames(slot.description);
+  const games = gamesOf(slot);
   const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(slot.start);
   const hour = slot.allDay ? t("allDay") : fmtTime(slot.start, ctx.locale, tz);
   const channel = channelHref;
@@ -498,7 +272,7 @@ function upcomingListHtml(slots, ctx, tz, covers, now, vis) {
     const wd = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", timeZone: tz }).format(s.start);
     const dn = new Intl.DateTimeFormat(ctx.locale, { day: "numeric", timeZone: tz }).format(s.start);
     const gc = gameCovers(s, covers)[0];
-    const games = s.allDay ? [] : extractGameNames(s.description);
+    const games = s.allDay ? [] : gamesOf(s);
     const hour = s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz);
     const rel = relativeLabel(s, now, tz, t);
     return `<li class="cpl-row"><time class="cpl-tile" datetime="${esc(isoOf(s, tz))}"><span class="cpl-tw">${esc(wd)}</span><span class="cpl-td">${esc(dn)}</span></time>` +
@@ -509,39 +283,6 @@ function upcomingListHtml(slots, ctx, tz, covers, now, vis) {
   return wrapCards(`<div class="cpl-list"><ul>${rows}</ul>${href ? `<div class="cpl-foot"><a class="cpl-link" href="${esc(href)}">${esc(t("fullPlanning"))}</a></div>` : ""}</div>`);
 }
 
-/* ───────────────────────────── Aide à la saisie : tutoriel d'admin et SKILL.md pour une IA ───────────────────────────── */
-
-const TUTO_CSS = `.cpt{margin:1rem 0}.cpt *{box-sizing:border-box}.cpt summary,.cpt .cpt-dl{display:inline-flex;align-items:center;min-height:2.75rem;padding:.55rem 1rem;border:1px solid color-mix(in srgb,currentColor 35%,transparent);border-radius:.65rem;font-weight:600;cursor:pointer;text-decoration:none;color:inherit}.cpt summary:hover,.cpt .cpt-dl:hover{background:color-mix(in srgb,currentColor 8%,transparent)}.cpt summary:focus-visible,.cpt .cpt-dl:focus-visible{outline:2px solid currentColor;outline-offset:3px}.cpt-body{margin-top:1rem;max-width:60rem;line-height:1.5}.cpt-body h4{margin:1.25rem 0 .4rem;font-size:1.05rem}.cpt-body ol,.cpt-body ul{margin:.25rem 0;padding-left:1.4rem}.cpt-body li{margin:.25rem 0}.cpt-row{padding:.75rem 0;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}.cpt-row dt{font-weight:700}.cpt-row dd{margin:.15rem 0 0}.cpt-row .cpt-k{display:block;opacity:.75;font-size:.9rem}.cpt-ex{margin:.5rem 0;padding:.75rem 1rem;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:.75rem}.cpt-ex dt{font-weight:700}.cpt-ex dd{margin:0 0 .4rem}.cpt-help{margin:.5rem 0 0;opacity:.8;font-size:.9rem}`;
-
-const TUTO_FIELDS = ["Title", "When", "End", "Game", "Desc", "Place", "AllDay", "Repeat", "Cancel"];
-
-/** Le tutoriel « Comment remplir mon agenda Google ? » (repliable) et le bouton de téléchargement du SKILL.md. Tout ce qui est dit ici est ce que le module lit. */
-export function tutorialHtml(ctx, tz) {
-  const t = (k, v) => esc(ctx.t(k, v));
-  const rows = TUTO_FIELDS.map((f) => `<dl class="cpt-row"><dt>${t(`tuto${f}What`)}</dt><dd><span class="cpt-k">${t("tutoColWhere")}</span>${t(`tuto${f}Where`)}</dd><dd><span class="cpt-k">${t("tutoColDoes")}</span>${t(`tuto${f}Does`, { tz })}</dd></dl>`).join("");
-  const li = (prefix, n) => Array.from({ length: n }, (_, i) => `<li>${t(`${prefix}${i + 1}`)}</li>`).join("");
-  const ex = (title, when, place, desc) => `<dl class="cpt-ex"><dt>${t("tutoExFieldTitle")}</dt><dd>${esc(title)}</dd><dt>${t("tutoExFieldWhen")}</dt><dd>${esc(when)}</dd><dt>${t("tutoExFieldPlace")}</dt><dd>${esc(place)}</dd><dt>${t("tutoExFieldDesc")}</dt><dd>${esc(desc)}</dd></dl>`;
-  const href = `/m/${encodeURIComponent(ctx.instance.key)}/skill?lang=${encodeURIComponent(ctx.locale)}`;
-  return `<div class="cpt"><style>${TUTO_CSS}</style>` +
-    `<details><summary>${t("tutoBtn")}</summary><div class="cpt-body"><p>${t("tutoIntro")}</p>${rows}` +
-    `<h4>${t("tutoStepsTitle")}</h4><ol>${li("tutoStep", 5)}</ol>` +
-    `<h4>${t("tutoExampleTitle")}</h4>${ex(ctx.t("tutoExTitle"), ctx.t("tutoExWhen"), ctx.t("tutoExPlace"), ctx.t("tutoExDesc"))}<p>${t("tutoExNoGameTitle")}</p>${ex(ctx.t("tutoExTitle"), ctx.t("tutoExWhen"), ctx.t("tutoExPlace"), ctx.t("tutoExNoGameDesc"))}` +
-    `<h4>${t("tutoErrTitle")}</h4><ul>${li("tutoErr", 5)}</ul></div></details>` +
-    `<p style="margin-top:.75rem"><a class="cpt-dl" href="${esc(href)}" download="SKILL.md">${t("skillBtn")}</a></p><p class="cpt-help">${t("skillHelp")}</p></div>`;
-}
-
-const oneLine = (v, max = 80) => String(v ?? "").replace(/[\u0000-\u001f\u007f`<>]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
-
-/** Le SKILL.md : généré à partir des réglages réels (fuseau, nom du site). Aucun secret : ni l'adresse du calendrier, ni aucune clé. */
-export async function skillMarkdown(ctx) {
-  const tz = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-  let site = "";
-  try { site = oneLine((await ctx.api.site(ctx.locale))?.name); } catch { site = ""; }
-  const vars = { site: site || "ce site", tz };
-  // L'en-tête YAML : chaînes JSON (guillemets doubles, échappées) = YAML valide quel que soit le nom du site.
-  return `---\nname: ${ctx.t("skillName")}\ndescription: ${JSON.stringify(oneLine(ctx.t("skillDesc", vars), 400))}\n---\n\n${ctx.t("skillBody", vars)}\n`;
-}
-
 function emptyCardHtml(ctx) {
   const t = ctx.t;
   const href = planningHref(ctx);
@@ -550,13 +291,12 @@ function emptyCardHtml(ctx) {
 
 /** Une semaine (lundi → dimanche) de créneaux, passés compris : pour l'image à partager. */
 async function loadWeek(ctx, weekOffset) {
-  const url = String(ctx.setting("icsUrl") ?? "").trim();
-  if (!url || !isPublicHttpsUrl(url)) return null;
-  const timeZone = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-  const text = await fetchIcs(url);
-  if (text === null) return null;
+  const now = Date.now();
+  const { items, failed } = await collectSlots(ctx, new Date(now - 8 * DAY), new Date(now + (weekOffset + 2) * 7 * DAY));
+  if (failed) return null;   // sans calendrier ou sans stream, l'image dit « rien de prévu » : un panneau Twitch ne doit jamais montrer une image cassée
+  const timeZone = displayZone(ctx.setting("timezone"), items);
   const range = getWeekRange(weekOffset, timeZone);
-  const slots = parseIcs(text, { timeZone, windowEnd: range.end }).filter((e) => e.end >= range.start && e.start <= range.end);
+  const slots = toSlots(items, timeZone).filter((e) => !e.cancelled && e.end >= range.start && e.start <= range.end);
   return { timeZone, range, days: buildDays(range.startWall, 7, slots, timeZone) };
 }
 
@@ -583,7 +323,7 @@ export function weekImage(ctx, week, site, covers = new Map()) {
     const list = coversOf(s, covers).slice(0, MAX_GAMES_PER_STREAM);
     const coverW = Math.round(coverH * (40 / 54));
     const textW = BOX_WIDTH - PAD_X * 2 - (list.length ? list.length * coverW + (list.length - 1) * COVER_GAP + COVER_ROW_GAP : 0);
-    const games = list.length || s.allDay ? "" : extractGameNames(s.description).join(", ");
+    const games = list.length || s.allDay ? "" : gamesOf(s).join(", ");
     return box({ alignItems: "center", gap: COVER_ROW_GAP },
       ...(list.length ? [box({ gap: COVER_GAP, flexShrink: 0 }, ...list.map((src) => ({ type: "img", props: { src, width: coverW, height: coverH, style: { borderRadius: 6, objectFit: "cover" } } })))] : []),
       box({ flexDirection: "column", justifyContent: "center", gap: 2, width: textW, ...(list.length ? { height: coverH } : {}) },
@@ -612,21 +352,17 @@ export function weekImage(ctx, week, site, covers = new Map()) {
   return { width: WIDTH, height, tree };
 }
 
-/** L'état du calendrier et les prochains créneaux (haut du panneau d'admin). */
+/** L'état des streams et les prochains créneaux (haut du panneau d'admin). Quand il n'y a rien à montrer, dit POURQUOI et quoi faire. */
 async function adminStatusBlocks(ctx) {
     const t = ctx.t;
-    const url = String(ctx.setting("icsUrl") ?? "").trim();
     const days = clampDays(ctx.setting("days"));
     const blocks = [{ type: "heading", text: t("adminStatus") }];
-    if (!url) return [...blocks, { type: "markdown", text: t("adminNotSet") }];
-    if (!isPublicHttpsUrl(url)) return [...blocks, { type: "markdown", text: t("badUrl") }];
-    const { ok, slots, timeZone } = await loadSlots(ctx, Math.max(days, 14));
+    const { slots, timeZone } = await loadSlots(ctx, Math.max(days, 14), { cancelled: false });
     const tz = timeZone ?? "UTC";
-    blocks.push({ type: "markdown", text: t("adminHint", { hint: url.slice(-6) }) });
-    if (!ok) return [...blocks, { type: "markdown", text: `⚠️ ${t("adminError")}` }, { type: "adminForm", action: "refresh", submitLabel: t("refresh"), fields: [] }];
+    if (!slots.length) return [...blocks, { type: "markdown", text: t("adminNoSlots") }];
     blocks.push({ type: "markdown", text: t("adminOk", { n: slots.filter((s) => s.start.getTime() <= Date.now() + days * 86_400_000).length, days }) });
     blocks.push({ type: "heading", text: t("adminNext") });
-    blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, extractGameNames(s.description).join(", ")]) });
+    blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, gamesOf(s).join(", ")]) });
     // Jaquettes : un message clair plutôt qu'un manque silencieux (clé absente, refusée, RAWG injoignable, jeux inconnus de RAWG).
     const next = slots.slice(0, 20);
     const { covers, states } = await coversForSlots(ctx, next);
@@ -643,18 +379,25 @@ async function adminStatusBlocks(ctx) {
       const withCovers = next.filter((s) => coversOf(s, covers).length > 0);
       if (withCovers.length) blocks.push({ type: "html", html: withCovers.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start))).join("") });
     }
-    blocks.push({ type: "adminForm", action: "refresh", submitLabel: t("refresh"), fields: [] });
     return blocks;
+}
+
+/** Clé de graine : un court hachage de l'adresse (jamais l'adresse en clair), stable d'une exécution à l'autre. Pas de secret en jeu : l'adresse a un jeton long et aléatoire. */
+export function seedKeyOf(url) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (const ch of `planning-ics:${String(url).trim()}`) {
+    const c = ch.codePointAt(0);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return `ical-${(h2 >>> 0).toString(16).padStart(8, "0")}${(h1 >>> 0).toString(16).padStart(8, "0")}`;
 }
 
 export default {
   // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
   routes: {
-    // SKILL.md pour une IA (« Télécharger le skill »). Public : le contenu est généré à partir du fuseau et du nom du site, jamais de secret.
-    async skill(request, ctx) {
-      if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
-      return new Response(request.method === "HEAD" ? null : await skillMarkdown(ctx), { headers: { "Content-Type": "text/markdown; charset=utf-8", "Content-Disposition": 'attachment; filename="SKILL.md"', "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff" } });
-    },
     async image(request, ctx) {
       const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
       const week = await loadWeek(ctx, offset);
@@ -672,13 +415,9 @@ export default {
 
   async page(ctx) {
     const days = clampDays(ctx.setting("days"));
-    const { configured, ok, slots, timeZone } = await loadSlots(ctx, days, { cancelled: wantsCancelled(ctx) });
+    const { slots, timeZone } = await loadSlots(ctx, days, { cancelled: wantsCancelled(ctx) });
     const tz = timeZone ?? "UTC";
     const blocks = [];
-    if (!configured || !ok) {
-      blocks.push({ type: "markdown", text: ctx.t("notConfigured") });
-      return { title: ctx.t("title"), blocks };
-    }
     blocks.push({ type: "markdown", text: ctx.t("intro", { days, tz }) });
     const custom = await appearanceBlocks(ctx, "page", { slots, tz, days, covers: async () => (await coversForSlots(ctx, slots)).covers, brand: () => brandVisual(ctx) });
     if (custom) return { title: ctx.t("title"), blocks: [...blocks, ...custom] };   // apparence choisie par le propriétaire ; sinon le rendu d'origine ci-dessous
@@ -698,8 +437,7 @@ export default {
   sections: {
     // Le prochain stream, seul : une carte (jaquette, heure, indication relative, bouton vers la chaîne). Calendrier lisible mais vide : carte « rien de prévu ».
     async next(ctx) {
-      const { ok, slots, timeZone } = await loadSlots(ctx, 30);
-      if (!ok) return null;
+      const { slots, timeZone } = await loadSlots(ctx, 30);
       const heading = { type: "heading", text: ctx.t("nextUp") };
       if (slots.length === 0) return [heading, { type: "html", html: emptyCardHtml(ctx) }];
       const tz = timeZone ?? "UTC";
@@ -714,8 +452,7 @@ export default {
     // Miniature des X prochains jours : un jour par ligne, les créneaux à la suite.
     async days(ctx, options) {
       const count = Math.min(7, Math.max(1, Math.trunc(Number(options.count)) || 3));
-      const { ok, slots, timeZone } = await loadSlots(ctx, count);
-      if (!ok) return null;
+      const { slots, timeZone } = await loadSlots(ctx, count);
       const tz = timeZone ?? "UTC";
       const rows = buildDays(wallDateNow(tz), count, slots, tz).map((day) => {
         const label = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", timeZone: tz }).format(zonedTimeToUtc(day.wall.y, day.wall.m, day.wall.d, 12, 0, 0, tz));
@@ -726,8 +463,7 @@ export default {
 
     async upcoming(ctx, options) {
       const count = Math.min(20, Math.max(1, Math.trunc(Number(options.count)) || 5));
-      const { ok, slots, timeZone } = await loadSlots(ctx, 30);
-      if (!ok) return null;
+      const { slots, timeZone } = await loadSlots(ctx, 30);
       const heading = { type: "heading", text: ctx.t("nextTitle") };
       const custom = await appearanceBlocks(ctx, "upcoming", { slots, tz: timeZone ?? "UTC", count, override: options.appearance, covers: async () => (await coversForSlots(ctx, slots.slice(0, count))).covers, brand: () => brandVisual(ctx) });
       if (custom) return [heading, ...custom];
@@ -740,32 +476,40 @@ export default {
     },
   },
 
-  exports: {
-    async "planning.slot"(ctx, { limit }) {
-      const { slots } = await loadSlots(ctx, 30);
-      return slots.slice(0, limit).map((s) => ({ title: s.title, text: extractGameNames(s.description).join(", ") || undefined, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: extractGameNames(s.description) }));
+  /**
+   * MIGRATION TEMPORAIRE — à retirer en 0.3.0 (reprise des sites créés avant la 2.0.0, comme les autres migrations de ce genre).
+   * Avant la 2.0.0, le Planning gardait lui-même l'adresse de l'agenda (réglage `icsUrl`). Désormais c'est le module « Agenda en ligne » qui la garde et la lit.
+   * Cette migration demande au cœur de créer UNE instance d'« Agenda en ligne » (le module est installé depuis le catalogue s'il manque) avec la MÊME adresse et
+   * le MÊME fuseau (celui que le Planning utilisait pour lire les heures : valeur choisie, sinon UTC), puis efface l'ancien réglage — seulement après le semis.
+   * Résultat pour la créatrice : rien à faire, le planning montre les mêmes streams. Idempotente : la graine (un hachage de l'adresse, jamais l'adresse) ne sème qu'une
+   * fois, même si la migration est rejouée ; sans adresse enregistrée, elle ne fait rien. Si le semis échoue, le cœur remet tout comme avant et la migration peut être réessayée.
+   */
+  migrations: {
+    2: async (ctx) => {
+      const url = String(ctx.setting("icsUrl") ?? "").trim();
+      if (!url) return;
+      const tr = (k, fallback) => { const v = ctx.t?.(k); return typeof v === "string" && v && v !== k ? v : fallback; };
+      const chosen = String(ctx.setting("timezone") ?? "").trim();
+      await ctx.seedInstance("calendar-ical", {
+        nickname: tr("seedNickname", "Agenda en ligne"),
+        settings: { url, timezone: isValidTimeZone(chosen) ? chosen : "UTC" },
+        seedKey: seedKeyOf(url),
+      });
+      await ctx.clearSetting("icsUrl");   // seulement après le semis (créé, ou déjà semé)
     },
   },
 
   async adminPanel(ctx) {
     const blocks = await adminStatusBlocks(ctx);
     const tz = isValidTimeZone(ctx.setting("timezone")) ? ctx.setting("timezone") : "UTC";
-    return [...blocks, ...(await previewBlocks(ctx, tz)), { type: "html", html: tutorialHtml(ctx, tz) }];
-  },
-
-  adminActions: {
-    async refresh(ctx) {
-      clearIcsCache();
-      return { ok: ctx.t("refreshed") };
-    },
+    return [...blocks, ...(await previewBlocks(ctx, tz))];
   },
 
   mcp: {
     async planning_upcoming(ctx, args) {
       const days = clampDays(args.days);
-      const { ok, slots } = await loadSlots(ctx, days);
-      if (!ok) throw Object.assign(new Error("the calendar is not configured or cannot be read"), { expose: true });
-      return slots.map((s) => ({ title: s.title, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: extractGameNames(s.description) }));
+      const { slots } = await loadSlots(ctx, days);
+      return slots.map((s) => ({ title: s.title, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: gamesOf(s) }));
     },
   },
 };

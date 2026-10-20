@@ -2,7 +2,7 @@
 
 Votre site **répond aux commandes tapées dans votre chat Twitch** : quelqu'un écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
 
-**Il faut Curiosa 0.1.24 ou plus, et la fonctionnalité « Chaîne Twitch » en version 1.5.0 ou plus** (elle s'installe toute seule avec le bot). Le bot n'a besoin ni de Planning, ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque.
+**Il faut Curiosa 0.1.24 ou plus, et la fonctionnalité « Chaîne Twitch » en version 1.5.0 ou plus** (elle s'installe toute seule avec le bot). Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
 
 ## Pour commencer
 1. **Installez le bot.** « Chaîne Twitch » s'installe avec lui. Si ce n'est pas déjà fait, suivez son guide (en haut de sa page) pour renseigner l'application Twitch de votre chaîne : c'est la même pour tout ce qui touche à Twitch, vous ne la saisissez qu'une fois.
@@ -36,7 +36,7 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 En haut de la page : **« Couper toutes les réponses »**. Un clic, le bot se tait partout, immédiatement. Rien n'est supprimé ; « Réactiver les réponses » le remet en marche.
 
 ## Comprendre « pourquoi il n'a pas répondu »
-Le bot garde le **journal des 30 dernières commandes**. Chaque ligne dit si le bot a répondu ou pourquoi il s'est tu : « vous n'étiez pas en direct », « trop tôt, encore 12 s », « cette personne n'a pas le droit », « arrêt d'urgence », « Planning n'est pas installé »… Vous pouvez le vider.
+Le bot garde le **journal des 30 dernières commandes**. Chaque ligne dit si le bot a répondu ou pourquoi il s'est tu : « vous n'étiez pas en direct », « trop tôt, encore 12 s », « cette personne n'a pas le droit », « arrêt d'urgence », « aucun agenda de streams n'est installé »… Vous pouvez le vider.
 
 ## Votre IA
 Trois outils, **aucun accordé d'office** (administration → accès de votre IA) :

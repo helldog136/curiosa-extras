@@ -5,11 +5,11 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "1.3.2",
-  "minCore": "0.1.22",
+  "version": "2.0.0",
+  "minCore": "0.1.27",
   "description": {
-    "fr": "Affiche vos prochains streams, lus depuis un Google Agenda (ou n'importe quel flux iCal), dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches…",
-    "en": "Shows your upcoming streams, read from a Google Calendar (or any iCal feed), in the look you choose: list, zigzag, week, timeline, posters…"
+    "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
+    "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -134,16 +134,54 @@
       ]
     }
   ],
-  "provides": [
+  "consumes": [
     {
       "topic": "planning.slot",
       "label": {
-        "en": "Upcoming streams",
-        "fr": "Prochains streams"
-      }
-    }
-  ],
-  "consumes": [
+        "en": "Your streams (from your online calendar or hand-written streams)",
+        "fr": "Vos streams (fournis par votre agenda en ligne ou vos streams saisis à la main)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "start",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "end",
+          "type": "datetime"
+        },
+        {
+          "key": "allDay",
+          "type": "boolean"
+        },
+        {
+          "key": "day",
+          "type": "string"
+        },
+        {
+          "key": "games",
+          "type": "string[]"
+        },
+        {
+          "key": "status",
+          "type": "string"
+        },
+        {
+          "key": "timezone",
+          "type": "string"
+        }
+      ]
+    },
     {
       "topic": "social.link",
       "label": {
@@ -180,13 +218,15 @@
     {
       "key": "icsUrl",
       "type": "secret",
+      "advanced": true,
+      "optional": true,
       "label": {
-        "en": "Calendar address (iCal, secret)",
-        "fr": "Adresse du calendrier (iCal, secrète)"
+        "en": "Old calendar address (taken over automatically)",
+        "fr": "Ancienne adresse du calendrier (reprise automatiquement)"
       },
       "help": {
-        "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Never shown again once saved.",
-        "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Jamais réaffichée une fois enregistrée."
+        "en": "This setting moved to the “Online calendar” module: your address was carried over for you, and this field is now empty. Leave it empty.",
+        "fr": "Ce réglage est passé dans le module « Agenda en ligne » : votre adresse y a été reprise pour vous, et ce champ est maintenant vide. Laissez-le vide."
       }
     },
     {
@@ -215,16 +255,16 @@
     {
       "key": "timezone",
       "type": "text",
-      "default": "UTC",
       "advanced": true,
       "label": {
-        "en": "Time zone",
-        "fr": "Fuseau horaire"
+        "en": "Time zone for display (optional)",
+        "fr": "Fuseau horaire d'affichage (facultatif)"
       },
       "help": {
-        "en": "IANA name, e.g. Europe/Paris, America/Montreal.",
-        "fr": "Nom IANA, ex. Europe/Paris, America/Montreal."
-      }
+        "en": "IANA name, e.g. Europe/Paris, America/Montreal. Left empty, the time zone of your calendars is used.",
+        "fr": "Nom IANA, ex. Europe/Paris, America/Montreal. Laissé vide, c'est le fuseau de vos agendas qui est utilisé."
+      },
+      "optional": true
     },
     {
       "key": "appearance",
@@ -581,10 +621,21 @@
           "days": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 60
+            "maximum": 60,
+            "description": "How many days ahead to list (1 to 60, default 7)."
           }
         }
       }
     }
-  ]
+  ],
+  "seeds": [
+    {
+      "module": "calendar-ical",
+      "reason": {
+        "fr": "Reprendre l'adresse de votre agenda dans « Agenda en ligne »",
+        "en": "Carry your calendar address over to “Online calendar”"
+      }
+    }
+  ],
+  "dataVersion": 2
 }

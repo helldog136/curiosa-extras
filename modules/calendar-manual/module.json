@@ -1,0 +1,51 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.1.22",
+  "id": "calendar-manual",
+  "name": {
+    "en": "Hand-written streams",
+    "fr": "Streams saisis à la main"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Write your streams here (day, time, games, every week) and your site shows them: the schedule, the chat bot… No Google account or calendar to set up.",
+    "fr": "Écrivez vos streams ici (jour, heure, jeux, chaque semaine) et votre site les montre : le planning, le bot du chat… Aucun compte Google ni agenda à régler."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "✍️",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "planning.slot",
+      "label": {
+        "en": "Streams written by hand",
+        "fr": "Streams saisis à la main"
+      }
+    }
+  ],
+  "permissions": [
+    "topics",
+    "storage",
+    "admin"
+  ],
+  "settings": [
+    {
+      "key": "timezone",
+      "type": "text",
+      "default": "Europe/Paris",
+      "advanced": true,
+      "label": {
+        "en": "Time zone of the times you type",
+        "fr": "Fuseau horaire des heures que vous tapez"
+      },
+      "help": {
+        "en": "IANA name, e.g. Europe/Paris, America/Montreal. Daylight saving time is handled.",
+        "fr": "Nom IANA, ex. Europe/Paris, America/Montreal. L'heure d'été est gérée."
+      }
+    }
+  ]
+}

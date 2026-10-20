@@ -3,7 +3,7 @@
   "minCore": "0.1.24",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -35,12 +35,13 @@
     },
     {
       "topic": "planning.slot",
-      "label": { "en": "Your next streams (from the Planning module, if installed)", "fr": "Vos prochains streams (fournis par le Planning, s'il est installé)" },
+      "label": { "en": "Your next streams (from your calendars, if installed)", "fr": "Vos prochains streams (fournis par vos agendas, s'ils sont installés)" },
       "schema": [
         { "key": "title", "type": "string" },
         { "key": "start", "type": "datetime", "required": true },
         { "key": "end", "type": "datetime" },
-        { "key": "allDay", "type": "boolean" }
+        { "key": "allDay", "type": "boolean" },
+        { "key": "status", "type": "string" }
       ]
     },
     {

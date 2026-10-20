@@ -4,7 +4,7 @@
 const V = new URL(import.meta.url).search;
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`../dates.mjs${V}`);
 const { relativeLabel } = await import(`../relative.mjs${V}`);
-const { extractGameNames } = await import(`../games.mjs${V}`);
+const { gamesOf } = await import(`../slots.mjs${V}`);
 
 const pad = (n) => String(n).padStart(2, "0");
 export const wallKey = (w) => `${w.y}-${pad(w.m)}-${pad(w.d)}`;
@@ -31,7 +31,7 @@ function dayLabel(fm, wall, tz) {
 const dayBounds = (w, tz) => [zonedTimeToUtc(w.y, w.m, w.d, 0, 0, 0, tz).getTime(), zonedTimeToUtc(w.y, w.m, w.d, 23, 59, 59, tz).getTime()];
 
 /**
- * @param input.slots      créneaux triés { uid, title, description, start, end, allDay, cancelled? } (Dates)
+ * @param input.slots      créneaux triés { uid, title, games, start, end, allDay, cancelled? } (Dates)
  * @param input.covers     Map(nom du jeu → adresse https de la jaquette)
  * @param input.mode       "days" : `days` jours à partir d'aujourd'hui, jours vides compris · "list" : les `count` prochains créneaux, jours vides omis
  */
@@ -43,7 +43,7 @@ export function buildModel(input) {
   const slots = (Array.isArray(rawSlots) ? rawSlots : []).filter((s) => s && s.start instanceof Date && !Number.isNaN(s.start.getTime())).map((s) => {
     const end = s.end instanceof Date && !Number.isNaN(s.end.getTime()) ? s.end : new Date(s.start.getTime() + 3_600_000);
     const w = wallDateNow(tz, s.start);
-    const games = s.allDay ? [] : extractGameNames(s.description);
+    const games = s.allDay ? [] : gamesOf(s);
     const cancelled = !!s.cancelled;
     const live = !cancelled && !s.allDay && s.start.getTime() <= nowMs && end.getTime() >= nowMs;
     const rel = cancelled || !opts.relative ? null : (() => { const r = relativeLabel({ ...s, end }, now, tz, t); return live ? null : r; })();

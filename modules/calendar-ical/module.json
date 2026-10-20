@@ -1,0 +1,77 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.1.22",
+  "id": "calendar-ical",
+  "name": {
+    "en": "Online calendar",
+    "fr": "Agenda en ligne"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Reads your Google Calendar (or any online calendar in iCal format) so your site can show your streams: the schedule, the chat bot… Nothing to retype.",
+    "fr": "Lit votre Google Agenda (ou tout agenda en ligne au format iCal) pour que votre site puisse montrer vos streams : le planning, le bot du chat… Rien à recopier."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🗓️",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "multiple",
+  "page": false,
+  "provides": [
+    {
+      "topic": "planning.slot",
+      "label": {
+        "en": "Streams of this online calendar",
+        "fr": "Streams de cet agenda en ligne"
+      }
+    }
+  ],
+  "permissions": [
+    "topics",
+    "routes",
+    "admin"
+  ],
+  "settings": [
+    {
+      "key": "url",
+      "type": "secret",
+      "label": {
+        "en": "Your calendar address",
+        "fr": "Adresse de votre agenda"
+      },
+      "help": {
+        "en": "In Google Calendar: Settings → your calendar → “Secret address in iCal format”. Never shown again once saved: whoever has it can read your calendar. Use a calendar dedicated to your streams: everything in it becomes visible on your site.",
+        "fr": "Dans Google Agenda : Paramètres → votre agenda → « Adresse secrète au format iCal ». Jamais réaffichée une fois enregistrée : qui la possède peut lire votre agenda. Utilisez un agenda dédié à vos streams : tout ce qu'il contient devient visible sur votre site."
+      }
+    },
+    {
+      "key": "timezone",
+      "type": "text",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "en": "Time zone of the calendar (optional)",
+        "fr": "Fuseau horaire de l'agenda (facultatif)"
+      },
+      "help": {
+        "en": "IANA name, e.g. Europe/Paris. Only needed if times look shifted. Left empty, the time zone your calendar announces is used.",
+        "fr": "Nom IANA, ex. Europe/Paris. Utile seulement si les heures semblent décalées. Laissé vide, c'est le fuseau que votre agenda annonce qui est utilisé."
+      }
+    },
+    {
+      "key": "cacheMinutes",
+      "type": "number",
+      "default": 5,
+      "advanced": true,
+      "label": {
+        "en": "Minutes between two reads of the calendar",
+        "fr": "Minutes entre deux lectures de l'agenda"
+      },
+      "help": {
+        "en": "From 1 to 120. Google updates its feed with a delay anyway.",
+        "fr": "De 1 à 120. Google met de toute façon son flux à jour avec un délai."
+      }
+    }
+  ]
+}

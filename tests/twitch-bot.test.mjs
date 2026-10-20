@@ -1,11 +1,14 @@
 // Bot Twitch : le site répond aux commandes du chat. Aucun réseau : un faux « monde » (Chaîne Twitch, Planning, Sponsors, réseaux) répond à la place des autres modules,
 // et les messages de Twitch sont fabriqués avec de vraies signatures.
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHmac } from "node:crypto";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { parseManifest } from "@/core/modules/manifest";
+
+/** Horloge simulée pour les tests qui annoncent un prochain stream à date fixe : le résultat ne dépend plus du jour où le test tourne. */
+const atClock = async (ms, fn) => { mock.timers.enable({ apis: ["Date"], now: ms }); try { return await fn(); } finally { mock.timers.reset(); } };
 
 const DIR = new URL("../modules/twitch-bot", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${DIR}/${p}`, "utf8"));
@@ -265,7 +268,7 @@ test("Planning absent : !planning est masquée avec une explication ; présent :
   const absent = world();
   const plan = (await listOf(absent.ctx, env(absent.ctx, { planning: { installed: false } }))).find((c) => c.id === "planning");
   assert.deepEqual([plan.state, plan.why], ["hidden", "planning_absent"]);
-  assert.match(fr.why_planning_absent, /Planning n'est pas installé/);
+  assert.match(fr.why_planning_absent, /aucun agenda de streams n'est installé/);
   const fol = (await listOf(absent.ctx, env(absent.ctx, { followers: { available: false } }))).find((c) => c.id === "followers");
   assert.deepEqual([fol.state, fol.why], ["hidden", "followers_absent"]);
   assert.equal((await listOf(absent.ctx)).find((c) => c.id === "planning").state, "on");
@@ -366,6 +369,7 @@ test("MCP et administration partagent les mêmes règles : une commande ne dépa
 /* ───────────── Répondre : le chat ───────────── */
 
 test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !followers les statistiques, !planning le prochain stream (heure du fuseau réglé)", async () => {
+  return atClock(NOW, async () => {
   const slots = [{ title: "Passé", start: "2026-10-14T10:00:00Z" }, { title: "Zelda en soirée", start: "2026-10-17T18:30:00Z" }, { title: "Plus tard", start: "2026-10-20T18:30:00Z" }];
   const { ctx, tw } = world({ planning: true, slots });
   let t = NOW;
@@ -379,6 +383,7 @@ test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !follower
   ]);
   assert.deepEqual(tw.chat.map((m) => [m.broadcaster_id, m.sender_id]), Array(5).fill(["100", "100"]));
   assert.equal(tw.chat[0].slot, "main");
+  });
 });
 
 test("alias, majuscules et préfixe : !GAME répond comme !jeu ; une commande inconnue ne répond pas et ne remplit pas le journal", async () => {
@@ -557,6 +562,7 @@ test("réseau : !tiktok et son alias !tik-tok répondent avec l'adresse fournie 
 });
 
 test("réglages dangereux : préfixe invalide → « ! » ; fuseau inconnu → UTC (dit « UTC » dans la réponse) ; nombres absurdes bornés", async () => {
+  return atClock(NOW, async () => {
   const { settingsOf, prefixOf, validPrefix } = await import("../modules/twitch-bot/settings.mjs");
   const s = (settings) => settingsOf(world({ settings }).ctx);
   for (const bad of ["/", ".", "\\", "a", "1", "!!!!", "", " ", "! "]) assert.equal(s({ prefix: bad }).prefix, "!", JSON.stringify(bad));
@@ -568,6 +574,7 @@ test("réglages dangereux : préfixe invalide → « ! » ; fuseau inconnu → U
   await say(utc.ctx, "!planning");
   assert.equal(sent(utc.tw)[0], "Prochain stream : samedi 17 octobre à 18:30 UTC");
   void prefixOf;
+  });
 });
 
 test("textes en anglais : le même bot répond en anglais quand la langue du site l'est", async () => {
@@ -863,7 +870,7 @@ test("page : le résumé liste les commandes (à vous, toutes prêtes, réseaux,
   const pt = table(b, fr.col_partner);
   assert.deepEqual(pt.rows, [[ "Tesla", `!tesla · ${fr.state_on}` ]], "le résumé du partenaire : son nom et l'état de sa commande");
   const noPlanning = await A.panel(world().ctx, { query: {} });
-  assert.match(table(noPlanning, fr.col_command).rows.find((r) => r[0].startsWith("!planning"))[2], /Masquée : le module Planning n'est pas installé/);
+  assert.match(table(noPlanning, fr.col_command).rows.find((r) => r[0].startsWith("!planning"))[2], /Masquée : aucun agenda de streams n'est installé/);
 });
 
 test("page : partenaires — explication si Sponsors est absent ; sinon la liste des fiches publiées avec « Modifier » vers la FICHE (plus de formulaire ici)", async () => {
@@ -1139,9 +1146,9 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 /* ───────────── Manifeste, textes, règles du dépôt ───────────── */
 
-test("manifeste : valide, 1.1.0, minCore 0.1.24 (le cœur qui apporte les sections d'éditeur), plateforme Twitch, dépend de Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
+test("manifeste : valide, 1.1.1, minCore 0.1.24 (le cœur qui apporte les sections d'éditeur), plateforme Twitch, dépend de Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances], ["twitch-bot", "1.1.0", "0.1.24", "twitch", "multiple"]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances], ["twitch-bot", "1.1.1", "0.1.24", "twitch", "multiple"]);
   assert.deepEqual(manifest.requires.map((x) => x.service).sort(), ["twitch.api", "twitch.live"]);
   assert.deepEqual(manifest.consumes.map((x) => x.topic).sort(), ["planning.slot", "social.link", "social.stat"]);
   assert.ok(!manifest.requires.some((x) => /sponsor|planning|social/.test(x.service)), "Sponsors, Planning et les réseaux ne sont jamais requis");
@@ -1227,4 +1234,20 @@ test("changer de compte qui répond (mode avancé) : la page le constate, suppri
   Object.assign(tw, { botStatus: "ok", botScopes: [...es.SCOPES.bot] });
   await A.panel(ctx, { query: {} });
   assert.deepEqual(tw.subs.map((s) => s.condition.user_id), ["555"], "l'abonnement de l'ancien compte est supprimé, celui du compte bot est créé");
+});
+
+test("!planning : un agenda de streams suffit (Agenda en ligne ou Streams saisis à la main), sans Planning ; un stream annulé n'est jamais annoncé", async () => {
+  await atClock(NOW, async () => {
+    const slots = [{ title: "Annulé", start: "2026-10-15T18:00:00Z", status: "cancelled" }, { title: "Zelda en soirée", start: "2026-10-17T18:30:00Z", status: "confirmed" }];
+    for (const module of ["calendar-ical", "calendar-manual"]) {
+      const w = world({ slots });
+      w.ctx.api.instances.list = async ({ module: m }) => (m === module ? [{ key: "agenda", module, basePath: null, name: "Agenda" }] : []);
+      await say(w.ctx, "!planning");
+      assert.equal(sent(w.tw)[0], "Prochain stream : samedi 17 octobre à 20:30 (Zelda en soirée)", module);
+    }
+    const none = world({ slots });
+    none.ctx.api.instances.list = async () => [];
+    await say(none.ctx, "!planning", { badges: ["broadcaster"] });
+    assert.deepEqual(sent(none.tw), [], "aucun agenda installé : la commande reste muette");
+  });
 });

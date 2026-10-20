@@ -78,7 +78,7 @@
   "state_on": "On",
   "state_off": "Off",
   "state_not_set": "Not switched on yet",
-  "why_planning_absent": "Hidden: the Planning module is not installed. Add it for this command to answer.",
+  "why_planning_absent": "Hidden: no streams calendar is installed. Add “Online calendar” or “Hand-written streams” for this command to answer.",
   "why_followers_absent": "Hidden: the follower count is not available. In “Twitch channel”, tick “Follow my statistics” and connect your channel.",
   "why_group_empty": "Hidden: no network command is switched on.",
   "why_partner_missing": "Paused: this partner's page cannot be found or is not published.",
