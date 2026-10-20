@@ -669,12 +669,12 @@
     },
     {
       "id": "twitch-channel",
-      "name": "Chaîne Twitch",
+      "name": "Ma Chaîne Twitch",
       "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnés payants. Mesure aussi vos directs (spectateurs moyens et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.10.0",
-      "version": "1.7.0",
+      "version": "2.0.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -686,17 +686,40 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.1.22"
+        "core": "0.2.0"
+      },
+      "offers": [
+        {
+          "service": "twitch.live",
+          "each": true
+        }
+      ],
+      "needs": [
+        {
+          "service": "twitch.api",
+          "min": 3
+        }
+      ]
+    },
+    {
+      "id": "twitch-connector",
+      "name": "Connecteur Twitch",
+      "description": "Relie votre site à Twitch, une seule fois pour tout ce qui touche à Twitch : votre application Twitch et les comptes que vous connectez (votre chaîne, et un compte pour le bot du chat si vous en voulez un) sont gardés ici, en sécurité, et jamais affichés. Réglage guidé en 5 minutes, avec l'adresse à coller chez Twitch et un bouton « Copier ».",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/twitch-connector",
+      "ref": "v1.10.0",
+      "version": "1.0.0",
+      "platform": "twitch",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🔌",
+      "requires": {
+        "core": "0.2.0"
       },
       "offers": [
         {
           "service": "twitch.api",
-          "version": 2,
-          "each": true
-        },
-        {
-          "service": "twitch.live",
-          "each": true
+          "version": 3
         }
       ]
     },

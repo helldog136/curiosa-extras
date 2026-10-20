@@ -61,12 +61,19 @@ test("SRP : Statistiques de la communauté collecte et garde les chiffres, sans 
 
 // ── Statistiques des réseaux (« social.stat ») : chaque module publie SES chiffres, un seul parle à chaque plateforme ──────────────────
 
-test("SRP : seul le module Chaîne Twitch parle à Twitch (adresses, jetons, connexion) ; les autres passent par son service", () => {
+test("SRP : seul le Connecteur Twitch parle à Twitch (adresses, jetons, connexion) ; les autres passent par son service twitch.api (Ma Chaîne Twitch 2.0 comprise)", () => {
   for (const m of mods) {
-    if (m.id === "twitch-channel") continue;
-    assert.ok(!/(?:id|api)\.twitch\.tv|oauth2\/(?:token|authorize|revoke|validate)|helix\//.test(m.code), `${m.id} parle à Twitch : passez par le service twitch.live`);
+    if (m.id === "twitch-connector") continue;
+    assert.ok(!/(?:id|api)\.twitch\.tv\/|oauth2\/(?:token|authorize|revoke|validate)|helix\//.test(m.code), `${m.id} parle à Twitch : passez par le service twitch.api`);
+    if (m.id === "twitch-channel") continue;   // ses anciennes collections de jetons ne sont plus que LUES une fois, pour les confier au Connecteur (handover.mjs)
     assert.ok(!/twitchConnection|twitchPending|refresh_token/.test(m.code), `${m.id} touche aux jetons Twitch`);
   }
+  const channel = mods.find((m) => m.id === "twitch-channel");
+  assert.ok(!/refresh_token|grant_type|access_token/.test(channel.code), "Ma Chaîne Twitch ne gère plus aucun jeton");
+  assert.ok(!(channel.manifest.offers ?? []).some((o) => o.service === "twitch.api"), "Ma Chaîne Twitch n'offre plus twitch.api");
+  const connector = mods.find((m) => m.id === "twitch-connector");
+  assert.deepEqual((connector.manifest.offers ?? []).map((o) => [o.service, o.version, !!o.each]), [["twitch.api", 3, false]]);
+  assert.ok(!/\bfetch\s*\(/.test(connector.code.replace(/\/\/.*$/gm, "")), "le Connecteur passe par ctx.api.net, jamais par fetch");
 });
 
 test("SRP : chaque plateforme n'est appelée que par SON module (YouTube, Bluesky, Mastodon, GitHub, Discord, Reddit) ; aucun fournisseur de chiffres n'appelle un autre", () => {
@@ -96,7 +103,7 @@ test("SRP : les collections de l'enregistreur de directs (twitchLive…) apparti
   const twitch = mods.find((m) => m.id === "twitch-channel");
   const own = new Set([...twitch.code.matchAll(/(?:store\.(?:add|list|count)|\ball|\bfirst)\(\s*(?:ctx,\s*)?"([A-Za-z]+)"/g)].map((x) => x[1]));
   for (const c of ["twitchLiveState", "twitchLiveSessions", "twitchLiveDays", "twitchLiveLists"]) assert.ok(twitch.code.includes(`"${c}"`), c);
-  for (const m of mods) if (m.id !== "twitch-channel") assert.ok(!/twitchLive|twitchConnection/.test(m.code), `${m.id} touche aux données Twitch`);
+  for (const m of mods) if (m.id !== "twitch-channel") assert.ok(!/twitchLive|twitchConnection\b/.test(m.code), `${m.id} touche aux données Twitch`);
   for (const c of own) assert.match(c, /^(twitch[A-Z][A-Za-z]*|adopted|borrowed)$/, `collection « ${c} » : préfixe twitch… attendu`);
   for (const m of mods) if (m.id !== "twitch-channel") assert.ok(!(m.manifest.mcp ?? []).some((t) => /^twitch_/.test(t.name)), `${m.id} n'expose pas d'outil twitch_`);
   assert.deepEqual((twitch.manifest.mcp ?? []).map((t) => t.name), ["twitch_streams", "twitch_games", "twitch_videos"]);

@@ -4,6 +4,28 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*Il faut Curiosa 0.2.0 ou plus pour « Connecteur Twitch » et « Ma Chaîne Twitch » 2.0.*
+
+### Nouveautés
+
+- **Nouveau module « Connecteur Twitch ».** Il relie votre site à Twitch, une seule fois pour tout ce qui touche à Twitch : votre application Twitch et les comptes que vous connectez (votre chaîne, et le compte du bot si vous en avez un) sont gardés à un seul endroit, en sécurité, et jamais affichés. Sa page vous guide pas à pas chez Twitch, avec l'adresse à coller et un bouton « Copier », et dit en mots simples si Twitch répond bien (« trop de demandes, pause jusqu'à 11 h 00 »…).
+- **« Chaîne Twitch » s'appelle maintenant « Ma Chaîne Twitch »** (version 2.0). Elle passe par le Connecteur Twitch, installé avec elle. **Rien à refaire** : à la mise à jour, votre application Twitch et vos connexions (chaîne et bot) passent toutes seules dans le Connecteur, sans rien ressaisir. L'adresse déjà enregistrée chez Twitch reste valable.
+
+### Améliorations
+
+- **Plusieurs chaînes, une seule application Twitch.** Le réglage « Utiliser les identifiants d'une autre chaîne » disparaît : toutes vos chaînes passent par l'application du Connecteur. Si une chaîne utilisait une autre application, sa page vous demande de la reconnecter une fois ; l'ancien accès est ensuite retiré tout seul.
+- **Twitch en pause ? Tout le site fait une pause ensemble.** Quand Twitch dit « trop de demandes », le Bot, le Raid et votre chaîne attendent tous l'heure indiquée, puis reprennent seuls.
+- **Sans Connecteur Twitch**, le bouton de votre chaîne et son lien restent affichés, et la page propose d'installer ce qu'il faut.
+
+### Pour les développeurs
+
+- `twitch-connector` 1.0.0 (`minCore` 0.2.0, `instances: "single"`, type `integration`) : offre `twitch.api` **version 3, non `each`**, sur-ensemble de la v2 (`account`, `wantScopes`, `connectLink`, `disconnect`, `request`) + `connections`, `exchangeCode`, `adopt`, `status`, `register`, `retire`. Liste fermée élargie : `GET users` (`login` ou `id`), `GET streams` (`user_login` ou `user_id`), `GET games`, `GET channels`, `GET videos`, `GET clips`, EventSub ; compte connecté : `POST chat/messages`, `GET channels/followers`, `GET subscriptions`. Tout passe par `ctx.api.net` (seau `bucket` par application Twitch, 8 s par appel, 15 s par appel complet du service), bloc `netHealth`. Réglages `appClientId` / `appSecret` (noms distincts de l'ancien `clientSecret` de `live-status`, pour la règle « un propriétaire par secret »).
+- Clé d'instance : le cœur 0.2.0 dérive la clé par défaut de l'identifiant du module, soit `twitch-connector` ; les nouvelles configurations ont donc l'adresse de retour `/m/twitch-connector/oauth/callback` (une clé `twitch` demanderait un réglage `defaultKey` du cœur, qui n'existe pas en 0.2.0).
+- `twitch-channel` 2.0.0 (identifiant conservé, nom « Ma Chaîne Twitch », `minCore` 0.2.0, `dataVersion` 2) : n'offre plus `twitch.api` ; `requires: [{ service: "twitch.api", min: 3 }]` dur (le cœur 0.2.0 installe le Connecteur avant de migrer). `clientId`, `clientSecret` (secret), `useCredentialsOf` deviennent `legacySettings` ; `legacyCollections` liste les anciennes collections. Migration 2 (`handover.mjs`, rejouable) : `adopt` de l'application, des connexions et des demandes ; `ctx.legacy.clear` et suppression seulement après `ready` ; sinon état `pending` / `conflict`, nouvel essai à l'ouverture de l'administration et dans la tâche. La route `oauth/callback` relaie `code` + `state` au Connecteur (`exchangeCode`) pour les installations existantes. `oauth.mjs` et `access.mjs` retirés ; `helix.mjs` ne parle plus qu'au Connecteur. Sans Connecteur : bloc `suggestInstall` (service `twitch.api`, `min` 3).
+- Tests : `twitch-connector`, `twitch-connector-contract` (Bot, Raid et Statut live d'aujourd'hui contre le vrai Connecteur), `twitch-channel-handover` (reprise, rejeu, échec sans perte, conflit, plusieurs instances, EventSub) ; `twitch-api.test.mjs` remplacé. `fakeTwitch` : en-têtes sans casse, corps de formulaire en texte, `retryAfter`, `silence`, `truncated`, `clips` ; `fakeLive.connect` écrit la connexion chez le Connecteur ; nouvelle aide `helpers/twitchConnector.mjs`.
+
 ## 1.10.0
 
 *Changements depuis la 1.9.0. « Raid Twitch » sait maintenant servir une grande communauté : jusqu'à 2 000 chaînes, avec un bouton « au hasard » quand la liste est très longue.*

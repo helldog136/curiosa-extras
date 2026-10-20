@@ -1,0 +1,74 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.0",
+  "id": "twitch-connector",
+  "name": {
+    "en": "Twitch connector",
+    "fr": "Connecteur Twitch"
+  },
+  "version": "1.0.0",
+  "platform": "twitch",
+  "description": {
+    "en": "Connects your site to Twitch, once for everything Twitch on your site: your Twitch application and the accounts you connect (your channel, and an account for the chat bot if you want one) are kept here, safely, and never shown. Guided set-up in 5 minutes, with the address to paste at Twitch and a “Copy” button.",
+    "fr": "Relie votre site à Twitch, une seule fois pour tout ce qui touche à Twitch : votre application Twitch et les comptes que vous connectez (votre chaîne, et un compte pour le bot du chat si vous en voulez un) sont gardés ici, en sécurité, et jamais affichés. Réglage guidé en 5 minutes, avec l'adresse à coller chez Twitch et un bouton « Copier »."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🔌",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "page": false,
+  "offers": [
+    {
+      "service": "twitch.api",
+      "version": 3,
+      "label": {
+        "en": "Talk to Twitch for your site (your channel, the chat bot, who is live among a list of channels)",
+        "fr": "Parler à Twitch pour votre site (votre chaîne, le bot du chat, qui est en direct parmi une liste de chaînes)"
+      },
+      "readOnly": [
+        "account",
+        "connectLink",
+        "request",
+        "connections",
+        "status",
+        "exchangeCode"
+      ]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "admin",
+    "routes"
+  ],
+  "settings": [
+    {
+      "key": "appClientId",
+      "type": "text",
+      "optional": true,
+      "refersTo": "external",
+      "label": {
+        "en": "Client ID of your Twitch application",
+        "fr": "Identifiant (Client ID) de votre application Twitch"
+      },
+      "help": {
+        "en": "From dev.twitch.tv/console: the guide at the top of this page shows where. Leave empty if your site already filled it in for you.",
+        "fr": "Depuis dev.twitch.tv/console : le guide en haut de cette page montre où le trouver. Laissez vide s'il a été repris tout seul."
+      }
+    },
+    {
+      "key": "appSecret",
+      "type": "secret",
+      "optional": true,
+      "label": {
+        "en": "Secret of your Twitch application",
+        "fr": "Secret de votre application Twitch"
+      },
+      "help": {
+        "en": "Never shown again once saved. Leave empty if your site already filled it in for you.",
+        "fr": "Jamais réaffiché une fois enregistré. Laissez vide s'il a été repris tout seul."
+      }
+    }
+  ]
+}
