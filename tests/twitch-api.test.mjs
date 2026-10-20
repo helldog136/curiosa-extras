@@ -30,10 +30,10 @@ async function connectMain(ctx, who) {
   return { link, res: await callback(new Request(tw.approve(link, who)), ctx) };
 }
 
-test("manifeste : offre twitch.api en « each » (une chaîne par instance), version 1.6.0, interface de service en version 2 ; textes ajoutés en fr et en", () => {
+test("manifeste : offre twitch.api en « each » (une chaîne par instance), version 1.7.0, interface de service en version 2 ; textes ajoutés en fr et en", () => {
   const o = manifest.offers.find((x) => x.service === "twitch.api");
   assert.ok(o && o.each === true && o.label.fr && o.label.en);
-  assert.equal(manifest.version, "1.6.0");
+  assert.equal(manifest.version, "1.7.0");
   assert.equal(o.version, 2, "la liste d'appels a gagné GET streams : les consommateurs exigent la version 2");
   for (const k of ["conn_why_chat", "extras_note"]) { assert.ok(fr[k] && en[k], k); }
   assert.deepEqual(Object.keys(api).sort(), ["account", "connectLink", "disconnect", "request", "wantScopes"]);
@@ -237,8 +237,35 @@ test("GET streams : 100 pseudos passent, 101 non ; seuls user_login et first son
   assert.deepEqual(await streams(ctx, { user_login: ["alice"] }, { method: "POST" }), { ok: false, error: "forbidden" });
   assert.deepEqual(await streams(ctx, { user_login: ["alice"] }, { channel: "autre" }), { ok: false, error: "other_channel" });
   assert.equal(tw.log.length, before, "aucune demande refusée n'est partie vers Twitch");
-  // le plafond de 20 valeurs reste la règle des autres appels
-  assert.deepEqual(await api.request(ctx, { as: "app", method: "GET", path: "users", query: { login: logins(21) } }), invalid);
+  // le plafond de 20 valeurs reste la règle des autres appels (GET users a sa propre règle, plus bas)
+  assert.deepEqual(await api.request(ctx, { as: "app", method: "GET", path: "eventsub/subscriptions", query: { type: logins(21) } }), invalid);
+});
+
+/* ───────────── Chaîne Twitch 1.7.0 : GET users (nom affiché et photo de profil d'une liste de chaînes) ───────────── */
+
+test("GET users : une forme stricte (login seulement, 1 à 100 pseudos valables) ; la réponse publique est rendue ; rien d'autre ne part vers Twitch", async () => {
+  const ctx = mk({ trackStats: false });
+  tw.state.users = [{ login: "alice_tv", name: "Alice", picture: "https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_image-300x300.png" }, { login: "bob_x", name: "Bob" }];
+  const users = (query, over = {}) => api.request(ctx, { as: "app", method: "GET", path: "users", query, ...over });
+  const ok = await users({ login: ["Alice_TV".toLowerCase(), "bob_x"] });
+  assert.equal(ok.ok, true); assert.equal(ok.status, 200);
+  assert.deepEqual(ok.json.data.map((d) => [d.login, d.display_name, d.profile_image_url]), [["alice_tv", "Alice", "https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_image-300x300.png"], ["bob_x", "Bob", ""]]);
+  const many = Array.from({ length: 100 }, (_, i) => `chaine_${String(i).padStart(3, "0")}`);
+  assert.equal((await users({ login: many })).ok, true, "100 pseudos : permis (une seule demande)");
+  const before = tw.log.length;
+  const invalid = { ok: false, error: "invalid" };
+  assert.deepEqual(await users({ login: [...many, "chaine_100"] }), invalid, "101 : refusé");
+  assert.deepEqual(await users({}), invalid, "sans pseudo");
+  assert.deepEqual(await users({ login: [] }), invalid);
+  assert.deepEqual(await users({ login: ["alice_tv"], id: ["1"] }), invalid, "pas d'identifiant numérique");
+  assert.deepEqual(await users({ id: ["1"] }), invalid);
+  assert.deepEqual(await users({ login: ["mauvais pseudo!"] }), invalid);
+  assert.deepEqual(await users({ login: ["a&login=b"] }), invalid, "pas d'injection de paramètre");
+  assert.deepEqual(await users({ login: [12345] }), invalid, "des textes seulement");
+  assert.deepEqual(await users({ login: ["alice_tv"] }, { as: "user" }), { ok: false, error: "forbidden" });
+  assert.deepEqual(await users({ login: ["alice_tv"] }, { method: "POST" }), { ok: false, error: "forbidden" });
+  assert.deepEqual(await users({ login: ["alice_tv"] }, { channel: "autre" }), { ok: false, error: "other_channel" });
+  assert.equal(tw.log.length, before, "aucune demande refusée n'est partie vers Twitch");
 });
 
 test("GET streams : sans application réglée → config ; Twitch muet → network ; trop de demandes → rate (puis pas de nouvel appel pendant la pause)", async () => {

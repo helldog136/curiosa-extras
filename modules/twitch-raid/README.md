@@ -34,8 +34,11 @@ Un outil, **non accordé d'office** (administration, accès de votre IA) :
 |---|---|
 | `raid_partners_live` | Dit quels partenaires sont en direct maintenant (nom, jeu, titre, spectateurs, depuis combien de minutes) avec la commande de raid de chacun. Lecture seule : rien n'est envoyé. |
 
+## Pour vos autres modules
+Si vous avez aussi « Story d'annonce », il peut **reprendre vos partenaires** (pseudo, nom affiché et **photo de profil Twitch**) pour les montrer dans vos vidéos d'annonce : un bouton lui suffit, rien à régler. Seuls le pseudo, le nom et la photo sont partagés : **jamais vos notes**, ni l'adresse secrète du dock. Sans ce module, rien ne change.
+
 ## À savoir
-- Les informations viennent de Twitch **par « Chaîne Twitch »** : ce module ne parle jamais à Twitch lui-même. Il faut Chaîne Twitch en version 1.6.0 ou plus (la mise à jour est proposée toute seule).
+- Les informations viennent de Twitch **par « Chaîne Twitch »** : ce module ne parle jamais à Twitch lui-même. Il faut Chaîne Twitch en version 1.6.0 ou plus (la mise à jour est proposée toute seule) ; les photos de profil demandent la version 1.7.0, mais sans elles tout marche quand même.
 - Pas besoin de connecter votre compte Twitch : l'identifiant et le secret de votre application, déjà réglés dans « Chaîne Twitch », suffisent.
 - Les informations sont gardées 30 secondes : plusieurs docks ou onglets ouverts en même temps ne font qu'une seule demande à Twitch.
 - Si votre site a plusieurs chaînes Twitch, le mode avancé permet de choisir laquelle utiliser.

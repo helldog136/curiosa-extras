@@ -1,4 +1,4 @@
-// Raid Twitch 1.0.0 : la liste des partenaires, le dock (adresse secrète, page, données), les attentes bornées, le presse-papier (fonctions de la page), l'administration.
+// Raid Twitch 1.1.0 : la liste des partenaires, le dock (adresse secrète, page, données), les attentes bornées, le presse-papier (fonctions de la page), l'administration.
 // Aucun réseau : Chaîne Twitch est remplacée par un faux service `twitch.api` ; la page du navigateur est vérifiée à part (voir README du dépôt : essais en navigateur réel faits à la livraison).
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
@@ -13,6 +13,7 @@ const def = (await import("../modules/twitch-raid/index.mjs")).default;
 const pure = await import("../modules/twitch-raid/pure.mjs");
 const data = await import("../modules/twitch-raid/data.mjs");
 const live = await import("../modules/twitch-raid/live.mjs");
+const partnersMod = await import("../modules/twitch-raid/partners.mjs");
 const dock = await import("../modules/twitch-raid/dock.mjs");
 const admin = await import("../modules/twitch-raid/admin.mjs");
 
@@ -42,7 +43,8 @@ const mk = (extra = {}, settings = {}) => fakeCtx({
   serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods: api.methods }] }, ...extra,
 });
 const timing0 = { ...live.timing };
-beforeEach(() => { api = fakeApi(); live.resetLive(); Object.assign(live.timing, timing0); });
+const ptiming0 = { ...partnersMod.timing };
+beforeEach(() => { api = fakeApi(); live.resetLive(); partnersMod.resetPartners(); Object.assign(live.timing, timing0); Object.assign(partnersMod.timing, ptiming0); });
 afterEach(() => { mock.timers.reset(); Object.assign(live.timing, timing0); });
 const logins = (n) => Array.from({ length: n }, (_, i) => `chaine_${String(i).padStart(3, "0")}`).join("\n");
 const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
@@ -50,10 +52,11 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste : un module, un service (twitch.api, version 2 au moins), aucun droit d'écriture MCP, réglage avancé facultatif, vie privée déclarée", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.0.0");
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.1.0");
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 2 }], "exige la Chaîne Twitch qui sait dire qui est en direct (1.6.0)");
-  assert.ok(!("consumes" in manifest) && !("provides" in manifest) && !("offers" in manifest));
-  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage"]);
+  assert.ok(!("consumes" in manifest) && !("offers" in manifest));
+  assert.deepEqual(manifest.provides.map((p) => p.topic), ["stream.partner"], "1.1.0 : le seul lien est un sujet, facultatif pour ceux qui le lisent");
+  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);
   assert.ok(manifest.mcp.every((t) => t.readOnly === true && t.default === false), "lecture seule, jamais accordé d'office");
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["raid_partners_live"]);
   const s = manifest.settings; assert.equal(s.length, 1);
@@ -498,4 +501,76 @@ test("sauvegarde lisible : la liste en CSV, sans formule dangereuse, sans le sec
 test("instance créée : l'adresse du dock existe tout de suite", async () => {
   const ctx = mk(); await def.hooks.onInstanceCreate(ctx);
   assert.equal(await ctx.api.store.count("dock"), 1);
+});
+
+/* ───────────── 1.1.0 : les partenaires proposés aux autres modules (sujet « stream.partner ») ───────────── */
+
+const PIC = (n) => `https://static-cdn.jtvnw.net/jtv_user_pictures/u${n}-profile_image-300x300.png`;
+/** Un faux « Chaîne Twitch » qui sait répondre à GET users (nom affiché et photo de profil) pour les pseudos demandés. */
+function withUsers(users) {
+  api.methods.request = async (args) => { api.calls.push(args); return { ok: true, status: 200, json: { data: args.query.login.map((l) => users[l]).filter(Boolean).map((u) => ({ login: u.login, display_name: u.name, profile_image_url: u.picture })) } }; };
+}
+const exportPartners = (ctx, opts = {}) => def.exports["stream.partner"](ctx, opts);
+
+test("sujet « stream.partner » : pseudo, nom affiché (le sien, sinon celui de Twitch) et photo de profil ; JAMAIS la note ; photos lues en groupes de 20 pseudos au plus", async () => {
+  const ctx = mk();
+  await data.addPartners(ctx, "alice_tv");
+  await data.updatePartner(ctx, "alice_tv", { newLogin: "alice_tv", name: "Alice à moi", note: "NOTE-SECRETE : ne pas raider le lundi" });
+  await data.addPartners(ctx, "bob_x carl_99");
+  withUsers({ alice_tv: { login: "alice_tv", name: "Alice", picture: PIC(1) }, bob_x: { login: "bob_x", name: "Bob Officiel", picture: PIC(2) } });
+  const items = await exportPartners(ctx);
+  assert.deepEqual(items, [
+    { id: "alice_tv", login: "alice_tv", title: "Alice à moi", image: PIC(1) },
+    { id: "bob_x", login: "bob_x", title: "Bob Officiel", image: PIC(2) },
+    { id: "carl_99", login: "carl_99", title: "carl_99" },
+  ]);
+  for (const x of items) assert.ok(typeof x.id === "string" && x.id && typeof x.title === "string" && x.title && (!("image" in x) || /^https:\/\//.test(x.image)), "conforme au schéma du lecteur (id et title texte, image : une adresse ou rien : le cœur écarte l'élément entier si une adresse est vide)");
+  assert.ok(!JSON.stringify(items).includes("NOTE-SECRETE") && !JSON.stringify(items).includes("secret"));
+  assert.equal(api.calls.length, 1); assert.deepEqual(api.calls[0], { as: "app", method: "GET", path: "users", query: { login: ["alice_tv", "bob_x", "carl_99"] }, channel: "emma_live" });
+  // 45 partenaires = 3 demandes de 20, 20 et 5 pseudos
+  const big = mk(); await data.addPartners(big, logins(45));
+  api.calls.length = 0; partnersMod.resetPartners();
+  const many = await exportPartners(big);
+  assert.equal(many.length, 45); assert.deepEqual(api.calls.map((c) => c.query.login.length).sort((a, b) => b - a), [20, 20, 5]);
+  assert.deepEqual((await exportPartners(big, { limit: 3 })).map((x) => x.login), ["chaine_000", "chaine_001", "chaine_002"]);
+  assert.deepEqual(await exportPartners(mk()), [], "aucun partenaire : rien");
+});
+
+test("sujet « stream.partner » : une photo n'est reprise que si elle vient du serveur d'images de Twitch ; un nom de Twitch piégé est nettoyé ; aucune photo gardée par ce module", async () => {
+  const ctx = mk(); await data.addPartners(ctx, "alice_tv bob_x carl_99");
+  withUsers({ alice_tv: { login: "alice_tv", name: "<b>Alice</b>\u0000\n" + "x".repeat(100), picture: "https://evil.example/a.png" }, bob_x: { login: "bob_x", name: "Bob", picture: "javascript:alert(1)" }, carl_99: { login: "carl_99", name: "Carl", picture: "https://static-cdn.jtvnw.net/jtv_user_pictures/../../x.png" } });
+  const items = await exportPartners(ctx);
+  assert.deepEqual(items.map((x) => x.image), [undefined, undefined, undefined], "aucune photo douteuse : la clé est absente (jamais une adresse vide)");
+  assert.ok(items[0].title.length <= 40 && !items[0].title.includes("\u0000"));
+  assert.ok(!(await ctx.api.store.list("partners")).some((r) => JSON.stringify(r.data).includes("profile_image")), "les photos ne sont pas copiées dans la liste : Twitch en reste propriétaire");
+  assert.equal(JSON.stringify(partnersMod.readUsers({ data: [{ login: "x", profile_image_url: PIC(1), display_name: 5 }, null, "x", { login: "" }] })), JSON.stringify({ x: { name: "", image: PIC(1) } }));
+  assert.deepEqual(partnersMod.readUsers(null), {}); assert.deepEqual(partnersMod.readUsers({ data: "x" }), {});
+});
+
+test("sujet « stream.partner » : Chaîne Twitch absente, pas prête, qui refuse (version ancienne) ou en erreur → les partenaires sont rendus SANS photo, sans erreur ; réponse gardée 6 h, un échec 1 minute", async () => {
+  const ctx = mk(); await data.addPartners(ctx, "alice_tv bob_x");
+  const plain = [{ id: "alice_tv", login: "alice_tv", title: "alice_tv" }, { id: "bob_x", login: "bob_x", title: "bob_x" }];
+  api.accounts = [{ ok: true, channel: null, ready: false }]; assert.deepEqual(await exportPartners(ctx), plain);
+  partnersMod.resetPartners(); api.accounts = [];
+  assert.deepEqual(await exportPartners(ctx), plain);
+  partnersMod.resetPartners(); api.accounts = [{ ok: true, channel: "emma_live", ready: true }];
+  for (const reply of [{ ok: false, error: "forbidden" }, { ok: false, error: "network" }, { ok: true, status: 500, json: {} }, { ok: true, status: 200, json: null }]) { partnersMod.resetPartners(); api.methods.request = async () => reply; assert.deepEqual(await exportPartners(ctx), plain, JSON.stringify(reply)); }
+  partnersMod.resetPartners(); api.methods.request = async () => { throw new Error("service en panne"); };
+  assert.deepEqual(await exportPartners(ctx), plain);
+  // cache
+  partnersMod.resetPartners(); mock.timers.enable({ apis: ["Date"], now: 5_000_000 });
+  let n = 0; api.methods.request = async () => { n++; return { ok: true, status: 200, json: { data: [{ login: "alice_tv", display_name: "Alice", profile_image_url: PIC(1) }] } }; };
+  await exportPartners(ctx); await exportPartners(ctx); assert.equal(n, 1, "deux lectures rapprochées = une seule demande");
+  mock.timers.setTime(5_000_000 + 5 * 3600_000); await exportPartners(ctx); assert.equal(n, 1, "encore gardée après 5 h");
+  mock.timers.setTime(5_000_000 + 7 * 3600_000); await exportPartners(ctx); assert.equal(n, 2, "relue après 6 h");
+  api.methods.request = async () => { n++; return { ok: false, error: "network" }; };
+  partnersMod.resetPartners(); const before = n; await exportPartners(ctx); await exportPartners(ctx); assert.equal(n, before + 1, "un échec est gardé : Twitch n'est pas martelé");
+  mock.timers.setTime(5_000_000 + 7 * 3600_000 + 61_000); await exportPartners(ctx); assert.equal(n, before + 2, "réessayé après 1 minute");
+});
+
+test("sujet « stream.partner » : une liste modifiée est relue tout de suite (la clé du cache change avec la liste)", async () => {
+  const ctx = mk(); await data.addPartners(ctx, "alice_tv");
+  let n = 0; api.methods.request = async (a) => { n++; return { ok: true, status: 200, json: { data: a.query.login.map((l) => ({ login: l, display_name: l, profile_image_url: PIC(1) })) } }; };
+  assert.equal((await exportPartners(ctx)).length, 1); await data.addPartners(ctx, "bob_x");
+  assert.equal((await exportPartners(ctx)).length, 2); assert.equal(n, 2);
 });

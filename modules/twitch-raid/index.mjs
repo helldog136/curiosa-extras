@@ -10,6 +10,7 @@ const live = await import(`./live.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
 const dock = await import(`./dock.mjs${v}`);
 const pure = await import(`./pure.mjs${v}`);
+const partnersOf = await import(`./partners.mjs${v}`);
 
 const onlyGet = (request) => (request.method === "GET" || request.method === "HEAD" ? null : new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }));
 const keyOf = (request) => new URL(request.url).searchParams.get("k") ?? "";
@@ -30,6 +31,11 @@ export default {
       const result = await live.liveNow(ctx, await data.readPartners(ctx), admin.settingsOf(ctx));
       return new Response(JSON.stringify({ ...result, now: Date.now() }), { headers: dock.jsonHeaders });
     },
+  },
+
+  // Les partenaires (pseudo, nom affiché, photo de profil), pour les modules qui en ont l'usage (sujet `stream.partner`). Jamais la note ; la photo est facultative.
+  exports: {
+    async "stream.partner"(ctx, { limit } = {}) { return partnersOf.partnerItems(ctx, await data.readPartners(ctx), admin.settingsOf(ctx), limit); },
   },
 
   adminPanel: admin.panel,

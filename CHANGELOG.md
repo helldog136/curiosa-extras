@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.9.0
+
+*Changements depuis la 1.8.0. Un nouveau module « Story d'annonce » fabrique la vidéo qui annonce votre prochain stream. Il faut Curiosa 0.1.22 ou plus.*
+
+### Nouveautés
+
+- **Nouveau module « Story d'annonce ».** Il fabrique une petite **vidéo animée** qui annonce votre prochain stream, prête à publier en **story Instagram**. Vous choisissez le stream (le prochain, un autre, ou un stream écrit à la main si vous n'avez pas d'agenda), ce que la vidéo montre (titre, jour et heure, compte à rebours « Dans 2 h 15 » / « Ce soir à 19 h 30 » / « Demain », jeu et jaquette, logo et nom de votre chaîne, votre phrase, vos co-streamers), le **style** (néon qui clignote, affiche qui glisse, compte à rebours animé, texte seul), le **format** (vertical 9:16, ou « Passeport » 4:5 presque carré) et la **durée** (5 à 15 secondes, 15 par défaut). Un aperçu animé vous montre le résultat avant de le fabriquer, avec une option pour afficher les **zones de sécurité** que cache Instagram.
+- **La vidéo se fabrique dans votre navigateur, rien n'est gardé sur le site** : une barre d'avancement, un bouton « Annuler », puis le fichier se télécharge (par exemple `annonce-2026-10-22-vertical.mp4`). Vidéo muette. Chrome ou Safari récents donnent un fichier MP4 ; sinon la page le dit et vous conseille un autre navigateur.
+- **Vos co-streamers** : une liste à vous (pseudo Twitch, nom et photo facultatifs), des cases pour choisir qui apparaît (6 au plus), et l'ajout d'un pseudo pour une seule vidéo. Si « Raid Twitch » est installé, un bouton **« Reprendre mes partenaires de Raid Twitch »** les ajoute avec leur photo de profil.
+- **Vos modèles** : enregistrez vos réglages sous un nom (« Stream du soir néon »), chargez-les, remplacez-les ou supprimez-les, chaque fois avec une confirmation.
+- **Votre IA peut préparer la vidéo pour vous** : elle remplit tout et vous donne un lien ; vous vérifiez l'aperçu et cliquez sur « Générer la vidéo ». Elle ne fabrique ni ne publie rien, et l'outil qui prépare n'est jamais accordé d'office.
+
+### Améliorations
+
+- **« Raid Twitch » 1.1.0 peut partager vos partenaires avec vos autres modules** (leur pseudo, leur nom et leur photo de profil Twitch, jamais vos notes ni l'adresse du dock). Rien ne change pour vous si vous n'en avez pas l'usage.
+- **« Chaîne Twitch » 1.7.0 sait donner le nom affiché et la photo de profil d'une liste de chaînes** (100 au plus, en une seule demande). Rien à régler ; la mise à jour est proposée toute seule.
+
+### Pour les développeurs
+
+- `stream-story` 1.0.0 (`minCore` 0.1.22, instance unique, `platform: "instagram"`, aucune page publique, aucune dépendance forte) : **consomme** les sujets `planning.slot` (n'importe quel agenda ; lecture bornée `from` / `to`, plafond de 100, attente maximale 6 s) et `stream.partner` ; jaquettes par `ctx.api.rawg`. L'éditeur est une page servie par la route `studio` dans un cadre du panneau d'administration ; ses routes de données exigent un jeton signé (HMAC, 12 h) donné par le panneau dans la partie `#` de l'adresse. Relais d'images `img` : hôtes `static-cdn.jtvnw.net` et `media.rawg.io` seulement, chemin d'image connu, 3 Mo, type lu dans les premiers octets, aucune redirection, 4 téléchargements à la fois. Outils MCP : `story_models` et `story_next_streams` (lecture seule), `story_prepare` (`default: false` : écrit une préparation de 7 jours et rend un lien ; entrées vérifiées une à une).
+- Fabrication dans le navigateur : `scenes.mjs` (chaque style est une fonction `draw(ctx, t)`), `mp4.mjs` (emballeur MP4 minimal écrit pour le module, essayé avec de vraies images x264 relues par `ffprobe`), `encode.mjs` (détection des capacités avant de commencer, WebCodecs H.264 à 30 images/s et environ 8 Mb/s, repli `MediaRecorder`), `pure.mjs` (formats dans une seule table `FORMATS`, dates, compte à rebours, mise en lignes, mise en page des co-streamers, couleurs). Fichiers purs, exécutables dans un `vm` vierge.
+- `twitch-raid` 1.1.0 : fournit le sujet `stream.partner` (`id`, `login`, `title`, `image` seulement s'il y a une photo), photos lues par `GET users` en demandes de 20 pseudos au plus, bornées à 6 s, gardées 6 h. Permission `topics`. `twitch-channel` 1.7.0 : `GET users` (liste fermée `ALLOWED.app`) passe en forme stricte : seul `login`, 1 à 100 pseudos valables. `fakeTwitch` répond à `GET users` (`state.users`).
+- Tests : `stream-story-pure`, `stream-story-scenes` (zone sûre de chaque style × format × 0 à 6 co-streamers), `stream-story-video`, `stream-story`, `hang-stream-story` (essais « trou noir »), `mp4probe` (analyseur de structure MP4) et `fakeCanvas` dans `tests/helpers`. Le sujet `stream.partner` est une exception documentée de `repo-rules.test.mjs` tant que le tableau des sujets du cœur ne le liste pas.
+
 ## 1.8.0
 
 *Changements depuis la 1.7.1. Le Planning montre vos streams et deux nouveaux modules les fournissent ; un nouveau module « Raid Twitch » vous dit quels partenaires sont en direct. Il faut Curiosa 0.1.27 ou plus pour mettre le Planning à jour.*

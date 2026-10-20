@@ -1,0 +1,293 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.1.22",
+  "id": "stream-story",
+  "name": {
+    "en": "Announcement story",
+    "fr": "Story d'annonce"
+  },
+  "version": "1.0.0",
+  "platform": "instagram",
+  "description": {
+    "en": "Make a short animated video that announces your next stream, ready to post as an Instagram story (vertical) or a portrait post. Pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
+    "fr": "Fabriquez une petite vidéo animée qui annonce votre prochain stream, prête à publier en story Instagram (vertical) ou en publication portrait. Choisissez un style, ce qu'elle montre, votre propre phrase et sa durée : elle se fabrique dans votre navigateur et se télécharge comme un fichier."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📱",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "routes",
+    "storage",
+    "admin",
+    "topics",
+    "mcp",
+    "rawg"
+  ],
+  "privacy": {
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your list of guest streamers, your saved models and, for 7 days at most, the settings an assistant prepared (visible to administrators only). No video or picture is kept on the site: the video is made in your browser. To draw a game cover or a profile picture, the site fetches that public picture for you.",
+    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde votre liste de co-streamers, vos modèles et, 7 jours au plus, les réglages préparés par un assistant (visibles des administrateurs seulement). Aucune vidéo ni image n'est gardée sur le site : la vidéo se fabrique dans votre navigateur. Pour dessiner une jaquette ou une photo de profil, le site va chercher cette image publique pour vous."
+  },
+  "settings": [
+    {
+      "key": "colorAccent",
+      "type": "color",
+      "default": "theme:accent",
+      "advanced": true,
+      "label": {
+        "en": "Main color of the video",
+        "fr": "Couleur principale de la vidéo"
+      },
+      "help": {
+        "en": "By default the main color of your site.",
+        "fr": "Par défaut, la couleur principale de votre site."
+      }
+    },
+    {
+      "key": "colorAccent2",
+      "type": "color",
+      "default": "theme:accent2",
+      "advanced": true,
+      "label": {
+        "en": "Second color of the video",
+        "fr": "Deuxième couleur de la vidéo"
+      },
+      "help": {
+        "en": "By default the second color of your site.",
+        "fr": "Par défaut, la deuxième couleur de votre site."
+      }
+    },
+    {
+      "key": "colorBackground",
+      "type": "color",
+      "default": "theme:bg",
+      "advanced": true,
+      "label": {
+        "en": "Background of the plain style",
+        "fr": "Fond du style « Minimal »"
+      },
+      "help": {
+        "en": "Only the Minimal style uses a plain background. By default the background of your site.",
+        "fr": "Seul le style « Minimal » a un fond uni. Par défaut, le fond de votre site."
+      }
+    },
+    {
+      "key": "colorText",
+      "type": "color",
+      "default": "theme:fg",
+      "advanced": true,
+      "label": {
+        "en": "Text color of the plain style",
+        "fr": "Couleur du texte du style « Minimal »"
+      },
+      "help": {
+        "en": "Made more readable automatically if it does not stand out enough on the background.",
+        "fr": "Rendue plus lisible automatiquement si elle ne ressort pas assez sur le fond."
+      }
+    },
+    {
+      "key": "timezone",
+      "type": "text",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "en": "Time zone for the dates (optional)",
+        "fr": "Fuseau horaire des dates (facultatif)"
+      },
+      "help": {
+        "en": "Example: Europe/Brussels. Empty = the one of your calendar, otherwise the one of your browser.",
+        "fr": "Exemple : Europe/Brussels. Vide = celui de votre agenda, sinon celui de votre navigateur."
+      }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "planning.slot",
+      "label": {
+        "en": "Your streams (from your calendars, if installed)",
+        "fr": "Vos streams (fournis par vos agendas, s'ils sont installés)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "start",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "end",
+          "type": "datetime"
+        },
+        {
+          "key": "allDay",
+          "type": "boolean"
+        },
+        {
+          "key": "day",
+          "type": "string"
+        },
+        {
+          "key": "games",
+          "type": "string[]"
+        },
+        {
+          "key": "status",
+          "type": "string"
+        },
+        {
+          "key": "timezone",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "topic": "stream.partner",
+      "label": {
+        "en": "Your partner channels (from the Twitch raid module, if installed)",
+        "fr": "Vos chaînes partenaires (fournies par le Raid Twitch, s'il est installé)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "login",
+          "type": "string"
+        },
+        {
+          "key": "image",
+          "type": "url"
+        }
+      ]
+    }
+  ],
+  "mcp": [
+    {
+      "name": "story_models",
+      "readOnly": true,
+      "description": "The video models the owner saved for the announcement story (a model = a style, a format, a length, the elements to show, a sentence and guest streamers, saved under a name). Use it before story_prepare to reuse a model by its name. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "story_next_streams",
+      "readOnly": true,
+      "description": "The next streams found in the owner's calendar (up to 8): a 'key' (to give to story_prepare), the title, the start (UTC, ISO 8601), whether it is a whole-day event, the games and the time zone when known. 'state' is 'ok', 'empty' (no calendar installed, or nothing planned) or 'slow' (the calendar did not answer in time). Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "story_prepare",
+      "default": false,
+      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The stream is 'next' (default), a key from story_next_streams, or a hand-written stream (streamTitle + streamDate [+ streamTime]). Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Name of a saved model to start from (see story_models)."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "neon",
+              "poster",
+              "countdown",
+              "minimal"
+            ],
+            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers; minimal = plain background, letters typed one by one."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "passeport"
+            ],
+            "description": "vertical = 1080x1920 (9:16 story); passeport = 1080x1350 (4:5 portrait post)."
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 15,
+            "description": "Length of the video in seconds (5 to 15, default 15)."
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What to show, taken from: title, when, countdown, game, brand, text, costreamers. Default: all of them."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 140,
+            "description": "Optional custom sentence (up to 140 characters, up to 3 lines). Plain text only."
+          },
+          "channelName": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Optional name shown next to the logo (default: the site name)."
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "description": "Language of the words written in the video (dates and countdown)."
+          },
+          "stream": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "'next' (default) or a key given by story_next_streams."
+          },
+          "streamTitle": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Hand-written stream: its title (use instead of 'stream')."
+          },
+          "streamDate": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Hand-written stream: the day, written YYYY-MM-DD."
+          },
+          "streamTime": {
+            "type": "string",
+            "maxLength": 5,
+            "description": "Hand-written stream: the start time, written HH:MM (24 h). Leave out for a whole day."
+          },
+          "costreamers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 6 Twitch names (4 to 25 letters, digits or _) of guest streamers to show."
+          }
+        }
+      }
+    }
+  ]
+}

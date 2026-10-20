@@ -13,7 +13,7 @@ const groups = {
   twitch: ["live-status", "twitch-bot", "twitch-channel", "twitch-raid"],
   discord: ["discord", "discord-announcer"],
   youtube: ["youtube-channel"],
-  instagram: ["instagram"], tiktok: ["tiktok"], x: ["x-twitter"], facebook: ["facebook"], bluesky: ["bluesky"], mastodon: ["mastodon"], threads: ["threads"],
+  instagram: ["instagram", "stream-story"], tiktok: ["tiktok"], x: ["x-twitter"], facebook: ["facebook"], bluesky: ["bluesky"], mastodon: ["mastodon"], threads: ["threads"],
   kick: ["kick"], spotify: ["spotify"], reddit: ["reddit"], patreon: ["patreon"], "ko-fi": ["kofi"], snapchat: ["snapchat"], pinterest: ["pinterest"],
   telegram: ["telegram"], steam: ["steam"], soundcloud: ["soundcloud"], bandcamp: ["bandcamp"], github: ["github"],
 };

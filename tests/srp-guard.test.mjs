@@ -17,7 +17,7 @@ test("SRP : les agendas de streams fournissent `planning.slot`, le Planning et l
   const providers = mods.filter((m) => (m.manifest.provides ?? []).some((p) => p.topic === "planning.slot")).map((m) => m.id).sort();
   assert.deepEqual(providers, ["calendar-ical", "calendar-manual"], "le Planning ne fournit plus planning.slot");
   const consumers = mods.filter((m) => (m.manifest.consumes ?? []).some((c) => c.topic === "planning.slot")).map((m) => m.id).sort();
-  assert.deepEqual(consumers, ["planning", "twitch-bot"]);
+  assert.deepEqual(consumers, ["planning", "stream-story", "twitch-bot"], "Story d'annonce lit les streams par le sujet, sans connaître aucun agenda");
   for (const id of providers) {
     const m = mods.find((x) => x.id === id);
     assert.equal(m.manifest.offers, undefined, `${id} : aucun service (deux agendas n'offrent jamais le même)`);
