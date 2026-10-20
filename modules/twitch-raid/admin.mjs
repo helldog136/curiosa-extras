@@ -47,30 +47,8 @@ export async function panel(ctx, { query } = {}) {
   blocks.push({ type: "adminForm", action: "check", title: t("check_title"), submitLabel: t("check_btn"), fields: [] });
   blocks.push({ type: "table", columns: [t("renew_title")], rows: [[t("renew_help")]], rowIds: ["dock"], rowActions: [{ label: t("renew_btn"), action: "renew", confirm: t("renew_confirm"), danger: true }] });
 
-  const q = oneLine(query?.q, 40), searching = q !== "";
-  const matches = filterPartners(partners, q), pg = pageOf(matches, query?.page, PAGE_SIZE);
-  blocks.push({ type: "heading", text: searching ? t("list_title_found", { n: matches.length, total: partners.length }) : t("list_title", { n: partners.length, max: MAX_PARTNERS }) });
-  if (partners.length) blocks.push({ type: "banner", tone: "info", text: t(modeFor(partners.length) === "random" ? "mode_random" : "mode_full", { n: partners.length, max: FULL_VIEW_MAX }) });
-  if (partners.length > 20 || searching) blocks.push({ type: "adminForm", action: "search", submitLabel: t("search_btn"), cancelHref: searching ? "?" : undefined, fields: [{ name: "q", label: t("search_label"), value: q, help: t("search_help") }] });
-  if (!partners.length) blocks.push({ type: "markdown", text: t("list_empty") });
-  else if (!matches.length) blocks.push({ type: "markdown", text: t("search_none", { q }) });
-  else {
-    blocks.push({
-      type: "table", columns: [t("col_channel"), t("col_note")],
-      rows: pg.items.map((p) => [p.name ? `${p.name}\n${p.login}` : p.login, p.note || "—"]), rowIds: pg.items.map((p) => rowId(p.login, pg.page, q)),
-      // « Monter / Descendre » change l'ordre de TOUTE la liste : pendant une recherche, les voisins affichés ne sont pas les voisins de la liste, on ne le propose pas
-      rowActions: [{ label: t("act_edit"), href: "?edit={id}" }, ...(searching ? [] : [{ label: t("act_up"), action: "up" }, { label: t("act_down"), action: "down" }]), { label: t("act_remove"), action: "remove", confirm: t("confirm_remove"), danger: true }],
-    });
-    if (pg.pages > 1) {
-      const items = [];
-      if (pg.page > 1) items.push({ label: t("page_first"), href: listHref(1, q) }, { label: t("page_prev"), href: listHref(pg.page - 1, q) });
-      items.push({ label: t("page_of", { page: pg.page, pages: pg.pages }), href: listHref(pg.page, q) });
-      if (pg.page < pg.pages) items.push({ label: t("page_next"), href: listHref(pg.page + 1, q) }, { label: t("page_last"), href: listHref(pg.pages, q) });
-      blocks.push({ type: "links", items });
-    }
-  }
-
-  const wanted = query?.edit ? parseRowId(query.edit) : null;
+  const wanted = query?.edit ? parseRowId(query.edit) : null;   // « Modifier » garde la page et la recherche d'où l'on vient (dans l'identifiant de la ligne)
+  // Le formulaire (ajouter ou modifier) est AVANT la liste : sa place ne bouge pas quand la liste grandit, et le bilan d'un import reste affiché.
   const editing = wanted && partners.find((p) => p.login === wanted.login);
   if (editing) {
     blocks.push({ type: "heading", text: t("edit_title", { login: editing.login }) });
@@ -87,6 +65,32 @@ export async function panel(ctx, { query } = {}) {
     blocks.push({ type: "heading", text: t("add_title") });
     blocks.push({ type: "adminForm", action: "add", submitLabel: t("add_btn"), fields: [{ name: "logins", kind: "textarea", label: t("f_logins"), help: t("f_logins_help"), required: true }] });
   }
+  const q = oneLine(wanted ? wanted.q : query?.q, 40), searching = q !== "";
+  const matches = filterPartners(partners, q), pg = pageOf(matches, wanted ? wanted.page : query?.page, PAGE_SIZE);
+  blocks.push({ type: "heading", text: searching ? t("list_title_found", { n: matches.length, total: partners.length }) : t(partners.length === 1 ? "list_title_one" : "list_title", { n: partners.length, max: MAX_PARTNERS }) });
+  if (partners.length) blocks.push({ type: "banner", tone: "info", text: t(modeFor(partners.length) === "random" ? "mode_random" : partners.length === 1 ? "mode_full_one" : "mode_full", { n: partners.length, max: FULL_VIEW_MAX }) });
+  if (partners.length > 20 || searching) blocks.push({ type: "adminForm", action: "search", submitLabel: t("search_btn"), cancelHref: searching ? "?" : undefined, fields: [{ name: "q", label: t("search_label"), value: q, help: t("search_help") }] });
+  if (!partners.length) blocks.push({ type: "markdown", text: t("list_empty") });
+  else if (!matches.length) blocks.push({ type: "markdown", text: t("search_none", { q }) });
+  else {
+    const pager = pg.pages > 1 ? (() => {
+      // Les liens d'un bloc « links » doivent être des adresses complètes : les boutons de ligne d'un tableau, eux, acceptent « ?page=3 ». Le pager est donc un petit tableau d'une ligne.
+      const buttons = [];
+      if (pg.page > 1) buttons.push({ label: t("page_first"), href: listHref(1, q) }, { label: t("page_prev"), href: listHref(pg.page - 1, q) });
+      if (pg.page < pg.pages) buttons.push({ label: t("page_next"), href: listHref(pg.page + 1, q) }, { label: t("page_last"), href: listHref(pg.pages, q) });
+      // libellés courts : sur un téléphone, le tableau ne doit pas déborder
+      return { type: "table", columns: [t("page_range", { from: (pg.page - 1) * PAGE_SIZE + 1, to: (pg.page - 1) * PAGE_SIZE + pg.items.length, total: matches.length })], rows: [[t("page_of", { page: pg.page, pages: pg.pages })]], rowIds: ["pager"], rowActions: buttons };
+    })() : null;
+    if (pager) blocks.push(pager);   // en haut ET en bas de la page de 50 chaînes
+    blocks.push({
+      type: "table", columns: [t("col_channel"), t("col_note")],
+      rows: pg.items.map((p) => [p.name ? `${p.name}\n${p.login}` : p.login, p.note || "—"]), rowIds: pg.items.map((p) => rowId(p.login, pg.page, q)),
+      // « Monter / Descendre » change l'ordre de TOUTE la liste : pendant une recherche, les voisins affichés ne sont pas les voisins de la liste, on ne le propose pas
+      rowActions: [{ label: t("act_edit"), href: "?edit={id}" }, ...(searching ? [] : [{ label: t("act_up"), action: "up" }, { label: t("act_down"), action: "down" }]), { label: t("act_remove"), action: "remove", confirm: t("confirm_remove"), danger: true }],
+    });
+    if (pager) blocks.push(pager);
+  }
+
   return blocks;
 }
 

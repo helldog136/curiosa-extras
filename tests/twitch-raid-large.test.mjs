@@ -489,16 +489,19 @@ test("admin : 2 000 chaînes → compteur, 50 par page, pages, recherche ; le pa
   assert.ok(tImport < 1500, `import ${tImport.toFixed(0)} ms`);
   const t1 = performance.now(); let blocks = await def.adminPanel(ctx, { query: {} }); const tPanel = performance.now() - t1;
   assert.ok(tPanel < 800, `panneau ${tPanel.toFixed(0)} ms`);
-  assert.equal(blocks.find((b) => b.type === "heading" && /partenaires/.test(b.text)).text, "Vos partenaires : 2000 chaînes (2000 au plus)");
+  console.log(`# 2000 chaînes : import ${tImport.toFixed(0)} ms (1 écriture), panneau d'administration ${tPanel.toFixed(0)} ms`);
+  assert.equal(blocks.find((b) => b.type === "heading" && /^Vos partenaires/.test(b.text)).text, "Vos partenaires : 2000 chaînes (2000 au plus)");
   let table = tableOf(blocks); assert.equal(table.rows.length, 50); assert.deepEqual(table.rowIds.slice(0, 2), [name(0), name(1)]);
-  const pager = blocks.find((b) => b.type === "links" && b.items.some((i) => /Page 1 sur 40/.test(i.label)));
-  assert.deepEqual(pager.items.map((i) => i.href), ["?", "?page=2", "?page=40"].slice(0, 0).concat(["?", "?page=2", "?page=40"]).slice(0, 3));
+  const pager = blocks.find((b) => b.type === "table" && b.rowIds?.[0] === "pager");
+  assert.equal(pager.columns[0], "Chaînes 1 à 50 sur 2000"); assert.equal(pager.rows[0][0], "Page 1/40");
+  assert.deepEqual(pager.rowActions.map((a) => [a.label, a.href]), [["›", "?page=2"], ["»", "?page=40"]], "pas de lien « # » : ce sont des boutons de ligne, qui acceptent « ?page=… »");
+  assert.ok(!blocks.some((b) => b.type === "links" && b.items.some((i) => String(i.href).startsWith("?"))), "un bloc links n'accepte que des adresses complètes");
   blocks = await def.adminPanel(ctx, { query: { page: "40" } });
   table = tableOf(blocks); assert.deepEqual([table.rows.length, table.rowIds[0].split(".")[0], table.rowIds[0].split(".")[1]], [50, name(1950), "40"]);
   assert.equal(tableOf(await def.adminPanel(ctx, { query: { page: "999" } })).rowIds[0].split(".")[0], name(1950), "page hors limites ramenée à la dernière");
   // recherche
   blocks = await def.adminPanel(ctx, { query: { q: "chaine_19" } });
-  assert.match(blocks.find((b) => b.type === "heading" && /Résultat/.test(b.text)).text, /100 chaînes sur 2000/);
+  assert.match(blocks.find((b) => b.type === "heading" && /Résultat/.test(b.text)).text, /100 sur 2000 chaînes/);
   table = tableOf(blocks); assert.equal(table.rows.length, 50); assert.ok(!table.rowActions.some((a) => a.action === "up"), "pas de Monter/Descendre pendant une recherche");
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "search" && b.fields[0].value === "chaine_19"));
   assert.match(JSON.stringify(await def.adminPanel(ctx, { query: { q: "zzzz" } })), /Aucune chaîne ne correspond à « zzzz »/);
@@ -506,7 +509,7 @@ test("admin : 2 000 chaînes → compteur, 50 par page, pages, recherche ; le pa
   assert.deepEqual(await act(ctx, "search", { q: "" }), { redirect: "?" });
   // petite liste : pas de recherche ni de pages
   const small = mk(); await data.addPartners(small, "alice_tv bob_x");
-  const sb = await def.adminPanel(small, { query: {} }); assert.ok(!sb.some((b) => b.type === "adminForm" && b.action === "search") && !sb.some((b) => b.type === "links" && b.items.some((i) => /Page/.test(i.label))));
+  const sb = await def.adminPanel(small, { query: {} }); assert.ok(!sb.some((b) => b.type === "adminForm" && b.action === "search") && !sb.some((b) => b.rowIds?.[0] === "pager"));
 });
 
 test("admin : Retirer / Modifier / Enregistrer depuis la page 7 ou une recherche ramènent à CETTE page ; ajouter et retirer restent possibles à 2 000", async () => {
@@ -515,7 +518,9 @@ test("admin : Retirer / Modifier / Enregistrer depuis la page 7 ou une recherche
   const id = table.rowIds[3]; assert.equal(pure.parseRowId(id).login, name(303));
   const removed = await act(ctx, "remove", { id }); assert.deepEqual([removed.redirect, /retirée/.test(removed.ok)], ["?page=7", true]);
   assert.equal((await data.readPartners(ctx)).length, 1999);
-  const form = (await def.adminPanel(ctx, { query: { edit: table.rowIds[4], page: "7" } })).find((b) => b.type === "adminForm" && b.action === "save");
+  const editing = await def.adminPanel(ctx, { query: { edit: table.rowIds[4] } });   // l'adresse ne contient que « ?edit=… » : la page 7 est dans l'identifiant
+  assert.equal(tableOf(editing).rowIds[0].split(".")[0], name(300), "la liste reste sur la page 7 pendant la modification");
+  const form = editing.find((b) => b.type === "adminForm" && b.action === "save");
   assert.equal(form.cancelHref, "?page=7"); assert.equal(form.fields[0].value, table.rowIds[4]); assert.equal(form.fields[1].value, name(304));
   const saved = await act(ctx, "save", { id: form.fields[0].value, login: name(304), name: "Nom", note: "n" }); assert.equal(saved.redirect, "?page=7");
   const viaSearch = pure.rowId(name(1500), 1, "chaine_15"); assert.equal((await act(ctx, "remove", { id: viaSearch })).redirect, "?q=chaine_15");
@@ -529,14 +534,15 @@ test("admin : import en masse par collage → bilan clair (ajoutés / déjà là
   const text = [...names(10), ...Array.from({ length: 700 }, (_, i) => `membre_${i}`), "pas valable!", "x", "https://twitch.tv/videos/1", "a b c d", ...Array.from({ length: 20 }, (_, i) => `?${i}?`)].join("\n");
   const res = await act(ctx, "add", { logins: text });
   assert.deepEqual(Object.keys(res), ["ok"]);
-  assert.match(res.ok, /700 chaînes ajoutées\./); assert.match(res.ok, /10 chaînes étaient déjà|Déjà dans votre liste/); assert.match(res.ok, /pas un pseudo Twitch valable/); assert.match(res.ok, /et 19 autres lignes/);
+  assert.match(res.ok, /700 chaînes ajoutées\./); assert.match(res.ok, /10 chaînes étaient déjà|Déjà dans votre liste/); assert.match(res.ok, /pas un pseudo Twitch valable/); assert.match(res.ok, /Autres lignes non valables : 19/);
   assert.ok(res.ok.length < 1200, "le bilan ne recopie pas 700 noms");
   assert.equal((await data.readPartners(ctx)).length, 710);
   const full = await act(ctx, "add", { logins: Array.from({ length: 1400 }, (_, i) => `autre_${i}`).join(" ") });
-  assert.match(full.ok, /La liste est pleine \(2000 chaînes au plus\) : 110 chaînes n'ont pas été ajoutées/); assert.equal((await data.readPartners(ctx)).length, 2000);
+  assert.match(full.ok, /La liste est pleine \(2000 chaînes au plus\)\. Non ajoutées : 110/); assert.equal((await data.readPartners(ctx)).length, 2000);
   assert.match((await act(ctx, "add", { logins: "encore_un" })).error, /liste est pleine/);
   const t0 = performance.now(); const files = await def.backup.readable(ctx); const ms = performance.now() - t0;
   const lines = files[0].content.split("\r\n"); assert.equal(lines.length, 2001); assert.equal(lines[0], "channel,name,note"); assert.ok(ms < 300, `${ms.toFixed(0)} ms`);
+  console.log(`# export CSV à 2000 chaînes : ${ms.toFixed(1)} ms, ${(files[0].content.length / 1024).toFixed(0)} Ko`);
   assert.ok(!files[0].content.includes(await data.dockSecret(ctx)));
 });
 
@@ -572,7 +578,7 @@ test("admin : la phrase du mode dit où on en est (FR et EN), l'avertissement «
 
 test("admin « Voir qui est en direct » : vue complète avec bandeau partiel ; au hasard : un essai (compté dans le plafond)", async () => {
   const ctx = mk(); await data.addPartners(ctx, names(350).join("\n")); api.liveSet = new Set([name(1)]); api.failWhen = (w) => w.includes(name(150));
-  assert.match((await act(ctx, "check")).ok, /En direct maintenant : CHAINE_0001\. Attention : 100 chaînes n'ont pas pu être vérifiées/);
+  assert.match((await act(ctx, "check")).ok, /En direct maintenant : CHAINE_0001\. Attention : certaines chaînes n'ont pas pu être vérifiées cette fois \(non vérifiées : 100\)/);
   const big = mk(); await data.addPartners(big, names(700).join("\n")); api = fakeApi(); api.liveSet = new Set([name(1), name(400), name(650)]);
   const big2 = mk(); await data.addPartners(big2, names(700).join("\n"));
   let r; for (let i = 0; i < 5; i++) { search.resetSearch(); r = await act(big2, "check"); if (r.ok && /est en direct/.test(r.ok)) break; }
@@ -599,4 +605,18 @@ test("vie privée : le dock n'expose ni notes, ni secret, ni adresse, dans aucun
   assert.equal(manifest.version, "1.2.0");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "add_cut", "search_btn"]) assert.ok(fr[k] && en[k], k);
+});
+
+test("trou noir par les routes : un Twitch muet → la route live (vue complète) et la route pick (au hasard) répondent proprement en quelques secondes", async () => {
+  Object.assign(live.timing, { packetMs: 5000, callMs: 300, searchMs: 300, failMs: 10 });
+  const ctx = mk(); await data.addPartners(ctx, names(350).join("\n")); const secret = await data.dockSecret(ctx);
+  api.hang = () => true;
+  const t0 = Date.now();
+  const res = await within(getLive(ctx, secret)); assert.notEqual(res, HUNG);
+  const body = await res.json(); assert.deepEqual([res.status, body.state, body.reason], [200, "error", "network"]);
+  const big = mk(); await data.addPartners(big, names(700).join("\n")); const k2 = await data.dockSecret(big);
+  const pk = await within(post(big, k2, {})); assert.notEqual(pk, HUNG);
+  const pb = await pk.json(); assert.deepEqual([pk.status, pb.state, pb.reason], [200, "error", "network"]);
+  assert.ok(Date.now() - t0 < 1500, `${Date.now() - t0} ms`);
+  const mcp = await within(def.mcp.raid_partners_live(big, {})); assert.notEqual(mcp, HUNG); assert.equal(mcp.state, "error");
 });
