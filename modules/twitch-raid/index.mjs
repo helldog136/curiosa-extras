@@ -1,7 +1,8 @@
 // Raid Twitch — module de Curiosa : la liste de vos chaînes partenaires, et un dock (pour OBS ou un onglet) qui montre lesquelles sont en direct, pour choisir qui raider.
 //
 // Ce que fait ce module, et rien d'autre : garder la liste de chaînes de la personne, et afficher celles qui sont en direct. Ce qui appartient aux autres reste chez eux :
-//   - Twitch et ses jetons : Chaîne Twitch (service `twitch.api`, qui fait l'appel sans jamais rendre un jeton) ; ce module ne parle jamais à Twitch lui-même ;
+//   - Twitch et ses jetons : le Connecteur Twitch (service `twitch.api`, qui fait l'appel sans jamais rendre un jeton) ; ce module ne parle jamais à Twitch lui-même ;
+//   - vos chaînes : Ma Chaîne Twitch (service `twitch.live`) ; le réglage « Chaîne Twitch à utiliser » est un choix parmi elles (voir channel.mjs) ;
 //   - le raid lui-même : il n'est jamais lancé d'ici. Un clic copie la commande `/raid pseudo`, la personne la colle dans son chat.
 // Le dock est une page à l'adresse secrète `/m/<clé>/dock?k=…` ; elle lit `/m/<clé>/live?k=…` (jusqu'à 500 chaînes : tous les membres en direct) ou, au-delà, demande
 // `/m/<clé>/pick?k=…` à chaque clic sur « au hasard ». Sans le bon secret : rien (une phrase, aucune donnée). Le site n'interroge Twitch que lorsque quelqu'un regarde ou clique.
@@ -13,6 +14,7 @@ const dock = await import(`./dock.mjs${v}`);
 const pure = await import(`./pure.mjs${v}`);
 const partnersOf = await import(`./partners.mjs${v}`);
 const search = await import(`./search.mjs${v}`);
+const channel = await import(`./channel.mjs${v}`);
 
 const onlyGet = (request) => (request.method === "GET" || request.method === "HEAD" ? null : new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }));
 const keyOf = (request) => new URL(request.url).searchParams.get("k") ?? "";
@@ -77,6 +79,11 @@ export default {
       const rows = await data.readPartners(ctx);
       return [{ path: "partners.csv", content: ["channel,name,note", ...rows.map((p) => [p.login, p.name, p.note].map(cell).join(","))].join("\r\n") }];
     },
+  },
+
+  // Données 2 : la chaîne tapée à la main (un pseudo) est notée, avec l'instance de Ma Chaîne Twitch qui l'a, pour le réglage devenu un choix (voir channel.mjs).
+  migrations: {
+    2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
   },
 
   hooks: {

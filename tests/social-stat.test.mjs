@@ -6,6 +6,7 @@ import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { problemsOf, problemsOfList } from "./helpers/socialStatContract.mjs";
 import { parseManifest } from "@/core/modules/manifest";
+import { makeConnector, connectorApi } from "./helpers/fakeYoutube.mjs";
 
 const root = new URL("../modules/", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${root}${p}`, "utf8"));
@@ -20,7 +21,7 @@ afterEach(() => { globalThis.fetch = realFetch; Date.now = realNow; });
 const YT = "UC" + "a".repeat(22);
 // Chaque plateforme : réglages, adresse appelée, réponse correcte → éléments attendus, et le code HTTP qui doit donner chaque erreur.
 const PLATFORMS = {
-  "youtube-channel": { platform: "youtube", settings: { channelId: YT, apiKey: "KEY-SECRETE" }, host: "www.googleapis.com", ok: { items: [{ statistics: { subscriberCount: "1230000", viewCount: "987654321", videoCount: "321", hiddenSubscriberCount: false } }] },
+  "youtube-channel": { platform: "youtube", settings: { channelId: YT }, host: "www.googleapis.com", ok: { items: [{ id: YT, statistics: { subscriberCount: "1230000", viewCount: "987654321", videoCount: "321", hiddenSubscriberCount: false } }] },
     values: { followers: 1230000, content: 321, views: 987654321 }, notFound: [200 /* items vides */], labels: { fr: ["Abonnés YouTube", "Vidéos YouTube", "Vues YouTube"], en: ["YouTube subscribers", "YouTube videos", "YouTube views"] } },
   bluesky: { platform: "bluesky", settings: { profile: "nom.bsky.social" }, host: "public.api.bsky.app", ok: { followersCount: 120, postsCount: 45, handle: "nom.bsky.social" }, values: { followers: 120, content: 45 }, notFound: [400, 404],
     labels: { fr: ["Abonnés Bluesky", "Publications Bluesky"], en: ["Bluesky followers", "Bluesky posts"] } },
@@ -34,10 +35,14 @@ const PLATFORMS = {
 };
 const ids = Object.keys(PLATFORMS);
 const mods = Object.fromEntries(await Promise.all(ids.map(async (id) => [id, await load(id)])));
-const ctxOf = (id, extra = {}, locale = "fr", key = "inst") => fakeCtx({ key, locale, messages: mods[id][locale], name: "Mon compte", settings: { ...(id === "youtube-channel" ? { trackStats: true } : {}), ...PLATFORMS[id].settings, ...extra }, siteUrl: "https://site.example" });
+// YouTube : la clé est portée par le Connecteur YouTube (service youtube.api) ; le VRAI connecteur est branché ici, sur le même faux réseau.
+let ytConn;
+const resetYt = (opts = {}) => { connectorApi.resetState(); ytConn = makeConnector({ apiKey: "KEY-SECRETE", ...opts }); };
+const reset = (id) => { mods[id].mod.resetCache?.(); if (id === "youtube-channel") resetYt(); };
+const ctxOf = (id, extra = {}, locale = "fr", key = "inst") => fakeCtx({ key, locale, messages: mods[id][locale], name: "Mon compte", settings: { ...(id === "youtube-channel" ? { trackStats: true } : {}), ...PLATFORMS[id].settings, ...extra }, siteUrl: "https://site.example", ...(id === "youtube-channel" ? { services: ytConn.services } : {}) });
 const statOf = (id, ctx, args) => mods[id].mod.default.exports["social.stat"](ctx, args ?? { locale: ctx.locale, limit: 50, tags: [] });
 const happy = () => (url) => reply(200, ids.map((id) => PLATFORMS[id]).find((p) => url.includes(p.host)).ok);
-beforeEach(() => { for (const id of ids) mods[id].mod.resetCache?.(); });
+beforeEach(() => { for (const id of ids) reset(id); });
 
 // ── La fonction de validation du contrat elle-même ──────────────────────────────────────────────────────────────────────────────────
 
@@ -68,7 +73,8 @@ test("manifestes : valides, fournissent social.stat (libellé fr + en), version 
     assert.ok(p?.label?.fr && p.label.en, id);
     const [a, b] = [manifest.version, before[id]].map((v) => v.split(".").map(Number));
     assert.ok(a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] > b[2])), `${id} : ${before[id]} → ${manifest.version} (version montée)`);
-    assert.ok(!manifest.minCore || manifest.minCore === "0.1.22", `${id} : seule exigence de cœur permise : 0.1.22 (réglages facultatifs)`);
+    // youtube-channel 1.2.0 : la clé passe au Connecteur YouTube (service youtube.api, réglage hérité) → cœur 0.2.0.
+    assert.ok(!manifest.minCore || manifest.minCore === (id === "youtube-channel" ? "0.2.0" : "0.1.22"), `${id} : seule exigence de cœur permise : 0.1.22 (réglages facultatifs), 0.2.0 pour youtube-channel`);
     const switches = manifest.settings.filter((s) => s.type === "boolean" && /statistiques/i.test(s.label.fr));
     assert.equal(switches.length, 1, id);
     assert.equal(switches[0].key, "trackStats");
@@ -79,8 +85,10 @@ test("manifestes : valides, fournissent social.stat (libellé fr + en), version 
     assert.ok(!manifest.settings.some((s) => s.key === "trackStats" && s.type === "secret"));
   }
   assert.equal(mods.discord.manifest.settings.find((s) => s.key === "invite").type, "text");
-  assert.equal(mods["youtube-channel"].manifest.settings.find((s) => s.key === "apiKey").type, "secret");
-  assert.ok(!mods["youtube-channel"].manifest.settings.find((s) => s.key === "apiKey").advanced, "la clé est saisissable en mode simple : c'est elle qui active les chiffres");
+  const connector = readJson("youtube-connector/module.json");
+  assert.ok(!mods["youtube-channel"].manifest.settings.some((s) => s.key === "apiKey"), "la clé YouTube n'est plus réglée dans youtube-channel");
+  assert.equal(connector.settings.find((s) => s.key === "apiKey").type, "secret");
+  assert.ok(!connector.settings.find((s) => s.key === "apiKey").advanced, "la clé est saisissable en mode simple (dans le connecteur) : c'est elle qui active les chiffres");
 });
 
 test("textes : fr et en alignés, toutes les clés utilisées existent, libellés humains, aucun jargon (mode simple)", () => {
@@ -102,7 +110,7 @@ test("textes : fr et en alignés, toutes les clés utilisées existent, libellé
 test("chaque erreur dit quoi faire (phrases exactes demandées pour YouTube)", () => {
   const yt = mods["youtube-channel"].fr;
   assert.equal(yt.err_hidden, "YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio.");
-  assert.equal(yt.err_auth, "La clé YouTube est refusée : vérifiez-la dans Réglages.");
+  assert.equal(yt.err_auth, "La clé YouTube est refusée : vérifiez-la dans Réglages, sur la page du connecteur YouTube du site.");
   assert.match(yt.err_config_key, /Ajoutez votre clé YouTube dans Réglages/);
   for (const id of ids) for (const k of Object.keys(mods[id].fr).filter((k) => /^err_/.test(k))) assert.match(mods[id].fr[k], /\p{L}+.*[.]$/su, `${id}.${k} : phrase complète`);
 });
@@ -119,7 +127,7 @@ for (const id of ids) {
     assert.deepEqual(Object.fromEntries(items.map((i) => [i.metric, i.value])), P.values);
     for (const i of items) { assert.equal(i.id, `${id}:inst:${i.metric}`); assert.equal(i.accountKey, "inst"); assert.equal(i.platform, P.platform); }
     assert.deepEqual(items.map((i) => i.label), P.labels.fr);
-    mods[id].mod.resetCache?.();
+    reset(id);
     assert.deepEqual((await statOf(id, ctxOf(id, {}, "en"))).map((i) => i.label), P.labels.en);
     assert.ok(items.every((i) => Math.abs(Date.parse(i.asOf) - Date.now()) < 5000));
     assert.ok(items.every((i) => typeof i.account === "string" && i.account.length > 0));
@@ -131,8 +139,7 @@ for (const id of ids) {
     assert.deepEqual(await statOf(id, ctxOf(id, noProfile)), []);
     assert.deepEqual(await statOf(id, ctxOf(id, { trackStats: false })), []);
     const panel = await def(id).adminPanel(ctxOf(id, { trackStats: false }));
-    if (id === "youtube-channel") assert.deepEqual(panel.map((b) => b.type), ["html"], "seul le guide de la clé est montré tant que le suivi est décoché");
-    else assert.deepEqual(panel, []);
+    assert.deepEqual(panel, [], "rien tant que le suivi est décoché (le guide de la clé YouTube est sur la page du connecteur)");
     assert.equal(calls.length, 0);
     if (id !== "youtube-channel") assert.ok((await statOf(id, ctxOf(id))).length > 0, "sans réglage enregistré, le suivi est actif");
     assert.ok((await statOf(id, ctxOf(id, { trackStats: true }))).length > 0);
@@ -140,7 +147,7 @@ for (const id of ids) {
 
   test(`${id} : erreurs 429 → rate, 500 → network, réseau coupé → network, JSON illisible → network ; jamais de value, jamais d'exception`, async () => {
     for (const [what, make, error] of [["429", () => reply(429), "rate"], ["500", () => reply(500), "network"], ["coupé", () => new Error("coupé"), "network"], ["JSON illisible", () => new Response("<html>pas du json", { status: 200 }), "network"]]) {
-      mods[id].mod.resetCache?.();
+      reset(id);
       answer = make;
       const items = await statOf(id, ctxOf(id));
       assert.ok(items.length > 0, what);
@@ -151,7 +158,7 @@ for (const id of ids) {
 
   test(`${id} : compte introuvable → config (message qui dit quoi faire) ; chaque erreur du panneau est une phrase du module`, async () => {
     for (const status of P.notFound) {
-      mods[id].mod.resetCache?.();
+      reset(id);
       answer = () => (status === 200 ? reply(200, { items: [] }) : reply(status, { error: { message: "introuvable" } }));
       const items = await statOf(id, ctxOf(id));
       assert.ok(items.every((i) => i.error === "config" && !("value" in i)), `${status}`);
@@ -166,7 +173,7 @@ for (const id of ids) {
     await statOf(id, ctxOf(id));
     assert.equal(calls.length, 1);
     assert.ok(calls.every((c) => c.url.startsWith("https://")), "https uniquement");
-    mods[id].mod.resetCache?.(); calls.length = 0;
+    reset(id); calls.length = 0;
     answer = () => reply(500);
     await statOf(id, ctxOf(id)); await statOf(id, ctxOf(id));
     assert.equal(calls.length, 1, "pas de harcèlement après une erreur");
@@ -198,40 +205,45 @@ function def(id) { return mods[id].mod.default; }
 
 // ── Spécificités de chaque plateforme ──────────────────────────────────────────────────────────────────────────────────────────────────
 
-test("YouTube : adresse channels.list?part=statistics avec la clé du module ; abonnés arrondis par YouTube (documenté) ; vidéos et vues exactes", async () => {
+test("YouTube : adresse channels.list (snippet,statistics) par le connecteur, clé dans l'en-tête et jamais dans l'adresse ; abonnés arrondis par YouTube (documenté) ; vidéos et vues exactes", async () => {
   answer = happy();
   await statOf("youtube-channel", ctxOf("youtube-channel"));
   const u = new URL(calls[0].url);
   assert.equal(u.origin + u.pathname, "https://www.googleapis.com/youtube/v3/channels");
-  assert.deepEqual([u.searchParams.get("part"), u.searchParams.get("id"), u.searchParams.get("key")], ["statistics", YT, "KEY-SECRETE"]);
+  assert.deepEqual([u.searchParams.get("part"), u.searchParams.get("id"), u.searchParams.get("key")], ["snippet,statistics", YT, null]);
+  assert.equal(new Headers(calls[0].init.headers).get("x-goog-api-key"), "KEY-SECRETE");
   const readme = fs.readFileSync(`${root}youtube-channel/README.md`, "utf8");
   assert.match(readme, /arrondi/i);
   assert.match(readme, /3 chiffres significatifs/);
 });
 
 test("YouTube : compteur d'abonnés caché → abonnés en error « hidden » SANS valeur, vidéos et vues toujours donnés", async () => {
-  answer = () => reply(200, { items: [{ statistics: { hiddenSubscriberCount: true, viewCount: "100", videoCount: "5" } }] });
+  answer = () => reply(200, { items: [{ id: YT, statistics: { hiddenSubscriberCount: true, viewCount: "100", videoCount: "5" } }] });
   const items = await statOf("youtube-channel", ctxOf("youtube-channel"));
   assert.deepEqual(problemsOfList(items, { module: "youtube-channel" }), []);
   assert.deepEqual(items.map((i) => [i.metric, i.error ?? i.value]), [["followers", "hidden"], ["content", 5], ["views", 100]]);
   const rows = (await def("youtube-channel").adminPanel(ctxOf("youtube-channel"))).find((b) => b.type === "table").rows;
   assert.equal(rows[0][1], "YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio.");
   // abonnés ni cachés ni donnés : même chose (jamais 0 inventé)
-  mods["youtube-channel"].mod.resetCache();
-  answer = () => reply(200, { items: [{ statistics: { viewCount: "100", videoCount: "5", hiddenSubscriberCount: false } }] });
+  reset("youtube-channel");
+  answer = () => reply(200, { items: [{ id: YT, statistics: { viewCount: "100", videoCount: "5", hiddenSubscriberCount: false } }] });
   assert.equal((await statOf("youtube-channel", ctxOf("youtube-channel")))[0].error, "hidden");
   // un chiffre absent n'est pas publié
-  mods["youtube-channel"].mod.resetCache();
-  answer = () => reply(200, { items: [{ statistics: { subscriberCount: "10", hiddenSubscriberCount: false } }] });
+  reset("youtube-channel");
+  answer = () => reply(200, { items: [{ id: YT, statistics: { subscriberCount: "10", hiddenSubscriberCount: false } }] });
   assert.deepEqual((await statOf("youtube-channel", ctxOf("youtube-channel"))).map((i) => i.metric), ["followers"]);
   // 0 abonné est un vrai zéro
-  mods["youtube-channel"].mod.resetCache();
-  answer = () => reply(200, { items: [{ statistics: { subscriberCount: "0", viewCount: "0", videoCount: "0", hiddenSubscriberCount: false } }] });
+  reset("youtube-channel");
+  answer = () => reply(200, { items: [{ id: YT, statistics: { subscriberCount: "0", viewCount: "0", videoCount: "0", hiddenSubscriberCount: false } }] });
   assert.deepEqual((await statOf("youtube-channel", ctxOf("youtube-channel"))).map((i) => i.value), [0, 0, 0]);
 });
 
-test("YouTube : sans clé → « config » + message d'aide, AUCUNE requête, le reste du module ne casse pas ; clé refusée → auth ; quota → rate", async () => {
-  const noKey = ctxOf("youtube-channel", { apiKey: "" });
+test("YouTube : sans connecteur ou sans clé → « config » + message d'aide, AUCUNE requête, le reste du module ne casse pas ; clé refusée → auth ; quota → rate", async () => {
+  const noConnector = fakeCtx({ key: "inst", locale: "fr", messages: mods["youtube-channel"].fr, settings: { trackStats: true, channelId: YT } });
+  assert.deepEqual((await statOf("youtube-channel", noConnector)).map((i) => [i.error, "value" in i]), [["config", false], ["config", false], ["config", false]]);
+  assert.match((await def("youtube-channel").adminPanel(noConnector)).find((b) => b.type === "table").rows[0][1], /il faut la clé YouTube du site/);
+  resetYt({ apiKey: null });
+  const noKey = ctxOf("youtube-channel");
   const items = await statOf("youtube-channel", noKey);
   assert.deepEqual(items.map((i) => [i.metric, i.error, "value" in i]), [["followers", "config", false], ["content", "config", false], ["views", "config", false]]);
   assert.equal(calls.length, 0);
@@ -245,7 +257,7 @@ test("YouTube : sans clé → « config » + message d'aide, AUCUNE requête, le
     [403, { error: { errors: [{ reason: "ipRefererBlocked" }] } }, "auth"],
     [401, {}, "auth"],
   ]) {
-    mods["youtube-channel"].mod.resetCache();
+    reset("youtube-channel");
     answer = () => reply(status, body);
     const r = await statOf("youtube-channel", ctxOf("youtube-channel"));
     assert.ok(r.every((i) => i.error === error && !("value" in i)), `${status} ${JSON.stringify(body)}`);
@@ -253,21 +265,22 @@ test("YouTube : sans clé → « config » + message d'aide, AUCUNE requête, le
   assert.equal(await statOf("youtube-channel", ctxOf("youtube-channel", { channelId: "pas-un-id" })).then((r) => r.length), 0);
 });
 
-test("YouTube : la clé n'apparaît ni dans les éléments, ni dans le panneau, ni dans les messages d'erreur ; seule l'adresse de l'appel la porte", async () => {
+test("YouTube : la clé n'apparaît ni dans les éléments, ni dans le panneau, ni dans les messages d'erreur ; seul l'en-tête de l'appel la porte", async () => {
   answer = () => reply(403, { error: { message: "Bad key KEY-SECRETE", errors: [{ reason: "keyInvalid" }] } });
   const c = ctxOf("youtube-channel");
   const dump = JSON.stringify([await statOf("youtube-channel", c), await def("youtube-channel").adminPanel(c), await def("youtube-channel").exports["social.link"](c)]);
   assert.ok(!dump.includes("KEY-SECRETE"));
-  assert.ok(calls.every((x) => !JSON.stringify(x.init).includes("KEY-SECRETE")));
+  assert.ok(calls.length > 0);
+  assert.ok(calls.every((x) => !x.url.includes("KEY-SECRETE") && !JSON.stringify({ ...x.init, headers: undefined }).includes("KEY-SECRETE") && new Headers(x.init.headers).get("x-goog-api-key") === "KEY-SECRETE"));
 });
 
 test("YouTube : les vidéos et le flux existants ne sont pas touchés (la liste des vidéos garde son cache, indépendant des chiffres)", async () => {
   const yt = mods["youtube-channel"].mod;
   answer = (url) => (url.includes("videos.xml") ? new Response(`<feed><entry><yt:videoId>vid00000001</yt:videoId><title>T</title><published>${new Date().toISOString()}</published></entry></feed>`) : reply(200, PLATFORMS["youtube-channel"].ok));
-  assert.equal((await yt.listVideos(YT, null)).length, 1);
+  assert.equal((await yt.listVideos(ctxOf("youtube-channel"), YT)).length, 1);
   await statOf("youtube-channel", ctxOf("youtube-channel"));
   yt.resetCache();
-  assert.equal((await yt.listVideos(YT, null)).length, 1);
+  assert.equal((await yt.listVideos(ctxOf("youtube-channel"), YT)).length, 1);
 });
 
 test("Bluesky : adresse de l'API publique getProfile ; l'adresse du profil ou l'identifiant donnent le même compte ; un identifiant tordu n'appelle rien", async () => {
@@ -415,7 +428,7 @@ test("aucun fournisseur n'écrit dans les journaux, ne stocke rien, n'appelle qu
 test("un module qui lève ou une plateforme qui répond n'importe quoi ne casse jamais le site : aucune exception, jamais de valeur fausse", async () => {
   for (const id of ids) {
     for (const body of [null, [], "texte", 12, { followers: "beaucoup", followers_count: -3, followersCount: 1.5, approximate_member_count: "x", data: { subscribers: "z" }, items: [{ statistics: { subscriberCount: "abc", viewCount: "-1", videoCount: "1e9" } }] }]) {
-      mods[id].mod.resetCache?.();
+      reset(id);
       answer = () => reply(200, body);
       const items = await statOf(id, ctxOf(id));
       assert.deepEqual(problemsOfList(items, { module: id }), [], `${id} ${JSON.stringify(body)}`);

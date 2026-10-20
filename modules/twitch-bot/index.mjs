@@ -2,10 +2,10 @@
 //
 // Ce que fait ce module, et rien d'autre : écouter le chat (Twitch appelle une adresse du site à chaque message, il n'y a pas de connexion permanente), décider si une commande doit
 // répondre (délais, rôles, direct en cours, arrêt d'urgence) et répondre. Ce qui appartient aux autres reste chez eux et se lit au moment de répondre :
-//   - les jetons Twitch : Chaîne Twitch (service `twitch.api`, qui fait les appels sans jamais rendre un jeton) ;
-//   - le direct et les followers : Chaîne Twitch (`twitch.live`, `social.stat`) ; le prochain stream : Planning (`planning.slot`) ;
+//   - les jetons Twitch : le Connecteur Twitch (service `twitch.api`, qui fait les appels sans jamais rendre un jeton) ;
+//   - la chaîne, le direct et les followers : Ma Chaîne Twitch (`twitch.live`, `social.stat`) ; le réglage « Chaîne Twitch » est un choix parmi elles (voir channel.mjs) ; le prochain stream : Planning (`planning.slot`) ;
 //   - les fiches des partenaires : Sponsors (la commande de chaque partenaire se règle dans sa fiche : voir entry.mjs) ; les adresses des réseaux : les modules de réseaux (`social.link`).
-// Seul Chaîne Twitch est indispensable ; Planning, Sponsors et les réseaux sont facultatifs : sans eux, la fonction correspondante est simplement absente et la page le dit.
+// Seuls Ma Chaîne Twitch et le Connecteur Twitch sont indispensables ; Planning, Sponsors et les réseaux sont facultatifs : sans eux, la fonction correspondante est simplement absente et la page le dit.
 // Les détails de Twitch (signature, abonnement, format des messages) sont tous dans eventsub.mjs.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const webhook = await import(`./webhook.mjs${v}`);
@@ -18,6 +18,7 @@ const { tidy } = await import(`./commands.mjs${v}`);
 const es = await import(`./eventsub.mjs${v}`);
 const sources = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
+const channel = await import(`./channel.mjs${v}`);
 
 export default {
   routes: {
@@ -44,6 +45,11 @@ export default {
   // La commande d'un partenaire se règle dans SA fiche (section ajoutée à l'éditeur d'entrée de Sponsors par le cœur, seulement si le bot est installé).
   entryPanels: { "chat-command": entry.default },
   mcp: tools,
+
+  // Données 2 : la chaîne tapée à la main (un pseudo) est notée, avec l'instance de Ma Chaîne Twitch qui l'a, pour le réglage devenu un choix (voir channel.mjs).
+  migrations: {
+    2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
+  },
 
   hooks: {
     async onInstanceCreate(ctx) { try { await diagnose(ctx, settingsOf(ctx)); } catch { /* la page le dira */ } },

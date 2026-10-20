@@ -46,7 +46,7 @@
   "ap_classic": "Liste classique",
   "apd_classic": "Un agenda sobre : l'heure à gauche, le titre et le jeu, la jaquette à droite.",
   "ap_alternating": "Liste en alternance",
-  "apd_alternating": "Le nom du jour passe de gauche à droite d'un jour à l'autre, comme sur l'ancien site.",
+  "apd_alternating": "Le nom du jour passe de gauche à droite d'un jour à l'autre, en alternance.",
   "ap_week": "Semaine en grille",
   "apd_week": "Sept colonnes, du lundi au dimanche : toute la semaine d'un coup d'œil.",
   "ap_timeline": "Timeline",

@@ -1,40 +1,47 @@
-// Reprise des identifiants Twitch : dans l'admin de ce module, propose de les copier UNE fois dans la Chaîne Twitch.
-// Un module n'écrit jamais dans les réglages d'un autre : la copie passe par le service `twitch.live` (méthode `adopt`), qui ne remplit que
-// ses champs vides. Les valeurs ne sont ni affichées ni renvoyées ; le journal d'audit du cœur note l'action sans son contenu.
-import { SERVICE, legacyOf, hasLegacy, providerInfo } from "./source.mjs";
+// Reprise automatique des identifiants Twitch que ce module gardait dans ses anciens réglages (`legacySettings`, jamais affichés) : ils sont copiés UNE fois dans la Chaîne
+// Twitch par le service `twitch.live` (méthode `adopt`), puis effacés d'ici. Un module n'écrit jamais dans les réglages d'un autre : la copie passe par le service, qui ne
+// remplit que ses champs vides (une valeur déjà présente n'est jamais écrasée). Les valeurs ne transitent qu'en mémoire : jamais affichées, journalisées ni renvoyées.
+// Appelée par la migration des données (version 2) ; rejouée par la tâche `adopt` tant qu'il reste quelque chose (Chaîne Twitch momentanément indisponible).
+import { SERVICE, CHANNEL_RE } from "./source.mjs";
 
-const MARK = "adoption";
-const FIELD_KEYS = { channel: "field_channel", clientId: "field_clientId", clientSecret: "field_clientSecret" };
-const mark = async (ctx) => { try { return (await ctx.api.store.list(MARK, { limit: 1 }))[0] ?? null; } catch { return null; } };
+export const FIELDS = ["channel", "clientId", "clientSecret"];
+const text = (v) => (typeof v === "string" ? v.trim() : "");
 
-/** Blocs d'admin : bandeau + bouton tant qu'il reste quelque chose à reprendre, sinon, une fois la reprise faite, une confirmation. */
-export async function adoptPanel(ctx) {
-  const legacy = legacyOf(ctx);
-  if (!hasLegacy(legacy)) return [];
-  const done = await mark(ctx);
-  const info = await providerInfo(ctx);
-  if (!info) return [{ type: "banner", tone: "warning", text: ctx.t("adoptUnavailable") }];
-  const todo = (info.missing ?? []).filter((f) => legacy[f]);
-  if (todo.length) {
-    return [
-      { type: "banner", tone: "info", text: ctx.t("adoptBanner") },
-      { type: "adminForm", action: "adopt", submitLabel: ctx.t("adoptButton"), fields: [] },
-    ];
-  }
-  return done ? [{ type: "banner", tone: "success", text: ctx.t("adoptDone") }] : [];
-}
-
-/** Action du bouton : idempotente, ne dit jamais une valeur. */
-export async function adopt(ctx) {
-  const legacy = legacyOf(ctx);
-  if (!hasLegacy(legacy)) return { error: ctx.t("adoptNothing") };
-  const r = await ctx.api.services.call(SERVICE, "adopt", legacy);
-  if (!r.ok) return { error: ctx.t("adoptUnavailable") };
-  const adopted = Array.isArray(r.value?.adopted) ? r.value.adopted.filter((f) => f in FIELD_KEYS) : [];
-  if (adopted.length) {
-    const doc = await mark(ctx);
-    const data = { at: new Date().toISOString(), fields: adopted };
-    if (doc) await ctx.api.store.update(doc.id, data); else await ctx.api.store.add(MARK, data);
-  }
-  return { ok: adopted.length ? ctx.t("adoptOk", { fields: adopted.map((f) => ctx.t(FIELD_KEYS[f])).join(", ") }) : ctx.t("adoptAlready"), redirect: "?" };
+/**
+ * Reprend ce qui reste des anciens réglages. Ne lève jamais. Renvoie { status, adopted } :
+ *   none        rien à reprendre (ou cœur sans `ctx.legacy`) ;
+ *   unavailable la Chaîne Twitch n'a pas répondu : rien n'est effacé, on réessaiera ;
+ *   done        reprise confirmée : les champs repris (ou déjà présents dans la Chaîne Twitch) sont effacés d'ici ;
+ *   partial     certains champs ne sont pas encore dans la Chaîne Twitch : ils restent ici, inutilisés, jusqu'au prochain essai.
+ * `adopted` : les noms de champs copiés cette fois (jamais une valeur).
+ */
+export async function adoptLegacy(ctx) {
+  try {
+    const legacy = ctx.legacy;
+    if (!legacy) return { status: "none", adopted: [] };
+    const declared = new Set(legacy.keys());
+    const present = {};
+    for (const f of FIELDS) if (declared.has(f)) present[f] = text(await legacy.get(f));
+    // Une chaîne illisible ne peut rien servir : elle est effacée sans être reprise.
+    const incoming = { channel: CHANNEL_RE.test(present.channel ?? "") ? present.channel : "", clientId: present.clientId ?? "", clientSecret: present.clientSecret ?? "" };
+    const junk = present.channel && !incoming.channel;
+    if (!Object.values(incoming).some(Boolean)) {
+      if (junk) await legacy.clear("channel");
+      return { status: "none", adopted: [] };
+    }
+    const r = await ctx.api.services.call(SERVICE, "adopt", incoming);
+    if (!r.ok) return { status: "unavailable", adopted: [] };
+    const adopted = Array.isArray(r.value?.adopted) ? r.value.adopted.filter((f) => FIELDS.includes(f)) : [];
+    // Confirmation : un champ n'est effacé d'ici que s'il est maintenant dans la Chaîne Twitch (copié à l'instant, ou déjà là).
+    const info = await ctx.api.services.call(SERVICE, "channel", {});
+    if (!info.ok || !info.value || typeof info.value !== "object") return { status: "partial", adopted };
+    const stillMissing = new Set(Array.isArray(info.value.missing) ? info.value.missing : FIELDS);
+    let left = false;
+    for (const f of FIELDS) {
+      if (!incoming[f]) continue;
+      if (adopted.includes(f) || !stillMissing.has(f)) await legacy.clear(f); else left = true;
+    }
+    if (junk) await legacy.clear("channel");
+    return { status: left ? "partial" : "done", adopted };
+  } catch { return { status: "unavailable", adopted: [] }; }
 }

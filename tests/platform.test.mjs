@@ -10,9 +10,9 @@ const manifests = listModuleDirs().map(({ dir }) => ({ dir, ...JSON.parse(fs.rea
 const byId = Object.fromEntries(manifests.map((m) => [m.id, m]));
 // Regroupements attendus : slug de plateforme -> modules qui le portent. Tout autre module n'a pas de « platform ».
 const groups = {
-  twitch: ["live-status", "twitch-bot", "twitch-channel", "twitch-raid"],
+  twitch: ["live-status", "twitch-bot", "twitch-channel", "twitch-connector", "twitch-raid"],
   discord: ["discord", "discord-announcer"],
-  youtube: ["youtube-channel"],
+  youtube: ["youtube-channel", "youtube-connector"],
   instagram: ["instagram", "stream-story"], tiktok: ["tiktok"], x: ["x-twitter"], facebook: ["facebook"], bluesky: ["bluesky"], mastodon: ["mastodon"], threads: ["threads"],
   kick: ["kick"], spotify: ["spotify"], reddit: ["reddit"], patreon: ["patreon"], "ko-fi": ["kofi"], snapchat: ["snapchat"], pinterest: ["pinterest"],
   telegram: ["telegram"], steam: ["steam"], soundcloud: ["soundcloud"], bandcamp: ["bandcamp"], github: ["github"],

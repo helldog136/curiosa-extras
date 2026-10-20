@@ -1,6 +1,6 @@
 // Les partenaires, proposés aux autres modules sous le sujet `stream.partner` (par exemple « Story d'annonce », qui s'en sert pour montrer des co-streamers) :
 // le pseudo, le nom affiché et la photo de profil Twitch. JAMAIS la note, ni l'adresse secrète du dock : seulement ce que Twitch montre déjà à tout le monde.
-// La photo se lit chez Twitch par Chaîne Twitch (service `twitch.api`, appel `GET users`) ; si Twitch ne répond pas, les partenaires sont rendus sans photo.
+// La photo se lit chez Twitch par le Connecteur Twitch (service `twitch.api`, appel `GET users`) ; si Twitch ne répond pas, les partenaires sont rendus sans photo.
 // Règles : au plus 5 demandes (20 pseudos chacune) en parallèle, bornées toutes ensemble à `timing.iconsMs` ; photos gardées 6 h en mémoire, un échec 1 minute.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const live = await import(`./live.mjs${v}`);

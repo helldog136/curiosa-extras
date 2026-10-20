@@ -16,297 +16,11 @@ const gsMsg = readJson("game-suggestions/locales/fr.json");
 const plMsg = readJson("planning/locales/fr.json");
 
 const IMG = "https://media.rawg.io/media/games/x.jpg";
-/** Faux RAWG : `answers` = { titre: image | null | statut HTTP }. Garde la trace des demandes. */
-const rawg = (answers = {}, fallback = 200) => {
-  const calls = [];
-  const fn = async (u) => {
-    const url = new URL(String(u)); calls.push(url);
-    assert.equal(url.protocol, "https:"); assert.equal(url.hostname, "api.rawg.io");
-    const a = answers[url.searchParams.get("search")];
-    if (typeof a === "number") return new Response("{}", { status: a });
-    if (a instanceof Error) throw a;
-    return Response.json({ results: a === undefined ? [] : a === null ? [] : [{ background_image: a }] }, { status: fallback });
-  };
-  fn.calls = calls; return fn;
-};
-
-import { createHash } from "node:crypto";
-const gsKeyPrint = (k) => createHash("sha256").update(`rawg:${k}`).digest("hex").slice(0, 12);
 const NOW = Date.parse("2026-03-10T12:00:00Z");
 const DAY = 86_400_000;
 let n = 0;
-// Contexte « cœur ancien » par défaut (sans ctx.api.rawg : le double du cœur en fournit un d'office, on le retire) ; les tests du service le remettent via withSvc.
-const gsCtx = (settings = { rawgApiKey: "KEY" }) => { const c = fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: gsMsg, settings, locale: "fr" }); delete c.api.rawg; return c; };
-const addGame = (c, title, extra = {}) => c.api.store.add("games", { title, status: "proposed", replayVotes: 0, coverUrl: null, ...extra });
-const game = async (c, id) => (await c.api.store.get(id)).data;
-const run = (c, fetchImpl, opts = {}) => gsMod.catchUpCovers(c, { fetchImpl, now: NOW, pauseMs: 0, ...opts });
 
-/* ───────────── Recherche ───────────── */
-
-for (const [name, lookup] of [["game-suggestions (repli, cœur sans service RAWG)", gsMod.lookupCover]]) {
-  test(`${name} : recherche de jaquette — trouvée, aucun résultat, clé absente, 401/403, 429, panne, réponse illisible, jamais d'exception`, async () => {
-    assert.deepEqual(await lookup("Celeste", "K", rawg({ Celeste: IMG })), { status: "found", url: IMG });
-    assert.deepEqual(await lookup("Inconnu", "K", rawg({})), { status: "none", url: null });
-    const f = rawg({ Celeste: IMG });
-    assert.equal((await lookup("Celeste", "  ", f)).status, "no_key");
-    assert.equal(f.calls.length, 0, "sans clé : aucune demande");
-    assert.equal((await lookup("Celeste", "K", rawg({ Celeste: 401 }))).status, "denied");
-    assert.equal((await lookup("Celeste", "K", rawg({ Celeste: 403 }))).status, "denied");
-    assert.equal((await lookup("Celeste", "K", rawg({ Celeste: 429 }))).status, "busy");
-    assert.equal((await lookup("Celeste", "K", rawg({ Celeste: 500 }))).status, "down");
-    assert.equal((await lookup("Celeste", "K", rawg({ Celeste: new Error("réseau coupé") }))).status, "down");
-    assert.equal((await lookup("Celeste", "K", async () => new Response("pas du json", { status: 200 }))).status, "down");
-    assert.equal((await lookup("Celeste", "K", async () => { throw new TypeError("x"); })).status, "down");
-  });
-
-  test(`${name} : https seulement — une jaquette http, javascript: ou relative est refusée`, async () => {
-    for (const bad of ["http://media.rawg.io/x.jpg", "javascript:alert(1)", "//media.rawg.io/x.jpg", "/x.jpg", "data:image/png;base64,AA"]) {
-      assert.deepEqual(await lookup("X", "K", rawg({ X: bad })), { status: "none", url: null }, bad);
-    }
-  });
-}
-
-/* ───────────── game-suggestions : rattrapage ───────────── */
-
-test("rattrapage : les suggestions sans jaquette (migrées ou restaurées) la reçoivent ; celles qui en ont déjà ne sont pas redemandées", async () => {
-  const c = gsCtx();
-  const a = await addGame(c, "Celeste");
-  const b = await addGame(c, "Hades", { coverUrl: IMG.replace("x.", "h.") });
-  const d = await addGame(c, "Inconnu Total");
-  const f = rawg({ Celeste: IMG, "Inconnu Total": null });
-  const r = await run(c, f);
-  assert.deepEqual([r.status, r.found, r.none, r.left, r.missing], ["done", 1, 1, 0, 2]);
-  assert.equal((await game(c, a)).coverUrl, IMG);
-  assert.equal((await game(c, a)).coverResult, "found");
-  assert.equal((await game(c, b)).coverUrl, IMG.replace("x.", "h."));
-  assert.equal((await game(c, d)).coverUrl, null);
-  assert.equal((await game(c, d)).coverResult, "none");
-  assert.equal((await game(c, d)).coverCheckedAt, new Date(NOW).toISOString());
-  assert.deepEqual(f.calls.map((u) => u.searchParams.get("search")).sort(), ["Celeste", "Inconnu Total"]);
-  assert.ok(f.calls.every((u) => u.searchParams.get("key") === "KEY" && u.searchParams.get("page_size") === "1"));
-  assert.equal((await run(gsCtx(), rawg())).status, "nothing", "rien de manquant : rien à faire");
-});
-
-test("rattrapage : la clé n'est jamais enregistrée (seulement son empreinte)", async () => {
-  const c = gsCtx({ rawgApiKey: "SECRET-KEY-123" });
-  await addGame(c, "Celeste");
-  await run(c, rawg({ Celeste: IMG }));
-  const all = JSON.stringify([...(await c.api.store.list("games")), ...(await c.api.store.list("state"))]);
-  assert.ok(!all.includes("SECRET-KEY-123"));
-});
-
-test("rattrapage après restauration : tout vient des données de l'instance (aucune mémoire du module), même avec un autre contexte et une autre date", async () => {
-  const c = gsCtx();
-  const id = await addGame(c, "Inconnu", { coverCheckedAt: new Date(NOW - 1 * DAY).toISOString(), coverResult: "none", coverKey: "pas-la-clé", coverTries: 3 });
-  // Données restaurées : essai fait avec une autre clé → on réessaie tout de suite ; le compteur repart de zéro.
-  assert.equal((await run(c, rawg({ Inconnu: IMG }))).found, 1);
-  assert.equal((await game(c, id)).coverTries, 1);
-  // Mêmes données relues par un « nouveau processus » (aucun état gardé en mémoire entre les appels) : pas de nouvelle demande avant le délai.
-  const c2 = gsCtx();
-  const id2 = await addGame(c2, "Rien", { coverCheckedAt: new Date(NOW).toISOString(), coverResult: "none", coverKey: gsKeyPrint("KEY"), coverTries: 1 });
-  const quiet = rawg({ Rien: IMG });
-  await run(c2, quiet, { now: NOW + 1 * DAY });
-  assert.equal(quiet.calls.length, 0, "moins de 3 jours après l'essai : RAWG n'est pas redemandé");
-  await run(c2, quiet, { now: NOW + 3 * DAY });
-  assert.equal((await game(c2, id2)).coverUrl, IMG, "après 3 jours : nouvel essai");
-});
-
-test("pas de marteau : délais croissants entre essais (3, 7, 14, 30 jours), plafond de 5 essais, aucun passage ne dépasse 5 titres", async () => {
-  const c = gsCtx();
-  const id = await addGame(c, "Introuvable");
-  const f = rawg({});
-  let t = NOW;
-  await run(c, f, { now: t });                                  // essai 1
-  const waits = [3, 7, 14, 30];
-  for (const w of waits) {
-    const before = f.calls.length;
-    await run(c, f, { now: t + w * DAY - 1000 });               // trop tôt
-    assert.equal(f.calls.length, before, `pas de demande ${w} j - 1 s après le précédent essai`);
-    t += w * DAY;
-    await run(c, f, { now: t });                                // à l'heure
-    assert.equal(f.calls.length, before + 1, `une demande après ${w} jours`);
-  }
-  assert.equal((await game(c, id)).coverTries, 5);
-  const calls = f.calls.length;
-  await run(c, f, { now: t + 400 * DAY });
-  assert.equal(f.calls.length, calls, "plafond atteint : la tâche renonce");
-  // Le bouton de l'admin peut quand même réessayer.
-  await run(c, f, { now: t + 400 * DAY, force: true });
-  assert.equal(f.calls.length, calls + 1);
-  // Par passage : 5 titres au plus.
-  const big = gsCtx();
-  for (let i = 0; i < 12; i++) await addGame(big, `Jeu ${i}`);
-  const fb = rawg({});
-  const r = await run(big, fb);
-  assert.equal(fb.calls.length, 5);
-  assert.equal(r.left, 7);
-  assert.equal((await run(big, fb)).left, 2, "le passage suivant prend les cinq suivants (les essayés passent après)");
-  assert.equal(fb.calls.length, 10);
-});
-
-test("clé saisie ou changée : réessai immédiat, même pour un titre déjà essayé et plafonné", async () => {
-  const settings = { rawgApiKey: "ANCIENNE" };
-  const c = gsCtx(settings);
-  const id = await addGame(c, "Celeste");
-  await run(c, rawg({}));
-  assert.equal((await game(c, id)).coverResult, "none");
-  const quiet = rawg({ Celeste: IMG });
-  await run(c, quiet, { now: NOW + 60_000 });
-  assert.equal(quiet.calls.length, 0, "même clé, une minute plus tard : rien");
-  settings.rawgApiKey = "NOUVELLE";
-  const r = await run(c, quiet, { now: NOW + 120_000 });
-  assert.equal(r.found, 1);
-  assert.equal((await game(c, id)).coverUrl, IMG);
-});
-
-test("clé absente : message clair, aucune demande, rien de modifié", async () => {
-  const c = gsCtx({});
-  const id = await addGame(c, "Celeste");
-  const f = rawg({ Celeste: IMG });
-  assert.equal((await run(c, f)).status, "no_key");
-  assert.equal(f.calls.length, 0);
-  assert.equal((await game(c, id)).coverCheckedAt, undefined, "pas marqué « essayé » : il le sera dès qu'une clé existe");
-  const res = await gs.adminActions.findCovers(c);
-  assert.match(res.error, /Aucune clé RAWG/);
-  assert.ok(!res.ok);
-  assert.match(JSON.stringify(await gs.adminPanel(c)), /aucune clé RAWG/);
-});
-
-test("clé refusée (401/403) : signalée à part, la tâche s'arrête et se met en pause, rien n'est marqué « sans résultat »", async () => {
-  for (const status of [401, 403]) {
-    const c = gsCtx();
-    const ids = [await addGame(c, "A"), await addGame(c, "B")];
-    const f = rawg({ A: status, B: status });
-    const r = await run(c, f);
-    assert.equal(r.status, "denied");
-    assert.equal(f.calls.length, 1, "on s'arrête à la première réponse refusée");
-    for (const id of ids) assert.equal((await game(c, id)).coverResult, undefined);
-    const again = rawg({});
-    assert.equal((await run(c, again, { now: NOW + 3_600_000 })).status, "denied", "pause de 24 h");
-    assert.equal(again.calls.length, 0);
-    assert.equal((await run(c, again, { now: NOW + 25 * 3_600_000 })).status, "done", "la pause se termine");
-    const msg = await gs.adminActions.findCovers(c);
-    assert.ok(msg.ok || msg.error);
-  }
-  const c = gsCtx(); await addGame(c, "A");
-  const res = await (async () => { const orig = globalThis.fetch; globalThis.fetch = rawg({ A: 401 }); try { return await gs.adminActions.findCovers(c); } finally { globalThis.fetch = orig; } })();
-  assert.match(res.error, /refuse la clé/);
-  assert.ok(!/sans résultat/.test(res.error), "distinct de « aucun résultat »");
-});
-
-test("clé refusée puis corrigée : la pause ne s'applique plus", async () => {
-  const settings = { rawgApiKey: "MAUVAISE" };
-  const c = gsCtx(settings); await addGame(c, "Celeste");
-  assert.equal((await run(c, rawg({ Celeste: 401 }))).status, "denied");
-  settings.rawgApiKey = "BONNE";
-  assert.equal((await run(c, rawg({ Celeste: IMG }), { now: NOW + 60_000 })).found, 1);
-});
-
-test("panne réseau, 429 ou 5xx : on s'arrête sans rien marquer ni lever d'erreur ; 429 met en pause 2 h", async () => {
-  for (const [answer, status] of [[new Error("réseau coupé"), "down"], [500, "down"], [429, "busy"]]) {
-    const c = gsCtx();
-    const ids = [await addGame(c, "A"), await addGame(c, "B")];
-    const f = rawg({ A: answer, B: answer });
-    const r = await run(c, f);
-    assert.equal(r.status, status);
-    assert.equal(f.calls.length, 1);
-    for (const id of ids) assert.equal((await game(c, id)).coverResult, undefined, "une panne n'est pas « sans résultat » et ne consomme pas un essai");
-  }
-  const c = gsCtx(); await addGame(c, "A");
-  assert.equal((await run(c, rawg({ A: 429 }))).status, "busy");
-  const quiet = rawg({ A: IMG });
-  assert.equal((await run(c, quiet, { now: NOW + 3_600_000 })).status, "busy");
-  assert.equal(quiet.calls.length, 0);
-  assert.equal((await run(c, quiet, { now: NOW + 3 * 3_600_000 })).found, 1);
-});
-
-test("titres trouvés avant une panne sont gardés ; le bilan du bouton le dit", async () => {
-  const c = gsCtx();
-  await addGame(c, "A"); await new Promise((r) => setTimeout(r, 2)); const b = await addGame(c, "B");
-  const f = rawg({ B: IMG, A: new Error("coupure") });   // le plus récent (B) est traité en premier
-  const r = await run(c, f, { force: true });
-  assert.equal(r.found + r.none, 1);
-  assert.equal(r.status, "down");
-});
-
-test("bouton « Rechercher les jaquettes manquantes » : bilan en langage simple (trouvées / sans résultat / reste à faire), ignore les délais", async () => {
-  const c = gsCtx();
-  await addGame(c, "Celeste");
-  await addGame(c, "Zzz", { coverCheckedAt: new Date().toISOString(), coverResult: "none", coverKey: "autre", coverTries: 1 });
-  const orig = globalThis.fetch; globalThis.fetch = rawg({ Celeste: IMG });
-  try {
-    const res = await gs.adminActions.findCovers(c);
-    assert.match(res.ok, /1 jaquette\(s\) trouvée\(s\), 1 sans résultat/);
-    assert.ok(!res.error);
-    assert.match((await gs.adminActions.findCovers(gsCtx())).ok, /Toutes les suggestions ont une jaquette/);
-    const many = gsCtx(); for (let i = 0; i < 30; i++) await addGame(many, `J${i}`);
-    assert.match((await gs.adminActions.findCovers(many)).ok, /Il en reste 5 à essayer/);
-  } finally { globalThis.fetch = orig; }
-});
-
-test("tâche planifiée déclarée, sans erreur sur une instance vide ; une erreur de RAWG ne la fait jamais échouer", async () => {
-  assert.ok(gs.tasks.covers.everyMinutes >= 1 && typeof gs.tasks.covers.run === "function");
-  const orig = globalThis.fetch; globalThis.fetch = async () => { throw new Error("hors ligne"); };
-  try {
-    await gs.tasks.covers.run(gsCtx());
-    const c = gsCtx(); await addGame(c, "A");
-    await gs.tasks.covers.run(c);
-    assert.equal((await game(c, (await c.api.store.list("games"))[0].id)).coverUrl, null);
-  } finally { globalThis.fetch = orig; }
-});
-
-test("suggestion envoyée : jaquette mémorisée avec la date de l'essai ; RAWG en panne → rien de marqué, la tâche s'en occupera", async () => {
-  const orig = globalThis.fetch;
-  try {
-    const c = gsCtx();
-    const send = (title) => { const fd = new FormData(); fd.set("title", title); return gs.routes.suggest(new Request("https://x.test/m/k/suggest", { method: "POST", body: fd, headers: { "x-forwarded-for": `7.7.${++n}.1` } }), c); };
-    globalThis.fetch = rawg({ Celeste: IMG, Rien: null });
-    await send("Celeste"); await send("Rien");
-    globalThis.fetch = async () => { throw new Error("panne"); };
-    await send("Pendant la panne");
-    const byTitle = Object.fromEntries((await c.api.store.list("games")).map((r) => [r.data.title, r.data]));
-    assert.equal(byTitle.Celeste.coverUrl, IMG); assert.equal(byTitle.Celeste.coverTries, 1);
-    assert.equal(byTitle.Rien.coverResult, "none");
-    assert.equal(byTitle["Pendant la panne"].coverCheckedAt, undefined);
-    globalThis.fetch = rawg({ "Pendant la panne": IMG });
-    assert.equal((await gs.tasks.covers.run(c), (await c.api.store.list("games")).find((r) => r.data.title === "Pendant la panne").data.coverUrl), IMG);
-  } finally { globalThis.fetch = orig; }
-});
-
-test("admin : colonne jaquette, compteur des manquantes, bouton ; rien d'affiché si tout est complet", async () => {
-  const c = gsCtx();
-  await addGame(c, "Avec", { coverUrl: IMG }); await addGame(c, "Sans");
-  const blocks = await gs.adminPanel(c);
-  assert.deepEqual(blocks.slice(0, 2).map((b) => b.type), ["heading", "table"]);
-  const form = blocks.find((b) => b.type === "adminForm");
-  assert.equal(form.action, "findCovers");
-  assert.equal(form.submitLabel, "Rechercher les jaquettes manquantes");
-  const table = blocks.find((b) => b.type === "table");
-  assert.deepEqual(table.rows.map((r) => r[2]).sort(), ["—", "✓"]);
-  assert.equal(table.rows.length, table.rowIds.length);
-  const full = gsCtx(); await addGame(full, "Avec", { coverUrl: IMG });
-  assert.ok(!(await gs.adminPanel(full)).some((b) => b.type === "adminForm"));
-});
-
-test("game-suggestions : manifeste valide, version montée, permission rawg, ancien réglage rawgApiKey gardé en repli (secret, avancé), textes fr/en alignés", () => {
-  const m = readJson("game-suggestions/module.json");
-  assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.1.1");
-  const k = m.settings.find((s) => s.key === "rawgApiKey");
-  assert.deepEqual([k.type, k.advanced], ["secret", true]);
-  assert.deepEqual(m.permissions, ["pages", "routes", "storage", "admin", "mcp", "rawg"]);
-  assert.deepEqual(Object.keys(readJson("game-suggestions/locales/fr.json")).sort(), Object.keys(readJson("game-suggestions/locales/en.json")).sort());
-});
-
-test("game-suggestions chargé comme le fait le cœur : la tâche est reconnue", async () => {
-  const { manifest, definition } = await loadModule("modules/game-suggestions");
-  assert.ok(parseManifest(manifest).ok);
-  assert.equal(typeof definition.tasks.covers.run, "function");
-});
-
-/* ───────────── game-suggestions : service RAWG du cœur (ctx.api.rawg) ───────────── */
-
-/** Faux service du cœur : answers = { titre: statut | { status, url } } ; `configured` réglable à la volée. */
+/** Faux service du cœur : answers = { titre: statut | { status, url } | Error } ; `configured` réglable à la volée ; `calls` = les titres demandés. */
 const service = (answers = {}, state = { configured: true }) => {
   const calls = [];
   return {
@@ -320,10 +34,250 @@ const service = (answers = {}, state = { configured: true }) => {
     },
   };
 };
-const withSvc = (svc, c = gsCtx({})) => { c.api.rawg = svc; return c; };
+/** Contexte de game-suggestions : le service RAWG du cœur est le seul moyen d'obtenir une jaquette (aucun `fetch` direct). */
+const gsCtx = (svc = service()) => { const c = fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: gsMsg, settings: {}, locale: "fr" }); c.api.rawg = svc; return c; };
+const addGame = (c, title, extra = {}) => c.api.store.add("games", { title, status: "proposed", replayVotes: 0, coverUrl: null, ...extra });
+const game = async (c, id) => (await c.api.store.get(id)).data;
+const run = (c, opts = {}) => gsMod.catchUpCovers(c, { now: NOW, pauseMs: 0, ...opts });
+const noDirectFetch = () => { const orig = globalThis.fetch; let direct = 0; globalThis.fetch = async () => { direct++; throw new Error("pas de réseau direct"); }; return { count: () => direct, restore: () => { globalThis.fetch = orig; } }; };
+
+/* ───────────── game-suggestions : le module ne parle jamais à RAWG lui-même ───────────── */
+
+test("game-suggestions : aucun appel direct à RAWG (ni adresse, ni fetch, ni clé lue) dans le code", () => {
+  const src = fs.readFileSync(new URL("../modules/game-suggestions/index.mjs", import.meta.url), "utf8");
+  assert.ok(!/api\.rawg\.io|fetch\(|fetchImpl|ctx\.setting\("rawgApiKey"\)|createHash/.test(src));
+  assert.ok(!("lookupCover" in gsMod) && !("fetchCover" in gsMod), "plus de recherche directe exportée");
+});
+
+/* ───────────── game-suggestions : rattrapage ───────────── */
+
+test("rattrapage : les suggestions sans jaquette (migrées ou restaurées) la reçoivent ; celles qui en ont déjà ne sont pas redemandées", async () => {
+  const svc = service({ Celeste: "found", "Inconnu Total": "none" });
+  const c = gsCtx(svc);
+  const a = await addGame(c, "Celeste");
+  const b = await addGame(c, "Hades", { coverUrl: IMG.replace("x.", "h.") });
+  const d = await addGame(c, "Inconnu Total");
+  const r = await run(c);
+  assert.deepEqual([r.status, r.found, r.none, r.left, r.missing], ["done", 1, 1, 0, 2]);
+  assert.equal((await game(c, a)).coverUrl, IMG);
+  assert.equal((await game(c, a)).coverResult, "found");
+  assert.equal((await game(c, b)).coverUrl, IMG.replace("x.", "h."));
+  assert.equal((await game(c, d)).coverUrl, null);
+  assert.equal((await game(c, d)).coverResult, "none");
+  assert.equal((await game(c, d)).coverCheckedAt, new Date(NOW).toISOString());
+  assert.deepEqual([...svc.calls].sort(), ["Celeste", "Inconnu Total"]);
+  assert.equal((await run(gsCtx())).status, "nothing", "rien de manquant : rien à faire");
+});
+
+test("rattrapage : aucune clé n'est lue, enregistrée ni journalisée (le module ne la voit jamais)", async () => {
+  const c = gsCtx(service({ Celeste: "found" }));
+  await addGame(c, "Celeste");
+  await run(c);
+  const all = JSON.stringify([...(await c.api.store.list("games")), ...(await c.api.store.list("state"))]);
+  assert.ok(!/key|clé|SECRET/i.test(JSON.stringify(await c.api.store.list("state"))), "l'état gardé ne contient ni clé ni empreinte");
+  assert.ok(!all.includes("keyFp"));
+});
+
+test("rattrapage après restauration : tout vient des données de l'instance (aucune mémoire du module), même avec un autre contexte et une autre date", async () => {
+  const c = gsCtx(service({ Inconnu: "found" }));
+  const id = await addGame(c, "Inconnu", { coverCheckedAt: new Date(NOW - 1 * DAY).toISOString(), coverResult: "none", coverKey: "pas-la-clé", coverTries: 3 });
+  // Données restaurées : essai fait à une autre « époque » → on réessaie tout de suite ; le compteur repart de zéro.
+  assert.equal((await run(c)).found, 1);
+  assert.equal((await game(c, id)).coverTries, 1);
+  // Mêmes données relues par un « nouveau processus » (aucun état gardé en mémoire entre les appels) : pas de nouvelle demande avant le délai.
+  const quiet = service({ Rien: "found" });
+  const c2 = gsCtx(quiet);
+  const id2 = await addGame(c2, "Rien", { coverCheckedAt: new Date(NOW).toISOString(), coverResult: "none", coverKey: "core", coverTries: 1 });
+  await run(c2, { now: NOW + 1 * DAY });
+  assert.equal(quiet.calls.length, 0, "moins de 3 jours après l'essai : RAWG n'est pas redemandé");
+  await run(c2, { now: NOW + 3 * DAY });
+  assert.equal((await game(c2, id2)).coverUrl, IMG, "après 3 jours : nouvel essai");
+});
+
+test("pas de marteau : délais croissants entre essais (3, 7, 14, 30 jours), plafond de 5 essais, aucun passage ne dépasse 5 titres", async () => {
+  const svc = service({});
+  const c = gsCtx(svc);
+  const id = await addGame(c, "Introuvable");
+  let t = NOW;
+  await run(c, { now: t });                                     // essai 1
+  const waits = [3, 7, 14, 30];
+  for (const w of waits) {
+    const before = svc.calls.length;
+    await run(c, { now: t + w * DAY - 1000 });                  // trop tôt
+    assert.equal(svc.calls.length, before, `pas de demande ${w} j - 1 s après le précédent essai`);
+    t += w * DAY;
+    await run(c, { now: t });                                   // à l'heure
+    assert.equal(svc.calls.length, before + 1, `une demande après ${w} jours`);
+  }
+  assert.equal((await game(c, id)).coverTries, 5);
+  const calls = svc.calls.length;
+  await run(c, { now: t + 400 * DAY });
+  assert.equal(svc.calls.length, calls, "plafond atteint : la tâche renonce");
+  // Le bouton de l'admin peut quand même réessayer.
+  await run(c, { now: t + 400 * DAY, force: true });
+  assert.equal(svc.calls.length, calls + 1);
+  // Par passage : 5 titres au plus.
+  const fb = service({});
+  const big = gsCtx(fb);
+  for (let i = 0; i < 12; i++) await addGame(big, `Jeu ${i}`);
+  const r = await run(big);
+  assert.equal(fb.calls.length, 5);
+  assert.equal(r.left, 7);
+  assert.equal((await run(big)).left, 2, "le passage suivant prend les cinq suivants (les essayés passent après)");
+  assert.equal(fb.calls.length, 10);
+});
+
+test("clé absente : message clair, aucune demande, rien de modifié", async () => {
+  const svc = service({ Celeste: "found" }, { configured: false });
+  const c = gsCtx(svc);
+  const id = await addGame(c, "Celeste");
+  assert.equal((await run(c)).status, "no_key");
+  assert.equal(svc.calls.length, 0);
+  assert.equal((await game(c, id)).coverCheckedAt, undefined, "pas marqué « essayé » : il le sera dès qu'une clé existe");
+  const res = await gs.adminActions.findCovers(c);
+  assert.match(res.error, /Aucune clé RAWG/);
+  assert.ok(!res.ok);
+  assert.match(JSON.stringify(await gs.adminPanel(c)), /aucune clé RAWG/);
+});
+
+test("panne réseau ou 5xx (« injoignable ») : on s'arrête sans rien marquer ni lever d'erreur", async () => {
+  for (const answer of ["unreachable", new Error("réseau coupé")]) {
+    const svc = service({ A: answer, B: answer });
+    const c = gsCtx(svc);
+    const ids = [await addGame(c, "A"), await addGame(c, "B")];
+    const r = await run(c);
+    assert.equal(r.status, "down");
+    assert.equal(svc.calls.length, 1);
+    for (const id of ids) assert.equal((await game(c, id)).coverResult, undefined, "une panne n'est pas « sans résultat » et ne consomme pas un essai");
+  }
+});
+
+test("titres trouvés avant une panne sont gardés ; le bilan du bouton le dit", async () => {
+  const c = gsCtx(service({ B: "found", A: new Error("coupure") }));
+  await addGame(c, "A"); await new Promise((r) => setTimeout(r, 2)); await addGame(c, "B");
+  const r = await run(c, { force: true });                      // le plus récent (B) est traité en premier
+  assert.equal(r.found + r.none, 1);
+  assert.equal(r.status, "down");
+  assert.match((await gs.adminActions.findCovers(c)).error, /injoignable|Déjà trouvées/);
+});
+
+test("bouton « Rechercher les jaquettes manquantes » : bilan en langage simple (trouvées / sans résultat / reste à faire), ignore les délais", async () => {
+  const c = gsCtx(service({ Celeste: "found" }));
+  await addGame(c, "Celeste");
+  await addGame(c, "Zzz", { coverCheckedAt: new Date().toISOString(), coverResult: "none", coverKey: "autre", coverTries: 1 });
+  const guard = noDirectFetch();
+  try {
+    const res = await gs.adminActions.findCovers(c);
+    assert.match(res.ok, /1 jaquette\(s\) trouvée\(s\), 1 sans résultat/);
+    assert.ok(!res.error);
+    assert.match((await gs.adminActions.findCovers(gsCtx())).ok, /Toutes les suggestions ont une jaquette/);
+    const many = gsCtx(); for (let i = 0; i < 30; i++) await addGame(many, `J${i}`);
+    assert.match((await gs.adminActions.findCovers(many)).ok, /Il en reste 5 à essayer/);
+    assert.equal(guard.count(), 0);
+  } finally { guard.restore(); }
+});
+
+test("tâche planifiée déclarée, sans erreur sur une instance vide ; une erreur de RAWG ne la fait jamais échouer", async () => {
+  assert.ok(gs.tasks.covers.everyMinutes >= 1 && typeof gs.tasks.covers.run === "function");
+  await gs.tasks.covers.run(gsCtx());
+  const c = gsCtx(service({ A: new Error("hors ligne") })); await addGame(c, "A");
+  await gs.tasks.covers.run(c);
+  assert.equal((await game(c, (await c.api.store.list("games"))[0].id)).coverUrl, null);
+});
+
+test("admin : colonne jaquette, compteur des manquantes, bouton ; rien d'affiché si tout est complet", async () => {
+  const c = gsCtx();
+  await addGame(c, "Avec", { coverUrl: IMG }); await addGame(c, "Sans");
+  const blocks = await gs.adminPanel(c);
+  assert.deepEqual(blocks.slice(0, 2).map((b) => b.type), ["heading", "table"], "clé présente : aucun bandeau");
+  const form = blocks.find((b) => b.type === "adminForm");
+  assert.equal(form.action, "findCovers");
+  assert.equal(form.submitLabel, "Rechercher les jaquettes manquantes");
+  const table = blocks.find((b) => b.type === "table");
+  assert.deepEqual(table.rows.map((r) => r[2]).sort(), ["—", "✓"]);
+  assert.equal(table.rows.length, table.rowIds.length);
+  const full = gsCtx(); await addGame(full, "Avec", { coverUrl: IMG });
+  assert.ok(!(await gs.adminPanel(full)).some((b) => b.type === "adminForm"));
+});
+
+test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans image, avec le lien vers les Réglages du site ; clé présente → aucun bandeau", async () => {
+  const svc = service({}, { configured: false });
+  const c = gsCtx(svc);
+  await addGame(c, "Avec", { coverUrl: IMG });
+  const blocks = await gs.adminPanel(c);
+  assert.equal(blocks[0].type, "banner");
+  assert.equal(blocks[0].tone, "warning");
+  assert.match(blocks[0].text, /Aucune clé RAWG/);
+  assert.match(blocks[1].text, /\(\/admin\/settings\)/);
+  svc.state.configured = true;
+  assert.ok(!(await gs.adminPanel(c)).some((b) => b.type === "banner"));
+  const nosvc = fakeCtx({ key: "gsx", messages: gsMsg, settings: {}, locale: "fr" }); delete nosvc.api.rawg;
+  assert.equal((await gs.adminPanel(nosvc))[0].type, "banner", "cœur sans service : comme sans clé, jamais d'exception");
+});
+
+test("game-suggestions : manifeste valide, version et données montées, permission rawg, clé RAWG du module seulement en legacySettings (secret, jamais affichée), textes fr/en alignés", () => {
+  const m = readJson("game-suggestions/module.json");
+  assert.ok(parseManifest(m).ok);
+  assert.equal(m.version, "1.2.0");
+  assert.equal(m.minCore, "0.2.0");
+  assert.equal(m.dataVersion, 2);
+  assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"), "plus de champ visible");
+  assert.deepEqual(m.legacySettings, [{ key: "rawgApiKey", secret: true }]);
+  assert.deepEqual(m.permissions, ["pages", "routes", "storage", "admin", "mcp", "rawg"]);
+  assert.deepEqual(Object.keys(readJson("game-suggestions/locales/fr.json")).sort(), Object.keys(readJson("game-suggestions/locales/en.json")).sort());
+});
+
+test("game-suggestions chargé comme le fait le cœur : la tâche et la migration sont reconnues", async () => {
+  const { manifest, definition } = await loadModule("modules/game-suggestions");
+  assert.ok(parseManifest(manifest).ok);
+  assert.equal(typeof definition.tasks.covers.run, "function");
+  assert.equal(typeof definition.migrations[manifest.dataVersion], "function");
+});
+
+/* ───────────── game-suggestions : migration de la clé RAWG du module (legacySettings) ───────────── */
+
+const SECRET = "SECRET-RAWG-KEY-9f3a";
+const migCtx = (legacy, svc = service()) => { const c = fakeCtx({ key: `gs${++n}`, migration: true, legacy, messages: gsMsg, settings: {}, locale: "fr" }); c.api.rawg = svc; return c; };
+
+test("migration 2 : le site a sa clé → l'ancienne clé du module est effacée ; rejouée, elle ne fait rien de plus ; la valeur n'est ni lue pour l'usage ni journalisée", async () => {
+  const c = migCtx({ rawgApiKey: SECRET });
+  await gs.migrations[2](c);
+  assert.deepEqual(c.calls.legacyCleared, ["rawgApiKey"]);
+  await gs.migrations[2](c);
+  assert.deepEqual(c.calls.legacyCleared, ["rawgApiKey"], "rejeu : rien de plus");
+  assert.ok(!JSON.stringify([c.calls, await c.api.store.list("games"), await c.api.store.list("state")]).includes(SECRET));
+});
+
+test("migration 2 : le site n'a pas encore sa clé → l'ancienne reste (rien n'est perdu), inutilisée ; la tâche l'efface dès que la clé du site existe", async () => {
+  const svc = service({}, { configured: false });
+  const c = migCtx({ rawgApiKey: SECRET }, svc);
+  await gs.migrations[2](c);
+  assert.deepEqual(c.calls.legacyCleared, []);
+  const guard = noDirectFetch();
+  try {
+    await addGame(c, "Celeste");
+    await gs.tasks.covers.run(c);
+    assert.equal(guard.count(), 0, "la clé du module n'est jamais utilisée pour appeler RAWG");
+    assert.deepEqual(c.calls.legacyCleared, [], "toujours pas de clé sur le site : on garde");
+    svc.state.configured = true;
+    await gs.tasks.covers.run(c);
+    assert.deepEqual(c.calls.legacyCleared, ["rawgApiKey"]);
+  } finally { guard.restore(); }
+});
+
+test("migration 2 : aucune ancienne clé, clé vide, cœur sans legacy, service qui plante → ne fait rien et ne lève jamais", async () => {
+  for (const legacy of [{ rawgApiKey: "" }, { rawgApiKey: "   " }, { rawgApiKey: null }, {}]) {
+    const c = migCtx(legacy); await gs.migrations[2](c); assert.deepEqual(c.calls.legacyCleared, [], JSON.stringify(legacy));
+  }
+  const plain = fakeCtx({ migration: true, settings: {} }); assert.equal(plain.legacy, undefined);
+  await gs.migrations[2](plain);
+  const boom = migCtx({ rawgApiKey: SECRET }, { configured: async () => { throw new Error("boum"); }, cover: async () => ({ status: "none", url: null }) });
+  await gs.migrations[2](boom);
+  assert.deepEqual(boom.calls.legacyCleared, []);
+});
 
 test("service du cœur : les cinq statuts sont traduits ; https seulement ; une exception du service ne remonte jamais", async () => {
-  const c = withSvc(service({ A: "found", B: "none", C: "no-key", D: "refused", E: "unreachable", F: { status: "found", url: "http://x/y.jpg" }, G: new Error("boum"), H: { status: "inconnu", url: null } }));
+  const c = gsCtx(service({ A: "found", B: "none", C: "no-key", D: "refused", E: "unreachable", F: { status: "found", url: "http://x/y.jpg" }, G: new Error("boum"), H: { status: "inconnu", url: null } }));
   const got = {};
   for (const t of "ABCDEFGH") got[t] = (await gsMod.coverFor(c, t)).status;
   assert.deepEqual(got, { A: "found", B: "none", C: "no_key", D: "denied", E: "down", F: "none", G: "down", H: "down" });
@@ -333,29 +287,18 @@ test("service du cœur : les cinq statuts sont traduits ; https seulement ; une 
   assert.equal(await gsMod.hasKey(c), false);
 });
 
-test("service du cœur : le réglage rawgApiKey du module n'est plus utilisé (aucun fetch direct)", async () => {
-  const orig = globalThis.fetch; let direct = 0; globalThis.fetch = async () => { direct++; throw new Error("pas de réseau direct"); };
-  try {
-    const c = withSvc(service({ Celeste: "found" }), gsCtx({ rawgApiKey: "VIEILLE" }));
-    const id = await addGame(c, "Celeste");
-    await run(c, undefined);
-    assert.equal((await game(c, id)).coverUrl, IMG);
-    assert.equal(direct, 0);
-  } finally { globalThis.fetch = orig; }
-});
-
 test("service du cœur : clé absente → message clair avec lien vers les Réglages, aucune recherche, rien de marqué ; dès que la clé existe, tout est de nouveau dû", async () => {
   const svc = service({ Inconnu: "none", Celeste: "found" }, { configured: false });
-  const c = withSvc(svc);
+  const c = gsCtx(svc);
   const a = await addGame(c, "Celeste");
   const b = await addGame(c, "Inconnu", { coverCheckedAt: new Date(NOW - DAY).toISOString(), coverResult: "none", coverKey: "core", coverTries: 2 });
-  assert.equal((await run(c, undefined)).status, "no_key");
+  assert.equal((await run(c)).status, "no_key");
   assert.equal(svc.calls.length, 0);
   const res = await gs.adminActions.findCovers(c);
   assert.match(res.error, /Aucune clé RAWG/); assert.match(res.error, /\/admin\/settings/);
   assert.match(JSON.stringify(await gs.adminPanel(c)), /\/admin\/settings/);
   svc.state.configured = true;                                   // l'administrateur saisit la clé dans Réglages
-  const r = await run(c, undefined, { now: NOW + 60_000 });
+  const r = await run(c, { now: NOW + 60_000 });
   assert.equal(r.found, 1);
   assert.equal((await game(c, a)).coverUrl, IMG);
   assert.equal((await game(c, b)).coverTries, 1, "essai immédiat malgré le délai : la situation a changé");
@@ -363,39 +306,39 @@ test("service du cœur : clé absente → message clair avec lien vers les Régl
 
 test("service du cœur : clé refusée → signalée à part, pause 24 h, reprise après (ou au clic) ; rien n'est marqué « sans résultat »", async () => {
   const svc = service({ A: "refused", B: "refused" });
-  const c = withSvc(svc);
+  const c = gsCtx(svc);
   const ids = [await addGame(c, "A"), await addGame(c, "B")];
-  assert.equal((await run(c, undefined)).status, "denied");
+  assert.equal((await run(c)).status, "denied");
   assert.equal(svc.calls.length, 1);
   for (const id of ids) assert.equal((await game(c, id)).coverResult, undefined);
-  assert.equal((await run(c, undefined, { now: NOW + 3_600_000 })).status, "denied");
+  assert.equal((await run(c, { now: NOW + 3_600_000 })).status, "denied");
   assert.equal(svc.calls.length, 1, "pause : aucune nouvelle demande");
   const msg = await gs.adminActions.findCovers(c);
   assert.match(msg.error, /refuse la clé/); assert.ok(!/sans résultat/.test(msg.error));
   assert.equal(svc.calls.length, 2, "le bouton passe outre la pause");
   assert.match(JSON.stringify(await gs.adminPanel(c)), /refuse la clé/);
   svc.cover = async () => ({ status: "found", url: IMG });       // clé corrigée
-  assert.equal((await run(c, undefined, { now: Date.now() + 25 * 3_600_000 })).found, 2);   // le clic a eu lieu « maintenant » (horloge réelle)
+  assert.equal((await run(c, { now: Date.now() + 25 * 3_600_000 })).found, 2);   // le clic a eu lieu « maintenant » (horloge réelle)
 });
 
 test("service du cœur : « injoignable » ne marque rien et ne compte pas comme un essai ; « aucun résultat » suit le calendrier 3/7/14/30 jours", async () => {
   const svc = service({ A: "unreachable" });
-  const c = withSvc(svc);
+  const c = gsCtx(svc);
   const id = await addGame(c, "A");
-  assert.equal((await run(c, undefined)).status, "down");
+  assert.equal((await run(c)).status, "down");
   assert.deepEqual([(await game(c, id)).coverCheckedAt, (await game(c, id)).coverTries], [undefined, undefined]);
   svc.cover = async () => ({ status: "none", url: null });
-  await run(c, undefined, { now: NOW + 1000 });
+  await run(c, { now: NOW + 1000 });
   assert.equal((await game(c, id)).coverTries, 1);
   const calls = []; svc.cover = async (t) => { calls.push(t); return { status: "none", url: null }; };
-  await run(c, undefined, { now: NOW + 2 * DAY }); assert.equal(calls.length, 0);
-  await run(c, undefined, { now: NOW + 1000 + 3 * DAY }); assert.equal(calls.length, 1);
+  await run(c, { now: NOW + 2 * DAY }); assert.equal(calls.length, 0);
+  await run(c, { now: NOW + 1000 + 3 * DAY }); assert.equal(calls.length, 1);
   assert.match((await gs.adminActions.findCovers(c)).ok, /sans résultat/);
 });
 
 test("service du cœur : suggestion envoyée → jaquette du service ; panne → la tâche la rattrape", async () => {
   const svc = service({ Celeste: "found", Panne: "unreachable" });
-  const c = withSvc(svc);
+  const c = gsCtx(svc);
   const send = (title) => { const fd = new FormData(); fd.set("title", title); return gs.routes.suggest(new Request("https://x.test/m/k/suggest", { method: "POST", body: fd, headers: { "x-forwarded-for": `6.6.${++n}.1` } }), c); };
   await send("Celeste"); await send("Panne");
   const by = Object.fromEntries((await c.api.store.list("games")).map((r) => [r.data.title, r.data]));
@@ -403,14 +346,6 @@ test("service du cœur : suggestion envoyée → jaquette du service ; panne →
   svc.cover = async () => ({ status: "found", url: IMG });
   await gs.tasks.covers.run(c);
   assert.equal((await c.api.store.list("games")).find((r) => r.data.title === "Panne").data.coverUrl, IMG);
-});
-
-test("repli : cœur sans ctx.api.rawg et sans réglage → « clé absente » ; avec l'ancien réglage → comme avant", async () => {
-  const c = gsCtx({}); await addGame(c, "A");
-  assert.equal(c.api.rawg, undefined);
-  assert.equal((await run(c, rawg({}))).status, "no_key");
-  const old = gsCtx({ rawgApiKey: "K" }); await addGame(old, "A");
-  assert.equal((await run(old, rawg({ A: IMG }))).found, 1);
 });
 
 /* ───────────── planning (service RAWG du cœur) ───────────── */
@@ -516,7 +451,7 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
 test("planning : plus de réglage de clé, permission rawg déclarée (pas de storage), version montée, textes alignés", () => {
   const m = readJson("planning/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "2.0.0");
+  assert.equal(m.version, "2.1.0");
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"));
   assert.ok(m.permissions.includes("rawg") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(readJson("planning/locales/fr.json")).sort(), Object.keys(readJson("planning/locales/en.json")).sort());
@@ -529,14 +464,14 @@ test("avec le double officiel du cœur (options rawgConfigured / rawgCover, appe
   const mk = (opts) => fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: gsMsg, settings: {}, locale: "fr", ...opts });
   const ok = mk({ rawgCover: { status: "found", url: IMG } });
   const id = await addGame(ok, "Celeste");
-  assert.equal((await run(ok, undefined)).found, 1);
+  assert.equal((await run(ok)).found, 1);
   assert.equal((await game(ok, id)).coverUrl, IMG);
   assert.deepEqual(ok.calls.rawg, ["Celeste"]);
   const nokey = mk({ rawgConfigured: false, rawgCover: { status: "no-key", url: null } });
   await addGame(nokey, "X");
-  assert.equal((await run(nokey, undefined)).status, "no_key");
+  assert.equal((await run(nokey)).status, "no_key");
   assert.deepEqual(nokey.calls.rawg, []);
   const refused = mk({ rawgCover: { status: "refused", url: null } });
   await addGame(refused, "X");
-  assert.equal((await run(refused, undefined)).status, "denied");
+  assert.equal((await run(refused)).status, "denied");
 });

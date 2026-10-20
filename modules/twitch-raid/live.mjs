@@ -1,5 +1,5 @@
 // La vue complète : qui est en direct parmi les partenaires, maintenant (jusqu'à 500 chaînes ; au-delà, le dock passe en mode « au hasard », voir search.mjs).
-// Les données viennent de Chaîne Twitch (service `twitch.api`, qui garde les jetons) par streams.mjs : ce fichier ne parle jamais à Twitch directement.
+// Les données viennent du Connecteur Twitch (service `twitch.api`, qui garde les jetons) par streams.mjs : ce fichier ne parle jamais à Twitch directement.
 // Règles de ce fichier :
 //   - la liste est découpée en paquets de 100 chaînes (jusqu'à 5), interrogés 3 à la fois, puis rassemblés ; gardés 30 s : dix docks ouverts, ou dix onglets, refont un seul jeu d'appels ;
 //   - AUCUNE attente sans borne : l'ensemble est abandonné après `timing.callMs`, et un paquet qui échoue ne fait pas perdre les autres (résultat partiel, dit clairement) ;

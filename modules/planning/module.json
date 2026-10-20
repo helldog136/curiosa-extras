@@ -5,8 +5,8 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.0.0",
-  "minCore": "0.1.27",
+  "version": "2.1.0",
+  "minCore": "0.2.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
@@ -215,20 +215,6 @@
     "rawg"
   ],
   "settings": [
-    {
-      "key": "icsUrl",
-      "type": "secret",
-      "advanced": true,
-      "optional": true,
-      "label": {
-        "en": "Old calendar address (taken over automatically)",
-        "fr": "Ancienne adresse du calendrier (reprise automatiquement)"
-      },
-      "help": {
-        "en": "This setting moved to the “Online calendar” module: your address was carried over for you, and this field is now empty. Leave it empty.",
-        "fr": "Ce réglage est passé dans le module « Agenda en ligne » : votre adresse y a été reprise pour vous, et ce champ est maintenant vide. Laissez-le vide."
-      }
-    },
     {
       "key": "channelUrl",
       "type": "url",
@@ -637,5 +623,11 @@
       }
     }
   ],
-  "dataVersion": 2
+  "dataVersion": 3,
+  "legacySettings": [
+    {
+      "key": "icsUrl",
+      "secret": true
+    }
+  ]
 }

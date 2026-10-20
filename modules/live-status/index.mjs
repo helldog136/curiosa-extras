@@ -1,9 +1,9 @@
 // Statut live Twitch — module de Curiosa. Il PRÉSENTE l'état « en direct » (bannière, lecteur intégré, section d'accueil) ; il ne parle jamais à Twitch.
-// L'état vient du service `twitch.live` de la Chaîne Twitch, qui est seule à connaître l'API, les identifiants, le jeton et les caches (voir source.mjs).
+// L'état vient du service `twitch.live` de Ma Chaîne Twitch, qui le demande au Connecteur Twitch (seul à connaître l'application et les jetons) ; voir source.mjs.
 // Les fichiers voisins sont importés avec la même « version » que celui-ci (jamais d'ancien fichier resté en mémoire après une mise à jour).
 const q = new URL(import.meta.url).search;
-const { liveSources, canTellLive, CHANNEL_RE } = await import(new URL(`./source.mjs${q}`, import.meta.url).href);
-const { adoptPanel, adopt } = await import(new URL(`./adopt.mjs${q}`, import.meta.url).href);
+const { liveSources, setupGap, CHANNEL_RE } = await import(new URL(`./source.mjs${q}`, import.meta.url).href);
+const { adoptLegacy } = await import(new URL(`./adopt.mjs${q}`, import.meta.url).href);
 const { bannerHtml, playersHtml } = await import(new URL(`./view.mjs${q}`, import.meta.url).href);
 
 const playerSrc = (ctx, channel) => `https://player.twitch.tv/?channel=${channel}&parent=${new URL(ctx.api.siteUrl).hostname}&muted=true`;
@@ -41,12 +41,16 @@ export default ({
         },
     },
     async adminPanel(ctx) {
-        const blocks = await adoptPanel(ctx);
-        // Sans identifiants Twitch, le lecteur ne peut jamais s'afficher (sauf réglage « toujours ») : on le dit en clair.
-        if (ctx.setting("playerWhen") !== "always" && (await canTellLive(ctx)) === false) {
-            blocks.push({ type: "banner", tone: "warning", text: ctx.t("needCredentials") }, { type: "markdown", text: `[${ctx.t("openTwitch")}](/admin/modules/twitch-channel)` });
-        }
+        const blocks = [];
+        // Sans application Twitch (Connecteur Twitch) ou sans chaîne (Ma Chaîne Twitch), le lecteur ne peut jamais s'afficher (sauf réglage « toujours ») :
+        // on le dit en clair, avec le lien vers l'endroit où cela se règle.
+        const gap = ctx.setting("playerWhen") !== "always" ? await setupGap(ctx) : null;
+        if (gap === "app") blocks.push({ type: "banner", tone: "warning", text: ctx.t("needCredentials") }, { type: "markdown", text: `[${ctx.t("openConnector")}](/admin/modules/twitch-connector)` });
+        else if (gap === "channel") blocks.push({ type: "banner", tone: "warning", text: ctx.t("needChannel") }, { type: "markdown", text: `[${ctx.t("openTwitch")}](/admin/modules/twitch-channel)` });
         return blocks;
     },
-    adminActions: { adopt },
+    // Reprise automatique des anciens identifiants Twitch (voir adopt.mjs) : à la mise à jour des données, puis réessayée chaque heure tant qu'il en reste
+    // (Chaîne Twitch momentanément indisponible). Une fois tout repris, la tâche ne lit plus rien d'autre que « vide » et s'arrête là.
+    migrations: { 2: async (ctx) => { await adoptLegacy(ctx); } },
+    tasks: { adopt: { everyMinutes: 60, run: async (ctx) => { await adoptLegacy(ctx); } } },
 });

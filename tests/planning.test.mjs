@@ -54,6 +54,6 @@ test("manifeste : instances multiples, page propre, MCP en lecture seule activé
   assert.ok(tool);
   assert.equal(tool.readOnly, true);
   assert.equal(tool.default, true);
-  const legacy = json.settings.find((x) => x.key === "icsUrl");
-  assert.equal(legacy.type, "secret", "l'ancien réglage (adresse d'un calendrier privé) reste un secret le temps de sa reprise — à retirer en 0.3.0");
+  assert.ok(!json.settings.some((x) => x.key === "icsUrl"), "l'adresse d'un calendrier privé n'est plus un réglage visible");
+  assert.deepEqual(json.legacySettings, [{ key: "icsUrl", secret: true }], "elle reste un secret le temps de sa reprise — à retirer en 0.3.0");
 });

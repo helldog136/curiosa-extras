@@ -1,8 +1,9 @@
 // L'écoute du chat : quel compte lit et répond, ce qu'il manque pour que ça marche, et l'abonnement chez Twitch (créé, surveillé, recréé).
-// Les jetons ne sont jamais ici : tout passe par le service `twitch.api` de Chaîne Twitch. Ce fichier ne contient aucun détail de Twitch (voir eventsub.mjs).
+// Les jetons ne sont jamais ici : tout passe par le service `twitch.api` du Connecteur Twitch. Ce fichier ne contient aucun détail de Twitch (voir eventsub.mjs).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const es = await import(`./eventsub.mjs${v}`);
 const { ensureSecret, readState, updateState } = await import(`./state.mjs${v}`);
+const { resolveChannel, firstAccount } = await import(`./channel.mjs${v}`);
 
 const SERVICE = "twitch.api";
 const ok = (r) => r.ok && r.value && r.value.ok !== false && r.value.error !== "other_channel";
@@ -18,12 +19,17 @@ export function isPublicSite(url) {
 }
 export const callbackOf = (ctx) => `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}${es.webhookPath(ctx.instance.key)}`;
 
-/** Les chaînes Twitch connues du site et celle que ce bot sert. { problem } ou { main, bot }. `bot` : le compte qui répond, en mode « compte bot séparé ». */
+/**
+ * La chaîne que ce bot sert et ses comptes. { problem } ou { main, bot }. `bot` : le compte qui répond, en mode « compte bot séparé ».
+ * La chaîne vient du réglage « Chaîne Twitch » (un choix parmi vos instances de Ma Chaîne Twitch, voir channel.mjs), sinon la première prête ; le Connecteur
+ * répond ensuite pour CETTE chaîne (`account({ channel })` : sans `channel`, il répondrait pour la première qu'il connaît).
+ */
 export async function accounts(ctx, s) {
-  const all = (await ctx.api.services.callAll(SERVICE, "account", {})).filter(ok).map((r) => r.value);
-  if (!all.length) return { problem: "no_channel" };
-  const main = s.channel ? all.find((a) => a.channel === s.channel) : all.find((a) => a.channel) ?? all[0];
-  if (!main) return { problem: "channel_unknown" };
+  const picked = await resolveChannel(ctx, s.channel);
+  if (picked.problem === "setup") return { main: picked.account, bot: null };   // ni chaîne ni application : diagnose dit « creds_missing », avec le lien du Connecteur
+  if (picked.problem) return { problem: picked.problem === "slow" ? "twitch_down" : picked.problem };
+  const main = await firstAccount(ctx, { channel: picked.channel });
+  if (!main) return { problem: "no_channel" };
   let bot = null;
   if (s.replyAs === "bot" && main.channel) {
     const r = (await ctx.api.services.callAll(SERVICE, "account", { slot: "bot", channel: main.channel })).find(ok);
@@ -32,7 +38,7 @@ export async function accounts(ctx, s) {
   return { main, bot };
 }
 
-/** Une demande à Twitch, via la Chaîne Twitch de `channel` : { ok: true, status, json } ou { ok: false, error }. */
+/** Une demande à Twitch, par le Connecteur Twitch, pour `channel` : { ok: true, status, json } ou { ok: false, error }. */
 export async function twitch(ctx, channel, req) {
   const all = await ctx.api.services.callAll(SERVICE, "request", { ...req, channel });
   const mine = all.find((r) => r.ok && r.value?.error !== "other_channel");
@@ -43,7 +49,7 @@ export async function twitch(ctx, channel, req) {
 const need = (s) => (s.replyAs === "bot" ? { main: es.SCOPES.ownerForBot, bot: es.SCOPES.bot } : { main: es.SCOPES.own, bot: [] });
 const lacks = (acc, scopes) => scopes.filter((x) => !(acc?.scopes ?? []).includes(x));
 
-/** Dit à Chaîne Twitch ce dont le bot a besoin (elle l'ajoute à ses autorisations) — idempotent. */
+/** Dit au Connecteur Twitch ce dont le bot a besoin pour cette chaîne (il l'ajoute à ses autorisations) — idempotent. */
 export async function declareScopes(ctx, s, channel) {
   const n = need(s), returnTo = `/admin/instances/${ctx.instance.id}`;
   await ctx.api.services.callAll(SERVICE, "wantScopes", { channel, consumer: ctx.instance.key, slot: "main", scopes: n.main, returnTo });
@@ -52,7 +58,7 @@ export async function declareScopes(ctx, s, channel) {
 
 /**
  * Où en est-on ? Rend toujours { code, … } ; `code` vaut "ready" quand tout est en place, sinon la PREMIÈRE chose à faire :
- * no_channel · channel_unknown · creds_missing · need_connect · need_reconnect · need_more · bot_need_connect · bot_reconnect · bot_more · site_private.
+ * no_channel · channel_unknown · twitch_down (Ma Chaîne Twitch muette) · creds_missing · need_connect · need_reconnect · need_more · bot_need_connect · bot_reconnect · bot_more · site_private.
  * Quand tout est prêt : { code: "ready", channel, broadcasterId, senderId, slot, main, bot }.
  */
 export async function diagnose(ctx, s, { declare = true } = {}) {

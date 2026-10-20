@@ -5,7 +5,7 @@ Vous finissez votre live et vous voulez **raider un ami**. Mais qui est en direc
 **Un clic sur un partenaire copie la commande de raid** (par exemple `/raid mon_ami`). Vous la collez dans votre chat Twitch et appuyez sur Entrée : c'est vous qui lancez le raid, le module n'écrit jamais à votre place.
 
 ## Pour commencer
-1. **Installez le module.** « Chaîne Twitch » s'installe avec lui. Si ce n'est pas déjà fait, renseignez votre chaîne et l'application Twitch dans « Chaîne Twitch » (c'est la même pour tout ce qui touche à Twitch, une seule fois).
+1. **Installez le module.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent avec lui. Si ce n'est pas déjà fait, suivez le guide du Connecteur Twitch pour renseigner l'application Twitch (c'est la même pour tout ce qui touche à Twitch, une seule fois), et indiquez votre chaîne dans « Ma Chaîne Twitch ».
 2. **Ajoutez vos partenaires.** Sur la page du module, tapez un pseudo Twitch par ligne. Vous pouvez aussi coller l'adresse de la chaîne (`twitch.tv/pseudo`) ou un `@pseudo`, et en coller plusieurs d'un coup : le module range tout seul. Si un pseudo n'est pas bon, il vous dit lequel et pourquoi, et ajoute quand même les autres.
 3. **Placez le dock dans OBS.** Copiez « l'adresse du dock », puis dans OBS : **Docks**, **Docks de navigateur personnalisés**, un nom (« Raid »), l'adresse, **Appliquer**. Vous pouvez aussi ouvrir cette adresse dans un onglet.
 4. **Vérifiez** avec « Voir qui est en direct maintenant » : si tout est en place, le module le dit, et sinon il explique quoi régler.
@@ -37,8 +37,8 @@ Le module sait servir **des centaines de membres** avec un seul dock.
 ### Installer le site central de l'association
 Une seule personne tient la liste, sur **un seul site**. Les membres n'ont **rien à installer** et n'ont pas besoin de Curiosa ni d'un accès Twitch : ils ajoutent simplement l'adresse du dock dans OBS.
 
-1. Installez **« Chaîne Twitch »** sur le site central et renseignez l'**identifiant client** et le **secret** de votre application Twitch. Aucune connexion de compte n'est nécessaire.
-2. Installez **« Raid Twitch »**.
+1. Installez **« Raid Twitch »** sur le site central : le **Connecteur Twitch** et **Ma Chaîne Twitch** s'installent avec lui. Dans le Connecteur, renseignez l'**identifiant client** et le **secret** de votre application Twitch ; dans Ma Chaîne Twitch, la chaîne du site. Aucune connexion de compte n'est nécessaire.
+2. Ouvrez la page de **« Raid Twitch »**.
 3. Importez la liste des membres (zone « Ajouter des partenaires », collage par paquets).
 4. Copiez **l'adresse du dock** et donnez-la à vos membres : dans OBS, **Docks**, **Docks de navigateur personnalisés**, un nom, l'adresse, **Appliquer**.
 
@@ -58,8 +58,8 @@ Un outil, **non accordé d'office** (administration, accès de votre IA) :
 Si vous avez aussi « Story d'annonce », il peut **reprendre vos partenaires** (pseudo, nom affiché et **photo de profil Twitch**) pour les montrer dans vos vidéos d'annonce : un bouton lui suffit, rien à régler. Seuls le pseudo, le nom et la photo sont partagés : **jamais vos notes**, ni l'adresse secrète du dock. Sans ce module, rien ne change.
 
 ## À savoir
-- Les informations viennent de Twitch **par « Chaîne Twitch »** : ce module ne parle jamais à Twitch lui-même. Il faut Chaîne Twitch en version 1.6.0 ou plus (la mise à jour est proposée toute seule) ; les photos de profil demandent la version 1.7.0, mais sans elles tout marche quand même.
-- Pas besoin de connecter votre compte Twitch : l'identifiant et le secret de votre application, déjà réglés dans « Chaîne Twitch », suffisent.
+- Les informations viennent de Twitch **par le « Connecteur Twitch »** : ce module ne parle jamais à Twitch lui-même. Il faut Curiosa 0.2.0 ou plus ; le Connecteur et Ma Chaîne Twitch 2.0 sont installés ou mis à jour avec lui.
+- Pas besoin de connecter votre compte Twitch : l'identifiant et le secret de votre application, réglés une fois dans le Connecteur Twitch, suffisent.
 - Les informations sont gardées 30 secondes : plusieurs docks ou onglets ouverts en même temps ne font qu'une seule demande à Twitch (une par groupe de 100 chaînes). Si une partie des chaînes n'a pas pu être vérifiée, le dock affiche ce qu'il a avec le message « Certaines chaînes n'ont pas pu être vérifiées. »
-- Si votre site a plusieurs chaînes Twitch, le mode avancé permet de choisir laquelle utiliser.
+- Si votre site a plusieurs chaînes Twitch (plusieurs « Ma Chaîne Twitch »), le mode avancé permet de **choisir dans la liste** laquelle utiliser ; sans choix, c'est la première qui est prête. Avec une seule chaîne, il n'y a rien à choisir. Si vous aviez tapé un pseudo avant la version 1.3.0, il continue de servir ; la page vous propose de confirmer la chaîne dans la liste.
 - **Vie privée** : le module ne collecte rien sur vos visiteurs. Il garde votre liste de chaînes, vos notes et l'adresse secrète du dock, visibles des seuls administrateurs. Le dock n'affiche que des informations publiques de Twitch.

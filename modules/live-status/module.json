@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.2.0",
   "id": "live-status",
   "name": {
     "en": "Twitch live status",
     "fr": "Statut live Twitch"
   },
-  "version": "1.2.1",
+  "version": "1.3.0",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
@@ -31,49 +31,9 @@
   "permissions": [
     "slots",
     "sections",
-    "storage",
     "admin"
   ],
   "settings": [
-    {
-      "key": "channel",
-      "type": "text",
-      "label": {
-        "en": "Twitch channel (former setting)",
-        "fr": "Chaîne Twitch (ancien réglage)"
-      },
-      "help": {
-        "en": "Now set in the Twitch channel module. Only used until its credentials are filled in.",
-        "fr": "Se règle maintenant dans la Chaîne Twitch. Utilisé seulement tant que celle-ci n'a pas ses identifiants."
-      },
-      "advanced": true
-    },
-    {
-      "key": "clientId",
-      "type": "text",
-      "label": {
-        "en": "Twitch client id (former setting)",
-        "fr": "Client id Twitch (ancien réglage)"
-      },
-      "advanced": true,
-      "help": {
-        "en": "Now set in the Twitch channel module. Only used until its credentials are filled in.",
-        "fr": "Se règle maintenant dans la Chaîne Twitch. Utilisé seulement tant que celle-ci n'a pas ses identifiants."
-      }
-    },
-    {
-      "key": "clientSecret",
-      "type": "secret",
-      "label": {
-        "en": "Twitch client secret (former setting)",
-        "fr": "Client secret Twitch (ancien réglage)"
-      },
-      "advanced": true,
-      "help": {
-        "en": "Now set in the Twitch channel module. Never shown.",
-        "fr": "Se règle maintenant dans la Chaîne Twitch. Jamais affiché."
-      }
-    },
     {
       "key": "playerWhen",
       "type": "select",
@@ -83,8 +43,8 @@
         "fr": "Quand afficher le lecteur"
       },
       "help": {
-        "en": "“Only when live” needs the Twitch channel module to have its client id and secret: without them the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
-        "fr": "« Seulement en direct » demande que la Chaîne Twitch ait son client id et son secret : sans eux, le lecteur n'est pas affiché (hors ligne, celui de Twitch est un grand panneau blanc). « Toujours » l'affiche quoi qu'il arrive."
+        "en": "“Only when live” needs your site to be connected to Twitch (Twitch connector): without it the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
+        "fr": "« Seulement en direct » demande que votre site soit relié à Twitch (Connecteur Twitch) : sans cela, le lecteur n'est pas affiché (hors ligne, celui de Twitch est un grand panneau blanc). « Toujours » l'affiche quoi qu'il arrive."
       },
       "options": [
         {
@@ -120,6 +80,19 @@
   "requires": [
     {
       "service": "twitch.live"
+    }
+  ],
+  "dataVersion": 2,
+  "legacySettings": [
+    {
+      "key": "channel"
+    },
+    {
+      "key": "clientId"
+    },
+    {
+      "key": "clientSecret",
+      "secret": true
     }
   ]
 }

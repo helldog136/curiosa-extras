@@ -20,7 +20,7 @@ export function settingsOf(ctx) {
     prefix: prefixOf(ctx),
     onlyWhenLive: ctx.setting("onlyWhenLive") !== false,
     replyAs: ctx.setting("replyAs") === "bot" ? "bot" : "own",
-    channel: String(ctx.setting("channel") ?? "").trim().toLowerCase(),
+    channel: String(ctx.setting("channel") ?? "").trim().slice(0, 200),   // l'id d'une instance de Ma Chaîne Twitch (ou un pseudo tapé avant le choix) : voir channel.mjs
     cdGlobal: int(ctx.setting("cooldownGlobal"), 0, 3600, 20),
     cdUser: int(ctx.setting("cooldownUser"), 0, 3600, 60),
     maxPerWindow: int(ctx.setting("maxPer30s"), 1, 18, 12),

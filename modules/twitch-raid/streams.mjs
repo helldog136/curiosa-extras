@@ -1,4 +1,4 @@
-// Poser la question « lesquelles de ces chaînes sont en direct ? » à Twitch, par Chaîne Twitch (service `twitch.api`, qui garde les jetons) : ce fichier ne parle jamais à Twitch directement.
+// Poser la question « lesquelles de ces chaînes sont en direct ? » à Twitch, par le Connecteur Twitch (service `twitch.api`, qui garde les jetons) : ce fichier ne parle jamais à Twitch directement.
 // C'est le seul endroit qui connaît la forme de l'appel `GET streams` ; la vue complète (live.mjs) et la recherche au hasard (search.mjs) s'en servent toutes les deux.
 // Règles de ce fichier (leçon d'un incident : une promesse partagée jamais résolue avait bloqué un site) :
 //   - chaque appel à Twitch a une borne dure (`timing.packetMs`), l'ensemble d'un balayage ou d'une recherche une autre (`timing.callMs`, `timing.searchMs`) ;
@@ -6,6 +6,7 @@
 //   - si Twitch refuse la taille d'un paquet (erreur 400 : trop de pseudos), on essaie des paquets plus petits (100, 50, 20) et on retient la taille qui marche.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { PACKET_SIZES, chunk, nextPacketSize } = await import(`./pure.mjs${v}`);
+const { resolveChannel, firstAccount } = await import(`./channel.mjs${v}`);
 
 export const SERVICE = "twitch.api";
 /** Les délais (en millisecondes). Un objet pour que les tests puissent les raccourcir. */
@@ -30,13 +31,16 @@ export function within(p, ms, fallback) {
 const usable = (r) => r.ok && r.value && r.value.ok !== false && r.value.error !== "other_channel";
 export const str = (x, max) => (typeof x === "string" ? x.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, max) : "");
 
-/** La chaîne Twitch du site à interroger : celle des réglages avancés, sinon la première prête. { problem } ou { channel }. */
+/**
+ * La chaîne Twitch du site à interroger : celle du réglage « Chaîne Twitch à utiliser » (un choix parmi vos instances de Ma Chaîne Twitch, voir channel.mjs),
+ * sinon la première prête. Le Connecteur Twitch dit ensuite si elle est utilisable : `account({ channel })` répond pour CETTE chaîne (sans `channel`, il
+ * répondrait pour la première qu'il connaît). { problem, adminPath? } ou { channel }.
+ */
 export async function pickChannel(ctx, wanted) {
-  const all = (await ctx.api.services.callAll(SERVICE, "account", {})).filter(usable).map((r) => r.value);
-  if (!all.length) return { problem: "no_channel" };
-  const w = str(wanted, 40).toLowerCase();
-  const mine = w ? all.find((a) => a.channel === w) : all.find((a) => a.ready && a.channel) ?? all[0];
-  if (!mine) return { problem: "channel_unknown" };
+  const picked = await resolveChannel(ctx, wanted);
+  if (picked.problem) return { problem: picked.problem, ...(picked.problem === "setup" && typeof picked.account?.adminPath === "string" ? { adminPath: picked.account.adminPath } : {}) };
+  const mine = await firstAccount(ctx, { channel: picked.channel }, timing.packetMs);
+  if (!mine) return { problem: "no_channel" };
   if (!mine.channel || !mine.ready) return { problem: "setup", adminPath: typeof mine.adminPath === "string" ? mine.adminPath : null };
   return { channel: mine.channel };
 }

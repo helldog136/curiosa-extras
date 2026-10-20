@@ -640,7 +640,10 @@ test("webhook : la réponse HTTP ne dépend pas du traitement (lent ou en erreur
   assert.equal(tw.chat.length, 0, "l'envoi n'a pas encore eu lieu");
   release(); await done;
   assert.equal(tw.chat.length, 1);
-  ctx.api.services.callAll = async () => { throw new Error("panne"); };
+  // une panne pendant le traitement (les commandes ne se lisent plus) ; la chaîne servie, elle, se résout sans jamais lever (bornée, voir channel.mjs)
+  ctx.api.services.callAll = slow;
+  const list = ctx.api.store.list;
+  ctx.api.store.list = async (collection, opts) => { if (collection === "botConfig") throw new Error("panne"); return list(collection, opts); };
   const errs = []; const log = console.error; console.error = (...a) => errs.push(a.join(" "));
   const bad = await W.handle(post(secret, eventBody("!jeu"), { id: "boom" }), ctx, { now: NOW + 5 });
   await bad.done; console.error = log;
@@ -822,7 +825,7 @@ test("page : « Le bot écoute : oui / non », avec pourquoi et quoi faire, en m
   assert.match(bannerOf(rb)[0].text, /Twitch a arrêté d'envoyer les messages du chat/);
   assert.equal(formsOf(rb, "relisten").length, 1);
   const creds = await A.panel(world({ tw: { ready: false } }).ctx, { query: {} });
-  assert.match(textOf(creds), /\[Chaîne Twitch\]\(\/admin\/instances\/tw1\)/, "le lien mène à la page où régler l'application Twitch");
+  assert.match(textOf(creds), /\[Connecteur Twitch\]\(\/admin\/instances\/tw1\)/, "le lien mène à la page où régler l'application Twitch (celle que donne le Connecteur)");
   const guide = await A.panel(world({ tw: { mainStatus: "none" } }).ctx, { query: {} });
   assert.match(textOf(guide), /Twitch doit d'abord vous demander votre accord/);
   assert.match(textOf(guide), /Autoriser le bot chez Twitch/);
@@ -1146,10 +1149,12 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 /* ───────────── Manifeste, textes, règles du dépôt ───────────── */
 
-test("manifeste : valide, 1.1.1, minCore 0.1.24 (le cœur qui apporte les sections d'éditeur), plateforme Twitch, dépend de Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
+test("manifeste : valide, 1.2.0, minCore 0.2.0 (réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances], ["twitch-bot", "1.1.1", "0.1.24", "twitch", "multiple"]);
-  assert.deepEqual(manifest.requires.map((x) => x.service).sort(), ["twitch.api", "twitch.live"]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.2.0", "0.2.0", "twitch", "multiple", 2]);
+  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }]);
+  assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
+  assert.equal(typeof def.migrations[2], "function");
   assert.deepEqual(manifest.consumes.map((x) => x.topic).sort(), ["planning.slot", "social.link", "social.stat"]);
   assert.ok(!manifest.requires.some((x) => /sponsor|planning|social/.test(x.service)), "Sponsors, Planning et les réseaux ne sont jamais requis");
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);

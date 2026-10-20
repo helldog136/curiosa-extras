@@ -161,7 +161,7 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   assert.ok(m.consumes.some((c) => c.topic === "planning.slot"));
   assert.equal(m.requires, undefined, "aucune dépendance forte : sans agenda, il affiche « pas de stream planifié »");
   assert.deepEqual(m.seeds.map((x) => x.module), ["calendar-ical"]);
-  assert.equal(m.dataVersion, 2); assert.deepEqual(Object.keys(def.migrations), ["2"]);
+  assert.equal(m.dataVersion, 3); assert.deepEqual(Object.keys(def.migrations), ["2", "3"]);
   assert.equal(typeof def.page, "function");
   assert.equal(typeof def.adminPanel, "function");
   for (const lang of ["en", "fr"]) {
@@ -173,8 +173,7 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   assert.deepEqual(en, fr);
   const settingKeys = new Set(m.settings.map((s) => s.key));
   for (const k of ["days", "timezone", "channelUrl"]) assert.ok(settingKeys.has(k), k);
-  const legacy = m.settings.find((s) => s.key === "icsUrl");
-  assert.ok(legacy.advanced && legacy.optional, "l'ancien réglage reste déclaré (le temps de la reprise) mais discret : à retirer en 0.3.0");
+  assert.ok(!settingKeys.has("icsUrl"), "l'adresse d'avant n'est plus un réglage : elle est dans legacySettings, jamais affichée (à retirer en 0.3.0)");
   assert.equal(m.settings.find((s) => s.key === "channelUrl").optional, true);
   assert.equal(m.settings.find((s) => s.key === "timezone").default, undefined, "sans réglage, le fuseau des agendas est utilisé");
 });

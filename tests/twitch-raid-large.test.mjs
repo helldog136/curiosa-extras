@@ -602,7 +602,7 @@ test("vie privée : le dock n'expose ni notes, ni secret, ni adresse, dans aucun
   for (const t of seen) assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note");
   for (const t of seen.slice(0, -2)) if (!t.includes("<script")) assert.ok(!t.includes(secret.slice(0, 12)) || t.length < 0, "le secret ne revient jamais dans les données");
   assert.ok(manifest.privacy.fr.includes("Nouvelle adresse") && manifest.privacy.en.includes("New address") && /une minute/.test(manifest.privacy.fr));
-  assert.equal(manifest.version, "1.2.0");
+  assert.equal(manifest.version, "1.3.0");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "add_cut", "search_btn"]) assert.ok(fr[k] && en[k], k);
 });

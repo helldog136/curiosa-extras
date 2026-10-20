@@ -51,9 +51,12 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 
 /* ───────────── Manifeste ───────────── */
 
-test("manifeste : un module, un service (twitch.api, version 2 au moins), aucun droit d'écriture MCP, réglage avancé facultatif, vie privée déclarée", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.2.0");
-  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 2 }], "exige la Chaîne Twitch qui sait dire qui est en direct (1.6.0)");
+test("manifeste : un module, deux services (Connecteur Twitch v3, Ma Chaîne Twitch), aucun droit d'écriture MCP, réglage avancé facultatif (un choix parmi vos chaînes), vie privée déclarée", () => {
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.3.0"); assert.equal(manifest.minCore, "0.2.0"); assert.equal(manifest.dataVersion, 2);
+  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }], "le Connecteur Twitch (une application, plusieurs chaînes) ; Ma Chaîne Twitch, parmi lesquelles on choisit");
+  const ch = manifest.settings[0];
+  assert.deepEqual([ch.type, ch.source, ch.fromText, ch.refersTo], ["choice", { kind: "providers", service: "twitch.live" }, true, "channel"]);
+  assert.equal(typeof def.migrations[2], "function");
   assert.ok(!("consumes" in manifest) && !("offers" in manifest));
   assert.deepEqual(manifest.provides.map((p) => p.topic), ["stream.partner"], "1.1.0 : le seul lien est un sujet, facultatif pour ceux qui le lisent");
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);
@@ -418,7 +421,7 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
   assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("Docks de navigateur personnalisés")));
   const warn = blocks.find((b) => b.type === "banner");
   assert.deepEqual([warn.tone, warn.href], ["warning", "/admin/instances/id-tw"]);
-  assert.match(warn.text, /Réglez d'abord votre chaîne dans Chaîne Twitch/);
+  assert.match(warn.text, /Réglez d'abord le Connecteur Twitch/);
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "add"));
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
   assert.deepEqual([renew.rowActions[0].danger, typeof renew.rowActions[0].confirm], [true, "string"], "« Nouvelle adresse » demande confirmation");
@@ -471,7 +474,7 @@ test("admin : « Voir qui est en direct maintenant » dit ce qui va ou ce qu'il 
   api.streams = [];
   assert.match((await act(ctx, "check")).ok, /personne n'est en direct pour le moment. Chaînes dans votre liste : 2/);
   api.accounts = [{ ok: true, channel: "emma_live", ready: false }];
-  assert.match((await act(ctx, "check")).error, /Réglez d'abord votre chaîne dans Chaîne Twitch/);
+  assert.match((await act(ctx, "check")).error, /Réglez d'abord le Connecteur Twitch/);
   api.accounts = [{ ok: true, channel: "emma_live", ready: true }]; api.reply = { ok: false, error: "network" };
   assert.match((await act(ctx, "check")).error, /Twitch ne répond pas/);
 });

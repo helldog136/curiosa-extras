@@ -1,0 +1,11 @@
+{
+  "key_ok": "YouTube key saved: the features that need it can read YouTube.",
+  "key_missing": "Add your YouTube key in Settings: without it, nothing is read from YouTube.",
+  "key_refused": "YouTube refuses the key: check it in Settings (the “YouTube Data v3” service must be enabled for it).",
+  "key_help": "Free key: in the [Google console](https://console.cloud.google.com/apis/library/youtube.googleapis.com), enable “YouTube Data v3”, then create a key under “Credentials” and paste it in Settings.",
+  "quota_used": "Used today: {used} of {budget}. Resets {when}.",
+  "quota_exhausted": "Today's YouTube allowance is used up, back {when}. Meanwhile the site shows the latest data it has.",
+  "when_today": "today at {hour}",
+  "when_tomorrow": "tomorrow at {hour}",
+  "when_later": "on {date} at {hour}"
+}

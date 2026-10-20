@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.2.0",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "platform": "twitch",
   "description": {
     "en": "List the channels of your partners on Twitch and get a small panel for OBS that shows which of them are live right now, to choose who to raid. One click copies the raid command ready to paste in your chat, and a button picks one at random. Made for large communities too: up to 2,000 channels, with a “find someone online at random” button when the list is very long.",
@@ -22,9 +22,13 @@
   "requires": [
     {
       "service": "twitch.api",
-      "min": 2
+      "min": 3
+    },
+    {
+      "service": "twitch.live"
     }
   ],
+  "dataVersion": 2,
   "provides": [
     {
       "topic": "stream.partner",
@@ -48,16 +52,22 @@
   "settings": [
     {
       "key": "channel",
-      "type": "text",
+      "type": "choice",
+      "source": {
+        "kind": "providers",
+        "service": "twitch.live"
+      },
+      "fromText": true,
+      "refersTo": "channel",
       "advanced": true,
       "optional": true,
       "label": {
-        "en": "Twitch channel to use (optional)",
-        "fr": "Chaîne Twitch à utiliser (facultatif)"
+        "en": "Twitch channel to use",
+        "fr": "Chaîne Twitch à utiliser"
       },
       "help": {
-        "en": "Only useful if the site has several Twitch channels: type the channel name. Empty = the first one that is ready.",
-        "fr": "Utile seulement si le site a plusieurs chaînes Twitch : saisissez le nom de la chaîne. Vide = la première qui est prête."
+        "en": "Only asked when your site has several Twitch channels. Leave empty to use the first one that is ready.",
+        "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch. Laissez vide pour utiliser la première qui est prête."
       }
     }
   ],

@@ -395,6 +395,20 @@ export function seedKeyOf(url) {
   return `ical-${(h2 >>> 0).toString(16).padStart(8, "0")}${(h1 >>> 0).toString(16).padStart(8, "0")}`;
 }
 
+/** Reprise de l'ancienne adresse d'agenda vers « Agenda en ligne » (voir `migrations`). Ne montre, ne journalise ni ne renvoie jamais l'adresse. */
+async function carryOverCalendar(ctx) {
+  const url = String((await ctx.legacy?.get("icsUrl")) ?? "").trim();
+  if (!url) return;
+  const tr = (k, fallback) => { const v = ctx.t?.(k); return typeof v === "string" && v && v !== k ? v : fallback; };
+  const chosen = String(ctx.setting("timezone") ?? "").trim();
+  await ctx.seedInstance("calendar-ical", {
+    nickname: tr("seedNickname", "Agenda en ligne"),
+    settings: { url, timezone: isValidTimeZone(chosen) ? chosen : "UTC" },
+    seedKey: seedKeyOf(url),
+  });
+  await ctx.legacy.clear("icsUrl");   // seulement après le semis (créé, ou déjà semé)
+}
+
 export default {
   // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
   routes: {
@@ -478,25 +492,17 @@ export default {
 
   /**
    * MIGRATION TEMPORAIRE — à retirer en 0.3.0 (reprise des sites créés avant la 2.0.0, comme les autres migrations de ce genre).
-   * Avant la 2.0.0, le Planning gardait lui-même l'adresse de l'agenda (réglage `icsUrl`). Désormais c'est le module « Agenda en ligne » qui la garde et la lit.
+   * Avant la 2.0.0, le Planning gardait lui-même l'adresse de l'agenda (réglage `icsUrl`, aujourd'hui dans `legacySettings` : jamais affiché). Désormais c'est le module
+   * « Agenda en ligne » qui la garde et la lit.
    * Cette migration demande au cœur de créer UNE instance d'« Agenda en ligne » (le module est installé depuis le catalogue s'il manque) avec la MÊME adresse et
-   * le MÊME fuseau (celui que le Planning utilisait pour lire les heures : valeur choisie, sinon UTC), puis efface l'ancien réglage — seulement après le semis.
+   * le MÊME fuseau (celui que le Planning utilisait pour lire les heures : valeur choisie, sinon UTC), puis efface l'ancienne valeur (`ctx.legacy.clear`) — seulement après le semis.
    * Résultat pour la créatrice : rien à faire, le planning montre les mêmes streams. Idempotente : la graine (un hachage de l'adresse, jamais l'adresse) ne sème qu'une
    * fois, même si la migration est rejouée ; sans adresse enregistrée, elle ne fait rien. Si le semis échoue, le cœur remet tout comme avant et la migration peut être réessayée.
+   * La version 3 des données rejoue la même reprise : un site dont les données étaient déjà en version 2 mais qui a gardé une adresse (sauvegarde restaurée) la voit reprise aussi.
    */
   migrations: {
-    2: async (ctx) => {
-      const url = String(ctx.setting("icsUrl") ?? "").trim();
-      if (!url) return;
-      const tr = (k, fallback) => { const v = ctx.t?.(k); return typeof v === "string" && v && v !== k ? v : fallback; };
-      const chosen = String(ctx.setting("timezone") ?? "").trim();
-      await ctx.seedInstance("calendar-ical", {
-        nickname: tr("seedNickname", "Agenda en ligne"),
-        settings: { url, timezone: isValidTimeZone(chosen) ? chosen : "UTC" },
-        seedKey: seedKeyOf(url),
-      });
-      await ctx.clearSetting("icsUrl");   // seulement après le semis (créé, ou déjà semé)
-    },
+    2: carryOverCalendar,
+    3: carryOverCalendar,
   },
 
   async adminPanel(ctx) {

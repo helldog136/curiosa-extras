@@ -1,20 +1,12 @@
 {
   "live": "{channel} est en direct — viens dire bonjour !",
-  "adoptBanner": "Les identifiants Twitch se règlent maintenant dans la Chaîne Twitch. Reprenez-les ici :",
-  "adoptButton": "Reprendre mes identifiants dans la Chaîne Twitch",
-  "adoptDone": "Vos identifiants Twitch ont été repris dans la Chaîne Twitch : c'est elle qui sert désormais. Vous pouvez vider les anciens champs (réglages avancés).",
-  "adoptUnavailable": "La Chaîne Twitch n'est pas disponible : installez-la et activez-la pour y reprendre vos identifiants.",
-  "adoptNothing": "Rien à reprendre : les anciens champs sont vides.",
-  "adoptOk": "Repris dans la Chaîne Twitch : {fields}.",
-  "adoptAlready": "Rien à reprendre : la Chaîne Twitch a déjà ses identifiants.",
-  "field_channel": "chaîne",
-  "field_clientId": "client id",
-  "field_clientSecret": "client secret",
-  "needCredentials": "Renseignez les identifiants Twitch dans la Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans eux, le lecteur n'est pas affiché.",
-  "openTwitch": "Ouvrir la Chaîne Twitch →",
+  "needCredentials": "Reliez votre site à Twitch dans le Connecteur Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans cela, le lecteur n'est pas affiché.",
+  "openTwitch": "Ouvrir Ma Chaîne Twitch →",
   "liveMany": "Chaînes en direct",
   "watch": "Regarder",
   "viewersOne": "{count} spectateur",
   "viewersMany": "{count} spectateurs",
-  "playerChoice": "Choisir la chaîne à regarder"
+  "playerChoice": "Choisir la chaîne à regarder",
+  "needChannel": "Indiquez votre chaîne dans Ma Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans elle, le lecteur n'est pas affiché.",
+  "openConnector": "Ouvrir le Connecteur Twitch →"
 }
