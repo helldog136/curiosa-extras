@@ -11,7 +11,7 @@ const LIST_TTL = 30 * 60_000;   // vidéos et clips (vues par vidéo) : une sér
 const state = { tokens: new Map(), ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map(), backoff: new Map(), videos: new Map(), topClips: new Map(), games: new Map() };
 // Le fichier voisin est importé avec la même « version » que celui-ci (jamais d'ancien oauth.mjs resté en mémoire après une mise à jour).
 const oauth = await import(new URL(`./oauth.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-export const { SCOPES, timing } = oauth;
+export const { SCOPES, timing, within } = oauth;
 export const resetCache = () => { for (const m of Object.values(state)) m.clear(); };
 
 const get = oauth.request;   // signal d'abandon de 5 s ET borne dure (lecture du corps comprise)

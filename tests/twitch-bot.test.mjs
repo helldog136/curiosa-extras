@@ -1,6 +1,6 @@
 // Bot Twitch : le site répond aux commandes du chat. Aucun réseau : un faux « monde » (Chaîne Twitch, Planning, Sponsors, réseaux) répond à la place des autres modules,
 // et les messages de Twitch sont fabriqués avec de vraies signatures.
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHmac } from "node:crypto";
@@ -365,7 +365,8 @@ test("MCP et administration partagent les mêmes règles : une commande ne dépa
 
 /* ───────────── Répondre : le chat ───────────── */
 
-test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !followers les statistiques, !planning le prochain stream (heure du fuseau réglé)", async () => {
+test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !followers les statistiques, !planning le prochain stream (heure du fuseau réglé)", async (t0) => {
+  mock.timers.enable({ apis: ["Date"], now: NOW }); t0.after(() => mock.timers.reset());   // « maintenant » = le 14 octobre : le prochain stream ne dépend pas de la vraie date
   const slots = [{ title: "Passé", start: "2026-10-14T10:00:00Z" }, { title: "Zelda en soirée", start: "2026-10-17T18:30:00Z" }, { title: "Plus tard", start: "2026-10-20T18:30:00Z" }];
   const { ctx, tw } = world({ planning: true, slots });
   let t = NOW;
@@ -556,7 +557,8 @@ test("réseau : !tiktok et son alias !tik-tok répondent avec l'adresse fournie 
   assert.deepEqual(sent(tw), ["Retrouvez-moi sur TikTok : www.tiktok.com/@emma", "Retrouvez-moi sur X : x.com/emma"]);
 });
 
-test("réglages dangereux : préfixe invalide → « ! » ; fuseau inconnu → UTC (dit « UTC » dans la réponse) ; nombres absurdes bornés", async () => {
+test("réglages dangereux : préfixe invalide → « ! » ; fuseau inconnu → UTC (dit « UTC » dans la réponse) ; nombres absurdes bornés", async (t0) => {
+  mock.timers.enable({ apis: ["Date"], now: NOW }); t0.after(() => mock.timers.reset());
   const { settingsOf, prefixOf, validPrefix } = await import("../modules/twitch-bot/settings.mjs");
   const s = (settings) => settingsOf(world({ settings }).ctx);
   for (const bad of ["/", ".", "\\", "a", "1", "!!!!", "", " ", "! "]) assert.equal(s({ prefix: bad }).prefix, "!", JSON.stringify(bad));
