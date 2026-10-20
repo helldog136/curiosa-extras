@@ -8,22 +8,35 @@ const connect = await import(new URL(`./connect.mjs${version}`, import.meta.url)
 
 /** Les seuls appels permis, par type de jeton. `scopes` : ce que l'autorisation de l'utilisateur doit couvrir. */
 export const ALLOWED = {
-  app: new Set(["GET users", "GET eventsub/subscriptions", "POST eventsub/subscriptions", "DELETE eventsub/subscriptions"]),
+  app: new Set(["GET users", "GET streams", "GET eventsub/subscriptions", "POST eventsub/subscriptions", "DELETE eventsub/subscriptions"]),
   user: new Map([["POST chat/messages", ["user:write:chat"]]]),
 };
 const MAX_BODY = 10_000;
 const text = (v) => String(v ?? "").trim();
-const plainQuery = (q) => {
+const plainQuery = (q, maxList = 20) => {
   if (q === undefined) return {};
   if (!q || typeof q !== "object" || Array.isArray(q)) return null;
   const out = {};
   for (const [k, v] of Object.entries(q)) {
     if (!/^[a-z_]{1,30}$/.test(k)) return null;
     const list = [].concat(v);
-    if (!list.length || list.length > 20 || list.some((x) => !["string", "number"].includes(typeof x) || String(x).length > 200)) return null;
+    if (!list.length || list.length > maxList || list.some((x) => !["string", "number"].includes(typeof x) || String(x).length > 200)) return null;
     out[k] = list;
   }
   return Object.keys(out).length <= 10 ? out : null;
+};
+
+/**
+ * `GET streams` (qui est en direct parmi une liste de chaînes) : une forme stricte. Seuls `user_login` (1 à 100 pseudos Twitch, des textes) et `first` (1 à 100) passent ;
+ * rien d'autre (pas de `after`, de `game_id`, de `user_id`…). C'est ce qui sert à un module comme le Raid Twitch ; la réponse est publique (aucun jeton n'y figure).
+ */
+export const STREAMS_MAX_LOGINS = 100;
+const streamsQuery = (q) => {
+  if (!q || Object.keys(q).some((k) => k !== "user_login" && k !== "first")) return false;
+  const logins = q.user_login;
+  if (!Array.isArray(logins) || !logins.length || logins.length > STREAMS_MAX_LOGINS || logins.some((x) => typeof x !== "string" || !helix.LOGIN.test(x))) return false;
+  if (q.first === undefined) return true;
+  return q.first.length === 1 && /^[0-9]{1,3}$/.test(String(q.first[0])) && Number(q.first[0]) >= 1 && Number(q.first[0]) <= 100;
 };
 
 /** `credentialsOf(ctx)` : les identifiants de l'instance (voir index.mjs). */
@@ -99,15 +112,17 @@ export function service(credentialsOf) {
       const route = `${method} ${path}`;
       const need = as === "app" ? (ALLOWED.app.has(route) ? [] : null) : ALLOWED.user.get(route) ?? null;
       if (need === null) return { ok: false, error: "forbidden" };
-      const query = plainQuery(a.query);
-      if (query === null) return { ok: false, error: "invalid" };
+      const query = plainQuery(a.query, route === "GET streams" ? STREAMS_MAX_LOGINS : 20);
+      if (query === null || (route === "GET streams" && !streamsQuery(query))) return { ok: false, error: "invalid" };
       let body;
       if (a.body !== undefined) {
         if (!a.body || typeof a.body !== "object" || Array.isArray(a.body) || JSON.stringify(a.body).length > MAX_BODY) return { ok: false, error: "invalid" };
         body = a.body;
       }
       const req = { method, path, query, ...(body === undefined ? {} : { body }), scopes: need };
-      const r = as === "app" ? await helix.appCall(creds, req) : await helix.userCall(connect.liveConn(ctx, creds, connect.slotOf(a.slot)), req);
+      // Borne dure sur l'ensemble de l'appel (jeton compris) : un Twitch muet ne retient jamais l'appelant plus de `timing.sharedMs`.
+      const call = as === "app" ? helix.appCall(creds, req) : helix.userCall(connect.liveConn(ctx, creds, connect.slotOf(a.slot)), req);
+      const r = await helix.within(call, helix.timing.sharedMs).catch(() => ({ error: "network" }));
       return r.error ? { ok: false, error: r.error } : { ok: true, status: r.status, json: r.json };
     },
   };

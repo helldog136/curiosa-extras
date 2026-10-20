@@ -30,10 +30,11 @@ async function connectMain(ctx, who) {
   return { link, res: await callback(new Request(tw.approve(link, who)), ctx) };
 }
 
-test("manifeste : offre twitch.api en « each » (une chaîne par instance), version 1.5.1 ; textes ajoutés en fr et en", () => {
+test("manifeste : offre twitch.api en « each » (une chaîne par instance), version 1.6.0, interface de service en version 2 ; textes ajoutés en fr et en", () => {
   const o = manifest.offers.find((x) => x.service === "twitch.api");
   assert.ok(o && o.each === true && o.label.fr && o.label.en);
-  assert.equal(manifest.version, "1.5.1");
+  assert.equal(manifest.version, "1.6.0");
+  assert.equal(o.version, 2, "la liste d'appels a gagné GET streams : les consommateurs exigent la version 2");
   for (const k of ["conn_why_chat", "extras_note"]) { assert.ok(fr[k] && en[k], k); }
   assert.deepEqual(Object.keys(api).sort(), ["account", "connectLink", "disconnect", "request", "wantScopes"]);
 });
@@ -190,4 +191,64 @@ test("un jeton refusé (401) est renouvelé UNE fois ; Twitch qui ne répond pas
   assert.equal(tw.log.filter((c) => c.body?.grant_type === "refresh_token").length, 1);
   tw.state.down = true;
   assert.deepEqual(await api.request(ctx, msg), { ok: false, error: "network" });
+});
+
+/* ───────────── Chaîne Twitch 1.6.0 : GET streams (qui est en direct parmi une liste de chaînes) ───────────── */
+
+const live = (login, viewers, extra = {}) => ({ login, name: login.toUpperCase(), game: "Zelda", title: `Live de ${login}`, viewers, startedAt: "2026-10-20T10:00:00Z", ...extra });
+const streams = (ctx, query, over = {}) => api.request(ctx, { as: "app", method: "GET", path: "streams", query, ...over });
+
+test("GET streams : un seul appel groupé avec le jeton d'application ; seuls ceux qui sont en direct reviennent ; jamais de jeton", async () => {
+  const ctx = mk({ trackStats: false });
+  tw.state.streams = [live("alice", 12), live("bob_x", 340), live("pas_dans_la_liste", 5)];
+  const r = await streams(ctx, { user_login: ["alice", "bob_x", "hors_ligne"], first: 100 });
+  assert.equal(r.ok, true); assert.equal(r.status, 200);
+  assert.deepEqual(r.json.data.map((x) => [x.user_login, x.viewer_count, x.game_name, x.type]), [["alice", 12, "Zelda", "live"], ["bob_x", 340, "Zelda", "live"]]);
+  const calls = tw.log.filter((c) => c.path === "/helix/streams");
+  assert.equal(calls.length, 1, "un seul appel pour toute la liste");
+  assert.deepEqual(new URL(calls[0].url).searchParams.getAll("user_login"), ["alice", "bob_x", "hors_ligne"]);
+  assert.equal(new URL(calls[0].url).searchParams.get("first"), "100");
+  assert.equal(calls[0].headers.Authorization, "Bearer app_tok", "jeton d'application, aucune connexion de l'utilisateur nécessaire");
+  const all = JSON.stringify(r);
+  for (const secret of ["SEC-RET", "app_tok", "at_", "rt_"]) assert.ok(!all.includes(secret), `« ${secret} » ne doit jamais sortir du service`);
+});
+
+test("GET streams : 100 pseudos passent, 101 non ; seuls user_login et first sont permis ; pseudos et first stricts ; jamais avec un jeton d'utilisateur", async () => {
+  const ctx = mk({ trackStats: false });
+  const logins = (n) => Array.from({ length: n }, (_, i) => `chaine_${String(i).padStart(3, "0")}`);
+  assert.equal((await streams(ctx, { user_login: logins(100), first: 100 })).ok, true);
+  const before = tw.log.length;
+  const invalid = { ok: false, error: "invalid" };
+  assert.deepEqual(await streams(ctx, { user_login: logins(101) }), invalid);
+  assert.deepEqual(await streams(ctx, {}), invalid, "sans pseudo : refusé (sinon Twitch rendrait n'importe quels directs)");
+  assert.deepEqual(await streams(ctx, undefined), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: [] }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], after: "abc" }), invalid, "pas de pagination");
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], game_id: "1" }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], user_id: "1" }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice", "mauvais pseudo!"] }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["a&user_login=b"] }), invalid, "pas d'injection de paramètre");
+  assert.deepEqual(await streams(ctx, { user_login: [12345] }), invalid, "des textes seulement");
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], first: 0 }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], first: 101 }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], first: "abc" }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"], first: [5, 6] }), invalid);
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"] }, { as: "user" }), { ok: false, error: "forbidden" });
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"] }, { method: "POST" }), { ok: false, error: "forbidden" });
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"] }, { channel: "autre" }), { ok: false, error: "other_channel" });
+  assert.equal(tw.log.length, before, "aucune demande refusée n'est partie vers Twitch");
+  // le plafond de 20 valeurs reste la règle des autres appels
+  assert.deepEqual(await api.request(ctx, { as: "app", method: "GET", path: "users", query: { login: logins(21) } }), invalid);
+});
+
+test("GET streams : sans application réglée → config ; Twitch muet → network ; trop de demandes → rate (puis pas de nouvel appel pendant la pause)", async () => {
+  assert.deepEqual(await streams(mk({ clientId: "", clientSecret: "" }), { user_login: ["alice"] }), { ok: false, error: "config" });
+  const ctx = mk({ trackStats: false });
+  tw.state.down = true;
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"] }), { ok: false, error: "network" });
+  tw.state.down = false; tw.state.rateLimited = true; mod.resetCache();
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"] }), { ok: false, error: "rate" });
+  const n = tw.log.length;
+  assert.deepEqual(await streams(ctx, { user_login: ["alice"] }), { ok: false, error: "rate" });
+  assert.equal(tw.log.length, n, "pause de 60 s après un 429 : Twitch n'est pas harcelé");
 });

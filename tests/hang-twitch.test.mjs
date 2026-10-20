@@ -118,3 +118,30 @@ test("enregistreur de directs : un Twitch qui ne répond pas ne laisse pas le ve
     assert.ok(d.openId, "le direct est enregistré");
   } finally { L.restore(realFetch); }
 });
+
+test("service twitch.api : GET streams vers un Twitch « trou noir » (jeton ou réponse qui ne viennent jamais) rend « network » dans le délai, pour tous les appelants", async () => {
+  const DIR = new URL("../modules/twitch-channel", import.meta.url).pathname;
+  const fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8"));
+  const mod = await import("../modules/twitch-channel/index.mjs");
+  mod.resetCache();
+  Object.assign(timing, { requestMs: 60_000, sharedMs: 150 });   // seule la borne de l'ensemble de l'appel joue
+  const ctx = fakeCtx({ key: "tw", locale: "fr", messages: fr, settings: { channel: "MaChaine", clientId: "cid", clientSecret: "SEC-RET" } });
+  const ask = () => mod.default.services["twitch.api"].request(ctx, { as: "app", method: "GET", path: "streams", query: { user_login: ["alice", "bob_x"], first: 100 } });
+  globalThis.fetch = blackHole;
+  const t0 = Date.now();
+  const [a, b] = await Promise.all([within(ask()), within(ask())]);
+  assert.deepEqual([a, b], [{ ok: false, error: "network" }, { ok: false, error: "network" }]);
+  assert.ok(Date.now() - t0 < 1400, "la borne joue, pas l'attente");
+  // le jeton arrive, mais la liste des directs ne vient jamais (et le délai d'un appel est long) : c'est la borne de l'ensemble qui protège
+  mod.resetCache();
+  globalThis.fetch = async (u) => (String(u).includes("oauth2/token") ? new Response(JSON.stringify({ access_token: "t", expires_in: 3600 })) : blackHole());
+  const t1 = Date.now();
+  assert.deepEqual(await within(ask()), { ok: false, error: "network" });
+  assert.ok(Date.now() - t1 < 1400);
+  // une fois Twitch revenu, la demande suivante repart de zéro
+  mod.resetCache();
+  globalThis.fetch = async (u) => new Response(JSON.stringify(String(u).includes("oauth2/token") ? { access_token: "t", expires_in: 3600 } : { data: [{ user_login: "alice", type: "live" }] }));
+  const r = await within(ask());
+  assert.notEqual(r, HUNG);
+  assert.equal(r.ok, true);
+});

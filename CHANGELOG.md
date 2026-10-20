@@ -4,12 +4,13 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.8.0
 
-*Changements depuis la 1.7.1. Le Planning montre vos streams ; deux nouveaux modules les fournissent. Il faut Curiosa 0.1.27 ou plus pour mettre le Planning à jour.*
+*Changements depuis la 1.7.1. Le Planning montre vos streams et deux nouveaux modules les fournissent ; un nouveau module « Raid Twitch » vous dit quels partenaires sont en direct. Il faut Curiosa 0.1.27 ou plus pour mettre le Planning à jour.*
 
 ### Nouveautés
 
+- **Nouveau module « Raid Twitch ».** Vous y listez les chaînes de vos partenaires, et il vous donne un petit panneau (un « dock ») à ajouter à OBS, qui montre **uniquement ceux qui sont en direct en ce moment** : leur jeu, leur titre, leurs spectateurs et depuis combien de temps ils streament. Un clic sur un partenaire **copie la commande de raid** (`/raid pseudo`), prête à coller dans votre chat : c'est vous qui la lancez. Un bouton « Au hasard » en choisit un pour vous. Le panneau se met à jour tout seul, se lit bien même très étroit, et ne s'ouvre qu'avec son adresse secrète (que vous pouvez remplacer d'un clic si elle a été partagée par erreur). Il faut Curiosa 0.1.22 ou plus ; « Chaîne Twitch » s'installe avec lui.
 - **« Agenda en ligne » : votre Google Agenda alimente le site.** Collez l'adresse secrète de votre agenda une seule fois, puis écrivez vos streams dans Google Agenda comme d'habitude. Un guide pas à pas et un bouton « Tester l'adresse » sont dans la page du module.
 - **« Streams saisis à la main » : pas d'agenda en ligne ? Pas de problème.** Un petit formulaire pour écrire vos streams (jour, heure, jeux, « chaque semaine », semaines à sauter) directement dans l'administration.
 - **Vous pouvez avoir un seul de ces modules, ou les deux.** Leurs streams s'ajoutent sur le planning, et un stream écrit deux fois n'est montré qu'une fois.
@@ -21,6 +22,8 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **Le bot Twitch répond à « !planning » avec un seul de ces modules.** Le Planning n'est plus nécessaire. Un stream annulé n'est jamais annoncé.
 - **Les heures suivent par défaut le fuseau de votre agenda.** Le réglage « Fuseau horaire d'affichage » du Planning est facultatif.
 - **Un agenda qui ne répond plus ne ralentit jamais votre site.** La lecture s'arrête au bout de quelques secondes et le site garde la dernière copie reçue.
+- **Chaîne Twitch 1.6.0 peut dire qui est en direct parmi une liste de chaînes.** C'est ce qui permet à « Raid Twitch » de savoir qui est en ligne, en une seule demande à Twitch (jusqu'à 100 chaînes). Rien à régler et pas besoin de connecter votre compte. Le module est proposé en mise à jour automatiquement.
+- **Chaîne Twitch ne peut plus rester en attente d'un Twitch qui ne répond pas quand un autre module l'interroge** (le Bot Twitch, par exemple) : la demande est abandonnée au bout de quelques secondes et le module appelant en est informé.
 
 ### Pour les développeurs
 
@@ -28,6 +31,10 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - `planning` 2.0.0 (`minCore` 0.1.27) ne fournit plus `planning.slot` : il le consomme. `slots.mjs` met les créneaux au format des apparences (fonctions pures) ; la lecture est bornée (`timing.collectMs`). Les jeux viennent de l'agenda (`games`), plus d'une description.
 - Migration 1 → 2 (`dataVersion` 2, **temporaire, à retirer en 0.3.0**) : `seeds` désigne `calendar-ical`, le lien est un sujet (le cœur doit accepter `seeds` avec `consumes`, 0.1.27). Elle sème une instance avec `{ url, timezone }` puis efface `icsUrl`, déclaré en réglage avancé le temps de la reprise.
 - `twitch-bot` 1.1.1 : `!planning` lit `planning.slot` sans exiger le Planning, ignore les streams annulés, lecture bornée (`timing.collectMs`). Tests : `tests/hang-calendar.test.mjs` (serveur « trou noir »), `planning-slots.test.mjs`, `planning-migration.test.mjs`, `calendar-*.test.mjs`.
+- `twitch-channel` 1.6.0 : le service `twitch.api` passe en **version 2** (`offers[].version`). La liste fermée `ALLOWED.app` gagne `GET streams`, avec une forme stricte (`access.mjs`) : seuls `user_login` (1 à 100 pseudos, des textes qui passent `LOGIN`) et `first` (1 à 100) sont permis, jamais `after`, `game_id` ni `user_id`, et jamais avec le jeton d'utilisateur ; les autres appels gardent leur plafond de 20 valeurs par paramètre. `request()` borne désormais l'ensemble de l'appel (jeton compris) à `timing.sharedMs` (`helix.within`) et rend `network` au-delà. `fakeTwitch` sait répondre à `GET streams` (`state.streams`).
+- `twitch-raid` 1.0.0 (`minCore` 0.1.22) : `requires: [{ service: "twitch.api", min: 2 }]` (une Chaîne Twitch d'avant la 1.6.0 est refusée avec le message du cœur « mettez le module à jour »). Une instance unique. Le dock est une page complète servie par la route `dock` (`/m/<clé>/dock?k=<secret>`), qui lit la route `live` ; secret de 192 bits gardé dans le stockage de l'instance, comparé à temps constant (empreintes SHA-256), régénérable ; page avec politique de sécurité à `nonce`, sans aucune donnée dans le HTML. `live.mjs` : un appel groupé par actualisation, gardé 30 s (`timing.okMs`), 15 s après une erreur, partagé par `share()` (expire à `timing.callMs`, 8 s), dernière liste connue (10 min) jointe aux erreurs. `pure.mjs` : les fonctions `raidCommand`, `sortPartners`, `pickRandom(items, rng, avoid)` et `durationText` sont recopiées telles quelles dans la page (`toString`) et testées avec un générateur injectable. Un outil MCP en lecture seule, non accordé d'office : `raid_partners_live`.
+- Tests : `twitch-raid.test.mjs` (dont les essais « trou noir » du service Twitch, de `account` et de la page d'administration), `hang-twitch.test.mjs` (GET streams), `twitch-api.test.mjs` (forme stricte de `GET streams`). `platform.test.mjs` connaît `twitch-raid`.
+
 
 ## 1.7.1
 

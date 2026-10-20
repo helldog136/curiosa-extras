@@ -18,7 +18,7 @@ test("dépôt : identifiants uniques, les 10 modules de base (ex-livrés avec le
     assert.ok(ids.includes(id), id);
   }
   assert.ok(!ids.includes("blocks"), "« Blocs de page » est une fonction du cœur, plus un module (migration automatique)");
-  assert.equal(ids.length, 47, "10 modules de base + 15 modules + 20 réseaux sociaux + 2 exemples");
+  assert.equal(ids.length, 48, "10 modules de base + 16 modules + 20 réseaux sociaux + 2 exemples");
 });
 
 for (const [name, m] of Object.entries(content)) {
