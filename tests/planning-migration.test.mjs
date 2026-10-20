@@ -127,3 +127,15 @@ test("graine : un hachage stable de l'adresse (jamais l'adresse), valide pour le
   assert.notEqual(k, mod.seedKeyOf(OTHER));
   assert.ok(!k.includes("TOKEN"));
 });
+
+test("catalogue : le module que la migration doit installer (calendar-ical) est dans l'index, annonce le sujet que le Planning lit et vise la même étiquette — sinon la mise à jour mettrait le Planning à l'écart", () => {
+  const index = JSON.parse(fs.readFileSync(new URL("../catalogue/index.json", import.meta.url), "utf8")).modules;
+  const planning = index.find((m) => m.id === "planning");
+  for (const seed of manifest.seeds) {
+    const target = index.find((m) => m.id === seed.module);
+    assert.ok(target, `${seed.module} absent de catalogue/index.json`);
+    assert.ok(target.provides?.includes("planning.slot"), "l'index annonce le sujet : c'est lui que le cœur vérifie avant de télécharger");
+    assert.equal(target.ref, planning.ref, "même étiquette que le Planning : publiés ensemble");
+    assert.ok(!target.requires || target.requires.core <= planning.requires.core);
+  }
+});
