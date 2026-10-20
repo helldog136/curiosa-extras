@@ -39,9 +39,10 @@
   "coversButton": "Look for missing covers",
   "coversNoKey": "No RAWG key: enter it in [Settings](/admin/settings), then run the search again.",
   "coversDenied": "RAWG refuses the key (wrong, disabled or expired). Check it in [Settings](/admin/settings), then run the search again.",
-  "coversBusy": "RAWG asks you to wait (too many requests). Try again in an hour or two.",
   "coversDown": "RAWG cannot be reached right now. Nothing was changed: try again later.",
   "coversPartial": " Found before stopping: {found}.",
   "coversDone": "Search finished: {found} cover(s) found, {none} with no result on RAWG.",
-  "coversMore": " {left} left to try: run the search again."
+  "coversMore": " {left} left to try: run the search again.",
+  "rawgBanner": "No RAWG key is set on the site, so suggestions will have no cover. Enter it once, in the site Settings.",
+  "rawgOpenSettings": "Open the site Settings →"
 }

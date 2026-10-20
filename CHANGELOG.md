@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*Nettoyage du dépôt des modules, pour Curiosa 0.2.0 : plus aucun réglage « ancien » à voir ni à vider.*
+
+### Améliorations
+
+- **« Suggestions de jeux » : la clé RAWG se saisit une seule fois**, dans les Réglages du site. Le champ propre au module a disparu. S'il manque une clé, l'administration du module le dit tout en haut, avec le lien pour la saisir. Si le module gardait une clé de son côté, elle est effacée dès que le site a la sienne.
+- **« Statut live Twitch » reprend tout seul vos identifiants Twitch** dans la Chaîne Twitch, à la mise à jour : plus de bouton à cliquer, plus de champs à vider. Si la Chaîne Twitch n'est pas disponible à ce moment-là, le module réessaie chaque heure.
+- **« Planning » ne montre plus de champ d'adresse de calendrier** : l'adresse reprise par « Agenda en ligne » n'est plus affichée nulle part.
+- Quelques phrases de « Raid Twitch » (renouvellement de l'adresse du dock) sont reformulées sans parler d'« ancienne » adresse.
+
+### Pour les développeurs
+
+- `scripts/build-index.mjs` recopie `requires[].optional` (et seulement la valeur `true`) dans `needs` de l'index : sans cela un cœur 0.2.0 traitait un besoin facultatif comme dur. Les fonctions partagées vivent dans `scripts/rules.mjs`. `build-index.mjs --check` vérifie en plus la règle `needs.optional`.
+- `scripts/release-check.mjs` : règle `needs.optional` et règle `data.versionMonotonic` (un module ne baisse jamais sa `dataVersion` par rapport à l'étiquette précédente ; `dataFloor` ≤ `dataVersion`).
+- `tests/legacy-labels.test.mjs` : copie du test du cœur 0.2.0 (aucun libellé visible ne dit « ancien », « legacy », « reprise automatiquement »), qui lit ce dépôt par défaut. Liste blanche temporaire, nommée et datée (2026-10-20), pour `partnerships` : à retirer avec Partenariats 2.0.
+- `game-suggestions` 1.2.0, `live-status` 1.3.0, `planning` 2.1.0 : `minCore` 0.2.0, `dataVersion` montée (2, 2 et 3), anciennes clés déclarées dans `legacySettings` (`rawgApiKey`, `channel` / `clientId` / `clientSecret`, `icsUrl`), lues par `ctx.legacy.get` et effacées par `ctx.legacy.clear` seulement après reprise confirmée. `game-suggestions` n'a plus de repli `fetch` direct vers RAWG. Tests de migration : rejeu deux fois, secret jamais affiché ni journalisé.
+
 ## 1.10.0
 
 *Changements depuis la 1.9.0. « Raid Twitch » sait maintenant servir une grande communauté : jusqu'à 2 000 chaînes, avec un bouton « au hasard » quand la liste est très longue.*

@@ -2,13 +2,12 @@
 //
 // Le public propose un jeu (liste publique, statut « proposé ») ; l'administrateur le fait avancer (planifié, accepté, déjà joué, fini…).
 // Sur les jeux « déjà joués », le public vote « rejoue-le » : N votes par mois et par visiteur (un cookie + une mémoire côté serveur).
-// La jaquette vient de RAWG par le service du cœur (`ctx.api.rawg`, permission `rawg` ; la clé se règle dans Admin → Réglages) — au mieux :
-// sans clé, la suggestion n'a simplement pas d'image. Un cœur plus ancien, sans ce service, garde l'ancien réglage `rawgApiKey` du module.
+// La jaquette vient de RAWG par le service du cœur (`ctx.api.rawg`, permission `rawg`) — au mieux : sans clé, la suggestion n'a simplement pas d'image.
+// La clé RAWG se saisit UNE seule fois, dans Admin → Réglages du site (jamais dans ce module) ; tant qu'elle manque, l'admin du module le dit avec un lien.
+// Le module n'appelle jamais RAWG lui-même. L'ancienne clé qu'il pouvait garder (`legacySettings`, jamais affichée) n'est plus lue : elle est effacée dès que le cœur a la sienne.
 // Une suggestion restée sans jaquette (migrée, restaurée d'une sauvegarde, créée pendant une panne de RAWG) est rattrapée plus tard :
 // une tâche du cœur en traite quelques-unes à la fois, et un bouton de l'admin lance la même opération tout de suite. Tout ce qui
 // sert à ne pas marteler RAWG (date et résultat de chaque essai) est écrit dans les données de l'instance : rien ne vit en mémoire seulement.
-import { createHash } from "node:crypto";
-
 const COLLECTION = "games";
 const STATE = "state";                // un seul document : dernière recherche de jaquettes, pause éventuelle
 const STATUSES = ["proposed", "planned", "accepted", "rejected", "already_played", "finished"];
@@ -37,42 +36,20 @@ function limited(bucket, max, windowMs, now = Date.now()) {
   return recent.length > max;
 }
 
-/**
- * Cherche une jaquette sur RAWG (au mieux, jamais d'exception, https seulement, 5 s au plus).
- * `status` : found (jaquette trouvée) · none (RAWG ne connaît pas ce titre) · no_key (aucune clé) · denied (clé refusée, 401/403)
- *          · busy (RAWG demande de patienter, 429) · down (RAWG injoignable ou réponse illisible).
- */
-export async function lookupCover(title, apiKey, fetchImpl = fetch) {
-  const key = String(apiKey ?? "").trim();
-  const name = String(title ?? "").trim();
-  if (!key) return { status: "no_key", url: null };
-  if (!name) return { status: "none", url: null };
-  try {
-    const url = new URL("https://api.rawg.io/api/games");
-    url.searchParams.set("search", name); url.searchParams.set("page_size", "1"); url.searchParams.set("key", key);
-    const res = await fetchImpl(url, { signal: AbortSignal.timeout(5000) });
-    if (res.status === 401 || res.status === 403) return { status: "denied", url: null };
-    if (res.status === 429) return { status: "busy", url: null };
-    if (!res.ok) return { status: "down", url: null };
-    const cover = safeHttps((await res.json()).results?.[0]?.background_image ?? null);
-    return cover ? { status: "found", url: cover } : { status: "none", url: null };
-  } catch { return { status: "down", url: null }; }
-}
-
-const SVC_STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };
+const SVC_STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };   // statuts du cœur → ceux de ce module
 const coreRawg = (ctx) => (ctx.api?.rawg && typeof ctx.api.rawg.cover === "function" ? ctx.api.rawg : null);
 
-/** Une clé RAWG est-elle disponible ? (service du cœur, sinon ancien réglage du module). Ne lève jamais. */
+/** Une clé RAWG est-elle réglée sur le site ? Ne lève jamais. */
 export async function hasKey(ctx) {
   const svc = coreRawg(ctx);
-  if (!svc) return !!apiKeyOf(ctx);
+  if (!svc) return false;
   try { return !!(await svc.configured()); } catch { return false; }
 }
 
-/** Cherche une jaquette par le service du cœur (statuts du cœur traduits : found · none · no_key · denied · down), sinon par l'ancien réglage. Jamais d'exception. */
-export async function coverFor(ctx, title, fetchImpl = fetch) {
+/** Cherche une jaquette par le service du cœur (statuts du cœur traduits : found · none · no_key · denied · down). Jamais d'exception. */
+export async function coverFor(ctx, title) {
   const svc = coreRawg(ctx);
-  if (!svc) return lookupCover(title, apiKeyOf(ctx), fetchImpl);
+  if (!svc) return { status: "no_key", url: null };
   try {
     const r = await svc.cover(title);
     const status = SVC_STATUS[r?.status] ?? "down";
@@ -80,9 +57,6 @@ export async function coverFor(ctx, title, fetchImpl = fetch) {
     return status === "found" && !url ? { status: "none", url: null } : { status, url };
   } catch { return { status: "down", url: null }; }
 }
-
-/** Jaquette via RAWG (au mieux, jamais d'exception). */
-export async function fetchCover(title, apiKey, fetchImpl = fetch) { return (await lookupCover(title, apiKey, fetchImpl)).url; }
 
 /* ───────────── Rattrapage des jaquettes manquantes ───────────── */
 
@@ -92,12 +66,8 @@ const MANUAL_BATCH = 25;                      // titres traités par clic sur le
 const RETRY_AFTER_DAYS = [3, 7, 14, 30];      // délai avant le nouvel essai d'un titre sans résultat, selon le nombre d'essais déjà faits
 const MAX_TRIES = RETRY_AFTER_DAYS.length + 1; // au-delà, la tâche renonce (le bouton de l'admin peut encore réessayer)
 const PAUSE_MS = 400;                         // petite pause entre deux demandes à RAWG
-const PAUSE_DENIED = DAY;                     // clé refusée : la tâche ne réessaie pas avant 24 h (avec l'ancien réglage : sauf si la clé change)
-const PAUSE_BUSY = 2 * HOUR;                  // RAWG demande de patienter
+const PAUSE_DENIED = DAY;                     // clé refusée : la tâche ne réessaie pas avant 24 h (le bouton de l'admin passe outre)
 
-const apiKeyOf = (ctx) => String(ctx.setting("rawgApiKey") ?? "").trim();
-/** Empreinte de l'ancienne clé du module (cœur sans service RAWG) : reconnaît « la clé a changé » sans l'enregistrer. */
-const fingerprint = (key) => createHash("sha256").update(`rawg:${key}`).digest("hex").slice(0, 12);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function readState(ctx) { const [row] = await ctx.api.store.list(STATE, { limit: 1 }); return row ? { id: row.id, ...row.data } : null; }
@@ -106,12 +76,10 @@ async function writeState(ctx, prev, data) {
 }
 
 /**
- * « Époque » des essais : les titres déjà essayés à une autre époque sont de nouveau dus tout de suite. Avec le service du cœur la clé
- * est invisible : l'époque change quand la dernière recherche s'était arrêtée faute de clé ou clé refusée (donc dès que la situation a
- * pu changer). Cœur sans service : empreinte de l'ancien réglage.
+ * « Époque » des essais : les titres déjà essayés à une autre époque sont de nouveau dus tout de suite. La clé est invisible pour le module :
+ * l'époque change quand la dernière recherche s'était arrêtée faute de clé ou clé refusée (donc dès que la situation a pu changer).
  */
 async function epochOf(ctx, state, now) {
-  if (!coreRawg(ctx)) return fingerprint(apiKeyOf(ctx));
   return state && (state.lastStatus === "no_key" || state.lastStatus === "denied") ? `e${now}` : state?.epoch ?? "core";
 }
 export const currentEpoch = async (ctx) => epochOf(ctx, await readState(ctx), Date.now());
@@ -127,22 +95,21 @@ function isDue(data, fp, now) {
 
 /**
  * Cherche les jaquettes manquantes, quelques titres à la fois. `force` : le bouton de l'admin (ignore les délais, 25 titres).
- * Ne lève jamais à cause de RAWG ; s'arrête dès que RAWG refuse la clé, demande de patienter ou ne répond pas.
- * Renvoie { status, found, none, left, missing } — status : nothing · no_key · denied · busy · down · done.
+ * Ne lève jamais à cause de RAWG ; s'arrête dès que RAWG refuse la clé ou ne répond pas.
+ * Renvoie { status, found, none, left, missing } — status : nothing · no_key · denied · down · done.
  */
-export async function catchUpCovers(ctx, { force = false, fetchImpl = fetch, now = Date.now(), pauseMs = PAUSE_MS } = {}) {
+export async function catchUpCovers(ctx, { force = false, now = Date.now(), pauseMs = PAUSE_MS } = {}) {
   const report = { status: "done", found: 0, none: 0, left: 0, missing: 0 };
   const missing = (await ctx.api.store.list(COLLECTION, { limit: 1000 })).filter((r) => !safeHttps(r.data.coverUrl) && String(r.data.title ?? "").trim());
   report.missing = missing.length;
   if (!missing.length) return { ...report, status: "nothing" };
   const state = await readState(ctx);
-  const svc = !!coreRawg(ctx);
   if (!(await hasKey(ctx))) {
     if (state?.lastStatus !== "no_key") await writeState(ctx, state, { ...state, id: undefined, epoch: state?.epoch, pausedFor: undefined, pausedUntil: undefined, lastRunAt: new Date(now).toISOString(), lastStatus: "no_key", lastFound: 0, lastNone: 0 });
     return { ...report, status: "no_key", left: missing.length };
   }
-  const paused = state && Date.parse(state.pausedUntil ?? "") > now && (svc || state.keyFp === fingerprint(apiKeyOf(ctx)));
-  if (!force && paused) return { ...report, status: state.pausedFor === "denied" ? "denied" : "busy", left: missing.length };
+  const paused = state && Date.parse(state.pausedUntil ?? "") > now;
+  if (!force && paused) return { ...report, status: "denied", left: missing.length };
   const fp = await epochOf(ctx, state, now);
 
   const due = (force ? missing : missing.filter((r) => isDue(r.data, fp, now)))
@@ -151,7 +118,7 @@ export async function catchUpCovers(ctx, { force = false, fetchImpl = fetch, now
   let stop = null;
   for (const [i, row] of batch.entries()) {
     if (i > 0 && pauseMs > 0) await sleep(pauseMs);
-    const res = await coverFor(ctx, row.data.title, fetchImpl);
+    const res = await coverFor(ctx, row.data.title);
     if (res.status !== "found" && res.status !== "none") { stop = res.status; break; }
     const fresh = await ctx.api.store.get(row.id);          // relit : un vote arrivé entre-temps ne doit pas être écrasé
     if (!fresh) continue;
@@ -162,10 +129,24 @@ export async function catchUpCovers(ctx, { force = false, fetchImpl = fetch, now
   report.left = due.length - report.found - report.none;
   if (stop) report.status = stop;
   await writeState(ctx, state, {
-    keyFp: fp, epoch: fp, lastRunAt: new Date(now).toISOString(), lastStatus: report.status, lastFound: report.found, lastNone: report.none,
-    ...(stop === "denied" || stop === "busy" ? { pausedFor: stop, pausedUntil: new Date(now + (stop === "denied" ? PAUSE_DENIED : PAUSE_BUSY)).toISOString() } : {}),
+    epoch: fp, lastRunAt: new Date(now).toISOString(), lastStatus: report.status, lastFound: report.found, lastNone: report.none,
+    ...(stop === "denied" ? { pausedFor: stop, pausedUntil: new Date(now + PAUSE_DENIED).toISOString() } : {}),
   });
   return report;
+}
+
+/**
+ * Efface l'ancienne clé RAWG de ce module (`legacySettings`) quand le site a sa clé : la valeur n'est jamais lue pour être utilisée, ni affichée, ni journalisée.
+ * Ne lève jamais (la tâche et la migration ne doivent pas échouer pour si peu). Renvoie vrai si une clé a été effacée.
+ */
+export async function dropOldKey(ctx) {
+  try {
+    if (!ctx.legacy || !ctx.legacy.keys().includes("rawgApiKey")) return false;
+    if (!(await hasKey(ctx))) return false;
+    if ((await ctx.legacy.get("rawgApiKey")) === null) return false;
+    await ctx.legacy.clear("rawgApiKey");
+    return true;
+  } catch { return false; }
 }
 
 const rows = async (ctx) => (await ctx.api.store.list(COLLECTION, { limit: 1000 })).map((r) => ({
@@ -243,24 +224,37 @@ export default {
   },
 
   // Rattrapage des jaquettes manquantes : quelques titres toutes les 15 minutes (instances actives seulement, voir catchUpCovers).
+  // Et, au passage, l'ancienne clé RAWG du module est effacée dès que le site a la sienne (voir dropOldKey).
   tasks: {
-    covers: { everyMinutes: 15, run: async (ctx) => { await catchUpCovers(ctx); } },
+    covers: { everyMinutes: 15, run: async (ctx) => { await dropOldKey(ctx); await catchUpCovers(ctx); } },
+  },
+
+  /**
+   * Version 2 des données : la clé RAWG se règle une seule fois pour tout le site (Admin → Réglages). Le réglage `rawgApiKey` du module (`legacySettings`, jamais affiché,
+   * plus jamais lu pour appeler RAWG) est effacé SEULEMENT quand le site a déjà sa propre clé ; sinon il reste, inutilisé, jusqu'à ce que la personne l'ait saisie (la tâche
+   * ci-dessus finit alors le travail) et l'admin du module affiche un bandeau avec le lien. Idempotente : rejouée, elle ne fait rien de plus.
+   */
+  migrations: {
+    2: async (ctx) => { await dropOldKey(ctx); },
   },
 
   async adminPanel(ctx) {
     const list = await rows(ctx);
     const missing = list.filter((g) => !g.cover).length;
     const state = await readState(ctx);
+    const keyed = await hasKey(ctx);
+    // Sans clé RAWG, aucune suggestion n'aura d'image : on le dit tout en haut, avec le lien vers l'endroit où la saisir (une seule fois pour tout le site).
+    const keyBanner = keyed ? [] : [{ type: "banner", tone: "warning", text: ctx.t("rawgBanner") }, { type: "markdown", text: `[${ctx.t("rawgOpenSettings")}](/admin/settings)` }];
     const coverBlocks = [{ type: "heading", text: ctx.t("coversTitle") }];
     if (missing === 0) coverBlocks.push({ type: "markdown", text: ctx.t("coversAll") });
     else {
-      const keyed = await hasKey(ctx);
       coverBlocks.push({ type: "markdown", text: `${keyed ? "" : "⚠️ "}${ctx.t(keyed ? "coversMissing" : "coversNoKeyHint", { n: missing })}` });
       if (state?.lastRunAt) coverBlocks.push({ type: "markdown", text: ctx.t("coversLast", { date: String(state.lastRunAt).slice(0, 16).replace("T", " "), found: Number(state.lastFound) || 0, none: Number(state.lastNone) || 0 }) });
-      if (state?.lastStatus === "denied" && (coreRawg(ctx) || state.keyFp === fingerprint(apiKeyOf(ctx)))) coverBlocks.push({ type: "markdown", text: `⚠️ ${ctx.t("coversDeniedHint")}` });
+      if (state?.lastStatus === "denied") coverBlocks.push({ type: "markdown", text: `⚠️ ${ctx.t("coversDeniedHint")}` });
       coverBlocks.push({ type: "adminForm", action: "findCovers", submitLabel: ctx.t("coversButton"), fields: [] });
     }
     return [
+      ...keyBanner,
       { type: "heading", text: ctx.t("adminTitle", { count: list.length, proposed: list.filter((g) => g.status === "proposed").length }) },
       {
         type: "table", columns: [ctx.t("colDate"), ctx.t("colGame"), ctx.t("colCover"), ctx.t("colBy"), ctx.t("colStatus"), ctx.t("colVotes")],
@@ -286,7 +280,6 @@ export default {
       if (r.status === "nothing") return { ok: ctx.t("coversAll") };
       if (r.status === "no_key") return { error: ctx.t("coversNoKey") };
       if (r.status === "denied") return { error: `${ctx.t("coversDenied")}${partial}` };
-      if (r.status === "busy") return { error: `${ctx.t("coversBusy")}${partial}` };
       if (r.status === "down") return { error: `${ctx.t("coversDown")}${partial}` };
       return { ok: `${ctx.t("coversDone", { found: r.found, none: r.none })}${r.left > 0 ? ctx.t("coversMore", { left: r.left }) : ""}` };
     },

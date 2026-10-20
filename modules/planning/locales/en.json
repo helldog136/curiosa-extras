@@ -46,7 +46,7 @@
   "ap_classic": "Classic list",
   "apd_classic": "A sober agenda: time on the left, title and game, cover on the right.",
   "ap_alternating": "Alternating list",
-  "apd_alternating": "The day name swaps from left to right from one day to the next, like the old site.",
+  "apd_alternating": "The day name swaps from left to right from one day to the next.",
   "ap_week": "Week grid",
   "apd_week": "Seven columns, Monday to Sunday: the whole week at a glance.",
   "ap_timeline": "Timeline",

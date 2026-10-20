@@ -6,6 +6,7 @@
 // REF force une autre référence (étiquette ou commit) ; REPO : adresse de ce dépôt.
 import fs from "node:fs";
 import path from "node:path";
+import { optionalNeedsProblems, serviceList } from "./rules.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const repo = process.env.REPO ?? "https://github.com/helldog136/curiosa-extras";
@@ -15,10 +16,8 @@ if (!/^(v\d+\.\d+\.\d+|[0-9a-f]{7,40})$/.test(ref)) { console.error(`Référence
 const pick = (v) => (typeof v === "string" ? v : v?.fr ?? v?.en ?? Object.values(v ?? {})[0] ?? "");
 // Services offerts / requis : le cœur choisit et annonce un fournisseur AVANT de télécharger le module (« installe aussi… »). Clé `needs` pour ne pas
 // la confondre avec `requires: { core }` (version minimale du cœur). Le manifeste du module fait toujours foi à l'installation.
-const services = (list, field) => (Array.isArray(list) ? list.map((x) => (typeof x === "string" ? { service: x } : x)).filter((x) => x?.service).map((x) => {
-  const o = { service: x.service, ...(Number.isInteger(x[field]) && x[field] > 1 ? { [field]: x[field] } : {}), ...(field === "version" && x.each === true ? { each: true } : {}) };   // `each` : chaque instance répond pour elle-même (offres seulement)
-  return Object.keys(o).length === 1 ? o.service : o;
-}) : []);
+// Fonction partagée avec release-check.mjs et les tests : scripts/rules.mjs (elle recopie aussi `requires[].optional`, seulement la valeur true).
+const services = serviceList;
 const modules = [];
 for (const group of ["modules", "examples"]) {
   for (const id of fs.readdirSync(path.join(root, group)).sort()) {
@@ -30,4 +29,7 @@ const out = JSON.stringify({ version: 1, modules }, null, 2) + "\n";
 const file = path.join(root, "catalogue/index.json");
 if (process.argv.includes("--check")) {
   if (!fs.existsSync(file) || fs.readFileSync(file, "utf8") !== out) { console.error("catalogue/index.json n'est pas à jour : lancez « node scripts/build-index.mjs »."); process.exit(1); }
+  // Règle explicite (en plus de l'égalité) : un besoin facultatif du manifeste (`requires[].optional: true`) est facultatif dans l'index, et rien d'autre ne l'est.
+  const problems = optionalNeedsProblems(modules.map((m) => ({ id: m.id, requires: JSON.parse(fs.readFileSync(path.join(root, m.subdir, "module.json"), "utf8")).requires })), JSON.parse(fs.readFileSync(file, "utf8")));
+  if (problems.length) { console.error("catalogue/index.json :\n- " + problems.join("\n- ")); process.exit(1); }
 } else fs.writeFileSync(file, out);

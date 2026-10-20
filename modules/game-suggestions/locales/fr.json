@@ -39,9 +39,10 @@
   "coversButton": "Rechercher les jaquettes manquantes",
   "coversNoKey": "Aucune clé RAWG : saisissez-la dans [Réglages](/admin/settings), puis relancez la recherche.",
   "coversDenied": "RAWG refuse la clé (fausse, désactivée ou expirée). Vérifiez-la dans [Réglages](/admin/settings), puis relancez la recherche.",
-  "coversBusy": "RAWG demande de patienter (trop de demandes). Réessayez dans une ou deux heures.",
   "coversDown": "RAWG est injoignable pour le moment. Rien n'a été modifié : réessayez plus tard.",
   "coversPartial": " Déjà trouvées avant l'arrêt : {found}.",
   "coversDone": "Recherche terminée : {found} jaquette(s) trouvée(s), {none} sans résultat sur RAWG.",
-  "coversMore": " Il en reste {left} à essayer : relancez la recherche."
+  "coversMore": " Il en reste {left} à essayer : relancez la recherche.",
+  "rawgBanner": "Aucune clé RAWG n'est réglée sur le site : les suggestions n'auront pas d'image. Saisissez-la une seule fois, dans les Réglages du site.",
+  "rawgOpenSettings": "Ouvrir les Réglages du site →"
 }

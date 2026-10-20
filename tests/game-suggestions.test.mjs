@@ -13,7 +13,7 @@ const def = mod.default;
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });
 let n = 0;
-const ctx = (settings = {}) => { const c = fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: readJson("locales/en.json"), settings }); delete c.api.rawg; return c; };   // ancien comportement (réglage du module) ; le service du cœur est testé dans rawg-covers.test.mjs
+const ctx = (settings = {}, over = {}) => fakeCtx({ key: `gs${++n}`, basePath: "suggestions", messages: readJson("locales/en.json"), settings, ...over });   // service RAWG du cœur : le double de fakeCtx ; le détail est dans rawg-covers.test.mjs
 const formReq = (url, fields, headers = {}) => { const fd = new FormData(); for (const [k, v] of Object.entries(fields)) fd.set(k, v); return new Request(url, { method: "POST", body: fd, headers }); };
 const suggest = (c, fields, ip = "1.1.1.1") => def.routes.suggest(formReq("https://x.test/m/k/suggest", fields, { "x-forwarded-for": ip }), c);
 const add = (c, data) => c.api.store.add("games", { title: "Jeu", status: "proposed", replayVotes: 0, ...data });
@@ -21,6 +21,7 @@ const add = (c, data) => c.api.store.add("games", { title: "Jeu", status: "propo
 test("manifeste valide, réglages déclarés, parité en/fr, clés ctx.t statiques existantes, actions MCP implémentées", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   const declared = new Set(manifestJson.settings.map((s) => s.key));
+  assert.ok(!source.includes('ctx.setting("rawgApiKey")'));
   for (const m of source.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)) assert.ok(declared.has(m[1]), m[1]);
   const en = readJson("locales/en.json");
   assert.deepEqual(Object.keys(readJson("locales/fr.json")).sort(), Object.keys(en).sort());
@@ -50,21 +51,22 @@ test("suggestion : limite par heure et par visiteur", async () => {
   assert.equal((await suggest(c, { title: "D" }, "8.8.8.8")).status, 200, "un autre visiteur n'est pas touché");
 });
 
-test("jaquette RAWG : https seulement, jamais d'erreur ; sans clé, aucune requête", async () => {
-  const calls = [];
-  globalThis.fetch = async (u) => { calls.push(String(u)); return { ok: true, json: async () => ({ results: [{ background_image: "https://media.rawg.io/x.jpg" }] }) }; };
-  const c = ctx({ rawgApiKey: "K" });
+test("jaquette RAWG : par le service du cœur, https seulement, jamais d'erreur ; sans clé, aucune jaquette ; jamais d'appel direct", async () => {
+  let direct = 0;
+  globalThis.fetch = async () => { direct++; throw new Error("pas de réseau direct"); };
+  const c = ctx({}, { rawgCover: { status: "found", url: "https://media.rawg.io/x.jpg" } });
   await suggest(c, { title: "Celeste" });
   assert.equal((await c.api.store.list("games"))[0].data.coverUrl, "https://media.rawg.io/x.jpg");
-  assert.ok(calls[0].includes("search=Celeste") && calls[0].includes("key=K"));
-  globalThis.fetch = async () => ({ ok: true, json: async () => ({ results: [{ background_image: "javascript:alert(1)" }] }) });
-  assert.equal(await mod.fetchCover("X", "K"), null);
-  globalThis.fetch = async () => { throw new Error("réseau"); };
-  assert.equal(await mod.fetchCover("X", "K"), null);
-  calls.length = 0; globalThis.fetch = async (u) => { calls.push(u); return { ok: false }; };
-  const c2 = ctx(); await suggest(c2, { title: "Sans clé" });
-  assert.equal(calls.length, 0);
-  assert.equal((await c2.api.store.list("games"))[0].data.coverUrl, null);
+  assert.deepEqual(c.calls.rawg, ["Celeste"]);
+  const bad = ctx({}, { rawgCover: { status: "found", url: "javascript:alert(1)" } });
+  await suggest(bad, { title: "X" });
+  assert.equal((await bad.api.store.list("games"))[0].data.coverUrl, null);
+  const boom = ctx({}, { rawgCover: () => { throw new Error("réseau"); } });
+  assert.equal((await suggest(boom, { title: "Y" })).status, 200);
+  const nokey = ctx({}, { rawgConfigured: false, rawgCover: { status: "no-key", url: null } });
+  await suggest(nokey, { title: "Sans clé" }, "2.2.2.2");
+  assert.equal((await nokey.api.store.list("games"))[0].data.coverUrl, null);
+  assert.equal(direct, 0);
 });
 
 test("vote « rejoue-le » : seulement sur un jeu déjà joué, 3 par mois (cookie et adresse), redirection vers la page", async () => {

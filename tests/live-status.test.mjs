@@ -28,25 +28,27 @@ function stubTwitch({ live = true, fail = false, status = 200 } = {}) {
 const streamCalls = (calls) => calls.filter((c) => c.url.includes("/helix/streams")).length;
 
 /** Un couple (fournisseur, consommateur) : le consommateur appelle le vrai service du fournisseur, dont le ctx est celui du fournisseur. */
-function wire({ provider = { channel: "machaine", clientId: "cid", clientSecret: "sec" }, own = {}, withProvider = true, messages = { live: "{channel} est en direct" }, siteUrl } = {}) {
+function wire({ provider = { channel: "machaine", clientId: "cid", clientSecret: "sec" }, own = {}, withProvider = true, messages = { live: "{channel} est en direct" }, siteUrl, legacy } = {}) {
   const pctx = fakeCtx({ key: "tw", settings: provider });
   const services = withProvider ? { "twitch.live": Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](pctx, args)])) } : {};
-  return { ctx: fakeCtx({ key: "live-status", settings: own, services, messages, siteUrl }), pctx };
+  return { ctx: fakeCtx({ key: "live-status", settings: own, services, messages, siteUrl, ...(legacy ? { legacy, migration: true } : {}) }), pctx };
 }
 const banner = (ctx) => def.slots["layout.banner"](ctx);
 const player = (ctx) => def.sections.player(ctx);
 
-test("live-status : manifeste valide, dépend du service twitch.live, n'en offre aucun, anciens réglages avancés", async () => {
+test("live-status : manifeste valide, dépend du service twitch.live, n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.2.1");
-  assert.equal(m.minCore, "0.1.22");
+  assert.equal(m.version, "1.3.0");
+  assert.equal(m.minCore, "0.2.0");
+  assert.equal(m.dataVersion, 2);
+  assert.equal(typeof def.migrations[2], "function");
+  assert.deepEqual(m.legacySettings, [{ key: "channel" }, { key: "clientId" }, { key: "clientSecret", secret: true }]);
   assert.deepEqual(m.sections.map((s) => s.id), ["player"]);
   assert.equal(m.instances, "single");
   assert.deepEqual(m.requires.map((r) => r.service), ["twitch.live"]);
   assert.ok(!m.offers && !(m.provides ?? []).length && !(m.consumes ?? []).length);
-  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["channel", "text"], ["clientId", "text"], ["clientSecret", "secret"], ["playerWhen", "select"], ["channels", "text"]]);
-  for (const k of ["channel", "clientId", "clientSecret"]) assert.equal(m.settings.find((s) => s.key === k).advanced, true, `${k} : ancien réglage, masqué en version simple`);
-  assert.deepEqual(m.permissions.sort(), ["admin", "sections", "slots", "storage"]);
+  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["playerWhen", "select"], ["channels", "text"]]);
+  assert.deepEqual(m.permissions.sort(), ["admin", "sections", "slots"], "plus de stockage : la marque de reprise manuelle a disparu");
   assert.deepEqual(Object.keys(def.slots), ["layout.banner"]);
 });
 
@@ -62,12 +64,11 @@ test("live-status : locales en/fr, variable {channel} conservée", () => {
   assert.match(locales.fr.live, /\{channel\}/);
 });
 
-test("player : aucune chaîne connue (ni de la Chaîne Twitch ni d'ancien réglage) ou chaîne invalide → null", async () => {
+test("player : aucune chaîne connue ou chaîne invalide → null", async () => {
   stubTwitch();
   assert.equal(await player(wire({ provider: {} }).ctx), null);
   assert.equal(await player(wire({ withProvider: false }).ctx), null);
   for (const channel of ["ab", "a".repeat(26), "bad name", "x&parent=evil.com", "ch/../x", "<script>", "a-b-c", "é_é_é"]) {
-    assert.equal(await player(wire({ provider: {}, own: { channel } }).ctx), null, channel);
     assert.equal(await player(wire({ provider: { channel, clientId: "a", clientSecret: "b" } }).ctx), null, channel);
   }
 });
@@ -110,12 +111,12 @@ test("bannière : en direct → bannière success avec lien twitch.tv, texte tra
   assert.equal(await banner(wire().ctx), null);
 });
 
-test("fournisseur absent (désinstallé, restauration) → dégrade proprement : pas de bannière, lecteur de l'ancien réglage ou rien, aucune exception", async () => {
+test("fournisseur absent (désinstallé, restauration) → dégrade proprement : pas de bannière, pas de lecteur, aucune exception", async () => {
   const calls = stubTwitch();
-  const gone = wire({ withProvider: false, own: { channel: "ancienne", clientId: "x", clientSecret: "y" } }).ctx;
+  const gone = wire({ withProvider: false, own: { channel: "ancienne", clientId: "x", clientSecret: "y" } }).ctx;   // d'anciennes valeurs restées dans les réglages n'y changent rien
   assert.equal(await banner(gone), null);
   assert.equal(await player(gone), null, "on ne peut pas savoir : pas de lecteur");
-  assert.equal((await player(wire({ withProvider: false, own: { channel: "ancienne", playerWhen: "always" } }).ctx))[0].type, "embed");
+  assert.equal(await player(wire({ withProvider: false, own: { playerWhen: "always" } }).ctx), null, "« toujours » sans Chaîne Twitch : aucune chaîne à montrer");
   const nothing = wire({ withProvider: false }).ctx;
   assert.equal(await banner(nothing), null);
   assert.equal(await player(nothing), null);
@@ -152,22 +153,17 @@ test("stream.live toujours publié par la Chaîne Twitch, avec les mêmes donné
   assert.equal(item.title, "Soirée");
 });
 
-test("mode hérité : anciens réglages seuls (Chaîne Twitch sans identifiants) → fonctionne comme avant, UN appel, fait par le service", async () => {
+test("plus de mode hérité : des valeurs d'avant restées dans les réglages ne servent plus à interroger Twitch (la Chaîne Twitch sans identifiants → ni bannière ni lecteur, aucun appel)", async () => {
   const calls = stubTwitch({ live: true });
   const w = wire({ provider: {}, own: { channel: "Ancienne_Chaine", clientId: "old-id", clientSecret: "old-SECRET" } });
-  const out = await banner(w.ctx);
-  assert.deepEqual(out, [{ type: "banner", tone: "success", text: "ancienne_chaine est en direct", href: "https://twitch.tv/ancienne_chaine" }]);
-  assert.equal((await player(w.ctx))[0].type, "embed");
-  assert.equal(streamCalls(calls), 1);
-  assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["Client-Id"], "old-id");
-  assert.ok(!JSON.stringify(out).includes("old-SECRET"));
-  tw.resetCache(); stubTwitch({ live: false });
-  assert.equal(await player(w.ctx), null, "hors ligne : lecteur masqué, comme avant");
+  assert.equal(await banner(w.ctx), null);
+  assert.equal(await player(w.ctx), null);
+  assert.equal(calls.length, 0);
 });
 
-test("mode hérité : dès que la Chaîne Twitch est configurée, elle prend le dessus (ses identifiants, sa chaîne)", async () => {
+test("la Chaîne Twitch configurée donne ses identifiants et sa chaîne", async () => {
   const calls = stubTwitch({ live: true });
-  const w = wire({ provider: { channel: "nouvelle", clientId: "new-id", clientSecret: "sec" }, own: { channel: "ancienne", clientId: "old-id", clientSecret: "old" } });
+  const w = wire({ provider: { channel: "nouvelle", clientId: "new-id", clientSecret: "sec" } });
   const [b] = await banner(w.ctx);
   assert.equal(b.href, "https://twitch.tv/nouvelle");
   assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["Client-Id"], "new-id");
@@ -194,92 +190,142 @@ test("échappement : une chaîne hostile venue du fournisseur ne produit ni bann
   assert.ok(!JSON.stringify(await banner(wire().ctx)).includes("<script>"));
 });
 
-// ── Reprise des identifiants ────────────────────────────────────────────────────────────────────────────────────────────────────────
-const legacyOwn = { channel: "Ancienne_Chaine", clientId: "old-id", clientSecret: "old-SECRET" };
-
-test("admin : ancien réglage rempli et Chaîne Twitch vide → bandeau en langage simple + bouton ; rien à reprendre → aucun bandeau", async () => {
-  const w = wire({ provider: {}, own: legacyOwn, messages: { adoptBanner: "BANDEAU", adoptButton: "BOUTON" } });
-  const blocks = await def.adminPanel(w.ctx);
-  assert.equal(blocks[0].type, "banner");
-  assert.equal(blocks[0].text, "BANDEAU");
-  assert.deepEqual([blocks[1].type, blocks[1].action, blocks[1].submitLabel], ["adminForm", "adopt", "BOUTON"]);
-  const dump = JSON.stringify(blocks);
-  for (const v of ["old-id", "old-SECRET", "Ancienne_Chaine"]) assert.ok(!dump.includes(v), `${v} jamais affiché`);
-  assert.ok(!(await def.adminPanel(wire({ provider: {} }).ctx)).some((b) => b.type === "adminForm"), "pas d'ancien réglage : pas de bouton");
-  assert.deepEqual(await def.adminPanel(wire({ own: legacyOwn }).ctx), [], "la Chaîne Twitch a déjà tout : rien");
-});
-
-test("admin : sans identifiants Twitch, message en langage simple avec lien vers la Chaîne Twitch ; absent avec identifiants, en mode hérité complet ou avec « toujours »", async () => {
+test("admin : sans identifiants Twitch, message en langage simple avec lien vers la Chaîne Twitch ; absent avec identifiants ou avec « toujours » ; jamais de bouton de reprise", async () => {
   const m = { needCredentials: "RENSEIGNEZ" };
   const blocks = await def.adminPanel(wire({ provider: { channel: "machaine" }, messages: m }).ctx);
   assert.equal(blocks.find((b) => b.text === "RENSEIGNEZ").type, "banner");
   assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("](/admin/modules/twitch-channel)")), "lien vers la Chaîne Twitch");
-  for (const w of [wire({ messages: m }), wire({ provider: {}, own: legacyOwn, messages: m }), wire({ provider: {}, own: { playerWhen: "always" }, messages: m })]) {
+  for (const w of [wire({ messages: m }), wire({ provider: {}, own: { playerWhen: "always" }, messages: m })]) {
     assert.ok(!(await def.adminPanel(w.ctx)).some((b) => b.text === "RENSEIGNEZ"));
   }
+  assert.equal(def.adminActions, undefined, "plus d'action de reprise manuelle");
+  assert.ok(!(await def.adminPanel(wire({ provider: {}, legacy: legacyOwn }).ctx)).some((b) => b.type === "adminForm"), "même avec d'anciennes valeurs : pas de bouton");
   assert.match(locales.fr.needCredentials, /Renseignez les identifiants Twitch dans la Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct/);
 });
 
-test("admin : la Chaîne Twitch absente → message pour l'installer (pas de bouton) ; l'action répond par une erreur claire", async () => {
-  const w = wire({ withProvider: false, own: legacyOwn, messages: { adoptUnavailable: "INSTALLEZ" } });
-  const blocks = await def.adminPanel(w.ctx);
-  assert.deepEqual(blocks.map((b) => b.type), ["banner"]);
-  assert.equal(blocks[0].text, "INSTALLEZ");
-  assert.deepEqual(await def.adminActions.adopt(w.ctx, {}), { error: "INSTALLEZ" });
-});
+// ── Reprise automatique des identifiants d'avant (migration, legacySettings) ──────────────────────────────────────────────────────────
+const legacyOwn = { channel: "Ancienne_Chaine", clientId: "old-id", clientSecret: "old-SECRET" };
+const SECRETS = ["old-id", "old-SECRET", "Ancienne_Chaine", "ancienne_chaine"];
+const noLeak = (...things) => { const dump = JSON.stringify(things); for (const v of SECRETS) assert.ok(!dump.includes(v), `${v} ne doit apparaître nulle part`); };
+/** Tout ce que le module a rendu visible ou écrit chez lui (les appels de service reçus par le fournisseur, eux, portent forcément les valeurs : c'est leur objet). */
+const visible = (ctx) => ({ ...ctx.calls, services: undefined, net: undefined });
+const migrate = (w) => def.migrations[2](w.ctx);
 
-test("reprise : le bouton copie une fois dans la Chaîne Twitch, la marque faite, puis la Chaîne Twitch prend le dessus ; idempotent ; aucun secret renvoyé", async () => {
+test("migration 2 : copie une fois dans la Chaîne Twitch (champs vides), efface ici ce qui est repris, puis la Chaîne Twitch sert ; aucun secret affiché, renvoyé ni journalisé", async () => {
   const calls = stubTwitch({ live: true });
-  const w = wire({ provider: {}, own: legacyOwn });
-  const r1 = await def.adminActions.adopt(w.ctx, {});
-  assert.deepEqual(Object.keys(r1).sort(), ["ok", "redirect"]);
-  assert.equal(r1.redirect, "?");
-  for (const v of ["old-id", "old-SECRET", "Ancienne_Chaine"]) assert.ok(!JSON.stringify(r1).includes(v));
+  const w = wire({ provider: {}, legacy: legacyOwn });
+  assert.equal(await migrate(w), undefined, "rien n'est renvoyé");
+  assert.deepEqual(w.ctx.calls.legacyCleared.sort(), ["channel", "clientId", "clientSecret"]);
   assert.deepEqual(await svc.channel(w.pctx), { channel: "ancienne_chaine", url: "https://twitch.tv/ancienne_chaine", configured: true, ready: true, missing: [] });
-  assert.equal(await w.ctx.api.store.count("adoption"), 1);
-  const done = await def.adminPanel(w.ctx);
-  assert.deepEqual(done.map((b) => [b.type, b.tone]), [["banner", "success"]], "plus de bouton, confirmation");
-  assert.ok(!JSON.stringify(done).includes("old-SECRET"));
-  // 2e clic : rien de plus
-  const r2 = await def.adminActions.adopt(w.ctx, {});
-  assert.equal(r2.ok, w.ctx.t("adoptAlready"));
-  assert.equal(await w.ctx.api.store.count("adoption"), 1);
   assert.equal(await w.pctx.api.store.count("adopted"), 1);
-  // l'état en direct vient maintenant de la Chaîne Twitch (identifiants repris)
+  // l'état en direct vient maintenant de la Chaîne Twitch (identifiants repris), exactement comme après l'ancien bouton
   assert.ok(await banner(w.ctx));
   assert.equal(calls.find((c) => c.url.includes("/helix/streams")).init.headers["Client-Id"], "old-id");
+  noLeak(visible(w.ctx), await def.adminPanel(w.ctx), await w.ctx.api.store.list("adoption"));
 });
 
-test("reprise : jamais d'écrasement d'une valeur déjà présente dans la Chaîne Twitch", async () => {
-  const w = wire({ provider: { channel: "ma_chaine" }, own: legacyOwn });
-  const blocks = await def.adminPanel(w.ctx);
-  assert.equal(blocks[1].action, "adopt", "il manque encore les identifiants");
-  await def.adminActions.adopt(w.ctx, {});
+test("migration 2 rejouée : rien de plus (aucun appel, aucune écriture, rien d'effacé en double)", async () => {
+  const w = wire({ provider: {}, legacy: legacyOwn });
+  await migrate(w);
+  const cleared = [...w.ctx.calls.legacyCleared];
+  const before = w.ctx.calls.services.length;
+  await migrate(w); await migrate(w);
+  assert.deepEqual(w.ctx.calls.legacyCleared, cleared);
+  assert.equal(w.ctx.calls.services.length, before, "plus rien à reprendre : le service n'est même pas appelé");
+  assert.equal(await w.pctx.api.store.count("adopted"), 1);
+});
+
+test("migration 2 : instance DÉJÀ reprise (ancien bouton cliqué, anciennes valeurs encore là) → même affichage qu'avant, anciennes valeurs effacées, rien écrasé, rien copié de plus", async () => {
+  const calls = stubTwitch({ live: true });
+  const w = wire({ provider: {}, legacy: legacyOwn });
+  await svc.adopt(w.pctx, { ...legacyOwn });                       // la reprise d'autrefois
+  const before = await banner(w.ctx);
+  assert.equal(await w.pctx.api.store.count("adopted"), 1);
+  await migrate(w);
+  assert.deepEqual(w.ctx.calls.legacyCleared.sort(), ["channel", "clientId", "clientSecret"]);
+  assert.equal(await w.pctx.api.store.count("adopted"), 1, "pas de seconde copie");
+  assert.deepEqual(await banner(w.ctx), before);
+  assert.equal((await player(w.ctx))[0].type, "embed");
+  assert.equal(streamCalls(calls) > 0, true);
+});
+
+test("migration 2 : jamais d'écrasement d'une valeur déjà présente dans la Chaîne Twitch ; ses identifiants saisis gardent le dessus", async () => {
+  const w = wire({ provider: { channel: "ma_chaine" }, legacy: legacyOwn });
+  await migrate(w);
   const info = await svc.channel(w.pctx);
   assert.equal(info.channel, "ma_chaine", "la chaîne saisie dans la Chaîne Twitch est intacte");
   assert.equal(info.ready, true);
-  assert.deepEqual(await def.adminPanel(wire({ provider: { channel: "ma_chaine", clientId: "a", clientSecret: "b" }, own: legacyOwn }).ctx), []);
+  const full = wire({ provider: { channel: "ma_chaine", clientId: "a", clientSecret: "b" }, legacy: legacyOwn });
+  await migrate(full);
+  assert.equal(await full.pctx.api.store.count("adopted"), 0, "rien à copier");
+  assert.deepEqual(full.ctx.calls.legacyCleared.sort(), ["channel", "clientId", "clientSecret"], "ses valeurs étaient déjà inutilisées : effacées");
 });
 
-test("reprise : rien à reprendre (anciens champs vides) → erreur simple, aucune écriture", async () => {
-  const w = wire({ provider: {}, messages: { adoptNothing: "RIEN" } });
-  assert.deepEqual(await def.adminActions.adopt(w.ctx, {}), { error: "RIEN" });
-  assert.equal(await w.pctx.api.store.count("adopted"), 0);
+test("migration 2 : Chaîne Twitch indisponible ou qui plante → rien n'est effacé, aucune exception ; la tâche réessaie et finit le travail", async () => {
+  const gone = wire({ withProvider: false, legacy: legacyOwn });
+  await assert.doesNotReject(() => migrate(gone));
+  assert.deepEqual(gone.ctx.calls.legacyCleared, []);
+  const broken = fakeCtx({ legacy: legacyOwn, services: { "twitch.live": { adopt: () => { throw new Error("boom"); }, channel: () => { throw new Error("boom"); } } } });
+  await assert.doesNotReject(() => def.migrations[2](broken));
+  assert.deepEqual(broken.calls.legacyCleared, []);
+  // plus tard, la Chaîne Twitch répond : la tâche reprend
+  const w = wire({ provider: {}, legacy: legacyOwn });
+  const real = w.ctx.api.services.call;
+  let up = false;
+  w.ctx.api.services.call = async (...a) => (up ? real(...a) : { ok: false, reason: "unavailable" });
+  await migrate(w);
+  assert.deepEqual(w.ctx.calls.legacyCleared, []);
+  up = true;
+  assert.equal(typeof def.tasks.adopt.run, "function");
+  await def.tasks.adopt.run(w.ctx);
+  assert.equal(w.ctx.calls.legacyCleared.length, 3);
+  assert.equal((await svc.channel(w.pctx)).ready, true);
 });
 
-test("textes d'admin de la reprise : tous présents en fr et en", () => {
-  for (const l of ["fr", "en"]) for (const k of ["adoptBanner", "adoptButton", "adoptDone", "adoptUnavailable", "adoptNothing", "adoptOk", "adoptAlready", "field_channel", "field_clientId", "field_clientSecret", "needCredentials", "openTwitch"]) assert.ok(locales[l][k], `${l}.${k}`);
-  assert.match(locales.fr.adoptBanner, /Les identifiants Twitch se règlent maintenant dans la Chaîne Twitch\. Reprenez-les ici/);
+test("migration 2 : rien à reprendre (valeurs vides, absentes) ou cœur sans ctx.legacy → aucune écriture, aucun appel", async () => {
+  for (const legacy of [{ channel: "", clientId: "", clientSecret: "" }, { channel: "  ", clientId: null, clientSecret: undefined }, {}]) {
+    const w = wire({ provider: {}, legacy });
+    await migrate(w);
+    assert.deepEqual([w.ctx.calls.legacyCleared, w.ctx.calls.services], [[], []], JSON.stringify(legacy));
+    assert.equal(await w.pctx.api.store.count("adopted"), 0);
+  }
+  const plain = wire({ provider: {} });
+  assert.equal(plain.ctx.legacy, undefined);
+  await assert.doesNotReject(() => migrate(plain));
+});
+
+test("migration 2 : seulement une partie reprise (chaîne illisible, secret manquant) → l'illisible est effacé, ce qui manque encore reste ici sans rien afficher", async () => {
+  const w = wire({ provider: {}, legacy: { channel: "x&y", clientId: "old-id", clientSecret: "" } });
+  await migrate(w);
+  assert.deepEqual(w.ctx.calls.legacyCleared.sort(), ["channel", "clientId"], "la chaîne illisible est du déchet ; le client id est repris");
+  const info = await svc.channel(w.pctx);
+  assert.deepEqual(info.missing, ["channel", "clientSecret"]);
+  noLeak(visible(w.ctx));
+});
+
+test("migration 2 avec plusieurs Chaînes Twitch : la reprise va dans la PREMIÈRE seulement, les autres ne sont pas touchées", async () => {
+  const { ctx, pctxs } = wireMany([{ settings: { clientId: "", clientSecret: "" } }, { settings: { channel: "rascane", clientId: "", clientSecret: "" } }], { own: {}, legacy: legacyOwn });
+  await def.migrations[2](ctx);
+  assert.equal((await svc.channel(pctxs[0])).ready, true, "la première chaîne reçoit la reprise");
+  assert.equal((await svc.channel(pctxs[1])).ready, false, "la deuxième n'est pas touchée");
+  assert.equal(await pctxs[1].api.store.count("adopted"), 0);
+});
+
+test("textes visibles : ni bouton ni message de reprise manuelle ; les clés qui restent existent en fr et en", () => {
+  for (const l of ["fr", "en"]) {
+    for (const k of Object.keys(locales[l])) assert.ok(!/^adopt|^field_/.test(k), `${l}.${k} : reprise manuelle retirée`);
+    for (const k of ["needCredentials", "openTwitch"]) assert.ok(locales[l][k], `${l}.${k}`);
+  }
 });
 
 // ── Plusieurs chaînes Twitch (une instance par chaîne) : Statut live les annonce TOUTES ─────────────────────────────────────────────────
 const bind = (pctx) => Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](pctx, args)]));
 /** N instances du vrai fournisseur (ordre de création = ordre du tableau) ; le consommateur a `callAll` (nouveau cœur) ou seulement `call` (vieux cœur : oldCore). */
-function wireMany(chans, { own = {}, oldCore = false, messages = {}, ...rest } = {}) {
+function wireMany(chans, { own = {}, oldCore = false, messages = {}, legacy, ...rest } = {}) {
   const pctxs = chans.map((c, i) => fakeCtx({ key: c.key ?? `tw${i}`, settings: { clientId: "cid", clientSecret: "sec", ...c.settings } }));
   const methods = pctxs.map((p) => bind(p));
   const ctx = fakeCtx({ key: "live-status", settings: own, services: { "twitch.live": methods[0] }, serviceInstances: { "twitch.live": chans.map((c, i) => ({ instance: pctxs[i].instance.key, name: c.name, methods: methods[i] })) },
-    messages: { live: "{channel} est en direct", liveMany: "En direct", watch: "Regarder", viewersOne: "{count} spectateur", viewersMany: "{count} spectateurs", playerChoice: "Chaîne", ...messages }, ...rest });
+    ...(legacy ? { legacy } : {}), messages: { live: "{channel} est en direct", liveMany: "En direct", watch: "Regarder", viewersOne: "{count} spectateur", viewersMany: "{count} spectateurs", playerChoice: "Chaîne", ...messages }, ...rest });
   if (oldCore) delete ctx.api.services.callAll;
   return { ctx, pctxs };
 }
@@ -300,8 +346,8 @@ function fakeHelix({ lives = {}, errors = {} } = {}) {
 }
 const two = [{ name: "Twitch Helldog136", settings: { channel: "helldog136" } }, { name: "Twitch Rascane", settings: { channel: "rascane" } }];
 
-test("manifeste : minCore 0.1.22, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
-  assert.equal(manifest.minCore, "0.1.22");
+test("manifeste : minCore 0.2.0, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
+  assert.equal(manifest.minCore, "0.2.0");
   const s = manifest.settings.find((x) => x.key === "channels");
   assert.equal(s.type, "text");
   assert.ok(!s.advanced && !s.default);
@@ -416,17 +462,6 @@ test("un callAll qui lève → pas d'exception (repli sur rien)", async () => {
   ctx.api.services.callAll = async () => { throw new Error("boom"); };
   assert.equal(await banner(ctx), null);
   assert.equal(await player(ctx), null);
-});
-
-test("mode hérité avec plusieurs chaînes sans identifiants : un seul appel (anciens réglages), fait par la première ; les identifiants repris vont dans la première", async () => {
-  const calls = fakeHelix({ lives: { ancienne: {} } });
-  const { ctx, pctxs } = wireMany([{ settings: { clientId: "", clientSecret: "" } }, { settings: { channel: "rascane", clientId: "", clientSecret: "" } }], { own: { channel: "Ancienne", clientId: "old-id", clientSecret: "old-SECRET" } });
-  assert.equal((await banner(ctx))[0].href, "https://twitch.tv/ancienne");
-  assert.equal(streamCalls(calls), 1);
-  await def.adminActions.adopt(ctx, {});
-  assert.equal((await svc.channel(pctxs[0])).ready, true, "la première chaîne reçoit la reprise");
-  assert.equal((await svc.channel(pctxs[1])).ready, false, "la deuxième n'est pas touchée");
-  assert.equal(await pctxs[1].api.store.count("adopted"), 0);
 });
 
 test("aucun secret ni jeton dans ce que présente Statut live ; aucun appel réseau de live-status lui-même", async () => {
