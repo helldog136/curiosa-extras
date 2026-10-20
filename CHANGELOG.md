@@ -4,7 +4,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.11.0
 
 *Livraison « Connexions » et nettoyage, pour Curiosa 0.2.0 ou plus : un Connecteur Twitch et un Connecteur YouTube qui gardent vos accès à un seul endroit, « Ma Chaîne Twitch », et plus aucun réglage « ancien » à voir.*
 
