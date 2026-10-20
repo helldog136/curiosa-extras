@@ -75,9 +75,11 @@ const ORDER = {
   countdown: ["brand", "digits", "when", "title", "game", "text", "costreamers"],
   minimal: ["brand", "title", "when", "countdown", "game", "text", "costreamers"],
 };
+/** Plus grand agrandissement : peu de contenu = éléments plus grands, pour que la composition remplisse la zone sûre au lieu de rester petite en haut. */
+const MAX_SCALE = 1.7;
 const STYLE_PARAMS = {
   neon: { align: "center", title: 100, weight: 800, gap: 40, cover: "thumb" },
-  poster: { align: "left", title: 112, weight: 900, gap: 36, cover: "hero" },
+  poster: { align: "center", title: 112, weight: 900, gap: 36, cover: "hero" },
   countdown: { align: "center", title: 76, weight: 800, gap: 34, cover: "thumb" },
   minimal: { align: "left", title: 92, weight: 700, gap: 44, cover: "thumb" },
 };
@@ -155,11 +157,11 @@ export function createScene(opts = {}) {
   const gapFor = (u) => sp.gap * u;
   const totalAt = (u) => { const bs = build(u); return bs.reduce((s, b) => s + b.h, 0) + Math.max(0, bs.length - 1) * gapFor(u); };
   // l'échelle : la plus grande pour laquelle tout tient en hauteur ET en largeur
-  const widthCap = (() => { const bs = build(1); return bs.reduce((k, b) => (b.id === "digits" || b.id === "game" || b.id === "brand" || b.id === "countdown" ? Math.min(k, (A.w * 0.99) / Math.max(1, b.tw)) : k), 1); })();
-  const u = solveScale(totalAt, A.h, Math.min(1, widthCap), 0.25);
+  const widthCap = (() => { const bs = build(1); return bs.reduce((k, b) => (b.id === "digits" || b.id === "game" || b.id === "brand" || b.id === "countdown" ? Math.min(k, (A.w * 0.99) / Math.max(1, b.tw)) : k), MAX_SCALE); })();
+  const u = solveScale(totalAt, A.h, widthCap, 0.25);
   const blocks = build(u), gap = gapFor(u);
   const used = blocks.reduce((s, b) => s + b.h, 0) + Math.max(0, blocks.length - 1) * gap;
-  const extra = Math.max(0, A.h - used), stretch = blocks.length > 1 ? Math.min(extra / (blocks.length - 1), gap * 0.9) : 0;
+  const extra = Math.max(0, A.h - used), stretch = blocks.length > 1 ? Math.min(extra / (blocks.length - 1), gap * 1.6) : 0;
   let cursor = A.y + Math.max(0, (A.h - (used + stretch * Math.max(0, blocks.length - 1))) / 2);
   for (const b of blocks) { b.x = A.x; b.w = A.w; b.y = cursor; cursor += b.h + gap + stretch; }
   // le rectangle réellement occupé par chaque bloc (pour la vérification de la zone sûre)
@@ -232,7 +234,7 @@ export function createScene(opts = {}) {
       ctx.fillStyle = band; ctx.fillRect(0, 0, W, H);
       const r = seeded(Math.floor(t * 12) + 5); ctx.fillStyle = "rgba(255,255,255,0.05)";
       for (let k = 0; k < 140; k++) ctx.fillRect(r() * W, r() * H, 3, 3);
-      ctx.fillStyle = pal.accent; ctx.fillRect(A.x, A.y - 28, 120 * easeOutCubic(progress(t, 0.1, 0.8)), 8);
+      ctx.fillStyle = pal.accent; { const bw = 120 * easeOutCubic(progress(t, 0.1, 0.8)); ctx.fillRect(W / 2 - bw / 2, A.y - 28, bw, 8); }
     } else if (style === "countdown") {
       const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, pal.bg0); g.addColorStop(1, pal.bg1); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
       for (let k = 0; k < 5; k++) {
