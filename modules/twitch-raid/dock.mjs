@@ -10,12 +10,12 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const KEYS = [
   "title", "random", "random_again", "sort", "refresh", "updated", "copied", "copy_failed", "random_toast", "none_to_pick", "empty", "empty_hint", "loading",
   "no_partners", "nr_no_channel", "nr_channel_unknown", "nr_setup", "nr_refused", "nr_outdated", "err_twitch", "err_rate", "err_site", "retry", "denied", "viewers_one", "viewers_other", "hint", "list_label",
-  "sort_viewers_asc", "sort_viewers_desc", "sort_newest", "sort_oldest", "sort_mine", "manual_label",
+  "sort_viewers_asc", "sort_viewers_desc", "sort_newest", "sort_oldest", "sort_mine", "manual_label", "rm_button", "rm_intro", "rm_searching", "rm_none", "limited", "partial",
 ];
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`dock_${k}`)]));
 
 /** Les mêmes fonctions que celles testées, recopiées dans la page. */
-const shared = [pure.raidCommand, pure.sortPartners, pure.pickRandom, pure.durationText].map((f) => f.toString()).join("\n");
+const shared = [pure.raidCommand, pure.sortPartners, pure.pickRandom, pure.durationText, pure.canSearch].map((f) => f.toString()).join("\n");
 
 const CLIENT = `
 (function () {
@@ -24,7 +24,7 @@ const CLIENT = `
   __SHARED__
   var $ = function (id) { return document.getElementById(id); };
   var fmt = function (s, vars) { return String(s).replace(/\\{(\\w+)\\}/g, function (m, k) { return vars && vars[k] !== undefined ? vars[k] : m; }); };
-  var st = { live: [], listed: 0, offset: 0, sort: C.sorts[0], picked: null, rows: {}, busy: false, timer: null, toastTimer: null, lastFetch: 0, failed: false, denied: false, ready: false, first: true };
+  var st = { mode: "full", searching: false, lastPick: 0, live: [], listed: 0, offset: 0, sort: C.sorts[0], picked: null, rows: {}, busy: false, timer: null, toastTimer: null, lastFetch: 0, failed: false, denied: false, ready: false, first: true };
   try { var saved = localStorage.getItem("raid-dock-sort"); if (saved && C.sorts.indexOf(saved) >= 0) st.sort = saved; } catch (e) { /* mémoire du navigateur indisponible : sans importance */ }
 
   function toast(text, kind) {
@@ -109,8 +109,15 @@ const CLIENT = `
     Object.keys(st.rows).forEach(function (l) { if (!seen[l]) { st.rows[l].remove(); delete st.rows[l]; } });
     if (focus && st.rows[focus] && document.activeElement !== st.rows[focus].firstChild) st.rows[focus].firstChild.focus({ preventScroll: true });
     list.hidden = !sorted.length;
-    $("count").textContent = st.ready ? String(sorted.length) : "";
-    $("rand").querySelector(".label").textContent = st.picked ? L.random_again : L.random;
+    $("count").textContent = st.ready && st.mode === "full" ? String(sorted.length) : "";
+    if (!st.searching) $("rand").querySelector(".label").textContent = st.mode === "random" ? (st.picked ? L.random_again : L.rm_button) : (st.picked ? L.random_again : L.random);
+  }
+  /* Le mode « au hasard » (plus de 500 chaînes) : pas de liste ni de tri ni d'actualisation, un grand bouton. */
+  function setMode(mode) {
+    st.mode = mode;
+    var big = mode === "random";
+    $("sortbox").hidden = big; $("refresh").hidden = big; $("rand").classList.toggle("big", big);
+    document.body.classList.toggle("rmode", big);
   }
 
   function reasonText(d) {
@@ -123,24 +130,31 @@ const CLIENT = `
     if (status === 403 || (d && d.state === "denied")) d = { state: "denied" };
     if (d && typeof d.now === "number") st.offset = d.now - Date.now();
     st.failed = false; st.denied = d.state === "denied";
-    if (d.state === "ok") {
+    if (d.state === "ok" && d.mode === "random") {
+      setMode("random"); st.listed = d.listed; st.ready = true; st.lastFetch = Date.now(); st.failed = false;
+      banner(""); if (!st.live.length && !st.noneShown) message(L.rm_intro, "");
+      $("updated").textContent = "";
+    } else if (d.state === "ok") {
+      setMode("full");
       st.live = d.live; st.listed = d.listed; st.ready = true; st.lastFetch = Date.now();
-      banner(""); message(d.live.length ? "" : L.empty, d.live.length ? "" : fmt(L.empty_hint, { n: d.listed }));
+      banner(d.partial ? L.partial : ""); message(d.live.length ? "" : L.empty, d.live.length ? "" : fmt(L.empty_hint, { n: d.listed }));
       $("updated").textContent = fmt(L.updated, { time: new Date(Date.now()).toLocaleTimeString(C.locale, { hour: "2-digit", minute: "2-digit" }) });
     } else if (d.state === "error") {
       st.failed = true; st.lastFetch = Date.now();
       if (d.stale) { st.live = d.stale.live; st.listed = d.stale.listed; st.ready = true; }
-      if (st.ready) { banner(reasonText(d) + " " + L.retry); message(st.live.length ? "" : L.empty, st.live.length ? "" : fmt(L.empty_hint, { n: st.listed })); }
+      if (st.ready && st.mode === "random") { banner(reasonText(d)); }
+      else if (st.ready) { banner(reasonText(d) + " " + L.retry); message(st.live.length ? "" : L.empty, st.live.length ? "" : fmt(L.empty_hint, { n: st.listed })); }
       else { banner(""); message(reasonText(d), L.retry); }
     } else {
       st.live = []; st.ready = false; st.failed = d.state === "not_ready"; banner(""); message(reasonText(d), d.state === "not_ready" ? L.retry : "");
     }
-    if (st.picked && !st.live.some(function (x) { return x.login === st.picked; })) st.picked = null;
+    if (st.mode === "full" && st.picked && !st.live.some(function (x) { return x.login === st.picked; })) st.picked = null;
     renderList();
   }
 
   function schedule() {
     clearTimeout(st.timer);
+    if (st.mode === "random") return;   // « au hasard » : Twitch n'est interrogé que sur un clic
     var wait = st.failed ? C.retryMs : C.intervalMs;
     st.timer = setTimeout(function () { refresh(); }, wait + Math.floor(Math.random() * 2000));
   }
@@ -153,7 +167,42 @@ const CLIENT = `
       .then(function () { clearTimeout(cut); st.busy = false; $("refresh").classList.remove("spin"); if (!st.denied) schedule(); });
   }
 
+  /* « Au hasard » (plus de 500 chaînes) : le serveur cherche, un clic = une recherche. Une seule à la fois, et jamais deux à moins de 2 secondes d'écart. */
+  function setBusy(on) {
+    var b = $("rand"); b.disabled = on; b.setAttribute("aria-busy", on ? "true" : "false");
+    if (on) b.querySelector(".label").textContent = L.rm_searching;
+  }
+  function handlePick(d, status) {
+    if (status === 403 || (d && d.state === "denied")) { st.live = []; st.picked = null; renderList(); message(L.denied, ""); return; }
+    if (d && typeof d.now === "number") st.offset = d.now - Date.now();
+    if (d.state === "found" && d.pick) {
+      st.noneShown = false; st.live = [{ login: d.pick.login, name: d.pick.name, game: d.pick.game, title: d.pick.title, viewers: d.pick.viewers, startedAt: d.pick.startedAt, pos: 0 }];
+      st.picked = d.pick.login; banner(""); message("", ""); renderList();
+      var li = st.rows[d.pick.login]; if (li) li.scrollIntoView({ block: "nearest" });
+      copyCommand(st.live[0], true);
+    } else if (d.state === "none") {
+      st.noneShown = true; st.live = []; st.picked = null; banner(""); renderList(); message(L.rm_none, "");
+    } else if (d.state === "limited") {
+      banner(L.limited); toast(L.limited, "warn");
+    } else if (d.state === "not_ready" || d.state === "no_partners") {
+      st.live = []; st.picked = null; renderList(); message(reasonText(d), "");
+    } else banner(reasonText(d));
+  }
+  function search() {
+    if (!canSearch(Date.now(), st.lastPick, st.searching, C.searchMinMs)) return;
+    st.searching = true; st.lastPick = Date.now(); setBusy(true);
+    var ctl = new AbortController(), cut = setTimeout(function () { ctl.abort(); }, C.pickMs);
+    fetch(C.pickUrl, { method: "POST", cache: "no-store", signal: ctl.signal, credentials: "omit", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ avoid: st.picked || "" }) })
+      .then(function (r) { return r.json().then(function (j) { handlePick(j, r.status); }, function () { handlePick({ state: "error", reason: "site" }, r.status); }); })
+      .catch(function () { handlePick({ state: "error", reason: "site" }, 0); })
+      .then(function () {
+        clearTimeout(cut); st.searching = false; st.lastPick = Date.now(); renderList();
+        var b = $("rand"); b.disabled = true; setTimeout(function () { b.disabled = false; b.removeAttribute("aria-busy"); }, C.searchMinMs);   // 2 s avant la recherche suivante
+      });
+  }
+
   function random() {
+    if (st.mode === "random") { search(); return; }
     var pick = pickRandom(st.live, Math.random, st.picked);
     if (!pick) { toast(L.none_to_pick, "info"); return; }
     st.picked = pick.login; renderList();
@@ -184,6 +233,9 @@ h1 .count:empty{display:none}
 button,select,input{font:inherit;color:inherit}
 .primary{flex:1 1 100%;min-height:44px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
 .primary:hover{filter:brightness(1.1)}
+.primary:disabled{opacity:.6;cursor:default;filter:none}
+.primary.big{min-height:84px;font-size:18px;padding:8px 14px;line-height:1.25}
+.rmode .msg{margin-top:26px}
 .sortbox{flex:1 1 0;min-width:0;display:flex}
 select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 8px}
 .icon{flex:0 0 44px;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;font-size:18px;line-height:1}
@@ -216,11 +268,11 @@ select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:10p
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}`;
 
 /** La réponse complète : la page, avec une politique de sécurité qui n'autorise que ses propres scripts et ne contacte que le site lui-même. */
-export function dockPage(ctx, { sorts = pure.SORTS, liveUrl }) {
+export function dockPage(ctx, { sorts = pure.SORTS, liveUrl, pickUrl }) {
   const nonce = randomBytes(16).toString("base64");
   const L = labelsOf(ctx);
   const accent = /^#[0-9a-fA-F]{6}$/.test(String(ctx.theme?.accent ?? "")) ? ctx.theme.accent : "#9147ff";
-  const config = { liveUrl, labels: L, sorts: [...sorts], intervalMs: 45_000, retryMs: 20_000, fetchMs: 12_000, locale: ctx.locale || "en" };
+  const config = { liveUrl, labels: L, sorts: [...sorts], pickUrl, searchMinMs: 2000, pickMs: 16_000, intervalMs: 45_000, retryMs: 20_000, fetchMs: 12_000, locale: ctx.locale || "en" };
   const script = CLIENT.replace("__SHARED__", () => shared).replace("__CONFIG__", () => JSON.stringify(config).replace(/</g, "\\u003c"));
   const options = sorts.map((s) => `<option value="${esc(s)}">${esc(L[`sort_${s}`])}</option>`).join("");
   const html = `<!doctype html>
@@ -229,7 +281,7 @@ export function dockPage(ctx, { sorts = pure.SORTS, liveUrl }) {
 <body><div class="wrap">
 <header class="head"><h1><span>${esc(L.title)}</span><span class="count" id="count"></span></h1>
 <div class="bar"><button type="button" class="primary" id="rand"><span aria-hidden="true">🎲 </span><span class="label">${esc(L.random)}</span></button>
-<label class="sortbox"><span class="sr">${esc(L.sort)}</span><select id="sort">${options}</select></label>
+<label class="sortbox" id="sortbox"><span class="sr">${esc(L.sort)}</span><select id="sort">${options}</select></label>
 <button type="button" class="icon" id="refresh" title="${esc(L.refresh)}" aria-label="${esc(L.refresh)}"><span aria-hidden="true">↻</span></button></div></header>
 <div class="banner" id="banner" role="status" hidden></div>
 <main><div class="msg" id="msg" role="status"></div>

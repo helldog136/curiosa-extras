@@ -1,4 +1,4 @@
-// Raid Twitch 1.1.0 : la liste des partenaires, le dock (adresse secrète, page, données), les attentes bornées, le presse-papier (fonctions de la page), l'administration.
+// Raid Twitch 1.2.0 : la liste des partenaires, le dock (adresse secrète, page, données), les attentes bornées, le presse-papier (fonctions de la page), l'administration.
 // Aucun réseau : Chaîne Twitch est remplacée par un faux service `twitch.api` ; la page du navigateur est vérifiée à part (voir README du dépôt : essais en navigateur réel faits à la livraison).
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
@@ -52,7 +52,7 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste : un module, un service (twitch.api, version 2 au moins), aucun droit d'écriture MCP, réglage avancé facultatif, vie privée déclarée", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.2.0");
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 2 }], "exige la Chaîne Twitch qui sait dire qui est en direct (1.6.0)");
   assert.ok(!("consumes" in manifest) && !("offers" in manifest));
   assert.deepEqual(manifest.provides.map((p) => p.topic), ["stream.partner"], "1.1.0 : le seul lien est un sujet, facultatif pour ceux qui le lisent");
@@ -63,7 +63,7 @@ test("manifeste : un module, un service (twitch.api, version 2 au moins), aucun 
   assert.deepEqual([s[0].key, s[0].advanced, s[0].optional], ["channel", true, true]);
   assert.ok(manifest.privacy.fr && manifest.privacy.en);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "live"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "live", "pick"]);
 });
 
 /* ───────────── Pseudos ───────────── */
@@ -79,12 +79,13 @@ test("pseudos : pseudo, @pseudo et adresses twitch.tv sont reconnus ; 4 à 25 ca
   assert.deepEqual(pure.splitList("alice\r\nbob_x, carl;dave  \n\n"), ["alice", "bob_x", "carl", "dave"]);
   assert.deepEqual(pure.splitList("alice_tv bob_x  @carl_99"), ["alice_tv", "bob_x", "@carl_99"], "des pseudos séparés par des espaces");
   assert.deepEqual(pure.splitList("Ma super chaîne\nalice_tv bob mauvais!"), ["Ma super chaîne", "alice_tv bob mauvais!"], "un mot douteux : la ligne entière est refusée plus tard");
-  assert.equal(pure.splitList("xxxx\n".repeat(1000)).length, 300);
+  assert.equal(pure.splitList("xxxx\n".repeat(1000)).length, 1000, "des centaines de pseudos collés d'un coup");
+  assert.equal(pure.splitList("xxxx\n".repeat(9000)).length, 5000, "plafond de sécurité très au-dessus de la liste");
 });
 
 /* ───────────── Liste ───────────── */
 
-test("liste : ajout groupé (un par ligne, adresses, @), doublons et erreurs dits sans bloquer le reste, 100 au plus, ordre gardé", async () => {
+test("liste : ajout groupé (un par ligne, adresses, @), doublons et erreurs dits sans bloquer le reste, 2000 au plus, ordre gardé", async () => {
   const ctx = mk();
   const r = await data.addPartners(ctx, "alice_tv\n@Bob_X\nhttps://twitch.tv/carl_99/\nALICE_TV\nmauvais pseudo!\nab\nhttps://twitch.tv/videos/1");
   assert.deepEqual(r.added, ["alice_tv", "bob_x", "carl_99"]);
@@ -93,9 +94,9 @@ test("liste : ajout groupé (un par ligne, adresses, @), doublons et erreurs dit
   assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), ["alice_tv", "bob_x", "carl_99"]);
   assert.deepEqual((await data.addPartners(ctx, "alice_tv")).added, [], "rien d'ajouté, rien d'écrit");
   const big = mk();
-  const full = await data.addPartners(big, logins(105));
-  assert.equal(full.added.length, 100); assert.equal(full.full.length, 5);
-  assert.equal((await data.readPartners(big)).length, 100);
+  const full = await data.addPartners(big, logins(pure.MAX_PARTNERS + 5));
+  assert.equal(full.added.length, 2000); assert.equal(full.full.length, 5);
+  assert.equal((await data.readPartners(big)).length, 2000);
   assert.equal((await ctx.api.store.count("partners")), 1, "une liste = un seul document");
 });
 

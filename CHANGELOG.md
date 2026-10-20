@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.10.0
+
+*Changements depuis la 1.9.0. « Raid Twitch » sait maintenant servir une grande communauté : jusqu'à 2 000 chaînes, avec un bouton « au hasard » quand la liste est très longue.*
+
+### Nouveautés
+
+- **« Raid Twitch » pour les grandes communautés (associations, collectifs).** La liste peut contenir **jusqu'à 2 000 chaînes** (100 avant). Jusqu'à 500 chaînes, le dock montre toujours **tous les membres en direct**. Au-delà, il propose un grand bouton **« Trouver un streameur en ligne au hasard »** : un clic choisit un membre en direct, le met en évidence et **copie sa commande de raid**. « Un autre au hasard » en propose un différent. La page d'administration dit clairement dans quel cas vous êtes, et pourquoi (Twitch ne permet de vérifier que 100 chaînes à la fois).
+- **Un seul dock pour toute l'association.** Une personne tient la liste sur un site ; les membres ajoutent l'adresse du dock dans OBS, sans rien installer. Le site n'interroge Twitch que lorsque quelqu'un regarde ou clique, et le nombre de demandes ne dépend pas du nombre de membres.
+
+### Améliorations
+
+- **Une liste de 2 000 chaînes reste agréable à gérer** : 50 chaînes par page, champ de recherche (pseudo, nom, note), nombre total affiché, retour à la même page après chaque action.
+- **Importer toute une communauté d'un coup** : collez vos pseudos (un par ligne, ou séparés par des virgules ou des espaces). Un bilan dit combien ont été ajoutés, combien y étaient déjà et lesquels ne sont pas valables, sans bloquer les bons. Un texte trop long est signalé, avec l'endroit où reprendre.
+- **Le dock ne se vide plus si quelques chaînes ne répondent pas** : il affiche ce qu'il a, avec le message « Certaines chaînes n'ont pas pu être vérifiées. »
+- **Votre propre chaîne n'apparaît plus** dans votre dock ni dans les tirages au hasard.
+- **« Nouvelle adresse » est plus clair** : il est écrit qu'elle coupe l'accès à tout le monde, membres compris.
+- **Votre IA** : au-delà de 500 chaînes, l'outil « qui est en direct » donne un membre tiré au hasard plutôt que la liste. Il reste en lecture seule et n'est jamais accordé d'office.
+
+### Pour les développeurs
+
+- `twitch-raid` 1.2.0 (`twitch-channel` inchangé : `GET streams` garde sa forme stricte de 100 pseudos au plus). Constantes uniques dans `pure.mjs` : `MAX_PARTNERS = 2000`, `FULL_VIEW_MAX = 500`, `PACKET_SIZES = [100, 50, 20]`, `SEARCH_TRIES = 6`. Nouveaux fichiers : `streams.mjs` (appel `GET streams`, paquets, borne par appel, repli 100 → 50 → 20 sur erreur 400, taille retenue 10 minutes) et `search.mjs` (mode au hasard : tirage sans remise injectable, souvenir par instance d'une minute, une recherche en cours est rejointe, plafond de 12 recherches par minute). `live.mjs` : vue complète par paquets de 100, 3 à la fois, résultat partiel, cache de 30 s (15 s si partiel) partagé et jamais éternel.
+- Nouvelle route `pick` (POST seulement, secret obligatoire). La route `live` ne fait aucune demande à Twitch au-delà de 500 chaînes. Le dock reste une seule page sans donnée : `canSearch` est recopiée dans la page comme les autres fonctions du dock.
+- Administration : `pageOf`, `filterPartners`, `rowId` / `parseRowId` (la page et la recherche voyagent dans l'identifiant de ligne). Le cœur coupe les textes de formulaire à 20 000 caractères : un collage trop long ignore son dernier pseudo, peut-être coupé.
+- Tests : `twitch-raid-large` (paquets, repli 400, partiel, 50 visiteurs = 1 jeu d'appels, tirage équitable et sans remise, 300 clics en une minute, plafond, « trou noir » de la vue complète et du mode au hasard, administration à 2 000 chaînes). `fakeTwitch` : `streamsMax` (400 au-delà), `streamsFail`, compteurs de demandes.
+
 ## 1.9.0
 
 *Changements depuis la 1.8.0. Un nouveau module « Story d'annonce » fabrique la vidéo qui annonce votre prochain stream. Il faut Curiosa 0.1.22 ou plus.*

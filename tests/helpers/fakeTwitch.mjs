@@ -87,8 +87,12 @@ export function fakeTwitch(opts = {}) {
           return json({ data: [{ id: s.userId, login: s.login }] });
         }
         if (u.pathname === "/helix/streams" && (init.method ?? "GET") === "GET") {
-          // Qui est en direct parmi `user_login` (répété) : `s.streams` = [{ login, name, game, title, viewers, startedAt, type? }]. `first` vaut 20 par défaut, comme chez Twitch.
+          // Qui est en direct parmi `user_login` (répété) : `s.streams` = [{ login, name, game, title, viewers, startedAt, type? }]. `first` vaut 20 par défaut, comme chez Twitch. `s.streamsMax` : limite de pseudos par demande (400 au-delà) ; `api.streamCalls` / `api.streamSizes` comptent les demandes.
           const wanted = u.searchParams.getAll("user_login").map((x) => x.toLowerCase()), first = Number(u.searchParams.get("first") ?? 20);
+          // `s.streamsMax` : refuse comme Twitch (erreur 400) une demande qui compte plus de pseudos que la limite ; `s.streamsFail(wanted)` vrai : une panne (503) pour cette demande-là
+          api.streamCalls = (api.streamCalls ?? 0) + 1; (api.streamSizes ??= []).push(wanted.length);
+          if (s.streamsMax && wanted.length > s.streamsMax) return json({ error: "Bad Request", status: 400, message: `The number of user_login query parameters exceeds the maximum of ${s.streamsMax}` }, 400);
+          if (s.streamsFail?.(wanted)) return json({ status: 503, message: "unavailable" }, 503);
           return json({ data: (s.streams ?? []).filter((x) => wanted.includes(x.login)).slice(0, first).map((x, i) => ({ id: `${9000 + i}`, user_id: `${500 + i}`, user_login: x.login, user_name: x.name ?? x.login, game_id: "1", game_name: x.game ?? "", type: x.type ?? "live", title: x.title ?? "", viewer_count: x.viewers ?? 0, started_at: x.startedAt ?? new Date().toISOString(), language: "fr", thumbnail_url: "https://static-cdn.jtvnw.net/previews-ttv/live_user_x-{width}x{height}.jpg", tags: [], is_mature: false })), pagination: {} });
         }
         return json({}, 404);

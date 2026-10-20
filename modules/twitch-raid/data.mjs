@@ -1,8 +1,8 @@
 // Ce que le module garde : la liste des chaînes partenaires de la personne, et l'adresse secrète de son dock. Rien d'autre, aucun visiteur.
-// Une liste = UN document (100 chaînes au plus) : l'ordre est celui du tableau, et il n'y a rien à recoller en cas de coupure.
+// Une liste = UN document (2 000 chaînes au plus, quelques centaines de ko) : l'ordre est celui du tableau, et il n'y a rien à recoller en cas de coupure. Un import de plusieurs centaines de chaînes est UNE seule écriture.
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { normalizeLogin, oneLine, splitList, MAX_PARTNERS } = await import(`./pure.mjs${v}`);
+const { normalizeLogin, oneLine, splitList, dedupe, MAX_PARTNERS } = await import(`./pure.mjs${v}`);
 
 const LIST = "partners", DOCK = "dock";
 
@@ -10,7 +10,7 @@ const LIST = "partners", DOCK = "dock";
 export async function readPartners(ctx) {
   const doc = (await ctx.api.store.list(LIST, { limit: 1 }))[0];
   const items = Array.isArray(doc?.data?.items) ? doc.data.items : [];
-  return items.filter((x) => x && typeof x.login === "string").map((x) => ({ login: x.login, name: oneLine(x.name, 40), note: oneLine(x.note, 200) })).slice(0, MAX_PARTNERS);
+  return dedupe(items.filter((x) => x && typeof x.login === "string").map((x) => ({ login: x.login, name: oneLine(x.name, 40), note: oneLine(x.note, 200) }))).slice(0, MAX_PARTNERS);
 }
 async function writePartners(ctx, items) {
   const doc = (await ctx.api.store.list(LIST, { limit: 1 }))[0];
