@@ -80,7 +80,12 @@ export function fakeTwitch(opts = {}) {
             return json({ data: [{ ...sub, secret: undefined }], total: 1, total_cost: 1, max_total_cost: 10000 }, 202);
           }
         }
-        if (u.pathname === "/helix/users") return json({ data: [{ id: s.userId, login: s.login }] });
+        if (u.pathname === "/helix/users") {
+          // Avec `login` (répété) : les chaînes connues de `s.users` = [{ login, name, picture }] (nom affiché, photo de profil). Sans : la chaîne elle-même.
+          const wanted = u.searchParams.getAll("login").map((x) => x.toLowerCase());
+          if (wanted.length) return json({ data: (s.users ?? []).filter((x) => wanted.includes(x.login)).map((x, i) => ({ id: `${700 + i}`, login: x.login, display_name: x.name ?? x.login, type: "", broadcaster_type: "", description: "", profile_image_url: x.picture ?? "", offline_image_url: "", view_count: 0, created_at: "2020-01-01T00:00:00Z" })) });
+          return json({ data: [{ id: s.userId, login: s.login }] });
+        }
         if (u.pathname === "/helix/streams" && (init.method ?? "GET") === "GET") {
           // Qui est en direct parmi `user_login` (répété) : `s.streams` = [{ login, name, game, title, viewers, startedAt, type? }]. `first` vaut 20 par défaut, comme chez Twitch.
           const wanted = u.searchParams.getAll("user_login").map((x) => x.toLowerCase()), first = Number(u.searchParams.get("first") ?? 20);

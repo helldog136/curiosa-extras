@@ -37,10 +37,12 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
     if (main) for (const m of read(`${dir}/${main}`).matchAll(/\btopic: "([^"]+)"/g)) used.add(m[1]);
   }
   assert.ok(used.size >= 5, "des sujets doivent être trouvés");
-  // Sujets que le cœur publié (0.1.16) ne liste pas encore dans son tableau : une entrée = une exception expliquée, à retirer quand le cœur les documente.
+  // Sujets que le cœur publié (0.1.27) ne liste pas encore dans son tableau : une entrée = une exception expliquée, à retirer quand le cœur les documente.
+  //   stream.partner : fourni par twitch-raid 1.1.0 (pseudo, nom, photo de profil des partenaires), lu par stream-story ; à ajouter au tableau « Sujets connus » de docs/MODULES.md du cœur.
+  const NOT_YET_DOCUMENTED = new Set(["stream.partner"]);
   for (const topic of used) {
     assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
-    assert.ok(doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
+    assert.ok(NOT_YET_DOCUMENTED.has(topic) || doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
   }
 });
 

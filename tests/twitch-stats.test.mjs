@@ -48,9 +48,9 @@ const SECRETS = (extra = []) => ["SEC-RET", ...extra];
 
 // ── Manifeste, réglages, textes ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
-test("manifeste : valide, 1.6.0, fournit social.stat, déclare routes + storage, réglages sûrs par défaut (éteint tant que le compte n'est pas connecté)", () => {
+test("manifeste : valide, 1.7.0, fournit social.stat, déclare routes + storage, réglages sûrs par défaut (éteint tant que le compte n'est pas connecté)", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.6.0");
+  assert.equal(manifest.version, "1.7.0");
   assert.ok(manifest.provides.some((p) => p.topic === "social.stat" && p.label.fr && p.label.en));
   for (const p of ["routes", "storage", "admin", "topics"]) assert.ok(manifest.permissions.includes(p), p);
   const s = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));

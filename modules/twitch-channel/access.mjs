@@ -39,6 +39,17 @@ const streamsQuery = (q) => {
   return q.first.length === 1 && /^[0-9]{1,3}$/.test(String(q.first[0])) && Number(q.first[0]) >= 1 && Number(q.first[0]) <= 100;
 };
 
+/**
+ * `GET users` (le nom affiché et la photo de profil d'une liste de chaînes) : une forme stricte, comme `GET streams`. Seul `login` (1 à 100 pseudos, des textes qui passent `LOGIN`) est permis,
+ * rien d'autre (pas de `id`, d'`after`…). C'est ce qui sert au Raid Twitch pour donner la photo de ses partenaires ; la réponse est publique (aucun jeton, aucune adresse e-mail avec un jeton d'application).
+ */
+export const USERS_MAX_LOGINS = 100;
+const usersQuery = (q) => {
+  if (!q || Object.keys(q).some((k) => k !== "login")) return false;
+  const logins = q.login;
+  return Array.isArray(logins) && logins.length >= 1 && logins.length <= USERS_MAX_LOGINS && logins.every((x) => typeof x === "string" && helix.LOGIN.test(x));
+};
+
 /** `credentialsOf(ctx)` : les identifiants de l'instance (voir index.mjs). */
 export function service(credentialsOf) {
   const mine = async (ctx, args) => {
@@ -112,8 +123,8 @@ export function service(credentialsOf) {
       const route = `${method} ${path}`;
       const need = as === "app" ? (ALLOWED.app.has(route) ? [] : null) : ALLOWED.user.get(route) ?? null;
       if (need === null) return { ok: false, error: "forbidden" };
-      const query = plainQuery(a.query, route === "GET streams" ? STREAMS_MAX_LOGINS : 20);
-      if (query === null || (route === "GET streams" && !streamsQuery(query))) return { ok: false, error: "invalid" };
+      const query = plainQuery(a.query, route === "GET streams" ? STREAMS_MAX_LOGINS : route === "GET users" ? USERS_MAX_LOGINS : 20);
+      if (query === null || (route === "GET streams" && !streamsQuery(query)) || (route === "GET users" && !usersQuery(query))) return { ok: false, error: "invalid" };
       let body;
       if (a.body !== undefined) {
         if (!a.body || typeof a.body !== "object" || Array.isArray(a.body) || JSON.stringify(a.body).length > MAX_BODY) return { ok: false, error: "invalid" };

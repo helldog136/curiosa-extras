@@ -2,8 +2,11 @@
   "apiVersion": 2,
   "minCore": "0.1.22",
   "id": "twitch-raid",
-  "name": { "en": "Twitch raid", "fr": "Raid Twitch" },
-  "version": "1.0.0",
+  "name": {
+    "en": "Twitch raid",
+    "fr": "Raid Twitch"
+  },
+  "version": "1.1.0",
   "platform": "twitch",
   "description": {
     "en": "List the channels of your partners on Twitch and get a small panel for OBS that shows which of them are live right now, to choose who to raid. One click copies the raid command ready to paste in your chat, and a button picks one at random.",
@@ -17,12 +20,30 @@
   "instances": "single",
   "page": false,
   "requires": [
-    { "service": "twitch.api", "min": 2 }
+    {
+      "service": "twitch.api",
+      "min": 2
+    }
   ],
-  "permissions": ["routes", "storage", "admin", "mcp"],
+  "provides": [
+    {
+      "topic": "stream.partner",
+      "label": {
+        "en": "Your partner channels (name and profile picture)",
+        "fr": "Vos chaînes partenaires (nom et photo de profil)"
+      }
+    }
+  ],
+  "permissions": [
+    "routes",
+    "storage",
+    "admin",
+    "topics",
+    "mcp"
+  ],
   "privacy": {
-    "en": "This module collects nothing about your visitors. It keeps the list of channels you type (names and your own notes) and the secret address of your dock, visible only to site administrators. The dock shows public information from Twitch (name, game, title, viewers) and is only reachable with its secret address.",
-    "fr": "Ce module ne collecte rien sur vos visiteurs. Il garde la liste de chaînes que vous saisissez (pseudos et vos propres notes) et l'adresse secrète de votre dock, visibles des seuls administrateurs du site. Le dock affiche des informations publiques de Twitch (nom, jeu, titre, spectateurs) et ne s'ouvre qu'avec son adresse secrète."
+    "en": "This module collects nothing about your visitors. It keeps the list of channels you type (names and your own notes) and the secret address of your dock, visible only to site administrators. The dock shows public information from Twitch (name, game, title, viewers) and is only reachable with its secret address. It can share the name and profile picture of your partners (never your notes) with other modules of your site.",
+    "fr": "Ce module ne collecte rien sur vos visiteurs. Il garde la liste de chaînes que vous saisissez (pseudos et vos propres notes) et l'adresse secrète de votre dock, visibles des seuls administrateurs du site. Le dock affiche des informations publiques de Twitch (nom, jeu, titre, spectateurs) et ne s'ouvre qu'avec son adresse secrète. Il peut partager le nom et la photo de profil de vos partenaires (jamais vos notes) avec d'autres modules de votre site."
   },
   "settings": [
     {
@@ -30,8 +51,14 @@
       "type": "text",
       "advanced": true,
       "optional": true,
-      "label": { "en": "Twitch channel to use (optional)", "fr": "Chaîne Twitch à utiliser (facultatif)" },
-      "help": { "en": "Only useful if the site has several Twitch channels: type the channel name. Empty = the first one that is ready.", "fr": "Utile seulement si le site a plusieurs chaînes Twitch : saisissez le nom de la chaîne. Vide = la première qui est prête." }
+      "label": {
+        "en": "Twitch channel to use (optional)",
+        "fr": "Chaîne Twitch à utiliser (facultatif)"
+      },
+      "help": {
+        "en": "Only useful if the site has several Twitch channels: type the channel name. Empty = the first one that is ready.",
+        "fr": "Utile seulement si le site a plusieurs chaînes Twitch : saisissez le nom de la chaîne. Vide = la première qui est prête."
+      }
     }
   ],
   "mcp": [
@@ -40,7 +67,10 @@
       "readOnly": true,
       "default": false,
       "description": "Which of the owner's partner Twitch channels are live right now, for choosing who to raid. For each live channel: name, game, title, viewers, how many minutes it has been live and the chat command to raid it ('/raid name', to be pasted by the owner: nothing is sent). Fewest viewers first. 'listed' is the number of partner channels in the list. If Twitch is unreachable or not set up, 'state' says so ('not_ready' or 'error', with a 'reason') and the list is empty. Use it for 'who could I raid?'. Read only.",
-      "input": { "type": "object", "properties": {} }
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
     }
   ]
 }
