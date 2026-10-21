@@ -1,9 +1,7 @@
 // Partenariats — les outils MCP : fiches, journal, et liens vers des contacts (jamais d'écriture dans le carnet : c'est le rôle de Contacts).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
-const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
-// MIGRATION TEMPORAIRE — à supprimer en 1.5.0 : seul `unmergedFor` (merge.mjs) vient de la fusion.
-const { mergeState, unmergedFor } = await import(`./merge.mjs${v}`);
+const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, healLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
 
 export default {
   // ── Actions MCP (déclarées dans module.json) ────────────────────────────────────
@@ -22,8 +20,9 @@ export default {
       const p = await ctx.api.store.get(a.id);
       if (!p || p.data.brand === undefined) throw fail("partnership not found");
       const journal = await all(ctx, "journal");
-      const ids = linksOf(p);
+      let ids = linksOf(p);
       const links = await resolveLinks(ctx, ids);
+      if (Object.keys(links.moved).length) { await healLinks(ctx, p, links.moved); ids = linksOf(p); }
       const { contactIds: _ignored, ...fields } = p.data;
       const out = { id: p.id, ...fields, journal: journal.filter((j) => j.data.partnerId === p.id).map((j) => ({ id: j.id, ...j.data })), contactIds: ids };
       if (!links.available) {
@@ -33,7 +32,6 @@ export default {
         out.contactsAvailable = true;
         out.contacts = [...links.cards.map(person), ...links.missing.map((id) => ({ id, name: null, role: null, email: null, missing: true }))];
       }
-      Object.assign(out, unmergedFor(await mergeState(ctx), p.id)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
       return out;
     },
     async partner_create(ctx, a, actor) {
@@ -83,7 +81,7 @@ export default {
     },
     async partner_delete(ctx, a) {
       if (!(await ctx.api.store.get(a.id))) throw fail("partnership not found");
-      for (const collection of ["journal", "contacts"]) for (const r of await all(ctx, collection)) if (r.data.partnerId === a.id) await ctx.api.store.remove(r.id);
+      for (const r of await all(ctx, "journal")) if (r.data.partnerId === a.id) await ctx.api.store.remove(r.id);
       await ctx.api.store.remove(a.id);
       return { deleted: a.id };
     },

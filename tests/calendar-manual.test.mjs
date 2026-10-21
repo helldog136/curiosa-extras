@@ -129,7 +129,7 @@ test("i18n et manifeste : fr/en alignés, aucune clé manquante, aucun service, 
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fs.readFileSync(new URL("module.json", dir), "utf8"));
   assert.ok(parseManifest(raw).ok);
-  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.0.0", "0.1.22", "multiple"]);
+  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.0.1", "0.2.2", "multiple"]);
   assert.equal(raw.offers, undefined, "aucun service : deux modules d'agenda n'offrent jamais le même"); assert.deepEqual(raw.provides.map((p) => p.topic), ["planning.slot"]);
   assert.ok(raw.permissions.includes("storage"));
   const declared = new Set(raw.settings.map((s) => s.key));

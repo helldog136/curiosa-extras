@@ -1,10 +1,12 @@
-// Raid Twitch 1.2.0 : la liste des partenaires, le dock (adresse secrète, page, données), les attentes bornées, le presse-papier (fonctions de la page), l'administration.
+// Raid Twitch 2.0.0 : le dock (adresse secrète, page, données), les attentes bornées, le presse-papier (fonctions de la page), l'administration.
+// La liste de raid vit dans Contacts (une catégorie) : elle est préparée dans le FAUX Contacts du contrat (tests/helpers/fakeContactBook.mjs), jamais dans le vrai module.
 // Aucun réseau : Chaîne Twitch est remplacée par un faux service `twitch.api` ; la page du navigateur est vérifiée à part (voir README du dépôt : essais en navigateur réel faits à la livraison).
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 
 const DIR = new URL("../modules/twitch-raid", import.meta.url).pathname;
 const fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8")), en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8"));
@@ -13,9 +15,9 @@ const def = (await import("../modules/twitch-raid/index.mjs")).default;
 const pure = await import("../modules/twitch-raid/pure.mjs");
 const data = await import("../modules/twitch-raid/data.mjs");
 const live = await import("../modules/twitch-raid/live.mjs");
-const partnersMod = await import("../modules/twitch-raid/partners.mjs");
 const dock = await import("../modules/twitch-raid/dock.mjs");
 const admin = await import("../modules/twitch-raid/admin.mjs");
+const source = await import("../modules/twitch-raid/source.mjs");
 
 /* ───────────── Un faux « Chaîne Twitch » (service twitch.api) ───────────── */
 
@@ -37,37 +39,53 @@ function fakeApi(over = {}) {
   return api;
 }
 const row = (login, viewers, extra = {}) => ({ user_login: login, user_name: login.toUpperCase(), game_name: "Zelda", title: `Live de ${login}`, viewer_count: viewers, started_at: "2026-10-20T10:00:00Z", type: "live", ...extra });
-let api;
+let api, book, CAT;
 const mk = (extra = {}, settings = {}) => fakeCtx({
   key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
+  services: { "contact.book": book.methods },
   serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods: api.methods }] }, ...extra,
 });
+/** 2.0 : la liste de raid = les fiches de la catégorie « Cible de raid » du faux Contacts. `addPartners("a b")` y range des fiches, comme la personne le ferait dans Contacts. */
+const addPartners = (text, { name, note } = {}) => {
+  for (const login of String(text).split(/\s+/).filter(Boolean)) {
+    const { id } = book.seedContact({ name: name ?? login, accounts: [{ network: "twitch", handle: login }], categoryIds: [CAT] });
+    if (note) book.methods.note({ id, text: note });
+  }
+  source.resetSource();
+};
+const readPartners = async (ctx) => (await source.targets(ctx)).partners;
+const contactOf = (login) => book.dump().contacts.find((c) => c.accounts.some((a) => a.handle === login));
 const timing0 = { ...live.timing };
-const ptiming0 = { ...partnersMod.timing };
-beforeEach(() => { api = fakeApi(); live.resetLive(); partnersMod.resetPartners(); Object.assign(live.timing, timing0); Object.assign(partnersMod.timing, ptiming0); });
+const stiming0 = { ...source.timing };
+beforeEach(() => { api = fakeApi(); book = fakeContactBook(); CAT = book.seedCategory("Cible de raid"); live.resetLive(); source.resetSource(); Object.assign(live.timing, timing0); });
 afterEach(() => { mock.timers.reset(); Object.assign(live.timing, timing0); });
-const logins = (n) => Array.from({ length: n }, (_, i) => `chaine_${String(i).padStart(3, "0")}`).join("\n");
 const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 
 /* ───────────── Manifeste ───────────── */
 
-test("manifeste : un module, deux services (Connecteur Twitch v3, Ma Chaîne Twitch), aucun droit d'écriture MCP, réglage avancé facultatif (un choix parmi vos chaînes), vie privée déclarée", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "1.3.0"); assert.equal(manifest.minCore, "0.2.0"); assert.equal(manifest.dataVersion, 2);
-  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }], "le Connecteur Twitch (une application, plusieurs chaînes) ; Ma Chaîne Twitch, parmi lesquelles on choisit");
-  const ch = manifest.settings[0];
-  assert.deepEqual([ch.type, ch.source, ch.fromText, ch.refersTo], ["choice", { kind: "providers", service: "twitch.live" }, true, "channel"]);
-  assert.equal(typeof def.migrations[2], "function");
-  assert.ok(!("consumes" in manifest) && !("offers" in manifest));
-  assert.deepEqual(manifest.provides.map((p) => p.topic), ["stream.partner"], "1.1.0 : le seul lien est un sujet, facultatif pour ceux qui le lisent");
-  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);
+test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.0.1"); assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 3);
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false]], "sans Contacts, Raid n'a plus de liste : besoin dur");
+  assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");
+  assert.deepEqual(Object.keys(def.services["privacy.subject"]).sort(), ["erase", "export", "remap"]);
+  const [cat, ch] = manifest.settings;
+  assert.deepEqual([cat.key, cat.type, cat.refersTo, cat.allowCreate, cat.optional], ["category", "choice", "category", true, true]);
+  assert.deepEqual(cat.source, { kind: "service", service: "contact.book", list: "categories", get: "categoriesResolve", create: "createCategory" });
+  assert.ok(!("default" in cat) && !("translatable" in cat), "un choix n'a ni défaut ni traduction");
+  assert.deepEqual([ch.key, ch.type, ch.source, ch.fromText, ch.refersTo, ch.advanced, ch.optional], ["channel", "choice", { kind: "providers", service: "twitch.live" }, true, "channel", true, true]);
+  assert.equal(manifest.settings.length, 2);
+  assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function");
+  assert.ok(!("provides" in manifest) && !def.exports, "plus de sujet fourni : le sujet « stream.partner » est retiré (Story lit Contacts)");
+  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage"]);
   assert.ok(manifest.mcp.every((t) => t.readOnly === true && t.default === false), "lecture seule, jamais accordé d'office");
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["raid_partners_live"]);
-  const s = manifest.settings; assert.equal(s.length, 1);
-  assert.deepEqual([s[0].key, s[0].advanced, s[0].optional], ["channel", true, true]);
   assert.ok(manifest.privacy.fr && manifest.privacy.en);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "live", "pick"]);
+  assert.equal(def.backup, undefined, "plus de liste à sauvegarder ici : elle est dans Contacts (qui a son export)");
+  assert.ok(!/createCategory\s*["']?\s*[,)]|"createCategory"\s*,\s*\{/.test(fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8")).join("\n")), "Raid n'appelle jamais createCategory lui-même (seul le cœur, pour la personne connectée)");
 });
+
 
 /* ───────────── Pseudos ───────────── */
 
@@ -79,46 +97,25 @@ test("pseudos : pseudo, @pseudo et adresses twitch.tv sont reconnus ; 4 à 25 ca
   assert.equal(pure.normalizeLogin("").error, "empty"); assert.equal(pure.normalizeLogin(null).error, "empty");
   assert.equal(pure.normalizeLogin("https://www.twitch.tv/videos/123456").error, "not_channel", "une adresse de vidéo n'est pas une chaîne");
   assert.equal(pure.normalizeLogin("twitch.tv/directory").error, "not_channel");
-  assert.deepEqual(pure.splitList("alice\r\nbob_x, carl;dave  \n\n"), ["alice", "bob_x", "carl", "dave"]);
-  assert.deepEqual(pure.splitList("alice_tv bob_x  @carl_99"), ["alice_tv", "bob_x", "@carl_99"], "des pseudos séparés par des espaces");
-  assert.deepEqual(pure.splitList("Ma super chaîne\nalice_tv bob mauvais!"), ["Ma super chaîne", "alice_tv bob mauvais!"], "un mot douteux : la ligne entière est refusée plus tard");
-  assert.equal(pure.splitList("xxxx\n".repeat(1000)).length, 1000, "des centaines de pseudos collés d'un coup");
-  assert.equal(pure.splitList("xxxx\n".repeat(9000)).length, 5000, "plafond de sécurité très au-dessus de la liste");
 });
 
 /* ───────────── Liste ───────────── */
 
-test("liste : ajout groupé (un par ligne, adresses, @), doublons et erreurs dits sans bloquer le reste, 2000 au plus, ordre gardé", async () => {
+test("liste (2.0) : les comptes Twitch des fiches de la catégorie, dans l'ordre de Contacts ; ni les autres fiches, ni les autres réseaux ; nom de la fiche, sinon celui de Twitch", async () => {
   const ctx = mk();
-  const r = await data.addPartners(ctx, "alice_tv\n@Bob_X\nhttps://twitch.tv/carl_99/\nALICE_TV\nmauvais pseudo!\nab\nhttps://twitch.tv/videos/1");
-  assert.deepEqual(r.added, ["alice_tv", "bob_x", "carl_99"]);
-  assert.deepEqual(r.dup, ["alice_tv"]);
-  assert.deepEqual(r.bad.map((b) => [b.text, b.error]), [["mauvais pseudo!", "invalid"], ["ab", "invalid"], ["https://twitch.tv/videos/1", "not_channel"]], "une ligne douteuse est refusée en entier : jamais des chaînes inventées à partir de ses mots");
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), ["alice_tv", "bob_x", "carl_99"]);
-  assert.deepEqual((await data.addPartners(ctx, "alice_tv")).added, [], "rien d'ajouté, rien d'écrit");
-  const big = mk();
-  const full = await data.addPartners(big, logins(pure.MAX_PARTNERS + 5));
-  assert.equal(full.added.length, 2000); assert.equal(full.full.length, 5);
-  assert.equal((await data.readPartners(big)).length, 2000);
-  assert.equal((await ctx.api.store.count("partners")), 1, "une liste = un seul document");
+  book.seedContact({ name: "Alice", accounts: [{ network: "twitch", handle: "Alice_TV" }, { network: "youtube", handle: "@alice" }], categoryIds: [CAT] });
+  book.seedContact({ name: "bob_x", accounts: [{ network: "twitch", handle: "https://twitch.tv/bob_x" }], categoryIds: [CAT] });
+  book.seedContact({ name: "Hors liste", accounts: [{ network: "twitch", handle: "dehors_x" }] });
+  book.seedContact({ name: "Sans Twitch", accounts: [{ network: "youtube", handle: "@sans" }], categoryIds: [CAT] });
+  book.seedContact({ name: "Deux chaînes", accounts: [{ network: "twitch", handle: "duo_un" }, { network: "twitch", handle: "duo_deux", displayName: "Duo Deux" }], categoryIds: [CAT] });
+  const r = await source.targets(ctx);
+  assert.equal(r.state, "ok"); assert.deepEqual(r.category, { id: CAT, label: "Cible de raid", how: "default" });
+  assert.deepEqual(r.partners.map((p) => [p.login, p.name]), [["alice_tv", "Alice"], ["bob_x", ""], ["duo_un", "Deux chaînes"], ["duo_deux", "Duo Deux"]], "une fiche sans vrai nom (son pseudo) laisse Twitch donner le nom affiché, comme en 1.3");
+  assert.ok(r.partners.every((p) => typeof p.contactId === "string"), "Raid ne garde que des identifiants de fiche, en mémoire");
+  assert.deepEqual(ctx.dumpStore().filter((x) => x.collection !== "dock"), [], "rien n'est copié dans le stockage du module");
+  assert.ok(book.calls.filter(([, m]) => m === "accounts").every(([, , a]) => a.network === "twitch" && a.limit === 500 && a.categoryId === CAT));
 });
 
-test("liste : modifier (pseudo, nom, note), refuser un doublon, retirer, monter et descendre", async () => {
-  const ctx = mk();
-  await data.addPartners(ctx, "alice_tv bob_x carl_99");
-  assert.deepEqual(await data.updatePartner(ctx, "bob_x", { newLogin: "https://twitch.tv/Bobby_X", name: "  Bobby \n le grand ", note: "a raidé\nla semaine dernière" }), { ok: true, login: "bobby_x" });
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => [p.login, p.name, p.note]), [["alice_tv", "", ""], ["bobby_x", "Bobby le grand", "a raidé la semaine dernière"], ["carl_99", "", ""]]);
-  assert.equal((await data.updatePartner(ctx, "bobby_x", { newLogin: "alice_tv" })).error, "dup");
-  assert.equal((await data.updatePartner(ctx, "bobby_x", { newLogin: "x" })).error, "invalid");
-  assert.equal((await data.updatePartner(ctx, "inconnu_x", { newLogin: "abcd" })).error, "missing");
-  assert.deepEqual(await data.movePartner(ctx, "carl_99", -1), { ok: true, moved: true });
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), ["alice_tv", "carl_99", "bobby_x"]);
-  assert.equal((await data.movePartner(ctx, "alice_tv", -1)).moved, false, "déjà en haut");
-  assert.equal((await data.movePartner(ctx, "bobby_x", 1)).moved, false, "déjà en bas");
-  assert.deepEqual(await data.removePartner(ctx, "carl_99"), { ok: true });
-  assert.equal((await data.removePartner(ctx, "carl_99")).error, "missing");
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), ["alice_tv", "bobby_x"]);
-});
 
 /* ───────────── Secret du dock ───────────── */
 
@@ -155,26 +152,27 @@ test("secret : si deux secrets ont été créés en même temps, le plus ancien 
 test("direct : UN appel groupé (jusqu'à 100 pseudos, first=100), seuls les partenaires en direct, nom affiché de la personne prioritaire, tout nettoyé", async () => {
   const ctx = mk();
   api.streams = [row("alice_tv", 12), row("bob_x", 340, { user_name: "Bob_X", title: "T".repeat(300) }), row("rediff_x", 5, { type: "" }), row("intrus_x", 9), row("carl_99", -3), row("dave_x", 4, { started_at: "pas une date" }), row("alice_tv", 99)];
-  await data.addPartners(ctx, "alice_tv bob_x rediff_x carl_99 dave_x erin_off");
-  await data.updatePartner(ctx, "alice_tv", { name: "Alice la Grande", note: "secret perso" });
-  const partners = await data.readPartners(ctx);
+  addPartners("alice_tv", { name: "Alice la Grande", note: "secret perso" }); addPartners("bob_x rediff_x carl_99 dave_x erin_off");
+  const partners = await readPartners(ctx);
   const r = await live.liveNow(ctx, partners, {});
   assert.equal(r.state, "ok"); assert.equal(r.listed, 6);
   assert.deepEqual(r.live.map((x) => [x.login, x.name, x.viewers]), [["alice_tv", "Alice la Grande", 12], ["bob_x", "Bob_X", 340]], "ni rediffusion, ni inconnu, ni nombre ou date invalide, ni doublon");
   assert.equal(r.live[1].title.length, 140, "titre coupé");
-  assert.ok(!JSON.stringify(r).includes("secret perso"), "la note ne sort pas");
+  assert.ok(!JSON.stringify(r).includes("secret perso"), "la note (de Contacts) ne sort pas");
   assert.equal(api.calls.length, 1);
   assert.deepEqual(api.calls[0], { as: "app", method: "GET", path: "streams", query: { user_login: ["alice_tv", "bob_x", "rediff_x", "carl_99", "dave_x", "erin_off"], first: 100 }, channel: "emma_live" });
 });
 
+
 test("direct : aucun partenaire en direct → liste vide (pas une erreur) ; liste vide → état dédié, sans appeler Twitch", async () => {
   const ctx = mk();
-  await data.addPartners(ctx, "alice_tv");
-  assert.deepEqual((await live.liveNow(ctx, await data.readPartners(ctx), {})).live, []);
+  addPartners("alice_tv");
+  assert.deepEqual((await live.liveNow(ctx, await readPartners(ctx), {})).live, []);
   live.resetLive(); api.calls.length = 0;
   assert.deepEqual(await live.liveNow(ctx, [], {}), { state: "no_partners" });
   assert.equal(api.calls.length, 0);
 });
+
 
 test("direct : la réponse est gardée 30 s et partagée (dix docks = un appel) ; elle est refaite quand la liste change", async () => {
   const ctx = mk(); const partners = P("alice_tv", "bob_x");
@@ -255,7 +253,7 @@ test("trou noir : un service Twitch qui ne répond JAMAIS → erreur propre dans
 test("trou noir : un service qui ne répond pas au « compte » (avant l'appel) est borné lui aussi ; routes et MCP répondent quand même", async () => {
   Object.assign(live.timing, { callMs: 120, failMs: 10 });
   const ctx = mk({ serviceInstances: { "twitch.api": [{ instance: "tw", methods: { account: () => new Promise(() => {}), request: () => new Promise(() => {}) } }] } });
-  await data.addPartners(ctx, "alice_tv");
+  addPartners("alice_tv");
   const secret = await data.dockSecret(ctx);
   const t0 = Date.now();
   const res = await within(def.routes.live(new Request(`https://site.example.test/m/raid/live?k=${secret}`), ctx));
@@ -263,6 +261,7 @@ test("trou noir : un service qui ne répond pas au « compte » (avant l'appel) 
   assert.deepEqual([(await res.json()).state, (await within(def.mcp.raid_partners_live(ctx, {}))).state], ["error", "error"]);
   assert.ok(Date.now() - t0 < 1200);
 });
+
 
 test("trou noir : la page d'administration ne reste pas suspendue à Chaîne Twitch", async () => {
   const ctx = mk({ serviceInstances: { "twitch.api": [{ instance: "tw", methods: { account: () => new Promise(() => {}) } }] } });
@@ -277,27 +276,8 @@ test("trou noir : la page d'administration ne reste pas suspendue à Chaîne Twi
 
 const get = (ctx, route, k, extra = "") => def.routes[route](new Request(`https://site.example.test/m/raid/${route}${k === undefined ? "" : `?k=${encodeURIComponent(k)}`}${extra}`), ctx);
 
-test("routes : sans le bon secret → rien (une phrase, aucune donnée), jamais d'écriture, GET seulement", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv"); api.streams = [row("alice_tv", 4)];
-  const secret = await data.dockSecret(ctx);
-  for (const k of [undefined, "", "faux", secret.slice(1), `${secret}x`, "x".repeat(1000)]) {
-    const page = await get(ctx, "dock", k), json = await get(ctx, "live", k);
-    assert.equal(page.status, 403); assert.equal(json.status, 403);
-    assert.deepEqual(await json.json(), { state: "denied" });
-    const html = await page.text();
-    assert.ok(html.includes("Cette adresse n") && !html.includes("alice_tv") && !html.includes("<script"), "ni liste, ni script");
-    assert.equal(page.headers.get("cache-control"), "no-store");
-  }
-  assert.equal(api.calls.length, 0, "sans secret, Twitch n'est jamais interrogé");
-  for (const route of ["dock", "live"]) for (const method of ["POST", "PUT", "DELETE"]) {
-    const res = await def.routes[route](new Request(`https://site.example.test/m/raid/${route}?k=${secret}`, { method, body: "x" }), ctx);
-    assert.equal(res.status, 405, `${route} ${method}`);
-  }
-  assert.equal(await ctx.api.store.count("dock"), 1, "les routes publiques ne créent rien");
-});
-
 test("route live : avec le bon secret, l'état et les partenaires en direct (public seulement), l'heure du serveur, rien de mis en cache", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv bob_x"); await data.updatePartner(ctx, "bob_x", { newLogin: "bob_x", note: "NOTE-PRIVEE" });
+  const ctx = mk(); addPartners("alice_tv"); addPartners("bob_x", { note: "NOTE-PRIVEE" });
   api.streams = [row("bob_x", 340), row("alice_tv", 12)];
   const secret = await data.dockSecret(ctx);
   const res = await get(ctx, "live", secret);
@@ -307,13 +287,35 @@ test("route live : avec le bon secret, l'état et les partenaires en direct (pub
   assert.equal(body.state, "ok"); assert.equal(typeof body.now, "number"); assert.equal(body.listed, 2);
   assert.deepEqual(body.live.map((x) => Object.keys(x).sort()), body.live.map(() => ["game", "login", "name", "pos", "startedAt", "title", "viewers"]));
   const raw = JSON.stringify(body);
-  assert.ok(!raw.includes("NOTE-PRIVEE") && !raw.includes(secret), "ni note, ni secret dans les données");
+  assert.ok(!raw.includes("NOTE-PRIVEE") && !raw.includes(secret) && !raw.includes(contactOf("bob_x").id), "ni note, ni secret, ni identifiant de fiche dans les données");
   assert.deepEqual((await (await get(mk(), "live", secret)).json()).state, "denied", "un autre site (autre secret) ne s'ouvre pas avec celui-ci");
 });
 
+test("routes : sans le bon secret → rien (une phrase, aucune donnée), jamais d'écriture, GET seulement ; Contacts n'est même pas lu", async () => {
+  const ctx = mk(); addPartners("alice_tv"); api.streams = [row("alice_tv", 4)];
+  const secret = await data.dockSecret(ctx);
+  const before = book.calls.length;
+  for (const k of [undefined, "", "faux", secret.slice(1), `${secret}x`, "x".repeat(1000)]) {
+    const page = await get(ctx, "dock", k), json = await get(ctx, "live", k);
+    assert.equal(page.status, 403); assert.equal(json.status, 403);
+    assert.deepEqual(await json.json(), { state: "denied" });
+    const html = await page.text();
+    assert.ok(html.includes("Cette adresse n") && !html.includes("alice_tv") && !html.includes("<script"), "ni liste, ni script");
+    assert.equal(page.headers.get("cache-control"), "no-store");
+  }
+  assert.equal(api.calls.length, 0, "sans secret, Twitch n'est jamais interrogé");
+  assert.equal(book.calls.length, before, "ni Contacts");
+  for (const route of ["dock", "live"]) for (const method of ["POST", "PUT", "DELETE"]) {
+    const res = await def.routes[route](new Request(`https://site.example.test/m/raid/${route}?k=${secret}`, { method, body: "x" }), ctx);
+    assert.equal(res.status, 405, `${route} ${method}`);
+  }
+  assert.equal(await ctx.api.store.count("dock"), 1, "les routes publiques ne créent rien");
+});
+
+
 test("route dock : page complète, politique de sécurité stricte (scripts à nonce, rien d'extérieur), aucune donnée de partenaire dans la page, ni journal du secret", async () => {
   const logs = []; for (const m of ["log", "error", "warn", "info", "debug"]) mock.method(console, m, (...a) => logs.push(a.join(" ")));
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv"); api.streams = [row("alice_tv", 4, { title: "<img src=x onerror=alert(1)>" })];
+  const ctx = mk(); addPartners("alice_tv"); api.streams = [row("alice_tv", 4, { title: "<img src=x onerror=alert(1)>" })];
   const secret = await data.dockSecret(ctx);
   const res = await get(ctx, "dock", secret);
   assert.equal(res.status, 200);
@@ -411,9 +413,9 @@ test("presse-papier : la commande est /raid pseudo, et rien si le pseudo n'est p
 
 const act = (ctx, name, values = {}) => admin.actions[name](ctx, values);
 
-test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS, le tableau, le formulaire d'ajout ; avertissement actionnable si Chaîne Twitch n'est pas réglée", async () => {
+test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS, le compteur, le lien vers Contacts ; plus d'ajout ni de tableau ; avertissement actionnable si Chaîne Twitch n'est pas réglée", async () => {
   api.accounts = [{ ok: true, channel: "emma_live", ready: false, adminPath: "/admin/instances/id-tw" }];
-  const ctx = mk();
+  const ctx = mk(); addPartners("alice_tv bob_x");
   let blocks = await def.adminPanel(ctx, { query: {} });
   const secret = await data.dockSecret(ctx);
   const copy = blocks.find((b) => b.type === "copy");
@@ -422,53 +424,34 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
   const warn = blocks.find((b) => b.type === "banner");
   assert.deepEqual([warn.tone, warn.href], ["warning", "/admin/instances/id-tw"]);
   assert.match(warn.text, /Réglez d'abord le Connecteur Twitch/);
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "add"));
+  assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("**2** chaînes Twitch dans la catégorie « Cible de raid » de Contacts")), "un compteur");
+  const link = blocks.find((b) => b.type === "links" && b.items[0].label === "Gérer mes partenaires dans Contacts");
+  assert.equal(link.items[0].href, `/admin/instances/id-contact.book-provider?category=${CAT}`, "la page de Contacts, filtrée sur la catégorie");
+  assert.ok(!blocks.some((b) => b.type === "adminForm" && ["add", "save", "search"].includes(b.action)), "l'ajout, l'import et la recherche sont sortis : la liste se gère dans Contacts");
+  assert.ok(!blocks.some((b) => b.type === "table" && b.rowActions?.some((a) => ["remove", "up", "down"].includes(a.action))));
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
   assert.deepEqual([renew.rowActions[0].danger, typeof renew.rowActions[0].confirm], [true, "string"], "« Nouvelle adresse » demande confirmation");
   api.accounts = [{ ok: true, channel: "emma_live", ready: true }];
   blocks = await def.adminPanel(mk(), { query: {} });
-  assert.ok(!blocks.some((b) => b.type === "banner"), "tout est prêt : pas d'avertissement");
+  assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), "tout est prêt : pas d'avertissement");
   const en2 = await def.adminPanel(mk({ locale: "en", messages: { ...en } }), { query: {} });
   assert.ok(en2.some((b) => b.type === "markdown" && b.text.includes("Custom Browser Docks")));
 });
 
-test("admin : ajouter (messages clairs, partiel accepté), modifier, monter, descendre, retirer (confirmé), nouvelle adresse (confirmée), « tout est prêt ? »", async () => {
+
+test("admin : nouvelle adresse (confirmée) ; les anciennes actions de liste n'existent plus", async () => {
   const ctx = mk();
-  const none = await act(ctx, "add", { logins: "pseudo invalide!" });
-  assert.ok(none.error && /pas un pseudo Twitch valable/.test(none.error) && /4 à 25/.test(none.error), none.error);
-  const some = await act(ctx, "add", { logins: "alice_tv\nbob_x\nalice_tv\n??" });
-  assert.deepEqual(Object.keys(some), ["ok"], "un résultat partiel reste sur la page pour que le message soit lu");
-  assert.deepEqual(Object.keys(await act(ctx, "add", { logins: "carl_99" })).sort(), ["ok", "redirect"], "tout est bon : retour à la liste");
-  await data.removePartner(ctx, "carl_99");
-  assert.match(some.ok, /Ajouté : alice_tv, bob_x\./); assert.match(some.ok, /Déjà dans votre liste : « alice_tv »/); assert.match(some.ok, /« \?\? » n'est pas un pseudo/);
-  assert.match((await act(ctx, "add", { logins: "alice_tv" })).error, /Déjà dans votre liste/);
-  assert.match((await act(ctx, "add", { logins: "" })).error, /rien à ajouter/);
-  assert.equal((await act(ctx, "save", { id: "bob_x", login: "https://twitch.tv/bob_x", name: "Bob", note: "ami" })).ok, "Enregistré.");
-  assert.match((await act(ctx, "save", { id: "bob_x", login: "alice_tv" })).error, /Déjà dans votre liste/);
-  assert.match((await act(ctx, "save", { id: "bob_x", login: "x" })).error, /n'est pas un pseudo/);
-  assert.match((await act(ctx, "save", { id: "inconnu_x", login: "abcd" })).error, /n'est plus dans la liste/);
-  await act(ctx, "down", { id: "alice_tv" });
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), ["bob_x", "alice_tv"]);
-  await act(ctx, "up", { id: "alice_tv" });
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), ["alice_tv", "bob_x"]);
-  const table = (await def.adminPanel(ctx, { query: {} })).find((b) => b.type === "table" && b.rowIds?.includes("alice_tv"));
-  assert.deepEqual(table.rowActions.map((a) => a.label), ["Modifier", "Monter", "Descendre", "Retirer"]);
-  assert.deepEqual([table.rowActions[3].danger, typeof table.rowActions[3].confirm], [true, "string"]);
-  assert.match((await act(ctx, "remove", { id: "alice_tv" })).ok, /retirée/);
-  assert.match((await act(ctx, "remove", { id: "alice_tv" })).error, /n'est plus dans la liste/);
+  assert.deepEqual(Object.keys(admin.actions).sort(), ["check", "finish", "migrate", "renew"]);
   const before = await data.dockSecret(ctx);
   assert.match((await act(ctx, "renew")).ok, /nouvelle adresse/);
   assert.notEqual(await data.dockSecret(ctx), before);
-  const edit = await def.adminPanel(ctx, { query: { edit: "bob_x" } });
-  const form = edit.find((b) => b.type === "adminForm" && b.action === "save");
-  assert.deepEqual(form.fields.map((f) => [f.name, f.value]), [["id", "bob_x"], ["login", "bob_x"], ["name", "Bob"], ["note", "ami"]]);
-  assert.ok(!edit.some((b) => b.type === "adminForm" && b.action === "add"), "un seul formulaire à la fois");
 });
+
 
 test("admin : « Voir qui est en direct maintenant » dit ce qui va ou ce qu'il faut régler", async () => {
   const ctx = mk();
-  assert.match((await act(ctx, "check")).error, /liste de partenaires est vide/);
-  await data.addPartners(ctx, "alice_tv bob_x");
+  assert.match((await act(ctx, "check")).error, /liste de raid est vide/);
+  addPartners("alice_tv bob_x");
   api.streams = [row("alice_tv", 4)];
   assert.match((await act(ctx, "check")).ok, /En direct maintenant : ALICE_TV/);
   api.streams = [];
@@ -477,13 +460,15 @@ test("admin : « Voir qui est en direct maintenant » dit ce qui va ou ce qu'il 
   assert.match((await act(ctx, "check")).error, /Réglez d'abord le Connecteur Twitch/);
   api.accounts = [{ ok: true, channel: "emma_live", ready: true }]; api.reply = { ok: false, error: "network" };
   assert.match((await act(ctx, "check")).error, /Twitch ne répond pas/);
+  book.admin.deleteCategory(CAT);
+  assert.match((await act(ctx, "check")).error, /Créez d'abord votre liste de raid/);
 });
 
-/* ───────────── Assistant (MCP), sauvegarde ───────────── */
+
+/* ───────────── Assistant (MCP) ───────────── */
 
 test("MCP : partenaires en direct, le moins de spectateurs d'abord, avec la commande (rien n'est envoyé) ; états d'erreur lisibles ; ni note ni secret", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv bob_x carl_99");
-  await data.updatePartner(ctx, "carl_99", { newLogin: "carl_99", note: "NOTE-PRIVEE" });
+  const ctx = mk(); addPartners("alice_tv bob_x"); addPartners("carl_99", { note: "NOTE-PRIVEE" });
   api.streams = [row("bob_x", 340), row("alice_tv", 12, { started_at: new Date(Date.now() - 90 * 60_000).toISOString() })];
   const r = await def.mcp.raid_partners_live(ctx, {});
   assert.deepEqual(r.live.map((x) => [x.channel, x.viewers, x.raidCommand]), [["alice_tv", 12, "/raid alice_tv"], ["bob_x", 340, "/raid bob_x"]]);
@@ -491,90 +476,12 @@ test("MCP : partenaires en direct, le moins de spectateurs d'abord, avec la comm
   assert.ok(!JSON.stringify(r).includes("NOTE-PRIVEE") && !JSON.stringify(r).includes(await data.dockSecret(ctx)));
   live.resetLive(); api.reply = { ok: false, error: "rate" };
   assert.deepEqual(await def.mcp.raid_partners_live(ctx, {}), { state: "error", reason: "rate", listed: 3, live: [] });
+  book.admin.deleteCategory(CAT); source.resetSource();
+  assert.deepEqual(await def.mcp.raid_partners_live(ctx, {}), { state: "not_ready", reason: "no_category", listed: 0, live: [] }, "plus de liste dans Contacts : dit clairement");
 });
 
-test("sauvegarde lisible : la liste en CSV, sans formule dangereuse, sans le secret", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv");
-  await data.updatePartner(ctx, "alice_tv", { newLogin: "alice_tv", name: '=HYPERLINK("x")', note: 'dit "bonjour"' });
-  const files = await def.backup.readable(ctx);
-  assert.equal(files[0].path, "partners.csv");
-  assert.equal(files[0].content, `channel,name,note\r\n"alice_tv","'=HYPERLINK(""x"")","dit ""bonjour"""`);
-  assert.ok(!files[0].content.includes(await data.dockSecret(ctx)));
-});
 
 test("instance créée : l'adresse du dock existe tout de suite", async () => {
   const ctx = mk(); await def.hooks.onInstanceCreate(ctx);
   assert.equal(await ctx.api.store.count("dock"), 1);
-});
-
-/* ───────────── 1.1.0 : les partenaires proposés aux autres modules (sujet « stream.partner ») ───────────── */
-
-const PIC = (n) => `https://static-cdn.jtvnw.net/jtv_user_pictures/u${n}-profile_image-300x300.png`;
-/** Un faux « Chaîne Twitch » qui sait répondre à GET users (nom affiché et photo de profil) pour les pseudos demandés. */
-function withUsers(users) {
-  api.methods.request = async (args) => { api.calls.push(args); return { ok: true, status: 200, json: { data: args.query.login.map((l) => users[l]).filter(Boolean).map((u) => ({ login: u.login, display_name: u.name, profile_image_url: u.picture })) } }; };
-}
-const exportPartners = (ctx, opts = {}) => def.exports["stream.partner"](ctx, opts);
-
-test("sujet « stream.partner » : pseudo, nom affiché (le sien, sinon celui de Twitch) et photo de profil ; JAMAIS la note ; photos lues en groupes de 20 pseudos au plus", async () => {
-  const ctx = mk();
-  await data.addPartners(ctx, "alice_tv");
-  await data.updatePartner(ctx, "alice_tv", { newLogin: "alice_tv", name: "Alice à moi", note: "NOTE-SECRETE : ne pas raider le lundi" });
-  await data.addPartners(ctx, "bob_x carl_99");
-  withUsers({ alice_tv: { login: "alice_tv", name: "Alice", picture: PIC(1) }, bob_x: { login: "bob_x", name: "Bob Officiel", picture: PIC(2) } });
-  const items = await exportPartners(ctx);
-  assert.deepEqual(items, [
-    { id: "alice_tv", login: "alice_tv", title: "Alice à moi", image: PIC(1) },
-    { id: "bob_x", login: "bob_x", title: "Bob Officiel", image: PIC(2) },
-    { id: "carl_99", login: "carl_99", title: "carl_99" },
-  ]);
-  for (const x of items) assert.ok(typeof x.id === "string" && x.id && typeof x.title === "string" && x.title && (!("image" in x) || /^https:\/\//.test(x.image)), "conforme au schéma du lecteur (id et title texte, image : une adresse ou rien : le cœur écarte l'élément entier si une adresse est vide)");
-  assert.ok(!JSON.stringify(items).includes("NOTE-SECRETE") && !JSON.stringify(items).includes("secret"));
-  assert.equal(api.calls.length, 1); assert.deepEqual(api.calls[0], { as: "app", method: "GET", path: "users", query: { login: ["alice_tv", "bob_x", "carl_99"] }, channel: "emma_live" });
-  // 45 partenaires = 3 demandes de 20, 20 et 5 pseudos
-  const big = mk(); await data.addPartners(big, logins(45));
-  api.calls.length = 0; partnersMod.resetPartners();
-  const many = await exportPartners(big);
-  assert.equal(many.length, 45); assert.deepEqual(api.calls.map((c) => c.query.login.length).sort((a, b) => b - a), [20, 20, 5]);
-  assert.deepEqual((await exportPartners(big, { limit: 3 })).map((x) => x.login), ["chaine_000", "chaine_001", "chaine_002"]);
-  assert.deepEqual(await exportPartners(mk()), [], "aucun partenaire : rien");
-});
-
-test("sujet « stream.partner » : une photo n'est reprise que si elle vient du serveur d'images de Twitch ; un nom de Twitch piégé est nettoyé ; aucune photo gardée par ce module", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv bob_x carl_99");
-  withUsers({ alice_tv: { login: "alice_tv", name: "<b>Alice</b>\u0000\n" + "x".repeat(100), picture: "https://evil.example/a.png" }, bob_x: { login: "bob_x", name: "Bob", picture: "javascript:alert(1)" }, carl_99: { login: "carl_99", name: "Carl", picture: "https://static-cdn.jtvnw.net/jtv_user_pictures/../../x.png" } });
-  const items = await exportPartners(ctx);
-  assert.deepEqual(items.map((x) => x.image), [undefined, undefined, undefined], "aucune photo douteuse : la clé est absente (jamais une adresse vide)");
-  assert.ok(items[0].title.length <= 40 && !items[0].title.includes("\u0000"));
-  assert.ok(!(await ctx.api.store.list("partners")).some((r) => JSON.stringify(r.data).includes("profile_image")), "les photos ne sont pas copiées dans la liste : Twitch en reste propriétaire");
-  assert.equal(JSON.stringify(partnersMod.readUsers({ data: [{ login: "x", profile_image_url: PIC(1), display_name: 5 }, null, "x", { login: "" }] })), JSON.stringify({ x: { name: "", image: PIC(1) } }));
-  assert.deepEqual(partnersMod.readUsers(null), {}); assert.deepEqual(partnersMod.readUsers({ data: "x" }), {});
-});
-
-test("sujet « stream.partner » : Chaîne Twitch absente, pas prête, qui refuse (version ancienne) ou en erreur → les partenaires sont rendus SANS photo, sans erreur ; réponse gardée 6 h, un échec 1 minute", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv bob_x");
-  const plain = [{ id: "alice_tv", login: "alice_tv", title: "alice_tv" }, { id: "bob_x", login: "bob_x", title: "bob_x" }];
-  api.accounts = [{ ok: true, channel: null, ready: false }]; assert.deepEqual(await exportPartners(ctx), plain);
-  partnersMod.resetPartners(); api.accounts = [];
-  assert.deepEqual(await exportPartners(ctx), plain);
-  partnersMod.resetPartners(); api.accounts = [{ ok: true, channel: "emma_live", ready: true }];
-  for (const reply of [{ ok: false, error: "forbidden" }, { ok: false, error: "network" }, { ok: true, status: 500, json: {} }, { ok: true, status: 200, json: null }]) { partnersMod.resetPartners(); api.methods.request = async () => reply; assert.deepEqual(await exportPartners(ctx), plain, JSON.stringify(reply)); }
-  partnersMod.resetPartners(); api.methods.request = async () => { throw new Error("service en panne"); };
-  assert.deepEqual(await exportPartners(ctx), plain);
-  // cache
-  partnersMod.resetPartners(); mock.timers.enable({ apis: ["Date"], now: 5_000_000 });
-  let n = 0; api.methods.request = async () => { n++; return { ok: true, status: 200, json: { data: [{ login: "alice_tv", display_name: "Alice", profile_image_url: PIC(1) }] } }; };
-  await exportPartners(ctx); await exportPartners(ctx); assert.equal(n, 1, "deux lectures rapprochées = une seule demande");
-  mock.timers.setTime(5_000_000 + 5 * 3600_000); await exportPartners(ctx); assert.equal(n, 1, "encore gardée après 5 h");
-  mock.timers.setTime(5_000_000 + 7 * 3600_000); await exportPartners(ctx); assert.equal(n, 2, "relue après 6 h");
-  api.methods.request = async () => { n++; return { ok: false, error: "network" }; };
-  partnersMod.resetPartners(); const before = n; await exportPartners(ctx); await exportPartners(ctx); assert.equal(n, before + 1, "un échec est gardé : Twitch n'est pas martelé");
-  mock.timers.setTime(5_000_000 + 7 * 3600_000 + 61_000); await exportPartners(ctx); assert.equal(n, before + 2, "réessayé après 1 minute");
-});
-
-test("sujet « stream.partner » : une liste modifiée est relue tout de suite (la clé du cache change avec la liste)", async () => {
-  const ctx = mk(); await data.addPartners(ctx, "alice_tv");
-  let n = 0; api.methods.request = async (a) => { n++; return { ok: true, status: 200, json: { data: a.query.login.map((l) => ({ login: l, display_name: l, profile_image_url: PIC(1) })) } }; };
-  assert.equal((await exportPartners(ctx)).length, 1); await data.addPartners(ctx, "bob_x");
-  assert.equal((await exportPartners(ctx)).length, 2); assert.equal(n, 2);
 });

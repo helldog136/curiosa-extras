@@ -1,10 +1,12 @@
-// Raid Twitch 1.2.0 — les grandes communautés : vue complète par paquets de 100 (jusqu'à 500 chaînes), mode « au hasard » au-delà, liste de 2 000 chaînes et son administration.
+// Raid Twitch — les grandes communautés : vue complète par paquets de 100 (jusqu'à 500 chaînes), mode « au hasard » au-delà (logique de la 1.2/1.3, inchangée en 2.0).
+// 2.0 : la liste est une catégorie de Contacts, préparée dans le FAUX Contacts du contrat (tests/helpers/fakeContactBook.mjs) ; son administration est dans Contacts.
 // Aucun réseau : Chaîne Twitch est remplacée par un faux service `twitch.api` qui compte ses appels (taille de chaque demande, demandes simultanées).
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 
 const DIR = new URL("../modules/twitch-raid", import.meta.url).pathname;
 const fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8")), en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8"));
@@ -16,6 +18,7 @@ const live = await import("../modules/twitch-raid/live.mjs");
 const search = await import("../modules/twitch-raid/search.mjs");
 const dock = await import("../modules/twitch-raid/dock.mjs");
 const admin = await import("../modules/twitch-raid/admin.mjs");
+const source = await import("../modules/twitch-raid/source.mjs");
 
 /* ───────────── Un faux « Chaîne Twitch » qui sait qui est en direct ───────────── */
 
@@ -46,8 +49,22 @@ const mk = (extra = {}, settings = {}) => fakeCtx({
   key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
   serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods: api.methods }] }, ...extra,
 });
+/**
+ * 2.0 : un site dont la liste de raid (catégorie « Cible de raid » d'un faux Contacts neuf) contient ces chaînes (`list` : un nombre → chaine_0000…, ou des pseudos).
+ * `people` : { pseudo: { name?, note? } }. Chaque site a sa clé d'instance (les caches du module sont par instance). Rend le contexte, avec `ctx.book`.
+ */
+let sites = 0;
+const mkList = (list, { people = {}, ...extra } = {}) => {
+  const book = fakeContactBook(), cat = book.seedCategory("Cible de raid");
+  for (const login of typeof list === "number" ? names(list) : list) {
+    const { id } = book.seedContact({ name: people[login]?.name ?? login, accounts: [{ network: "twitch", handle: login }], categoryIds: [cat] });
+    if (people[login]?.note) book.methods.note({ id, text: people[login].note });
+  }
+  const ctx = mk({ key: `raid${++sites}`, services: { "contact.book": book.methods }, ...extra });
+  return Object.assign(ctx, { book });
+};
 const timing0 = { ...live.timing }, limits0 = { ...search.limits };
-beforeEach(() => { api = fakeApi(); live.resetLive(); search.resetSearch(); Object.assign(live.timing, timing0); Object.assign(search.limits, limits0); });
+beforeEach(() => { api = fakeApi(); live.resetLive(); search.resetSearch(); source.resetSource(); Object.assign(live.timing, timing0); Object.assign(search.limits, limits0); });
 afterEach(() => { mock.timers.reset(); Object.assign(live.timing, timing0); Object.assign(search.limits, limits0); });
 const name = (i) => `chaine_${String(i).padStart(4, "0")}`;
 const names = (n) => Array.from({ length: n }, (_, i) => name(i));
@@ -59,12 +76,14 @@ const tick = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ───────────── Les petites règles ───────────── */
 
-test("constantes : 2 000 chaînes au plus, vue complète jusqu'à 500 (une seule valeur), paquets de 100 / 50 / 20, 6 tentatives", () => {
-  assert.equal(pure.MAX_PARTNERS, 2000); assert.equal(pure.FULL_VIEW_MAX, 500); assert.deepEqual(pure.PACKET_SIZES, [100, 50, 20]); assert.equal(pure.SEARCH_TRIES, 6);
+test("constantes : vue complète jusqu'à 500 (une seule valeur), paquets de 100 / 50 / 20, 6 tentatives ; 2 000 chaînes migrées au plus, 10 000 lues dans Contacts par pages de 500", () => {
+  assert.equal(pure.MAX_PARTNERS, 2000); assert.equal(pure.MAX_TARGETS, 10_000); assert.equal(pure.CONTACTS_PAGE, 500);
+  assert.equal(pure.FULL_VIEW_MAX, 500); assert.deepEqual(pure.PACKET_SIZES, [100, 50, 20]); assert.equal(pure.SEARCH_TRIES, 6);
   assert.equal(pure.modeFor(0), "full"); assert.equal(pure.modeFor(100), "full"); assert.equal(pure.modeFor(500), "full"); assert.equal(pure.modeFor(501), "random"); assert.equal(pure.modeFor(2000), "random");
   const src = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs") && f !== "pure.mjs").map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8")).join("\n");
   assert.ok(!/\b500\b/.test(src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/ .*$/gm, "")), "le seuil de 500 n'est écrit qu'à un seul endroit (pure.mjs)");
 });
+
 
 test("paquets : découpage en morceaux de 100, taille plus petite à essayer, doublons et chaîne du propriétaire écartés", () => {
   assert.deepEqual(pure.chunk(names(350), 100).map((c) => c.length), [100, 100, 100, 50]);
@@ -103,21 +122,6 @@ test("recherche statistique : 600 chaînes dont 2 % en direct, 6 tirages de 100 
   let big = 0;   // 2000 chaînes, 2 % : 600 vues sur 2000, quasi certain aussi
   for (let t = 0; t < 2000; t++) { const liveSet = new Set(pure.drawer(names(2000), rng).take(40)), d = pure.drawer(names(2000), rng); for (let k = 0; k < 6; k++) if (d.take(100).some((x) => liveSet.has(x))) { big++; break; } }
   assert.ok(big / 2000 >= 0.99, `${big}/2000`);
-});
-
-test("administration : recherche (sans accents ni majuscules), pages, identifiants de ligne qui gardent la page", () => {
-  const list = [{ login: "alice_tv", name: "Éloïse", note: "" }, { login: "bob_xx", name: "", note: "ami de Léa" }, { login: "carl_99", name: "", note: "" }];
-  assert.deepEqual(pure.filterPartners(list, "eloise").map((p) => p.login), ["alice_tv"]);
-  assert.deepEqual(pure.filterPartners(list, "LEA").map((p) => p.login), ["bob_xx"]);
-  assert.deepEqual(pure.filterPartners(list, "carl").map((p) => p.login), ["carl_99"]);
-  assert.equal(pure.filterPartners(list, "  ").length, 3); assert.equal(pure.filterPartners(list, "zzz").length, 0);
-  const l = names(2000);
-  assert.deepEqual([pure.pageOf(l, 1).items.length, pure.pageOf(l, 1).pages, pure.pageOf(l, 40).items[49], pure.pageOf(l, 41).page, pure.pageOf(l, -3).page, pure.pageOf(l, "x").page, pure.pageOf([], 5).pages], [50, 40, name(1999), 40, 1, 1, 1]);
-  assert.equal(pure.rowId("alice_tv"), "alice_tv"); assert.equal(pure.rowId("alice_tv", 1, ""), "alice_tv");
-  for (const [page, q] of [[3, ""], [1, "éloïse & co"], [12, "a.b~c/d"]]) assert.deepEqual(pure.parseRowId(pure.rowId("alice_tv", page, q)), { login: "alice_tv", page, q });
-  assert.deepEqual(pure.parseRowId("alice_tv"), { login: "alice_tv", page: 1, q: "" });
-  assert.deepEqual(pure.parseRowId(undefined), { login: "", page: 1, q: "" });
-  assert.match(pure.rowId("alice_tv", 3, "é & z"), /^[a-z0-9_.A-Z-]+$/, "sûr dans une adresse");
 });
 
 test("page : canSearch (2 s entre deux recherches, une à la fois) est la même fonction dans la page que dans le module", async () => {
@@ -231,9 +235,10 @@ test("vue complète : 50 visiteurs simultanés (ou 50 onglets) = UN seul jeu d'a
   assert.equal(api.calls.length, 4, "100 visiteurs, 4 paquets (≤ 5)");
   assert.ok(all.every((x) => x === all[0]), "tous reçoivent la même réponse");
   // par la vraie route, avec le secret
-  const secret = await data.dockSecret(ctx); await data.addPartners(ctx, names(350).join("\n")); api.calls.length = 0; live.resetLive();
-  const res = await Promise.all(Array.from({ length: 50 }, () => def.routes.live(new Request(`https://site.example.test/m/raid/live?k=${secret}`), ctx)));
+  const site = mkList(350), secret = await data.dockSecret(site); api.calls.length = 0; live.resetLive();
+  const res = await Promise.all(Array.from({ length: 50 }, () => def.routes.live(new Request(`https://site.example.test/m/raid/live?k=${secret}`), site)));
   assert.ok(res.every((r) => r.status === 200)); assert.equal(api.calls.length, 4);
+  assert.equal(site.book.calls.filter(([, m]) => m === "accounts").length, 1, "et UNE lecture de la liste dans Contacts (350 < 500 : une page), partagée par les 50");
   mock.timers.enable({ apis: ["Date"], now: Date.now() + 31_000 });
   const before = api.calls.length;
   await Promise.all(Array.from({ length: 50 }, () => live.liveNow(ctx, partners, {})));
@@ -441,7 +446,7 @@ const post = (ctx, k, body) => def.routes.pick(new Request(`https://site.example
 const getLive = (ctx, k) => def.routes.live(new Request(`https://site.example.test/m/raid/live?k=${encodeURIComponent(k)}`), ctx);
 
 test("route pick : POST seulement, secret obligatoire (sans lui, Twitch n'est jamais interrogé), réponse publique uniquement", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(700).join("\n")); await data.updatePartner(ctx, name(10), { newLogin: name(10), note: "NOTE-PRIVEE", name: "Dix" });
+  const ctx = mkList(700, { people: { [name(10)]: { name: "Dix", note: "NOTE-PRIVEE" } } });
   api.liveSet = new Set([name(10)]);
   const secret = await data.dockSecret(ctx);
   assert.equal((await def.routes.pick(new Request(`https://site.example.test/m/raid/pick?k=${secret}`), ctx)).status, 405, "GET refusé : un robot qui suit des liens ne lance pas de recherche");
@@ -454,121 +459,57 @@ test("route pick : POST seulement, secret obligatoire (sans lui, Twitch n'est ja
   const r2 = await post(ctx, secret, { avoid: "x".repeat(5000) }); assert.equal(r2.status, 200);
 });
 
+
 test("route live (plus de 500 chaînes) : seulement le mode et le nombre, SANS demande à Twitch et sans la liste ; jusqu'à 500 : comme avant", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(612).join("\n")); const secret = await data.dockSecret(ctx);
+  const ctx = mkList(612); const secret = await data.dockSecret(ctx);
   const body = await (await getLive(ctx, secret)).json();
   assert.deepEqual([body.state, body.mode, body.listed, body.live], ["ok", "random", 612, []]);
   assert.equal(api.calls.length, 0); assert.ok(!JSON.stringify(body).includes(name(5)), "pas la liste des 612 noms");
-  const small = mk(); await data.addPartners(small, names(30).join("\n")); api.liveSet = new Set([name(1)]);
+  const small = mkList(30); api.liveSet = new Set([name(1)]);
   const b2 = await (await getLive(small, await data.dockSecret(small))).json();
   assert.deepEqual([b2.state, b2.mode, b2.live.length, b2.listed], ["ok", "full", 1, 30]);
 });
 
+
 test("MCP (plus de 500 chaînes) : un tirage au hasard, jamais la liste ; lecture seule ; jusqu'à 500 : la liste comme avant", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(700).join("\n")); api.liveSet = new Set([name(10)]);
+  const ctx = mkList(700); api.liveSet = new Set([name(10)]);
   let r; for (let i = 0; i < 8; i++) { search.resetSearch(); r = await def.mcp.raid_partners_live(ctx, {}); if (r.live.length) break; }
   assert.deepEqual([r.state, r.mode, r.listed, r.live.length], ["ok", "random", 700, 1]);
   assert.deepEqual([r.live[0].channel, r.live[0].raidCommand], [name(10), `/raid ${name(10)}`]);
   assert.ok(manifest.mcp.every((t) => t.readOnly === true && t.default === false));
   assert.match(manifest.mcp[0].description, /more than 500/);
-  const small = mk(); await data.addPartners(small, "alice_tv bob_x"); api.liveSet = new Set(["alice_tv"]);
+  const small = mkList(["alice_tv", "bob_x"]); api.liveSet = new Set(["alice_tv"]);
   const s = await def.mcp.raid_partners_live(small, {}); assert.deepEqual([s.mode, s.live.length], ["full", 1]);
 });
+
 
 /* ───────────── Administration à 2 000 chaînes ───────────── */
 
 const act = (ctx, n, values = {}) => admin.actions[n](ctx, values);
-const tableOf = (blocks) => blocks.find((b) => b.type === "table" && b.columns.length === 2);
 
-test("admin : 2 000 chaînes → compteur, 50 par page, pages, recherche ; le panneau reste rapide ; une seule lecture de la liste", async () => {
-  const ctx = mk(); const t0 = performance.now();
-  const r = await data.addPartners(ctx, names(2000).join("\n"));
-  const tImport = performance.now() - t0;
-  assert.equal(r.added.length, 2000); assert.equal(await ctx.api.store.count("partners"), 1, "un seul document");
-  assert.ok(ctx.calls.writes.filter((w) => w.collection === "partners").length === 1, "import de 2 000 chaînes = UNE écriture (pas d'écriture quadratique)");
-  assert.ok(tImport < 1500, `import ${tImport.toFixed(0)} ms`);
-  const t1 = performance.now(); let blocks = await def.adminPanel(ctx, { query: {} }); const tPanel = performance.now() - t1;
+test("admin : 2 000 chaînes dans Contacts → compteur, mode, lien vers Contacts ; le panneau reste rapide ; la liste est lue par pages de 500 (4 demandes)", async () => {
+  const ctx = mkList(2000);
+  const t1 = performance.now(); const blocks = await def.adminPanel(ctx, { query: {} }); const tPanel = performance.now() - t1;
   assert.ok(tPanel < 800, `panneau ${tPanel.toFixed(0)} ms`);
-  console.log(`# 2000 chaînes : import ${tImport.toFixed(0)} ms (1 écriture), panneau d'administration ${tPanel.toFixed(0)} ms`);
-  assert.equal(blocks.find((b) => b.type === "heading" && /^Vos partenaires/.test(b.text)).text, "Vos partenaires : 2000 chaînes (2000 au plus)");
-  let table = tableOf(blocks); assert.equal(table.rows.length, 50); assert.deepEqual(table.rowIds.slice(0, 2), [name(0), name(1)]);
-  const pager = blocks.find((b) => b.type === "table" && b.rowIds?.[0] === "pager");
-  assert.equal(pager.columns[0], "Chaînes 1 à 50 sur 2000"); assert.equal(pager.rows[0][0], "Page 1/40");
-  assert.deepEqual(pager.rowActions.map((a) => [a.label, a.href]), [["›", "?page=2"], ["»", "?page=40"]], "pas de lien « # » : ce sont des boutons de ligne, qui acceptent « ?page=… »");
-  assert.ok(!blocks.some((b) => b.type === "links" && b.items.some((i) => String(i.href).startsWith("?"))), "un bloc links n'accepte que des adresses complètes");
-  blocks = await def.adminPanel(ctx, { query: { page: "40" } });
-  table = tableOf(blocks); assert.deepEqual([table.rows.length, table.rowIds[0].split(".")[0], table.rowIds[0].split(".")[1]], [50, name(1950), "40"]);
-  assert.equal(tableOf(await def.adminPanel(ctx, { query: { page: "999" } })).rowIds[0].split(".")[0], name(1950), "page hors limites ramenée à la dernière");
-  // recherche
-  blocks = await def.adminPanel(ctx, { query: { q: "chaine_19" } });
-  assert.match(blocks.find((b) => b.type === "heading" && /Résultat/.test(b.text)).text, /100 sur 2000 chaînes/);
-  table = tableOf(blocks); assert.equal(table.rows.length, 50); assert.ok(!table.rowActions.some((a) => a.action === "up"), "pas de Monter/Descendre pendant une recherche");
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "search" && b.fields[0].value === "chaine_19"));
-  assert.match(JSON.stringify(await def.adminPanel(ctx, { query: { q: "zzzz" } })), /Aucune chaîne ne correspond à « zzzz »/);
-  assert.deepEqual(await act(ctx, "search", { q: " chaine_19 " }), { redirect: "?q=chaine_19" });
-  assert.deepEqual(await act(ctx, "search", { q: "" }), { redirect: "?" });
-  // petite liste : pas de recherche ni de pages
-  const small = mk(); await data.addPartners(small, "alice_tv bob_x");
-  const sb = await def.adminPanel(small, { query: {} }); assert.ok(!sb.some((b) => b.type === "adminForm" && b.action === "search") && !sb.some((b) => b.rowIds?.[0] === "pager"));
+  console.log(`# 2000 chaînes (Contacts) : panneau d'administration ${tPanel.toFixed(0)} ms`);
+  assert.ok(blocks.some((b) => b.type === "markdown" && b.text.startsWith("**2000** chaînes Twitch dans la catégorie « Cible de raid »")));
+  assert.ok(blocks.some((b) => b.type === "links" && b.items[0].label === "Gérer mes partenaires dans Contacts"));
+  assert.ok(!blocks.some((b) => (b.type === "table" && b.columns.length === 2) || (b.type === "adminForm" && ["add", "search", "save"].includes(b.action))), "ni tableau, ni pages, ni recherche, ni import : c'est le travail de Contacts");
+  const pages = ctx.book.calls.filter(([, m, a]) => m === "accounts" && a.categoryId);
+  assert.deepEqual(pages.map(([, , a]) => a.limit), [500, 500, 500, 500]);
+  assert.equal(new Set(pages.map(([, , a]) => a.cursor ?? "")).size, 4, "chaque page reprend au curseur de la précédente");
+  assert.deepEqual(Object.keys(admin.actions).sort(), ["check", "finish", "migrate", "renew"]);
 });
 
-test("admin : Retirer / Modifier / Enregistrer depuis la page 7 ou une recherche ramènent à CETTE page ; ajouter et retirer restent possibles à 2 000", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(2000).join("\n"));
-  const table = tableOf(await def.adminPanel(ctx, { query: { page: "7" } }));
-  const id = table.rowIds[3]; assert.equal(pure.parseRowId(id).login, name(303));
-  const removed = await act(ctx, "remove", { id }); assert.deepEqual([removed.redirect, /retirée/.test(removed.ok)], ["?page=7", true]);
-  assert.equal((await data.readPartners(ctx)).length, 1999);
-  const editing = await def.adminPanel(ctx, { query: { edit: table.rowIds[4] } });   // l'adresse ne contient que « ?edit=… » : la page 7 est dans l'identifiant
-  assert.equal(tableOf(editing).rowIds[0].split(".")[0], name(300), "la liste reste sur la page 7 pendant la modification");
-  const form = editing.find((b) => b.type === "adminForm" && b.action === "save");
-  assert.equal(form.cancelHref, "?page=7"); assert.equal(form.fields[0].value, table.rowIds[4]); assert.equal(form.fields[1].value, name(304));
-  const saved = await act(ctx, "save", { id: form.fields[0].value, login: name(304), name: "Nom", note: "n" }); assert.equal(saved.redirect, "?page=7");
-  const viaSearch = pure.rowId(name(1500), 1, "chaine_15"); assert.equal((await act(ctx, "remove", { id: viaSearch })).redirect, "?q=chaine_15");
-  const added = await act(ctx, "add", { logins: "nouveau_membre" }); assert.equal(added.redirect, "?");
-  assert.equal((await data.readPartners(ctx)).length, 1999);
-  const downed = await act(ctx, "down", { id: pure.rowId(name(0), 1, "") }); assert.ok(downed.ok);
-});
-
-test("admin : import en masse par collage → bilan clair (ajoutés / déjà là / invalides) sans bloquer les bons ; liste pleine dite ; export CSV à 2 000", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(10).join("\n"));
-  const text = [...names(10), ...Array.from({ length: 700 }, (_, i) => `membre_${i}`), "pas valable!", "x", "https://twitch.tv/videos/1", "a b c d", ...Array.from({ length: 20 }, (_, i) => `?${i}?`)].join("\n");
-  const res = await act(ctx, "add", { logins: text });
-  assert.deepEqual(Object.keys(res), ["ok"]);
-  assert.match(res.ok, /700 chaînes ajoutées\./); assert.match(res.ok, /10 chaînes étaient déjà|Déjà dans votre liste/); assert.match(res.ok, /pas un pseudo Twitch valable/); assert.match(res.ok, /Autres lignes non valables : 19/);
-  assert.ok(res.ok.length < 1200, "le bilan ne recopie pas 700 noms");
-  assert.equal((await data.readPartners(ctx)).length, 710);
-  const full = await act(ctx, "add", { logins: Array.from({ length: 1400 }, (_, i) => `autre_${i}`).join(" ") });
-  assert.match(full.ok, /La liste est pleine \(2000 chaînes au plus\)\. Non ajoutées : 110/); assert.equal((await data.readPartners(ctx)).length, 2000);
-  assert.match((await act(ctx, "add", { logins: "encore_un" })).error, /liste est pleine/);
-  const t0 = performance.now(); const files = await def.backup.readable(ctx); const ms = performance.now() - t0;
-  const lines = files[0].content.split("\r\n"); assert.equal(lines.length, 2001); assert.equal(lines[0], "channel,name,note"); assert.ok(ms < 300, `${ms.toFixed(0)} ms`);
-  console.log(`# export CSV à 2000 chaînes : ${ms.toFixed(1)} ms, ${(files[0].content.length / 1024).toFixed(0)} Ko`);
-  assert.ok(!files[0].content.includes(await data.dockSecret(ctx)));
-});
-
-test("admin : un collage trop long (le cœur coupe à 20 000 caractères) n'ajoute JAMAIS un pseudo coupé en deux et dit où reprendre", async () => {
-  const ctx = mk(); const all = names(2000).join("\n");   // 2 000 × 12 caractères = 24 000
-  const cut = all.slice(0, pure.PASTE_MAX);               // ce que le cœur transmet au module
-  assert.ok(cut.length === 20000 && !cut.endsWith("\n"));
-  const res = await act(ctx, "add", { logins: cut });
-  const have = await data.readPartners(ctx);
-  assert.ok(have.length > 1600 && have.length < 1700, `${have.length}`); assert.ok(have.every((p) => /^chaine_\d{4}$/.test(p.login)), "aucun pseudo tronqué");
-  assert.match(res.ok, /trop long/); const after = /juste après « (chaine_\d{4}) »/.exec(res.ok)[1]; assert.equal(after, have.at(-1).login);
-  // la suite : on recolle à partir de ce pseudo, sans rien perdre
-  const rest = all.slice(all.indexOf(after) + after.length + 1);
-  await act(ctx, "add", { logins: rest });
-  assert.deepEqual((await data.readPartners(ctx)).map((p) => p.login), names(2000));
-});
 
 test("admin : la phrase du mode dit où on en est (FR et EN), l'avertissement « Nouvelle adresse » est clair pour tout le monde", async () => {
-  const mkN = async (n, extra = {}) => { const c = mk(extra); await data.addPartners(c, names(n).join("\n")); return c; };
   const text = (blocks, tone) => blocks.filter((b) => b.type === "banner" && b.tone === tone).map((b) => b.text).join("|");
-  const r = text(await def.adminPanel(await mkN(612), { query: {} }), "info");
+  const r = text(await def.adminPanel(mkList(612), { query: {} }), "info");
   assert.match(r, /Vous avez 612 chaînes : le dock propose un bouton « au hasard » plutôt que la liste complète\. Jusqu'à 500 chaînes il montre tous les membres en direct\./); assert.match(r, /100 chaînes à la fois/);
-  assert.match(text(await def.adminPanel(await mkN(40), { query: {} }), "info"), /Vous avez 40 chaînes : le dock montre tous vos membres en direct\. Au-delà de 500 chaînes/);
-  const e = text(await def.adminPanel(await mkN(612, { locale: "en", messages: { ...en } }), { query: {} }), "info");
+  assert.match(text(await def.adminPanel(mkList(40), { query: {} }), "info"), /Vous avez 40 chaînes : le dock montre tous vos membres en direct\. Au-delà de 500 chaînes/);
+  const e = text(await def.adminPanel(mkList(612, { locale: "en", messages: { ...en } }), { query: {} }), "info");
   assert.match(e, /You have 612 channels: the dock offers a “random” button rather than the full list\. Up to 500 channels/);
-  const blocks = await def.adminPanel(await mkN(3), { query: {} });
+  const blocks = await def.adminPanel(mkList(3), { query: {} });
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
   assert.match(renew.columns[0], /coupe l'accès à tout le monde/); assert.match(renew.rows[0][0], /cesse de marcher tout de suite pour tout le monde/); assert.match(renew.rowActions[0].confirm, /POUR PERSONNE/);
   assert.ok(renew.rowActions[0].danger);
@@ -576,47 +517,52 @@ test("admin : la phrase du mode dit où on en est (FR et EN), l'avertissement «
   assert.match(fr.renewed, /ne marche plus pour personne/);
 });
 
+
 test("admin « Voir qui est en direct » : vue complète avec bandeau partiel ; au hasard : un essai (compté dans le plafond)", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(350).join("\n")); api.liveSet = new Set([name(1)]); api.failWhen = (w) => w.includes(name(150));
+  const ctx = mkList(350); api.liveSet = new Set([name(1)]); api.failWhen = (w) => w.includes(name(150));
   assert.match((await act(ctx, "check")).ok, /En direct maintenant : CHAINE_0001\. Attention : certaines chaînes n'ont pas pu être vérifiées cette fois \(non vérifiées : 100\)/);
-  const big = mk(); await data.addPartners(big, names(700).join("\n")); api = fakeApi(); api.liveSet = new Set([name(1), name(400), name(650)]);
-  const big2 = mk(); await data.addPartners(big2, names(700).join("\n"));
+  api = fakeApi(); api.liveSet = new Set([name(1), name(400), name(650)]);
+  const big2 = mkList(700);
   let r; for (let i = 0; i < 5; i++) { search.resetSearch(); r = await act(big2, "check"); if (r.ok && /est en direct/.test(r.ok)) break; }
   assert.match(r.ok, /Essai au hasard : CHAINE_/);
   api.liveSet = new Set(); search.resetSearch(); assert.match((await act(big2, "check")).ok, /personne n'a été trouvé en ligne/);
 });
 
+
 /* ───────────── Vie privée et textes ───────────── */
 
-test("vie privée : le dock n'expose ni notes, ni secret, ni adresse, dans aucune route, à 2 000 chaînes ; manifeste à jour ; FR et EN complets", async () => {
-  const ctx = mk(); await data.addPartners(ctx, names(2000).join("\n"));
-  for (const i of [3, 700, 1999]) await data.updatePartner(ctx, name(i), { newLogin: name(i), name: `Nom ${i}`, note: `NOTE-PRIVEE-${i}` });
+test("vie privée : le dock n'expose ni notes, ni secret, ni identifiant de fiche, dans aucune route, à 2 000 chaînes ; manifeste à jour ; FR et EN complets", async () => {
+  const people = Object.fromEntries([3, 700, 1999].map((i) => [name(i), { name: `Nom ${i}`, note: `NOTE-PRIVEE-${i}` }]));
+  const ctx = mkList(2000, { people });
   api.liveSet = new Set([name(3), name(700), name(1999)]);
   const secret = await data.dockSecret(ctx); const seen = [];
   seen.push(await (await getLive(ctx, secret)).text());
   for (let i = 0; i < 6; i++) { search.resetSearch(); seen.push(await (await post(ctx, secret, {})).text()); }
   seen.push(await (await def.routes.dock(new Request(`https://site.example.test/m/raid/dock?k=${secret}`), ctx)).text());
   seen.push(JSON.stringify(await def.mcp.raid_partners_live(ctx, {})));
-  const small = mk(); await data.addPartners(small, "alice_tv"); await data.updatePartner(small, "alice_tv", { newLogin: "alice_tv", note: "NOTE-PRIVEE-X" }); api.liveSet = new Set(["alice_tv"]);
+  const small = mkList(["alice_tv"], { people: { alice_tv: { note: "NOTE-PRIVEE-X" } } }); api.liveSet = new Set(["alice_tv"]);
   seen.push(await (await getLive(small, await data.dockSecret(small))).text());
-  for (const t of seen) assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note");
+  const ids = ctx.book.dump().contacts.map((c) => c.id);
+  for (const t of seen) { assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note"); assert.ok(!t.includes(`"${ids[3]}"`), "aucun identifiant de fiche"); }
   for (const t of seen.slice(0, -2)) if (!t.includes("<script")) assert.ok(!t.includes(secret.slice(0, 12)) || t.length < 0, "le secret ne revient jamais dans les données");
-  assert.ok(manifest.privacy.fr.includes("Nouvelle adresse") && manifest.privacy.en.includes("New address") && /une minute/.test(manifest.privacy.fr));
-  assert.equal(manifest.version, "1.3.0");
+  assert.ok(/une minute/.test(manifest.privacy.fr) && /one minute/.test(manifest.privacy.en) && /Contacts/.test(manifest.privacy.fr) && /adresse/.test(manifest.privacy.fr));
+  assert.equal(manifest.version, "2.0.1");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "add_cut", "search_btn"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "manage_link", "dock_nr_category_gone", "dock_nr_contacts_missing"]) assert.ok(fr[k] && en[k], k);
 });
+
 
 test("trou noir par les routes : un Twitch muet → la route live (vue complète) et la route pick (au hasard) répondent proprement en quelques secondes", async () => {
   Object.assign(live.timing, { packetMs: 5000, callMs: 300, searchMs: 300, failMs: 10 });
-  const ctx = mk(); await data.addPartners(ctx, names(350).join("\n")); const secret = await data.dockSecret(ctx);
+  const ctx = mkList(350); const secret = await data.dockSecret(ctx);
   api.hang = () => true;
   const t0 = Date.now();
   const res = await within(getLive(ctx, secret)); assert.notEqual(res, HUNG);
   const body = await res.json(); assert.deepEqual([res.status, body.state, body.reason], [200, "error", "network"]);
-  const big = mk(); await data.addPartners(big, names(700).join("\n")); const k2 = await data.dockSecret(big);
+  const big = mkList(700); const k2 = await data.dockSecret(big);
   const pk = await within(post(big, k2, {})); assert.notEqual(pk, HUNG);
   const pb = await pk.json(); assert.deepEqual([pk.status, pb.state, pb.reason], [200, "error", "network"]);
   assert.ok(Date.now() - t0 < 1500, `${Date.now() - t0} ms`);
   const mcp = await within(def.mcp.raid_partners_live(big, {})); assert.notEqual(mcp, HUNG); assert.equal(mcp.state, "error");
 });
+

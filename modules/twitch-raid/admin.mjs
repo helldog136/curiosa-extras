@@ -1,45 +1,77 @@
-// La page d'administration du module : l'adresse du dock (à copier dans OBS), la liste des chaînes partenaires (jusqu'à 2 000 : par pages de 50, avec une recherche), de quoi en ajouter (par paquets collés), les modifier, les ranger.
+// La page d'administration du module (2.0) : l'adresse du dock (à copier dans OBS), l'état de la liste de raid et du dock, un lien vers Contacts.
+// La liste elle-même se gère dans Contacts (une catégorie, « Cible de raid » par défaut) : ici, ni ajout, ni import, ni pages, ni recherche.
+// Pendant la migration depuis la 1.x : où en est la copie de l'ancienne liste, et la dernière étape à faire (créer la catégorie, y ranger les chaînes).
 // Écrite pour quelqu'un qui n'est pas technicien : des phrases, et chaque problème dit quoi faire.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const data = await import(`./data.mjs${v}`);
 const live = await import(`./live.mjs${v}`);
 const search = await import(`./search.mjs${v}`);
-const { MAX_PARTNERS, FULL_VIEW_MAX, PASTE_MAX, PAGE_SIZE, oneLine, splitList, modeFor, filterPartners, pageOf, rowId, parseRowId } = await import(`./pure.mjs${v}`);
+const source = await import(`./source.mjs${v}`);
+const migrate = await import(`./migrate.mjs${v}`);
+const { FULL_VIEW_MAX, MAX_TARGETS, oneLine, modeFor, fold } = await import(`./pure.mjs${v}`);
 
-const SERVICE = "twitch.api";
 /** `channel` : la valeur brute du réglage (l'id d'une instance de Ma Chaîne Twitch, ou un pseudo tapé avant le choix) ; channel.mjs la traduit en pseudo. */
 export const settingsOf = (ctx) => ({ channel: oneLine(ctx.setting("channel"), 200) });
 export const dockUrl = (ctx, secret) => `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}/m/${ctx.instance.key}/dock?k=${encodeURIComponent(secret)}`;
 
 /** Attend `p` au plus `ms` (la page d'administration ne reste jamais suspendue à un autre module). */
-const within = (p, ms, fallback) => { let t; return Promise.race([p, new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
+const within = (p, ms, fallback) => { let t; return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
 
-const errorText = (ctx, e) => ctx.t(`add_${e.error}`, { value: e.text ?? "" });
-const quote = (list) => list.map((x) => `« ${x} »`).join(", ");
-const SHOWN = 10;   // combien de noms le bilan d'un ajout énumère avant de passer aux totaux
+/** La phrase d'un problème de liste (les mêmes que celles du dock). */
+export const problemText = (ctx, problem) => ctx.t(`dock_nr_${problem}`, { label: source.defaultLabels(ctx)[0] });
+/** Une catégorie qui est vraiment la liste de raid (choisie, suivie après fusion, ou « Cible de raid ») ; « only » (l'unique catégorie de Contacts) sert au dock, mais la migration n'y range jamais rien d'office. */
+const isRaidCategory = (cat) => !!cat && ["chosen", "moved", "default"].includes(cat.how);
+const timeOf = (ctx, ms) => { try { return new Date(ms).toLocaleTimeString(ctx.locale || "en", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
 
-/** Dit en quelques phrases ce qui s'est passé quand on ajoute des chaînes (jamais une liste de 500 noms). */
-function addReport(ctx, r, cut) {
-  const t = ctx.t, parts = [];
-  if (r.added.length) parts.push(r.added.length <= SHOWN ? t("add_done", { n: r.added.length, list: r.added.join(", ") }) : t("add_done_many", { n: r.added.length }));
-  if (r.dup.length) parts.push(r.dup.length <= SHOWN ? t("add_dup", { list: quote(r.dup) }) : t("add_dup_many", { n: r.dup.length }));
-  if (r.full.length) parts.push(t("add_full", { max: MAX_PARTNERS, n: r.full.length }));
-  for (const b of r.bad.slice(0, 5)) parts.push(errorText(ctx, b));
-  if (r.bad.length > 5) parts.push(t("add_bad_more", { n: r.bad.length - 5 }));
-  if (cut) parts.push(t("add_cut", { after: cut }));
-  return parts.join(" ");
-}
-
-/** L'adresse de la page demandée de la liste (`?page=3&q=alice`), ou `?` pour la première page sans recherche. */
-const listHref = (page, q) => { const p = new URLSearchParams(); if (page > 1) p.set("page", String(page)); if (q) p.set("q", q); const s = p.toString(); return s ? `?${s}` : "?"; };
-
-export async function panel(ctx, { query } = {}) {
-  const t = ctx.t, s = settingsOf(ctx);
-  const [partners, secret, tw] = await Promise.all([data.readPartners(ctx), data.dockSecret(ctx), within(live.pickChannel(ctx, s.channel).catch(() => ({ problem: "no_channel" })), 4000, { problem: "slow" })]);
+export async function panel(ctx) {
+  const t = ctx.t, s = settingsOf(ctx), label0 = source.defaultLabels(ctx)[0];
+  const [src, secret, tw, st] = await Promise.all([
+    within(source.targets(ctx), source.timing.readMs + 1000, { state: "problem", problem: "contacts_down" }),
+    data.dockSecret(ctx),
+    within(live.pickChannel(ctx, s.channel), 4000, { problem: "slow" }),
+    migrate.readState(ctx).catch(() => null),
+  ]);
+  const contactsPath = src.problem !== "contacts_missing" ? await source.contactsAdminPath(ctx, src.category?.id) : null;
   const address = dockUrl(ctx, secret);
   const blocks = [];
   if (tw.problem && tw.problem !== "slow") blocks.push({ type: "banner", tone: "warning", text: t(`dock_nr_${tw.problem}`), ...(tw.adminPath ? { href: tw.adminPath } : {}) });
-  blocks.push({ type: "markdown", text: t("admin_intro") });
+
+  // Contacts : absent (proposer de l'installer, par SERVICE), trop ancien, muet ; catégorie disparue, à choisir, à créer.
+  if (src.state !== "ok") {
+    if (src.problem === "contacts_missing") blocks.push({ type: "suggestInstall", service: source.BOOK, min: 2, reason: t("suggest_reason") });
+    blocks.push({ type: "banner", tone: "warning", text: problemText(ctx, src.problem) });
+  } else if (src.stale) blocks.push({ type: "banner", tone: "warning", text: t("contacts_stale", { time: timeOf(ctx, src.asOf) }) });
+
+  // La migration depuis la 1.x (à retirer en phase 3).
+  if (st && st.total > 0 && !st.migratedAt) {
+    if (!st.copiedAt) {
+      blocks.push({ type: "banner", tone: "warning", text: t("mig_copy_todo", { done: st.done, total: st.total }) + (st.full ? " " + t("mig_full") : st.stopped ? " " + problemText(ctx, st.stopped) : "") });
+      blocks.push({ type: "adminForm", action: "migrate", submitLabel: t("mig_copy_btn"), fields: [] });
+    } else if (st.pending.length) {
+      if (src.state === "ok" && isRaidCategory(src.category)) {
+        blocks.push({ type: "heading", text: t("mig_finish_title") });
+        blocks.push({ type: "markdown", text: t("mig_finish_text", { n: st.pending.length, label: src.category.label }) });
+        blocks.push({ type: "adminForm", action: "finish", submitLabel: t("mig_finish_btn"), fields: [] });
+      } else blocks.push({ type: "banner", tone: "info", text: t(src.category?.how === "only" ? "mig_need_category_contacts" : "mig_need_category", { n: st.pending.length, label: label0 }) });
+    }
+  }
+  if (st?.skippedCount) blocks.push({ type: "markdown", text: t("mig_skipped", { n: st.skippedCount, list: st.skipped.slice(0, 10).map((x) => `« ${oneLine(x.login, 40)} »`).join(", ") }) });
+
+  blocks.push({ type: "markdown", text: t("admin_intro", { label: label0 }) });
+
+  // La liste de raid : un compteur, le mode du dock, le lien vers Contacts.
+  blocks.push({ type: "heading", text: t("list_title") });
+  if (src.state === "ok") {
+    const n = src.partners.length;
+    if (src.category) {
+      if (src.category.how === "moved") blocks.push({ type: "banner", tone: "info", text: t("list_moved", { label: src.category.label }) });
+      if (src.category.how === "only" && !source.defaultLabels(ctx).some((l) => fold(l) === fold(src.category.label))) blocks.push({ type: "markdown", text: t("list_only", { label: src.category.label, default: label0 }) });
+      blocks.push({ type: "markdown", text: n ? t(n === 1 ? "list_count_one" : "list_count", { n, label: src.category.label }) : t("list_empty", { label: src.category.label }) });
+    } else blocks.push({ type: "markdown", text: t(n === 1 ? "list_count_awaiting_one" : "list_count_awaiting", { n }) });
+    if (n) blocks.push({ type: "banner", tone: "info", text: t(modeFor(n) === "random" ? "mode_random" : n === 1 ? "mode_full_one" : "mode_full", { n, max: FULL_VIEW_MAX }) });
+    if (src.truncated) blocks.push({ type: "banner", tone: "warning", text: t("list_truncated", { max: MAX_TARGETS }) });
+  }
+  if (contactsPath) blocks.push({ type: "links", items: [{ label: t("manage_link"), href: contactsPath }] });
 
   blocks.push({ type: "heading", text: t("addr_title") });
   blocks.push({ type: "markdown", text: t("addr_steps") });
@@ -47,99 +79,44 @@ export async function panel(ctx, { query } = {}) {
   blocks.push({ type: "links", items: [{ label: t("addr_open"), href: address }] });
   blocks.push({ type: "adminForm", action: "check", title: t("check_title"), submitLabel: t("check_btn"), fields: [] });
   blocks.push({ type: "table", columns: [t("renew_title")], rows: [[t("renew_help")]], rowIds: ["dock"], rowActions: [{ label: t("renew_btn"), action: "renew", confirm: t("renew_confirm"), danger: true }] });
-
-  const wanted = query?.edit ? parseRowId(query.edit) : null;   // « Modifier » garde la page et la recherche d'où l'on vient (dans l'identifiant de la ligne)
-  // Le formulaire (ajouter ou modifier) est AVANT la liste : sa place ne bouge pas quand la liste grandit, et le bilan d'un import reste affiché.
-  const editing = wanted && partners.find((p) => p.login === wanted.login);
-  if (editing) {
-    blocks.push({ type: "heading", text: t("edit_title", { login: editing.login }) });
-    blocks.push({
-      type: "adminForm", action: "save", submitLabel: t("edit_btn"), cancelHref: listHref(wanted.page, wanted.q),
-      fields: [
-        { name: "id", kind: "hidden", value: rowId(editing.login, wanted.page, wanted.q) },
-        { name: "login", label: t("f_login"), value: editing.login, required: true, help: t("f_login_help") },
-        { name: "name", label: t("f_name"), value: editing.name, help: t("f_name_help") },
-        { name: "note", label: t("f_note"), value: editing.note, help: t("f_note_help") },
-      ],
-    });
-  } else {
-    blocks.push({ type: "heading", text: t("add_title") });
-    blocks.push({ type: "adminForm", action: "add", submitLabel: t("add_btn"), fields: [{ name: "logins", kind: "textarea", label: t("f_logins"), help: t("f_logins_help"), required: true }] });
-  }
-  const q = oneLine(wanted ? wanted.q : query?.q, 40), searching = q !== "";
-  const matches = filterPartners(partners, q), pg = pageOf(matches, wanted ? wanted.page : query?.page, PAGE_SIZE);
-  blocks.push({ type: "heading", text: searching ? t("list_title_found", { n: matches.length, total: partners.length }) : t(partners.length === 1 ? "list_title_one" : "list_title", { n: partners.length, max: MAX_PARTNERS }) });
-  if (partners.length) blocks.push({ type: "banner", tone: "info", text: t(modeFor(partners.length) === "random" ? "mode_random" : partners.length === 1 ? "mode_full_one" : "mode_full", { n: partners.length, max: FULL_VIEW_MAX }) });
-  if (partners.length > 20 || searching) blocks.push({ type: "adminForm", action: "search", submitLabel: t("search_btn"), cancelHref: searching ? "?" : undefined, fields: [{ name: "q", label: t("search_label"), value: q, help: t("search_help") }] });
-  if (!partners.length) blocks.push({ type: "markdown", text: t("list_empty") });
-  else if (!matches.length) blocks.push({ type: "markdown", text: t("search_none", { q }) });
-  else {
-    const pager = pg.pages > 1 ? (() => {
-      // Les liens d'un bloc « links » doivent être des adresses complètes : les boutons de ligne d'un tableau, eux, acceptent « ?page=3 ». Le pager est donc un petit tableau d'une ligne.
-      const buttons = [];
-      if (pg.page > 1) buttons.push({ label: t("page_first"), href: listHref(1, q) }, { label: t("page_prev"), href: listHref(pg.page - 1, q) });
-      if (pg.page < pg.pages) buttons.push({ label: t("page_next"), href: listHref(pg.page + 1, q) }, { label: t("page_last"), href: listHref(pg.pages, q) });
-      // libellés courts : sur un téléphone, le tableau ne doit pas déborder
-      return { type: "table", columns: [t("page_range", { from: (pg.page - 1) * PAGE_SIZE + 1, to: (pg.page - 1) * PAGE_SIZE + pg.items.length, total: matches.length })], rows: [[t("page_of", { page: pg.page, pages: pg.pages })]], rowIds: ["pager"], rowActions: buttons };
-    })() : null;
-    if (pager) blocks.push(pager);   // en haut ET en bas de la page de 50 chaînes
-    blocks.push({
-      type: "table", columns: [t("col_channel"), t("col_note")],
-      rows: pg.items.map((p) => [p.name ? `${p.name}\n${p.login}` : p.login, p.note || "—"]), rowIds: pg.items.map((p) => rowId(p.login, pg.page, q)),
-      // « Monter / Descendre » change l'ordre de TOUTE la liste : pendant une recherche, les voisins affichés ne sont pas les voisins de la liste, on ne le propose pas
-      rowActions: [{ label: t("act_edit"), href: "?edit={id}" }, ...(searching ? [] : [{ label: t("act_up"), action: "up" }, { label: t("act_down"), action: "down" }]), { label: t("act_remove"), action: "remove", confirm: t("confirm_remove"), danger: true }],
-    });
-    if (pager) blocks.push(pager);
-  }
-
   return blocks;
 }
 
-/** Revient à la liste, à la même page et avec la même recherche. */
-const back = (ctx, message, where = {}) => ({ ok: message, redirect: listHref(where.page ?? 1, where.q ?? "") });
-const clear = () => live.resetLive();
+const back = (message) => ({ ok: message, redirect: "?" });
+const forget = () => { source.resetSource(); live.resetLive(); };
 
 export const actions = {
-  async add(ctx, values) {
-    const raw = String(values.logins ?? ""), tooLong = raw.length >= PASTE_MAX;
-    let text = raw, after = "";
-    if (tooLong) {
-      // le cœur coupe ce qu'on colle à 20 000 caractères : le dernier pseudo est peut-être coupé en deux, on ne l'ajoute SURTOUT pas (ce serait une autre chaîne)
-      const lines = splitList(raw); lines.pop();
-      after = lines[lines.length - 1] ?? ""; text = lines.join("\n");
-    }
-    const r = await data.addPartners(ctx, text);
-    clear();
-    const message = addReport(ctx, r, tooLong ? after || "…" : "");
-    if (!r.added.length) return { error: message || ctx.t("add_empty") };
-    // Tout est bon : on revient à la liste. Sinon on reste là, pour que la personne lise ce qui n'a pas été ajouté.
-    return r.dup.length || r.bad.length || r.full.length || tooLong ? { ok: message } : back(ctx, message);
-  },
-  async save(ctx, values) {
-    const at = parseRowId(values.id);
-    const r = await data.updatePartner(ctx, at.login, { newLogin: values.login, name: values.name, note: values.note });
-    if (r.error) return { error: r.error === "dup" ? ctx.t("add_dup", { list: quote([r.login]) }) : r.error === "missing" ? ctx.t("err_missing") : errorText(ctx, { error: r.error, text: oneLine(values.login, 60) }) };
-    clear();
-    return back(ctx, ctx.t("saved"), at);
-  },
-  async remove(ctx, values) {
-    const at = parseRowId(values.id);
-    const r = await data.removePartner(ctx, at.login);
-    clear();
-    return r.error ? { error: ctx.t("err_missing") } : back(ctx, ctx.t("removed"), at);
-  },
-  async up(ctx, values) { const at = parseRowId(values.id); const r = await data.movePartner(ctx, at.login, -1); clear(); return r.error ? { error: ctx.t("err_missing") } : back(ctx, ctx.t("moved"), at); },
-  async down(ctx, values) { const at = parseRowId(values.id); const r = await data.movePartner(ctx, at.login, +1); clear(); return r.error ? { error: ctx.t("err_missing") } : back(ctx, ctx.t("moved"), at); },
-  /** Chercher dans la liste : on revient à la page 1 de la liste filtrée (la recherche est dans l'adresse). */
-  async search(ctx, values) { return { redirect: listHref(1, oneLine(values.q, 40)) }; },
   async renew(ctx) {
     await data.renewSecret(ctx);
-    return back(ctx, ctx.t("renewed"));
+    return back(ctx.t("renewed"));
+  },
+  /** « Continuer la copie » : la suite de la migration de l'ancienne liste vers Contacts, bornée (un clic = quelques secondes de travail). */
+  async migrate(ctx) {
+    const cat = await source.resolveCategory(ctx);
+    const r = await migrate.copyToContacts(ctx, { budgetMs: migrate.timing.actionMs, categoryId: isRaidCategory(cat) ? cat.id : null });
+    forget();
+    const st = r.state;
+    if (r.status === "done" || r.status === "copied") return back(ctx.t("mig_copy_done", { total: st.total }));
+    if (r.status === "partial") return { ok: ctx.t("mig_copy_partial", { done: st.done, total: st.total }) };
+    return { error: st.full ? ctx.t("mig_full") : problemText(ctx, st.stopped ?? "contacts_down") };
+  },
+  /** « Ranger mes chaînes dans cette catégorie » : les fiches recopiées rejoignent la catégorie choisie (ou « Cible de raid »). */
+  async finish(ctx) {
+    const cat = await source.resolveCategory(ctx);
+    if (cat.problem) return { error: problemText(ctx, cat.problem) };
+    if (!isRaidCategory(cat)) return { error: ctx.t("mig_need_category_contacts", { n: (await migrate.readState(ctx)).pending.length, label: source.defaultLabels(ctx)[0] }) };
+    const r = await migrate.finishCategory(ctx, cat.id);
+    forget();
+    if (r.status === "done") return back(ctx.t("mig_finish_done", { label: cat.label }));
+    if (r.status === "partial") return { ok: ctx.t("mig_finish_partial", { n: r.state.pending.length }) };
+    return { error: problemText(ctx, r.state.stopped ?? "contacts_down") };
   },
   /** « Voir qui est en direct » : un essai tout de suite, pour savoir si tout est en place sans ouvrir le dock. */
   async check(ctx) {
-    live.resetLive();
-    const partners = await data.readPartners(ctx);
+    forget();
+    const src = await source.targets(ctx);
+    if (src.state !== "ok") return { error: problemText(ctx, src.problem) };
+    const partners = src.partners;
     const r = await live.liveNow(ctx, partners, settingsOf(ctx));
     if (r.state === "ok" && r.mode === "random") {
       const f = await search.findRandom(ctx, partners, settingsOf(ctx));

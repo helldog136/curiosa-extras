@@ -52,7 +52,7 @@ test("manifeste : valide, une seule instance, twitch.api v3 NON each, minCore 0.
   assert.equal(manifest.id, "twitch-connector");
   assert.deepEqual(manifest.name, { en: "Twitch connector", fr: "Connecteur Twitch" });
   assert.equal(manifest.instances, "single");
-  assert.equal(manifest.minCore, "0.2.0");
+  assert.equal(manifest.minCore, "0.2.2");
   assert.equal(manifest.type, "integration");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version, o.each ?? false]), [["twitch.api", 3, false]]);
   assert.ok(!manifest.requires, "le fournisseur ne dépend de personne");

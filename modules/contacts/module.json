@@ -1,14 +1,15 @@
 {
   "apiVersion": 2,
   "id": "contacts",
+  "minCore": "0.2.2",
   "name": {
     "en": "Contacts",
     "fr": "Contacts"
   },
-  "version": "1.1.1",
+  "version": "2.1.0",
   "description": {
-    "en": "Your private address book: people, organisations, notes. Each person lives here once; the rest of the site only links to them.",
-    "fr": "Votre carnet d'adresses privé : personnes, organisations, notes. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer."
+    "en": "Your private address book: people and organisations, their accounts on the networks (Twitch, YouTube, Bluesky…), categories, notes and photo. Each person lives here once; the rest of the site only links to them.",
+    "fr": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux (Twitch, YouTube, Bluesky…), catégories, notes et photo. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -17,6 +18,16 @@
   "type": "utility",
   "instances": "single",
   "page": false,
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "en": "My contacts",
+        "fr": "Mes contacts"
+      }
+    }
+  ],
+  "dataVersion": 2,
   "offers": [
     {
       "service": "contact.store",
@@ -27,15 +38,36 @@
     },
     {
       "service": "contact.book",
+      "version": 2,
       "label": {
-        "en": "Contacts (read, search, create, correct, annotate)",
-        "fr": "Contacts (lire, chercher, créer, corriger, annoter)"
+        "en": "Contacts (people, organisations, accounts, categories)",
+        "fr": "Contacts (personnes, organisations, comptes, catégories)"
       },
       "readOnly": [
         "get",
+        "resolve",
         "find",
-        "resolve"
+        "accounts",
+        "search",
+        "list",
+        "categories",
+        "categoriesResolve"
       ]
+    }
+  ],
+  "requires": [
+    {
+      "service": "privacy.subject",
+      "optional": true
+    },
+    {
+      "service": "twitch.api",
+      "min": 3,
+      "optional": true
+    },
+    {
+      "service": "youtube.api",
+      "optional": true
     }
   ],
   "permissions": [
@@ -43,14 +75,68 @@
     "storage",
     "mcp"
   ],
+  "rights": [
+    {
+      "id": "email.view",
+      "label": {
+        "fr": "voir les e-mails et téléphones",
+        "en": "see e-mails and phone numbers"
+      },
+      "help": {
+        "fr": "Sans ce droit, la personne voit les fiches, les comptes et les notes, mais jamais une adresse e-mail ni un numéro de téléphone.",
+        "en": "Without it, the person sees cards, accounts and notes, but never an e-mail address or a phone number."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "export",
+      "label": {
+        "fr": "exporter le carnet",
+        "en": "export the address book"
+      },
+      "help": {
+        "fr": "Télécharger toutes les fiches dans un fichier (tableur).",
+        "en": "Download every card as a file (spreadsheet)."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "categories.create",
+      "label": {
+        "fr": "créer des catégories",
+        "en": "create categories"
+      },
+      "help": {
+        "fr": "Par exemple « Cible de raid » depuis un autre module.",
+        "en": "For example « Raid target » from another module."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
   "mcp": [
     {
       "name": "contacts_list",
       "readOnly": true,
-      "description": "List people in THE address book (every person of the site lives here once: form messages, partners' contacts, manual entries). Use it to look someone up by name, organisation or email before creating a contact; the partnership files only link to these people (partner_get (Partnerships module) shows who is linked to a brand). Contacts created by the website form start as 'to_review': research the person, complete the card, then mark it 'active' (or delete it if it is spam).",
+      "description": "List or search THE address book (people and organisations; every person of the site lives here once). Never returns e-mails or phone numbers. Use it before creating a contact (never duplicate someone). Paginated: at most 100 per call, pass 'next' as 'cursor' to continue. Filters: q (name, @handle, organisation; accents and case ignored), status ('to_review' = website form messages to check), kind, categoryId (see contact_categories), network. Partnership files only link to these people (partner_get, Partnerships module).",
       "input": {
         "type": "object",
         "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Text to look for: name, account handle (with or without @), organisation."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -58,14 +144,42 @@
               "active"
             ]
           },
-          "search": {
+          "kind": {
             "type": "string",
-            "description": "Text to look for in name, organisation or email."
+            "enum": [
+              "person",
+              "org"
+            ]
+          },
+          "categoryId": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "twitch",
+              "youtube",
+              "tiktok",
+              "instagram",
+              "discord",
+              "x",
+              "bluesky",
+              "mastodon",
+              "web",
+              "other"
+            ]
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Opaque cursor: pass the 'next' value of the previous page to get the following one."
           },
           "limit": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Page size (1 to 100, default 30)."
           }
         }
       }
@@ -73,12 +187,13 @@
     {
       "name": "contact_get",
       "readOnly": true,
-      "description": "Read one person of the address book with all their notes. Use it for the details behind a contact id, including the ones linked to a partnership file (partner_get (Partnerships module) only gives name, role and email).",
+      "description": "Read one card of the address book: name, organisation, function, categories, accounts on the networks, notes (50 latest). No e-mail or phone (contact_get_private gives them, if your access allows it).",
       "input": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           }
         },
         "required": [
@@ -87,69 +202,135 @@
       }
     },
     {
+      "name": "contact_get_private",
+      "readOnly": true,
+      "default": false,
+      "description": "Same as contact_get, WITH the e-mail address and phone number. Not granted by default: personal data.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "contact_categories",
+      "readOnly": true,
+      "description": "List the categories of the address book (id, label). Paginated: at most 100 per call, pass 'next' as 'cursor'.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Opaque cursor: pass the 'next' value of the previous page to get the following one."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size (1 to 100, default 100)."
+          }
+        }
+      }
+    },
+    {
       "name": "contact_create",
-      "description": "Create a NEW person in the address book (status 'active', source 'agent'). Always search with contacts_list first: this is the only place where people are created, never duplicate someone. To attach a person to a brand, create it here, then call partner_link_contact (Partnerships module).",
+      "default": false,
+      "description": "Create a NEW card (person, or organisation with kind 'org'). Always search with contacts_list first: if the same e-mail (or the same name and organisation) already exists, that card is returned (created: false) and nothing changes. 'organisation' is the organisation's name: its card is found or created. To attach a person to a brand, then call partner_link_contact (Partnerships module).",
       "input": {
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "org"
+            ]
           },
           "role": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120,
+            "description": "Function in the organisation."
           },
           "organisation": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "phone": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 60
           },
           "others": {
             "type": "string",
-            "description": "Other channels (Discord, LinkedIn…), one per line."
+            "maxLength": 1000
           },
           "relation": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 300
           }
         },
         "required": [
           "name"
         ]
-      },
-      "default": false
+      }
     },
     {
       "name": "contact_update",
-      "description": "Change fields of a person already in the address book (only the given fields change); set status to 'active' once verified. For the brand a person belongs to, do not write it here: use partner_link_contact (Partnerships module) / partner_unlink_contact.",
+      "default": false,
+      "description": "Change fields of a card (only the given fields change; empty text clears a field); set status to 'active' once a form message is checked. For the brand a person works with, use partner_link_contact (Partnerships module).",
       "input": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "role": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120
           },
           "organisation": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "phone": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 60
           },
           "others": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 1000
           },
           "relation": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 300
           },
           "status": {
             "type": "string",
@@ -166,34 +347,75 @@
     },
     {
       "name": "contact_note",
-      "description": "Add a dated note to a person of the address book (exchange, preference, what you learned). Notes about a brand's negotiation go to the partnership journal instead (partner_log (Partnerships module)).",
+      "default": false,
+      "description": "Add a dated note to a card (exchange, preference, what you learned). Notes about a brand's negotiation go to the partnership journal instead (partner_log, Partnerships module).",
       "input": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
           "text": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           }
         },
         "required": [
           "id",
           "text"
         ]
-      },
-      "default": false
+      }
+    },
+    {
+      "name": "contact_add_account",
+      "default": false,
+      "description": "Add an account on a network to a card: a profile link or a handle (twitch.tv/name, @name…). One account belongs to one card only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "twitch",
+              "youtube",
+              "tiktok",
+              "instagram",
+              "discord",
+              "x",
+              "bluesky",
+              "mastodon",
+              "web",
+              "other"
+            ]
+          },
+          "handle": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "id",
+          "network",
+          "handle"
+        ]
+      }
     },
     {
       "name": "contact_delete",
       "destructive": true,
       "default": false,
-      "description": "Permanently delete a person and their notes from the address book (spam, true duplicates). Irreversible, and brands that link to this person lose the link. Disabled unless an administrator grants it to the token.",
+      "description": "Permanently delete a card and its notes (spam, true duplicates). The other modules that link to it are told to forget it first. Irreversible. Disabled unless an administrator grants it to the token.",
       "input": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           }
         },
         "required": [

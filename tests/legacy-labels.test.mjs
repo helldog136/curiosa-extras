@@ -1,7 +1,7 @@
 // Aucun libellé visible d'un module ne parle d'« ancien réglage » (contrat 10, 0.2.0) : ce qui sert à une reprise va dans `legacySettings`,
 // jamais affiché. Et chaque réglage déclaré est lu par le code du module (sinon c'est un champ mort à retirer ou à passer en `legacySettings`).
 // COPIE (adaptée) du test du cœur 0.2.0 (tests/core/legacy-labels.test.mjs) : ici il lit CE dépôt par défaut (CURIOSA_EXTRAS_DIR le remplace). Garder les règles
-// (FORBIDDEN, visibleStrings) identiques à celles du cœur ; seule la liste blanche temporaire ci-dessous est propre à ce dépôt.
+// (FORBIDDEN, visibleStrings) identiques à celles du cœur ; seule la liste blanche ci-dessous est propre à ce dépôt (plus aucune liste temporaire : Partenariats 2.0 n'a plus de libellé hérité).
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -32,19 +32,6 @@ export const ALLOWED = [
   { module: "discord-announcer", file: "module.json", key: "*", term: "ancien" },
 ];
 
-/**
- * LISTE BLANCHE TEMPORAIRE, NOMMÉE ET DATÉE (ajoutée le 2026-10-20) : « à retirer avec Partenariats 2.0 ». Les textes de fusion des anciens contacts de « Partenariats »
- * (écran de reprise vers le module Contacts) disparaissent quand ce module est réécrit en phase 2. Ne concerne QUE ce module : aucun autre n'y entre
- * (le test « la liste temporaire ne vise que partnerships » le vérifie) ; chaque entrée supprimée ici = un mot interdit de moins.
- */
-export const TEMPORARY_ALLOWED = [
-  { module: "partnerships", file: "locales/fr.json", key: "*", term: "ancien" },
-  { module: "partnerships", file: "locales/fr.json", key: "*", term: "reprise automatiquement" },
-  { module: "partnerships", file: "locales/fr.json", key: "*", term: "legacy" },
-  { module: "partnerships", file: "locales/en.json", key: "*", term: "legacy" },
-  { module: "partnerships", file: "locales/en.json", key: "*", term: "taken over automatically" },
-].map((a) => ({ ...a, until: "Partenariats 2.0 (phase 2)", since: "2026-10-20" }));
-
 const VISIBLE_KEYS = new Set(["name", "label", "help", "description", "reason", "title", "summary", "body"]);
 
 /** Les textes visibles d'un manifeste : `[chemin, texte]`. Hors `legacySettings` (jamais affiché) et `mcp` (destiné aux assistants). */
@@ -68,7 +55,7 @@ export function violations(module, file, entries) {
   for (const [key, text] of entries) {
     for (const f of FORBIDDEN) {
       if (!f.re.test(text)) continue;
-      const ok = [...ALLOWED, ...TEMPORARY_ALLOWED].some((a) => a.module === module && a.file === file && (a.key === "*" || a.key === key) && a.term === f.id);
+      const ok = ALLOWED.some((a) => a.module === module && a.file === file && (a.key === "*" || a.key === key) && a.term === f.id);
       if (!ok) out.push(`${module}/${file} ${key} : « ${f.id} » dans « ${text.slice(0, 80)} »`);
     }
   }
@@ -86,10 +73,11 @@ test("règles : mots entiers, français et anglais, liste blanche par module/fic
   assert.deepEqual(strings.map(([p]) => p), ["name", "settings[0].label.fr", "settings[0].help"]);
 });
 
-test("la liste blanche temporaire ne vise que partnerships, datée et nommée (aucun autre module ne s'y glisse)", () => {
-  assert.ok(TEMPORARY_ALLOWED.length > 0);
-  for (const a of TEMPORARY_ALLOWED) { assert.equal(a.module, "partnerships"); assert.match(a.since, /^\d{4}-\d{2}-\d{2}$/); assert.match(a.until, /Partenariats 2\.0/); }
+test("plus aucune liste blanche temporaire : un module qui parle d'« ancien » ou de « legacy » dans un libellé fait échouer le test (Partenariats compris)", () => {
+  assert.equal(violations("partnerships", "locales/fr.json", [["x", "Revenir à l'ancien carnet"]]).length, 1);
+  assert.equal(violations("partnerships", "locales/en.json", [["x", "Revert to the legacy address book"]]).length, 1);
   assert.equal(violations("planning", "locales/fr.json", [["x", "l'ancien site"]]).length, 1, "un autre module reste contrôlé");
+  assert.ok(ALLOWED.every((a) => a.module !== "partnerships"), "aucune entrée pour Partenariats");
 });
 
 const modules = root ? fs.readdirSync(path.join(root, "modules")).filter((id) => fs.existsSync(path.join(root, "modules", id, "module.json"))).sort() : [];

@@ -1,11 +1,12 @@
 {
   "apiVersion": 2,
+  "minCore": "0.2.2",
   "id": "reddit",
   "name": {
     "en": "Reddit",
     "fr": "Reddit"
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "platform": "reddit",
   "description": {
     "en": "Shows your Reddit button in the site header and shares your follower count. Add one per account if you have several.",
@@ -36,6 +37,15 @@
   ],
   "permissions": [
     "admin"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Statistiques",
+        "en": "Statistics"
+      }
+    }
   ],
   "settings": [
     {

@@ -59,7 +59,13 @@ test("réglages : valeurs inconnues écartées, durée de 5 à 15 (entiers), él
   assert.equal(P.cleanConfig({ style: "<script>", format: "paysage" }).style, "neon");
   assert.equal(P.cleanConfig({ format: "paysage" }).format, "vertical", "le paysage n'existe pas");
   assert.deepEqual(P.cleanConfig({ elements: ["title", "bidon", "text", "title"] }).elements, ["title", "text"]);
-  assert.deepEqual(P.cleanConfig({ costreamers: ["Alice_TV", "alice_tv", "x", "@bob_x", 12, null, "carl_99", "dave_live", "eve_play", "fay_games", "gus_stream", "hank_play"] }).costreamers, ["alice_tv", "bob_x", "carl_99", "dave_live", "eve_play", "fay_games"], "6 au plus, sans doublon ni pseudo invalide");
+  const inline = (login, name = "", image = "") => ({ login, name, image });
+  assert.deepEqual(P.cleanConfig({ costreamers: ["Alice_TV", "alice_tv", "x", "@bob_x", 12, null, "carl_99", "dave_live", "eve_play", "fay_games", "gus_stream", "hank_play"] }).costreamers, ["alice_tv", "bob_x", "carl_99", "dave_live", "eve_play", "fay_games"].map((l) => inline(l)), "version 1 : une liste de pseudos est lue comme des co-streamers pour cette vidéo seulement ; 6 au plus, sans doublon ni pseudo invalide");
+  assert.deepEqual(P.cleanConfig({ costreamers: [{ id: "c0001" }, { id: "c0001" }, { id: "" }, { id: 5 }, { id: "a b" }, { id: "x".repeat(81) }, { id: "x".repeat(80) }, { login: "@Zoé Live", name: " Zoé  ", image: "https://static-cdn.jtvnw.net/a.png" }, { name: "Sans pseudo" }, { login: "", name: "" }, { login: "pseudo", image: "http://pas-https/a.png" }] }).costreamers,
+    [{ id: "c0001" }, { id: "x".repeat(80) }, inline("Zoé Live", "Zoé", "https://static-cdn.jtvnw.net/a.png"), inline("", "Sans pseudo"), inline("pseudo")], "références (identifiant opaque ≤ 80, sans espace), saisies ponctuelles (pseudo libre OU nom), image seulement en https");
+  assert.deepEqual(P.cleanConfig({ costreamers: [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }, { id: "e" }, { id: "f" }, { id: "g" }] }).costreamers.length, 6, "6 au plus, références comprises");
+  assert.deepEqual(P.cleanConfig({ costreamers: [{ id: "c1", login: "copie", name: "copie", image: "https://x/a.png" }] }).costreamers, [{ id: "c1" }], "une référence ne garde RIEN d'autre que son identifiant (jamais une copie de nom, pseudo ou photo)");
+  assert.deepEqual([P.memberKey({ id: "c1" }), P.memberKey(inline("Zoé")), P.memberKey(inline("", "Zoé"))], ["id:c1", "x:zoé", "x:zoé"]);
   assert.equal([...P.cleanConfig({ text: "x".repeat(500) }).text].length, 140);
   for (const junk of [null, undefined, 5, "x", [], () => 1]) assert.doesNotThrow(() => P.cleanConfig(junk));
   assert.equal(P.cleanConfig({ streamKey: "a/b" }).streamKey, "");

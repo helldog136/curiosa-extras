@@ -1149,9 +1149,9 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 /* ───────────── Manifeste, textes, règles du dépôt ───────────── */
 
-test("manifeste : valide, 1.2.0, minCore 0.2.0 (réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
+test("manifeste : valide, 1.2.1, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.2.0", "0.2.0", "twitch", "multiple", 2]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.2.1", "0.2.2", "twitch", "multiple", 2]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function");

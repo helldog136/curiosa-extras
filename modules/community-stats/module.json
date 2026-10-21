@@ -5,8 +5,8 @@
     "fr": "Statistiques de la communauté",
     "en": "Community statistics"
   },
-  "version": "1.1.1",
-  "minCore": "0.1.16",
+  "version": "1.1.2",
+  "minCore": "0.2.2",
   "description": {
     "fr": "Garde les chiffres de vos réseaux (abonnés, abonnés payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
     "en": "Keeps the numbers of your networks (followers, paying followers, posts, views) and how they evolve, for you and for your AI. Nothing is shown on your site without your say-so."
@@ -81,6 +81,15 @@
     "storage",
     "topics",
     "mcp"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Chiffres",
+        "en": "Figures"
+      }
+    }
   ],
   "settings": [
     {

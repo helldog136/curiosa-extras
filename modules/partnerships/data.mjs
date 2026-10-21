@@ -78,6 +78,19 @@ export async function all(ctx, collection) {
   return ctx.api.store.list(collection, { limit: 1000 });
 }
 
+/** Toute une collection, lue par pages (jamais d'un bloc) : plus ancien d'abord, 20 000 lignes au plus. */
+export async function readAll(ctx, collection, cap = 20_000) {
+  const out = [];
+  if (typeof ctx.api.store.page !== "function") return (await ctx.api.store.list(collection, { limit: 1000 })).slice().reverse();
+  let cursor;
+  do {
+    const r = await ctx.api.store.page(collection, { limit: 1000, order: "asc", cursor });
+    out.push(...r.items);
+    cursor = r.next;
+  } while (cursor && out.length < cap);
+  return out;
+}
+
 export function lastActivity(partner, journal) {
   const dates = journal.filter((j) => j.data.partnerId === partner.id).map((j) => Date.parse(j.data.date)).filter(Number.isFinite);
   return dates.length ? Math.max(...dates) : partner.createdAt.getTime();

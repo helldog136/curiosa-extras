@@ -1,18 +1,17 @@
-// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés). (La page de fusion, temporaire, est dans merge.mjs.)
+// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés). (La reprise des contacts d'avant la 2.0, temporaire, est dans migrate.mjs.)
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
-const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
-// MIGRATION TEMPORAIRE — à supprimer en 1.5.0 (ou quand plus aucun site n'a d'anciens contacts) : tout ce qui touche à la fusion vient de merge.mjs.
-const { mergeState, mergeNotices, mergeFooter, legacySection, mergeActions, mergePage } = await import(`./merge.mjs${v}`);
+const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, healLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
+// MIGRATION À RETIRER EN PHASE 3 : la reprise unique des contacts d'avant la 2.0 (voir migrate.mjs).
+const { migrationNotices } = await import(`./migrate.mjs${v}`);
 
 export default {
   // ── Panneau d'admin ───────────────────────────────────────────────────────────
   async adminPanel(ctx, { query }) {
     const t = ctx.t;
-    const [partners, journal, state, hasBook] = await Promise.all([all(ctx, "partners"), all(ctx, "journal"), mergeState(ctx), bookAvailable(ctx)]);
+    const [partners, journal, hasBook] = await Promise.all([all(ctx, "partners"), all(ctx, "journal"), bookAvailable(ctx)]);
     const statusOptions = STATUSES.map((s) => ({ value: s, label: t(`s_${s}`) }));
     const blocks = [{ type: "markdown", text: `*${t("private")}*` }];
-    const brandOf = (id) => partners.find((p) => p.id === id)?.data.brand ?? "";
 
     const partnerForm = (p) => ({
       type: "adminForm",
@@ -38,17 +37,14 @@ export default {
       ],
     });
 
-    // Bandeaux : module Contacts absent, fusion à faire / à finir.
+    // Bandeaux : module Contacts absent, reprise des contacts en attente (ou à vérifier).
     const notices = [];
     if (!hasBook) notices.push({ type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` });
-    notices.push(...mergeNotices(t, state)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
+    notices.push(...(await migrationNotices(ctx))); // MIGRATION À RETIRER EN PHASE 3
 
     // Modification d'une fiche
     const editing = query.edit && partners.find((p) => p.id === query.edit);
     if (editing) return [...blocks, partnerForm(editing)];
-
-    // Fusion des contacts
-    if (query.merge) return /* MIGRATION TEMPORAIRE — à supprimer en 1.5.0 */ [...blocks, ...(await mergePage(ctx, state, hasBook, brandOf))];
 
     // Fiche détaillée : journal + contacts liés
     const open = query.partner && partners.find((p) => p.id === query.partner);
@@ -66,7 +62,7 @@ export default {
         { type: "heading", text: t("journal") },
         { type: "table", columns: [t("date"), t("author"), t("text")], rows: mine.map((j) => [j.data.date, j.data.author, j.data.text + (j.data.link ? `\n${j.data.link}` : "")]), rowIds: mine.map((j) => j.id), rowActions: [{ label: t("delete"), action: "deleteJournal", confirm: t("confirm"), danger: true }] },
         { type: "adminForm", action: "addJournal", title: t("journalAdd"), submitLabel: t("journalAdd"), fields: [{ name: "partnerId", kind: "hidden", value: open.id }, { name: "date", label: t("date"), kind: "date", value: today() }, { name: "text", label: t("text"), kind: "textarea", required: true }, { name: "link", label: t("link"), kind: "url" }] },
-        ...(await contactsSection(ctx, open, state, hasBook)),
+        ...(await contactsSection(ctx, open, hasBook)),
       ];
     }
 
@@ -83,7 +79,6 @@ export default {
       { type: "adminForm", action: "importPartners", title: t("importTitle"), submitLabel: t("importSubmit"), fields: [{ name: "csv", label: t("importCsv"), kind: "textarea", required: true }] },
       { type: "markdown", text: t("importHelp") },
     );
-    blocks.push(...mergeFooter(t, state)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
     return blocks;
   },
 
@@ -104,9 +99,9 @@ export default {
       if (r.error) return { error: ctx.t(r.error === "noBrand" ? "importNoBrand" : "importEmpty") };
       return { ok: ctx.t("importDone", { created: r.created, completed: r.completed, skipped: r.skipped }) };
     },
-    // Supprime la fiche et son journal (et, avant la fusion, ses anciens contacts) — JAMAIS une personne du module Contacts : seule la référence disparaît.
+    // Supprime la fiche et son journal — JAMAIS une personne du module Contacts : seule la référence disparaît.
     async deletePartner(ctx, v) {
-      for (const collection of ["journal", "contacts"]) for (const r of await all(ctx, collection)) if (r.data.partnerId === v.id) await ctx.api.store.remove(r.id);
+      for (const r of await all(ctx, "journal")) if (r.data.partnerId === v.id) await ctx.api.store.remove(r.id);
       await ctx.api.store.remove(v.id);
       return { ok: ctx.t("deleted"), redirect: "?" };
     },
@@ -168,18 +163,16 @@ export default {
       await setLinks(ctx, partner, linksOf(partner).filter((id) => id !== contactId), "admin");
       return { ok: ctx.t("unlinked") };
     },
-
-    // MIGRATION TEMPORAIRE — à supprimer en 1.5.0 : ...mergeActions (voir merge.mjs)
-    ...mergeActions,
   }
 };
 
 // ── Morceaux de page ──────────────────────────────────────────────────────────────────────────────────────
-/** Section « Contacts » d'une fiche : personnes liées (résolues par le service), lier / créer / délier, anciens contacts pas encore repris. */
-async function contactsSection(ctx, partner, state, hasBook) {
+/** Section « Contacts » d'une fiche : personnes liées (résolues par le service), lier / créer / délier. */
+async function contactsSection(ctx, partner, hasBook) {
   const t = ctx.t;
-  const ids = linksOf(partner);
+  let ids = linksOf(partner);
   const links = await resolveLinks(ctx, ids);
+  if (Object.keys(links.moved).length) { await healLinks(ctx, partner, links.moved); ids = linksOf(partner); } // une personne fusionnée dans une autre : le lien suit
   const out = [{ type: "heading", text: t("contacts") }];
   const rows = [], rowIds = [];
   if (!links.available) for (const id of ids) { rows.push([t("unavailableName"), "", `(${id})`, ""]); rowIds.push(`${partner.id}~${id}`); }
@@ -194,7 +187,6 @@ async function contactsSection(ctx, partner, state, hasBook) {
     if (open.length) out.push({ type: "markdown", text: `${t("openInContacts")} ${open.join(" · ")}` });
   } else out.push({ type: "markdown", text: t("noLinkedContacts") });
 
-  out.push(...legacySection(ctx, partner, state)); // MIGRATION TEMPORAIRE — à supprimer en 1.5.0
   if (hasBook) {
     const linked = new Set(ids);
     const found = await book(ctx, "find", { limit: 200 });

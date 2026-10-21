@@ -17,7 +17,8 @@ test("manifeste : offre contact.store ET contact.book (lectures déclarées read
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store", "contact.book"]);
-  assert.deepEqual(r.manifest.offers[1].readOnly, ["get", "find", "resolve"]);
+  assert.deepEqual(r.manifest.offers[1].readOnly, ["get", "resolve", "find", "accounts", "search", "list", "categories", "categoriesResolve"], "2.0 : toutes les lectures");
+  assert.equal(r.manifest.offers[1].version, 2, "contact.book version 2 (sur-ensemble de la v1)");
   for (const m of ["get", "find", "resolve", "create", "update", "note"]) assert.equal(typeof svc[m], "function", m);
 });
 
@@ -63,8 +64,11 @@ test("create : validations (nom obligatoire, e-mail valide) et plafond ; rien n'
   assert.deepEqual(await svc.create(c, { name: "X", email: "pas-un-mail" }), { ok: false, error: "invalid_email" });
   for (const bad of [undefined, null, "texte", 42]) assert.equal((await svc.create(c, bad)).ok, false);
   assert.equal(await c.api.store.count("contacts"), 0);
-  for (let i = 0; i < 5000; i++) await c.api.store.add("contacts", { name: `n${i}`, status: "active" });
+  // 2.0 : plafond technique 100 000 fiches, abaissé ici par l'option de test interne (jamais un réglage visible).
+  c.__contactsTest = { maxContacts: 3 };
+  for (let i = 0; i < 3; i++) assert.equal((await svc.create(c, { name: `n${i}` })).created, true);
   assert.deepEqual(await svc.create(c, { name: "De trop" }), { ok: false, error: "too_many" });
+  assert.equal(await c.api.store.count("contacts"), 3);
 });
 
 test("create : champs tronqués, caractères de contrôle retirés, note initiale facultative", async () => {
@@ -107,7 +111,8 @@ test("find / resolve n'exposent que le résumé : ni notes, ni autres canaux, ni
   const c = ctx();
   const { id } = await svc.create(c, { name: "Ada", others: "secret", relation: "ami", note: "privé" });
   const found = (await svc.find(c, {})).contacts[0];
-  assert.deepEqual(Object.keys(found).sort(), ["adminPath", "createdAt", "email", "id", "name", "organisation", "phone", "role", "source", "status"]);
+  // 2.0 : la fiche v1 + kind, orgId, orgName, categoryIds, accounts (sans e-mail ni téléphone), photo.
+  assert.deepEqual(Object.keys(found).sort(), ["accounts", "adminPath", "categoryIds", "createdAt", "email", "id", "kind", "name", "orgId", "orgName", "organisation", "phone", "photo", "role", "source", "status"]);
   assert.ok(!JSON.stringify(await svc.resolve(c, { ids: [id] })).match(/secret|ami|privé/));
 });
 
@@ -159,14 +164,14 @@ test("contact.store reste inchangé (formulaire) : à vérifier, même e-mail �
   assert.equal((await svc.create(c, { name: "Alice", email: "ALICE@x.org" })).created, false, "le formulaire et les partenariats ne se doublonnent pas");
 });
 
-test("MCP : descriptions qui disent quand utiliser l'outil et quand passer par Partenariats ; création et note accordées d'office, mise à jour et suppression non", () => {
+test("MCP : descriptions qui disent quand utiliser l'outil et quand passer par Partenariats ; aucune écriture accordée d'office (2.0)", () => {
   const by = Object.fromEntries(manifestJson.mcp.map((t) => [t.name, t]));
   for (const t of manifestJson.mcp) assert.ok(t.description.length > 60 && t.description.length < 1000, t.name);
   assert.match(by.contacts_list.description, /Partnerships|partnership/);
   assert.match(by.contact_create.description, /partner_link_contact/);
   assert.match(by.contact_create.description, /contacts_list/, "chercher avant de créer");
   assert.match(by.contact_note.description, /partner_log/);
-  assert.deepEqual([by.contact_create.default, by.contact_note.default, by.contact_update.default, by.contact_delete.default], [false, false, undefined, false]);
+  assert.deepEqual([by.contact_create.default, by.contact_note.default, by.contact_update.default, by.contact_delete.default, by.contact_add_account.default, by.contact_get_private.default], [false, false, false, false, false, false]);
   assert.equal(by.contact_delete.destructive, true);
 });
 
@@ -174,7 +179,11 @@ test("admin : la source « partenariats » a un libellé dans les deux langues ;
   for (const l of ["en", "fr"]) assert.ok(JSON.parse(fs.readFileSync(`${DIR}/locales/${l}.json`, "utf8")).source_partnerships);
   const c = ctx();
   await svc.create(c, { name: "<b>Ada</b>", email: "a@x.org" });
-  const table = (await def.adminPanel(c, { query: {} })).find((b) => b.type === "table");
-  assert.equal(table.rows[0][1], "<b>Ada</b>", "texte brut transmis tel quel (le rendu du cœur l'échappe)");
-  assert.equal(table.rows[0][5], "Partnerships");
+  // 2.0 : la liste est faite de cartes (bloc html, texte échappé par le module) ; l'origine se lit sur la fiche.
+  const list = (await def.adminPanel(c, { query: {} })).map((b) => b.html ?? "").join("");
+  assert.match(list, /&lt;b&gt;Ada&lt;\/b&gt;/);
+  assert.doesNotMatch(list, /<b>Ada/);
+  const id = (await svc.find(c, {})).contacts[0].id;
+  const card = (await def.adminPanel(c, { query: { contact: id } })).map((b) => b.html ?? b.text ?? "").join("");
+  assert.match(card, /Partnerships/);
 });

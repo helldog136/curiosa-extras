@@ -6,18 +6,18 @@
 export const LOGIN = /^[a-z0-9_]{4,25}$/;
 /** Les adresses twitch.tv/… qui ne sont pas une chaîne. */
 const NOT_CHANNELS = new Set(["videos", "directory", "downloads", "settings", "subscriptions", "friends", "wallet", "inventory", "drops", "prime", "turbo", "jobs", "store", "team", "popout", "embed", "moderator", "dashboard", "broadcast", "login", "signup", "search"]);
-/** Combien de chaînes la liste peut contenir au plus. */
+/** Combien de chaînes l'ancienne liste propre au module (1.x) pouvait contenir : la migration n'en reprend jamais plus. */
 export const MAX_PARTNERS = 2000;
+/** Combien de comptes Twitch le module lit au plus dans la catégorie de Contacts (20 pages de 500) ; au-delà, le reste est ignoré et l'administration le dit. */
+export const MAX_TARGETS = 10_000;
+/** Taille d'une page lue dans Contacts (le plus grand `limit` que permet le contrat de `contact.book`). */
+export const CONTACTS_PAGE = 500;
 /** Jusqu'à ce nombre de chaînes, le dock montre tous les membres en direct ; au-delà, il propose un bouton « au hasard ». UNE seule valeur pour tout le module. */
 export const FULL_VIEW_MAX = 500;
 /** Twitch vérifie au plus 100 pseudos par demande (connu de mémoire) ; si Twitch en refuse autant, on essaie des paquets plus petits (voir `nextPacketSize`). */
 export const PACKET_SIZES = [100, 50, 20];
 /** Au hasard : combien de fois au plus on tire 100 autres noms avant de dire que personne n'est en ligne. */
 export const SEARCH_TRIES = 6;
-/** Le cœur coupe à 20 000 caractères ce qu'on colle dans un formulaire : plus long, la fin serait perdue sans prévenir. */
-export const PASTE_MAX = 20000;
-/** Chaînes montrées par page dans l'administration. */
-export const PAGE_SIZE = 50;
 export const SORTS = ["viewers_asc", "viewers_desc", "newest", "oldest", "mine"];
 
 /**
@@ -38,25 +38,14 @@ export function normalizeLogin(input) {
 }
 function decodeURIComponent_(v) { try { return decodeURIComponent(v); } catch { return v; } }
 
-/**
- * Découpe un texte collé en « lignes » : une par ligne, ou séparées par des virgules ou points-virgules (5 000 au plus : bien plus que la liste ne peut en contenir ; le surplus est compté et dit, pas perdu en silence).
- * Une ligne qui contient plusieurs pseudos séparés par des espaces (« alice bob carl ») est acceptée si CHACUN est valable ;
- * sinon elle reste en un seul morceau et sera refusée en entier (« Ma super chaîne » ne doit pas devenir trois chaînes inventées).
- */
-export function splitList(text) {
-  const out = [];
-  for (const line of String(text ?? "").split(/[\r\n,;]+/)) {
-    const t = line.trim();
-    if (!t) continue;
-    const words = t.split(/\s+/);
-    if (words.length > 1 && words.every((w) => normalizeLogin(w).login)) out.push(...words); else out.push(t);
-    if (out.length >= 5000) break;
-  }
-  return out.slice(0, 5000);
-}
-
 /** Nom affiché ou note : une ligne de texte, sans caractère de contrôle, coupée à `max`. */
 export const oneLine = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+
+/** Clé de comparaison d'un nom : sans casse, sans accents, espaces réduits. */
+export const fold = (v) => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+/** Une adresse d'image acceptable (photo venue de Contacts) : https seulement, sans espace, 500 caractères au plus. */
+export const httpsUrl = (x) => typeof x === "string" && x.length <= 500 && /^https:\/\/[^\s/?#]+\.[^\s/?#]+(\/\S*)?$/i.test(x);
 
 /** Le mode du dock selon le nombre de chaînes : "full" (tous les membres en direct) jusqu'à `FULL_VIEW_MAX`, "random" (un bouton « au hasard ») au-delà. */
 export const modeFor = (n) => (Number(n) > FULL_VIEW_MAX ? "random" : "full");
@@ -104,37 +93,6 @@ export function drawer(items, rng) {
     },
     left: () => left,
   };
-}
-
-/** Cherche dans la liste (administration) : pseudo, nom affiché ou note contiennent le texte, sans tenir compte des majuscules ni des accents. Texte vide : tout. */
-export function filterPartners(partners, q) {
-  const fold = (v) => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const needle = fold(oneLine(q, 40));
-  if (!needle) return partners;
-  return partners.filter((p) => fold(p.login).includes(needle) || fold(p.name).includes(needle) || fold(p.note).includes(needle));
-}
-
-/** Une page de la liste : { items, page, pages, total } ; une page hors limites est ramenée à la plus proche. */
-export function pageOf(list, page, size = PAGE_SIZE) {
-  const pages = Math.max(1, Math.ceil(list.length / size));
-  const p = Math.min(pages, Math.max(1, Math.floor(Number(page)) || 1));
-  return { items: list.slice((p - 1) * size, p * size), page: p, pages, total: list.length };
-}
-
-/**
- * Identifiant d'une ligne du tableau d'administration : le pseudo, plus (hors première page sans recherche) la page et la recherche,
- * pour revenir à la même page après « Retirer » ou « Enregistrer ». Format : `pseudo.page.recherche` (recherche en base64 sûre pour une adresse).
- */
-export function rowId(login, page = 1, q = "") {
-  const query = oneLine(q, 40);
-  return page <= 1 && !query ? login : `${login}.${Math.max(1, Math.floor(page) || 1)}.${Buffer.from(query, "utf8").toString("base64url")}`;
-}
-/** L'inverse de `rowId` : { login, page, q }. Un identifiant simple (le pseudo seul) est valable. */
-export function parseRowId(id) {
-  const [login, page, q] = String(id ?? "").slice(0, 200).split(".");
-  let query = "";
-  try { query = oneLine(Buffer.from(q ?? "", "base64url").toString("utf8"), 40); } catch { /* recherche illisible : ignorée */ }
-  return { login: oneLine(login, 40), page: Math.max(1, Math.floor(Number(page)) || 1), q: query };
 }
 
 /* ───────────── DOCK : exécuté dans la page ───────────── */
