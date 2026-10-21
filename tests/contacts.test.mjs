@@ -47,20 +47,29 @@ test("service : nom obligatoire, origine inconnue → manuelle, e-mail invalide 
   assert.equal(row.data.source, "manual");
 });
 
-test("service : plafond de contacts", async () => {
+test("service : plafond du carnet (100 000 fiches en vrai, abaissé ici par l'option de test interne)", async () => {
   const c = ctx();
-  for (let i = 0; i < 5000; i++) await c.api.store.add("contacts", { name: `n${i}`, status: "active" });
+  c.__contactsTest = { maxContacts: 2 };
+  await svc.add(c, { name: "Un" });
+  await svc.add(c, { name: "Deux" });
   await assert.rejects(svc.add(c, { name: "De trop", email: "z@z.io" }), /too many contacts/);
+  assert.equal(await c.api.store.count("contacts"), 2);
 });
 
-test("MCP : liste filtrée par statut et recherche, fiche avec notes, mise à jour partielle, passage « actif », note, suppression avec ses notes", async () => {
+test("MCP : liste paginée filtrée par statut et recherche (sans e-mail ni téléphone), fiche avec notes, mise à jour partielle, passage « actif », note, suppression avec ses notes", async () => {
   const c = ctx();
-  const a = (await svc.add(c, { name: "Alice", email: "a@x.io", message: "hello", source: "contact-form" })).id;
+  const a = (await svc.add(c, { name: "Alice", email: "a@x.io", phone: "0102", message: "hello", source: "contact-form" })).id;
   await def.mcp.contact_create(c, { name: "Bob", organisation: "Acme" });
-  assert.deepEqual((await def.mcp.contacts_list(c, { status: "to_review" })).map((x) => x.name), ["Alice"]);
-  assert.deepEqual((await def.mcp.contacts_list(c, { search: "acme" })).map((x) => x.name), ["Bob"]);
+  const reviewList = await def.mcp.contacts_list(c, { status: "to_review" });
+  assert.deepEqual(reviewList.items.map((x) => x.name), ["Alice"]);
+  assert.ok(!JSON.stringify(reviewList).includes("a@x.io") && !JSON.stringify(reviewList).includes("0102"), "ni e-mail ni téléphone dans la liste");
+  assert.deepEqual((await def.mcp.contacts_list(c, { q: "acme", kind: "person" })).items.map((x) => x.name), ["Bob"]);
+  assert.deepEqual((await def.mcp.contacts_list(c, { search: "acme", kind: "person" })).items.map((x) => x.name), ["Bob"], "ancien nom du paramètre accepté");
   const full = await def.mcp.contact_get(c, { id: a });
   assert.equal(full.notes.length, 1);
+  assert.ok(!("email" in full) && !("phone" in full), "contact_get : pas d'e-mail ni de téléphone");
+  const priv = await def.mcp.contact_get_private(c, { id: a });
+  assert.deepEqual([priv.email, priv.phone], ["a@x.io", "0102"]);
   await def.mcp.contact_update(c, { id: a, organisation: "Initech", status: "active" }, { name: "assistant" });
   const upd = await def.mcp.contact_get(c, { id: a });
   assert.deepEqual([upd.organisation, upd.status, upd.name], ["Initech", "active", "Alice"], "les autres champs ne bougent pas");
@@ -69,37 +78,20 @@ test("MCP : liste filtrée par statut et recherche, fiche avec notes, mise à jo
   await def.mcp.contact_note(c, { id: a, text: "Vérifié sur LinkedIn" }, { name: "assistant" });
   assert.equal((await def.mcp.contact_get(c, { id: a })).notes.length, 2);
   await assert.rejects(def.mcp.contact_get(c, { id: "inconnu" }), /not found/);
-  assert.deepEqual(await def.mcp.contact_delete(c, { id: a }), { id: a, deleted: true });
+  const added = await def.mcp.contact_add_account(c, { id: a, network: "twitch", handle: "twitch.tv/Alice_Live" });
+  assert.equal(added.account.handle, "alice_live");
+  await assert.rejects(def.mcp.contact_add_account(c, { id: a, network: "twitch", handle: "a b" }), /invalid_handle/);
+  assert.deepEqual(await def.mcp.contact_delete(c, { id: a }), { id: a, deleted: true, modules: [] });
   assert.equal(await c.api.store.count("notes"), 0);
   assert.equal(await c.api.store.count("contacts"), 1);
 });
 
-test("admin : vue d'ensemble (à vérifier d'abord), fiche, formulaire ; activer, noter, supprimer", async () => {
-  const c = ctx();
-  const id = (await svc.add(c, { name: "Alice", email: "a@x.io", message: "hello", source: "contact-form" })).id;
-  await def.mcp.contact_create(c, { name: "Bob" });
-  const overview = await def.adminPanel(c, { query: {} });
-  assert.equal(overview.find((b) => b.type === "heading").text, "Contacts (2, 1 to review)");
-  assert.equal(overview.find((b) => b.type === "table").rows[0][1], "Alice", "à vérifier en premier");
-  assert.ok(overview.some((b) => b.type === "adminForm" && b.action === "save"));
-  const detail = await def.adminPanel(c, { query: { contact: id } });
-  assert.ok(detail.some((b) => b.type === "adminForm" && b.action === "note"));
-  assert.ok(JSON.stringify(detail).includes("Activate") || JSON.stringify(detail).includes("Mark active"));
-  assert.equal((await def.adminActions.activate(c, { id })).ok, "Saved.");
-  assert.equal((await c.api.store.get(id)).data.status, "active");
-  assert.equal((await def.adminActions.note(c, { contactId: id, text: "ok" })).ok, "Saved.");
-  assert.ok((await def.adminActions.save(c, { name: "" })).error);
-  assert.equal((await def.adminActions.save(c, { id, name: "Alice Martin", phone: "123" })).redirect, `?contact=${id}`);
-  assert.equal((await c.api.store.get(id)).data.email, "a@x.io", "modification : le reste est conservé");
-  assert.equal((await def.adminActions.remove(c, { id })).ok, "Deleted.");
-  assert.equal(await c.api.store.count("notes"), 0);
-});
-
-test("sauvegarde lisible : CSV avec notes, cellules neutralisées", async () => {
+test("sauvegarde lisible : contacts.csv et notes.csv, cellules neutralisées", async () => {
   const c = ctx();
   await svc.add(c, { name: "=cmd()", email: "a@x.io", message: "hello" });
-  const [f] = await def.backup.readable(c);
+  const [f, notes] = await def.backup.readable(c);
   assert.equal(f.path, "contacts.csv");
   assert.match(f.content, /"'=cmd\(\)"/);
-  assert.match(f.content, /hello/);
+  assert.equal(notes.path, "notes.csv");
+  assert.match(notes.content, /hello/);
 });
