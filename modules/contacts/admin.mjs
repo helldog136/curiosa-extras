@@ -124,8 +124,8 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
   blocks.push({ type: "heading", text: t("sectionAccounts") });
   if (c.accounts.length) {
     blocks.push({
-      type: "table", columns: [t("colNetwork"), t("colAccount")],
-      rows: c.accounts.map((a) => [nn(a.network), [a.handle, a.displayName && a.displayName !== a.handle ? a.displayName : null, Number.isInteger(a.followers) ? plural(ctx, a.followers, "followers") : null].filter(Boolean).join(" · ")]),
+      type: "table", columns: [t("colAccount")],
+      rows: c.accounts.map((a) => [[nn(a.network), a.handle, a.displayName && N.fold(a.displayName) !== N.fold(a.handle) ? a.displayName : null, Number.isInteger(a.followers) ? plural(ctx, a.followers, "followers") : null].filter(Boolean).join(" · ")]),
       rowIds: c.accounts.map((a) => `${c.id}|${a.id}`),
       rowActions: [{ label: t("accountRemove"), action: "removeAccount", confirm: t("confirmAccountRemove"), danger: true }],
     });
@@ -145,7 +145,7 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
     const mine = new Set(c.accounts.map((a) => N.accountKey(a.network, a.handle)));
     const found = N.accountsInText(d.others).filter((n) => !mine.has(N.accountKey(n.network, n.handle)));
     blocks.push({ type: "heading", text: t("othersTitle") }, html(`<p class="ct-help">${U.esc(t("othersHelp"))}</p><div class="ct-pre">${U.esc(d.others)}</div>`));
-    if (found.length) blocks.push({ type: "table", columns: [t("colNetwork"), t("othersFound")], rows: found.map((n) => [nn(n.network), n.handle]), rowIds: found.map((n) => `${c.id}|${n.network}|${n.handle}`), rowActions: [{ label: t("addAsAccount"), action: "addFromText" }] });
+    if (found.length) blocks.push({ type: "table", columns: [t("othersFound")], rows: found.map((n) => [`${nn(n.network)} · ${n.handle}`]), rowIds: found.map((n) => `${c.id}|${n.network}|${n.handle}`), rowActions: [{ label: t("addAsAccount"), action: "addFromText" }] });
   }
   // Organisation : ses personnes (50 premières ; la liste complète par le filtre).
   if (org) {
@@ -156,12 +156,12 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
     blocks.push(html(cards.length ? `${U.cardList(cards, { t, netName: nn, linkOf: (m) => `?contact=${encodeURIComponent(m.id)}` })}${members.next ? `<p class="ct-more"><a class="ct-btn" href="?org=${encodeURIComponent(c.id)}">${U.esc(t("seeMore"))}</a></p>` : ""}` : `<p class="ct-empty">${U.esc(t("noMembers"))}</p>`));
   }
   // Photo.
-  blocks.push({ type: "heading", text: t("photoTitle") }, { type: "markdown", text: `${photoOrigin(ctx, c)} ${t("photoHelp")}` });
+  blocks.push({ type: "heading", text: t("photoTitle") }, { type: "markdown", text: `**${photoOrigin(ctx, c)}**\n\n${t("photoHelp")}` });
   blocks.push({ type: "adminForm", action: "photo", submitLabel: t("photoSave"), fields: [{ name: "id", kind: "hidden", value: c.id }, { name: "photo", label: t("photoField"), kind: "image", value: d.photo ?? "" }] });
   if (d.photo) blocks.push({ type: "adminForm", action: "photoAuto", submitLabel: t("photoAuto"), fields: [{ name: "id", kind: "hidden", value: c.id }] });
   // Notes.
   blocks.push({ type: "heading", text: t("notes") });
-  if (r.notes.length) blocks.push({ type: "table", columns: ["", ""], rows: r.notes.map((n) => [`${n.date} · ${n.author}`, n.text]), rowIds: r.notes.map((n) => n.id), rowActions: [{ label: t("noteDelete"), action: "removeNote", confirm: t("confirmDeleteNote"), danger: true }] });
+  if (r.notes.length) blocks.push({ type: "table", columns: [t("notes")], rows: r.notes.map((n) => [`${n.date} · ${n.author}\n${n.text}`]), rowIds: r.notes.map((n) => n.id), rowActions: [{ label: t("noteDelete"), action: "removeNote", confirm: t("confirmDeleteNote"), danger: true }] });
   else blocks.push({ type: "markdown", text: t("noNotes") });
   blocks.push({ type: "adminForm", action: "note", title: t("noteAdd"), submitLabel: t("noteAdd"), fields: [{ name: "contactId", kind: "hidden", value: c.id }, { name: "text", label: t("noteText"), kind: "textarea", required: true }] });
   // Suppression (confirmation).
@@ -212,21 +212,24 @@ async function categoriesPage(ctx, q) {
   const cats = B.liveCategories(idx).sort((a, b) => N.fold(a.name).localeCompare(N.fold(b.name)));
   const counts = new Map();
   for (const e of idx.list) for (const k of new Set((e.c ?? []).map((x) => B.liveCategory(idx, x)).filter(Boolean))) counts.set(k, (counts.get(k) ?? 0) + 1);
-  const blocks = [first(`${nav(ctx, "categories")}<p class="ct-help">${U.esc(t("categoriesHelp"))}</p>`)];
-  const target = (q.rename || q.merge) && idx.cats.get(q.rename || q.merge);
-  if (q.rename && target && !target.movedTo) {
-    blocks.push({ type: "adminForm", action: "renameCategory", title: t("catRenameTitle", { name: target.name }), submitLabel: t("catRename"), cancelHref: "?view=categories", fields: [{ name: "id", kind: "hidden", value: target.id }, { name: "label", label: t("catLabel"), required: true, value: target.name }] });
-  } else if (q.merge && target && !target.movedTo) {
+  const target = q.edit && idx.cats.get(q.edit);
+  // Une catégorie : renommer, « Mettre dans… », supprimer (une page par catégorie : rien de trop large sur un téléphone).
+  if (target && !target.movedTo) {
     const others = cats.filter((k) => k.id !== target.id);
-    blocks.push({ type: "markdown", text: t("catMergeHelp", { name: target.name }) });
+    const n = counts.get(target.id) ?? 0;
+    const blocks = [first(`${nav(ctx, "categories")}<a class="ct-back" href="?view=categories">${U.esc(t("backCategories"))}</a>
+<p class="ct-head"><span class="ct-cat"><span class="ct-dot" style="--c:${U.esc(B.categoryView(target).color)}" aria-hidden="true"></span>${U.esc(target.name)}</span> <a class="ct-btn ct-ghost" href="?cat=${encodeURIComponent(target.id)}">${U.esc(plural(ctx, n, "catSeeCount"))}</a></p>`)];
+    blocks.push({ type: "adminForm", action: "renameCategory", title: t("catRenameTitle", { name: target.name }), submitLabel: t("catRename"), fields: [{ name: "id", kind: "hidden", value: target.id }, { name: "label", label: t("catLabel"), required: true, value: target.name }] });
+    blocks.push({ type: "heading", text: t("catMergeTitle", { name: target.name }) }, { type: "markdown", text: t("catMergeHelp", { name: target.name }) });
     blocks.push(others.length
-      ? { type: "adminForm", action: "mergeCategory", title: t("catMergeTitle", { name: target.name }), submitLabel: t("catMergeButton"), cancelHref: "?view=categories", fields: [{ name: "drop", kind: "hidden", value: target.id }, { name: "keep", label: t("catMergeTarget"), kind: "select", options: others.map((k) => ({ value: k.id, label: k.name })), value: others[0].id }] }
+      ? { type: "adminForm", action: "mergeCategory", submitLabel: t("catMergeButton"), fields: [{ name: "drop", kind: "hidden", value: target.id }, { name: "keep", label: t("catMergeTarget"), kind: "select", options: others.map((k) => ({ value: k.id, label: k.name })), value: others[0].id }] }
       : { type: "banner", tone: "info", text: t("catMergeNone") });
+    blocks.push({ type: "heading", text: t("catDeleteTitle") }, { type: "markdown", text: t("catDeleteHelp") });
+    blocks.push({ type: "table", columns: [t("colCategory")], rows: [[target.name]], rowIds: [target.id], rowActions: [{ label: t("catDelete"), action: "deleteCategory", confirm: t("confirmCatDelete"), danger: true }] });
+    return blocks;
   }
-  blocks.push({ type: "heading", text: t("categoriesTitle") });
-  blocks.push(cats.length
-    ? { type: "table", columns: [t("colCategory"), t("colCount")], rows: cats.map((k) => [k.name, fmt(ctx, counts.get(k.id) ?? 0)]), rowIds: cats.map((k) => k.id), rowActions: [{ label: t("catSee"), href: "?cat={id}" }, { label: t("catRename"), href: "?view=categories&rename={id}" }, { label: t("catMerge"), href: "?view=categories&merge={id}" }, { label: t("catDelete"), action: "deleteCategory", confirm: t("confirmCatDelete"), danger: true }] }
-    : { type: "markdown", text: t("catNone") });
+  const items = cats.map((k) => `<li><a class="ct-card" href="?view=categories&amp;edit=${encodeURIComponent(k.id)}"><span class="ct-dot" style="--c:${U.esc(B.categoryView(k).color)}" aria-hidden="true"></span><span class="ct-main"><span class="ct-name">${U.esc(k.name)}</span><span class="ct-sub">${U.esc(plural(ctx, counts.get(k.id) ?? 0, "count"))}</span></span><span class="ct-sub" aria-hidden="true">›</span></a></li>`).join("");
+  const blocks = [first(`${nav(ctx, "categories")}<p class="ct-help">${U.esc(t("categoriesHelp"))}</p>${cats.length ? `<ul class="ct-cards" aria-label="${U.esc(t("categoriesTitle"))}">${items}</ul>` : `<p class="ct-empty">${U.esc(t("catNone"))}</p>`}`)];
   if (B.can(ctx, B.RIGHT_CREATE_CATEGORY)) {
     blocks.push({ type: "adminForm", action: "createCategory", title: t("catCreateTitle"), submitLabel: t("catCreate"), fields: [{ name: "label", label: t("catLabel"), required: true }, { name: "color", label: t("catColor"), kind: "select", value: COLORS[cats.length % COLORS.length][1], options: COLORS.map(([n, hex]) => ({ value: hex, label: t(`color_${n}`) })) }] });
   }
@@ -342,7 +345,7 @@ export default {
     },
     renameCategory: guard(async (ctx, v) => {
       const r = await B.renameCategory(ctx, v.id, v.label);
-      if (r.ok) return { ok: ctx.t("catRenamed"), redirect: "?view=categories" };
+      if (r.ok) return { ok: ctx.t("catRenamed"), redirect: `?view=categories&edit=${encodeURIComponent(v.id)}` };
       if (r.error === "not_found") return { error: ctx.t("catNotFound") };
       return { errors: { label: ctx.t(r.error === "duplicate" ? "catDuplicate" : "catInvalid") } };
     }),

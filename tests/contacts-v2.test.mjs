@@ -219,11 +219,11 @@ test("admin — fiche : photo et son origine, comptes, encadré d'installation p
   assert.deepEqual(blocks.filter((b) => b.type === "suggestInstall").map((b) => [b.service, b.min]), [["twitch.api", 3], ["youtube.api", undefined]]);
   assert.ok(!all.includes("twitch-channel") && !all.includes("youtube-channel"), "on nomme un service, jamais un module");
   const accounts = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "removeAccount");
-  assert.deepEqual(accounts.rows.map((r) => r[0]), ["YouTube", "Twitch"]);
-  assert.match(accounts.rows[0][1], /12 400 abonnés/);
+  assert.deepEqual(accounts.rows.map((r) => r[0].split(" · ")[0]), ["YouTube", "Twitch"]);
+  assert.match(accounts.rows[0][0], /^YouTube · @ada_channel · 12.400 abonnés$/);
   assert.match(all, /Autres canaux \(texte d'avant\)/);
   const found = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "addFromText");
-  assert.deepEqual(found.rows, [["Twitch", "ada_live"]]);
+  assert.deepEqual(found.rows, [["Twitch · ada_live"]]);
   const r = await def.adminActions.addFromText(ctx, { id: found.rowIds[0] });
   assert.equal(r.ok, "Compte ajouté.");
   assert.ok((await svc.get(ctx, { id: ada })).contact.accounts.some((a) => a.handle === "ada_live"));
@@ -298,25 +298,26 @@ test("admin — catégories : créer (droit), renommer, « Mettre dans… », su
   const ctx = makeCtx({ locale: "fr" });
   const { cat, ada } = await seedBook(ctx);
   const page = await def.adminPanel(ctx, { query: { view: "categories" } });
-  const table = page.find((b) => b.type === "table");
-  assert.deepEqual(table.rows, [["Raid target", "1"]]);
-  assert.deepEqual(table.rowActions.map((a) => a.label), ["Voir les fiches", "Renommer", "Mettre dans…", "Supprimer"]);
-  assert.equal(table.rowActions[3].confirm, "Supprimer cette catégorie ? Les fiches ne sont pas supprimées.");
+  assert.match(htmlOf(page), new RegExp(`href="\\?view=categories&amp;edit=${cat}"[\\s\\S]*Raid target[\\s\\S]*1 fiche`));
   assert.ok(page.some((b) => b.action === "createCategory"));
   assert.equal(def.adminActions.createCategory.right, "categories.create", "le cœur vérifie le droit avant l'action");
   assert.equal((await def.adminActions.createCategory.run(ctx, { label: "Amis", color: "#58b368" })).ok, "Catégorie créée.");
   assert.deepEqual((await def.adminActions.createCategory.run(ctx, { label: "AMIS" })).errors, { label: "Cette catégorie existe déjà." });
   const amis = (await svc.categories(ctx, { q: "amis" })).items[0];
   assert.equal(amis.color, "#58b368");
+  const one = await def.adminPanel(ctx, { query: { view: "categories", edit: amis.id } });
+  assert.ok(one.some((b) => b.action === "renameCategory"));
+  assert.ok(one.some((b) => b.action === "mergeCategory" && b.fields.find((f) => f.name === "keep").options[0].label === "Raid target"));
+  const del = one.find((b) => b.type === "table");
+  assert.deepEqual([del.rowActions[0].action, del.rowActions[0].confirm], ["deleteCategory", "Supprimer cette catégorie ? Les fiches ne sont pas supprimées."]);
+  assert.match(textOf(one), /Mettre les fiches de « Amis » dans…/);
   assert.equal((await def.adminActions.renameCategory(ctx, { id: cat, label: "Cible de raid" })).ok, "Catégorie renommée.");
-  const merge = await def.adminPanel(ctx, { query: { view: "categories", merge: amis.id } });
-  assert.ok(merge.some((b) => b.action === "mergeCategory" && b.fields.find((f) => f.name === "keep").options[0].label === "Cible de raid"));
   assert.equal((await def.adminActions.mergeCategory(ctx, { drop: amis.id, keep: cat })).ok, "C'est fait : les fiches ont rejoint l'autre catégorie.");
   assert.deepEqual((await svc.categoriesResolve(ctx, { ids: [amis.id] })).moved, { [amis.id]: cat });
   assert.equal((await def.adminActions.deleteCategory(ctx, { id: cat })).ok, "Catégorie supprimée. Les fiches ne sont pas supprimées.");
   assert.equal((await svc.get(ctx, { id: ada })).ok, true);
   assert.deepEqual((await svc.get(ctx, { id: ada })).contact.categoryIds, []);
-  assert.match(textOf(await def.adminPanel(ctx, { query: { view: "categories" } })), /Aucune catégorie pour l'instant/);
+  assert.match(textOf(await def.adminPanel(ctx, { query: { view: "categories" } })), /Aucune catégorie pour l(&#39;|')instant/);
 });
 
 test("accessibilité du HTML de l'admin (FR et EN) : images avec alt, liens avec un texte, champ de recherche étiqueté, onglets nommés, ids uniques, titres", async () => {
@@ -324,7 +325,7 @@ test("accessibilité du HTML de l'admin (FR et EN) : images avec alt, liens avec
     const ctx = makeCtx({ locale });
     const { ada } = await seedBook(ctx, 3);
     const org = (await svc.get(ctx, { id: ada })).contact.orgId;
-    for (const query of [{}, { q: "ada" }, { kind: "org" }, { contact: ada }, { contact: org }, { contact: ada, edit: "1" }, { new: "person" }, { view: "categories" }, { cat: "nope" }, { contact: "missing" }]) {
+    for (const query of [{}, { q: "ada" }, { kind: "org" }, { contact: ada }, { contact: org }, { contact: ada, edit: "1" }, { new: "person" }, { view: "categories" }, { view: "categories", edit: "x" }, { cat: "nope" }, { contact: "missing" }]) {
       const blocks = await def.adminPanel(ctx, { query });
       const html = htmlOf(blocks);
       for (const img of html.match(/<img\b[^>]*>/g) ?? []) assert.match(img, /\salt="[^"]*"/, `${locale} ${JSON.stringify(query)} : ${img}`);

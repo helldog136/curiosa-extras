@@ -46,7 +46,6 @@
   "verify": "It's checked",
   "verified": "Card checked.",
   "sectionAccounts": "Accounts",
-  "colNetwork": "Network",
   "colAccount": "Account",
   "accountRemove": "Remove",
   "confirmAccountRemove": "Remove this account from the card?",
@@ -152,10 +151,7 @@
   "categoriesTitle": "Categories",
   "categoriesHelp": "A category groups cards (for example « Raid target »). A card can have several.",
   "colCategory": "Category",
-  "colCount": "Cards",
-  "catSee": "See the cards",
   "catRename": "Rename",
-  "catMerge": "Put into…",
   "catDelete": "Delete",
   "confirmCatDelete": "Delete this category? The cards are not deleted.",
   "catCreateTitle": "New category",
@@ -185,5 +181,10 @@
   "color_purple": "Purple",
   "color_teal": "Teal",
   "color_brown": "Brown",
-  "color_grey": "Grey"
+  "color_grey": "Grey",
+  "backCategories": "← All categories",
+  "catSeeCountOne": "See the card ({count})",
+  "catSeeCountMany": "See the cards ({count})",
+  "catDeleteTitle": "Delete the category",
+  "catDeleteHelp": "The cards are not deleted: they only lose this category."
 }

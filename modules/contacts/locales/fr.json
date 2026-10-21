@@ -46,7 +46,6 @@
   "verify": "C'est vérifié",
   "verified": "Fiche vérifiée.",
   "sectionAccounts": "Comptes",
-  "colNetwork": "Réseau",
   "colAccount": "Compte",
   "accountRemove": "Retirer",
   "confirmAccountRemove": "Retirer ce compte de la fiche ?",
@@ -152,10 +151,7 @@
   "categoriesTitle": "Catégories",
   "categoriesHelp": "Une catégorie regroupe des fiches (par exemple « Cible de raid »). Une fiche peut en avoir plusieurs.",
   "colCategory": "Catégorie",
-  "colCount": "Fiches",
-  "catSee": "Voir les fiches",
   "catRename": "Renommer",
-  "catMerge": "Mettre dans…",
   "catDelete": "Supprimer",
   "confirmCatDelete": "Supprimer cette catégorie ? Les fiches ne sont pas supprimées.",
   "catCreateTitle": "Nouvelle catégorie",
@@ -185,5 +181,10 @@
   "color_purple": "Violet",
   "color_teal": "Turquoise",
   "color_brown": "Brun",
-  "color_grey": "Gris"
+  "color_grey": "Gris",
+  "backCategories": "← Toutes les catégories",
+  "catSeeCountOne": "Voir la fiche ({count})",
+  "catSeeCountMany": "Voir les fiches ({count})",
+  "catDeleteTitle": "Supprimer la catégorie",
+  "catDeleteHelp": "Les fiches ne sont pas supprimées : elles perdent seulement cette catégorie."
 }
