@@ -339,6 +339,10 @@ test("admin : adresse absente / refusée / illisible / lue ; « Tester l'adresse
   assert.match(none.at(-1).html, /<details>/, "le guide aide à trouver l'adresse dès le départ");
   assert.match((await def.adminPanel(ctxFr({ url: "http://x.test/a.ics" })))[1].text, /n'est pas autorisée/);
   assert.match((await def.adminActions.test(ctxFr({ url: "" }))).error, /Aucune adresse/);
+  // Sans adresse (ou adresse refusée), tout le panneau passe dans l'onglet Réglages (cœur 0.2.5), au-dessus du champ à remplir ; une fois l'adresse bonne, il reste dans Utiliser.
+  assert.ok(none.every((b) => b.tab === "settings"), "adresse absente : message et guide dans Réglages");
+  assert.ok((await def.adminPanel(ctxFr({ url: "http://x.test/a.ics" }))).every((b) => b.tab === "settings"), "adresse refusée : idem");
+  assert.doesNotMatch(none[1].text, /ci-dessus|above|réglages ci/i, "plus de renvoi « ci-dessus » (faux avec les onglets)");
   serve("nope", { status: 403 });
   const bad = await def.adminPanel(ctxFr());
   assert.ok(bad.some((b) => b.type === "markdown" && /code 403/.test(b.text)));
@@ -348,6 +352,7 @@ test("admin : adresse absente / refusée / illisible / lue ; « Tester l'adresse
   serve(cal(ev(["UID:a", `DTSTART:${d(soon)}`, `DTEND:${d(later)}`, "SUMMARY:A"]), ev(["UID:c", "STATUS:CANCELLED", `DTSTART:${d(soon)}`, `DTEND:${d(later)}`, "SUMMARY:X"])));
   const ok = await def.adminPanel(ctxFr({ url: SECRET }));
   assert.ok(ok.some((b) => b.type === "adminForm" && b.action === "test"));
+  assert.ok(ok.every((b) => b.tab === undefined), "adresse enregistrée : le panneau reste dans Utiliser");
   const table = ok.find((b) => b.type === "table");
   assert.equal(table.rows.length, 1, "un stream annulé n'est pas compté");
   assert.deepEqual([table.rows[0][1], table.rows[0][2]], ["A", ""]);
@@ -429,7 +434,7 @@ test("retrait de l'instance (« tout effacer ») : plus aucune copie de l'agenda
   assert.equal(typeof def.hooks.onInstanceDelete, "function");
 });
 
-test("manifeste : valide, 1.0.0, minCore 0.1.22, aucun service ni dépendance, sujet fourni, adresse secrète, réglages avancés facultatifs ; fr/en alignés ; toutes les clés existent", async () => {
+test("manifeste : valide, 1.0.1, minCore 0.2.5, aucun service ni dépendance, sujet fourni, adresse secrète, réglages avancés facultatifs ; fr/en alignés ; toutes les clés existent", async () => {
   assert.deepEqual(Object.keys(frMsgs).sort(), Object.keys(enMsgs).sort());
   const code = ["index.mjs", "tutorial.mjs"].map((f) => fsMod.readFileSync(new URL(f, dirOf), "utf8")).join("\n");
   for (const m of code.matchAll(/\bt\(\s*"([A-Za-z_]+)"/g)) assert.ok(m[1] in frMsgs, m[1]);
@@ -437,7 +442,7 @@ test("manifeste : valide, 1.0.0, minCore 0.1.22, aucun service ni dépendance, s
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fsMod.readFileSync(new URL("module.json", dirOf), "utf8"));
   const parsed = parseManifest(raw); assert.ok(parsed.ok, parsed.error);
-  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.0.0", "0.1.22", "multiple"]);
+  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.0.1", "0.2.5", "multiple"]);
   assert.deepEqual([raw.offers, raw.requires, raw.seeds], [undefined, undefined, undefined], "ni service ni dépendance : un agenda seul est utile (le bot lit planning.slot)");
   assert.deepEqual(raw.provides.map((p) => p.topic), ["planning.slot"]);
   assert.equal(raw.settings.find((s) => s.key === "url").type, "secret");

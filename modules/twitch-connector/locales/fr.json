@@ -6,7 +6,7 @@
   "guide_2": "**2.** Donnez-lui un nom (par exemple le nom de votre site). Dans la case « Redirect URLs », collez l'adresse ci-dessous (bouton « Copier »), puis cliquez sur « Add ».",
   "copy_label": "Adresse à coller dans la case « Redirect URLs » de Twitch",
   "guide_3": "**3.** Catégorie : « Website Integration ». Type de client : « Confidential ». Cliquez sur « Create ».",
-  "guide_4": "**4.** Ouvrez votre application (« Manage »). Copiez le « Client ID », puis cliquez sur « New Secret » et copiez le secret. Collez-les plus bas, dans « Réglages de cette fonctionnalité », et enregistrez. C'est tout : vos modules Twitch s'en servent tout seuls.",
+  "guide_4": "**4.** Ouvrez votre application (« Manage »). Copiez le « Client ID », puis cliquez sur « New Secret » et copiez le secret. Collez-les dans les deux champs juste en dessous, et enregistrez. C'est tout : vos modules Twitch s'en servent tout seuls.",
   "redirect_keep": "Cette adresse doit figurer dans la case « Redirect URLs » de votre application Twitch (ajoutez-la si ce n'est pas déjà fait) : elle sert quand vous connectez un nouveau compte.",
   "redirect_adopted": "Ces adresses servent déjà à vos chaînes et sont connues de Twitch : laissez-les aussi dans la case « Redirect URLs » de votre application Twitch.",
   "col_channel": "Chaîne",

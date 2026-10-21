@@ -62,7 +62,7 @@
   "untitled": "(Sans titre)",
   "allDay": "Toute la journée",
   "adminStatus": "Votre agenda",
-  "adminNotSet": "Aucune adresse enregistrée. Collez l'adresse secrète de votre agenda dans les réglages ci-dessus : le mode d'emploi est juste en dessous.",
+  "adminNotSet": "Aucune adresse enregistrée. Le mode d'emploi ci-dessous montre où la trouver ; collez ensuite l'adresse secrète de votre agenda dans le champ « Adresse de votre agenda ».",
   "adminSaved": "Adresse enregistrée ({host}). Elle n'est jamais réaffichée.",
   "adminOk": "{n} stream(s) à venir dans les 30 prochains jours.",
   "adminStale": "Votre agenda ne répond pas en ce moment ({reason}) : la dernière copie reçue est utilisée.",

@@ -59,7 +59,7 @@
   "importDone": "Import terminé : {created} créé(s), {completed} complété(s), {skipped} ignoré(s).",
   "importNoBrand": "La première ligne doit contenir une colonne « brand ».",
   "importEmpty": "Rien à importer.",
-  "contactHelp": "Moyen général de joindre la marque. Les personnes se rattachent plus bas, depuis le module Contacts.",
+  "contactHelp": "Moyen général de joindre la marque. Les personnes se rattachent depuis la fiche du partenaire, section « Contacts », avec le module Contacts.",
   "contactAddHelp": "Créé dans le module Contacts, puis lié à cette fiche. Si cet e-mail y existe déjà, la personne existante est liée : aucun doublon.",
   "contactNameRequired": "Le nom du contact est obligatoire.",
   "contactBadEmail": "Cette adresse e-mail n'est pas valide.",

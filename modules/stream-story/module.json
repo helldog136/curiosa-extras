@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "platform": "instagram",
   "description": {
     "en": "Make a short animated video that announces your next stream, ready to post as an Instagram story (vertical) or a portrait post. Pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
@@ -53,7 +53,8 @@
       "help": {
         "en": "By default the main color of your site.",
         "fr": "Par défaut, la couleur principale de votre site."
-      }
+      },
+      "group": "appearance"
     },
     {
       "key": "colorAccent2",
@@ -67,7 +68,8 @@
       "help": {
         "en": "By default the second color of your site.",
         "fr": "Par défaut, la deuxième couleur de votre site."
-      }
+      },
+      "group": "appearance"
     },
     {
       "key": "colorBackground",
@@ -81,7 +83,8 @@
       "help": {
         "en": "Only the Minimal style uses a plain background. By default the background of your site.",
         "fr": "Seul le style « Minimal » a un fond uni. Par défaut, le fond de votre site."
-      }
+      },
+      "group": "appearance"
     },
     {
       "key": "colorText",
@@ -95,7 +98,8 @@
       "help": {
         "en": "Made more readable automatically if it does not stand out enough on the background.",
         "fr": "Rendue plus lisible automatiquement si elle ne ressort pas assez sur le fond."
-      }
+      },
+      "group": "appearance"
     },
     {
       "key": "timezone",
