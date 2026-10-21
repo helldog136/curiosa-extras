@@ -69,7 +69,7 @@ test("onglets : Planning et Labyrinthe rangent leurs réglages d'apparence dans 
   assert.deepEqual(planTabs(read("modules/planning").tabs).order.map((t) => t.id), ["use", "settings", "look", "sources", "general"]);
 });
 
-test("onglets : Contacts et les autres modules non audités ne déclarent rien (les quatre onglets du cœur leur suffisent)", () => {
-  assert.equal(read("modules/contacts").tabs, undefined, "Contacts : lot K2");
+test("onglets : les modules non audités ne déclarent rien (les quatre onglets du cœur leur suffisent) ; Contacts renomme seulement « Utiliser »", () => {
+  assert.deepEqual(read("modules/contacts").tabs.map((x) => x.id), ["use"], "Contacts : un seul onglet renommé");
   for (const dir of ["modules/blog", "modules/links", "modules/pages", "modules/hero"]) assert.equal(read(dir).tabs, undefined, dir);
 });
