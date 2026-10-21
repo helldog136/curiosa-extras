@@ -84,7 +84,7 @@
   "mig_copy_done": "Done: your {total} channels are in Contacts.",
   "mig_copy_partial": "Copied: {done} of {total}. Click “Continue the copy” again for the rest.",
   "mig_full": "Contacts is full (100,000 cards): the copy stopped. Make room in Contacts then click “Continue the copy”.",
-  "mig_need_category": "Last step: your {n} channels from version 1 are in Contacts, they need a category. In the “Raid list” setting below, type “{label}” then click “Create”, and save. Then come back here to put your channels in it. Meanwhile, the dock keeps using these channels.",
+  "mig_need_category": "Last step: your {n} channels from version 1 are in Contacts, they need a category. In the “Settings” tab, in the “Raid list” setting, type “{label}” then click “Create”, and save. Then come back here to put your channels in it. Meanwhile, the dock keeps using these channels.",
   "mig_finish_title": "Last step: put your channels in their category",
   "mig_finish_text": "{n} cards copied from your version 1 list are not in the “{label}” category yet. The button adds them to it in Contacts: nothing is deleted, nothing is overwritten. Meanwhile, the dock already uses them.",
   "mig_finish_btn": "Put my channels in this category",

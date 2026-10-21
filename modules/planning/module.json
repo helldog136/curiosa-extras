@@ -279,8 +279,8 @@
         "fr": "Apparence du planning"
       },
       "help": {
-        "en": "How to show your streams, on the schedule page and in the “Next streams” home section. A preview of each choice is shown further down this page. “Simple list” is the look from before.",
-        "fr": "Comment présenter vos streams, sur la page du planning et dans la section d'accueil « Prochains streams ». L'aperçu de chaque choix est affiché plus bas, sur cette page. « Liste simple » est l'affichage d'avant."
+        "en": "How to show your streams, on the schedule page and in the “Next streams” home section. A preview of each choice is shown in the “Slots” tab. “Simple list” is the look from before.",
+        "fr": "Comment présenter vos streams, sur la page du planning et dans la section d'accueil « Prochains streams ». L'aperçu de chaque choix est affiché dans l'onglet « Créneaux ». « Liste simple » est l'affichage d'avant."
       },
       "options": [
         {

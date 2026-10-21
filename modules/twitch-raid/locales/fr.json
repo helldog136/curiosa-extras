@@ -84,7 +84,7 @@
   "mig_copy_done": "C'est fait : vos {total} chaînes sont dans Contacts.",
   "mig_copy_partial": "Copiées : {done} sur {total}. Cliquez encore sur « Continuer la copie » pour la suite.",
   "mig_full": "Contacts est plein (100 000 fiches) : la copie s'est arrêtée. Faites de la place dans Contacts puis cliquez sur « Continuer la copie ».",
-  "mig_need_category": "Dernière étape : vos {n} chaînes de la version 1 sont dans Contacts, il leur faut une catégorie. Dans le réglage « Liste de raid » ci-dessous, tapez « {label} » puis cliquez sur « Créer », et enregistrez. Revenez ensuite ici pour y ranger vos chaînes. En attendant, le dock continue d'utiliser ces chaînes.",
+  "mig_need_category": "Dernière étape : vos {n} chaînes de la version 1 sont dans Contacts, il leur faut une catégorie. Dans l'onglet « Réglages », au réglage « Liste de raid », tapez « {label} » puis cliquez sur « Créer », et enregistrez. Revenez ensuite ici pour y ranger vos chaînes. En attendant, le dock continue d'utiliser ces chaînes.",
   "mig_finish_title": "Dernière étape : ranger vos chaînes",
   "mig_finish_text": "{n} fiches recopiées de votre liste de la version 1 ne sont pas encore dans la catégorie « {label} ». Le bouton les y ajoute dans Contacts : rien n'est supprimé, rien n'est écrasé. En attendant, le dock les utilise déjà.",
   "mig_finish_btn": "Ranger mes chaînes dans cette catégorie",
