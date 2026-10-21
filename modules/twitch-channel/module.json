@@ -6,7 +6,7 @@
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.0.1",
+  "version": "2.0.2",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -111,8 +111,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your followers and paying subscribers for the site's statistics, and measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured by your site every 2 minutes while you are live, from the day this is switched on: Twitch gives no history. Twitch must authorize the follower count: once this is on and saved, a “Connect my Twitch channel” button appears at the top of this page.",
-        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site, et mesure vos directs : spectateurs, heures de live, followers par jeu, vues de vos vidéos. Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ceci est activé : Twitch ne fournit pas l'historique. Twitch doit autoriser le comptage des followers : une fois ceci activé et enregistré, le bouton « Connecter ma chaîne Twitch » apparaît en haut de cette page."
+        "en": "Counts your followers and paying subscribers for the site's statistics, and measures your lives: viewers, hours streamed, followers per game, views of your videos. Measured by your site every 2 minutes while you are live, from the day this is switched on: Twitch gives no history. Twitch must authorize the follower count: once this is on and saved, a “Connect my Twitch channel” button appears in the “My channel” tab.",
+        "fr": "Compte vos followers et vos abonnés payants pour les statistiques du site, et mesure vos directs : spectateurs, heures de live, followers par jeu, vues de vos vidéos. Mesuré par votre site toutes les 2 minutes quand vous êtes en direct, à partir du jour où ceci est activé : Twitch ne fournit pas l'historique. Twitch doit autoriser le comptage des followers : une fois ceci activé et enregistré, le bouton « Connecter ma chaîne Twitch » apparaît dans l'onglet « Ma chaîne »."
       }
     },
     {

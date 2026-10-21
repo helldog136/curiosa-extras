@@ -86,9 +86,12 @@ export default {
 
   async adminPanel(ctx) {
     const t = ctx.t, s = settingsOf(ctx);
+    // Pas d'adresse (ou adresse refusée) : c'est le champ « Adresse de votre agenda » (onglet Réglages, ouvert d'office) qu'il faut remplir. Le mode d'emploi pour la trouver
+    // s'affiche donc DANS cet onglet, au-dessus du champ (`tab: "settings"`, cœur 0.2.5) ; Utiliser, resté vide, n'est pas affiché. Une fois l'adresse bonne : retour dans Utiliser.
+    const toFill = (problem) => [{ type: "heading", text: t("adminStatus"), tab: "settings" }, { type: "markdown", text: problem, tab: "settings" }, { type: "html", html: tutorialHtml(ctx, s.zone || "UTC"), tab: "settings" }];
+    if (!s.url) return toFill(t("adminNotSet"));
+    if (!isPublicHttpsUrl(s.url)) return toFill(`⚠️ ${t("err_url")}`);
     const blocks = [{ type: "heading", text: t("adminStatus") }];
-    if (!s.url) return [...blocks, { type: "markdown", text: t("adminNotSet") }, { type: "html", html: tutorialHtml(ctx, s.zone || "UTC") }];
-    if (!isPublicHttpsUrl(s.url)) return [...blocks, { type: "markdown", text: `⚠️ ${t("err_url")}` }, { type: "html", html: tutorialHtml(ctx, s.zone || "UTC") }];
     let host = "";
     try { host = new URL(s.url).hostname; } catch { host = ""; }
     blocks.push({ type: "markdown", text: t("adminSaved", { host }) });

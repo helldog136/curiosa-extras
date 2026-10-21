@@ -39,7 +39,7 @@
   "cancelled": "Annulé",
   "tzNote": "Heures affichées en {tz}.",
   "apTitle": "Choisir l'apparence",
-  "apIntro": "Voici ce que donne chaque apparence avec des streams d'exemple. Choisissez la vôtre dans l'onglet « Apparence » (réglage « Apparence du planning »), puis enregistrez.",
+  "apIntro": "Voici ce que donne chaque apparence avec des streams d'exemple. Choisissez la vôtre juste en dessous, dans le réglage « Apparence du planning », puis enregistrez.",
   "apCurrent": "Choisie",
   "ap_original": "Liste simple",
   "apd_original": "L'affichage d'origine : un titre par jour, puis les streams en liste.",

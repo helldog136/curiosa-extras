@@ -10,5 +10,5 @@
   "kind_raid": "Raid",
   "kind_test": "Test",
   "kind_alert": "Alerte",
-  "noToken": "Aucun jeton d'envoi défini : seule l'alerte de test fonctionne."
+  "noToken": "Aucun jeton d'envoi défini : seule l'alerte de test fonctionne. Pour en définir un : onglet « Réglages », option « Jeton d'envoi » (mode avancé)."
 }

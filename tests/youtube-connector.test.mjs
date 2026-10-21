@@ -284,7 +284,7 @@ test("heure de reprise : minuit à Los Angeles (heure d'été et d'hiver), jour 
 test("panneau : sans clé, dit quoi faire et où créer la clé gratuite (un lien vers la console Google) ; aucun appel réseau à l'ouverture", async () => {
   const c = makeConnector({ apiKey: null });
   const panel = await def.adminPanel(c.ctx);
-  assert.match(panel[0].text, /Ajoutez votre clé YouTube dans Réglages/);
+  assert.match(panel[0].text, /Ajoutez votre clé YouTube dans le champ ci-dessous/);
   const help = panel.find((b) => b.type === "markdown" && b.text.includes("console.cloud.google.com"));
   assert.ok(help, "une phrase et un lien vers la console Google");
   assert.equal((help.text.match(/\]\(https:\/\//g) ?? []).length, 1);

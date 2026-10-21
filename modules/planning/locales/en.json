@@ -39,7 +39,7 @@
   "cancelled": "Cancelled",
   "tzNote": "Times shown in {tz}.",
   "apTitle": "Choose the look",
-  "apIntro": "This is what each look gives with sample streams. Pick yours in the “Appearance” tab (“Schedule look” setting), then save.",
+  "apIntro": "This is what each look gives with sample streams. Pick yours just below, in the “Schedule look” setting, then save.",
   "apCurrent": "Selected",
   "ap_original": "Simple list",
   "apd_original": "The original look: one heading per day, then the streams as a list.",

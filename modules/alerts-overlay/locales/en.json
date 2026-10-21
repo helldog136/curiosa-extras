@@ -10,5 +10,5 @@
   "kind_raid": "Raid",
   "kind_test": "Test",
   "kind_alert": "Alert",
-  "noToken": "No push token set: only the test alert works."
+  "noToken": "No push token set: only the test alert works. To set one: “Settings” tab, “Push token” option (advanced mode)."
 }

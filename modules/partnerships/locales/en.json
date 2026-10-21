@@ -59,7 +59,7 @@
   "importDone": "Import done: {created} created, {completed} completed, {skipped} skipped.",
   "importNoBrand": "The first line must contain a \"brand\" column.",
   "importEmpty": "Nothing to import.",
-  "contactHelp": "A general way to reach the brand. People are attached below, from the Contacts module.",
+  "contactHelp": "A general way to reach the brand. People are attached from the partner's page, “Contacts” section, with the Contacts module.",
   "contactAddHelp": "Created in the Contacts module, then linked to this file. If this email already exists there, the existing person is linked: no duplicate.",
   "contactNameRequired": "The contact's name is required.",
   "contactBadEmail": "This email address is not valid.",

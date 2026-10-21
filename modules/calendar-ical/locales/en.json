@@ -62,7 +62,7 @@
   "untitled": "(Untitled)",
   "allDay": "All day",
   "adminStatus": "Your calendar",
-  "adminNotSet": "No address saved. Paste your calendar's secret address in the settings above: the instructions are right below.",
+  "adminNotSet": "No address saved. The instructions below show where to find it; then paste your calendar's secret address in the “Your calendar address” field.",
   "adminSaved": "Address saved ({host}). It is never shown again.",
   "adminOk": "{n} upcoming stream(s) in the next 30 days.",
   "adminStale": "Your calendar is not answering right now ({reason}): the last copy received is used.",

@@ -5,8 +5,8 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.2.0",
-  "minCore": "0.2.2",
+  "version": "2.2.1",
+  "minCore": "0.2.5",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
@@ -279,8 +279,8 @@
         "fr": "Apparence du planning"
       },
       "help": {
-        "en": "How to show your streams, on the schedule page and in the “Next streams” home section. A preview of each choice is shown in the “Slots” tab. “Simple list” is the look from before.",
-        "fr": "Comment présenter vos streams, sur la page du planning et dans la section d'accueil « Prochains streams ». L'aperçu de chaque choix est affiché dans l'onglet « Créneaux ». « Liste simple » est l'affichage d'avant."
+        "en": "How to show your streams, on the schedule page and in the “Next streams” home section. A preview of each choice is shown just above. “Simple list” is the look from before.",
+        "fr": "Comment présenter vos streams, sur la page du planning et dans la section d'accueil « Prochains streams ». L'aperçu de chaque choix est affiché juste au-dessus. « Liste simple » est l'affichage d'avant."
       },
       "options": [
         {

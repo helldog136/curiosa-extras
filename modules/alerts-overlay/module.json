@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": {
     "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Tools such as Streamer.bot, a webhook relay or a script can send it alerts.",
     "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Des outils comme Streamer.bot, un relais de webhook ou un script peuvent lui envoyer des alertes."
