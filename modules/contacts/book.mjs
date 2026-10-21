@@ -572,6 +572,37 @@ export async function saveCard(ctx, values, { withContact }) {
   });
 }
 
+/**
+ * Ce que la fusion de `drop` dans `keep` ferait, SANS rien écrire (l'aperçu de l'écran de fusion et la fusion elle-même passent par ici : elles ne peuvent pas diverger).
+ * Rend { data: les données de la fiche gardée après fusion, filled: [champs complétés], status: bool (« vérifiée » reprise), accounts: [repris], skippedAccounts: [{ account, why }],
+ * categories: [ids repris], org: bool (l'organisation de la fiche abandonnée est reprise), members: nombre de personnes de l'organisation qui passent sur la fiche gardée }.
+ */
+export function planMerge(idx, keep, drop) {
+  const k = { ...keep.data }, d = drop.data;
+  const filled = [];
+  for (const f of ["email", "phone", "role", "others", "relation", "photo"]) if (!k[f] && d[f]) { k[f] = d[f]; filled.push(f); }
+  let org = false;
+  if (!k.orgId && d.orgId && d.orgId !== keep.id) { k.orgId = d.orgId; org = true; }
+  const status = d.status === "active" && k.status !== "active";
+  if (d.status === "active") k.status = "active";
+  const before = liveCategoryIds(idx, k.categoryIds ?? []);
+  k.categoryIds = liveCategoryIds(idx, [...(k.categoryIds ?? []), ...(d.categoryIds ?? [])]).slice(0, LIMITS.categoriesPerContact);
+  const categories = k.categoryIds.filter((c) => !before.includes(c));
+  const accs = accountsOf(k);
+  const taken = [], skippedAccounts = [];
+  for (const acc of accountsOf(d)) {
+    const key = accountKey(acc.network, acc.handle);
+    const owner = idx.byAccount.get(key);
+    if (accs.some((x) => accountKey(x.network, x.handle) === key)) continue;
+    if (accs.length >= LIMITS.accountsPerContact) { skippedAccounts.push({ account: acc, why: "full" }); continue; }
+    if (owner && owner !== keep.id && owner !== drop.id) { skippedAccounts.push({ account: acc, why: "taken" }); continue; }
+    accs.push(acc); taken.push(acc);
+  }
+  k.accounts = accs;
+  const members = kindOf(d) === "org" ? idx.list.reduce((n, x) => n + (x.o === drop.id ? 1 : 0), 0) : 0;
+  return { data: k, filled, status, accounts: taken, skippedAccounts, categories, org, members };
+}
+
 /** Fusion : tout passe sur la fiche gardée (comptes, catégories, notes, champs vides complétés, membres d'organisation), l'ancien id devient « moved ». */
 export async function merge(ctx, a) {
   a = obj(a);
@@ -581,22 +612,11 @@ export async function merge(ctx, a) {
     const keep = idx.byId.has(a.keep) ? await readContact(ctx, a.keep) : null, drop = idx.byId.has(a.drop) ? await readContact(ctx, a.drop) : null;
     if (!keep || !drop) return err("not_found");
     if (kindOf(keep.data) !== kindOf(drop.data)) return err("invalid");
-    const k = { ...keep.data }, d = drop.data;
-    for (const f of ["email", "phone", "role", "others", "relation", "photo"]) if (!k[f] && d[f]) k[f] = d[f];
-    if (!k.orgId && d.orgId && d.orgId !== keep.id) k.orgId = d.orgId;
-    if (d.status === "active") k.status = "active";
-    k.categoryIds = liveCategoryIds(idx, [...(k.categoryIds ?? []), ...(d.categoryIds ?? [])]).slice(0, LIMITS.categoriesPerContact);
+    const plan = planMerge(idx, keep, drop);
     // La fiche abandonnée sort de l'index (ses comptes et son e-mail se libèrent), puis la fiche gardée reçoit tout.
     indexDrop(idx, drop.id);
-    const accs = accountsOf(k);
-    for (const acc of accountsOf(d)) {
-      const key = accountKey(acc.network, acc.handle);
-      if (accs.length >= LIMITS.accountsPerContact || accs.some((x) => accountKey(x.network, x.handle) === key) || (idx.byAccount.has(key) && idx.byAccount.get(key) !== keep.id)) continue;
-      accs.push(acc);
-    }
-    k.accounts = accs;
     await ctx.api.store.remove(drop.id);
-    await save(ctx, idx, keep, k);
+    await save(ctx, idx, keep, plan.data);
     const notes = [];
     for await (const n of allNotes(ctx, drop.id)) notes.push(n);
     for (const n of notes) await ctx.api.store.update(n.id, { ...n.data, contactId: keep.id }, { key: keep.id });
@@ -606,11 +626,11 @@ export async function merge(ctx, a) {
     }
     const old = await getByKey(ctx, "moved", drop.id);
     if (old) await ctx.api.store.update(old.id, { from: drop.id, to: keep.id }, { key: drop.id }); else await ctx.api.store.add("moved", { from: drop.id, to: keep.id }, { key: drop.id });
-    return { ok: true, id: keep.id };
+    return { ok: true, id: keep.id, notes: notes.length };
   });
   if (!done.ok) return done;
   const res = await callSubjects(ctx, "remap", { from: a.drop, to: a.keep });
-  return { ok: true, id: done.id, remapped: res.map(({ module, name, ok }) => ({ module, name, ok })) };
+  return { ok: true, id: done.id, notes: done.notes, remapped: res.map(({ module, name, ok }) => ({ module, name, ok })) };
 }
 
 /** Effacement : chaque « privacy.subject » efface ses références (borné, muet = listé), PUIS la fiche et ses notes disparaissent. */
@@ -761,4 +781,4 @@ export async function storeAdd(ctx, a, formNote) {
   return r;
 }
 
-export { getIndex, forgetIndex, readContact, readMany, latestNotes, liveCategories, categoryView, liveCategory };
+export { byEmail, save, insert, orgFor, addNoteTo, attach, catByLabel, labelOf, getIndex, forgetIndex, readContact, readMany, latestNotes, liveCategories, categoryView, liveCategory };
