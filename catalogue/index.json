@@ -161,7 +161,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contacts",
       "ref": "v1.12.0",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📇",
@@ -173,7 +173,8 @@
         {
           "service": "contact.book",
           "version": 2
-        }
+        },
+        "contact.curate"
       ],
       "needs": [
         {
@@ -784,11 +785,11 @@
     {
       "id": "twitch-raid",
       "name": "Raid Twitch",
-      "description": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts : les personnes de la catégorie « Cible de raid » (ou celle que vous choisissez) qui ont une chaîne Twitch. Un clic copie la commande de raid à coller dans votre chat, un bouton en choisit une au hasard. Pour les grandes communautés : au-delà de 500 chaînes, un bouton « trouver quelqu'un en ligne au hasard ».",
+      "description": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid », créée toute seule). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien, ou collez-en plusieurs : nom et photo viennent de Twitch. « Retirer » sort une chaîne de la liste sans toucher à sa fiche. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
       "ref": "v1.12.0",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -811,7 +812,8 @@
         {
           "service": "contact.book",
           "min": 2
-        }
+        },
+        "contact.curate"
       ]
     },
     {

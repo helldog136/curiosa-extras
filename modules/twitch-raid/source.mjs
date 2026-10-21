@@ -32,18 +32,21 @@ const left = (deadline) => Math.max(0, deadline - Date.now());
 export const categorySetting = (ctx) => { const s = ctx.setting("category"); return typeof s === "string" && isId(s.trim()) ? s.trim() : ""; };
 
 /**
- * Un appel à Contacts, borné, qui ne lève jamais : { ok: true, value } ou { ok: false, why, error? }.
+ * Un appel à Contacts, borné, qui ne lève jamais : { ok: true, value } ou { ok: false, why, error?, id? } (`id` : l autre fiche ou catégorie d une erreur « duplicate » ou « taken »).
  * `why` : "missing" (Contacts absent), "old" (Contacts trop ancien : méthode inconnue), "down" (muet, en panne), "error" (réponse { ok: false, error }).
  */
-export async function ask(ctx, method, args, ms = timing.callMs) {
-  const r = await within(Promise.resolve().then(() => ctx.api.services.call(BOOK, method, args)).catch(() => ({ ok: false, reason: "failed" })), Math.max(0, ms), null);
+export async function ask(ctx, method, args, ms = timing.callMs, { service = BOOK, asCaller = false } = {}) {
+  const r = await within(Promise.resolve().then(() => ctx.api.services.call(service, method, args, asCaller ? { asCaller: true } : undefined)).catch(() => ({ ok: false, reason: "failed" })), Math.max(0, ms), null);
   if (!r) return { ok: false, why: "down" };
   if (!r.ok) return { ok: false, why: r.reason === "unavailable" || r.reason === "undeclared" ? "missing" : r.reason === "no_method" ? "old" : "down" };
   const val = r.value;
   if (!val || typeof val !== "object") return { ok: false, why: "down" };
-  if (val.ok === false) return { ok: false, why: "error", error: typeof val.error === "string" ? val.error.slice(0, 40) : "invalid" };
+  if (val.ok === false) return { ok: false, why: "error", error: typeof val.error === "string" ? val.error.slice(0, 40) : "invalid", ...(isId(val.id) ? { id: val.id } : {}) };
   return { ok: true, value: val };
 }
+export const CURATE = "contact.curate";
+/** Un appel à l'extension « contact.curate » de Contacts (voir tests/contract-ext/README.md) : comme `ask`. Une méthode inconnue ou un service absent veut dire « Contacts trop ancien ». */
+export const askCurate = (ctx, method, args, ms = timing.callMs) => ask(ctx, method, args, ms, { service: CURATE });
 /** Un échec d'appel → l'état à dire. */
 export const problemOf = (why) => (why === "missing" ? "contacts_missing" : why === "old" ? "contacts_old" : "contacts_down");
 const labelOf = (x) => oneLine(x?.label ?? x?.name, 100);
@@ -95,6 +98,28 @@ export async function resolveCategory(ctx, deadline = Date.now() + timing.readMs
   const items = itemsOf(r.value);
   if (items.length === 1 && !r.value.next) return { id: items[0].id, label: labelOf(items[0]), how: "only" };
   return { problem: items.length ? "choose" : "no_category" };
+}
+
+/** Le nom donné à la catégorie qu'on crée : dans la langue par défaut du site (ensuite, c'est une donnée de la personne, qui peut la renommer). */
+export const DEFAULT_NAMES = { fr: "Cible de raid", en: "Raid target" };
+export const defaultName = (ctx) => DEFAULT_NAMES[String(ctx.defaultLocale ?? "").slice(0, 2).toLowerCase()] ?? DEFAULT_NAMES.en;
+
+/**
+ * La liste de raid, créée si elle n'existe pas encore : { ok: true, id, label, how, created } ou { ok: false, problem }.
+ * Une catégorie existante est TOUJOURS préférée (choisie, fusionnée, « Cible de raid », ou la seule de Contacts : c'est celle que lit le dock) ; `ownList` : sauf cette dernière (elle n'est pas faite pour ça).
+ * La catégorie qui manque est créée,
+ * avec les droits de la personne qui vient de cliquer (`asCaller`, cœur 0.2.4) : sans le droit ou sur un cœur plus ancien, problème « category_denied » (l'administration dit quoi faire).
+ */
+export async function ensureCategory(ctx, deadline = Date.now() + timing.readMs, { ownList = false } = {}) {
+  const cat = await resolveCategory(ctx, deadline);
+  if (!cat.problem && !(ownList && cat.how === "only")) return { ok: true, id: cat.id, label: cat.label, how: cat.how, created: false };
+  if (cat.problem && cat.problem !== "no_category" && cat.problem !== "choose") return { ok: false, problem: cat.problem };
+  const label = defaultName(ctx);
+  const r = await ask(ctx, "createCategory", { label }, Math.min(timing.callMs, left(deadline)), { asCaller: true });
+  if (r.ok && isId(r.value.id)) { resetSource(); return { ok: true, id: r.value.id, label: oneLine(r.value.label, 100) || label, how: "default", created: true }; }
+  if (!r.ok && r.why === "error" && r.error === "duplicate" && isId(r.id)) return { ok: true, id: r.id, label, how: "default", created: false };
+  if (!r.ok && r.why === "error") return { ok: false, problem: "category_denied" };
+  return { ok: false, problem: r.ok ? "contacts_down" : problemOf(r.why) };
 }
 
 /** Tous les comptes Twitch d'une demande `accounts` (pages de 500, curseur), ajoutés à `out` ; { ok: true, truncated } ou l'échec. */

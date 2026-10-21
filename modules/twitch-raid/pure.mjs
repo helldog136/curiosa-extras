@@ -12,6 +12,8 @@ export const MAX_PARTNERS = 2000;
 export const MAX_TARGETS = 10_000;
 /** Taille d'une page lue dans Contacts (le plus grand `limit` que permet le contrat de `contact.book`). */
 export const CONTACTS_PAGE = 500;
+/** Longueur d'un curseur de page (contrat de `contact.book` : 500 caractères au plus) : plus long, il est ignoré. */
+export const CURSOR_MAX = 500;
 /** Jusqu'à ce nombre de chaînes, le dock montre tous les membres en direct ; au-delà, il propose un bouton « au hasard ». UNE seule valeur pour tout le module. */
 export const FULL_VIEW_MAX = 500;
 /** Twitch vérifie au plus 100 pseudos par demande (connu de mémoire) ; si Twitch en refuse autant, on essaie des paquets plus petits (voir `nextPacketSize`). */
@@ -37,6 +39,32 @@ export function normalizeLogin(input) {
   return LOGIN.test(s) ? { login: s } : { error: "invalid" };
 }
 function decodeURIComponent_(v) { try { return decodeURIComponent(v); } catch { return v; } }
+
+/**
+ * Comme `normalizeLogin`, mais dit POURQUOI un texte n'est pas un pseudo : { login } ou { error: "empty" | "not_channel" | "short" | "long" | "chars" }.
+ * Indulgent : espaces autour, majuscules, @, guillemets ou virgule autour, puce en tête (« - », « • »), caractères invisibles, adresses twitch.tv/… (avec www, m, /, ?…).
+ */
+export function explainLogin(input) {
+  const raw = String(input ?? "").replace(/[\u200b-\u200d\u2060\ufeff]/g, "").replace(/^\s*[-*•]\s+/, "").trim().replace(/^["'“”‘’«»(<\[]+|["'“”‘’«»)>\],;.]+$/g, "").trim();
+  if (!raw) return { error: "empty" };
+  const r = normalizeLogin(raw);
+  if (r.login) return r;
+  if (r.error === "not_channel" || r.error === "empty") return { error: r.error };
+  const url = /^(?:https?:\/\/)?(?:www\.|m\.)?twitch\.tv\/([^/?#\s]*)/i.exec(raw);
+  const name = (url ? decodeURIComponent_(url[1]) : raw.replace(/^@/, "")).toLowerCase();
+  if (!name) return { error: "empty" };
+  if (!/^[a-z0-9_]+$/.test(name)) return { error: "chars" };
+  return { error: name.length < 4 ? "short" : "long" };
+}
+
+/** Ce qui ressemble à une adresse ou à un @pseudo plutôt qu'à un nom à chercher : on l'ajoute tout de suite. */
+export const looksLikeChannel = (input) => /twitch\.tv\//i.test(String(input ?? "")) || /^\s*@[A-Za-z0-9_]/.test(String(input ?? ""));
+
+/** Le texte collé → au plus `max` lignes non vides (coupées à 300 caractères) ; `total` = le nombre de lignes non vides, `over` vrai s'il y en a plus que `max`. */
+export function splitLines(text, max) {
+  const all = String(text ?? "").slice(0, 200_000).split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
+  return { lines: all.slice(0, max).map((l) => l.slice(0, 300)), total: all.length, over: all.length > max };
+}
 
 /** Nom affiché ou note : une ligne de texte, sans caractère de contrôle, coupée à `max`. */
 export const oneLine = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);

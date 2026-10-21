@@ -16,7 +16,7 @@ const ctx = () => fakeCtx({ key: "contacts", messages: en });
 test("manifeste : offre contact.store ET contact.book (lectures déclarées readOnly), valide", () => {
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store", "contact.book"]);
+  assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store", "contact.book", "contact.curate"]);
   assert.deepEqual(r.manifest.offers[1].readOnly, ["get", "resolve", "find", "accounts", "search", "list", "categories", "categoriesResolve"], "2.0 : toutes les lectures");
   assert.equal(r.manifest.offers[1].version, 2, "contact.book version 2 (sur-ensemble de la v1)");
   for (const m of ["get", "find", "resolve", "create", "update", "note"]) assert.equal(typeof svc[m], "function", m);

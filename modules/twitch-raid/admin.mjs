@@ -8,10 +8,11 @@ const live = await import(`./live.mjs${v}`);
 const search = await import(`./search.mjs${v}`);
 const source = await import(`./source.mjs${v}`);
 const migrate = await import(`./migrate.mjs${v}`);
+const addAdmin = await import(`./add-admin.mjs${v}`);
+const { settingsOf } = await import(`./settings.mjs${v}`);
+export { settingsOf };
 const { FULL_VIEW_MAX, MAX_TARGETS, oneLine, modeFor, fold } = await import(`./pure.mjs${v}`);
 
-/** `channel` : la valeur brute du réglage (l'id d'une instance de Ma Chaîne Twitch, ou un pseudo tapé avant le choix) ; channel.mjs la traduit en pseudo. */
-export const settingsOf = (ctx) => ({ channel: oneLine(ctx.setting("channel"), 200) });
 export const dockUrl = (ctx, secret) => `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}/m/${ctx.instance.key}/dock?k=${encodeURIComponent(secret)}`;
 
 /** Attend `p` au plus `ms` (la page d'administration ne reste jamais suspendue à un autre module). */
@@ -23,7 +24,7 @@ export const problemText = (ctx, problem) => ctx.t(`dock_nr_${problem}`, { label
 const isRaidCategory = (cat) => !!cat && ["chosen", "moved", "default"].includes(cat.how);
 const timeOf = (ctx, ms) => { try { return new Date(ms).toLocaleTimeString(ctx.locale || "en", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
 
-export async function panel(ctx) {
+export async function panel(ctx, { query = {} } = {}) {
   const t = ctx.t, s = settingsOf(ctx), label0 = source.defaultLabels(ctx)[0];
   const [src, secret, tw, st] = await Promise.all([
     within(source.targets(ctx), source.timing.readMs + 1000, { state: "problem", problem: "contacts_down" }),
@@ -47,17 +48,18 @@ export async function panel(ctx) {
     if (!st.copiedAt) {
       blocks.push({ type: "banner", tone: "warning", text: t("mig_copy_todo", { done: st.done, total: st.total }) + (st.full ? " " + t("mig_full") : st.stopped ? " " + problemText(ctx, st.stopped) : "") });
       blocks.push({ type: "adminForm", action: "migrate", submitLabel: t("mig_copy_btn"), fields: [] });
-    } else if (st.pending.length) {
-      if (src.state === "ok" && isRaidCategory(src.category)) {
-        blocks.push({ type: "heading", text: t("mig_finish_title") });
-        blocks.push({ type: "markdown", text: t("mig_finish_text", { n: st.pending.length, label: src.category.label }) });
-        blocks.push({ type: "adminForm", action: "finish", submitLabel: t("mig_finish_btn"), fields: [] });
-      } else blocks.push({ type: "banner", tone: "info", text: t(src.category?.how === "only" ? "mig_need_category_contacts" : "mig_need_category", { n: st.pending.length, label: label0 }) });
+    } else if (st.pending.length && !(src.state !== "ok" && ["contacts_missing", "contacts_old", "contacts_down", "category_gone"].includes(src.problem))) {
+      // Dernière étape : la catégorie est créée toute seule si elle manque (avec vos droits), puis les chaînes de la version 1 y sont rangées.
+      const label = src.state === "ok" && isRaidCategory(src.category) ? src.category.label : source.defaultName(ctx);
+      blocks.push({ type: "heading", text: t("mig_finish_title") });
+      blocks.push({ type: "markdown", text: t("mig_finish_text", { n: st.pending.length, label }) });
+      blocks.push({ type: "adminForm", action: "finish", submitLabel: t("mig_finish_btn"), fields: [] });
     }
   }
   if (st?.skippedCount) blocks.push({ type: "markdown", text: t("mig_skipped", { n: st.skippedCount, list: st.skipped.slice(0, 10).map((x) => `« ${oneLine(x.login, 40)} »`).join(", ") }) });
 
-  blocks.push({ type: "markdown", text: t("admin_intro", { label: label0 }) });
+  // Ajouter une chaîne (en haut : c'est ce qu'on fait le plus souvent), puis la liste, puis l'explication du dock.
+  blocks.push(...await within(addAdmin.addBlocks(ctx, src, query), source.timing.readMs + 3000, []));
 
   // La liste de raid : un compteur, le mode du dock, le lien vers Contacts.
   blocks.push({ type: "heading", text: t("list_title") });
@@ -72,6 +74,9 @@ export async function panel(ctx) {
     if (src.truncated) blocks.push({ type: "banner", tone: "warning", text: t("list_truncated", { max: MAX_TARGETS }) });
   }
   if (contactsPath) blocks.push({ type: "links", items: [{ label: t("manage_link"), href: contactsPath }] });
+  blocks.push(...await within(addAdmin.listBlocks(ctx, src, query), source.timing.readMs + 1000, []));
+
+  blocks.push({ type: "markdown", text: t("admin_intro", { label: label0 }) });
 
   blocks.push({ type: "heading", text: t("addr_title") });
   blocks.push({ type: "markdown", text: t("addr_steps") });
@@ -86,6 +91,7 @@ const back = (message) => ({ ok: message, redirect: "?" });
 const forget = () => { source.resetSource(); live.resetLive(); };
 
 export const actions = {
+  ...addAdmin.actions,
   async renew(ctx) {
     await data.renewSecret(ctx);
     return back(ctx.t("renewed"));
@@ -100,14 +106,13 @@ export const actions = {
     if (r.status === "partial") return { ok: ctx.t("mig_copy_partial", { done: st.done, total: st.total }) };
     return { error: st.full ? ctx.t("mig_full") : problemText(ctx, st.stopped ?? "contacts_down") };
   },
-  /** « Ranger mes chaînes dans cette catégorie » : les fiches recopiées rejoignent la catégorie choisie (ou « Cible de raid »). */
+  /** « Ranger mes chaînes dans cette catégorie » : les fiches recopiées rejoignent la catégorie choisie ou « Cible de raid », créée toute seule si elle manque (avec vos droits). */
   async finish(ctx) {
-    const cat = await source.resolveCategory(ctx);
-    if (cat.problem) return { error: problemText(ctx, cat.problem) };
-    if (!isRaidCategory(cat)) return { error: ctx.t("mig_need_category_contacts", { n: (await migrate.readState(ctx)).pending.length, label: source.defaultLabels(ctx)[0] }) };
+    const cat = await source.ensureCategory(ctx, undefined, { ownList: true });
+    if (!cat.ok) return { error: addAdmin.problemLine(ctx, cat.problem) };
     const r = await migrate.finishCategory(ctx, cat.id);
     forget();
-    if (r.status === "done") return back(ctx.t("mig_finish_done", { label: cat.label }));
+    if (r.status === "done") return back(ctx.t("mig_finish_done", { label: cat.label }) + (cat.created ? " " + ctx.t("add_cat_created", { label: cat.label }) : ""));
     if (r.status === "partial") return { ok: ctx.t("mig_finish_partial", { n: r.state.pending.length }) };
     return { error: problemText(ctx, r.state.stopped ?? "contacts_down") };
   },

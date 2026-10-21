@@ -700,6 +700,93 @@ export async function importRows(ctx, a) {
   });
 }
 
+// ── Extensions « contact.curate » (2.2) : ce que Raid et ses semblables demandent en plus du contrat « contact.book » v2 (additif, voir README) ────────────
+/** Bornes de « contact.curate ». */
+export const CURATE = { lookup: 200, search: 50 };
+const echo = (h) => (typeof h === "string" ? h.slice(0, 100) : "");
+
+/**
+ * Qui porte ces comptes ? Pour 200 pseudos au plus : { input, handle, id, accountId, inCategory?, hasProfile } ou { input, error: "invalid_handle" }, dans l'ordre reçu.
+ * Lit l'index seulement (aucun parcours du carnet) ; la lecture des fiches trouvées sert à savoir si le compte a déjà un nom ou une photo (`hasProfile`).
+ */
+export async function lookupAccounts(ctx, a) {
+  a = obj(a);
+  if (!a || !Array.isArray(a.handles) || a.handles.length > CURATE.lookup) return err("invalid");
+  if (!NETWORKS.includes(a.network)) return err("invalid_network");
+  const idx = await getIndex(ctx);
+  let cat = null;
+  if (a.categoryId !== undefined && a.categoryId !== null) { cat = liveCategory(idx, a.categoryId); if (!cat) return err("not_found"); }
+  const rows = a.handles.map((h) => {
+    const n = typeof h === "string" ? normalizeAccount(a.network, h) : { error: "invalid_handle" };
+    return n.error ? { input: echo(h), error: n.error } : { input: echo(h), n, id: idx.byAccount.get(accountKey(n.network, n.handle)) ?? null };
+  });
+  const recs = await readMany(ctx, [...new Set(rows.map((r) => r.id).filter(Boolean))]);
+  return {
+    ok: true,
+    items: rows.map((r) => {
+      if (r.error) return { input: r.input, error: r.error };
+      const out = { input: r.input, handle: r.n.handle, id: null };
+      const rec = r.id ? recs.get(r.id) : null;
+      if (!rec) return out;
+      const acc = accountsOf(rec.data).find((x) => accountKey(x.network, x.handle) === accountKey(r.n.network, r.n.handle));
+      const e = idx.byId.get(rec.id);
+      return { ...out, id: rec.id, accountId: acc?.id ?? null, hasProfile: !!(acc && (acc.displayName || acc.avatar)), ...(cat ? { inCategory: !!e && (e.c ?? []).some((k) => k === cat || liveCategory(idx, k) === cat) } : {}) };
+    }),
+  };
+}
+
+/** Retire UNE catégorie d'une fiche (suivie si elle a été fusionnée). La fiche, ses autres catégories et ses comptes ne changent pas. Idempotent : { ok: true, removed: false } si elle n'y était pas. */
+export async function removeCategory(ctx, a) {
+  a = obj(a);
+  if (!a || !idOk(a.id) || !idOk(a.categoryId)) return err("invalid");
+  return withLock(ctx, async () => {
+    const idx = await getIndex(ctx);
+    const cat = liveCategory(idx, a.categoryId);
+    if (!cat) return err("not_found");
+    const rec = idx.byId.has(a.id) ? await readContact(ctx, a.id) : null;
+    if (!rec) return err("not_found");
+    const ids = liveCategoryIds(idx, rec.data.categoryIds);
+    if (!ids.includes(cat)) return { ok: true, removed: false };
+    await save(ctx, idx, rec, { ...rec.data, categoryIds: ids.filter((k) => k !== cat) });
+    return { ok: true, removed: true };
+  });
+}
+
+/** Ajoute un compte à une fiche existante (jamais de doublon : un compte n'appartient qu'à une fiche). Erreurs : invalid, invalid_network, invalid_handle, not_found, taken (+ id de l'autre fiche), too_many_accounts. */
+export async function addAccountTo(ctx, a) {
+  a = obj(a);
+  if (!a || !idOk(a.id) || typeof a.network !== "string") return err("invalid");
+  const r = await addAccount(ctx, { id: a.id, network: a.network, handle: a.handle });
+  return r.ok ? { ok: true, accountId: r.accountId, existed: r.existed } : r;
+}
+
+/**
+ * Cherche dans les comptes d'un réseau, éventuellement d'UNE catégorie : { items: [{ id, accountId, name, handle, displayName?, avatar? }], next }. 50 au plus par page,
+ * le curseur est opaque. Les fiches les plus proches du texte d'abord (comme `search`). Sans texte : page vide (utilisez `accounts` pour parcourir).
+ */
+export async function searchAccounts(ctx, a) {
+  a = obj(a);
+  if (!a) return err("invalid");
+  if (!NETWORKS.includes(a.network)) return err("invalid_network");
+  const q = searchKey(a.q);
+  const lim = clampLimit(a.limit, CURATE.search, 10);
+  const c = decCursor(a.cursor, "sa");
+  if (!q || c.bad) return { ok: true, items: [], next: null };
+  const idx = await getIndex(ctx);
+  let cat = null;
+  if (a.categoryId !== undefined && a.categoryId !== null) { cat = liveCategory(idx, a.categoryId); if (!cat) return err("not_found"); }
+  const offset = c.at ? Math.max(0, Math.min(100_000, Math.trunc(c.at[1]))) : 0;
+  const { ids, total } = searchIds(idx, { q, network: a.network, cat, limit: lim, offset });
+  const recs = await readMany(ctx, ids);
+  const items = [];
+  for (const id of ids) {
+    const rec = recs.get(id);
+    if (!rec) continue;
+    for (const acc of accountsOf(rec.data).filter((x) => x.network === a.network)) items.push({ id, accountId: acc.id, name: rec.data.name, handle: acc.handle, ...(acc.displayName ? { displayName: acc.displayName } : {}), ...(acc.avatar ? { avatar: acc.avatar } : {}) });
+  }
+  return { ok: true, items, next: offset + ids.length < total ? encCursor(["sa", offset + ids.length, "o"]) : null };
+}
+
 // ── Catégories (gestes d'admin) ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const catData = (k) => { const { id: _id, ...data } = k; return data; };
 export async function renameCategory(ctx, id, label) {
