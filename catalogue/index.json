@@ -154,17 +154,38 @@
     {
       "id": "contacts",
       "name": "Contacts",
-      "description": "Votre carnet d'adresses privé : personnes, organisations, notes. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer.",
+      "description": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux (Twitch, YouTube, Bluesky…), catégories, notes et photo. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contacts",
       "ref": "v1.11.0",
-      "version": "1.1.1",
+      "version": "2.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📇",
+      "requires": {
+        "core": "0.2.1"
+      },
       "offers": [
         "contact.store",
-        "contact.book"
+        {
+          "service": "contact.book",
+          "version": 2
+        }
+      ],
+      "needs": [
+        {
+          "service": "privacy.subject",
+          "optional": true
+        },
+        {
+          "service": "twitch.api",
+          "min": 3,
+          "optional": true
+        },
+        {
+          "service": "youtube.api",
+          "optional": true
+        }
       ]
     },
     {
@@ -393,12 +414,21 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/partnerships",
       "ref": "v1.11.0",
-      "version": "1.1.2",
+      "version": "2.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤝",
       "provides": [
         "partnership.partner"
+      ],
+      "requires": {
+        "core": "0.2.1"
+      },
+      "offers": [
+        {
+          "service": "privacy.subject",
+          "each": true
+        }
       ],
       "needs": [
         "contact.book"
@@ -578,14 +608,27 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-story",
       "ref": "v1.11.0",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📱",
       "requires": {
-        "core": "0.1.22"
-      }
+        "core": "0.2.1"
+      },
+      "offers": [
+        {
+          "service": "privacy.subject",
+          "each": true
+        }
+      ],
+      "needs": [
+        {
+          "service": "contact.book",
+          "min": 2,
+          "optional": true
+        }
+      ]
     },
     {
       "id": "telegram",
@@ -729,11 +772,11 @@
     {
       "id": "twitch-raid",
       "name": "Raid Twitch",
-      "description": "Listez les chaînes Twitch de vos partenaires et obtenez un petit panneau pour OBS qui montre lesquelles sont en direct en ce moment, pour choisir qui raider. Un clic copie la commande de raid toute prête à coller dans votre chat, et un bouton en choisit une au hasard. Pensé aussi pour les grandes communautés : jusqu'à 2 000 chaînes, avec un bouton « trouver quelqu'un en ligne au hasard » quand la liste est très longue.",
+      "description": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts : les personnes de la catégorie « Cible de raid » (ou celle que vous choisissez) qui ont une chaîne Twitch. Un clic copie la commande de raid à coller dans votre chat, un bouton en choisit une au hasard. Pour les grandes communautés : au-delà de 500 chaînes, un bouton « trouver quelqu'un en ligne au hasard ».",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
       "ref": "v1.11.0",
-      "version": "1.3.0",
+      "version": "2.0.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -742,14 +785,24 @@
         "stream.partner"
       ],
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.1"
       },
+      "offers": [
+        {
+          "service": "privacy.subject",
+          "each": true
+        }
+      ],
       "needs": [
         {
           "service": "twitch.api",
           "min": 3
         },
-        "twitch.live"
+        "twitch.live",
+        {
+          "service": "contact.book",
+          "min": 2
+        }
       ]
     },
     {
