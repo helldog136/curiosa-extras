@@ -40,7 +40,8 @@ async function listPage(ctx, q) {
   const t = ctx.t;
   const idx = await B.getIndex(ctx);
   const kind = q.kind === "org" ? "org" : undefined;
-  const cat = q.cat ? B.liveCategory(idx, q.cat) : null;
+  const catParam = q.cat || q.category; // « ?category=<id> » : lien venu d'un autre module (Raid : « voir les fiches de la catégorie »)
+  const cat = catParam ? B.liveCategory(idx, catParam) : null;
   const network = N.NETWORKS.includes(q.net) ? q.net : undefined;
   const review = q.review === "1";
   const orgId = q.org && idx.byId.get(q.org)?.k & 1 ? q.org : undefined;
@@ -65,7 +66,7 @@ async function listPage(ctx, q) {
   // Filtres : « à vérifier », catégories, réseaux présents dans le carnet.
   let toReview = 0;
   const nets = new Set();
-  for (const e of idx.list) { if (e.k & 2) toReview++; for (const k of e.a ?? []) nets.add(k.slice(0, k.indexOf(":"))); }
+  for (const e of idx.list) { if (e.k & 2) toReview++; if (e.a) for (const k of e.a.split("\u0001")) nets.add(k.slice(0, k.indexOf(":"))); }
   const toggle = (k, val, current) => U.href({ ...base, [k]: current ? undefined : val, after: undefined, at: undefined });
   const chipItems = [];
   if (toReview || review) chipItems.push({ label: t("filterReview", { count: fmt(ctx, toReview) }), href: toggle("review", "1", review), current: review });
@@ -266,6 +267,7 @@ async function addAccountFlow(ctx, id, network, handle) {
 export default {
   // Pastille du menu d'admin : les fiches « à vérifier » (messages du formulaire). Jamais d'attente longue : 0 si l'index n'est pas prêt.
   async adminBadge(ctx) {
+    // Drapeau 2 de l'index = statut « to_review ».
     try { const idx = await B.getIndex(ctx, { waitMs: 2000 }); let n = 0; for (const e of idx.list) if (e.k & 2) n++; return n; } catch { return 0; }
   },
 

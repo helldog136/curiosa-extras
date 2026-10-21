@@ -85,18 +85,21 @@ async function generationOf(ctx) {
 
 // ── Entrées de l'index ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // E = { id, t: date (ms), k: drapeaux (1 = organisation, 2 = à vérifier), n: nom sans accents, d: nom affiché (organisations seulement),
-//       a: clés des comptes (["twitch:x", …]) | null, h: noms affichés des comptes (sans accents) | null, c: ids de catégories | null, o: id d'organisation | null }
+//       a: clés des comptes jointes par \u0001 (« twitch:x\u0001youtube:@y ») | null, h: noms affichés des comptes (sans accents, seulement s'ils
+//       diffèrent du pseudo) | null, c: ids de catégories | null, o: id d'organisation | null }. Une chaîne plutôt qu'un tableau : moins de mémoire.
+export const SEP = "\u0001";
+export const keysOf = (e) => (e.a ? e.a.split(SEP) : []);
 export const isContactData = (d) => !!d && typeof d === "object" && typeof d.name === "string" && STATUSES.includes(d.status) && (d.kind === undefined || KINDS.includes(d.kind));
 export const kindOf = (d) => (d.kind === "org" ? "org" : "person");
 export function entryOf(rec) {
   const d = rec.data;
   const org = kindOf(d) === "org";
   const accs = Array.isArray(d.accounts) ? d.accounts.filter((a) => a && NETWORKS.includes(a.network) && typeof a.handle === "string") : [];
-  const names = accs.map((a) => (a.displayName ? fold(a.displayName) : "")).filter(Boolean);
+  const names = accs.map((a) => (a.displayName ? fold(a.displayName) : "")).filter((x, i) => x && x !== accs[i].handle && x !== accs[i].handle.replace(/^@/, ""));
   const cats = Array.isArray(d.categoryIds) ? d.categoryIds.filter(idOk) : [];
   return {
     id: rec.id, t: new Date(rec.createdAt).getTime(), k: (org ? 1 : 0) | (d.status === "to_review" ? 2 : 0), n: fold(d.name), d: org ? String(d.name) : undefined,
-    a: accs.length ? accs.map((a) => accountKey(a.network, a.handle)) : null, h: names.length ? names.join("\u0001") : null, c: cats.length ? cats : null,
+    a: accs.length ? accs.map((a) => accountKey(a.network, a.handle)).join(SEP) : null, h: names.length ? names.join(SEP) : null, c: cats.length ? cats : null,
     o: !org && idOk(d.orgId) ? d.orgId : null,
   };
 }
@@ -115,7 +118,7 @@ function addEntry(idx, e) {
   const at = after(idx.list, e.t, e.id);
   if (at === idx.list.length) idx.list.push(e); else idx.list.splice(at, 0, e);
   idx.byId.set(e.id, e);
-  for (const k of e.a ?? []) if (!idx.byAccount.has(k)) idx.byAccount.set(k, e.id);
+  for (const k of keysOf(e)) if (!idx.byAccount.has(k)) idx.byAccount.set(k, e.id);
   if (e.k & 1 && !idx.orgByName.has(e.n)) idx.orgByName.set(e.n, e.id);
 }
 function removeEntry(idx, e) {
@@ -123,7 +126,7 @@ function removeEntry(idx, e) {
   if (at >= 0 && idx.list[at]?.id === e.id) idx.list.splice(at, 1);
   else { const j = idx.list.findIndex((x) => x.id === e.id); if (j >= 0) idx.list.splice(j, 1); }
   idx.byId.delete(e.id);
-  for (const k of e.a ?? []) if (idx.byAccount.get(k) === e.id) idx.byAccount.delete(k);
+  for (const k of keysOf(e)) if (idx.byAccount.get(k) === e.id) idx.byAccount.delete(k);
   if (e.k & 1 && idx.orgByName.get(e.n) === e.id) {
     idx.orgByName.delete(e.n);
     const twin = idx.list.find((x) => x.k & 1 && x.n === e.n);
@@ -151,7 +154,7 @@ async function build(ctx, gen) {
         const e = entryOf(r);
         idx.list.push(e); // pages lues dans l'ordre (date, id) : déjà triées
         idx.byId.set(e.id, e);
-        for (const k of e.a ?? []) if (!idx.byAccount.has(k)) idx.byAccount.set(k, e.id);
+        for (const k of keysOf(e)) if (!idx.byAccount.has(k)) idx.byAccount.set(k, e.id);
         if (e.k & 1 && !idx.orgByName.has(e.n)) idx.orgByName.set(e.n, e.id);
       }
       cursor = page.next ?? null;

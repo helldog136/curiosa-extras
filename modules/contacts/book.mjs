@@ -5,7 +5,7 @@ import { normalizeAccount, accountKey, pickPhoto, clean, fold, NETWORKS } from "
 import {
   LIMITS, FIELDS, ORG_NAME_MAX, KINDS, STATUSES, PALETTE, idOk, validEmail, emailKey, maxContacts, getIndex, withLock, forgetIndex, readContact, readMany,
   latestNotes, allNotes, movedTarget, liveCategory, liveCategories, categoryView, indexPut, indexDrop, indexPutCategory, indexDropCategory,
-  encCursor, decCursor, after, kindOf, getByKey, collectionOf, CARD_COLLECTIONS,
+  encCursor, decCursor, after, kindOf, getByKey, collectionOf, CARD_COLLECTIONS, keysOf, SEP,
 } from "./data.mjs";
 import { callSubjects } from "./subjects.mjs";
 
@@ -91,7 +91,7 @@ export async function find(ctx, a) {
     if (email && e.id !== emailId) continue;
     if (name && e.n !== name) continue;
     if (org && orgName(e) !== org) continue;
-    if (q && !(e.id === qEmailId || e.n.includes(q) || orgName(e).includes(q) || (e.a ?? []).some((k) => k.slice(k.indexOf(":") + 1).replace(/^@/, "").includes(bare)))) continue;
+    if (q && !(e.id === qEmailId || e.n.includes(q) || orgName(e).includes(q) || (e.a !== null && e.a.includes(bare) && keysOf(e).some((k) => k.slice(k.indexOf(":") + 1).replace(/^@/, "").includes(bare))))) continue;
     hits.push(e.id);
   }
   const page = hits.slice(0, lim);
@@ -105,7 +105,7 @@ export function matcher(idx, { cat, kind, orgId, network, review }) {
   return (e) => (!kind || (kind === "org" ? (e.k & 1) === 1 : (e.k & 1) === 0))
     && (!orgId || e.o === orgId)
     && (!review || (e.k & 2) === 2)
-    && (!netPrefix || (e.a ?? []).some((k) => k.startsWith(netPrefix)))
+    && (!netPrefix || (e.a !== null && (e.a.startsWith(netPrefix) || e.a.includes(SEP + netPrefix))))
     && (!cat || (e.c ?? []).some((k) => k === cat || liveCategory(idx, k) === cat));
 }
 
@@ -170,7 +170,7 @@ export async function accounts(ctx, a) {
   outer: for (; i < idx.list.length; i++, skipUpTo = -1) {
     const e = idx.list[i];
     if ((only && !only.has(e.id)) || !ok(e)) continue;
-    const n = (e.a ?? []).filter((k) => k.startsWith(prefix)).length;
+    const n = keysOf(e).filter((k) => k.startsWith(prefix)).length;
     for (let r = skipUpTo + 1; r < n; r++) {
       if (want.length === lim) { more = true; break outer; }
       want.push([e, r]);
@@ -190,8 +190,11 @@ export async function accounts(ctx, a) {
 
 /** Score d'une entrée pour un texte replié (0 = exact, 1 = début d'un mot, 2 = contenu, -1 = absent). */
 function scoreOf(idx, e, q) {
-  const handles = (e.a ?? []).map((k) => k.slice(k.indexOf(":") + 1));
-  const texts = [e.n, ...handles, ...handles.map((h) => h.replace(/^@/, "")), ...(e.h ? e.h.split("\u0001") : []), e.o ? idx.byId.get(e.o)?.n ?? "" : ""];
+  const org = e.o ? idx.byId.get(e.o)?.n ?? "" : "";
+  // Tri rapide sans allocation : la plupart des fiches ne contiennent pas le texte du tout.
+  if (!e.n.includes(q) && !(e.a !== null && e.a.includes(q)) && !(e.h !== null && e.h.includes(q)) && !org.includes(q)) return -1;
+  const handles = keysOf(e).map((k) => k.slice(k.indexOf(":") + 1));
+  const texts = [e.n, ...handles, ...handles.map((h) => h.replace(/^@/, "")), ...(e.h ? e.h.split(SEP) : []), org];
   if (texts.some((t) => t === q)) return 0;
   if (texts.some((t) => t.startsWith(q) || t.split(/[\s._@-]/).some((w) => w.startsWith(q)))) return 1;
   if (texts.some((t) => t.includes(q))) return 2;
