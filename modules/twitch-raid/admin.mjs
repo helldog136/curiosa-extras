@@ -40,7 +40,7 @@ export async function panel(ctx, { query = {} } = {}) {
   // Contacts : absent (proposer de l'installer, par SERVICE), trop ancien, muet ; catégorie disparue, à choisir, à créer.
   if (src.state !== "ok") {
     if (src.problem === "contacts_missing") blocks.push({ type: "suggestInstall", service: source.BOOK, min: 2, reason: t("suggest_reason") });
-    blocks.push({ type: "banner", tone: "warning", text: problemText(ctx, src.problem) });
+    if (src.problem !== "no_category" && src.problem !== "choose") blocks.push({ type: "banner", tone: "warning", text: problemText(ctx, src.problem) });   // « pas encore de liste » n'est plus un problème : elle se crée au premier ajout
   } else if (src.stale) blocks.push({ type: "banner", tone: "warning", text: t("contacts_stale", { time: timeOf(ctx, src.asOf) }) });
 
   // La migration depuis la 1.x (à retirer en phase 3).
