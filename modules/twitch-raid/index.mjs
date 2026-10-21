@@ -1,6 +1,7 @@
 // Raid Twitch — module de Curiosa : la liste de vos chaînes partenaires, et un dock (pour OBS ou un onglet) qui montre lesquelles sont en direct, pour choisir qui raider.
 //
-// Ce que fait ce module, et rien d'autre : garder la liste de chaînes de la personne, et afficher celles qui sont en direct. Ce qui appartient aux autres reste chez eux :
+// Ce que fait ce module, et rien d'autre : afficher, parmi les chaînes de la liste de raid, celles qui sont en direct. Ce qui appartient aux autres reste chez eux :
+//   - la liste (2.0) : les fiches d'une catégorie de Contacts (service `contact.book` v2, « Cible de raid » par défaut) ; ce module ne garde ni nom, ni pseudo, ni photo (voir source.mjs) ;
 //   - Twitch et ses jetons : le Connecteur Twitch (service `twitch.api`, qui fait l'appel sans jamais rendre un jeton) ; ce module ne parle jamais à Twitch lui-même ;
 //   - vos chaînes : Ma Chaîne Twitch (service `twitch.live`) ; le réglage « Chaîne Twitch à utiliser » est un choix parmi elles (voir channel.mjs) ;
 //   - le raid lui-même : il n'est jamais lancé d'ici. Un clic copie la commande `/raid pseudo`, la personne la colle dans son chat.
@@ -13,11 +14,19 @@ const admin = await import(`./admin.mjs${v}`);
 const dock = await import(`./dock.mjs${v}`);
 const pure = await import(`./pure.mjs${v}`);
 const partnersOf = await import(`./partners.mjs${v}`);
+const source = await import(`./source.mjs${v}`);
+const migrate = await import(`./migrate.mjs${v}`);
+const privacy = await import(`./privacy.mjs${v}`);
 const search = await import(`./search.mjs${v}`);
 const channel = await import(`./channel.mjs${v}`);
 
 const onlyGet = (request) => (request.method === "GET" || request.method === "HEAD" ? null : new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }));
 const keyOf = (request) => new URL(request.url).searchParams.get("k") ?? "";
+/** La liste de raid (lue dans Contacts) : { partners } ou, si Contacts n'a pas de liste à donner, l'état à dire ({ state: "not_ready", reason }). */
+async function raidList(ctx) {
+  const src = await source.targets(ctx);
+  return src.state === "ok" ? { partners: src.partners } : { problem: { state: "not_ready", reason: src.problem } };
+}
 
 export default {
   routes: {
@@ -33,7 +42,8 @@ export default {
     async live(request, ctx) {
       const no = onlyGet(request); if (no) return no;
       if (!(await data.secretMatches(ctx, keyOf(request)))) return Response.json({ state: "denied" }, { status: 403, headers: dock.jsonHeaders });
-      const result = await live.liveNow(ctx, await data.readPartners(ctx), admin.settingsOf(ctx));
+      const list = await raidList(ctx);
+      const result = list.problem ?? await live.liveNow(ctx, list.partners, admin.settingsOf(ctx));
       return new Response(JSON.stringify({ ...result, now: Date.now() }), { headers: dock.jsonHeaders });
     },
 
@@ -43,14 +53,24 @@ export default {
       if (!(await data.secretMatches(ctx, keyOf(request)))) return Response.json({ state: "denied" }, { status: 403, headers: dock.jsonHeaders });
       let avoid = "";
       try { avoid = pure.normalizeLogin(String(JSON.parse((await request.text()).slice(0, 512))?.avoid ?? "")).login ?? ""; } catch { /* corps absent ou illisible : sans importance */ }
-      const result = await search.findRandom(ctx, await data.readPartners(ctx), admin.settingsOf(ctx), { avoid });
+      const list = await raidList(ctx);
+      const result = list.problem ?? await search.findRandom(ctx, list.partners, admin.settingsOf(ctx), { avoid });
       return new Response(JSON.stringify({ ...result, now: Date.now() }), { headers: dock.jsonHeaders });
     },
   },
 
-  // Les partenaires (pseudo, nom affiché, photo de profil), pour les modules qui en ont l'usage (sujet `stream.partner`). Jamais la note ; la photo est facultative.
+  // Les partenaires (pseudo, nom, photo : tout vient de Contacts), pour les modules qui en ont l'usage (sujet `stream.partner`, lu par Story tant qu'elle ne lit pas Contacts elle-même).
   exports: {
-    async "stream.partner"(ctx, { limit } = {}) { return partnersOf.partnerItems(ctx, await data.readPartners(ctx), admin.settingsOf(ctx), limit); },
+    async "stream.partner"(ctx, { limit } = {}) { return partnersOf.partnerItems(ctx, limit); },
+  },
+
+  // Vie privée : Contacts demande ce que ce module sait d'une fiche (export), de l'oublier (effacement) ou de suivre une fusion. Voir privacy.mjs.
+  services: {
+    "privacy.subject": {
+      export: (ctx, args) => privacy.subject.export(ctx, args),
+      erase: (ctx, args) => privacy.subject.erase(ctx, args),
+      remap: (ctx, args) => privacy.subject.remap(ctx, args),
+    },
   },
 
   adminPanel: admin.panel,
@@ -59,7 +79,9 @@ export default {
   mcp: {
     // Lecture seule : qui est en direct parmi les partenaires, maintenant.
     async raid_partners_live(ctx) {
-      const partners = await data.readPartners(ctx);
+      const list = await raidList(ctx);
+      if (list.problem) return { ...list.problem, listed: 0, live: [] };
+      const partners = list.partners;
       const r = await live.liveNow(ctx, partners, admin.settingsOf(ctx));
       if (r.state === "ok" && r.mode === "random") {   // plus de 500 chaînes : un membre en direct tiré au hasard, pas la liste
         const f = await search.findRandom(ctx, partners, admin.settingsOf(ctx));
@@ -72,18 +94,12 @@ export default {
     },
   },
 
-  backup: {
-    // Votre liste, lisible sans Curiosa.
-    async readable(ctx) {
-      const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
-      const rows = await data.readPartners(ctx);
-      return [{ path: "partners.csv", content: ["channel,name,note", ...rows.map((p) => [p.login, p.name, p.note].map(cell).join(","))].join("\r\n") }];
-    },
-  },
-
   // Données 2 : la chaîne tapée à la main (un pseudo) est notée, avec l'instance de Ma Chaîne Twitch qui l'a, pour le réglage devenu un choix (voir channel.mjs).
+  // Données 3 (2.0) : l'ancienne liste propre au module part dans Contacts (fiches, et catégorie « Cible de raid » si elle existe). L'ancien document reste intact.
+  // Rejouable, par lots reprenables, ne lève pas pour une panne de Contacts : voir migrate.mjs. À retirer en phase 3.
   migrations: {
     2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
+    3: async (ctx) => { await migrate.migrate3(ctx); },
   },
 
   hooks: {

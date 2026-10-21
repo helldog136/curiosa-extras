@@ -9,13 +9,14 @@ import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { fakeTwitch } from "./helpers/fakeTwitch.mjs";
 import { connector, connectorModule, connectorCallback } from "./helpers/twitchConnector.mjs";
+import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 
 const read = (p) => JSON.parse(fs.readFileSync(new URL(p, import.meta.url), "utf8"));
 const channelMod = await import("../modules/twitch-channel/index.mjs");
 const channelDef = channelMod.default;
 const raidDef = (await import("../modules/twitch-raid/index.mjs")).default;
 const raidLive = await import("../modules/twitch-raid/live.mjs");
-const raidPartners = await import("../modules/twitch-raid/partners.mjs");
+const raidSource = await import("../modules/twitch-raid/source.mjs");
 const raidAdmin = await import("../modules/twitch-raid/admin.mjs");
 const botDef = (await import("../modules/twitch-bot/index.mjs")).default;
 const L = await import("../modules/twitch-bot/listen.mjs");
@@ -27,7 +28,7 @@ const OLD = (key) => `https://example.test/m/${key}/oauth/callback`;
 const realFetch = globalThis.fetch;
 let tw, C;
 beforeEach(() => {
-  channelMod.resetCache(); connectorModule.resetCache(); raidLive.resetLive(); raidPartners.resetPartners();
+  channelMod.resetCache(); connectorModule.resetCache(); raidLive.resetLive(); raidSource.resetSource();
   tw = fakeTwitch({
     redirects: new Set([OLD("tw"), OLD("tw2"), connectorCallback()]),
     users: [{ login: "alice", name: "Alice" }, { login: "machaine", name: "MaChaine" }],
@@ -58,9 +59,9 @@ async function upgradedSite() {
   return { first, second, live };
 }
 /** Un consommateur (Raid, Bot, Statut live) : `twitch.api` → le Connecteur ; `twitch.live` → les deux instances de Ma Chaîne Twitch (ids « id-tw », « id-tw2 »). */
-const consumer = (site, { key, moduleId, settings = {}, choice, migration = false, messages = {} }) => fakeCtx({
+const consumer = (site, { key, moduleId, settings = {}, choice, migration = false, messages = {}, book }) => fakeCtx({
   key, moduleId, locale: "fr", settings, messages, migration,
-  services: { "twitch.api": C.methods, "twitch.live": site.live[0].methods },
+  services: { "twitch.api": C.methods, "twitch.live": site.live[0].methods, ...(book ? { "contact.book": book.methods } : {}) },
   serviceInstances: { "twitch.api": [C.instance], "twitch.live": site.live },
   ...(choice ? { choices: { channel: choice } } : {}),
 });
@@ -78,19 +79,25 @@ test("mise à jour : le Connecteur reprend l'application et les DEUX connexions 
 test("Raid Twitch réglé sur la DEUXIÈME chaîne (pseudo tapé) : la migration note l'instance ; le dock exclut CETTE chaîne et interroge Twitch par le Connecteur", async () => {
   const site = await upgradedSite();
   // le cœur 0.2.0 : une valeur texte qui n'est l'étiquette d'aucune instance (deux options) → « missing », l'admin demandera de confirmer
-  const ctx = consumer(site, { key: "raid", moduleId: "twitch-raid", settings: { channel: "autre" }, choice: { status: "missing" }, migration: true });
+  // Raid 2.0 : la liste vient de Contacts (double du contrat), catégorie « Cible de raid »
+  const book = fakeContactBook(), cat = book.seedCategory("Cible de raid");
+  book.seedContact({ name: "Alice", accounts: [{ network: "twitch", handle: "alice", avatar: "https://static-cdn.jtvnw.net/jtv_user_pictures/alice.png" }], categoryIds: [cat] });
+  for (const login of ["machaine", "autre"]) book.seedContact({ name: login, accounts: [{ network: "twitch", handle: login }], categoryIds: [cat] });
+  const ctx = consumer(site, { key: "raid", moduleId: "twitch-raid", settings: { channel: "autre" }, choice: { status: "missing" }, migration: true, book });
   await raidDef.migrations[2](ctx);
   assert.deepEqual((await ctx.api.store.list("typedChannel")).map((d) => d.data), [{ from: "autre", login: "autre", id: "id-tw2" }]);
   await raidDef.migrations[2](ctx);
   assert.equal(await ctx.api.store.count("typedChannel"), 1, "rejouée : rien de plus");
   assert.deepEqual(await raidLive.pickChannel(ctx, raidAdmin.settingsOf(ctx).channel), { channel: "autre" });
-  const partners = ["alice", "machaine", "autre"].map((login) => ({ login, name: "", note: "" }));
+  const partners = (await raidSource.targets(ctx)).partners;
+  assert.deepEqual(partners.map((p) => p.login), ["alice", "machaine", "autre"]);
   const r = await raidLive.liveNow(ctx, partners, raidAdmin.settingsOf(ctx));
   assert.equal(r.state, "ok");
   assert.deepEqual(r.live.map((x) => x.login).sort(), ["alice", "machaine"], "la chaîne servie (« autre ») n'est pas dans son propre dock ; la première chaîne, si");
   assert.ok(tw.log.some((c) => c.path === "/helix/streams"), "GET streams fait par le Connecteur");
-  const items = await raidPartners.partnerItems(ctx, partners, raidAdmin.settingsOf(ctx));
-  assert.equal(items.find((x) => x.login === "alice").title, "Alice", "GET users par le Connecteur");
+  const items = await raidDef.exports["stream.partner"](ctx, {});
+  assert.deepEqual(items.find((x) => x.login === "alice"), { id: "alice", login: "alice", title: "Alice", image: "https://static-cdn.jtvnw.net/jtv_user_pictures/alice.png" }, "nom et photo lus dans Contacts (plus de GET users)");
+  assert.ok(!tw.log.some((c) => c.path === "/helix/users" && c.search.includes("login=alice")));
   // l'administration ne signale aucun problème de chaîne
   const blocks = await raidDef.adminPanel(ctx, { query: {} });
   assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), JSON.stringify(blocks.filter((b) => b.type === "banner")));

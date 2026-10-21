@@ -15,9 +15,9 @@ const data = await import("../modules/stream-story/data.mjs");
 const src = await import("../modules/stream-story/sources.mjs");
 const images = await import("../modules/stream-story/images.mjs");
 const raid = (await import("../modules/twitch-raid/index.mjs")).default;
-const raidData = await import("../modules/twitch-raid/data.mjs");
 const partners = await import("../modules/twitch-raid/partners.mjs");
-const live = await import("../modules/twitch-raid/live.mjs");
+const raidSource = await import("../modules/twitch-raid/source.mjs");
+import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 
 const HUNG = Symbol("hung"), SITE = "https://site.example.test", NOW_ISO = new Date(Date.now() + 86_400_000).toISOString();
 const within = (p, ms = 3000) => { let t; return Promise.race([p, new Promise((r) => { t = setTimeout(() => r(HUNG), ms); })]).finally(() => clearTimeout(t)); };
@@ -28,10 +28,10 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
 const mk = (extra = {}) => fakeCtx({ key: "story", moduleId: "stream-story", locale: "fr", messages: { ...fr }, permissions: manifest.permissions, siteUrl: SITE, topics: { "planning.slot": () => SLOTS, "stream.partner": () => [] }, instances: [{ id: "id-story", key: "story", module: "stream-story", adminPath: "/admin/instances/id-story" }], rawgCover: { status: "found", url: "https://media.rawg.io/media/games/a/b.jpg" }, ...extra });
 const call = (ctx, route, token, search = "") => def.routes[route](new Request(`${SITE}/m/story/${route}${search}`, { headers: { "x-story-token": token } }), ctx);
-const timing0 = { ...src.timing }, img0 = { ...images.timing }, partners0 = { ...partners.timing }, live0 = { ...live.timing };
+const timing0 = { ...src.timing }, img0 = { ...images.timing }, partners0 = { ...partners.timing }, source0 = { ...raidSource.timing };
 const realFetch = globalThis.fetch;
-beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 150, coverMs: 150, partnersMs: 150, brandMs: 150, authMs: 150, routeMs: 400 }); Object.assign(images.timing, img0, { fetchMs: 100, totalMs: 160 }); Object.assign(partners.timing, partners0, { iconsMs: 150 }); images.resetImages(); partners.resetPartners(); live.resetLive(); });
-afterEach(() => { globalThis.fetch = realFetch; Object.assign(src.timing, timing0); Object.assign(images.timing, img0); Object.assign(partners.timing, partners0); Object.assign(live.timing, live0); });
+beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 150, coverMs: 150, partnersMs: 150, brandMs: 150, authMs: 150, routeMs: 400 }); Object.assign(images.timing, img0, { fetchMs: 100, totalMs: 160 }); Object.assign(partners.timing, partners0, { photoMs: 150 }); Object.assign(raidSource.timing, source0, { callMs: 150, readMs: 200 }); images.resetImages(); raidSource.resetSource(); });
+afterEach(() => { globalThis.fetch = realFetch; Object.assign(src.timing, timing0); Object.assign(images.timing, img0); Object.assign(partners.timing, partners0); Object.assign(raidSource.timing, source0); });
 
 test("agenda qui ne répond jamais : la route des streams répond « slow » dans le délai, la page d'administration s'ouvre quand même, l'outil de l'IA répond ; la demande suivante repart de zéro", async () => {
   let hang = true;
@@ -104,24 +104,24 @@ test("serveur d'images qui ne répond jamais (même en ignorant le signal d'aban
   assert.equal((await within(call(ctx, "img", token, `?u=${u}`))).status, 502);
 });
 
-test("Raid Twitch 1.1.0 : Chaîne Twitch qui ne répond jamais → les partenaires sont rendus sans photo dans le délai (sujet « stream.partner »), sans bloquer ; ensuite tout repart ; la liste des partenaires reste lisible", async () => {
-  let hang = true;
-  const methods = { account: async () => ({ ok: true, channel: "emma_live", ready: true }), request: async (args) => (hang ? blackHole() : { ok: true, status: 200, json: { data: args.query.login.map((l) => ({ login: l, display_name: l.toUpperCase(), profile_image_url: PIC })) } }) };
-  const rctx = fakeCtx({ key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...raidFr }, permissions: raidManifest.permissions, siteUrl: SITE, serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods }] } });
-  await raidData.addPartners(rctx, "alice_tv bob_x");
+test("Raid Twitch 2.0 : Contacts (d'où vient la liste de raid) qui ne répond jamais → le sujet « stream.partner » répond dans le délai, sans bloquer ; ensuite tout repart", async () => {
+  const book = fakeContactBook(), cat = book.seedCategory("Cible de raid");
+  for (const [login, nm] of [["alice_tv", "Alice"], ["bob_x", "Bob"]]) book.seedContact({ name: nm, accounts: [{ network: "twitch", handle: login, avatar: PIC }], categoryIds: [cat] });
+  const rctx = fakeCtx({ key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...raidFr }, permissions: raidManifest.permissions, siteUrl: SITE, services: { "contact.book": book.methods } });
+  book.faults.hang.add("accounts");
   const t0 = Date.now(), items = await within(raid.exports["stream.partner"](rctx, { limit: 100 }));
-  assert.notEqual(items, HUNG, "le sujet ne doit pas attendre Chaîne Twitch");
-  assert.deepEqual(items.map((x) => [x.login, x.title, x.image]), [["alice_tv", "alice_tv", undefined], ["bob_x", "bob_x", undefined]]);
+  assert.notEqual(items, HUNG, "le sujet ne doit pas attendre Contacts");
+  assert.deepEqual(items, [], "rien de connu : rien (jamais une attente)");
   assert.ok(Date.now() - t0 < 1500);
-  // plusieurs lecteurs en même temps : une seule demande partagée, qui expire pour tous
-  partners.resetPartners();
+  // plusieurs lecteurs en même temps : une seule lecture partagée, qui expire pour tous
+  raidSource.resetSource();
   const many = await within(Promise.all([raid.exports["stream.partner"](rctx, {}), raid.exports["stream.partner"](rctx, {}), raid.exports["stream.partner"](rctx, {})])); assert.notEqual(many, HUNG);
-  hang = false; partners.timing.failMs = 1; await new Promise((r) => setTimeout(r, 20)); partners.resetPartners();
+  book.faults.hang.delete("accounts"); raidSource.resetSource();
   const ok = await within(raid.exports["stream.partner"](rctx, {})); assert.notEqual(ok, HUNG);
-  assert.deepEqual(ok.map((x) => [x.title, x.image]), [["ALICE_TV", PIC], ["BOB_X", PIC]], "après la panne : les photos reviennent");
-  // l'administration du Raid (liste) et le service de comptes muet
-  hang = true; methods.account = blackHole; partners.resetPartners();
-  const items2 = await within(raid.exports["stream.partner"](rctx, {}), 3000); assert.notEqual(items2, HUNG, "même un compte qui ne répond jamais");
+  assert.deepEqual(ok.map((x) => [x.title, x.image]), [["Alice", PIC], ["Bob", PIC]], "après la panne : la liste et les photos reviennent");
+  // les photos (resolve) muettes : la liste est rendue sans photo, dans le délai
+  book.faults.hang.add("resolve");
+  const items2 = await within(raid.exports["stream.partner"](rctx, {}), 3000); assert.notEqual(items2, HUNG);
   assert.equal(items2.length, 2);
 });
 

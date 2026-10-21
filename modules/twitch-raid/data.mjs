@@ -1,75 +1,30 @@
-// Ce que le module garde : la liste des chaînes partenaires de la personne, et l'adresse secrète de son dock. Rien d'autre, aucun visiteur.
-// Une liste = UN document (2 000 chaînes au plus, quelques centaines de ko) : l'ordre est celui du tableau, et il n'y a rien à recoller en cas de coupure. Un import de plusieurs centaines de chaînes est UNE seule écriture.
+// Ce que le module garde (2.0) : l'adresse secrète de son dock, et rien sur les personnes. La liste des chaînes vit dans Contacts (une catégorie, voir source.mjs).
+// L'ancienne liste propre au module (1.x, collection « partners », UN document) reste TELLE QUELLE après la migration vers Contacts (voir migrate.mjs) :
+// une copie inerte que le module ne relit jamais pour faire son travail. Seules exceptions : la migration elle-même (qui la recopie dans Contacts) et
+// les demandes de vie privée venues de Contacts (export, effacement d'une personne : voir privacy.mjs). À retirer en phase 3.
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { normalizeLogin, oneLine, splitList, dedupe, MAX_PARTNERS } = await import(`./pure.mjs${v}`);
+const { normalizeLogin, oneLine, dedupe, MAX_PARTNERS } = await import(`./pure.mjs${v}`);
 
-const LIST = "partners", DOCK = "dock";
+export const LEGACY = "partners", DOCK = "dock";
 
-/** La liste : [{ login, name, note }] dans l'ordre choisi. */
-export async function readPartners(ctx) {
-  const doc = (await ctx.api.store.list(LIST, { limit: 1 }))[0];
+/** L'ancienne liste (1.x) : [{ login, name, note }] dans son ordre, nettoyée et bornée (2 000). Lecture seule. */
+export async function readLegacy(ctx) {
+  const doc = (await ctx.api.store.list(LEGACY, { limit: 1 }))[0];
   const items = Array.isArray(doc?.data?.items) ? doc.data.items : [];
-  return dedupe(items.filter((x) => x && typeof x.login === "string").map((x) => ({ login: x.login, name: oneLine(x.name, 40), note: oneLine(x.note, 200) }))).slice(0, MAX_PARTNERS);
-}
-async function writePartners(ctx, items) {
-  const doc = (await ctx.api.store.list(LIST, { limit: 1 }))[0];
-  const data = { items };
-  if (doc) await ctx.api.store.update(doc.id, data); else await ctx.api.store.add(LIST, data);
+  return dedupe(items.filter((x) => x && typeof x.login === "string").map((x) => ({ login: normalizeLogin(x.login).login ?? "", name: oneLine(x.name, 40), note: oneLine(x.note, 200) })).filter((x) => x.login)).slice(0, MAX_PARTNERS);
 }
 
-/**
- * Ajoute des chaînes (texte collé). Rend { added: [login], dup: [login], bad: [{ text, error }], full: [login] } ; enregistre ce qui est valable.
- * Une erreur ne bloque pas le reste : on dit simplement ce qui n'a pas été ajouté, et pourquoi.
- */
-export async function addPartners(ctx, text, { name = "", note = "" } = {}) {
-  const items = await readPartners(ctx);
-  const res = { added: [], dup: [], bad: [], full: [] };
-  const known = new Set(items.map((x) => x.login));
-  const tokens = splitList(text);
-  for (const token of tokens) {
-    const r = normalizeLogin(token);
-    if (r.error) { res.bad.push({ text: oneLine(token, 60), error: r.error }); continue; }
-    if (known.has(r.login)) { if (!res.dup.includes(r.login)) res.dup.push(r.login); continue; }
-    if (items.length >= MAX_PARTNERS) { res.full.push(r.login); continue; }
-    known.add(r.login);
-    items.push({ login: r.login, name: tokens.length === 1 ? oneLine(name, 40) : "", note: tokens.length === 1 ? oneLine(note, 200) : "" });
-    res.added.push(r.login);
-  }
-  if (res.added.length) await writePartners(ctx, items);
-  return res;
-}
-
-/** Modifie une chaîne (pseudo, nom affiché, note). Rend { ok: true } ou { error: "missing" | "invalid" | "empty" | "not_channel" | "dup" }. */
-export async function updatePartner(ctx, login, { newLogin, name, note }) {
-  const items = await readPartners(ctx);
-  const i = items.findIndex((x) => x.login === login);
-  if (i < 0) return { error: "missing" };
-  const r = normalizeLogin(newLogin ?? login);
-  if (r.error) return { error: r.error };
-  if (r.login !== login && items.some((x) => x.login === r.login)) return { error: "dup", login: r.login };
-  items[i] = { login: r.login, name: oneLine(name, 40), note: oneLine(note, 200) };
-  await writePartners(ctx, items);
-  return { ok: true, login: r.login };
-}
-
-export async function removePartner(ctx, login) {
-  const items = await readPartners(ctx);
-  const next = items.filter((x) => x.login !== login);
-  if (next.length === items.length) return { error: "missing" };
-  await writePartners(ctx, next);
-  return { ok: true };
-}
-
-/** Monte (-1) ou descend (+1) une chaîne dans la liste. */
-export async function movePartner(ctx, login, delta) {
-  const items = await readPartners(ctx);
-  const i = items.findIndex((x) => x.login === login), j = i + delta;
-  if (i < 0) return { error: "missing" };
-  if (j < 0 || j >= items.length) return { ok: true, moved: false };
-  [items[i], items[j]] = [items[j], items[i]];
-  await writePartners(ctx, items);
-  return { ok: true, moved: true };
+/** Vie privée : retire ces pseudos de l'ancienne copie (effacement d'une personne demandé dans Contacts). Rend le nombre de lignes retirées. */
+export async function forgetLegacy(ctx, logins) {
+  const wanted = new Set(logins);
+  if (!wanted.size) return 0;
+  const doc = (await ctx.api.store.list(LEGACY, { limit: 1 }))[0];
+  const items = Array.isArray(doc?.data?.items) ? doc.data.items : [];
+  const keep = items.filter((x) => !(x && typeof x.login === "string" && wanted.has(normalizeLogin(x.login).login)));
+  if (keep.length === items.length) return 0;
+  await ctx.api.store.update(doc.id, { ...doc.data, items: keep });
+  return items.length - keep.length;
 }
 
 /* ───────────── L'adresse secrète du dock ───────────── */
