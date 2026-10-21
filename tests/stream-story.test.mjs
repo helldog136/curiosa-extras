@@ -1,4 +1,4 @@
-// Story d'annonce 1.0.0 — le serveur : manifeste, accès de l'éditeur, lecture des streams (n'importe quel agenda) et des partenaires, co-streamers, modèles, préparations,
+// Story d'annonce 2.0.0 — le serveur : manifeste, accès de l'éditeur, lecture des streams (n'importe quel agenda), modèles, préparations,
 // outils pour l'IA, relais d'images (liste blanche), page de l'éditeur, administration, sauvegarde. Aucun réseau : tout est factice.
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
@@ -24,7 +24,7 @@ const PICTURE = "https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_imag
 
 const mk = (extra = {}) => fakeCtx({
   key: "story", moduleId: "stream-story", locale: "fr", messages: { ...fr }, permissions: manifest.permissions, siteUrl: SITE,
-  topics: { "planning.slot": () => SLOTS, "stream.partner": () => [] },
+  topics: { "planning.slot": () => SLOTS },
   instances: [{ id: "id-story", key: "story", module: "stream-story", basePath: "", name: "Story", adminPath: "/admin/instances/id-story" }],
   rawgCover: { status: "found", url: "https://media.rawg.io/media/games/abc/cover.jpg" },
   theme: { accent: "#7c5cff", accentFg: "#ffffff", bg: "#101018", fg: "#f2f2f2", accent2: "#ff4d8d", font: "Inter, sans-serif" }, ...extra,
@@ -39,16 +39,17 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "1.0.0");
-  assert.equal(manifest.minCore, "0.1.22"); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.0.0");
+  assert.equal(manifest.minCore, "0.2.1"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
-  assert.ok(!("requires" in manifest) && !("offers" in manifest), "aucune dépendance forte : ni service exigé, ni service offert");
-  assert.deepEqual(manifest.consumes.map((c) => c.topic).sort(), ["planning.slot", "stream.partner"], "des liens facultatifs par sujets seulement");
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, true]], "Contacts (v2) : un besoin FACULTATIF, jamais dur");
+  assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "Story garde des identifiants de fiche : elle offre privacy.subject");
+  assert.deepEqual(manifest.consumes.map((c) => c.topic), ["planning.slot"], "le sujet stream.partner n'est plus lu : les co-streamers viennent de Contacts");
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);
   assert.ok(manifest.privacy.fr && manifest.privacy.en && !/visiteur/.test("") );
-  assert.match(manifest.privacy.fr, /Rien n'est collecté sur vos visiteurs/); assert.match(manifest.privacy.fr, /Aucune vidéo ni image n'est gardée/);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "data", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "prep", "streams", "studio"]);
+  assert.match(manifest.privacy.fr, /Rien n'est collecté sur vos visiteurs/); assert.match(manifest.privacy.fr, /Aucune vidéo n'est gardée/); assert.match(manifest.privacy.fr, /restent dans Contacts/);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "data", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "people", "prep", "streams", "studio"]);
 });
 
 test("réglages : seules les couleurs de la vidéo et le fuseau, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
@@ -79,7 +80,7 @@ test("textes : français et anglais alignés ; chaque phrase de la page est dans
   const app = read("app.mjs"), used = new Set([...app.matchAll(/\bL\("([a-z0-9_]+)"/g)].map((m) => m[1]));
   for (const m of app.matchAll(/\bL\([^)"`]*\?\s*"([a-z0-9_]+)"\s*:\s*"([a-z0-9_]+)"/g)) { used.add(m[1]); used.add(m[2]); }
   for (const k of used) assert.ok(page.KEYS.includes(k), `l'éditeur emploie « ${k} » : absent de la liste de la page`);
-  for (const k of ["err_auth", "err_network", "err_empty", "err_invalid", "err_not_channel", "err_dup", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_none", "err_generic", "manual_title", "manual_date", "manual_time"]) assert.ok(page.KEYS.includes(k) || k.startsWith("manual_"), k);
+  for (const k of ["err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic", "manual_title", "manual_date", "manual_time"]) assert.ok(page.KEYS.includes(k) || k.startsWith("manual_"), k);
   for (const k of ["manual_title", "manual_date", "manual_time"]) assert.ok(k in Object.fromEntries(Object.keys(fr).map((x) => [x.replace(/^ui_/, ""), 1])));
   for (const t of Object.values(fr).concat(Object.values(en))) assert.ok(!/\b(api|json|jeton|token|http|mcp|webcodecs|canvas)\b/i.test(t), `jargon dans « ${t.slice(0, 50)} »`);
   assert.match(fr.ui_webm_notice, /Instagram préfère le MP4 : essayez Chrome ou Safari récent/);
@@ -157,55 +158,14 @@ test("streams : sans agenda ou agenda muet → état « empty » (la page dit qu
   assert.equal((await json(await call(throwing, "streams", { token: t5 }))).state, "slow");
 });
 
-test("données de l'éditeur : co-streamers, modèles, logo du site (chemin du site seulement), nombre de partenaires du Raid ; rien de secret", async () => {
-  const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} },
-    topics: { "planning.slot": () => SLOTS, "stream.partner": () => [{ id: "alice_tv", title: "Alice", login: "alice_tv", image: PICTURE }, { id: "bob_x", title: "Bob", login: "bob_x" }, { id: "x", title: "Mauvais" }] } });
+test("données de l'éditeur : modèles, ponctuels, état de Contacts, logo du site (chemin du site seulement) ; rien de secret", async () => {
+  const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} } });
   const token = await data.mintToken(ctx);
   const r = await json(await call(ctx, "data", { token }));
-  assert.deepEqual([r.ok, r.partners, r.brand, r.costreamers, r.models, r.defaults], [true, 2, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], { lang: "fr" }]);
+  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.migrated, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", null, { lang: "fr" }], "sans Contacts : « absent »");
+  assert.ok(!("costreamers" in r) && !("partners" in r), "plus de liste « à moi » ni de partenaires du Raid");
   const ext = mk({ brand: { name: "X", logos: [{ kind: "square", src: "https://cdn.evil/logo.png" }], logo: "https://cdn.evil/l.png", colors: [], font: {} } });
   assert.equal((await json(await call(ext, "data", { token: await data.mintToken(ext) }))).brand.logo, "", "un logo venu d'ailleurs n'est pas relayé");
-});
-
-/* ───────────── Co-streamers ───────────── */
-
-test("co-streamers : ajout, modification, retrait avec validation Twitch, nom et image facultatifs, image seulement chez Twitch ; liste de 60 au plus ; un seul document", async () => {
-  const ctx = mk(), token = await data.mintToken(ctx);
-  let r = await act(ctx, token, { op: "costreamer.save", login: "@Alice_TV", name: "  Alice \n la  grande ", image: PICTURE });
-  assert.deepEqual([r.ok, r.items], [true, [{ login: "alice_tv", name: "Alice la grande", image: PICTURE }]]);
-  r = await act(ctx, token, { op: "costreamer.save", login: "https://twitch.tv/bob_x" });
-  assert.deepEqual(r.items.map((x) => [x.login, x.name, x.image]), [["alice_tv", "Alice la grande", PICTURE], ["bob_x", "", ""]]);
-  for (const [login, error] of [["", "empty"], ["ab", "invalid"], ["<b>x</b>", "invalid"], ["twitch.tv/videos/1", "not_channel"]]) assert.deepEqual(await act(ctx, token, { op: "costreamer.save", login }), { status: 200, ok: false, error });
-  assert.equal((await act(ctx, token, { op: "costreamer.save", login: "carl_99", image: "https://evil.example/a.png" })).error, "image");
-  assert.equal((await act(ctx, token, { op: "costreamer.save", login: "carl_99", image: "javascript:alert(1)" })).error, "image");
-  r = await act(ctx, token, { op: "costreamer.save", login: "alice_tv", name: "Alice", original: "alice_tv" });
-  assert.equal(r.items[0].name, "Alice"); assert.equal(r.items[0].image, PICTURE, "modifier le nom ne perd pas la photo");
-  r = await act(ctx, token, { op: "costreamer.save", login: "alice_tv", name: "Alice", image: "", original: "alice_tv" });
-  assert.equal(r.items[0].image, "", "une photo vide la retire");
-  r = await act(ctx, token, { op: "costreamer.save", login: "alicia_tv", name: "Alicia", original: "alice_tv" });
-  assert.deepEqual(r.items.map((x) => x.login), ["alicia_tv", "bob_x"], "renommer garde la place");
-  assert.equal((await act(ctx, token, { op: "costreamer.save", login: "bob_x", original: "alicia_tv" })).error, "dup");
-  assert.deepEqual((await act(ctx, token, { op: "costreamer.remove", login: "bob_x" })).items.map((x) => x.login), ["alicia_tv"]);
-  assert.equal((await act(ctx, token, { op: "costreamer.remove", login: "bob_x" })).error, "missing");
-  for (let i = 0; i < 70; i++) await act(ctx, token, { op: "costreamer.save", login: `chaine_${String(i).padStart(3, "0")}` });
-  assert.equal((await json(await call(ctx, "data", { token }))).costreamers.length, 60);
-  assert.equal((await act(ctx, token, { op: "costreamer.save", login: "encore_un" })).error, "full");
-  assert.equal(await ctx.api.store.count("story_costreamers"), 1, "une liste = un seul document");
-});
-
-test("reprendre les partenaires du Raid (sujet « stream.partner ») : ajoute les nouveaux avec leur photo, complète une photo manquante, ne retire ni n'écrase rien", async () => {
-  const partners = [{ id: "alice_tv", title: "Alice (Twitch)", login: "alice_tv", image: PICTURE }, { id: "bob_x", title: "Bob", login: "bob_x", image: "https://evil.example/x.png" }, { id: "carl_99", title: "Carl", login: "carl_99" }, { id: "x", title: "x" }, "n'importe quoi", null];
-  const ctx = mk({ topics: { "planning.slot": () => SLOTS, "stream.partner": () => partners } }), token = await data.mintToken(ctx);
-  await act(ctx, token, { op: "costreamer.save", login: "alice_tv", name: "Ma Alice" });
-  await act(ctx, token, { op: "costreamer.save", login: "zoe_live", name: "Zoé" });
-  const r = await act(ctx, token, { op: "costreamers.import" });
-  assert.deepEqual([r.ok, r.added, r.updated], [true, 2, 1]);
-  assert.deepEqual(r.items.map((x) => [x.login, x.name, x.image]), [["alice_tv", "Ma Alice", PICTURE], ["zoe_live", "Zoé", ""], ["bob_x", "Bob", ""], ["carl_99", "Carl", ""]], "le nom choisi par la personne reste ; l'image venue d'ailleurs est écartée");
-  const again = await act(ctx, token, { op: "costreamers.import" });
-  assert.deepEqual([again.added, again.updated], [0, 0], "deux fois de suite : rien n'est dupliqué");
-  const none = mk(), t2 = await data.mintToken(none);
-  assert.deepEqual(await act(none, t2, { op: "costreamers.import" }), { status: 200, ok: false, error: "none" });
-  assert.deepEqual(ctx.calls.topics.filter(([t]) => t === "stream.partner").every(([, o]) => o.limit === 100), true);
 });
 
 /* ───────────── Modèles ───────────── */
@@ -276,10 +236,10 @@ test("MCP : story_prepare enregistre une préparation et rend un LIEN vers la pa
   const m = /^https:\/\/site\.example\.test\/admin\/instances\/id-story\?prep=([A-Za-z0-9_-]{22})$/.exec(r.link);
   assert.ok(m, r.link);
   assert.ok(!r.link.includes(token) && !JSON.stringify(r).includes((await ctx.api.store.list("story_key"))[0].data.secret), "ni jeton ni clé dans le lien ni dans la réponse");
-  assert.deepEqual(r.prepared, { style: "neon", format: "vertical", durationSeconds: 8, elements: ["title", "when", "countdown"], text: "Ce soir !", costreamers: ["bob_x", "carl_99"], stream: "next" });
+  assert.deepEqual(r.prepared, { style: "neon", format: "vertical", durationSeconds: 8, elements: ["title", "when", "countdown"], text: "Ce soir !", costreamers: ["bob_x", "carl_99"], stream: "next" }, "sans Contacts : des co-streamers pour cette vidéo seulement");
   assert.ok(Date.parse(r.expiresAt) > Date.now() + 6 * 86_400_000); assert.match(r.note, /Nothing has been generated or published/);
   const prep = await data.readPrep(ctx, m[1]);
-  assert.deepEqual([prep.config.style, prep.config.duration, prep.config.text, prep.config.lang, prep.config.channelName, prep.config.costreamers], ["neon", 8, "Ce soir !", "en", "Emma", ["bob_x", "carl_99"]], "le modèle sert de départ, les valeurs données le complètent");
+  assert.deepEqual([prep.config.style, prep.config.duration, prep.config.text, prep.config.lang, prep.config.channelName, prep.config.costreamers.map((m) => m.login)], ["neon", 8, "Ce soir !", "en", "Emma", ["bob_x", "carl_99"]], "le modèle sert de départ, les valeurs données le complètent");
   assert.equal(prep.manual, null);
   assert.equal((await ctx.api.store.list("story_preps")).length, 1);
   const other = await prepare(ctx, {});
@@ -436,14 +396,19 @@ test("relais d'images : type vérifié sur les premiers octets, taille bornée (
 
 /* ───────────── Sauvegarde et vie privée ───────────── */
 
-test("sauvegarde lisible : la liste de co-streamers (CSV sans formule dangereuse) et les modèles ; aucune clé ni préparation", async () => {
+test("sauvegarde lisible : les modèles (références de fiche), les ponctuels et l'ancienne liste (CSV sans formule dangereuse) ; aucune clé ni préparation", async () => {
   const ctx = mk(), token = await data.mintToken(ctx);
-  await act(ctx, token, { op: "costreamer.save", login: "alice_tv", name: "=HYPERLINK(\"http://evil\")", image: PICTURE });
-  await act(ctx, token, { op: "model.save", name: "M1", config: { style: "minimal" } });
+  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "=HYPERLINK(\"http://evil\")", image: PICTURE }] });
+  await data.addAdhoc(ctx, [{ login: "zoe_live", name: "Zoé", image: "" }]);
+  await act(ctx, token, { op: "model.save", name: "M1", config: { style: "minimal", costreamers: [{ id: "c0001" }, { login: "bob_x", name: "Bob", image: "" }] } });
   await data.savePrep(ctx, { config: {} });
   const files = await def.backup.readable(ctx);
-  assert.deepEqual(files.map((f) => f.path), ["costreamers.csv", "models.json"]);
-  assert.match(files[0].content, /^login,name,image\r\n"alice_tv","'=HYPERLINK\(""http:\/\/evil""\)","https:\/\/static-cdn/);
-  assert.equal(JSON.parse(files[1].content)[0].name, "M1");
+  assert.deepEqual(files.map((f) => f.path), ["adhoc-costreamers.csv", "costreamers.csv", "models.json"]);
+  assert.match(files[1].content, /^login,name,image\r\n"alice_tv","'=HYPERLINK\(""http:\/\/evil""\)","https:\/\/static-cdn/);
+  assert.match(files[0].content, /"zoe_live","Zoé",""/);
+  const model = JSON.parse(files[2].content)[0];
+  assert.equal(model.name, "M1"); assert.deepEqual(model.costreamers, [{ contactId: "c0001" }, { login: "bob_x", name: "Bob", image: "" }]);
   assert.ok(!files.map((f) => f.content).join("").match(/secret|prep|token/i));
+  const bare = await def.backup.readable(mk());
+  assert.deepEqual(bare.map((f) => f.path), ["models.json"], "rien à dire : pas de fichier vide");
 });

@@ -6,7 +6,17 @@ const P = await import(`./pure.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 
-export const publicModel = (m) => ({ name: m.name, style: m.config.style, format: m.config.format, durationSeconds: m.config.duration, elements: m.config.elements, text: m.config.text, channelName: m.config.channelName, costreamers: m.config.costreamers, language: m.config.lang });
+/**
+ * Un modèle tel que l'IA le voit. Les co-streamers sont rendus par leur NOM (celui que Contacts donne à la fiche, ou le pseudo saisi à la main) : `names` est une Map
+ * identifiant de fiche → nom ; une fiche que Contacts ne connaît plus (ou que l'on n'a pas pu lire) est simplement omise.
+ */
+export const publicModel = (m, names = new Map()) => ({
+  name: m.name, style: m.config.style, format: m.config.format, durationSeconds: m.config.duration, elements: m.config.elements, text: m.config.text, channelName: m.config.channelName,
+  costreamers: m.config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), language: m.config.lang,
+});
+
+/** Un modèle pour la sauvegarde lisible : les co-streamers y sont des références (`contactId`) ou des saisies ponctuelles (pseudo, nom, photo). */
+export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.costreamers.map((e) => (e.id ? { contactId: e.id } : { login: e.login, name: e.name, image: e.image })) });
 
 /**
  * Vérifie ce que l'IA demande et en tire { config, manual } (réglages complets et stream manuel éventuel) ; lève une erreur claire (visible de l'IA) sinon.
