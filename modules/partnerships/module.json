@@ -1,11 +1,12 @@
 {
   "apiVersion": 2,
+  "minCore": "0.2.1",
   "id": "partnerships",
   "name": {
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "1.1.2",
+  "version": "2.0.0",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
     "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
@@ -23,6 +24,19 @@
       "label": {
         "en": "Partners (for linking)",
         "fr": "Partenaires (pour s'y référer)"
+      }
+    }
+  ],
+  "offers": [
+    {
+      "service": "privacy.subject",
+      "each": true,
+      "readOnly": [
+        "export"
+      ],
+      "label": {
+        "en": "Partnerships: what is kept about a contact (export, erase, redirect)",
+        "fr": "Partenariats : ce qui est gardé sur une personne de Contacts (export, effacement, redirection)"
       }
     }
   ],
@@ -44,6 +58,12 @@
       }
     }
   ],
+  "legacyCollections": [
+    "contacts",
+    "legacyContacts",
+    "meta"
+  ],
+  "dataVersion": 2,
   "mcp": [
     {
       "name": "partners_list",
