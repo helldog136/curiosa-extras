@@ -6,6 +6,11 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const B = await import(`./book.mjs${v}`);
 const N = await import(`./networks.mjs${v}`);
 const U = await import(`./ui.mjs${v}`);
+const { nav } = await import(`./nav.mjs${v}`);
+const Ph = await import(`./photos.mjs${v}`);
+const Imp = await import(`./import-admin.mjs${v}`);
+const Ded = await import(`./dedupe-admin.mjs${v}`);
+const Priv = await import(`./privacy-admin.mjs${v}`);
 
 const PAGE = 30;
 const COLORS = [["amber", "#e8a23b"], ["blue", "#4f9dde"], ["green", "#58b368"], ["rose", "#d1556b"], ["purple", "#9b6bd1"], ["teal", "#3bb3a8"], ["brown", "#c9853a"], ["grey", "#7a8794"]];
@@ -18,13 +23,6 @@ const first = (inner) => ({ type: "html", html: `${U.STYLE}<div class="ct">${inn
 const isOn = (x) => ["on", "1", "true"].includes(String(x ?? ""));
 const okImage = (u) => B.httpsUrl(u) || /^\/[A-Za-z0-9._~/%-]+(#[\w=.,:-]*)?$/.test(u);
 
-function nav(ctx, current) {
-  return U.tabs([
-    { label: ctx.t("tabContacts"), href: "?", current: current === "contacts" },
-    { label: ctx.t("tabOrgs"), href: "?kind=org", current: current === "orgs" },
-    { label: ctx.t("tabCategories"), href: "?view=categories", current: current === "categories" },
-  ], ctx.t("tabsLabel"));
-}
 /** Phrase « Photo YouTube (12 400 abonnés) » / « Photo choisie à la main ». */
 function photoOrigin(ctx, c) {
   const p = c.photo;
@@ -90,6 +88,8 @@ async function listPage(ctx, q) {
 // ── Fiche ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function contactPage(ctx, id) {
   const t = ctx.t;
+  // Ouvrir une fiche est une interaction humaine : si un profil date de plus de 24 h, on le rafraîchit (borné à 6 s, jamais bloquant ; voir photos.mjs).
+  await Ph.refreshOnOpen(ctx, id);
   const r = await B.get(ctx, { id });
   if (!r.ok) {
     return [first(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a>`), { type: "banner", tone: "warning", text: t(r.movedTo ? "movedTo" : "notFound") },
@@ -155,8 +155,17 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
     blocks.push({ type: "heading", text: t("members") });
     blocks.push(html(cards.length ? `${U.cardList(cards, { t, netName: nn, linkOf: (m) => `?contact=${encodeURIComponent(m.id)}` })}${members.next ? `<p class="ct-more"><a class="ct-btn" href="?org=${encodeURIComponent(c.id)}">${U.esc(t("seeMore"))}</a></p>` : ""}` : `<p class="ct-empty">${U.esc(t("noMembers"))}</p>`));
   }
+  // Catégories : deux gestes simples sur téléphone (une liste avec « Retirer », puis un choix et un bouton pour ajouter).
+  blocks.push({ type: "heading", text: t("categoriesOf") });
+  const mine = c.categoryIds.map((k) => idx.cats.get(k)).filter(Boolean);
+  if (mine.length) blocks.push({ type: "table", columns: [t("colCategory")], rows: mine.map((k) => [k.name]), rowIds: mine.map((k) => `${c.id}|${k.id}`), rowActions: [{ label: t("catCardRemove"), action: "removeFromCategory" }] });
+  else blocks.push({ type: "markdown", text: t("noCategories") });
+  const free = B.liveCategories(idx).filter((k) => !c.categoryIds.includes(k.id)).sort((a, b) => N.fold(a.name).localeCompare(N.fold(b.name)));
+  if (free.length) blocks.push({ type: "adminForm", action: "addToCategory", submitLabel: t("catCardAddButton"), fields: [{ name: "id", kind: "hidden", value: c.id }, { name: "category", label: t("catCardAdd"), kind: "select", options: free.map((k) => ({ value: k.id, label: k.name })), value: free[0].id }] });
+  else if (!mine.length) blocks.push(html(`<p class="ct-help">${U.esc(t("catCardNoneYet"))} <a href="?view=categories">${U.esc(t("tabCategories"))}</a></p>`));
   // Photo.
   blocks.push({ type: "heading", text: t("photoTitle") }, { type: "markdown", text: `**${photoOrigin(ctx, c)}**\n\n${t("photoHelp")}` });
+  if (Ph.refreshable(d).length) blocks.push({ type: "adminForm", action: "refreshPhoto", submitLabel: t("photoRefresh"), fields: [{ name: "id", kind: "hidden", value: c.id }] });
   blocks.push({ type: "adminForm", action: "photo", submitLabel: t("photoSave"), fields: [{ name: "id", kind: "hidden", value: c.id }, { name: "photo", label: t("photoField"), kind: "image", value: d.photo ?? "" }] });
   if (d.photo) blocks.push({ type: "adminForm", action: "photoAuto", submitLabel: t("photoAuto"), fields: [{ name: "id", kind: "hidden", value: c.id }] });
   // Notes.
@@ -164,9 +173,10 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
   if (r.notes.length) blocks.push({ type: "table", columns: [t("notes")], rows: r.notes.map((n) => [`${n.date} · ${n.author}\n${n.text}`]), rowIds: r.notes.map((n) => n.id), rowActions: [{ label: t("noteDelete"), action: "removeNote", confirm: t("confirmDeleteNote"), danger: true }] });
   else blocks.push({ type: "markdown", text: t("noNotes") });
   blocks.push({ type: "adminForm", action: "note", title: t("noteAdd"), submitLabel: t("noteAdd"), fields: [{ name: "contactId", kind: "hidden", value: c.id }, { name: "text", label: t("noteText"), kind: "textarea", required: true }] });
-  // Suppression (confirmation).
-  blocks.push({ type: "heading", text: t("deleteTitle") }, { type: "markdown", text: t("deleteHelp") });
-  blocks.push({ type: "table", columns: [t("name")], rows: [[c.name]], rowIds: [c.id], rowActions: [{ label: t("deleteButton"), action: "remove", confirm: t("confirmDeleteContact"), danger: true }] });
+  // Données personnelles : tout ce que le site sait de la personne, et son effacement (page à part, avec confirmation en clair).
+  blocks.push({ type: "heading", text: t("privacyTitle") }, { type: "markdown", text: t("privacyHelp") });
+  blocks.push({ type: "download", name: "person", label: t("privDownload"), params: { id: c.id } });
+  blocks.push(html(`<p><a class="ct-btn ct-ghost" href="${U.esc(`?contact=${encodeURIComponent(c.id)}&erase=1`)}">${U.esc(t("privEraseLink"))}</a></p>`));
   return blocks;
 }
 
@@ -237,6 +247,10 @@ async function categoriesPage(ctx, q) {
 }
 
 async function panel(ctx, q) {
+  if (q.view === "import") return Imp.panel(ctx, q);
+  if (q.view === "dupes" || q.view === "merge" || (q.keep && q.drop)) return Ded.panel(ctx, q);
+  if (q.view === "erased") return Priv.reportPage(ctx);
+  if (q.contact && q.erase) return Priv.erasePage(ctx, q.contact);
   if (q.view === "categories") return categoriesPage(ctx, q);
   if (q.new) return editPage(ctx, null, q.new);
   if (q.contact) return q.edit ? editPage(ctx, q.contact) : contactPage(ctx, q.contact);
@@ -248,6 +262,7 @@ const guard = (fn) => async (ctx, values) => {
   try { return await fn(ctx, values ?? {}); } catch (e) { if (e?.code === "busy") return { error: ctx.t("busy") }; throw e; }
 };
 const back = (id) => `?contact=${encodeURIComponent(id)}`;
+const wrap = (o) => Object.fromEntries(Object.entries(o).map(([k, f]) => [k, guard(f)]));
 
 /** Ajout d'un compte : erreurs actionnables sous le champ (« Ce lien est un lien YouTube : choisissez… »). */
 async function addAccountFlow(ctx, id, network, handle) {
@@ -316,6 +331,34 @@ export default {
       const r = await B.setManualPhoto(ctx, v.id, url || null, { allowLocal: true });
       return r.ok ? { ok: ctx.t("photoSaved"), redirect: back(v.id) } : r.error === "invalid" ? { errors: { photo: ctx.t("photoInvalid") } } : { error: ctx.t("notFound") };
     }),
+    refreshPhoto: guard(async (ctx, v) => {
+      const t = ctx.t;
+      const r = await Ph.refreshNow(ctx, v.id);
+      const bad = Object.entries(r.services).filter(([, s]) => s !== "ok");
+      if (r.skipped && !Object.keys(r.services).length) return { error: t("photoNothing") };
+      if (bad.length === Object.keys(r.services).length && !r.updated) return { error: t("photoFail", { services: bad.map(([n]) => t(`net_${n}`)).join(", ") }) };
+      const missing = bad.filter(([, s]) => s === "missing").map(([n]) => t(`net_${n}`));
+      return { ok: [t(r.updated ? "photoRefreshed" : "photoUnchanged"), missing.length ? t("photoMissing", { services: missing.join(", ") }) : ""].filter(Boolean).join(" "), redirect: back(v.id) };
+    }),
+    addToCategory: guard(async (ctx, v) => {
+      const t = ctx.t;
+      const r = await B.get(ctx, { id: v.id });
+      if (!r.ok) return { error: t("notFound") };
+      if (!B.liveCategory(r.index, v.category)) return { errors: { category: t("catNotFound") } };
+      if (r.contact.categoryIds.length >= 50) return { errors: { category: t("catCardFull") } };
+      const w = await B.setCategories(ctx, v.id, [...r.contact.categoryIds, v.category]);
+      return w.ok ? { ok: t("catCardAdded"), redirect: back(v.id) } : { error: t("notFound") };
+    }),
+    removeFromCategory: guard(async (ctx, v) => {
+      const [id, cat] = String(v.id ?? "").split("|");
+      const r = await B.get(ctx, { id });
+      if (!r.ok) return { error: ctx.t("notFound") };
+      const w = await B.setCategories(ctx, id, r.contact.categoryIds.filter((k) => k !== cat));
+      return w.ok ? { ok: ctx.t("catCardRemoved"), redirect: back(id) } : { error: ctx.t("notFound") };
+    }),
+    ...wrap(Imp.actions),
+    ...wrap(Ded.actions),
+    ...wrap(Priv.actions),
     photoAuto: guard(async (ctx, v) => {
       const r = await B.setManualPhoto(ctx, v.id, null);
       return r.ok ? { ok: ctx.t("photoSaved"), redirect: back(v.id) } : { error: ctx.t("notFound") };

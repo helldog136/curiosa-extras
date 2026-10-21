@@ -52,6 +52,24 @@ a.ct-net{text-decoration:none}
 .ct-empty{padding:1.2rem;border-radius:1rem;border:1px dashed var(--v-line);color:var(--v-muted)}
 .ct-back{display:inline-block;margin:0 0 .75rem;text-decoration:none;font-weight:600}
 .ct-help{color:var(--v-muted);font-size:.9rem;margin:.25rem 0 .75rem}
+.ct-bar{height:.8rem;border-radius:999px;background:var(--v-line);overflow:hidden;margin:.4rem 0}
+.ct-bar>span{display:block;height:100%;background:var(--v-accent);border-radius:999px}
+.ct-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:.5rem 0 1rem;padding:0;list-style:none}
+@media (min-width:700px){.ct-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.ct-stat{border:1px solid var(--v-line);border-radius:1rem;padding:.7rem .8rem;background:var(--v-surface)}
+.ct-stat b{display:block;font-size:1.5rem;line-height:1.2}
+.ct-stat span{color:var(--v-muted);font-size:.85rem}
+.ct-lines{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:.4rem}
+.ct-lines li{border:1px solid var(--v-line);border-radius:.75rem;padding:.6rem .8rem;background:var(--v-surface);overflow-wrap:anywhere}
+.ct-cmp{display:grid;gap:var(--ct-gap);grid-template-columns:1fr;margin:0 0 1rem}
+@media (min-width:700px){.ct-cmp{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ct-box{border:1px solid var(--v-line);border-radius:1rem;padding:1rem;background:var(--v-surface);min-width:0}
+.ct-box h3{margin:0 0 .6rem;font-size:1.05rem;overflow-wrap:anywhere}
+.ct-kv{display:grid;gap:.1rem;margin:0}
+.ct-kv dt{color:var(--v-muted);font-size:.8rem}
+.ct-kv dd{margin:0 0 .45rem;overflow-wrap:anywhere}
+.ct-list{margin:.25rem 0 .75rem;padding-left:1.2rem}
+.ct-list li{margin:.15rem 0;overflow-wrap:anywhere}
 .ct-pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:.8rem;border-radius:.75rem;border:1px solid var(--v-line);background:var(--v-surface);margin:.25rem 0 .5rem}
 </style>`;
 
@@ -84,3 +102,14 @@ export function searchBar({ q, hidden, label, placeholder, button }) {
 }
 /** Pastilles de filtre : [{ label, href, current, color?, network?, netLabel? }]. */
 export const chips = (items, label) => (items.length ? `<ul class="ct-chips" aria-label="${esc(label)}">${items.map((i) => `<li><a href="${esc(i.href)}" aria-current="${i.current ? "true" : "false"}">${i.network ? netPill(i.network, "") : i.color ? `<span class="ct-dot" style="--c:${esc(i.color)}" aria-hidden="true"></span>` : ""}<span>${esc(i.label)}</span></a></li>`).join("")}</ul>` : "");
+
+/** Barre de progression : `done` sur `total` (texte pour les lecteurs d'écran : `label`). */
+export function bar(done, total, label) {
+  const pct = total > 0 ? Math.max(0, Math.min(100, Math.floor((done * 100) / total))) : 0;
+  return `<div class="ct-bar" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="${Number(total) || 0}" aria-valuenow="${Number(done) || 0}"><span style="width:${pct}%"></span></div>`;
+}
+/** Quatre chiffres côte à côte (deux par ligne sur téléphone) : [{ n, label, hint? }]. */
+export const stats = (items, label) => `<ul class="ct-stats" aria-label="${esc(label)}">${items.map((i) => `<li class="ct-stat"><b>${esc(i.n)}</b><span>${esc(i.label)}</span></li>`).join("")}</ul>`;
+/** Blocs « html » du panneau : le premier porte la feuille de style. */
+export const htmlBlock = (inner) => ({ type: "html", html: `<div class="ct">${inner}</div>` });
+export const firstBlock = (inner) => ({ type: "html", html: `${STYLE}<div class="ct">${inner}</div>` });

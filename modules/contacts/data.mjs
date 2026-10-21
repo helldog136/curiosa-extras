@@ -86,7 +86,7 @@ async function generationOf(ctx) {
 // ── Entrées de l'index ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // E = { id, t: date (ms), k: drapeaux (1 = organisation, 2 = à vérifier), n: nom sans accents, d: nom affiché (organisations seulement),
 //       a: clés des comptes jointes par \u0001 (« twitch:x\u0001youtube:@y ») | null, h: noms affichés des comptes (sans accents, seulement s'ils
-//       diffèrent du pseudo) | null, c: ids de catégories | null, o: id d'organisation | null }. Une chaîne plutôt qu'un tableau : moins de mémoire.
+//       diffèrent du pseudo) | null, c: ids de catégories | null, o: id d'organisation | null, m: e-mail (si la fiche en a un) }. Une chaîne plutôt qu'un tableau : moins de mémoire.
 export const SEP = "\u0001";
 export const keysOf = (e) => (e.a ? e.a.split(SEP) : []);
 export const isContactData = (d) => !!d && typeof d === "object" && typeof d.name === "string" && STATUSES.includes(d.status) && (d.kind === undefined || KINDS.includes(d.kind));
@@ -101,6 +101,7 @@ export function entryOf(rec) {
     id: rec.id, t: new Date(rec.createdAt).getTime(), k: (org ? 1 : 0) | (d.status === "to_review" ? 2 : 0), n: fold(d.name), d: org ? String(d.name) : undefined,
     a: accs.length ? accs.map((a) => accountKey(a.network, a.handle)).join(SEP) : null, h: names.length ? names.join(SEP) : null, c: cats.length ? cats : null,
     o: !org && idOk(d.orgId) ? d.orgId : null,
+    ...(typeof d.email === "string" && d.email ? { m: d.email } : {}), // l'e-mail sert au détecteur de doublons (pas à la recherche)
   };
 }
 const cmp = (t1, id1, t2, id2) => (t1 < t2 ? -1 : t1 > t2 ? 1 : id1 < id2 ? -1 : id1 > id2 ? 1 : 0);

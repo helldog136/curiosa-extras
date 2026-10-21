@@ -6,14 +6,16 @@
 //
 // Fichiers : networks.mjs (réseaux, normalisation, photo), data.mjs (stockage + index mémoire borné), book.mjs (règles), subjects.mjs (appel des
 // « privacy.subject »), service.mjs (services), admin.mjs + ui.mjs (administration), tools.mjs (MCP), migrate.mjs (données 1 → 2).
-// Points d'extension prévus pour la suite (lot K2, fichiers à créer) : import.mjs (CSV), dedupe.mjs (doublons), privacy.mjs (export/effacement
-// d'une personne), photos.mjs (rafraîchir les photos depuis les connecteurs). Le service sait déjà fusionner, importer et effacer (book.mjs).
+// Lot K2 : csv.mjs + import.mjs + import-admin.mjs (import CSV avec aperçu, par lots), export.mjs + downloads.mjs (export complet en flux), dedupe.mjs +
+// dedupe-admin.mjs (doublons et fusion), privacy.mjs + privacy-admin.mjs (export et effacement d'une personne), photos.mjs (rafraîchir la photo, seulement
+// quand une personne ouvre la fiche ou clique), nav.mjs + messages.mjs (sections et phrases d'erreur).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { default: service } = await import(`./service.mjs${v}`);
 const { default: admin } = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
 const { migrateTo2 } = await import(`./migrate.mjs${v}`);
 const { getIndex, readMany, card } = await import(`./book.mjs${v}`);
+const { default: downloads } = await import(`./downloads.mjs${v}`);
 
 const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
 
@@ -21,6 +23,7 @@ export default {
   ...service, // services
   ...admin, // adminBadge, adminPanel, adminActions
   ...tools, // mcp
+  adminDownloads: downloads, // « contacts » (tout le carnet), « template », « importReport », « person » : servis par le cœur, droit « exporter le carnet »
   migrations: {
     // 1.x → 2.0 : organisations en fiches, notes rangées par fiche (clé), identifiants conservés. À retirer en phase 3.
     2: async (ctx) => { await migrateTo2(ctx); },
