@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.2.1",
   "id": "stream-story",
   "name": {
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "1.0.0",
+  "version": "2.0.0",
   "platform": "instagram",
   "description": {
     "en": "Make a short animated video that announces your next stream, ready to post as an Instagram story (vertical) or a portrait post. Pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
@@ -28,8 +28,8 @@
     "rawg"
   ],
   "privacy": {
-    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your list of guest streamers, your saved models and, for 7 days at most, the settings an assistant prepared (visible to administrators only). No video or picture is kept on the site: the video is made in your browser. To draw a game cover or a profile picture, the site fetches that public picture for you.",
-    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde votre liste de co-streamers, vos modèles et, 7 jours au plus, les réglages préparés par un assistant (visibles des administrateurs seulement). Aucune vidéo ni image n'est gardée sur le site : la vidéo se fabrique dans votre navigateur. Pour dessiner une jaquette ou une photo de profil, le site va chercher cette image publique pour vous."
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (for each guest streamer only the number of their card in Contacts), a short list of one-off people without a card and, for 7 days at most, the settings an assistant prepared (administrators only). Names, handles and pictures stay in Contacts. No video is kept: it is made in your browser. To draw a cover or a picture, the site fetches it for you.",
+    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels sans fiche et, 7 jours au plus, les réglages préparés par un assistant (administrateurs seulement). Les noms, pseudos et photos restent dans Contacts. Aucune vidéo n'est gardée : elle se fabrique dans votre navigateur. Pour dessiner une jaquette ou une photo, le site va la chercher pour vous."
   },
   "settings": [
     {
@@ -150,40 +150,34 @@
           "type": "string"
         }
       ]
-    },
+    }
+  ],
+  "offers": [
     {
-      "topic": "stream.partner",
+      "service": "privacy.subject",
+      "each": true,
       "label": {
-        "en": "Your partner channels (from the Twitch raid module, if installed)",
-        "fr": "Vos chaînes partenaires (fournies par le Raid Twitch, s'il est installé)"
-      },
-      "schema": [
-        {
-          "key": "id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "key": "title",
-          "type": "string",
-          "required": true
-        },
-        {
-          "key": "login",
-          "type": "string"
-        },
-        {
-          "key": "image",
-          "type": "url"
-        }
-      ]
+        "en": "What Story keeps about a person (export, erase, follow a merge)",
+        "fr": "Ce que Story garde d'une personne (export, effacement, suivi d'une fusion)"
+      }
+    }
+  ],
+  "requires": [
+    {
+      "service": "contact.book",
+      "min": 2,
+      "optional": true,
+      "label": {
+        "en": "Your contacts (the Contacts module): guest streamers are looked up there, with their picture. Optional: without it you can still add someone for one video only",
+        "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter quelqu'un pour une seule vidéo"
+      }
     }
   ],
   "mcp": [
     {
       "name": "story_models",
       "readOnly": true,
-      "description": "The video models the owner saved for the announcement story (a model = a style, a format, a length, the elements to show, a sentence and guest streamers, saved under a name). Use it before story_prepare to reuse a model by its name. Read only.",
+      "description": "The video models the owner saved for the announcement story (a model = a style, a format, a length, the elements to show, a sentence and guest streamers (people from the owner's Contacts, or typed in for one video), saved under a name). Use it before story_prepare to reuse a model by its name. Read only.",
       "input": {
         "type": "object",
         "properties": {}
@@ -284,10 +278,11 @@
             "items": {
               "type": "string"
             },
-            "description": "Up to 6 Twitch names (4 to 25 letters, digits or _) of guest streamers to show."
+            "description": "Up to 6 Twitch names (4 to 25 letters, digits or _) of guest streamers to show. A name that matches a person in the owner's Contacts is linked to that card (name and picture come from Contacts); any other name is shown for this video only."
           }
         }
       }
     }
-  ]
+  ],
+  "dataVersion": 2
 }

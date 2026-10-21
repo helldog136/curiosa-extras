@@ -14,11 +14,13 @@ export const KEYS = [
   "h_texts", "text_label", "text_help", "channel_label", "channel_help", "lang_label", "lang_fr", "lang_en",
   "h_look", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown", "style_countdown_hint", "style_minimal", "style_minimal_hint",
   "format_label", "format_vertical", "format_passeport", "format_help_vertical", "format_help_passeport", "duration_label", "duration_help", "seconds",
-  "h_members", "members_help", "members_none", "members_max", "only_this_video", "adhoc_label", "adhoc_help", "adhoc_add", "saved_title", "saved_help", "c_login", "c_name", "c_image", "c_image_help",
-  "add_to_list", "save_changes", "edit", "remove", "has_photo", "member_saved", "member_removed", "confirm_remove_member", "raid_import", "raid_import_help", "importing", "import_done", "import_none",
+  "h_members", "members_help", "members_chosen", "members_none", "members_max", "member_missing", "member_unreadable", "member_loading", "only_this_video", "legacy_tag",
+  "search_label", "search_placeholder", "search_hint", "search_busy", "search_none", "search_slow", "search_refine", "show_more", "add", "already", "remove",
+  "cat_title", "cat_label", "cat_choose", "cat_none", "cat_empty", "cat_gone", "cat_more", "cat_add_first", "cat_added", "cat_full", "book_absent",
+  "adhoc_title", "adhoc_help", "a_login", "a_name", "a_image", "a_image_help", "saved_title", "saved_help", "migrated_note", "net_web", "net_other",
   "h_models", "models_help", "model_name", "model_save", "models_none", "load", "replace", "cancel", "model_exists", "model_saved", "model_loaded", "model_replaced", "model_removed", "confirm_replace_model", "confirm_remove_model",
   "h_preview", "preview_label", "play", "pause", "replay", "safe_label", "safe_help", "zone_ui", "zone_grid", "reduced", "empty", "generate", "progress_start", "progress", "progress_finish", "cancelled", "cancel_video",
-  "done", "download_again", "webm_notice", "recorder_notice", "err_unsupported", "err_encoder", "err_auth", "err_network", "err_empty", "err_invalid", "err_not_channel", "err_dup", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_none", "err_generic",
+  "done", "download_again", "webm_notice", "recorder_notice", "err_unsupported", "err_encoder", "err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic",
   "silent_note",
 ];
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`ui_${k}`)]));
@@ -46,7 +48,7 @@ p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
 fieldset{border:0;margin:0;padding:0;min-width:0}legend{font-weight:600;padding:0;margin-bottom:6px}
 label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}
-input[type=text],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;padding:10px;font:inherit;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px}
+input[type=text],input[type=search],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;padding:10px;font:inherit;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px}
 textarea{min-height:76px;resize:vertical}input[type=range]{width:100%}
 input[type=checkbox],input[type=radio]{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--accent)}
 button,a.button{font:inherit;padding:9px 14px;min-height:40px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-block}
@@ -60,6 +62,9 @@ button.danger{color:var(--danger);border-color:var(--danger)}button:disabled{opa
 .cards small{display:block;color:var(--muted)}
 ul.list{list-style:none;margin:6px 0;padding:0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.grow{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}
 .confirm{display:flex;gap:8px;flex-wrap:wrap}.tag{font-size:.8rem;color:var(--muted);margin-left:6px}
+.sub{font-weight:600;margin:12px 0 2px}.person{display:flex;gap:10px;align-items:center;flex:1 1 200px;min-width:0}.who{min-width:0;overflow-wrap:anywhere}
+.avatar{flex:none;width:44px;height:44px;border-radius:50%;background:var(--field);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--muted);overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}
+.pills{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}.pill{font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted);background:var(--field)}
 .status{padding:10px 12px;border-radius:8px;margin:0 0 12px;border:1px solid var(--line);background:var(--card)}.status.error{border-color:var(--danger);color:var(--danger)}.status.ok{border-color:var(--ok)}
 .banner{padding:10px 12px;border-radius:8px;background:var(--card);border:1px solid var(--accent);margin:0 0 12px}
 canvas#preview{display:block;width:100%;max-width:340px;max-height:70vh;margin:0 auto;border-radius:10px;background:#000;object-fit:contain}
@@ -99,14 +104,20 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <label for="format-vertical"><input type="radio" name="format" id="format-vertical"><span>${T("format_vertical")}</span></label>
 <label for="format-passeport"><input type="radio" name="format" id="format-passeport"><span>${T("format_passeport")}</span></label></div><p id="fmt-note" class="muted"></p></fieldset>
 <label for="duration" style="margin-top:12px">${T("duration_label")} : <strong id="duration-out"></strong></label><input type="range" id="duration" min="${P.LIMITS.durationMin}" max="${P.LIMITS.durationMax}" step="1"><p class="muted">${T("duration_help")}</p></section>
-<section><h2>${T("h_members")}</h2><p class="muted">${T("members_help")}</p><div id="members"></div><p id="members-note" class="muted"></p>
-<label for="adhoc">${T("adhoc_label")}</label><div class="bar"><input type="text" id="adhoc" class="grow" maxlength="60" autocomplete="off" placeholder="pseudo_twitch"><button type="button" id="adhoc-add">${T("adhoc_add")}</button></div><p class="muted">${T("adhoc_help")}</p>
-<details><summary>${T("saved_title")}</summary><p class="muted">${T("saved_help")}</p>
-<div class="grid2"><div><label for="c-login">${T("c_login")}</label><input type="text" id="c-login" maxlength="60" autocomplete="off"></div><div><label for="c-name">${T("c_name")}</label><input type="text" id="c-name" maxlength="40" autocomplete="off"></div>
-<div style="grid-column:1/-1"><label for="c-image">${T("c_image")}</label><input type="url" id="c-image" maxlength="400" autocomplete="off"><p class="muted">${T("c_image_help")}</p></div></div>
-<div class="bar"><button type="button" id="c-save">${T("add_to_list")}</button><button type="button" id="c-cancel" hidden>${T("cancel")}</button></div>
-<ul class="list" id="saved-list"></ul>
-<div id="raid-import-box"><button type="button" id="raid-import" hidden>${T("raid_import")}</button><p class="muted">${T("raid_import_help")}</p></div></details></section>
+<section aria-labelledby="h-members"><h2 id="h-members">${T("h_members")}</h2><p class="muted">${T("members_help")}</p>
+<p id="migrated" class="banner" hidden></p>
+<p class="sub">${T("members_chosen")}</p><ul class="list" id="chosen"></ul><p id="members-note" class="muted" role="status"></p>
+<div id="book-box" hidden><label for="q">${T("search_label")}</label><input type="search" id="q" maxlength="100" autocomplete="off" placeholder="${T("search_placeholder")}" aria-describedby="q-note"><p id="q-note" class="muted" role="status" aria-live="polite">${T("search_hint")}</p>
+<ul class="list" id="results"></ul><button type="button" id="results-more" hidden>${T("show_more")}</button>
+<details id="cat-box"><summary>${T("cat_title")}</summary><label for="cat">${T("cat_label")}</label><select id="cat"></select><div class="bar"><button type="button" id="cat-more-cats" hidden>${T("cat_more")}</button></div>
+<p id="cat-note" class="muted" role="status" aria-live="polite"></p><ul class="list" id="cat-results"></ul>
+<div class="bar"><button type="button" id="cat-add-first" hidden></button><button type="button" id="cat-more" hidden>${T("show_more")}</button></div></details></div>
+<p id="book-absent" class="banner" hidden>${T("book_absent")}</p>
+<details id="adhoc-box" open><summary>${T("adhoc_title")}</summary><p class="muted">${T("adhoc_help")}</p>
+<div class="grid2"><div><label for="a-login">${T("a_login")}</label><input type="text" id="a-login" maxlength="40" autocomplete="off"></div><div><label for="a-name">${T("a_name")}</label><input type="text" id="a-name" maxlength="40" autocomplete="off"></div>
+<div style="grid-column:1/-1"><label for="a-image">${T("a_image")}</label><input type="url" id="a-image" maxlength="400" autocomplete="off" aria-describedby="a-image-help"><p id="a-image-help" class="muted">${T("a_image_help")}</p></div></div>
+<p id="a-error" class="warn" role="alert"></p><div class="bar"><button type="button" id="adhoc-add">${T("add")}</button></div></details>
+<div id="saved-box" hidden><p class="sub">${T("saved_title")}</p><p class="muted">${T("saved_help")}</p><ul class="list" id="saved-list"></ul></div></section>
 <section><h2>${T("h_models")}</h2><p class="muted">${T("models_help")}</p>
 <label for="model-name">${T("model_name")}</label><div class="bar"><input type="text" id="model-name" class="grow" maxlength="60" autocomplete="off"><button type="button" id="model-save">${T("model_save")}</button></div><ul class="list" id="model-list"></ul></section>
 </div>

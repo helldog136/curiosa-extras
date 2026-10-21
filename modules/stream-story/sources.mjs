@@ -1,12 +1,12 @@
 // Ce que « Story d'annonce » lit chez les autres, sans jamais les connaître par leur nom : les streams à venir (sujet `planning.slot`, fourni par n'importe quel agenda),
-// les partenaires (sujet `stream.partner`, fourni par le Raid Twitch) et les jaquettes (service du cœur, via ctx.api.rawg). Chaque lecture est facultative et BORNÉE :
+// et les jaquettes (service du cœur, via ctx.api.rawg). Les co-streamers, eux, viennent de Contacts (contacts.mjs). Chaque lecture est facultative et BORNÉE :
 // un agenda ou un service qui ne répond jamais rend « slow » au bout de quelques secondes, jamais une attente sans fin.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const P = await import(`./pure.mjs${v}`);
 const images = await import(`./images.mjs${v}`);
 
 /** Les délais (en millisecondes), dans un objet pour que les tests puissent les raccourcir. */
-export const timing = { collectMs: 6000, coverMs: 5000, partnersMs: 4000, brandMs: 2000, authMs: 4000, routeMs: 20_000 };
+export const timing = { collectMs: 6000, coverMs: 5000, bookMs: 5000, providersMs: 2000, migrateMs: 45_000, brandMs: 2000, authMs: 4000, routeMs: 20_000 };
 const HOUR = 3_600_000, DAY = 86_400_000;
 
 /** Attend `p` au plus `ms` ; passé ce délai, rend `fallback` (et le résultat tardif n'est jamais utilisé). Le minuteur ne retient pas le processus. */
@@ -43,21 +43,6 @@ export async function loadStreams(ctx, { zone = "", now = Date.now(), max = P.LI
     }
   }
   return { state: "ok", streams, coverState };
-}
-
-/** Les partenaires fournis par un autre module : { state: "ok" | "none" | "slow", items: [{ login, name, image }] }. Les images ne sont gardées que si le relais sait les servir. */
-export async function loadPartners(ctx) {
-  const FAILED = Symbol("failed");
-  const items = await within(Promise.resolve().then(() => ctx.api.topics.collect("stream.partner", { limit: 100 })), timing.partnersMs, FAILED);
-  if (items === FAILED || !Array.isArray(items)) return { state: "slow", items: [] };
-  const out = [], seen = new Set();
-  for (const it of items) {
-    const n = P.normalizeLogin(it?.login ?? it?.id);
-    if (!n.login || seen.has(n.login)) continue;
-    seen.add(n.login);
-    out.push({ login: n.login, name: P.oneLine(it?.title, P.LIMITS.displayName), image: images.allowedUrl(it?.image)?.href ?? "" });
-  }
-  return { state: out.length ? "ok" : "none", items: out.slice(0, P.LIMITS.savedCostreamers) };
 }
 
 /** Le nom du site et son logo (un chemin du site : le navigateur peut le dessiner sans passer par le relais). */

@@ -1,4 +1,4 @@
-// Story d'annonce 1.0.0 et Raid Twitch 1.1.0 : des « trous noirs » (un agenda, RAWG, le Raid, un serveur d'images, Chaîne Twitch qui ne répondent JAMAIS, qui ignorent même le signal d'abandon)
+// Story d'annonce 2.0.0 : des « trous noirs » (un agenda, RAWG, Contacts, un serveur d'images qui ne répondent JAMAIS, qui ignorent même le signal d'abandon)
 // ne doivent bloquer personne : la page d'administration et les routes répondent quand même, en erreur propre, en quelques secondes.
 // Leçon d'un incident de production : une promesse partagée jamais résolue avait bloqué tout un site. Ici : aucune attente sans borne, aucune promesse partagée sans expiration,
 // aucun appel à la suite sans plafond global — et une demande après la panne repart de zéro.
@@ -9,15 +9,13 @@ import { fakeCtx } from "./helpers/fakeCtx.mjs";
 
 const DIR = new URL("../modules/stream-story", import.meta.url).pathname;
 const manifest = JSON.parse(fs.readFileSync(`${DIR}/module.json`, "utf8")), fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8"));
-const raidManifest = JSON.parse(fs.readFileSync(new URL("../modules/twitch-raid/module.json", import.meta.url), "utf8")), raidFr = JSON.parse(fs.readFileSync(new URL("../modules/twitch-raid/locales/fr.json", import.meta.url), "utf8"));
 const def = (await import("../modules/stream-story/index.mjs")).default;
 const data = await import("../modules/stream-story/data.mjs");
 const src = await import("../modules/stream-story/sources.mjs");
 const images = await import("../modules/stream-story/images.mjs");
-const raid = (await import("../modules/twitch-raid/index.mjs")).default;
-const raidData = await import("../modules/twitch-raid/data.mjs");
-const partners = await import("../modules/twitch-raid/partners.mjs");
-const live = await import("../modules/twitch-raid/live.mjs");
+const book = await import("../modules/stream-story/contacts.mjs");
+const migrate = await import("../modules/stream-story/migrate.mjs");
+import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 
 const HUNG = Symbol("hung"), SITE = "https://site.example.test", NOW_ISO = new Date(Date.now() + 86_400_000).toISOString();
 const within = (p, ms = 3000) => { let t; return Promise.race([p, new Promise((r) => { t = setTimeout(() => r(HUNG), ms); })]).finally(() => clearTimeout(t)); };
@@ -26,16 +24,16 @@ const SLOTS = [{ id: "a", title: "Demain", start: NOW_ISO, end: NOW_ISO, allDay:
 const PIC = "https://static-cdn.jtvnw.net/jtv_user_pictures/u1-profile_image-300x300.png";
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==", "base64");
 
-const mk = (extra = {}) => fakeCtx({ key: "story", moduleId: "stream-story", locale: "fr", messages: { ...fr }, permissions: manifest.permissions, siteUrl: SITE, topics: { "planning.slot": () => SLOTS, "stream.partner": () => [] }, instances: [{ id: "id-story", key: "story", module: "stream-story", adminPath: "/admin/instances/id-story" }], rawgCover: { status: "found", url: "https://media.rawg.io/media/games/a/b.jpg" }, ...extra });
+const mk = (extra = {}) => fakeCtx({ key: "story", moduleId: "stream-story", locale: "fr", messages: { ...fr }, permissions: manifest.permissions, siteUrl: SITE, topics: { "planning.slot": () => SLOTS }, instances: [{ id: "id-story", key: "story", module: "stream-story", adminPath: "/admin/instances/id-story" }], rawgCover: { status: "found", url: "https://media.rawg.io/media/games/a/b.jpg" }, ...extra });
 const call = (ctx, route, token, search = "") => def.routes[route](new Request(`${SITE}/m/story/${route}${search}`, { headers: { "x-story-token": token } }), ctx);
-const timing0 = { ...src.timing }, img0 = { ...images.timing }, partners0 = { ...partners.timing }, live0 = { ...live.timing };
+const timing0 = { ...src.timing }, img0 = { ...images.timing };
 const realFetch = globalThis.fetch;
-beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 150, coverMs: 150, partnersMs: 150, brandMs: 150, authMs: 150, routeMs: 400 }); Object.assign(images.timing, img0, { fetchMs: 100, totalMs: 160 }); Object.assign(partners.timing, partners0, { iconsMs: 150 }); images.resetImages(); partners.resetPartners(); live.resetLive(); });
-afterEach(() => { globalThis.fetch = realFetch; Object.assign(src.timing, timing0); Object.assign(images.timing, img0); Object.assign(partners.timing, partners0); Object.assign(live.timing, live0); });
+beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 150, coverMs: 150, bookMs: 150, providersMs: 150, migrateMs: 400, brandMs: 150, authMs: 150, routeMs: 400 }); Object.assign(images.timing, img0, { fetchMs: 100, totalMs: 160 }); images.resetImages(); });
+afterEach(() => { globalThis.fetch = realFetch; Object.assign(src.timing, timing0); Object.assign(images.timing, img0); });
 
 test("agenda qui ne répond jamais : la route des streams répond « slow » dans le délai, la page d'administration s'ouvre quand même, l'outil de l'IA répond ; la demande suivante repart de zéro", async () => {
   let hang = true;
-  const ctx = mk({ topics: { "planning.slot": () => (hang ? blackHole() : SLOTS), "stream.partner": () => [] } }), token = await data.mintToken(ctx);
+  const ctx = mk({ topics: { "planning.slot": () => (hang ? blackHole() : SLOTS) } }), token = await data.mintToken(ctx);
   const t0 = Date.now();
   const r = await within(call(ctx, "streams", token));
   assert.notEqual(r, HUNG, "la route ne doit pas attendre l'agenda");
@@ -60,16 +58,37 @@ test("RAWG qui ne répond jamais : les streams sont rendus quand même, sans jaq
   assert.equal((await r2.json()).coverState, "no_key");
 });
 
-test("Raid Twitch, site (identité) ou partenaires qui ne répondent jamais : les données de l'éditeur arrivent quand même (co-streamers et modèles enregistrés), sans le bouton de reprise", async () => {
-  const ctx = mk({ topics: { "planning.slot": () => SLOTS, "stream.partner": () => blackHole() } }); ctx.api.brand = blackHole;
+test("Contacts, site (identité) qui ne répondent jamais : les données de l'éditeur arrivent quand même (modèles et anciens co-streamers lus en repli), la recherche, les fiches et les catégories répondent « slow » dans le délai", async () => {
+  const cb = fakeContactBook();
+  const ctx = mk({ services: cb.services }); ctx.api.brand = blackHole;
+  for (const m of ["search", "resolve", "categories", "accounts", "upsertByAccount"]) cb.faults.hang.add(m);
   const token = await data.mintToken(ctx);
   await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "Alice", image: "" }] });
+  const t0 = Date.now();
   const r = await within(call(ctx, "data", token)); assert.notEqual(r, HUNG);
   const body = await r.json();
-  assert.deepEqual([body.ok, body.partners, body.brand, body.costreamers.map((c) => c.login)], [true, 0, { name: "", logo: "" }, ["alice_tv"]]);
-  const imp = await within(def.routes.act(new Request(`${SITE}/m/story/act`, { method: "POST", headers: { "x-story-token": token, "content-type": "application/json" }, body: JSON.stringify({ op: "costreamers.import" }) }), ctx));
-  assert.notEqual(imp, HUNG); assert.deepEqual(await imp.json(), { ok: false, error: "network" });
-  assert.equal((await within(def.mcp.story_prepare(ctx, {})))?.ok, true);
+  assert.deepEqual([body.ok, body.brand, body.contacts, body.adhoc.map((c) => [c.login, c.legacy]), body.migrated], [true, { name: "", logo: "" }, "ok", [["alice_tv", true]], null], "l'ancienne liste reste lue en repli ; rien n'est perdu");
+  assert.ok(Date.now() - t0 < 1500);
+  assert.equal(await ctx.api.store.count("story_costreamers"), 1, "l'ancienne liste est intacte");
+  for (const [route, search] of [["people", "?q=alice"], ["members", "?id=c0001"], ["categories", ""], ["category", "?id=k1"]]) {
+    const x = await within(call(ctx, route, token, search)); assert.notEqual(x, HUNG, route);
+    const j = await x.json(); assert.deepEqual([j.ok, j.state, j.items ?? j.members], [true, "slow", j.items ?? []], route);
+  }
+  assert.equal((await within(def.mcp.story_prepare(ctx, { costreamers: ["bob_x"] })))?.ok, true, "l'IA prépare quand même (le pseudo reste ponctuel)");
+  const models = await within(def.mcp.story_models(ctx)); assert.notEqual(models, HUNG);
+});
+
+test("Contacts qui ne répond jamais pendant la migration : rien n'est touché, l'ancienne liste reste, et la migration repart dès que Contacts répond", async () => {
+  const cb = fakeContactBook();
+  const ctx = mk({ services: cb.services });
+  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "Alice", image: "" }, { login: "bob_x", name: "", image: "" }] });
+  cb.faults.hang.add("upsertByAccount");
+  const t0 = Date.now(), r = await within(migrate.migrateCostreamers(ctx)); assert.notEqual(r, HUNG, "la migration est bornée");
+  assert.equal(r.state, "waiting"); assert.ok(Date.now() - t0 < 1500);
+  assert.equal(await ctx.api.store.count("story_costreamers"), 1); assert.equal(cb.dump().contacts.length, 0);
+  cb.faults.hang.delete("upsertByAccount");
+  const again = await within(migrate.ensureMigrated(ctx)); assert.equal(again.state, "done");
+  assert.equal(await ctx.api.store.count("story_costreamers"), 0); assert.equal(cb.dump().contacts.length, 2);
 });
 
 test("la route entière est bornée : même si le stockage ne répond jamais, la route rend « network » (504) au plus tard à `timing.routeMs`", async () => {
@@ -104,29 +123,8 @@ test("serveur d'images qui ne répond jamais (même en ignorant le signal d'aban
   assert.equal((await within(call(ctx, "img", token, `?u=${u}`))).status, 502);
 });
 
-test("Raid Twitch 1.1.0 : Chaîne Twitch qui ne répond jamais → les partenaires sont rendus sans photo dans le délai (sujet « stream.partner »), sans bloquer ; ensuite tout repart ; la liste des partenaires reste lisible", async () => {
-  let hang = true;
-  const methods = { account: async () => ({ ok: true, channel: "emma_live", ready: true }), request: async (args) => (hang ? blackHole() : { ok: true, status: 200, json: { data: args.query.login.map((l) => ({ login: l, display_name: l.toUpperCase(), profile_image_url: PIC })) } }) };
-  const rctx = fakeCtx({ key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...raidFr }, permissions: raidManifest.permissions, siteUrl: SITE, serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods }] } });
-  await raidData.addPartners(rctx, "alice_tv bob_x");
-  const t0 = Date.now(), items = await within(raid.exports["stream.partner"](rctx, { limit: 100 }));
-  assert.notEqual(items, HUNG, "le sujet ne doit pas attendre Chaîne Twitch");
-  assert.deepEqual(items.map((x) => [x.login, x.title, x.image]), [["alice_tv", "alice_tv", undefined], ["bob_x", "bob_x", undefined]]);
-  assert.ok(Date.now() - t0 < 1500);
-  // plusieurs lecteurs en même temps : une seule demande partagée, qui expire pour tous
-  partners.resetPartners();
-  const many = await within(Promise.all([raid.exports["stream.partner"](rctx, {}), raid.exports["stream.partner"](rctx, {}), raid.exports["stream.partner"](rctx, {})])); assert.notEqual(many, HUNG);
-  hang = false; partners.timing.failMs = 1; await new Promise((r) => setTimeout(r, 20)); partners.resetPartners();
-  const ok = await within(raid.exports["stream.partner"](rctx, {})); assert.notEqual(ok, HUNG);
-  assert.deepEqual(ok.map((x) => [x.title, x.image]), [["ALICE_TV", PIC], ["BOB_X", PIC]], "après la panne : les photos reviennent");
-  // l'administration du Raid (liste) et le service de comptes muet
-  hang = true; methods.account = blackHole; partners.resetPartners();
-  const items2 = await within(raid.exports["stream.partner"](rctx, {}), 3000); assert.notEqual(items2, HUNG, "même un compte qui ne répond jamais");
-  assert.equal(items2.length, 2);
-});
-
 test("aucun appel sans plafond : pas de boucle d'attente sans fin dans le code du module, et le relais d'images coupe chaque téléchargement par un signal d'abandon", () => {
-  const code = ["index.mjs", "sources.mjs", "images.mjs", "admin.mjs", "data.mjs", "mcp.mjs"].map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\/.*$/gm, "")).join("\n");
+  const code = ["index.mjs", "sources.mjs", "images.mjs", "admin.mjs", "data.mjs", "mcp.mjs", "contacts.mjs", "migrate.mjs"].map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\/.*$/gm, "")).join("\n");
   assert.ok(!/while\s*\(\s*true\s*\)/.test(code));
   assert.match(fs.readFileSync(`${DIR}/images.mjs`, "utf8"), /AbortController/);
   assert.ok(!/setInterval/.test(code), "aucun minuteur qui tourne en arrière-plan");

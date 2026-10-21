@@ -16,7 +16,7 @@ export const FORMATS = [
 export const STYLES = ["neon", "poster", "countdown", "minimal"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
 export const LANGS = ["fr", "en"];
-export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, savedCostreamers: 60, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
+export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, savedCostreamers: 60, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
 
 export const formatOf = (id) => FORMATS.find((f) => f.id === id) ?? FORMATS[0];
 /** La zone où l'on peut placer du contenu essentiel : { x, y, w, h }. */
@@ -62,6 +62,26 @@ export function safeImageUrl(v) {
   return /^https:\/\/[^/]+\//.test(s) ? s : "";
 }
 
+/* ───────────── Les co-streamers d'une vidéo ─────────────
+ * Une entrée est l'UNE de ces deux formes :
+ *   { id }                          une RÉFÉRENCE à une fiche de Contacts (identifiant opaque : on ne suppose rien de sa forme). Nom, pseudo et photo restent chez Contacts ;
+ *   { login, name, image }          un co-streamer « pour cette vidéo seulement » : saisi à la main, jamais une fiche. `login` est un pseudo libre, `name` un nom, `image` une adresse https
+ *                                   (le serveur ne la fait suivre que si l'hôte est permis) ; au moins l'un des deux, pseudo ou nom.
+ * Un modèle de la version 1 gardait une simple liste de pseudos Twitch (« alice_tv ») : elle est lue comme des entrées « pour cette vidéo seulement » (puis la migration les remplace par des références). */
+const MEMBER_ID = /^[^\s\u0000-\u001f\u007f]{1,80}$/;
+export const NETWORKS = ["twitch", "youtube", "tiktok", "instagram", "discord", "x", "bluesky", "mastodon", "web", "other"];
+const httpsImage = (v) => { const u = safeImageUrl(v); return /^https:\/\//.test(u) ? u : ""; };
+/** Une entrée remise au bon format, ou null. */
+export function cleanMember(x) {
+  if (typeof x === "string") { const n = normalizeLogin(x); return n.login ? { login: n.login, name: "", image: "" } : null; }
+  if (!x || typeof x !== "object" || Array.isArray(x)) return null;
+  if (x.id !== undefined) return typeof x.id === "string" && MEMBER_ID.test(x.id) ? { id: x.id } : null;
+  const login = oneLine(x.login, LIMITS.handle).replace(/^@+/, ""), name = oneLine(x.name, LIMITS.displayName);
+  return login || name ? { login, name, image: httpsImage(x.image) } : null;
+}
+/** Ce qui rend deux entrées « la même personne » dans une vidéo. */
+export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).toLowerCase()}`);
+
 /* ───────────── Les réglages d'une génération ───────────── */
 
 export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", lang: "fr" });
@@ -75,16 +95,16 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
   const dn = Number(r.duration);
   const duration = Number.isInteger(dn) && dn >= LIMITS.durationMin && dn <= LIMITS.durationMax ? dn : Number.isFinite(dn) && dn > 0 ? Math.min(LIMITS.durationMax, Math.max(LIMITS.durationMin, Math.round(dn))) : cleanConfigDuration(d.duration);
   const elements = Array.isArray(r.elements) ? ELEMENTS.filter((e) => r.elements.includes(e)) : ELEMENTS.filter((e) => (Array.isArray(d.elements) ? d.elements : ELEMENTS).includes(e));
-  const logins = [];
+  const members = [], seen = new Set();
   for (const x of Array.isArray(r.costreamers) ? r.costreamers : Array.isArray(d.costreamers) ? d.costreamers : []) {
-    const n = typeof x === "string" ? normalizeLogin(x) : { error: "invalid" };
-    if (n.login && !logins.includes(n.login) && logins.length < LIMITS.costreamers) logins.push(n.login);
+    const m = cleanMember(x);
+    if (m && !seen.has(memberKey(m)) && members.length < LIMITS.costreamers) { seen.add(memberKey(m)); members.push(m); }
   }
   return {
     style, format, duration, elements,
     text: freeText(r.text ?? d.text, LIMITS.text),
     channelName: oneLine(r.channelName ?? d.channelName, LIMITS.channelName),
-    costreamers: logins,
+    costreamers: members,
     streamKey: /^[a-z0-9]{1,20}$/.test(String(r.streamKey ?? "")) ? String(r.streamKey) : /^[a-z0-9]{1,20}$/.test(String(d.streamKey ?? "")) && r.streamKey === undefined ? String(d.streamKey) : "",
     lang: LANGS.includes(r.lang) ? r.lang : LANGS.includes(d.lang) ? d.lang : "fr",
   };

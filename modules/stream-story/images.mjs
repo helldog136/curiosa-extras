@@ -1,4 +1,4 @@
-// Les images de la vidéo (photo de profil Twitch, jaquette du jeu) passent par le site lui-même : le navigateur ne peut dessiner dans son canvas, puis en faire une vidéo,
+// Les images de la vidéo (photo d'un co-streamer, qui vient de la fiche de Contacts, et jaquette du jeu) passent par le site lui-même : le navigateur ne peut dessiner dans son canvas, puis en faire une vidéo,
 // qu'avec des images venues de la MÊME adresse que la page. Cette route est donc un petit relais, très serré :
 //   - la personne ne donne JAMAIS d'adresse à relire librement : l'adresse doit être en https, sur un hôte de la liste blanche ci-dessous, sans port, sans identifiant,
 //     sans paramètre, avec un chemin d'image connu ; aucune redirection n'est suivie ;
@@ -8,9 +8,16 @@ export const timing = { fetchMs: 6000, totalMs: 8000, okMs: 10 * 60_000, failMs:
 export const LIMITS = { bytes: 3 * 1024 * 1024, entries: 40, cacheBytes: 24 * 1024 * 1024, parallel: 4 };
 
 /** Les seuls hôtes permis, et la forme du chemin permise pour chacun. */
+// Photos de Contacts : seuls les hôtes REELS des photos de profil de Twitch (static-cdn.jtvnw.net), de YouTube (yt3.ggpht.com, yt3.googleusercontent.com : « …=s240-c-k-… », sans extension)
+// et de Bluesky (cdn.bsky.app : « /img/avatar/plain/did:plc:…/…@jpeg ») sont ajoutés. Une photo manuelle sur un autre hôte, ou un réseau dont les adresses de photo sont signées ou
+// éphémères (Instagram, TikTok…) ou dépendent d'un serveur quelconque (Mastodon), n'est PAS relayée : la vidéo montre alors les initiales. Les mêmes bornes valent pour tous.
+const GOOGLE_PHOTO = /^\/(?:(?:ytc|a)\/)?[A-Za-z0-9_-]{20,200}(?:=[A-Za-z0-9_-]{1,60})?$/;
 export const HOSTS = {
   "static-cdn.jtvnw.net": /^\/(?:jtv_user_pictures|user-default-pictures-uv|ttv-boxart)\/[A-Za-z0-9_.\-/]{1,160}\.(?:png|jpe?g|webp)$/,
   "media.rawg.io": /^\/media\/[A-Za-z0-9_.\-/]{1,200}\.(?:png|jpe?g|webp)$/,
+  "yt3.ggpht.com": GOOGLE_PHOTO,
+  "yt3.googleusercontent.com": GOOGLE_PHOTO,
+  "cdn.bsky.app": /^\/img\/avatar(?:_thumbnail)?\/plain\/did:plc:[a-z2-7]{24}\/[A-Za-z0-9]{8,120}@(?:jpeg|png|webp)$/,
 };
 
 /** L'adresse (URL) si elle est permise, sinon null. */

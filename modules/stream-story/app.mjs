@@ -37,13 +37,13 @@ async function api(path, { method = "GET", body, ms = 15000 } = {}) {
     return await res.json();
   } catch { return { ok: false, error: "network" }; } finally { clearTimeout(timer); }
 }
-const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "not_channel", "dup", "full", "missing", "name", "exists", "image", "none"].includes(e) ? e : "generic"}`);
+const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "full", "missing", "name", "exists", "image"].includes(e) ? e : "generic"}`);
 
 /* ───────────── L'état ───────────── */
 const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
   streams: [], streamsState: "loading", coverState: "", manual: { title: "", date: "", time: "" }, useManual: false,
-  costreamers: [], adhoc: [], models: [], partners: 0, brand: { name: "", logo: "" },
+  known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
   images: new Map(), scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
@@ -53,8 +53,12 @@ const selectedStream = () => {
   if (S.useManual) { const m = P.manualStream(S.manual, TZ); return m.error ? null : m; }
   return S.streams.find((s) => s.key === S.cfg.streamKey) ?? S.streams[0] ?? null;
 };
-const allMembers = () => [...S.costreamers, ...S.adhoc.filter((a) => !S.costreamers.some((c) => c.login === a.login))];
-const chosenMembers = () => S.cfg.costreamers.map((l) => allMembers().find((m) => m.login === l)).filter(Boolean);
+/* Les co-streamers de la vidéo : chaque entrée est { id } (une fiche de Contacts, lue au besoin) ou une saisie « pour cette vidéo seulement ». `key` : ce qui les distingue. */
+const keyOf = P.memberKey;
+const viewOf = (entry) => (entry.id
+  ? S.known.get(`id:${entry.id}`) ?? { key: `id:${entry.id}`, state: "loading", name: "", login: "", image: "", accounts: [] }
+  : { key: keyOf(entry), state: "ok", name: entry.name || entry.login, login: entry.login, image: entry.image, accounts: [], inline: true });
+const chosenMembers = () => S.cfg.costreamers.map(viewOf).filter((m) => m.state === "ok").map((m) => ({ login: m.key, name: m.name, image: m.image }));
 const zoneOf = (stream) => (stream && P.validZone(stream.timezone) ? stream.timezone : TZ);
 
 /* ───────────── Images ───────────── */
@@ -73,6 +77,7 @@ function loadImage(url) {
       .then((r) => (r.ok ? r.blob() : null)).then((b) => { if (!b) return finish(null); img.src = URL.createObjectURL(b); }).catch(() => finish(null));
   });
   S.images.set(url, job);
+  if (S.images.size > 80) S.images.delete(S.images.keys().next().value); // borné : on ne garde pas toutes les photos vues
   return job;
 }
 
@@ -152,60 +157,162 @@ function renderStreamPicker() {
   $("manual-error").textContent = S.useManual && error && (S.manual.title || S.manual.date) ? L(`manual_${error}`) : "";
 }
 
-function renderMembers() {
-  const box = $("members"), picked = new Set(S.cfg.costreamers), full = picked.size >= P.LIMITS.costreamers;
-  const list = allMembers();
-  box.replaceChildren(...(list.length ? list.map((m) => {
-    const id = `m-${m.login}`, on = picked.has(m.login);
-    return h("label", { class: "check", for: id }, h("input", { type: "checkbox", id, checked: on, disabled: !on && full, onchange: (e) => { setMember(m.login, e.target.checked); } }), h("span", { text: m.name ? `${m.name} (${m.login})` : m.login }), S.costreamers.some((c) => c.login === m.login) ? null : h("em", { class: "tag", text: L("only_this_video") }));
-  }) : [h("p", { class: "muted", text: L("members_none") })]));
-  $("members-note").textContent = full ? L("members_max", { n: P.LIMITS.costreamers }) : "";
-  renderCostreamerManager();
+/* ───────────── Les co-streamers ───────────── */
+const NET = { twitch: "Twitch", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", discord: "Discord", x: "X", bluesky: "Bluesky", mastodon: "Mastodon" };
+const netName = (n) => NET[n] ?? L(n === "web" ? "net_web" : "net_other");
+const isFull = () => S.cfg.costreamers.length >= P.LIMITS.costreamers;
+const inVideo = (key) => S.cfg.costreamers.some((e) => keyOf(e) === key);
+
+/** Une pastille ronde : la photo (lue par le relais du site) ou, à défaut, les initiales. */
+function thumb(image, name) {
+  const box = h("span", { class: "avatar", "aria-hidden": "true", text: P.initials(name) });
+  if (image) loadImage(image).then((img) => { if (img) { const i = new Image(); i.alt = ""; i.src = img.src; box.replaceChildren(i); } });
+  return box;
 }
-function setMember(login, on) {
-  const set = new Set(S.cfg.costreamers);
-  if (on) { if (set.size < P.LIMITS.costreamers) set.add(login); } else set.delete(login);
-  S.cfg.costreamers = [...set]; renderMembers(); rebuild();
+/** Une ligne de personne : photo, nom, pastilles de comptes (ou pseudo), puis les boutons donnés. */
+function personRow(m, ...actions) {
+  const pills = m.accounts?.length ? h("span", { class: "pills" }, m.accounts.slice(0, 6).map((a) => h("span", { class: "pill", text: `${netName(a.network)} · ${a.label || a.handle}` }))) : (m.login && m.login !== m.name ? h("span", { class: "muted", text: m.login }) : null);
+  return h("li", { class: "row" }, h("span", { class: "person" }, thumb(m.image, m.name || m.login), h("span", { class: "who" }, h("strong", { text: m.name || m.login }), m.inline ? h("em", { class: "tag", text: L("only_this_video") }) : null, m.tag ? h("em", { class: "tag", text: m.tag }) : null, pills)), ...actions);
+}
+function remember(items) { for (const m of items) S.known.set(`id:${m.id}`, { key: `id:${m.id}`, state: "ok", name: m.name, login: m.login, image: m.image, accounts: m.accounts ?? [] }); }
+function addEntry(entry) {
+  if (isFull() || inVideo(keyOf(entry))) return false;
+  S.cfg.costreamers.push(entry);
+  return true;
+}
+function addButton(entry, label) {
+  const has = inVideo(keyOf(entry));
+  return h("button", { type: "button", text: L(has ? "already" : "add"), disabled: has || isFull(), "aria-label": `${L(has ? "already" : "add")} ${label}`, onclick: () => { if (addEntry(entry)) { renderMembers(); rebuild(); } } });
 }
 
-function renderCostreamerManager() {
-  const box = $("saved-list");
-  const rows = S.costreamers.map((m) => {
-    const confirming = S.confirm?.kind === "member" && S.confirm.id === m.login;
-    return h("li", { class: "row" },
-      h("span", { class: "grow", text: `${m.name ? `${m.name} — ` : ""}${m.login}${m.image ? ` · ${L("has_photo")}` : ""}` }),
-      confirming ? h("span", { class: "confirm", role: "group" }, h("button", { type: "button", class: "danger", text: L("confirm_remove_member", { name: m.name || m.login }), onclick: () => removeMember(m.login) }), h("button", { type: "button", text: L("cancel"), onclick: () => { S.confirm = null; renderCostreamerManager(); } }))
-        : [h("button", { type: "button", text: L("edit"), "aria-label": `${L("edit")} ${m.login}`, onclick: () => editMember(m) }), h("button", { type: "button", text: L("remove"), "aria-label": `${L("remove")} ${m.login}`, onclick: () => { S.confirm = { kind: "member", id: m.login }; renderCostreamerManager(); } })]);
+function renderChosen() {
+  const rows = S.cfg.costreamers.map((e) => {
+    const m = viewOf(e), name = m.name || m.login || "";
+    const remove = h("button", { type: "button", text: L("remove"), "aria-label": `${L("remove")} ${name}`, onclick: () => { S.cfg.costreamers = S.cfg.costreamers.filter((x) => keyOf(x) !== keyOf(e)); renderMembers(); rebuild(); } });
+    if (m.state !== "ok") return h("li", { class: "row" }, h("span", { class: `grow ${m.state === "missing" ? "warn" : "muted"}`, text: L(m.state === "missing" ? "member_missing" : m.state === "unreadable" ? "member_unreadable" : "member_loading") }), remove);
+    return personRow(m, remove);
   });
-  box.replaceChildren(...(rows.length ? rows : [h("li", { class: "muted", text: L("members_none") })]));
-  $("raid-import").hidden = !(S.partners > 0);
+  $("chosen").replaceChildren(...(rows.length ? rows : [h("li", { class: "muted", text: L("members_none") })]));
+  $("members-note").textContent = isFull() ? L("members_max", { n: P.LIMITS.costreamers }) : "";
 }
-function editMember(m) { S.editing = m.login; $("c-login").value = m.login; $("c-name").value = m.name; $("c-image").value = m.image; $("c-save").textContent = L("save_changes"); $("c-cancel").hidden = false; $("c-login").focus(); }
-function resetMemberForm() { S.editing = null; for (const id of ["c-login", "c-name", "c-image"]) $(id).value = ""; $("c-save").textContent = L("add_to_list"); $("c-cancel").hidden = true; }
-async function saveMember() {
-  const r = await api("act", { method: "POST", body: { op: "costreamer.save", login: $("c-login").value, name: $("c-name").value, image: $("c-image").value.trim(), original: S.editing || undefined } });
+function renderResults() {
+  const shown = S.search.items.slice(0, S.search.shown);
+  $("results").replaceChildren(...shown.map((m) => personRow(m, addButton({ id: m.id }, m.name))));
+  $("results-more").hidden = S.search.items.length <= S.search.shown;
+}
+function renderCategory() {
+  $("cat-results").replaceChildren(...S.cat.items.map((m) => personRow(m, addButton({ id: m.id }, m.name))));
+  $("cat-more").hidden = !S.cat.next;
+  const free = P.LIMITS.costreamers - S.cfg.costreamers.length, first = $("cat-add-first");
+  first.hidden = !S.cat.items.length || free <= 0; first.textContent = L("cat_add_first", { n: free });
+}
+function renderSaved() {
+  $("saved-box").hidden = !S.adhoc.length;
+  $("saved-list").replaceChildren(...S.adhoc.map((m) => {
+    const entry = { login: m.login, name: m.name, image: m.image }, label = m.name || m.login;
+    return personRow({ name: label, login: m.login, image: m.image, accounts: [], tag: m.legacy ? L("legacy_tag") : "" }, addButton(entry, label),
+      m.legacy ? null : h("button", { type: "button", text: L("remove"), "aria-label": `${L("remove")} ${label}`, onclick: () => removeSaved(m) }));
+  }));
+}
+function renderMembers() {
+  $("book-box").hidden = S.contacts !== "ok"; $("book-absent").hidden = S.contacts !== "absent";
+  renderChosen(); renderResults(); renderCategory(); renderSaved();
+}
+
+/** Relit les fiches de Contacts nommées par la vidéo (modèle chargé, préparation de l'IA) : nom, pseudo, photo. Une fiche fusionnée est suivie, une fiche effacée est signalée. */
+async function resolveRefs() {
+  const todo = [...new Set(S.cfg.costreamers.filter((e) => e.id && S.known.get(`id:${e.id}`)?.state !== "ok" && S.known.get(`id:${e.id}`)?.state !== "missing").map((e) => e.id))];
+  for (let i = 0; i < todo.length; i += 24) {
+    const part = todo.slice(i, i + 24);
+    const r = S.contacts === "ok" ? await api(`members?${part.map((id) => `id=${encodeURIComponent(id)}`).join("&")}`) : { ok: false };
+    if (!r.ok || r.state !== "ok") { for (const id of part) S.known.set(`id:${id}`, { key: `id:${id}`, state: "unreadable", name: "", login: "", image: "", accounts: [] }); continue; }
+    remember(r.members);
+    for (const m of r.members) if (m.movedFrom) {
+      S.cfg.costreamers = S.cfg.costreamers.map((e) => (e.id === m.movedFrom ? { id: m.id } : e)).filter((e, k, all) => all.findIndex((x) => keyOf(x) === keyOf(e)) === k);
+    }
+    for (const id of r.missing) S.known.set(`id:${id}`, { key: `id:${id}`, state: "missing", name: "", login: "", image: "", accounts: [] });
+  }
+}
+async function refreshMembers() { renderMembers(); await resolveRefs(); renderMembers(); rebuild(); }
+
+/* La recherche à la saisie : une liste de 30 au plus (limite de Contacts), montrée 10 par 10. */
+let searchTimer = null;
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  const q = $("q").value.trim(), seq = ++S.searchSeq;
+  if ([...q].length < 2) { S.search = { items: [], shown: 10 }; $("q-note").textContent = L("search_hint"); renderResults(); return; }
+  $("q-note").textContent = L("search_busy");
+  searchTimer = setTimeout(() => runSearch(q, seq), 300);
+}
+async function runSearch(q, seq) {
+  const r = await api(`people?q=${encodeURIComponent(q)}`);
+  if (seq !== S.searchSeq) return;
+  S.search = { items: [], shown: 10 };
+  if (!r.ok) { $("q-note").textContent = errText(r.error); return renderResults(); }
+  if (r.state === "absent") { S.contacts = "absent"; return renderMembers(); }
+  if (r.state !== "ok") { $("q-note").textContent = L("search_slow"); return renderResults(); }
+  remember(r.items);
+  S.search = { items: r.items, shown: 10 };
+  $("q-note").textContent = !r.items.length ? L("search_none") : r.items.length >= 30 ? L("search_refine") : "";
+  renderResults();
+}
+
+/* Ajouter depuis une catégorie de Contacts : les catégories (par pages), puis les comptes de celle qu'on choisit (par pages). */
+const catNote = (text) => { $("cat-note").textContent = text || ""; };
+function renderCategoryPicker() {
+  const sel = $("cat");
+  sel.replaceChildren(h("option", { value: "", text: L("cat_choose") }), ...S.catList.items.map((k) => h("option", { value: k.id, text: k.label })));
+  sel.value = S.cat.id; $("cat-more-cats").hidden = !S.catList.next;
+  if (S.catList.loaded && !S.catList.items.length) catNote(L("cat_none"));
+}
+async function loadCategories(more) {
+  const r = await api(`categories${more && S.catList.next ? `?cursor=${encodeURIComponent(S.catList.next)}` : ""}`);
+  if (!r.ok) return catNote(errText(r.error));
+  if (r.state !== "ok") return catNote(L("search_slow"));
+  S.catList = { items: more ? [...S.catList.items, ...r.items] : r.items, next: r.next, loaded: true };
+  renderCategoryPicker();
+}
+async function loadCategory(more) {
+  const id = S.cat.id, seq = ++S.catSeq;
+  if (!id) { S.cat = { id: "", items: [], next: null }; catNote(""); return renderCategory(); }
+  const r = await api(`category?id=${encodeURIComponent(id)}${more && S.cat.next ? `&cursor=${encodeURIComponent(S.cat.next)}` : ""}`);
+  if (seq !== S.catSeq) return;
+  if (!r.ok) return catNote(errText(r.error));
+  if (r.error === "not_found") { S.cat = { id, items: [], next: null }; catNote(L("cat_gone")); return renderCategory(); }
+  if (r.state !== "ok") return catNote(L("search_slow"));
+  remember(r.items);
+  const have = new Set(more ? S.cat.items.map((m) => m.id) : []);
+  S.cat = { id, items: [...(more ? S.cat.items : []), ...r.items.filter((m) => !have.has(m.id))], next: r.next };
+  catNote(!S.cat.items.length && !S.cat.next ? L("cat_empty") : "");
+  renderCategory();
+}
+async function addFirstOfCategory() {
+  let added = 0, pages = 0;
+  $("cat-add-first").disabled = true;
+  for (;;) {
+    for (const m of S.cat.items) if (addEntry({ id: m.id })) added++;
+    if (isFull() || !S.cat.next || ++pages > 4) break;
+    const before = S.cat.next; await loadCategory(true);
+    if (S.cat.next === before) break;
+  }
+  $("cat-add-first").disabled = false;
+  say(added ? L("cat_added", { n: added }) : L("cat_full", { n: P.LIMITS.costreamers }), added ? "ok" : "");
+  renderMembers(); rebuild();
+}
+
+/* Une personne « pour cette vidéo seulement » : le serveur remet la saisie en ordre (et refuse une photo qu'il ne saurait pas relayer) ; rien n'est enregistré dans Contacts. */
+async function addAdhoc() {
+  $("a-error").textContent = "";
+  const r = await api("act", { method: "POST", body: { op: "adhoc.check", login: $("a-login").value, name: $("a-name").value, image: $("a-image").value.trim() } });
+  if (!r.ok) { $("a-error").textContent = errText(r.error); return; }
+  if (!addEntry(r.entry)) { say(L("members_max", { n: P.LIMITS.costreamers }), "error"); return; }
+  for (const id of ["a-login", "a-name", "a-image"]) $(id).value = "";
+  say("", ""); renderMembers(); rebuild();
+}
+async function removeSaved(m) {
+  const r = await api("act", { method: "POST", body: { op: "adhoc.remove", id: m.id } });
   if (!r.ok) return say(errText(r.error), "error");
-  S.costreamers = r.items; resetMemberForm(); say(L("member_saved"), "ok"); renderMembers(); rebuild();
-}
-async function removeMember(login) {
-  const r = await api("act", { method: "POST", body: { op: "costreamer.remove", login } });
-  S.confirm = null;
-  if (!r.ok) return say(errText(r.error), "error");
-  S.costreamers = r.items; S.cfg.costreamers = S.cfg.costreamers.filter((l) => l !== login); say(L("member_removed"), "ok"); renderMembers(); rebuild();
-}
-async function importPartners() {
-  $("raid-import").disabled = true; say(L("importing"), "");
-  const r = await api("act", { method: "POST", body: { op: "costreamers.import" }, ms: 20000 });
-  $("raid-import").disabled = false;
-  if (!r.ok) return say(r.error === "none" ? L("import_none") : errText(r.error), "error");
-  S.costreamers = r.items; say(L("import_done", { added: r.added, updated: r.updated }), "ok"); renderMembers(); rebuild();
-}
-function addAdhoc() {
-  const input = $("adhoc"), n = P.normalizeLogin(input.value);
-  if (n.error) return say(errText(n.error), "error");
-  if (!allMembers().some((m) => m.login === n.login)) S.adhoc.push({ login: n.login, name: "", image: "" });
-  if (S.cfg.costreamers.length < P.LIMITS.costreamers && !S.cfg.costreamers.includes(n.login)) S.cfg.costreamers.push(n.login);
-  input.value = ""; say("", ""); renderMembers(); rebuild();
+  S.adhoc = S.adhoc.filter((x) => x.id !== m.id); renderSaved();
 }
 
 /* ───────────── Les modèles ───────────── */
@@ -224,8 +331,7 @@ function renderModels() {
 function loadModel(m) {
   const keep = S.cfg.streamKey;
   S.cfg = P.cleanConfig({ ...m.config, streamKey: keep });
-  for (const login of S.cfg.costreamers) if (!allMembers().some((x) => x.login === login)) S.adhoc.push({ login, name: "", image: "" });
-  syncControls(); renderMembers(); rebuild(); say(L("model_loaded", { name: m.name }), "ok");
+  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok");
 }
 async function saveModel() {
   const name = $("model-name").value, clash = S.models.find((m) => m.name.toLowerCase() === P.oneLine(name, 60).toLowerCase());
@@ -281,9 +387,11 @@ function bind() {
   on("replay", "click", () => { S.t = 0; setPlaying(true); });
   on("safe", "change", () => { S.showSafe = $("safe").checked; drawPreview(); });
   on("adhoc-add", "click", addAdhoc);
-  on("adhoc", "keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addAdhoc(); } });
-  on("c-save", "click", saveMember); on("c-cancel", "click", resetMemberForm);
-  on("raid-import", "click", importPartners);
+  for (const id of ["a-login", "a-name", "a-image"]) on(id, "keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addAdhoc(); } });
+  on("q", "input", onSearchInput); on("results-more", "click", () => { S.search.shown += 10; renderResults(); });
+  on("cat-box", "toggle", () => { if ($("cat-box").open && !S.catList.loaded) loadCategories(false); });
+  on("cat", "change", () => { S.cat = { id: $("cat").value, items: [], next: null }; renderCategory(); loadCategory(false); });
+  on("cat-more-cats", "click", () => loadCategories(true)); on("cat-more", "click", () => loadCategory(true)); on("cat-add-first", "click", addFirstOfCategory);
   on("model-save", "click", saveModel);
   on("model-name", "keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); saveModel(); } });
   on("generate", "click", generate); on("cancel", "click", () => S.job?.abort());
@@ -326,7 +434,6 @@ async function generate() {
 /* ───────────── Démarrage ───────────── */
 function applyPrep(prep) {
   S.cfg = P.cleanConfig(prep.config);
-  for (const login of S.cfg.costreamers) if (!allMembers().some((x) => x.login === login)) S.adhoc.push({ login, name: "", image: "" });
   if (prep.manual && prep.manual.title) { S.manual = { title: prep.manual.title, date: prep.manual.date, time: prep.manual.time }; S.useManual = true; for (const f of ["title", "date", "time"]) $(`m-${f}`).value = S.manual[f]; }
   $("prep-note").hidden = false;
 }
@@ -335,7 +442,10 @@ async function start() {
   bind(); syncControls(); renderMembers(); renderModels();
   const [data, streams, prep] = await Promise.all([api("data"), api("streams", { ms: 20000 }), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
   if (data.error === "auth" || streams.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
-  if (data.ok) { S.costreamers = data.costreamers; S.models = data.models; S.partners = data.partners; S.brand = data.brand; }
+  if (data.ok) {
+    S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
+    if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
+  }
   else say(errText(data.error), "error");
   S.streams = streams.ok ? streams.streams : []; S.streamsState = streams.ok ? streams.state : "slow"; S.coverState = streams.coverState ?? "";
   if (!S.cfg.streamKey && S.streams[0]) S.cfg.streamKey = S.streams[0].key;
@@ -347,6 +457,7 @@ async function start() {
   const r = await buildScene();
   if (r) { S.scene = r.scene; S.empty = r.empty; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }
   setPlaying(S.playing);
+  refreshMembers(); // les fiches de Contacts nommées par un modèle ou une préparation : nom, pseudo et photo arrivent ensuite, sans retarder l'aperçu
   $("reduced").hidden = !REDUCED;
   requestAnimationFrame(loop);
 }
