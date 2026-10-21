@@ -1,5 +1,6 @@
 // La page du dock : une page complète (pas un bloc du site) que l'on ajoute à OBS comme « dock de navigateur personnalisé », ou que l'on ouvre dans un onglet.
 // Elle ne contient AUCUNE donnée : elle demande la liste des partenaires en direct à la route `live` du module (même adresse secrète) et se met à jour toute seule.
+// Les délais du navigateur (14 s pour `live`, 18 s pour `pick`) couvrent la lecture de la liste dans Contacts (4,5 s au plus) PLUS les demandes à Twitch (9 s, 12 s).
 // Tout ce qui s'affiche vient de `textContent` (jamais de HTML) ; les seules phrases du serveur sont celles de locales/.
 import { randomBytes } from "node:crypto";
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
@@ -11,8 +12,11 @@ const KEYS = [
   "title", "random", "random_again", "sort", "refresh", "updated", "copied", "copy_failed", "random_toast", "none_to_pick", "empty", "empty_hint", "loading",
   "no_partners", "nr_no_channel", "nr_channel_unknown", "nr_setup", "nr_refused", "nr_outdated", "err_twitch", "err_rate", "err_site", "retry", "denied", "viewers_one", "viewers_other", "hint", "list_label",
   "sort_viewers_asc", "sort_viewers_desc", "sort_newest", "sort_oldest", "sort_mine", "manual_label", "rm_button", "rm_intro", "rm_searching", "rm_none", "limited", "partial",
+  // 2.0 : la liste vient de Contacts (voir source.mjs) ; ce qui peut manquer de ce côté
+  "nr_contacts_missing", "nr_contacts_old", "nr_contacts_down", "nr_category_gone", "nr_no_category", "nr_choose",
 ];
-export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`dock_${k}`)]));
+/** `{label}` : le nom de la catégorie par défaut (« Cible de raid »), dans la langue de la page. */
+export const labelsOf = (ctx) => { const label = ctx.t("default_category"); return Object.fromEntries(KEYS.map((k) => [k, ctx.t(`dock_${k}`, { label })])); };
 
 /** Les mêmes fonctions que celles testées, recopiées dans la page. */
 const shared = [pure.raidCommand, pure.sortPartners, pure.pickRandom, pure.durationText, pure.canSearch].map((f) => f.toString()).join("\n");
@@ -272,7 +276,7 @@ export function dockPage(ctx, { sorts = pure.SORTS, liveUrl, pickUrl }) {
   const nonce = randomBytes(16).toString("base64");
   const L = labelsOf(ctx);
   const accent = /^#[0-9a-fA-F]{6}$/.test(String(ctx.theme?.accent ?? "")) ? ctx.theme.accent : "#9147ff";
-  const config = { liveUrl, labels: L, sorts: [...sorts], pickUrl, searchMinMs: 2000, pickMs: 16_000, intervalMs: 45_000, retryMs: 20_000, fetchMs: 12_000, locale: ctx.locale || "en" };
+  const config = { liveUrl, labels: L, sorts: [...sorts], pickUrl, searchMinMs: 2000, pickMs: 18_000, intervalMs: 45_000, retryMs: 20_000, fetchMs: 14_000, locale: ctx.locale || "en" };
   const script = CLIENT.replace("__SHARED__", () => shared).replace("__CONFIG__", () => JSON.stringify(config).replace(/</g, "\\u003c"));
   const options = sorts.map((s) => `<option value="${esc(s)}">${esc(L[`sort_${s}`])}</option>`).join("");
   const html = `<!doctype html>

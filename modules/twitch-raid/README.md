@@ -1,14 +1,15 @@
 # Raid Twitch
 
-Vous finissez votre live et vous voulez **raider un ami**. Mais qui est en direct à cet instant ? Ce module vous le montre : vous y listez les chaînes de vos partenaires, et il vous donne un **petit panneau (un « dock »)** à placer dans OBS. Ce panneau n'affiche **que les partenaires en direct**, avec leur jeu, leur titre, leurs spectateurs et depuis combien de temps ils streament.
+Vous finissez votre live et vous voulez **raider un ami**. Mais qui est en direct à cet instant ? Ce module vous le montre : vos partenaires sont dans **Contacts** (le carnet d'adresses de votre site), et il vous donne un **petit panneau (un « dock »)** à placer dans OBS. Ce panneau n'affiche **que les partenaires en direct**, avec leur jeu, leur titre, leurs spectateurs et depuis combien de temps ils streament.
 
 **Un clic sur un partenaire copie la commande de raid** (par exemple `/raid mon_ami`). Vous la collez dans votre chat Twitch et appuyez sur Entrée : c'est vous qui lancez le raid, le module n'écrit jamais à votre place.
 
 ## Pour commencer
-1. **Installez le module.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent avec lui. Si ce n'est pas déjà fait, suivez le guide du Connecteur Twitch pour renseigner l'application Twitch (c'est la même pour tout ce qui touche à Twitch, une seule fois), et indiquez votre chaîne dans « Ma Chaîne Twitch ».
-2. **Ajoutez vos partenaires.** Sur la page du module, tapez un pseudo Twitch par ligne. Vous pouvez aussi coller l'adresse de la chaîne (`twitch.tv/pseudo`) ou un `@pseudo`, et en coller plusieurs d'un coup : le module range tout seul. Si un pseudo n'est pas bon, il vous dit lequel et pourquoi, et ajoute quand même les autres.
-3. **Placez le dock dans OBS.** Copiez « l'adresse du dock », puis dans OBS : **Docks**, **Docks de navigateur personnalisés**, un nom (« Raid »), l'adresse, **Appliquer**. Vous pouvez aussi ouvrir cette adresse dans un onglet.
-4. **Vérifiez** avec « Voir qui est en direct maintenant » : si tout est en place, le module le dit, et sinon il explique quoi régler.
+1. **Installez le module.** Le « Connecteur Twitch », « Ma Chaîne Twitch » et « Contacts » s'installent avec lui. Si ce n'est pas déjà fait, suivez le guide du Connecteur Twitch pour renseigner l'application Twitch (c'est la même pour tout ce qui touche à Twitch, une seule fois), et indiquez votre chaîne dans « Ma Chaîne Twitch ».
+2. **Créez votre liste de raid.** Dans les réglages du module, réglage « Liste de raid », tapez « Cible de raid » puis cliquez sur « Créer » : c'est une catégorie de Contacts. (Si elle existe déjà, rien à faire : le module la trouve tout seul.)
+3. **Ajoutez vos partenaires dans Contacts.** Ouvrez Contacts (le lien « Gérer mes partenaires dans Contacts » y mène), créez ou ouvrez la fiche de chaque partenaire, ajoutez sa chaîne Twitch et la catégorie « Cible de raid ». Une personne a une seule fiche pour tout le site : son nom et sa photo servent partout.
+4. **Placez le dock dans OBS.** Copiez « l'adresse du dock », puis dans OBS : **Docks**, **Docks de navigateur personnalisés**, un nom (« Raid »), l'adresse, **Appliquer**. Vous pouvez aussi ouvrir cette adresse dans un onglet.
+5. **Vérifiez** avec « Voir qui est en direct maintenant » : si tout est en place, le module le dit, et sinon il explique quoi régler.
 
 ## Le dock
 - **Seuls les partenaires en direct** apparaissent. Pour chacun : son nom, le jeu, le titre, le nombre de spectateurs et la durée du live.
@@ -19,12 +20,16 @@ Vous finissez votre live et vous voulez **raider un ami**. Mais qui est en direc
 - Il est pensé pour un **dock étroit** (300 pixels) comme pour un téléphone, en sombre, et se manie aussi au clavier.
 - Aucun partenaire en direct ? Il écrit simplement « Aucun de vos partenaires n'est en direct pour le moment ».
 
-## Votre liste
-- **Ajouter, modifier, retirer, monter, descendre.** Pour chaque chaîne, vous pouvez donner un **nom affiché** (si vous préférez un autre nom que celui de Twitch) et une **note** pour vous seul (elle n'apparaît jamais dans le dock).
-- **2 000 chaînes au plus.** Pour une liste longue, la page affiche **50 chaînes par page**, avec un **champ de recherche** (pseudo, nom ou note), le nombre total de chaînes en haut, et les mêmes boutons Modifier / Retirer sur chaque ligne : après une action, vous revenez à la même page.
-- **Importer toute une communauté d'un coup** : collez vos pseudos (un par ligne, ou séparés par des virgules ou des espaces), environ 1 400 à la fois. Un bilan dit combien ont été ajoutés, combien y étaient déjà et lesquels ne sont pas valables, **sans bloquer les bons**. Si votre texte est trop long, le module le dit et vous indique où reprendre : aucun pseudo coupé en deux n'est ajouté.
-- **Une sauvegarde lisible** de la liste (tableur) est incluse dans les sauvegardes du site.
-- L'ordre de votre liste sert au tri « Dans l'ordre de ma liste », et à départager deux chaînes qui ont autant de spectateurs.
+## Votre liste (dans Contacts)
+- **Votre liste de raid, ce sont les fiches d'une catégorie de Contacts** (« Cible de raid » par défaut, ou celle que vous choisissez dans le réglage « Liste de raid ») qui ont une chaîne Twitch. Une fiche avec deux chaînes Twitch compte deux fois (une par chaîne).
+- **Ajouter, retirer, renommer, noter** : tout se fait dans Contacts. La page de Raid montre le nombre de chaînes, l'état du dock et le lien « Gérer mes partenaires dans Contacts ».
+- **Le nom** affiché dans le dock est celui de la fiche (sinon celui de Twitch) ; **la photo** est celle que Contacts choisit pour la fiche.
+- **La catégorie a disparu ?** La page le dit (« La catégorie choisie n'existe plus, choisissez-en une ») et le dock aussi. Si elle a été **fusionnée** avec une autre dans Contacts, Raid suit tout seul.
+- **Contacts ne répond pas un moment ?** Le dock continue avec la dernière liste connue pendant 10 minutes au plus, puis le dit clairement.
+- L'ordre de Contacts sert au tri « Dans l'ordre de ma liste », et à départager deux chaînes qui ont autant de spectateurs.
+
+### Vous veniez d'une version 1.x ?
+À la mise à jour, **votre ancienne liste passe dans Contacts toute seule** : une fiche par chaîne (une fiche qui existait déjà avec ce compte Twitch est reprise, jamais doublée), avec le nom que vous aviez donné et **votre note devenue une note de la fiche**. Si la catégorie « Cible de raid » existe déjà, les fiches y sont rangées. Sinon, la page de Raid vous demande une dernière étape : créer « Cible de raid » dans le réglage « Liste de raid », puis cliquer sur « Ranger mes chaînes dans cette catégorie ». En attendant, le dock continue d'utiliser vos chaînes. Une liste très longue se copie par morceaux : si la copie a été interrompue, un bouton « Continuer la copie » la reprend là où elle s'était arrêtée. **Rien n'est perdu** : votre ancienne liste reste gardée telle quelle jusqu'à une mise à jour d'entretien.
 
 ## Pour une grande communauté (association, collectif)
 Le module sait servir **des centaines de membres** avec un seul dock.
@@ -39,7 +44,7 @@ Une seule personne tient la liste, sur **un seul site**. Les membres n'ont **rie
 
 1. Installez **« Raid Twitch »** sur le site central : le **Connecteur Twitch** et **Ma Chaîne Twitch** s'installent avec lui. Dans le Connecteur, renseignez l'**identifiant client** et le **secret** de votre application Twitch ; dans Ma Chaîne Twitch, la chaîne du site. Aucune connexion de compte n'est nécessaire.
 2. Ouvrez la page de **« Raid Twitch »**.
-3. Importez la liste des membres (zone « Ajouter des partenaires », collage par paquets).
+3. Mettez les membres dans Contacts, dans la catégorie « Cible de raid » (l'import de Contacts accepte une liste collée ou un fichier).
 4. Copiez **l'adresse du dock** et donnez-la à vos membres : dans OBS, **Docks**, **Docks de navigateur personnalisés**, un nom, l'adresse, **Appliquer**.
 
 Le site central **n'interroge Twitch que lorsque quelqu'un regarde ou clique**, et le nombre de demandes **ne dépend pas du nombre de membres** : tout le monde partage les mêmes réponses (30 secondes pour la liste complète, une minute pour le mode « au hasard »). Rien n'est écrit sur le disque : si le site redémarre, les réponses gardées sont simplement oubliées.
@@ -55,11 +60,11 @@ Un outil, **non accordé d'office** (administration, accès de votre IA) :
 | `raid_partners_live` | Dit quels partenaires sont en direct maintenant (nom, jeu, titre, spectateurs, depuis combien de minutes) avec la commande de raid de chacun. Au-delà de 500 chaînes, elle ne donne pas la liste mais **un membre en direct tiré au hasard**. Lecture seule : rien n'est envoyé. |
 
 ## Pour vos autres modules
-Si vous avez aussi « Story d'annonce », il peut **reprendre vos partenaires** (pseudo, nom affiché et **photo de profil Twitch**) pour les montrer dans vos vidéos d'annonce : un bouton lui suffit, rien à régler. Seuls le pseudo, le nom et la photo sont partagés : **jamais vos notes**, ni l'adresse secrète du dock. Sans ce module, rien ne change.
+Si vous avez aussi « Story d'annonce », il peut **reprendre vos partenaires** (pseudo, nom et photo, lus dans Contacts) pour les montrer dans vos vidéos d'annonce : un bouton lui suffit, rien à régler. Seuls le pseudo, le nom et la photo sont partagés : **jamais de note**, ni l'adresse secrète du dock. Sans ce module, rien ne change.
 
 ## À savoir
-- Les informations viennent de Twitch **par le « Connecteur Twitch »** : ce module ne parle jamais à Twitch lui-même. Il faut Curiosa 0.2.0 ou plus ; le Connecteur et Ma Chaîne Twitch 2.0 sont installés ou mis à jour avec lui.
+- Les informations viennent de Twitch **par le « Connecteur Twitch »** : ce module ne parle jamais à Twitch lui-même. La liste vient de **Contacts** (version 2 ou plus). Il faut Curiosa 0.2.1 ou plus ; le Connecteur, Ma Chaîne Twitch et Contacts sont installés ou mis à jour avec lui.
 - Pas besoin de connecter votre compte Twitch : l'identifiant et le secret de votre application, réglés une fois dans le Connecteur Twitch, suffisent.
 - Les informations sont gardées 30 secondes : plusieurs docks ou onglets ouverts en même temps ne font qu'une seule demande à Twitch (une par groupe de 100 chaînes). Si une partie des chaînes n'a pas pu être vérifiée, le dock affiche ce qu'il a avec le message « Certaines chaînes n'ont pas pu être vérifiées. »
 - Si votre site a plusieurs chaînes Twitch (plusieurs « Ma Chaîne Twitch »), le mode avancé permet de **choisir dans la liste** laquelle utiliser ; sans choix, c'est la première qui est prête. Avec une seule chaîne, il n'y a rien à choisir. Si vous aviez tapé un pseudo avant la version 1.3.0, il continue de servir ; la page vous propose de confirmer la chaîne dans la liste.
-- **Vie privée** : le module ne collecte rien sur vos visiteurs. Il garde votre liste de chaînes, vos notes et l'adresse secrète du dock, visibles des seuls administrateurs. Le dock n'affiche que des informations publiques de Twitch.
+- **Vie privée** : le module ne collecte rien sur vos visiteurs. Il ne garde pas de liste à lui (elle est dans Contacts) : seulement l'adresse secrète du dock et, après une mise à jour depuis la 1.x, la copie inchangée de l'ancienne liste (retirée lors d'une mise à jour d'entretien). Quand une personne est effacée dans Contacts, elle est aussi retirée de cette copie, et l'export « tout ce que le site sait d'elle » inclut ce que Raid en garde. Le dock n'affiche que des informations publiques de Twitch.

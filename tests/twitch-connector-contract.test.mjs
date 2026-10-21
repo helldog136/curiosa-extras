@@ -12,7 +12,7 @@ const manifestOf = (id) => JSON.parse(fs.readFileSync(new URL(`../modules/${id}/
 const L = await import("../modules/twitch-bot/listen.mjs");
 const botSettings = await import("../modules/twitch-bot/settings.mjs");
 const raidLive = await import("../modules/twitch-raid/live.mjs");
-const raidPartners = await import("../modules/twitch-raid/partners.mjs");
+const raidSource = await import("../modules/twitch-raid/source.mjs");
 const channelMod = await import("../modules/twitch-channel/index.mjs");
 const liveStatus = (await import("../modules/live-status/index.mjs")).default;
 const OWN = connectorCallback("https://site.example.org");
@@ -20,7 +20,7 @@ const PIC = "https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_image-30
 const realFetch = globalThis.fetch;
 let tw, C;
 beforeEach(() => {
-  connectorModule.resetCache(); channelMod.resetCache(); raidLive.resetLive(); raidPartners.resetPartners();
+  connectorModule.resetCache(); channelMod.resetCache(); raidLive.resetLive(); raidSource.resetSource();
   tw = fakeTwitch({ redirects: new Set([OWN]), users: [{ login: "alice", name: "Alice", picture: PIC }, { login: "bob_x", name: "Bob" }], streams: [{ login: "alice", title: "Chez Alice", game: "Zelda", viewers: 3 }] });
   globalThis.fetch = (u, i) => tw.fetch(u, i);
   C = connector({ siteUrl: "https://site.example.org" });
@@ -92,7 +92,7 @@ test("Bot Twitch : Connecteur sans application → « creds_missing » ; ce que 
   assert.equal((await L.diagnose(ctx, botSettings.settingsOf(ctx))).code, "creds_missing");
 });
 
-test("Raid Twitch : pickChannel (account) puis « qui est en direct » (GET streams, 100 pseudos) et photos (GET users) par le Connecteur", async () => {
+test("Raid Twitch : pickChannel (account) puis « qui est en direct » (GET streams, 100 pseudos) par le Connecteur (2.0 : plus de GET users, les photos viennent de Contacts)", async () => {
   await C.methods.register({ channel: "machaine" });
   const ctx = consumer({ ctx: { key: "raid", moduleId: "twitch-raid" } });
   assert.deepEqual(await raidLive.pickChannel(ctx, ""), { channel: "machaine" });
@@ -100,8 +100,6 @@ test("Raid Twitch : pickChannel (account) puis « qui est en direct » (GET stre
   const r = await raidLive.liveNow(ctx, partners, {});
   assert.equal(r.state, "ok");
   assert.deepEqual(r.live.map((x) => x.login), ["alice"]);
-  const items = await raidPartners.partnerItems(ctx, partners, {});
-  assert.deepEqual(items.map((x) => [x.login, x.title, x.image ?? null]), [["alice", "Alice", PIC], ["bob_x", "Bob", null]]);
   assert.ok(tw.log.some((c) => c.path === "/helix/streams" && c.search.includes("first=100")));
   // Connecteur sans application : le Raid dit quoi faire (pas d'exception)
   connectorModule.resetCache(); raidLive.resetLive();
