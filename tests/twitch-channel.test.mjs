@@ -34,7 +34,7 @@ test("manifeste : valide ; « Ma Chaîne Twitch », identifiant conservé ; 2.0.
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifestJson.id, "twitch-channel");
   assert.deepEqual(manifestJson.name, { en: "My Twitch channel", fr: "Ma Chaîne Twitch" });
-  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.0.0", "0.2.0", 2]);
+  assert.deepEqual([manifestJson.version, manifestJson.minCore, manifestJson.dataVersion], ["2.0.1", "0.2.2", 2]);
   assert.deepEqual(manifestJson.offers.map((o) => [o.service, o.each]), [["twitch.live", true]]);
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional ?? false]), [["twitch.api", 3, false]]);
   assert.deepEqual(manifestJson.legacySettings, [{ key: "clientId" }, { key: "clientSecret", secret: true }, { key: "useCredentialsOf" }]);

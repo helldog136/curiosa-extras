@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.1",
+  "minCore": "0.2.2",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.0.0",
+  "version": "2.0.1",
   "platform": "twitch",
   "description": {
     "fr": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts : les personnes de la catégorie « Cible de raid » (ou celle que vous choisissez) qui ont une chaîne Twitch. Un clic copie la commande de raid à coller dans votre chat, un bouton en choisit une au hasard. Pour les grandes communautés : au-delà de 500 chaînes, un bouton « trouver quelqu'un en ligne au hasard ».",
@@ -47,26 +47,25 @@
     }
   ],
   "dataVersion": 3,
-  "provides": [
-    {
-      "topic": "stream.partner",
-      "label": {
-        "en": "Your partner channels (name and profile picture)",
-        "fr": "Vos chaînes partenaires (nom et photo de profil)"
-      }
-    }
-  ],
   "permissions": [
     "routes",
     "storage",
     "admin",
-    "topics",
     "mcp"
   ],
   "privacy": {
     "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts (noms et photos jamais copiés). Le module garde l'adresse secrète du dock et, depuis la 2.0, une copie inchangée de la liste de la version 1 (chaînes et notes, jamais affichées), retirée à une mise à jour d'entretien. Le dock montre à qui a son adresse des informations publiques de Twitch et se souvient une minute de qui était en direct. Une personne effacée dans Contacts est retirée de cette copie.",
     "en": "Collects nothing about your visitors. The list is read in Contacts (names and pictures never copied). The module keeps the secret address of the dock and, since 2.0, an unchanged copy of the version 1 list (channels and notes, never shown), removed by a maintenance update. The dock shows public Twitch information to whoever has its address and remembers for one minute who was live. A person erased in Contacts is removed from that copy."
   },
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Ma liste",
+        "en": "My list"
+      }
+    }
+  ],
   "settings": [
     {
       "key": "category",

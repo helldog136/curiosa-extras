@@ -29,7 +29,7 @@ Le Connecteur est **une seule application Twitch**, avec autant de comptes conne
 
 ## Pour les développeurs
 
-Identifiant `twitch-connector`, `instances: "single"`, `minCore` 0.2.0. La clé d'instance par défaut est celle que le cœur 0.2.0 dérive de l'identifiant du module (`twitch-connector`) : l'adresse de retour des **nouvelles** configurations est donc `<site>/m/twitch-connector/oauth/callback` (le cœur 0.2.0 n'a pas de réglage de clé par défaut ; voir le CHANGELOG). Réglages : `appClientId` (texte, `refersTo: "external"`) et `appSecret` (secret). Les valeurs reprises vivent dans le stockage (`twitchApp`) ; un réglage saisi a toujours le dessus, champ par champ.
+Identifiant `twitch-connector`, `instances: "single"`, `minCore` 0.2.2. La clé d'instance par défaut est celle que le cœur 0.2.0 dérive de l'identifiant du module (`twitch-connector`) : l'adresse de retour des **nouvelles** configurations est donc `<site>/m/twitch-connector/oauth/callback` (le cœur 0.2.0 n'a pas de réglage de clé par défaut ; voir le CHANGELOG). Réglages : `appClientId` (texte, `refersTo: "external"`) et `appSecret` (secret). Les valeurs reprises vivent dans le stockage (`twitchApp`) ; un réglage saisi a toujours le dessus, champ par champ.
 
 ### Service `twitch.api`, version 3 (non `each`)
 Sur-ensemble de la version 2 offerte par « Chaîne Twitch » 1.7 : les appels de *Bot Twitch*, *Raid Twitch* et *Statut live* passent sans changement.

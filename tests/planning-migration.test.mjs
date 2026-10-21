@@ -26,7 +26,7 @@ test("manifeste : dataVersion 3, migrations 2 et 3, adresse d'avant seulement en
   assert.ok(manifest.seeds[0].reason.fr && manifest.seeds[0].reason.en);
   const target = JSON.parse(fs.readFileSync(new URL("../modules/calendar-ical/module.json", import.meta.url), "utf8"));
   assert.ok(target.provides.some((p) => p.topic === "planning.slot") && manifest.consumes.some((c) => c.topic === "planning.slot"));
-  assert.equal(manifest.minCore, "0.2.0", "ctx.legacy (réglages hérités) arrive avec le cœur 0.2.0");
+  assert.equal(manifest.minCore, "0.2.2", "ctx.legacy (réglages hérités) arrive avec le cœur 0.2.0 ; les onglets (2.2.0) avec le 0.2.2");
   const url = target.settings.map((s) => s.key);
   assert.ok(url.includes("url") && url.includes("timezone"), "les réglages semés existent chez la cible");
   assert.equal(target.settings.find((s) => s.key === "url").type, "secret");

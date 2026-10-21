@@ -7,7 +7,7 @@ Vos prochains streams, jour par jour, **affichés** dans l'apparence de votre ch
 
 Installez l'un des deux, ou les deux : leurs streams s'ajoutent (un stream écrit deux fois n'est montré qu'une fois). Le **bot Twitch** lit les mêmes agendas : il peut répondre à `!planning` même sans Planning.
 
-Il faut Curiosa 0.1.27 ou plus.
+Il faut Curiosa 0.2.2 ou plus.
 
 - **Page publique** `/planning` : les *N* prochains jours (7 par défaut, réglage avancé).
 - **Section d'accueil** « Prochains streams » et « Prochain stream » (à placer depuis *Page d'accueil*).

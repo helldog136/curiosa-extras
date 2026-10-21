@@ -1,9 +1,9 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.0",
+  "minCore": "0.2.2",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -71,6 +71,15 @@
     "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page.",
     "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot."
   },
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Commandes",
+        "en": "Commands"
+      }
+    }
+  ],
   "settings": [
     {
       "key": "onlyWhenLive",

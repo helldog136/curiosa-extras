@@ -5,8 +5,8 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.1.0",
-  "minCore": "0.2.0",
+  "version": "2.2.0",
+  "minCore": "0.2.2",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
@@ -214,6 +214,22 @@
     "mcp",
     "rawg"
   ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Créneaux",
+        "en": "Slots"
+      }
+    },
+    {
+      "id": "look",
+      "label": {
+        "fr": "Apparence",
+        "en": "Appearance"
+      }
+    }
+  ],
   "settings": [
     {
       "key": "channelUrl",
@@ -257,6 +273,7 @@
       "type": "select",
       "default": "original",
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Schedule look",
         "fr": "Apparence du planning"
@@ -322,6 +339,7 @@
       "type": "select",
       "default": "comfortable",
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Density",
         "fr": "Densité"
@@ -352,6 +370,7 @@
       "type": "boolean",
       "default": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Show game covers",
         "fr": "Afficher les jaquettes des jeux"
@@ -362,6 +381,7 @@
       "type": "boolean",
       "default": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Show “In 3 h”, “Tomorrow”…",
         "fr": "Afficher « Dans 3 h », « Demain »…"
@@ -373,6 +393,7 @@
       "default": "24",
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Time format",
         "fr": "Format de l'heure"
@@ -400,6 +421,7 @@
       "default": "1",
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "First day of the week",
         "fr": "Premier jour de la semaine"
@@ -438,6 +460,7 @@
       "default": false,
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Show the time zone under the schedule",
         "fr": "Rappeler le fuseau horaire sous le planning"
@@ -449,6 +472,7 @@
       "default": "text",
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Day heading style",
         "fr": "Style des en-têtes de jour"
@@ -483,6 +507,7 @@
       "default": false,
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Also show the end time",
         "fr": "Afficher aussi l'heure de fin"
@@ -494,6 +519,7 @@
       "default": false,
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Show cancelled streams (struck through)",
         "fr": "Montrer les streams annulés (barrés)"
@@ -509,6 +535,7 @@
       "default": false,
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Classic list: hide days without a stream",
         "fr": "Liste classique : masquer les jours sans stream"
@@ -520,6 +547,7 @@
       "default": "left",
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Alternating list: side of the first day",
         "fr": "Liste en alternance : côté du premier jour"
@@ -547,6 +575,7 @@
       "default": "calendar",
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Week grid: weeks",
         "fr": "Semaine en grille : semaines"
@@ -578,6 +607,7 @@
       "default": false,
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Timeline: also show days without a stream",
         "fr": "Timeline : montrer aussi les jours sans stream"
@@ -589,6 +619,7 @@
       "default": 5,
       "advanced": true,
       "group": "appearance",
+      "tab": "look",
       "label": {
         "en": "Spotlight: how many “up next” streams",
         "fr": "À la une : combien de streams « à suivre »"

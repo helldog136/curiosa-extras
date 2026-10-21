@@ -1,9 +1,9 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.2.2",
   "id": "guestbook",
   "name": { "en": "Guestbook", "fr": "Livre d'or" },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": {
     "en": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework.",
     "fr": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
@@ -22,6 +22,15 @@
   "basePath": "guestbook",
   "permissions": ["slots", "routes", "storage", "sections", "pages", "topics", "mcp", "admin", "mail"],
 
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Messages",
+        "en": "Messages"
+      }
+    }
+  ],
   "settings": [
     {
       "key": "title", "type": "text", "translatable": true,

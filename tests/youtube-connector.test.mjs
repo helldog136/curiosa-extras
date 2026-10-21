@@ -44,7 +44,7 @@ test("manifeste : valide, une seule instance, offre youtube.api v1, clé secrèt
   assert.equal(manifest.type, "integration");
   assert.equal(manifest.platform, "youtube");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version, !!o.each]), [["youtube.api", 1, false]]);
-  assert.equal(manifest.minCore, "0.2.0");
+  assert.equal(manifest.minCore, "0.2.2");
   const keySetting = manifest.settings.find((s) => s.key === "apiKey");
   assert.equal(keySetting.type, "secret");
   assert.ok(!keySetting.advanced && !("default" in keySetting), "saisissable en mode simple, sans valeur par défaut");

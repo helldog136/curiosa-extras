@@ -2,7 +2,7 @@
 
 Le site tient à jour **les chiffres de vos réseaux** : abonnés, abonnés payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 abonnés cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre, et cet affichage n'existe pas encore dans cette version (voir « Ce qui viendra »).
 
-**Il faut Curiosa 0.1.16 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (spectateurs moyens, pic, temps de direct et regardé, followers gagnés).
+**Il faut Curiosa 0.2.2 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (spectateurs moyens, pic, temps de direct et regardé, followers gagnés).
 
 ## Pour commencer : rien à régler
 1. Installez et activez ce module.

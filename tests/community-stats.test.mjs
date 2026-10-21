@@ -28,9 +28,9 @@ function make({ items = [], settings = {}, locale = "fr", messages } = {}) {
 const statOf = async (ctx, id) => (await loadStats(ctx)).find((s) => s.id === id);
 const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
-test("manifeste : valide, 1.1.1, minCore 0.1.16, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
+test("manifeste : valide, 1.1.2, minCore 0.2.2, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.1.1"); assert.equal(manifestJson.minCore, "0.1.16"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.1.2"); assert.equal(manifestJson.minCore, "0.2.2"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });

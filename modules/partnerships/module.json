@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.1",
+  "minCore": "0.2.2",
   "id": "partnerships",
   "name": {
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
     "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
@@ -45,6 +45,15 @@
     "storage",
     "topics",
     "mcp"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Partenaires",
+        "en": "Partners"
+      }
+    }
   ],
   "settings": [
     {

@@ -13,7 +13,6 @@ const live = await import(`./live.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
 const dock = await import(`./dock.mjs${v}`);
 const pure = await import(`./pure.mjs${v}`);
-const partnersOf = await import(`./partners.mjs${v}`);
 const source = await import(`./source.mjs${v}`);
 const migrate = await import(`./migrate.mjs${v}`);
 const privacy = await import(`./privacy.mjs${v}`);
@@ -57,11 +56,6 @@ export default {
       const result = list.problem ?? await search.findRandom(ctx, list.partners, admin.settingsOf(ctx), { avoid });
       return new Response(JSON.stringify({ ...result, now: Date.now() }), { headers: dock.jsonHeaders });
     },
-  },
-
-  // Les partenaires (pseudo, nom, photo : tout vient de Contacts), pour les modules qui en ont l'usage (sujet `stream.partner`, lu par Story tant qu'elle ne lit pas Contacts elle-même).
-  exports: {
-    async "stream.partner"(ctx, { limit } = {}) { return partnersOf.partnerItems(ctx, limit); },
   },
 
   // Vie privée : Contacts demande ce que ce module sait d'une fiche (export), de l'oublier (effacement) ou de suivre une fusion. Voir privacy.mjs.

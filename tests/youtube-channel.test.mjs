@@ -50,7 +50,7 @@ test("manifeste : valide, la clé n'est plus un réglage (réglage hérité masq
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional]), [["youtube.api", 1, true]]);
   assert.equal(manifestJson.dataVersion, 2);
   assert.equal(typeof def.migrations[2], "function");
-  assert.equal(manifestJson.minCore, "0.2.0");
+  assert.equal(manifestJson.minCore, "0.2.2");
   assert.equal(manifestJson.settings.find((s) => s.key === "channelId").refersTo, "external", "une chaîne YouTube est un profil externe : texte");
   assert.ok(!manifestJson.settings.some((s) => s.type === "secret"), "aucun secret ici");
   assert.ok(!/\bfetch\(|googleapis/.test(source), "aucun fetch direct ni appel à l'interface de données : ctx.api.net et le service youtube.api");

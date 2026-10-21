@@ -95,9 +95,6 @@ test("Raid Twitch réglé sur la DEUXIÈME chaîne (pseudo tapé) : la migration
   assert.equal(r.state, "ok");
   assert.deepEqual(r.live.map((x) => x.login).sort(), ["alice", "machaine"], "la chaîne servie (« autre ») n'est pas dans son propre dock ; la première chaîne, si");
   assert.ok(tw.log.some((c) => c.path === "/helix/streams"), "GET streams fait par le Connecteur");
-  const items = await raidDef.exports["stream.partner"](ctx, {});
-  assert.deepEqual(items.find((x) => x.login === "alice"), { id: "alice", login: "alice", title: "Alice", image: "https://static-cdn.jtvnw.net/jtv_user_pictures/alice.png" }, "nom et photo lus dans Contacts (plus de GET users)");
-  assert.ok(!tw.log.some((c) => c.path === "/helix/users" && c.search.includes("login=alice")));
   // l'administration ne signale aucun problème de chaîne
   const blocks = await raidDef.adminPanel(ctx, { query: {} });
   assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), JSON.stringify(blocks.filter((b) => b.type === "banner")));

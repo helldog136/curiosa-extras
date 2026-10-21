@@ -48,7 +48,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bluesky",
       "ref": "v1.11.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "platform": "bluesky",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -56,7 +56,10 @@
       "provides": [
         "social.link",
         "social.stat"
-      ]
+      ],
+      "requires": {
+        "core": "0.2.2"
+      }
     },
     {
       "id": "calendar-ical",
@@ -83,7 +86,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-manual",
       "ref": "v1.11.0",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "✍️",
@@ -91,7 +94,7 @@
         "planning.slot"
       ],
       "requires": {
-        "core": "0.1.22"
+        "core": "0.2.2"
       }
     },
     {
@@ -125,12 +128,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/community-stats",
       "ref": "v1.11.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
       "requires": {
-        "core": "0.1.16"
+        "core": "0.2.2"
       }
     },
     {
@@ -195,7 +198,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
       "ref": "v1.11.0",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -205,7 +208,7 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.1.22"
+        "core": "0.2.2"
       }
     },
     {
@@ -215,13 +218,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
       "ref": "v1.11.0",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📣",
       "requires": {
-        "core": "0.1.22"
+        "core": "0.2.2"
       }
     },
     {
@@ -247,12 +250,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
       "ref": "v1.11.0",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       }
     },
     {
@@ -262,7 +265,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/github",
       "ref": "v1.11.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "platform": "github",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -270,7 +273,10 @@
       "provides": [
         "social.link",
         "social.stat"
-      ]
+      ],
+      "requires": {
+        "core": "0.2.2"
+      }
     },
     {
       "id": "hero",
@@ -351,13 +357,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
       "ref": "v1.11.0",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔴",
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       },
       "needs": [
         "twitch.live"
@@ -370,7 +376,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mastodon",
       "ref": "v1.11.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "platform": "mastodon",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -378,7 +384,10 @@
       "provides": [
         "social.link",
         "social.stat"
-      ]
+      ],
+      "requires": {
+        "core": "0.2.2"
+      }
     },
     {
       "id": "maze-overlay",
@@ -387,12 +396,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/maze-overlay",
       "ref": "v1.11.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🌀",
       "requires": {
-        "core": "0.1.10"
+        "core": "0.2.2"
       }
     },
     {
@@ -414,7 +423,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/partnerships",
       "ref": "v1.11.0",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤝",
@@ -422,7 +431,7 @@
         "partnership.partner"
       ],
       "requires": {
-        "core": "0.2.1"
+        "core": "0.2.2"
       },
       "offers": [
         {
@@ -473,12 +482,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.11.0",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       }
     },
     {
@@ -500,7 +509,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/reddit",
       "ref": "v1.11.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "platform": "reddit",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -508,7 +517,10 @@
       "provides": [
         "social.link",
         "social.stat"
-      ]
+      ],
+      "requires": {
+        "core": "0.2.2"
+      }
     },
     {
       "id": "snapchat",
@@ -608,13 +620,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-story",
       "ref": "v1.11.0",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📱",
       "requires": {
-        "core": "0.2.1"
+        "core": "0.2.2"
       },
       "offers": [
         {
@@ -697,13 +709,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.11.0",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🤖",
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       },
       "needs": [
         {
@@ -720,7 +732,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.11.0",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -732,7 +744,7 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       },
       "offers": [
         {
@@ -754,13 +766,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-connector",
       "ref": "v1.11.0",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔌",
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       },
       "offers": [
         {
@@ -776,16 +788,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
       "ref": "v1.11.0",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🚀",
-      "provides": [
-        "stream.partner"
-      ],
       "requires": {
-        "core": "0.2.1"
+        "core": "0.2.2"
       },
       "offers": [
         {
@@ -828,7 +837,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-channel",
       "ref": "v1.11.0",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -840,7 +849,7 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       },
       "needs": [
         {
@@ -856,13 +865,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-connector",
       "ref": "v1.11.0",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "platform": "youtube",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔌",
       "requires": {
-        "core": "0.2.0"
+        "core": "0.2.2"
       },
       "offers": [
         "youtube.api"
@@ -893,7 +902,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/guestbook",
       "ref": "v1.11.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📖",
@@ -902,7 +911,7 @@
         "guestbook.message"
       ],
       "requires": {
-        "core": "0.1.22"
+        "core": "0.2.2"
       }
     }
   ]

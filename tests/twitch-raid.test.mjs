@@ -15,7 +15,6 @@ const def = (await import("../modules/twitch-raid/index.mjs")).default;
 const pure = await import("../modules/twitch-raid/pure.mjs");
 const data = await import("../modules/twitch-raid/data.mjs");
 const live = await import("../modules/twitch-raid/live.mjs");
-const partnersMod = await import("../modules/twitch-raid/partners.mjs");
 const dock = await import("../modules/twitch-raid/dock.mjs");
 const admin = await import("../modules/twitch-raid/admin.mjs");
 const source = await import("../modules/twitch-raid/source.mjs");
@@ -57,15 +56,15 @@ const addPartners = (text, { name, note } = {}) => {
 const readPartners = async (ctx) => (await source.targets(ctx)).partners;
 const contactOf = (login) => book.dump().contacts.find((c) => c.accounts.some((a) => a.handle === login));
 const timing0 = { ...live.timing };
-const ptiming0 = { ...partnersMod.timing }, stiming0 = { ...source.timing };
-beforeEach(() => { api = fakeApi(); book = fakeContactBook(); CAT = book.seedCategory("Cible de raid"); live.resetLive(); source.resetSource(); Object.assign(live.timing, timing0); Object.assign(partnersMod.timing, ptiming0); });
+const stiming0 = { ...source.timing };
+beforeEach(() => { api = fakeApi(); book = fakeContactBook(); CAT = book.seedCategory("Cible de raid"); live.resetLive(); source.resetSource(); Object.assign(live.timing, timing0); });
 afterEach(() => { mock.timers.reset(); Object.assign(live.timing, timing0); });
 const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.0.0"); assert.equal(manifest.minCore, "0.2.1"); assert.equal(manifest.dataVersion, 3);
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.0.1"); assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 3);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false]], "sans Contacts, Raid n'a plus de liste : besoin dur");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");
   assert.deepEqual(Object.keys(def.services["privacy.subject"]).sort(), ["erase", "export", "remap"]);
@@ -76,8 +75,8 @@ test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un rég
   assert.deepEqual([ch.key, ch.type, ch.source, ch.fromText, ch.refersTo, ch.advanced, ch.optional], ["channel", "choice", { kind: "providers", service: "twitch.live" }, true, "channel", true, true]);
   assert.equal(manifest.settings.length, 2);
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function");
-  assert.deepEqual(manifest.provides.map((p) => p.topic), ["stream.partner"], "gardé tant que Story le lit (retiré avec Story 2.0)");
-  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);
+  assert.ok(!("provides" in manifest) && !def.exports, "plus de sujet fourni : le sujet « stream.partner » est retiré (Story lit Contacts)");
+  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage"]);
   assert.ok(manifest.mcp.every((t) => t.readOnly === true && t.default === false), "lecture seule, jamais accordé d'office");
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["raid_partners_live"]);
   assert.ok(manifest.privacy.fr && manifest.privacy.en);
@@ -486,69 +485,3 @@ test("instance créée : l'adresse du dock existe tout de suite", async () => {
   const ctx = mk(); await def.hooks.onInstanceCreate(ctx);
   assert.equal(await ctx.api.store.count("dock"), 1);
 });
-
-/* ───────────── Les partenaires proposés aux autres modules (sujet « stream.partner », lu par Story tant qu'elle ne lit pas Contacts) ───────────── */
-
-const PIC = (n) => `https://static-cdn.jtvnw.net/jtv_user_pictures/u${n}-profile_image-300x300.png`;
-const exportPartners = (ctx, opts = {}) => def.exports["stream.partner"](ctx, opts);
-
-test("sujet « stream.partner » (2.0) : pseudo, nom et photo viennent de Contacts (photo de la fiche) ; JAMAIS la note ; aucune demande à Twitch", async () => {
-  const ctx = mk();
-  addPartners("alice_tv", { name: "Alice à moi", note: "NOTE-SECRETE : ne pas raider le lundi" });
-  book.admin.setManualPhoto(contactOf("alice_tv").id, PIC(1));
-  book.seedContact({ name: "Bob Officiel", accounts: [{ network: "twitch", handle: "bob_x", avatar: PIC(2) }], categoryIds: [CAT] });
-  addPartners("carl_99"); source.resetSource();
-  const items = await exportPartners(ctx);
-  assert.deepEqual(items, [
-    { id: "alice_tv", login: "alice_tv", title: "Alice à moi", image: PIC(1) },
-    { id: "bob_x", login: "bob_x", title: "Bob Officiel", image: PIC(2) },
-    { id: "carl_99", login: "carl_99", title: "carl_99" },
-  ]);
-  for (const x of items) assert.ok(typeof x.id === "string" && x.id && typeof x.title === "string" && x.title && (!("image" in x) || /^https:\/\//.test(x.image)), "conforme au schéma du lecteur (id et title texte, image : une adresse ou rien : le cœur écarte l'élément entier si une adresse est vide)");
-  assert.ok(!JSON.stringify(items).includes("NOTE-SECRETE"));
-  assert.equal(api.calls.length, 0, "plus de GET users : la photo vient de Contacts");
-  assert.deepEqual(book.calls.filter(([, m]) => m === "resolve").map(([, , a]) => a.ids.length), [3], "les photos : UN appel resolve (100 fiches au plus)");
-  // 150 partenaires : 100 au plus rendus
-  const big = mk(); for (let i = 0; i < 150; i++) addPartners(`chaine_${String(i).padStart(3, "0")}`);
-  assert.equal((await exportPartners(big)).length, 100);
-  assert.deepEqual((await exportPartners(big, { limit: 3 })).map((x) => x.login), ["alice_tv", "bob_x", "carl_99"]);
-  book.admin.deleteCategory(CAT); source.resetSource();
-  assert.deepEqual(await exportPartners(mk()), [], "plus de liste : rien");
-});
-
-
-test("sujet « stream.partner » : une photo douteuse (pas https) n'est jamais reprise ; aucune photo gardée par ce module", async () => {
-  const ctx = mk();
-  book.seedContact({ name: "<b>Alice</b>" + "x".repeat(100), accounts: [{ network: "twitch", handle: "alice_tv", avatar: "javascript:alert(1)" }], categoryIds: [CAT] });
-  book.seedContact({ name: "Bob", accounts: [{ network: "twitch", handle: "bob_x", avatar: "http://insecure.example/a.png" }], categoryIds: [CAT] });
-  const items = await exportPartners(ctx);
-  assert.deepEqual(items.map((x) => x.image), [undefined, undefined], "aucune photo douteuse : la clé est absente (jamais une adresse vide)");
-  assert.ok(items[0].title.length <= 40);
-  assert.deepEqual(ctx.dumpStore().filter((x) => x.collection !== "dock"), [], "rien n'est copié : Contacts reste propriétaire des noms et des photos");
-});
-
-
-test("sujet « stream.partner » : Contacts muet → rendu dans le délai (sans liste, ou la dernière connue sans photo), sans erreur ; Twitch n'y est pour rien", async () => {
-  Object.assign(source.timing, { callMs: 80, readMs: 120 }); Object.assign(partnersMod.timing, { photoMs: 80 });
-  const alive = setInterval(() => {}, 50);   // un serveur réel a toujours une boucle vivante ; les minuteurs du module ne la retiennent pas (unref)
-  try {
-    const ctx = mk(); addPartners("alice_tv bob_x");
-    book.faults.hang.add("accounts");
-    const t0 = Date.now(); assert.deepEqual(await within(exportPartners(ctx)), [], "rien de connu : rien"); assert.ok(Date.now() - t0 < 1000);
-    book.faults.hang.delete("accounts"); source.resetSource();
-    assert.equal((await exportPartners(ctx)).length, 2);
-    book.faults.hang.add("resolve");
-    const t1 = Date.now(); const plain = await within(exportPartners(ctx));
-    assert.deepEqual(plain, [{ id: "alice_tv", login: "alice_tv", title: "alice_tv" }, { id: "bob_x", login: "bob_x", title: "bob_x" }], "photos indisponibles : sans photo");
-    assert.ok(Date.now() - t1 < 1000);
-    api.accounts = []; assert.equal((await exportPartners(ctx)).length, 2, "Twitch absent : la liste ne dépend pas de Twitch");
-  } finally { clearInterval(alive); Object.assign(source.timing, stiming0); Object.assign(partnersMod.timing, ptiming0); }
-});
-
-
-test("sujet « stream.partner » : la liste est celle du dock (gardée 30 s) ; une fiche ajoutée dans Contacts apparaît à la lecture suivante", async () => {
-  const ctx = mk(); addPartners("alice_tv");
-  assert.equal((await exportPartners(ctx)).length, 1); addPartners("bob_x");
-  assert.equal((await exportPartners(ctx)).length, 2);
-});
-

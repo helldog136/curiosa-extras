@@ -2,7 +2,7 @@
 
 Pour celles et ceux qui **n'ont pas d'agenda en ligne** : écrivez vos streams directement dans l'administration de votre site. Ils apparaissent tout seuls sur le **Planning des streams** et le **bot Twitch** s'en sert pour répondre à `!planning`.
 
-Il faut Curiosa 0.1.22 ou plus.
+Il faut Curiosa 0.2.2 ou plus.
 
 ## Ajouter un stream
 

@@ -1,11 +1,12 @@
 {
   "apiVersion": 2,
+  "minCore": "0.2.2",
   "id": "bluesky",
   "name": {
     "en": "Bluesky",
     "fr": "Bluesky"
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "platform": "bluesky",
   "description": {
     "en": "Shows your Bluesky button in the site header and shares your follower and post counts. Add one per account if you have several.",
@@ -36,6 +37,15 @@
   ],
   "permissions": [
     "admin"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Statistiques",
+        "en": "Statistics"
+      }
+    }
   ],
   "settings": [
     {

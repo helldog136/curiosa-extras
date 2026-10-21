@@ -5,8 +5,8 @@
     "en": "3D maze overlay (OBS)",
     "fr": "Overlay labyrinthe 3D (OBS)"
   },
-  "version": "1.0.2",
-  "minCore": "0.1.10",
+  "version": "1.1.0",
+  "minCore": "0.2.2",
   "description": {
     "en": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",
     "fr": "Un labyrinthe 3D rétro pour OBS. Le personnage se promène dans les couloirs et s'arrête devant des affiches faites avec le contenu de votre site."
@@ -68,6 +68,15 @@
     "storage",
     "topics"
   ],
+  "tabs": [
+    {
+      "id": "look",
+      "label": {
+        "fr": "Apparence",
+        "en": "Appearance"
+      }
+    }
+  ],
   "settings": [
     {
       "key": "size",
@@ -100,7 +109,8 @@
           }
         }
       ],
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "accent",
@@ -110,7 +120,8 @@
         "en": "Accent color",
         "fr": "Couleur d'accent"
       },
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "wallTexture",
@@ -123,7 +134,8 @@
         "en": "Empty = a simple checkerboard.",
         "fr": "Vide = un damier simple."
       },
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "floorTexture",
@@ -132,12 +144,14 @@
         "en": "Floor texture",
         "fr": "Texture du sol"
       },
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "wallColor",
       "type": "color",
       "group": "appearance",
+      "tab": "look",
       "default": "#2a2118",
       "label": {
         "en": "Wall color (when there is no wall texture)",
@@ -148,6 +162,7 @@
       "key": "floorColor",
       "type": "color",
       "group": "appearance",
+      "tab": "look",
       "default": "#181310",
       "label": {
         "en": "Floor color (when there is no floor texture)",
@@ -221,7 +236,8 @@
         "en": "Portal wall texture",
         "fr": "Texture des murs-portails"
       },
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "handsSprite",
@@ -231,7 +247,8 @@
         "en": "Hands sprite (HUD)",
         "fr": "Sprite des mains (HUD)"
       },
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "extraWall",
@@ -241,7 +258,8 @@
         "en": "More wall textures (one URL per line, up to 4)",
         "fr": "Autres textures de murs (une URL par ligne, 4 maximum)"
       },
-      "group": "appearance"
+      "group": "appearance",
+      "tab": "look"
     },
     {
       "key": "devMode",

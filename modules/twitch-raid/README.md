@@ -60,10 +60,10 @@ Un outil, **non accordé d'office** (administration, accès de votre IA) :
 | `raid_partners_live` | Dit quels partenaires sont en direct maintenant (nom, jeu, titre, spectateurs, depuis combien de minutes) avec la commande de raid de chacun. Au-delà de 500 chaînes, elle ne donne pas la liste mais **un membre en direct tiré au hasard**. Lecture seule : rien n'est envoyé. |
 
 ## Pour vos autres modules
-Si vous avez aussi « Story d'annonce », il peut **reprendre vos partenaires** (pseudo, nom et photo, lus dans Contacts) pour les montrer dans vos vidéos d'annonce : un bouton lui suffit, rien à régler. Seuls le pseudo, le nom et la photo sont partagés : **jamais de note**, ni l'adresse secrète du dock. Sans ce module, rien ne change.
+Ce module ne partage plus rien avec les autres : ils lisent vos partenaires directement dans **Contacts**, qui en reste le seul propriétaire (« Story d'annonce » le fait pour ses co-streamers). Depuis la 2.0, le sujet `stream.partner` n'existe plus ; vos données ne changent pas.
 
 ## À savoir
-- Les informations viennent de Twitch **par le « Connecteur Twitch »** : ce module ne parle jamais à Twitch lui-même. La liste vient de **Contacts** (version 2 ou plus). Il faut Curiosa 0.2.1 ou plus ; le Connecteur, Ma Chaîne Twitch et Contacts sont installés ou mis à jour avec lui.
+- Les informations viennent de Twitch **par le « Connecteur Twitch »** : ce module ne parle jamais à Twitch lui-même. La liste vient de **Contacts** (version 2 ou plus). Il faut Curiosa 0.2.2 ou plus ; le Connecteur, Ma Chaîne Twitch et Contacts sont installés ou mis à jour avec lui.
 - Pas besoin de connecter votre compte Twitch : l'identifiant et le secret de votre application, réglés une fois dans le Connecteur Twitch, suffisent.
 - Les informations sont gardées 30 secondes : plusieurs docks ou onglets ouverts en même temps ne font qu'une seule demande à Twitch (une par groupe de 100 chaînes). Si une partie des chaînes n'a pas pu être vérifiée, le dock affiche ce qu'il a avec le message « Certaines chaînes n'ont pas pu être vérifiées. »
 - Si votre site a plusieurs chaînes Twitch (plusieurs « Ma Chaîne Twitch »), le mode avancé permet de **choisir dans la liste** laquelle utiliser ; sans choix, c'est la première qui est prête. Avec une seule chaîne, il n'y a rien à choisir. Si vous aviez tapé un pseudo avant la version 1.3.0, il continue de servir ; la page vous propose de confirmer la chaîne dans la liste.
