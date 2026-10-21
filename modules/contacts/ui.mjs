@@ -60,7 +60,7 @@ a.ct-net{text-decoration:none}
 .ct-stat b{display:block;font-size:1.5rem;line-height:1.2}
 .ct-stat span{color:var(--v-muted);font-size:.85rem}
 .ct-lines{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:.4rem}
-.ct-lines li{border:1px solid var(--v-line);border-radius:.75rem;padding:.6rem .8rem;background:var(--v-surface);overflow-wrap:anywhere}
+.ct-lines li{font-size:.92rem;border:1px solid var(--v-line);border-radius:.75rem;padding:.6rem .8rem;background:var(--v-surface);overflow-wrap:anywhere}
 .ct-cmp{display:grid;gap:var(--ct-gap);grid-template-columns:1fr;margin:0 0 1rem}
 @media (min-width:700px){.ct-cmp{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ct-box{border:1px solid var(--v-line);border-radius:1rem;padding:1rem;background:var(--v-surface);min-width:0}
@@ -68,7 +68,7 @@ a.ct-net{text-decoration:none}
 .ct-kv{display:grid;gap:.1rem;margin:0}
 .ct-kv dt{color:var(--v-muted);font-size:.8rem}
 .ct-kv dd{margin:0 0 .45rem;overflow-wrap:anywhere}
-.ct-list{margin:.25rem 0 .75rem;padding-left:1.2rem}
+.ct-list{margin:.25rem 0 .75rem;padding-left:1.2rem;list-style:disc}
 .ct-list li{margin:.15rem 0;overflow-wrap:anywhere}
 .ct-pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:.8rem;border-radius:.75rem;border:1px solid var(--v-line);background:var(--v-surface);margin:.25rem 0 .5rem}
 </style>`;

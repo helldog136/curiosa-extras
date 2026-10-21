@@ -95,7 +95,8 @@ export async function confirmPage(ctx, q) {
   const html = `${nav(ctx, "dupes")}<a class="ct-back" href="${U.esc(link(keep.id, drop.id))}">${U.esc(t("mgBackCompare"))}</a>
 <h2 class="ct-name">${U.esc(t("mgConfirmTitle"))}</h2>
 <div class="ct-box"><p><strong>${U.esc(t("mgKept"))}</strong> ${U.esc(keep.data.name)}</p><p><strong>${U.esc(t("mgMerged"))}</strong> ${U.esc(drop.data.name)}</p><ul class="ct-list">${li.map((x) => `<li>${U.esc(x)}</li>`).join("")}</ul><p class="ct-help">${U.esc(t("mgIrreversible"))}</p></div>`;
-  return [U.firstBlock(html), { type: "adminForm", action: "mergeDo", submitLabel: t("mgValidate"), cancelHref: link(keep.id, drop.id), fields: [{ name: "keep", kind: "hidden", value: keep.id }, { name: "drop", kind: "hidden", value: drop.id }] }];
+  const cancel = U.htmlBlock(`<p class="ct-more"><a class="ct-btn ct-ghost" href="${U.esc(link(keep.id, drop.id))}">${U.esc(t("mgCancel"))}</a></p>`);
+  return [U.firstBlock(html), { type: "adminForm", action: "mergeDo", submitLabel: t("mgValidate"), cancelHref: link(keep.id, drop.id), fields: [{ name: "keep", kind: "hidden", value: keep.id }, { name: "drop", kind: "hidden", value: drop.id }] }, cancel];
 }
 
 export async function panel(ctx, q) {

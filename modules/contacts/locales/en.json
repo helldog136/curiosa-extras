@@ -386,5 +386,6 @@
   "mgIgnoreFull": "The list of set-aside pairs is full (20,000).",
   "impStaging": "The file was not fully read (the site may have restarted). Cancel this import and start again with your file.",
   "impE_email_elsewhere": "Row {line}: the e-mail {value} is already on the card “{a}”, while the accounts of this row are on another card. Fix the e-mail or the account, or merge the two cards in the Duplicates tab.",
-  "impKept": "(the address book keeps its own values: {fields})."
+  "impKept": "(the address book keeps its own values: {fields}).",
+  "mgCancel": "Cancel: change nothing"
 }

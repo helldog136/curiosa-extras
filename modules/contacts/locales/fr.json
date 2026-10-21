@@ -386,5 +386,6 @@
   "mgIgnoreFull": "La liste des paires écartées est pleine (20 000).",
   "impStaging": "Le fichier n'a pas fini d'être lu (le site a peut-être redémarré). Annulez cet import et recommencez avec votre fichier.",
   "impE_email_elsewhere": "Ligne {line} : l'e-mail {value} est déjà sur la fiche « {a} », alors que les comptes de cette ligne sont sur une autre fiche. Corrigez l'e-mail ou le compte, ou réunissez les deux fiches dans l'onglet Doublons.",
-  "impKept": "(le carnet garde ses valeurs : {fields})."
+  "impKept": "(le carnet garde ses valeurs : {fields}).",
+  "mgCancel": "Annuler : ne rien changer"
 }
