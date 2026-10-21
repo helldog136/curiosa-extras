@@ -61,7 +61,9 @@ test("manifeste : MCP déclarés = MCP implémentés, aucun sujet/section/slot f
   assert.ok(!def.slots && !def.sections && !def.routes && !def.overlay, "aucun rendu public");
   assert.ok(manifestJson.permissions.includes("admin") && manifestJson.permissions.includes("storage") && manifestJson.permissions.includes("mcp") && manifestJson.permissions.includes("topics"));
   assert.equal(typeof def.adminPanel, "function");
-  for (const name of ["savePartner", "deletePartner", "addJournal", "deleteJournal", "linkContact", "createContact", "unlinkContact", "mergeRun", "mergeUndo", "mergeResolve", "mergeDismiss"]) assert.equal(typeof def.adminActions[name], "function", name);
+  for (const name of ["savePartner", "deletePartner", "addJournal", "deleteJournal", "linkContact", "createContact", "unlinkContact"]) assert.equal(typeof def.adminActions[name], "function", name);
+  for (const name of ["mergeRun", "mergeUndo", "mergeResolve", "mergeDismiss"]) assert.equal(def.adminActions[name], undefined, `${name} : l'écran de fusion est sorti`);
+  assert.equal(def.backup, undefined, "plus de sauvegarde lisible de l'ancien carnet");
 });
 
 test("manifeste : suppressions MCP destructives et désactivées par défaut, les écritures non accordées d'office, seules les lectures activées", () => {
@@ -167,7 +169,7 @@ test("admin savePartner : modification conserve les champs non fournis, id incon
   assert.equal(await ctx.api.store.count("partners"), 1);
 });
 
-test("admin deletePartner : supprime la fiche, son journal et ses contacts, pas ceux des autres", async () => {
+test("admin deletePartner : supprime la fiche et son journal, pas ceux des autres ; ne touche pas à la copie inerte de l'ancien carnet", async () => {
   const ctx = ctxFor();
   const a = await ctx.api.store.add("partners", { brand: "A" });
   const b = await ctx.api.store.add("partners", { brand: "B" });
@@ -179,7 +181,7 @@ test("admin deletePartner : supprime la fiche, son journal et ses contacts, pas 
   assert.deepEqual(r, { ok: "Deleted.", redirect: "?" });
   assert.equal(await ctx.api.store.get(a), null);
   assert.equal(await ctx.api.store.count("journal"), 1);
-  assert.equal(await ctx.api.store.count("contacts"), 1);
+  assert.equal(await ctx.api.store.count("contacts"), 2, "l'ancien carnet n'est plus lu ni nettoyé ici : la reprise s'en charge");
   assert.ok(await ctx.api.store.get(b));
 });
 
@@ -377,7 +379,7 @@ test("MCP partner_get : fiche + journal uniquement les siens ; inconnu → erreu
   await assert.rejects(() => def.mcp.partner_get(ctx, { id: "nope" }), (e) => e.expose && e.message === "partnership not found");
 });
 
-test("MCP partner_delete : supprime la fiche et son journal (et ses anciens contacts avant fusion), jamais une personne de Contacts ; inconnu → erreur", async () => {
+test("MCP partner_delete : supprime la fiche et son journal, jamais une personne de Contacts ; inconnu → erreur", async () => {
   const ctx = ctxFor();
   const a = await ctx.api.store.add("partners", { brand: "A", contactIds: ["c1"] });
   const b = await ctx.api.store.add("partners", { brand: "B" });
@@ -388,11 +390,11 @@ test("MCP partner_delete : supprime la fiche et son journal (et ses anciens cont
   assert.equal(await ctx.api.store.count("partners"), 2);
   assert.deepEqual(await def.mcp.partner_delete(ctx, { id: a }), { deleted: a });
   assert.equal(await ctx.api.store.count("journal"), 0);
-  assert.equal(await ctx.api.store.count("contacts"), 1);
+  assert.equal(await ctx.api.store.count("contacts"), 2);
 });
 
-test("stockage : les collections utilisées sont partners / journal / contacts (ancien) / legacyContacts / meta uniquement", async () => {
-  const used = new Set([...source.matchAll(/(?:store\.(?:add|list)|all\(ctx,)\s*\(?\s*"([A-Za-z]+)"/g)].map((m) => m[1]));
+test("stockage : les collections utilisées sont partners / journal, plus contacts / legacyContacts / meta (reprise unique, à retirer en phase 3)", async () => {
+  const used = new Set([...source.matchAll(/(?:store\.(?:add|list)|[aA]ll\(ctx,)\s*\(?\s*"([A-Za-z]+)"/g)].map((m) => m[1]));
   assert.deepEqual([...used].sort(), ["contacts", "journal", "legacyContacts", "meta", "partners"]);
 });
 

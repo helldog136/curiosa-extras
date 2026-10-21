@@ -43,9 +43,9 @@ test("SRP : Contacts possède les personnes, Partenariats ne garde que des réf�
   assert.ok(!tools.some((n) => /^contacts?_/.test(n)), "Partenariats n'expose aucun outil de personne : seuls partner_link_contact / partner_unlink_contact");
   assert.ok(!(contacts.manifest.mcp ?? []).some((t) => /^partners?_/.test(t.name)), "Contacts n'a aucun outil de prospection");
   assert.ok(!/partner|prospect|brand|marque/i.test(contacts.code.replace(/"partnerships"|source_partnerships|partnerships/g, "")), "Contacts ne connaît pas la prospection (hors le libellé d'origine « partenariats »)");
-  // Partenariats n'écrit des personnes que via le service (« contacts » = seulement la restauration de l'ancien carnet par « Annuler la fusion »)
+  // Partenariats n'écrit des personnes que via le service ; son stockage ne reçoit que fiches, journal, et l'état de la reprise unique (copie inerte + « meta »)
   const writes = [...partnerships.code.matchAll(/store\.add\("([A-Za-z]+)"/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(writes)].sort(), ["contacts", "journal", "legacyContacts", "meta", "partners"]);
+  assert.deepEqual([...new Set(writes)].sort(), ["journal", "legacyContacts", "meta", "partners"]);
   for (const m of mods) if (m.id !== "contacts") assert.ok(!/store\.(?:add|list)\("notes"/.test(m.code) || m.id === "contacts", `${m.id} ne réimplémente pas les notes de Contacts`);
 });
 
