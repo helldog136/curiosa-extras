@@ -46,7 +46,7 @@ function fakeApi(over = {}) {
 const row = (login, viewers, extra = {}) => ({ user_login: login, user_name: login.toUpperCase(), game_name: "Zelda", title: `Live de ${login}`, viewer_count: viewers, started_at: "2026-10-20T10:00:00Z", type: "live", ...extra });
 let api;
 const mk = (extra = {}, settings = {}) => fakeCtx({
-  key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
+  key: "raid", moduleId: "twitch-raid", locale: "fr", defaultLocale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
   serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods: api.methods }] }, ...extra,
 });
 /**
@@ -494,11 +494,13 @@ test("admin : 2 000 chaînes dans Contacts → compteur, mode, lien vers Contact
   console.log(`# 2000 chaînes (Contacts) : panneau d'administration ${tPanel.toFixed(0)} ms`);
   assert.ok(blocks.some((b) => b.type === "markdown" && b.text.startsWith("**2000** chaînes Twitch dans la catégorie « Cible de raid »")));
   assert.ok(blocks.some((b) => b.type === "links" && b.items[0].label === "Gérer mes partenaires dans Contacts"));
-  assert.ok(!blocks.some((b) => (b.type === "table" && b.columns.length === 2) || (b.type === "adminForm" && ["add", "search", "save"].includes(b.action))), "ni tableau, ni pages, ni recherche, ni import : c'est le travail de Contacts");
-  const pages = ctx.book.calls.filter(([, m, a]) => m === "accounts" && a.categoryId);
+  const rows = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "remove");
+  assert.equal(rows.rows.length, 50, "la liste est montrée 50 par 50 (jamais les 2 000 d'un coup)");
+  assert.ok(blocks.some((b) => b.type === "links" && b.items.some((l) => /cur=/.test(l.href))), "« Page suivante » : un curseur");
+  const pages = ctx.book.calls.filter(([, m, a]) => m === "accounts" && a.categoryId && a.limit === 500);
   assert.deepEqual(pages.map(([, , a]) => a.limit), [500, 500, 500, 500]);
   assert.equal(new Set(pages.map(([, , a]) => a.cursor ?? "")).size, 4, "chaque page reprend au curseur de la précédente");
-  assert.deepEqual(Object.keys(admin.actions).sort(), ["check", "finish", "migrate", "renew"]);
+  assert.deepEqual(Object.keys(admin.actions).sort(), ["attach", "bulkApply", "bulkCancel", "bulkPreview", "check", "create", "find", "finish", "listSearch", "migrate", "pick", "remove", "renew"]);
 });
 
 
@@ -546,7 +548,7 @@ test("vie privée : le dock n'expose ni notes, ni secret, ni identifiant de fich
   for (const t of seen) { assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note"); assert.ok(!t.includes(`"${ids[3]}"`), "aucun identifiant de fiche"); }
   for (const t of seen.slice(0, -2)) if (!t.includes("<script")) assert.ok(!t.includes(secret.slice(0, 12)) || t.length < 0, "le secret ne revient jamais dans les données");
   assert.ok(/une minute/.test(manifest.privacy.fr) && /one minute/.test(manifest.privacy.en) && /Contacts/.test(manifest.privacy.fr) && /adresse/.test(manifest.privacy.fr));
-  assert.equal(manifest.version, "2.0.1");
+  assert.equal(manifest.version, "2.1.0");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "manage_link", "dock_nr_category_gone", "dock_nr_contacts_missing"]) assert.ok(fr[k] && en[k], k);
 });

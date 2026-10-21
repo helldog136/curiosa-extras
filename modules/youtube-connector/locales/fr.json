@@ -1,8 +1,8 @@
 {
   "key_ok": "Clé YouTube enregistrée : les modules qui en ont besoin peuvent lire YouTube.",
-  "key_missing": "Ajoutez votre clé YouTube dans Réglages : sans elle, rien n'est lu chez YouTube.",
-  "key_refused": "La clé YouTube est refusée : vérifiez-la dans Réglages (le service « YouTube Data v3 » doit être activé pour elle).",
-  "key_help": "Clé gratuite : dans la [console Google](https://console.cloud.google.com/apis/library/youtube.googleapis.com), activez « YouTube Data v3 », puis créez une clé dans « Identifiants » et collez-la dans Réglages.",
+  "key_missing": "Ajoutez votre clé YouTube dans le champ ci-dessous : sans elle, rien n'est lu chez YouTube.",
+  "key_refused": "La clé YouTube est refusée : vérifiez-la dans le champ ci-dessous (le service « YouTube Data v3 » doit être activé pour elle).",
+  "key_help": "Clé gratuite : dans la [console Google](https://console.cloud.google.com/apis/library/youtube.googleapis.com), activez « YouTube Data v3 », puis créez une clé dans « Identifiants » et collez-la dans le champ ci-dessous.",
   "quota_used": "Utilisé aujourd'hui : {used} sur {budget}. Remise à zéro {when}.",
   "quota_exhausted": "La limite YouTube du jour est épuisée, reprise {when}. En attendant, le site montre les dernières données connues.",
   "when_today": "aujourd'hui à {hour}",

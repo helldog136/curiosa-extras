@@ -36,5 +36,12 @@ export default {
       import: safe(B.importRows),
       erase: safe(async (ctx, a) => { const r = await B.erase(ctx, a); return r.ok ? { ok: true, modules: r.modules.map(({ name: _n, ...m }) => m) } : r; }),
     },
+    // Extension additive de « contact.book » v2 (README du contrat) : ce que Raid demande en plus. Jamais de nom, d'e-mail ni de téléphone dans les réponses, sauf le nom de fiche de `searchAccounts`.
+    "contact.curate": {
+      lookupAccounts: safe(B.lookupAccounts),
+      searchAccounts: safe(B.searchAccounts),
+      addAccount: safe(B.addAccountTo),
+      removeCategory: safe(B.removeCategory),
+    },
   },
 };

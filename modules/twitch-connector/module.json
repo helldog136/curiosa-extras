@@ -6,7 +6,7 @@
     "en": "Twitch connector",
     "fr": "Connecteur Twitch"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "twitch",
   "description": {
     "en": "Connects your site to Twitch, once for everything Twitch on your site: your Twitch application and the accounts you connect (your channel, and an account for the chat bot if you want one) are kept here, safely, and never shown. Guided set-up in 5 minutes, with the address to paste at Twitch and a “Copy” button.",

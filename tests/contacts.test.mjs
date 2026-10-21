@@ -14,7 +14,7 @@ const svc = def.services["contact.store"];
 
 test("manifeste valide, offre contact.store, parité en/fr, clés ctx.t existantes, actions MCP implémentées, aucune destructive par défaut", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store", "contact.book"]);
+  assert.deepEqual(r.manifest.offers.map((o) => o.service), ["contact.store", "contact.book", "contact.curate"]);
   const en = readJson("locales/en.json");
   assert.deepEqual(Object.keys(readJson("locales/fr.json")).sort(), Object.keys(en).sort());
   for (const m of source.matchAll(/\bt\("([A-Za-z0-9_]+)"/g)) assert.ok(m[1] in en, m[1]);

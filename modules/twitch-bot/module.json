@@ -3,7 +3,7 @@
   "minCore": "0.2.2",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.2.1",
+  "version": "1.2.2",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -101,7 +101,7 @@
       "default": "own",
       "advanced": true,
       "label": { "en": "Account that answers in the chat", "fr": "Compte qui répond dans le chat" },
-      "help": { "en": "By default your own account answers. Choose “A separate bot account” to have another Twitch account answer: you will connect it on this page.", "fr": "Par défaut, c'est votre propre compte qui répond. Choisissez « Un compte bot séparé » pour qu'un autre compte Twitch réponde : vous le connecterez sur cette page." },
+      "help": { "en": "By default your own account answers. Choose “A separate bot account” to have another Twitch account answer: you will connect it in the “Commands” tab.", "fr": "Par défaut, c'est votre propre compte qui répond. Choisissez « Un compte bot séparé » pour qu'un autre compte Twitch réponde : vous le connecterez dans l'onglet « Commandes »." },
       "options": [
         { "value": "own", "label": { "en": "My own account", "fr": "Mon propre compte" } },
         { "value": "bot", "label": { "en": "A separate bot account", "fr": "Un compte bot séparé" } }

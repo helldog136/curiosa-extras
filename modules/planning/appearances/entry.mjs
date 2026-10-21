@@ -53,5 +53,6 @@ export function densify(ctx, html) {
 export async function previewBlocks(ctx, tz) {
   const { previewHtml } = await import(`./preview.mjs${V}`);
   const current = chosenAppearance(ctx);
-  return [{ type: "heading", text: ctx.t("apTitle") }, { type: "html", html: previewHtml({ t: ctx.t, locale: ctx.locale, tz, theme: ctx.theme, current }) }];
+  // `tab: "look"` (cœur 0.2.5) : la galerie s'affiche dans l'onglet Apparence, au-dessus du réglage « Apparence du planning » qu'elle illustre.
+  return [{ type: "heading", text: ctx.t("apTitle"), tab: "look" }, { type: "html", tab: "look", html: previewHtml({ t: ctx.t, locale: ctx.locale, tz, theme: ctx.theme, current }) }];
 }

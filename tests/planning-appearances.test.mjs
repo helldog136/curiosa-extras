@@ -120,7 +120,7 @@ test("manifeste : chaque réglage d'apparence a un défaut égal à celui du cod
   const m = JSON.parse(read("module.json"));
   const { parseManifest } = await import("@/core/modules/manifest");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "2.2.0");
+  assert.equal(m.version, "2.2.1");
   for (const key of Object.keys(DEFAULTS)) {
     const s = m.settings.find((x) => x.key === key);
     assert.ok(s, key);
@@ -237,6 +237,12 @@ test("admin : un aperçu réel de chaque apparence, la choisie est marquée, auc
   const html = blocks.filter((b) => b.type === "html").map((b) => b.html).join("");
   assert.equal((html.match(/class="pa-pv-card/g) ?? []).length, APPEARANCE_IDS.length);
   assert.equal((html.match(/class="pa-pv-card is-current"/g) ?? []).length, 1);
+  // La galerie est dans l'onglet Apparence (au-dessus du réglage qu'elle illustre) ; l'état des streams reste dans Créneaux (« Utiliser »).
+  const gallery = blocks.slice(blocks.findIndex((b) => b.type === "heading" && b.text === fr.apTitle));
+  assert.equal(gallery.length, 2, "titre + galerie");
+  assert.ok(gallery.every((b) => b.tab === "look"), "titre et galerie : tab « look »");
+  assert.ok(blocks.slice(0, blocks.length - gallery.length).every((b) => b.tab === undefined), "le reste du panneau n'a pas de tab");
+  assert.ok(!fr.apIntro.includes("onglet") && !en.apIntro.includes("tab"), "le texte ne renvoie plus à un onglet");
   const evil = previewHtml({ t: mk(fr), theme: { accent: '#fff"><script>', fg: "red", accent2: "#123456" }, current: "classic" });
   assert.ok(!evil.includes("<script>"));
   assert.match(evil, /data-accent2="1"/);

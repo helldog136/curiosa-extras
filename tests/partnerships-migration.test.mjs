@@ -55,7 +55,7 @@ const meta = async (ctx) => (await ctx.api.store.list("meta")).find((r) => r.dat
 test("manifeste 2.0.0 : dataVersion 2, minCore 0.2.2, collection héritée déclarée, privacy.subject offert, valide", () => {
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifestJson.version, manifestJson.dataVersion, manifestJson.minCore], ["2.0.1", 2, "0.2.2"]);
+  assert.deepEqual([manifestJson.version, manifestJson.dataVersion, manifestJson.minCore], ["2.0.2", 2, "0.2.2"]);
   assert.deepEqual(manifestJson.legacyCollections, ["contacts", "legacyContacts", "meta"]);
   assert.deepEqual(manifestJson.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]]);
   assert.equal(typeof def.migrations[2], "function");

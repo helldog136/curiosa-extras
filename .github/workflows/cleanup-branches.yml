@@ -1,0 +1,31 @@
+name: Nettoyage des branches
+
+# Après chaque publication sur master : on supprime les branches de travail dont tout le contenu est déjà dans master.
+# On garde master et dev, et toute branche qui contient encore quelque chose qui n'est pas dans master.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  nettoyage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Supprimer les branches déjà fusionnées dans master
+        run: |
+          git fetch --prune origin
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin); do
+            b="${ref#origin/}"
+            case "$b" in HEAD|master|dev) continue ;; esac
+            if git merge-base --is-ancestor "$ref" origin/master; then
+              echo "supprimée : $b"
+              git push origin --delete "$b" || echo "échec pour $b (laissée)"
+            else
+              echo "gardée (pas encore dans master) : $b"
+            fi
+          done

@@ -6,7 +6,7 @@
   "guide_2": "**2.** Give it a name (for example your site's name). In the “Redirect URLs” box, paste the address below (“Copy” button), then click “Add”.",
   "copy_label": "Address to paste in Twitch's “Redirect URLs” box",
   "guide_3": "**3.** Category: “Website Integration”. Client type: “Confidential”. Click “Create”.",
-  "guide_4": "**4.** Open your application (“Manage”). Copy the “Client ID”, then click “New Secret” and copy the secret. Paste them below, in “Settings of this feature”, and save. That's all: your Twitch modules use it by themselves.",
+  "guide_4": "**4.** Open your application (“Manage”). Copy the “Client ID”, then click “New Secret” and copy the secret. Paste them in the two fields just below, and save. That's all: your Twitch modules use it by themselves.",
   "redirect_keep": "This address must be in the “Redirect URLs” box of your Twitch application (add it if it is not there yet): it is used when you connect a new account.",
   "redirect_adopted": "These addresses are already used by your channels and known to Twitch: keep them too in the “Redirect URLs” box of your Twitch application.",
   "col_channel": "Channel",

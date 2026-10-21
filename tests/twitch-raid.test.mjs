@@ -41,7 +41,7 @@ function fakeApi(over = {}) {
 const row = (login, viewers, extra = {}) => ({ user_login: login, user_name: login.toUpperCase(), game_name: "Zelda", title: `Live de ${login}`, viewer_count: viewers, started_at: "2026-10-20T10:00:00Z", type: "live", ...extra });
 let api, book, CAT;
 const mk = (extra = {}, settings = {}) => fakeCtx({
-  key: "raid", moduleId: "twitch-raid", locale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
+  key: "raid", moduleId: "twitch-raid", locale: "fr", defaultLocale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
   services: { "contact.book": book.methods },
   serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods: api.methods }] }, ...extra,
 });
@@ -64,8 +64,8 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.0.1"); assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 3);
-  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false]], "sans Contacts, Raid n'a plus de liste : besoin dur");
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.1.0"); assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 3);
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false], ["contact.curate", 1, false]], "sans Contacts, Raid n'a plus de liste : besoin dur ; son extension sert à ajouter et retirer");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");
   assert.deepEqual(Object.keys(def.services["privacy.subject"]).sort(), ["erase", "export", "remap"]);
   const [cat, ch] = manifest.settings;
@@ -83,7 +83,10 @@ test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un rég
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "live", "pick"]);
   assert.equal(def.backup, undefined, "plus de liste à sauvegarder ici : elle est dans Contacts (qui a son export)");
-  assert.ok(!/createCategory\s*["']?\s*[,)]|"createCategory"\s*,\s*\{/.test(fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8")).join("\n")), "Raid n'appelle jamais createCategory lui-même (seul le cœur, pour la personne connectée)");
+  // Raid n'appelle createCategory qu'à UN endroit (source.mjs, ensureCategory), toujours avec { asCaller: true } : les droits sont ceux de la personne qui a cliqué, vérifiés par Contacts.
+  const uses = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).flatMap((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").split("\n").filter((l) => /createCategory/.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l)).map((l) => `${f}: ${l.trim()}`));
+  assert.equal(uses.length, 1, uses.join("\n"));
+  assert.ok(uses[0].startsWith("source.mjs:") && /asCaller: true/.test(uses[0]), "createCategory : seulement ensureCategory, avec asCaller");
 });
 
 
@@ -427,8 +430,9 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
   assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("**2** chaînes Twitch dans la catégorie « Cible de raid » de Contacts")), "un compteur");
   const link = blocks.find((b) => b.type === "links" && b.items[0].label === "Gérer mes partenaires dans Contacts");
   assert.equal(link.items[0].href, `/admin/instances/id-contact.book-provider?category=${CAT}`, "la page de Contacts, filtrée sur la catégorie");
-  assert.ok(!blocks.some((b) => b.type === "adminForm" && ["add", "save", "search"].includes(b.action)), "l'ajout, l'import et la recherche sont sortis : la liste se gère dans Contacts");
-  assert.ok(!blocks.some((b) => b.type === "table" && b.rowActions?.some((a) => ["remove", "up", "down"].includes(a.action))));
+  assert.deepEqual(blocks.filter((b) => b.type === "adminForm").map((b) => b.action), ["find", "bulkPreview", "listSearch", "check"], "ajouter (un champ, ou plusieurs lignes), chercher dans la liste, vérifier : l'ancien ajout/import/tri est resté sorti");
+  assert.ok(!blocks.some((b) => b.type === "table" && b.rowActions?.some((a) => ["up", "down", "save"].includes(a.action))));
+  assert.deepEqual(blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "remove").rowActions.map((a) => a.action), ["remove"], "« Retirer » seulement : la fiche reste dans Contacts");
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
   assert.deepEqual([renew.rowActions[0].danger, typeof renew.rowActions[0].confirm], [true, "string"], "« Nouvelle adresse » demande confirmation");
   api.accounts = [{ ok: true, channel: "emma_live", ready: true }];
@@ -439,9 +443,9 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
 });
 
 
-test("admin : nouvelle adresse (confirmée) ; les anciennes actions de liste n'existent plus", async () => {
+test("admin : nouvelle adresse (confirmée) ; les actions sont celles de l'ajout rapide, de la liste et de la migration (rien de l'ancien tri)", async () => {
   const ctx = mk();
-  assert.deepEqual(Object.keys(admin.actions).sort(), ["check", "finish", "migrate", "renew"]);
+  assert.deepEqual(Object.keys(admin.actions).sort(), ["attach", "bulkApply", "bulkCancel", "bulkPreview", "check", "create", "find", "finish", "listSearch", "migrate", "pick", "remove", "renew"]);
   const before = await data.dockSecret(ctx);
   assert.match((await act(ctx, "renew")).ok, /nouvelle adresse/);
   assert.notEqual(await data.dockSecret(ctx), before);
@@ -461,7 +465,7 @@ test("admin : « Voir qui est en direct maintenant » dit ce qui va ou ce qu'il 
   api.accounts = [{ ok: true, channel: "emma_live", ready: true }]; api.reply = { ok: false, error: "network" };
   assert.match((await act(ctx, "check")).error, /Twitch ne répond pas/);
   book.admin.deleteCategory(CAT);
-  assert.match((await act(ctx, "check")).error, /Créez d'abord votre liste de raid/);
+  assert.match((await act(ctx, "check")).error, /liste de raid n'existe pas encore/);
 });
 
 

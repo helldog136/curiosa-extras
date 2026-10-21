@@ -8,6 +8,7 @@ import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 import { fakeTwitch } from "./helpers/fakeTwitch.mjs";
+import { carryRights } from "./helpers/callerRights.mjs";
 import { connector } from "./helpers/twitchConnector.mjs";
 import { runPrivacySubjectContract } from "./contract/privacySubject.contract.mjs";
 
@@ -52,7 +53,7 @@ function site({ legacy = [], withCategory = true, settings = {}, services, ...ex
   const book = fakeContactBook();
   const cat = withCategory ? book.seedCategory("Cible de raid") : null;
   const ctx = fakeCtx({
-    key: `raid${++sites}`, moduleId: "twitch-raid", locale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
+    key: `raid${++sites}`, moduleId: "twitch-raid", locale: "fr", defaultLocale: "fr", messages: { ...fr }, settings, siteUrl: "https://site.example.test", permissions: manifest.permissions,
     services: services ?? { "contact.book": book.methods },
     serviceInstances: { "twitch.api": [{ instance: "tw", name: "Chaîne Twitch", methods: api.methods }] },
     rows: legacy.length ? { partners: [{ items: legacy }] } : {}, ...extra,
@@ -160,8 +161,8 @@ test("migration SANS catégorie : les fiches sont créées, le dock continue (lu
   assert.deepEqual(await routeLive(ctx), await dock13(legacy));
   assert.ok(book.calls.some(([, m, a]) => m === "accounts" && Array.isArray(a.ids) && a.ids.length === 120));
   let blocks = await def.adminPanel(ctx, { query: {} });
-  const ask = blocks.find((b) => b.type === "banner" && b.tone === "info" && /Dernière étape/.test(b.text));
-  assert.match(ask.text, /vos 120 chaînes de la version 1 sont dans Contacts.*tapez « Cible de raid » puis cliquez sur « Créer »/);
+  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "finish"), "la dernière étape est un bouton : la catégorie se crée toute seule");
+  assert.match(blocks.find((b) => b.type === "markdown" && /fiches recopiées/.test(b.text)).text, /120 fiches recopiées.*« Cible de raid ».*créée toute seule/);
   assert.ok(blocks.some((b) => b.type === "markdown" && /\*\*120\*\* chaînes Twitch : vos chaînes de la version 1/.test(b.text)));
   assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), "rien d'alarmant : c'est une étape");
   // la personne crée la catégorie dans le réglage (le cœur appelle createCategory POUR elle), puis l'enregistre
@@ -184,6 +185,35 @@ test("migration SANS catégorie : les fiches sont créées, le dock continue (lu
   source.resetSource();
   assert.deepEqual(await routeLive(chosen), await dock13(legacy), "dock identique, lu par la catégorie");
   assert.ok(!(await def.adminPanel(chosen, { query: {} })).some((b) => b.type === "adminForm" && ["finish", "migrate"].includes(b.action)), "migration terminée : plus rien à faire");
+});
+
+test("migration SANS catégorie, « Ranger » : la catégorie « Cible de raid » est créée toute seule avec les droits de la personne qui clique (asCaller), puis tout y est rangé", async () => {
+  const { ctx, book } = site({ legacy: legacyItems(120), withCategory: false });
+  const seen = carryRights(ctx, book);
+  await def.migrations[3](ctx);
+  assert.equal(book.calls.filter(([, m]) => m === "createCategory").length, 0, "la migration elle-même ne crée rien (aucune personne n'a cliqué)");
+  const res = await act(ctx, "finish");
+  assert.match(res.ok, /toutes vos chaînes sont dans la catégorie « Cible de raid »/);
+  assert.match(res.ok, /La liste « Cible de raid » a été créée dans Contacts/);
+  assert.deepEqual(seen.filter((c) => c.method === "createCategory"), [{ service: "contact.book", method: "createCategory", asCaller: true }], "demandé avec asCaller, et seulement pour cet appel");
+  assert.ok(seen.filter((c) => c.method !== "createCategory").every((c) => !c.asCaller), "aucun autre appel ne demande les droits");
+  const cat = book.dump().categories.find((k) => k.name === "Cible de raid");
+  assert.ok(cat);
+  assert.ok(book.dump().contacts.every((c) => c.categoryIds.includes(cat.id)));
+  assert.deepEqual((await act(ctx, "finish")).error ?? "", "", "rejouable");
+  assert.equal(book.dump().categories.filter((k) => k.name === "Cible de raid").length, 1, "jamais deux");
+});
+
+test("« Ranger » sans le droit de créer une catégorie, ou sur un cœur qui ignore asCaller : un message qui dit quoi faire, rien n'est créé ni perdu", async () => {
+  for (const mode of [{ carried: false }, { rights: [] }]) {
+    const { ctx, book } = site({ legacy: legacyItems(5), withCategory: false });
+    carryRights(ctx, book, mode);
+    await def.migrations[3](ctx);
+    const res = await act(ctx, "finish");
+    assert.match(res.error, /Impossible de créer toute seule la catégorie « Cible de raid ».*Créez-la vous-même dans Contacts/);
+    assert.equal(book.dump().categories.length, 0);
+    assert.equal((await migrate.readState(ctx)).pending.length, 5, "les chaînes recopiées attendent toujours : le dock les lit");
+  }
 });
 
 test("migration rejouée deux fois (et même sans son point de reprise) : aucun doublon de fiche ni de note, rien de perdu, ancienne liste intacte", async () => {
@@ -414,7 +444,7 @@ test("vie privée : une personne effacée dans Contacts disparaît aussi de l'an
   assert.deepEqual((await source.targets(ctx)).partners.map((p) => p.login), ["bob_x"], "le dock suit la fiche fusionnée");
 });
 
-test("migration sans « Cible de raid » quand Contacts n'a qu'UNE autre catégorie (« Famille ») : le dock lit les deux, mais rien n'est rangé d'office dans « Famille » ; la page dit de créer « Cible de raid » dans Contacts", async () => {
+test("migration sans « Cible de raid » quand Contacts n'a qu'UNE autre catégorie (« Famille ») : le dock lit les deux, mais rien n'est rangé d'office dans « Famille » ; « Ranger » crée « Cible de raid » (ou dit quoi faire)", async () => {
   const legacy = legacyItems(3);
   const { ctx, book } = site({ legacy, withCategory: false });
   const fam = book.seedCategory("Famille");
@@ -423,10 +453,8 @@ test("migration sans « Cible de raid » quand Contacts n'a qu'UNE autre catégo
   assert.equal((await migrate.readState(ctx)).pending.length, 3);
   assert.deepEqual((await source.targets(ctx)).partners.map((p) => p.login), ["tata_tv", name(0), name(1), name(2)], "l'unique catégorie (règle du cœur) et les chaînes recopiées");
   const blocks = await def.adminPanel(ctx, { query: {} });
-  assert.match(blocks.find((b) => b.type === "banner" && /Dernière étape/.test(b.text)).text, /Dans Contacts, créez la catégorie « Cible de raid »/);
-  assert.ok(!blocks.some((b) => b.type === "adminForm" && b.action === "finish"));
-  assert.match((await act(ctx, "finish")).error, /créez la catégorie « Cible de raid »/);
-  assert.match((await act(ctx, "migrate")).ok, /vos 3 chaînes sont dans Contacts/);
+  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "finish"), "le bouton existe : « Cible de raid » se crée toute seule");
+  assert.match((await act(ctx, "finish")).error, /Impossible de créer toute seule la catégorie « Cible de raid »/, "sans le droit (cœur ancien) : on dit quoi faire");
   assert.ok(book.dump().contacts.filter((c) => c.source === "twitch-raid").every((c) => !c.categoryIds.includes(fam)), "« Famille » n'a rien reçu");
   // la personne crée « Cible de raid » dans Contacts : Raid la prend toute seule, et propose de ranger
   book.seedCategory("Cible de raid"); source.resetSource();

@@ -6,11 +6,11 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.0.1",
+  "version": "2.1.0",
   "platform": "twitch",
   "description": {
-    "fr": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts : les personnes de la catégorie « Cible de raid » (ou celle que vous choisissez) qui ont une chaîne Twitch. Un clic copie la commande de raid à coller dans votre chat, un bouton en choisit une au hasard. Pour les grandes communautés : au-delà de 500 chaînes, un bouton « trouver quelqu'un en ligne au hasard ».",
-    "en": "A small panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts: the people of the “Raid target” category (or the one you choose) who have a Twitch channel. One click copies the raid command to paste in your chat, a button picks one at random. For large communities: with more than 500 channels, a “find someone online at random” button."
+    "fr": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid », créée toute seule). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien, ou collez-en plusieurs : nom et photo viennent de Twitch. « Retirer » sort une chaîne de la liste sans toucher à sa fiche. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard.",
+    "en": "A small panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts (“Raid target” category, created by itself). Add a channel by typing a name, a Twitch name or a link, or paste several: name and picture come from Twitch. “Remove” takes a channel out of the list without touching its card. One click copies the raid command; beyond 500 channels, a button finds one at random."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -34,6 +34,14 @@
         "en": "The address book (Contacts module): your raid list is a category there",
         "fr": "Le carnet d'adresses (module Contacts) : votre liste de raid y est une catégorie"
       }
+    },
+    {
+      "service": "contact.curate",
+      "min": 1,
+      "label": {
+        "en": "The address book (Contacts module), recent enough to add a channel and take one out of the list",
+        "fr": "Le carnet d'adresses (module Contacts), assez récent pour ajouter une chaîne et en retirer une de la liste"
+      }
     }
   ],
   "offers": [
@@ -54,8 +62,8 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts (noms et photos jamais copiés). Le module garde l'adresse secrète du dock et, depuis la 2.0, une copie inchangée de la liste de la version 1 (chaînes et notes, jamais affichées), retirée à une mise à jour d'entretien. Le dock montre à qui a son adresse des informations publiques de Twitch et se souvient une minute de qui était en direct. Une personne effacée dans Contacts est retirée de cette copie.",
-    "en": "Collects nothing about your visitors. The list is read in Contacts (names and pictures never copied). The module keeps the secret address of the dock and, since 2.0, an unchanged copy of the version 1 list (channels and notes, never shown), removed by a maintenance update. The dock shows public Twitch information to whoever has its address and remembers for one minute who was live. A person erased in Contacts is removed from that copy."
+    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts : noms et photos ne sont jamais copiés ici (à l'ajout, ceux de Twitch vont dans la fiche de Contacts). Le module garde l'adresse secrète du dock, 30 minutes au plus les pseudos publics d'un envoi en gros en attente, et une copie inchangée de l'ancienne liste 1.x (jamais affichée, retirée à une mise à jour d'entretien). Le dock montre des informations publiques de Twitch et se souvient une minute de qui était en direct.",
+    "en": "Collects nothing about your visitors. The list is read in Contacts: names and pictures are never copied here (when you add a channel, those from Twitch go into the Contacts card). The module keeps the secret address of the dock, for 30 minutes at most the public names of a bulk paste waiting to be confirmed, and an unchanged copy of the old 1.x list (never shown, removed by a maintenance update). The dock shows public Twitch information and remembers for one minute who was live."
   },
   "tabs": [
     {

@@ -29,6 +29,8 @@ const RENAMED = {
   "modules/bluesky": ["Statistiques", "Statistics"],
   "modules/youtube-channel": ["Statistiques", "Statistics"],
 };
+// Modules dont le panneau range des blocs dans un autre onglet que « Utiliser » (clé `tab` d'un bloc, cœur 0.2.5).
+const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
@@ -37,7 +39,9 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     const m = read(dir);
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
-    assert.equal(m.minCore, "0.2.2", `${dir} : les onglets demandent le cœur 0.2.2`);
+    // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
+    const expected = BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }
 });
@@ -72,4 +76,18 @@ test("onglets : Planning et Labyrinthe rangent leurs réglages d'apparence dans 
 test("onglets : les modules non audités ne déclarent rien (les quatre onglets du cœur leur suffisent) ; Contacts renomme seulement « Utiliser »", () => {
   assert.deepEqual(read("modules/contacts").tabs.map((x) => x.id), ["use"], "Contacts : un seul onglet renommé");
   for (const dir of ["modules/blog", "modules/links", "modules/pages", "modules/hero"]) assert.equal(read(dir).tabs, undefined, dir);
+});
+
+test("onglets : un module qui place un bloc du panneau dans un onglet demande le cœur 0.2.5, et vise un onglet qu'il connaît", () => {
+  for (const dir of BLOCKS_IN_TABS) {
+    const m = read(dir);
+    assert.ok(parseManifest(m).ok, dir);
+    assert.equal(m.minCore, "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
+    const code = fs.readdirSync(new URL(`../${dir}/`, import.meta.url), { recursive: true }).filter((f) => /\.mjs$/.test(f))
+      .map((f) => fs.readFileSync(new URL(`../${dir}/${f}`, import.meta.url), "utf8")).join("\n");
+    const known = new Set(["settings", "sources", "general", ...(m.tabs ?? []).map((t) => t.id)]);
+    const used = [...code.matchAll(/\btab:\s*"([a-z-]+)"/g)].map((x) => x[1]);
+    assert.ok(used.length > 0, `${dir} : il place bien un bloc dans un onglet`);
+    for (const id of used) assert.ok(known.has(id), `${dir} : l'onglet « ${id} » existe`);
+  }
 });
