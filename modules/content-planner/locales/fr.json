@@ -4,7 +4,7 @@
   "quickAdd": "J'ai une idée !",
   "quickTitle": "Le titre de votre idée",
   "quickHelp": "Quelques mots suffisent, par exemple « Tutoriel sur le montage ». Le reste viendra après.",
-  "added": "C'est noté : « {title} ». Vous la compléterez quand vous voudrez.",
+  "added": "C'est noté dans « Idées » : « {title} ». Ouvrez-la quand vous voudrez pour la compléter.",
   "errTitleEmpty": "Écrivez au moins quelques mots, par exemple « Tutoriel sur le montage ».",
   "errTitleLong": "Ce titre est trop long ({max} caractères au plus). Gardez l'essentiel ici : les détails vont dans les notes.",
   "errFull": "Le cahier est plein ({max} idées). Supprimez d'anciennes idées archivées pour faire de la place.",

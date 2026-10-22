@@ -4,7 +4,7 @@
   "quickAdd": "I have an idea!",
   "quickTitle": "The title of your idea",
   "quickHelp": "A few words are enough, for example “Video editing tutorial”. The rest can come later.",
-  "added": "Noted: “{title}”. You can fill it in whenever you like.",
+  "added": "Noted in “Ideas”: “{title}”. Open it whenever you like to fill it in.",
   "errTitleEmpty": "Write at least a few words, for example “Video editing tutorial”.",
   "errTitleLong": "This title is too long ({max} characters at most). Keep the essentials here: details go in the notes.",
   "errFull": "The notebook is full ({max} ideas). Delete some old archived ideas to make room.",

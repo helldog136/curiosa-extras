@@ -153,7 +153,7 @@ const actions = {
     if (r.error) return { errors: { quickTitle: r.error } };
     const made = await D.addIdea(ctx, { title: r.title });
     if (made.full) return { errors: { quickTitle: ctx.t("errFull", { max: MAX_IDEAS }) } };
-    return { ok: ctx.t("added", { title: r.title }), redirect: "?" };
+    return { ok: ctx.t("added", { title: r.title }) };
   },
   // La recherche ne change rien : elle renvoie simplement vers la liste filtrée.
   search: async (ctx, v0) => {
@@ -196,7 +196,7 @@ const actions = {
     const otherRaw = String(v0.otherNetworks ?? "").split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
     const longOne = otherRaw.find((x) => x.length > LIMITS.network);
     const networks = D.parseNetworks([...ticked, ...otherRaw]);
-    if (longOne) errors.otherNetworks = ctx.t("errNetworkLong", { max: LIMITS.network, name: D.line(longOne, 40) });
+    if (longOne) errors.otherNetworks = ctx.t("errNetworkLong", { max: LIMITS.network, name: D.line(longOne, 24) });
     else if (new Set([...ticked, ...otherRaw].map(D.fold)).size > MAX_NETWORKS) errors.otherNetworks = ctx.t("errNetworks", { max: MAX_NETWORKS });
     if (Object.keys(errors).length) return { errors };
     await D.saveIdea(ctx, { ...idea, targetDate, publishedAt, networks });
@@ -215,7 +215,7 @@ const actions = {
     const lines = String(v0.stepsText ?? "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
     const longStep = lines.find((x) => x.length > LIMITS.step);
     const labels = D.parseStepLines(lines);
-    if (longStep) errors.stepsText = ctx.t("errStepLong", { max: LIMITS.step, step: D.line(longStep, 40) });
+    if (longStep) errors.stepsText = ctx.t("errStepLong", { max: LIMITS.step, step: D.line(longStep, 24) });
     else if (new Set(lines.map(D.fold)).size > MAX_STEPS) errors.stepsText = ctx.t("errSteps", { max: MAX_STEPS });
     if (Object.keys(errors).length) return { errors };
     await D.saveIdea(ctx, { ...idea, title: tt.title, summary: D.line(summaryRaw, LIMITS.summary), notes: D.para(notesRaw, LIMITS.notes), steps: D.mergeSteps(idea.steps, labels) });
