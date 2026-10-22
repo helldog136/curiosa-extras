@@ -36,7 +36,7 @@ const CSS = `
 [data-accent2] .tw-btn{background:var(--v-accent2,#e8a23b);color:var(--v-accent2-fg,#111)}
 .tw-link{display:inline-flex;align-items:center;min-height:2.75rem;color:var(--v-fg,inherit);text-decoration:underline;text-underline-offset:.2em}
 .tw-btn:focus-visible,.tw-link:focus-visible{outline:2px solid var(--v-fg,currentColor);outline-offset:3px}
-.tw .tw-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;margin:1.5rem 0 0}
+.tw .tw-nav{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:1.5rem 0 0;max-width:28rem}.tw-pg{grid-column:1/-1;order:-1;color:var(--v-muted,#aaa)}
 .tw-nav [aria-disabled]{opacity:.45}
 .tw-empty{padding:2.25rem 1.25rem;text-align:center;border:1px dashed var(--v-line,#333);border-radius:1rem;background:var(--v-surface,#1c1c1f)}
 .tw-empty-t{font-size:1.15rem;font-weight:700}
@@ -106,7 +106,7 @@ export async function render(ctx, segments) {
     if (route.page > pages) return { notFound: true };
     const slice = all.slice((route.page - 1) * LIMITS.perPage, route.page * LIMITS.perPage);
     const href = (p) => `${base}/g/${group.n}${p > 1 ? `/page/${p}` : ""}`;
-    const nav = pages > 1 ? `<nav class="tw-nav" aria-label="${esc(ctx.t("pubPages"))}">${route.page > 1 ? `<a class="tw-btn" rel="prev" href="${esc(href(route.page - 1))}">${esc(ctx.t("pubPrev"))}</a>` : `<span class="tw-btn" aria-disabled="true">${esc(ctx.t("pubPrev"))}</span>`}<span>${esc(ctx.t("pubPageOf", { page: route.page, pages }))}</span>${route.page < pages ? `<a class="tw-btn" rel="next" href="${esc(href(route.page + 1))}">${esc(ctx.t("pubNext"))}</a>` : `<span class="tw-btn" aria-disabled="true">${esc(ctx.t("pubNext"))}</span>`}</nav>` : "";
+    const nav = pages > 1 ? `<nav class="tw-nav" aria-label="${esc(ctx.t("pubPages"))}">${route.page > 1 ? `<a class="tw-btn" rel="prev" href="${esc(href(route.page - 1))}">${esc(ctx.t("pubPrev"))}</a>` : `<span class="tw-btn" aria-disabled="true">${esc(ctx.t("pubPrev"))}</span>`}<span class="tw-pg">${esc(ctx.t("pubPageOf", { page: route.page, pages }))}</span>${route.page < pages ? `<a class="tw-btn" rel="next" href="${esc(href(route.page + 1))}">${esc(ctx.t("pubNext"))}</a>` : `<span class="tw-btn" aria-disabled="true">${esc(ctx.t("pubNext"))}</span>`}</nav>` : "";
     const html = `<div class="tw"><style>${CSS}</style><section class="tw-group" aria-labelledby="tw-g"><div class="tw-head"><h2 id="tw-g">${esc(group.title)}</h2><span class="tw-count">${esc(count(ctx, all.length))}</span></div>${slice.length ? `<ul class="tw-grid">${slice.map((p) => card(ctx, p, o)).join("")}</ul>` : ""}${nav}<p class="tw-more"><a class="tw-link" href="${esc(base || "/")}">${esc(ctx.t("pubBack"))}</a></p></section></div>`;
     return { title: `${group.title} — ${title}`, description: ctx.t("pubDescription"), blocks: [{ type: "html", html }] };
   }
