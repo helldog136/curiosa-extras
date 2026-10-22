@@ -168,9 +168,9 @@ test("fermeture à la lecture : date de fin passée, fermeture à la main, sonda
   await c.api.store.update(id, { ...rec.data, endsAt: new Date(Date.now() - 1000).toISOString() });
   assert.equal((await vote(c, slug, ["c1"], 2)).error, "closed");
   const d = ctx(); const m = await make(d);
-  assert.ok((await mod.default.adminActions.close(d, { id: m.id })).ok);
+  assert.ok((await mod.default.adminActions.close(d, { id: m.id, confirm: "on" })).ok);
   assert.equal((await vote(d, m.slug, ["c1"], 1)).error, "closed");
-  assert.ok((await mod.default.adminActions.close(d, { id: m.id })).error, "fermer deux fois : message");
+  assert.ok((await mod.default.adminActions.close(d, { id: m.id, confirm: "on" })).error, "fermer deux fois : message");
   assert.equal((await vote(d, "inconnu", ["c1"], 1)).error, "gone");
   assert.equal((await vote(d, m.slug, ["c1"], 1, Date.now())).error, "closed");
 });
@@ -314,7 +314,7 @@ test("résultats cachés avant le vote : jamais dans la page ni dans la réponse
   assert.ok(!JSON.stringify(no).includes("Celeste"), "rien ne fuit");
   const yes = await (await def.routes.results(post(url, { poll: slug, t: tok(1) }), c)).json();
   assert.ok(yes.ok && yes.html.includes("100 %") && yes.mine[0] === "c1" && yes.html.includes("Votre choix"));
-  await def.adminActions.close(c, { id });
+  await def.adminActions.close(c, { id, confirm: "on" });
   const closed = await (await def.routes.results(post(url, { poll: slug, t: tok(2) }), c)).json();
   assert.ok(closed.ok && closed.html.includes("Résultat final"), "à la fin, tout le monde voit");
   const done = (await def.page(c, { segments: [slug] })).blocks[0].html;
@@ -420,7 +420,7 @@ test("source OBS : adresse secrète obligatoire, mise à jour légère (inchang�
   assert.ok((await def.adminActions.screenAuto(c)).ok);
   assert.equal((await (await live(`?k=${cfg.obsKey}`)).json()).question, "Second ?");
   assert.equal((await (await live(`?k=${cfg.obsKey}&poll=${m1.slug}`)).json()).question, "Premier ?");
-  await def.adminActions.close(c, { id: m2.id });
+  await def.adminActions.close(c, { id: m2.id, confirm: "on" });
   assert.equal((await (await live(`?k=${cfg.obsKey}&poll=${m2.slug}`)).json()).state, "closed");
   const none = ctx(); await def.hooks.onInstanceCreate(none);
   const k2 = (await none.api.store.list("meta"))[0].data.obsKey;
@@ -432,8 +432,8 @@ test("source OBS : la page ne montre rien sans le code secret ; avec le code, r�
   await def.hooks.onInstanceCreate(c);
   const k = (await c.api.store.list("meta"))[0].data.obsKey;
   const blank = await def.overlay(c, { query: new URLSearchParams("") });
-  assert.equal(blank.html, ""); assert.ok(!blank.script);
-  assert.equal((await def.overlay(c, { query: new URLSearchParams("k=faux") })).html, "");
+  assert.ok(blank.html.includes(L.esc(fr.obsIncomplete)) && !blank.script, "sans le code : un message, aucun résultat");
+  assert.ok(!(await def.overlay(c, { query: new URLSearchParams("k=faux") })).script);
   const o = await def.overlay(c, { query: new URLSearchParams(`k=${k}&poll=${encodeURIComponent("</script><b>")}`) });
   assert.ok(o.html.includes("vo-box") && o.script.includes("window.__VO="));
   const cfg = JSON.parse(o.script.slice(o.script.indexOf("=") + 1, o.script.indexOf(";(function")).replace(/\\u003c/g, "<"));
@@ -469,7 +469,11 @@ test("administration : créer (erreurs sous les champs, avec exemple), puis lien
   assert.ok(panel.includes('"type":"copy"'));
   const main = await def.adminPanel(c, { query: {} });
   assert.ok(main.some((b) => b.type === "adminForm" && b.action === "create"));
-  assert.ok(main.some((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "remove" && a.confirm && a.danger)), "suppression confirmée");
+  const det = await def.adminPanel(c, { query: { poll: id } });
+  const del = det.find((b) => b.action === "remove");
+  assert.ok(del.fields.some((f) => f.name === "confirm" && f.required), "suppression confirmée par une case");
+  assert.equal((await def.adminActions.remove(c, { id })).errors.confirm.length > 0, true, "sans la case, rien n'est supprimé");
+  assert.equal(await c.api.store.count("polls"), 1);
   assert.ok(flat(main).includes(fr.limitsText.slice(0, 40)), "les limites anti-triche sont dites");
 });
 
@@ -503,12 +507,12 @@ test("administration : panneau vide, copie d'un sondage, modification (choix ver
 test("administration : fermer, rouvrir, archiver (bulletins effacés, totaux gardés, lien qui marche encore), supprimer", async () => {
   const c = ctx(); const { id, slug } = await make(c);
   for (let i = 0; i < 3; i++) await vote(c, slug, ["c3"], i);
-  assert.ok((await def.adminActions.archive(c, { id })).error, "pas d'archivage d'un sondage ouvert");
-  assert.ok((await def.adminActions.close(c, { id })).ok);
-  assert.ok((await def.adminActions.reopen(c, { id })).ok);
+  assert.ok((await def.adminActions.archive(c, { id, confirm: "on" })).error, "pas d'archivage d'un sondage ouvert");
+  assert.ok((await def.adminActions.close(c, { id, confirm: "on" })).ok);
+  assert.ok((await def.adminActions.reopen(c, { id, confirm: "on" })).ok);
   assert.ok((await vote(c, slug, ["c1"], 9)).ok, "rouvert : on peut voter");
-  await def.adminActions.close(c, { id });
-  const r = await def.adminActions.archive(c, { id });
+  await def.adminActions.close(c, { id, confirm: "on" });
+  const r = await def.adminActions.archive(c, { id, confirm: "on" });
   assert.ok(r.ok);
   assert.equal(await c.api.store.count("polls"), 0);
   assert.equal(await c.api.store.count(`b-${id}`), 0, "bulletins effacés");
@@ -519,9 +523,9 @@ test("administration : fermer, rouvrir, archiver (bulletins effacés, totaux gar
   assert.equal((await vote(c, slug, ["c1"], 20)).error, "closed", "un sondage archivé ne reçoit plus de vote");
   const d = ctx(); const m = await make(d);
   await vote(d, m.slug, ["c1"], 1);
-  assert.ok((await def.adminActions.remove(d, { id: m.id })).ok);
+  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on" })).ok);
   assert.equal(await d.api.store.count("polls"), 0); assert.equal(await d.api.store.count(`b-${m.id}`), 0);
-  assert.ok((await def.adminActions.remove(d, { id: m.id })).error);
+  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on" })).error);
 });
 
 test("plafond de 200 sondages : le plus ancien sondage terminé est archivé ; si tous sont ouverts, on le dit clairement ; 800 archives au plus", async () => {
@@ -540,7 +544,7 @@ test("plafond de 200 sondages : le plus ancien sondage terminé est archivé ; s
   for (let i = 0; i < 800; i++) await c.api.store.add("archive", { slug: `x${i}-bbbb`, question: "x", choices: [], counts: {}, voters: 0 }, { key: `x${i}-bbbb` });
   const closedNow = (await c.api.store.list("polls", { limit: 300 })).find((r) => r.data.slug === "s1-aaaa");
   await c.api.store.update(closedNow.id, { ...closedNow.data, closedAt: new Date(t0 + 6000).toISOString() });
-  assert.ok((await def.adminActions.archive(c, { id: closedNow.id })).ok);
+  assert.ok((await def.adminActions.archive(c, { id: closedNow.id, confirm: "on" })).ok);
   assert.equal(await c.api.store.count("archive"), 800, "jamais plus de 800 archives");
 });
 
@@ -556,7 +560,7 @@ test("conservation : les bulletins d'un sondage fini depuis plus de 30 jours son
   assert.equal(await c.api.store.count(`b-${b.id}`), 3, "10 jours : encore gardés");
   const pa = (await c.api.store.get(a.id)).data;
   assert.ok(pa.purgedAt); assert.equal(pa.voters, 3); assert.deepEqual(pa.counts, { c1: 3 });
-  assert.ok((await def.adminActions.reopen(c, { id: a.id })).error);
+  assert.ok((await def.adminActions.reopen(c, { id: a.id, confirm: "on" })).error);
   assert.equal((await mod.sweep(c, Date.now())), 0, "pas deux ménages à la suite (au plus un toutes les 10 minutes)");
   const d = ctx({ retentionDays: 1 }); const m = await make(d);
   await vote(d, m.slug, ["c1"], 1);
@@ -609,13 +613,13 @@ test("administration : détails d'un sondage inconnu, curseur de liste, aucun se
   assert.equal((await def.adminPanel(c, { query: { edit: "inconnu" } }))[0].type, "banner");
   for (let i = 0; i < 55; i++) await make(c, { question: `Q${i}` });
   const p1 = await def.adminPanel(c, { query: {} });
-  const table = p1.find((b) => b.type === "table" && b.rowIds);
-  assert.equal(table.rows.length, 50);
+  const lines = (blocks) => blocks.find((b) => b.type === "markdown" && b.text.startsWith("- [")).text.split("\n").length;
+  assert.equal(lines(p1), 50);
   const next = p1.find((b) => b.type === "markdown" && b.text.includes("?c="));
   assert.ok(next);
   const cursor = decodeURIComponent(next.text.match(/\?c=([^)]+)\)/)[1]);
   const p2 = await def.adminPanel(c, { query: { c: cursor } });
-  assert.equal(p2.find((b) => b.type === "table" && b.rowIds).rows.length, 5);
+  assert.equal(lines(p2), 5);
   await def.adminPanel(c, { query: { c: "x".repeat(1000) } });
 });
 
@@ -664,4 +668,15 @@ test("textes : français et anglais, mots simples (pas de jargon dans ce que lit
   const jargon = /\b(sujets?|m[ée]triques?|collecteurs?|topics?|metrics?|api|json|sch[ée]mas?|endpoint|payload|jetons?|tokens?|oauth|quota|http|mcp|ctx|slug)\b/i;
   for (const [lang, d] of [["fr", fr], ["en", en]]) for (const [k, v] of Object.entries(d)) assert.ok(!jargon.test(v), `${lang}.${k}`);
   assert.ok(fr.limitsText.includes("revoter") && en.limitsText.includes("vote again"), "la limite anti-triche est dite honnêtement dans l'admin");
+});
+
+test("liens internes dans une autre langue que celle du site : le préfixe de langue est gardé ; textes anglais utilisés", async () => {
+  const c = ctx({}, { locale: "en", defaultLocale: "fr", messages: en });
+  const { slug } = await make(c);
+  const html = (await def.page(c, { segments: [] })).blocks.at(-1).html;
+  assert.ok(html.includes(`href="/en/polls/${slug}"`) && html.includes("Open"));
+  const sec = (await def.sections.current(c))[0].html;
+  assert.ok(sec.includes('href="/en/polls"') && sec.includes("All polls"));
+  const fr1 = ctx({}, { defaultLocale: "fr" }); const m = await make(fr1);
+  assert.ok((await def.page(fr1, { segments: [] })).blocks.at(-1).html.includes(`href="/polls/${m.slug}"`));
 });

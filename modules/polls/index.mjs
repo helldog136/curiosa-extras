@@ -106,6 +106,8 @@ const saveCfg = async (ctx, cfg) => { const { id, ...data } = cfg; await ctx.api
 
 const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return L.isValidTimeZone(z) ? z : DEFAULT_TZ; };
 const baseOf = (ctx) => { const b = ctx.instance.basePath; return b === null || b === undefined ? null : b ? `/${b}` : ""; };
+/** Lien interne écrit dans du HTML : la langue choisie (préfixe /en) est gardée. */
+const loc = (ctx, href) => (ctx.locale && ctx.defaultLocale && ctx.locale !== ctx.defaultLocale ? `/${ctx.locale}${href === "/" ? "" : href}` || "/" : href);
 const pollHref = (ctx, slug) => { const b = baseOf(ctx); return b === null ? null : `${b}/${encodeURIComponent(slug)}`; };
 
 /** Efface des bulletins d'un sondage (par tranches). Renvoie vrai s'il en reste. */
@@ -324,7 +326,7 @@ function listItem(ctx, p) {
   const meta = open
     ? `${endLine(ctx, p).replace(/<[^>]+>/g, "")}`
     : `${esc(ctx.t("endedShort", { date: fmtDay(ctx, new Date(L.endedAtMs(p) || Date.now()).toISOString(), p.tz || DEFAULT_TZ) }))} · ${esc(votersText(ctx, Number(p.voters) || 0))}${lead ? ` · ${esc(ctx.t("winnerIs", { text: lead }))}` : ""}`;
-  return `<li><a href="${esc(href ?? "#")}"><b>${esc(p.question)}</b><small>${meta}</small></a></li>`;
+  return `<li><a href="${esc(href ? loc(ctx, href) : "#")}"><b>${esc(p.question)}</b><small>${meta}</small></a></li>`;
 }
 
 const byEnded = (now) => (a, b) => (L.endedAtMs(b, now) || 0) - (L.endedAtMs(a, now) || 0);
@@ -354,7 +356,7 @@ async function pastPage(ctx, page, now = Date.now()) {
 
 const pager = (ctx, page, pages) => {
   const b = baseOf(ctx) ?? "";
-  const link = (n, label) => `<a href="${esc(n === 1 ? b || "/" : `${b}/page/${n}`)}">${esc(label)}</a>`;
+  const link = (n, label) => `<a href="${esc(loc(ctx, n === 1 ? b || "/" : `${b}/page/${n}`))}">${esc(label)}</a>`;
   return pages > 1 ? `<p>${page > 1 ? link(page - 1, ctx.t("prevPage")) : ""}${page > 1 && page < pages ? " · " : ""}${page < pages ? link(page + 1, ctx.t("nextPage")) : ""}</p>` : "";
 };
 
@@ -411,7 +413,7 @@ export default {
       const p = open[0];
       if (!p) return null;
       const all = baseOf(ctx);
-      return [{ type: "html", html: pollHtml(ctx, p, { title: "h3", link: pollHref(ctx, p.slug) }) + (all === null ? "" : `<p style="text-align:center"><a href="${esc(all || "/")}">${esc(ctx.t("allPolls"))}</a></p>`) }];
+      return [{ type: "html", html: pollHtml(ctx, p, { title: "h3", link: pollHref(ctx, p.slug) ? loc(ctx, pollHref(ctx, p.slug)) : null }) + (all === null ? "" : `<p style="text-align:center"><a href="${esc(loc(ctx, all || "/"))}">${esc(ctx.t("allPolls"))}</a></p>`) }];
     },
   },
 
@@ -510,7 +512,7 @@ export default {
 
   async overlay(ctx, { query }) {
     const cfg = await getCfg(ctx);
-    if (!cfg || !sameSecret(query.get("k"), cfg.obsKey)) return { title: ctx.instance.name, html: "" };   // l'adresse sans le code secret ne montre rien
+    if (!cfg || !sameSecret(query.get("k"), cfg.obsKey)) return { title: ctx.instance.name, html: `<p style="margin:24px;padding:16px 20px;max-width:560px;border-radius:12px;background:#222;color:#fff;font:18px/1.4 system-ui,sans-serif">${esc(ctx.t("obsIncomplete"))}</p>` };   // sans le code secret : un simple message, aucun résultat
     const seconds = num(ctx.setting("obsRefreshSeconds"), 5, 3, 30);
     const color = (v, d) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : d);
     const pos = ["left", "right", "center"].includes(ctx.setting("obsPosition")) ? ctx.setting("obsPosition") : "left";
@@ -589,14 +591,17 @@ export default {
       const href = pollHref(ctx, p.slug);
       const rows = L.rows(p);
       const zone = p.tz || tz;
-      const actions = [
-        { label: ctx.t("actOnAir"), action: "onAir" },
-        ...(state === "open" ? [{ label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actClose"), action: "close", confirm: ctx.t("confirmClose") }]
-          : [{ label: ctx.t("actReopen"), action: "reopen", confirm: ctx.t("confirmReopen") }, { label: ctx.t("actArchive"), action: "archive", confirm: ctx.t("confirmArchive") }]),
-        { label: ctx.t("actCopy"), href: "?copy={id}" },
-        ...(p.purgedAt ? [] : [{ label: ctx.t("actRecount"), action: "recount" }]),
-        { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true },
-      ];
+      const id = { name: "id", kind: "hidden", value: p.id };
+      const sure = (label) => ({ name: "confirm", kind: "checkbox", label, required: true });
+      const act = (action, submitLabel, title, extra = []) => ({ type: "adminForm", action, title, submitLabel, fields: [id, ...extra] });
+      const actions = manage ? [
+        { type: "markdown", text: `[${ctx.t("actEdit")}](?edit=${encodeURIComponent(p.id)}) · [${ctx.t("actCopy")}](?copy=${encodeURIComponent(p.id)})` },
+        act("onAir", ctx.t("actOnAir"), null),
+        ...(state === "open" ? [act("close", ctx.t("actClose"), null, [sure(ctx.t("confirmClose"))])]
+          : [act("reopen", ctx.t("actReopen"), null, [sure(ctx.t("confirmReopen"))]), act("archive", ctx.t("actArchive"), null, [sure(ctx.t("confirmArchive"))])]),
+        ...(p.purgedAt ? [] : [act("recount", ctx.t("actRecount"), null)]),
+        act("remove", ctx.t("actDelete"), ctx.t("dangerTitle"), [sure(ctx.t("confirmDelete"))]),
+      ] : [];
       return [
         { type: "markdown", text: `[${ctx.t("back")}](?)` },
         { type: "heading", text: p.question },
@@ -608,7 +613,7 @@ export default {
         ].join("\n\n") },
         ...(href ? [{ type: "copy", label: ctx.t("publicLink"), text: `${ctx.api.siteUrl}${href}` }] : [{ type: "markdown", text: ctx.t("noPage") }]),
         { type: "table", columns: [ctx.t("colChoice"), ctx.t("colVoices"), ctx.t("colPct")], rows: rows.map((r) => [`${r.text}${r.lead ? ` — ${ctx.t(state === "open" ? "leading" : "winner")}` : ""}`, String(r.count), `${r.pct} %`]) },
-        ...(manage ? [{ type: "table", columns: [ctx.t("colPoll"), ctx.t("colState")], rows: [[p.question, ctx.t(state === "open" ? "stateOpen" : "stateClosed")]], rowIds: [p.id], rowActions: actions }] : []),
+        ...actions,
         ...screen,
       ];
     }
@@ -627,12 +632,7 @@ export default {
     });
     if (polls.length) {
       blocks.push({ type: "heading", text: ctx.t("listTitle", { n: await ctx.api.store.count(POLLS), open }) });
-      blocks.push({
-        type: "table", columns: [ctx.t("colPoll"), ctx.t("colState"), ctx.t("colVoters"), ctx.t("colEnd")],
-        rows: polls.map((p) => [p.question, ctx.t(L.stateOf(p, now) === "open" ? "stateOpen" : "stateClosed"), String(Number(p.voters) || 0), p.endsAt ? stamp(ctx, p.endsAt, p.tz || tz) : "—"]),
-        rowIds: polls.map((p) => p.id),
-        rowActions: [{ label: ctx.t("actDetails"), href: "?poll={id}" }, ...(manage ? [{ label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }] : [])],
-      });
+      blocks.push({ type: "markdown", text: polls.map((p) => `- [${p.question.replace(/[\[\]\\]/g, "")}](?poll=${encodeURIComponent(p.id)}) — ${ctx.t(L.stateOf(p, now) === "open" ? "stateOpen" : "stateClosed")} · ${votersText(ctx, Number(p.voters) || 0)}${p.endsAt ? ` · ${stamp(ctx, p.endsAt, p.tz || tz)}` : ""}`).join("\n") });
       if (page.next) blocks.push({ type: "markdown", text: `[${ctx.t("nextPage")}](?c=${encodeURIComponent(page.next)})` });
       const archived = await ctx.api.store.count(ARCHIVE);
       if (archived) blocks.push({ type: "markdown", text: ctx.t("archivedCount", { n: archived }) });
@@ -671,11 +671,13 @@ export default {
     }),
 
     close: needs("manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
       const r = await closeNow(ctx, values.id);
       return r.ok ? { ok: ctx.t("okClosed") } : { error: ctx.t(r.error === "already" ? "errAlreadyClosed" : "errGone") };
     }),
 
     reopen: needs("manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
       const p = await findById(ctx, values.id);
       if (!p) return { error: ctx.t("errGone") };
       if (p.purgedAt) return { error: ctx.t("errPurged") };
@@ -684,6 +686,7 @@ export default {
     }),
 
     archive: needs("manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
       const p = await findById(ctx, values.id);
       if (!p) return { error: ctx.t("errGone") };
       if (L.stateOf(p) !== "closed") return { error: ctx.t("errNotClosed") };
@@ -692,6 +695,7 @@ export default {
     }),
 
     remove: needs("manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
       const p = await findById(ctx, values.id);
       if (!p) return { error: ctx.t("errGone") };
       await withLock(ctx, () => removePoll(ctx, p));
