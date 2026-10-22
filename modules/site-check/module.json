@@ -1,0 +1,124 @@
+{
+  "apiVersion": 2,
+  "id": "site-check",
+  "name": {
+    "en": "Site health",
+    "fr": "Santé du site"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "en": "Is your site in good shape? One click looks for images without a description, pages without a text for search engines, empty or repeated titles, missing translations and links that no longer answer. Each remark says what to do and opens the right screen. Nothing is changed without you.",
+    "fr": "Votre site est-il en bon état ? Un clic cherche les images sans description, les pages sans texte pour les moteurs de recherche, les titres vides ou en double, les traductions manquantes et les liens qui ne répondent plus. Chaque remarque dit quoi faire et ouvre le bon écran. Rien n'est modifié sans vous."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🩺",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "storage",
+    "admin",
+    "mcp",
+    "topics"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Santé",
+        "en": "Health"
+      }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "social.link",
+      "label": {
+        "fr": "Boutons des réseaux sociaux du site",
+        "en": "The site's social network buttons"
+      },
+      "schema": [
+        {
+          "key": "label",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "checkLinks",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Vérifier aussi les liens vers d'autres sites",
+        "en": "Also check links to other websites"
+      },
+      "help": {
+        "fr": "Le module visite brièvement chaque adresse, une à la fois, seulement quand vous lancez une vérification, pour voir si elle répond encore. Rien n'est envoyé sur vous ni sur vos visiteurs.",
+        "en": "The module briefly visits each address, one at a time, only when you start a check, to see if it still answers. Nothing is sent about you or your visitors."
+      }
+    },
+    {
+      "key": "maxLinks",
+      "type": "number",
+      "default": 200,
+      "advanced": true,
+      "label": {
+        "fr": "Liens regardés à chaque vérification (200 au plus)",
+        "en": "Links looked at per check (200 at most)"
+      },
+      "help": {
+        "fr": "Au-delà, la vérification suivante reprend là où celle-ci s'est arrêtée.",
+        "en": "Beyond that, the next check carries on where this one stopped."
+      }
+    },
+    {
+      "key": "ignoreHosts",
+      "type": "textarea",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "fr": "Sites à ne jamais visiter",
+        "en": "Websites to never visit"
+      },
+      "help": {
+        "fr": "Un site par ligne, par exemple boutique.example.org. Utile pour un site qui n'aime pas les visites automatiques.",
+        "en": "One website per line, for example shop.example.org. Useful for a website that dislikes automatic visits."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "site_health_status",
+      "readOnly": true,
+      "description": "Read the latest site health report: whether all is well, the remarks grouped by importance (important, advised, for information) with a plain sentence, a few examples and the admin page that fixes each, what could not be checked, and the last 5 checks. Reads stored results only; contacts no website.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "site_health_run",
+      "description": "Start a new site health check, or continue the one in progress. It reads the site's pages and visits outgoing links one website at a time (at most 200 links, small batches of about 20 seconds). It changes nothing on the site. Call again with continue=true while the answer says progress is not finished.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "continue": {
+            "type": "boolean",
+            "description": "true to carry on with the check in progress instead of starting a new one."
+          }
+        }
+      }
+    }
+  ]
+}
