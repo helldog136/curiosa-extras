@@ -32,10 +32,7 @@ async function overview(ctx, q, manage) {
   const [queue, st] = await Promise.all([D.readQueue(ctx), D.stats(ctx)]);
   const ps = D.publicState(queue, st);
   const blocks = [];
-  if (!(await M.enabled(ctx))) {
-    blocks.push({ type: "banner", tone: "info", text: ctx.t(ctx.setting("clientMails") === false ? "mailOff" : "mailNotSet") });
-    if (ctx.setting("clientMails") !== false) blocks.push({ type: "links", items: [{ label: ctx.t("mailSetLink"), href: "/admin/settings" }] });
-  }
+  if (!st.total && queue.mode === "closed" && !(await D.listFormulas(ctx)).length) blocks.push({ type: "markdown", text: `**${ctx.t("startTitle")}**\n\n${ctx.t("startSteps")}` });
   if (st.total >= LIMITS.orders * 0.9) blocks.push({ type: "banner", tone: "warning", text: ctx.t("nearFull", { n: st.total, max: LIMITS.orders }) });
   blocks.push({ type: "heading", text: ctx.t("stateTitle") });
   const free = ps.free === null ? "" : ctx.t("slotsFree", { free: ps.free, slots: queue.slots });
@@ -44,7 +41,7 @@ async function overview(ctx, q, manage) {
   if (manage) {
     blocks.push({
       type: "table", columns: [ctx.t("colMode"), ctx.t("colModeSeen")],
-      rows: MODES.map((m) => [`${queue.mode === m ? "✓ " : ""}${ctx.t(`mode_${m}`)}`, ctx.t(`modeHelp_${m}`)]),
+      rows: MODES.map((m) => [ctx.t(`mode_${m}`), `${queue.mode === m ? `${ctx.t("modeCurrent")} ` : ""}${ctx.t(`modeHelp_${m}`)}`]),
       rowIds: [...MODES], rowActions: [{ label: ctx.t("modeChoose"), action: "setMode" }],
     });
     blocks.push({
@@ -78,6 +75,10 @@ async function overview(ctx, q, manage) {
     if (from + LIMITS.page < sorted.length) blocks.push({ type: "links", items: [{ label: ctx.t("nextPage"), href: `?filter=${filter}&after=${pageRows[pageRows.length - 1].id}` }] });
   }
   if (can(ctx, "export")) blocks.push({ type: "download", name: "orders", label: ctx.t("exportCsv") });
+  if (!(await M.enabled(ctx))) {
+    blocks.push({ type: "markdown", text: ctx.t(ctx.setting("clientMails") === false ? "mailOff" : "mailNotSet") });
+    if (ctx.setting("clientMails") !== false) blocks.push({ type: "links", items: [{ label: ctx.t("mailSetLink"), href: "/admin/settings" }] });
+  }
   return blocks;
 }
 
@@ -92,14 +93,14 @@ async function detail(ctx, id, manage) {
   const rows = [
     [ctx.t("fStatus"), ctx.t(`status_${o.status}`)],
     [ctx.t("fReceived"), stamp(o.at)],
-    [ctx.t("fFormula"), o.formulaName || "—"],
+    [ctx.t("dFormula"), o.formulaName || "—"],
   ];
   if (can(ctx, "email.view")) {
     const email = o.email || (card.state === "found" && typeof card.card.email === "string" ? card.card.email : "");
-    rows.push([ctx.t("fEmail"), email ? (o.email ? email : ctx.t("emailInContacts", { email })) : "—"]);
+    rows.push([ctx.t("dEmail"), email ? (o.email ? email : ctx.t("emailInContacts", { email })) : "—"]);
   }
   rows.push([ctx.t("fContact"), card.state === "found" ? ctx.t("contactYes") : o.contactId ? ctx.t("contactLost") : ctx.t("contactNo")]);
-  rows.push([ctx.t("fMailOpt"), ctx.t(o.mailOptIn ? "yes" : "no")], [ctx.t("fWant"), o.want || "—"], [ctx.t("fInspiration"), o.inspiration || "—"]);
+  rows.push([ctx.t("fMailOpt"), ctx.t(o.mailOptIn ? "yes" : "no")], [ctx.t("dWant"), o.want || "—"], [ctx.t("dInspiration"), o.inspiration || "—"]);
   blocks.push({ type: "table", columns: [ctx.t("colDetail"), ctx.t("colValue")], rows });
   const links = [];
   if (o.inspiration) links.push({ label: ctx.t("openInspiration"), href: o.inspiration });
@@ -137,12 +138,9 @@ async function formulasTab(ctx, editId, manage) {
   if (!list.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("formulasNone"), tab: "formulas" });
   else {
     blocks.push({
-      type: "table", tab: "formulas", columns: [ctx.t("colName"), ctx.t("price"), ctx.t("delay"), ctx.t("colShown")],
-      rows: list.map((f) => [f.name, f.price || "—", f.delay || "—", ctx.t(f.visible ? "yes" : "no")]), rowIds: list.map((f) => f.id),
-      rowActions: manage ? [
-        { label: ctx.t("edit"), href: "?formula={id}&tab=formulas" }, { label: ctx.t("moveUp"), action: "moveUp" }, { label: ctx.t("moveDown"), action: "moveDown" },
-        { label: ctx.t("delete"), action: "removeFormula", confirm: ctx.t("formulaDeleteConfirm"), danger: true },
-      ] : [],
+      type: "table", tab: "formulas", columns: [ctx.t("colName"), ctx.t("price")],
+      rows: list.map((f) => [f.visible ? f.name : `${f.name} ${ctx.t("hiddenMark")}`, f.price || "—"]), rowIds: list.map((f) => f.id),
+      rowActions: manage ? [{ label: ctx.t("edit"), href: "?formula={id}&tab=formulas" }] : [],
     });
   }
   if (!manage) return blocks;
@@ -152,13 +150,15 @@ async function formulasTab(ctx, editId, manage) {
     type: "adminForm", tab: "formulas", action: "saveFormula", title: ctx.t(editing ? "formulaEdit" : "formulaAdd"), submitLabel: ctx.t("save"), ...(editing ? { cancelHref: "?tab=formulas" } : {}),
     fields: [
       { name: "id", kind: "hidden", value: editing?.id ?? "" },
-      { name: "name", kind: "text", label: ctx.t("fFormulaName"), help: ctx.t("fFormulaNameHelp"), required: true, value: editing?.name ?? "" },
+      { name: "name", kind: "text", label: ctx.t("fFormulaName"), help: ctx.t("fFormulaNameHelp"), value: editing?.name ?? "" },
       { name: "price", kind: "text", label: ctx.t("fFormulaPrice"), help: ctx.t("fFormulaPriceHelp"), value: editing?.price ?? "" },
       { name: "delay", kind: "text", label: ctx.t("fFormulaDelay"), help: ctx.t("fFormulaDelayHelp"), value: editing?.delay ?? "" },
       { name: "includes", kind: "textarea", label: ctx.t("fFormulaIncludes"), help: ctx.t("fFormulaIncludesHelp"), value: editing?.includes ?? "" },
+      { name: "position", kind: "number", label: ctx.t("fFormulaPosition"), help: ctx.t("fFormulaPositionHelp"), value: editing ? String(list.indexOf(editing) + 1) : "" },
       { name: "visible", kind: "checkbox", label: ctx.t("fFormulaVisible"), value: editing && !editing.visible ? "" : "on" },
     ],
   });
+  if (editing) blocks.push({ type: "table", tab: "formulas", columns: [ctx.t("formulaDeleteTitle")], rows: [[ctx.t("formulaDeleteText")]], rowIds: [editing.id], rowActions: [{ label: ctx.t("formulaDeleteBtn"), action: "removeFormula", confirm: ctx.t("formulaDeleteConfirm"), danger: true }] });
   return blocks;
 }
 
@@ -258,16 +258,28 @@ async function saveFormula(ctx, values) {
   const errors = {};
   const name = clean(values.name, LIMITS.formulaName);
   if (!name) errors.name = ctx.t("errFormulaName");
-  if (Object.keys(errors).length) return { errors };
+  const rawPos = String(values.position ?? "").trim();
   const list = await D.listFormulas(ctx);
   const editing = idOk(values.id) ? list.find((f) => f.id === values.id) : null;
+  const max = editing ? list.length : list.length + 1;
+  let position = max;                                                                      // par défaut : à la fin
+  if (rawPos) {
+    position = /^\d{1,3}$/.test(rawPos) ? Number(rawPos) : 0;
+    if (position < 1 || position > max) errors.position = ctx.t("errPosition", { max });
+  }
+  if (Object.keys(errors).length) return { errors };
   if (idOk(values.id) && !editing) return gone(ctx);
   if (!editing && list.length >= LIMITS.formulas) return { error: ctx.t("formulasMax", { n: LIMITS.formulas }) };
-  const f = {
-    name, price: clean(values.price, LIMITS.formulaPrice), delay: clean(values.delay, LIMITS.formulaDelay), includes: clean(values.includes, LIMITS.formulaIncludes, true),
-    visible: values.visible === "on", pos: editing ? editing.pos : (list.length ? Math.max(...list.map((x) => x.pos)) + 1 : 0),
-  };
-  if (editing) await ctx.api.store.update(editing.id, D.formulaData(f)); else await ctx.api.store.add(D.FORMULAS, D.formulaData(f));
+  const f = { name, price: clean(values.price, LIMITS.formulaPrice), delay: clean(values.delay, LIMITS.formulaDelay), includes: clean(values.includes, LIMITS.formulaIncludes, true), visible: values.visible === "on", pos: 0 };
+  let id = editing?.id;
+  if (!editing) id = await ctx.api.store.add(D.FORMULAS, D.formulaData(f));
+  // Les rangs sont renumérotés 0, 1, 2… dans le nouvel ordre : l'ordre affiché est toujours celui que la personne a choisi.
+  const others = list.filter((x) => x.id !== id);
+  const order = [...others.slice(0, position - 1).map((x) => x.id), id, ...others.slice(position - 1).map((x) => x.id)];
+  for (const [pos, fid] of order.entries()) {
+    const cur = fid === id ? { ...f, pos } : list.find((x) => x.id === fid);
+    if (fid === id || cur.pos !== pos) await ctx.api.store.update(fid, D.formulaData({ ...cur, pos }));
+  }
   return { ok: ctx.t(editing ? "okFormulaSaved" : "okFormulaAdded"), redirect: "?tab=formulas" };
 }
 
@@ -278,25 +290,9 @@ async function removeFormula(ctx, values) {
   return { ok: ctx.t("okFormulaDeleted"), redirect: "?tab=formulas" };
 }
 
-const move = (delta) => async (ctx, values) => {
-  const list = await D.listFormulas(ctx);
-  const i = list.findIndex((f) => f.id === values.id);
-  if (i < 0) return gone(ctx);
-  const j = i + delta;
-  if (j < 0 || j >= list.length) return { ok: ctx.t("okMoved"), redirect: "?tab=formulas" };
-  const order = list.map((f) => f.id);
-  [order[i], order[j]] = [order[j], order[i]];
-  for (const [pos, id] of order.entries()) {
-    const f = list.find((x) => x.id === id);
-    if (f.pos !== pos) await ctx.api.store.update(id, D.formulaData({ ...f, pos }));
-  }
-  return { ok: ctx.t("okMoved"), redirect: "?tab=formulas" };
-};
-
 export const adminActions = {
   setMode: needs(setMode), saveQueue: needs(saveQueue), setStatus: needs(setStatus), saveNote: needs(saveNote), linkContact: needs(linkContact),
   renewLink: needs(renewLink), removeOrder: needs(removeOrder), saveFormula: needs(saveFormula), removeFormula: needs(removeFormula),
-  moveUp: needs(move(-1)), moveDown: needs(move(1)),
 };
 
 /** Pastille du menu : les demandes nouvelles qui attendent une réponse. */

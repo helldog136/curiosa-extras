@@ -65,7 +65,7 @@ export function stateText(ctx, queue, ps) {
     return { s: "open", title: ctx.t("stateOpen"), sub };
   }
   if (ps.state === "full") return { s: "full", title: ctx.t("stateFull"), sub: date ? ctx.t("reopenOn", { date }) : ctx.t("tryLater") };
-  return { s: "closed", title: ctx.t("stateClosed"), sub: date ? ctx.t("reopenOn", { date }) : "" };
+  return { s: "closed", title: ctx.t("stateClosed"), sub: date ? ctx.t("reopenOn", { date }) : ctx.t("tryLater") };
 }
 export function stateCard(ctx, queue, ps) {
   const t = stateText(ctx, queue, ps);
@@ -139,7 +139,8 @@ async function trackPage(ctx, token) {
     (order.clientNote ? `<p class="cm-note">${esc(order.clientNote)}</p>` : "") +
     `</div></section><section class="cm-card"><h2 class="cm-t">${esc(ctx.t("trackHistory"))}</h2><ol class="cm-tl">${tl}</ol></section></div>` });
   const url = `${ctx.api.siteUrl}${trackBase(ctx)}/suivi/${token}`;
-  blocks.push({ type: "heading", text: ctx.t("trackKeepTitle") }, { type: "markdown", text: ctx.t("trackKeep") }, { type: "copy", text: url, label: ctx.t("copyLink") });
+  blocks.push({ type: "heading", text: ctx.t("trackKeepTitle") }, { type: "markdown", text: ctx.t("trackKeep") },
+    { type: "html", html: `<div class="cm"><div class="cm-card"><label class="cm-lab" for="cm-link">${esc(ctx.t("copyLink"))}</label><input class="cm-in" id="cm-link" readonly value="${esc(url)}" onfocus="this.select()"><p><button type="button" class="cm-btn cm-btn-quiet" data-done="${esc(ctx.t("copied"))}" onclick="var b=this,i=document.getElementById('cm-link');i.select();if(navigator.clipboard){navigator.clipboard.writeText(i.value).then(function(){b.textContent=b.getAttribute('data-done')})}">${esc(ctx.t("copyBtn"))}</button></p></div></div>` });
   const form = (route, label, intro, btn) => `<details class="cm-card"><summary>${esc(label)}</summary><p>${esc(intro)}</p><form method="post" action="/m/${esc(ctx.instance.key)}/${route}?lang=${esc(ctx.locale)}"><input type="hidden" name="t" value="${esc(token)}"><button type="submit" class="cm-btn cm-btn-danger">${esc(btn)}</button></form></details>`;
   const acts = [];
   if (s === "new" || s === "accepted") acts.push(form("cancel", ctx.t("cancelTitle"), ctx.t("cancelText"), ctx.t("cancelBtn")));
