@@ -98,9 +98,9 @@ async function honorBlocks(ctx, wall, query) {
       const c = names.cards.get(h.contactId);
       const who = c ? P.shownName(c, "card") : names.state === "ok" ? t("honorGone") : "…";
       const when = h.month === now ? t("honorNow") : h.month > now ? t("honorPlanned") : t("honorPast");
-      return [P.monthLabel(h.month, ctx.locale), who, when, P.pickText(h.why, ctx.locale, ctx.defaultLocale)];
+      return [`${P.monthLabel(h.month, ctx.locale)} (${when.toLowerCase()})`, who];
     });
-    out.push({ type: "table", columns: [t("colMonth"), t("colPerson"), t("colWhen"), t("colWhy")], rows, rowIds: honors.map((h) => h.month), rowActions: writable ? [{ label: t("honorRemove"), action: "honorClear", confirm: t("honorRemoveConfirm"), danger: true }] : [] });
+    out.push({ type: "table", columns: [t("colMonth"), t("colPerson")], rows, rowIds: honors.map((h) => h.month), rowActions: writable ? [{ label: t("honorRemove"), action: "honorClear", confirm: t("honorRemoveConfirm"), danger: true }] : [] });
   } else out.push({ type: "markdown", text: t("honorNone") });
   if (!writable) return out;
   // Chercher la personne à mettre à l'honneur (un nom, ou un morceau de nom).

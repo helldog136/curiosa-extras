@@ -199,7 +199,7 @@ test("à l'honneur : chercher (2 lettres au moins, erreur sous le champ), choisi
   assert.ok((await run(ctx, "honorSave", { contactId: "inconnu", month: now })).error.includes("n'existe plus"));
   // Le tableau des mises à l'honneur.
   const t = byType(await panel(ctx), "table").find((x) => x.columns[0] === "Mois");
-  assert.deepEqual(t.rows[0].slice(1, 3), [list[1].name, "Ce mois-ci"]);
+  assert.deepEqual([t.rows[0][1], t.rows[0][0].endsWith("(ce mois-ci)")], [list[1].name, true]);
   assert.equal(t.rowIds[0], now);
   r = await run(ctx, "honorClear", { id: now });
   assert.equal(r.redirect, "?");
