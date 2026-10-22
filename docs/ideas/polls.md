@@ -103,7 +103,7 @@ Secondes d'affichage de la décision (20, 5–120) ; durée habituelle d'un sond
 500 décisions ; une série à la fois ; une manche de 1 à 60 minutes ; 2 à 4 choix pour un sondage rapide ; les sondages d'une manche comptent dans les 200 sondages complets (une seule manche existe à la fois, effacée dès la décision).
 
 ## Outils pour l'assistant (ajouts)
-`rounds_status` et `rounds_history` (lecture), `round_control` (écriture : start / next / stop), `poll_quick` (écriture). Écritures jamais accordées d'office ; noms de 11 à 14 caractères.
+`rounds_status` et `rounds_history` (lecture), `round_control` (écriture : start / next / stop), `poll_quick` (écriture). Écritures jamais accordées d'office ; noms de 10 à 14 caractères.
 
 ## Ce qui n'est pas fait, et pourquoi
 - **Plusieurs questions qui tournent** (une liste de questions préparées jouées dans l'ordre) : le formulaire serait bien plus lourd ; pour varier, « A ou B ? » et l'assistant (`poll_quick`) existent. Idée pour la suite.
@@ -113,4 +113,4 @@ Secondes d'affichage de la décision (20, 5–120) ; durée habituelle d'un sond
 - **Pas de manche rattrapée** : si personne ne regarde pendant une heure, il n'y a pas six décisions fantômes, il y en a une.
 
 ## Tests (ajouts)
-`tests/polls-rounds.test.mjs` (cycle d'une manche, dérive, égalités, lectures simultanées, suivant/arrêter, plafond de 500, réglages, sondage rapide, pages, administration, assistant, anciennes données), `tests/polls-audience.test.mjs` (voix unique, repli autonome, panne et trou noir, sourdine, limites, 120 votants en même temps, direct privé/public, adresse régénérée, écran, tick de bout en bout avec une horloge simulée, télécommande de bout en bout), plus les 32 tests de la 1.0 inchangés (ajustés pour le script désormais dynamique et la configuration séparée de la série).
+`tests/polls-rounds.test.mjs` (cycle d'une manche, dérive, égalités, lectures simultanées, suivant/arrêter, plafond de 500, réglages, sondage rapide, pages, administration, assistant, anciennes données), `tests/polls-audience.test.mjs` (voix unique, repli autonome, panne et trou noir, sourdine, limites, 120 votants en même temps, direct privé/public, adresse régénérée, écran, tick de bout en bout avec une horloge simulée, télécommande de bout en bout), plus les tests de la 1.0, conservés (ajustés pour le script désormais dynamique et la configuration séparée de la série).
