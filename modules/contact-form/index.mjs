@@ -13,7 +13,8 @@ export default ({
         async send(request, ctx) {
             if (request.method !== "POST")
                 return new Response("Method not allowed", { status: 405 });
-            const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+            // Dernière entrée : celle qu'ajoute le relais de confiance (le début vient du visiteur et peut être inventé).
+            const ip = request.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "local";
             if (limited(ip))
                 return Response.json({ ok: false }, { status: 429 });
             let form;

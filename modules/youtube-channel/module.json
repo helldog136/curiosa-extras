@@ -5,11 +5,15 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.2.1",
+  "version": "1.2.2",
   "platform": "youtube",
   "description": {
     "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, your videos in the site's RSS feed, and your subscriber, video and view counts. Works with just the channel id; the site's YouTube key, entered once for the whole site, adds the counts, Shorts detection and exact durations.",
     "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos abonnés, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; la clé YouTube du site, saisie une fois pour tout le site, ajoute les chiffres, la détection des Shorts et les durées exactes."
+  },
+  "privacy": {
+    "en": "This module collects nothing itself. When a video preview is shown, your browser loads its thumbnail picture from YouTube (Google), so YouTube sees your address, under its own privacy policy. The video itself is not played on this site: clicking the preview opens YouTube in a new tab.",
+    "fr": "Ce module ne collecte rien lui-même. Quand l'aperçu d'une vidéo est affiché, votre navigateur charge sa vignette depuis YouTube (Google) : YouTube voit alors votre adresse, selon sa propre politique de confidentialité. La vidéo n'est pas lue sur ce site : un clic sur l'aperçu ouvre YouTube dans un nouvel onglet."
   },
   "author": "Helldog136",
   "license": "MIT",

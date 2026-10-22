@@ -3,7 +3,7 @@
   "minCore": "0.2.2",
   "id": "guestbook",
   "name": { "en": "Guestbook", "fr": "Livre d'or" },
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": {
     "en": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework.",
     "fr": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
