@@ -102,7 +102,7 @@ export function card(ctx, v, { variant = "card", kicker = "", noTitle = false, h
   const msg = endMessage(ctx, v);
   const link = v.endLink ? `<p class="vcd-actions"><a class="vcd-btn" href="${esc(v.endLink)}"${/^https?:/i.test(v.endLink) ? ' rel="noopener noreferrer"' : ""}>${esc(v.endLinkLabel || ctx.t("endLinkDefault"))}</a></p>` : "";
   const parts = [
-    kicker ? `<p class="vcd-kicker">${esc(kicker)}</p>` : "",
+    kicker ? `<p class="vcd-kicker" data-vcd-kicker="" data-end-text="${esc(ctx.t("kickerStarted"))}">${esc(kicker)}</p>` : "",
     noTitle ? "" : `<h3 class="vcd-title">${href ? `<a href="${esc(href)}" style="color:inherit;text-decoration:none">${esc(v.title)}</a>` : esc(v.title)}</h3>`,
     v.image && details ? `<img class="vcd-img" src="${esc(v.image)}" alt="" loading="lazy">` : "",
     `<p class="vcd-when" data-vcd-event="">${esc(lines.event)}</p>`,

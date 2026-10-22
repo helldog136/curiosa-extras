@@ -100,6 +100,8 @@ export function addCard(env, { start, hide = 0, allDay = false, tz = "Europe/Par
   const art = wrap.append(new FakeEl("article", { "data-vcd": "", "data-start": String(start), "data-hide": String(hide), "data-allday": allDay ? "1" : "0", "data-tz": tz, "data-now": String(serverNow ?? env.now), "data-seconds": seconds ? "1" : "0" }));
   const el = (tag, attrs = {}) => art.append(new FakeEl(tag, attrs));
   const card = { art, wrap };
+  card.kicker = el("p", { "data-vcd-kicker": "", "data-end-text": "C’est maintenant" });
+  card.kicker.textContent = "Prochain rendez-vous";
   card.event = el("p", { "data-vcd-event": "" });
   card.local = el("p", { "data-vcd-local": "", hidden: "" });
   card.run = el("div", ended ? { "data-vcd-run": "", hidden: "" } : { "data-vcd-run": "" });

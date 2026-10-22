@@ -201,7 +201,7 @@ export function bootCountdowns(win, doc) {
       el: el, L: cfg.L || { d: ["", ""], h: ["", ""], m: ["", ""], s: ["", ""] }, lang: cfg.lang || "en", cfg: cfg,
       start: +el.getAttribute("data-start"), hide: +el.getAttribute("data-hide") || 0,
       allDay: el.getAttribute("data-allday") === "1", tz: el.getAttribute("data-tz") || "UTC", wantSec: el.getAttribute("data-seconds") !== "0",
-      run: q(el, "run"), end: q(el, "end"), ev: q(el, "event"), loc: q(el, "local"), sr: q(el, "sr"),
+      run: q(el, "run"), end: q(el, "end"), kicker: q(el, "kicker"), ev: q(el, "event"), loc: q(el, "local"), sr: q(el, "sr"),
       u: { d: q(el, "u-d"), h: q(el, "u-h"), m: q(el, "u-m"), s: q(el, "u-s") },
       l: { d: q(el, "l-d"), h: q(el, "l-h"), m: q(el, "l-m"), s: q(el, "l-s") },
       tileS: q(el, "t-s"), showSec: null, minute: -1, srMinute: -1, ended: false, gone: false,
@@ -255,6 +255,7 @@ export function bootCountdowns(win, doc) {
       if (s.run) s.run.hidden = true;
       if (s.end) s.end.hidden = false;
       s.el.setAttribute("data-vcd-state", "started");
+      if (s.kicker && s.kicker.getAttribute("data-end-text")) setText(s.kicker, s.kicker.getAttribute("data-end-text"));
     }
     if (s.hide && t >= s.hide) { s.el.hidden = true; s.gone = true; return 0; }
     return s.hide ? s.hide - t : 0;

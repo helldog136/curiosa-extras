@@ -151,6 +151,7 @@ test("à l'heure pile : les chiffres sont remplacés par le message de fin, puis
   assert.equal(card.run.hidden, true);
   assert.equal(card.end.hidden, false);
   assert.equal(card.art.getAttribute("data-vcd-state"), "started");
+  assert.equal(card.kicker.textContent, "C’est maintenant", "le petit titre suit : plus « prochain rendez-vous »");
   assert.equal(card.art.hidden, false);
   env.advance(3_600_000 - 1);
   assert.equal(card.art.hidden, false, "une milliseconde avant le délai : encore là");
@@ -327,7 +328,7 @@ test("toutes les fonctions communes ne dépendent que d'elles-mêmes (aucune var
 test("les attributs que le script cherche existent bien dans le HTML des cartes", () => {
   const ctx = fakeCtx({ key: "cd", basePath: "countdown", locale: "fr", messages: { }, settings: {} });
   const v = M.view(M.read({ id: "r1", data: { uid: "u0000001", slug: "x", rev: 1, title: "T", allDay: false, date: "2099-01-01", time: "10:00", tz: "UTC", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" } }), "1d", 0);
-  const html = R.card(ctx, v, { now: 0 });
+  const html = R.card(ctx, v, { now: 0, kicker: "k" });
   const used = [...T.bootCountdowns.toString().matchAll(/\bq\(el, "([a-z-]+)"\)/g)].map((m) => m[1]);
   assert.ok(used.length >= 10);
   for (const name of new Set(used)) assert.ok(html.includes(`data-vcd-${name}=`), `data-vcd-${name} absent du HTML`);
