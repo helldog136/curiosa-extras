@@ -396,6 +396,16 @@ export function isValidZone(tz) {
   }
 }
 
+/** Le nom du fuseau avec ses majuscules officielles (« europe/paris » → « Europe/Paris »), ou « » s'il n'existe pas. */
+export function canonicalZone(tz) {
+  if (!isValidZone(tz)) return "";
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: tz }).resolvedOptions().timeZone;
+  } catch {
+    return "";
+  }
+}
+
 /** Décalage (ms) de l'heure du mur sur l'heure universelle à cet instant : +3 600 000 pour Paris en hiver, +7 200 000 en été. */
 export function offsetAt(ms, tz) {
   const p = zoneParts(ms, tz);

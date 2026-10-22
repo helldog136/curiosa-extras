@@ -227,11 +227,11 @@ export function buildEvent(values, { zone, existing = null, takenSlugs = new Set
   let tz = zone;
   const other = v("tzOther").trim();
   if (other) {
-    if (T.isValidZone(other)) tz = other;
-    else errors.tzOther = "err_zone";
+    tz = T.canonicalZone(other);
+    if (!tz) errors.tzOther = "err_zone";
   } else if (v("tz").trim()) {
-    if (T.isValidZone(v("tz").trim())) tz = v("tz").trim();
-    else errors.tz = "err_zone";
+    tz = T.canonicalZone(v("tz").trim());
+    if (!tz) errors.tz = "err_zone";
   }
 
   const endDateRaw = v("endDate").trim();
