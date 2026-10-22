@@ -214,7 +214,7 @@ export async function saveEvent(ctx, values, id) {
   return { ok: [ctx.t(r.created ? "created" : "saved"), ...r.notes].join(" "), redirect: "?" };
 }
 
-async function featureEvent(ctx, values) {
+export async function featureEvent(ctx, values) {
   const rows = await rowsOf(ctx);
   const row = rows.find((r) => r.id === String(values?.id ?? ""));
   if (!row) return { error: ctx.t("notFound") };
@@ -223,24 +223,28 @@ async function featureEvent(ctx, values) {
   return { ok: ctx.t("featuredDone", { name: M.clean(row.data.title, 80) }) };
 }
 
-async function removeEvent(ctx, values) {
+export async function removeEvent(ctx, values) {
   const row = await ctx.api.store.get(String(values?.id ?? ""));
   if (!row) return { error: ctx.t("notFound") };
   await ctx.api.store.remove(row.id);
   return { ok: ctx.t("removed") };
 }
 
-async function cleanupEvents(ctx) {
+export async function cleanupEvents(ctx) {
   const gone = (await M.readAll(ctx)).filter((v) => v.phase === "hidden");
   for (const v of gone) await ctx.api.store.remove(v.id);
   return { ok: ctx.t("cleaned", { n: gone.length }) };
 }
 
-/** Chaque action porte son droit : le cœur le vérifie avant de l'appeler (créer et modifier ≠ supprimer). */
+/**
+ * Les actions de l'administration. Chacune vérifie le droit de la personne (créer et modifier ≠ supprimer) : le propriétaire peut
+ * retirer un droit à un rôle, même à « administrateur ». Forme « fonction » : réservée aux administrateurs, comme le cœur le décide.
+ */
+const guarded = (right, run) => async (ctx, values) => (may(ctx, right) ? run(ctx, values) : { error: ctx.t("denied") });
 export const actions = {
-  create: { right: "events.edit", run: (ctx, values) => saveEvent(ctx, values, null) },
-  save: { right: "events.edit", run: (ctx, values) => saveEvent(ctx, values, String(values?.id ?? "")) },
-  feature: { right: "events.edit", run: featureEvent },
-  remove: { right: "events.delete", run: removeEvent },
-  cleanup: { right: "events.delete", run: cleanupEvents },
+  create: guarded("events.edit", (ctx, values) => saveEvent(ctx, values, null)),
+  save: guarded("events.edit", (ctx, values) => saveEvent(ctx, values, String(values?.id ?? ""))),
+  feature: guarded("events.edit", featureEvent),
+  remove: guarded("events.delete", removeEvent),
+  cleanup: guarded("events.delete", cleanupEvents),
 };

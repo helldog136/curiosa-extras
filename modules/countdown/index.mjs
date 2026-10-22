@@ -224,12 +224,12 @@ export default {
       return answer(ctx, r);
     },
     async event_set_featured(ctx, args) {
-      const r = await A.actions.feature.run(ctx, { id: args.id });
+      const r = await A.featureEvent(ctx, { id: args.id });
       if (r.error) throw exposed(r.error);
       return { ok: true, message: r.ok };
     },
     async event_delete(ctx, args) {
-      const r = await A.actions.remove.run(ctx, { id: args.id });
+      const r = await A.removeEvent(ctx, { id: args.id });
       if (r.error) throw exposed(r.error);
       return { ok: true, message: r.ok };
     },

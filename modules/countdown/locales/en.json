@@ -20,6 +20,7 @@
   "created": "Event added.",
   "dayAfter": "next day",
   "dayBefore": "day before",
+  "denied": "You are not allowed to do this. Ask the person who manages the site.",
   "downloadAll": "Download all my events (.ics calendar)",
   "editTitle": "Edit “{name}”",
   "empty": "Nothing is planned right now. Come back soon!",

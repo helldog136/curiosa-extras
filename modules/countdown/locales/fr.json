@@ -20,6 +20,7 @@
   "created": "Événement ajouté.",
   "dayAfter": "le lendemain",
   "dayBefore": "la veille",
+  "denied": "Vous n’avez pas le droit de faire cela. Demandez à la personne qui gère le site.",
   "downloadAll": "Télécharger tous mes événements (agenda .ics)",
   "editTitle": "Modifier « {name} »",
   "empty": "Aucun événement prévu pour le moment. Revenez bientôt !",
