@@ -155,10 +155,9 @@ function pill(kind, label) { return h("span", { class: `src src-${kindOf(kind)}`
 
 function renderEventChosen() {
   const box = $("event-chosen"), e = selectedStream();
-  box.replaceChildren();
-  if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.append(m.error ? L("event_none_chosen") : L("event_manual_chosen", { title: m.title, when: whenText(m) })); return; }
-  if (!e) { box.append(L("event_none_chosen")); return; }
-  box.append(h("strong", { text: L("event_chosen") }), " ", `${e.title || L("untitled")} — ${whenText(e)}`);
+  if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.textContent = m.error ? L("event_none_chosen") : L("event_manual_chosen", { title: m.title, when: whenText(m) }); return; }
+  if (!e) { box.textContent = L("event_none_chosen"); return; }
+  box.replaceChildren(h("strong", { text: L("event_chosen") }), h("span", { text: ` ${e.title || L("untitled")} — ${whenText(e)}` }));
 }
 
 function renderFilter() {

@@ -112,6 +112,13 @@ export function fakeTwitch(opts = {}) {
           // `s.clips` = [{ title, url, thumbnail_url, created_at, view_count, game_id }] : les clips de la chaîne `s.userId`
           return json({ data: u.searchParams.get("broadcaster_id") === s.userId ? (s.clips ?? []).slice(0, Number(u.searchParams.get("first") ?? 20)) : [], pagination: {} });
         }
+        if (u.pathname === "/helix/schedule") {
+          // `s.schedule` = { segments: [{ id, start_time, end_time, title, canceled_until, category: { id, name }, is_recurring }], vacation? } pour la chaîne `s.userId` ;
+          // sans planning publié, Twitch répond 404 (« The broadcaster has not set up a schedule »)
+          api.scheduleCalls = (api.scheduleCalls ?? 0) + 1;
+          if (u.searchParams.get("broadcaster_id") !== s.userId || !s.schedule) return json({ error: "Not Found", status: 404, message: "The broadcaster has not set up a schedule." }, 404);
+          return json({ data: { segments: s.schedule.segments.slice(0, Number(u.searchParams.get("first") ?? 20)), broadcaster_id: s.userId, broadcaster_login: s.login, vacation: s.schedule.vacation ?? null }, pagination: {} });
+        }
         return json({}, 404);
       }
       if (u.hostname === "api.twitch.tv") {
