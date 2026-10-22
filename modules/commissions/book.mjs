@@ -17,13 +17,13 @@ export function within(p, ms, fallback = null) {
   return Promise.race([Promise.resolve(p).catch(() => fallback), late]).finally(() => clearTimeout(timer));
 }
 
-/** Appelle le carnet. Ne lève jamais : { ok: true, … } | { ok: false, unavailable: true } | { ok: false, error, id? }. */
+/** Appelle le carnet. Ne lève jamais : { ok: true, … } | { ok: false, unavailable: true } | { ok: false, code, id? }. */
 export async function call(ctx, method, args) {
   const r = await within(Promise.resolve().then(() => ctx.api.services.call(CONTACTS, method, args)), timing.callMs, null);
   if (!r?.ok) return { ok: false, unavailable: true };
   const value = r.value;
   if (value && typeof value === "object" && value.ok === true) return value;
-  return { ok: false, error: typeof value?.error === "string" ? value.error.slice(0, 40) : "invalid", id: idOk(value?.id) ? value.id : undefined };
+  return { ok: false, code: typeof value?.error === "string" ? value.error.slice(0, 40) : "invalid", id: idOk(value?.id) ? value.id : undefined };
 }
 export async function available(ctx) {
   return !!(await within(Promise.resolve().then(() => ctx.api.services.available(CONTACTS)), timing.callMs, false));
@@ -56,11 +56,11 @@ export async function emailOf(ctx, order) {
   return { email, from: email ? "contacts" : null };
 }
 
-/** Crée (ou retrouve, par e-mail) la fiche du carnet, relie la commande et en efface l'adresse. { ok: true, id, created } | { ok: false, error }. */
+/** Crée (ou retrouve, par e-mail) la fiche du carnet, relie la commande et en efface l'adresse. { ok: true, id, created } | { ok: false, why }. */
 export async function linkOrder(ctx, order) {
   if (order.contactId) return { ok: true, id: order.contactId, created: false, already: true };
   const r = await call(ctx, "create", { name: order.nick, ...(order.email ? { email: order.email } : {}), source: "commissions", status: "active" });
-  if (!r.ok) return { ok: false, error: r.unavailable ? "unavailable" : r.error === "too_many" ? "too_many" : "failed" };
+  if (!r.ok) return { ok: false, why: r.unavailable ? "unavailable" : r.code === "too_many" ? "too_many" : "failed" };
   const note = ctx.t("bookNote", { formula: order.formulaName || "—" });
   await call(ctx, "note", { id: r.id, text: note, author: "commissions" });          // au mieux : une note manquante ne défait rien
   order.contactId = r.id;

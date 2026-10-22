@@ -202,7 +202,7 @@ async function setStatus(ctx, values) {
   const said = [ctx.t(changed ? "okStatus" : "okSaved", { status: ctx.t(`status_${status}`) })];
   if (values.contact === "on" && !o.contactId && ["accepted", "in_progress", "delivered"].includes(status)) {
     const r = await B.linkOrder(ctx, o);
-    said.push(r.ok ? ctx.t(r.created ? "okCardCreated" : "okCardFound") : ctx.t(`errCard_${r.error}`));
+    said.push(r.ok ? ctx.t(r.created ? "okCardCreated" : "okCardFound") : ctx.t(`errCard_${r.why}`));
   }
   if (changed && values.notify === "on" && o.mailOptIn) {
     const { email } = await B.emailOf(ctx, o);
@@ -228,7 +228,7 @@ async function linkContact(ctx, values) {
   const o = await D.getOrder(ctx, String(values.id ?? ""));
   if (!o) return gone(ctx);
   const r = await B.linkOrder(ctx, o);
-  if (!r.ok) return { error: ctx.t(`errCard_${r.error}`) };
+  if (!r.ok) return { error: ctx.t(`errCard_${r.why}`) };
   return { ok: ctx.t(r.already ? "okCardFound" : r.created ? "okCardCreated" : "okCardFound"), redirect: `?order=${o.id}` };
 }
 

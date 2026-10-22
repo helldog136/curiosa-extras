@@ -22,8 +22,10 @@ export function clientSubmit(f, ev) {
   btn.disabled = true;
   btn.textContent = f.getAttribute("data-sending");
   f.setAttribute("aria-busy", "true");
-  fetch(f.action, { method: "POST", body: new FormData(f), headers: { Accept: "application/json" }, credentials: "same-origin" })
-    .then(function (r) { return r.json().then(function (j) { return { j: j || {} }; }, function () { return { j: {} }; }); })
+  var ctl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
+  fetch(f.action, { method: "POST", body: new FormData(f), headers: { Accept: "application/json" }, credentials: "same-origin", signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(timer); return r.json().then(function (j) { return { j: j || {} }; }, function () { return { j: {} }; }); })
     .then(function (x) {
       if (x.j.ok === true) {
         var u = x.j.url;
@@ -46,6 +48,6 @@ export function clientSubmit(f, ev) {
       if (!Object.keys(errs).length) show("_", String(x.j.message || f.getAttribute("data-neterr")));
       if (first) first.focus();
     })
-    .catch(function () { done(); show("_", f.getAttribute("data-neterr")); });
+    .catch(function () { clearTimeout(timer); done(); show("_", f.getAttribute("data-neterr")); });
   return false;
 }
