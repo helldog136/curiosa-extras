@@ -35,12 +35,23 @@ Ce que dit le panneau **Mes directs** (page d'administration de la chaîne) : «
 - Un trou de mesure (site arrêté, Twitch qui ne répond pas) n'est **jamais comblé** : il n'entre pas dans les moyennes, et le direct est marqué « approximatif ». Au-delà de 30 minutes sans mesure, le direct est refermé à sa dernière mesure.
 - Une **coupure brève** (moins de 3 vérifications consécutives hors direct, soit environ 4 à 6 minutes) ne coupe pas le direct en deux ; ces minutes ne comptent pas comme regardées.
 
+## Votre planning Twitch (annoncer un événement)
+
+Depuis la 2.1, le module sait dire **les rendez-vous que vous avez publiés dans le planning de votre chaîne Twitch**, pour les modules qui annoncent des événements (par exemple « Story d'annonce » : ils apparaissent dans sa liste « Pour quoi veux-tu une story ? », triés par date et heure avec le reste). Il n'y a **rien à régler** : si l'application Twitch du site est réglée (le guide du Connecteur Twitch), c'est fait.
+
+- **Ce qui est lu** : le planning **public** de votre chaîne (Tableau de bord Twitch, Planning) : titre, début, fin, catégorie (le jeu). Les rendez-vous **annulés** et ceux pendant vos **vacances** annoncées sont ignorés ; 25 rendez-vous au plus, dans les 90 jours.
+- **Sans planning publié** sur Twitch, il n'y a rien à venir : le module le dit (« Aucun rendez-vous à venir dans votre planning Twitch… »), ce n'est pas une panne.
+- **Rien de privé** : aucune autorisation de votre compte n'est demandée, le planning est public.
+- **Combien ça coûte** : un appel à Twitch par chaîne tous les quarts d'heure au plus, seulement quand un module demande la liste (aucune tâche en arrière-plan).
+- **Si ça ne marche pas** : phrase en mots simples (nom de chaîne à saisir, application Twitch à régler, Connecteur Twitch à mettre à jour) ; si Twitch ne répond pas, la liste dit « Twitch ne répond pas pour l'instant ».
+
 ## Pour les développeurs
 
 Identifiant technique **conservé** : `twitch-channel` (sauvegardes, adresses de retour déjà enregistrées chez Twitch, catalogue). Nom affiché : « Ma Chaîne Twitch ». Version 2.0.0, `minCore` 0.2.0, données en version 2.
 
 ### Ce que le module fournit
 - `social.link` (bouton), `stream.live` (live en cours, vide hors ligne), `maze.poster` (derniers clips, 60 jours), `social.stat` (followers, abonnés payants, chiffres de période).
+- **Service offert `event.source`** (version 1, `each: true`, `readOnly: ["upcoming"]`, depuis la 2.1.0) : `upcoming({ limit?, locale? })` → `{ ok: true, source: { kind: "twitch", label: "Twitch" }, state: "ok" | "setup" | "down", message?, note?, events: [{ id: "twitch:<chaîne>:<empreinte du rendez-vous>", title, start (UTC), end?, timezone: "", type: "stream", url: "https://www.twitch.tv/<chaîne>", games? }] }` (contrat commun : README de Story d'annonce et du dépôt). `GET schedule` (`broadcaster_id`, `first` 25) par le jeton d'application du Connecteur Twitch (1.1.0 et plus : ajouté à sa liste fermée) ; 404 = pas de planning = `ok` sans événement ; 15 minutes de cache par chaîne (20 s après une erreur, 60 s après un 429), un appel partagé entre demandes simultanées ; `events.mjs` (pur) transforme la réponse. Un Connecteur plus ancien refuse l'appel : réponse « à mettre à jour ». Le besoin `twitch.api` (min 3) ne change pas.
 - Service `twitch.live` (`each` : chaque instance répond pour sa chaîne) : `channel()` → `{ channel, url, configured, ready, missing }` (sans réseau ; `configured` : l'application est réglée dans le Connecteur) ; `status({ channel?, legacy? })` → `{ configured, known, live, channel, url, id?, title?, game?, viewers?, startedAt?, thumbnail?, displayName?, error? }` ; `adopt({ channel, clientId, clientSecret })` → `{ adopted, ready }` (la chaîne va dans cette instance si elle est vide, l'application va au Connecteur par son `adopt`, qui n'écrase jamais).
 - Il **n'offre plus** `twitch.api` : c'est le Connecteur Twitch (`twitch.api` version 3, non `each`, une seule instance). Sans quoi un mélange `each` / non-`each` demanderait à l'administrateur de choisir un maître.
 

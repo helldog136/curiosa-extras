@@ -30,6 +30,27 @@ Le module *Statistiques de la communauté* relève, garde et sert (admin, assist
 
 Un élément invalide est écarté seul ; un élément avec `error` ne produit jamais de point d'historique. Le détail (limites de taille, stockage, volumes) est dans `modules/community-stats/README.md`.
 
+## Les événements datés : le contrat `event.source`
+Le module *Story d'annonce* (et tout module qui annonce des événements) montre **une seule liste** de ce qui arrive bientôt, de **toutes les sources**, triée par date et heure. Chaque source est un module qui **offre** le service `event.source` (version 1, `each: true` : chaque instance répond pour elle-même, c'est le seul cas où plusieurs modules offrent le même service) avec la méthode `upcoming`, et le consommateur le déclare en **besoin facultatif** (`requires[].optional`). Les streams des agendas, eux, passent par le sujet `planning.slot`.
+
+```js
+// services: { "event.source": { async upcoming(ctx, { from, to, limit, locale }) { … } } } — borné, ne lève jamais
+{ ok: true,
+  source: { kind: "youtube", label: "YouTube" },   // type (minuscules) et nom affiché
+  state: "ok",       // "ok" | "setup" (à régler : `message` dit quoi faire, en mots simples) | "down" (ne répond pas pour l'instant)
+  message: "…", note: "…",   // facultatifs, 240 caractères : quoi régler / ce qu'il faut savoir (ex. « une vidéo privée programmée n'est pas visible »)
+  events: [{
+    id: "youtube:AbC123",          // STABLE, préfixé par la source : lettres, chiffres, « : _ . - », 100 au plus
+    title: "Ma première",          // 80 caractères
+    start: "2026-10-24T18:30:00Z", // UTC ; ou allDay: true + day: "2026-10-24" (minuit du fuseau)
+    timezone: "Europe/Brussels",   // IANA, ou vide si la source ne le sait pas
+    end: "…",                      // facultatif
+    type: "premiere",              // stream | live | premiere | video | event | other
+    url: "https://…", image: "https://…", games: ["Hades"],   // facultatifs (https)
+  }] }
+```
+Sources fournies aujourd'hui : *Chaîne YouTube* (directs et premières **publics** programmés) et *Ma Chaîne Twitch* (planning de la chaîne). Le consommateur borne tout (100 événements par source, 10 sources, 200 au total, délai par source), vérifie chaque champ, écarte seul un événement illisible, dédoublonne un même événement vu par deux sources et trie sur l'instant UTC. Un module qui publie des événements datés n'a qu'à offrir ce service : aucun consommateur n'est à modifier.
+
 ## Tests
 ```
 git clone https://github.com/helldog136/Curiosa ../Curiosa && (cd ../Curiosa && npm ci)
