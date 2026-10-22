@@ -8,8 +8,8 @@
   "version": "1.0.0",
   "minCore": "0.2.5",
   "description": {
-    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les modules qui en ont besoin (Sondages…).",
-    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone and a gentle live update for the screen. Installs itself with the modules that need it (Polls…)."
+    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
+    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone and a gentle live update for the screen. Installs itself with the activities that need it."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",

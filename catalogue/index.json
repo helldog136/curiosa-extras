@@ -14,6 +14,30 @@
       "icon": "🔔"
     },
     {
+      "id": "audience",
+      "name": "Participation",
+      "description": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/audience",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🙌",
+      "requires": {
+        "core": "0.2.5"
+      },
+      "offers": [
+        "audience.session"
+      ],
+      "needs": [
+        {
+          "service": "audience.remote",
+          "optional": true
+        }
+      ]
+    },
+    {
       "id": "bandcamp",
       "name": "Bandcamp",
       "description": "Affiche le bouton de votre Bandcamp dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
@@ -582,17 +606,29 @@
     {
       "id": "polls",
       "name": "Sondages",
-      "description": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS).",
+      "description": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS). Nouveau : des manches (« toutes les 10 minutes, le chat décide », avec le vainqueur à l'écran) et un sondage rapide « A ou B ? » depuis votre téléphone.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/polls",
       "ref": "v1.13.0",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
       "requires": {
         "core": "0.2.5"
-      }
+      },
+      "offers": [
+        {
+          "service": "audience.remote",
+          "each": true
+        }
+      ],
+      "needs": [
+        {
+          "service": "audience.session",
+          "optional": true
+        }
+      ]
     },
     {
       "id": "press-kit",
