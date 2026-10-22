@@ -171,7 +171,7 @@ test("liste : formulaire « J'ai une idée ! » en tête, quatre endroits avec l
   assert.match(page, /Idées<span class="cp-n">1<\/span>/);
   assert.match(page, /En préparation<span class="cp-n">1<\/span>/);
   assert.ok(page.includes("Première") && !page.includes("Deuxième"), "l'endroit ouvert montre ses idées seulement");
-  assert.ok(page.includes(`href="?idea=${a}"`), "toute la carte est le lien vers l'idée");
+  assert.ok(page.includes(`href="?idea=${a}&amp;col=idea"`), "toute la carte est le lien vers l'idée");
   const doing = html(await def.adminPanel(ctx, { query: { col: "doing" } }));
   assert.ok(doing.includes("Deuxième") && !doing.includes("Première"));
   assert.match(doing, /aria-current="page">En préparation/);
