@@ -14,7 +14,10 @@ Vous collez un lien dans un panneau de stream, une affiche ou un flyer : il est 
 Pour chaque lien : combien de clics aujourd'hui, ces 7 et 30 derniers jours, et depuis la création, avec un petit graphique.
 
 ## Ce que voit le visiteur
-Une redirection instantanée. Si le lien a disparu ou si sa date de fin est passée, une page aimable (dans la langue du site) propose de retourner à l'accueil. Vous pouvez écrire votre propre message pour les liens terminés dans les réglages.
+Une redirection instantanée. Si le lien a disparu ou si sa date de fin est passée, une page aimable (dans la langue du navigateur) propose de retourner à l'accueil. Vous pouvez écrire votre propre message pour les liens terminés dans les réglages. Ce module n'ajoute aucune page au menu de votre site.
+
+## Et « Raccourcis de liens » ?
+Le site a déjà ses « Raccourcis de liens » (une adresse simple de votre site vers une autre page). Liens courts ajoute le QR code, la date de fin, les chiffres par jour et le refus des adresses qui ne peuvent pas marcher. Les deux peuvent vivre ensemble.
 
 ## Changer la destination sans changer le QR code
 Ouvrez un lien, **Modifier ce lien**, changez l'adresse : le nom court et le QR code déjà imprimé restent les mêmes et mènent à la nouvelle adresse. Le nom court lui-même ne change jamais (c'est ce qui est imprimé).
