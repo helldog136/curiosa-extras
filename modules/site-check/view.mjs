@@ -1,7 +1,7 @@
 // Santé du site — ce que voit Emma : un résumé rassurant, des remarques regroupées, ce qui n'a pas pu être regardé, l'historique.
 // Tout texte venu du site (titres, adresses…) passe par esc() avant d'entrer dans du HTML ; les tableaux (`table`) échappent seuls.
 import { esc, clip } from "./urls.mjs";
-import { visibleGroups, tally, progressOf } from "./run.mjs";
+import { visibleGroups, tally, progressOf, weightOf } from "./run.mjs";
 import { LIMITS, fixHref } from "./scan.mjs";
 
 const SHOWN = 8;   // remarques montrées d'abord dans chaque groupe ; « Voir les autres » déplie jusqu'à 60
@@ -62,7 +62,7 @@ const PLURAL = {
   link_gone: ["g_link_gone_one", "g_link_gone_other"], img_gone: ["g_img_gone_one", "g_img_gone_other"], link_down: ["g_link_down_one", "g_link_down_other"],
   link_loop: ["g_link_loop_one", "g_link_loop_other"], link_blocked: ["g_link_blocked_one", "g_link_blocked_other"], link_moved: ["g_link_moved_one", "g_link_moved_other"],
   link_insecure: ["g_link_insecure_one", "g_link_insecure_other"], link_unverified: ["g_link_unverified_one", "g_link_unverified_other"],
-  imgs: ["d_imgs_one", "d_imgs_other"], some: ["hero_some_text_one", "hero_some_text_other"], ignored: ["ignored_line_one", "ignored_line_other"],
+  imgs: ["d_imgs_one", "d_imgs_other"], some: ["hero_some_text_one", "hero_some_text_other"], ignored: ["ignored_line_one", "ignored_line_other"], unlisted: ["unlisted_one", "unlisted_other"],
 };
 const plural = (ctx, name, n, vars = {}) => ctx.t(PLURAL[name][n === 1 ? 0 : 1], { count: n, ...vars });
 
@@ -163,9 +163,9 @@ function groupBlocks(ctx, g, expanded) {
   const showAll = expanded === key;
   const shown = showAll ? g.items : g.items.slice(0, SHOWN);
   const hidden = g.items.length - shown.length;
-  const unlisted = Math.max(0, g.count - g.items.length);
+  const unlisted = Math.max(0, g.count - g.items.reduce((n, i) => n + weightOf(i), 0));
   const more = hidden > 0 ? `<a href="?all=${encodeURIComponent(key)}#sc-${esc(key)}">${esc(ctx.t("see_more", { n: hidden }))}</a>` : showAll && g.items.length > SHOWN ? `<a href="?#sc-${esc(key)}">${esc(ctx.t("see_less"))}</a>` : "";
-  const tail = unlisted > 0 ? `<p>${esc(ctx.t("unlisted", { n: unlisted }))}</p>` : "";
+  const tail = unlisted > 0 ? `<p>${esc(plural(ctx, "unlisted", unlisted))}</p>` : "";
   const head = `<section class="sc-group" id="sc-${esc(key)}"><span class="sc-sev"><span class="sc-dot sc-d-${g.sev}" aria-hidden="true"></span>${esc(ctx.t(`sev_${g.sev}`))}</span><h3>${esc(sentence(ctx, g))}</h3><p>${esc(why(ctx, g))}</p>${more}${tail}</section>`;
   return [
     wrap(head),

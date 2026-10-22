@@ -96,7 +96,7 @@ export function linkGroups(run) {
   return [...map.values()];
 }
 
-const weightOf = (item) => (item.d?.[0] === "imgs" ? Number(item.d[1]) || 1 : 1);
+export const weightOf = (item) => (item.d?.[0] === "imgs" ? Number(item.d[1]) || 1 : 1);
 
 /** Les remarques à montrer : celles que la personne n'a pas masquées, de la plus utile à la moins urgente. */
 export function visibleGroups(report, ignored = new Set()) {
@@ -112,7 +112,7 @@ export function visibleGroups(report, ignored = new Set()) {
 
 export function tally(groups) {
   const counts = { important: 0, advised: 0, info: 0 };
-  for (const g of groups) counts[g.sev] += g.items.length ? g.count : 0;
+  for (const g of groups) counts[g.sev] += g.id === "alt" ? g.items.length : g.count;   // on compte des choses à corriger (pages, liens), pas des images
   return counts;
 }
 

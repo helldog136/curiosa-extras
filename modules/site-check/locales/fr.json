@@ -92,7 +92,6 @@
   "progress_help": "Appuyez sur « Continuer la vérification » pour traiter le groupe suivant. Vous pouvez aussi quitter la page et revenir plus tard.",
   "see_more": "Voir les {n} autres",
   "see_less": "Réduire la liste",
-  "unlisted": "Et {n} autres, non listées ici : corrigez celles-ci, puis relancez la vérification.",
   "col_item": "Concerné",
   "col_date": "Quand",
   "col_result": "Résultat",
@@ -137,5 +136,7 @@
   "err_nothing": "Il n'y a pas de vérification à continuer. Lancez-en une nouvelle avec « Vérifier maintenant ».",
   "err_failed": "La vérification s'est arrêtée avant la fin. Réessayez dans un instant.",
   "err_gone": "Cette remarque n'existe plus. Relancez la vérification pour avoir une liste à jour.",
-  "err_ignored_full": "Trop de remarques sont déjà masquées (200 au plus). Affichez-les de nouveau avant d'en masquer d'autres."
+  "err_ignored_full": "Trop de remarques sont déjà masquées (200 au plus). Affichez-les de nouveau avant d'en masquer d'autres.",
+  "unlisted_one": "Et {count} autre, non listée ici : corrigez celles-ci, puis relancez la vérification.",
+  "unlisted_other": "Et {count} autres, non listées ici : corrigez celles-ci, puis relancez la vérification."
 }

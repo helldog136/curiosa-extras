@@ -92,7 +92,6 @@
   "progress_help": "Press \"Carry on checking\" to do the next group. You can also leave the page and come back later.",
   "see_more": "See the {n} others",
   "see_less": "Shorten the list",
-  "unlisted": "And {n} more, not listed here: fix these ones, then run the check again.",
   "col_item": "Concerned",
   "col_date": "When",
   "col_result": "Result",
@@ -137,5 +136,7 @@
   "err_nothing": "There is no check to carry on. Start a new one with \"Check now\".",
   "err_failed": "The check stopped before the end. Try again in a moment.",
   "err_gone": "This remark no longer exists. Run the check again to get an up-to-date list.",
-  "err_ignored_full": "Too many remarks are already hidden (200 at most). Show them again before hiding more."
+  "err_ignored_full": "Too many remarks are already hidden (200 at most). Show them again before hiding more.",
+  "unlisted_one": "And {count} more, not listed here: fix these ones, then run the check again.",
+  "unlisted_other": "And {count} more, not listed here: fix these ones, then run the check again."
 }
