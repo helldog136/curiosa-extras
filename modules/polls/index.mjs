@@ -270,7 +270,7 @@ const CSS = `.vp{box-sizing:border-box;border:1px solid var(--v-line);background
 .vp-track{height:16px;border-radius:8px;background:var(--v-bg);border:1px solid var(--v-muted);overflow:hidden;margin-top:6px}
 .vp-fill{height:100%;background:var(--v-accent);transition:width .5s}.vp-lead .vp-fill{background-image:repeating-linear-gradient(135deg,transparent 0 6px,rgba(0,0,0,.28) 6px 9px)}
 .vp-tag{display:inline-block;margin:6px 6px 0 0;font-size:.82rem;font-weight:700;border:1px solid var(--v-fg);border-radius:999px;padding:1px 10px}
-.vp-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}.vp-list a{display:block;padding:12px 14px;min-height:48px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-fg);text-decoration:none}
+.vp-h{margin:1.6rem 0 .8rem;font-size:1.3rem;font-weight:700}.vp-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}.vp-list a{display:block;padding:12px 14px;min-height:48px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-fg);text-decoration:none}
 .vp-list a:hover,.vp-list a:focus-visible{border-color:var(--v-accent)}.vp-list b{display:block;overflow-wrap:anywhere}.vp-list small{color:var(--v-muted)}
 @media (prefers-reduced-motion:reduce){.vp-fill{transition:none}}`;
 
@@ -436,8 +436,8 @@ export default {
       const intro = String(ctx.setting("intro") ?? "").trim();
       if (n === 1 && intro) blocks.push({ type: "markdown", text: intro });
       let html = `<style>${CSS}</style>`;
-      if (open.length) html += `<h2>${esc(ctx.t("openPolls"))}</h2><ul class="vp-list">${open.map((p) => listItem(ctx, p)).join("")}</ul>`;
-      html += `<h2>${esc(ctx.t("pastPolls"))}</h2>`;
+      if (open.length) html += `<h2 class="vp-h">${esc(ctx.t("openPolls"))}</h2><ul class="vp-list">${open.map((p) => listItem(ctx, p)).join("")}</ul>`;
+      html += `<h2 class="vp-h">${esc(ctx.t("pastPolls"))}</h2>`;
       html += past.items.length ? `<ul class="vp-list">${past.items.map((p) => listItem(ctx, p)).join("")}</ul>${pager(ctx, n, past.pages)}` : `<p class="vp-hint">${esc(ctx.t(open.length ? "noPast" : "noPolls"))}</p>`;
       blocks.push({ type: "html", html });
       return { title, description: ctx.t("pageDescription"), blocks };
