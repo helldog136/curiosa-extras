@@ -1,0 +1,642 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.5",
+  "id": "thanks-wall",
+  "name": {
+    "en": "Thank-you wall",
+    "fr": "Mur des remerciements"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "A “Thank you!” page for your community: the people of one or more Contacts categories (moderators, supporters, beta testers…) as a grid of cards with their photos, a person in the spotlight each month and a short message for anyone you like. Names and photos stay in Contacts, so there is nothing to retype.",
+    "fr": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-testeurs…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "💛",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "merci",
+  "permissions": [
+    "pages",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "requires": [
+    {
+      "service": "contact.book",
+      "min": 2,
+      "label": {
+        "en": "The address book (Contacts module): the people of the wall are its cards, in the categories you choose",
+        "fr": "Le carnet d'adresses (module Contacts) : les personnes du mur sont ses fiches, dans les catégories que vous choisissez"
+      }
+    }
+  ],
+  "offers": [
+    {
+      "service": "privacy.subject",
+      "each": true,
+      "label": {
+        "en": "What the thank-you wall knows about a person of Contacts (export, erase, merge)",
+        "fr": "Ce que le mur des remerciements sait d'une personne de Contacts (export, effacement, fusion)"
+      }
+    }
+  ],
+  "privacy": {
+    "en": "Nothing is collected about your visitors: no cookie, no form, no address kept. The wall shows people from your Contacts, so it shows what you put there on purpose (name and photo); a card in the “Do not show” category never appears. The module itself only keeps the short messages you write and the person in the spotlight each month, each tied to the number of the card in Contacts (never a name or a photo); they leave with the card when it is erased. Photos are loaded by the visitor's browser straight from where they live (your site, Twitch, YouTube or Bluesky), so that service sees the visitor's address, as for any image.",
+    "fr": "Rien n'est collecté sur vos visiteurs : pas de cookie, pas de formulaire, aucune adresse gardée. Le mur montre des personnes de vos Contacts, donc ce que vous y avez mis volontairement (nom et photo) ; une fiche rangée dans la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement les petits messages que vous écrivez et la personne à l'honneur de chaque mois, chacun rattaché au numéro de la fiche dans Contacts (jamais un nom ni une photo) ; ils partent avec la fiche quand elle est effacée. Les photos sont chargées par le navigateur du visiteur directement là où elles se trouvent (votre site, Twitch, YouTube ou Bluesky) : ce service voit donc l'adresse du visiteur, comme pour toute image."
+  },
+  "rights": [
+    {
+      "id": "messages.edit",
+      "label": {
+        "fr": "écrire les messages et choisir la personne à l'honneur",
+        "en": "write the messages and choose the person in the spotlight"
+      },
+      "help": {
+        "fr": "Sans ce droit, la personne voit le mur et sa liste, mais ne peut rien changer.",
+        "en": "Without it, the person sees the wall and its list, but cannot change anything."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mon mur",
+        "en": "My wall"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "category",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Who to thank (a Contacts category)",
+        "fr": "Qui remercier (une catégorie de Contacts)"
+      },
+      "help": {
+        "en": "Everyone in this Contacts category appears on the wall. No category yet? Type its name (for example “Moderators”), click “Create”, then put your cards in it from Contacts.",
+        "fr": "Toutes les personnes de cette catégorie de Contacts apparaissent sur le mur. Pas encore de catégorie ? Tapez son nom (par exemple « Modérateurs »), cliquez sur « Créer », puis rangez vos fiches dedans depuis Contacts."
+      }
+    },
+    {
+      "key": "groupTitle",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of this group",
+        "fr": "Titre de ce groupe"
+      },
+      "help": {
+        "en": "For example “Moderation”. Left empty, the name of the category is used.",
+        "fr": "Par exemple « Modération ». Laissé vide, le nom de la catégorie est utilisé."
+      }
+    },
+    {
+      "key": "category2",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Second group (a Contacts category)",
+        "fr": "Deuxième groupe (une catégorie de Contacts)"
+      }
+    },
+    {
+      "key": "groupTitle2",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of the second group",
+        "fr": "Titre du deuxième groupe"
+      }
+    },
+    {
+      "key": "category3",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Third group (a Contacts category)",
+        "fr": "Troisième groupe (une catégorie de Contacts)"
+      }
+    },
+    {
+      "key": "groupTitle3",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of the third group",
+        "fr": "Titre du troisième groupe"
+      }
+    },
+    {
+      "key": "category4",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Fourth group (a Contacts category)",
+        "fr": "Quatrième groupe (une catégorie de Contacts)"
+      }
+    },
+    {
+      "key": "groupTitle4",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of the fourth group",
+        "fr": "Titre du quatrième groupe"
+      }
+    },
+    {
+      "key": "category5",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Fifth group (a Contacts category)",
+        "fr": "Cinquième groupe (une catégorie de Contacts)"
+      }
+    },
+    {
+      "key": "groupTitle5",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of the fifth group",
+        "fr": "Titre du cinquième groupe"
+      }
+    },
+    {
+      "key": "category6",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Sixth group (a Contacts category)",
+        "fr": "Sixième groupe (une catégorie de Contacts)"
+      }
+    },
+    {
+      "key": "groupTitle6",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of the sixth group",
+        "fr": "Titre du sixième groupe"
+      }
+    },
+    {
+      "key": "hide",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Category “Do not show”",
+        "fr": "Catégorie « Ne pas montrer »"
+      },
+      "help": {
+        "en": "A person who asks not to appear: put her card in this Contacts category and she disappears from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.",
+        "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît du mur en moins de deux minutes. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe."
+      }
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Page title",
+        "fr": "Titre de la page"
+      },
+      "help": {
+        "en": "Left empty, the page is titled “Thank you!”.",
+        "fr": "Laissé vide, la page s'appelle « Merci ! »."
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "A few words under the title",
+        "fr": "Quelques mots sous le titre"
+      },
+      "help": {
+        "en": "Optional. For example: “Without you, none of this would exist.”",
+        "fr": "Facultatif. Par exemple : « Sans vous, rien de tout cela n'existerait. »"
+      }
+    },
+    {
+      "key": "nameStyle",
+      "type": "select",
+      "default": "card",
+      "label": {
+        "en": "How names are shown",
+        "fr": "Comment les noms sont affichés"
+      },
+      "help": {
+        "en": "The wall is public: choose what you are comfortable showing.",
+        "fr": "Le mur est public : choisissez ce que vous êtes à l'aise de montrer."
+      },
+      "options": [
+        {
+          "value": "card",
+          "label": {
+            "en": "As written on the card in Contacts",
+            "fr": "Comme sur la fiche dans Contacts"
+          }
+        },
+        {
+          "value": "first",
+          "label": {
+            "en": "First name only (first word)",
+            "fr": "Prénom seulement (premier mot)"
+          }
+        },
+        {
+          "value": "nickname",
+          "label": {
+            "en": "Online nickname (name of the account)",
+            "fr": "Pseudo en ligne (nom du compte)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "photos",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Show photos",
+        "fr": "Montrer les photos"
+      },
+      "help": {
+        "en": "Switched off, only the first letters of each name are shown.",
+        "fr": "Désactivé, seules les initiales de chaque nom sont affichées."
+      }
+    },
+    {
+      "key": "order",
+      "type": "select",
+      "default": "alpha",
+      "advanced": true,
+      "label": {
+        "en": "Order of the cards",
+        "fr": "Ordre des cartes"
+      },
+      "options": [
+        {
+          "value": "alpha",
+          "label": {
+            "en": "Alphabetical",
+            "fr": "Ordre alphabétique"
+          }
+        },
+        {
+          "value": "oldest",
+          "label": {
+            "en": "Oldest cards first",
+            "fr": "Fiches les plus anciennes d'abord"
+          }
+        },
+        {
+          "value": "newest",
+          "label": {
+            "en": "Newest cards first",
+            "fr": "Fiches les plus récentes d'abord"
+          }
+        }
+      ]
+    },
+    {
+      "key": "preview",
+      "type": "number",
+      "default": 12,
+      "advanced": true,
+      "label": {
+        "en": "People shown per group on the main page",
+        "fr": "Personnes montrées par groupe sur la page principale"
+      },
+      "help": {
+        "en": "Between 4 and 48. The rest is one click away (“See everyone”).",
+        "fr": "Entre 4 et 48. Le reste est à un clic (« Voir tout le monde »)."
+      }
+    }
+  ],
+  "optionalGroups": [
+    {
+      "id": "group2",
+      "label": {
+        "en": "Second group",
+        "fr": "Deuxième groupe"
+      },
+      "addLabel": {
+        "en": "Add a second group",
+        "fr": "Ajouter un deuxième groupe"
+      },
+      "removeLabel": {
+        "en": "Remove this group",
+        "fr": "Retirer ce groupe"
+      },
+      "fields": [
+        "category2",
+        "groupTitle2"
+      ],
+      "required": [
+        "category2"
+      ]
+    },
+    {
+      "id": "group3",
+      "label": {
+        "en": "Third group",
+        "fr": "Troisième groupe"
+      },
+      "addLabel": {
+        "en": "Add a third group",
+        "fr": "Ajouter un troisième groupe"
+      },
+      "removeLabel": {
+        "en": "Remove this group",
+        "fr": "Retirer ce groupe"
+      },
+      "fields": [
+        "category3",
+        "groupTitle3"
+      ],
+      "required": [
+        "category3"
+      ]
+    },
+    {
+      "id": "group4",
+      "label": {
+        "en": "Fourth group",
+        "fr": "Quatrième groupe"
+      },
+      "addLabel": {
+        "en": "Add a fourth group",
+        "fr": "Ajouter un quatrième groupe"
+      },
+      "removeLabel": {
+        "en": "Remove this group",
+        "fr": "Retirer ce groupe"
+      },
+      "fields": [
+        "category4",
+        "groupTitle4"
+      ],
+      "required": [
+        "category4"
+      ]
+    },
+    {
+      "id": "group5",
+      "label": {
+        "en": "Fifth group",
+        "fr": "Cinquième groupe"
+      },
+      "addLabel": {
+        "en": "Add a fifth group",
+        "fr": "Ajouter un cinquième groupe"
+      },
+      "removeLabel": {
+        "en": "Remove this group",
+        "fr": "Retirer ce groupe"
+      },
+      "fields": [
+        "category5",
+        "groupTitle5"
+      ],
+      "required": [
+        "category5"
+      ]
+    },
+    {
+      "id": "group6",
+      "label": {
+        "en": "Sixth group",
+        "fr": "Sixième groupe"
+      },
+      "addLabel": {
+        "en": "Add a sixth group",
+        "fr": "Ajouter un sixième groupe"
+      },
+      "removeLabel": {
+        "en": "Remove this group",
+        "fr": "Retirer ce groupe"
+      },
+      "fields": [
+        "category6",
+        "groupTitle6"
+      ],
+      "required": [
+        "category6"
+      ]
+    }
+  ],
+  "mcp": [
+    {
+      "name": "wall_status",
+      "readOnly": true,
+      "description": "State of the thank-you wall: 'state' ('ok', or 'unready' with a 'reason' when no Contacts category is chosen yet, 'absent' without Contacts, 'slow' when Contacts does not answer), the groups (number, title, Contacts category, how many people are shown, how many are hidden by the 'Do not show' category, 'truncated' when a group has more than 1000 cards and only the first 1000 are read), which category hides people, how many short messages are kept and the people in the spotlight by month (card ids only). The people themselves (names, photos) live in Contacts and are never copied here. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wall_people",
+      "readOnly": true,
+      "description": "The people shown in one group of the wall, 50 per page, in the order of the public page: contactId (the id of the card in Contacts), shown name and short message if any. Use it to find who is on the wall and to get the contactId for message_set or honor_set. People hidden by the 'Do not show' category are not listed. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Group number, 1 by default (see wall_status)."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page number, 1 by default."
+          }
+        }
+      }
+    },
+    {
+      "name": "message_set",
+      "description": "Write (or replace) the short thank-you message shown on a person's card, 160 characters at most, in one language. Only the message is stored here, tied to the card id; the card itself is never created or changed (use the Contacts tools to find the contactId). Shown publicly on the wall as soon as the person is on it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "contactId",
+          "text"
+        ],
+        "properties": {
+          "contactId": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Id of the card in Contacts."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "The message, 160 characters at most. Plain text."
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Language of the text, such as 'fr' or 'en'. Default: the default language of the site."
+          }
+        }
+      }
+    },
+    {
+      "name": "message_clear",
+      "destructive": true,
+      "default": false,
+      "description": "Remove the short message of a person (all languages, or just 'locale' if given). Cannot be undone. The card in Contacts is not touched.",
+      "input": {
+        "type": "object",
+        "required": [
+          "contactId"
+        ],
+        "properties": {
+          "contactId": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "honor_set",
+      "description": "Put a person in the spotlight for a month (this month or one of the next eleven; one person per month, replacing any earlier choice for that month), with an optional word on why (300 characters at most). Shown publicly on the wall during that month. Only the card id and the word are stored here (use the Contacts tools to find the contactId).",
+      "input": {
+        "type": "object",
+        "required": [
+          "contactId"
+        ],
+        "properties": {
+          "contactId": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Id of the card in Contacts."
+          },
+          "month": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Month like '2026-11'. Default: this month."
+          },
+          "why": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Optional word shown under the name, 300 characters at most."
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Language of 'why'. Default: the default language of the site."
+          }
+        }
+      }
+    },
+    {
+      "name": "honor_clear",
+      "destructive": true,
+      "default": false,
+      "description": "Remove the spotlight chosen for a month. Cannot be undone.",
+      "input": {
+        "type": "object",
+        "required": [
+          "month"
+        ],
+        "properties": {
+          "month": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Month like '2026-11'."
+          }
+        }
+      }
+    }
+  ]
+}
