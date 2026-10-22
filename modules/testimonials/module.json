@@ -8,7 +8,7 @@
   "version": "1.0.0",
   "minCore": "0.2.5",
   "description": {
-    "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, coups de cœur et trois avis sur l'accueil.",
+    "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
     "en": "Collect reviews: a shareable “Leave a review” link, every review waits for your approval before it appears, with optional stars, a grid or slow scrolling, favourites and three reviews on the home page."
   },
   "author": "Helldog136",
@@ -75,8 +75,8 @@
         "en": "Short welcome text (optional)"
       },
       "help": {
-        "fr": "Montré au-dessus des avis. Vous pouvez mettre du gras avec **deux étoiles**.",
-        "en": "Shown above the reviews. You can make words bold with **two stars**."
+        "fr": "Montré au-dessus des avis, sur la page des avis.",
+        "en": "Shown above the reviews, on the reviews page."
       }
     },
     {
@@ -124,7 +124,7 @@
         {
           "value": "favorites",
           "label": {
-            "fr": "Coups de cœur d'abord, puis les plus récents",
+            "fr": "Favoris d'abord, puis les plus récents",
             "en": "Favourites first, then the newest"
           }
         },
@@ -406,7 +406,7 @@
     {
       "topic": "overlay.item",
       "label": {
-        "fr": "Avis en coup de cœur (pour une source de stream)",
+        "fr": "Avis en favori (pour une source de stream)",
         "en": "Favourite reviews (for a stream source)"
       }
     }

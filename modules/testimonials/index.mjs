@@ -97,7 +97,8 @@ async function thanksPage(ctx, token) {
   if (r) {
     parts.push(`<p class="tm-muted">${L.esc(state)}</p>`);
     blocks.push(wrap(...parts));
-    blocks.push({ type: "markdown", text: ctx.t("withdrawIntro") }, { type: "copy", text: `${ctx.api.siteUrl}${here(ctx, "retrait", token)}`, label: ctx.t("withdrawCopy") });
+    // Un champ en lecture seule (pas un bloc « copier » du cœur) : une longue adresse y défile au lieu d'élargir la page sur un téléphone.
+    blocks.push({ type: "markdown", text: ctx.t("withdrawIntro") }, wrap(`<div class="tm-field"><label for="tm-link">${L.esc(ctx.t("withdrawCopy"))}</label><input class="tm-in" id="tm-link" type="text" readonly value="${L.esc(`${ctx.api.siteUrl}${here(ctx, "retrait", token)}`)}"><p class="tm-hint">${L.esc(ctx.t("withdrawSelect"))}</p></div>`));
   } else blocks.push(wrap(...parts));
   blocks.push(wrap(`<nav class="tm-nav"><a class="tm-chip" href="${L.esc(here(ctx) ?? "/")}">${L.esc(ctx.t("backToReviews"))}</a></nav>`));
   return { title: ctx.t("thanksTitle"), blocks };
@@ -220,7 +221,7 @@ export default {
 
   // ACCUEIL : trois morceaux. Un morceau sans rien à montrer disparaît (les autres prennent sa place).
   sections: {
-    // Les avis à la une : 3 par défaut, les coups de cœur d'abord.
+    // Les avis à la une : 3 par défaut, les favoris d'abord.
     async featured(ctx, options) {
       const cfg = L.config(ctx);
       const list = (await publicSorted(ctx, homeOrder(cfg))).slice(0, L.num(options?.count, 3, 1, 12));
@@ -244,7 +245,7 @@ export default {
     },
   },
 
-  // SUJET : les coups de cœur (ou, à défaut, les mieux placés) peuvent défiler dans une source navigateur de stream. Jamais d'adresse e-mail.
+  // SUJET : les favoris (ou, à défaut, les mieux placés) peuvent défiler dans une source navigateur de stream. Jamais d'adresse e-mail.
   exports: {
     async "overlay.item"(ctx, query) {
       const list = await publicSorted(ctx, "favorites");

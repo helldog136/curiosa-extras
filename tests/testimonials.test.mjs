@@ -266,7 +266,7 @@ test("grille par défaut, pagination : une seule adresse par page, page vide ou 
 });
 function fakeNoPage() { const c = ctxFor(); c.instance.basePath = null; return c; }
 
-test("ordre : coups de cœur d'abord (défaut), plus récents, mieux notés, à la main", async () => {
+test("ordre : favoris d'abord (défaut), plus récents, mieux notés, à la main", async () => {
   const mk = async (order) => {
     const ctx = ctxFor({ settings: { order } });
     await seed(ctx, { name: "A-vieux-5", rating: 5, at: NOW - 5 * DAY });
@@ -281,7 +281,7 @@ test("ordre : coups de cœur d'abord (défaut), plus récents, mieux notés, à 
   assert.deepEqual(await mk("best"), ["A-vieux-5", "D-milieu-4", "C-coeur-3", "B-recent-2"]);
   assert.deepEqual(await mk("manual"), ["D-milieu-4", "C-coeur-3", "B-recent-2", "A-vieux-5"]);
   const html = htmlOf(await page(await (async () => { const c = ctxFor(); await seed(c, { featured: true }); return c; })()));
-  assert.match(html, /★ Favourite/, "le coup de cœur s'écrit en toutes lettres");
+  assert.match(html, /★ Favourite/, "le favori s'écrit en toutes lettres");
 });
 
 test("note moyenne : à partir de 3 notes, sur les seules notes données, et on peut la masquer", async () => {
@@ -344,7 +344,7 @@ test("défilement lent : bouton pause réel, aucun script, mouvement coupé si �
   assert.equal((await page(ctxFor(), "tous")).notFound, true);
 });
 
-test("accueil : trois avis à la une par défaut (coups de cœur d'abord), grille ou défilement, rien à montrer = la section disparaît", async () => {
+test("accueil : trois avis à la une par défaut (favoris d'abord), grille ou défilement, rien à montrer = la section disparaît", async () => {
   const ctx = ctxFor();
   assert.equal(await def.sections.featured(ctx, {}), null);
   await seedMany(ctx, 6);
@@ -477,11 +477,11 @@ test("QR code : image à télécharger (GET seulement), sur fond blanc avec marg
   assert.equal(ctx.calls.writes.length, 0);
 });
 
-test("overlay : seuls les coups de cœur (ou les premiers avis) sont proposés, sans e-mail, bornés", async () => {
+test("overlay : seuls les favoris (ou les premiers avis) sont proposés, sans e-mail, bornés", async () => {
   const ctx = ctxFor();
   assert.deepEqual(await def.exports["overlay.item"](ctx, { limit: 5 }), []);
   await seedMany(ctx, 8);
-  assert.equal((await def.exports["overlay.item"](ctx, { limit: 20 })).length, 5, "sans coup de cœur : les 5 premiers");
+  assert.equal((await def.exports["overlay.item"](ctx, { limit: 20 })).length, 5, "sans favori : les 5 premiers");
   await seed(ctx, { name: "Chouchou", featured: true, rating: 4 });
   const items = await def.exports["overlay.item"](ctx, { limit: 20 });
   assert.equal(items.length, 1);

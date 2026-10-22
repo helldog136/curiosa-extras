@@ -22,7 +22,8 @@ const privacyHref = (ctx) => `${ctx.locale !== ctx.defaultLocale ? `/${ctx.local
 
 // ── Style : suit le thème du site (variables --v-*), aucune couleur en dur ─────────────────────────────────────────
 export const CSS = `
-.tm{color:var(--v-fg);display:grid;gap:16px}
+.tm{color:var(--v-fg);display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.tm-scroll{min-width:0;max-width:100%}
 .tm *{box-sizing:border-box}
 .tm a{color:inherit}
 .tm-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}

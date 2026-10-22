@@ -59,7 +59,7 @@ export async function panel(ctx, { query: q0 } = {}) {
 
   // Modifier ou ajouter : le formulaire s'ouvre en haut de page.
   const editing = q.edit ? all.find((r) => r.id === String(q.edit)) : undefined;
-  if (editing) blocks.push(editForm(ctx, editing, withEmail));
+  if (editing) blocks.push(...editForm(ctx, editing, withEmail));
   else if (String(q.add) === "1") blocks.push(addForm(ctx));
   else if (can(ctx, RIGHTS.moderate)) blocks.push({ type: "links", items: [{ label: ctx.t("addLink"), href: "?add=1" }] });
 
@@ -90,8 +90,9 @@ export async function panel(ctx, { query: q0 } = {}) {
     if (can(ctx, RIGHTS.delete)) actions.push({ label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true });
     blocks.push({
       type: "table",
-      columns: [ctx.t("colDate"), ctx.t("colName"), ctx.t("colRating"), ctx.t("colReview"), ctx.t("colState"), ...(withEmail ? [ctx.t("colEmail")] : [])],
-      rows: slice.map((r) => [L.day(r.at, ctx.locale), r.name, r.rating ? ctx.t("ratingShort", { n: r.rating }) : "—", excerpt(r.text, 160), `${word(ctx, r.status)}${r.featured ? ` · ★ ${ctx.t("favorite")}` : ""}${r.editedAt ? ` · ${ctx.t("edited")}` : ""}`, ...(withEmail ? [r.email ?? "—"] : [])]),
+      // L'état se lit déjà sur l'onglet choisi : on ne le répète que pour les avis publiés (favori, modifié).
+      columns: [ctx.t("colDate"), ctx.t("colName"), ctx.t("colRating"), ctx.t("colReview"), ...(status === "approved" ? [ctx.t("colState")] : []), ...(withEmail ? [ctx.t("colEmail")] : [])],
+      rows: slice.map((r) => [L.isoDay(r.at), r.name, r.rating ? ctx.t("ratingShort", { n: r.rating }) : "—", excerpt(r.text, 120), ...(status === "approved" ? [`${word(ctx, r.status)}${r.featured ? ` · ★ ${ctx.t("favorite")}` : ""}${r.editedAt ? ` · ${ctx.t("edited")}` : ""}`] : []), ...(withEmail ? [r.email ?? "—"] : [])]),
       rowIds: slice.map((r) => r.id),
       rowActions: actions,
     });
@@ -119,25 +120,25 @@ const ratingOptions = (ctx) => [{ value: "", label: ctx.t("noRating") }, ...[1, 
 function editForm(ctx, r, withEmail) {
   const fields = [
     { name: "id", label: "id", kind: "hidden", value: r.id },
-    { name: "name", label: ctx.t("field_name"), kind: "text", required: true, value: r.name },
-    { name: "text", label: ctx.t("field_text"), kind: "textarea", required: true, value: r.text, help: ctx.t("editHelp") },
-    { name: "rating", label: ctx.t("field_rating"), kind: "select", options: ratingOptions(ctx), value: r.rating ? String(r.rating) : "" },
+    { name: "name", label: ctx.t("colName"), kind: "text", required: true, value: r.name },
+    { name: "text", label: ctx.t("colReview"), kind: "textarea", required: true, value: r.text, help: ctx.t("editHelp") },
+    { name: "rating", label: ctx.t("colRating"), kind: "select", options: ratingOptions(ctx), value: r.rating ? String(r.rating) : "" },
     { name: "photo", label: ctx.t("photoLabel"), kind: "image", value: r.photo ?? "", help: ctx.t("photoHelp") },
     { name: "featured", label: ctx.t("featuredLabel"), kind: "checkbox", value: r.featured ? "on" : "" },
     { name: "position", label: ctx.t("positionLabel"), kind: "number", value: r.position ?? "", help: ctx.t("positionHelp") },
   ];
   if (r.email) fields.push({ name: "clearEmail", label: withEmail ? ctx.t("clearEmailNamed", { email: r.email }) : ctx.t("clearEmail"), kind: "checkbox", value: "", help: ctx.t("clearEmailHelp") });
   const consent = r.consentAt ? ctx.t("consentRecord", { date: L.day(r.consentAt, ctx.locale), who: ctx.t(r.consentBy === "owner" ? "consentByOwner" : "consentByVisitor"), text: r.consentText }) : ctx.t("consentNone");
-  return { type: "adminForm", action: "save", title: `${ctx.t("editTitle")} — ${consent}`, submitLabel: ctx.t("save"), cancelHref: "?", fields };
+  return [{ type: "markdown", text: consent }, { type: "adminForm", action: "save", title: ctx.t("editTitle"), submitLabel: ctx.t("save"), cancelHref: "?", fields }];
 }
 
 function addForm(ctx) {
   return {
     type: "adminForm", action: "add", title: ctx.t("addTitle"), submitLabel: ctx.t("addSubmit"), cancelHref: "?",
     fields: [
-      { name: "name", label: ctx.t("field_name"), kind: "text", required: true },
-      { name: "text", label: ctx.t("field_text"), kind: "textarea", required: true, help: ctx.t("addTextHelp") },
-      { name: "rating", label: ctx.t("field_rating"), kind: "select", options: ratingOptions(ctx), value: "" },
+      { name: "name", label: ctx.t("colName"), kind: "text", required: true },
+      { name: "text", label: ctx.t("colReview"), kind: "textarea", required: true, help: ctx.t("addTextHelp") },
+      { name: "rating", label: ctx.t("colRating"), kind: "select", options: ratingOptions(ctx), value: "" },
       { name: "consent", label: ctx.t("ownerConsentLabel"), kind: "checkbox", value: "", help: ctx.t("ownerConsentHelp") },
     ],
   };

@@ -32,12 +32,12 @@ test("panneau : avis à valider d'abord, bandeau clair, actions adaptées à cha
   assert.equal(blocks[0].type, "banner"); assert.match(blocks[0].text, /1 avis attendent votre lecture\. Rien n'est publié/);
   const t = table(blocks);
   assert.deepEqual(t.rows.map((r) => r[1]), ["Attente"]);
-  assert.deepEqual(t.columns, ["Date", "Prénom ou pseudo", "Note", "Avis", "État"], "pas de colonne e-mail sans le droit");
+  assert.deepEqual(t.columns, ["Date", "Prénom ou pseudo", "Note", "Avis"], "pas de colonne e-mail sans le droit");
   assert.deepEqual(t.rowActions.map((a) => a.action ?? a.href), ["approve", "reject", "?edit={id}", "remove"]);
   assert.ok(!flat(blocks).includes("ada@example.org"), "l'e-mail n'apparaît nulle part");
   const published = table(await def.adminPanel(ctx, { query: { status: "approved" } }));
   assert.deepEqual(published.rowActions.map((a) => a.action ?? a.href), ["feature", "unpublish", "?edit={id}", "remove"]);
-  assert.match(published.rows[0][4], /Publié · ★ Coup de cœur/);
+  assert.match(published.rows[0][4], /Publié · ★ Favori/);
   const refused = table(await def.adminPanel(ctx, { query: { status: "rejected" } }));
   assert.deepEqual(refused.rowActions.map((a) => a.action ?? a.href), ["restore", "remove"]);
   // sans le droit de supprimer, le bouton n'existe pas
@@ -100,7 +100,7 @@ test("onglet Partager : lien à copier, QR code sur fond blanc, téléchargement
 });
 
 // ── Les décisions ────────────────────────────────────────────────────────────────────────────────────────────────
-test("publier, refuser, remettre à valider, coup de cœur : chaque clic fait ce qu'il dit, rien n'est publié sans accord", async () => {
+test("publier, refuser, remettre à valider, favori : chaque clic fait ce qu'il dit, rien n'est publié sans accord", async () => {
   const ctx = ctxFor({ rights: "all" });
   const id = await seed(ctx, { status: "pending", publishedAt: null, decidedAt: null });
   assert.ok((await run(ctx, "approve", { id })).ok);
@@ -111,7 +111,7 @@ test("publier, refuser, remettre à valider, coup de cœur : chaque clic fait ce
   await run(ctx, "feature", { id });
   assert.ok((await run(ctx, "unpublish", { id })).ok);
   r = await D.readOne(ctx, id);
-  assert.equal(r.status, "pending"); assert.equal(r.featured, false, "retiré du site = plus de coup de cœur");
+  assert.equal(r.status, "pending"); assert.equal(r.featured, false, "retiré du site = plus de favori");
   assert.ok((await run(ctx, "reject", { id })).ok); assert.equal(await status(ctx, id), "rejected");
   assert.ok((await run(ctx, "restore", { id })).ok); assert.equal(await status(ctx, id), "pending");
   // sans accord enregistré : impossible de publier
@@ -154,8 +154,9 @@ test("supprimer : tout part (avis, e-mail, accord) ; modifier : erreurs sous cha
   assert.equal(stored(ctx).length, 0);
   // le formulaire de modification rappelle comment l'accord a été donné
   const again = await seed(ctx, { status: "pending", email: "ada@example.org" });
-  const form = (await def.adminPanel(ctx, { query: { edit: again } })).find((b) => b.type === "adminForm" && b.action === "save");
-  assert.match(form.title, /permission given on .*: “J'accepte”/);
+  const panel = await def.adminPanel(ctx, { query: { edit: again } });
+  const form = panel.find((b) => b.type === "adminForm" && b.action === "save");
+  assert.match(panel.find((b) => b.type === "markdown").text, /permission given on .*: “J'accepte”/);
   assert.ok(form.fields.find((f) => f.name === "clearEmail").label.includes("ada@example.org"));
   const blind = ctxFor({ rights: ["reviews.moderate"] }); const b2 = await seed(blind, { status: "pending", email: "ada@example.org" });
   assert.ok(!flat(await def.adminPanel(blind, { query: { edit: b2 } })).includes("ada@example.org"));
@@ -182,7 +183,7 @@ test("fichier CSV : preuve d'accord incluse, séparateur du pays, formules neutr
   await seed(ctx, { name: "=HYPERLINK(\"x\")", text: "@cmd|' /C calc'!A0 ; avec \"guillemets\"", email: "ada@example.org", emailUntil: new Date(NOW + DAY).toISOString(), featured: true });
   const dl = def.adminDownloads.reviews;
   const csv = await lines(dl.generate(ctx, { emails: "0" }));
-  assert.ok(csv.startsWith("﻿\"Date\";\"État\";\"Coup de cœur\""), "BOM et point-virgule en français");
+  assert.ok(csv.startsWith("﻿\"Date\";\"État\";\"Favori\""), "BOM et point-virgule en français");
   assert.match(csv, /"'=HYPERLINK\(""x""\)"/);
   assert.match(csv, /"'@cmd\|' \/C calc'!A0 ; avec ""guillemets"""/);
   assert.match(csv, /"2\d{3}-\d\d-\d\d";"Publié";"oui";"5";/);

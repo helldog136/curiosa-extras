@@ -167,7 +167,7 @@ export function same(a, b) {
 
 // ── Tri, moyenne, répartition ───────────────────────────────────────────────────────────────────────────────────
 const byNewest = (a, b) => (b.publishedAt || b.at) - (a.publishedAt || a.at) || b.id.localeCompare(a.id);
-/** `order` : « favorites » (coups de cœur d'abord, puis les plus récents) · « newest » · « best » (mieux notés d'abord) · « manual » (le numéro choisi par vous). */
+/** `order` : « favorites » (favoris d'abord, puis les plus récents) · « newest » · « best » (mieux notés d'abord) · « manual » (le numéro choisi par vous). */
 export function orderReviews(list, order) {
   const sorters = {
     newest: byNewest,
