@@ -153,9 +153,10 @@ const freshSlug = async (ctx, question) => {
 
 async function archiveOne(ctx, p, now = Date.now()) {
   while (await purgeBallots(ctx, p.id, { pages: 10 })) { /* jusqu'à la dernière tranche (5 000 bulletins au plus) */ }
-  if ((await ctx.api.store.count(ARCHIVE)) >= LIMITS.archived) {
+  for (let over = (await ctx.api.store.count(ARCHIVE)) - LIMITS.archived + 1; over > 0; over--) {   // jamais plus de 800 archives : les plus anciennes s'effacent
     const [oldest] = (await ctx.api.store.page(ARCHIVE, { limit: 1, order: "asc" })).items;
-    if (oldest) await ctx.api.store.remove(oldest.id);
+    if (!oldest) break;
+    await ctx.api.store.remove(oldest.id);
   }
   const { id, archived, ...data } = p;
   await ctx.api.store.add(ARCHIVE, { ...data, archivedAt: new Date(now).toISOString(), endedAt: new Date(L.endedAtMs(p, now) || now).toISOString() }, { key: p.slug });
@@ -416,6 +417,7 @@ export default {
 
   news: async (ctx) => {
     const since = ctx.visit?.lastVisit?.getTime?.() ?? 0;
+    if (since <= 0) return false;   // visiteur inconnu : rien n'est « nouveau » pour lui
     return (await ctx.api.store.list(POLLS, { limit: 20 })).some((r) => L.stateOf(r.data) === "open" && Date.parse(r.data.createdAt ?? "") > since);
   },
 
