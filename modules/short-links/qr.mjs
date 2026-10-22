@@ -82,6 +82,12 @@ function layout(version, level) {
   return { ecPer, blocks, dataTotal: blocks.reduce((a, b) => a + b, 0) };
 }
 
+/** Découpage d'une version et d'un niveau : octets de correction par bloc, taille de chaque bloc de données (pour les tests et la lecture). */
+export function blockLayout(version, level) {
+  const { ecPer, blocks, dataTotal } = layout(version, level);
+  return { ecPer, blocks: [...blocks], dataTotal };
+}
+
 /** Nombre d'octets qu'une version et un niveau peuvent contenir en mode octet. */
 export function byteCapacity(version, level) {
   const { dataTotal } = layout(version, level);
@@ -289,7 +295,7 @@ export function penalty(modules) {
     }
   }
   const total = size * size;
-  score += (Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1) * 10;
+  score += Math.floor(Math.abs(dark * 20 - total * 10) / total) * 10;
   return score;
 }
 
