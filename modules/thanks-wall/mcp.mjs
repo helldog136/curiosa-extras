@@ -47,7 +47,7 @@ export default {
     const loc = localeOf(ctx, args.locale);
     const old = (await D.readData(ctx, { fresh: true })).messages.get(who.id);
     const r = await D.setMessage(ctx, who.id, { ...(old?.texts ?? {}), [loc]: text });
-    if (!r.ok) throw fail(r.error === "too_many" ? `Too many messages (${LIMITS.messages} at most).` : "Could not save.");
+    if (!r.ok) throw fail(r.code === "too_many" ? `Too many messages (${LIMITS.messages} at most).` : "Could not save.");
     return { saved: true, contactId: who.id, name: P.shownName(who.card, "card"), locale: loc };
   },
   async message_clear(ctx, args) {

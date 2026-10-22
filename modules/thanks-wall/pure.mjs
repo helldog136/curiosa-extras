@@ -21,7 +21,7 @@ export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&a
 
 /** Texte d'une personne ou de Contacts → une ligne propre (sans caractères de contrôle ni de direction), coupée. */
 export function clean(v, max, multiline = false) {
-  let t = String(v ?? "").normalize("NFC").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f  ‪-‮⁦-⁩]/g, "");
+  let t = String(v ?? "").normalize("NFC").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, "");
   t = multiline ? t.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n") : t.replace(/\s+/g, " ");
   return [...t.trim()].slice(0, max).join("");
 }

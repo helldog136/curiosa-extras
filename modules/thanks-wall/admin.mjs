@@ -255,7 +255,7 @@ export const actions = {
     if (who.error) return { error: who.error };
     if (who.missing) return { error: ctx.t("honorGoneBanner") };
     const r = await D.setMessage(ctx, who.id, texts);
-    if (!r.ok) return { error: r.error === "too_many" ? ctx.t("errTooMany", { max: LIMITS.messages }) : ctx.t("errSave") };
+    if (!r.ok) return { error: r.code === "too_many" ? ctx.t("errTooMany", { max: LIMITS.messages }) : ctx.t("errSave") };
     return back(ctx, Object.keys(texts).length ? ctx.t("msgSaved", { name: P.shownName(who.card, "card") }) : ctx.t("msgRemoved", { name: P.shownName(who.card, "card") }));
   } },
   // Remettre en ordre : suivre les fiches fusionnées, retirer ce qui visait une fiche supprimée. Borné : 1 000 messages au plus = 10 lectures.

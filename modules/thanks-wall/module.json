@@ -46,8 +46,8 @@
     }
   ],
   "privacy": {
-    "en": "Nothing is collected about your visitors: no cookie, no form, no address kept. The wall shows people from your Contacts, so it shows what you put there on purpose (name and photo); a card in the “Do not show” category never appears. The module itself only keeps the short messages you write and the person in the spotlight each month, each tied to the number of the card in Contacts (never a name or a photo); they leave with the card when it is erased. Photos are loaded by the visitor's browser straight from where they live (your site, Twitch, YouTube or Bluesky), so that service sees the visitor's address, as for any image.",
-    "fr": "Rien n'est collecté sur vos visiteurs : pas de cookie, pas de formulaire, aucune adresse gardée. Le mur montre des personnes de vos Contacts, donc ce que vous y avez mis volontairement (nom et photo) ; une fiche rangée dans la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement les petits messages que vous écrivez et la personne à l'honneur de chaque mois, chacun rattaché au numéro de la fiche dans Contacts (jamais un nom ni une photo) ; ils partent avec la fiche quand elle est effacée. Les photos sont chargées par le navigateur du visiteur directement là où elles se trouvent (votre site, Twitch, YouTube ou Bluesky) : ce service voit donc l'adresse du visiteur, comme pour toute image."
+    "en": "Nothing is collected about your visitors: no cookie, no form, no address kept. The wall shows what you put in Contacts (name, photo); a card in the “Do not show” category never appears. The module keeps only the short messages you write and the monthly spotlight, tied to the card number (never a name or photo). Photos are loaded by the visitor's browser from where they live (your site, Twitch, YouTube or Bluesky), which sees the visitor's address, as for any image.",
+    "fr": "Rien n'est collecté sur vos visiteurs : ni cookie, ni formulaire, aucune adresse gardée. Le mur montre ce que vous avez mis dans Contacts (nom, photo) ; une fiche de la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement vos petits messages et la mise à l'honneur du mois, rattachés au numéro de la fiche (jamais un nom ni une photo). Les photos sont chargées par le navigateur du visiteur là où elles sont (votre site, Twitch, YouTube, Bluesky) : ce service voit son adresse."
   },
   "rights": [
     {
@@ -578,11 +578,13 @@
         "properties": {
           "contactId": {
             "type": "string",
-            "maxLength": 80
+            "maxLength": 80,
+            "description": "Id of the card in Contacts."
           },
           "locale": {
             "type": "string",
-            "maxLength": 10
+            "maxLength": 10,
+            "description": "Language to remove, such as 'fr'. Default: all languages."
           }
         }
       }

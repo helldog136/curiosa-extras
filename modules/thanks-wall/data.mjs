@@ -60,9 +60,9 @@ export const cleanTexts = textsOf;
 
 /* ───────────── Messages ───────────── */
 
-/** Pose (ou remplace) le message d'une fiche. `texts` vide : le message est retiré. Rend { ok: true, removed? } ou { ok: false, error: "too_many" | "invalid" }. */
+/** Pose (ou remplace) le message d'une fiche. `texts` vide : le message est retiré. Rend { ok: true, removed? } ou { ok: false, code: "too_many" | "invalid" }. */
 export async function setMessage(ctx, contactId, texts) {
-  if (!idOk(contactId)) return { ok: false, error: "invalid" };
+  if (!idOk(contactId)) return { ok: false, code: "invalid" };
   const clean_ = textsOf(texts, LIMITS.message);
   const data = await readData(ctx, { fresh: true });
   const old = data.messages.get(contactId);
@@ -73,7 +73,7 @@ export async function setMessage(ctx, contactId, texts) {
   }
   if (old) await ctx.api.store.update(old.id, { contactId, texts: clean_ });
   else {
-    if (data.messages.size >= LIMITS.messages) return { ok: false, error: "too_many" };
+    if (data.messages.size >= LIMITS.messages) return { ok: false, code: "too_many" };
     await ctx.api.store.add(MESSAGES, { contactId, texts: clean_ });
   }
   forgetData(ctx);
@@ -84,7 +84,7 @@ export async function setMessage(ctx, contactId, texts) {
 
 /** Pose (ou remplace) la mise à l'honneur d'un mois. */
 export async function setHonor(ctx, { month, contactId, why }) {
-  if (!monthOk(month) || !idOk(contactId)) return { ok: false, error: "invalid" };
+  if (!monthOk(month) || !idOk(contactId)) return { ok: false, code: "invalid" };
   const data = await readData(ctx, { fresh: true });
   const doc = { month, contactId, why: textsOf(why, LIMITS.why) };
   const old = data.honors.find((h) => h.month === month);
@@ -101,7 +101,7 @@ export async function setHonor(ctx, { month, contactId, why }) {
 }
 
 export async function clearHonor(ctx, month) {
-  if (!monthOk(month)) return { ok: false, error: "invalid" };
+  if (!monthOk(month)) return { ok: false, code: "invalid" };
   const data = await readData(ctx, { fresh: true });
   const old = data.honors.find((h) => h.month === month);
   if (old) await ctx.api.store.remove(old.id);

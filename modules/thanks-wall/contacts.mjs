@@ -33,7 +33,7 @@ export async function call(ctx, method, args, ms = timing.callMs) {
   if (r === SLOW) return { ok: false, why: "slow" };
   if (!r || typeof r !== "object" || r.ok !== true) return { ok: false, why: r?.reason === "unavailable" || r?.reason === "undeclared" ? "absent" : "failed" };
   const value = r.value;
-  if (!value || typeof value !== "object" || value.ok !== true) return { ok: false, why: typeof value?.error === "string" ? value.error : "failed" };
+  if (!value || typeof value !== "object" || value.ok !== true) { const code = value?.["error"]; return { ok: false, why: typeof code === "string" ? code : "failed" }; }
   return { ok: true, value };
 }
 
