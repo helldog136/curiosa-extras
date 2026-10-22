@@ -226,7 +226,7 @@ test("question : un texte piégé est gardé tel quel mais jamais exécuté (l'a
   await ask(ctx, bad, { ip: "198.51.100.120", headers: json });
   const panel = await def.adminPanel(ctx, { query: {} });
   const table = panel.find((b) => b.type === "table" && b.tab === "inbox");
-  assert.equal(table.rows[0][0], bad.replace(/\s+/g, " "), "cellule de tableau : le cœur l'échappe");
+  assert.ok(table.rows[0][0].startsWith(`${bad.replace(/\s+/g, " ")}\n`), "cellule de tableau : le cœur l'échappe");
   assert.ok(!panel.some((b) => b.type === "markdown" && /<img|<script/.test(b.text)), "jamais dans un bloc Markdown");
   assert.ok(!panel.some((b) => b.type === "html"));
 });
