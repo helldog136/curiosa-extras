@@ -12,6 +12,7 @@ const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === 
 const one = (x) => (typeof x === "string" ? x : Array.isArray(x) ? String(x[0] ?? "") : "");
 const day = (d) => d.toISOString().slice(0, 10);
 const stamp = (d) => `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}`;
+const shortDay = (ctx, d) => { try { return d.toLocaleDateString(ctx.locale, { day: "numeric", month: "short", timeZone: "UTC" }); } catch { return day(d); } };
 const FILTERS = ["new", "queue", "done", "all"];
 
 const matches = (filter, o) => filter === "all" || (filter === "new" && o.status === "new") || (filter === "queue" && ACTIVE.includes(o.status)) || (filter === "done" && FINISHED.includes(o.status));
@@ -40,10 +41,10 @@ async function overview(ctx, q, manage) {
   if (queue.reopenOn && ps.state !== "open" && queue.reopenOn < day(new Date())) blocks.push({ type: "banner", tone: "info", text: ctx.t("reopenPassed", { date: fmtDay(ctx.locale, queue.reopenOn) }) });
   if (manage) {
     blocks.push({
-      type: "table", columns: [ctx.t("colMode"), ctx.t("colModeSeen")],
-      rows: MODES.map((m) => [ctx.t(`mode_${m}`), `${queue.mode === m ? `${ctx.t("modeCurrent")} ` : ""}${ctx.t(`modeHelp_${m}`)}`]),
+      type: "table", columns: [ctx.t("colMode")], rows: MODES.map((m) => [`${ctx.t(`mode_${m}`)}${queue.mode === m ? ` ${ctx.t("modeCurrentMark")}` : ""}`]),
       rowIds: [...MODES], rowActions: [{ label: ctx.t("modeChoose"), action: "setMode" }],
     });
+    blocks.push({ type: "markdown", text: MODES.map((m) => `**${ctx.t(`mode_${m}`)}** : ${ctx.t(`modeHelp_${m}`)}`).join("  \n") });
     blocks.push({
       type: "adminForm", action: "saveQueue", title: ctx.t("queueFormTitle"), submitLabel: ctx.t("save"),
       fields: [
@@ -68,8 +69,8 @@ async function overview(ctx, q, manage) {
   if (!pageRows.length) blocks.push({ type: "markdown", text: ctx.t(st.total ? "emptyFilter" : "emptyAll") });
   else {
     blocks.push({
-      type: "table", columns: [ctx.t("colDate"), ctx.t("colNick"), ctx.t("colFormula"), ctx.t("colStatus")],
-      rows: pageRows.map((o) => [day(o.at), o.nick || "—", o.formulaName || "—", `${ctx.t(`status_${o.status}`)}${o.contactId ? " · 📇" : ""}`]),
+      type: "table", columns: [ctx.t("colOrder"), ctx.t("colStatus")],
+      rows: pageRows.map((o) => [`${o.nick || "—"} · ${o.formulaName || "—"}`, `${ctx.t(`status_${o.status}`)}${o.contactId ? " 📇" : ""} (${shortDay(ctx, o.at)})`]),
       rowIds: pageRows.map((o) => o.id), rowActions: [{ label: ctx.t("open"), href: "?order={id}" }],
     });
     if (from + LIMITS.page < sorted.length) blocks.push({ type: "links", items: [{ label: ctx.t("nextPage"), href: `?filter=${filter}&after=${pageRows[pageRows.length - 1].id}` }] });
@@ -125,10 +126,13 @@ async function detail(ctx, id, manage) {
     type: "adminForm", action: "saveNote", title: ctx.t("noteTitle"), submitLabel: ctx.t("save"),
     fields: [{ name: "id", kind: "hidden", value: o.id }, { name: "privateNote", kind: "textarea", label: ctx.t("fNote"), help: ctx.t("fNoteHelp"), value: o.privateNote }],
   });
-  const row1 = (title, text, action, label, extra = {}) => ({ type: "table", columns: [title], rows: [[text]], rowIds: [o.id], rowActions: [{ label, action, ...extra }] });
-  if (canLink) blocks.push(row1(ctx.t("contactsTitle"), ctx.t("contactsText"), "linkContact", ctx.t("contactsBtn")));
-  blocks.push(row1(ctx.t("linkTitle"), ctx.t("linkText"), "renewLink", ctx.t("linkBtn"), { confirm: ctx.t("linkConfirm") }));
-  blocks.push(row1(ctx.t("deleteTitle"), ctx.t("deleteText"), "removeOrder", ctx.t("deleteBtn"), { confirm: ctx.t("deleteConfirm"), danger: true }));
+  const row1 = (title, text, action, label, extra = {}) => [
+    { type: "markdown", text: `**${title}** : ${text}` },
+    { type: "table", columns: [ctx.t("colAction")], rows: [[title]], rowIds: [o.id], rowActions: [{ label, action, ...extra }] },
+  ];
+  if (canLink) blocks.push(...row1(ctx.t("contactsTitle"), ctx.t("contactsText"), "linkContact", ctx.t("contactsBtn")));
+  blocks.push(...row1(ctx.t("linkTitle"), ctx.t("linkText"), "renewLink", ctx.t("linkBtn"), { confirm: ctx.t("linkConfirm") }));
+  blocks.push(...row1(ctx.t("deleteTitle"), ctx.t("deleteText"), "removeOrder", ctx.t("deleteBtn"), { confirm: ctx.t("deleteConfirm"), danger: true }));
   return blocks;
 }
 
@@ -158,7 +162,7 @@ async function formulasTab(ctx, editId, manage) {
       { name: "visible", kind: "checkbox", label: ctx.t("fFormulaVisible"), value: editing && !editing.visible ? "" : "on" },
     ],
   });
-  if (editing) blocks.push({ type: "table", tab: "formulas", columns: [ctx.t("formulaDeleteTitle")], rows: [[ctx.t("formulaDeleteText")]], rowIds: [editing.id], rowActions: [{ label: ctx.t("formulaDeleteBtn"), action: "removeFormula", confirm: ctx.t("formulaDeleteConfirm"), danger: true }] });
+  if (editing) blocks.push({ type: "markdown", tab: "formulas", text: `**${ctx.t("formulaDeleteTitle")}** : ${ctx.t("formulaDeleteText")}` }, { type: "table", tab: "formulas", columns: [ctx.t("colAction")], rows: [[editing.name]], rowIds: [editing.id], rowActions: [{ label: ctx.t("delete"), action: "removeFormula", confirm: ctx.t("formulaDeleteConfirm"), danger: true }] });
   return blocks;
 }
 
@@ -213,7 +217,7 @@ async function setStatus(ctx, values) {
     const [queue, st] = await Promise.all([D.readQueue(ctx), D.stats(ctx)]);
     if (queue.slots > 0 && st.active > queue.slots) said.push(ctx.t("overSlots", { slots: queue.slots }));
   }
-  return { ok: said.join(" "), redirect: `?order=${o.id}` };
+  return { ok: said.join(" ") };
 }
 
 async function saveNote(ctx, values) {
@@ -229,7 +233,7 @@ async function linkContact(ctx, values) {
   if (!o) return gone(ctx);
   const r = await B.linkOrder(ctx, o);
   if (!r.ok) return { error: ctx.t(`errCard_${r.why}`) };
-  return { ok: ctx.t(r.already ? "okCardFound" : r.created ? "okCardCreated" : "okCardFound"), redirect: `?order=${o.id}` };
+  return { ok: ctx.t(r.already ? "okCardFound" : r.created ? "okCardCreated" : "okCardFound") };
 }
 
 async function renewLink(ctx, values) {
