@@ -114,6 +114,10 @@ test("doublons : le même événement vu par deux sources n'en fait qu'un (agend
   assert.deepEqual(out.map((e) => e.id), ["calendar:aaa", "youtube:ddd", "youtube:eee"], "« Live » (trop court pour fusionner) et celui de 30 minutes plus tard restent séparés");
   assert.equal(E.findEvent(out, { id: "youtube:ccc" }).id, "calendar:aaa", "l'identifiant d'une source fusionnée retrouve l'événement");
   assert.equal(E.findEvent(out, { id: "inconnu" }), null);
+  // l'agenda garde la main même quand une autre source commence quelques minutes plus tôt
+  const early = agg(evs(TW, [raw("twitch:me:z", "Soirée Zelda", at - 2 * 60_000, { games: ["Zelda"] })]), evs(CAL, [raw("calendar:z", "Soirée Zelda", at)]), evs(YT, [raw("youtube:z", "Soirée Zelda", at - 3 * 60_000)]));
+  assert.equal(early.length, 1); assert.equal(early[0].id, "calendar:z"); assert.equal(early[0].startMs, at, "l'heure de l'agenda fait foi");
+  assert.deepEqual(early[0].alsoIn.map((s) => s.kind).sort(), ["twitch", "youtube"]); assert.deepEqual(early[0].ids.sort(), ["calendar:z", "twitch:me:z", "youtube:z"]); assert.deepEqual(early[0].games, ["Zelda"]);
   // même lien : fusionnés même avec des titres différents
   const byLink = agg(evs(YT, [raw("youtube:v1", "Titre A", at, { url: "https://x.example/e" })]), evs(TW, [raw("twitch:m:1", "Tout autre titre", at + 60_000, { url: "https://x.example/e" })]));
   assert.equal(byLink.length, 1);

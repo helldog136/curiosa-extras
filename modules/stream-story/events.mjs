@@ -108,9 +108,23 @@ function sameEvent(a, b) {
 }
 const byTime = (a, b) => a.startMs - b.startMs || rank(a.source) - rank(b.source) || plain(a.title).localeCompare(plain(b.title)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
+/** `e` est le même événement que `twin` (déjà gardé) : la source qui a la priorité garde la main (titre, début, identifiant), l'autre devient « aussi dans » ; liens, image et jeux manquants sont repris. */
+function merge(kept, twin, e) {
+  const first = rank(e.source) < rank(twin.source) ? e : twin, other = first === e ? twin : e;
+  const also = [...first.alsoIn];
+  for (const s of [{ kind: other.source, label: other.sourceLabel }, ...other.alsoIn]) if (s.kind !== first.source && !also.some((x) => x.kind === s.kind)) also.push(s);
+  const ids = [...first.ids];
+  for (const id of other.ids) if (!ids.includes(id) && ids.length < 8) ids.push(id);
+  const merged = {
+    ...first, alsoIn: also, ids, url: first.url || other.url, image: first.image || other.image, games: first.games.length ? first.games : other.games,
+    legacyKey: first.legacyKey || other.legacyKey, timezone: first.timezone || other.timezone,
+  };
+  kept[kept.indexOf(twin)] = merged;
+}
+
 /**
  * Les événements de toutes les sources : à venir (ou commencés depuis moins de 3 h), un seul par événement réel, triés à la minute près (sur l'instant UTC : le fuseau et l'heure d'été
- * n'y changent rien), `LIMITS.total` au plus. Le premier arrivé par ordre de source garde la main ; les autres s'ajoutent à `alsoIn` et à `ids`.
+ * n'y changent rien), `LIMITS.total` au plus. La source prioritaire (l'agenda, puis Twitch, puis YouTube) garde la main ; les autres s'ajoutent à `alsoIn` et à `ids`.
  */
 export function aggregate(lists, nowMs, max = LIMITS.total) {
   const all = lists.flat().filter((e) => e.startMs >= nowMs - LIMITS.pastMs || e.endMs >= nowMs).sort(byTime);
@@ -123,13 +137,7 @@ export function aggregate(lists, nowMs, max = LIMITS.total) {
       if (sameEvent(k, e)) { twin = k; break; }
     }
     if (!twin) { kept.push({ ...e, alsoIn: [...e.alsoIn], ids: [...e.ids] }); continue; }
-    if (twin.source !== e.source && !twin.alsoIn.some((s) => s.kind === e.source)) twin.alsoIn.push({ kind: e.source, label: e.sourceLabel });
-    for (const id of e.ids) if (!twin.ids.includes(id) && twin.ids.length < 8) twin.ids.push(id);
-    if (!twin.url && e.url) twin.url = e.url;
-    if (!twin.image && e.image) twin.image = e.image;
-    if (!twin.games.length && e.games.length) twin.games = e.games;
-    if (!twin.legacyKey && e.legacyKey) twin.legacyKey = e.legacyKey;
-    if (!twin.timezone && e.timezone) twin.timezone = e.timezone;
+    merge(kept, twin, e);
   }
   return kept.sort(byTime).slice(0, max);
 }
