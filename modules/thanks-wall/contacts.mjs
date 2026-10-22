@@ -15,7 +15,7 @@ export const HIDE_NAMES = ["ne pas montrer", "do not show"];
 export const GROUP_KEYS = [["category", "groupTitle"], ["category2", "groupTitle2"], ["category3", "groupTitle3"], ["category4", "groupTitle4"], ["category5", "groupTitle5"], ["category6", "groupTitle6"]];
 
 const SLOW = Symbol("slow");
-export const within = (p, ms, fallback = SLOW) => { let t; return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
+export const within = (p, ms, fallback = SLOW) => { let t; return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); })]).finally(() => clearTimeout(t)); };
 
 /** Les fournisseurs de Contacts (borné) ; [] au moindre doute. */
 export async function providers(ctx) {
