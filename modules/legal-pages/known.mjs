@@ -25,7 +25,7 @@ export const COLLECTORS = {
 export const QUIET = [
   "alerts-overlay", "announcement-banner", "bandcamp", "blog", "bluesky", "calendar-ical", "calendar-manual", "codes", "collection", "community-stats",
   "contacts", "content-planner", "discord", "discord-announcer", "facebook", "github", "hero", "instagram", "kick", "kofi", "legal-pages", "links", "mastodon", "maze-overlay",
-  "pages", "partnerships", "patreon", "pinterest", "planning", "press-kit", "reddit", "snapchat", "soundcloud", "short-links", "site-check", "sponsor-ticker", "sponsors", "spotify",
+  "pages", "partnerships", "patreon", "pinterest", "planning", "press-kit", "reddit", "snapchat", "soundcloud", "sponsor-ticker", "sponsors", "spotify",
   "steam", "stream-story", "telegram", "thanks-wall", "threads", "ticker-overlay", "tiktok", "twitch-channel", "twitch-raid", "x-twitter", "youtube-channel",
 ];
 

@@ -6,7 +6,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
-*Dix nouveaux modules, pour Curiosa 0.2.5 ou plus : Mentions légales, Liens courts, Mur des remerciements, Commandes, Questions fréquentes, Témoignages, Sondages, Compte à rebours, Santé du site et Cahier de contenu.*
+*Huit nouveaux modules, pour Curiosa 0.2.5 ou plus : Mentions légales, Mur des remerciements, Commandes, Questions fréquentes, Témoignages, Sondages, Compte à rebours et Cahier de contenu.*
 
 ### Nouveautés
 
@@ -46,16 +46,6 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Un vote par personne, sans compte ni cookie.
 - Un affichage en direct pour OBS, protégé par une adresse secrète.
 - L'assistant IA peut lister, lire, créer et fermer des sondages.
-- Collez une longue adresse : le site crée un nom court lisible (`merch`) et son QR code, à télécharger en image nette (SVG) ou en PNG, prêt à imprimer.
-- Un petit compteur de clics par jour pour chaque lien, avec un graphique, sans cookie ni adresse IP.
-- Une date de fin facultative : après elle, une page aimable remplace la redirection (vous pouvez écrire votre message).
-- Changez où mène un lien sans changer le QR code déjà imprimé.
-- Export des clics par jour pour votre tableur ; les liens et les chiffres sont aussi dans la sauvegarde lisible.
-- Votre assistant IA peut lister, créer, modifier et supprimer des liens (suppression jamais accordée d'office).
-- Une page « Santé du site » avec un bouton « Vérifier maintenant » : le résultat tient en quelques phrases claires, classées Important / Conseillé / Pour info, avec « Tout va bien » quand tout va bien.
-- Elle repère les images sans description, les pages sans texte pour les moteurs de recherche, les titres vides ou en double, les traductions manquantes, les liens qui ne répondent plus et les liens vers une de vos pages disparue.
-- Chaque remarque a un bouton « Corriger » qui ouvre le bon écran, et « Ignorer » si c'est voulu.
-- Les 5 dernières vérifications sont gardées.
 - Un lien « Laisser un avis » à partager (et son QR code), pensé pour le téléphone.
 - Chaque avis arrive « à valider » : rien n'est publié sans que vous l'ayez lu, ni sans l'accord de la personne (case obligatoire, enregistrée avec sa date).
 - Étoiles facultatives, note moyenne, filtre par note, avis en grille ou en défilement lent avec un bouton pause (sans mouvement pour qui préfère moins d'animation).
@@ -89,11 +79,6 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Actions graves (fermer, archiver, supprimer) avec une case de confirmation claire.
 - Les votes détaillés (sans aucun nom) sont effacés 30 jours après la fin ; les totaux restent.
 - Sauvegarde lisible (tableur) de tous les sondages.
-- Les adresses qui ne peuvent pas marcher pour vos visiteurs (ordinateur local, réseau privé) sont refusées avec une explication et un exemple, sous le champ.
-- Un bandeau vous prévient si l'adresse publique du site n'est pas réglée, avant que vous imprimiez.
-- Utilisable sur téléphone, en clair et en sombre, en français et en anglais.
-- Les liens vers d'autres sites sont visités doucement, un site à la fois, par petits groupes avec une barre de progression, et seulement quand vous le demandez.
-- La page dit aussi ce qu'elle ne peut pas voir (le menu, les pages d'autres extensions, vos fichiers importés).
 - Les erreurs du formulaire s'affichent sous chaque champ, avec un exemple, et la personne ne retape rien.
 - L'adresse e-mail est facultative, jamais publiée, et s'efface toute seule au bout de 90 jours.
 - Les avis refusés s'effacent tout seuls après 30 jours ; aucun cookie, aucune adresse IP gardée.
@@ -134,13 +119,6 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Stockage : `polls` (≤ 200), `archive` (≤ 800), `b-<id>` (≤ 5 000 bulletins), `meta`. Écritures sérialisées par instance, bulletin unique par clé (le plus ancien gagne), « Recompter » pour réparer.
 - Limite de débit par empreinte HMAC à sel quotidien en mémoire ; aucun minuteur ni tâche de fond ; source OBS à interrogation douce bornée.
 - Les actions d'admin sont des fonctions qui vérifient `ctx.can` (le kit 0.2.5 ne reconnaît pas la forme `{ right, run }` pour les actions liées à un formulaire).
-- Module `short-links` 1.0.0, `minCore` 0.2.5, aucune dépendance ; générateur de QR code en JavaScript pur (`qr.mjs`, `qr-render.mjs`).
-- Adresse : `/m/<clé>/go?c=<nom>` (302, sans cache) et `/m/<clé>/qr` ; le cœur réserve `/go/…`.
-- Compteur : en mémoire puis une écriture coalescée par lien (un document de statistiques par lien, 120 jours), sans verrou ni minuteur.
-- Tests : `tests/short-links.test.mjs`, `tests/short-links-qr.test.mjs`, décodeur de test `tests/helpers/short-links-qr-decode.mjs`.
-- Lecture par `ctx.api.instances/entries/site/brand` et le sujet `social.link` ; visites par `ctx.api.net` seulement (HEAD puis GET de 2 Ko, redirections suivies à la main, garde d'adresses publiques avec résolution `node:dns`).
-- Actions MCP : `site_health_status` (lecture), `site_health_run` (écriture explicite).
-- Aucune tâche planifiée ; un passage à la fois (réservation mémoire + date en données). Données : `report`, `run`, `state`, `history`, `ignored`.
 - Module à code (`index.mjs`, `lib.mjs`, `data.mjs`, `view.mjs`, `admin.mjs`), `minCore` 0.2.5, onglet « Avis » (renommé) + un onglet ajouté « Partager » (blocs rangés par `tab`).
 - Droits : `reviews.moderate`, `reviews.delete`, `email.view`, `reviews.export` ; téléchargement `adminDownloads.reviews` (flux, 500 lignes par lecture).
 - Actions MCP : `testimonials_list`, `testimonials_summary`, `testimonials_decide`, `testimonials_delete` (destructive). Sujet fourni : `overlay.item`.

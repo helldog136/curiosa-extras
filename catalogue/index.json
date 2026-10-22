@@ -627,36 +627,6 @@
       }
     },
     {
-      "id": "short-links",
-      "name": "Liens courts",
-      "description": "Transformez une longue adresse en un nom court facile à retenir, avec son QR code prêt à imprimer et un petit compteur de clics par jour, sans suivre vos visiteurs.",
-      "repo": "https://github.com/helldog136/curiosa-extras",
-      "subdir": "modules/short-links",
-      "ref": "v1.13.0",
-      "version": "1.0.0",
-      "apiVersion": 2,
-      "author": "Helldog136",
-      "icon": "🔗",
-      "requires": {
-        "core": "0.2.5"
-      }
-    },
-    {
-      "id": "site-check",
-      "name": "Santé du site",
-      "description": "Votre site est-il en bon état ? Un clic cherche les images sans description, les pages sans texte pour les moteurs de recherche, les titres vides ou en double, les traductions manquantes et les liens qui ne répondent plus. Chaque remarque dit quoi faire et ouvre le bon écran. Rien n'est modifié sans vous.",
-      "repo": "https://github.com/helldog136/curiosa-extras",
-      "subdir": "modules/site-check",
-      "ref": "v1.13.0",
-      "version": "1.0.0",
-      "apiVersion": 2,
-      "author": "Helldog136",
-      "icon": "🩺",
-      "requires": {
-        "core": "0.2.5"
-      }
-    },
-    {
       "id": "snapchat",
       "name": "Snapchat",
       "description": "Affiche le bouton de votre Snapchat dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
