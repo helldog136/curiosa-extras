@@ -79,7 +79,7 @@ test("administration, onglet « Salles et pseudos » : salles, personnes par pag
   assert.ok((await def.adminActions.clearRoomAdmin(c, { id: "nope" })).error);
   const log = (await def.adminPanel(c, { query: {} })).find((b) => b.type === "table" && b.columns[0] === fr.colWhen);
   const whats = log.rows.map((r) => r[2]);
-  assert.ok(["mute", "unmute", "removePerson", "clearRoom"].every((w) => whats.includes(w)), "chaque geste est au journal");
+  assert.ok([fr.what_mute, fr.what_unmute, fr.what_removePerson, fr.what_clearRoom].every((w) => whats.includes(w)), "chaque geste est au journal");
   const gone = await def.adminPanel(c, { query: { room: "inexistante" } });
   assert.ok(gone.some((b) => b.type === "banner") && flat(gone).includes(fr.errGone));
 });

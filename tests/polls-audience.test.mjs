@@ -265,7 +265,7 @@ test("télécommande de bout en bout : la streameuse lance, passe au suivant, la
   r = await press("start"); assert.deepEqual([r.status, r.ok, r.error], [400, false, "already"]);
   const r1 = await current(w.polls); await vote(w.polls, r1.slug, ["c2"], 1);
   r = await press("next"); assert.ok(r.ok);
-  assert.match((await state()).panels[0].state.text, /Dernière décision \(manche 1\) : Le chat a décidé : On change de jeu/);
+  assert.match((await state()).panels[0].state.text, /Dernière décision \(manche 1\) : On change de jeu/);
   r = await press("quick", { a: "", b: "Face", seconds: "60" });
   assert.deepEqual([r.status, r.ok, r.error, r.field], [400, false, "invalid", "a"]); assert.match(r.message, /Exemple/);
   r = await press("quick", { a: "Pile", b: "Face", seconds: "30" }); assert.ok(r.ok); assert.match(r.message, /écran/);

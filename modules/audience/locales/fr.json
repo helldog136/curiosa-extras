@@ -110,5 +110,17 @@
   "remoteErrGone": "Cet élément n'existe plus. La télécommande va se mettre à jour.",
   "remoteErrFailed": "Ça n'a pas marché. Réessayez dans un instant.",
   "remoteErrInvalid": "Ce geste n'a pas été compris. Rechargez la page.",
-  "remoteErrLimit": "Trop d'appuis d'un coup. Patientez quelques secondes."
+  "remoteErrLimit": "Trop d'appuis d'un coup. Patientez quelques secondes.",
+  "who_remote": "Télécommande",
+  "who_admin": "Administration",
+  "who_assistant": "Assistant IA",
+  "what_mute": "Sourdine",
+  "what_unmute": "Sourdine retirée",
+  "what_clearRoom": "Salle vidée",
+  "what_removePerson": "Personne retirée",
+  "what_remote_regenerate": "Nouvelle adresse secrète",
+  "what_round_start": "Manches lancées",
+  "what_round_stop": "Manches arrêtées",
+  "what_round_decision": "Décision du chat",
+  "what_poll_quick": "Sondage rapide"
 }

@@ -180,7 +180,7 @@
   "roundsTitle": "Manches : le chat décide",
   "roundsIntro": "Une manche est un sondage qui se ferme tout seul au bout de quelques minutes. Le choix qui a le plus de voix l'emporte, il s'affiche à l'écran, puis la manche suivante démarre. En cas d'égalité, le sort tranche, et l'écran le dit.",
   "roundsLast": "Dernière décision (manche {n}) : {text}",
-  "roundsRunning": "Manche {n} en cours (une manche dure {minutes} minutes).",
+  "roundsRunning": "Manche {n} en cours (durée d'une manche : {minutes} min).",
   "roundsEnds": "Fin à {time} · {voters} votants.",
   "roundsIdle": "Aucune manche en cours.",
   "roundsLink": "Lien à partager (la manche du moment)",
@@ -231,5 +231,7 @@
   "err_quick_b": "Écrivez le deuxième choix. Exemple : Boss B.",
   "err_quick_same": "Ce choix existe déjà. Écrivez-en un différent.",
   "err_quick_seconds": "Choisissez une durée dans la liste.",
-  "msg_muted": "Vous ne pouvez pas voter pour le moment."
+  "msg_muted": "Vous ne pouvez pas voter pour le moment.",
+  "remoteLast": "Dernière décision (manche {n}) : {winner}.",
+  "noWinnerShort": "personne n'a voté"
 }

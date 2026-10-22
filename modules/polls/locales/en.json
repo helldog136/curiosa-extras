@@ -180,7 +180,7 @@
   "roundsTitle": "Rounds: the chat decides",
   "roundsIntro": "A round is a poll that closes by itself after a few minutes. The choice with the most votes wins and is shown on screen, then the next round starts. If it is a tie, a draw settles it, and the screen says so.",
   "roundsLast": "Last decision (round {n}): {text}",
-  "roundsRunning": "Round {n} is on (a round lasts {minutes} minutes).",
+  "roundsRunning": "Round {n} is on (a round lasts {minutes} min).",
   "roundsEnds": "Ends at {time} · {voters} voters.",
   "roundsIdle": "No round going on.",
   "roundsLink": "Link to share (the round of the moment)",
@@ -231,5 +231,7 @@
   "err_quick_b": "Write the second choice. Example: Boss B.",
   "err_quick_same": "This choice already exists. Write a different one.",
   "err_quick_seconds": "Pick a duration from the list.",
-  "msg_muted": "You cannot vote right now."
+  "msg_muted": "You cannot vote right now.",
+  "remoteLast": "Last decision (round {n}): {winner}.",
+  "noWinnerShort": "nobody voted"
 }

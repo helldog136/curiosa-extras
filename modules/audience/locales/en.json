@@ -110,5 +110,17 @@
   "remoteErrGone": "This item no longer exists. The remote control will refresh.",
   "remoteErrFailed": "That did not work. Try again in a moment.",
   "remoteErrInvalid": "That gesture was not understood. Reload the page.",
-  "remoteErrLimit": "Too many presses at once. Wait a few seconds."
+  "remoteErrLimit": "Too many presses at once. Wait a few seconds.",
+  "who_remote": "Remote control",
+  "who_admin": "Administration",
+  "who_assistant": "AI assistant",
+  "what_mute": "Muted",
+  "what_unmute": "Mute removed",
+  "what_clearRoom": "Room cleared",
+  "what_removePerson": "Person removed",
+  "what_remote_regenerate": "New secret address",
+  "what_round_start": "Rounds started",
+  "what_round_stop": "Rounds stopped",
+  "what_round_decision": "Chat decision",
+  "what_poll_quick": "Quick poll"
 }

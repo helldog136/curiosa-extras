@@ -241,6 +241,10 @@ const stamp = (ctx, iso) => { try { return new Intl.DateTimeFormat(ctx.locale, {
 const personsText = (ctx, n) => ctx.t(n === 1 ? "persons_one" : "persons_many", { n });
 const needs = (right, fn) => async (ctx, values) => (can(ctx, right) ? fn(ctx, values) : { error: ctx.t("errRight") });
 
+const WHO = ["remote", "admin", "assistant"];
+const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick"];
+const whoText = (ctx, w) => (WHO.includes(w) ? ctx.t(`who_${w}`) : w);
+const whatText = (ctx, w) => (WHAT.includes(w) ? ctx.t(`what_${w.replace(".", "_")}`) : w);
 const remoteUrl = (ctx, meta) => `${ctx.api.siteUrl}/m/${ctx.instance.key}/remote?k=${meta.remoteKey}`;
 
 /* ───────────── Le module ───────────── */
@@ -431,7 +435,7 @@ export default {
     const log = await ctx.api.store.page(K.AUDIT, { limit: 30 });
     blocks.push({ type: "heading", text: ctx.t("journalTitle"), tab }, { type: "markdown", text: ctx.t("journalIntro"), tab });
     blocks.push(log.items.length
-      ? { type: "table", tab, columns: [ctx.t("colWhen"), ctx.t("colWho"), ctx.t("colWhat"), ctx.t("colDetail")], rows: log.items.map((r) => [stamp(ctx, r.data.at), r.data.who, r.data.what, [r.data.room, r.data.detail].filter(Boolean).join(" · ")]) }
+      ? { type: "table", tab, columns: [ctx.t("colWhen"), ctx.t("colWho"), ctx.t("colWhat"), ctx.t("colDetail")], rows: log.items.map((r) => [stamp(ctx, r.data.at), whoText(ctx, r.data.who), whatText(ctx, r.data.what), r.data.detail || r.data.room || ""]) }
       : { type: "markdown", text: ctx.t("journalEmpty"), tab });
     blocks.push({ type: "download", name: "journal", label: ctx.t("downloadJournal"), tab });
     return blocks;

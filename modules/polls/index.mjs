@@ -764,7 +764,7 @@ async function remotePanel(ctx, now) {
   const series = await ensureSeries(ctx);
   const running = series.status === "running";
   const cur = running ? await bySlug(ctx, series.current) : null;
-  const last = series.lastDecision ? ` ${ctx.t("roundsLast", { n: series.lastDecision.n, text: decisionText(ctx, series.lastDecision) })}` : "";
+  const last = series.lastDecision ? ` ${ctx.t("remoteLast", { n: series.lastDecision.n, winner: series.lastDecision.winner ?? ctx.t("noWinnerShort") })}` : "";
   const state = running
     ? { text: `${ctx.t("remoteRunning", { n: cur?.round?.n ?? series.n, voters: Number(cur?.voters) || 0 })}${last}`, tone: "live", until: cur?.endsAt ?? null }
     : { text: `${ctx.t("remoteIdle")}${last}`, tone: "idle" };
