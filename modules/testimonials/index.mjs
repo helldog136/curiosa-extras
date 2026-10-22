@@ -21,7 +21,7 @@ function go(ctx, ...segments) {
 }
 
 // ── Pages publiques ─────────────────────────────────────────────────────────────────────────────────────────────────
-const PAGE_N = /^\d{1,4}$/;
+const PAGE_N = /^[1-9]\d{0,3}$/;
 /** Lit le chemin : null = introuvable. Chaque forme a UNE seule adresse (page 1 = l'adresse sans « page »). */
 function parseRoute(segments) {
   const [a, b, c, d] = segments;

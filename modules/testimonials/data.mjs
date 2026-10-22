@@ -44,16 +44,16 @@ export async function readDrafts(ctx) {
   const page = await ctx.api.store.page(L.DRAFTS, { limit: L.MAX_DRAFTS + 50, order: "desc" });
   return (page?.items ?? []).map((r) => ({ id: r.id, ref: String(r.data?.ref ?? ""), at: Date.parse(String(r.data?.at ?? "")) || 0, values: r.data?.values ?? {}, errors: r.data?.errors ?? {} }));
 }
-export async function purgeDrafts(ctx, now = Date.now()) {
+export async function purgeDrafts(ctx, now = Date.now(), keep = L.MAX_DRAFTS) {
   let removed = 0;
   const drafts = await readDrafts(ctx);
   const fresh = drafts.filter((d) => now - d.at < L.DRAFT_TTL);
   for (const d of drafts) if (now - d.at >= L.DRAFT_TTL) { await ctx.api.store.remove(d.id); removed++; }
-  for (const d of fresh.slice(L.MAX_DRAFTS)) { await ctx.api.store.remove(d.id); removed++; }   // trop de brouillons : les plus anciens partent
+  for (const d of fresh.slice(keep)) { await ctx.api.store.remove(d.id); removed++; }   // trop de brouillons : les plus anciens partent
   return removed;
 }
 export async function saveDraft(ctx, values, errors, now = Date.now()) {
-  await purgeDrafts(ctx, now);
+  await purgeDrafts(ctx, now, L.MAX_DRAFTS - 1);                 // la place du nouveau brouillon est comptée
   const ref = L.newRef();
   const safe = {
     name: L.clean(values.name, L.FIELD_MAX.name), text: L.clean(values.text, L.FIELD_MAX.text, true),
