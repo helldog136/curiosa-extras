@@ -16,8 +16,8 @@
   "main": "index.mjs",
   "permissions": ["routes", "storage", "admin", "mcp"],
   "privacy": {
-    "fr": "Quand vous ouvrez un lien court de ce site, le site ajoute 1 à un compteur du jour pour ce lien, et c'est tout : ni cookie, ni adresse IP, ni navigateur, ni provenance ne sont enregistrés, et rien ne permet de vous reconnaître. Les robots et les aperçus de messagerie ne sont pas comptés. Il n'y a rien à effacer à votre demande, puisque rien ne vous concerne.",
-    "en": "When you open a short link on this site, the site adds 1 to that link's counter for the day, and that is all: no cookie, no IP address, no browser details and no origin are saved, and nothing can be used to recognise you. Robots and message previews are not counted. There is nothing to erase on request, since nothing is about you."
+    "fr": "Rien n'est collecté sur vous. Quand vous ouvrez un lien court de ce site, le site ajoute 1 à un compteur du jour pour ce lien, et c'est tout : ni cookie, ni adresse IP, ni navigateur, ni provenance ne sont enregistrés, et rien ne permet de vous reconnaître. Les robots et les aperçus de messagerie ne sont pas comptés. Il n'y a rien à effacer à votre demande, puisque rien ne vous concerne.",
+    "en": "Nothing is collected about you. When you open a short link on this site, the site adds 1 to that link's counter for the day, and that is all: no cookie, no IP address, no browser details and no origin are saved, and nothing can be used to recognise you. Robots and message previews are not counted. There is nothing to erase on request, since nothing is about you."
   },
   "tabs": [{ "id": "use", "label": { "fr": "Mes liens", "en": "My links" } }],
   "rights": [

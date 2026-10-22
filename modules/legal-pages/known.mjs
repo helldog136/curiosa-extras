@@ -16,13 +16,17 @@ export const COLLECTORS = {
   "game-suggestions": { publicPosts: true, memory: true },
   "twitch-bot": { chat: true },
   "live-status": { thirdParty: ["Twitch"] },
+  polls: { memory: true },
+  commissions: { messages: true },
+  testimonials: { publicPosts: true },
+  faq: { messages: true, memory: true },
 };
 
 export const QUIET = [
   "alerts-overlay", "announcement-banner", "bandcamp", "blog", "bluesky", "calendar-ical", "calendar-manual", "codes", "collection", "community-stats",
-  "contacts", "discord", "discord-announcer", "facebook", "github", "hero", "instagram", "kick", "kofi", "legal-pages", "links", "mastodon", "maze-overlay",
-  "pages", "partnerships", "patreon", "pinterest", "planning", "press-kit", "reddit", "snapchat", "soundcloud", "sponsor-ticker", "sponsors", "spotify",
-  "steam", "stream-story", "telegram", "threads", "ticker-overlay", "tiktok", "twitch-channel", "twitch-raid", "x-twitter", "youtube-channel",
+  "contacts", "content-planner", "discord", "discord-announcer", "facebook", "github", "hero", "instagram", "kick", "kofi", "legal-pages", "links", "mastodon", "maze-overlay",
+  "pages", "partnerships", "patreon", "pinterest", "planning", "press-kit", "reddit", "snapchat", "soundcloud", "short-links", "site-check", "sponsor-ticker", "sponsors", "spotify",
+  "steam", "stream-story", "telegram", "thanks-wall", "threads", "ticker-overlay", "tiktok", "twitch-channel", "twitch-raid", "x-twitter", "youtube-channel",
 ];
 
 /**
