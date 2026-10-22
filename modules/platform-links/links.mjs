@@ -42,9 +42,9 @@ export function normalizeUrl(input, platformId = "other") {
   const v = String(input ?? "").normalize("NFC").replace(/[\u200b-\u200f\u2060\ufeff]/g, "").trim();
   if (!v) return fail("empty");
   if (v.length > MAX_URL) return fail("long");
-  if (/[\u0000-\u0020\u007f<>"`\\]/.test(v)) return fail("invalid");
   if (/^http:/i.test(v)) return fail("http");
   if (/^[a-z][a-z0-9+.-]*:(?!\d+(?:[/?#]|$))/i.test(v) && !/^https:/i.test(v)) return fail("scheme");   // javascript:, data:, mailto:, ftp:… (« hôte:8080 » n'est pas un schéma)
+  if (/[\u0000-\u0020\u007f<>"`\\]/.test(v)) return fail("invalid");
   let candidate;
   if (/^https:\/\//i.test(v)) candidate = v;
   else if (/^https:/i.test(v)) return fail("invalid");

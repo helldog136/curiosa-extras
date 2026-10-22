@@ -178,20 +178,13 @@ async function panel(ctx, { query }) {
   ];
   if (!links.length) blocks.push({ type: "markdown", text: ctx.t("empty") });
   else {
+    // Une seule colonne de texte : le tableau du cœur ne passe pas à la ligne pour les boutons de ligne, donc peu de boutons et une colonne étroite (téléphone).
     blocks.push({
       type: "table",
-      columns: [ctx.t("colOrder"), ctx.t("colPlatform"), ctx.t("colAddress"), ctx.t("colNotice"), ctx.t("colShown")],
-      rows: links.map((l, i) => [String(i + 1), nameOf(ctx, l), shortUrl(l.url), ctx.t(shouldWarn(l, cfg) ? "yes" : "no"), ctx.t(l.visible ? "shown" : "hidden")]),
+      columns: [ctx.t("colLink")],
+      rows: links.map((l, i) => [`${ctx.t("rowLine", { n: i + 1, name: nameOf(ctx, l), address: shortUrl(l.url) })}\n${ctx.t("rowState", { notice: ctx.t(shouldWarn(l, cfg) ? "yes" : "no"), shown: ctx.t(l.visible ? "shown" : "hidden") })}`]),
       rowIds: links.map((l) => l.id),
-      ...(editable ? {
-        rowActions: [
-          { label: ctx.t("actEdit"), href: "?edit={id}" },
-          { label: ctx.t("actUp"), action: "up" },
-          { label: ctx.t("actDown"), action: "down" },
-          { label: ctx.t("actToggle"), action: "toggle" },
-          { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true },
-        ],
-      } : {}),
+      ...(editable ? { rowActions: [{ label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }] } : {}),
     });
     blocks.push({ type: "markdown", text: ctx.t("limitNote") });
   }
@@ -207,6 +200,12 @@ async function panel(ctx, { query }) {
     select("warn", ctx.t("fWarn"), editing?.warn ?? "auto", [{ value: "auto", label: ctx.t("warnAuto") }, { value: "on", label: ctx.t("warnOn") }, { value: "off", label: ctx.t("warnOff") }], ctx.t("fWarnHelp")),
     ...(cfg.perLinkOrigin ? [select("origin", ctx.t("fOrigin"), editing?.origin ?? "auto", [{ value: "auto", label: ctx.t("originAuto") }, { value: "on", label: ctx.t("originOn") }, { value: "off", label: ctx.t("originOff") }])] : []),
   ];
+  if (editing) {
+    const at = links.findIndex((l) => l.id === editing.id);
+    blocks.push({ type: "heading", text: ctx.t("editHeading", { name: nameOf(ctx, editing) }) }, { type: "markdown", text: ctx.t("editPlace", { n: at + 1, total: links.length }) });
+    blocks.push({ type: "adminForm", action: "up", submitLabel: ctx.t("actUp"), fields: [{ name: "id", kind: "hidden", value: editing.id }] });
+    blocks.push({ type: "adminForm", action: "down", submitLabel: ctx.t("actDown"), fields: [{ name: "id", kind: "hidden", value: editing.id }] });
+  }
   blocks.push({ type: "adminForm", action: "save", title: ctx.t(editing ? "formEditTitle" : "formAddTitle"), submitLabel: ctx.t(editing ? "submitSave" : "submitAdd"), fields, ...(editing ? { cancelHref: "?" } : {}) });
   return blocks;
 }
@@ -228,12 +227,6 @@ const adminActions = {
   }),
   up: guarded(async (ctx, values) => reorder(ctx, values.id, -1)),
   down: guarded(async (ctx, values) => reorder(ctx, values.id, 1)),
-  toggle: guarded(async (ctx, values) => {
-    const l = await byId(ctx, values.id);
-    if (!l) return { error: ctx.t("err_notfound") };
-    await ctx.api.store.update(l.id, { key: l.key, platform: l.platform, url: l.url, label: l.label, visible: !l.visible, warn: l.warn, origin: l.origin, order: l.order });
-    return { ok: ctx.t(l.visible ? "okHidden" : "okShown") };
-  }),
   remove: guarded(async (ctx, values) => {
     const l = await byId(ctx, values.id);
     if (!l) return { error: ctx.t("err_notfound") };
@@ -246,12 +239,12 @@ async function reorder(ctx, id, delta) {
   const links = await readLinks(ctx);
   if (!links.some((l) => l.id === id)) return { error: ctx.t("err_notfound") };
   const r = move(links, id, delta);
-  if (!r.moved) return { ok: ctx.t(delta < 0 ? "alreadyFirst" : "alreadyLast") };
+  if (!r.moved) return { ok: ctx.t(delta < 0 ? "alreadyFirst" : "alreadyLast"), redirect: `?edit=${id}` };
   for (const c of r.changes) {
     const l = links.find((x) => x.id === c.id);
     await ctx.api.store.update(l.id, { key: l.key, platform: l.platform, url: l.url, label: l.label, visible: l.visible, warn: l.warn, origin: l.origin, order: c.order });
   }
-  return { ok: ctx.t("okMoved") };
+  return { ok: ctx.t("okMoved"), redirect: `?edit=${id}` };
 }
 
 /* ───────────── Assistant IA ───────────── */
