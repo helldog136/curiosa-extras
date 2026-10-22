@@ -7,13 +7,11 @@
   "btnCreate": "Ajouter",
   "btnDelete": "Supprimer",
   "btnEdit": "Modifier",
-  "btnFeature": "Mettre à la une",
   "btnReuse": "Réutiliser",
   "btnSave": "Enregistrer",
   "cleaned": "{n} événement(s) supprimé(s).",
   "cleanupTitle": "Faire le ménage",
-  "colName": "Événement",
-  "colStatus": "État",
+  "colName": "Événement — état",
   "colWhen": "Quand",
   "confirmDelete": "Supprimer cet événement pour de bon ?",
   "copyTitle": "Réutiliser « {name} » avec une nouvelle date",
@@ -70,7 +68,7 @@
   "featuredDone": "« {name} » est maintenant à la une.",
   "formFull": "Tous les détails",
   "formNew": "Nouveau compte à rebours",
-  "intro": "Ajoutez un **événement ponctuel** : une sortie, un lancement, un anniversaire, une convention. Vos visiteurs voient le temps qui reste **et l’heure chez eux**, où qu’ils soient. Pour vos streams réguliers, utilisez plutôt le module « Planning ».",
+  "intro": "Pour un rendez-vous unique : sortie, lancement, anniversaire, convention. Vos streams réguliers se gèrent dans le module « Planning des streams ».",
   "keepSame": "Comme dans mes réglages",
   "keep_1d": "1 jour",
   "keep_1h": "1 heure",
@@ -120,5 +118,5 @@
   "unit_s": "seconde|secondes",
   "upcomingTitle": "Prochains événements",
   "whereLabel": "Lieu :",
-  "whereToShow": "Pour montrer un compte à rebours sur votre page d’accueil : ouvrez « Accueil » dans le menu, puis ajoutez le morceau « Compte à rebours à la une ». Pour votre stream, collez dans OBS l’adresse affichée dans l’onglet « Mes événements ». Le style, la place et la taille ci-dessous ne concernent que OBS."
+  "whereToShow": "Pour montrer un compte à rebours sur votre page d’accueil : ouvrez « Page d’accueil » dans le menu, puis ajoutez le morceau « Compte à rebours à la une ». Pour votre stream, collez dans OBS l’adresse affichée dans l’onglet « Mes événements ». Le style, la place et la taille ci-dessous ne concernent que OBS."
 }

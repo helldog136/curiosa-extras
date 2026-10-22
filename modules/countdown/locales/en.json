@@ -7,13 +7,11 @@
   "btnCreate": "Add",
   "btnDelete": "Delete",
   "btnEdit": "Edit",
-  "btnFeature": "Feature",
   "btnReuse": "Reuse",
   "btnSave": "Save",
   "cleaned": "{n} event(s) deleted.",
   "cleanupTitle": "Tidy up",
-  "colName": "Event",
-  "colStatus": "Status",
+  "colName": "Event — status",
   "colWhen": "When",
   "confirmDelete": "Delete this event for good?",
   "copyTitle": "Reuse “{name}” with a new date",
@@ -70,7 +68,7 @@
   "featuredDone": "“{name}” is now featured.",
   "formFull": "All the details",
   "formNew": "New countdown",
-  "intro": "Add a **one-off event**: a release, a launch, a birthday, a convention. Your visitors see the time left **and the time where they live**, wherever they are. For your regular streams, use the “Schedule” module instead.",
+  "intro": "For a one-off date: release, launch, birthday, convention. Your regular streams are managed in the “Stream schedule” module.",
   "keepSame": "Same as in my settings",
   "keep_1d": "1 day",
   "keep_1h": "1 hour",
@@ -120,5 +118,5 @@
   "unit_s": "second|seconds",
   "upcomingTitle": "Upcoming events",
   "whereLabel": "Where:",
-  "whereToShow": "To show a countdown on your home page: open “Home” in the menu, then add the “Featured countdown” piece. For your stream, paste in OBS the address shown in the “My events” tab. The look, place and size below only apply to OBS."
+  "whereToShow": "To show a countdown on your home page: open “Home page” in the menu, then add the “Featured countdown” piece. For your stream, paste in OBS the address shown in the “My events” tab. The look, place and size below only apply to OBS."
 }

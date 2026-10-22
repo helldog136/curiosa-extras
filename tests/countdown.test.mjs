@@ -219,9 +219,8 @@ test("créer : un nom, un jour, une heure suffisent ; l'événement apparaît à
   const panel = await mod.adminPanel(ctx, { query: {} });
   const table = panel.find((b) => b.type === "table");
   assert.equal(table.rows.length, 1);
-  assert.equal(table.rows[0][0], "Sortie du jeu");
-  assert.match(table.rows[0][1], /Samedi 14 novembre 2099 à 21 h \(heure d’Europe centrale\)/);
-  assert.match(table.rows[0][2], /À la une · À venir · dans \d+ jours/);
+  assert.equal(table.rows[0][0], "Sortie du jeu — À la une · À venir");
+  assert.match(table.rows[0][1], /^sam\. 14 nov\. 2099, 21 h · dans \d+ jours/);
 });
 
 test("créer : l'erreur s'affiche sous le champ fautif, avec un exemple, et rien n'est enregistré", async () => {
@@ -370,7 +369,7 @@ test("panneau : sans événement, une phrase d'accueil et un formulaire ; sans b
 test("panneau : réglages — l'explication « où l'afficher » est dans l'onglet des réglages", async () => {
   const panel = await mod.adminPanel(ctxFor(), { query: {} });
   const hint = panel.find((b) => b.tab === "settings");
-  assert.match(hint.text, /Accueil/);
+  assert.match(hint.text, /Page d’accueil/);
   assert.match(hint.text, /OBS/);
 });
 

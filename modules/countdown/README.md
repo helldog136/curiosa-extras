@@ -18,7 +18,7 @@ Ce module ne remplace pas le module **Planning** : le Planning montre vos *strea
 4. **Mettre à la une** : l'événement passe en premier sur l'accueil et dans OBS. Sans choix de votre part, c'est le prochain événement qui est à la une.
 
 ### Sur la page d'accueil
-Dans **Accueil**, ajoutez le morceau **Compte à rebours à la une** (un seul grand compteur) et/ou **Prochains événements** (une courte liste). Si vous n'avez aucun événement, ces morceaux restent invisibles.
+Dans **Page d'accueil** (menu de gauche), ajoutez le morceau **Compte à rebours à la une** (un seul grand compteur) et/ou **Prochains événements** (une courte liste). Si vous n'avez aucun événement, ces morceaux restent invisibles.
 
 ### Dans OBS (stream)
 Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *source navigateur* (largeur 1920, hauteur 1080 conseillées). Le fond est transparent. Par défaut, l'événement à la une s'affiche ; pour un événement précis, ouvrez-le avec **Modifier** et copiez « l'adresse à coller dans OBS pour cet événement ». Le style (sombre, clair, sans fond), la place, la taille et la durée du message de fin se règlent dans l'onglet **Réglages**.

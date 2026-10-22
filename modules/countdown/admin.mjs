@@ -34,15 +34,22 @@ function inText(ctx, ms) {
 
 const dateTime = (ctx, ms, tz) => T.fmtIn(ms, tz, ctx.locale, { dateStyle: "medium", timeStyle: "short" });
 
-function statusText(ctx, v, featuredId, now) {
+function statusText(ctx, v, featuredId) {
   const star = v.id === featuredId ? `${ctx.t("statusFeatured")} · ` : "";
-  if (v.phase === "upcoming") return `${star}${ctx.t("statusUpcoming")} · ${inText(ctx, v.startMs - now)}`;
+  if (v.phase === "upcoming") return `${star}${ctx.t("statusUpcoming")}`;
   if (v.phase === "started") return `${star}${Number.isFinite(v.hideMs) ? ctx.t("statusStarted", { when: dateTime(ctx, v.hideMs, v.tz) }) : ctx.t("statusKept")}`;
   return ctx.t("statusHidden", { when: dateTime(ctx, v.hideMs, v.tz) });
 }
 
+/** Court, pour tenir sur un téléphone : « sam. 5 déc. 2026, 21 h 30 · dans 44 jours » (le fuseau n'est dit que s'il n'est pas celui du site). */
 function whenCell(ctx, v, now) {
-  return T.linesFor(v.startMs, now, v.tz, "", ctx.locale, R.labels(ctx), v.allDay).event;
+  const lang = ctx.locale;
+  const day = T.fmtIn(v.startMs, v.tz, lang, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const p = T.zoneParts(v.startMs, v.tz);
+  const parts = [v.allDay ? day : `${day}, ${T.clockText(p.h, p.mi, lang)}`];
+  if (v.tz !== defaultZone(ctx)) parts.push(v.tz);
+  if (v.phase === "upcoming") parts.push(inText(ctx, v.startMs - now));
+  return parts.join(" · ");
 }
 
 /** « Chez vos visiteurs : Londres : samedi 20 h · New York : samedi 15 h · Tokyo : dimanche 5 h ». */
@@ -117,10 +124,10 @@ export async function panel(ctx, { query } = {}) {
     blocks.push({ type: "heading", text: ctx.t("listTitle") });
     blocks.push({
       type: "table",
-      columns: [ctx.t("colName"), ctx.t("colWhen"), ctx.t("colStatus")],
-      rows: live.map((v) => [v.title, whenCell(ctx, v, now), statusText(ctx, v, featuredId, now)]),
+      columns: [ctx.t("colName"), ctx.t("colWhen")],
+      rows: live.map((v) => [`${v.title} — ${statusText(ctx, v, featuredId)}`, whenCell(ctx, v, now)]),
       rowIds: live.map((v) => v.id),
-      rowActions: rowActions(canEdit ? [{ label: ctx.t("btnFeature"), action: "feature" }] : []),
+      rowActions: rowActions(),
     });
   }
 
@@ -163,8 +170,8 @@ export async function panel(ctx, { query } = {}) {
     blocks.push({ type: "markdown", text: ctx.t("pastHelp") });
     blocks.push({
       type: "table",
-      columns: [ctx.t("colName"), ctx.t("colWhen"), ctx.t("colStatus")],
-      rows: gone.map((v) => [v.title, whenCell(ctx, v, now), statusText(ctx, v, featuredId, now)]),
+      columns: [ctx.t("colName"), ctx.t("colWhen")],
+      rows: gone.map((v) => [`${v.title} — ${statusText(ctx, v, featuredId)}`, whenCell(ctx, v, now)]),
       rowIds: gone.map((v) => v.id),
       rowActions: [...(canEdit ? [{ label: ctx.t("btnReuse"), href: "?copy={id}" }] : []), ...(canDelete ? [{ label: ctx.t("btnDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }] : [])],
     });
