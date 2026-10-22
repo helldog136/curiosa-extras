@@ -120,7 +120,7 @@ export async function loadEvents(ctx, { zone = "", now = Date.now(), force = fal
       if (!mine) sources.push({ kind: a.kind, label: a.label, state: a.state, message: a.message, note: a.note, count, ...(a.stale ? { stale: true } : {}) });
       else if (a.state !== "ok" && mine.state === "ok") Object.assign(mine, { state: a.state, message: a.message, ...(a.stale ? { stale: true } : {}) });   // deux chaînes d'un même type : la panne de l'une se voit
     }
-    sources.sort((a, b) => E.SOURCE_ORDER.indexOf(a.kind) - E.SOURCE_ORDER.indexOf(b.kind) || a.label.localeCompare(b.label));
+    sources.sort((a, b) => E.sourceRank(a.kind) - E.sourceRank(b.kind) || a.label.localeCompare(b.label));
     return { events, sources, at: now, zone };
   });
   const bounded = within(work, timing.eventsMs, null).then((value) => value ?? { events: [], sources: [{ kind: "calendar", label: String(ctx.t?.("src_calendar") ?? "") || "Planning", state: "down", message: "", note: "", count: 0 }], at: now, zone, late: true });

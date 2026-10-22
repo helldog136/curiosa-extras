@@ -21,6 +21,7 @@ export const LIMITS = { perSource: 100, total: 200, page: 50, pageDefault: 20, s
 /** Dans quel ordre les sources passent quand deux événements commencent en même temps (et laquelle garde la main quand deux sources parlent du même événement). */
 export const SOURCE_ORDER = ["calendar", "twitch", "youtube"];
 const rank = (kind) => { const i = SOURCE_ORDER.indexOf(kind); return i < 0 ? SOURCE_ORDER.length : i; };
+export const sourceRank = rank;
 
 const httpsUrl = (u, max = LIMITS.url) => {
   const s = String(u ?? "").trim();
