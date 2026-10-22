@@ -12,11 +12,11 @@ const CSS = `
 .tw *{box-sizing:border-box}
 .tw h2,.tw p,.tw ul{margin:0;padding:0}
 .tw ul{list-style:none}
-.tw-intro{color:var(--v-muted,#aaa);font-size:1.05rem;max-width:42rem;margin:0 0 1.5rem;overflow-wrap:anywhere}
+.tw .tw-intro{color:var(--v-muted,#aaa);font-size:1.05rem;max-width:42rem;margin:0 0 1.5rem;overflow-wrap:anywhere}
 .tw-spot{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center;padding:1.75rem 1.25rem 1.5rem;margin:0 0 2.25rem;background:var(--v-surface,#1c1c1f);border:1px solid var(--v-line,#333);border-radius:1.25rem;box-shadow:0 1px 2px color-mix(in srgb,var(--v-fg,#000) 12%,transparent),0 14px 34px -16px color-mix(in srgb,var(--v-fg,#000) 40%,transparent)}
 .tw-spot::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--v-gradient,var(--v-accent,#e8a23b))}
 .tw-spot .tw-av{width:8rem}
-.tw-eyebrow{display:inline-block;padding:.2rem .75rem;border-radius:999px;background:var(--v-accent,#e8a23b);color:var(--v-accent-fg,#111);font-size:.8rem;font-weight:700;letter-spacing:.02em;line-height:1.5}
+.tw .tw-eyebrow{display:inline-block;padding:.2rem .75rem;border-radius:999px;background:var(--v-accent,#e8a23b);color:var(--v-accent-fg,#111);font-size:.8rem;font-weight:700;letter-spacing:.02em;line-height:1.5}
 [data-accent2] .tw-eyebrow{background:var(--v-accent2,#e8a23b);color:var(--v-accent2-fg,#111)}
 .tw-spot-name{font-size:1.6rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
 .tw-spot-why{max-width:34rem;font-size:1.05rem;overflow-wrap:anywhere;white-space:pre-line}
@@ -28,19 +28,19 @@ const CSS = `
 .tw-card{display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1rem .6rem .9rem;text-align:center;background:var(--v-surface,#1c1c1f);border:1px solid var(--v-line,#333);border-radius:1rem;min-width:0}
 .tw-av{position:relative;flex:0 0 auto;width:5.25rem;aspect-ratio:1;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--v-accent,#e8a23b) 24%,var(--v-surface,#1c1c1f));border:2px solid var(--v-line,#333);font-weight:800;font-size:1.5rem;color:var(--v-fg,inherit)}
 .tw-spot .tw-av{font-size:2.25rem}
-.tw-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:var(--v-surface,#1c1c1f)}
+.tw-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 .tw-name{font-weight:700;line-height:1.3;overflow-wrap:anywhere;max-width:100%}
 .tw-msg{color:var(--v-muted,#aaa);font-size:.9rem;line-height:1.4;overflow-wrap:anywhere}
-.tw-more{margin:1rem 0 0}
+.tw .tw-more{margin:1.25rem 0 0}
 .tw-btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem 1.1rem;border-radius:.7rem;font-weight:600;text-decoration:none;background:var(--v-accent,#e8a23b);color:var(--v-accent-fg,#111)}
 [data-accent2] .tw-btn{background:var(--v-accent2,#e8a23b);color:var(--v-accent2-fg,#111)}
 .tw-link{display:inline-flex;align-items:center;min-height:2.75rem;color:var(--v-fg,inherit);text-decoration:underline;text-underline-offset:.2em}
 .tw-btn:focus-visible,.tw-link:focus-visible{outline:2px solid var(--v-fg,currentColor);outline-offset:3px}
-.tw-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;margin:1.5rem 0 0}
+.tw .tw-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;margin:1.5rem 0 0}
 .tw-nav [aria-disabled]{opacity:.45}
 .tw-empty{padding:2.25rem 1.25rem;text-align:center;border:1px dashed var(--v-line,#333);border-radius:1rem;background:var(--v-surface,#1c1c1f)}
 .tw-empty-t{font-size:1.15rem;font-weight:700}
-.tw-empty-s{color:var(--v-muted,#aaa);margin-top:.35rem}
+.tw .tw-empty-s{color:var(--v-muted,#aaa);margin-top:.35rem}
 @media (min-width:36rem){.tw-grid{grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr));gap:1rem}.tw-card{padding:1.15rem .75rem 1rem}.tw-av{width:5.75rem}.tw-spot{flex-direction:row;text-align:left;gap:1.75rem;padding:2rem}.tw-spot .tw-av{width:9rem}}
 @media (prefers-reduced-motion:no-preference){.tw-card{transition:transform .15s ease,border-color .15s ease}.tw-card:hover{transform:translateY(-2px);border-color:var(--v-accent,#e8a23b)}}
 `.replace(/\n/g, "");
