@@ -54,7 +54,7 @@ async function roomFor(ctx, a, { create = false } = {}) {
 
 const limited = (ctx, a, rules, now = Date.now()) => {
   const f = K.fp(a.conn, now);
-  for (const [bucket, max, win] of rules(f)) { const h = K.over(bucket, max, win, now); if (h.over) return bad("limit", { retryAfter: h.retryAfter }); }
+  for (const [bucket, max, win] of rules(f)) { const h = K.over(ctx, bucket, max, win, now); if (h.over) return bad("limit", { retryAfter: h.retryAfter }); }
   return null;
 };
 
@@ -148,7 +148,7 @@ const services = {
       const buckets = [`lim|${a.room}|${a.scope}|${f}`];
       if (a.token !== undefined) { if (!L.tokenOk(a.token)) return bad("invalid"); buckets.push(`lim|${a.room}|${a.scope}|t:${L.keyHash(a.token)}`); }
       let remaining = max, retry = 0;
-      for (const b of buckets) { const h = K.over(b, max, per * 1000, now); remaining = Math.min(remaining, h.remaining); retry = Math.max(retry, h.retryAfter); }
+      for (const b of buckets) { const h = K.over(ctx, b, max, per * 1000, now); remaining = Math.min(remaining, h.remaining); retry = Math.max(retry, h.retryAfter); }
       return retry > 0 ? bad("limit", { retryAfter: retry }) : { ok: true, remaining };
     }),
 
@@ -276,7 +276,7 @@ export default {
       const room = url.searchParams.get("room") ?? "", channel = url.searchParams.get("channel") ?? "";
       if (!L.roomOk(room) || !L.CHANNEL_RE.test(channel)) return json({ ok: false, error: "invalid" }, 400);
       const cfg = K.cfgOf(ctx), f = K.fp(K.connOf(request), now);
-      if (K.over(`d|${f}`, 90, 60_000, now).over || K.over(`dg|${ctx.instance.key}`, 3000, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "30" });
+      if (K.over(ctx, `d|${f}`, 90, 60_000, now).over || K.over(ctx, `dg|${ctx.instance.key}`, 3000, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "30" });
       // plus il y a de lecteurs, plus on demande d'espacer les visites
       K.mem.reads = K.mem.reads.filter((t) => now - t < 60_000); K.mem.reads.push(now);
       const next = Math.min(30_000, cfg.directMin + Math.floor(K.mem.reads.length / 100) * 2000);
@@ -296,7 +296,7 @@ export default {
       const got = await readJson(request, 1000);
       if (got.response) return got.response;
       const b = got.body, now = Date.now();
-      if (K.over(`me|${K.fp(K.connOf(request), now)}`, 240, HOUR, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
+      if (K.over(ctx, `me|${K.fp(K.connOf(request), now)}`, 240, HOUR, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
       if (!L.roomOk(b.room) || !L.tokenOk(b.t)) return json({ ok: false, error: "invalid" }, 400);
       const room = await K.getRoom(ctx, b.room);
       const rec = room ? await K.findParticipant(ctx, room, b.t) : null;
@@ -310,7 +310,7 @@ export default {
       const b = got.body, now = Date.now();
       if (String(b.website ?? "")) return json({ ok: true, participant: { pseudo: null, muted: false } });   // piège à robots : on fait semblant
       const conn = K.connOf(request);
-      if (K.over(`ps|${K.fp(conn, now)}`, 30, HOUR, now).over || K.over(`psg|${ctx.instance.key}`, 300, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
+      if (K.over(ctx, `ps|${K.fp(conn, now)}`, 30, HOUR, now).over || K.over(ctx, `psg|${ctx.instance.key}`, 300, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
       if (!L.roomOk(b.room) || !L.tokenOk(b.t) || typeof b.name !== "string") return json({ ok: false, error: "invalid" }, 400);
       let room = await K.getRoom(ctx, b.room);
       if (!room && b.room === K.GENERAL) { const r = await K.ensureRoom(ctx, K.GENERAL, ctx.t("generalRoom")); room = r.error ? null : r; }
@@ -325,7 +325,7 @@ export default {
       const got = await readJson(request, 500);
       if (got.response) return got.response;
       const now = Date.now();
-      if (K.over(`fg|${K.fp(K.connOf(request), now)}`, 10, HOUR, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
+      if (K.over(ctx, `fg|${K.fp(K.connOf(request), now)}`, 10, HOUR, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
       if (!L.tokenOk(got.body.t)) return json({ ok: false, error: "invalid" }, 400);
       return json({ ok: true, removed: await K.forgetEverywhere(ctx, got.body.t) });
     },
@@ -336,7 +336,7 @@ export default {
       const meta = await K.ensureMeta(ctx);
       const url = new URL(request.url), now = Date.now();
       if (!L.sameSecret(url.searchParams.get("k"), meta.remoteKey)) {
-        if (K.over(`rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return new Response("Too many requests", { status: 429, headers: { "retry-after": "300" } });
+        if (K.over(ctx, `rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return new Response("Too many requests", { status: 429, headers: { "retry-after": "300" } });
         return new Response("Not found", { status: 404 });
       }
       return new Response(R.remoteHtml(ctx, meta.remoteKey, C.REMOTE_JS), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-robots-tag": "noindex, nofollow", "x-content-type-options": "nosniff" } });
@@ -347,10 +347,10 @@ export default {
       const meta = await K.ensureMeta(ctx);
       const url = new URL(request.url), now = Date.now();
       if (!L.sameSecret(url.searchParams.get("k"), meta.remoteKey)) {
-        if (K.over(`rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return json({ ok: false }, 429, { "retry-after": "300" });
+        if (K.over(ctx, `rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return json({ ok: false }, 429, { "retry-after": "300" });
         return new Response("Not found", { status: 404 });
       }
-      if (K.over(`rs|${ctx.instance.key}`, 120, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "10" });
+      if (K.over(ctx, `rs|${ctx.instance.key}`, 120, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "10" });
       K.sweep(ctx, now).catch(KEEP);
       return json(await R.remoteState(ctx, now));
     },
@@ -362,10 +362,10 @@ export default {
       if (got.response) return got.response;
       const b = got.body, now = Date.now();
       if (!L.sameSecret(b.k, meta.remoteKey)) {
-        if (K.over(`rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return json({ ok: false }, 429, { "retry-after": "300" });
+        if (K.over(ctx, `rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return json({ ok: false }, 429, { "retry-after": "300" });
         return new Response("Not found", { status: 404 });
       }
-      if (K.over(`rp|${ctx.instance.key}`, 60, 60_000, now).over) return json({ ok: false, error: "limit", message: ctx.t("remoteErrLimit") }, 429, { "retry-after": "10" });
+      if (K.over(ctx, `rp|${ctx.instance.key}`, 60, 60_000, now).over) return json({ ok: false, error: "limit", message: ctx.t("remoteErrLimit") }, 429, { "retry-after": "10" });
       if (typeof b.panel !== "string" || b.panel.length > 80) return json({ ok: false, error: "invalid" }, 400);
       const r = await R.pressPanel(ctx, { panel: b.panel, action: b.action, values: b.values });
       return json(r, r.ok ? 200 : r.error === "gone" ? 404 : 400);
@@ -548,7 +548,7 @@ export default {
       await K.ensureRoom(ctx, K.GENERAL, ctx.t("generalRoom")).catch(KEEP);
     },
     async onInstanceDelete(ctx) {
-      for (const k of [...K.mem.hits.keys()]) if (k.includes(`|${ctx.instance.key}`)) K.mem.hits.delete(k);
+      for (const k of [...K.mem.hits.keys()]) if (k.startsWith(`${ctx.instance.key}|`)) K.mem.hits.delete(k);
       K.mem.swept.delete(ctx.instance.key);
     },
   },

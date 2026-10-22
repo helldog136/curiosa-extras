@@ -125,13 +125,13 @@ export const STARTER_BANNED = [
   "# Se faire passer pour l'équipe",
   "admin", "administrateur", "administrator", "modo", "moderateur", "moderator", "staff", "streamer", "streameuse", "bot", "system", "systeme",
   "# Insultes courantes (français)",
-  "*merde*", "*putain*", "*connard*", "*connasse*", "*salope*", "*encul*", "*enfoire*", "*batard*", "pute", "pd", "ntm", "fdp", "tg",
+  "*merde*", "*putain*", "*connard*", "*connasse*", "*salope*", "*encul*", "*enfoire*", "batard", "pute", "pd", "ntm", "fdp", "tg",
   "# Insultes courantes (anglais)",
-  "*fuck*", "*shit*", "*bitch*", "*asshole*", "*cunt*", "*dick*", "*whore*", "*slut*", "retard", "idiot",
+  "*fuck*", "*shit*", "*bitch*", "*asshole*", "cunt*", "dick", "dickhead*", "*whore*", "*slut*", "retard", "idiot",
   "# Haine et sujets graves",
-  "*nazi*", "*hitler*", "*nigg*", "*fagg*", "*pedo*", "*rapist*", "violeur",
+  "nazi", "nazis", "*neonazi*", "*hitler*", "*nigg*", "*fagg*", "pedo*", "*rapist*", "violeur",
   "# Liens et publicités",
-  "*http*", "www*", "*discord gg*", "*porn*",
+  "*http*", "www*", "*discord gg*", "porn", "porno*",
 ].join("\n");
 
 /* ───────────── Limiteur à fenêtre glissante (en mémoire, borné) ───────────── */
@@ -164,12 +164,12 @@ export function sanitizePanel(raw) {
   const st = isObj(raw.state) ? raw.state : null;
   const until = st && typeof st.until === "string" && Number.isFinite(Date.parse(st.until)) ? new Date(Date.parse(st.until)).toISOString() : null;
   const state = st ? { text: clean(st.text, 200), tone: ["idle", "live", "done"].includes(st.tone) ? st.tone : "idle", until } : null;
-  const buttons = (Array.isArray(raw.buttons) ? raw.buttons : []).slice(0, LIMITS.buttons).filter((b) => isObj(b) && ID_RE.test(String(b.id ?? "")) && clean(b.label, 40)).map((b) => ({
+  const buttons = (Array.isArray(raw.buttons) ? raw.buttons : []).filter((b) => isObj(b) && ID_RE.test(String(b.id ?? "")) && clean(b.label, 40)).slice(0, LIMITS.buttons).map((b) => ({
     id: String(b.id), label: clean(b.label, 40), tone: TONES.has(b.tone) ? b.tone : "plain", confirm: b.confirm ? clean(b.confirm, 120) : "", disabled: b.disabled === true,
   }));
-  const forms = (Array.isArray(raw.forms) ? raw.forms : []).slice(0, LIMITS.forms).filter((f) => isObj(f) && ID_RE.test(String(f.id ?? "")) && clean(f.title, 60)).map((f) => ({
+  const forms = (Array.isArray(raw.forms) ? raw.forms : []).filter((f) => isObj(f) && ID_RE.test(String(f.id ?? "")) && clean(f.title, 60)).slice(0, LIMITS.forms).map((f) => ({
     id: String(f.id), title: clean(f.title, 60), submit: clean(f.submit, 30) || "OK",
-    fields: (Array.isArray(f.fields) ? f.fields : []).slice(0, LIMITS.fields).filter((x) => isObj(x) && /^[a-z][a-z0-9_]{0,19}$/.test(String(x.name ?? ""))).map((x) => ({
+    fields: (Array.isArray(f.fields) ? f.fields : []).filter((x) => isObj(x) && /^[a-z][a-z0-9_]{0,19}$/.test(String(x.name ?? ""))).slice(0, LIMITS.fields).map((x) => ({
       name: String(x.name), label: clean(x.label, 40), type: FIELD_TYPES.has(x.type) ? x.type : "text", required: x.required === true,
       max: num(x.max, 60, 1, 200), placeholder: clean(x.placeholder, 40), value: clean(x.value, 60),
       options: x.type === "select" ? (Array.isArray(x.options) ? x.options : []).slice(0, 12).filter((o) => isObj(o)).map((o) => ({ value: clean(o.value, 30), label: clean(o.label, 40) })) : [],

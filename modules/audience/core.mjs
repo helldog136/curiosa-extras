@@ -38,7 +38,7 @@ export function fp(conn, now = Date.now()) {
 }
 export const connOf = (request) => ({ forwarded: request.headers.get("x-forwarded-for") ?? "", real: request.headers.get("x-real-ip") ?? "" });
 
-export function over(bucket, max, windowMs, now = Date.now()) { return L.hit(mem.hits, bucket, max, windowMs, now); }
+export function over(ctx, bucket, max, windowMs, now = Date.now()) { return L.hit(mem.hits, `${ctx.instance.key}|${bucket}`, max, windowMs, now); }
 
 /* ───────────── Accès au stockage ───────────── */
 
@@ -327,8 +327,9 @@ export async function dropLive(ctx, room, channel) {
 
 export async function journal(ctx, { who, what, room, detail }, now = Date.now()) {
   await ctx.api.store.add(AUDIT, { at: new Date(now).toISOString(), who: L.clean(who, 40) || "?", what: L.clean(what, 60), room: room ? L.clean(room, LIMITS.roomKey) : null, detail: L.clean(detail, LIMITS.detail) });
-  if ((await ctx.api.store.count(AUDIT)) > LIMITS.audit) {
-    const old = await ctx.api.store.page(AUDIT, { limit: 25, order: "asc" });
+  const extra = (await ctx.api.store.count(AUDIT)) - LIMITS.audit;
+  if (extra > 0) {   // jamais plus de 500 lignes : les plus anciennes s'effacent
+    const old = await ctx.api.store.page(AUDIT, { limit: Math.min(extra, 50), order: "asc" });
     for (const r of old.items) await ctx.api.store.remove(r.id);
   }
 }
