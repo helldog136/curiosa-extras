@@ -14,9 +14,7 @@
   "type": "utility",
   "instances": "single",
   "main": "index.mjs",
-  "page": true,
-  "basePath": "lien",
-  "permissions": ["pages", "routes", "storage", "admin", "mcp"],
+  "permissions": ["routes", "storage", "admin", "mcp"],
   "privacy": {
     "fr": "Quand vous ouvrez un lien court de ce site, le site ajoute 1 à un compteur du jour pour ce lien, et c'est tout : ni cookie, ni adresse IP, ni navigateur, ni provenance ne sont enregistrés, et rien ne permet de vous reconnaître. Les robots et les aperçus de messagerie ne sont pas comptés. Il n'y a rien à effacer à votre demande, puisque rien ne vous concerne.",
     "en": "When you open a short link on this site, the site adds 1 to that link's counter for the day, and that is all: no cookie, no IP address, no browser details and no origin are saved, and nothing can be used to recognise you. Robots and message previews are not counted. There is nothing to erase on request, since nothing is about you."
@@ -66,8 +64,8 @@
       "optional": true,
       "label": { "fr": "Message d'un lien terminé (facultatif)", "en": "Message for an ended link (optional)" },
       "help": {
-        "fr": "Affiché quand quelqu'un ouvre un lien dont la date de fin est passée, par exemple « L'offre est terminée, retrouvez nos nouveautés sur la boutique. ». Laissez vide pour le message habituel.",
-        "en": "Shown when someone opens a link whose end date has passed, for example \"The offer has ended, see what's new in the shop.\" Leave empty for the usual message."
+        "fr": "Affiché (en texte simple) quand quelqu'un ouvre un lien dont la date de fin est passée, par exemple « L'offre est terminée, retrouvez nos nouveautés sur la boutique. ». Laissez vide pour le message habituel.",
+        "en": "Shown (as plain text) when someone opens a link whose end date has passed, for example \"The offer has ended, see what's new in the shop.\" Leave empty for the usual message."
       }
     },
     {

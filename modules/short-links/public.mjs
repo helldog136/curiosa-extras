@@ -70,35 +70,51 @@ export function preferredLocale(request, ctx) {
 
 const NO_STORE = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" };
 
-/** Redirection vers une page du site (jamais vers une adresse reçue). */
+/** Redirection (jamais vers une adresse reçue). */
 const redirectTo = (location) => new Response(null, { status: 302, headers: { Location: location, ...NO_STORE } });
 
 function homeHref(ctx, locale) {
   return locale && locale !== ctx.defaultLocale ? `/${locale}` : "/";
 }
 
-/** Lien terminé ou introuvable : la page aimable du site (dans la langue du visiteur) ; sans page, une petite page autonome. */
-function friendly(request, ctx, kind, slug) {
-  const base = ctx.instance.basePath;
-  const locale = preferredLocale(request, ctx);
-  if (base !== null && base !== undefined) {
-    const prefix = locale !== ctx.defaultLocale ? `/${locale}` : "";
-    const path = `/${[base, kind, kind === "ended" ? slug : ""].filter(Boolean).join("/")}`;
-    return redirectTo(`${prefix}${path}`);
+/**
+ * Lien terminé ou introuvable : une petite page autonome aux couleurs du site, dans la langue du visiteur. Si la langue demandée par le navigateur n'est pas
+ * celle du contexte, on repart une fois vers la même route avec `lang` (le cœur y prépare alors les textes dans cette langue).
+ */
+function friendly(request, ctx, kind, link) {
+  const wanted = preferredLocale(request, ctx);
+  if (!new URL(request.url).searchParams.has("lang") && wanted !== ctx.locale) {
+    const params = new URLSearchParams();
+    const slug = slugOf(new URL(request.url).searchParams.get("c"));
+    if (slug) params.set("c", slug);
+    params.set("lang", wanted);
+    return redirectTo(`/m/${encodeURIComponent(ctx.instance.key)}/go?${params}`);
   }
-  return plainPage(ctx, kind, locale);
+  return plainPage(ctx, kind, link);
 }
 
-/** Page autonome (le module n'a pas de page sur le site) : aux couleurs du site, sans rien venant du visiteur. */
-function plainPage(ctx, kind, locale) {
+function dayText(ctx, day) {
+  const ms = endOfDay(day);
+  if (!Number.isFinite(ms)) return "";
+  try {
+    return new Intl.DateTimeFormat(ctx.locale, { dateStyle: "long", timeZone: "UTC" }).format(new Date(ms));
+  } catch {
+    return day;
+  }
+}
+
+/** La page : aux couleurs du site, sans rien venant du visiteur. 404 pour un lien introuvable, 410 pour un lien terminé. */
+export function plainPage(ctx, kind, link) {
   const color = (key, fallback) => safeColor(ctx.theme?.[key]) ?? fallback;
   const bg = color("bg", "#ffffff"), fg = color("fg", "#111111"), accent = color("accent", "#2255cc"), accentFg = color("accentFg", "#ffffff"), line = color("line", "#cccccc");
   const title = kind === "ended" ? ctx.t("endedTitle") : ctx.t("missingTitle");
-  const text = kind === "ended" ? ctx.t("endedText") : ctx.t("missingText");
-  const html = `<!doctype html><html lang="${esc(locale || ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title>` +
+  const custom = kind === "ended" ? String(ctx.setting("endedMessage") ?? "").trim().slice(0, 1000) : "";
+  const date = kind === "ended" && link?.expires ? dayText(ctx, link.expires) : "";
+  const text = custom || (kind === "ended" ? (date ? ctx.t("endedTextDate", { date }) : ctx.t("endedText")) : ctx.t("missingText"));
+  const html = `<!doctype html><html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title>` +
     `<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:${bg};color:${fg};font:16px/1.5 system-ui,sans-serif}main{max-width:32rem;padding:24px;text-align:center}` +
-    `h1{font-size:1.5rem;margin:0 0 .75rem}p{margin:0 0 1.5rem}a{display:inline-block;min-height:44px;box-sizing:border-box;padding:10px 22px;border:1px solid ${line};border-radius:999px;background:${accent};color:${accentFg};text-decoration:none;font-weight:600}</style></head>` +
-    `<body><main><h1>${esc(title)}</h1><p>${esc(text)}</p><a href="${esc(homeHref(ctx, locale))}">${esc(ctx.t("goHome"))}</a></main></body></html>`;
+    `h1{font-size:1.5rem;margin:0 0 .75rem}p{margin:0 0 1.5rem;white-space:pre-line}a{display:inline-block;min-height:44px;box-sizing:border-box;padding:10px 22px;border:1px solid ${line};border-radius:999px;background:${accent};color:${accentFg};text-decoration:none;font-weight:600}</style></head>` +
+    `<body><main><h1>${esc(title)}</h1><p>${esc(text)}</p><a href="${esc(homeHref(ctx, ctx.locale))}">${esc(ctx.t("goHome"))}</a></main></body></html>`;
   return new Response(html, {
     status: kind === "ended" ? 410 : 404,
     headers: { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff", ...NO_STORE },
@@ -117,7 +133,7 @@ export const routes = {
     if (!link) return friendly(request, ctx, "missing");
     const dest = parseDestination(link.url, { siteUrl: ctx.api.siteUrl });
     if (!dest.ok) return friendly(request, ctx, "missing");
-    if (isEnded(link)) return friendly(request, ctx, "ended", link.slug);
+    if (isEnded(link)) return friendly(request, ctx, "ended", link);
     if (request.method === "GET" && ctx.setting("countClicks") !== false && !looksLikeRobot(request) && mayCount(ctx, visitorKey(clientIp(request)))) recordClick(ctx, link.id);
     return redirectTo(dest.url);
   },
@@ -143,35 +159,3 @@ export const routes = {
     return new Response(svg, { headers: { "Content-Type": "image/svg+xml; charset=utf-8", ...common } });
   },
 };
-
-// ── La page aimable ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-function dayText(ctx, day) {
-  const ms = endOfDay(day);
-  if (!Number.isFinite(ms)) return "";
-  try {
-    return new Intl.DateTimeFormat(ctx.locale, { dateStyle: "long", timeZone: "UTC" }).format(new Date(ms));
-  } catch {
-    return day;
-  }
-}
-
-/** Page publique du module : /<chemin>/missing, /<chemin>/ended/<nom court>. Rien de ce qu'écrit le visiteur n'y est repris. */
-export async function page(ctx, { segments }) {
-  const [kind, slug] = segments;
-  const home = [{ label: ctx.t("goHome"), href: homeHref(ctx, ctx.locale) }];
-  if (segments.length === 0 || (kind === "missing" && segments.length === 1)) {
-    return { title: ctx.t("missingTitle"), description: ctx.t("missingText"), blocks: [{ type: "markdown", text: ctx.t("missingText") }, { type: "links", items: home }] };
-  }
-  if (kind === "ended" && segments.length <= 2) {
-    let date = "";
-    const name = slugOf(slug);
-    if (name) {
-      const link = await cachedLink(ctx, name);
-      if (link?.expires) date = dayText(ctx, link.expires);
-    }
-    const custom = String(ctx.setting("endedMessage") ?? "").trim();
-    const text = custom || (date ? ctx.t("endedTextDate", { date }) : ctx.t("endedText"));
-    return { title: ctx.t("endedTitle"), description: ctx.t("endedText"), blocks: [{ type: "markdown", text }, { type: "links", items: home }] };
-  }
-  return { notFound: true, blocks: [] };
-}

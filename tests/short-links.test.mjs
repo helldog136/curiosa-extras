@@ -285,8 +285,8 @@ test("redirection : aucune redirection ouverte — la destination ne vient jamai
   for (const query of attacks) {
     const res = await go(c, query);
     const location = res.headers.get("location");
-    assert.equal(res.status, 302);
-    assert.ok(location === "https://www.example.org/boutique" || (location.startsWith("/lien/") && !location.startsWith("//")), `${JSON.stringify(query)} → ${location}`);
+    if (res.status === 302) assert.equal(location, "https://www.example.org/boutique", `${JSON.stringify(query)} → ${location}`);
+    else assert.equal(res.status, 404, `${JSON.stringify(query)} : page « introuvable », jamais une redirection`);
     assert.equal(res.headers.get("set-cookie"), null);
   }
   // les paramètres ne changent rien à la destination du lien qui existe
@@ -301,8 +301,8 @@ test("redirection : une destination abîmée dans le stockage n'est jamais suivi
     await c.api.store.update(link.id, { slug: "merch", url: bad, title: "", expires: "" });
     forgetLink(c, "merch");
     const res = await go(c, { c: "merch" });
-    assert.equal(res.status, 302);
-    assert.equal(res.headers.get("location"), "/lien/missing", bad);
+    assert.equal(res.status, 404, bad);
+    assert.equal(res.headers.get("location"), null, bad);
   }
 });
 
@@ -321,42 +321,49 @@ test("redirection : seulement GET (et HEAD) ; rien n'est écrit ni compté par u
   assert.equal((await readStats(c, link.id)).total, 0, "HEAD ne compte pas");
 });
 
-test("lien introuvable, mal écrit ou terminé : page aimable du site (dans la langue du visiteur), jamais une erreur sèche", async () => {
+test("lien introuvable, mal écrit ou terminé : page aimable aux couleurs du site (404 / 410), la veille et le jour de la fin le lien marche encore", async () => {
   const c = ctx();
   const link = await make(c, "https://www.example.org/boutique", { slug: "offre", expires: today(Date.now() + 86_400_000) });
   assert.equal((await go(c, { c: "offre" })).headers.get("location"), "https://www.example.org/boutique", "la veille de la fin : valable");
-  // terminé hier
-  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: today(Date.now() - 86_400_000) });
-  forgetLink(c, "offre");
-  const ended = await go(c, { c: "offre" });
-  assert.equal(ended.status, 302);
-  assert.equal(ended.headers.get("location"), "/lien/ended/offre");
-  assert.equal((await go(c, { c: "offre" }, { headers: { "accept-language": "en-GB,en;q=0.9" } })).headers.get("location"), "/en/lien/ended/offre");
-  assert.equal((await go(c, { c: "inconnu" })).headers.get("location"), "/lien/missing");
-  assert.equal((await go(c, "")).headers.get("location"), "/lien/missing");
-  assert.equal((await go(c, { c: "x".repeat(500) })).headers.get("location"), "/lien/missing");
-  assert.equal((await go(c, { c: "Bad Name!" })).headers.get("location"), "/lien/missing");
-  // le jour de la date : encore valable jusqu'à la fin de la journée
-  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: today() });
-  forgetLink(c, "offre");
-  assert.equal((await go(c, { c: "offre" })).headers.get("location"), "https://www.example.org/boutique");
-});
-
-test("sans page sur le site, un lien terminé ou introuvable affiche une petite page autonome (404 / 410), sans rien reprendre du visiteur", async () => {
-  const c = ctx({}, { basePath: null });
-  const link = await make(c, "https://www.example.org/boutique", { slug: "offre" });
-  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: "2020-01-01" });
+  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: "2026-03-05" });
   forgetLink(c, "offre");
   const ended = await go(c, { c: "offre" });
   assert.equal(ended.status, 410);
   assert.match(ended.headers.get("content-type"), /text\/html/);
   assert.match(ended.headers.get("content-security-policy"), /default-src 'none'/);
-  assert.match(await ended.text(), /Ce lien n&#39;est plus disponible/);
-  const missing = await go(c, { c: '"><script>alert(1)</script>' });
-  assert.equal(missing.status, 404);
-  const html = await missing.text();
-  assert.ok(!html.includes("<script>alert"), "rien du visiteur dans la page");
-  assert.match(html, /href="\/"/);
+  assert.equal(ended.headers.get("location"), null);
+  const html = await ended.text();
+  assert.match(html, /Ce lien était valable jusqu&#39;au 5 mars 2026/);
+  assert.match(html, /<a href="\/">Aller à l&#39;accueil<\/a>/);
+  for (const query of [{ c: "inconnu" }, "", { c: "x".repeat(500) }, { c: "Bad Name!" }]) {
+    const res = await go(c, query);
+    assert.equal(res.status, 404, JSON.stringify(query));
+    assert.match(await res.text(), /Lien introuvable/);
+  }
+  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: today() });
+  forgetLink(c, "offre");
+  assert.equal((await go(c, { c: "offre" })).headers.get("location"), "https://www.example.org/boutique", "le jour de la date : encore valable");
+});
+
+test("page aimable : langue du visiteur (un détour, une seule fois), message personnalisé en texte simple, rien du visiteur repris", async () => {
+  const c = ctx({}, { messages: en, locale: "fr", locales: ["fr", "en"] });
+  const link = await make(c, "https://www.example.org/boutique", { slug: "offre" });
+  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: "2020-01-01" });
+  forgetLink(c, "offre");
+  const detour = await go(c, { c: "offre", next: "https://evil.example.net" }, { headers: { "accept-language": "en-GB,en;q=0.9" } });
+  assert.equal(detour.status, 302);
+  assert.equal(detour.headers.get("location"), `/m/${c.instance.key}/go?c=offre&lang=en`, "même route, rien d'autre que le nom court et la langue");
+  const again = await go(c, "c=offre&lang=en", { headers: { "accept-language": "en-GB,en;q=0.9" } });
+  assert.equal(again.status, 410);
+  const custom = ctx({ endedMessage: "L'offre est <b>terminée</b>.\nÀ bientôt !" });
+  const l2 = await make(custom, "https://www.example.org/x", { slug: "offre" });
+  await custom.api.store.update(l2.id, { slug: "offre", url: "https://www.example.org/x", title: "", expires: "2020-01-01" });
+  forgetLink(custom, "offre");
+  const html = await (await go(custom, { c: "offre" })).text();
+  assert.ok(html.includes("L&#39;offre est &lt;b&gt;terminée&lt;/b&gt;.\nÀ bientôt !") && !html.includes("<b>"));
+  const hostile = await (await go(custom, { c: '"><script>alert(1)</script>' })).text();
+  assert.ok(!hostile.includes("<script>alert"));
+  assert.match(await (await go(ctx({}, { messages: en, locale: "en" }), "c=nope&lang=en")).text(), /Link not found/);
 });
 
 test("langue de la page aimable : la plus proche de ce que demande le navigateur", () => {
@@ -486,7 +493,7 @@ test("suppression d'un lien : ses chiffres partent avec lui et le lien ne répon
   assert.equal(r.redirect, "?removed=1");
   assert.equal(c.api.store.dump(STATS).length, 0);
   assert.equal(await c.api.store.count(LINKS), 0);
-  assert.equal((await go(c, { c: "merch" })).headers.get("location"), "/lien/missing", "l'ancienne destination n'est plus servie");
+  assert.equal((await go(c, { c: "merch" })).status, 404, "l'ancienne destination n'est plus servie");
   assert.match((await def.adminActions.remove.run(c, { id: link.id })).error, /n'existe plus/);
 });
 
@@ -569,29 +576,6 @@ test("adresse courte : celle de l'option avancée si elle est donnée, sinon cel
   const e = ctx({ publicBase: "javascript:alert(1)" });
   await make(e, "https://www.example.org/boutique", { slug: "merch" });
   assert.match(decodeMatrix(matrixFromSvg(await (await qr(e, { c: "merch" })).text())).text, /^https:\/\/demo\.example\.org\/m\//, "une valeur absurde est ignorée");
-});
-
-// ── Page aimable ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-test("page aimable : introuvable, terminé (avec la date), message personnalisé ; tout autre chemin est une 404 ; rien du visiteur n'est repris", async () => {
-  const c = ctx();
-  const link = await make(c, "https://www.example.org/boutique", { slug: "offre" });
-  await c.api.store.update(link.id, { slug: "offre", url: "https://www.example.org/boutique", title: "", expires: "2026-03-05" });
-  forgetLink(c, "offre");
-  const missing = await def.page(c, { segments: [] });
-  assert.equal(missing.title, "Lien introuvable");
-  assert.deepEqual(missing.blocks.at(-1), { type: "links", items: [{ label: "Aller à l'accueil", href: "/" }] });
-  assert.equal((await def.page(c, { segments: ["missing"] })).title, "Lien introuvable");
-  const ended = await def.page(c, { segments: ["ended", "offre"] });
-  assert.equal(ended.title, "Ce lien n'est plus disponible");
-  assert.match(ended.blocks[0].text, /5 mars 2026/);
-  assert.match((await def.page(c, { segments: ["ended", "inconnu"] })).blocks[0].text, /sa date de fin est passée/);
-  assert.match((await def.page(c, { segments: ["ended"] })).blocks[0].text, /sa date de fin est passée/);
-  const custom = ctx({ endedMessage: "L'offre est **terminée**." });
-  assert.equal((await def.page(custom, { segments: ["ended", "x"] })).blocks[0].text, "L'offre est **terminée**.");
-  for (const segments of [["page", "2"], ["whatever"], ["ended", "a", "b"], ['"><script>alert(1)</script>'], ["missing", "x"]]) assert.equal((await def.page(c, { segments })).notFound, true, JSON.stringify(segments));
-  const english = ctx({}, { messages: en, locale: "en" });
-  assert.equal((await def.page(english, { segments: [] })).blocks.at(-1).items[0].href, "/en", "lien d'accueil dans la langue du visiteur");
-  assert.equal((await def.page(english, { segments: [] })).title, "Link not found");
 });
 
 // ── Administration ─────────────────────────────────────────────────────────────────────────────────────────────────────────

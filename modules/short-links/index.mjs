@@ -7,13 +7,13 @@
 //   data.mjs       le stockage (liens, un document de statistiques par lien), tout borné
 //   clicks.mjs     le décompte des clics : en mémoire d'abord, écrit derrière, jamais d'attente pour le visiteur
 //   links.mjs      créer / modifier / supprimer (mêmes règles pour l'administration et pour l'assistant IA)
-//   public.mjs     la redirection publique, l'image du QR code et la page aimable d'un lien terminé
+//   public.mjs     la redirection publique, l'image du QR code et la page aimable d'un lien terminé ou introuvable
 //   admin.mjs      le panneau « Mes liens », les exports, la sauvegarde lisible
 import { adminActions, adminDownloads, adminPanel, backup } from "./admin.mjs";
 import { forgetInstance, settle } from "./clicks.mjs";
 import { MAX_LINKS, linkById, linkPage, readStats, summarize } from "./data.mjs";
 import { createLink, deleteLink, editLink, isEnded, shortUrl } from "./links.mjs";
-import { forgetImageHits, page, routes } from "./public.mjs";
+import { forgetImageHits, routes } from "./public.mjs";
 
 /** Une erreur dont le message peut être lu par l'assistant (les autres sont masquées par le cœur). */
 const refuse = (message) => Object.assign(new Error(message), { expose: true });
@@ -58,7 +58,6 @@ const view = (ctx, link, sums) => ({
 });
 
 export default {
-  page,
   routes,
   adminPanel,
   adminActions,
