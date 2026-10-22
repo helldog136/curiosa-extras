@@ -107,11 +107,12 @@ test("contact-form : limite de 5 messages par heure et par IP (429 ensuite), les
   assert.equal((await def.routes.send(post(ok, { ip: freshIp() }), ctx)).status, 200);
 });
 
-test("contact-form : première IP de x-forwarded-for prise en compte, absence d'en-tête → « local »", async () => {
+test("contact-form : l'adresse est la DERNIÈRE de x-forwarded-for (une valeur forgée en tête ne contourne pas la limite), absence d'en-tête → « local »", async () => {
   const ctx = formCtx();
   const a = freshIp();
-  for (let i = 0; i < 5; i++) await def.routes.send(post(ok, { ip: `${a}, 1.1.1.1` }), ctx);
-  assert.equal((await def.routes.send(post(ok, { ip: `${a}, 2.2.2.2` }), ctx)).status, 429);
+  for (let i = 0; i < 5; i++) await def.routes.send(post(ok, { ip: `forgé-${i}, ${a}` }), ctx);
+  assert.equal((await def.routes.send(post(ok, { ip: `encore-autre, ${a}` }), ctx)).status, 429, "début inventé : même visiteur");
+  assert.equal((await def.routes.send(post(ok, { ip: `${a}, ${freshIp()}` }), ctx)).status, 200, "la dernière entrée fait foi, pas la première");
   const fd = new FormData(); for (const [k, v] of Object.entries(ok)) fd.set(k, v);
   const res = await def.routes.send(new Request("https://x.test/s", { method: "POST", body: fd }), ctx);
   assert.ok([200, 429].includes(res.status));

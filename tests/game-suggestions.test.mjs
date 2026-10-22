@@ -43,6 +43,14 @@ test("suggestion : enregistrée « proposé », texte nettoyé et borné ; titre
   assert.equal((await suggest(c, { title: "x".repeat(500) }).then(() => c.api.store.list("games")))[0].data.title.length, 100);
 });
 
+test("suggestion : une adresse forgée en tête de x-forwarded-for ne contourne pas la limite (la dernière entrée fait foi)", async () => {
+  const c = ctx({ rateLimit: 2 });
+  assert.equal((await suggest(c, { title: "A" }, "1.1.1.1, 7.7.7.7")).status, 200);
+  assert.equal((await suggest(c, { title: "B" }, "2.2.2.2, 7.7.7.7")).status, 200);
+  assert.equal((await suggest(c, { title: "C" }, "3.3.3.3, 7.7.7.7")).status, 429);
+  assert.equal((await suggest(c, { title: "D" }, "1.1.1.1, 7.7.7.8")).status, 200);
+});
+
 test("suggestion : limite par heure et par visiteur", async () => {
   const c = ctx({ rateLimit: 2 });
   assert.equal((await suggest(c, { title: "A" }, "9.9.9.9")).status, 200);
@@ -67,6 +75,14 @@ test("jaquette RAWG : par le service du cœur, https seulement, jamais d'erreur 
   await suggest(nokey, { title: "Sans clé" }, "2.2.2.2");
   assert.equal((await nokey.api.store.list("games"))[0].data.coverUrl, null);
   assert.equal(direct, 0);
+});
+
+test("vote : une adresse forgée en tête de x-forwarded-for ne contourne pas la limite par adresse", async () => {
+  const c = ctx();
+  const played = await add(c, { status: "already_played" });
+  const vote = (ip) => def.routes.vote(formReq("https://x.test/m/k/vote", { id: played }, { "x-forwarded-for": ip }), c);
+  for (let i = 0; i < 3; i++) assert.equal((await vote(`${i}.9.9.9, 5.5.5.5`)).status, 303);
+  assert.equal((await vote("8.8.8.8, 5.5.5.5")).status, 429);
 });
 
 test("vote « rejoue-le » : seulement sur un jeu déjà joué, 3 par mois (cookie et adresse), redirection vers la page", async () => {

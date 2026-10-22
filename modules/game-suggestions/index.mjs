@@ -25,7 +25,8 @@ const clean = (v, max, multiline = false) => {
 };
 const num = (v, def, min, max) => { const n = Number(v); return v === undefined || v === null || v === "" || !Number.isFinite(n) ? def : Math.min(max, Math.max(min, Math.trunc(n))); };
 const safeHttps = (v) => (typeof v === "string" && /^https:\/\//.test(v) ? v : null);
-const ipOf = (request) => request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+// Dernière entrée de l'en-tête : celle qu'ajoute le relais de confiance (le début vient du visiteur et peut être inventé).
+const ipOf = (request) => request.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean).pop() || "local";
 export const isStatus = (v) => STATUSES.includes(v);
 
 const memory = new Map();           // limiteurs en mémoire : un garde-fou, pas un pare-feu
