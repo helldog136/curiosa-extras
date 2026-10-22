@@ -237,7 +237,8 @@ export function applyPatch(current, patch, facts) {
       if (!Object.hasOwn(patch ?? {}, f.name)) continue;
       const v = parse(f, patch[f.name]);
       setValue(a, f.name, v);
-      if (!emptyValue(v)) { const bad = f.check(v, a); if (bad) errors[f.name] = bad; }
+      if (f.type === "select" && v === "" && String(patch[f.name] ?? "") !== "") errors[f.name] = "err.choose"; // une valeur hors liste n'est pas « vide » : elle est refusée
+      else if (!emptyValue(v)) { const bad = f.check(v, a); if (bad) errors[f.name] = bad; }
     }
   }
   void facts;
