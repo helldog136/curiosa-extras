@@ -1,0 +1,405 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.5",
+  "id": "content-planner",
+  "name": {
+    "en": "Content notebook",
+    "fr": "Cahier de contenu"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Your private notebook for videos, articles and posts: ideas, work in progress and published, with steps to tick off and a target date. Nothing is ever shown on your site.",
+    "fr": "Votre cahier privé pour vos vidéos, articles et posts : idées, en préparation et publié, avec des étapes à cocher et une date visée. Rien n'est jamais montré sur votre site."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📓",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "admin",
+    "storage",
+    "mcp"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mon cahier",
+        "en": "My notebook"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "stepModel",
+      "type": "textarea",
+      "optional": true,
+      "label": {
+        "fr": "Étapes de chaque nouvelle idée",
+        "en": "Steps for each new idea"
+      },
+      "help": {
+        "fr": "Une étape par ligne (12 au plus). Laissez vide pour : Script, Miniature, Description, Publication. Les idées déjà notées ne changent pas : vous pouvez modifier leurs étapes une par une.",
+        "en": "One step per line (12 at most). Leave empty for: Script, Thumbnail, Description, Publishing. Ideas you already wrote down do not change: you can edit their steps one by one."
+      }
+    },
+    {
+      "key": "rhythmCount",
+      "type": "select",
+      "label": {
+        "fr": "Combien de publications",
+        "en": "How many posts"
+      },
+      "help": {
+        "fr": "Un repère pour vous, jamais une obligation. Si vous publiez moins que prévu, le cahier vous le dit tout doucement.",
+        "en": "A guide for you, never a duty. If you publish less than planned, the notebook tells you very gently."
+      },
+      "options": [
+        {
+          "value": "1",
+          "label": {
+            "fr": "1",
+            "en": "1"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "fr": "2",
+            "en": "2"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "fr": "3",
+            "en": "3"
+          }
+        },
+        {
+          "value": "4",
+          "label": {
+            "fr": "4",
+            "en": "4"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "fr": "5",
+            "en": "5"
+          }
+        },
+        {
+          "value": "7",
+          "label": {
+            "fr": "7",
+            "en": "7"
+          }
+        }
+      ]
+    },
+    {
+      "key": "rhythmPeriod",
+      "type": "select",
+      "label": {
+        "fr": "Sur quelle durée",
+        "en": "Over what time"
+      },
+      "options": [
+        {
+          "value": "week",
+          "label": {
+            "fr": "par semaine",
+            "en": "per week"
+          }
+        },
+        {
+          "value": "fortnight",
+          "label": {
+            "fr": "par quinzaine",
+            "en": "per fortnight"
+          }
+        },
+        {
+          "value": "month",
+          "label": {
+            "fr": "par mois",
+            "en": "per month"
+          }
+        }
+      ]
+    },
+    {
+      "key": "networkList",
+      "type": "text",
+      "advanced": true,
+      "default": "YouTube, Twitch, Instagram, TikTok, Blog, Newsletter, Podcast, Bluesky",
+      "label": {
+        "fr": "Réseaux proposés dans chaque idée",
+        "en": "Networks offered in each idea"
+      },
+      "help": {
+        "fr": "Séparés par des virgules (12 au plus). Ce ne sont que des suggestions : dans une idée, vous pouvez toujours en écrire d'autres.",
+        "en": "Separated by commas (12 at most). These are only suggestions: in an idea you can always write others."
+      }
+    }
+  ],
+  "optionalGroups": [
+    {
+      "id": "rhythm",
+      "label": {
+        "fr": "Mon rythme de publication",
+        "en": "My publishing rhythm"
+      },
+      "addLabel": {
+        "fr": "Ajouter un rythme (par exemple une vidéo par semaine)",
+        "en": "Add a rhythm (for example one video per week)"
+      },
+      "removeLabel": {
+        "fr": "Retirer le rythme",
+        "en": "Remove the rhythm"
+      },
+      "fields": [
+        "rhythmCount",
+        "rhythmPeriod"
+      ],
+      "required": [
+        "rhythmCount",
+        "rhythmPeriod"
+      ]
+    }
+  ],
+  "rights": [
+    {
+      "id": "ideas.export",
+      "label": {
+        "fr": "télécharger le cahier (fichier CSV)",
+        "en": "download the notebook (CSV file)"
+      },
+      "help": {
+        "fr": "Le fichier contient toutes les idées, notes comprises.",
+        "en": "The file holds every idea, notes included."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "dataVersion": 1,
+  "mcp": [
+    {
+      "name": "ideas_list",
+      "readOnly": true,
+      "description": "List the ideas of the content notebook (videos, articles, posts), newest planning first. Each item has its id, title, one-line summary, place (idea, doing, published or archived), steps with done flags, target date and networks. Use it to find an idea before moving it or ticking a step. Pagination: pass back the returned next as cursor.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "doing",
+              "published",
+              "archived",
+              "active",
+              "all"
+            ],
+            "description": "Which ideas: idea = not started, doing = in progress, published, archived, active = idea + doing + published (default), all."
+          },
+          "q": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Words to look for in titles, summaries, notes, networks and steps (accents and capitals are ignored)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "How many ideas to return (default 20)."
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "The next value of the previous answer, to read the following ideas."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_get",
+      "readOnly": true,
+      "description": "Read one idea of the content notebook in full, notes included.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The idea id, as returned by ideas_list."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_add",
+      "description": "Write down a new idea in the content notebook. Only the title is required; the steps come from the owner's default model unless you give some. The idea is private: it is never shown on the website.",
+      "input": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Short title of the video, article or post."
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "One sentence about it."
+          },
+          "place": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "doing"
+            ],
+            "description": "Where to put it: idea (default) or doing (in progress)."
+          },
+          "targetDate": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Target date as YYYY-MM-DD (optional)."
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Networks concerned, for example YouTube, Twitch, Blog (12 at most)."
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Steps to tick off, in order (12 at most). Leave out to use the default steps."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Free notes."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_update",
+      "description": "Change the title, summary, target date, networks or notes of an idea. Only the fields you give are changed; give targetDate as an empty string to remove the date. Does not move the idea (use idea_move) and does not tick steps (use idea_step).",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The idea id."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "New title."
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "New one-sentence summary."
+          },
+          "targetDate": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "New target date as YYYY-MM-DD, or an empty string to remove it."
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The full new list of networks (replaces the old one)."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "New notes (replace the old ones)."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_move",
+      "description": "Move an idea between the places of the notebook: idea (not started), doing (in progress), published, or archived (put away, never deleted). Moving to published records today as the publication date. Moving out of archived puts the idea back in the place you give.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "to"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The idea id."
+          },
+          "to": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "doing",
+              "published",
+              "archived"
+            ],
+            "description": "The place to move the idea to."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_step",
+      "description": "Tick (or untick) one step of an idea, for example the script or the thumbnail. Give the step name as written in the idea, or its number (1 = first step).",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "step"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The idea id."
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "The step name (capitals ignored) or its number, 1 for the first step."
+          },
+          "done": {
+            "type": "boolean",
+            "description": "true to tick (default), false to untick."
+          }
+        }
+      }
+    }
+  ]
+}
