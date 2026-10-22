@@ -50,7 +50,7 @@ export async function buildView(ctx) {
 const VOTE_MIN_PUBLIC = 3; // le nombre de personnes aidées ne s'affiche qu'à partir de là (un « 1 » ferait pauvre)
 
 export const CSS = `
-.faq{max-width:46rem;margin:0 auto;color:var(--v-fg)}
+.faq{max-width:46rem;margin:0;color:var(--v-fg)}
 .faq *,.faq *::before,.faq *::after{box-sizing:border-box}
 .faq [hidden]{display:none!important}
 .faq-intro{margin:0 0 1.25rem;color:var(--v-muted)}
@@ -84,6 +84,8 @@ export const CSS = `
 .faq-a{padding:0 1rem 1rem;line-height:1.6;overflow-wrap:anywhere}
 .faq-a p,.faq-a ul,.faq-a ol{margin:0 0 .75rem}
 .faq-a ul,.faq-a ol{padding-left:1.4rem}
+.faq-a ul{list-style:disc}
+.faq-a ol{list-style:decimal}
 .faq-lang{margin:0 0 .75rem;color:var(--v-muted);font-size:.9rem}
 .faq-meta{display:flex;flex-wrap:wrap;align-items:center;gap:0 1rem;margin-top:.25rem;padding-top:.35rem;border-top:1px solid var(--v-line);color:var(--v-muted);font-size:.9rem}
 .faq-meta a{display:inline-flex;align-items:center;min-height:44px;color:var(--v-muted);text-decoration:underline;text-underline-offset:3px}
@@ -98,7 +100,8 @@ export const CSS = `
 .faq-ask{margin-top:2rem;padding:1rem;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)}
 .faq-ask h2{margin:0 0 .35rem;font-size:1.25rem;font-weight:600}
 .faq-hint{margin:.35rem 0 .75rem;color:var(--v-muted);font-size:.9rem}
-.faq-result{min-height:1.5em;margin:.75rem 0 0}
+.faq-result{margin:.75rem 0 0}
+.faq-result:empty{margin:0}
 .faq-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .faq-note{display:none;position:fixed;right:1rem;bottom:1rem;left:1rem;z-index:50;max-width:30rem;margin:0 auto;padding:.75rem 1rem;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-fg);box-shadow:0 4px 18px rgba(0,0,0,.25)}
 .faq-note:target{display:block}

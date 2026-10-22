@@ -210,7 +210,7 @@ test("panneau : vide, il explique par où commencer ; rempli, brouillons / publi
   assert.match(texts, /Pas de thème pour l'instant/);
   assert.match(texts, /Aucune question pour l'instant\. Quand un visiteur pose une question/);
   assert.ok(empty.some((b) => b.type === "adminForm" && b.action === "saveTheme"));
-  assert.ok(empty.find((b) => b.type === "links").items.some((l) => l.href === "?new=1"));
+  assert.ok(empty.find((b) => b.type === "links").items.some((l) => /^\/admin\/instances\/id-faq\d+\?new=1$/.test(l.href)), "un lien d'administration complet (« ?new=1 » seul serait refusé)");
   assert.ok(!empty.some((b) => b.type === "adminForm" && b.action === "saveItem"), "le formulaire s'ouvre à la demande");
 
   const ctx = ctxFor();
@@ -220,18 +220,25 @@ test("panneau : vide, il explique par où commencer ; rempli, brouillons / publi
   await addItem(ctx, { q: "Mal notée ?", a: "Hum.", theme: t, pos: 2, slug: "m", y: 1, n: 6 });
   const blocks = await panel(ctx);
   const [drafts, pub, themes] = tables(blocks);
-  assert.deepEqual(drafts.columns, ["Question", "Thème", "Langues", "Origine"]);
-  assert.deepEqual(drafts.rows[0], ["Brouillon ?", "Sans thème", "FR (manque : EN)", "Brouillon de l'assistant"]);
-  assert.deepEqual(drafts.rowActions.map((a) => a.label), ["Modifier", "Publier", "Supprimer"]);
-  assert.deepEqual(pub.columns, ["Question", "Langues", "Utile / Pas vraiment"]);
-  assert.deepEqual(pub.rows[0], ["Publiée ?", "FR (manque : EN)", "12 / 4"]);
-  assert.deepEqual(pub.rowActions.map((a) => a.label), ["Modifier", "↑ Monter", "↓ Descendre", "Retirer du site", "Supprimer"]);
-  assert.deepEqual(themes.rows, [["Abonnements", "2"]]);
+  assert.deepEqual(drafts.columns, ["Question"], "une seule colonne : lisible sur un téléphone");
+  assert.deepEqual(drafts.rows[0], ["Brouillon ?\nSans thème · FR (manque : EN) · Brouillon de l'assistant"]);
+  assert.deepEqual(drafts.rowActions.map((a) => a.label), ["Modifier", "Publier"]);
+  assert.deepEqual(pub.rows[0], ["Publiée ?\nFR (manque : EN) · 12 / 4"]);
+  assert.deepEqual(pub.rowActions.map((a) => a.label), ["Modifier", "↑ Haut", "↓ Bas"], "trois boutons au plus par ligne");
+  assert.deepEqual(themes.rows, [["Abonnements\nQuestions : 2"]]);
+  assert.deepEqual(themes.rowActions.map((a) => a.label), ["Modifier", "↑ Haut", "↓ Bas"]);
+  // les boutons rares (retirer, supprimer) sont sous le formulaire de la question
+  const idp = items(ctx).find((i) => i.tr.fr.q === "Publiée ?").id;
+  const more = tables(await panel(ctx, { edit: idp })).find((t) => t.columns[0] === "Autres actions");
+  assert.deepEqual(more.rowActions.map((a) => a.label), ["Retirer du site", "Supprimer"]);
+  assert.ok(more.rowActions.every((a) => a.action && (!a.danger || a.confirm)));
+  const idd = items(ctx).find((i) => i.status === "draft").id;
+  assert.deepEqual(tables(await panel(ctx, { edit: idd })).find((t) => t.columns[0] === "Autres actions").rowActions.map((a) => a.label), ["Publier", "Supprimer"]);
   assert.ok(blocks.some((b) => b.type === "markdown" && /plus de « Pas vraiment »/.test(b.text)), "astuce sur les réponses qui déçoivent");
   assert.ok(blocks.some((b) => b.type === "markdown" && /questions décrites à Google/.test(b.text)));
   assert.ok(blocks.some((b) => b.type === "copy" && b.text === "https://example.test/faq"));
   // tout ce qui est confirmé l'est en clair
-  for (const t2 of tables(blocks)) for (const a of t2.rowActions ?? []) if (a.danger) assert.ok(a.confirm);
+  for (const t2 of tables(blocks)) assert.ok((t2.rowActions ?? []).length <= 3);
 });
 
 test("panneau : « Questions reçues » dans son onglet, brouillons prêts à publier en un clic", async () => {
@@ -240,15 +247,15 @@ test("panneau : « Questions reçues » dans son onglet, brouillons prêts à pu
   const id = await addItem(ctx, { q: "Livrez-vous ?", a: "Oui.", status: "draft", slug: "l", by: "assistant" });
   await ctx.api.store.add("faq_asked", { text: "Et en Belgique ?", lang: "fr", count: 1, last: new Date().toISOString(), status: "drafted", draft: id });
   const blocks = await panel(ctx);
-  assert.equal(blocks.find((b) => b.type === "banner").href, "?tab=inbox");
+  assert.equal(blocks.find((b) => b.type === "banner").href, `/admin/instances/${ctx.instance.id}?tab=inbox`);
   assert.match(blocks.find((b) => b.type === "banner").text, /à traiter : 1\./, "seules les questions sans brouillon sont « à traiter »");
   const inbox = blocks.filter((b) => b.tab === "inbox");
   assert.ok(inbox.length >= 5);
   assert.ok(blocks.filter((b) => b.tab !== "inbox").every((b) => b.tab === undefined), "le reste est dans « Ma FAQ »");
   const [news, ready] = inbox.filter((b) => b.type === "table");
   assert.deepEqual(news.rowActions.map((a) => a.label), ["Répondre", "Écarter"]);
-  assert.equal(news.rows[0][2], "3 fois");
-  assert.deepEqual(ready.rowActions.map((a) => a.label), ["Relire et modifier", "Publier", "Écarter"]);
+  assert.match(news.rows[0][0], /^Vous livrez \?\nFR · 3 fois · /);
+  assert.deepEqual(ready.rowActions.map((a) => a.label), ["Relire et modifier", "Publier"]);
   assert.equal(await def.adminBadge(ctx), 2, "la pastille du menu compte les questions reçues");
 });
 

@@ -8,6 +8,9 @@ import { buildView, markupHtml, pageHref, themeName } from "./view.mjs";
 
 const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 
+/** Cette page d'administration : un lien du panneau doit être une adresse du site (« ?x=1 » seul serait refusé par le bloc de liens). */
+const here = (ctx) => `/admin/instances/${ctx.instance.id}`;
+
 /** Adresse complète de la page publique (langue du site), sans « / » final. */
 function fullUrl(ctx) {
   const path = pageHref(ctx, false);
@@ -82,20 +85,29 @@ export async function adminPanel(ctx, { query } = {}) {
   const blocks = [];
   const fresh = asked.filter((a) => a.status === "new");
 
-  if (fresh.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("bannerNew", { count: fresh.length }), href: "?tab=inbox" });
+  if (fresh.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("bannerNew", { count: fresh.length }), href: `${here(ctx)}?tab=inbox` });
 
   // Le formulaire demandé par l'adresse : ?edit=<question> · ?new=1 · ?answer=<question reçue>
   if (editor) {
     const wantedAsked = typeof q.answer === "string" ? asked.find((a) => a.id === q.answer) : undefined;
     const wantedItem = typeof q.edit === "string" ? items.find((i) => i.id === q.edit) : wantedAsked?.draft ? items.find((i) => i.id === wantedAsked.draft) : undefined;
-    if (wantedItem) blocks.push(itemForm(ctx, themes, { item: wantedItem, askedId: wantedAsked?.id ?? "" }));
-    else if (wantedAsked) blocks.push(itemForm(ctx, themes, { askedId: wantedAsked.id, prefill: { [wantedAsked.lang || ctx.defaultLocale]: wantedAsked.text } }));
+    if (wantedItem) {
+      blocks.push(itemForm(ctx, themes, { item: wantedItem, askedId: wantedAsked?.id ?? "" }));
+      const more = [];
+      if (publisher) more.push(wantedItem.status === "published" ? { label: ctx.t("actUnpublish"), action: "unpublish", confirm: ctx.t("confirmUnpublish") } : { label: ctx.t("actPublish"), action: "publish" });
+      more.push({ label: ctx.t("actDelete"), action: "removeItem", confirm: ctx.t("confirmDeleteItem"), danger: true });
+      blocks.push(extraActions(ctx, titleOf(ctx, wantedItem), wantedItem.id, more));
+      if (wantedAsked) blocks.push(extraActions(ctx, wantedAsked.text, wantedAsked.id, [{ label: ctx.t("actDismiss"), action: "dismissAsked", confirm: ctx.t("confirmDismiss"), danger: true }]));
+    } else if (wantedAsked) {
+      blocks.push(itemForm(ctx, themes, { askedId: wantedAsked.id, prefill: { [wantedAsked.lang || ctx.defaultLocale]: wantedAsked.text } }));
+      blocks.push(extraActions(ctx, wantedAsked.text, wantedAsked.id, [{ label: ctx.t("actDismiss"), action: "dismissAsked", confirm: ctx.t("confirmDismiss"), danger: true }]));
+    }
     else if (q.new) blocks.push(itemForm(ctx, themes, { theme: typeof q.theme === "string" && themes.some((t) => t.id === q.theme) ? q.theme : "" }));
   }
 
   const href = pageHref(ctx);
   const links = [];
-  if (editor) links.push({ label: ctx.t("linkNew"), href: "?new=1" });
+  if (editor) links.push({ label: ctx.t("linkNew"), href: `${here(ctx)}?new=1` });
   if (href) links.push({ label: ctx.t("linkSee"), href });
   if (links.length) blocks.push({ type: "links", items: links });
   if (href) blocks.push({ type: "copy", label: ctx.t("copyLabel"), text: fullUrl(ctx) || ctx.api.siteUrl });
@@ -106,12 +118,11 @@ export async function adminPanel(ctx, { query } = {}) {
     const actions = [];
     if (editor) actions.push({ label: ctx.t("actEdit"), href: "?edit={id}" });
     if (publisher) actions.push({ label: ctx.t("actPublish"), action: "publish" });
-    if (editor) actions.push({ label: ctx.t("actDelete"), action: "removeItem", confirm: ctx.t("confirmDeleteItem"), danger: true });
     blocks.push({ type: "heading", text: ctx.t("draftsTitle", { count: drafts.length }) });
     blocks.push({ type: "markdown", text: ctx.t("draftsHelp") });
     blocks.push({
-      type: "table", columns: [ctx.t("colQuestion"), ctx.t("colTheme"), ctx.t("colLangs"), ctx.t("colOrigin")],
-      rows: drafts.map((i) => [titleOf(ctx, i), themeLabel(ctx, themes, i.theme), langsCell(ctx, i), ctx.t(i.by === "assistant" ? "originAssistant" : "originTeam")]),
+      type: "table", columns: [ctx.t("colQuestion")],
+      rows: drafts.map((i) => [`${titleOf(ctx, i)}\n${[themeLabel(ctx, themes, i.theme), langsCell(ctx, i), ctx.t(i.by === "assistant" ? "originAssistant" : "originTeam")].join(" · ")}`]),
       rowIds: drafts.map((i) => i.id), rowActions: actions,
     });
   }
@@ -125,12 +136,10 @@ export async function adminPanel(ctx, { query } = {}) {
     if (!g.items.length) continue;
     const actions = [];
     if (editor) actions.push({ label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actUp"), action: "moveUp" }, { label: ctx.t("actDown"), action: "moveDown" });
-    if (publisher) actions.push({ label: ctx.t("actUnpublish"), action: "unpublish", confirm: ctx.t("confirmUnpublish") });
-    if (editor) actions.push({ label: ctx.t("actDelete"), action: "removeItem", confirm: ctx.t("confirmDeleteItem"), danger: true });
     if (themes.length) blocks.push({ type: "heading", text: g.name });
     blocks.push({
-      type: "table", columns: [ctx.t("colQuestion"), ctx.t("colLangs"), ctx.t("colVotes")],
-      rows: g.items.map((i) => [titleOf(ctx, i), langsCell(ctx, i), ctx.t("votesCell", { yes: i.y, no: i.n })]),
+      type: "table", columns: [ctx.t("colQuestion")],
+      rows: g.items.map((i) => [`${titleOf(ctx, i)}\n${langsCell(ctx, i)} · ${ctx.t("votesCell", { yes: i.y, no: i.n })}`]),
       rowIds: g.items.map((i) => i.id), rowActions: actions,
     });
   }
@@ -141,14 +150,16 @@ export async function adminPanel(ctx, { query } = {}) {
   blocks.push({ type: "markdown", text: ctx.t(themes.length ? "themesHelp" : "themesNone") });
   if (themes.length) {
     const actions = [];
-    if (editor) actions.push({ label: ctx.t("actEdit"), href: "?theme={id}" }, { label: ctx.t("actUp"), action: "themeUp" }, { label: ctx.t("actDown"), action: "themeDown" }, { label: ctx.t("actDelete"), action: "removeTheme", confirm: ctx.t("confirmDeleteTheme"), danger: true });
+    if (editor) actions.push({ label: ctx.t("actEdit"), href: "?theme={id}" }, { label: ctx.t("actUp"), action: "themeUp" }, { label: ctx.t("actDown"), action: "themeDown" });
     blocks.push({
-      type: "table", columns: [ctx.t("colTheme"), ctx.t("colCount")],
-      rows: themes.map((t) => [themeName(ctx, t) || ctx.t("untitled"), String(items.filter((i) => i.theme === t.id).length)]),
+      type: "table", columns: [ctx.t("colTheme")],
+      rows: themes.map((t) => [`${themeName(ctx, t) || ctx.t("untitled")}\n${ctx.t("themeCount", { count: items.filter((i) => i.theme === t.id).length })}`]),
       rowIds: themes.map((t) => t.id), rowActions: actions,
     });
   }
-  if (editor) blocks.push(themeForm(ctx, typeof q.theme === "string" ? themes.find((t) => t.id === q.theme) : undefined));
+  const editedTheme = typeof q.theme === "string" ? themes.find((t) => t.id === q.theme) : undefined;
+  if (editor) blocks.push(themeForm(ctx, editedTheme));
+  if (editor && editedTheme) blocks.push(extraActions(ctx, themeName(ctx, editedTheme) || ctx.t("untitled"), editedTheme.id, [{ label: ctx.t("actDelete"), action: "removeTheme", confirm: ctx.t("confirmDeleteTheme"), danger: true }]));
 
   // Ce que voient les moteurs de recherche
   if (flag(ctx, "markup", true) && published.length) {
@@ -162,8 +173,8 @@ export async function adminPanel(ctx, { query } = {}) {
   const tab = "inbox";
   blocks.push({ type: "heading", text: ctx.t("inboxTitle", { count: asked.length }), tab });
   blocks.push({ type: "markdown", text: ctx.t(asked.length ? "inboxHelp" : "inboxNone", { days: retentionDays(ctx) }), tab });
-  const rowsOf = (list) => list.map((a) => [a.text, a.lang ? a.lang.toUpperCase() : "—", a.count > 1 ? ctx.t("askedTimes", { count: a.count }) : ctx.t("askedOnce"), day(a.last, ctx.locale)]);
-  const cols = [ctx.t("colQuestion"), ctx.t("colLang"), ctx.t("colAsked"), ctx.t("colDate")];
+  const rowsOf = (list) => list.map((a) => [`${a.text}\n${[a.lang ? a.lang.toUpperCase() : "", a.count > 1 ? ctx.t("askedTimes", { count: a.count }) : ctx.t("askedOnce"), day(a.last, ctx.locale)].filter(Boolean).join(" · ")}`]);
+  const cols = [ctx.t("colQuestion")];
   if (fresh.length) {
     blocks.push({ type: "heading", text: ctx.t("inboxNewTitle", { count: fresh.length }), tab });
     const actions = [];
@@ -177,11 +188,13 @@ export async function adminPanel(ctx, { query } = {}) {
     const actions = [];
     if (editor) actions.push({ label: ctx.t("actReread"), href: "?answer={id}" });
     if (publisher) actions.push({ label: ctx.t("actPublish"), action: "publishAsked", confirm: ctx.t("confirmPublish") });
-    if (editor) actions.push({ label: ctx.t("actDismiss"), action: "dismissAsked", confirm: ctx.t("confirmDismiss"), danger: true });
     blocks.push({ type: "table", columns: cols, rows: rowsOf(ready), rowIds: ready.map((a) => a.id), rowActions: actions, tab });
   }
   return blocks;
 }
+
+/** Les boutons rares (retirer, supprimer, écarter) : sous le formulaire, pour garder les listes étroites sur un téléphone. */
+const extraActions = (ctx, label, id, rowActions) => ({ type: "table", columns: [ctx.t("colOther")], rows: [[label]], rowIds: [id], rowActions });
 
 const themeLabel = (ctx, themes, id) => { const t = themes.find((x) => x.id === id); return t ? themeName(ctx, t) || ctx.t("untitled") : ctx.t("noTheme"); };
 
