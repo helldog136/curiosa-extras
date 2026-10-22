@@ -47,7 +47,7 @@ h1{font-size:1.25rem;margin:0 0 4px}h2{font-size:1.05rem;margin:0 0 8px}
 p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var(--ok)}
 .layout{display:grid;gap:16px}
 @media (min-width:720px){.layout{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.previewcol{position:sticky;top:12px}}
-@media (max-width:719px){.previewcol{order:-1}}
+@media (max-width:719px){.layout{display:flex;flex-direction:column;gap:0}#controls{display:contents}section.pick{order:-2}.previewcol{order:-1}}
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
 fieldset{border:0;margin:0;padding:0;min-width:0}legend{font-weight:600;padding:0;margin-bottom:6px}
 label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}
@@ -75,6 +75,7 @@ canvas#preview{display:block;width:100%;max-width:340px;max-height:70vh;margin:0
 progress{width:100%;height:14px}
 details>summary{cursor:pointer;font-weight:600;padding:6px 0;min-height:32px}
 .sr{position:absolute;left:-9999px}
+[hidden]{display:none!important}
 .chosen{padding:10px 12px;border:1px solid var(--accent);border-radius:10px;background:var(--field);margin:0 0 12px;overflow-wrap:anywhere}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.chips button{min-height:44px;border-radius:999px;padding:6px 14px}
 .chips button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
@@ -103,7 +104,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div id="status" class="status" role="status" aria-live="polite" hidden></div>
 <p id="prep-note" class="banner" hidden>${T("prep_note")}</p><p id="prep-expired" class="banner" hidden>${T("prep_expired")}</p><p id="prep-stream-gone" class="banner" hidden>${T("prep_stream_gone")}</p>
 <div class="layout"><div id="controls">
-<section aria-labelledby="h-event"><h2 id="h-event">${T("h_event")}</h2><p class="muted">${T("event_help")}</p>
+<section class="pick" aria-labelledby="h-event"><h2 id="h-event">${T("h_event")}</h2><p class="muted">${T("event_help")}</p>
 <div id="event-chosen" class="chosen" role="status" aria-live="polite"></div>
 <div id="event-picker"><label for="event-q">${T("event_search")}</label><input type="search" id="event-q" maxlength="80" autocomplete="off" placeholder="${T("event_search_ph")}">
 <div id="event-filter" class="chips" role="group" aria-label="${T("event_sources")}" hidden></div>
