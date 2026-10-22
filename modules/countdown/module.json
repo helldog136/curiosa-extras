@@ -928,7 +928,7 @@
       "name": "event_delete",
       "destructive": true,
       "default": false,
-      "description": "Permanently delete a countdown event. It cannot be undone.",
+      "description": "Permanently delete one countdown event, with its page, calendar link and OBS address. It cannot be undone: ask the person first, and check the identifier with events_list.",
       "input": {
         "type": "object",
         "properties": {

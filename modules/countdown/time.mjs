@@ -397,9 +397,17 @@ export function isValidZone(tz) {
   }
 }
 
-/** Le nom du fuseau avec ses majuscules officielles (« europe/paris » → « Europe/Paris »), ou « » s'il n'existe pas. */
-export function canonicalZone(tz) {
+/**
+ * Le nom d'un fuseau avec ses bonnes majuscules (« asia/kolkata » → « Asia/Kolkata »), ou « » s'il n'existe pas.
+ * `known` : liste de noms préférés (ceux des listes du module) ; un nom déjà bien écrit est gardé tel quel (le navigateur
+ * connaît « Asia/Calcutta » avant « Asia/Kolkata » : on ne remplace jamais le choix de la personne par un ancien nom).
+ */
+export function canonicalZone(tz, known = []) {
   if (!isValidZone(tz)) return "";
+  const lower = tz.toLowerCase();
+  const hit = known.find((z) => z.toLowerCase() === lower);
+  if (hit) return hit;
+  if (/^(?:UTC|[A-Z][A-Za-z0-9_+-]*(?:\/[A-Z0-9][A-Za-z0-9_+-]*){1,2})$/.test(tz)) return tz;
   try {
     return new Intl.DateTimeFormat("en-US", { timeZone: tz }).resolvedOptions().timeZone;
   } catch {

@@ -4,6 +4,8 @@
 // (et donc le décalage de l'heure d'été ou d'hiver de CE jour-là) est calculé à la lecture : voir `view()`.
 const V = new URL(import.meta.url).search; // même « version » pour les fichiers voisins : jamais d'ancien code en mémoire après une mise à jour
 const T = await import(`./time.mjs${V}`);
+const { ZONES } = await import(`./zones.mjs${V}`);
+const KNOWN_ZONES = ZONES.map((z) => z[0]);
 
 export const MAX_EVENTS = 100; // plafond de volume : au-delà, on demande de supprimer d'anciens événements
 export const PER_PAGE = 20; // événements par page publique
@@ -197,7 +199,9 @@ export function pickForOverlay(views, now, endMs, slug) {
   const ok = (v) => v.phase === "upcoming" || (v.phase === "started" && now < v.startMs + endMs);
   const list = order(views.filter(ok));
   if (slug) return list.find((v) => v.slug === slug) ?? null;
-  return list.find((v) => v.featured) ?? list[0] ?? null;
+  // Un événement dont l'heure vient de passer garde l'écran pendant son message de fin ; sinon la une, sinon le prochain.
+  const justStarted = list.filter((v) => v.phase === "started");
+  return justStarted.find((v) => v.featured) ?? justStarted[0] ?? list.find((v) => v.featured) ?? list[0] ?? null;
 }
 
 // ── Vérification de ce que la personne a tapé ───────────────────────────────────────────────────────────────────
@@ -227,10 +231,10 @@ export function buildEvent(values, { zone, existing = null, takenSlugs = new Set
   let tz = zone;
   const other = v("tzOther").trim();
   if (other) {
-    tz = T.canonicalZone(other);
+    tz = T.canonicalZone(other, KNOWN_ZONES);
     if (!tz) errors.tzOther = "err_zone";
   } else if (v("tz").trim()) {
-    tz = T.canonicalZone(v("tz").trim());
+    tz = T.canonicalZone(v("tz").trim(), KNOWN_ZONES);
     if (!tz) errors.tz = "err_zone";
   }
 
