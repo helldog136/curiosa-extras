@@ -20,13 +20,13 @@ let n = 0;
 export function world({ audience = true, pollsSettings = {}, audSettings = {}, locale = "fr" } = {}) {
   const state = { down: false, hang: false, calls: [] };
   const pollsServices = {};
-  const audServices = {};
+  const audServices = {}, audInstances = {};
   const polls = fakeCtx({ moduleId: "polls", key: `polls${++n}`, name: "Sondages", basePath: "polls", locale, messages: locale === "fr" ? pollsFr : pollsEn, settings: pollsSettings, services: pollsServices });
   polls.api.store = pollsStore();
   polls.can = () => true;
   let aud = null;
   if (audience) {
-    aud = audienceCtx({ settings: audSettings, locale, services: audServices });
+    aud = audienceCtx({ settings: audSettings, locale, services: audServices, serviceInstances: audInstances });
     // Sondages appelle Participation
     const wrap = (method) => async (args) => {
       state.calls.push([method, args]);
@@ -36,7 +36,9 @@ export function world({ audience = true, pollsSettings = {}, audSettings = {}, l
     };
     pollsServices["audience.session"] = Object.fromEntries(Object.keys(audienceDef.services["audience.session"]).map((m) => [m, wrap(m)]));
     // Participation appelle Sondages (télécommande, tick)
-    audServices["audience.remote"] = Object.fromEntries(Object.keys(pollsDef.services["audience.remote"]).map((m) => [m, async (args) => pollsDef.services["audience.remote"][m](polls, args)]));
+    const remote = Object.fromEntries(Object.keys(pollsDef.services["audience.remote"]).map((m) => [m, async (args) => pollsDef.services["audience.remote"][m](polls, args)]));
+    audServices["audience.remote"] = remote;
+    audInstances["audience.remote"] = [{ instance: "polls", name: "Sondages", module: "polls", methods: remote }];
   }
   return { polls, aud, state, down: (v = true) => { state.down = v; }, hang: (v = true) => { state.hang = v; } };
 }
