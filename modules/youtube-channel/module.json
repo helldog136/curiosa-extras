@@ -5,7 +5,7 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.2.1",
+  "version": "1.3.0",
   "platform": "youtube",
   "description": {
     "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, your videos in the site's RSS feed, and your subscriber, video and view counts. Works with just the channel id; the site's YouTube key, entered once for the whole site, adds the counts, Shorts detection and exact durations.",
@@ -45,6 +45,20 @@
       "label": {
         "en": "YouTube subscribers, videos and views",
         "fr": "Abonnés, vidéos et vues YouTube"
+      }
+    }
+  ],
+  "offers": [
+    {
+      "service": "event.source",
+      "version": 1,
+      "each": true,
+      "readOnly": [
+        "upcoming"
+      ],
+      "label": {
+        "en": "Your scheduled public videos and live streams, for the modules that announce events",
+        "fr": "Vos vidéos et directs publics programmés, pour les modules qui annoncent des événements"
       }
     }
   ],

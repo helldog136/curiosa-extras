@@ -16,5 +16,11 @@
   "err_config_channel": "YouTube cannot find this channel: check the channel id in Settings (it starts with UC).",
   "err_config_connector": "To follow your statistics, the site needs a YouTube key: install what is suggested above, then add your key to it.",
   "suggest_reason": "keeps the site's YouTube key and adds your channel's counts, exact durations and Shorts detection",
-  "key_waiting": "Your YouTube key is kept safe: as soon as this is installed, it will be carried over on its own, nothing to type again."
+  "key_waiting": "Your YouTube key is kept safe: as soon as this is installed, it will be carried over on its own, nothing to type again.",
+  "events_note": "Only public live streams and premieres are visible. A private scheduled video cannot be seen with the site's key: to announce it, write the event yourself.",
+  "events_setup_channel": "Enter your channel id (it starts with UC) in the YouTube channel settings to see your scheduled videos.",
+  "events_setup_connector": "To see your scheduled videos and live streams, the site needs a YouTube key: install what the YouTube channel page offers, then add your key there.",
+  "events_setup_key": "To see your scheduled videos and live streams, add your YouTube key in Settings, on the site's YouTube connector page (it is free).",
+  "events_setup_refused": "The YouTube key is refused: check it in Settings, on the site's YouTube connector page.",
+  "events_setup_update": "To see your scheduled videos, the site's YouTube connector must be updated (Extensions, Check for updates)."
 }

@@ -87,5 +87,11 @@
   "handover_incomplete": "Votre application Twitch n'a pas pu être reprise en entier (il manque l'identifiant ou le secret). Ouvrez le Connecteur Twitch et complétez-la : rien d'autre à faire ici.",
   "cb_noConnector": "Le Connecteur Twitch n'est pas installé : installez-le depuis l'administration de votre site, puis cliquez de nouveau sur « Connecter ma chaîne Twitch ».",
   "cb_down": "Votre site n'a pas pu terminer la connexion. Retournez dans l'administration et cliquez de nouveau sur « Connecter ma chaîne Twitch ».",
-  "connectorMissing": "Le Connecteur Twitch n'est pas disponible pour le moment. Réessayez dans un instant."
+  "connectorMissing": "Le Connecteur Twitch n'est pas disponible pour le moment. Réessayez dans un instant.",
+  "events_untitled": "Stream sur Twitch",
+  "events_empty": "Aucun rendez-vous à venir dans votre planning Twitch. Ajoutez-y vos streams sur Twitch (Tableau de bord, Planning) pour les voir ici.",
+  "events_setup_channel": "Renseignez le nom de votre chaîne dans les réglages de la chaîne Twitch pour voir votre planning Twitch.",
+  "events_setup_connector": "Pour voir votre planning Twitch, il faut que l'application Twitch du site soit réglée : suivez les étapes de la page de la chaîne Twitch.",
+  "events_setup_refused": "Twitch refuse l'application du site : vérifiez ses identifiants sur la page du connecteur Twitch.",
+  "events_setup_update": "Pour voir votre planning Twitch, le connecteur Twitch du site doit être mis à jour (Extensions, Chercher une mise à jour)."
 }

@@ -82,7 +82,7 @@ function parts(value, allowed) {
  * Valide et normalise une demande : { endpoint, query } ou null (refusée sans réseau).
  *   channels.list      part ⊂ snippet,statistics,contentDetails ; `id` (1 à 50 identifiants UC…) OU `forHandle` (un pseudo @nom)
  *   playlistItems.list part ⊂ snippet,contentDetails ; `playlistId` ; `maxResults` 1 à 50 (50 par défaut) ; `pageToken` facultatif
- *   videos.list        part ⊂ snippet,contentDetails,statistics ; `id` (1 à 50 identifiants de vidéo)
+ *   videos.list        part ⊂ snippet,contentDetails,statistics,liveStreamingDetails ; `id` (1 à 50 identifiants de vidéo) — liveStreamingDetails : début programmé d'une première ou d'un direct
  */
 export function normalize(endpoint, params = {}) {
   if (!Object.hasOwn(COSTS, endpoint) || !params || typeof params !== "object") return null;
@@ -109,7 +109,7 @@ export function normalize(endpoint, params = {}) {
     q.maxResults = String(max);
     if (params.pageToken !== undefined) { if (typeof params.pageToken !== "string" || !PAGE_TOKEN_RE.test(params.pageToken)) return null; q.pageToken = params.pageToken; }
   } else {
-    q.part = parts(params.part ?? "contentDetails,statistics", ["snippet", "contentDetails", "statistics"]);
+    q.part = parts(params.part ?? "contentDetails,statistics", ["snippet", "contentDetails", "statistics", "liveStreamingDetails"]);
     const ids = [...new Set(asList(params.id))];
     if (!ids.length || ids.length > LIMITS.maxItems || !ids.every((x) => VIDEO_RE.test(x))) return null;
     q.id = ids.sort().join(",");

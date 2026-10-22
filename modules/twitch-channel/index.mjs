@@ -11,6 +11,7 @@ const connect = await import(new URL(`./connect.mjs${v}`, import.meta.url).href)
 const live = await import(new URL(`./live.mjs${v}`, import.meta.url).href);
 const analytics = await import(new URL(`./analytics.mjs${v}`, import.meta.url).href);
 const hand = await import(new URL(`./handover.mjs${v}`, import.meta.url).href);
+const events = await import(new URL(`./events.mjs${v}`, import.meta.url).href);
 const { LOGIN, valid, liveStatus, recentClips } = helix;
 export const { currentStream } = helix;
 export { recentClips };
@@ -54,7 +55,7 @@ async function credentials(ctx, { wait = true } = {}) {
       const r = await connect.call(ctx, "request", { ...req, channel });
       if (!r.ok) return { error: connect.missingConnector(r) ? "config" : "network" };
       const x = r.value && typeof r.value === "object" ? r.value : {};
-      return x.ok ? { status: x.status, json: x.json } : { error: ["config", "auth", "rate", "network", "scope"].includes(x.error) ? x.error : "network" };
+      return x.ok ? { status: x.status, json: x.json } : { error: ["config", "auth", "rate", "network", "scope", "forbidden"].includes(x.error) ? x.error : "network" };
     },
     async account() {
       const r = await connect.call(ctx, "account", { channel, slot: "main" });
@@ -158,6 +159,23 @@ export default {
   },
 
   services: {
+    "event.source": {
+      /**
+       * Le planning publié sur la chaîne Twitch (contrat commun `event.source`, méthode `upcoming`) :
+       * { ok: true, source: { kind: "twitch", label }, state: "ok" | "setup" | "down", message?, note?, events: [{ id, title, start (UTC), type, url, games? }] }. Ne lève jamais.
+       * Lecture publique (jeton d'application du Connecteur) : rien de privé, aucune autorisation de compte.
+       */
+      async upcoming(ctx, args) {
+        const t = (k) => ctx.t(k), limit = args?.limit;
+        const channel = await channelOf(ctx);
+        if (!LOGIN.test(channel)) return events.answer({ state: "setup", reason: "channel", t, limit });
+        const st = await connectorState(ctx);
+        if (!st.ready) return events.answer({ ...events.failure("config"), t, limit });
+        const r = await helix.channelSchedule(await credentials(ctx));
+        if (r.error) return events.answer({ ...events.failure(r.error), t, limit });
+        return events.answer({ state: "ok", events: events.scheduleEvents(r.data, { channel, untitled: t("events_untitled") }), t, limit });
+      },
+    },
     "twitch.live": {
       /** { channel, url, configured, ready, missing } — la chaîne de cette instance et si Twitch est utilisable (application réglée dans le Connecteur) ; aucun appel réseau. */
       async channel(ctx) {

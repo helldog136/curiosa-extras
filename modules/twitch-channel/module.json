@@ -6,7 +6,7 @@
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.0.2",
+  "version": "2.1.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -41,6 +41,18 @@
         "status"
       ],
       "each": true
+    },
+    {
+      "service": "event.source",
+      "version": 1,
+      "each": true,
+      "readOnly": [
+        "upcoming"
+      ],
+      "label": {
+        "en": "Your Twitch schedule (the appointments published on your channel), for the modules that announce events",
+        "fr": "Votre planning Twitch (les rendez-vous publiés sur votre chaîne), pour les modules qui annoncent des événements"
+      }
     }
   ],
   "provides": [

@@ -153,7 +153,7 @@ function whenText(e) {
 }
 function pill(kind, label) { return h("span", { class: `src src-${kindOf(kind)}`, text: label }); }
 
-function renderChosen() {
+function renderEventChosen() {
   const box = $("event-chosen"), e = selectedStream();
   box.replaceChildren();
   if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.append(m.error ? L("event_none_chosen") : L("event_manual_chosen", { title: m.title, when: whenText(m) })); return; }
@@ -204,7 +204,7 @@ function renderNotes() {
 }
 
 function renderEvents() {
-  renderChosen(); renderFilter(); renderEventList(); renderNotes();
+  renderEventChosen(); renderFilter(); renderEventList(); renderNotes();
   $("manual").hidden = !S.useManual;
   $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
   $("event-manual-toggle").setAttribute("aria-expanded", S.useManual ? "true" : "false");
@@ -257,8 +257,8 @@ async function loadEvents(more, { fresh = false, id = "", key = "" } = {}) {
   renderEvents();
   return r;
 }
-let searchTimer = null;
-function onEventSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { S.ev.q = $("event-q").value.trim().slice(0, 80); loadEvents(false); }, 280); }
+let eventTimer = null;
+function onEventSearch() { clearTimeout(eventTimer); eventTimer = setTimeout(() => { S.ev.q = $("event-q").value.trim().slice(0, 80); loadEvents(false); }, 280); }
 
 /* ───────────── Les co-streamers ───────────── */
 const NET = { twitch: "Twitch", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", discord: "Discord", x: "X", bluesky: "Bluesky", mastodon: "Mastodon" };

@@ -35,7 +35,7 @@ Liste fermée de `request` (toute autre demande : `invalid`, sans réseau) :
 
 - `channels.list` (1 unité) : `part` ⊂ `snippet,statistics,contentDetails` ; `id` (1 à 50 `UC…`) **ou** `forHandle` (`@nom`) ;
 - `playlistItems.list` (1 unité) : `part` ⊂ `snippet,contentDetails` ; `playlistId` ; `maxResults` ≤ 50 ; `pageToken` ;
-- `videos.list` (1 unité) : `part` ⊂ `snippet,contentDetails,statistics` ; `id` (1 à 50).
+- `videos.list` (1 unité) : `part` ⊂ `snippet,contentDetails,statistics,liveStreamingDetails` ; `id` (1 à 50). `liveStreamingDetails` (depuis la 1.1.0) donne l'heure de début programmée d'une première ou d'un direct public ; une vidéo privée programmée reste invisible avec une clé.
 - `search.list` (100 unités) est exclu.
 
 Erreurs : `config` (aucune clé), `auth` (clé refusée : pause de 10 min ou jusqu'au changement de clé), `quota` (budget du jour atteint, ou 403 `quotaExceeded` : rien avant minuit `America/Los_Angeles`, `retryAt`), `rate`, `timeout`, `network`, `circuit`, `busy`, `invalid`, `too_large`. Avec un résultat déjà lu pour la même demande, la réponse est `ok: true` avec `stale: true`, `at` (date de la lecture) et `error`.
