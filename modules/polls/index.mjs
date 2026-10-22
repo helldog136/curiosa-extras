@@ -736,7 +736,8 @@ async function roundsBlocks(ctx, manage, now) {
   }
   const present = await B.present(ctx);
   if (present) {
-    const mine = (await ctx.api.instances.list({ module: "audience" }).catch(() => []))[0];
+    const provider = (await ctx.api.services.providers(B.SERVICE).catch(() => []))[0];
+    const mine = provider ? (await ctx.api.instances.list().catch(() => [])).find((i) => i.key === provider.key) : null;
     out.push({ type: "markdown", tab, text: mine?.adminPath ? ctx.t("audienceOn", { href: mine.adminPath }) : ctx.t("audienceOnPlain") });
   } else out.push({ type: "markdown", text: ctx.t("audienceOff"), tab }, { type: "suggestInstall", service: B.SERVICE, reason: ctx.t("suggestReason"), tab });
   const hist = (await ctx.api.store.page(ROUNDS, { limit: 10 })).items;

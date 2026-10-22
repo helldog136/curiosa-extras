@@ -386,7 +386,7 @@ export default {
       blocks.push(
         { type: "copy", label: ctx.t("remoteAddress"), text: addr },
         { type: "markdown", text: `[${ctx.t("remoteOpen")}](${addr})` },
-        ...(qr ? [{ type: "html", html: `<div style="max-width:200px;background:#fff;padding:10px;border-radius:12px" role="img" aria-label="${esc(ctx.t("qrAlt"))}">${qr}</div>` }] : []),
+        ...(qr ? [{ type: "html", html: `<img src="data:image/svg+xml;base64,${Buffer.from(String(qr)).toString("base64")}" width="200" height="200" alt="${esc(ctx.t("qrAlt"))}" style="background:#fff;padding:10px;border-radius:12px;max-width:100%;height:auto">` }] : []),
         { type: "markdown", text: ctx.t("remoteSecret") },
         { type: "adminForm", action: "regenerate", title: ctx.t("regenTitle"), submitLabel: ctx.t("regenBtn"), fields: [{ name: "confirm", kind: "checkbox", label: ctx.t("regenConfirm"), help: ctx.t("regenHelp") }] },
       );

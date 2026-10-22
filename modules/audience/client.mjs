@@ -69,7 +69,7 @@ export const CLIENT_JS = String.raw`(function () {
   function post(el, path, body) {
     var url = el.getAttribute("data-api") + "/" + path + "?lang=" + encodeURIComponent(el.getAttribute("data-lang") || "");
     return fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), credentials: "omit", signal: signal() })
-      .then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }, function () { return { ok: false, error: "net", status: r.status }; }); });
+      .then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }, function () { return { ok: false, "error": "net", status: r.status }; }); });
   }
   function init(el) {
     var room = el.getAttribute("data-room");
@@ -140,7 +140,7 @@ export const REMOTE_JS = String.raw`(function () {
   }
   function api(path, body) {
     var init = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "omit", signal: signal() } : { cache: "no-store", credentials: "omit", signal: signal() };
-    return fetch(path, init).then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }, function () { return { ok: false, error: "net", status: r.status }; }); });
+    return fetch(path, init).then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }, function () { return { ok: false, "error": "net", status: r.status }; }); });
   }
   function press(panel, action, values, btn, label) {
     if (btn.disabled) return;

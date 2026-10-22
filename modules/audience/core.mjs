@@ -13,6 +13,10 @@ export const GENERAL = "general";
 
 /* ───────────── Mémoire du processus : verrou, limiteur, sel du jour (rien n'est écrit sur le disque) ───────────── */
 
+/** Un refus interne : le code de l'erreur (les méthodes du service le rendent en { ok: false, error }). */
+export const fail = (code) => ({ error: code });
+export const no = (code) => ({ ok: false, error: code });
+
 const chains = (globalThis.__curiosaAudienceLocks ??= new Map());
 export async function withLock(ctx, fn) {
   const key = ctx.instance.key;
@@ -93,7 +97,7 @@ export async function ensureRoom(ctx, key, label, now = Date.now()) {
     const again = await getRoom(ctx, key);
     if (again) return again;
     if ((await ctx.api.store.count(ROOMS)) >= LIMITS.rooms) {
-      if (!(await dropOldestRoom(ctx, now))) return { error: "too_many_rooms" };
+      if (!(await dropOldestRoom(ctx, now))) return fail("too_many_rooms");
     }
     const data = { k: key, label: L.clean(label, LIMITS.label) || key, salt: randomBytes(16).toString("base64url"), gen: 0, count: 0, claims: 0, createdAt: new Date(now).toISOString(), lastAt: new Date(now).toISOString() };
     return { id: await ctx.api.store.add(ROOMS, data, { key }), ...data };
@@ -130,7 +134,7 @@ async function touchRoom(ctx, room, patch, now) {
 export async function clearRoom(ctx, key, now = Date.now()) {
   return withLock(ctx, async () => {
     const room = await getRoom(ctx, key);
-    if (!room) return { ok: false, error: "unknown_room" };
+    if (!room) return no("unknown_room");
     const removed = room.count || 0;
     const meta = await ensureMeta(ctx);
     await saveMeta(ctx, { ...meta, garbage: [...(meta.garbage ?? []), pcol(room), ccol(room)].slice(-60) });
@@ -161,8 +165,8 @@ export async function joinRoom(ctx, room, token, now = Date.now()) {
     const again = await byKey(ctx, pcol(room), pid);
     if (again) return { participant: view(again), isNew: false };
     const fresh = await getRoom(ctx, room.k);
-    if (!fresh || fresh.gen !== room.gen) return { error: "busy" };
-    if ((fresh.count || 0) >= LIMITS.participants) return { error: "room_full" };
+    if (!fresh || fresh.gen !== room.gen) return fail("busy");
+    if ((fresh.count || 0) >= LIMITS.participants) return fail("room_full");
     const iso = new Date(now).toISOString();
     const id = await ctx.api.store.add(pcol(fresh), { k: pid, pseudo: null, pk: null, muted: false, at: iso, last: iso }, { key: pid });
     const first = await byKey(ctx, pcol(fresh), pid);
@@ -175,18 +179,18 @@ export async function joinRoom(ctx, room, token, now = Date.now()) {
 /** Choisit (ou change) le pseudo. Unique dans la salle, sans tenir compte des accents, majuscules et chiffres pour lettres. */
 export async function choosePseudo(ctx, room, token, raw, cfg, now = Date.now()) {
   const v = L.validatePseudo(raw, { min: cfg.min, max: cfg.max, banned: cfg.banned });
-  if (!v.ok) return { error: v.code };
+  if (!v.ok) return fail(v.code);
   const pid = idOf(room, token);
   return withLock(ctx, async () => {
     const rec = await byKey(ctx, pcol(room), pid);
-    if (!rec) return { error: "unknown_participant" };
-    if (rec.data.muted) return { error: "muted" };
+    if (!rec) return fail("unknown_participant");
+    if (rec.data.muted) return fail("muted");
     if (rec.data.pk === v.key) { await ctx.api.store.update(rec.id, { ...rec.data, pseudo: v.value, last: new Date(now).toISOString() }, { key: pid }); return { participant: { id: pid, pseudo: v.value, muted: false } }; }
     const taken = await byKey(ctx, pcol(room), `n:${v.key}`);
-    if (taken && taken.data.id !== pid) return { error: "pseudo_taken" };
+    if (taken && taken.data.id !== pid) return fail("pseudo_taken");
     const nameId = await ctx.api.store.add(pcol(room), { k: `n:${v.key}`, n: true, id: pid }, { key: `n:${v.key}` });
     const first = await byKey(ctx, pcol(room), `n:${v.key}`);
-    if (first && first.id !== nameId) { await ctx.api.store.remove(nameId); return { error: "pseudo_taken" }; }
+    if (first && first.id !== nameId) { await ctx.api.store.remove(nameId); return fail("pseudo_taken"); }
     if (rec.data.pk) { const old = await byKey(ctx, pcol(room), `n:${rec.data.pk}`); if (old && old.data.id === pid) await ctx.api.store.remove(old.id); }
     await ctx.api.store.update(rec.id, { ...rec.data, pseudo: v.value, pk: v.key, last: new Date(now).toISOString() }, { key: pid });
     return { participant: { id: pid, pseudo: v.value, muted: false } };
@@ -203,7 +207,7 @@ export async function setMuted(ctx, room, who, muted) {
       const name = pk ? await byKey(ctx, pcol(room), `n:${pk}`) : null;
       if (name) rec = await byKey(ctx, pcol(room), name.data.id);
     }
-    if (!rec || rec.data.n) return { error: "not_found" };
+    if (!rec || rec.data.n) return fail("not_found");
     await ctx.api.store.update(rec.id, { ...rec.data, muted: muted === true }, { key: rec.data.k });
     return { participant: { id: rec.data.k, pseudo: rec.data.pseudo ?? null, muted: muted === true } };
   });
@@ -237,14 +241,14 @@ export async function claim(ctx, room, token, key, now = Date.now()) {
   const pid = idOf(room, token);
   return withLock(ctx, async () => {
     const rec = await byKey(ctx, pcol(room), pid);
-    if (!rec) return { error: "unknown_participant" };
-    if (rec.data.muted) return { error: "muted" };
+    if (!rec) return fail("unknown_participant");
+    if (rec.data.muted) return fail("muted");
     const mine = await listByKey(ctx, ccol(room), pid, 501);
-    if (mine.some((c) => c.data.ck === key)) return { error: "already" };
-    if (mine.length > 500) return { error: "limit" };
+    if (mine.some((c) => c.data.ck === key)) return fail("already");
+    if (mine.length > 500) return fail("limit");
     const fresh = await getRoom(ctx, room.k);
-    if (!fresh || fresh.gen !== room.gen) return { error: "busy" };
-    if ((fresh.claims || 0) >= LIMITS.claims) return { error: "room_full" };
+    if (!fresh || fresh.gen !== room.gen) return fail("busy");
+    if ((fresh.claims || 0) >= LIMITS.claims) return fail("room_full");
     await ctx.api.store.add(ccol(fresh), { pid, ck: key, at: new Date(now).toISOString() }, { key: pid });
     await touchRoom(ctx, fresh, { claims: (fresh.claims || 0) + 1 }, now);
     return { first: true };
@@ -270,7 +274,7 @@ const LIVE_TTL = { def: 6 * HOUR, max: DAY };
 
 export async function publishLive(ctx, { room, channel, data, public: isPublic, readKey, refreshAt, ttlSec }, now = Date.now()) {
   const json = JSON.stringify(data ?? null);
-  if (json === undefined || json.length > LIMITS.liveBytes) return { error: "too_big" };
+  if (json === undefined || json.length > LIMITS.liveBytes) return fail("too_big");
   const key = liveKey(room, channel);
   const exp = new Date(now + Math.min(LIVE_TTL.max, Math.max(10_000, (Number(ttlSec) || 0) * 1000 || LIVE_TTL.def))).toISOString();
   const kh = readKey ? L.keyHash(readKey) : null;
@@ -290,7 +294,7 @@ export async function publishLive(ctx, { room, channel, data, public: isPublic, 
     if ((await ctx.api.store.count(LIVE)) >= LIMITS.channels) {
       let freed = 0;
       for (const r of await ctx.api.store.list(LIVE, { limit: LIMITS.channels + 20 })) if (Date.parse(r.data.exp) <= now) { await ctx.api.store.remove(r.id); freed++; }
-      if (!freed) return { error: "too_many_channels" };
+      if (!freed) return fail("too_many_channels");
     }
     await ctx.api.store.add(LIVE, { k: key, room, channel, json, public: isPublic === true, kh, refreshAt: due, rev: 1, at: new Date(now).toISOString(), exp }, { key });
     return { rev: 1 };

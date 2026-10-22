@@ -53,17 +53,19 @@ export async function remoteState(ctx, now = Date.now()) {
   return { ok: true, now, panels, rooms };
 }
 
+/** Une réponse de refus de la télécommande : { ok: false, error: code }. */
+const no = (error, extra = {}) => ({ ok: false, error, ...extra });
 const errCode = (v) => (typeof v === "string" && /^[a-z][a-z0-9_]{0,29}$/.test(v) ? v : "failed");
 
 /** Un appui sur un bouton ou un formulaire. Le module visé décide (et valide) ; la réponse est ramenée à { ok, message?, error?, field? }. */
 export async function pressPanel(ctx, { panel, action, values }) {
-  if (typeof action !== "string" || !/^[a-z][a-z0-9_-]{0,29}$/.test(action)) return { ok: false, error: "invalid" };
+  if (typeof action !== "string" || !/^[a-z][a-z0-9_-]{0,29}$/.test(action)) return no("invalid");
   const clean = L.sanitizeValues(values);
   if (panel === "audience") return pressOwn(ctx, action, clean);
   const known = (await providersOf(ctx)).find((p) => p.id === panel);
-  if (!known) return { ok: false, error: "gone" };
+  if (!known) return no("gone");
   const r = await withTimeout(ctx.api.services.call(SERVICE, "press", { action, values: clean, locale: ctx.locale }, { provider: known.id }).catch(() => null), 6000, null);
-  if (!r?.ok || !L.isObj(r.value)) return { ok: false, error: "failed" };
+  if (!r?.ok || !L.isObj(r.value)) return no("failed");
   const v = r.value;
   const out = v.ok === true ? { ok: true, message: L.clean(v.message, 200) } : { ok: false, error: errCode(v.error), message: L.clean(v.message, 200) };
   if (v.field && /^[a-z][a-z0-9_]{0,19}$/.test(String(v.field))) out.field = String(v.field);
@@ -75,22 +77,22 @@ export async function pressPanel(ctx, { panel, action, values }) {
 async function pressOwn(ctx, action, values) {
   if (action === "mute") {
     const room = await K.getRoom(ctx, values.room);
-    if (!room) return { ok: false, error: "gone" };
+    if (!room) return no("gone");
     const muted = values.muted === "1";
     const r = await K.setMuted(ctx, room, { id: values.id }, muted);
-    if (r.error) return { ok: false, error: "gone" };
+    if (r.error) return no("gone");
     K.mem.roomsView = null;
     await K.journal(ctx, { who: "remote", what: muted ? "mute" : "unmute", room: room.k, detail: r.participant.pseudo || "-" });
     return { ok: true, message: ctx.t(muted ? "remoteMuted" : "remoteUnmuted", { name: r.participant.pseudo || ctx.t("anon") }) };
   }
   if (action === "clear") {
     const r = await K.clearRoom(ctx, values.room);
-    if (!r.ok) return { ok: false, error: "gone" };
+    if (!r.ok) return no("gone");
     K.mem.roomsView = null;
     await K.journal(ctx, { who: "remote", what: "clearRoom", room: values.room, detail: `${r.removed}` });
     return { ok: true, message: ctx.t("remoteCleared", { n: r.removed }) };
   }
-  return { ok: false, error: "invalid" };
+  return no("invalid");
 }
 
 /** Demande à tous les modules branchés de rafraîchir leur direct (un seul appel à la fois par canal, réutilisé pendant 1 s : des centaines de lecteurs ne le répètent pas). */
