@@ -224,9 +224,15 @@ test("panneau : vide, il explique par où commencer ; rempli, brouillons / publi
   assert.deepEqual(drafts.rows[0], ["Brouillon ?\nSans thème · FR (manque : EN) · Brouillon de l'assistant"]);
   assert.deepEqual(drafts.rowActions.map((a) => a.label), ["Modifier", "Publier"]);
   assert.deepEqual(pub.rows[0], ["Publiée ?\nFR (manque : EN) · 12 / 4"]);
-  assert.deepEqual(pub.rowActions.map((a) => a.label), ["Modifier", "↑ Haut", "↓ Bas"], "trois boutons au plus par ligne");
+  assert.deepEqual(pub.rowActions.map((a) => a.label), ["Modifier"], "un seul bouton par ligne publiée : lisible sur un téléphone");
   assert.deepEqual(themes.rows, [["Abonnements\nQuestions : 2"]]);
-  assert.deepEqual(themes.rowActions.map((a) => a.label), ["Modifier", "↑ Haut", "↓ Bas"]);
+  assert.deepEqual(themes.rowActions.map((a) => a.label), ["Modifier"]);
+  const order = (await panel(ctx, { order: t })).filter((b) => b.type === "table");
+  assert.equal(order.length, 1, "la vue « ordre » ne montre que la liste à ranger");
+  assert.deepEqual(order[0].rowActions.map((a) => a.label), ["↑ Haut", "↓ Bas"]);
+  assert.deepEqual(order[0].rows.map((r) => r[0]), ["1. Publiée ?", "2. Mal notée ?"]);
+  assert.ok((await panel(ctx)).some((b) => b.type === "links" && b.items[0].href.endsWith(`?order=${t}`)), "le lien vers la vue « ordre »");
+  for (const bad of ["inconnu", "<script>", "themes", "none"]) assert.ok((await panel(ctx, { order: bad })).length > 3, "ordre inconnu ou sans objet : le panneau normal");
   // les boutons rares (retirer, supprimer) sont sous le formulaire de la question
   const idp = items(ctx).find((i) => i.tr.fr.q === "Publiée ?").id;
   const more = tables(await panel(ctx, { edit: idp })).find((t) => t.columns[0] === "Autres actions");
@@ -238,7 +244,7 @@ test("panneau : vide, il explique par où commencer ; rempli, brouillons / publi
   assert.ok(blocks.some((b) => b.type === "markdown" && /questions décrites à Google/.test(b.text)));
   assert.ok(blocks.some((b) => b.type === "copy" && b.text === "https://example.test/faq"));
   // tout ce qui est confirmé l'est en clair
-  for (const t2 of tables(blocks)) assert.ok((t2.rowActions ?? []).length <= 3);
+  for (const t2 of tables(blocks)) assert.ok((t2.rowActions ?? []).length <= 2, "deux boutons au plus par ligne");
 });
 
 test("panneau : « Questions reçues » dans son onglet, brouillons prêts à publier en un clic", async () => {

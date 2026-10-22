@@ -85,6 +85,25 @@ export async function adminPanel(ctx, { query } = {}) {
   const blocks = [];
   const fresh = asked.filter((a) => a.status === "new");
 
+  // Vue « changer l'ordre » : une courte liste avec « ↑ Haut / ↓ Bas » (jamais de glisser-déposer), pour rester lisible sur un téléphone.
+  if (editor && typeof q.order === "string") {
+    const asThemes = q.order === "themes";
+    const list = asThemes ? themes : siblings(items, q.order === "none" ? "" : q.order).filter((i) => q.order !== "none" || !themes.some((t) => t.id === i.theme));
+    const unknown = !asThemes && q.order !== "none" && !themes.some((t) => t.id === q.order);
+    if (list.length > 1 && !unknown) {
+      const name = asThemes ? ctx.t("themesTitle", { count: themes.length }) : q.order === "none" ? ctx.t("noTheme") : themeName(ctx, themes.find((t) => t.id === q.order)) || ctx.t("untitled");
+      blocks.push({ type: "heading", text: ctx.t("orderTitle", { name }) });
+      blocks.push({ type: "markdown", text: ctx.t("orderHelp") });
+      blocks.push({
+        type: "table", columns: [ctx.t(asThemes ? "colTheme" : "colQuestion")],
+        rows: list.map((x, n) => [`${n + 1}. ${asThemes ? themeName(ctx, x) || ctx.t("untitled") : titleOf(ctx, x)}`]),
+        rowIds: list.map((x) => x.id), rowActions: [{ label: ctx.t("actUp"), action: asThemes ? "themeUp" : "moveUp" }, { label: ctx.t("actDown"), action: asThemes ? "themeDown" : "moveDown" }],
+      });
+      blocks.push({ type: "links", items: [{ label: ctx.t("orderDone"), href: here(ctx) }] });
+      return blocks;
+    }
+  }
+
   if (fresh.length) blocks.push({ type: "banner", tone: "info", text: ctx.t("bannerNew", { count: fresh.length }), href: `${here(ctx)}?tab=inbox` });
 
   // Le formulaire demandé par l'adresse : ?edit=<question> · ?new=1 · ?answer=<question reçue>
@@ -135,13 +154,14 @@ export async function adminPanel(ctx, { query } = {}) {
   for (const g of groups) {
     if (!g.items.length) continue;
     const actions = [];
-    if (editor) actions.push({ label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actUp"), action: "moveUp" }, { label: ctx.t("actDown"), action: "moveDown" });
+    if (editor) actions.push({ label: ctx.t("actEdit"), href: "?edit={id}" });
     if (themes.length) blocks.push({ type: "heading", text: g.name });
     blocks.push({
       type: "table", columns: [ctx.t("colQuestion")],
       rows: g.items.map((i) => [`${titleOf(ctx, i)}\n${langsCell(ctx, i)} · ${ctx.t("votesCell", { yes: i.y, no: i.n })}`]),
       rowIds: g.items.map((i) => i.id), rowActions: actions,
     });
+    if (editor && g.items.length > 1) blocks.push({ type: "links", items: [{ label: ctx.t("linkOrder"), href: `${here(ctx)}?order=${g.theme ? g.theme.id : "none"}` }] });
   }
   if (published.some((i) => i.n >= 3 && i.n > i.y)) blocks.push({ type: "markdown", text: ctx.t("votesHint") });
 
@@ -150,12 +170,13 @@ export async function adminPanel(ctx, { query } = {}) {
   blocks.push({ type: "markdown", text: ctx.t(themes.length ? "themesHelp" : "themesNone") });
   if (themes.length) {
     const actions = [];
-    if (editor) actions.push({ label: ctx.t("actEdit"), href: "?theme={id}" }, { label: ctx.t("actUp"), action: "themeUp" }, { label: ctx.t("actDown"), action: "themeDown" });
+    if (editor) actions.push({ label: ctx.t("actEdit"), href: "?theme={id}" });
     blocks.push({
       type: "table", columns: [ctx.t("colTheme")],
       rows: themes.map((t) => [`${themeName(ctx, t) || ctx.t("untitled")}\n${ctx.t("themeCount", { count: items.filter((i) => i.theme === t.id).length })}`]),
       rowIds: themes.map((t) => t.id), rowActions: actions,
     });
+    if (editor && themes.length > 1) blocks.push({ type: "links", items: [{ label: ctx.t("linkOrderThemes"), href: `${here(ctx)}?order=themes` }] });
   }
   const editedTheme = typeof q.theme === "string" ? themes.find((t) => t.id === q.theme) : undefined;
   if (editor) blocks.push(themeForm(ctx, editedTheme));

@@ -77,7 +77,7 @@
   "confirmDismiss": "Écarter cette question reçue ? Elle sera effacée.",
   "confirmPublish": "Publier cette réponse sur le site ?",
   "themesTitle": "Thèmes ({count})",
-  "themesHelp": "Les thèmes regroupent les questions sur la page. Changez leur ordre avec « ↑ Haut » et « ↓ Bas ».",
+  "themesHelp": "Les thèmes regroupent les questions sur la page. Changez leur ordre avec « Changer l'ordre des thèmes ».",
   "themesNone": "Pas de thème pour l'instant : les questions s'affichent à la suite. Ajoutez un thème (par exemple « Abonnements ») pour les regrouper.",
   "themeNewTitle": "Ajouter un thème",
   "themeEditTitle": "Modifier le thème",
@@ -133,5 +133,10 @@
   "markupInfo": "Moteurs de recherche : questions décrites à Google et aux autres moteurs : {count}.",
   "markupPartial": "Moteurs de recherche : questions décrites à Google et aux autres moteurs : {count}. {omitted} n'y figurent pas (réponse trop longue ou trop de questions) mais restent visibles sur la page.",
   "themeCount": "Questions : {count}",
-  "colOther": "Autres actions"
+  "colOther": "Autres actions",
+  "linkOrder": "Changer l'ordre de ces questions",
+  "linkOrderThemes": "Changer l'ordre des thèmes",
+  "orderTitle": "Ordre : {name}",
+  "orderHelp": "Cliquez sur « ↑ Haut » ou « ↓ Bas » pour déplacer une ligne. L'ordre est celui de la page publique.",
+  "orderDone": "Terminé"
 }

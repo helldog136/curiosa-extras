@@ -77,7 +77,7 @@
   "confirmDismiss": "Dismiss this received question? It will be erased.",
   "confirmPublish": "Publish this answer on the site?",
   "themesTitle": "Categories ({count})",
-  "themesHelp": "Categories group the questions on the page. Change their order with “↑ Up” and “↓ Down”.",
+  "themesHelp": "Categories group the questions on the page. Change their order with “Change the order of the categories”.",
   "themesNone": "No category yet: the questions are shown one after the other. Add a category (for example “Subscriptions”) to group them.",
   "themeNewTitle": "Add a category",
   "themeEditTitle": "Edit the category",
@@ -133,5 +133,10 @@
   "markupInfo": "Search engines: questions described to Google and the other engines: {count}.",
   "markupPartial": "Search engines: questions described to Google and the other engines: {count}. {omitted} are left out (answer too long or too many questions) but stay visible on the page.",
   "themeCount": "Questions: {count}",
-  "colOther": "Other actions"
+  "colOther": "Other actions",
+  "linkOrder": "Change the order of these questions",
+  "linkOrderThemes": "Change the order of the categories",
+  "orderTitle": "Order: {name}",
+  "orderHelp": "Click “↑ Up” or “↓ Down” to move a line. The order is the one of the public page.",
+  "orderDone": "Done"
 }
