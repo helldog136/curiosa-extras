@@ -26,7 +26,8 @@ const clean = (v, max, multiline = false) => {
 const num = (v, def, min, max) => { const n = Number(v); return v === undefined || v === null || v === "" || !Number.isFinite(n) ? def : Math.min(max, Math.max(min, Math.trunc(n))); };
 const safeHttps = (v) => (typeof v === "string" && /^https:\/\//.test(v) ? v : null);
 // Dernière entrée de l'en-tête : celle qu'ajoute le relais de confiance (le début vient du visiteur et peut être inventé).
-const ipOf = (request) => request.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean).pop() || "local";
+// Empreinte du visiteur fournie par le cœur (0.2.6) : adresse de confiance, salée, jamais gardée en clair.
+const whoOf = (request, ctx, scope) => ctx.api.visitor.fingerprint(request, scope);
 export const isStatus = (v) => STATUSES.includes(v);
 
 const memory = new Map();           // limiteurs en mémoire : un garde-fou, pas un pare-feu
@@ -190,7 +191,7 @@ export default {
   routes: {
     async suggest(request, ctx) {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      if (limited(`s|${ctx.instance.key}|${ipOf(request)}`, num(ctx.setting("rateLimit"), 5, 1, 100), HOUR)) return Response.json({ ok: false }, { status: 429 });
+      if (limited(`s|${ctx.instance.key}|${whoOf(request, ctx, "suggest")}`, num(ctx.setting("rateLimit"), 5, 1, 100), HOUR)) return Response.json({ ok: false }, { status: 429 });
       let form; try { form = await request.formData(); } catch { return Response.json({ ok: false }, { status: 400 }); }
       if (String(form.get("website") ?? "")) return Response.json({ ok: true });          // piège à robots
       const title = clean(form.get("title"), 100);
@@ -216,7 +217,7 @@ export default {
       const cookie = /(?:^|;\s*)vh_gs_votes=([^;]*)/.exec(request.headers.get("cookie") ?? "")?.[1];
       let mine = []; try { mine = JSON.parse(decodeURIComponent(cookie ?? "[]")).filter((t) => Number.isFinite(t) && now - t < MONTH); } catch { mine = []; }
       // Le cookie seul se contourne (on l'efface) : une mémoire par adresse le double.
-      if (mine.length >= max || limited(`v|${ctx.instance.key}|${ipOf(request)}`, max, MONTH, now)) return new Response("Too many votes", { status: 429 });
+      if (mine.length >= max || limited(`v|${ctx.instance.key}|${whoOf(request, ctx, "vote")}`, max, MONTH, now)) return new Response("Too many votes", { status: 429 });
       await ctx.api.store.update(record.id, { ...record.data, replayVotes: (Number(record.data.replayVotes) || 0) + 1, lastVotedAt: new Date(now).toISOString() });
       mine.push(now);
       back.headers.append("Set-Cookie", `${COOKIE}=${encodeURIComponent(JSON.stringify(mine))}; Path=/; Max-Age=${30 * 86400}; SameSite=Lax; HttpOnly`);

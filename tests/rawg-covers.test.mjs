@@ -218,8 +218,8 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
 test("game-suggestions : manifeste valide, version et données montées, permission rawg, clé RAWG du module seulement en legacySettings (secret, jamais affichée), textes fr/en alignés", () => {
   const m = readJson("game-suggestions/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.2.2");
-  assert.equal(m.minCore, "0.2.2");
+  assert.equal(m.version, "1.2.3");
+  assert.equal(m.minCore, "0.2.6");
   assert.equal(m.dataVersion, 2);
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"), "plus de champ visible");
   assert.deepEqual(m.legacySettings, [{ key: "rawgApiKey", secret: true }]);

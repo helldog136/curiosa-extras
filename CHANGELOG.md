@@ -4,6 +4,23 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.14.0
+
+*Finitions des modules existants : des limites anti-abus qui ne se contournent plus, la vie privée mieux expliquée, des textes d'aide plus justes. Pour Curiosa 0.2.6 ou plus.*
+
+### Améliorations
+
+- **Les limites anti-abus ne se contournent plus.** Le formulaire de contact (1.0.3), les suggestions de jeux (1.2.3) et le livre d'or d'exemple (1.0.5) comptent les essais d'un visiteur grâce à l'identifiant discret que fournit désormais votre site (Curiosa 0.2.6), et non plus d'après une adresse que le visiteur pouvait inventer. Cet identifiant ne permet jamais de retrouver l'adresse, change chaque jour et n'est pas partagé d'un module à l'autre. Ces trois modules demandent donc Curiosa 0.2.6.
+- **La page « Politique de confidentialité » parle des services d'autres sites.** « Statut live » 1.3.2 (lecteur Twitch), « Ma Chaîne YouTube » 1.2.2 (vignettes YouTube), « Planning » 2.2.2 et « Suggestions de jeux » (jaquettes RAWG) disent en mots simples que le navigateur du visiteur contacte ces services pour afficher l'image ou le lecteur.
+- **Textes d'aide plus justes** : « Press kit » 1.0.1 et « Discord » 1.1.4 ne renvoient plus à un endroit imprécis (« ici », « le bouton ci-dessus »).
+
+### Pour les développeurs
+
+- `contact-form` 1.0.3, `game-suggestions` 1.2.3 et l'exemple `guestbook` 1.0.5 : le débit se compte par `ctx.api.visitor.fingerprint(request, portée)` (portées `envoi`, `suggest` / `vote`, `sign`) ; plus aucune lecture de `X-Forwarded-For`. `minCore` 0.2.6 (l'API est protégée par `minCore`, pas de repli). La règle du kit `routes.visitorIp` est satisfaite par ces trois modules ; aucun autre module du dépôt ne lit d'en-tête d'adresse.
+- Nouveau `tests/visitor-fingerprint.test.mjs` : un double espion de `ctx.api.visitor.fingerprint` désigne le visiteur ; il prouve que la limite suit l'empreinte et non l'en-tête, que les portées sont celles ci-dessus, qu'aucun des trois fichiers ne contient d'en-tête d'adresse et que `minCore` vaut 0.2.6 au moins. Il échoue sur le code de la 1.13.0.
+- Déclaration `privacy` (FR+EN) de ce que le navigateur charge chez un tiers : `live-status` 1.3.2, `youtube-channel` 1.2.2, `planning` 2.2.2, `game-suggestions` (jaquettes RAWG). Textes d'aide : `press-kit` 1.0.1, `discord` 1.1.4.
+- `catalogue/index.json` régénéré.
+
 ## 1.13.0
 
 *Ajout rapide d'une chaîne dans Raid Twitch, et des pages de module mieux rangées, pour Curiosa 0.2.5 ou plus.*
@@ -68,7 +85,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **Aucun écran ne déborde sur téléphone** : les tableaux n'ont qu'une colonne et les textes longs passent à la ligne.
 - **Quand un service (Twitch, YouTube, Bluesky) ne répond pas ou demande une pause**, la fiche s'ouvre quand même et garde ses dernières données ; elle ne réessaie pas avant 10 minutes.
 - **Le dock ne change pas** : mêmes membres en direct, même tri, même bouton « au hasard » au-delà de 500 chaînes, même adresse secrète. Seule l'origine de la liste change.
-- **La page de Raid est plus simple** : le nombre de chaînes, l'état du dock et un lien « Gérer mes partenaires dans Contacts ». Ajouter, importer, chercher ou retirer des partenaires se fait dans Contacts.
+- **La page de Raid est plus simple** : le nombre de chaînes, l'état du dock et un lien « Gérer mes partenaires dans Contacts ». Ajouter, importer, chercher ou retirer des partenaires se fait dans Contacts. (Depuis la 1.13.0, un champ « Ajouter une chaîne » et un bouton « Retirer » existent aussi dans Raid.)
 - **Si la catégorie choisie disparaît**, la page et le dock disent « La catégorie choisie n'existe plus, choisissez-en une » ; si elle a été fusionnée avec une autre, Raid suit tout seul. **Si Contacts ne répond pas un moment**, le dock garde la dernière liste connue (10 minutes au plus) puis le dit clairement. **Sans Contacts**, la page propose de l'installer.
 - **Vie privée** : une personne effacée dans Contacts est aussi retirée de ce que Raid garde, et l'export « tout ce que le site sait de cette personne » inclut la part de Raid.
 - **Votre liste de co-streamers passe dans Contacts toute seule.** À la mise à jour, chaque personne de « Ma liste de co-streamers » devient une fiche de Contacts (ou retrouve celle qu'elle avait déjà), avec sa photo, et vos modèles enregistrés suivent. Rien n'est perdu : si Contacts n'est pas installé, la liste reste, elle est proposée comme « ponctuels », et le passage se fait dès que Contacts arrive. Le faire deux fois ne crée aucun doublon.
@@ -88,9 +105,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Nouveaux fichiers : `csv.mjs`, `import.mjs` (`stage`, `step("preview" | "run")`, `evaluate` unique pour l'aperçu et l'import), `export.mjs` et `downloads.mjs` (`adminDownloads` : `contacts` avec le droit `export`, `template`, `importReport`, `person`), `dedupe.mjs` (`planMerge` partagé avec `merge`), `privacy.mjs`, `photos.mjs`, écrans `*-admin.mjs`.
 - Bornes : import 100 000 lignes, paquets de 200, 100 lignes par verrou, 8 s par pas, un pas abandonné au bout de 28 s si le stockage ne répond plus ; export par pages de 500 ; doublons 20 groupes par page, 5 000 gardés ; photos 6 s, 10 comptes par service. Mesures à 2 000, 10 000 et 100 000 fiches dans `tests/contacts-volume.test.mjs` (stockage en mémoire fidèle au contrat 5).
 - L'index mémoire garde l'e-mail de chaque fiche (`m`) pour le détecteur.
-- `twitch-raid` 2.0.0 : `minCore` 0.2.1, `dataVersion` 3 (migration `3` : `upsertByAccount` par lots de 100 avec point de reprise `contactsMigration`, idempotente, ne lève pas pour une panne de Contacts, ancien document `partners` intact ; à retirer en phase 3). `requires` : `contact.book` `min: 2` (dur) ; `offers` : `privacy.subject` (`each`). Nouveau réglage `category` (`choice`, source `service` `categories` / `categoriesResolve` / `createCategory`, `allowCreate`, `refersTo: "category"`, facultatif). Raid n'appelle jamais `createCategory` lui-même.
+- `twitch-raid` 2.0.0 : `minCore` 0.2.1, `dataVersion` 3 (migration `3` : `upsertByAccount` par lots de 100 avec point de reprise `contactsMigration`, idempotente, ne lève pas pour une panne de Contacts, ancien document `partners` intact ; à retirer en phase 3). `requires` : `contact.book` `min: 2` (dur) ; `offers` : `privacy.subject` (`each`). Nouveau réglage `category` (`choice`, source `service` `categories` / `categoriesResolve` / `createCategory`, `allowCreate`, `refersTo: "category"`, facultatif). Raid n'appelle `createCategory` que depuis une action d'administration, avec le droit de la personne connectée (`asCaller`, cœur 0.2.4 ; voir 1.13.0).
 - La liste est lue par `accounts({ network: "twitch", categoryId, cursor, limit: 500 })` (10 000 comptes au plus), gardée 30 s et partagée, bornée (4,5 s), avec la dernière liste connue 10 minutes en cas de panne. La logique du dock (paquets de 100, 3 en parallèle, mode « au hasard », souvenir d'une minute, plafond) est inchangée.
-- Sortis : l'administration de la liste (ajout, import par collage, pages, recherche, monter/descendre), `backup.readable`, l'appel `GET users` (photos lues dans Contacts).
+- Sortis en 1.12.0 (l'ajout rapide, le retrait et la liste par pages reviennent en 1.13.0) : l'administration de la liste (ajout, import par collage, pages, recherche, monter/descendre), `backup.readable`, l'appel `GET users` (photos lues dans Contacts).
 - Délais du dock dans le navigateur : 14 s pour `live`, 18 s pour `pick` (lecture de Contacts comprise).
 - `stream-story` 2.0.0 (`minCore` 0.2.1, `dataVersion` 2) : `requires: [{ service: "contact.book", min: 2, optional: true }]`, `offers: [{ service: "privacy.subject", each: true }]` (export, effacement et suivi des fusions sur les références gardées dans les modèles et les préparations). Le sujet `stream.partner` n'est plus consommé (aucun autre module du dépôt ne le lisait) : le module Raid peut cesser de l'offrir.
 - Un co-streamer d'une vidéo est `{ id }` (référence de fiche, rien d'autre) ou `{ login, name, image }` (saisie pour cette vidéo seulement) ; un modèle de la version 1 (liste de pseudos) reste lisible. Nouvelles routes de l'éditeur : `people`, `members`, `categories`, `category` ; `costreamer.*` et `costreamers.import` disparaissent. Le document `story_costreamers` n'existe plus qu'avant la migration ; `story_adhoc` (20 au plus) garde les personnes que Contacts n'a pas pu accueillir.

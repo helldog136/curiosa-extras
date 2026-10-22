@@ -5,8 +5,8 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.2.2",
-  "minCore": "0.2.2",
+  "version": "1.2.3",
+  "minCore": "0.2.6",
   "description": {
     "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played, covers fetched from RAWG.",
     "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués, des jaquettes récupérées via RAWG."
