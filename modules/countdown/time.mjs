@@ -351,8 +351,9 @@ export function bootOverlay(win, doc, cfg) {
 
   function poll() {
     win.clearTimeout(pollTimer);
+    pollTimer = null;
+    if (doc.hidden) return; // source cachée : on ne demande rien, on reprend au retour
     pollTimer = win.setTimeout(poll, cfg.poll);
-    if (doc.hidden) return;
     var perf = win.performance, t0 = perf ? perf.now() : 0, d0 = win.Date.now();
     try {
       win.fetch(cfg.stateUrl, { cache: "no-store", credentials: "omit" })
