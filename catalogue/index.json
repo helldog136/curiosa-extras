@@ -236,6 +236,21 @@
       }
     },
     {
+      "id": "countdown",
+      "name": "Compte à rebours",
+      "description": "Annoncez une sortie, un lancement, un anniversaire ou une convention : vos visiteurs voient le temps qui reste et l'heure chez eux, et peuvent l'ajouter à leur agenda. Une page, un morceau d'accueil et une source pour OBS.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/countdown",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "⏳",
+      "requires": {
+        "core": "0.2.5"
+      }
+    },
+    {
       "id": "discord",
       "name": "Discord",
       "description": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs.",
