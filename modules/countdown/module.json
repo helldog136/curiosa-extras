@@ -1,0 +1,952 @@
+{
+  "apiVersion": 2,
+  "id": "countdown",
+  "name": {
+    "fr": "Compte à rebours",
+    "en": "Countdown"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention : vos visiteurs voient le temps qui reste et l'heure chez eux, et peuvent l'ajouter à leur agenda. Une page, un morceau d'accueil et une source pour OBS.",
+    "en": "Announce a release, a launch, a birthday or a convention: visitors see the time left and the time where they live, and can add it to their calendar. A page, a home section and an OBS source."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "⏳",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "multiple",
+  "page": true,
+  "basePath": "countdown",
+  "permissions": [
+    "slots",
+    "sections",
+    "pages",
+    "routes",
+    "storage",
+    "overlay",
+    "mcp",
+    "admin"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mes événements",
+        "en": "My events"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "timezone",
+      "type": "select",
+      "default": "Europe/Paris",
+      "options": [
+        {
+          "value": "Europe/Paris",
+          "label": {
+            "fr": "Belgique, France, Allemagne, Espagne, Italie, Pays-Bas… (Europe/Paris)",
+            "en": "Belgium, France, Germany, Spain, Italy, Netherlands… (Europe/Paris)"
+          }
+        },
+        {
+          "value": "Europe/London",
+          "label": {
+            "fr": "Londres, Dublin (Europe/London)",
+            "en": "London, Dublin (Europe/London)"
+          }
+        },
+        {
+          "value": "Europe/Lisbon",
+          "label": {
+            "fr": "Lisbonne (Europe/Lisbon)",
+            "en": "Lisbon (Europe/Lisbon)"
+          }
+        },
+        {
+          "value": "Europe/Athens",
+          "label": {
+            "fr": "Athènes, Helsinki, Kiev, Bucarest (Europe/Athens)",
+            "en": "Athens, Helsinki, Kyiv, Bucharest (Europe/Athens)"
+          }
+        },
+        {
+          "value": "Europe/Moscow",
+          "label": {
+            "fr": "Moscou (Europe/Moscow)",
+            "en": "Moscow (Europe/Moscow)"
+          }
+        },
+        {
+          "value": "Europe/Istanbul",
+          "label": {
+            "fr": "Istanbul (Europe/Istanbul)",
+            "en": "Istanbul (Europe/Istanbul)"
+          }
+        },
+        {
+          "value": "Atlantic/Reykjavik",
+          "label": {
+            "fr": "Reykjavik (Atlantic/Reykjavik)",
+            "en": "Reykjavik (Atlantic/Reykjavik)"
+          }
+        },
+        {
+          "value": "Africa/Casablanca",
+          "label": {
+            "fr": "Casablanca (Africa/Casablanca)",
+            "en": "Casablanca (Africa/Casablanca)"
+          }
+        },
+        {
+          "value": "Africa/Algiers",
+          "label": {
+            "fr": "Alger, Tunis (Africa/Algiers)",
+            "en": "Algiers, Tunis (Africa/Algiers)"
+          }
+        },
+        {
+          "value": "Africa/Lagos",
+          "label": {
+            "fr": "Lagos, Kinshasa, Douala (Africa/Lagos)",
+            "en": "Lagos, Kinshasa, Douala (Africa/Lagos)"
+          }
+        },
+        {
+          "value": "Africa/Cairo",
+          "label": {
+            "fr": "Le Caire (Africa/Cairo)",
+            "en": "Cairo (Africa/Cairo)"
+          }
+        },
+        {
+          "value": "Africa/Johannesburg",
+          "label": {
+            "fr": "Johannesburg (Africa/Johannesburg)",
+            "en": "Johannesburg (Africa/Johannesburg)"
+          }
+        },
+        {
+          "value": "Africa/Nairobi",
+          "label": {
+            "fr": "Nairobi (Africa/Nairobi)",
+            "en": "Nairobi (Africa/Nairobi)"
+          }
+        },
+        {
+          "value": "America/St_Johns",
+          "label": {
+            "fr": "Terre-Neuve (Saint-Jean) (America/St_Johns)",
+            "en": "Newfoundland (St. John's) (America/St_Johns)"
+          }
+        },
+        {
+          "value": "America/Halifax",
+          "label": {
+            "fr": "Halifax (America/Halifax)",
+            "en": "Halifax (America/Halifax)"
+          }
+        },
+        {
+          "value": "America/New_York",
+          "label": {
+            "fr": "New York, Montréal, Toronto (America/New_York)",
+            "en": "New York, Montreal, Toronto (America/New_York)"
+          }
+        },
+        {
+          "value": "America/Chicago",
+          "label": {
+            "fr": "Chicago, Winnipeg (America/Chicago)",
+            "en": "Chicago, Winnipeg (America/Chicago)"
+          }
+        },
+        {
+          "value": "America/Denver",
+          "label": {
+            "fr": "Denver, Calgary (America/Denver)",
+            "en": "Denver, Calgary (America/Denver)"
+          }
+        },
+        {
+          "value": "America/Phoenix",
+          "label": {
+            "fr": "Phoenix (America/Phoenix)",
+            "en": "Phoenix (America/Phoenix)"
+          }
+        },
+        {
+          "value": "America/Los_Angeles",
+          "label": {
+            "fr": "Los Angeles, Vancouver (America/Los_Angeles)",
+            "en": "Los Angeles, Vancouver (America/Los_Angeles)"
+          }
+        },
+        {
+          "value": "America/Anchorage",
+          "label": {
+            "fr": "Anchorage (America/Anchorage)",
+            "en": "Anchorage (America/Anchorage)"
+          }
+        },
+        {
+          "value": "Pacific/Honolulu",
+          "label": {
+            "fr": "Honolulu (Pacific/Honolulu)",
+            "en": "Honolulu (Pacific/Honolulu)"
+          }
+        },
+        {
+          "value": "America/Mexico_City",
+          "label": {
+            "fr": "Mexico (America/Mexico_City)",
+            "en": "Mexico City (America/Mexico_City)"
+          }
+        },
+        {
+          "value": "America/Bogota",
+          "label": {
+            "fr": "Bogota, Lima, Quito (America/Bogota)",
+            "en": "Bogota, Lima, Quito (America/Bogota)"
+          }
+        },
+        {
+          "value": "America/Santiago",
+          "label": {
+            "fr": "Santiago (America/Santiago)",
+            "en": "Santiago (America/Santiago)"
+          }
+        },
+        {
+          "value": "America/Sao_Paulo",
+          "label": {
+            "fr": "São Paulo, Brasilia (America/Sao_Paulo)",
+            "en": "São Paulo, Brasilia (America/Sao_Paulo)"
+          }
+        },
+        {
+          "value": "America/Argentina/Buenos_Aires",
+          "label": {
+            "fr": "Buenos Aires (America/Argentina/Buenos_Aires)",
+            "en": "Buenos Aires (America/Argentina/Buenos_Aires)"
+          }
+        },
+        {
+          "value": "Asia/Dubai",
+          "label": {
+            "fr": "Dubaï, Abou Dabi (Asia/Dubai)",
+            "en": "Dubai, Abu Dhabi (Asia/Dubai)"
+          }
+        },
+        {
+          "value": "Asia/Karachi",
+          "label": {
+            "fr": "Karachi, Tachkent (Asia/Karachi)",
+            "en": "Karachi, Tashkent (Asia/Karachi)"
+          }
+        },
+        {
+          "value": "Asia/Kolkata",
+          "label": {
+            "fr": "Inde (Delhi, Bombay) (Asia/Kolkata)",
+            "en": "India (Delhi, Mumbai) (Asia/Kolkata)"
+          }
+        },
+        {
+          "value": "Asia/Dhaka",
+          "label": {
+            "fr": "Dacca (Asia/Dhaka)",
+            "en": "Dhaka (Asia/Dhaka)"
+          }
+        },
+        {
+          "value": "Asia/Bangkok",
+          "label": {
+            "fr": "Bangkok, Hanoï (Asia/Bangkok)",
+            "en": "Bangkok, Hanoi (Asia/Bangkok)"
+          }
+        },
+        {
+          "value": "Asia/Jakarta",
+          "label": {
+            "fr": "Jakarta (Asia/Jakarta)",
+            "en": "Jakarta (Asia/Jakarta)"
+          }
+        },
+        {
+          "value": "Asia/Singapore",
+          "label": {
+            "fr": "Singapour, Kuala Lumpur (Asia/Singapore)",
+            "en": "Singapore, Kuala Lumpur (Asia/Singapore)"
+          }
+        },
+        {
+          "value": "Asia/Hong_Kong",
+          "label": {
+            "fr": "Hong Kong (Asia/Hong_Kong)",
+            "en": "Hong Kong (Asia/Hong_Kong)"
+          }
+        },
+        {
+          "value": "Asia/Shanghai",
+          "label": {
+            "fr": "Pékin, Shanghai, Taipei (Asia/Shanghai)",
+            "en": "Beijing, Shanghai, Taipei (Asia/Shanghai)"
+          }
+        },
+        {
+          "value": "Asia/Manila",
+          "label": {
+            "fr": "Manille (Asia/Manila)",
+            "en": "Manila (Asia/Manila)"
+          }
+        },
+        {
+          "value": "Asia/Seoul",
+          "label": {
+            "fr": "Séoul (Asia/Seoul)",
+            "en": "Seoul (Asia/Seoul)"
+          }
+        },
+        {
+          "value": "Asia/Tokyo",
+          "label": {
+            "fr": "Tokyo, Osaka (Asia/Tokyo)",
+            "en": "Tokyo, Osaka (Asia/Tokyo)"
+          }
+        },
+        {
+          "value": "Australia/Perth",
+          "label": {
+            "fr": "Perth (Australia/Perth)",
+            "en": "Perth (Australia/Perth)"
+          }
+        },
+        {
+          "value": "Australia/Adelaide",
+          "label": {
+            "fr": "Adélaïde (Australia/Adelaide)",
+            "en": "Adelaide (Australia/Adelaide)"
+          }
+        },
+        {
+          "value": "Australia/Sydney",
+          "label": {
+            "fr": "Sydney, Melbourne (Australia/Sydney)",
+            "en": "Sydney, Melbourne (Australia/Sydney)"
+          }
+        },
+        {
+          "value": "Pacific/Auckland",
+          "label": {
+            "fr": "Auckland, Wellington (Pacific/Auckland)",
+            "en": "Auckland, Wellington (Pacific/Auckland)"
+          }
+        },
+        {
+          "value": "Pacific/Fiji",
+          "label": {
+            "fr": "Fidji (Pacific/Fiji)",
+            "en": "Fiji (Pacific/Fiji)"
+          }
+        },
+        {
+          "value": "UTC",
+          "label": {
+            "fr": "Heure universelle (UTC) (UTC)",
+            "en": "Universal time (UTC) (UTC)"
+          }
+        }
+      ],
+      "label": {
+        "fr": "Mon fuseau horaire",
+        "en": "My time zone"
+      },
+      "help": {
+        "fr": "C'est le fuseau des heures que vous écrivez. Le passage à l'heure d'été et d'hiver est géré tout seul. Vous pouvez choisir un autre fuseau pour un événement précis.",
+        "en": "This is the time zone of the times you write. Summer and winter time changes are handled for you. You can pick another zone for a single event."
+      }
+    },
+    {
+      "key": "timezoneOther",
+      "type": "text",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "fr": "Autre fuseau (nom officiel)",
+        "en": "Other time zone (official name)"
+      },
+      "help": {
+        "fr": "Seulement si le vôtre n'est pas dans la liste, par exemple Asia/Kolkata ou America/Montreal. Il remplace le choix ci-dessus.",
+        "en": "Only if yours is not in the list, for example Asia/Kolkata or America/Montreal. It replaces the choice above."
+      }
+    },
+    {
+      "key": "keep",
+      "type": "select",
+      "default": "1d",
+      "options": [
+        {
+          "value": "1h",
+          "label": {
+            "fr": "1 heure",
+            "en": "1 hour"
+          }
+        },
+        {
+          "value": "6h",
+          "label": {
+            "fr": "6 heures",
+            "en": "6 hours"
+          }
+        },
+        {
+          "value": "1d",
+          "label": {
+            "fr": "1 jour",
+            "en": "1 day"
+          }
+        },
+        {
+          "value": "3d",
+          "label": {
+            "fr": "3 jours",
+            "en": "3 days"
+          }
+        },
+        {
+          "value": "7d",
+          "label": {
+            "fr": "1 semaine",
+            "en": "1 week"
+          }
+        },
+        {
+          "value": "30d",
+          "label": {
+            "fr": "1 mois",
+            "en": "1 month"
+          }
+        },
+        {
+          "value": "never",
+          "label": {
+            "fr": "Jamais (je les supprime moi-même)",
+            "en": "Never (I delete them myself)"
+          }
+        }
+      ],
+      "label": {
+        "fr": "Garder un événement affiché une fois passé",
+        "en": "Keep an event shown once it has started"
+      },
+      "help": {
+        "fr": "Après ce délai, l'événement disparaît tout seul du site. D'ici là, votre message de fin s'affiche à la place des chiffres.",
+        "en": "After this delay the event disappears from the site by itself. Until then your end message replaces the numbers."
+      }
+    },
+    {
+      "key": "endMessage",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Message de fin",
+        "en": "End message"
+      },
+      "help": {
+        "fr": "Affiché quand l'heure est arrivée. Vide : « C'est parti ! ». Chaque événement peut avoir le sien.",
+        "en": "Shown when the time has come. Empty: “It's on!”. Each event can have its own."
+      }
+    },
+    {
+      "key": "pageTitle",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Titre de la page",
+        "en": "Page title"
+      },
+      "help": {
+        "fr": "Vide : « Compte à rebours ».",
+        "en": "Empty: “Countdown”."
+      }
+    },
+    {
+      "key": "showSeconds",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Afficher les secondes",
+        "en": "Show seconds"
+      },
+      "help": {
+        "fr": "Les visiteurs qui demandent moins de mouvement sur leur appareil ne voient jamais les secondes.",
+        "en": "Visitors who ask their device for less motion never see the seconds."
+      }
+    },
+    {
+      "key": "overlayLook",
+      "type": "select",
+      "group": "appearance",
+      "default": "dark",
+      "options": [
+        {
+          "value": "dark",
+          "label": {
+            "fr": "Sombre (lisible sur tout)",
+            "en": "Dark (readable on anything)"
+          }
+        },
+        {
+          "value": "light",
+          "label": {
+            "fr": "Clair",
+            "en": "Light"
+          }
+        },
+        {
+          "value": "bare",
+          "label": {
+            "fr": "Sans fond (texte avec ombre)",
+            "en": "No background (text with shadow)"
+          }
+        }
+      ],
+      "label": {
+        "fr": "Style pour OBS",
+        "en": "Look in OBS"
+      }
+    },
+    {
+      "key": "overlayPosition",
+      "type": "select",
+      "group": "appearance",
+      "default": "top-center",
+      "options": [
+        {
+          "value": "top-left",
+          "label": {
+            "fr": "En haut à gauche",
+            "en": "Top left"
+          }
+        },
+        {
+          "value": "top-center",
+          "label": {
+            "fr": "En haut au centre",
+            "en": "Top centre"
+          }
+        },
+        {
+          "value": "top-right",
+          "label": {
+            "fr": "En haut à droite",
+            "en": "Top right"
+          }
+        },
+        {
+          "value": "center",
+          "label": {
+            "fr": "Au centre",
+            "en": "Centre"
+          }
+        },
+        {
+          "value": "bottom-left",
+          "label": {
+            "fr": "En bas à gauche",
+            "en": "Bottom left"
+          }
+        },
+        {
+          "value": "bottom-center",
+          "label": {
+            "fr": "En bas au centre",
+            "en": "Bottom centre"
+          }
+        },
+        {
+          "value": "bottom-right",
+          "label": {
+            "fr": "En bas à droite",
+            "en": "Bottom right"
+          }
+        }
+      ],
+      "label": {
+        "fr": "Place à l'écran (OBS)",
+        "en": "Place on screen (OBS)"
+      }
+    },
+    {
+      "key": "overlaySize",
+      "type": "select",
+      "group": "appearance",
+      "default": "m",
+      "options": [
+        {
+          "value": "s",
+          "label": {
+            "fr": "Petit",
+            "en": "Small"
+          }
+        },
+        {
+          "value": "m",
+          "label": {
+            "fr": "Moyen",
+            "en": "Medium"
+          }
+        },
+        {
+          "value": "l",
+          "label": {
+            "fr": "Grand",
+            "en": "Large"
+          }
+        }
+      ],
+      "label": {
+        "fr": "Taille (OBS)",
+        "en": "Size (OBS)"
+      }
+    },
+    {
+      "key": "overlayAccent",
+      "type": "color",
+      "group": "appearance",
+      "default": "theme:accent",
+      "label": {
+        "fr": "Couleur du liseré (OBS)",
+        "en": "Accent colour (OBS)"
+      }
+    },
+    {
+      "key": "overlayEndMinutes",
+      "type": "number",
+      "group": "appearance",
+      "default": 5,
+      "label": {
+        "fr": "Minutes pendant lesquelles garder le message de fin à l'écran (OBS)",
+        "en": "Minutes to keep the end message on screen (OBS)"
+      },
+      "help": {
+        "fr": "Après ce délai, la source OBS s'efface ou passe à l'événement suivant. Entre 1 et 120.",
+        "en": "After that the OBS source clears or moves on to the next event. Between 1 and 120."
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "featured",
+      "label": {
+        "fr": "Compte à rebours à la une",
+        "en": "Featured countdown"
+      },
+      "size": "medium"
+    },
+    {
+      "id": "upcoming",
+      "label": {
+        "fr": "Prochains événements",
+        "en": "Upcoming events"
+      },
+      "size": "medium",
+      "options": [
+        {
+          "key": "count",
+          "type": "number",
+          "default": 3,
+          "label": {
+            "fr": "Combien d'événements",
+            "en": "How many events"
+          }
+        },
+        {
+          "key": "skipFeatured",
+          "type": "boolean",
+          "default": true,
+          "label": {
+            "fr": "Sans répéter celui qui est à la une",
+            "en": "Without repeating the featured one"
+          }
+        }
+      ]
+    }
+  ],
+  "rights": [
+    {
+      "id": "events.edit",
+      "label": {
+        "fr": "créer et modifier les comptes à rebours",
+        "en": "create and edit countdowns"
+      },
+      "help": {
+        "fr": "Ajouter un événement, changer sa date, son message de fin, le mettre à la une.",
+        "en": "Add an event, change its date or end message, put it first."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "events.delete",
+      "label": {
+        "fr": "supprimer des comptes à rebours",
+        "en": "delete countdowns"
+      },
+      "help": {
+        "fr": "Retirer un événement pour de bon.",
+        "en": "Remove an event for good."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "events_list",
+      "readOnly": true,
+      "description": "List the countdown events shown on the site (upcoming first, then those whose time has just passed and that are still shown). With include_hidden=true also the ones already hidden. Each has its exact start in UTC, its time zone, its state and until when it stays visible. Use it to avoid creating a duplicate.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "include_hidden": {
+            "type": "boolean",
+            "description": "Also list events already hidden from the site."
+          }
+        }
+      }
+    },
+    {
+      "name": "event_create",
+      "description": "Create a countdown event (a release, a launch, a birthday, a convention - NOT a regular stream, which belongs to the schedule module). Give the day and time as written in the event's own time zone; the module works out the exact moment, including summer/winter time of that day. Returns the created event with its start in UTC.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Event name, e.g. 'Game launch'.",
+            "maxLength": 80
+          },
+          "date": {
+            "type": "string",
+            "description": "Day as YYYY-MM-DD, in the event's time zone, e.g. 2026-11-14.",
+            "maxLength": 10
+          },
+          "time": {
+            "type": "string",
+            "description": "Time of day as HH:MM (24 h), e.g. 21:00. Leave out for an all-day event.",
+            "maxLength": 12
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Official time zone name of the event, e.g. Europe/Paris, Asia/Tokyo. Empty = the site owner's zone. Daylight saving time of that day is applied for you.",
+            "maxLength": 64
+          },
+          "all_day": {
+            "type": "boolean",
+            "description": "True for an all-day event (birthday, convention day): no time."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Last day as YYYY-MM-DD (optional).",
+            "maxLength": 10
+          },
+          "end_time": {
+            "type": "string",
+            "description": "End time as HH:MM (optional, same time zone).",
+            "maxLength": 12
+          },
+          "description": {
+            "type": "string",
+            "description": "Short text shown on the event page and in the calendar file.",
+            "maxLength": 600
+          },
+          "location": {
+            "type": "string",
+            "description": "Place or platform, e.g. 'Twitch'.",
+            "maxLength": 120
+          },
+          "end_message": {
+            "type": "string",
+            "description": "Message shown once the time has come, e.g. 'It is on!'.",
+            "maxLength": 140
+          },
+          "end_link_label": {
+            "type": "string",
+            "description": "Label of the button shown with the end message.",
+            "maxLength": 40
+          },
+          "end_link": {
+            "type": "string",
+            "description": "Address (https://...) of the button shown with the end message.",
+            "maxLength": 500
+          },
+          "keep": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "6h",
+              "1d",
+              "3d",
+              "7d",
+              "30d",
+              "never"
+            ],
+            "description": "How long the event stays shown after it has started. Empty = the site default."
+          },
+          "featured": {
+            "type": "boolean",
+            "description": "True to put this event first on the home page (only one at a time)."
+          }
+        },
+        "required": [
+          "title",
+          "date"
+        ]
+      }
+    },
+    {
+      "name": "event_update",
+      "description": "Change an existing countdown event. Only the fields you give are changed. Returns the updated event.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Event name, e.g. 'Game launch'.",
+            "maxLength": 80
+          },
+          "date": {
+            "type": "string",
+            "description": "Day as YYYY-MM-DD, in the event's time zone, e.g. 2026-11-14.",
+            "maxLength": 10
+          },
+          "time": {
+            "type": "string",
+            "description": "Time of day as HH:MM (24 h), e.g. 21:00. Leave out for an all-day event.",
+            "maxLength": 12
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Official time zone name of the event, e.g. Europe/Paris, Asia/Tokyo. Empty = the site owner's zone. Daylight saving time of that day is applied for you.",
+            "maxLength": 64
+          },
+          "all_day": {
+            "type": "boolean",
+            "description": "True for an all-day event (birthday, convention day): no time."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Last day as YYYY-MM-DD (optional).",
+            "maxLength": 10
+          },
+          "end_time": {
+            "type": "string",
+            "description": "End time as HH:MM (optional, same time zone).",
+            "maxLength": 12
+          },
+          "description": {
+            "type": "string",
+            "description": "Short text shown on the event page and in the calendar file.",
+            "maxLength": 600
+          },
+          "location": {
+            "type": "string",
+            "description": "Place or platform, e.g. 'Twitch'.",
+            "maxLength": 120
+          },
+          "end_message": {
+            "type": "string",
+            "description": "Message shown once the time has come, e.g. 'It is on!'.",
+            "maxLength": 140
+          },
+          "end_link_label": {
+            "type": "string",
+            "description": "Label of the button shown with the end message.",
+            "maxLength": 40
+          },
+          "end_link": {
+            "type": "string",
+            "description": "Address (https://...) of the button shown with the end message.",
+            "maxLength": 500
+          },
+          "keep": {
+            "type": "string",
+            "enum": [
+              "1h",
+              "6h",
+              "1d",
+              "3d",
+              "7d",
+              "30d",
+              "never"
+            ],
+            "description": "How long the event stays shown after it has started. Empty = the site default."
+          },
+          "featured": {
+            "type": "boolean",
+            "description": "True to put this event first on the home page (only one at a time)."
+          },
+          "id": {
+            "type": "string",
+            "description": "Identifier of the event (from events_list).",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "event_set_featured",
+      "description": "Put an event first on the home page and in the OBS source. Only one event is featured at a time; the previous one is released.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identifier of the event (from events_list).",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "event_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Permanently delete a countdown event. It cannot be undone.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identifier of the event (from events_list).",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  ],
+  "onboarding": {
+    "home": {
+      "section": "featured"
+    }
+  }
+}
