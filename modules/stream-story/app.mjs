@@ -42,7 +42,7 @@ const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "full", 
 /* ───────────── L'état ───────────── */
 const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
-  streams: [], streamsState: "loading", coverState: "", manual: { title: "", date: "", time: "" }, useManual: false,
+  ev: { items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
   images: new Map(), scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
@@ -51,7 +51,7 @@ const colors = C.colors;
 
 const selectedStream = () => {
   if (S.useManual) { const m = P.manualStream(S.manual, TZ); return m.error ? null : m; }
-  return S.streams.find((s) => s.key === S.cfg.streamKey) ?? S.streams[0] ?? null;
+  return S.ev.selected;
 };
 /* Les co-streamers de la vidéo : chaque entrée est { id } (une fiche de Contacts, lue au besoin) ou une saisie « pour cette vidéo seulement ». `key` : ce qui les distingue. */
 const keyOf = P.memberKey;
@@ -141,21 +141,124 @@ function setPlaying(on) {
 
 /* ───────────── Les éléments de l'éditeur ───────────── */
 const ELEMENT_KEYS = P.ELEMENTS;
-function streamLabel(s) { const z = zoneOf(s); return `${P.formatDay(s.startMs, z, S.cfg.lang)}${s.allDay ? "" : ` · ${P.formatTime(s.startMs, z, S.cfg.lang)}`} — ${s.title || L("untitled")}`; }
+const kindOf = (k) => (P.SOURCE_KIND.test(String(k)) ? String(k) : "other");
+const typeLabel = (t) => L(`type_${["stream", "live", "premiere", "video", "event"].includes(t) ? t : "other"}`);
+/** La date d'un événement, lisible, dans le fuseau du site (ou celui du réglage) ; entre parenthèses l'heure sur place quand elle est différente. */
+function whenText(e) {
+  const day = P.formatDay(e.startMs, TZ, C.lang);
+  if (e.allDay) return day;
+  let text = `${day} · ${P.formatTime(e.startMs, TZ, C.lang)}`;
+  if (P.validZone(e.timezone) && e.timezone !== TZ) { const there = P.formatTime(e.startMs, e.timezone, C.lang); if (there !== P.formatTime(e.startMs, TZ, C.lang)) text += ` (${L("event_local", { time: there })})`; }
+  return text;
+}
+function pill(kind, label) { return h("span", { class: `src src-${kindOf(kind)}`, text: label }); }
 
-function renderStreamPicker() {
-  const sel = $("stream"), note = $("stream-note");
-  sel.replaceChildren(...S.streams.map((s) => h("option", { value: s.key, text: streamLabel(s) })), h("option", { value: "manual", text: L("stream_manual") }));
-  sel.value = S.useManual ? "manual" : (selectedStream()?.key ?? "manual");
+function renderChosen() {
+  const box = $("event-chosen"), e = selectedStream();
+  box.replaceChildren();
+  if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.append(m.error ? L("event_none_chosen") : L("event_manual_chosen", { title: m.title, when: whenText(m) })); return; }
+  if (!e) { box.append(L("event_none_chosen")); return; }
+  box.append(h("strong", { text: L("event_chosen") }), " ", `${e.title || L("untitled")} — ${whenText(e)}`);
+}
+
+function renderFilter() {
+  const box = $("event-filter"), shown = S.ev.sources.filter((x) => x.count > 0 || x.kind === S.ev.source);
+  box.hidden = shown.length < 2 && !S.ev.source;
+  box.replaceChildren(...(box.hidden ? [] : [
+    h("button", { type: "button", "aria-pressed": S.ev.source ? "false" : "true", text: L("event_all"), onclick: () => { S.ev.source = ""; loadEvents(false); } }),
+    ...shown.map((x) => h("button", { type: "button", "aria-pressed": S.ev.source === x.kind ? "true" : "false", text: `${x.label} (${x.count})`, onclick: () => { S.ev.source = S.ev.source === x.kind ? "" : x.kind; loadEvents(false); } })),
+  ]));
+}
+
+function renderEventList() {
+  const list = $("event-list"), E = S.ev, picked = !S.useManual && E.selected ? E.selected.id : "";
+  list.replaceChildren(...E.items.map((e) => {
+    const also = e.alsoIn.length ? h("span", { class: "more", text: L("event_also", { sources: e.alsoIn.map((x) => x.label).join(", ") }) }) : null;
+    const on = e.id === picked || (picked && e.ids?.includes?.(picked));
+    const row = h("button", { type: "button", class: "event", "aria-pressed": on ? "true" : "false", "aria-label": L("event_row", { title: e.title || L("untitled"), when: whenText(e) }), onclick: () => pickEvent(e) },
+      h("span", { class: "top" }, pill(e.source, e.sourceLabel), h("span", { text: typeLabel(e.type) }), h("span", { text: whenText(e) }), on ? h("strong", { text: L("event_picked") }) : null),
+      h("span", { class: "ttl", text: e.title || L("untitled") }), also);
+    return h("li", {}, row);
+  }));
+  $("event-count").textContent = E.items.length ? L("event_count", { shown: E.items.length, total: E.total }) + (E.totalAll >= 200 && !E.q && !E.source ? ` · ${L("event_capped")}` : "") : "";
+  $("event-more").hidden = !E.next; $("event-more").disabled = E.busy;
+}
+
+function renderNotes() {
+  const E = S.ev, box = $("event-sources"), note = $("event-note");
+  note.textContent = "";
+  box.replaceChildren();
+  if (E.state === "loading") { note.textContent = L("event_loading"); return; }
+  const down = E.sources.filter((x) => x.state === "down");
+  $("event-retry").hidden = !down.length || E.state === "loading";
+  if (E.state === "slow") box.append(h("p", { class: "warn", text: L("event_all_down") }));
+  else if (!E.total && !E.q && !E.source) note.textContent = L("event_none");
+  else if (!E.total) note.textContent = L("event_no_match");
+  for (const x of E.sources) {
+    if (x.state === "down" && E.state !== "slow") box.append(h("p", { class: "warn", text: L(x.stale ? "ev_down_stale" : "ev_down", { source: x.label }) }));
+    else if (x.state === "setup" && x.message) box.append(h("p", { class: "warn", text: L("ev_setup", { source: x.label, message: x.message }) }));
+    else if (x.state === "ok" && x.note) box.append(h("p", { class: "muted", text: L("ev_note", { source: x.label, note: x.note }) }));
+  }
+  if (E.coverState === "no_key" && E.selected?.games?.length && S.cfg.elements.includes("game")) box.append(h("p", { class: "muted", text: L("cover_no_key") }));
+  box.append(h("p", { class: "muted", text: L("event_zone", { zone: TZ }) }));
+}
+
+function renderEvents() {
+  renderChosen(); renderFilter(); renderEventList(); renderNotes();
   $("manual").hidden = !S.useManual;
-  note.replaceChildren();
-  if (S.streamsState === "loading") note.append(L("streams_loading"));
-  else if (S.streamsState === "slow") note.append(h("span", { class: "warn", text: L("streams_slow") }));
-  else if (!S.streams.length) note.append(h("span", { class: "warn", text: L("no_agenda") }));
-  else if (S.coverState === "no_key" && S.streams.some((s) => s.games.length)) note.append(L("cover_no_key"));
+  $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
+  $("event-manual-toggle").setAttribute("aria-expanded", S.useManual ? "true" : "false");
   const { error } = S.useManual ? P.manualStream(S.manual, TZ) : {};
   $("manual-error").textContent = S.useManual && error && (S.manual.title || S.manual.date) ? L(`manual_${error}`) : "";
 }
+const renderStreamPicker = renderEvents;
+
+/** Choisit un événement de la liste : la vidéo se remplit, et le choix (identifiant + source) est gardé dans les réglages de la demande. */
+function pickEvent(e, { quiet = false } = {}) {
+  S.useManual = false;
+  S.ev.selected = { ...e, cover: "" };
+  S.cfg.eventId = e.id; S.cfg.eventSource = kindOf(e.source); S.cfg.streamKey = e.legacyKey || "";
+  S.ev.coverState = "";
+  renderEvents(); rebuild();
+  if (!quiet) {
+    say(L("event_ready", { title: e.title || L("untitled") }), "ok");
+    // Sur téléphone l'aperçu est tout en haut : on y emmène la personne, bouton « Générer la vidéo » en vue. Sur grand écran il reste visible à droite.
+    try { if (matchMedia("(max-width: 719px)").matches) document.querySelector?.(".previewcol")?.scrollIntoView?.({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); } catch { /* sans importance */ }
+  }
+  if (e.games?.[0]) loadCover(e);
+}
+async function loadCover(e) {
+  const r = await api(`cover?game=${encodeURIComponent(e.games[0])}`, { ms: 12000 });
+  if (!r.ok || S.ev.selected?.id !== e.id) return;
+  S.ev.coverState = r.coverState || "";
+  if (r.cover) { S.ev.selected.cover = r.cover; rebuild(); }
+  renderNotes();
+}
+
+/** Lit la liste (`more` : la page suivante). Les réponses arrivées en retard d'une recherche précédente sont ignorées. */
+async function loadEvents(more, { fresh = false, id = "", key = "" } = {}) {
+  const E = S.ev, mine = ++E.seq;
+  E.busy = true; if (!more) { E.state = E.items.length ? E.state : "loading"; } renderEventList(); renderNotes();
+  const qs = new URLSearchParams({ limit: "20" });
+  if (E.q) qs.set("q", E.q);
+  if (E.source) qs.set("source", E.source);
+  if (more && E.next) qs.set("cursor", E.next);
+  if (fresh) qs.set("fresh", "1");
+  if (id) qs.set("id", id);
+  if (key) qs.set("key", key);
+  const r = await api(`events?${qs}`, { ms: 20000 });
+  if (mine !== E.seq) return r;
+  E.busy = false;
+  if (r.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return r; }
+  if (!r.ok) { E.state = "slow"; E.sources = E.sources.length ? E.sources : []; renderEvents(); return r; }
+  E.items = more ? [...E.items, ...r.items].filter((e, i, all) => all.findIndex((x) => x.id === e.id) === i).slice(0, 200) : r.items;
+  E.next = r.next; E.total = r.total; E.totalAll = r.totalAll; E.sources = r.sources;
+  E.state = r.totalAll || r.sources.some((x) => x.state !== "down") ? "ok" : "slow";
+  renderEvents();
+  return r;
+}
+let searchTimer = null;
+function onEventSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { S.ev.q = $("event-q").value.trim().slice(0, 80); loadEvents(false); }, 280); }
 
 /* ───────────── Les co-streamers ───────────── */
 const NET = { twitch: "Twitch", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", discord: "Discord", x: "X", bluesky: "Bluesky", mastodon: "Mastodon" };
@@ -316,7 +419,7 @@ async function removeSaved(m) {
 }
 
 /* ───────────── Les modèles ───────────── */
-function configForModel() { return { ...S.cfg, streamKey: "" }; }
+function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "" }; }
 function renderModels() {
   const box = $("model-list");
   box.replaceChildren(...(S.models.length ? S.models.map((m) => {
@@ -329,8 +432,8 @@ function renderModels() {
   }) : [h("li", { class: "muted", text: L("models_none") })]));
 }
 function loadModel(m) {
-  const keep = S.cfg.streamKey;
-  S.cfg = P.cleanConfig({ ...m.config, streamKey: keep });
+  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource };
+  S.cfg = P.cleanConfig({ ...m.config, ...keep });
   syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok");
 }
 async function saveModel() {
@@ -381,7 +484,10 @@ function bind() {
   on("text", "input", () => { S.cfg.text = P.freeText($("text").value, P.LIMITS.text); $("text-count").textContent = `${[...$("text").value].length}/${P.LIMITS.text}`; rebuild(); });
   on("channel", "input", () => { S.cfg.channelName = P.oneLine($("channel").value, P.LIMITS.channelName); rebuild(); });
   on("lang", "change", () => { S.cfg.lang = $("lang").value === "en" ? "en" : "fr"; renderStreamPicker(); rebuild(); });
-  on("stream", "change", () => { const v = $("stream").value; S.useManual = v === "manual"; if (!S.useManual) S.cfg.streamKey = v; renderStreamPicker(); rebuild(); });
+  on("event-q", "input", onEventSearch);
+  on("event-more", "click", () => loadEvents(true));
+  on("event-retry", "click", () => loadEvents(false, { fresh: true }));
+  on("event-manual-toggle", "click", () => { S.useManual = !S.useManual; if (S.useManual) { S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; } renderEvents(); rebuild(); });
   for (const f of ["title", "date", "time"]) on(`m-${f}`, "input", () => { S.manual[f] = $(`m-${f}`).value; renderStreamPicker(); rebuild(); });
   on("play", "click", () => setPlaying(!S.playing));
   on("replay", "click", () => { S.t = 0; setPlaying(true); });
@@ -440,19 +546,25 @@ function applyPrep(prep) {
 async function start() {
   if (!TOKEN) { $("app").hidden = true; $("noaccess").hidden = false; return; }
   bind(); syncControls(); renderMembers(); renderModels();
-  const [data, streams, prep] = await Promise.all([api("data"), api("streams", { ms: 20000 }), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
-  if (data.error === "auth" || streams.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
+  const [data, prep] = await Promise.all([api("data"), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
+  if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
   if (data.ok) {
     S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
     if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
   else say(errText(data.error), "error");
-  S.streams = streams.ok ? streams.streams : []; S.streamsState = streams.ok ? streams.state : "slow"; S.coverState = streams.coverState ?? "";
-  if (!S.cfg.streamKey && S.streams[0]) S.cfg.streamKey = S.streams[0].key;
-  if (!S.streams.length) S.useManual = true;
   if (PREP) { if (prep?.ok && prep.prep) applyPrep(prep.prep); else { $("prep-expired").hidden = false; } }
-  if (prep?.ok && prep.prep?.config?.streamKey && S.streams.some((s) => s.key === prep.prep.config.streamKey)) S.cfg.streamKey = prep.prep.config.streamKey;
-  else if (prep?.ok && S.cfg.streamKey && !S.streams.some((s) => s.key === S.cfg.streamKey)) { S.cfg.streamKey = S.streams[0]?.key ?? ""; if (S.streams[0]) $("prep-stream-gone").hidden = false; }
+  syncControls();
+  // Les événements de toutes les sources. L'événement déjà choisi (par une préparation) est retrouvé même s'il n'est pas dans la première page.
+  const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
+  const ev = await loadEvents(false, { id: wantId, key: wantKey });
+  if (ev?.error === "auth") return;
+  const first = S.ev.items[0] ?? null;
+  if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true });
+  else {
+    if (wantId || wantKey) { if (first) $("prep-stream-gone").hidden = false; }
+    if (first) pickEvent(first, { quiet: true }); else { S.useManual = true; S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; renderEvents(); }
+  }
   syncControls(); renderMembers(); renderModels();
   const r = await buildScene();
   if (r) { S.scene = r.scene; S.empty = r.empty; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }

@@ -3,6 +3,7 @@
 // Toutes les entrées de l'IA sont vérifiées une à une ; rien n'est jamais lu comme du HTML (le texte est dessiné avec `fillText`).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const P = await import(`./pure.mjs${v}`);
+const E = await import(`./events.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 
@@ -21,8 +22,9 @@ export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.co
 /**
  * Vérifie ce que l'IA demande et en tire { config, manual } (réglages complets et stream manuel éventuel) ; lève une erreur claire (visible de l'IA) sinon.
  * `models` : les modèles enregistrés. Un modèle sert de point de départ ; les autres valeurs le complètent ou le remplacent.
+ * `events` : les événements à venir de toutes les sources (pour `event`) ; `sourcesDown` : toutes les sources se sont tues (le message le dit).
  */
-export function strictPrepare(args, { models, tz }) {
+export function strictPrepare(args, { models, tz, events = [], sourcesDown = false }) {
   const a = args && typeof args === "object" ? args : {};
   let base = P.DEFAULT_CONFIG;
   if (a.model !== undefined) {
@@ -57,17 +59,25 @@ export function strictPrepare(args, { models, tz }) {
     }
     next.costreamers = logins;
   }
-  let manual = null;
+  let manual = null, chosen = null;
   const hasManual = a.streamTitle !== undefined || a.streamDate !== undefined || a.streamTime !== undefined;
+  if (a.event !== undefined) {
+    if (typeof a.event !== "string" || !P.EVENT_ID.test(a.event)) throw expose("'event' must be an id given by story_events.");
+    if (a.stream !== undefined || hasManual) throw expose("Give only one of 'event' (an id from story_events), 'stream' (a key from story_next_streams) or a hand-written stream.");
+    chosen = E.findEvent(events, { id: a.event });
+    if (!chosen) throw expose(sourcesDown ? "No event could be checked: the sources did not answer. Try again in a minute." : `No upcoming event has the id '${P.oneLine(a.event, 100)}' (it may be over, or moved). Call story_events for the current list.`);
+  }
   if (a.stream !== undefined && hasManual) throw expose("Give either 'stream' (a key from story_next_streams, or 'next') or a hand-written stream (streamTitle + streamDate [+ streamTime]), not both.");
   if (a.stream !== undefined) {
     if (typeof a.stream !== "string" || !(a.stream === "next" || /^[a-z0-9]{1,20}$/.test(a.stream))) throw expose("'stream' must be 'next' or a key given by story_next_streams.");
     next.streamKey = a.stream === "next" ? "" : a.stream;
   } else next.streamKey = "";
+  if (chosen) { next.streamKey = chosen.legacyKey || ""; next.eventId = chosen.id; next.eventSource = chosen.source; }
+  else if (a.stream !== undefined || hasManual) { next.eventId = ""; next.eventSource = ""; }
   if (hasManual) {
     const m = P.manualStream({ title: a.streamTitle, date: a.streamDate, time: a.streamTime }, tz);
     if (m.error) throw expose(m.error === "title" ? "'streamTitle' is required for a hand-written stream." : m.error === "date" ? "'streamDate' must be a real date written YYYY-MM-DD." : "'streamTime' must be written HH:MM (24 h), or left out for a whole day.");
     manual = { title: m.title, date: String(a.streamDate), time: String(a.streamTime ?? "") };
   }
-  return { config: P.cleanConfig(next), manual };
+  return { config: P.cleanConfig(next), manual, event: chosen };
 }
