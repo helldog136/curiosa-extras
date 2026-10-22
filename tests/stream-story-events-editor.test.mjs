@@ -77,11 +77,11 @@ async function boot(ctx, { prep } = {}) {
   return { els, server, html };
 }
 
-const slot = (i, h, extra = {}) => ({ id: `s${i}`, title: `Stream ${i}`, start: iso(h), end: iso(h + 1), allDay: false, games: [], status: "confirmed", timezone: "Europe/Brussels", ...extra });
+const slot = (i, h, extra = {}) => ({ id: `s${i}`, title: `Stream ${i}`, start: iso(h), end: iso(h + 1), allDay: false, games: [], status: "confirmed", timezone: "Europe/Paris", ...extra });
 const ytOk = (events, note = "Seuls les directs et premières publics sont visibles.") => () => ({ ok: true, source: YT, state: "ok", note, events });
 const twOk = (events) => () => ({ ok: true, source: TW, state: "ok", events });
 const mk = ({ calendar = [], yt, tw, locale = "fr", settings = {} } = {}) => (src.resetEvents(), fakeCtx({
-  key: "story", moduleId: "stream-story", locale, messages: { ...(locale === "en" ? en : fr) }, permissions: manifest.permissions, siteUrl: SITE, settings: { timezone: "Europe/Brussels", ...settings },
+  key: "story", moduleId: "stream-story", locale, messages: { ...(locale === "en" ? en : fr) }, permissions: manifest.permissions, siteUrl: SITE, settings: { timezone: "Europe/Paris", ...settings },
   topics: { "planning.slot": () => calendar },
   serviceInstances: { "event.source": [...(yt ? [{ instance: "yt", name: "Ma chaîne", methods: { upcoming: yt } }] : []), ...(tw ? [{ instance: "tw", name: "Mon Twitch", methods: { upcoming: tw } }] : [])] },
   instances: [{ id: "id-story", key: "story", module: "stream-story", basePath: "", name: "Story", adminPath: "/admin/instances/id-story" }],
@@ -108,14 +108,14 @@ test("la liste : toutes les sources, triées, avec la pastille de chacune, la da
   const titles = rows.slice(0, 4).map((r) => /Stream \d+|Première du clip|Surprise du vendredi/.exec(r.textContent)[0]);
   assert.deepEqual(titles, ["Stream 0", "Première du clip", "Stream 1", "Surprise du vendredi"], "triés par date et heure, toutes sources mêlées");
   const yt = rows[1].textContent, start = Date.parse(iso(9));
-  assert.match(yt, /YouTube/); assert.match(yt, /Première/); assert.ok(yt.includes(P.formatTime(start, "Europe/Brussels", "fr")), "l'heure est celle du fuseau du site");
-  assert.ok(yt.includes(P.formatDay(start, "Europe/Brussels", "fr")), "le jour s'écrit en toutes lettres");
+  assert.match(yt, /YouTube/); assert.match(yt, /Première/); assert.ok(yt.includes(P.formatTime(start, "Europe/Paris", "fr")), "l'heure est celle du fuseau du site");
+  assert.ok(yt.includes(P.formatDay(start, "Europe/Paris", "fr")), "le jour s'écrit en toutes lettres");
   assert.match(els.get("event-chosen").textContent, /Story pour : Stream 0/);
   assert.match(els.get("event-count").textContent, /20 sur 32 événements/); assert.equal(els.get("event-more").hidden, false);
   const chips = buttons(els.get("event-filter")).map((b) => b.textContent);
   assert.deepEqual(chips, ["Tout", "Planning (30)", "Twitch (1)", "YouTube (1)"]); assert.equal(els.get("event-filter").hidden, false);
   assert.match(els.get("event-sources").textContent, /YouTube : Seuls les directs et premières publics sont visibles/, "ce que YouTube ne montre pas est dit");
-  assert.match(els.get("event-sources").textContent, /Les heures sont affichées pour : Europe\/Brussels/);
+  assert.match(els.get("event-sources").textContent, /Les heures sont affichées pour : Europe\/Paris/);
   assert.equal(els.get("manual").hidden, true);
   assert.ok(server.log.some(([, r]) => r === "events?limit=20"));
   assert.ok(!server.log.some(([, r]) => r.startsWith("streams")), "l'ancienne liste de streams n'est plus demandée");

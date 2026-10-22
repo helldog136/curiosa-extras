@@ -7,7 +7,7 @@
 //   id        identifiant STABLE donné par la source, unique et préfixé par elle (« youtube:AbC123 ») : lettres, chiffres, « : _ . - », 100 caractères au plus ;
 //   title     le titre (80 caractères au plus) ;
 //   start     le début, en UTC (ISO 8601, « 2026-10-24T18:30:00Z ») ; pour une journée entière, `allDay: true` + `day` (« 2026-10-24 ») ;
-//   timezone  le fuseau IANA de l'événement (« Europe/Brussels »), ou vide quand la source ne le sait pas ;
+//   timezone  le fuseau IANA de l'événement (« Europe/Paris »), ou vide quand la source ne le sait pas ;
 //   end       la fin (facultative) ;
 //   type      stream · live · premiere · video · event · other ;
 //   url       le lien (https, facultatif) ; image : une image (https, facultative) ; games : jusqu'à 3 jeux (facultatif).

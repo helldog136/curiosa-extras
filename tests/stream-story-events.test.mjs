@@ -25,10 +25,10 @@ const clean = (r, source, zone) => E.cleanEvent(r, source, { fallbackZone: zone 
 /* ───────────── Le contrat d'un événement ───────────── */
 
 test("contrat : un événement valide garde id, titre, début UTC, fuseau, type, lien et image ; tout ce qui est inutilisable est écarté sans exception", () => {
-  const e = clean({ id: "youtube:AbC_123-xyz", title: "  Ma   première\n du soir ", start: "2026-10-24T18:30:00+02:00", end: "2026-10-24T20:00:00Z", timezone: "Europe/Brussels", type: "premiere", url: "https://www.youtube.com/watch?v=x", image: "https://i.ytimg.com/vi/x/hq.jpg", games: ["Hades", "", 12, "A", "B", "C"] }, YT);
+  const e = clean({ id: "youtube:AbC_123-xyz", title: "  Ma   première\n du soir ", start: "2026-10-24T18:30:00+02:00", end: "2026-10-24T20:00:00Z", timezone: "Europe/Paris", type: "premiere", url: "https://www.youtube.com/watch?v=x", image: "https://i.ytimg.com/vi/x/hq.jpg", games: ["Hades", "", 12, "A", "B", "C"] }, YT);
   assert.equal(e.id, "youtube:AbC_123-xyz"); assert.equal(e.title, "Ma première du soir");
   assert.equal(e.start, "2026-10-24T16:30:00.000Z", "le début est ramené en UTC"); assert.equal(e.end, "2026-10-24T20:00:00.000Z");
-  assert.equal(e.timezone, "Europe/Brussels"); assert.equal(e.type, "premiere"); assert.equal(e.source, "youtube"); assert.equal(e.sourceLabel, "YouTube");
+  assert.equal(e.timezone, "Europe/Paris"); assert.equal(e.type, "premiere"); assert.equal(e.source, "youtube"); assert.equal(e.sourceLabel, "YouTube");
   assert.equal(e.url, "https://www.youtube.com/watch?v=x"); assert.equal(e.image, "https://i.ytimg.com/vi/x/hq.jpg"); assert.deepEqual(e.games, ["Hades", "A", "B"], "3 jeux au plus, sans vide ni nombre");
   for (const bad of [null, undefined, "x", 3, [], {}, { id: "a" }, { id: "a b", start: iso(NOW) }, { id: "", start: iso(NOW) }, { id: "x".repeat(101), start: iso(NOW) }, { id: "<b>", start: iso(NOW) }, { id: "ok", start: "pas une date" }, { id: "ok", start: 5 },
     { id: "ok", start: "1969-01-01T00:00:00Z" }, { id: "ok", start: "2150-01-01T00:00:00Z" }, { id: "ok", start: iso(NOW), status: "cancelled" }]) assert.equal(clean(bad, CAL), null, JSON.stringify(bad));
@@ -67,11 +67,11 @@ const agg = (...lists) => E.aggregate(lists, NOW);
 const evs = (source, rows, zone) => rows.map((r) => clean(r, source, zone)).filter(Boolean);
 
 test("tri : à la minute près, sur l'instant UTC, quel que soit le fuseau annoncé ; l'ordre d'arrivée des sources n'y change rien", () => {
-  const brussels = evs(CAL, [raw("c:1", "Brussels 20:31", Date.UTC(2026, 9, 24, 18, 31), { timezone: "Europe/Brussels" })]);
+  const paris = evs(CAL, [raw("c:1", "Paris 20:31", Date.UTC(2026, 9, 24, 18, 31), { timezone: "Europe/Paris" })]);
   const tokyo = evs(TW, [raw("t:1", "Tokyo 03:30", Date.UTC(2026, 9, 24, 18, 30), { timezone: "Asia/Tokyo" })]);   // 03:30 le lendemain à Tokyo, mais 1 minute AVANT l'autre
   const ny = evs(YT, [raw("y:1", "New York 14:29", Date.UTC(2026, 9, 24, 18, 29), { timezone: "America/New_York" })]);
   const want = ["y:1", "t:1", "c:1"];
-  for (const order of [[brussels, tokyo, ny], [ny, tokyo, brussels], [tokyo, brussels, ny]]) assert.deepEqual(agg(...order).map((e) => e.id), want);
+  for (const order of [[paris, tokyo, ny], [ny, tokyo, paris], [tokyo, paris, ny]]) assert.deepEqual(agg(...order).map((e) => e.id), want);
 });
 
 test("heure d'été : deux « 2 h 30 » d'une nuit de changement d'heure restent dans l'ordre ; une journée entière passe avant les heures de ce jour", () => {
@@ -183,7 +183,7 @@ test("pagination : un curseur illisible redonne la première page ; un événeme
 
 /* ───────────── Les sources branchées : chargement, pannes, cache ───────────── */
 
-const SLOT = (id, title, ms, extra = {}) => ({ id, title, start: iso(ms), end: iso(ms + H), allDay: false, games: [], status: "confirmed", timezone: "Europe/Brussels", ...extra });
+const SLOT = (id, title, ms, extra = {}) => ({ id, title, start: iso(ms), end: iso(ms + H), allDay: false, games: [], status: "confirmed", timezone: "Europe/Paris", ...extra });
 const ytAnswer = (events, extra = {}) => ({ ok: true, source: YT, state: "ok", note: "Seuls les directs et premières publics sont visibles.", events, ...extra });
 const twAnswer = (events, extra = {}) => ({ ok: true, source: TW, state: "ok", events, ...extra });
 const NEXT = (h) => NOW + h * H;
