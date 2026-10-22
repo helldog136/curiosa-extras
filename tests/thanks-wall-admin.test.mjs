@@ -79,7 +79,7 @@ test("panneau : un groupe de plus de 1 000 fiches est signalé", async () => {
   assert.ok(text(await panel(ctx)).includes("seules les 1000 premières sont montrées"));
 });
 
-test("liste des messages : 25 par page, recherche sans accents, pages précédente / suivante ; seul « Écrire un message » est proposé, avec le droit", async () => {
+test("liste des messages : 25 par page, recherche sans accents, pages précédente / suivante ; seul « Écrire » est proposé, avec le droit", async () => {
   const book = fakeContactBook();
   const cat = book.seedCategory("Soutiens");
   people(book, cat, 59, { prefix: "P" });
@@ -87,7 +87,7 @@ test("liste des messages : 25 par page, recherche sans accents, pages précéden
   const { ctx } = makeWorld({ book, settings: { category: cat } });
   const t1 = byType(await panel(ctx, {}), "table").find((t) => t.columns.includes("Message"));
   assert.equal(t1.rows.length, 25);
-  assert.deepEqual(t1.rowActions, [{ label: "Écrire un message", href: "?msg={id}" }]);
+  assert.deepEqual(t1.rowActions, [{ label: "Écrire", href: "?msg={id}" }]);
   const p3 = await panel(ctx, { page: "3" });
   assert.equal(byType(p3, "table").find((t) => t.columns.includes("Message")).rows.length, 10);
   assert.ok(byType(p3, "links").some((l) => l.items.some((i) => i.label === "← Page précédente" && i.href === "?page=2")));

@@ -79,7 +79,7 @@
   "msgIntro": "Write a short message under a person's name ({max} characters at most). It is kept here, tied to her card: it follows the card if it is merged and disappears if it is deleted.",
   "msgCount": "Messages written: {n} out of {total} people.",
   "msgAside": "Messages waiting (people not on the wall right now): {n}.",
-  "msgWrite": "Write a message",
+  "msgWrite": "Write",
   "msgSearchLabel": "Find a person",
   "msgSearchHelp": "Type part of the name.",
   "msgSearchButton": "Filter",

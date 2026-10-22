@@ -149,6 +149,7 @@ async function messageBlocks(ctx, wall, query) {
     e.groups.push(g.title); seen.set(p.id, e);
   }
   const all = P.sortPeople([...seen.values()], "alpha", ctx.locale);
+  const many = wall.groups.filter((x) => !x.problem).length > 1;
   out.push({ type: "heading", text: t("msgTitle") });
   const withMessage = all.filter((p) => data?.messages.has(p.id)).length;
   const aside = data ? [...data.messages.keys()].filter((id) => !seen.has(id)).length : 0;
@@ -162,8 +163,8 @@ async function messageBlocks(ctx, wall, query) {
   if (all.length > LIMITS.adminPage || q) out.push({ type: "adminForm", action: "messageSearch", submitLabel: t("msgSearchButton"), fields: [{ name: "q", kind: "text", label: t("msgSearchLabel"), value: q, help: t("msgSearchHelp") }] });
   if (!filtered.length) { out.push({ type: "markdown", text: t("msgSearchNone") }); return out; }
   out.push({
-    type: "table", columns: [t("colPerson"), t("colGroup"), t("colMessage")],
-    rows: slice.map((p) => [p.shown, [...new Set(p.groups)].join(", "), data?.messages.has(p.id) ? P.pickText(data.messages.get(p.id).texts, ctx.locale, ctx.defaultLocale) : "—"]),
+    type: "table", columns: [t("colPerson"), t("colMessage")],
+    rows: slice.map((p) => [many ? `${p.shown} (${[...new Set(p.groups)].join(", ")})` : p.shown, data?.messages.has(p.id) ? P.pickText(data.messages.get(p.id).texts, ctx.locale, ctx.defaultLocale) : "—"]),
     rowIds: slice.map((p) => p.id), rowActions: can(ctx) ? [{ label: t("msgWrite"), href: "?msg={id}" }] : [],
   });
   if (pages > 1) {
