@@ -243,22 +243,24 @@ export function readPng(buf) {
   return { pixels, side: header.w, header };
 }
 
-/** Matrice (sans zone de silence) d'un PNG du module : le facteur d'échelle est retrouvé d'après la taille. */
+/** Matrice (sans zone de silence) d'un PNG du module : la version et le facteur d'échelle sont retrouvés d'après la taille, en vérifiant la zone de silence et les trois repères. */
 export function matrixFromPng(buf) {
   const { pixels, side } = readPng(buf);
   for (let version = 1; version <= 10; version++) {
     const n = 17 + 4 * version;
     if (side % (n + 8) !== 0) continue;
     const scale = side / (n + 8);
-    const modules = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => pixels[(r + 4) * scale + (scale >> 1)][(c + 4) * scale + (scale >> 1)]));
-    // la zone de silence doit être entièrement claire
-    for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    const at = (r, c) => pixels[(r + 4) * scale + (scale >> 1)][(c + 4) * scale + (scale >> 1)];
+    let quietClear = true;
+    for (let y = 0; y < side && quietClear; y++) for (let x = 0; x < side; x++) {
       const inside = y >= 4 * scale && y < (n + 4) * scale && x >= 4 * scale && x < (n + 4) * scale;
-      if (!inside && pixels[y][x]) throw new Error("la zone de silence n'est pas claire");
+      if (!inside && pixels[y][x]) { quietClear = false; break; }
     }
-    return { modules, scale };
+    const finders = [[0, 0], [0, n - 7], [n - 7, 0]].every(([r, c]) => at(r, c) && at(r, c + 6) && at(r + 6, c) && at(r + 6, c + 6) && !at(r + 1, c + 1) && at(r + 3, c + 3));
+    if (!quietClear || !finders) continue;
+    return { modules: Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => at(r, c))), scale };
   }
-  throw new Error("taille de PNG inconnue");
+  throw new Error("taille de PNG inconnue ou zone de silence non claire");
 }
 
 export function crc32(bytes) {

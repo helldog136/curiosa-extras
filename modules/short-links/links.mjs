@@ -109,7 +109,7 @@ export async function createLink(ctx, input) {
   const typed = String(input.slug ?? "").trim();
   if (typed) {
     slug = normalizeSlug(typed);
-    const problem = slugProblem(slug, reserved);
+    const problem = slug ? slugProblem(slug, reserved) : "chars"; // rien d'utilisable après nettoyage (« ??? »)
     if (problem) {
       codes.slug = problem;
       suggestion = dest.ok ? freeSlug(suggestSlug({ title, url: dest.url }), (n) => existing.has(n) || Boolean(slugProblem(n, reserved))) : undefined;

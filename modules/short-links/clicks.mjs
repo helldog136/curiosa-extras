@@ -52,7 +52,7 @@ export function mayCount(ctx, visitor, now = Date.now()) {
 }
 
 /** Robots, aperçus de messagerie, outils de contrôle : ils ne sont pas des personnes qui cliquent. */
-const ROBOTS = /bot|crawl|spider|slurp|preview|fetch|monitor|headless|check|probe|scan|validator|lighthouse|pingdom|uptime|curl|wget|python|httpclient|axios|java\/|libwww|go-http|okhttp|facebookexternalhit|whatsapp|telegram|discord|slack|skype|twitter|linkedin|pinterest|embedly|quora|vkshare|outbrain/i;
+const ROBOTS = /bot|crawl|spider|slurp|preview|fetch|monitor|headless|validator|lighthouse|pingdom|uptime|curl|wget|python|httpclient|axios|java\/|libwww|go-http|facebookexternalhit|whatsapp|telegram|discord|slack|skype|twitter|linkedin|pinterest|embedly|quora|vkshare|outbrain/i;
 export function looksLikeRobot(request) {
   const ua = request.headers.get("user-agent") ?? "";
   if (!ua || ua.length < 12 || ROBOTS.test(ua)) return true;
