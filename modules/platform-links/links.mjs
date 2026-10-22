@@ -21,7 +21,7 @@ export const PLATFORMS = [
   { id: "liberapay", name: "Liberapay", icon: "liberapay", adult: false, hosts: ["liberapay.com"], base: "https://liberapay.com/", example: "liberapay.com/monnom" },
   { id: "buymeacoffee", name: "Buy Me a Coffee", icon: "buymeacoffee", adult: false, hosts: ["buymeacoffee.com", "bmc.link"], base: "https://buymeacoffee.com/", example: "buymeacoffee.com/monnom" },
   { id: "linktree", name: "Linktree", icon: "linktree", adult: false, hosts: ["linktr.ee"], base: "https://linktr.ee/", example: "linktr.ee/monnom" },
-  { id: "other", name: "", icon: "↗︎", adult: false, hosts: null, base: null, example: "example.org/ma-page" },
+  { id: "other", name: "", icon: "◎︎", adult: false, hosts: null, base: null, example: "example.org/ma-page" },
 ];
 export const platformById = (id) => PLATFORMS.find((p) => p.id === id) ?? PLATFORMS[PLATFORMS.length - 1];
 export const isPlatform = (id) => PLATFORMS.some((p) => p.id === id);

@@ -259,7 +259,7 @@ test("bornes : 20 liens au plus (message clair, rien d'écrit au-delà) ; un lie
   assert.equal(await ctx.api.store.count("links"), 20);
   assert.equal(((await mod.saveLink(ctx, { platform: "other", url: "example.org/x", label: "x" }))).general, "limit");
   assert.ok(!(await def.adminPanel(ctx, { query: {} })).some((b) => b.type === "adminForm"), "plus de formulaire d'ajout au plafond");
-  await def.adminActions.remove.run(ctx, { id: (await mod.readLinks(ctx))[0].id });
+  await def.adminActions.remove.run(ctx, { id: (await mod.readLinks(ctx))[0].id, confirm: "on" });
   assert.equal((await save(ctx, { platform: "other", url: "example.org/de-trop", label: "Trop" })).ok, "Lien ajouté.");
   assert.equal(lib.cleanLabel("x".repeat(90)).length, 40);
   assert.equal((await mod.saveLink(ctx, { platform: "other", url: "example.org/long", label: "y".repeat(90) }, (await mod.readLinks(ctx))[0].id)).link.label.length, 40);
@@ -278,8 +278,9 @@ test("administration : ajouter, modifier (le lien garde son rang et sa clé), ma
   assert.equal((await mod.readLinks(ctx))[0].visible, true);
   await save(ctx, { url: "onlyfans.com/autre", visible: undefined }, l.id);
   assert.equal((await links(ctx)).length, 0);
-  assert.equal((await def.adminActions.remove.run(ctx, { id: l.id })).ok, "Lien retiré.");
-  assert.ok((await def.adminActions.remove.run(ctx, { id: l.id })).error);
+  assert.ok((await def.adminActions.remove.run(ctx, { id: l.id })).errors.confirm, "le retrait demande une confirmation");
+  assert.equal((await def.adminActions.remove.run(ctx, { id: l.id, confirm: "on" })).ok, "Lien retiré.");
+  assert.ok((await def.adminActions.remove.run(ctx, { id: l.id, confirm: "on" })).error);
   assert.ok((await save(ctx, { url: "onlyfans.com/x" }, "inconnu")).error);
   const panel = await def.adminPanel(ctx, { query: {} });
   assert.ok(panel.some((b) => b.type === "markdown" && /Aucun lien/.test(b.text)), "état vide expliqué");

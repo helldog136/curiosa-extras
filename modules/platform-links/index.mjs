@@ -184,7 +184,7 @@ async function panel(ctx, { query }) {
       columns: [ctx.t("colLink")],
       rows: links.map((l, i) => [`${ctx.t("rowLine", { n: i + 1, name: nameOf(ctx, l), address: shortUrl(l.url) })}\n${ctx.t("rowState", { notice: ctx.t(shouldWarn(l, cfg) ? "yes" : "no"), shown: ctx.t(l.visible ? "shown" : "hidden") })}`]),
       rowIds: links.map((l) => l.id),
-      ...(editable ? { rowActions: [{ label: ctx.t("actEdit"), href: "?edit={id}" }, { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }] } : {}),
+      ...(editable ? { rowActions: [{ label: ctx.t("actEdit"), href: "?edit={id}" }] } : {}),
     });
     blocks.push({ type: "markdown", text: ctx.t("limitNote") });
   }
@@ -203,10 +203,13 @@ async function panel(ctx, { query }) {
   if (editing) {
     const at = links.findIndex((l) => l.id === editing.id);
     blocks.push({ type: "heading", text: ctx.t("editHeading", { name: nameOf(ctx, editing) }) }, { type: "markdown", text: ctx.t("editPlace", { n: at + 1, total: links.length }) });
-    blocks.push({ type: "adminForm", action: "up", submitLabel: ctx.t("actUp"), fields: [{ name: "id", kind: "hidden", value: editing.id }] });
-    blocks.push({ type: "adminForm", action: "down", submitLabel: ctx.t("actDown"), fields: [{ name: "id", kind: "hidden", value: editing.id }] });
   }
   blocks.push({ type: "adminForm", action: "save", title: ctx.t(editing ? "formEditTitle" : "formAddTitle"), submitLabel: ctx.t(editing ? "submitSave" : "submitAdd"), fields, ...(editing ? { cancelHref: "?" } : {}) });
+  if (editing) {
+    blocks.push({ type: "adminForm", action: "up", submitLabel: ctx.t("actUp"), fields: [{ name: "id", kind: "hidden", value: editing.id }] });
+    blocks.push({ type: "adminForm", action: "down", submitLabel: ctx.t("actDown"), fields: [{ name: "id", kind: "hidden", value: editing.id }] });
+    blocks.push({ type: "adminForm", action: "remove", title: ctx.t("removeTitle"), submitLabel: ctx.t("actDelete"), fields: [{ name: "id", kind: "hidden", value: editing.id }, { name: "confirm", kind: "checkbox", label: ctx.t("removeConfirm"), value: "" }] });
+  }
   return blocks;
 }
 
@@ -230,8 +233,9 @@ const adminActions = {
   remove: guarded(async (ctx, values) => {
     const l = await byId(ctx, values.id);
     if (!l) return { error: ctx.t("err_notfound") };
+    if (values.confirm !== "on") return { errors: { confirm: ctx.t("err_confirm") } };
     await ctx.api.store.remove(l.id);
-    return { ok: ctx.t("okDeleted") };
+    return { ok: ctx.t("okDeleted"), redirect: "?" };
   }),
 };
 
