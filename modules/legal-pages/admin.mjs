@@ -78,7 +78,11 @@ function notes(ctx, s) {
 
 // ── Petits morceaux d'écran ─────────────────────────────────────────────────────────────────────────────────────
 
-const disclaimer = (ctx, short = false) => ({ type: "markdown", text: `> ${ctx.t(short ? "adm.disclaimer.short" : "adm.disclaimer")}` });
+/** L'avertissement « modèle d'aide, pas un conseil juridique » : lisible (couleur du texte normale, jamais atténuée), identique sur tous les écrans de l'assistant. */
+const disclaimer = (ctx, short = false) => ({
+  type: "html",
+  html: `<div role="note" style="padding:12px 16px;border-left:4px solid rgba(127,127,127,.6);border-radius:0 8px 8px 0;background:rgba(127,127,127,.1);font-size:.925rem;line-height:1.55">${htmlEsc(ctx.t(short ? "adm.disclaimer.short" : "adm.disclaimer")).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</div>`,
+});
 const list = (items) => items.map((x) => `- ${x}`).join("\n");
 
 function progress(ctx, a, stepId) {
@@ -140,14 +144,9 @@ async function overview(ctx, s, query) {
     if (bad.length) return ctx.t("adm.state.confirm");
     return ctx.t("adm.state.done");
   };
+  // Une liste (pas un tableau) : elle se replie proprement sur un téléphone, sans défilement de côté.
   const steps = appliedSteps(a);
-  blocks.push({
-    type: "table",
-    columns: [ctx.t("adm.col.question"), ctx.t("adm.col.answer"), ctx.t("adm.col.state")],
-    rows: steps.map((step) => [ctx.t(`st.${step.id}.short`), summary(ctx, step.id, a) || "—", state1(step)]),
-    rowIds: steps.map((step) => step.id),
-    rowActions: [{ label: ctx.t("adm.edit"), href: "?step={id}" }],
-  });
+  blocks.push({ type: "markdown", text: list(steps.map((step) => `**${ctx.t(`st.${step.id}.short`)}** : ${summary(ctx, step.id, a) || "—"} (${state1(step)}) · [${ctx.t("adm.edit")}](?step=${step.id})`)) });
 
   const nts = notes(ctx, s);
   if (nts.length) blocks.push({ type: "markdown", text: `**${ctx.t("adm.notes")}**\n\n${list(nts)}` });
@@ -155,7 +154,8 @@ async function overview(ctx, s, query) {
   // Aperçu et publication
   blocks.push({ type: "heading", text: ctx.t("adm.publish.title") });
   blocks.push({ type: "markdown", text: `[${ctx.t("adm.preview.open")}](?view=preview&lang=${ctx.locale === "en" ? "en" : "fr"})` });
-  if (ready && base(ctx) !== null) {
+  const upToDate = state.published && !dirty;
+  if (ready && base(ctx) !== null && !upToDate) {
     blocks.push({
       type: "adminForm", action: "publish", submitLabel: state.published ? ctx.t("adm.publish.again") : ctx.t("adm.publish.first"),
       fields: [{ name: "ack", kind: "checkbox", label: ctx.t("adm.publish.ack"), help: ctx.t("adm.publish.ackHelp") }],
@@ -170,13 +170,9 @@ async function overview(ctx, s, query) {
     const docs = pages?.[ctx.locale] ?? pages?.[ctx.defaultLocale] ?? pages?.en ?? pages?.fr;
     if (docs) {
       blocks.push({ type: "heading", text: ctx.t("adm.live.title") });
-      blocks.push({
-        type: "table", columns: [ctx.t("adm.col.page"), ctx.t("adm.col.address")],
-        rows: PAGES.map((p) => [docs[p]?.title ?? p, hrefOf(siteSide(ctx), p) ?? "—"]),
-        rowIds: PAGES.map((p) => hrefOf(siteSide(ctx), p) ?? "/"),
-        rowActions: [{ label: ctx.t("adm.live.see"), href: "{id}" }],
-      });
-      blocks.push({ type: "table", columns: [ctx.t("adm.col.page")], rows: [[ctx.t("adm.live.all")]], rowIds: ["all"], rowActions: [{ label: ctx.t("adm.live.remove"), action: "unpublish", confirm: ctx.t("adm.live.confirm"), danger: true }] });
+      blocks.push({ type: "markdown", text: ctx.t("adm.navTip") });
+      blocks.push({ type: "markdown", text: list(PAGES.map((p) => `[${docs[p]?.title ?? p}](${hrefOf(siteSide(ctx), p) ?? "#"})`)) });
+      blocks.push({ type: "table", columns: [ctx.t("adm.live.all")], rows: [[ctx.t("adm.live.keep")]], rowIds: ["all"], rowActions: [{ label: ctx.t("adm.live.remove"), action: "unpublish", confirm: ctx.t("adm.live.confirm"), danger: true }] });
     }
   }
   return blocks;

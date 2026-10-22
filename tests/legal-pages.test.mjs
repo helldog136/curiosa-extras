@@ -567,7 +567,7 @@ test("langue du visiteur : repli sur la langue du site, puis l'anglais, puis ce 
 
 // ── L'administration ───────────────────────────────────────────────────────────────────────────────────────────
 
-const KNOWN_BLOCKS = new Set(["markdown", "html", "heading", "table", "adminForm", "copy", "links"]);
+const KNOWN_BLOCKS = new Set(["markdown", "html", "heading", "table", "adminForm", "copy"]);
 const flat = (blocks) => JSON.stringify(blocks);
 
 test("administration : chaque écran rend des blocs connus, avec l'avertissement « modèle d'aide » en haut, dans les deux langues", async () => {
@@ -578,7 +578,7 @@ test("administration : chaque écran rend des blocs connus, avec l'avertissement
       const blocks = await def.adminPanel(ctx, { query });
       assert.ok(Array.isArray(blocks) && blocks.length > 0);
       for (const b of blocks) assert.ok(KNOWN_BLOCKS.has(b.type), `${lang} ${JSON.stringify(query)} : bloc ${b.type}`);
-      assert.match(blocks[0].text ?? "", /modèle d'aide|help template/i, `${lang} ${JSON.stringify(query)} : avertissement en tête`);
+      assert.match(blocks[0].html ?? "", /mod\u00e8le d(?:'|&#39;)aide|help template/i, `${lang} ${JSON.stringify(query)} : avertissement en tête`);
       assert.ok(!/\b(?:adm|rem|note|st|f|o|err)\.[a-zA-Z]+\b/.test(flat(blocks).replace(/https?:\/\/\S+/g, "")), `${lang} ${JSON.stringify(query)} : clé de traduction affichée`);
     }
   }
@@ -641,11 +641,10 @@ test("accueil : tableau des réponses, état de chaque question, bon à savoir, 
   const ctx = ctxFor({ instances: [inst("contact-form", "Contact")] });
   await def.adminActions.saveStep(ctx, { step: "country", country: "BE" });
   const partial = await def.adminPanel(ctx, { query: {} });
-  const table = partial.find((b) => b.type === "table");
-  assert.deepEqual(table.columns, ["Question", "Votre réponse", "État"]);
-  assert.equal(table.rows[0][2], "Fait");
-  assert.ok(table.rows.some((r) => r[2] === "À compléter"));
-  assert.ok(table.rowActions[0].href === "?step={id}" && table.rowIds[0] === "country");
+  const listing = partial.find((b) => b.type === "markdown" && b.text.includes("?step=country")).text;
+  assert.match(listing, /\*\*Pays\*\* : Belgique \(Fait\) · \[Modifier\]\(\?step=country\)/);
+  assert.match(listing, /\(À compléter\)/);
+  assert.ok(!partial.some((b) => b.type === "table"), "pas de tableau large : rien ne défile de côté sur un téléphone");
   assert.ok(!partial.some((b) => b.type === "adminForm" && b.action === "publish"), "pas de bouton tant qu'il manque quelque chose");
   assert.ok(partial.some((b) => b.type === "markdown" && /Je ne peux pas encore publier/.test(b.text)));
   const ready = await answerEverything(ctxFor({ instances: [inst("contact-form", "Contact")] }));

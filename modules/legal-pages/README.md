@@ -38,6 +38,7 @@ Vous pouvez recommencer, corriger une réponse ou **retirer** les pages à tout 
 - Il **n'écrit pas de conditions de vente** ni l'information sur le droit de rétractation. Si vous vendez, elles sont à écrire à part (le module vous le rappelle).
 - Il **ne fabrique pas de bandeau de consentement** et ne bloque pas les contenus d'autres services (lecteur vidéo…). Si vous en intégrez, il vous prévient : en Belgique et en France, il faut en principe l'accord du visiteur avant de les afficher.
 - Il **n'efface pas vos messages** à votre place : la durée de conservation que vous choisissez est un engagement que vous prenez.
+- Il **n'empêche pas** le site d'ajouter par défaut un lien « Mentions légales » dans le menu du haut : décochez « Afficher dans le menu de mon site » (onglet « Général ») pour le garder seulement en bas de page.
 - Il ne connaît que les extensions du catalogue au moment de son écriture. Pour une extension qu'il ne connaît pas, il vous **pose la question** au lieu de deviner.
 - Les textes sont en français et en anglais seulement.
 
