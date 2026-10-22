@@ -1,3 +1,25 @@
+# Sondages 1.1.0
+
+## Nouveautés
+- **Des manches : « toutes les 10 minutes, le chat décide ».** Une question qui revient en boucle ; à la fin de chaque manche le choix qui a le plus de voix l'emporte, s'affiche en grand à l'écran, puis la manche suivante démarre. En cas d'égalité, le sort tranche, et l'écran le dit. L'historique des décisions est public (`/polls/decisions`) et téléchargeable.
+- **Un lien à partager qui montre toujours la manche du moment** (`/polls/now`), avec son compte à rebours.
+- **Un sondage rapide « A ou B ? »** en un geste (2 à 4 choix, 30 secondes à 5 minutes) : il passe tout de suite à l'écran.
+- **Une télécommande pour votre téléphone** avec de gros boutons (lancer, suivant, arrêter, A ou B ?), grâce au nouveau module Participation, qui s'installe d'un clic depuis l'onglet « En direct ».
+- L'écran de votre stream affiche le numéro de la manche, le compte à rebours, les résultats en direct et la décision prise.
+- L'assistant IA peut lancer, passer ou arrêter les manches, lire l'historique et lancer un sondage rapide (ces gestes ne sont jamais autorisés d'office).
+
+## Améliorations
+- L'onglet « À l'écran » devient « En direct » et rassemble les manches, le sondage rapide et l'écran OBS.
+- Les votes d'une manche sont effacés dès que la décision est prise (au lieu de 30 jours après la fin).
+- Avec Participation : une voix par personne gérée en commun, la possibilité de mettre quelqu'un en sourdine, et une mise à jour de l'écran plus douce qui ralentit toute seule quand il y a beaucoup de monde. Sans elle, tout marche comme avant.
+
+## Pour les développeurs
+- Module `polls` 1.1.0, `minCore` 0.2.5. Offre `audience.remote` v1 (`each`) ; demande `audience.session` en facultatif (mode autonome conservé, délai de 3 s puis repli).
+- Données ajoutées : `rounds` (≤ 500), `series` dans `meta`, file d'attente du ménage dans `cfg` ; aucune migration (`dataVersion` 1).
+- Une manche = un sondage (`round: { n, run }`, caché des listes). La série avance « à la lecture » (verrou `series:` distinct du verrou des votes) ; `syncLive` publie `screen` (privé, clé = adresse secrète) et `now` (public) chez Participation, regroupé quand plusieurs votes arrivent ensemble.
+- Nouveaux fichiers : `bridge.mjs` (pont vers Participation), fonctions pures `pickWinner`, `validateSeriesForm`, `validateQuick` dans `lib.mjs`. Route `client` désormais asynchrone (bibliothèque du direct livrée devant si Participation est là).
+- Nouveaux outils MCP : `rounds_status`, `rounds_history`, `round_control`, `poll_quick`.
+
 # Sondages 1.0.0
 
 ## Nouveautés
