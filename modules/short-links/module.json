@@ -1,0 +1,148 @@
+{
+  "apiVersion": 2,
+  "id": "short-links",
+  "name": { "fr": "Liens courts", "en": "Short links" },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "fr": "Transformez une longue adresse en un nom court facile à retenir, avec son QR code prêt à imprimer et un petit compteur de clics par jour, sans suivre vos visiteurs.",
+    "en": "Turn a long address into a short, memorable name, with a print-ready QR code and a small click counter per day that never tracks your visitors."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🔗",
+  "type": "utility",
+  "instances": "single",
+  "main": "index.mjs",
+  "permissions": ["routes", "storage", "admin", "mcp"],
+  "privacy": {
+    "fr": "Quand vous ouvrez un lien court de ce site, le site ajoute 1 à un compteur du jour pour ce lien, et c'est tout : ni cookie, ni adresse IP, ni navigateur, ni provenance ne sont enregistrés, et rien ne permet de vous reconnaître. Les robots et les aperçus de messagerie ne sont pas comptés. Il n'y a rien à effacer à votre demande, puisque rien ne vous concerne.",
+    "en": "When you open a short link on this site, the site adds 1 to that link's counter for the day, and that is all: no cookie, no IP address, no browser details and no origin are saved, and nothing can be used to recognise you. Robots and message previews are not counted. There is nothing to erase on request, since nothing is about you."
+  },
+  "tabs": [{ "id": "use", "label": { "fr": "Mes liens", "en": "My links" } }],
+  "rights": [
+    {
+      "id": "links.edit",
+      "label": { "fr": "créer, modifier et supprimer des liens courts", "en": "create, change and delete short links" },
+      "help": {
+        "fr": "Sans ce droit, la personne peut seulement voir les liens, leurs QR codes et leurs chiffres.",
+        "en": "Without this right, the person can only see the links, their QR codes and their numbers."
+      },
+      "default": { "admin": true, "editor": false }
+    }
+  ],
+  "settings": [
+    {
+      "key": "countClicks",
+      "type": "boolean",
+      "default": true,
+      "label": { "fr": "Compter les clics", "en": "Count the clicks" },
+      "help": {
+        "fr": "Pour savoir quel panneau ou quelle affiche amène du monde. On compte seulement combien de fois par jour : aucune adresse IP, aucun cookie, rien sur les visiteurs.",
+        "en": "To know which sign or poster brings people. Only the number of clicks per day is counted: no IP address, no cookie, nothing about the visitors."
+      }
+    },
+    {
+      "key": "qrLevel",
+      "type": "select",
+      "default": "M",
+      "label": { "fr": "Solidité du QR code", "en": "QR code strength" },
+      "help": {
+        "fr": "Plus il est solide, plus il a de petits carrés et plus il résiste aux plis, aux taches et aux rayures. Changer ce réglage n'abîme pas les QR codes déjà imprimés : ils continuent de marcher.",
+        "en": "The stronger it is, the more small squares it has and the better it survives folds, stains and scratches. Changing this setting does not harm QR codes already printed: they keep working."
+      },
+      "options": [
+        { "value": "L", "label": { "fr": "Léger : le plus simple à lire de loin", "en": "Light: easiest to read from far away" } },
+        { "value": "M", "label": { "fr": "Normal", "en": "Normal" } },
+        { "value": "Q", "label": { "fr": "Renforcé : pour l'impression (plis, taches)", "en": "Strong: for printing (folds, stains)" } }
+      ]
+    },
+    {
+      "key": "endedMessage",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": { "fr": "Message d'un lien terminé (facultatif)", "en": "Message for an ended link (optional)" },
+      "help": {
+        "fr": "Affiché (en texte simple) quand quelqu'un ouvre un lien dont la date de fin est passée, par exemple « L'offre est terminée, retrouvez nos nouveautés sur la boutique. ». Laissez vide pour le message habituel.",
+        "en": "Shown (as plain text) when someone opens a link whose end date has passed, for example \"The offer has ended, see what's new in the shop.\" Leave empty for the usual message."
+      }
+    },
+    {
+      "key": "publicBase",
+      "type": "url",
+      "optional": true,
+      "advanced": true,
+      "label": { "fr": "Début de l'adresse courte", "en": "Start of the short address" },
+      "help": {
+        "fr": "Seulement si votre hébergeur redirige déjà une adresse plus courte vers ce service, par exemple https://monsite.be/go/ : les QR codes créés ensuite l'utiliseront. Laissez vide sinon.",
+        "en": "Only if your host already forwards a shorter address to this service, for example https://mysite.be/go/ : QR codes made afterwards will use it. Leave empty otherwise."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "shortlink_list",
+      "readOnly": true,
+      "description": "List the short links, newest first, with their short address, destination, end date and number of clicks (last 30 days and total). Use 'cursor' from the previous answer to get the next page.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100, "description": "How many links at most (default 30)." },
+          "cursor": { "type": "string", "maxLength": 300, "description": "The 'next' value of the previous answer, to get the following links." }
+        }
+      }
+    },
+    {
+      "name": "shortlink_stats",
+      "readOnly": true,
+      "description": "Clicks per day of one short link (only the days with at least one click), over the last N days. Counts are aggregated per day: there is nothing about individual visitors.",
+      "input": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 80, "description": "The link id, as given by shortlink_list." },
+          "days": { "type": "integer", "minimum": 1, "maximum": 120, "description": "How many days back (default 30)." }
+        }
+      }
+    },
+    {
+      "name": "shortlink_create",
+      "description": "Create a short link and return its short address. Only http and https destinations are accepted; private or internal addresses are refused. Without 'name', a readable name is chosen automatically.",
+      "input": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string", "maxLength": 2000, "description": "The destination address, for example https://www.example.org/shop." },
+          "name": { "type": "string", "maxLength": 40, "description": "Optional short name: lowercase letters, digits and hyphens." },
+          "note": { "type": "string", "maxLength": 80, "description": "Optional private note to find the link again, for example 'Winter market flyer'." },
+          "endsOn": { "type": "string", "maxLength": 10, "description": "Optional last valid day, like 2026-12-31. After it, visitors see a friendly 'link ended' page." }
+        }
+      }
+    },
+    {
+      "name": "shortlink_update",
+      "description": "Change where an existing short link leads, its note or its end date. The short name and the QR code never change, so printed QR codes keep working. Fields left out stay as they are.",
+      "input": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 80, "description": "The link id, as given by shortlink_list." },
+          "url": { "type": "string", "maxLength": 2000, "description": "The new destination address." },
+          "note": { "type": "string", "maxLength": 80, "description": "The new private note (an empty text removes it)." },
+          "endsOn": { "type": "string", "maxLength": 10, "description": "The new last valid day like 2026-12-31, or 'none' to remove the end date." }
+        }
+      }
+    },
+    {
+      "name": "shortlink_delete",
+      "destructive": true,
+      "description": "Delete a short link and its click counts. QR codes already printed for it will then show a friendly 'link not found' page. This cannot be undone.",
+      "input": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string", "maxLength": 80, "description": "The link id, as given by shortlink_list." } }
+      }
+    }
+  ]
+}
