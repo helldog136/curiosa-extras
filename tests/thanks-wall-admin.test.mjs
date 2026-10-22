@@ -4,7 +4,7 @@ import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 import { runPrivacySubjectContract } from "./contract/privacySubject.contract.mjs";
-import { makeWorld, reset, restore, manifest, P, C, D, def, Admin, Mcp, Privacy, people, htmlOf } from "./helpers/thanks-wall-world.mjs";
+import { makeWorld, reset, restore, manifest, P, C, D, def, Admin, people } from "./helpers/thanks-wall-world.mjs";
 
 beforeEach(() => reset());
 afterEach(() => restore());
@@ -36,7 +36,6 @@ test("panneau : le mur, ses groupes, le lien vers le mur et vers Contacts, la se
   assert.equal(links[0].href, "/merci");
   assert.ok(links[1].href.startsWith("/admin/instances/"));
   assert.ok(t.includes("créez une catégorie « Ne pas montrer »"), "sans catégorie : on explique comment faire");
-  assert.ok(!t.includes(list[0].name) || true);
 });
 
 test("panneau : avec une catégorie « Ne pas montrer », la consigne cite son nom et le nombre de personnes cachées", async () => {
@@ -111,8 +110,6 @@ test("l'écran d'un message : un formulaire par langue du site, le texte actuel,
   assert.deepEqual(form.fields.map((f) => f.name), ["contactId", "text_fr", "text_en"]);
   assert.equal(form.fields[1].value, "Merci !");
   assert.ok(form.fields[1].help.includes("160 caractères") && form.fields[1].label.endsWith("(FR)"));
-  const ro = makeWorld({ book: ctx.__book, can: false });
-  void ro;
   const noRight = setup(1, { can: false });
   const b2 = await panel(noRight.ctx, { msg: noRight.list[0].id });
   assert.ok(text(b2).includes("pas le modifier") && !byType(b2, "adminForm").length);
@@ -275,7 +272,7 @@ runPrivacySubjectContract(async () => {
   const svc = def.services["privacy.subject"];
   return {
     methods: Object.fromEntries(Object.keys(svc).map((m) => [m, (args) => svc[m](ctx, args)])),
-    addReference: async (contactId) => { await D.setMessage(ctx, contactId, { fr: "Merci" }); await D.setHonor(ctx, { month: P.monthKey(), contactId, why: {} }).catch(() => {}); },
+    addReference: async (contactId) => { await D.setMessage(ctx, contactId, { fr: "Merci" }); },
     countReferences: async (contactId) => { const refs = await D.referencesOf(ctx, contactId); return (refs.message ? 1 : 0) + refs.honors.length; },
   };
 }, { prefix: "thanks-wall privacy.subject" });
@@ -417,5 +414,4 @@ test("la page publique, la racine et les groupes n'écrivent rien (aucune route,
   await def.page(ctx, { segments: [] }); await def.page(ctx, { segments: ["g", "1"] });
   assert.equal(JSON.stringify(ctx.dumpStore()), before);
   assert.equal(ctx.calls.writes.length, 0);
-  void htmlOf; void Mcp; void Privacy;
 });
