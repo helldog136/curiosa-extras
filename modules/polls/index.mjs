@@ -10,15 +10,21 @@
 //   archive   ≤ 800  sondages archivés (même forme, sans bulletins)
 //   b-<id>    ≤ 5000 bulletins d'un sondage (clé = empreinte du code anonyme ; gardés 30 jours après la fin, puis effacés)
 //   meta      un document : code secret de la source OBS, sondage à l'écran
-// Rien ne tourne en arrière-plan : l'état « ouvert / fermé » est calculé à la lecture, le ménage se fait quand quelqu'un vote ou ouvre l'admin.
+//   rounds    ≤ 500  décisions des manches (« toutes les N minutes, le chat décide ») : les votes d'une manche sont effacés dès la décision
+// Rien ne tourne en arrière-plan : l'état « ouvert / fermé » est calculé à la lecture, les manches avancent quand l'écran, la télécommande ou une page les regarde,
+// le ménage se fait quand quelqu'un vote ou ouvre l'admin.
+//
+// Avec le module « Participation » (service « audience.session », facultatif), les sondages lui confient l'identité, les limites, la télécommande et le direct ;
+// sans lui, tout continue de marcher comme avant (mode autonome). Voir README.md.
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const V = new URL(import.meta.url).search;   // le cœur recharge index.mjs avec ?v=… : les fichiers voisins suivent
 const L = await import(`./lib.mjs${V}`);
 const C = await import(`./client.mjs${V}`);
-const { esc, clean, num, LIMITS } = L;
+const B = await import(`./bridge.mjs${V}`);
+const { esc, clean, num, LIMITS, ROUND } = L;
 
-const POLLS = "polls", ARCHIVE = "archive", META = "meta";
+const POLLS = "polls", ARCHIVE = "archive", META = "meta", ROUNDS = "rounds";
 const DAY = 86_400_000, HOUR = 3_600_000;
 const PAGE = 50;
 const DEFAULT_TZ = "Europe/Paris";
@@ -28,8 +34,8 @@ const TOKEN_RE = /^[A-Za-z0-9_-]{22,64}$/;
 
 const chains = (globalThis.__curiosaPollsLocks ??= new Map());
 /** Passe les écritures d'une instance l'une après l'autre : deux votes simultanés ne se marchent jamais dessus. */
-async function withLock(ctx, fn) {
-  const key = ctx.instance.key;
+async function withLock(ctx, fn, name = "") {
+  const key = `${name}${ctx.instance.key}`;
   const prev = chains.get(key) ?? Promise.resolve();
   let release;
   const gate = new Promise((r) => { release = r; });
@@ -77,6 +83,8 @@ async function byKey(ctx, collection, key, field) {
 }
 
 const pollOf = (r, kind = "live") => (r ? { ...r.data, id: r.id, archived: kind === "archive" } : null);
+/** Les manches en cours ne sont pas des sondages « à lister » : elles vivent sur la page « en cours » et à l'écran. */
+const listed = (p) => !p.round;
 const can = (ctx, right) => (typeof ctx.can === "function" ? !!ctx.can(right) : true);   // le cœur refuse déjà l'action elle-même : ici, on ne fait que cacher ce qu'on ne peut pas utiliser
 
 async function livePolls(ctx) {
@@ -92,15 +100,15 @@ async function findById(ctx, id) {
   return r && r.data?.slug && Array.isArray(r.data?.choices) ? pollOf(r) : null;
 }
 async function getCfg(ctx) { const r = await byKey(ctx, META, "cfg", "k"); return r ? { id: r.id, ...r.data } : null; }
+/** Sans verrou (elle est aussi appelée depuis des sections déjà verrouillées) : si deux créations se croisent, la plus ancienne gagne. */
 async function ensureCfg(ctx) {
   const found = await getCfg(ctx);
   if (found) return found;
-  return withLock(ctx, async () => {
-    const again = await getCfg(ctx);
-    if (again) return again;
-    const data = { k: "cfg", obsKey: randomBytes(18).toString("base64url"), onAir: null };
-    return { id: await ctx.api.store.add(META, data, { key: "cfg" }), ...data };
-  });
+  const data = { k: "cfg", obsKey: randomBytes(18).toString("base64url"), onAir: null, onAirUntil: null, garbage: [] };
+  const id = await ctx.api.store.add(META, data, { key: "cfg" });
+  const first = await byKey(ctx, META, "cfg", "k");
+  if (first && first.id !== id) { await ctx.api.store.remove(id); return { id: first.id, ...first.data }; }
+  return { id, ...data };
 }
 const saveCfg = async (ctx, cfg) => { const { id, ...data } = cfg; await ctx.api.store.update(id, data); };
 
@@ -122,6 +130,22 @@ async function purgeBallots(ctx, pollId, { pages = 1 } = {}) {
   return (await ctx.api.store.count(col)) > 0;
 }
 
+/** Efface les votes des manches décidées (collections mises de côté), 300 lignes au plus par passage. */
+async function eatGarbage(ctx, limit) {
+  const cfg = await getCfg(ctx);
+  if (!cfg?.garbage?.length) return 0;
+  const garbage = [...cfg.garbage];
+  let used = 0;
+  while (garbage.length && used < limit) {
+    const page = await ctx.api.store.page(garbage[0], { limit: Math.min(100, limit - used), order: "asc" });
+    for (const it of page.items) { await ctx.api.store.remove(it.id); used++; }
+    if (!page.items.length) garbage.shift();
+  }
+  const done = cfg.garbage.filter((g) => !garbage.includes(g));
+  if (done.length) await withLock(ctx, async () => { const c = await getCfg(ctx); if (c) await saveCfg(ctx, { ...c, garbage: (c.garbage ?? []).filter((g) => !done.includes(g)) }); });
+  return used;
+}
+
 /** Ménage de la conservation : bulletins des sondages finis depuis plus de N jours. Quelques centaines d'effacements au plus par passage. */
 export async function sweep(ctx, now = Date.now(), { force = false } = {}) {
   const k = ctx.instance.key;
@@ -129,7 +153,7 @@ export async function sweep(ctx, now = Date.now(), { force = false } = {}) {
   mem.swept.set(k, now);
   const days = num(ctx.setting("retentionDays"), 30, 1, 90);
   let budget = 3;
-  let cleaned = 0;
+  let cleaned = await eatGarbage(ctx, 300);
   for (const p of await livePolls(ctx)) {
     if (budget <= 0) break;
     if (p.purgedAt || L.stateOf(p, now) !== "closed") continue;
@@ -166,7 +190,7 @@ async function archiveOne(ctx, p, now = Date.now()) {
 }
 
 /** Crée un sondage (borné : au-delà de 200, le plus ancien sondage fini est archivé ; s'il n'y en a pas, on le dit). */
-export async function createPoll(ctx, value, tz, now = Date.now()) {
+export async function createPoll(ctx, value, tz, now = Date.now(), extra = {}) {
   return withLock(ctx, async () => {
     if ((await ctx.api.store.count(POLLS)) >= LIMITS.livePolls) {
       const closed = (await livePolls(ctx)).filter((p) => L.stateOf(p, now) === "closed").sort((a, b) => (L.endedAtMs(a, now) || 0) - (L.endedAtMs(b, now) || 0));
@@ -176,7 +200,7 @@ export async function createPoll(ctx, value, tz, now = Date.now()) {
     const slug = await freshSlug(ctx, value.question);
     const data = {
       slug, question: value.question, choices: value.choices.map((text, i) => ({ id: `c${i + 1}`, text })), max: value.max, endsAt: value.endsAt,
-      tz, resultsMode: value.resultsMode, counts: {}, voters: 0, rev: 0, createdAt: new Date(now).toISOString(), closedAt: null,
+      tz, resultsMode: value.resultsMode, counts: {}, voters: 0, rev: 0, createdAt: new Date(now).toISOString(), closedAt: null, ...extra,
     };
     const id = await ctx.api.store.add(POLLS, data, { key: slug });
     return { ok: true, id, slug };
@@ -249,6 +273,169 @@ async function removePoll(ctx, p) {
   if (cfg?.onAir === p.slug) await saveCfg(ctx, { ...cfg, onAir: null });
 }
 
+/* ───────────── Manches : « toutes les N minutes, le chat décide » ───────────── */
+
+// Une manche = un sondage ordinaire (même comptage, mêmes bulletins) qui se ferme tout seul à l'heure dite. Au premier regard APRÈS sa fin (écran, télécommande, page),
+// la décision est prise : le vainqueur est écrit dans l'historique, les votes de la manche sont effacés, et la manche suivante démarre. Aucun minuteur.
+const SERIES_KEY = "series";
+const getSeries = async (ctx) => { const r = await byKey(ctx, META, SERIES_KEY, "k"); return r ? { id: r.id, ...r.data } : null; };
+const saveSeries = async (ctx, s) => { const { id, ...data } = s; await ctx.api.store.update(id, data, { key: SERIES_KEY }); };
+const bySlug = async (ctx, slug) => (slug ? pollOf(await byKey(ctx, POLLS, slug, "slug")) : null);
+const isoOf = (ms) => new Date(ms).toISOString();
+
+/** La configuration des manches (une seule par site). Créée au premier besoin avec des valeurs qui marchent tout de suite. */
+async function ensureSeries(ctx) {
+  const found = await getSeries(ctx);
+  if (found) return found;
+  const data = { k: SERIES_KEY, status: "idle", question: ctx.t("roundQuestion"), choices: [ctx.t("roundChoice1"), ctx.t("roundChoice2"), ctx.t("roundChoice3")], minutes: ROUND.defaultMinutes, runId: null, n: 0, current: null, startedAt: null, stoppedAt: null, lastDecision: null };
+  const id = await ctx.api.store.add(META, data, { key: SERIES_KEY });
+  const first = await byKey(ctx, META, SERIES_KEY, "k");
+  if (first && first.id !== id) { await ctx.api.store.remove(id); return { id: first.id, ...first.data }; }
+  return { id, ...data };
+}
+
+/** Note dans le journal de Participation, s'il est là (qui a décidé quoi). Silencieux. */
+const note = (ctx, what, detail) => B.audience(ctx, "journal", { who: "polls", what, room: B.roomOf(ctx), detail: clean(detail, 160) || undefined });
+
+/** Met de côté les votes d'une collection (effacés par petites tranches au prochain passage de ménage), puis supprime le sondage. */
+async function dropRoundPoll(ctx, p) {
+  await withLock(ctx, async () => {
+    const cfg = await ensureCfg(ctx);
+    await saveCfg(ctx, { ...cfg, garbage: [...(cfg.garbage ?? []), `b-${p.id}`].slice(-40), onAir: cfg.onAir === p.slug ? null : cfg.onAir });
+    await ctx.api.store.remove(p.id);
+  });
+}
+
+/** Prend la décision d'une manche terminée : vainqueur (ou tirage au sort, dit en clair), historique borné, votes effacés. Renvoie l'enregistrement. */
+async function decideRound(ctx, series, cur, now, { rand, via = "timer" } = {}) {
+  const { winner, tie } = L.pickWinner(cur, rand);
+  const at = L.endedAtMs(cur, now) || now;
+  const rec = {
+    k: cur.slug, run: series.runId, n: cur.round?.n ?? series.n, question: cur.question,
+    choices: cur.choices.map((c) => ({ text: c.text, count: Math.max(0, Number(cur.counts?.[c.id]) || 0) })),
+    voters: Number(cur.voters) || 0, winner: winner ? winner.text : null, tie, at: isoOf(at), decidedAt: isoOf(now), via,
+  };
+  await withLock(ctx, async () => {
+    await ctx.api.store.add(ROUNDS, rec, { key: cur.slug });
+    for (let extra = (await ctx.api.store.count(ROUNDS)) - ROUND.history; extra > 0; extra--) {   // jamais plus de 500 décisions : les plus anciennes s'effacent
+      const [oldest] = (await ctx.api.store.page(ROUNDS, { limit: 1, order: "asc" })).items;
+      if (!oldest) break;
+      await ctx.api.store.remove(oldest.id);
+    }
+  });
+  await dropRoundPoll(ctx, cur);
+  await note(ctx, "round.decision", `${ctx.t("journalRound", { n: rec.n })} : ${rec.winner ?? ctx.t("noWinner")}${tie ? ` (${ctx.t("journalTie", { list: tie.join(", ") })})` : ""}`);
+  return rec;
+}
+
+const decisionOf = (rec) => ({ slug: rec.k, n: rec.n, question: rec.question, winner: rec.winner, tie: rec.tie, voters: rec.voters, decidedAt: rec.decidedAt, choices: rec.choices });
+
+/** Fait avancer la série si une manche est finie. À appeler SOUS le verrou « series: ». */
+async function advanceLocked(ctx, now, opts = {}) {
+  let series = await getSeries(ctx);
+  if (!series || series.status !== "running") return series;
+  const cur = await bySlug(ctx, series.current);
+  if (cur && L.stateOf(cur, now) === "open") return series;
+  let prevEnd = null;
+  if (cur) {
+    prevEnd = L.endedAtMs(cur, now);
+    series = { ...series, current: null, lastDecision: decisionOf(await decideRound(ctx, series, cur, now, opts)) };
+  } else if (series.current) series = { ...series, current: null };
+  const startAt = prevEnd && now - prevEnd >= 0 && now - prevEnd < ROUND.resumeGapMs ? prevEnd : now;   // sans trou ni dérive quand l'écran regarde en continu
+  const n = (Number(series.n) || 0) + 1;
+  const made = await createPoll(ctx, { question: series.question, choices: series.choices, max: 1, endsAt: isoOf(startAt + series.minutes * 60_000), resultsMode: "always" }, tzOf(ctx), startAt, { round: { n, run: series.runId } });
+  series = made.ok ? { ...series, n, current: made.slug } : series;
+  await saveSeries(ctx, series);
+  return series;
+}
+
+/** Regarde si une manche est finie et, si oui, décide et passe à la suivante. Ne coûte presque rien quand il n'y a rien à faire. */
+export async function advance(ctx, now = Date.now(), opts = {}) {
+  const series = await getSeries(ctx);
+  if (!series || series.status !== "running") return series;
+  const cur = await bySlug(ctx, series.current);
+  if (cur && L.stateOf(cur, now) === "open") return series;
+  const out = await withLock(ctx, () => advanceLocked(ctx, now, opts), "series:");
+  await syncLive(ctx, now);
+  return out;
+}
+
+export async function startSeries(ctx, now = Date.now(), opts = {}) {
+  const r = await withLock(ctx, async () => {
+    const series = await ensureSeries(ctx);
+    if (series.status === "running") return { ok: false, error: "already" };
+    await saveSeries(ctx, { ...series, status: "running", runId: randomBytes(6).toString("hex"), n: 0, current: null, startedAt: isoOf(now), stoppedAt: null });
+    await advanceLocked(ctx, now, opts);
+    return { ok: true };
+  }, "series:");
+  if (r.ok) { await note(ctx, "round.start", ctx.t("journalStart")); await syncLive(ctx, now); }
+  return r;
+}
+
+/** « Suivant » : la manche en cours se termine tout de suite, le vainqueur est décidé, la suivante démarre. */
+export async function nextRound(ctx, now = Date.now(), opts = {}) {
+  const r = await withLock(ctx, async () => {
+    const series = await getSeries(ctx);
+    if (!series || series.status !== "running") return { ok: false, error: "idle" };
+    const cur = await bySlug(ctx, series.current);
+    if (cur && L.stateOf(cur, now) === "open") await closeNow(ctx, cur.id, now);
+    await advanceLocked(ctx, now, { via: "next", ...opts });
+    return { ok: true };
+  }, "series:");
+  if (r.ok) await syncLive(ctx, now);
+  return r;
+}
+
+/** « Arrêter » : la série s'arrête et la manche en cours est annulée (aucune décision, ses votes sont effacés). */
+export async function stopSeries(ctx, now = Date.now()) {
+  const r = await withLock(ctx, async () => {
+    const series = await getSeries(ctx);
+    if (!series || series.status !== "running") return { ok: false, error: "idle" };
+    const cur = await bySlug(ctx, series.current);
+    if (cur) await dropRoundPoll(ctx, cur);
+    await saveSeries(ctx, { ...series, status: "idle", current: null, stoppedAt: isoOf(now) });
+    return { ok: true, cancelled: !!cur && (Number(cur.voters) || 0) > 0 };
+  }, "series:");
+  if (r.ok) { await note(ctx, "round.stop", ctx.t("journalStop")); await syncLive(ctx, now); }
+  return r;
+}
+
+/** « A ou B ? » en un geste : un sondage court de 2 à 4 choix, tout de suite à l'écran. */
+export async function quickPoll(ctx, values, now = Date.now()) {
+  const q = L.validateQuick(values);
+  if (Object.keys(q.errors).length) return { ok: false, errors: q.errors };
+  const question = q.value.question || (q.value.choices.length === 2 ? ctx.t("quickQuestion2", { a: q.value.choices[0], b: q.value.choices[1] }) : ctx.t("quickQuestionMany"));
+  const ends = now + q.value.seconds * 1000;
+  const made = await createPoll(ctx, { question: clean(question, LIMITS.question), choices: q.value.choices, max: 1, endsAt: isoOf(ends), resultsMode: "always" }, tzOf(ctx), now, { quick: true });
+  if (!made.ok) return { ok: false, error: "full" };
+  await withLock(ctx, async () => { const cfg = await ensureCfg(ctx); await saveCfg(ctx, { ...cfg, onAir: made.slug, onAirUntil: isoOf(ends + ROUND.pinGraceMs) }); });
+  await note(ctx, "poll.quick", `${clean(question, 100)}`);
+  await syncLive(ctx, now);
+  return { ok: true, slug: made.slug, id: made.id, endsAt: isoOf(ends) };
+}
+
+/**
+ * Les limites et l'identité d'un vote. Avec Participation : débit par connexion et par personne, inscription dans la salle, sourdine. Sans lui (ou s'il ne répond pas) :
+ * le limiteur local, comme avant. Rend { audience: true|false } pour voter, ou { refuse, status } pour refuser.
+ */
+async function voteGate(ctx, request, { slug, token, now }) {
+  const room = B.roomOf(ctx), conn = B.connOf(request);
+  if (await B.present(ctx)) {
+    const hourly = await B.audience(ctx, "limit", { room, scope: "vote", conn, token, max: num(ctx.setting("ratePerHour"), 30, 3, 300), per: 3600 });
+    if (hourly) {
+      const poll = hourly.ok ? await B.audience(ctx, "limit", { room, scope: `p-${slug}`.replace(/[^a-z0-9:._-]/g, "").slice(0, 40) || "p", conn, max: 8, per: 600 }) : null;
+      const joined = poll?.ok ? await B.audience(ctx, "join", { room, label: ctx.instance.name, token, conn }) : null;
+      const bad = [hourly, poll, joined].find((x) => x && !x.ok);
+      if (bad) return { refuse: B.reasonOf(bad.error), status: bad.error === "limit" ? 429 : bad.error === "muted" ? 403 : bad.error === "room_full" || bad.error === "busy" ? 503 : 400, retryAfter: bad.retryAfter };
+      if (joined?.participant?.muted) return { refuse: "muted", status: 403 };
+      if (joined) return { audience: true };
+    }
+  }
+  const fp = fingerprint(request, now);
+  if (over(`a|${ctx.instance.key}|${fp}`, num(ctx.setting("ratePerHour"), 30, 3, 300), HOUR, now) || over(`p|${ctx.instance.key}|${fp}|${slug}`, 8, 10 * 60_000, now)) return { refuse: "limit", status: 429 };
+  return { audience: false };
+}
+
 /* ───────────── Visibilité des résultats ───────────── */
 
 const myBallot = async (ctx, p, token) => (TOKEN_RE.test(String(token ?? "")) && !p.archived ? byKey(ctx, `b-${p.id}`, ballotKey(p.id, token), "k") : null);
@@ -272,6 +459,8 @@ const CSS = `.vp{box-sizing:border-box;border:1px solid var(--v-line);background
 .vp-tag{display:inline-block;margin:6px 6px 0 0;font-size:.82rem;font-weight:700;border:1px solid var(--v-fg);border-radius:999px;padding:1px 10px}
 .vp-h{margin:1.6rem 0 .8rem;font-size:1.3rem;font-weight:700}.vp-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}.vp-list a{display:block;padding:12px 14px;min-height:48px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-fg);text-decoration:none}
 .vp-list a:hover,.vp-list a:focus-visible{border-color:var(--v-accent)}.vp-list b{display:block;overflow-wrap:anywhere}.vp-list small{color:var(--v-muted)}
+.vp-cd{font-variant-numeric:tabular-nums}.vp-decision{margin:0;padding:12px 16px;border:3px solid var(--v-accent);border-radius:14px;font-weight:700;overflow-wrap:anywhere}
+.vp-dec b{display:block}.vp-nav{display:flex;flex-wrap:wrap;gap:8px 18px;margin:.4rem 0 0}.vp-nav a{display:inline-flex;align-items:center;min-height:44px}
 @media (prefers-reduced-motion:reduce){.vp-fill{transition:none}}`;
 
 const votesText = (ctx, n) => ctx.t(n === 1 ? "voice_one" : "voice_many", { n });
@@ -286,23 +475,29 @@ function resultsHtml(ctx, p, mine = []) {
   return `<p class="vp-hint">${esc(ctx.t(closed ? "finalResult" : "liveResult"))} · ${esc(votersText(ctx, Number(p.voters) || 0))}</p><ol class="vp-bars">${items}</ol>`;
 }
 
-function endLine(ctx, p) {
+function endLine(ctx, p, reload = false) {
   const closed = L.stateOf(p) === "closed";
   if (closed) {
     const when = L.endedAtMs(p);
     return esc(ctx.t("endedOn", { date: when ? L.formatEnd(new Date(when).toISOString(), p.tz || DEFAULT_TZ, ctx.locale) : "" }));
   }
   if (!p.endsAt) return esc(ctx.t("noEnd"));
+  if (p.round || p.quick) {   // une manche ou un sondage rapide : le temps qui reste, pas une date
+    const left = Math.max(0, Date.parse(p.endsAt) - Date.now());
+    return `${p.round ? `${esc(ctx.t("roundBadge", { n: p.round.n }))} · ` : ""}${esc(ctx.t("timeLeft"))} <strong class="vp-cd" data-vp-cd data-left="${left}"${reload ? ' data-reload="1"' : ""}>${esc(L.clock(left))}</strong>`;
+  }
   return `${esc(ctx.t("endsOn", { date: "" }))}<time datetime="${esc(p.endsAt)}" data-vp-end data-label="${esc(ctx.t("localLabel"))}">${esc(L.formatEnd(p.endsAt, p.tz || DEFAULT_TZ, ctx.locale))}</time><span data-vp-local hidden></span>`;
 }
 
 /** Le bloc d'un sondage : question, formulaire (s'il est ouvert), résultats (selon le choix d'Emma). Même rendu sur la page, l'accueil et après un vote. */
-export function pollHtml(ctx, p, { title = "h2", link = null } = {}) {
+export function pollHtml(ctx, p, { title = "h2", link = null, reload = false } = {}) {
   const closed = L.stateOf(p) === "closed";
   const head = title ? `<${title} class="vp-q">${link ? `<a href="${esc(link)}" style="color:inherit">${esc(p.question)}</a>` : esc(p.question)}</${title}>` : "";
   const max = Math.min(p.max || 1, p.choices.length);
-  const attrs = ["closed", "already", "limit", "invalid", "net", "busy", "full", "gone", "thanks", "pick"].map((c) => `data-m-${c}="${esc(ctx.t(`msg_${c}`))}"`).join(" ")
-    + ` data-m-busy="${esc(ctx.t("sending"))}"`;
+  const attrs = ["closed", "already", "limit", "invalid", "net", "busy", "full", "gone", "thanks", "pick", "muted"].map((c) => `data-m-${c}="${esc(ctx.t(`msg_${c}`))}"`).join(" ")
+    + ` data-m-busy="${esc(ctx.t("sending"))}"`
+    + ` data-t-live="${esc(ctx.t("liveResult"))}" data-t-final="${esc(ctx.t("finalResult"))}" data-t-leading="${esc(ctx.t("leading"))}" data-t-winner="${esc(ctx.t("winner"))}" data-t-yours="${esc(ctx.t("yourChoice"))}"`
+    + ` data-t-voice1="${esc(ctx.t("voice_one", { n: "{n}" }))}" data-t-voicen="${esc(ctx.t("voice_many", { n: "{n}" }))}" data-t-voters1="${esc(ctx.t("voters_one", { n: "{n}" }))}" data-t-votersn="${esc(ctx.t("voters_many", { n: "{n}" }))}"`;
   const type = max > 1 ? "checkbox" : "radio";
   const form = closed ? "" :
     `<form class="vp-form" data-vp-form hidden novalidate><fieldset><legend>${esc(ctx.t(max > 1 ? "hintMany" : "hintOne", { n: max }))}</legend>` +
@@ -313,7 +508,7 @@ export function pollHtml(ctx, p, { title = "h2", link = null } = {}) {
   const show = canSeeResults(p, false);
   const res = show ? resultsHtml(ctx, p) : `<p class="vp-hint">${esc(ctx.t("hiddenUntilVote"))}</p>`;
   return `<style>${CSS}</style><section class="vp" data-vp data-poll="${esc(p.slug)}" data-api="/m/${esc(ctx.instance.key)}" data-lang="${esc(ctx.locale)}" data-max="${max}" ${attrs}>` +
-    `${head}<p class="vp-meta">${endLine(ctx, p)}${p.archived ? ` · ${esc(ctx.t("archivedNote"))}` : ""}</p>${form}<div data-vp-res aria-live="polite">${res}</div></section>`;
+    `${head}<p class="vp-meta">${endLine(ctx, p, reload)}${p.archived ? ` · ${esc(ctx.t("archivedNote"))}` : ""}</p>${form}<div data-vp-res${show ? ' data-shown="1"' : ""} aria-live="polite">${res}</div></section>`;
 }
 
 const fmtDay = (ctx, iso, tz) => { try { return new Intl.DateTimeFormat(ctx.locale, { timeZone: tz, dateStyle: "long" }).format(new Date(iso)); } catch { return String(iso).slice(0, 10); } };
@@ -333,7 +528,7 @@ const byEnded = (now) => (a, b) => (L.endedAtMs(b, now) || 0) - (L.endedAtMs(a, 
 
 /** Les sondages terminés, du plus récent au plus ancien : d'abord les complets, puis les archivés. 50 par page. */
 async function pastPage(ctx, page, now = Date.now()) {
-  const live = (await livePolls(ctx)).filter((p) => L.stateOf(p, now) === "closed").sort(byEnded(now));
+  const live = (await livePolls(ctx)).filter((p) => listed(p) && L.stateOf(p, now) === "closed").sort(byEnded(now));
   const archived = await ctx.api.store.count(ARCHIVE);
   const total = live.length + archived;
   const start = (page - 1) * PAGE;
@@ -360,20 +555,124 @@ const pager = (ctx, page, pages) => {
   return pages > 1 ? `<p>${page > 1 ? link(page - 1, ctx.t("prevPage")) : ""}${page > 1 && page < pages ? " · " : ""}${page < pages ? link(page + 1, ctx.t("nextPage")) : ""}</p>` : "";
 };
 
-/* ───────────── Source navigateur OBS ───────────── */
+/* ───────────── Pages « en cours » et « décisions » ───────────── */
 
-async function onAirPoll(ctx, cfg, query) {
+/** La phrase d'une décision, dite en clair — avec le tirage au sort quand il y a eu égalité. */
+function decisionText(ctx, d) {
+  if (!d.winner) return ctx.t("decisionNone");
+  return d.tie && d.tie.length > 1 ? ctx.t("decisionTie", { list: d.tie.join(", "), winner: d.winner }) : ctx.t("decisionWinner", { winner: d.winner });
+}
+
+/** Le lien stable à partager pendant un live : toujours le sondage ou la manche du moment. */
+async function nowPage(ctx) {
+  const now = Date.now();
+  await advance(ctx, now);
+  const cfg = await ensureCfg(ctx);
+  const series = await getSeries(ctx);
+  const p = await onAirPoll(ctx, cfg, null, now);
+  const dec = recentDecision(series, now, winnerSeconds(ctx));
+  const info = (await B.present(ctx)) ? await B.audience(ctx, "info", {}) : null;
+  const closed = !!p && L.stateOf(p, now) === "closed";
+  const live = info?.ok && typeof info.base === "string"
+    ? { url: `${info.base}/direct?room=${encodeURIComponent(B.roomOf(ctx))}&channel=now`, base: 4000, max: 30000, slug: p?.slug ?? "", state: closed ? "closed" : "open",
+        t: { decided: ctx.t("decisionWinner", { winner: "{winner}" }), nodecision: ctx.t("decisionNone"), tie: ctx.t("decisionTie", { list: "{list}", winner: "{winner}" }) } }
+    : null;
+  const b = baseOf(ctx) ?? "";
+  let html = `<style>${CSS}</style><div style="display:grid;gap:14px"${live ? ` data-vp-live="${esc(JSON.stringify(live))}"` : ""}>`;
+  html += `<p class="vp-decision" data-vp-decision${dec ? "" : " hidden"} role="status">${dec ? esc(decisionText(ctx, dec)) : ""}</p>`;
+  html += p ? pollHtml(ctx, p, { title: "h2", reload: true }) : `<p class="vp-hint">${esc(ctx.t(series?.status === "running" ? "nowWaiting" : "nowNone"))}</p>`;
+  html += `<p class="vp-nav"><a href="${esc(loc(ctx, `${b}/decisions`))}">${esc(ctx.t("seeDecisions"))}</a><a href="${esc(loc(ctx, b || "/"))}">${esc(ctx.t("allPolls"))}</a></p></div>`;
+  return { title: ctx.t("nowTitle"), description: ctx.t("nowDescription"), blocks: [{ type: "html", html }] };
+}
+
+const decisionItem = (ctx, r) => {
+  const counts = r.choices.map((c) => `${c.text} ${c.count}`).join(" · ");
+  return `<li class="vp-dec"><b>${esc(ctx.t("roundBadge", { n: r.n }))} · ${esc(decisionText(ctx, r))}</b><small>${esc(r.question)} · ${esc(stamp(ctx, r.decidedAt, DEFAULT_TZ))} · ${esc(votersText(ctx, r.voters))} · ${esc(counts)}</small></li>`;
+};
+
+/** L'historique public des décisions du chat, 50 par page, les plus récentes d'abord. */
+async function decisionsPage(ctx, n) {
+  if (!Number.isInteger(n) || n < 1) return { notFound: true, blocks: [] };
+  const total = await ctx.api.store.count(ROUNDS);
+  const pages = Math.max(1, Math.ceil(total / PAGE));
+  if (n > pages) return { notFound: true, blocks: [] };
+  let cursor = null, items = [];
+  for (let i = 1; i <= n; i++) { const pg = await ctx.api.store.page(ROUNDS, { limit: PAGE, cursor }); if (i === n) items = pg.items; cursor = pg.next; if (!cursor) break; }
+  const b = baseOf(ctx) ?? "";
+  const link = (k, label) => `<a href="${esc(loc(ctx, k === 1 ? `${b}/decisions` : `${b}/decisions/page/${k}`))}">${esc(label)}</a>`;
+  const pager = pages > 1 ? `<p>${n > 1 ? link(n - 1, ctx.t("prevPage")) : ""}${n > 1 && n < pages ? " · " : ""}${n < pages ? link(n + 1, ctx.t("nextPage")) : ""}</p>` : "";
+  const html = `<style>${CSS}</style>${items.length ? `<ul class="vp-list">${items.map((r) => decisionItem(ctx, r.data)).join("")}</ul>${pager}` : `<p class="vp-hint">${esc(ctx.t("noDecisions"))}</p>`}<p class="vp-nav"><a href="${esc(loc(ctx, `${b}/now`))}">${esc(ctx.t("seeNow"))}</a><a href="${esc(loc(ctx, b || "/"))}">${esc(ctx.t("allPolls"))}</a></p>`;
+  return { title: ctx.t("decisionsTitle"), description: ctx.t("decisionsDescription"), blocks: [{ type: "html", html }] };
+}
+
+/** Une manche déjà décidée : son ancien lien montre ce que le chat a choisi. */
+function decisionPage(ctx, r) {
+  const b = baseOf(ctx) ?? "";
+  const html = `<style>${CSS}</style><section class="vp"><h2 class="vp-q">${esc(r.question)}</h2><p class="vp-decision" role="status">${esc(decisionText(ctx, r))}</p><ul class="vp-list">${decisionItem(ctx, r)}</ul>` +
+    `<p class="vp-nav"><a href="${esc(loc(ctx, `${b}/decisions`))}">${esc(ctx.t("seeDecisions"))}</a><a href="${esc(loc(ctx, `${b}/now`))}">${esc(ctx.t("seeNow"))}</a></p></section>`;
+  return { title: r.question, description: ctx.t("decisionsDescription"), blocks: [{ type: "html", html }] };
+}
+
+/* ───────────── Source navigateur OBS et direct ───────────── */
+
+/** Ce qui est à l'écran : le sondage demandé dans l'adresse, puis celui qu'Emma a choisi (ou le sondage rapide, le temps qu'il dure), puis la manche en cours, puis le plus récent. */
+async function onAirPoll(ctx, cfg, query, now = Date.now()) {
   const asked = query?.get?.("poll");
   if (asked) { const p = await findPoll(ctx, asked); if (p) return p; }
-  if (cfg?.onAir) { const p = await findPoll(ctx, cfg.onAir); if (p) return p; }
-  const open = (await livePolls(ctx)).filter((p) => L.stateOf(p) === "open").sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  if (cfg?.onAir && (!cfg.onAirUntil || Date.parse(cfg.onAirUntil) > now)) { const p = await findPoll(ctx, cfg.onAir); if (p) return p; }
+  const series = await getSeries(ctx);
+  if (series?.status === "running") { const p = await bySlug(ctx, series.current); if (p) return p; }
+  const open = (await livePolls(ctx)).filter((p) => listed(p) && L.stateOf(p, now) === "open").sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   return open[0] ?? null;
 }
 
-function liveData(p, now = Date.now()) {
-  if (!p) return { empty: true, rev: "none" };
+/** La décision qui vient d'être prise, tant qu'elle doit rester à l'écran. */
+function recentDecision(series, now, seconds) {
+  const d = series?.lastDecision;
+  if (!d) return null;
+  const until = Date.parse(d.decidedAt) + seconds * 1000;
+  return until > now ? { n: d.n, winner: d.winner, tie: d.tie, voters: d.voters, showUntil: isoOf(until) } : null;
+}
+const winnerSeconds = (ctx) => num(ctx.setting("winnerSeconds"), 20, 5, 120);
+
+/** Les chiffres de l'écran. Sans sondage à montrer : rien, ou la décision qui vient d'être prise. `rev` change dès que quelque chose change (le navigateur ne redessine pas sinon). */
+function liveData(p, now = Date.now(), series = null, seconds = 20) {
+  const decision = recentDecision(series, now, seconds);
+  if (!p) return decision ? { rev: `d.${series.lastDecision.decidedAt}`, kind: "decision", state: "decided", decision, question: "", voters: 0, endsAt: null, rows: [] } : { empty: true, rev: "none" };
   const state = L.stateOf(p, now);
-  return { rev: `${p.id}.${p.rev || 0}.${state}`, state, question: p.question, voters: Number(p.voters) || 0, endsAt: p.endsAt ?? null, rows: L.rows(p) };
+  return {
+    rev: `${p.id}.${p.rev || 0}.${state}.${decision ? series.lastDecision.decidedAt : ""}`, state, question: p.question, voters: Number(p.voters) || 0, endsAt: p.endsAt ?? null, rows: L.rows(p),
+    ...(p.round ? { round: { n: p.round.n } } : {}), ...(p.quick ? { quick: true } : {}), ...(decision ? { decision } : {}),
+  };
+}
+
+/** La version publique : les chiffres restent cachés tant qu'un sondage « résultats après le vote » est ouvert. */
+const publicData = (d, p, now = Date.now()) => (d.empty || !p || L.stateOf(p, now) === "closed" || p.resultsMode !== "after" ? { ...d, slug: p?.slug ?? null } : { ...d, slug: p.slug, rows: null, hidden: true });
+
+/**
+ * Publie l'état en direct chez Participation (écran OBS : canal privé ; page publique : canal public), s'il est là. Silencieux, jamais bloquant.
+ * `refreshAt` : l'instant où l'état change tout seul (fin de la manche) — le premier lecteur après cet instant fait avancer la série (voir « tick »).
+ */
+export function syncLive(ctx) {
+  const key = ctx.instance.key;
+  if (pendingSync.has(key)) return pendingSync.get(key);   // une mise à jour attend déjà son tour : elle lira l'état le plus récent
+  const run = withLock(ctx, async () => { pendingSync.delete(key); await publishLive(ctx, Date.now()); }, "sync:").catch(() => {});
+  pendingSync.set(key, run);
+  return run;
+}
+const pendingSync = (globalThis.__curiosaPollsSync ??= new Map());
+
+async function publishLive(ctx, now) {
+  try {
+    if (!(await B.present(ctx))) return;
+    const cfg = await ensureCfg(ctx);
+    const series = await getSeries(ctx);
+    const p = await onAirPoll(ctx, cfg, null, now);
+    const screen = liveData(p, now, series, winnerSeconds(ctx));
+    const refreshAt = p && L.stateOf(p, now) === "open" && p.endsAt ? p.endsAt : null;
+    if (!(await B.publish(ctx, "screen", screen, { readKey: cfg.obsKey, refreshAt }))) return;
+    await B.publish(ctx, "now", publicData(screen, p, now), { public: true, refreshAt });
+  } catch (e) { console.error("[polls] live sync failed:", e?.message); }
 }
 
 const json = (body, status = 200, headers = {}) => Response.json(body, { status, headers: { "cache-control": "no-store", ...headers } });
@@ -399,9 +698,117 @@ const fieldErrors = (ctx, errors) => Object.fromEntries(Object.entries(errors).m
 /** Une action d'administration réservée à un droit du module (le cœur ne contrôle que « ouvrir » pour une action écrite en simple fonction). */
 const needs = (right, fn) => async (ctx, values) => (can(ctx, right) ? fn(ctx, values) : { error: ctx.t("errRight") });
 
+/* ───────────── Administration des manches et du sondage rapide ───────────── */
+
+const SEC_LABELS = { 30: "quickSec30", 60: "quickSec60", 120: "quickSec120", 300: "quickSec300" };
+const quickFields = (ctx, v = {}) => [
+  { name: "a", label: ctx.t("fQuickA"), kind: "text", required: true, value: v.a ?? "", help: ctx.t("fQuickAHelp") },
+  { name: "b", label: ctx.t("fQuickB"), kind: "text", required: true, value: v.b ?? "" },
+  { name: "c", label: ctx.t("fQuickC"), kind: "text", value: v.c ?? "" },
+  { name: "d", label: ctx.t("fQuickD"), kind: "text", value: v.d ?? "" },
+  { name: "seconds", label: ctx.t("fQuickSeconds"), kind: "select", value: String(v.seconds ?? quickDefault(ctx)), options: L.ROUND.quickSeconds.map((n) => ({ value: String(n), label: ctx.t(SEC_LABELS[n]) })) },
+];
+const quickDefault = (ctx) => { const n = num(ctx.setting("quickSeconds"), 60, 15, 900); return L.ROUND.quickSeconds.reduce((best, x) => (Math.abs(x - n) < Math.abs(best - n) ? x : best), 60); };
+
+async function roundsBlocks(ctx, manage, now) {
+  const tab = "screen";
+  const series = await ensureSeries(ctx);
+  const running = series.status === "running";
+  const cur = running ? await bySlug(ctx, series.current) : null;
+  const b = baseOf(ctx);
+  const out = [{ type: "heading", text: ctx.t("roundsTitle"), tab }, { type: "markdown", text: ctx.t("roundsIntro"), tab }];
+  const last = series.lastDecision ? ` ${ctx.t("roundsLast", { n: series.lastDecision.n, text: decisionText(ctx, series.lastDecision) })}` : "";
+  out.push({ type: "markdown", tab, text: running ? `**${ctx.t("roundsRunning", { n: cur?.round?.n ?? series.n, minutes: series.minutes })}** ${cur?.endsAt ? ctx.t("roundsEnds", { time: stamp(ctx, cur.endsAt, tzOf(ctx)), voters: Number(cur.voters) || 0 }) : ""}${last}` : `**${ctx.t("roundsIdle")}**${last}` });
+  if (b !== null) out.push({ type: "copy", label: ctx.t("roundsLink"), text: `${ctx.api.siteUrl}${b}/now`, tab });
+  if (manage) {
+    if (!running) out.push({ type: "adminForm", action: "roundStart", submitLabel: ctx.t("roundsStart"), fields: [], tab });
+    else out.push(
+      { type: "adminForm", action: "roundNext", submitLabel: ctx.t("roundsNext"), fields: [], tab },
+      { type: "adminForm", action: "roundStop", submitLabel: ctx.t("roundsStop"), fields: [{ name: "confirm", kind: "checkbox", label: ctx.t("confirmStop"), required: true }], tab },
+    );
+    out.push({ type: "adminForm", action: "roundConfig", title: ctx.t("roundsConfig"), submitLabel: ctx.t("save"), tab,
+      fields: [
+        { name: "question", label: ctx.t("fRoundQuestion"), kind: "text", required: true, value: series.question, help: ctx.t("fRoundQuestionHelp") },
+        { name: "choices", label: ctx.t("fChoices"), kind: "textarea", required: true, value: series.choices.join("\n"), help: ctx.t("fChoicesHelp") },
+        { name: "minutes", label: ctx.t("fRoundMinutes"), kind: "number", value: String(series.minutes), help: ctx.t("fRoundMinutesHelp") },
+      ] });
+    out.push({ type: "adminForm", action: "quick", title: ctx.t("quickTitle"), submitLabel: ctx.t("quickGo"), fields: quickFields(ctx), tab });
+  }
+  const present = await B.present(ctx);
+  if (present) {
+    const mine = (await ctx.api.instances.list({ module: "audience" }).catch(() => []))[0];
+    out.push({ type: "markdown", tab, text: mine?.adminPath ? ctx.t("audienceOn", { href: mine.adminPath }) : ctx.t("audienceOnPlain") });
+  } else out.push({ type: "markdown", text: ctx.t("audienceOff"), tab }, { type: "suggestInstall", service: B.SERVICE, reason: ctx.t("suggestReason"), tab });
+  const hist = (await ctx.api.store.page(ROUNDS, { limit: 10 })).items;
+  out.push({ type: "heading", text: ctx.t("historyTitle"), tab });
+  out.push(hist.length
+    ? { type: "table", tab, columns: [ctx.t("colRound"), ctx.t("colDecision"), ctx.t("colVoters"), ctx.t("colWhen")], rows: hist.map((r) => [String(r.data.n), decisionText(ctx, r.data), String(r.data.voters), stamp(ctx, r.data.decidedAt, tzOf(ctx))]) }
+    : { type: "markdown", text: ctx.t("historyEmpty"), tab });
+  if (hist.length && manage) out.push({ type: "download", name: "rounds", label: ctx.t("downloadRounds"), tab });
+  return out;
+}
+
 /* ───────────── Le module ───────────── */
 
+/* ───────────── La télécommande : ce que Sondages montre à Participation (service « audience.remote ») ───────────── */
+
+const remoteReply = (ctx, r, okKey) => {
+  if (r.ok) return { ok: true, message: ctx.t(okKey) };
+  if (r.errors) { const field = Object.keys(r.errors)[0]; return { ok: false, error: "invalid", field, message: ctx.t(`err_${r.errors[field]}`) }; }
+  return { ok: false, error: r.error === "idle" || r.error === "already" ? r.error : "failed", message: ctx.t(r.error === "already" ? "remoteErrAlready" : r.error === "idle" ? "remoteErrIdle" : r.error === "full" ? "errFullShort" : "remoteErrFailed") };
+};
+
+async function remotePanel(ctx, now) {
+  await advance(ctx, now);
+  const series = await ensureSeries(ctx);
+  const running = series.status === "running";
+  const cur = running ? await bySlug(ctx, series.current) : null;
+  const last = series.lastDecision ? ` ${ctx.t("roundsLast", { n: series.lastDecision.n, text: decisionText(ctx, series.lastDecision) })}` : "";
+  const state = running
+    ? { text: `${ctx.t("remoteRunning", { n: cur?.round?.n ?? series.n, voters: Number(cur?.voters) || 0 })}${last}`, tone: "live", until: cur?.endsAt ?? null }
+    : { text: `${ctx.t("remoteIdle")}${last}`, tone: "idle" };
+  return {
+    title: ctx.t("remoteTitle"), state,
+    buttons: [
+      { id: "start", label: ctx.t("remoteStart"), tone: "primary", disabled: running },
+      { id: "next", label: ctx.t("remoteNext"), disabled: !running },
+      { id: "stop", label: ctx.t("remoteStop"), tone: "danger", confirm: ctx.t("remoteStopConfirm"), disabled: !running },
+    ],
+    forms: [{ id: "quick", title: ctx.t("quickTitle"), submit: ctx.t("quickGo"), fields: [
+      { name: "a", label: ctx.t("fQuickAShort"), type: "text", required: true, max: LIMITS.choice },
+      { name: "b", label: ctx.t("fQuickBShort"), type: "text", required: true, max: LIMITS.choice },
+      { name: "c", label: ctx.t("fQuickCShort"), type: "text", max: LIMITS.choice },
+      { name: "d", label: ctx.t("fQuickDShort"), type: "text", max: LIMITS.choice },
+      { name: "seconds", label: ctx.t("fQuickSeconds"), type: "select", value: String(quickDefault(ctx)), options: L.ROUND.quickSeconds.map((n) => ({ value: String(n), label: ctx.t(SEC_LABELS[n]) })) },
+    ] }],
+  };
+}
+
 export default {
+  services: {
+    "audience.remote": {
+      describe: async (ctx) => ({ ok: true, panel: await remotePanel(ctx, Date.now()) }),
+      // La télécommande a déjà vérifié l'adresse secrète : aucun droit d'administration ne passe par ici (voir README).
+      press: async (ctx, a) => {
+        const now = Date.now(), values = a?.values && typeof a.values === "object" ? a.values : {};
+        switch (a?.action) {
+          case "start": return remoteReply(ctx, await startSeries(ctx, now), "remoteStarted");
+          case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");
+          case "stop": { const r = await stopSeries(ctx, now); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
+          case "quick": return remoteReply(ctx, await quickPoll(ctx, values, now), "remoteQuickOk");
+          default: return { ok: false, error: "invalid", message: ctx.t("remoteErrFailed") };
+        }
+      },
+      // « Ton direct est périmé » : le premier lecteur après la fin d'une manche fait avancer la série et republier l'état.
+      tick: async (ctx, a) => {
+        if (a?.room !== B.roomOf(ctx)) return { ok: true, handled: false };
+        await advance(ctx, Date.now());
+        await syncLive(ctx);
+        return { ok: true, handled: true };
+      },
+    },
+  },
+
   slots: {
     // Le petit script du sondage n'est demandé que si le site a des sondages ; il ne fait rien sur une page sans sondage.
     "layout.head": async (ctx) => ((await ctx.api.store.count(POLLS)) > 0 ? [{ type: "head", tags: [{ tag: "script", src: `/m/${ctx.instance.key}/client?v=${C.CLIENT_REV}`, defer: true }] }] : null),
@@ -420,7 +827,7 @@ export default {
   news: async (ctx) => {
     const since = ctx.visit?.lastVisit?.getTime?.() ?? 0;
     if (since <= 0) return false;   // visiteur inconnu : rien n'est « nouveau » pour lui
-    return (await ctx.api.store.list(POLLS, { limit: 20 })).some((r) => L.stateOf(r.data) === "open" && Date.parse(r.data.createdAt ?? "") > since);
+    return (await ctx.api.store.list(POLLS, { limit: 20 })).some((r) => !r.data.round && L.stateOf(r.data) === "open" && Date.parse(r.data.createdAt ?? "") > since);
   },
 
   async page(ctx, { segments }) {
@@ -429,7 +836,7 @@ export default {
       const n = segments.length === 0 ? 1 : Number(segments[1]);
       if (!Number.isInteger(n) || n < 1) return { notFound: true, blocks: [] };
       const now = Date.now();
-      const open = n === 1 ? (await livePolls(ctx)).filter((p) => L.stateOf(p, now) === "open").sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) : [];
+      const open = n === 1 ? (await livePolls(ctx)).filter((p) => listed(p) && L.stateOf(p, now) === "open").sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) : [];
       const past = await pastPage(ctx, n, now);
       if (n > past.pages) return { notFound: true, blocks: [] };
       const blocks = [];
@@ -442,9 +849,14 @@ export default {
       blocks.push({ type: "html", html });
       return { title, description: ctx.t("pageDescription"), blocks };
     }
+    if (segments.length === 1 && segments[0] === "now") return nowPage(ctx);
+    if (segments[0] === "decisions" && (segments.length === 1 || (segments.length === 3 && segments[1] === "page"))) return decisionsPage(ctx, segments.length === 1 ? 1 : Number(segments[2]));
     if (segments.length === 1) {
       const p = await findPoll(ctx, segments[0]);
-      if (!p) return { notFound: true, blocks: [] };
+      if (!p) {
+        const done = await byKey(ctx, ROUNDS, clean(segments[0], 80).toLowerCase(), "k");   // une manche déjà décidée : son lien montre la décision
+        return done ? decisionPage(ctx, done.data) : { notFound: true, blocks: [] };
+      }
       const href = pollHref(ctx, p.slug);
       const blocks = [{ type: "html", html: pollHtml(ctx, p, { title: null }) }];
       if (L.stateOf(p) === "open" && href) blocks.push({ type: "copy", label: ctx.t("shareLabel"), text: `${ctx.api.siteUrl}${href}` });
@@ -456,9 +868,12 @@ export default {
 
   routes: {
     // Le petit script des visiteurs (même contenu pour tous, mis en cache).
-    client(request) {
+    async client(request, ctx) {
       if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
-      return new Response(C.CLIENT_JS, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "public, max-age=3600", "x-content-type-options": "nosniff" } });
+      // Avec Participation, la bibliothèque du direct (mise à jour douce) est livrée devant : la page « en cours » se met alors à jour toute seule.
+      const lib = (await B.present(ctx)) ? await B.audience(ctx, "directClient", {}) : null;
+      const body = `${lib?.ok && typeof lib.js === "string" ? `${lib.js}\n` : ""}${C.CLIENT_JS}`;
+      return new Response(body, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "public, max-age=300", "x-content-type-options": "nosniff" } });
     },
 
     async vote(request, ctx) {
@@ -469,15 +884,26 @@ export default {
       if (!body || typeof body !== "object") return json({ ok: false, reason: "invalid" }, 400);
       if (String(body.website ?? "")) return json({ ok: true, html: "" });                    // piège à robots : on fait semblant, rien n'est enregistré
       const now = Date.now();
-      const fp = fingerprint(request, now);
       const slug = clean(body.poll, 80).toLowerCase();
-      if (over(`a|${ctx.instance.key}|${fp}`, num(ctx.setting("ratePerHour"), 30, 3, 300), HOUR, now)
-        || over(`p|${ctx.instance.key}|${fp}|${slug}`, 8, 10 * 60_000, now)
-        || over(`g|${ctx.instance.key}`, 120, 60_000, now)) return json({ ok: false, reason: "limit" }, 429, { "retry-after": "60" });
+      if (over(`g|${ctx.instance.key}`, 120, 60_000, now)) return json({ ok: false, reason: "limit" }, 429, { "retry-after": "60" });
       if (!TOKEN_RE.test(String(body.t ?? ""))) return json({ ok: false, reason: "invalid" }, 400);
-      const r = await castVote(ctx, { slug, token: String(body.t), ids: Array.isArray(body.c) ? body.c.slice(0, LIMITS.maxChoices + 1).map(String) : null, now });
-      if (!r.ok) return json({ ok: false, reason: r.error }, r.error === "closed" || r.error === "already" ? 409 : r.error === "gone" ? 404 : r.error === "full" ? 503 : r.error === "busy" ? 503 : 400);
+      const token = String(body.t);
+      const gate = await voteGate(ctx, request, { slug, token, now });
+      if (gate.refuse) return json({ ok: false, reason: gate.refuse }, gate.status, gate.status === 429 ? { "retry-after": String(gate.retryAfter ?? 60) } : {});
+      // Une voix par personne : confiée à Participation s'il est là (en plus du bulletin unique, qui reste la dernière garantie).
+      const known = await findPoll(ctx, slug);
+      const claimKey = gate.audience && known && !known.archived && L.stateOf(known, now) === "open" ? `v-${known.id}` : null;
+      if (claimKey) {
+        const c = await B.audience(ctx, "claim", { room: B.roomOf(ctx), token, key: claimKey });
+        if (c && !c.ok) return json({ ok: false, reason: B.reasonOf(c.error) }, c.error === "already" ? 409 : c.error === "muted" ? 403 : 400);
+      }
+      const r = await castVote(ctx, { slug, token, ids: Array.isArray(body.c) ? body.c.slice(0, LIMITS.maxChoices + 1).map(String) : null, now });
+      if (!r.ok) {
+        if (claimKey && r.error !== "already") await B.audience(ctx, "release", { room: B.roomOf(ctx), token, key: claimKey });
+        return json({ ok: false, reason: r.error }, r.error === "closed" || r.error === "already" ? 409 : r.error === "gone" ? 404 : r.error === "full" ? 503 : r.error === "busy" ? 503 : 400);
+      }
       sweep(ctx, now).catch(() => {});
+      await syncLive(ctx);
       return json({ ok: true, html: resultsHtml(ctx, r.poll, r.picked), mine: r.picked });
     },
 
@@ -504,7 +930,9 @@ export default {
       const cfg = await getCfg(ctx);
       if (!cfg || !sameSecret(url.searchParams.get("k"), cfg.obsKey)) return new Response("Not found", { status: 404 });
       if (over(`l|${ctx.instance.key}`, 120, 60_000)) return json({ ok: false }, 429, { "retry-after": "30" });
-      const data = liveData(await onAirPoll(ctx, cfg, url.searchParams));
+      const now = Date.now();
+      await advance(ctx, now);
+      const data = liveData(await onAirPoll(ctx, cfg, url.searchParams, now), now, await getSeries(ctx), winnerSeconds(ctx));
       if (url.searchParams.get("rev") === data.rev) return json({ unchanged: true, rev: data.rev, state: data.state ?? "open" });
       return json(data);
     },
@@ -514,12 +942,20 @@ export default {
     const cfg = await getCfg(ctx);
     if (!cfg || !sameSecret(query.get("k"), cfg.obsKey)) return { title: ctx.instance.name, html: `<p style="margin:24px;padding:16px 20px;max-width:560px;border-radius:12px;background:#222;color:#fff;font:18px/1.4 system-ui,sans-serif">${esc(ctx.t("obsIncomplete"))}</p>` };   // sans le code secret : un simple message, aucun résultat
     const seconds = num(ctx.setting("obsRefreshSeconds"), 5, 3, 30);
+    const own = `/m/${ctx.instance.key}/live?k=${encodeURIComponent(query.get("k"))}${query.get("poll") ? `&poll=${encodeURIComponent(query.get("poll"))}` : ""}`;
+    // Avec Participation, l'écran lit le point de direct (léger, partagé, qui ralentit tout seul) ; sans lui, ou pour un sondage choisi dans l'adresse, la route du module.
+    let direct = null;
+    if (!query.get("poll") && (await B.present(ctx))) {
+      const info = await B.audience(ctx, "info", {});
+      if (info?.ok && typeof info.base === "string") { await advance(ctx); await syncLive(ctx); direct = `${info.base}/direct?room=${encodeURIComponent(B.roomOf(ctx))}&channel=screen&k=${encodeURIComponent(query.get("k"))}`; }
+    }
     const color = (v, d) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : d);
     const pos = ["left", "right", "center"].includes(ctx.setting("obsPosition")) ? ctx.setting("obsPosition") : "left";
     const cfgJs = JSON.stringify({
-      url: `/m/${ctx.instance.key}/live?k=${encodeURIComponent(query.get("k"))}${query.get("poll") ? `&poll=${encodeURIComponent(query.get("poll"))}` : ""}`,
+      url: direct ?? own, alt: direct ? own : null,
       base: seconds * 1000, max: 30000, lang: ctx.locale,
-      t: { live: ctx.t("obsLive"), final: ctx.t("obsFinal"), one: ctx.t("voice_one", { n: "" }).trim(), many: ctx.t("voice_many", { n: "" }).trim(), lead: ctx.t("leading"), person: ctx.t("person_one"), people: ctx.t("person_many"), ends: ctx.t("obsEnds") },
+      t: { live: ctx.t("obsLive"), final: ctx.t("obsFinal"), one: ctx.t("voice_one", { n: "" }).trim(), many: ctx.t("voice_many", { n: "" }).trim(), lead: ctx.t("leading"), person: ctx.t("person_one"), people: ctx.t("person_many"), ends: ctx.t("obsEnds"),
+        round: ctx.t("obsRound"), decided: ctx.t("obsDecided"), nodecision: ctx.t("obsNoDecision"), tie: ctx.t("obsTie"), quick: ctx.t("obsQuick") },
     }).replace(/</g, "\\u003c");
     const accent = color(ctx.setting("obsAccent"), ctx.theme.accent), fg = color(ctx.setting("obsText"), ctx.theme.fg), card = color(ctx.setting("obsCard"), ctx.theme.surface);
     return {
@@ -535,6 +971,9 @@ export default {
 .vo-fill{height:100%;background:${accent};transition:width .6s}.vo-row.lead .vo-fill{background-image:repeating-linear-gradient(135deg,transparent 0 7px,rgba(0,0,0,.3) 7px 11px)}
 .vo-tag{display:inline-block;margin-top:4px;font-size:16px;font-weight:700;border:2px solid ${fg};border-radius:999px;padding:0 10px}
 .vo-foot{margin:16px 0 0;font-size:18px;opacity:.85}
+.vo-clock{font-variant-numeric:tabular-nums;font-weight:700;margin-left:8px}
+.vo-decision{margin:0 0 16px;padding:14px 18px;border:3px solid ${accent};border-radius:14px;animation:vo-in .4s ease-out}
+.vo-dtitle{margin:0;font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${accent}}.vo-dwin{margin:4px 0 0;font-size:34px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}.vo-dtie{margin:6px 0 0;font-size:18px}
 @keyframes vo-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.vo-card{animation:none}.vo-fill{transition:none}}`,
       script: `window.__VO=${cfgJs};${C.OVERLAY_JS}`,
@@ -550,7 +989,8 @@ export default {
     const blocks = [];
     const screen = [];
 
-    // ── Onglet « À l'écran » : la source navigateur OBS ──
+    // ── Onglet « En direct » : les manches, le sondage rapide, puis la source navigateur OBS ──
+    screen.push(...(await roundsBlocks(ctx, manage, now)));
     screen.push({ type: "heading", text: ctx.t("obsTitle"), tab: "screen" });
     if (can(ctx, "obs.view")) {
       const addr = `${ctx.api.siteUrl}/overlays/${ctx.instance.key}?k=${cfg.obsKey}`;
@@ -721,15 +1161,60 @@ export default {
       return { ok: ctx.t("okAuto") };
     }),
 
+    roundConfig: needs("manage", async (ctx, values) => {
+      const v = L.validateSeriesForm(values);
+      if (Object.keys(v.errors).length) return { errors: fieldErrors(ctx, v.errors) };
+      await withLock(ctx, async () => { const series = await ensureSeries(ctx); await saveSeries(ctx, { ...series, ...v.value }); }, "series:");
+      return { ok: ctx.t("okRoundConfig") };
+    }),
+
+    roundStart: needs("manage", async (ctx) => {
+      const r = await startSeries(ctx);
+      return r.ok ? { ok: ctx.t("remoteStarted") } : { error: ctx.t(r.error === "already" ? "remoteErrAlready" : "remoteErrFailed") };
+    }),
+
+    roundNext: needs("manage", async (ctx) => {
+      const r = await nextRound(ctx);
+      return r.ok ? { ok: ctx.t("remoteNexted") } : { error: ctx.t("remoteErrIdle") };
+    }),
+
+    roundStop: needs("manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
+      const r = await stopSeries(ctx);
+      return r.ok ? { ok: ctx.t(r.cancelled ? "remoteStoppedCancelled" : "remoteStopped") } : { error: ctx.t("remoteErrIdle") };
+    }),
+
+    quick: needs("manage", async (ctx, values) => {
+      const r = await quickPoll(ctx, values);
+      if (r.errors) return { errors: fieldErrors(ctx, r.errors) };
+      return r.ok ? { ok: ctx.t("remoteQuickOk") } : { error: ctx.t("errFullShort") };
+    }),
+
     regenerate: needs("obs.view", async (ctx, values) => {
       if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
       const cfg = await ensureCfg(ctx);
       await saveCfg(ctx, { ...cfg, obsKey: randomBytes(18).toString("base64url") });
+      await syncLive(ctx);   // l'ancienne adresse ne lit plus rien chez Participation non plus
       return { ok: ctx.t("okRegen") };
     }),
   },
 
   adminDownloads: {
+    rounds: {
+      right: "manage",
+      contentType: "text/csv",
+      filename: () => "decisions",
+      async *generate(ctx) {
+        const cell = (v) => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
+        yield `\ufeff${["round", "question", "decided", "winner", "tie", "voters", "results"].map(cell).join(",")}\r\n`;
+        let cursor = null;
+        do {
+          const page = await ctx.api.store.page(ROUNDS, { limit: 500, cursor, order: "asc" });
+          for (const r of page.items) yield `${[r.data.n, r.data.question, r.data.decidedAt, r.data.winner ?? "", (r.data.tie ?? []).join(" | "), r.data.voters, r.data.choices.map((c) => `${c.text}: ${c.count}`).join(" | ")].map(cell).join(",")}\r\n`;
+          cursor = page.next;
+        } while (cursor);
+      },
+    },
     results: {
       right: "manage",
       contentType: "text/csv",
@@ -777,6 +1262,42 @@ export default {
       if (!r.ok) throw Object.assign(new Error(`the site already keeps ${LIMITS.livePolls} polls and none is finished yet`), { expose: true });
       return { id: r.id, link: pollHref(ctx, r.slug) ? `${ctx.api.siteUrl}${pollHref(ctx, r.slug)}` : null };
     },
+    async rounds_status(ctx) {
+      const now = Date.now();
+      await advance(ctx, now);
+      const series = await ensureSeries(ctx);
+      const cur = series.status === "running" ? await bySlug(ctx, series.current) : null;
+      return {
+        running: series.status === "running", question: series.question, choices: series.choices, minutes: series.minutes,
+        round: cur ? { number: cur.round?.n ?? series.n, endsAt: cur.endsAt, voters: Number(cur.voters) || 0, results: L.rows(cur).map((r) => ({ choice: r.text, votes: r.count, percent: r.pct })) } : null,
+        lastDecision: series.lastDecision ? { round: series.lastDecision.n, winner: series.lastDecision.winner, tie: series.lastDecision.tie, voters: series.lastDecision.voters, decidedAt: series.lastDecision.decidedAt } : null,
+        link: baseOf(ctx) === null ? null : `${ctx.api.siteUrl}${baseOf(ctx)}/now`,
+      };
+    },
+    async rounds_history(ctx, args) {
+      return (await ctx.api.store.page(ROUNDS, { limit: num(args?.limit, 20, 1, 100) })).items.map((r) => ({ round: r.data.n, question: r.data.question, winner: r.data.winner, tie: r.data.tie, voters: r.data.voters, decidedAt: r.data.decidedAt, results: r.data.choices.map((c) => ({ choice: c.text, votes: c.count })) }));
+    },
+    async round_control(ctx, args) {
+      const fail = (m) => Object.assign(new Error(m), { expose: true });
+      if (args?.action === "start") {
+        const r = await startSeries(ctx);
+        if (!r.ok) throw fail("rounds are already running");
+      } else if (args?.action === "next") {
+        const r = await nextRound(ctx);
+        if (!r.ok) throw fail("no rounds are running");
+      } else if (args?.action === "stop") {
+        const r = await stopSeries(ctx);
+        if (!r.ok) throw fail("no rounds are running");
+      } else throw fail("action must be start, next or stop");
+      return { done: args.action };
+    },
+    async poll_quick(ctx, args) {
+      const choices = Array.isArray(args?.choices) ? args.choices : [];
+      const r = await quickPoll(ctx, { a: choices[0], b: choices[1], c: choices[2], d: choices[3], seconds: args?.seconds ?? quickDefault(ctx), question: args?.question });
+      if (r.errors) throw Object.assign(new Error(`invalid: ${Object.keys(r.errors).join(", ")} (2 to 4 different choices of 60 characters at most, seconds between 15 and 900)`), { expose: true });
+      if (!r.ok) throw Object.assign(new Error(`the site already keeps ${LIMITS.livePolls} polls and none is finished yet`), { expose: true });
+      return { id: r.id, endsAt: r.endsAt, link: baseOf(ctx) === null ? null : `${ctx.api.siteUrl}${baseOf(ctx)}/now` };
+    },
     async poll_close(ctx, args) {
       const r = await closeNow(ctx, args?.id);
       if (!r.ok) throw Object.assign(new Error(r.error === "already" ? "poll already closed" : "poll not found"), { expose: true });
@@ -799,7 +1320,14 @@ export default {
           cursor = page.next;
         } while (cursor);
       }
-      return [{ path: "polls.csv", content: `﻿${lines.join("\r\n")}\r\n` }];
+      const rl = [["round", "question", "decided", "winner", "tie", "voters", "results"].map(cell).join(",")];
+      let rc = null;
+      do {
+        const page = await ctx.api.store.page(ROUNDS, { limit: 500, cursor: rc, order: "asc" });
+        for (const r of page.items) rl.push([r.data.n, r.data.question, r.data.decidedAt, r.data.winner ?? "", (r.data.tie ?? []).join(" | "), r.data.voters, r.data.choices.map((c) => `${c.text}: ${c.count}`).join(" | ")].map(cell).join(","));
+        rc = page.next;
+      } while (rc);
+      return [{ path: "polls.csv", content: `﻿${lines.join("\r\n")}\r\n` }, { path: "decisions.csv", content: `\ufeff${rl.join("\r\n")}\r\n` }];
     },
   },
 
@@ -808,6 +1336,7 @@ export default {
     async onInstanceDelete(ctx) {
       for (const k of [...mem.hits.keys()]) if (k.split("|")[1] === ctx.instance.key) mem.hits.delete(k);
       mem.swept.delete(ctx.instance.key);
+      pendingSync.delete(ctx.instance.key);
     },
   },
 };

@@ -5,11 +5,11 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minCore": "0.2.5",
   "description": {
-    "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS).",
-    "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS)."
+    "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS). New: rounds (\"every 10 minutes the chat decides\", with the winner shown on screen) and a quick \"A or B?\" poll from your phone.",
+    "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS). Nouveau : des manches (« toutes les 10 minutes, le chat décide », avec le vainqueur à l'écran) et un sondage rapide « A ou B ? » depuis votre téléphone."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -20,8 +20,8 @@
   "page": true,
   "basePath": "polls",
   "privacy": {
-    "en": "No account needed. Your browser keeps a random private code (local storage, not a cookie) so you cannot vote twice; the site keeps only a scrambled version, different for each poll, and your ticked choices. Your IP address is never saved: it only serves, scrambled with a daily salt never written to disk, to slow down abuse. Votes carry no name; scrambled codes are erased 30 days after a poll ends. Clearing browser data removes your code. To remove a poll, write to the site's contact.",
-    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) pour qu'on ne vote pas deux fois ; le site n'en garde qu'une version brouillée, propre à chaque sondage, et vos choix. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert seulement à freiner les abus. Aucun nom n'est gardé ; les codes brouillés sont effacés 30 jours après la fin du sondage. Pour retirer un sondage, écrivez au contact du site."
+    "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different for each poll, and your ticked choices. Your IP address is never saved: scrambled with a daily salt never written to disk, it only slows down abuse. No name is kept. Codes are erased 30 days after a poll ends (at once for a decided round). With Audience installed, a scrambled code is kept per room for 14 days.",
+    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, propre à chaque sondage, et vos choix. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert seulement à freiner les abus. Aucun nom. Codes effacés 30 jours après la fin du sondage (tout de suite pour une manche décidée). Avec Participation : une version brouillée par salle, 14 jours."
   },
   "permissions": [
     "slots",
@@ -32,6 +32,20 @@
     "overlay",
     "admin",
     "mcp"
+  ],
+  "offers": [
+    {
+      "service": "audience.remote",
+      "version": 1,
+      "each": true
+    }
+  ],
+  "requires": [
+    {
+      "service": "audience.session",
+      "min": 1,
+      "optional": true
+    }
   ],
   "tabs": [
     {
@@ -44,8 +58,8 @@
     {
       "id": "screen",
       "label": {
-        "fr": "À l'écran",
-        "en": "On screen"
+        "fr": "En direct",
+        "en": "Live"
       },
       "panel": true
     }
@@ -356,6 +370,34 @@
       }
     },
     {
+      "key": "winnerSeconds",
+      "type": "number",
+      "default": 20,
+      "advanced": true,
+      "label": {
+        "fr": "Secondes d'affichage de la décision à l'écran",
+        "en": "Seconds the decision stays on screen"
+      },
+      "help": {
+        "fr": "De 5 à 120. Le vainqueur d'une manche reste affiché ce temps-là.",
+        "en": "From 5 to 120. The winner of a round stays displayed that long."
+      }
+    },
+    {
+      "key": "quickSeconds",
+      "type": "number",
+      "default": 60,
+      "advanced": true,
+      "label": {
+        "fr": "Durée habituelle d'un sondage rapide (secondes)",
+        "en": "Usual length of a quick poll (seconds)"
+      },
+      "help": {
+        "fr": "De 15 à 900. Sert de valeur de départ au sondage rapide.",
+        "en": "From 15 to 900. Used as the starting value of the quick poll."
+      }
+    },
+    {
       "key": "obsPosition",
       "type": "select",
       "group": "appearance",
@@ -519,6 +561,82 @@
             "type": "string",
             "maxLength": 120,
             "description": "Poll id (from polls_list)."
+          }
+        }
+      }
+    },
+    {
+      "name": "rounds_status",
+      "readOnly": true,
+      "description": "Read the state of the rounds (\"every N minutes the chat decides\"): running or not, the current round with its live results and end time, the last decision and the link to share.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "rounds_history",
+      "readOnly": true,
+      "description": "List the latest decisions taken by the chat, newest first: round number, winner, tie (if any), number of voters and the result of each choice.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many decisions at most (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "round_control",
+      "description": "Start the rounds, move to the next one (decide now) or stop them. Stopping cancels the round in progress with no decision.",
+      "input": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "start",
+              "next",
+              "stop"
+            ],
+            "description": "start, next (decide now and start the next round) or stop."
+          }
+        }
+      }
+    },
+    {
+      "name": "poll_quick",
+      "description": "Start a quick poll (2 to 4 choices, short duration) that goes on screen right away, like \"A or B?\" from the remote control.",
+      "input": {
+        "type": "object",
+        "required": [
+          "choices"
+        ],
+        "properties": {
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "2 to 4 different choices, 60 characters each at most."
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 140,
+            "description": "Optional question. Without it the question is \"A or B?\"."
+          },
+          "seconds": {
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 900,
+            "description": "Duration in seconds (default 60)."
           }
         }
       }

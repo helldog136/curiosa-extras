@@ -1,4 +1,5 @@
 // Sondages — fonctions pures (aucune lecture ni écriture : de quoi les tester seules).
+import { randomInt } from "node:crypto";
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -105,7 +106,7 @@ export function parseChoices(text) {
   return out;
 }
 
-const RESERVED = new Set(["page", "archive", "vote", "results", "live", "vp"]);
+const RESERVED = new Set(["page", "archive", "vote", "results", "live", "vp", "now", "decisions"]);
 export function slugify(question, rand = Math.random) {
   const base = String(question ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 36).replace(/-+$/g, "") || "sondage";
   const suffix = Math.floor(rand() * 36 ** 4).toString(36).padStart(4, "0");
@@ -179,3 +180,79 @@ export function validBallot(poll, ids) {
   }
   return out;
 }
+
+/* ───────────── Manches : « toutes les N minutes, le chat décide » ───────────── */
+
+export const ROUND = {
+  minMinutes: 1,
+  maxMinutes: 60,
+  defaultMinutes: 10,
+  history: 500,           // décisions gardées (les plus anciennes s'effacent)
+  quickChoices: 4,        // « A ou B ? » : de 2 à 4 choix
+  quickSeconds: [30, 60, 120, 300],
+  resumeGapMs: 60_000,    // si personne n'a regardé depuis plus d'une minute après la fin d'une manche, la suivante part de maintenant
+  pinGraceMs: 45_000,     // un sondage rapide reste à l'écran un peu après sa fin
+};
+
+/**
+ * Le vainqueur d'une manche. Le plus de voix gagne ; à égalité, tirage au sort parmi les premiers ex æquo (et on le DIT : `tie` liste les ex æquo) ;
+ * aucune voix = pas de vainqueur. `rand(n)` renvoie un entier de 0 à n-1 (aléatoire sûr par défaut ; injectable pour les tests).
+ */
+export function pickWinner(poll, rand = (n) => randomInt(n)) {
+  const counts = poll.counts ?? {};
+  const score = poll.choices.map((c) => ({ id: c.id, text: c.text, count: Math.max(0, Number(counts[c.id]) || 0) }));
+  const top = Math.max(0, ...score.map((x) => x.count));
+  if (top <= 0) return { winner: null, tie: null };
+  const leaders = score.filter((x) => x.count === top);
+  if (leaders.length === 1) return { winner: leaders[0], tie: null };
+  const drawn = leaders[Math.min(leaders.length - 1, Math.max(0, rand(leaders.length)))];
+  return { winner: drawn, tie: leaders.map((x) => x.text) };
+}
+
+/** Le formulaire « Manches » → champs validés. Erreurs PAR CHAMP (codes), comme pour un sondage. */
+export function validateSeriesForm(values) {
+  const errors = {};
+  const question = clean(values.question, LIMITS.question);
+  if (!question) errors.question = "question";
+  const list = parseChoices(values.choices);
+  if (list.length < LIMITS.minChoices) errors.choices = "few";
+  else if (list.length > LIMITS.maxChoices) errors.choices = "many";
+  const raw = String(values.minutes ?? "").trim();
+  let minutes = ROUND.defaultMinutes;
+  if (raw !== "") {
+    if (!/^\d+$/.test(raw) || Number(raw) < ROUND.minMinutes || Number(raw) > ROUND.maxMinutes) errors.minutes = "minutes";
+    else minutes = Number(raw);
+  }
+  return { errors, value: { question, choices: list, minutes } };
+}
+
+/** « A ou B ? » : de 2 à 4 choix (les deux premiers sont obligatoires) et une durée courte. */
+export function validateQuick(values) {
+  const errors = {};
+  const picks = ["a", "b", "c", "d"].map((k) => [k, clean(values[k], LIMITS.choice)]);
+  if (!picks[0][1]) errors.a = "quick_a";
+  if (!picks[1][1]) errors.b = "quick_b";
+  const seen = new Set();
+  const choices = [];
+  for (const [k, t] of picks) {
+    if (!t) continue;
+    const key = t.toLocaleLowerCase();
+    if (seen.has(key)) { errors[k] = "quick_same"; continue; }
+    seen.add(key);
+    choices.push(t);
+  }
+  const rawSeconds = String(values.seconds ?? "").trim();
+  let seconds = 60;
+  if (rawSeconds !== "") {
+    if (!/^\d+$/.test(rawSeconds) || Number(rawSeconds) < 15 || Number(rawSeconds) > 900) errors.seconds = "quick_seconds";
+    else seconds = Number(rawSeconds);
+  }
+  const question = clean(values.question, LIMITS.question);
+  return { errors, value: { choices, seconds, question } };
+}
+
+/** « mm:ss » pour un nombre de millisecondes (jamais négatif). */
+export const clock = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+};

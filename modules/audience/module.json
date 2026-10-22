@@ -20,8 +20,8 @@
   "page": true,
   "basePath": "participation",
   "privacy": {
-    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, différente dans chaque salle, avec le pseudo que vous choisissez (facultatif) et la date de votre dernière visite. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert seulement à freiner les abus. Les participants inactifs sont effacés au bout de 14 jours (réglable). Vous pouvez tout effacer vous-même depuis la page « Participation » (bouton « Effacer mes données »).",
-    "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different in each room, with the nickname you choose (optional) and the date of your last visit. Your IP address is never saved: scrambled with a daily salt never written to disk, it only serves to slow down abuse. Inactive participants are erased after 14 days (adjustable). You can erase everything yourself from the \"Participation\" page (\"Erase my data\" button)."
+    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, différente dans chaque salle, avec le pseudo choisi (facultatif) et la date de votre dernière visite. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert à freiner les abus. Effacement après 14 jours d'inactivité (réglable) ou sur demande : page « Participation », bouton « Effacer mes données ».",
+    "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different in each room, with the nickname you chose (optional) and your last visit date. Your IP address is never saved: scrambled with a daily salt never written to disk, it only slows down abuse. Erased after 14 days of inactivity (adjustable) or on request: \"Participation\" page, \"Erase my data\" button."
   },
   "permissions": [
     "slots",
