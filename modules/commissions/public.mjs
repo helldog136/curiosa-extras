@@ -40,7 +40,7 @@ textarea.cm-in{min-height:8rem;resize:vertical}
 .cm-err{color:var(--v-danger);margin:.3rem 0 0;font-size:.9rem;overflow-wrap:anywhere}
 .cm-err:empty,.cm-okbox:empty{display:none}
 .cm-okbox{margin:0;padding:.75rem 1rem;border:1px solid var(--v-line);border-radius:8px}
-.cm-check{display:flex;gap:.6rem;align-items:flex-start;min-height:44px;font-weight:400}
+.cm-field label.cm-check{display:flex;gap:.6rem;align-items:flex-start;min-height:44px;font-weight:400;margin:0}
 .cm-check input{width:1.4rem;height:1.4rem;margin:.1rem 0 0;flex:none}
 .cm-btn{min-height:44px;padding:.6rem 1.4rem;font:inherit;font-weight:600;border:1px solid transparent;border-radius:999px;background:var(--v-accent);color:var(--v-accent-fg);cursor:pointer}
 .cm-btn[disabled]{opacity:.65;cursor:progress}
