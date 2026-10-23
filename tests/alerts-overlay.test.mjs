@@ -59,8 +59,8 @@ test("flux SSE : reçoit les alertes de SA clé uniquement, se désabonne à la 
   assert.equal(mod.listeners("k2"), 0);
 });
 
-test("overlay : configuration échappée, texte inséré via textContent (jamais innerHTML), durée bornée", () => {
-  const out = def.overlay(ctx({ durationSeconds: 9999, visual: "plain" }));
+test("overlay : configuration échappée, texte inséré via textContent (jamais innerHTML), durée bornée", async () => {
+  const out = await def.overlay(ctx({ durationSeconds: 9999, visual: "plain" }));
   assert.match(out.script, /"duration":60/);
   assert.match(out.script, /"neon":false/);
   assert.ok(!/innerHTML/.test(out.script));
