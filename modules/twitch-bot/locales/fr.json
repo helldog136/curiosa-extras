@@ -217,10 +217,8 @@
   "rw_list_title": "Vos récompenses",
   "rw_list_empty": "Aucune récompense pour l'instant. Créez la première avec le formulaire ci-dessous.",
   "rw_col_reward": "Récompense",
-  "rw_col_action": "Action",
   "rw_col_state": "État",
   "rw_points": "{n} points",
-  "rw_toggle": "Pause / reprise",
   "rw_delete_confirm": "Supprimer cette récompense chez Twitch ? Les viewers ne pourront plus la prendre.",
   "rw_state_active": "En vente",
   "rw_state_paused": "En pause",
@@ -324,7 +322,6 @@
   "reason_not_installed": "Le module Home Assistant n'est pas installé.",
   "reason_kill_failed": "La maison n'a pas répondu.",
   "rw_log_test_pill": "[Test]",
-  "rw_sim_row": "Simuler",
   "rw_sim_title": "Simuler une récompense",
   "rw_sim_help": "Pour vérifier que tout marche sans dépenser de points : la simulation fait comme un vrai échange, avec un faux viewer « Test », mais ne contacte pas Twitch. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée, jamais envoyée.",
   "rw_sim_btn": "Lancer la simulation",
@@ -339,5 +336,10 @@
   "rw_sim_preview": "Voici ce que le bot écrirait dans le chat (rien n'est envoyé) : {text}",
   "rw_sim_pending": "Envoyé à la maison. Pas encore de réponse : le résultat apparaîtra dans « Derniers échanges » (ouvrez de nouveau cet onglet).",
   "rw_sim_done": "Test réussi : envoyé, récupéré par Home Assistant et exécuté.",
-  "rw_sim_failed": "La maison a répondu, mais l'action n'a pas été faite : {why}."
+  "rw_sim_failed": "La maison a répondu, mais l'action n'a pas été faite : {why}.",
+  "rw_pause_btn": "Mettre en pause",
+  "rw_resume_btn": "Remettre en vente",
+  "rw_pause_help": "Une récompense en pause reste visible chez Twitch mais personne ne peut la prendre.",
+  "rw_delete_title": "Supprimer cette récompense",
+  "rw_sim_row_btn": "Simuler cette récompense"
 }

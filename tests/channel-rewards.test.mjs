@@ -758,7 +758,7 @@ test("l'onglet : avant activation une explication et un bouton ; ensuite liste, 
   assert.ok(page.some((y) => !y.tab) && page.some((y) => y.tab === "rewards"));
 });
 
-test("la page de modification d'une récompense charge ses valeurs ; la simulation se prépare depuis la ligne", async () => {
+test("la page de modification d'une récompense charge ses valeurs ; la simulation a son bouton sur la page de chaque récompense", async () => {
   const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
   const w = await setup();
   const rw = await mk(w, { cooldownMin: "2.5" });
@@ -769,5 +769,9 @@ test("la page de modification d'une récompense charge ses valeurs ; la simulati
   const t = b.find((x) => x.type === "adminForm" && x.action === "rewardSimulate");
   assert.equal(t.fields.find((f) => f.name === "id").value, rw.id);
   const table = b.find((x) => x.type === "table" && x.rowIds);
-  assert.ok(table.rowActions.some((a) => a.href?.includes("rewardTest")));
+  assert.equal(table.rowActions.length, 1, "un seul bouton par ligne : rien ne déborde sur un téléphone");
+  assert.equal(table.columns.length, 2);
+  const mine = b.filter((x) => x.type === "adminForm" && x.fields.some((f) => f.name === "id" && f.kind === "hidden" && f.value === rw.id)).map((x) => x.action).sort();
+  assert.deepEqual(mine, ["rewardSave", "rewardSimulate", "rewardToggle"], "pause, simulation et suppression sur la page de la récompense");
+  assert.ok(b.some((x) => x.type === "table" && x.rowActions?.[0]?.action === "rewardRemove"));
 });

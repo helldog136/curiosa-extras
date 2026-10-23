@@ -143,14 +143,20 @@ export async function blocks(ctx, info, query = {}) {
   out.push({ type: "heading", text: t("rw_list_title") });
   if (!rows.length) out.push({ type: "markdown", text: t("rw_list_empty") });
   else {
-    out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_action"), t("rw_col_state")],
-      rows: rows.map((r) => [`${r.title} · ${t("rw_points", { n: r.cost })}`, actionLabel(t, r.action), statusText(t, r)]), rowIds: rows.map((r) => r.id),
-      rowActions: can(ctx) ? [{ label: t("act_edit"), href: "?tab=rewards&rewardEdit={id}#edit" }, { label: t("rw_sim_row"), href: "?tab=rewards&rewardTest={id}#test" }, { label: t("rw_toggle"), action: "rewardToggle" }, { label: t("delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] : [] });
+    // Deux colonnes et UN bouton seulement : sur un téléphone, rien ne déborde. La pause, la simulation et la suppression sont dans la page de modification.
+    out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_state")],
+      rows: rows.map((r) => [`${r.title} · ${t("rw_points", { n: r.cost })} · ${actionLabel(t, r.action)}`, statusText(t, r)]), rowIds: rows.map((r) => r.id),
+      rowActions: can(ctx) ? [{ label: t("act_edit"), href: "?tab=rewards&rewardEdit={id}#edit" }] : [] });
   }
   if (can(ctx)) {
     const editing = typeof query.rewardEdit === "string" ? rows.find((r) => r.id === query.rewardEdit) : null;
     out.push({ type: "html", html: '<div id="edit" style="scroll-margin-top:5rem"></div>' });
-    if (editing) out.push({ type: "heading", text: t("rw_edit_title", { title: editing.title }) }, rewardForm(ctx, s, house.installed, editing));
+    if (editing) {
+      out.push({ type: "heading", text: t("rw_edit_title", { title: editing.title }) }, rewardForm(ctx, s, house.installed, editing));
+      if (!editing.gone) out.push({ type: "adminForm", action: "rewardToggle", submitLabel: t(editing.pause ? "rw_resume_btn" : "rw_pause_btn"), fields: [{ name: "id", kind: "hidden", value: editing.id }] }, { type: "markdown", text: t("rw_pause_help") });
+      out.push({ type: "adminForm", action: "rewardSimulate", submitLabel: t("rw_sim_row_btn"), title: t("rw_sim_title"), fields: [{ name: "id", kind: "hidden", value: editing.id }, ...(editing.needsInput ? [{ name: "text", label: t("rw_sim_f_text"), help: t("rw_sim_f_text_help") }] : [])] });
+      out.push({ type: "table", columns: [t("rw_delete_title")], rows: [[editing.title]], rowIds: [editing.id], rowActions: [{ label: t("delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] });
+    }
     else if (rows.length < R.MAX_REWARDS) out.push({ type: "heading", text: t("rw_new_title") }, { type: "markdown", text: t("rw_new_help") }, rewardForm(ctx, s, house.installed, null));
     else out.push({ type: "markdown", text: t("rw_err_too_many", { max: R.MAX_REWARDS }) });
   }

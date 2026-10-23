@@ -217,10 +217,8 @@
   "rw_list_title": "Your rewards",
   "rw_list_empty": "No reward yet. Create the first one with the form below.",
   "rw_col_reward": "Reward",
-  "rw_col_action": "Action",
   "rw_col_state": "State",
   "rw_points": "{n} points",
-  "rw_toggle": "Pause / resume",
   "rw_delete_confirm": "Delete this reward at Twitch? Viewers will no longer be able to take it.",
   "rw_state_active": "On sale",
   "rw_state_paused": "Paused",
@@ -324,7 +322,6 @@
   "reason_not_installed": "The Home Assistant module is not installed.",
   "reason_kill_failed": "The home did not answer.",
   "rw_log_test_pill": "[Test]",
-  "rw_sim_row": "Simulate",
   "rw_sim_title": "Simulate a reward",
   "rw_sim_help": "To check that everything works without spending points: the simulation behaves like a real exchange, with a fake viewer called “Test”, but never contacts Twitch. A home action is really sent to your place; a chat answer is only shown, never sent.",
   "rw_sim_btn": "Run the simulation",
@@ -339,5 +336,10 @@
   "rw_sim_preview": "This is what the bot would write in the chat (nothing is sent): {text}",
   "rw_sim_pending": "Sent to the home. No answer yet: the result will show in “Latest exchanges” (open this tab again).",
   "rw_sim_done": "Test passed: sent, picked up by Home Assistant and carried out.",
-  "rw_sim_failed": "The home answered, but the action was not done: {why}."
+  "rw_sim_failed": "The home answered, but the action was not done: {why}.",
+  "rw_pause_btn": "Pause",
+  "rw_resume_btn": "Put back on sale",
+  "rw_pause_help": "A paused reward stays visible at Twitch but nobody can take it.",
+  "rw_delete_title": "Delete this reward",
+  "rw_sim_row_btn": "Simulate this reward"
 }
