@@ -258,7 +258,7 @@ export function disconnect(ctx) {
     if (!token) return { ok: true, revoked: null };
     const r = await post(ctx, URLS.revoke, { token }, { fp: c.fp || String(tok.fp ?? "") });
     const revoked = r.ok && r.status === 200;
-    if (!revoked) await note(ctx, "revoke_failed");   // l'écran le dit : déconnecté ici, Google n'a pas répondu
+    await note(ctx, revoked ? "disconnected" : "revoke_failed");   // l'écran garde la trace (le cœur perd le message d'une action qui redirige)   // l'écran le dit : déconnecté ici, Google n'a pas répondu
     return { ok: true, revoked };
   });
 }

@@ -89,7 +89,7 @@ test("textes : parité exacte FR/EN, toutes les clés utilisées existent (y com
   const used = [...src["index.mjs"].matchAll(/\bt\("([\w]+)"/g)].map((m) => m[1]);
   for (const k of used) assert.ok(k in fr, `clé absente : ${k}`);
   for (const code of ["client_id", "client_secret", "too_fast", "too_many", "client", "scope", "rate", "timeout", "network", "google", "no_pending", "expired", "denied", "policy"]) assert.ok(`err_${code}` in fr && `err_${code}` in en, `err_${code}`);
-  for (const code of ["code_expired", "denied", "policy", "client", "google", "scope_missing", "write_missing", "expired", "revoke_failed"]) assert.ok(`last_${code}` in fr && `last_${code}` in en, `last_${code}`);
+  for (const code of ["code_expired", "denied", "policy", "client", "google", "scope_missing", "write_missing", "expired", "revoke_failed", "disconnected"]) assert.ok(`last_${code}` in fr && `last_${code}` in en, `last_${code}`);
   const visible = Object.entries(fr).filter(([k]) => /^(acc_|btn_|pend_|err_|last_|check_|cancel_|connect_|disconnect_)/.test(k)).map(([, v]) => v).join(" ");
   assert.ok(!/oauth|token|jeton|endpoint|payload|slug|scope/i.test(visible), "mots simples, pas de jargon");
   for (const k of ["acc_step1", "acc_step2", "acc_step3", "acc_step4"]) assert.match(fr[k], /\*\*/, "chaque étape met en gras ce qu'il faut chercher à l'écran");

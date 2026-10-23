@@ -86,7 +86,7 @@ async function accountBlocks(ctx) {
     out.push({ type: "banner", tone: "info", text: ctx.t(c.pending.wantWrite ? "acc_pending_write" : "acc_pending") }, { type: "html", html: await pendingHtml(ctx, c.pending) }, form("accountCheck", ctx.t("btn_check")), form("accountCancel", ctx.t("btn_cancel")));
     return out;
   }
-  if (c.last) out.push({ type: "banner", tone: c.last.code === "write_missing" ? "info" : "warning", text: ctx.t(`last_${c.last.code}`) });
+  if (c.last) out.push({ type: "banner", tone: ["write_missing", "disconnected"].includes(c.last.code) ? "info" : "warning", text: ctx.t(`last_${c.last.code}`) });
   if (c.state === "stale") out.push({ type: "banner", tone: "warning", text: ctx.t("acc_stale") });
   if (!c.configured) {
     if (c.idSet && !c.idOk) out.push({ type: "banner", tone: "warning", text: ctx.t("acc_bad_id") });
