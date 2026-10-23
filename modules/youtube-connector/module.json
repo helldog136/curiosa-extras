@@ -104,8 +104,8 @@
         "fr": "Laisser le site répondre dans le chat de votre direct"
       },
       "help": {
-        "en": "Off by default. When on, the site may write short messages in your live chat (for example “Stopped”) when another feature asks for it. Google will ask your permission to write in your chat when you connect your account (a new connection is needed after switching this on). You can switch it off or disconnect at any time.",
-        "fr": "Désactivé par défaut. Activé, le site peut écrire de courts messages dans le chat de votre direct (par exemple « C'est arrêté ») quand une autre fonction le demande. Google vous demandera l'autorisation d'écrire dans votre chat quand vous connecterez votre compte (une nouvelle connexion est nécessaire après l'avoir activé). Vous pouvez le couper ou vous déconnecter à tout moment."
+        "en": "Off by default. When on, the site may write short messages in your live chat (for example “Everything is off.”) when another feature asks for it. Google will ask your permission to write in your chat when you connect your account (a new connection is needed after switching this on). You can switch it off or disconnect at any time.",
+        "fr": "Désactivé par défaut. Activé, le site peut écrire de courts messages dans le chat de votre direct (par exemple « Tout est coupé. ») quand une autre fonction le demande. Google vous demandera l'autorisation d'écrire dans votre chat quand vous connecterez votre compte (une nouvelle connexion est nécessaire après l'avoir activé). Vous pouvez le couper ou vous déconnecter à tout moment."
       }
     }
   ],
