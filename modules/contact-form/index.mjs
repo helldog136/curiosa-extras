@@ -1,11 +1,11 @@
 // Contact form — module de Curiosa.
-// Anti-abus minimal en mémoire : 5 messages / heure / IP.
+// Anti-abus minimal en mémoire : 5 messages / heure / visiteur (empreinte du cœur).
 const hits = new Map();
-function limited(ip) {
+function limited(who) {
     const now = Date.now();
-    const recent = (hits.get(ip) ?? []).filter((t) => now - t < 3_600_000);
+    const recent = (hits.get(who) ?? []).filter((t) => now - t < 3_600_000);
     recent.push(now);
-    hits.set(ip, recent);
+    hits.set(who, recent);
     return recent.length > 5;
 }
 export default ({
@@ -13,8 +13,9 @@ export default ({
         async send(request, ctx) {
             if (request.method !== "POST")
                 return new Response("Method not allowed", { status: 405 });
-            const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-            if (limited(ip))
+            // Le cœur (0.2.6) donne une empreinte salée du visiteur, calculée sur l'adresse de confiance : jamais l'adresse elle-même.
+            const who = ctx.api.visitor.fingerprint(request, "envoi");
+            if (limited(who))
                 return Response.json({ ok: false }, { status: 429 });
             let form;
             try {

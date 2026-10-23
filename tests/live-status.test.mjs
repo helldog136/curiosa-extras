@@ -47,7 +47,7 @@ const player = (ctx) => def.sections.player(ctx);
 
 test("live-status : manifeste valide, dépend du service twitch.live, n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.3.1");
+  assert.equal(m.version, "1.3.2");
   assert.equal(m.minCore, "0.2.2");
   assert.equal(m.dataVersion, 2);
   assert.equal(typeof def.migrations[2], "function");

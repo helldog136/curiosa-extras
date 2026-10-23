@@ -31,6 +31,8 @@ const RENAMED = {
 };
 // Modules dont le panneau range des blocs dans un autre onglet que « Utiliser » (clé `tab` d'un bloc, cœur 0.2.5).
 const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical"];
+// Ces modules comptent leurs visiteurs par ctx.api.visitor.fingerprint (cœur 0.2.6, qui couvre aussi les onglets).
+const VISITOR_API = ["modules/game-suggestions", "examples/guestbook"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
@@ -40,7 +42,7 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
     // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
-    const expected = BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    const expected = VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
     assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }

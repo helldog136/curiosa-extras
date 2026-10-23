@@ -5,16 +5,16 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.2.1",
-  "minCore": "0.2.2",
+  "version": "1.2.3",
+  "minCore": "0.2.6",
   "description": {
     "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played, covers fetched from RAWG.",
     "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués, des jaquettes récupérées via RAWG."
   },
   "author": "Helldog136",
   "privacy": {
-    "en": "If you suggest a game, the game's name, your first name or nickname (if you give one) and your note are saved and shown publicly on the suggestions page. If you vote to replay a game, a small cookie on your browser remembers your votes for the month. To have a suggestion removed, write to the site's contact.",
-    "fr": "Si vous proposez un jeu, le nom du jeu, votre prénom ou pseudo (si vous en donnez un) et votre note sont enregistrés et affichés publiquement sur la page des suggestions. Si vous votez pour rejouer un jeu, un petit cookie sur votre navigateur retient vos votes du mois. Pour faire retirer une suggestion, écrivez au contact du site."
+    "en": "If you suggest a game, the game's name, your first name or nickname (if you give one) and your note are saved and shown publicly on the suggestions page. If you vote to replay a game, a small cookie on your browser remembers your votes for the month. Game covers are loaded by your browser from RAWG, which sees your address. To have a suggestion removed, write to the site's contact.",
+    "fr": "Si vous proposez un jeu, le nom du jeu, votre prénom ou pseudo (si vous en donnez un) et votre note sont enregistrés et affichés publiquement sur la page des suggestions. Si vous votez pour rejouer un jeu, un petit cookie sur votre navigateur retient vos votes du mois. Les jaquettes sont chargées par votre navigateur depuis RAWG, qui voit votre adresse. Pour faire retirer une suggestion, écrivez au contact du site."
   },
   "license": "MIT",
   "icon": "🎮",

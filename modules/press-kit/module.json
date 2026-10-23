@@ -5,11 +5,11 @@
     "en": "Press kit",
     "fr": "Kit presse"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.mjs",
   "description": {
-    "en": "A public page presenting your identity to press and partners: presentation, logo, colors, font, contact. It only displays what you set in Settings — nothing to maintain here.",
-    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, logo, couleurs, police, contact. Elle n'affiche que ce que vous réglez dans Réglages — rien à entretenir ici."
+    "en": "A public page presenting your identity to press and partners: presentation, logo, colors, font, contact. It only displays what you fill in on its “Settings” tab — nothing else to maintain.",
+    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, logo, couleurs, police, contact. Elle n'affiche que ce que vous remplissez dans son onglet « Réglages » — rien d'autre à entretenir."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",

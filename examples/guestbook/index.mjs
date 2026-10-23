@@ -109,9 +109,9 @@ const stack = (cards) => ({ type: "html", html: `<div style="display:grid;gap:12
 // En mémoire = remis à zéro au redémarrage, et propre à ce processus : c'est un garde-fou, pas un pare-feu.
 
 const hits = new Map();
-function limited(ctx, ip) {
+function limited(ctx, who) {
   const max = num(ctx.setting("rateLimit"), 5, 1, 100);
-  const key = `${ctx.instance.key}|${ip}`; // la clé d'instance isole deux livres d'or l'un de l'autre
+  const key = `${ctx.instance.key}|${who}`; // la clé d'instance isole deux livres d'or l'un de l'autre
   const now = Date.now();
   const recent = (hits.get(key) ?? []).filter((t) => now - t < HOUR);
   recent.push(now);
@@ -171,8 +171,9 @@ export default {
   routes: {
     async sign(request, ctx) {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-      if (limited(ctx, ip)) return Response.json({ ok: false }, { status: 429 });
+      // Empreinte du visiteur donnée par le cœur (0.2.6) : adresse de confiance, salée, jamais gardée en clair.
+      const who = ctx.api.visitor.fingerprint(request, "sign");
+      if (limited(ctx, who)) return Response.json({ ok: false }, { status: 429 });
 
       let form;
       try {

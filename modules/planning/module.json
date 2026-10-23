@@ -5,11 +5,15 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.2.1",
+  "version": "2.2.2",
   "minCore": "0.2.5",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
+  },
+  "privacy": {
+    "en": "This module collects nothing itself. When game covers are shown, your browser loads those pictures from RAWG (a video-game database), so RAWG sees your address, under its own privacy policy. Without a cover, nothing is loaded from elsewhere.",
+    "fr": "Ce module ne collecte rien lui-même. Quand des jaquettes de jeux sont affichées, votre navigateur charge ces images depuis RAWG (une base de données de jeux vidéo) : RAWG voit alors votre adresse, selon sa propre politique de confidentialité. Sans jaquette, rien n'est chargé ailleurs."
   },
   "author": "Helldog136",
   "license": "MIT",

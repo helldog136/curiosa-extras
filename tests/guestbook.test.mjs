@@ -181,6 +181,15 @@ test("signer : le piège à robots répond « ok » sans rien conserver ni envoy
   assert.equal(ctx.calls.mail.length, 0);
 });
 
+test("signer : une adresse forgée en tête de x-forwarded-for ne contourne pas la limite (la dernière entrée fait foi)", async () => {
+  const ctx = ctxFor({ rateLimit: 2 });
+  const ok = { name: "Ada", message: "Salut" };
+  assert.equal((await sign(ctx, ok, "1.1.1.1, 198.51.100.50")).status, 200);
+  assert.equal((await sign(ctx, ok, "2.2.2.2, 198.51.100.50")).status, 200);
+  assert.equal((await sign(ctx, ok, "3.3.3.3, 198.51.100.50")).status, 429);
+  assert.equal((await sign(ctx, ok, "1.1.1.1, 198.51.100.51")).status, 200, "une autre dernière entrée = un autre visiteur");
+});
+
 test("signer : limiteur de débit par visiteur et par instance (429), un autre visiteur passe", async () => {
   const ctx = ctxFor({ rateLimit: 2 });
   const ok = { name: "Ada", message: "Salut" };
