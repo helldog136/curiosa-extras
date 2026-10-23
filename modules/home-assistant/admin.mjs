@@ -24,7 +24,7 @@ export function ago(ctx, ms, now = Date.now()) {
   if (s < 86400) return rtf.format(-Math.round(s / 3600), "hour");
   return rtf.format(-Math.round(s / 86400), "day");
 }
-const seconds = (ms) => `${(Math.max(0, ms) / 1000).toFixed(1).replace(/\.0$/, "")} s`;
+const seconds = (ctx, ms) => `${(Math.max(0, ms) / 1000).toFixed(1).replace(/\.0$/, "").replace(".", ctx.locale === "en" ? "." : ",")} s`;
 
 /* ───────────── Ce que la page sait ───────────── */
 
@@ -33,7 +33,7 @@ export async function overview(ctx, now = Date.now()) {
   const live = await liveNow(ctx, now);
   return S.transact(ctx, async (db) => {
     const core = await db.core();
-    const open = await B.openNow(db, live);
+    const open = await B.openNow(db, live, { note: false });
     const queue = await db.queue();
     const log = await db.log();
     const seen = B.lastSeenOf(ctx, core);
@@ -162,9 +162,9 @@ function followBlocks(ctx, o) {
   if (!l) return [];
   const finished = !["queued", "delivered"].includes(l.status);
   const steps = [t("fol_sent", { key: l.key })];
-  if (l.deliveredAt) steps.push(t("fol_fetched", { after: seconds(l.deliveredAt - l.at) }));
+  if (l.deliveredAt) steps.push(t("fol_fetched", { after: seconds(ctx, l.deliveredAt - l.at) }));
   else if (!finished) steps.push(t("fol_waiting_fetch"));
-  if (finished) steps.push(t(`fol_end_${["done", "failed", "ignored", "expired", "refused"].includes(l.status) ? l.status : "failed"}`, { after: seconds((l.doneAt ?? o.now) - l.at), result: resultText(ctx, l) }));
+  if (finished) steps.push(t(`fol_end_${["done", "failed", "ignored", "expired", "refused"].includes(l.status) ? l.status : "failed"}`, { after: seconds(ctx, (l.doneAt ?? o.now) - l.at), result: resultText(ctx, l) }));
   else steps.push(t("fol_waiting_run"));
   const follow = !finished && o.now - l.at < TEST_FOLLOW_MS;
   const out = [{ type: "markdown", text: `**${t("fol_title")}**\n\n${steps.map((s) => `- ${s}`).join("\n")}` }];

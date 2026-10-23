@@ -54,7 +54,7 @@ export function takePull(ctx, now) {
   m.pull = now;
   return 0;
 }
-export const takeAck = (ctx, now) => slide(mem(ctx).acks, now, 10_000, 30);
+export const takeAck = (ctx, now) => slide(mem(ctx).acks, now, 10_000, 60);
 /** Débit de l'appairage : 10 essais par heure et par visiteur, 60 en tout. */
 export function takePair(ctx, who, now) {
   const m = mem(ctx);
@@ -156,8 +156,8 @@ async function cancelQueue(db, code) {
 const byOf = (by) => label(typeof by === "string" ? by : "", 40);
 
 /** « Tout couper » : plus rien n'est envoyé, ce qui attendait est refusé. `by` : qui le demande (« owner », « mod:pseudo », « admin »…). */
-export function stop(ctx, { by } = {}, now = Date.now()) {
-  const who = byOf(by);
+export function stop(ctx, args, now = Date.now()) {
+  const who = byOf(args?.by);
   if (!who) return Promise.resolve({ ok: false, reason: "invalid_by" });
   return S.transact(ctx, async (db) => {
     const core = await db.core();
@@ -171,8 +171,8 @@ export function stop(ctx, { by } = {}, now = Date.now()) {
 }
 
 /** « Reprendre ». Réservé à la propriétaire et aux personnes qui gèrent le module : un modérateur (« mod:… ») peut couper, pas reprendre. */
-export function start(ctx, { by } = {}, now = Date.now()) {
-  const who = byOf(by);
+export function start(ctx, args, now = Date.now()) {
+  const who = byOf(args?.by);
   if (!who) return Promise.resolve({ ok: false, reason: "invalid_by" });
   if (/^mod:/i.test(who)) return Promise.resolve({ ok: false, reason: "forbidden" });
   return S.transact(ctx, async (db) => {
@@ -188,9 +188,9 @@ export function start(ctx, { by } = {}, now = Date.now()) {
 /* ───────────── Un instantané de l'état (pour le service, les routes et l'administration) ───────────── */
 
 /** Note le direct vu (au plus une écriture par minute) et rend s'il est ouvert. À appeler dans une transaction. */
-export async function openNow(db, live) {
+export async function openNow(db, live, { note = true } = {}) {
   const core = await db.core();
-  if (shouldNoteLive(live, core.lastLiveAt || 0, db.now)) core.lastLiveAt = db.now;
+  if (note && shouldNoteLive(live, core.lastLiveAt || 0, db.now)) core.lastLiveAt = db.now;
   return isOpen(live, core.lastLiveAt || 0, db.now);
 }
 
@@ -199,7 +199,7 @@ export async function status(ctx, now = Date.now()) {
   const live = await liveNow(ctx, now);
   return S.transact(ctx, async (db) => {
     const core = await db.core();
-    const open = await openNow(db, live);
+    const open = await openNow(db, live, { note: false });   // une simple lecture n'écrit rien
     const seen = lastSeenOf(ctx, core);
     return { enabled: core.enabled !== false, paired: !!core.paired, lastSeenAt: seen ? iso(seen) : null, live: open, queued: (await db.queue()).items.length };
   }, { now });

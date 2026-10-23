@@ -17,7 +17,7 @@ export const resetLive = () => cache.clear();
 
 function within(p, ms, fallback) {
   let t;
-  return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t));
+  return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); })]).finally(() => clearTimeout(t));
 }
 
 /**
