@@ -36,7 +36,12 @@ Liste fermée de `request` (toute autre demande : `invalid`, sans réseau) :
 - `channels.list` (1 unité) : `part` ⊂ `snippet,statistics,contentDetails` ; `id` (1 à 50 `UC…`) **ou** `forHandle` (`@nom`) ;
 - `playlistItems.list` (1 unité) : `part` ⊂ `snippet,contentDetails` ; `playlistId` ; `maxResults` ≤ 50 ; `pageToken` ;
 - `videos.list` (1 unité) : `part` ⊂ `snippet,contentDetails,statistics,liveStreamingDetails` ; `id` (1 à 50). `liveStreamingDetails` (depuis la 1.1.0) donne l'heure de début programmée d'une première ou d'un direct public ; une vidéo privée programmée reste invisible avec une clé.
+- `liveChatMessages.list` (**5 unités**, depuis la 1.2.0) : lecture du chat d'un direct public. `part` ⊂ `snippet,authorDetails` ; `liveChatId` ; `maxResults` 200 à 500 ; `pageToken`. **Jamais en cache** et jamais de réponse de repli (un chat périmé n'a aucun sens). Réponses d'erreur propres à ce chat : `chat_ended` (direct fini ou chat introuvable), `chat_disabled` (chat désactivé), `chat_denied` (YouTube demande plus qu'une clé pour ce chat : pause de 10 minutes pour CET appel seulement, la clé n'est pas déclarée refusée). Elles ne coupent jamais les autres lectures.
 - `search.list` (100 unités) est exclu.
+
+Toute demande accepte `fresh: true` (depuis la 1.2.0) : ni lue ni gardée en cache (pour savoir si un direct a commencé). Le coût est celui de l'appel.
+
+`status().chat` dit ce que ce connecteur sait faire avec le chat : `{ read, write }`. **`write` est toujours faux** : écrire dans un chat demande une connexion au compte YouTube (OAuth), que ce connecteur n'a pas (clé seulement). Les modules ne doivent donc pas promettre de réponse dans le chat.
 
 Erreurs : `config` (aucune clé), `auth` (clé refusée : pause de 10 min ou jusqu'au changement de clé), `quota` (budget du jour atteint, ou 403 `quotaExceeded` : rien avant minuit `America/Los_Angeles`, `retryAt`), `rate`, `timeout`, `network`, `circuit`, `busy`, `invalid`, `too_large`. Avec un résultat déjà lu pour la même demande, la réponse est `ok: true` avec `stale: true`, `at` (date de la lecture) et `error`.
 

@@ -15,6 +15,9 @@ const BASE = `https://${HOST}/youtube/v3/`;
 export const DAILY_QUOTA = 10_000;
 /** Coût de chaque appel permis, en unités de quota (barème publié par YouTube). `search.list` (100 unités) est volontairement exclu. */
 export const COSTS = Object.freeze({ "channels.list": 1, "playlistItems.list": 1, "videos.list": 1 });
+/** Lecture du chat d'un direct (1.2.0) : 5 unités l'appel, jamais gardée en cache (un chat périmé n'a aucun sens), aucune réponse de repli. */
+export const LIVE_CHAT = "liveChatMessages.list";
+export const LIVE_CHAT_COST = 5;
 /** Bornes (dans un objet pour que les tests puissent les raccourcir). */
 export const LIMITS = {
   timeoutMs: 8000,        // un appel réseau (ctx.api.net), file d'attente et lecture comprises
@@ -38,6 +41,12 @@ const HANDLE_RE = /^@[\p{L}\p{N}._·-]{3,30}$/u;
 const PLAYLIST_RE = /^[\w-]{10,64}$/;
 const VIDEO_RE = /^[\w-]{11}$/;
 const PAGE_TOKEN_RE = /^[\w-]{1,100}$/;
+const CHAT_ID_RE = /^[\w.=-]{6,200}$/;
+const CHAT_TOKEN_RE = /^[\w.=-]{1,400}$/;
+/** Raisons de YouTube qui disent « ce chat-là n'est (plus) pas lisible », sans rien dire de la clé. */
+const CHAT_ENDED = new Set(["liveChatEnded", "liveChatNotFound"]);
+const CHAT_OFF = new Set(["liveChatDisabled"]);
+const CHAT_DENIED = new Set(["forbidden", "insufficientPermissions", "liveChatForbidden", "authError", "required"]);
 
 // ── Outils ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 /** Attend `p` au plus `ms` ; au-delà, `fallback()`. Le minuteur est toujours libéré et ne retient pas le processus. */
@@ -83,8 +92,10 @@ function parts(value, allowed) {
  *   channels.list      part ⊂ snippet,statistics,contentDetails ; `id` (1 à 50 identifiants UC…) OU `forHandle` (un pseudo @nom)
  *   playlistItems.list part ⊂ snippet,contentDetails ; `playlistId` ; `maxResults` 1 à 50 (50 par défaut) ; `pageToken` facultatif
  *   videos.list        part ⊂ snippet,contentDetails,statistics,liveStreamingDetails ; `id` (1 à 50 identifiants de vidéo) — liveStreamingDetails : début programmé d'une première ou d'un direct
+ *   liveChatMessages.list (1.2.0) part ⊂ snippet,authorDetails ; `liveChatId` ; `maxResults` 200 à 500 (500 par défaut) ; `pageToken` facultatif — 5 unités, jamais en cache
  */
 export function normalize(endpoint, params = {}) {
+  if (endpoint === LIVE_CHAT) return normalizeChat(params);
   if (!Object.hasOwn(COSTS, endpoint) || !params || typeof params !== "object") return null;
   const q = {};
   if (endpoint === "channels.list") {
@@ -116,7 +127,21 @@ export function normalize(endpoint, params = {}) {
   }
   if (!q.part) return null;
   const query = new URLSearchParams(Object.entries(q).sort(([a], [b]) => a.localeCompare(b)));
-  return { endpoint, url: `${BASE}${endpoint.split(".")[0]}?${query}`, key: `${endpoint}?${query}` };
+  return { endpoint, url: `${BASE}${endpoint.split(".")[0]}?${query}`, key: `${endpoint}?${query}`, cost: COSTS[endpoint] };
+}
+function normalizeChat(params) {
+  if (!params || typeof params !== "object" || typeof params.liveChatId !== "string" || !CHAT_ID_RE.test(params.liveChatId)) return null;
+  const part = parts(params.part ?? "snippet,authorDetails", ["snippet", "authorDetails"]);
+  if (!part) return null;
+  const q = { liveChatId: params.liveChatId, part };
+  if (params.maxResults !== undefined) {
+    const max = Number(params.maxResults);
+    if (!Number.isInteger(max) || max < 200 || max > 500) return null;
+    q.maxResults = String(max);
+  }
+  if (params.pageToken !== undefined) { if (typeof params.pageToken !== "string" || !CHAT_TOKEN_RE.test(params.pageToken)) return null; q.pageToken = params.pageToken; }
+  const query = new URLSearchParams(Object.entries(q).sort(([a], [b]) => a.localeCompare(b)));
+  return { endpoint: LIVE_CHAT, url: `${BASE}liveChat/messages?${query}`, key: `${LIVE_CHAT}?${query}`, cost: LIVE_CHAT_COST, chat: true };
 }
 
 // ── État d'une instance (mémoire, borné) ─────────────────────────────────────────────────────────────────────────────
@@ -125,7 +150,7 @@ function stateOf(ctx) {
   const id = String(ctx.instance?.id ?? ctx.instance?.key ?? "default");
   let st = states.get(id);
   if (!st) {
-    st = { cache: new Map(), lastGood: new Map(), failUntil: new Map(), quota: null, quotaUntil: 0, rateUntil: 0, auth: null, lastGoodAt: null };
+    st = { cache: new Map(), lastGood: new Map(), failUntil: new Map(), quota: null, quotaUntil: 0, rateUntil: 0, auth: null, chatDeniedUntil: 0, lastGoodAt: null };
     remember(states, id, st, 20);
   }
   return st;
@@ -202,14 +227,16 @@ export async function request(ctx, args = {}) {
   const fp = fingerprint(key);
   const ck = `${fp}|${spec.key}`;
   const now = Date.now();
-  const cost = COSTS[spec.endpoint];
-  const hit = st.cache.get(ck);
+  const cost = spec.cost;
+  const noCache = spec.chat === true || args.fresh === true;   // le chat, et toute demande « à jour » (par exemple : un direct a-t-il commencé ?) : ni lue ni gardée en cache, aucune réponse de repli
+  const hit = noCache ? null : st.cache.get(ck);
   if (hit && hit.until > now) return { ok: true, status: 200, json: clone(hit.json), cost: 0, cached: true, at: iso(hit.at) };
   const fallback = (error, extra = {}) => {
-    const last = st.lastGood.get(ck);
+    const last = noCache ? null : st.lastGood.get(ck);
     return last ? { ok: true, status: 200, json: clone(last.json), cost: 0, stale: true, error, at: iso(last.at), ...extra } : { ok: false, error, ...extra };
   };
   if (refused(st, fp, now)) return fallback("auth");
+  if (spec.chat && st.chatDeniedUntil > now) return fallback("chat_denied", { retryAt: st.chatDeniedUntil });
   if (st.quotaUntil > now) return fallback("quota", { retryAt: st.quotaUntil });
   if (st.rateUntil > now) return fallback("rate", { retryAt: st.rateUntil });
   if ((st.failUntil.get(ck) ?? 0) > now) return fallback("network");
@@ -231,26 +258,36 @@ export async function request(ctx, args = {}) {
   if (!r.ok) {
     if (r.error === "quota") { st.quotaUntil = r.retryAt ?? nextPacificMidnight(done); return fallback("quota", { retryAt: st.quotaUntil }); }
     if (r.error === "rate") return fallback("rate", r.retryAt ? { retryAt: r.retryAt } : {});
-    if (r.error === "timeout" || r.error === "network") remember(st.failUntil, ck, done + LIMITS.failMs);
+    if ((r.error === "timeout" || r.error === "network") && !spec.chat) remember(st.failUntil, ck, done + LIMITS.failMs);
     return fallback(r.error, r.retryAt ? { retryAt: r.retryAt } : {});
   }
   const status = r.status;
   if (status === 200) {
-    if (!r.json || typeof r.json !== "object" || Array.isArray(r.json)) { remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }   // JSON tronqué ou illisible
-    remember(st.cache, ck, { json: r.json, at: done, until: done + LIMITS.cacheMs });
-    remember(st.lastGood, ck, { json: r.json, at: done });
+    if (!r.json || typeof r.json !== "object" || Array.isArray(r.json)) { if (!spec.chat) remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }   // JSON tronqué ou illisible
+    if (!noCache) {
+      remember(st.cache, ck, { json: r.json, at: done, until: done + LIMITS.cacheMs });
+      remember(st.lastGood, ck, { json: r.json, at: done });
+    }
     st.lastGoodAt = done;
     st.failUntil.delete(ck);
     return { ok: true, status, json: clone(r.json), cost: charged ? cost : 0, at: iso(done) };
   }
   const { reasons, message } = errorReasons(r.json);
   if ([...reasons].some((x) => RATE_REASONS.has(x))) { st.rateUntil = done + LIMITS.rateMs; return fallback("rate", { retryAt: st.rateUntil }); }
+  if (spec.chat) {
+    // Le chat a ses propres réponses : un direct fini ou sans chat n'est PAS une clé refusée (sinon toute lecture de YouTube s'arrêterait 10 minutes).
+    const list = [...reasons];
+    if (status === 404 || list.some((x) => CHAT_ENDED.has(x))) return { ok: false, error: "chat_ended", status };
+    if (list.some((x) => CHAT_OFF.has(x))) return { ok: false, error: "chat_disabled", status };
+    const keyProblem = list.some((x) => AUTH_REASONS.has(x) && !CHAT_DENIED.has(x)) || /api key/i.test(message);
+    if (!keyProblem && (status === 401 || status === 403)) { st.chatDeniedUntil = done + LIMITS.authPauseMs; return { ok: false, error: "chat_denied", status, retryAt: st.chatDeniedUntil }; }
+  }
   if (status === 401 || status === 403 || (status === 400 && ([...reasons].some((x) => AUTH_REASONS.has(x)) || /api key/i.test(message)))) {
     st.auth = { fp, until: done + LIMITS.authPauseMs };
     return fallback("auth", { status });
   }
   if (status === 400) return { ok: false, error: "invalid", status };
-  if (status >= 500) { remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }
+  if (status >= 500) { if (!spec.chat) remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }
   return { ok: true, status, json: r.json && typeof r.json === "object" ? clone(r.json) : null, cost: charged ? cost : 0, at: iso(done) };   // 404… : l'appelant juge
 }
 
@@ -352,6 +389,6 @@ export async function status(ctx) {
   return {
     ready: keyState === "set", key: keyState,
     quota: { used: q.used, budget, reserve: reserveOf(budget), day: q.day, resetAt: iso(resetAt), exhausted: st.quotaUntil > now || q.used >= budget - reserveOf(budget), until: iso(st.quotaUntil > now ? st.quotaUntil : resetAt) },
-    costs: { ...COSTS }, lastGoodAt: st.lastGoodAt ? iso(st.lastGoodAt) : null,
+    costs: { ...COSTS, [LIVE_CHAT]: LIVE_CHAT_COST }, chat: { read: keyState === "set" && st.chatDeniedUntil <= now, write: false }, lastGoodAt: st.lastGoodAt ? iso(st.lastGoodAt) : null,
   };
 }

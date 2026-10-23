@@ -5,7 +5,7 @@
     "en": "YouTube connector",
     "fr": "Connecteur YouTube"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "platform": "youtube",
   "description": {
     "en": "Keeps your site's YouTube key in one place, entered once and never shown again. Reads channel names, pictures and subscriber counts, while watching YouTube's daily allowance so the site never runs out.",
