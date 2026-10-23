@@ -28,6 +28,7 @@ export const timing = {
   waitLostMs: 330_000,       // une action confiée à la maison sans nouvelle depuis ce temps : « pas de nouvelle »
   simGapMs: 3_000, simPerHour: 30,
   pageMax: 500,
+  requestMs: 8000,           // un appel au chat, d'un bout à l'autre
 };
 const COST_CHAT = 5;
 
@@ -129,7 +130,7 @@ export async function processItems(ctx, s, st, items, now) {
     if (!ev || ev.kind === "invalid") continue;
     const fp = S.fingerprint(ev.id);
     if (seen.has(fp)) continue;
-    if (done >= timing.maxEvents) break;   // le reste sera relu... jamais : on s'arrête là, la lecture suivante repart de la fin
+    if (done >= timing.maxEvents) break;   // borne dure (invraisemblable sur 500 messages) : le reste de cette page est laissé
     seen.add(fp); st.seen.push(fp); done++;
     if (ev.kind === "command") {
       if (now - ev.at > timing.commandMaxAgeMs) { old++; continue; }
@@ -190,7 +191,7 @@ async function tickNow(ctx, now) {
   // 2. Lire le chat, pas avant l'heure.
   if (cur.nextPollAt > now) return set("reading");
   if (cur.usage.units + COST_CHAT > budgetUnits(s)) return set("budget");
-  const p = await B.youtube(ctx, "request", { endpoint: "liveChatMessages.list", params: { liveChatId: cur.chatId, maxResults: timing.pageMax, ...(cur.cursor ? { pageToken: cur.cursor } : {}) }, priority: "background", timeoutMs: 8000 });
+  const p = await B.youtube(ctx, "request", { endpoint: "liveChatMessages.list", params: { liveChatId: cur.chatId, maxResults: timing.pageMax, ...(cur.cursor ? { pageToken: cur.cursor } : {}) }, priority: "background", timeoutMs: timing.requestMs });
   const cost = p.ok ? Number(p.cost) || 0 : 0;
   if (!p.ok || p.stale || p.status !== 200) {
     const code = String(p.error ?? "network");
