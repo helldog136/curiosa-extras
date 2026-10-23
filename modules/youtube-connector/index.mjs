@@ -81,7 +81,7 @@ async function accountBlocks(ctx) {
     return out;
   }
   if (c.state === "pending" && c.pending) {
-    out.push({ type: "banner", tone: "info", text: ctx.t(c.pending.wantWrite ? "acc_pending_write" : "acc_pending") }, { type: "html", html: pendingHtml(ctx, c.pending) }, form("accountCheck", ctx.t("btn_check")), form("accountCancel", ctx.t("btn_cancel")));
+    out.push({ type: "banner", tone: "info", text: ctx.t(c.pending.wantWrite ? "acc_pending_write" : "acc_pending") }, { type: "html", html: await pendingHtml(ctx, c.pending) }, form("accountCheck", ctx.t("btn_check")), form("accountCancel", ctx.t("btn_cancel")));
     return out;
   }
   if (c.last) out.push({ type: "banner", tone: c.last.code === "write_missing" ? "info" : "warning", text: ctx.t(`last_${c.last.code}`) });
@@ -105,9 +105,9 @@ function stepsHtml(ctx) {
   const items = [1, 2, 3, 4].map((n) => `<li style="margin:.4rem 0">${inline(ctx.t(`acc_step${n}`))}</li>`).join("");
   return `<ol style="padding-left:1.25rem;line-height:1.55;margin:.25rem 0">${items}</ol>`;
 }
-function pendingHtml(ctx, p) {
+async function pendingHtml(ctx, p) {
   let qr = "";
-  try { const svg = ctx.api.qr(p.url); if (typeof svg === "string" && svg.startsWith("<svg")) qr = `<div role="img" aria-label="${esc(ctx.t("pend_qr_alt"))}" style="background:#fff;padding:8px;border-radius:8px;width:160px;height:160px;box-sizing:content-box;flex:none"><div style="width:160px;height:160px">${svg}</div></div>`; } catch { /* le code suffit */ }
+  try { const svg = await ctx.api.qr(p.url); if (typeof svg === "string" && svg.startsWith("<svg")) qr = `<div role="img" aria-label="${esc(ctx.t("pend_qr_alt"))}" style="background:#fff;padding:8px;border-radius:8px;width:160px;height:160px;box-sizing:content-box;flex:none"><div style="width:160px;height:160px">${svg.replace("<svg", '<svg style="width:100%;height:100%;display:block"')}</div></div>`; } catch { /* le code suffit */ }
   const minutes = Math.max(1, Math.ceil((p.expiresAt - Date.now()) / 60_000));
   const li = (k, vars) => `<li style="margin:.4rem 0">${esc(ctx.t(k, vars))}</li>`;
   return `<div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;line-height:1.5">${qr}<div style="flex:1 1 16rem;min-width:0">`
