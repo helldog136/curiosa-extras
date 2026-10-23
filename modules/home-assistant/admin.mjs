@@ -204,7 +204,7 @@ function journalHtml(ctx, o) {
   });
   const css = `<style>
 .hj{list-style:none;margin:0;padding:0;border:1px solid rgba(128,128,128,.35);border-radius:.75rem;overflow:hidden}
-.hj-row{display:grid;grid-template-columns:7rem 1fr;gap:.15rem .75rem;padding:.65rem .8rem;border-top:1px solid rgba(128,128,128,.25);font-size:.92rem;align-items:baseline}
+.hj-row{display:grid;grid-template-columns:9.5rem 1fr;gap:.15rem .75rem;padding:.65rem .8rem;border-top:1px solid rgba(128,128,128,.25);font-size:.92rem;align-items:baseline}
 .hj-row:first-child{border-top:0}
 .hj-when{opacity:.75;white-space:nowrap}
 .hj-res{grid-column:2;font-weight:600}
