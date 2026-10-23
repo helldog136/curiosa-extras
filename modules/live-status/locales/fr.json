@@ -8,5 +8,17 @@
   "viewersMany": "{count} spectateurs",
   "playerChoice": "Choisir la chaîne à regarder",
   "needChannel": "Indiquez votre chaîne dans Ma Chaîne Twitch pour afficher le lecteur seulement quand vous êtes en direct. Sans elle, le lecteur n'est pas affiché.",
-  "openConnector": "Ouvrir le Connecteur Twitch →"
+  "openConnector": "Ouvrir le Connecteur Twitch →",
+  "liveYoutube": "En direct sur YouTube — viens dire bonjour !",
+  "ytStart": "Lancer le lecteur YouTube",
+  "ytNote": "Rien n'est chargé depuis YouTube avant votre clic. Une fois lancé, le lecteur se connecte à YouTube (Google).",
+  "needSource": "Aucune source de direct n'est installée : sans elle, ni bannière ni lecteur. Installez Ma Chaîne Twitch ou Chaîne YouTube.",
+  "suggestTwitch": "sait quand vous êtes en direct sur Twitch (Ma Chaîne Twitch)",
+  "suggestYoutube": "sait quand vous êtes en direct sur YouTube (Chaîne YouTube)",
+  "ytNeedChannel": "Indiquez votre chaîne dans Chaîne YouTube pour annoncer vos directs YouTube.",
+  "openYoutube": "Ouvrir Chaîne YouTube →",
+  "ytNeedKey": "Reliez votre site à YouTube (clé du Connecteur YouTube) pour annoncer vos directs YouTube.",
+  "openYoutubeConnector": "Ouvrir le Connecteur YouTube →",
+  "ytQuota": "YouTube limite le nombre de vérifications par jour et la limite est atteinte : vos directs YouTube ne seront pas annoncés avant demain.",
+  "ytDown": "YouTube ne répond pas pour le moment : vos directs YouTube ne sont pas annoncés. Cela se rétablit tout seul."
 }
