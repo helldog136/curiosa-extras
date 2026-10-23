@@ -51,6 +51,11 @@ export async function overview(ctx, now = Date.now()) {
 /* ───────────── Les phrases du journal ───────────── */
 
 function resultText(ctx, l) {
+  const back = (l.test ? "" : ctx.t("res_points_back"));
+  const text = resultBase(ctx, l);
+  return ["expired", "refused"].includes(l.status) ? `${text}${back}` : text;
+}
+function resultBase(ctx, l) {
   const t = ctx.t;
   switch (l.status) {
     case "queued": return t("res_queued");
@@ -147,7 +152,7 @@ function deviceBlocks(ctx, o) {
   const t = ctx.t;
   return [
     { type: "heading", text: t("dev_title") },
-    { type: "table", columns: [t("dev_name"), t("dev_since"), t("dev_mark")], rows: [[o.paired.name, ago(ctx, o.paired.at, o.now), o.paired.fp]], rowIds: ["device"],
+    { type: "table", columns: [t("dev_name")], rows: [[t("dev_row", { name: o.paired.name, since: ago(ctx, o.paired.at, o.now), mark: o.paired.fp })]], rowIds: ["device"],
       rowActions: [{ label: t("dev_unpair"), action: "unpair", confirm: t("dev_unpair_confirm"), danger: true }] },
     ...(o.pending ? [{ type: "copy", text: o.pending.code, label: t("wiz_code_label") }, { type: "markdown", text: t("wiz_code_help", { minutes: Math.max(1, Math.ceil((o.pending.expiresAt - o.now) / 60_000)) }) }] : []),
     { type: "adminForm", action: "pair", submitLabel: t("dev_another"), fields: [] },

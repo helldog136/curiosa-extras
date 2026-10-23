@@ -846,12 +846,12 @@ test("test : issues expiré, ignoré (pas de liaison) et échec sont suivies ave
   await def.adminActions.test.run(w.ctx, { key: "lumieres:inconnue" });
   w.tick(1100);
   await ha.step();
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /Ignoré après 1,1 s : Ignorée : aucune scène/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Résultat après 1,1 s : Ignorée : aucune scène/);
   w.tick(4000);
   await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" });
   w.tick(61_000);
   await ha.pull();
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /Expiré après 60 s/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Résultat après 60 s : Trop tard/);
   w.done();
 });
 
