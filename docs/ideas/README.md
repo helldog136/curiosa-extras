@@ -20,6 +20,16 @@ Publiés dans la version 1.15.0 (les propriétaires ont choisi de tout publier e
 - `IDEES-DEPART.md` : le cahier des charges de départ.
 - `FAMILLE-STREAM.md` : la suite imaginée à partir des sondages (tombola, roue, bingo, quiz ; la base commune « Participation » existe maintenant : `audience.md`).
 
+## La famille « maison » (octobre 2026, version 1.16.0)
+
+Deux nouveaux modules et une extension du Bot Twitch, qui font réagir la maison de la créatrice (Home Assistant) à son live, avec un gros bouton « Tout couper ». Chacun a sa description (`<id>.md`) et ses notes de version (`<id>.changelog.md`) ; le Bot Twitch 1.3.0 a la sienne dans `../changelog-parts/channel-rewards.md`.
+
+| Module | Pour résoudre quel problème |
+|---|---|
+| `home-assistant` Home Assistant | Le pont sûr : la file d'ordres, l'association, le coupe-circuit, la modération du texte lu, le journal ; le « en direct » vient de Twitch OU de YouTube. Contrat exact : `home-assistant-contract.md` |
+| `twitch-bot` Bot Twitch 1.3.0 | Les récompenses en points de chaîne qui lancent une action (lumières, message lu à voix haute) |
+| `youtube-live-actions` Actions du live YouTube | Les Super Chats, Super Stickers et adhésions qui lancent la même action |
+
 ## Devenus des extensions du cœur (et non des modules)
 - **Liens courts** : le cœur a déjà des redirections (`/twitch`). On y ajoute le QR code, la date de fin et les statistiques : voir `dans-le-coeur/liens-courts.md`.
 - **Santé du site** : intégrée à l'Entretien du cœur, qui a déjà un diagnostic et des outils pour l'assistant IA : voir `dans-le-coeur/sante-du-site.md`.
