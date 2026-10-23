@@ -65,7 +65,7 @@ export async function redirectFor(ctx, channel, own) {
 
 /* ───────────── Autorisations demandées par d'autres modules ───────────── */
 /** Autorisations que d'autres modules peuvent demander (liste fermée : on n'accorde jamais autre chose à leur demande). */
-export const EXTRA_SCOPES = ["user:read:chat", "user:write:chat", "user:bot", "channel:bot", "moderator:read:followers", "channel:read:subscriptions"];
+export const EXTRA_SCOPES = ["user:read:chat", "user:write:chat", "user:bot", "channel:bot", "moderator:read:followers", "channel:read:subscriptions", "channel:manage:redemptions"];
 export const RETURN_TO = /^\/admin\/instances\/[A-Za-z0-9_-]{1,64}$/;
 export const wantsOf = async (ctx, channel, slot) => (await all(ctx, COL.wants, LIMITS.wants)).filter((d) => d.data.channel === channel && slotOf(d.data.slot) === slotOf(slot));
 export async function wantedScopes(ctx, channel, slot) {

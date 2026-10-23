@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 export const LOG_MAX = 30;
 const chain = new Map();
 /** Une écriture après l'autre pour une même instance et un même document (des messages en rafale ne s'écrasent pas). */
-function serial(ctx, name, fn) {
+export function serial(ctx, name, fn) {
   const k = `${ctx.instance.key}|${name}`;
   const run = (chain.get(k) ?? Promise.resolve()).catch(() => {}).then(fn);
   chain.set(k, run);

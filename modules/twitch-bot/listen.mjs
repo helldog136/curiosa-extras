@@ -52,7 +52,9 @@ const lacks = (acc, scopes) => scopes.filter((x) => !(acc?.scopes ?? []).include
 /** Dit au Connecteur Twitch ce dont le bot a besoin pour cette chaîne (il l'ajoute à ses autorisations) — idempotent. */
 export async function declareScopes(ctx, s, channel) {
   const n = need(s), returnTo = `/admin/instances/${ctx.instance.id}`;
-  await ctx.api.services.callAll(SERVICE, "wantScopes", { channel, consumer: ctx.instance.key, slot: "main", scopes: n.main, returnTo });
+  // Les autorisations des récompenses ne sont demandées qu'une fois la propriétaire entrée dans l'onglet Récompenses et ayant dit oui : le chat ne s'arrête jamais pour ça.
+  const main = (await readState(ctx)).rewardsOn === true ? [...new Set([...n.main, ...es.REWARD_SCOPES])] : n.main;
+  await ctx.api.services.callAll(SERVICE, "wantScopes", { channel, consumer: ctx.instance.key, slot: "main", scopes: main, returnTo });
   await ctx.api.services.callAll(SERVICE, "wantScopes", { channel, consumer: ctx.instance.key, slot: "bot", scopes: n.bot, returnTo });
 }
 
@@ -131,4 +133,41 @@ export async function sendChat(ctx, d, text) {
   const res = await twitch(ctx, d.channel, es.sendRequest({ broadcasterId: d.broadcasterId, senderId: d.senderId, text, slot: d.slot }));
   if (!res.ok) return { sent: false, code: res.error === "auth" || res.error === "scope" ? "denied" : res.error === "rate" ? "rate" : "twitch" };
   return es.readSend(res);
+}
+
+/**
+ * L'abonnement aux échanges de points (même adresse, même secret, même signature que le chat : une seule route). Rend { code } : off (récompenses pas activées) · need_scope · site_private ·
+ * listening · pending · refused · twitch_down · twitch_busy. Noté dans `redeemSub`. Sûr à rappeler souvent.
+ */
+export async function ensureRedeemListening(ctx, s, { settle = false } = {}) {
+  if ((await readState(ctx)).rewardsOn !== true) return { code: "off" };
+  const mark = async (code, extra = {}) => { await updateState(ctx, (d) => { d.redeemSub = { code, at: Date.now(), ...extra }; }); return { code }; };
+  const acc = await accounts(ctx, s);
+  const m = acc.main;
+  if (acc.problem || !m?.channel || !m.userId || m.status === "none" || m.status === "reconnect" || !es.REWARD_SCOPES.every((x) => (m.scopes ?? []).includes(x))) return mark("need_scope");
+  if (!isPublicSite(ctx.api.siteUrl)) return mark("site_private");
+  const callback = callbackOf(ctx), ids = { broadcasterId: m.userId, callback };
+  const secret = await ensureSecret(ctx);
+  const list = await twitch(ctx, m.channel, es.redeemListRequest());
+  if (!list.ok) return mark(list.error === "rate" ? "twitch_busy" : "twitch_down");
+  if (list.status === 401 || list.status === 403) return mark("need_scope");
+  const cls = es.classifyRedeem(list.json, ids);
+  for (const id of cls.stale) await twitch(ctx, m.channel, es.deleteRequest(id));
+  if (cls.state === "enabled") return mark("listening");
+  if (cls.state === "pending") {
+    const before = (await readState(ctx)).redeemSub;
+    const since = before?.code === "pending" && before.since ? before.since : Date.now();
+    if (Date.now() - since < 10 * 60_000) return mark("pending", { since });
+    await twitch(ctx, m.channel, es.deleteRequest(cls.id));
+  }
+  const made = await twitch(ctx, m.channel, es.redeemCreateRequest({ ...ids, secret }));
+  if (!made.ok) return mark(made.error === "rate" ? "twitch_busy" : "twitch_down");
+  const r = es.readCreate(made);
+  if (!(r.ok || r.code === "exists")) return mark(r.code === "denied" ? "need_scope" : r.code === "refused" ? "refused" : "twitch_down", r.detail ? { detail: r.detail } : {});
+  if (settle) for (let i = 0; i < 4; i++) {
+    await new Promise((ok) => setTimeout(ok, 600));
+    const again = await twitch(ctx, m.channel, es.redeemListRequest());
+    if (again.ok && es.classifyRedeem(again.json, ids).state === "enabled") return mark("listening");
+  }
+  return mark("pending", { since: Date.now() });
 }

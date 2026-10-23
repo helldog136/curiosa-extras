@@ -2,7 +2,7 @@
 
 Votre site **répond aux commandes tapées dans votre chat Twitch** : quelqu'un écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
 
-**Il faut Curiosa 0.2.2 ou plus.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent tout seuls avec le bot. Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
+**Il faut Curiosa 0.2.5 ou plus.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent tout seuls avec le bot. Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
 
 ## Pour commencer
 1. **Installez le bot.** Le Connecteur Twitch et Ma Chaîne Twitch s'installent avec lui. Si ce n'est pas déjà fait, suivez le guide du Connecteur Twitch (en haut de sa page) pour renseigner l'application Twitch de votre site, et indiquez votre chaîne dans Ma Chaîne Twitch : c'est la même application pour tout ce qui touche à Twitch, vous ne la saisissez qu'une fois.
@@ -23,6 +23,23 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 - **Réseaux sociaux** (si vous avez installé leurs modules et indiqué vos adresses) : `!youtube`, `!tiktok` (aussi `!tik-tok`), `!instagram`, `!discord`, `!x` (aussi `!twitter`)… Texte proposé : « Retrouvez-moi sur YouTube : youtube.com/@vous ». Deux comptes d'un même réseau : `!youtube` et `!youtube2`. Une commande **`!reseaux`** donne d'un coup tous les liens des réseaux activés (vous pouvez la désactiver).
 - Les commandes des réseaux, les vôtres et les commandes toutes prêtes se règlent **sur la page du bot** : un résumé les montre avec leur état et un bouton « Modifier » (ou « Configurer »). La page ne remonte plus en haut quand vous cliquez : le message s'affiche à côté du bouton.
 - Une fiche pas encore publiée peut déjà avoir sa commande réglée : elle attend la publication. Sans le bot, la fiche du partenaire ne montre aucune section en plus.
+
+## Les récompenses en points de chaîne (onglet « Récompenses », depuis la 1.3.0)
+Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action** :
+- **Répondre dans le chat** (marche sans rien d'autre) : « Merci {utilisateur} ! ».
+- **Une action de la maison**, si le module **Home Assistant** est installé : la couleur des lumières (`lumieres:rouge`, `lumieres:bleu`…) ou **lire le message du viewer à voix haute** (`tts:lire`). Sans ce module, l'onglet propose de l'installer ; il reste facultatif.
+- En **mode avancé**, le réglage « Autres actions à choisir » ajoute vos propres mots (`lumieres:orange`, `scene:cinema`) à la liste.
+
+Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n'est pas coupé), créer « Rouge » avec l'action « Lumières : rouge ».
+
+**Ce qui se passe quand un viewer prend une récompense** : l'échange est noté **une seule fois**, puis l'action est lancée. Si la maison accepte, **les points sont validés** quand elle a joué l'action ; si elle refuse (maison coupée, pas en direct, message refusé par la modération, trop de demandes…) ou n'a rien fait dans le délai (2 minutes par défaut), **les points sont rendus**. Un message dans le chat peut prévenir le viewer (réglage « Prévenir le chat quand des points sont rendus », désactivé par défaut).
+- **Rien ne tourne en arrière-plan** : les résultats de la maison et les délais dépassés sont pris en compte au prochain évènement sur votre chaîne ou quand vous ouvrez l'onglet.
+- **Hors direct, ou quand la maison est coupée**, les récompenses de la maison sont **mises en pause chez Twitch**, et remises en vente toutes seules ensuite (seulement celles que Curiosa a mises en pause : une pause que vous avez faite reste).
+- **`!stop`** dans le chat coupe la maison (vous et les modérateurs que vous nommez dans les réglages), **`!start`** la rebranche (vous seule). Sans le module Home Assistant, le bot le dit poliment.
+- **Simuler** : le bouton « Simuler cette récompense » joue le même chemin avec un faux viewer « Test », **sans Twitch et sans points**. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée. Refusé si la maison est coupée. 1 test toutes les 3 secondes, 30 par heure.
+- **Journal** des 50 derniers échanges (pseudo, récompense, résultat) ; le message écrit par le viewer n'est **jamais gardé**.
+- **Limites** : 20 récompenses, 100 échanges en attente. Les points de chaîne n'existent que pour un compte **Affilié ou Partenaire** : sinon la page le dit en clair.
+- Le droit **« créer, modifier et supprimer les récompenses »** (`rewards.manage`) se donne dans les rôles. Outils pour l'assistant : `rewards_list` (lecture), `reward_create`, `reward_update`, `reward_simulate` (écritures, jamais accordées d'office).
 
 ## Les protections
 - Le bot **répond seulement pendant vos directs** (vous pouvez le changer).

@@ -25,6 +25,11 @@ export function settingsOf(ctx) {
     cdUser: int(ctx.setting("cooldownUser"), 0, 3600, 60),
     maxPerWindow: int(ctx.setting("maxPer30s"), 1, 18, 12),
     toleranceMin: int(ctx.setting("toleranceMinutes"), 1, 10, 10),
+    // Récompenses (points de chaîne) : message de remboursement dans le chat, modérateurs désignés pour !stop, attente maximale d'un résultat, clés d'action ajoutées à la main
+    rewardsNotice: ctx.setting("rewardsNotice") === true,
+    stopMods: new Set(String(ctx.setting("stopMods") ?? "").toLowerCase().split(/[\s,;]+/).map((x) => x.replace(/^@/, "")).filter((x) => /^[a-z0-9_]{2,25}$/.test(x)).slice(0, 20)),
+    rewardWaitSec: int(ctx.setting("rewardWaitSeconds"), 30, 600, 120),
+    extraActions: String(ctx.setting("extraActions") ?? "").toLowerCase().split(/[\s,;]+/).filter(Boolean).slice(0, 20),
     bots: new Set([...KNOWN_BOTS, ...extra]),
     timeZone,
   };
