@@ -1,10 +1,22 @@
-# Statut live Twitch
+# Statut du live
 
-Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct.
+Affiche une bannière « en direct » et votre lecteur sur l'accueil quand vous êtes en direct **sur Twitch, sur YouTube ou sur les deux**. (Le module s'appelait « Statut live Twitch » : son identifiant `live-status`, ses réglages et son instance n'ont pas changé.)
 
 **Ce module présente, il n'interroge pas Twitch.** Il demande à **Ma Chaîne Twitch** (module `twitch-channel`, service `twitch.live`) si vous êtes en direct ; elle-même passe par le **Connecteur Twitch**. L'application Twitch (client id et secret) se règle **une seule fois, dans le Connecteur Twitch**, et la chaîne dans Ma Chaîne Twitch ; une seule authentification et un seul appel à Twitch servent la bannière, le lecteur et les autres modules. Ma Chaîne Twitch doit être installée et active.
 
 Le lecteur Twitch affiche, hors ligne, un grand panneau blanc « hors ligne ». Dès que le site est relié à Twitch, le lecteur n'apparaît donc **qu'en direct** (réglage « Quand afficher le lecteur » : « Seulement en direct » par défaut, ou « Toujours »). **Sans application Twitch** (dans le Connecteur Twitch) ou sans chaîne (dans Ma Chaîne Twitch), on ne peut pas savoir si vous êtes en direct : le lecteur n'est **pas affiché** (plus de panneau blanc « hors ligne »), sauf si vous choisissez « Toujours ». L'admin de ce module le dit et renvoie vers la bonne page. Si Twitch ne répond pas, ni bannière ni lecteur.
+
+## YouTube (version 1.4.0)
+
+Installez **Chaîne YouTube** (module `youtube-channel`, 1.4.0 ou plus, avec la clé du Connecteur YouTube) : Statut du live l'utilise tout seul, sans réglage. Les deux sources, Twitch et YouTube, sont **facultatives** : une seule suffit. Sans aucune des deux, l'administration le dit (« Installez Ma Chaîne Twitch ou Chaîne YouTube ») et propose de les installer.
+
+- **Bannière** : YouTube seul en direct → « En direct sur YouTube » avec le lien de la vidéo. Plusieurs plateformes en direct → une ligne par plateforme (Twitch, YouTube) avec son titre et son bouton « Regarder ».
+- **Lecteur** : un seul lecteur à la fois. Si Twitch et YouTube sont en direct ensemble, le réglage **En direct sur les deux : quel lecteur ?** choisit (Twitch par défaut, comme avant) ; l'autre plateforme reste un lien dans la bannière. Si une seule est en direct, c'est son lecteur.
+- **Vie privée** : le lecteur YouTube (adresse `youtube-nocookie.com`) n'est chargé **qu'après le clic** du visiteur sur « Lancer le lecteur YouTube » (réglage **Lecteur YouTube** : « Après un clic », par défaut). « Dès l'ouverture de la page » le charge tout de suite, comme le lecteur Twitch. Tant que le visiteur n'a pas cliqué, il n'y a ni image, ni script, ni cadre qui contacte YouTube : le cadre du lecteur est rangé, fermé, dans un bloc repliable.
+- **Quota** : chaque vérification coûte **2 unités** de la limite du jour de YouTube (10 000 sur une clé gratuite). Chaîne YouTube garde sa réponse 45 secondes ; Statut du live la garde **3 minutes en direct, 5 minutes hors direct, 2 minutes après une erreur**, quel que soit le nombre de visiteurs (au plus 960 unités par jour, moins de 10 %). Rien ne tourne en arrière-plan : sans visiteur, aucune vérification. Un visiteur n'attend jamais plus de 2,5 secondes. Conséquence : un direct YouTube peut apparaître jusqu'à 5 minutes après son début, et disparaître jusqu'à 3 minutes après sa fin.
+- **YouTube en panne, clé manquante, limite du jour atteinte** : ni bannière ni lecteur YouTube pour les visiteurs ; l'administration dit quoi faire en une phrase, avec le lien du bon réglage. Twitch continue normalement.
+- **Un site Twitch seul ne change pas** : sans Chaîne YouTube, aucun appel de plus et exactement le même affichage qu'avant (bannière, lecteur, réglages, instance).
+- Pour les développeurs : service facultatif `youtube.live` (méthode `current`, via `callAll`, jamais `fresh`) ; `youtube.mjs` (mémoire des réponses, question partagée, délai de 2,5 s), `view.mjs` (bannière à plusieurs plateformes, lecteur « au clic »). Les deux besoins (`twitch.live`, `youtube.live`) sont `optional`. La plateforme déclarée reste `twitch` (simple regroupement à l'écran).
 
 ## Si vous aviez déjà réglé ce module (reprise automatique)
 

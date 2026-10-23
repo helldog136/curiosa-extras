@@ -45,18 +45,21 @@ function wire({ provider = { channel: "machaine", clientId: "cid", clientSecret:
 const banner = (ctx) => def.slots["layout.banner"](ctx);
 const player = (ctx) => def.sections.player(ctx);
 
-test("live-status : manifeste valide, dépend du service twitch.live, n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
+test("live-status : manifeste valide, deux sources FACULTATIVES (twitch.live, youtube.live), n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.3.2");
+  assert.equal(m.version, "1.4.0");
+  assert.equal(m.id, "live-status", "l'identifiant ne change pas : les sites existants gardent leur instance");
+  assert.equal(m.platform, "twitch", "la plateforme déclarée ne change pas (regroupement visuel seulement)");
   assert.equal(m.minCore, "0.2.2");
   assert.equal(m.dataVersion, 2);
   assert.equal(typeof def.migrations[2], "function");
   assert.deepEqual(m.legacySettings, [{ key: "channel" }, { key: "clientId" }, { key: "clientSecret", secret: true }]);
   assert.deepEqual(m.sections.map((s) => s.id), ["player"]);
   assert.equal(m.instances, "single");
-  assert.deepEqual(m.requires.map((r) => r.service), ["twitch.live"]);
+  assert.deepEqual(m.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
+  assert.deepEqual(m.name, { en: "Live status", fr: "Statut du live" });
   assert.ok(!m.offers && !(m.provides ?? []).length && !(m.consumes ?? []).length);
-  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["playerWhen", "select"], ["channels", "text"]]);
+  assert.deepEqual(m.settings.map((s) => [s.key, s.type]), [["playerWhen", "select"], ["playerPlatform", "select"], ["youtubeLoad", "select"], ["channels", "text"]]);
   assert.deepEqual(m.permissions.sort(), ["admin", "sections", "slots"], "plus de stockage : la marque de reprise manuelle a disparu");
   assert.deepEqual(Object.keys(def.slots), ["layout.banner"]);
 });
@@ -211,7 +214,9 @@ test("admin : sans application Twitch (Connecteur) ou sans chaîne (Ma Chaîne T
   for (const w of [wire({ messages: m }), wire({ provider: {}, own: { playerWhen: "always" }, messages: m })]) {
     assert.ok(!(await def.adminPanel(w.ctx)).some((b) => b.text === "RELIEZ" || b.text === "INDIQUEZ"));
   }
-  assert.deepEqual(await def.adminPanel(wire({ withProvider: false, messages: m }).ctx), [], "Ma Chaîne Twitch absente : le cœur propose de l'installer (requires)");
+  // Ni Ma Chaîne Twitch ni Chaîne YouTube : une phrase simple et une proposition d'installer l'une ou l'autre (les deux sources sont facultatives).
+  const none = await def.adminPanel(wire({ withProvider: false, messages: m }).ctx);
+  assert.deepEqual(none.map((b) => [b.type, b.service ?? b.text]), [["banner", "needSource"], ["suggestInstall", "twitch.live"], ["suggestInstall", "youtube.live"]]);
   assert.equal(def.adminActions, undefined, "plus d'action de reprise manuelle");
   assert.ok(!(await def.adminPanel(wire({ provider: {}, legacy: legacyOwn }).ctx)).some((b) => b.type === "adminForm"), "même avec d'anciennes valeurs : pas de bouton");
   assert.match(locales.fr.needCredentials, /Reliez votre site à Twitch dans le Connecteur Twitch pour afficher le lecteur seulement quand vous êtes en direct/);

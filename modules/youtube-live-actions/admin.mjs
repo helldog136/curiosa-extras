@@ -75,7 +75,7 @@ export function resultText(ctx, l) {
     case "expired": return t("res_expired");
     case "lost": return t("res_lost");
     case "ignored": return t(["unmapped", "disabled", "expired", "error"].includes(l.code) ? `res_ignored_${l.code}` : "res_ignored_error");
-    case "skipped": return l.reason === "cooldown" ? t("res_cooldown", { seconds: l.seconds ?? 0 }) : t("res_no_rule");
+    case "skipped": return l.reason === "cooldown" ? t("res_cooldown", { seconds: l.seconds ?? 0 }) : l.reason === "alert_only" ? t("res_alert_only") : t("res_no_rule");
     case "refused": {
       if (!l.reason) return t("res_refused_off");   // refusé par la maison après coup (coupe-circuit)
       return `${t(REFUSED.includes(l.reason) ? `res_refused_${l.reason}` : "res_refused_error")}${extra}`;

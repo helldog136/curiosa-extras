@@ -14,5 +14,12 @@
   "colResult": "Résultat",
   "resultOk": "envoyé",
   "resultFailed": "échec ({status}) · {attempts} tentative(s) : {error}",
-  "noLog": "Aucune annonce envoyée pour l'instant."
+  "noLog": "Aucune annonce envoyée pour l'instant.",
+  "platformTwitch": "Twitch",
+  "platformYoutube": "YouTube",
+  "platformBoth": "Twitch et YouTube",
+  "linkLine": "{platform} : {url}",
+  "liveDefault": "🔴 En direct sur {platform} : {title}",
+  "ytOn": "Vos directs YouTube sont annoncés aussi (vérification toutes les {minutes} minutes au plus, un seul message par direct).",
+  "ytOff": "L'annonce des directs YouTube est coupée dans les réglages."
 }

@@ -36,6 +36,15 @@ Il n'y a **pas** de déclencheur sur un mot écrit dans le chat : seuls les dons
 
 YouTube donne 10 000 unités par jour à la clé du site. Lire le chat d'un direct en coûte 5 à chaque lecture : environ **12 % de la limite par heure** à une lecture toutes les 15 secondes. La page l'écrit en clair (« environ N % de votre limite du jour »). Le module **s'arrête doucement** à 50 % de la limite du jour (réglable dans les options avancées), pour laisser de la place aux autres modules YouTube, et reprend à la remise à zéro. Chercher un direct (chaque minute tant que la page est ouverte hors direct, soit environ 1 % de la limite par heure) coûte 2 unités.
 
+## Alertes à l'écran (OBS), version 1.1.0
+
+Le module **publie** les Super Chats, Super Stickers, adhésions et adhésions offertes qu'il voit dans le chat (sujet `live.event`) ; l'**Overlay alertes (OBS)** peut les afficher (il les lit s'il est installé, aucun des deux n'a besoin de l'autre). Que le don déclenche une règle ou non.
+
+- Réglage **Laisser l'overlay d'alertes afficher les dons** (oui par défaut ; sans l'overlay, il ne fait rien).
+- Réglage **Lire le chat même sans Home Assistant (alertes OBS seulement)** (non par défaut) : pour qui veut seulement les alertes à l'écran. Le chat est alors lu comme d'habitude (même limite du jour, page « En direct » ouverte) et les dons sont notés « Affiché en alerte seulement » dans le journal. Par défaut, sans Home Assistant, rien n'est lu, comme avant.
+- **Comme pour les actions, le chat n'est lu que page « En direct » ouverte** : pas de page ouverte, pas d'alerte. L'overlay ne déclenche jamais cette lecture.
+- Les alertes vivent **en mémoire**, 15 minutes au plus, 50 au plus : rien sur le disque, rien à effacer. Un montant n'est jamais publié sans sa devise, et jamais converti.
+
 ## Réglages
 
 - **Chaîne YouTube** : rien à choisir s'il n'y en a qu'une.
@@ -48,8 +57,8 @@ YouTube donne 10 000 unités par jour à la clé du site. Lire le chat d'un dire
 
 ## Vie privée
 
-Le journal garde le pseudo YouTube, le montant et le résultat (50 lignes). **Le texte des messages n'est jamais gardé.** « Vider le journal » efface tout.
+Le journal garde le pseudo YouTube, le montant et le résultat (50 lignes). **Le texte des messages n'est jamais écrit sur le disque.** « Vider le journal » efface tout. Si le partage avec l'overlay d'alertes est actif (réglage ci-dessous), le pseudo, le montant et le texte du message restent 15 minutes au plus **en mémoire** (50 évènements au plus), le temps que l'overlay les lise.
 
 ## Pour les développeurs
 
-Service demandés (tous facultatifs) : `home-assistant.bridge` (`enqueue`, `stop`, `start`, `status`), `youtube.api` (`request` avec `liveChatMessages.list`, version 1.2.0 du connecteur ; `status` (champ `chat: { read, write }`, connecteur 1.3.0) ; `chatPost` seulement pour répondre à `!stop` / `!start` quand `chat.write` est vrai) et `youtube.live` (`current`, Chaîne YouTube 1.4.0). Sujet consommé : `ha.result` (suivi de ce qui s'est passé chez vous). Outils pour les assistants : `youtube_live_status`, `youtube_live_journal`, `youtube_live_rules` (lecture) et `youtube_action_simulate` (écriture, jamais accordée d'office).
+Service demandés (tous facultatifs) : `home-assistant.bridge` (`enqueue`, `stop`, `start`, `status`), `youtube.api` (`request` avec `liveChatMessages.list`, version 1.2.0 du connecteur ; `status` (champ `chat: { read, write }`, connecteur 1.3.0) ; `chatPost` seulement pour répondre à `!stop` / `!start` quand `chat.write` est vrai) et `youtube.live` (`current`, Chaîne YouTube 1.4.0). Sujet consommé : `ha.result` (suivi de ce qui s'est passé chez vous). Sujet publié : `live.event` (`{ id, platform, kind, who, at, amount?, currency?, count?, text? }`, `amount` seulement avec `currency` ; file en mémoire de `events.mjs`, 50 évènements, 15 minutes). Outils pour les assistants : `youtube_live_status`, `youtube_live_journal`, `youtube_live_rules` (lecture) et `youtube_action_simulate` (écriture, jamais accordée d'office).

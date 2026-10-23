@@ -1,6 +1,6 @@
 {
   "st_off": "La lecture du chat est coupée dans les Réglages : rien n'est lu.",
-  "st_no_bridge": "Il manque le module Home Assistant : sans lui, rien ne peut se déclencher chez vous. Vous pouvez quand même écrire vos règles et lire le journal.",
+  "st_no_bridge": "Il manque le module Home Assistant : sans lui, rien ne peut se déclencher chez vous. Vous pouvez quand même écrire vos règles et lire le journal. Pour seulement afficher les alertes à l'écran, cochez « Lire le chat même sans Home Assistant » dans les réglages.",
   "st_no_api": "Il manque la clé YouTube du site : sans elle, le chat ne peut pas être lu.",
   "st_no_channel": "Il manque le module « Chaîne YouTube » (avec l'identifiant de votre chaîne) : c'est lui qui dit quand vous êtes en direct.",
   "st_ambiguous": "Vous avez plusieurs chaînes YouTube : choisissez celle à lire dans l'onglet Réglages.",
@@ -163,5 +163,6 @@
   "chat_stopped": "Tout est coupé.",
   "chat_started": "Tout est repris.",
   "st_connect": "Connectez votre compte YouTube dans le Connecteur YouTube : YouTube ne laisse pas lire ce chat avec la seule clé du site.",
-  "connect_link": "Ouvrir le Connecteur YouTube"
+  "connect_link": "Ouvrir le Connecteur YouTube",
+  "res_alert_only": "Affiché en alerte seulement (pas de Home Assistant)"
 }

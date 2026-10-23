@@ -8,5 +8,17 @@
   "viewersMany": "{count} viewers",
   "playerChoice": "Choose the channel to watch",
   "needChannel": "Enter your channel in My Twitch channel to show the player only when you are live. Without it, the player is not shown.",
-  "openConnector": "Open the Twitch connector →"
+  "openConnector": "Open the Twitch connector →",
+  "liveYoutube": "Live on YouTube — come say hi!",
+  "ytStart": "Start the YouTube player",
+  "ytNote": "Nothing is loaded from YouTube before you click. Once started, the player connects to YouTube (Google).",
+  "needSource": "No live source is installed: without one there is no banner and no player. Install My Twitch channel or YouTube channel.",
+  "suggestTwitch": "knows when you are live on Twitch (My Twitch channel)",
+  "suggestYoutube": "knows when you are live on YouTube (YouTube channel)",
+  "ytNeedChannel": "Enter your channel in YouTube channel to announce your YouTube lives.",
+  "openYoutube": "Open YouTube channel →",
+  "ytNeedKey": "Connect your site to YouTube (key in the YouTube connector) to announce your YouTube lives.",
+  "openYoutubeConnector": "Open the YouTube connector →",
+  "ytQuota": "YouTube limits the number of checks per day and the limit is reached: your YouTube lives will not be announced until tomorrow.",
+  "ytDown": "YouTube is not answering right now: your YouTube lives are not announced. It recovers by itself."
 }

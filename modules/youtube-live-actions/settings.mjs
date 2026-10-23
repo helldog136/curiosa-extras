@@ -16,6 +16,8 @@ export function settingsOf(ctx) {
   return {
     readChat: ctx.setting("readChat") !== false,
     modsStop: ctx.setting("modsStop") !== false,
+    shareAlerts: ctx.setting("shareAlerts") !== false,
+    readWithoutHouse: ctx.setting("readWithoutHouse") === true,
     ifRefused: ctx.setting("ifRefused") === "thanks" ? "thanks" : "silent",
     thanks: thanks || DEFAULT_THANKS,
     extraCurrencies: String(ctx.setting("extraCurrencies") ?? "").slice(0, 200),
