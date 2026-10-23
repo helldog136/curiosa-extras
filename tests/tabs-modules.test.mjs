@@ -30,7 +30,7 @@ const RENAMED = {
   "modules/youtube-channel": ["Statistiques", "Statistics"],
 };
 // Modules dont le panneau range des blocs dans un autre onglet que « Utiliser » (clé `tab` d'un bloc, cœur 0.2.5).
-const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical"];
+const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical", "modules/twitch-bot"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 

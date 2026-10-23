@@ -95,9 +95,9 @@ test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, d
   assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage"]);
   assert.deepEqual(manifest.consumes.filter((c) => c.topic.startsWith("ha.")).map((c) => c.topic).sort(), ["ha.result", "ha.state"]);
   const mcp = Object.fromEntries(manifest.mcp.map((m) => [m.name, m]));
-  for (const n of ["rewards_list", "reward_create", "reward_update", "twitch_reward_simulate"]) { assert.ok(mcp[n], n); assert.ok(n.length <= 64); assert.ok(typeof tools[n] === "function"); }
+  for (const n of ["rewards_list", "reward_create", "reward_update", "reward_simulate"]) { assert.ok(mcp[n], n); assert.ok(n.length <= 64); assert.ok(typeof tools[n] === "function"); }
   assert.equal(mcp.rewards_list.readOnly, true);
-  for (const n of ["reward_create", "reward_update", "twitch_reward_simulate"]) { assert.ok(!mcp[n].readOnly); assert.equal(mcp[n].default, false); }
+  for (const n of ["reward_create", "reward_update", "reward_simulate"]) { assert.ok(!mcp[n].readOnly); assert.equal(mcp[n].default, false); }
   assert.ok(mcp.reward_create.input.properties.name.maxLength <= 64);
   for (const k of ["rewardCreate", "rewardSave", "rewardToggle", "rewardRemove", "rewardsEnable", "rewardSimulate", "rewardLogClear"]) assert.equal(A.actions[k].right, "rewards.manage", k);
 });
@@ -723,9 +723,9 @@ test("MCP : lister, créer, modifier, simuler ; refus clairs ; aucun jeton", asy
   await assert.rejects(tools.reward_create(w.ctx, { name: "x".repeat(60), costPoints: 5, action: "lumieres:rouge" }), (e) => e.expose && /45/.test(e.message));
   await assert.rejects(tools.reward_create(w.ctx, { name: "Z", costPoints: 5, action: "pas:permise" }), (e) => e.expose);
   await assert.rejects(tools.reward_create(w.ctx, { name: "Z", costPoints: 0, action: "lumieres:rouge" }), (e) => e.expose);
-  const sim = await tools.twitch_reward_simulate(w.ctx, { name: "Rouge vif" });
+  const sim = await tools.reward_simulate(w.ctx, { name: "Rouge vif" });
   assert.equal(sim.simulated, true);
-  await assert.rejects(tools.twitch_reward_simulate(w.ctx, { name: "nope" }), (e) => e.expose);
+  await assert.rejects(tools.reward_simulate(w.ctx, { name: "nope" }), (e) => e.expose);
   assert.ok(!/at_|rt_|SEC-RET|secret/i.test(JSON.stringify([created, list, sim])));
 });
 

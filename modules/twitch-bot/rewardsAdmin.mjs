@@ -8,11 +8,11 @@ const J = await import(`./redeem.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { accounts, declareScopes, ensureRedeemListening, isPublicSite } = await import(`./listen.mjs${v}`);
 
-const TAB = "rewards";
 const SERVICE = "twitch.api";
 const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (x, n) => { const s = String(x ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
-const tab = (blocks) => blocks.map((b) => ({ ...b, tab: TAB }));
+/** Tous les blocs de cet écran vont dans l'onglet « Récompenses » (cœur 0.2.5). */
+const tab = (blocks) => blocks.map((b) => ({ ...b, tab: "rewards" }));
 const can = (ctx) => typeof ctx.can === "function" && ctx.can("rewards.manage") === true;
 
 /** Une erreur de création / modification en phrases : { errors: { champ: texte } } ou { error: texte }. */

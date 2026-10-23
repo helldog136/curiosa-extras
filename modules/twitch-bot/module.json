@@ -234,31 +234,6 @@
   ],
   "mcp": [
     {
-      "name": "rewards_list",
-      "readOnly": true,
-      "default": false,
-      "description": "List the channel point rewards created by this site on Twitch: name, cost in points, delay in seconds, help text, whether the viewer writes a message, the action it triggers (a short key like lumieres:rouge, or chat:repondre to answer in the chat), and its state (active, paused, refused, gone). Also gives the maximum number of rewards and the actions that may be used. Use it before creating or changing anything.",
-      "input": { "type": "object", "properties": {} }
-    },
-    {
-      "name": "reward_create",
-      "default": false,
-      "description": "Create a REAL channel point reward on Twitch (needs a Twitch Affiliate or Partner channel). 'name' is the title viewers see (45 characters at most, unique). 'costPoints' is a whole number from 1. 'action' must be one of the actions given by rewards_list; home actions need the Home Assistant module. 'chatReply' is required for chat:repondre and may contain {utilisateur} and {recompense}. Refused with an explanation otherwise.",
-      "input": { "type": "object", "required": ["name", "costPoints", "action"], "properties": { "name": { "type": "string", "maxLength": 45 }, "costPoints": { "type": "integer", "minimum": 1, "maximum": 1000000000 }, "action": { "type": "string", "maxLength": 40 }, "delaySeconds": { "type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses, 0 for none." }, "helpText": { "type": "string", "maxLength": 200 }, "viewerWritesMessage": { "type": "boolean" }, "chatReply": { "type": "string", "maxLength": 300 } } }
-    },
-    {
-      "name": "twitch_reward_simulate",
-      "default": false,
-      "description": "Simulate one reward WITHOUT Twitch and without points: runs the same path as a real exchange with a fake viewer named Test. A home action is really sent to the home (lights change, voice speaks) and the result is awaited for a few seconds; a chat answer is only previewed, never sent. Refused when the home emergency switch is on. For the voice reward 'text' is required (300 characters at most). Limits: one test every 3 seconds, 30 per hour.",
-      "input": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 45 }, "text": { "type": "string", "maxLength": 300 } } }
-    },
-    {
-      "name": "reward_update",
-      "default": false,
-      "description": "Change a reward created by this site, found by its current 'name'. Give only what changes. Same limits as reward_create. Cannot delete a reward.",
-      "input": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 45 }, "newName": { "type": "string", "maxLength": 45 }, "costPoints": { "type": "integer", "minimum": 1, "maximum": 1000000000 }, "action": { "type": "string", "maxLength": 40 }, "delaySeconds": { "type": "integer", "minimum": 0, "maximum": 86400 }, "helpText": { "type": "string", "maxLength": 200 }, "viewerWritesMessage": { "type": "boolean" }, "chatReply": { "type": "string", "maxLength": 300 } } }
-    },
-    {
       "name": "bot_commands_list",
       "readOnly": true,
       "default": false,
@@ -306,6 +281,31 @@
           "delayPerPersonSeconds": { "type": "integer", "minimum": 0, "maximum": 3600 }
         }
       }
+    },
+    {
+      "name": "rewards_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the channel point rewards created by this site on Twitch: name, cost in points, delay in seconds, help text, whether the viewer writes a message, the action it triggers (a short key like lumieres:rouge, or chat:repondre to answer in the chat), and its state (active, paused, refused, gone). Also gives the maximum number of rewards and the actions that may be used. Use it before creating or changing anything.",
+      "input": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "reward_create",
+      "default": false,
+      "description": "Create a REAL channel point reward on Twitch (needs a Twitch Affiliate or Partner channel). 'name' is the title viewers see (45 characters at most, unique). 'costPoints' is a whole number from 1. 'action' must be one of the actions given by rewards_list; home actions need the Home Assistant module. 'chatReply' is required for chat:repondre and may contain {utilisateur} and {recompense}. Refused with an explanation otherwise.",
+      "input": { "type": "object", "required": ["name", "costPoints", "action"], "properties": { "name": { "type": "string", "maxLength": 45 }, "costPoints": { "type": "integer", "minimum": 1, "maximum": 1000000000 }, "action": { "type": "string", "maxLength": 40 }, "delaySeconds": { "type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses, 0 for none." }, "helpText": { "type": "string", "maxLength": 200 }, "viewerWritesMessage": { "type": "boolean" }, "chatReply": { "type": "string", "maxLength": 300 } } }
+    },
+    {
+      "name": "reward_simulate",
+      "default": false,
+      "description": "Simulate one reward WITHOUT Twitch and without points: runs the same path as a real exchange with a fake viewer named Test. A home action is really sent to the home (lights change, voice speaks) and the result is awaited for a few seconds; a chat answer is only previewed, never sent. Refused when the home emergency switch is on. For the voice reward 'text' is required (300 characters at most). Limits: one test every 3 seconds, 30 per hour.",
+      "input": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 45 }, "text": { "type": "string", "maxLength": 300 } } }
+    },
+    {
+      "name": "reward_update",
+      "default": false,
+      "description": "Change a REAL channel point reward created by this site on Twitch, found by its current 'name' (see rewards_list). Give only what changes: 'newName', 'costPoints', 'action', 'delaySeconds', 'helpText', 'viewerWritesMessage', 'chatReply'. Same limits and explanations as reward_create. It cannot delete a reward or pause it.",
+      "input": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 45 }, "newName": { "type": "string", "maxLength": 45 }, "costPoints": { "type": "integer", "minimum": 1, "maximum": 1000000000 }, "action": { "type": "string", "maxLength": 40 }, "delaySeconds": { "type": "integer", "minimum": 0, "maximum": 86400 }, "helpText": { "type": "string", "maxLength": 200 }, "viewerWritesMessage": { "type": "boolean" }, "chatReply": { "type": "string", "maxLength": 300 } } }
     }
   ]
 }

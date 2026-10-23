@@ -78,7 +78,7 @@ export default {
     if (!r.ok) refuse(ctx, r);
     return { updated: true, name: c.value.title };
   },
-  async twitch_reward_simulate(ctx, args) {
+  async reward_simulate(ctx, args) {
     const s = settingsOf(ctx), cur = (await R.list(ctx)).find((r) => r.title.toLowerCase() === String(args.name).toLowerCase());
     if (!cur) throw expose(`no reward named "${args.name}"`);
     const r = await J.simulate(ctx, s, cur.id, { text: args.text ?? "", waitMs: 8000 });
