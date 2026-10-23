@@ -98,7 +98,7 @@ export function cancelPairing(ctx, { now = Date.now() } = {}) {
 }
 
 /**
- * Home Assistant présente le code. Rend { ok: true, token, instance } ou { ok: false, error: "invalid_code" }.
+ * Home Assistant présente le code. Rend { ok: true, token, instance } ou { ok: false, problem: "invalid_code" }.
  * Le jeton n'est rendu qu'ici, une fois ; seule son empreinte SHA-256 est gardée. Un code sert une fois ; 5 mauvais essais l'annulent ; il vit 10 minutes.
  */
 export function redeemCode(ctx, { code, name }, { now = Date.now() } = {}) {
@@ -106,12 +106,12 @@ export function redeemCode(ctx, { code, name }, { now = Date.now() } = {}) {
     const core = await db.core();
     const p = core.pending;
     if (p && p.expiresAt <= now) core.pending = null;
-    if (!core.pending) return { ok: false, error: "invalid_code" };
+    if (!core.pending) return { ok: false, problem: "invalid_code" };
     const given = normalizeCode(code);
     if (!(given.length === CODE_LENGTH && safeEqualHex(sha256hex(given), sha256hex(core.pending.code)))) {
       core.pending.tries = (core.pending.tries || 0) + 1;
       if (core.pending.tries >= CODE_TRIES) { core.pending = null; await S.addLog(db, { kind: "system", event: "pair_locked" }); }
-      return { ok: false, error: "invalid_code" };
+      return { ok: false, problem: "invalid_code" };
     }
     const token = randomBytes(32).toString("base64url");
     const tokenHash = sha256hex(token);

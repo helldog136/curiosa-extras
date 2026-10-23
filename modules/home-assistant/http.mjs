@@ -65,7 +65,7 @@ export async function pair(request, ctx, now = Date.now()) {
 const intParam = (url, name, def, min, max) => {
   const raw = url.searchParams.get(name);
   if (raw === null || raw === "") return { value: def };
-  if (!/^\d{1,12}$/.test(raw)) return { error: true };
+  if (!/^\d{1,12}$/.test(raw)) return { bad: true };
   return { value: Math.min(max, Math.max(min, Number(raw))) };
 };
 
@@ -83,7 +83,7 @@ export async function pull(request, ctx, now = Date.now()) {
     if (wait) return tooMany(wait);
     const url = new URL(request.url);
     const cursor = intParam(url, "cursor", 0, 0, Number.MAX_SAFE_INTEGER), limit = intParam(url, "limit", 10, 1, 10);
-    if (cursor.error || limit.error) return json(400, { ok: false, error: "bad_request" });
+    if (cursor.bad || limit.bad) return json(400, { ok: false, error: "bad_request" });
     return json(200, await B.pull(ctx, { cursor: cursor.value, limit: limit.value }, now));
   } catch (e) { return fail(e, ctx, "interrogation"); }
 }
