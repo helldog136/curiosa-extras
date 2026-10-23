@@ -21,5 +21,5 @@
   "linkLine": "{platform}: {url}",
   "liveDefault": "🔴 Live on {platform}: {title}",
   "ytOn": "Your YouTube lives are announced too (checked every {minutes} minutes at most, one message per live).",
-  "ytOff": "Announcing YouTube lives is turned off in the settings."
+  "ytOff": "Your YouTube lives are not announced. To do so, tick “Announce my YouTube lives too” in the settings."
 }

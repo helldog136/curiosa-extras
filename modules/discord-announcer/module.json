@@ -150,14 +150,14 @@
     {
       "key": "youtubeLive",
       "type": "boolean",
-      "default": true,
+      "default": false,
       "label": {
         "en": "Announce my YouTube lives too",
         "fr": "Annoncer aussi mes directs YouTube"
       },
       "help": {
-        "en": "Needs the YouTube channel module. One message per live, never two for the same live.",
-        "fr": "Demande le module Chaîne YouTube. Un seul message par direct, jamais deux pour le même."
+        "en": "Off until you tick it. Needs the YouTube channel module. One message per live, never two for the same live.",
+        "fr": "Désactivé tant que vous ne cochez pas. Demande le module Chaîne YouTube. Un seul message par direct, jamais deux pour le même."
       }
     },
     {

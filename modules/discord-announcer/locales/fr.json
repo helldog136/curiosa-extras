@@ -21,5 +21,5 @@
   "linkLine": "{platform} : {url}",
   "liveDefault": "🔴 En direct sur {platform} : {title}",
   "ytOn": "Vos directs YouTube sont annoncés aussi (vérification toutes les {minutes} minutes au plus, un seul message par direct).",
-  "ytOff": "L'annonce des directs YouTube est coupée dans les réglages."
+  "ytOff": "Vos directs YouTube ne sont pas annoncés. Pour le faire, cochez « Annoncer aussi mes directs YouTube » dans les réglages."
 }

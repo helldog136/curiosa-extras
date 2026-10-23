@@ -44,7 +44,7 @@ function site({ twitch = [], youtube = true, settings = {}, locale = "fr", extra
   const conn = makeConnector({ apiKey: "FAKE-YT-KEY-0001" });
   const cctx = fakeCtx({ moduleId: "youtube-channel", key: "chaine", settings: { channelId: CHANNEL }, services: conn.services, messages: channelMessages, permissions: ["sections", "topics", "admin"] });
   const methods = { current: (a) => channelDef.services["youtube.live"].current(cctx, a) };
-  return fakeCtx({ key: "discord", locale, messages: readJson(`locales/${locale}.json`), settings: { webhookUrl: HOOK, ...settings }, topics: { "stream.live": () => twitch, ...extra },
+  return fakeCtx({ key: "discord", locale, messages: readJson(`locales/${locale}.json`), settings: { webhookUrl: HOOK, youtubeLive: true, ...settings }, topics: { "stream.live": () => twitch, ...extra },
     ...(youtube ? { serviceInstances: { "youtube.live": [{ instance: "chaine", name: "Chaîne YouTube", methods }] } } : {}) });
 }
 const goLive = (o = {}) => yt.goLive({ videoId: "LIVEvideo01", title: "Direct YouTube", startedAt: iso(NOW - 4 * 60_000), ...o });
@@ -57,7 +57,7 @@ test("manifeste : version mineure, Chaîne YouTube FACULTATIVE, réglages simple
   assert.equal(manifest.version, "1.1.0");
   assert.deepEqual(manifest.requires.map((x) => [x.service, x.optional]), [["youtube.live", true]]);
   const set = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));
-  assert.equal(set.youtubeLive.default, true); assert.equal(set.liveBoth.default, "both"); assert.equal(set.liveText.default, ""); assert.equal(set.liveText.optional, true);
+  assert.equal(set.youtubeLive.default, false); assert.equal(set.liveBoth.default, "both"); assert.equal(set.liveText.default, ""); assert.equal(set.liveText.optional, true);
   assert.equal(set.youtubeCheckMinutes.default, 10); assert.equal(set.youtubeCheckMinutes.advanced, true);
   assert.deepEqual(set.liveBoth.options.map((o) => o.value), ["both", "first"]);
   for (const k of ["youtubeLive", "liveBoth", "liveText"]) assert.ok(!set[k].advanced, k);
@@ -202,6 +202,17 @@ test("Chaîne YouTube absente, ou réglage « Annoncer aussi mes directs YouTube
   assert.equal(yt.calls.all.length, 0); assert.equal(discord.length, 0);
 });
 
+test("par défaut (réglage jamais enregistré, ou « non ») : les directs YouTube ne sont PAS annoncés et YouTube n'est pas interrogé ; « oui » les annonce", async () => {
+  goLive();
+  const bare = site({ settings: { youtubeLive: undefined } });  // instance existante : la valeur n'existe pas
+  assert.equal(bare.setting("youtubeLive"), undefined);
+  assert.deepEqual(await announce(bare), { sent: 0, skipped: 0 });
+  assert.equal(yt.calls.all.length, 0); assert.equal(discord.length, 0);
+  const panel = await def.adminPanel(bare);
+  assert.ok(panel.some((b) => b.type === "markdown" && /ne sont pas annoncés/.test(b.text)));
+  assert.equal((await announce(site({ settings: { youtubeLive: true } }))).sent, 1);
+});
+
 test("YouTube en panne (quota, clé refusée, 5xx, trou noir) : aucune exception, aucun message, pas d'insistance avant l'échéance ; Twitch continue", async () => {
   for (const fail of [yt?.fail?.quota, ...["keyInvalid", "denied", "server"].map((n) => (...a) => yt.fail[n](...a))]) {
     wireFetch(); channelLive.resetLive(); connectorApi.resetState();
@@ -306,7 +317,7 @@ test("administration : une phrase sur YouTube seulement si Chaîne YouTube est i
   const withYt = await def.adminPanel(site());
   assert.ok(withYt.some((b) => b.type === "markdown" && /Vos directs YouTube sont annoncés/.test(b.text) && /10 minutes/.test(b.text)));
   const off = await def.adminPanel(site({ settings: { youtubeLive: false } }));
-  assert.ok(off.some((b) => b.type === "markdown" && /coupée dans les réglages/.test(b.text)));
+  assert.ok(off.some((b) => b.type === "markdown" && /ne sont pas annoncés.*Annoncer aussi mes directs YouTube/.test(b.text)));
   const without = await def.adminPanel(site({ youtube: false }));
   assert.ok(!without.some((b) => b.type === "markdown" && /YouTube/.test(b.text)));
 });

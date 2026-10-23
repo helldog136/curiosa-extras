@@ -71,7 +71,8 @@ async function candidates(ctx) {
 /* ───────────── YouTube ───────────── */
 
 const oneLine = (v, max) => String(v ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
-const ytEnabled = (ctx) => ctx.setting("youtubeLive") !== false;
+// Désactivé par défaut (la propriétaire ne doit pas voir arriver des messages qu'elle n'a pas demandés) : seule la valeur « oui » l'active ; une instance sans valeur compte pour « non ».
+const ytEnabled = (ctx) => ctx.setting("youtubeLive") === true;
 const ytMinutes = (ctx) => { const n = Math.trunc(Number(ctx.setting("youtubeCheckMinutes"))); return Number.isFinite(n) && n >= YT.minMinutes && n <= YT.maxMinutes ? n : YT.defaultMinutes; };
 
 /**
