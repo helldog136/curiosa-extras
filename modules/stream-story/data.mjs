@@ -166,7 +166,7 @@ export async function saveModel(ctx, { name, config, replaceId }) {
   const at = replaceId ? items.findIndex((x) => x.id === String(replaceId)) : -1;
   if (replaceId && at < 0) return { error: "missing" };
   if (clash >= 0 && clash !== at) return { error: "exists", id: items[clash].id };
-  const entry = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), name: nm, config: { ...tidyConfig(config), streamKey: "" } };
+  const entry = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), name: nm, config: { ...tidyConfig(config), streamKey: "", eventId: "", eventSource: "" } };
   if (at >= 0) items[at] = entry; else { if (items.length >= LIMITS.models) return { error: "full" }; items.push(entry); }
   await writeList(ctx, MODELS, items);
   return { ok: true, items, id: entry.id };

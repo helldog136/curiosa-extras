@@ -8,6 +8,8 @@
 // Mise en cache 10 minutes : on ne sollicite pas YouTube à chaque visite.
 // La vidéo mise en avant n'est PAS intégrée dans la page : un lecteur affiché compte comme une vue pour YouTube. On affiche la vignette,
 // qui renvoie vers YouTube.
+const v = new URL(import.meta.url).search;   // la version du module se propage au fichier voisin (sinon l'ancien code resterait en mémoire après une mise à jour)
+const events = await import(new URL(`./events.mjs${v}`, import.meta.url).href);
 const CHANNEL_RE = /^UC[\w-]{22}$/;
 const SHORT_MAX_SECONDS = 60;
 const TTL = 10 * 60_000;
@@ -120,7 +122,7 @@ export async function listVideos(ctx, channelId) {
   if (items.length) { remember(cache, channelId, { items, at: Date.now() }); return items; }
   return hit?.items ?? [];
 }
-export const resetCache = () => { cache.clear(); shortCache.clear(); shortPending.clear(); };
+export const resetCache = () => { cache.clear(); shortCache.clear(); shortPending.clear(); events.resetEvents(); };
 
 /**
  * Sans durée connue : /shorts/<id> répond 200 pour un vrai Short, redirige pour une vidéo classique (ctx.api.net ne suit pas les redirections).
@@ -249,6 +251,19 @@ export default {
           `<span aria-hidden="true" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:4rem;height:4rem;border-radius:9999px;background:rgba(0,0,0,.7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.8rem;box-shadow:0 0 0 2px rgba(255,255,255,.7)">▶</span></a>` +
           `<p style="margin:.5rem 0 0;color:var(--v-fg)"><strong>${title}</strong>${video.views != null ? ` <span style="color:var(--v-muted)">· ${esc(ctx.t("views", { n: video.views.toLocaleString(ctx.locale) }))}</span>` : ""}</p>`,
       }];
+    },
+  },
+
+  services: {
+    /**
+     * Les vidéos et directs PROGRAMMÉS de la chaîne, pour les modules qui annoncent des événements (contrat commun `event.source`, méthode `upcoming`) :
+     * { ok: true, source: { kind: "youtube", label }, state: "ok" | "setup" | "down", message?, note?, events: [{ id, title, start (UTC), type, url, image }] }.
+     * Public seulement : une vidéo privée programmée n'est pas visible avec la clé du site (le texte `note` le dit). Sans clé ni connecteur, `state: "setup"` et une phrase qui dit quoi faire.
+     */
+    "event.source": {
+      async upcoming(ctx, args) {
+        return events.upcomingAnswer({ call: (method, a) => youtube(ctx, method, a), channelId: channelOf(ctx), t: (k) => ctx.t(k), limit: args?.limit });
+      },
     },
   },
 

@@ -9,7 +9,10 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 /** Les phrases de la page (clés `ui_…` des locales, sans le préfixe). */
 export const KEYS = [
   "title", "no_access", "no_access_hint", "prep_note", "prep_expired", "prep_stream_gone", "help_intro",
-  "h_stream", "stream_label", "stream_manual", "streams_loading", "streams_slow", "no_agenda", "cover_no_key", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
+  "h_event", "event_help", "event_chosen", "event_none_chosen", "event_manual_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
+  "event_zone", "event_local", "event_also", "event_picked", "event_row", "event_retry", "event_manual", "event_manual_close", "event_all_down", "event_busy", "event_ready", "ev_down", "ev_down_stale", "ev_setup", "ev_note",
+  "type_stream", "type_live", "type_premiere", "type_video", "type_event", "type_other",
+  "cover_no_key", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
   "h_elements", "el_title", "el_when", "el_countdown", "el_game", "el_brand", "el_text", "el_costreamers", "countdown_is", "no_stream_info",
   "h_texts", "text_label", "text_help", "channel_label", "channel_help", "lang_label", "lang_fr", "lang_en",
   "h_look", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown", "style_countdown_hint", "style_minimal", "style_minimal_hint",
@@ -44,7 +47,7 @@ h1{font-size:1.25rem;margin:0 0 4px}h2{font-size:1.05rem;margin:0 0 8px}
 p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var(--ok)}
 .layout{display:grid;gap:16px}
 @media (min-width:720px){.layout{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.previewcol{position:sticky;top:12px}}
-@media (max-width:719px){.previewcol{order:-1}}
+@media (max-width:719px){.layout{display:flex;flex-direction:column;gap:0}#controls{display:contents}section.pick{order:-2}.previewcol{order:-1}}
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
 fieldset{border:0;margin:0;padding:0;min-width:0}legend{font-weight:600;padding:0;margin-bottom:6px}
 label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}
@@ -72,6 +75,20 @@ canvas#preview{display:block;width:100%;max-width:340px;max-height:70vh;margin:0
 progress{width:100%;height:14px}
 details>summary{cursor:pointer;font-weight:600;padding:6px 0;min-height:32px}
 .sr{position:absolute;left:-9999px}
+[hidden]{display:none!important}
+.chosen{padding:10px 12px;border:1px solid var(--accent);border-radius:10px;background:var(--field);margin:0 0 12px;overflow-wrap:anywhere}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.chips button{min-height:44px;border-radius:999px;padding:6px 14px}
+.chips button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+ul.events{list-style:none;margin:10px 0;padding:0;display:grid;gap:8px}
+button.event{display:block;width:100%;text-align:left;padding:10px 12px;min-height:60px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--fg)}
+button.event[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.event .top{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:.85rem;color:var(--muted)}
+.event .ttl{display:block;font-weight:600;margin-top:4px;overflow-wrap:anywhere}
+.event .more{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.src{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--fg);background:var(--card)}
+.src::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot,var(--muted));flex:none}
+.src-calendar{--dot:#4f46e5}.src-youtube{--dot:#d92d20}.src-twitch{--dot:#8b5cf6}
+.srcnotes p{margin:.35rem 0}button.wide{min-height:48px}
 `;
 
 /** La page. `cfg` : ce que l'éditeur sait déjà (couleurs, fuseau, adresse des routes). */
@@ -87,8 +104,16 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div id="status" class="status" role="status" aria-live="polite" hidden></div>
 <p id="prep-note" class="banner" hidden>${T("prep_note")}</p><p id="prep-expired" class="banner" hidden>${T("prep_expired")}</p><p id="prep-stream-gone" class="banner" hidden>${T("prep_stream_gone")}</p>
 <div class="layout"><div id="controls">
-<section aria-labelledby="h-stream"><h2 id="h-stream">${T("h_stream")}</h2>
-<label for="stream">${T("stream_label")}</label><select id="stream"></select><p id="stream-note" class="muted"></p>
+<section class="pick" aria-labelledby="h-event"><h2 id="h-event">${T("h_event")}</h2><p class="muted">${T("event_help")}</p>
+<div id="event-chosen" class="chosen" role="status" aria-live="polite"></div>
+<div id="event-picker"><label for="event-q">${T("event_search")}</label><input type="search" id="event-q" maxlength="80" autocomplete="off" placeholder="${T("event_search_ph")}">
+<div id="event-filter" class="chips" role="group" aria-label="${T("event_sources")}" hidden></div>
+<p id="event-note" class="muted" role="status" aria-live="polite"></p>
+<ul id="event-list" class="events"></ul>
+<p id="event-count" class="muted" role="status" aria-live="polite"></p>
+<div class="bar"><button type="button" id="event-more" class="wide" hidden>${T("event_more")}</button><button type="button" id="event-retry" class="wide" hidden>${T("event_retry")}</button></div>
+<div id="event-sources" class="srcnotes" role="status" aria-live="polite"></div></div>
+<button type="button" id="event-manual-toggle" class="wide" aria-expanded="false" aria-controls="manual">${T("event_manual")}</button>
 <div id="manual" hidden><div class="grid2"><div style="grid-column:1/-1"><label for="m-title">${T("m_title")}</label><input type="text" id="m-title" maxlength="80" autocomplete="off"></div>
 <div><label for="m-date">${T("m_date")}</label><input type="date" id="m-date"></div><div><label for="m-time">${T("m_time")}</label><input type="time" id="m-time"></div></div>
 <p class="muted">${T("m_time_hint")}</p><p id="manual-error" class="warn" role="alert"></p></div></section>

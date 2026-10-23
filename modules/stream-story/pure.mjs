@@ -84,7 +84,10 @@ export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).
 
 /* ───────────── Les réglages d'une génération ───────────── */
 
-export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", lang: "fr" });
+/** L'identifiant d'un événement (donné par sa source, stable) et le type de sa source (« calendar », « youtube »…) : de courtes chaînes sûres, jamais une adresse. */
+export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,99}$/;
+export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
+export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr" });
 
 /** Remet n'importe quelle entrée (modèle enregistré, IA, navigateur) au bon format : valeurs inconnues écartées, durées et longueurs bornées. Ne lève jamais. */
 export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
@@ -106,8 +109,17 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
     channelName: oneLine(r.channelName ?? d.channelName, LIMITS.channelName),
     costreamers: members,
     streamKey: /^[a-z0-9]{1,20}$/.test(String(r.streamKey ?? "")) ? String(r.streamKey) : /^[a-z0-9]{1,20}$/.test(String(d.streamKey ?? "")) && r.streamKey === undefined ? String(d.streamKey) : "",
+    // L'événement choisi pour la vidéo : son identifiant (donné par sa source) et le type de sa source. L'un sans l'autre n'a pas de sens : tous deux valides, sinon rien.
+    ...pickEvent(r, d),
     lang: LANGS.includes(r.lang) ? r.lang : LANGS.includes(d.lang) ? d.lang : "fr",
   };
+}
+function pickEvent(r, d) {
+  const read = (x) => (typeof x?.eventId === "string" && EVENT_ID.test(x.eventId) && typeof x?.eventSource === "string" && SOURCE_KIND.test(x.eventSource) ? { eventId: x.eventId, eventSource: x.eventSource } : null);
+  const own = read(r);
+  if (own) return own;
+  if (r.eventId === undefined && r.eventSource === undefined) return read(d) ?? { eventId: "", eventSource: "" };
+  return { eventId: "", eventSource: "" };
 }
 const cleanConfigDuration = (n) => (Number.isInteger(n) && n >= LIMITS.durationMin && n <= LIMITS.durationMax ? n : LIMITS.durationDefault);
 
@@ -239,6 +251,24 @@ export function upcomingStreams(items, nowMs, fallbackZone = "UTC", max = LIMITS
     out.push({ key: streamKeyOf({ id: it.id, start: it.start, title: it.title }), title, start: new Date(startMs).toISOString(), startMs, allDay, day: day ? it.day : "", games, timezone: slotZone || (allDay ? tz : "") });
   }
   return out.sort((a, b) => a.startMs - b.startMs || a.title.localeCompare(b.title)).slice(0, max);
+}
+
+/**
+ * Quand commence (et finit) un événement donné par une source : { startMs, endMs, allDay, day, zone } ou null s'il est illisible.
+ * `start` / `end` : des instants ISO 8601 (UTC de préférence) ; `allDay` + `day` (AAAA-MM-JJ) : une journée entière sur l'horloge de `timezone` (ou de `fallbackZone`).
+ * Même règle que pour les streams des agendas : un jour entier commence à minuit du fuseau, et dure 24 h (23 ou 25 h le jour d'un changement d'heure, mais ici on ne s'en sert que pour trier).
+ */
+export function eventTimes(it, fallbackZone = "UTC") {
+  if (!it || typeof it !== "object") return null;
+  const parsed = typeof it.start === "string" ? Date.parse(it.start) : NaN;
+  const allDay = it.allDay === true, own = validZone(it.timezone) ? it.timezone : "";
+  const zone = own || (validZone(fallbackZone) ? fallbackZone : "UTC");
+  const d = allDay && typeof it.day === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(it.day) : null;
+  const startMs = d ? zonedToUtc(Number(d[1]), Number(d[2]), Number(d[3]), 0, 0, zone) : parsed;
+  if (!Number.isFinite(startMs) || startMs < Date.UTC(1971, 0, 1) || startMs > Date.UTC(2099, 0, 1)) return null;
+  const endParsed = typeof it.end === "string" ? Date.parse(it.end) : NaN;
+  const endMs = Number.isFinite(endParsed) && endParsed > startMs ? endParsed : startMs + (allDay ? 86_400_000 : 3_600_000);
+  return { startMs, endMs, allDay, day: d ? it.day : "", zone: own || (allDay ? zone : "") };
 }
 
 /** Un stream saisi à la main (titre, jour AAAA-MM-JJ, heure HH:MM) → un stream comme ci-dessus, ou { error }. */

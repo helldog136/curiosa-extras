@@ -1,0 +1,267 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.5",
+  "id": "platform-links",
+  "name": {
+    "en": "Other platforms",
+    "fr": "Autres plateformes"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Add your OnlyFans, Mym, Fansly, Patreon, Ko-fi or any other page as an icon next to your social networks, with an optional notice page (18+) before the link opens.",
+    "fr": "Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi ou une autre page en icône à côté de vos réseaux, avec en option une page d'avertissement (18 ans et plus) avant l'ouverture du lien."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🔗",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "routes",
+    "storage",
+    "topics",
+    "admin",
+    "mcp"
+  ],
+  "provides": [
+    {
+      "topic": "social.link",
+      "label": {
+        "en": "Other platforms: icons in the header",
+        "fr": "Autres plateformes : icônes dans l'en-tête"
+      }
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mes liens",
+        "en": "My links"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "links.edit",
+      "label": {
+        "fr": "modifier les liens des autres plateformes",
+        "en": "change the links to other platforms"
+      },
+      "help": {
+        "fr": "Ajouter, modifier, ranger, masquer ou retirer un lien, et choisir s'il y a un avertissement avant son ouverture.",
+        "en": "Add, change, reorder, hide or remove a link, and choose whether a notice appears before it opens."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "warnAdult",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Prévenir avant d'ouvrir OnlyFans, Mym et Fansly",
+        "en": "Warn before opening OnlyFans, Mym and Fansly"
+      },
+      "help": {
+        "fr": "Une page demande de confirmer que l'on a 18 ans ou plus avant d'ouvrir le lien. Un lien vers ces plateformes n'est pas forcément du contenu pour adultes : coupez l'avertissement ici pour toutes, ou pour un seul lien depuis l'onglet Mes liens. Les autres plateformes n'ont jamais d'avertissement, sauf si vous le choisissez pour un lien.",
+        "en": "A page asks visitors to confirm they are 18 or older before the link opens. A link to these platforms is not necessarily adult content: turn the notice off here for all of them, or for a single link from the My links tab. Other platforms never show a notice unless you choose it for a link."
+      }
+    },
+    {
+      "key": "warnTitle",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Titre de la page d'avertissement",
+        "en": "Title of the notice page"
+      },
+      "help": {
+        "fr": "Facultatif. Vide : « Avant de continuer ».",
+        "en": "Optional. Empty: “Before you continue”."
+      }
+    },
+    {
+      "key": "warnMessage",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Message de la page d'avertissement",
+        "en": "Message of the notice page"
+      },
+      "help": {
+        "fr": "Facultatif. Vide : « Ce lien mène vers un site réservé aux adultes (18 ans et plus). » Cette page n'est pas une vérification d'âge : elle prévient seulement.",
+        "en": "Optional. Empty: “This link leads to a site for adults only (18 and over).” This page is not an age check: it only gives notice."
+      }
+    },
+    {
+      "key": "originEnabled",
+      "type": "boolean",
+      "advanced": true,
+      "default": true,
+      "label": {
+        "fr": "Indiquer d'où vient le visiteur",
+        "en": "Tell the platform where the visitor comes from"
+      },
+      "help": {
+        "fr": "Ajoute à l'adresse de chaque lien utm_source (le nom de votre site) et utm_medium=link, pour que la plateforme sache d'où viennent les visites. Rien de personnel n'est transmis. Certaines plateformes ignorent ces informations. Les paramètres déjà présents dans votre adresse ne sont jamais remplacés.",
+        "en": "Adds utm_source (your site's name) and utm_medium=link to each link's address, so the platform knows where visits come from. Nothing personal is sent. Some platforms ignore this. Parameters already in your address are never replaced."
+      }
+    },
+    {
+      "key": "originCampaign",
+      "type": "text",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "fr": "Nom de campagne (utm_campaign)",
+        "en": "Campaign name (utm_campaign)"
+      },
+      "help": {
+        "fr": "Facultatif. Ajouté à chaque lien tant qu'il est rempli.",
+        "en": "Optional. Added to every link while it is filled in."
+      }
+    },
+    {
+      "key": "perLinkOrigin",
+      "type": "boolean",
+      "advanced": true,
+      "default": false,
+      "label": {
+        "fr": "Choisir l'origine lien par lien",
+        "en": "Choose the origin link by link"
+      },
+      "help": {
+        "fr": "Ajoute, dans le formulaire de chaque lien, un choix pour mettre ou non l'origine de la visite.",
+        "en": "Adds, to each link's form, a choice to include or not the visit origin."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "platform_links_list",
+      "readOnly": true,
+      "description": "List the links to other platforms (id, platform, address, label, visible, notice choice, whether the 18+ notice is shown now), in display order.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "platform_link_create",
+      "description": "Add a link to another platform (at most 20). The address may be pasted loosely (\"onlyfans.com/name\" is completed to https). Writes to the site; the link is shown in the header icons unless visible is false.",
+      "input": {
+        "type": "object",
+        "required": [
+          "platform",
+          "url"
+        ],
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "onlyfans",
+              "mym",
+              "fansly",
+              "patreon",
+              "kofi",
+              "tipeee",
+              "liberapay",
+              "buymeacoffee",
+              "linktree",
+              "other"
+            ],
+            "description": "Platform. Use other for any other https site (then label is required)."
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Page address, https only, for example onlyfans.com/name. For a known platform the address must be on that platform's site."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Name shown on hover and to screen readers. Optional for a known platform, required for other."
+          },
+          "visible": {
+            "type": "boolean",
+            "description": "Show the icon (default true)."
+          },
+          "warn": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "on",
+              "off"
+            ],
+            "description": "Notice page before opening: auto follows the platform default, on always warns, off opens directly (default auto)."
+          }
+        }
+      }
+    },
+    {
+      "name": "platform_link_update",
+      "description": "Change a link to another platform. Only the given fields change. Writes to the site. Use visible=false to hide a link without removing it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Link id, from platform_links_list."
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "onlyfans",
+              "mym",
+              "fansly",
+              "patreon",
+              "kofi",
+              "tipeee",
+              "liberapay",
+              "buymeacoffee",
+              "linktree",
+              "other"
+            ],
+            "description": "New platform."
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "New page address (https only)."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "New name (empty text removes the custom name)."
+          },
+          "visible": {
+            "type": "boolean",
+            "description": "Show or hide the icon."
+          },
+          "warn": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "on",
+              "off"
+            ],
+            "description": "Notice page before opening: auto, on or off."
+          }
+        }
+      }
+    }
+  ]
+}
