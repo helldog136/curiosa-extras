@@ -19,11 +19,11 @@ test("manifeste : valide, et le code fait ce que module.json annonce", () => {
   assert.equal(r.manifest.name.en, "FAQ");
   assert.equal(r.manifest.basePath, "faq");
   assert.equal(r.manifest.page, true);
-  assert.equal(manifest.minCore, "0.2.5");
-  assert.equal(index.VERSION, manifest.version, "VERSION (adresse du script mise en cache) doit suivre la version du manifeste");
+  assert.equal(manifest.minCore, "0.2.6", "scripts de page : cœur 0.2.6");
+  assert.equal(index.VERSION, manifest.version, "VERSION doit suivre la version du manifeste");
   assert.deepEqual(manifest.sections.map((s) => s.id), Object.keys(def.sections));
   assert.deepEqual(manifest.mcp.map((a) => a.name).sort(), Object.keys(def.mcp).sort());
-  assert.deepEqual(Object.keys(def.routes).sort(), ["ask", "client.js", "vote"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["ask", "vote"]);
   assert.deepEqual(Object.keys(def.adminActions).sort(), ["dismissAsked", "moveDown", "moveUp", "publish", "publishAsked", "removeItem", "saveItem", "saveTheme", "themeDown", "themeUp", "unpublish", "removeTheme"].sort());
   // chaque action d'admin est réservée à un droit déclaré
   const rights = new Set(manifest.rights.map((x) => x.id));
@@ -245,12 +245,27 @@ test("accueil : les questions les plus utiles, ou rien", async () => {
   assert.equal(en.at(-1).items[0].href, "/en/faq");
 });
 
-test("emplacements : le script de confort est chargé avec son numéro de version ; le lien du pied de page est facultatif", () => {
-  const head = def.slots["layout.head"](ctxFor());
-  assert.deepEqual(head, [{ type: "head", tags: [{ tag: "script", src: `/m/${head[0].tags[0].src.split("/")[2]}/client.js?v=1.0.0`, defer: true }] }]);
-  assert.equal(def.slots["layout.head"](ctxFor({}, { basePath: null })), null, "sans page, rien à charger");
+test("emplacements : plus aucun script dans l'en-tête de toutes les pages ; le lien du pied de page est facultatif", () => {
+  assert.equal(def.slots["layout.head"], undefined, "le script de confort n'est plus chargé sur toutes les pages du site");
   assert.equal(def.slots["layout.footer"](ctxFor()), null);
   assert.deepEqual(def.slots["layout.footer"](ctxFor({ footerLink: true })), [{ type: "links", items: [{ label: "Questions fréquentes", href: "/faq" }] }]);
+});
+
+test("script de page (cœur 0.2.6) : la page FAQ réclame scripts/faq.js ; la 404 et l'accueil n'en réclament pas ; le fichier existe, est un vrai fichier, tient dans 32 Ko et est exactement le script du navigateur", async () => {
+  const ctx = await seeded({});
+  const page = await def.page(ctx, { segments: [] });
+  assert.deepEqual(page.scripts, ["faq.js"]);
+  assert.match(page.scripts[0], /^[a-z0-9._-]+\.js$/, "nom accepté par le cœur");
+  const missing = await def.page(ctx, { segments: ["nope"] });
+  assert.equal(missing.notFound, true); assert.equal(missing.scripts, undefined);
+  const top = await def.sections.top(ctx, {});
+  assert.ok(!JSON.stringify(top).includes("faq.js"), "la section d'accueil n'a pas besoin du script");
+  const file = `${DIR}/scripts/faq.js`;
+  assert.ok(fs.lstatSync(file).isFile(), "pas un lien symbolique");
+  const bytes = fs.statSync(file).size;
+  assert.ok(bytes > 0 && bytes <= 32 * 1024, `${bytes} octets`);
+  assert.equal(fs.readFileSync(file, "utf8"), client.CLIENT_JS, "scripts/faq.js doit être la copie exacte de CLIENT_JS (client.mjs) : le régénérer si client.mjs change");
+  assert.equal(manifest.minCore, "0.2.6", "un cœur plus ancien ignorerait scripts : la page n'aurait plus son confort");
 });
 
 // ── Le script du navigateur ──────────────────────────────────────────────────────────────────────────────────────
@@ -270,17 +285,6 @@ test("script : autonome, sans eval ni innerHTML, se charge et branche ses écout
   const again = listeners.length;
   vm.runInNewContext(js, { window: win, document: doc, WeakMap, Array, JSON, decodeURIComponent });
   assert.equal(listeners.length, again, "un second chargement ne double rien");
-});
-
-test("script : la route le sert avec un cache raisonnable, et seulement en lecture", async () => {
-  const ctx = ctxFor();
-  const res = await def.routes["client.js"](new Request("https://example.org/m/x/client.js"), ctx);
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get("content-type"), /javascript/);
-  assert.match(res.headers.get("cache-control"), /max-age=3600/);
-  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
-  assert.ok((await res.text()).includes("__faqBoot"));
-  assert.equal((await def.routes["client.js"](new Request("https://example.org/m/x/client.js", { method: "POST", body: "x" }), ctx)).status, 405);
 });
 
 test("textes : mêmes clés en français et en anglais, aucune clé oubliée", () => {

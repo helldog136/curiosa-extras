@@ -8,14 +8,14 @@
 // des brouillons et des pages par entrée, mais ni dépliants, ni recherche, ni avis, ni thèmes réordonnables par boutons, ni boîte de
 // questions, ni données FAQPage ; et ses réponses ne sont pas lisibles par le code d'un module.
 //
-// Fichiers : text.mjs (outils de texte) · data.mjs (données, limiteurs) · ops.mjs (écritures partagées) · view.mjs (pages) · client.mjs (script de confort)
+// Fichiers : text.mjs (outils de texte) · data.mjs (données, limiteurs) · ops.mjs (écritures partagées) · view.mjs (pages) · client.mjs (le script de confort ; son texte est recopié dans scripts/faq.js, vérifié par les tests)
 //           routes.mjs (poser une question, avis, script) · admin.mjs (administration) · mcp.mjs (assistant IA)
 
 import { C, loadItems, loadThemes, loadAsked, flag, forget } from "./data.mjs";
 import { adminActions, adminBadge, adminPanel } from "./admin.mjs";
 import { mcp } from "./mcp.mjs";
 import { routes } from "./routes.mjs";
-import { cell, plainText, safeSlug, slugify } from "./text.mjs";
+import { cell, plainText, slugify } from "./text.mjs";
 import { pageHref, renderPage, renderTop } from "./view.mjs";
 
 /** Doit rester égale à `version` de module.json (le script est mis en cache par son numéro). */
@@ -39,7 +39,8 @@ export default {
     if (segments.length > 0) return { notFound: true, blocks: [] };
     const { html } = await renderPage(ctx);
     const intro = ctx.setting("intro");
-    return { title: ctx.instance.name || ctx.t("pageTitle"), description: intro ? plainText(intro, 160) : ctx.t("pageDescription"), blocks: [{ type: "html", html }] };
+    // Le petit script de confort (recherche, avis sans rechargement) n'est chargé que sur CETTE page (cœur 0.2.6) : fichier scripts/faq.js.
+    return { title: ctx.instance.name || ctx.t("pageTitle"), description: intro ? plainText(intro, 160) : ctx.t("pageDescription"), blocks: [{ type: "html", html }], scripts: ["faq.js"] };
   },
 
   routes,
@@ -50,11 +51,6 @@ export default {
   },
 
   slots: {
-    // Le petit script de confort (recherche, avis sans rechargement) : chargé une fois, mis en cache, sans effet sur les pages qui n'ont pas de FAQ.
-    "layout.head"(ctx) {
-      if (ctx.instance.basePath === null || ctx.instance.basePath === undefined) return null;
-      return [{ type: "head", tags: [{ tag: "script", src: `/m/${safeSlug(ctx.instance.key)}/client.js?v=${VERSION}`, defer: true }] }];
-    },
     "layout.footer"(ctx) {
       const href = pageHref(ctx);
       if (!flag(ctx, "footerLink", false) || !href) return null;

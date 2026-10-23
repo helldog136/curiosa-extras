@@ -6,7 +6,6 @@
 import { C, locked, getRow, loadAsked, purgeAsked, limited, alreadyVoted, visitorId, mailDue, flag, askedKey, HOUR } from "./data.mjs";
 import { LIMITS, clean, num } from "./text.mjs";
 import { pageHref } from "./view.mjs";
-import { CLIENT_JS } from "./client.mjs";
 
 const json = (body, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
 const wantsJson = (request) => /application\/json/i.test(request.headers.get("accept") ?? "");
@@ -94,13 +93,5 @@ export const routes = {
     });
     if (!out) return reply(request, ctx, 404, "problem", { ok: false });
     return reply(request, ctx, 200, "thanks", { ok: true, y: out.y, already: out.already });
-  },
-
-  // GET /m/<clé>/client.js : le script de confort de la page (voir client.mjs). Rien n'est écrit.
-  async "client.js"(request) {
-    if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
-    return new Response(request.method === "HEAD" ? null : CLIENT_JS, {
-      headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "public, max-age=3600", "x-content-type-options": "nosniff" },
-    });
   },
 };

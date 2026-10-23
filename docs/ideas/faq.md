@@ -1,6 +1,6 @@
 # Questions fréquentes (`faq`) : description complète
 
-Module du catalogue, version 1.0.0, `minCore` 0.2.5, licence et auteur comme les autres modules. Type déclaré : `content` (pour être rangé sous « Mon contenu » dans le menu), sans bloc `content` : c'est un module à code.
+Module du catalogue, version 1.0.0, `minCore` 0.2.6, licence et auteur comme les autres modules. Type déclaré : `content` (pour être rangé sous « Mon contenu » dans le menu), sans bloc `content` : c'est un module à code.
 
 ## Le problème
 
@@ -22,7 +22,7 @@ Le module garde donc ses questions dans son propre stockage (un seul propriétai
 
 - `/faq` : introduction facultative, recherche, navigation par thèmes, questions repliables (`details` / `summary` natifs), « Tout ouvrir / Tout fermer », boîte « Vous ne trouvez pas votre réponse ? ».
 - **Sans JavaScript** : les questions s'ouvrent et se referment ; les avis et les questions partent par formulaire ordinaire, la page revient avec un message (ancre `#faq-sent`, `#faq-thanks`… affichée par la règle CSS `:target`) ; la recherche et « Tout ouvrir » disparaissent (`noscript`). Un lien `#q-…` amène à la question mais ne l'ouvre pas sans script (limite du HTML).
-- **Avec JavaScript** (petit script `client.js`, ≈ 8 Ko, mis en cache une heure, chargé dans l'en-tête de toutes les pages du site tant qu'une FAQ a une page) : recherche sans accents ni majuscules (la même fonction `fold` sert au serveur et au navigateur), question ouverte par son lien et par `hashchange`, lien copié, avis et question envoyés sans recharger, mise en route aussi après un changement de page sans rechargement (observateur léger).
+- **Avec JavaScript** (petit script `scripts/faq.js`, ≈ 8 Ko, servi par le cœur avec son empreinte et chargé **seulement sur la page des questions**, cœur 0.2.6) : recherche sans accents ni majuscules (la même fonction `fold` sert au serveur et au navigateur), question ouverte par son lien et par `hashchange`, lien copié, avis et question envoyés sans recharger, mise en route aussi après un changement de page sans rechargement (observateur léger).
 - **Avis** : « Cela m'a aidé / Pas vraiment ». Le visiteur ne voit que « N personnes ont trouvé cette réponse utile » à partir de 3.
 - **Langues** : chaque question a, par langue du site, une question et une réponse. Une question qui n'existe que dans une langue : avec le réglage « Montrer aussi les questions écrites dans une autre langue » (oui par défaut), le visiteur de l'autre langue la voit avec la mention « Cette réponse n'existe pas encore dans votre langue : elle est affichée en … » et `lang` correct ; décoché, elle lui est cachée. Un thème sans nom dans la langue du visiteur prend celui de la langue du site.
 - **Moteurs de recherche** : un FAQPage (JSON-LD) des seules questions publiées et visibles sur la page, avec le même HTML simple que la page (`p`, `br`, `ul`, `ol`, `li`, `a`, `strong`, `em`). Écrit dans une balise du corps de la page (l'emplacement d'en-tête du cœur ne sait pas quelle page est affichée), échappé (`<`, `>`, `&`, séparateurs de ligne en `\uXXXX`) et passé par `ctx.api.seo.jsonLd` (le cœur en borne la taille). Borné à 17 000 caractères et 100 questions ; ce qui ne rentre pas reste visible mais n'est pas décrit (l'administration le dit).
