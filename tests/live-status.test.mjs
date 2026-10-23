@@ -47,7 +47,7 @@ const player = (ctx) => def.sections.player(ctx);
 
 test("live-status : manifeste valide, deux sources FACULTATIVES (twitch.live, youtube.live), n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.4.0");
+  assert.equal(m.version, "1.4.1");
   assert.equal(m.id, "live-status", "l'identifiant ne change pas : les sites existants gardent leur instance");
   assert.equal(m.platform, "twitch", "la plateforme déclarée ne change pas (regroupement visuel seulement)");
   assert.equal(m.minCore, "0.2.2");
