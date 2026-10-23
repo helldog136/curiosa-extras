@@ -10,8 +10,8 @@
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
-    "en": "Shows a “live now” banner and your player on the home page when you are live on Twitch, on YouTube, or on both. Each platform needs its own channel module.",
-    "fr": "Affiche une bannière « en direct » et votre lecteur sur l'accueil quand vous êtes en direct sur Twitch, sur YouTube ou sur les deux. Chaque plateforme demande son module de chaîne."
+    "en": "Shows a “live now” banner and your player on the home page when you are live on Twitch, on YouTube, or on both.",
+    "fr": "Affiche une bannière « en direct » et votre lecteur sur l'accueil quand vous êtes en direct sur Twitch, sur YouTube ou sur les deux."
   },
   "privacy": {
     "en": "This module collects nothing itself. Twitch: the Twitch player appears only while you are live (or always, if the owner chose so); your browser then contacts Twitch, which sees your address and may set its own cookies. YouTube: the player (youtube-nocookie.com) is loaded only after you click “Start the YouTube player”, unless the owner chose otherwise; your browser then contacts YouTube (Google), which sees your address. A banner or a “Watch” link loads nothing until you click.",
