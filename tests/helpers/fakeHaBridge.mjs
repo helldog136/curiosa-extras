@@ -12,10 +12,10 @@ export function fakeHaBridge(opts = {}) {
     if (!s.paired) return "not_paired";
     if (!s.enabled) return "off";
     if (s.offline) return "offline";
-    if (!s.live) return "not_live";
+    if (!s.live && a?.test !== true) return "not_live";   // un essai (test: true) peut se faire hors direct, jamais coupe-circuit actif
     if (!a || typeof a.key !== "string" || !KEY.test(a.key) || (s.knownKeys && !s.knownKeys.includes(a.key))) return "unknown_key";
     if (a.text !== undefined && s.blockWords.some((w) => String(a.text).toLowerCase().includes(w))) return "blocked";
-    if (s.busy || api.queue.length >= 50) return "busy";
+    if (s.busy || api.queue.length >= (s.maxQueue ?? 50)) return "busy";
     return null;
   };
   api.methods = {

@@ -35,6 +35,8 @@ const collect = async (ctx, topic, limit) => { try { const a = await within(ctx.
 
 const rows = async (ctx) => (await ctx.api.store.list(COL, { limit: 400 })).map((r) => ({ id: r.id, ...rec(r.data) }));
 const write = (ctx, doc) => { const { id, ...data } = doc; return ctx.api.store.update(id, data, { key: doc.rid }); };
+/** Cet échange est-il déjà noté ? (index par clé quand le cœur l'offre, sinon lecture bornée.) */
+const known = async (ctx, rid) => (typeof ctx.api.store.getByKey === "function" ? !!(await ctx.api.store.getByKey(COL, rid)) : (await rows(ctx)).some((r) => r.rid === rid));
 const PENDING = new Set(["new", "waiting", "settle"]);
 
 /** Le journal pour l'administration : les 50 derniers échanges (et ceux en attente) ; ce qui dépasse est supprimé ici, à la lecture. */
@@ -88,7 +90,7 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
   if (!reward || reward.gone) return NOT_OURS;
   await reconcile(ctx, { now, force: true }).catch(() => {});   // d'abord le retard éventuel (résultats reçus, échanges expirés), puis celui-ci
   return st.serial(ctx, "redeem", async () => {
-    if (await ctx.api.store.getByKey(COL, red.id)) return { handled: false, why: "duplicate" };   // un échange n'est traité qu'une fois, même après un redémarrage
+    if (await known(ctx, red.id)) return { handled: false, why: "duplicate" };   // un échange n'est traité qu'une fois, même après un redémarrage
     const acc = await R.access(ctx, s);
     if (acc.ok && acc.broadcasterId !== red.broadcasterId) return { handled: false, why: "other_channel" };
     const waiting = (await rows(ctx)).filter((r) => PENDING.has(r.status) && !r.test).length;
@@ -178,7 +180,7 @@ export const resetRedeem = () => lastRun.clear();
 
 const sims = new Map();
 export const resetSims = () => sims.clear();
-const pause = (ms) => new Promise((ok) => { const t = setTimeout(ok, ms); t.unref?.(); });
+const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));   // borné par waitMs ; pas unref : la demande d'administration attend vraiment
 /**
  * Joue le MÊME chemin qu'un vrai échange (action de la récompense, pont de la maison) avec un faux échange : pseudo « Test », aucune mise à jour chez Twitch, aucun point.
  * Une action du bot (réponse dans le chat) n'est PAS envoyée : on rend l'aperçu. Limites : 1 test / 3 s, 30 / heure. Le coupe-circuit actif refuse le test.

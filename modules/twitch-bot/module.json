@@ -98,8 +98,8 @@
     }
   ],
   "privacy": {
-    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page. If you use channel point rewards, it also keeps, for each exchange (the last 50), the viewer's Twitch username, the reward and what happened; the message a viewer writes with a reward is passed on to the action and never kept.",
-    "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Si vous utilisez les récompenses en points de chaîne, il garde aussi, pour chaque échange (les 50 derniers), le pseudo Twitch du viewer, la récompense et ce qui s'est passé ; le message écrit par le viewer avec une récompense est transmis à l'action et jamais gardé."
+    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page. For channel point rewards it also keeps, for the last 50 exchanges, the username, the reward and the outcome, never the viewer's message.",
+    "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Pour les récompenses en points de chaîne, il garde aussi, pour les 50 derniers échanges, le pseudo, la récompense et le résultat, jamais le message du viewer."
   },
   "tabs": [
     {

@@ -165,7 +165,6 @@ export function setPaused(ctx, s, id, paused) {
  * Une seule demande ; au plus une toutes les 30 s par instance (admin ouverte en boucle). Ne lève jamais.
  */
 const lastSync = new Map();
-export const resetRewards = () => lastSync.clear();
 export function sync(ctx, s, { now = Date.now(), force = false } = {}) {
   const k = ctx.instance.key;
   if (!force && (lastSync.get(k) ?? 0) > now - 30_000) return Promise.resolve({ ok: true, skipped: true });
@@ -198,6 +197,7 @@ export function sync(ctx, s, { now = Date.now(), force = false } = {}) {
  * N'agit qu'au CHANGEMENT d'état (noté dans `applied`) ; un échec est retenté au prochain évènement (au plus toutes les 30 s). Aucun minuteur.
  */
 const lastApply = new Map();
+export const resetRewards = () => { lastSync.clear(); lastApply.clear(); };
 export function applyHouseState(ctx, s, state, { now = Date.now() } = {}) {
   if (!state || typeof state !== "object") return Promise.resolve({ ok: true, skipped: true });
   const ready = state.enabled === true && state.live === true && state.paired !== false;

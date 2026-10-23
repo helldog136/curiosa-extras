@@ -8,7 +8,7 @@ const single = (test) => (v) => v.length === 1 && test(v[0]);
 const query = (opt = {}) => (q) => {
   const keys = Object.keys(q);
   if (!keys.includes("broadcaster_id") || !single(digits)(q.broadcaster_id)) return false;
-  return keys.every((k) => k === "broadcaster_id" || (k in opt && single(opt[k])(q[k])));
+  return keys.every((k) => k === "broadcaster_id" || (k in opt && opt[k](q[k])));
 };
 const only = (obj, allowed) => Object.keys(obj).every((k) => k in allowed && allowed[k](obj[k]));
 const int = (min, max) => (x) => Number.isInteger(x) && x >= min && x <= max;
