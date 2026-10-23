@@ -87,7 +87,7 @@ const STYLE_PARAMS = {
 export function createScene(opts = {}) {
   const fmt = formatOf(opts.format), W = fmt.width, H = fmt.height, safe = safeArea(fmt);
   // La mention « Made with Curiosa » (seulement si la case est cochée : un `true` explicite). Elle occupe le bas de la zone sûre ; le contenu se met en page au-dessus d'elle.
-  const wmOn = opts.watermark === true, WM = { px: 30, h: 54, padX: 26, gap: 28 };
+  const wmOn = opts.watermark === true, WM = { px: 30, h: 54, padX: 26, gap: 28, alpha: 0.6 };
   const A = wmOn ? { ...safe, h: safe.h - WM.h - WM.gap } : safe;
   const style = STYLES.includes(opts.style) ? opts.style : "neon";
   const duration = Math.min(LIMITS.durationMax, Math.max(LIMITS.durationMin, Number(opts.duration) || LIMITS.durationDefault));
@@ -102,17 +102,21 @@ export function createScene(opts = {}) {
      pastille semi-transparente de la couleur du fond. Aucun mouvement : la même image à chaque instant, du premier au dernier fond. */
   const watermark = (() => {
     if (!wmOn) return null;
-    const f = font(600, WM.px), tw = Math.ceil(measureWith(f)(WATERMARK_TEXT)), w = tw + WM.padX * 2;
+    const f = font(600, WM.px), tw = Math.ceil(measureWith(f)(WATERMARK_TEXT)), w = Math.ceil((tw + WM.padX * 2) / 2) * 2;   // largeur paire : le centre tombe sur un pixel entier (texte net)
     const bgs = [...new Set([pal.base, pal.bg0, pal.bg1])];
-    const worst = (c) => Math.min(...bgs.map((b) => contrast(c, b)));
+    const worst = (c, pill = null) => Math.min(...bgs.map((b) => contrast(c, pill ? mix(b, pill, WM.alpha) : b)));
     const color = worst("#ffffff") >= worst("#111111") ? "#ffffff" : "#111111";
-    return { text: WATERMARK_TEXT, font: f, color, pill: pal.base, ratio: worst(color), x: Math.round((W - w) / 2), y: Math.round(safe.y + safe.h - WM.h), w, h: WM.h, textW: tw };
+    // la pastille a la couleur du fond ; si le fond est un gris moyen où ni le blanc ni le noir n'atteignent 4,5:1, elle s'assombrit (ou s'éclaircit) juste ce qu'il faut
+    const toward = color === "#ffffff" ? "#000000" : "#ffffff";
+    let pill = pal.base;
+    for (let k = 1; k <= 10 && worst(color, pill) < 4.5; k++) pill = mix(pal.base, toward, k / 10);
+    return { text: WATERMARK_TEXT, font: f, color, pill, ratio: worst(color, pill), x: Math.round((W - w) / 2), y: Math.round(safe.y + safe.h - WM.h), w, h: WM.h };
   })();
   function drawWatermark(ctx) {
     const m = watermark;
     ctx.save();
     ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.shadowColor = "rgba(0,0,0,0)"; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
-    roundRectPath(ctx, m.x, m.y, m.w, m.h, m.h / 2); ctx.fillStyle = rgba(m.pill, 0.6); ctx.fill();
+    roundRectPath(ctx, m.x, m.y, m.w, m.h, m.h / 2); ctx.fillStyle = rgba(m.pill, WM.alpha); ctx.fill();
     ctx.strokeStyle = rgba(m.color, 0.28); ctx.lineWidth = 2; ctx.stroke();
     ctx.font = m.font; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = m.color;
     ctx.fillText(m.text, m.x + m.w / 2, m.y + m.h / 2 + 1);

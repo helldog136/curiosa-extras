@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.1.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.2.0");
   assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -52,8 +52,8 @@ test("manifeste : un module à lui, une instance, aucune page publique, 4 permis
   assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "people", "prep", "streams", "studio"]);
 });
 
-test("réglages : seules les couleurs de la vidéo et le fuseau, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
-  assert.deepEqual(manifest.settings.map((s) => s.key), ["colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone"]);
+test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ de la mention, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
+  assert.deepEqual(manifest.settings.map((s) => s.key), ["colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone", "watermark"]);
   assert.ok(manifest.settings.every((s) => s.advanced === true), "rien en mode simple : zéro configuration");
   assert.deepEqual(manifest.settings.filter((s) => s.type === "color").map((s) => s.default), ["theme:accent", "theme:accent2", "theme:bg", "theme:fg"]);
   assert.equal(manifest.settings.find((s) => s.key === "timezone").optional, true);
@@ -162,7 +162,7 @@ test("données de l'éditeur : modèles, ponctuels, état de Contacts, logo du s
   const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} } });
   const token = await data.mintToken(ctx);
   const r = await json(await call(ctx, "data", { token }));
-  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.migrated, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", null, { lang: "fr" }], "sans Contacts : « absent »");
+  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.migrated, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", null, { lang: "fr", watermark: false }], "sans Contacts : « absent »");
   assert.ok(!("costreamers" in r) && !("partners" in r), "plus de liste « à moi » ni de partenaires du Raid");
   const ext = mk({ brand: { name: "X", logos: [{ kind: "square", src: "https://cdn.evil/logo.png" }], logo: "https://cdn.evil/l.png", colors: [], font: {} } });
   assert.equal((await json(await call(ext, "data", { token: await data.mintToken(ext) }))).brand.logo, "", "un logo venu d'ailleurs n'est pas relayé");
@@ -176,7 +176,7 @@ test("modèles : enregistrer sous un nom, charger, remplacer (nom pris refusé t
   let r = await act(ctx, token, { op: "model.save", name: "Stream du soir néon", config: cfg });
   assert.equal(r.ok, true); assert.equal(r.items.length, 1);
   const m = r.items[0];
-  assert.deepEqual(m.config, { ...P.cleanConfig(cfg), streamKey: "" }); assert.equal(m.config.format, "passeport"); assert.equal(m.config.duration, 10);
+  assert.deepEqual(m.config, { ...P.cleanConfig(cfg), streamKey: "", watermark: false }); assert.equal(m.config.format, "passeport"); assert.equal(m.config.duration, 10);
   assert.match(m.id, /^[0-9a-f]{16}$/);
   const dup = await act(ctx, token, { op: "model.save", name: "stream du SOIR néon", config: { style: "minimal" } });
   assert.deepEqual([dup.ok, dup.error], [false, "exists"], "même nom (sans tenir compte des majuscules) : refusé");
@@ -236,7 +236,7 @@ test("MCP : story_prepare enregistre une préparation et rend un LIEN vers la pa
   const m = /^https:\/\/site\.example\.test\/admin\/instances\/id-story\?prep=([A-Za-z0-9_-]{22})$/.exec(r.link);
   assert.ok(m, r.link);
   assert.ok(!r.link.includes(token) && !JSON.stringify(r).includes((await ctx.api.store.list("story_key"))[0].data.secret), "ni jeton ni clé dans le lien ni dans la réponse");
-  assert.deepEqual(r.prepared, { style: "neon", format: "vertical", durationSeconds: 8, elements: ["title", "when", "countdown"], text: "Ce soir !", costreamers: ["bob_x", "carl_99"], stream: "next" }, "sans Contacts : des co-streamers pour cette vidéo seulement");
+  assert.deepEqual(r.prepared, { style: "neon", format: "vertical", durationSeconds: 8, elements: ["title", "when", "countdown"], text: "Ce soir !", costreamers: ["bob_x", "carl_99"], stream: "next", watermark: false }, "sans Contacts : des co-streamers pour cette vidéo seulement");
   assert.ok(Date.parse(r.expiresAt) > Date.now() + 6 * 86_400_000); assert.match(r.note, /Nothing has been generated or published/);
   const prep = await data.readPrep(ctx, m[1]);
   assert.deepEqual([prep.config.style, prep.config.duration, prep.config.text, prep.config.lang, prep.config.channelName, prep.config.costreamers.map((m) => m.login)], ["neon", 8, "Ce soir !", "en", "Emma", ["bob_x", "carl_99"]], "le modèle sert de départ, les valeurs données le complètent");
