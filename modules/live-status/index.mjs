@@ -76,7 +76,9 @@ export default ({
         else if (gap === "channel") blocks.push({ type: "banner", tone: "warning", text: ctx.t("needChannel") }, { type: "markdown", text: `[${ctx.t("openTwitch")}](/admin/modules/twitch-channel)` });
         // YouTube : la réponse est celle que les visiteurs voient (gardée quelques minutes) ; ouvrir cette page ne coûte donc presque rien.
         const yt = await youtubeLives(ctx);
-        if (twitchGap === null && yt.state === "none") {
+        // Une source « absente » = aucun fournisseur du tout (un fournisseur présent mais muet ou en panne n'est pas absent).
+        const hasProvider = async (service) => { try { const l = typeof ctx.api.services?.providers === "function" ? await ctx.api.services.providers(service) : []; return Array.isArray(l) && l.length > 0; } catch { return false; } };
+        if (twitchGap === null && yt.state === "none" && !(await hasProvider("twitch.live")) && !(await hasProvider("youtube.live"))) {
             blocks.push({ type: "banner", tone: "info", text: ctx.t("needSource") },
                 { type: "suggestInstall", service: "twitch.live", reason: ctx.t("suggestTwitch") },
                 { type: "suggestInstall", service: "youtube.live", reason: ctx.t("suggestYoutube") });

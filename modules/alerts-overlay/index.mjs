@@ -170,8 +170,8 @@ export default {
         .al-kind{font-size:1.6rem;font-weight:700;color:var(--al-accent)}
         .al-card.neon .al-kind{text-shadow:0 0 12px var(--al-accent)}
         .al-msg{font-size:1.15rem;color:var(--al-fg)}
-        .al-detail{font-size:1rem;color:var(--al-fg);opacity:.85;max-width:32rem;overflow-wrap:anywhere}
-        @keyframes alPop{0%{opacity:0;transform:scale(.85)}10%{opacity:1;transform:scale(1)}90%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.95)}}`,
+${pull ? `        .al-detail{font-size:1rem;color:var(--al-fg);opacity:.85;max-width:32rem;overflow-wrap:anywhere}
+` : ""}        @keyframes alPop{0%{opacity:0;transform:scale(.85)}10%{opacity:1;transform:scale(1)}90%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.95)}}`,
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
       script: pull ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
