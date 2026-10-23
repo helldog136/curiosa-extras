@@ -15,7 +15,7 @@ const { settingsOf, budgetUnits } = await import(`./settings.mjs${v}`);
 
 /** Millisecondes et bornes, dans un objet pour que les tests puissent les raccourcir. */
 export const timing = {
-  idleMs: 180_000,           // pas de direct : on revérifie toutes les 3 minutes (2 unités de limite chaque fois)
+  idleMs: 60_000,            // pas de direct : on revérifie chaque minute (2 unités de limite chaque fois, environ 1 % par heure)
   heartbeatMs: 90_000,       // une page est « ouverte » si elle s'est montrée depuis moins de 90 s
   reloadMaxMs: 60_000,       // la page se recharge au moins chaque minute
   reloadMinMs: 4_000,

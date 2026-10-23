@@ -29,7 +29,7 @@ export function whenText(ctx, at, now = Date.now()) {
   const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
   return ctx.t(sameDay(at, now) ? "when_today" : sameDay(at, now + 86_400_000) ? "when_tomorrow" : "when_later", { hour, date: d.toLocaleDateString(fr ? "fr" : "en") });
 }
-const percent = (ctx, units) => (units > 0 && units < 100 ? ctx.t("pct_under_one") : String(Math.round(units / 100)));
+const percent = (ctx, units) => String(units > 0 && units < 100 ? 1 : Math.round(units / 100));
 
 /* ───────────── Les phrases ───────────── */
 
@@ -197,7 +197,7 @@ function ruleBlocks(ctx, o, query) {
   if (!o.rules.length) out.push({ type: "markdown", text: t("rules_empty") });
   else {
     out.push({
-      type: "table", columns: [t("col_rule"), t("col_what")], rows: o.rules.map((r) => [r.name, ruleSummary(ctx, r)]), rowIds: o.rules.map((r) => r.id),
+      type: "table", columns: [t("col_rule")], rows: o.rules.map((r) => [`${r.name} — ${ruleSummary(ctx, r)}`]), rowIds: o.rules.map((r) => r.id),
       ...(manage ? { rowActions: [{ label: t("rule_edit"), href: "?edit={id}" }, { label: t("rule_toggle"), action: "toggleRule" }, { label: t("rule_delete"), action: "removeRule", confirm: t("rule_delete_confirm"), danger: true }] } : {}),
     });
   }

@@ -33,7 +33,7 @@ Il n'y a **pas** de déclencheur sur un mot écrit dans le chat : seuls les dons
 
 ## La limite du jour de YouTube
 
-YouTube donne 10 000 unités par jour à la clé du site. Lire le chat d'un direct en coûte 5 à chaque lecture : environ **12 % de la limite par heure** à une lecture toutes les 15 secondes. La page l'écrit en clair (« environ N % de votre limite du jour »). Le module **s'arrête doucement** à 50 % de la limite du jour (réglable dans les options avancées), pour laisser de la place aux autres modules YouTube, et reprend à la remise à zéro. Chercher un direct (toutes les 3 minutes tant que la page est ouverte hors direct) coûte 2 unités.
+YouTube donne 10 000 unités par jour à la clé du site. Lire le chat d'un direct en coûte 5 à chaque lecture : environ **12 % de la limite par heure** à une lecture toutes les 15 secondes. La page l'écrit en clair (« environ N % de votre limite du jour »). Le module **s'arrête doucement** à 50 % de la limite du jour (réglable dans les options avancées), pour laisser de la place aux autres modules YouTube, et reprend à la remise à zéro. Chercher un direct (chaque minute tant que la page est ouverte hors direct, soit environ 1 % de la limite par heure) coûte 2 unités.
 
 ## Réglages
 

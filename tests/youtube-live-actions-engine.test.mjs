@@ -301,16 +301,16 @@ test("cadence : jamais avant le réglage, et jamais avant pollingIntervalMillis 
   w2.done();
 });
 
-test("hors direct : aucune lecture du chat ; le direct est cherché toutes les 3 minutes seulement", async () => {
+test("hors direct : aucune lecture du chat ; le direct est cherché chaque minute seulement", async () => {
   const w = await world();
   let st = await w.read();
   assert.equal(st.status, "idle");
   assert.equal(w.yt.calls.chat.length, 0);
   assert.equal(w.yt.calls.detect, 2);
-  await w.read(60_000); await w.read(60_000);
-  assert.equal(w.yt.calls.detect, 2, "pas de nouvelle recherche avant 3 minutes");
+  await w.read(30_000); await w.read(29_000);
+  assert.equal(w.yt.calls.detect, 2, "pas de nouvelle recherche avant une minute");
   live(w);
-  st = await w.read(61_000);
+  st = await w.read(2_000);
   assert.equal(st.status, "reading"); assert.equal(w.yt.calls.chat.length, 1);
   assert.equal(st.title, "Mon direct");
   w.done();
@@ -332,7 +332,7 @@ test("direct sans chat : « pas de chat », aucune lecture ; direct terminé : r
   let st = await w.read();
   assert.equal(st.status, "no_chat"); assert.equal(w.yt.calls.chat.length, 0);
   w.yt.endLive(); live(w);
-  st = await w.read(181_000);
+  st = await w.read(61_000);
   assert.equal(st.status, "reading");
   w.yt.next = w.yt.reasonBody(403, "liveChatEnded");
   st = await w.read(16_000);

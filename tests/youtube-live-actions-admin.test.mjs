@@ -160,9 +160,9 @@ test("le tableau des règles se lit en une phrase ; les devises ajoutées en ré
   await addRule(w, { name: "B", type: "gift", min: "5", action: "lumieres:vert" });
   const blocks = await w.panel();
   const table = find(blocks, "table")[0];
-  assert.deepEqual(table.rows.map((r) => r[0]), ["A", "B"]);
-  assert.match(table.rows[0][1], /Super Chat, toutes devises · → tts:lire \+ lit le message · recharge 30 s/);
-  assert.match(table.rows[1][1], /Adhésions offertes : 5 ou plus/);
+  assert.deepEqual(table.rows.map((r) => r[0].split(" — ")[0]), ["A", "B"]);
+  assert.match(table.rows[0][0], /Super Chat, toutes devises · → tts:lire \+ lit le message · recharge 30 s/);
+  assert.match(table.rows[1][0], /Adhésions offertes : 5 ou plus/);
   assert.equal(table.rowIds.length, 2);
   assert.deepEqual(table.rowActions.map((a) => a.action ?? "href"), ["href", "toggleRule", "removeRule"]);
   assert.ok(table.rowActions[2].danger && table.rowActions[2].confirm);
