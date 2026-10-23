@@ -1,0 +1,304 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.6",
+  "id": "home-assistant",
+  "name": {
+    "fr": "Home Assistant",
+    "en": "Home Assistant"
+  },
+  "version": "1.0.0",
+  "description": {
+    "fr": "Laisse vos viewers piloter vos lumières et faire lire un message à voix haute chez vous, avec leurs points de chaîne. Home Assistant vient chercher les ordres : rien n'est ouvert chez vous. Avec un gros bouton « Tout couper », une modération du texte lu et un journal.",
+    "en": "Lets your viewers change your lights and have a message read aloud at your place, with their channel points. Home Assistant comes to fetch the orders: nothing is opened at your place. With a big “Cut everything” button, moderation of the text read aloud, and a log."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "homepage": "https://github.com/helldog136/curiosa-extras",
+  "icon": "🏠",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "routes",
+    "storage",
+    "admin",
+    "topics",
+    "mcp"
+  ],
+  "dataVersion": 1,
+  "offers": [
+    {
+      "service": "home-assistant.bridge",
+      "version": 1,
+      "label": {
+        "fr": "Envoyer des ordres à Home Assistant (lumières, message à voix haute)",
+        "en": "Send orders to Home Assistant (lights, message read aloud)"
+      }
+    }
+  ],
+  "requires": [
+    {
+      "service": "twitch.live",
+      "optional": true
+    }
+  ],
+  "provides": [
+    {
+      "topic": "ha.result",
+      "label": {
+        "fr": "Ce qui est arrivé aux ordres envoyés à Home Assistant",
+        "en": "What happened to the orders sent to Home Assistant"
+      }
+    },
+    {
+      "topic": "ha.state",
+      "label": {
+        "fr": "État du pont avec Home Assistant (coupé ou non, en direct, connecté)",
+        "en": "State of the link with Home Assistant (cut or not, live, connected)"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "ha.manage",
+      "label": {
+        "fr": "associer et régler Home Assistant, et reprendre après une coupure",
+        "en": "pair and set up Home Assistant, and resume after a cut"
+      },
+      "help": {
+        "fr": "Associer ou dissocier Home Assistant, vider le journal, reprendre après « Tout couper ».",
+        "en": "Pair or unpair Home Assistant, clear the log, resume after “Cut everything”."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "ha.stop",
+      "label": {
+        "fr": "« Tout couper » (arrêt d'urgence)",
+        "en": "“Cut everything” (emergency stop)"
+      },
+      "help": {
+        "fr": "Couper tout de suite ce que les viewers peuvent déclencher chez vous. Reprendre demande le droit de gérer.",
+        "en": "Immediately cut everything viewers can trigger at your place. Resuming needs the right to manage."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "ha.test",
+      "label": {
+        "fr": "envoyer un test à Home Assistant",
+        "en": "send a test to Home Assistant"
+      },
+      "help": {
+        "fr": "Simuler un échange de points de chaîne pour vérifier que tout marche, sans toucher à Twitch.",
+        "en": "Simulate a channel points reward to check everything works, without touching Twitch."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "privacy": {
+    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible des seuls administrateurs (100 lignes au plus, 7 jours au plus). Le message lu à voix haute n'est gardé que s'il a été accepté ; un message refusé n'est pas gardé, seulement le motif. Pour tout effacer : « Vider le journal » sur la page du module.",
+    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to site administrators (100 lines at most, 7 days at most). The message read aloud is only kept if it was accepted; a refused message is not kept, only the reason. To erase everything: “Clear the log” on the module's page."
+  },
+  "settings": [
+    {
+      "key": "expirySeconds",
+      "type": "number",
+      "default": 60,
+      "label": {
+        "fr": "Délai avant d'abandonner un ordre (secondes)",
+        "en": "Time before giving up on an order (seconds)"
+      },
+      "help": {
+        "fr": "Si Home Assistant ne l'a pas exécuté à temps, l'ordre est abandonné et les points sont rendus. Entre 15 et 300.",
+        "en": "If Home Assistant has not carried it out in time, the order is dropped and the points are given back. Between 15 and 300."
+      }
+    },
+    {
+      "key": "maxChars",
+      "type": "number",
+      "default": 140,
+      "label": {
+        "fr": "Longueur maximale d'un message lu (caractères)",
+        "en": "Maximum length of a message read aloud (characters)"
+      },
+      "help": {
+        "fr": "Un message plus long est refusé et les points sont rendus. Entre 20 et 300.",
+        "en": "A longer message is refused and the points are given back. Between 20 and 300."
+      }
+    },
+    {
+      "key": "viewerDelaySeconds",
+      "type": "number",
+      "default": 60,
+      "label": {
+        "fr": "Attente entre deux messages d'une même personne (secondes)",
+        "en": "Wait between two messages from the same person (seconds)"
+      },
+      "help": {
+        "fr": "0 pour ne pas attendre.",
+        "en": "0 for no wait."
+      }
+    },
+    {
+      "key": "globalDelaySeconds",
+      "type": "number",
+      "default": 10,
+      "label": {
+        "fr": "Attente entre deux messages lus, tout le monde ensemble (secondes)",
+        "en": "Wait between two messages read aloud, everyone together (seconds)"
+      },
+      "help": {
+        "fr": "0 pour ne pas attendre.",
+        "en": "0 for no wait."
+      }
+    },
+    {
+      "key": "prefixViewer",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Dire le pseudo avant le message (« Léa dit : … »)",
+        "en": "Say the username before the message (“Lea says: …”)"
+      },
+      "help": {
+        "fr": "Pour qu'on sache qui parle.",
+        "en": "So that everyone knows who is speaking."
+      }
+    },
+    {
+      "key": "blockNumbers",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Refuser les numéros (téléphone, carte…)",
+        "en": "Refuse numbers (phone, card…)"
+      },
+      "help": {
+        "fr": "Refuse un message qui contient une longue suite de chiffres.",
+        "en": "Refuses a message that contains a long run of digits."
+      }
+    },
+    {
+      "key": "useDefaultWords",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Refuser les mots de la liste fournie (français et anglais)",
+        "en": "Refuse the words of the provided list (French and English)"
+      },
+      "help": {
+        "fr": "Insultes, propos haineux ou violents. Vous voyez la liste plus bas, et vous pouvez la compléter ou la corriger ci-dessous.",
+        "en": "Insults, hateful or violent words. You can see the list below, and complete or correct it underneath."
+      }
+    },
+    {
+      "key": "extraWords",
+      "type": "textarea",
+      "optional": true,
+      "label": {
+        "fr": "Mots à refuser en plus",
+        "en": "Words to refuse as well"
+      },
+      "help": {
+        "fr": "Un mot ou une expression par ligne. « mot* » = tous les mots qui commencent par « mot ». Exemple : spoiler",
+        "en": "One word or phrase per line. “word*” = every word starting with “word”. Example: spoiler"
+      }
+    },
+    {
+      "key": "allowedWords",
+      "type": "textarea",
+      "optional": true,
+      "label": {
+        "fr": "Mots à toujours accepter",
+        "en": "Words to always accept"
+      },
+      "help": {
+        "fr": "Un mot par ligne, pour corriger la liste fournie si elle refuse trop. Exemple : con",
+        "en": "One word per line, to correct the provided list if it refuses too much. Example: con"
+      }
+    },
+    {
+      "key": "pollSeconds",
+      "type": "number",
+      "default": 3,
+      "advanced": true,
+      "label": {
+        "fr": "Intervalle conseillé à Home Assistant (secondes)",
+        "en": "Interval advised to Home Assistant (seconds)"
+      },
+      "help": {
+        "fr": "Toutes les combien de secondes Home Assistant vient chercher les ordres. Entre 2 et 30.",
+        "en": "How often Home Assistant comes to fetch orders. Between 2 and 30."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "ha_status",
+      "readOnly": true,
+      "description": "Get the state of the link with Home Assistant: whether everything is cut, paired, last time Home Assistant was seen, whether the streamer is live and how many orders are waiting. No secret.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "ha_journal",
+      "readOnly": true,
+      "description": "List the latest actions viewers triggered (newest first) with their outcome and, for refusals, the reason. Never contains secrets.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "How many lines to return (1 to 100, default 30).",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "ha_stop",
+      "description": "Emergency stop: immediately cut everything viewers can trigger through Home Assistant. Waiting orders are refused and points are given back. Only the site owner can resume, from the module page.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "home_assistant_test",
+      "description": "Send a test order through the real queue, as if a viewer had spent channel points (real text moderation, expiry and acknowledgement), without touching Twitch. Works outside a live. Fails if everything is cut or Home Assistant is not paired. Limited to one test every 3 seconds and 30 per hour.",
+      "input": {
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Action key, lowercase, for example lights:red or tts:read.",
+            "maxLength": 40
+          },
+          "text": {
+            "type": "string",
+            "description": "Text to read aloud, only for keys starting with tts:.",
+            "maxLength": 300
+          }
+        }
+      }
+    }
+  ]
+}
