@@ -58,8 +58,8 @@ export default ({
             // Pas de YouTube en direct : exactement le lecteur d'avant.
             if (!yt.lives.length) return twitchPlayer(ctx);
             // YouTube en direct : si Twitch ne l'est pas, c'est le lecteur YouTube ; si les deux le sont, un seul lecteur, celui que la propriétaire a choisi (Twitch par défaut) ; l'autre reste un lien dans la bannière.
-            const twitchLive = (await liveSources(ctx)).some((s) => s.live && CHANNEL_RE.test(s.channel));
-            if (twitchLive && ctx.setting("playerPlatform") !== "youtube") return twitchPlayer(ctx);
+            const onTwitch = (await liveSources(ctx)).some((s) => s.live && CHANNEL_RE.test(s.channel));
+            if (onTwitch && ctx.setting("playerPlatform") !== "youtube") return twitchPlayer(ctx);
             const v = yt.lives[0];
             const title = `YouTube — ${v.name}`;
             if (ctx.setting("youtubeLoad") === "auto") return [{ type: "embed", title, src: embedUrl(v.videoId) }];
