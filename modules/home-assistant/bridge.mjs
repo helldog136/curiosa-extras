@@ -219,7 +219,8 @@ export async function enqueue(ctx, args, { test = false, now = Date.now() } = {}
   const key = typeof a.key === "string" ? a.key : "";
   const ref = typeof a.ref === "string" && REF_RE.test(a.ref) ? a.ref : null;
   const s = settingsOf(ctx);
-  const live = key && KEY_RE.test(key) ? await liveNow(ctx, now) : { source: "none", live: false, known: false };
+  // Un test ne dépend pas du direct : on ne demande même pas à Twitch.
+  const live = !test && key && KEY_RE.test(key) ? await liveNow(ctx, now) : { source: "none", live: false, known: false };
   return S.transact(ctx, async (db) => {
     const core = await db.core();
     const refuse = async (reason, extra = {}) => {

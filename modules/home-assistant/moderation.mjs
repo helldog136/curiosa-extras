@@ -23,6 +23,7 @@ const cutChars = (s, n) => [...s].slice(0, n).join("");
 // Domaines courants : « exemple.com » ou « super.tv/abc » sont retirés même sans « http ».
 const TLD = "com|net|org|fr|be|io|tv|gg|co|uk|de|es|it|nl|ch|ca|us|xyz|me|ly|app|dev|info|biz|ru|cn|tk|ml|ga|cf|gq|top|site|online|link|live|shop|club|vip|cc|to|sh|so|gl|gd|li|eu|pro|fun|win|bid|zip|mov|lol|wtf|ws|su|pw|cloud|page|store|tech|click";
 const RE_SCHEME = /\b(?:https?|ftp|wss?|file|data|javascript|vbscript|mailto|tel|sms|ssh|irc|magnet|steam|discord):[^\s]+/giu;
+const RE_ANY_SCHEME = /[a-z][a-z0-9+.-]*:\/\/[^\s]+/giu;
 const RE_WWW = /\bwww\d?\.[^\s]+/giu;
 const RE_EMAIL = /[^\s@<>()[\]]+@[^\s@<>()[\]]+\.[^\s@<>()[\]]+/gu;
 const RE_DOMAIN = new RegExp(`\\b(?:[a-z0-9-]{1,63}\\.)+(?:${TLD})\\b(?:[/:?#][^\\s]*)?`, "giu");
@@ -56,7 +57,7 @@ function stripMarkup(s) {
 }
 
 function stripAddresses(s) {
-  return s.replace(RE_DOT, ".").replace(RE_SCHEME, " ").replace(RE_EMAIL, " ").replace(RE_WWW, " ").replace(RE_DOMAIN, " ").replace(RE_IPV4, " ");
+  return s.replace(RE_SCHEME, " ").replace(RE_ANY_SCHEME, " ").replace(RE_EMAIL, " ").replace(RE_WWW, " ").replace(RE_DOMAIN, " ").replace(RE_IPV4, " ");
 }
 
 /** Au plus EMOJI_MAX emojis dans tout le texte ; les autres sont retirés. Les emojis liés (famille, drapeau) comptent pour un. */
@@ -81,11 +82,12 @@ export function clean(input, { maxRaw = RAW_MAX } = {}) {
   let s = cutChars(cutChars(raw, maxRaw).normalize("NFKC"), maxRaw * 2);
   const step = (name, fn) => { const next = fn(s); if (next !== s) changed.add(name); s = next; };
   step("invisible", stripInvisible);
+  step("address", (x) => x.replace(RE_DOT, "."));
   step("markup", stripMarkup);
   step("address", stripAddresses);
   step("mention", (x) => x.replace(RE_MENTION, " ").replace(/[@＠]/gu, " "));
   step("emoji", limitEmojis);
-  s = s.replace(/\u200D/gu, "");
+  s = s.replace(/(?<!\p{Extended_Pictographic}\uFE0F?)\u200D|\u200D(?!\p{Extended_Pictographic})/gu, "");
   step("repeat", squeeze);
   s = s.replace(/\s+/gu, " ").trim();
   return { text: s, changed: [...changed] };
@@ -210,7 +212,8 @@ export function moderate(input, options = {}) {
     const viewer = cleanName(options.viewer);
     if (!/[\p{L}\p{N}]/u.test(text)) return { ok: false, code: "empty", changed };
     if (len(text) > maxChars) return { ok: false, code: "too_long", changed };
-    if (options.blockNumbers !== false && hasNumber(text)) return { ok: false, code: "number", changed };
+    // Les numéros se cherchent AUSSI avant le retrait des adresses : « 06.12.34.56.78 » ressemble à une adresse réseau et ne doit pas s'y cacher.
+    if (options.blockNumbers !== false && (hasNumber(text) || hasNumber(stripInvisible(cutChars(String(input ?? ""), RAW_MAX).normalize("NFKC"))))) return { ok: false, code: "number", changed };
     const hit = matcher.find(text);
     if (hit) return { ok: false, code: "word", detail: hit.raw, changed };
     let who = viewer;
