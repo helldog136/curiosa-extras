@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.16.1
+
+*Correctif : Statut du live 1.4.1 se recharge correctement après la mise à jour. Pour Curiosa 0.2.6 ou plus.*
+
+### Améliorations
+
+- **Le statut du live se recharge correctement après la mise à jour.** Avec la 1.4.0, le module pouvait être signalé comme « non chargeable » juste après sa mise à jour, et la bannière et le lecteur disparaissaient. Il se charge maintenant normalement, sans rien réinstaller ni redémarrer. Les sites qui ne diffusent que sur Twitch ne voient aucune différence.
+
+### Pour les développeurs
+
+- **Statut du live 1.4.1 : cause.** `youtube.mjs` (nouveau en 1.4.0) faisait `import { askAll } from "./source.mjs"`. Le cœur importe `index.mjs?v=<commit>`, mais un import statique relatif n'a **pas** ce `?v=` : il vise `source.mjs` sans version. Or `adopt.mjs` de la 1.3.2 faisait déjà ce même import, si bien que, dans un site qui tournait avant la mise à jour, Node avait gardé en mémoire l'ANCIEN `source.mjs` (sans `askAll`, ajouté en 1.4.0). Après `modules_update_all` : `SyntaxError: The requested module './source.mjs' does not provide an export named 'askAll'` → `loadModule` renvoie `null` → `maintenance_modules` : `loadable: false`. Un processus neuf (CI, redémarrage) charge le bon fichier : c'est pourquoi les tests, le cœur jetable et « réinstaller » (identique à la source) n'ont rien vu.
+- **Correctif** : `youtube.mjs` et `adopt.mjs` importent `./source.mjs` comme `index.mjs` le fait pour ses voisins (`await import(new URL("./source.mjs" + new URL(import.meta.url).search, import.meta.url).href)`). Aucun autre changement de comportement.
+- **Test** `tests/live-status-update.test.mjs` (échoue avant, passe après) : charge l'ancienne 1.3.2 (`tests/fixtures/live-status-1.3.2/`) avec `?v=`, remplace les fichiers du dossier, charge la version courante dans le MÊME processus, puis vérifie qu'un direct YouTube est vu ; un second test interdit tout import relatif statique dans `modules/live-status`. Règle à retenir : dans un module, les fichiers voisins s'importent TOUJOURS avec la version de `index.mjs` ; un test de mise à jour doit charger l'ancienne version avant la nouvelle, dans un seul processus.
+
 ## 1.16.0
 
 *La maison réagit à votre live : des récompenses en points de chaîne Twitch et des soutiens YouTube qui allument vos lumières ou font lire un message chez vous, avec un gros bouton « Tout couper ». Et votre direct YouTube compte autant que votre direct Twitch : connexion de votre compte pour lire et répondre au chat, bannière « en direct » sur le site, alertes Super Chat à l'écran, annonce Discord (désactivée tant que vous ne la cochez pas). Nouveautés : Bot Twitch 1.3.0, Home Assistant, Actions du live YouTube 1.1.0, Connecteur YouTube 1.3.0, Statut du live 1.4.0, Overlay alertes 1.1.0 et Annonces Discord 1.1.0. Pour Curiosa 0.2.6 ou plus (0.2.5 pour le Bot Twitch seul, 0.2.2 pour la connexion du compte YouTube).*
