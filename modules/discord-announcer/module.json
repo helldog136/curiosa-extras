@@ -5,11 +5,11 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.0.5",
+  "version": "1.1.0",
   "platform": "discord",
   "description": {
-    "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link.",
-    "fr": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier."
+    "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link. Also tells your Discord when you go live on Twitch or on YouTube.",
+    "fr": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier. Prévient aussi votre Discord quand vous passez en direct sur Twitch ou sur YouTube."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -148,6 +148,62 @@
       }
     },
     {
+      "key": "youtubeLive",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Announce my YouTube lives too",
+        "fr": "Annoncer aussi mes directs YouTube"
+      },
+      "help": {
+        "en": "Needs the YouTube channel module. One message per live, never two for the same live.",
+        "fr": "Demande le module Chaîne YouTube. Un seul message par direct, jamais deux pour le même."
+      }
+    },
+    {
+      "key": "liveBoth",
+      "type": "select",
+      "default": "both",
+      "label": {
+        "en": "Live on Twitch and YouTube at once",
+        "fr": "En direct sur Twitch et YouTube en même temps"
+      },
+      "help": {
+        "en": "Either way, only one message is sent.",
+        "fr": "Dans les deux cas, un seul message part."
+      },
+      "options": [
+        {
+          "value": "both",
+          "label": {
+            "en": "One message that mentions both",
+            "fr": "Un message qui cite les deux"
+          }
+        },
+        {
+          "value": "first",
+          "label": {
+            "en": "One message, for the first platform seen",
+            "fr": "Un message, pour la première plateforme vue"
+          }
+        }
+      ]
+    },
+    {
+      "key": "liveText",
+      "type": "text",
+      "default": "",
+      "optional": true,
+      "label": {
+        "en": "Live announcement text (optional)",
+        "fr": "Texte de l'annonce de live (facultatif)"
+      },
+      "help": {
+        "en": "Leave empty for the standard sentence. You can use {platform} (Twitch, YouTube, or both), {title}, {game} and {url} (the link or links). Without {url}, the links are added at the end. For example: Come and watch {title} on {platform}!",
+        "fr": "Laissez vide pour la phrase habituelle. Vous pouvez utiliser {platform} (Twitch, YouTube ou les deux), {title}, {game} et {url} (le ou les liens). Sans {url}, les liens sont ajoutés à la fin. Par exemple : Venez voir {title} sur {platform} !"
+      }
+    },
+    {
       "key": "freshHours",
       "type": "number",
       "default": 24,
@@ -174,7 +230,31 @@
         "en": "A connection drop often restarts the stream: two lives closer than this count as the same one.",
         "fr": "Une coupure de connexion relance souvent le stream : deux lives plus proches que cela comptent pour le même."
       }
+    },
+    {
+      "key": "youtubeCheckMinutes",
+      "type": "number",
+      "default": 10,
+      "advanced": true,
+      "label": {
+        "en": "Minutes between two YouTube checks",
+        "fr": "Minutes entre deux vérifications YouTube"
+      },
+      "help": {
+        "en": "Each check uses 2 units of YouTube's daily limit (10,000): every 10 minutes is under 3 % of it. From 5 to 60.",
+        "fr": "Chaque vérification utilise 2 unités de la limite du jour de YouTube (10 000) : toutes les 10 minutes, c'est moins de 3 %. De 5 à 60."
+      }
     }
   ],
-  "minCore": "0.2.2"
+  "minCore": "0.2.2",
+  "requires": [
+    {
+      "service": "youtube.live",
+      "optional": true,
+      "label": {
+        "en": "Announce your YouTube lives (YouTube channel)",
+        "fr": "Annoncer vos directs YouTube (Chaîne YouTube)"
+      }
+    }
+  ]
 }
