@@ -2,7 +2,7 @@
 // réponses à « !stop » / « !start » seulement quand le Connecteur dit qu'il sait écrire (chat.write). Les VRAIS modules, un faux direct YouTube et un faux Google devant lui.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { world, E, S } from "./helpers/ytLiveWorld.mjs";
+import { world, E, S, def } from "./helpers/ytLiveWorld.mjs";
 import { connectorApi, connectorMessages } from "./helpers/fakeYoutube.mjs";
 import { fakeGoogle, CLIENT_ID, CLIENT_SECRET, SCOPE_READ, SCOPE_MANAGE, SECRET_RE } from "./helpers/fakeGoogleAuth.mjs";
 import { messages } from "./helpers/ytLiveWorld.mjs";
@@ -12,8 +12,8 @@ const flat = (v) => JSON.stringify(v);
 const cmd = (w, text, o) => w.yt.text({ text, at: Date.now(), ...o });
 
 /** Un site où YouTube refuse la clé seule pour le chat (l'hypothèse de la propriétaire), avec un faux Google devant le faux direct. */
-async function site({ chatReply = true, grant } = {}) {
-  const w = await world({ connectorSettings: { ...SETTINGS, ...(chatReply ? { chatReply: true } : {}) } });
+async function site({ chatReply = true, grant, extra = {} } = {}) {
+  const w = await world({ connectorSettings: { ...SETTINGS, ...(chatReply ? { chatReply: true } : {}) }, ...extra });
   const g = fakeGoogle();
   g.grant = grant ?? null;
   globalThis.fetch = g.in_front_of(w.yt.fetch);
@@ -140,4 +140,23 @@ test("textes : « Connectez votre compte YouTube » dans les deux langues, sans 
   assert.equal(messages.fr.err_chat_denied, messages.fr.st_connect);
   assert.ok(!/oauth|token|jeton|\bscope\b/i.test(flat([messages.fr.st_connect, messages.en.st_connect, messages.fr.connect_link, messages.en.connect_link])));
   assert.ok(connectorMessages("fr").btn_connect);
+});
+
+test("sans Home Assistant : la clé seule est tentée d'abord ; refusée, l'écran dit « Connectez votre compte » ; une fois connecté, le don va à l'overlay SEULEMENT (« alerte seulement »), rien n'est envoyé à la maison", async () => {
+  const EVT = await import("../modules/youtube-live-actions/events.mjs");
+  EVT.resetEvents();
+  const { w, g, connect } = await site({ chatReply: false, extra: { noBridge: true, settings: { readWithoutHouse: true } } });
+  const st0 = await w.read();                                 // sans compte : la lecture par la clé est tentée (et refusée ici)
+  assert.equal(w.yt.calls.chat.length, 1, "la lecture par clé a bien été tentée");
+  assert.equal(st0.error.code, "chat_denied");
+  assert.equal((await w.read(20_000)).status, "connect");
+  assert.equal((await connect()).connected, true);
+  w.yt.say(w.yt.superChat({ who: "Léa", micros: 5_000_000, currency: "EUR", at: Date.now() }));
+  assert.equal((await w.read()).status, "reading");
+  assert.match(g.calls.chatList.at(-1).headers.authorization, /^Bearer /);
+  const [line] = await w.journal();
+  assert.deepEqual([line.status, line.reason], ["skipped", "alert_only"]);
+  const list = await def.exports["live.event"](w.ctx, {});
+  assert.equal(list.length, 1); assert.equal(list[0].who, "Léa");
+  w.done();
 });
