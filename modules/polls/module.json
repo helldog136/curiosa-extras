@@ -1,0 +1,527 @@
+{
+  "apiVersion": 2,
+  "id": "polls",
+  "name": {
+    "en": "Polls",
+    "fr": "Sondages"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS).",
+    "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS)."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "📊",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "polls",
+  "privacy": {
+    "en": "No account needed. Your browser keeps a random private code (local storage, not a cookie) so you cannot vote twice; the site keeps only a scrambled version, different for each poll, and your ticked choices. Your IP address is never saved: it only serves, scrambled with a daily salt never written to disk, to slow down abuse. Votes carry no name; scrambled codes are erased 30 days after a poll ends. Clearing browser data removes your code. To remove a poll, write to the site's contact.",
+    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) pour qu'on ne vote pas deux fois ; le site n'en garde qu'une version brouillée, propre à chaque sondage, et vos choix. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert seulement à freiner les abus. Aucun nom n'est gardé ; les codes brouillés sont effacés 30 jours après la fin du sondage. Pour retirer un sondage, écrivez au contact du site."
+  },
+  "permissions": [
+    "slots",
+    "sections",
+    "pages",
+    "routes",
+    "storage",
+    "overlay",
+    "admin",
+    "mcp"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mes sondages",
+        "en": "My polls"
+      }
+    },
+    {
+      "id": "screen",
+      "label": {
+        "fr": "À l'écran",
+        "en": "On screen"
+      },
+      "panel": true
+    }
+  ],
+  "sections": [
+    {
+      "id": "current",
+      "label": {
+        "fr": "Le sondage en cours",
+        "en": "The current poll"
+      },
+      "size": "medium"
+    }
+  ],
+  "rights": [
+    {
+      "id": "manage",
+      "label": {
+        "fr": "créer, modifier, fermer et supprimer des sondages",
+        "en": "create, edit, close and delete polls"
+      },
+      "help": {
+        "fr": "Permet aussi de choisir le sondage affiché à l'écran et de télécharger les résultats.",
+        "en": "Also lets the person pick the poll shown on screen and download the results."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "obs.view",
+      "label": {
+        "fr": "voir et changer l'adresse secrète de la source OBS",
+        "en": "see and change the secret address of the OBS source"
+      },
+      "help": {
+        "fr": "Cette adresse donne accès aux résultats en direct, même cachés au public.",
+        "en": "This address gives access to the live results, even those hidden from the public."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Texte d'introduction de la page (Markdown)",
+        "en": "Intro text of the page (Markdown)"
+      },
+      "help": {
+        "fr": "Affiché au-dessus de la liste des sondages. Laissez vide pour ne rien afficher.",
+        "en": "Shown above the list of polls. Leave empty to show nothing."
+      }
+    },
+    {
+      "key": "timezone",
+      "type": "select",
+      "default": "Europe/Paris",
+      "label": {
+        "fr": "Votre fuseau horaire",
+        "en": "Your time zone"
+      },
+      "help": {
+        "fr": "Les dates de fin que vous écrivez sont lues dans ce fuseau, et l'heure est toujours écrite avec son fuseau pour vos visiteurs.",
+        "en": "End dates you write are read in this time zone, and visitors always see the time written with its zone."
+      },
+      "options": [
+        {
+          "value": "Europe/Paris",
+          "label": {
+            "fr": "Paris, Bruxelles, Genève, Berlin, Madrid",
+            "en": "Paris, Brussels, Geneva, Berlin, Madrid"
+          }
+        },
+        {
+          "value": "Europe/London",
+          "label": {
+            "fr": "Londres, Dublin",
+            "en": "London, Dublin"
+          }
+        },
+        {
+          "value": "Europe/Lisbon",
+          "label": {
+            "fr": "Lisbonne",
+            "en": "Lisbon"
+          }
+        },
+        {
+          "value": "Europe/Athens",
+          "label": {
+            "fr": "Athènes, Helsinki, Bucarest",
+            "en": "Athens, Helsinki, Bucharest"
+          }
+        },
+        {
+          "value": "Europe/Moscow",
+          "label": {
+            "fr": "Moscou, Istanbul",
+            "en": "Moscow, Istanbul"
+          }
+        },
+        {
+          "value": "Africa/Casablanca",
+          "label": {
+            "fr": "Casablanca",
+            "en": "Casablanca"
+          }
+        },
+        {
+          "value": "Africa/Dakar",
+          "label": {
+            "fr": "Dakar, Abidjan",
+            "en": "Dakar, Abidjan"
+          }
+        },
+        {
+          "value": "Africa/Algiers",
+          "label": {
+            "fr": "Alger, Tunis",
+            "en": "Algiers, Tunis"
+          }
+        },
+        {
+          "value": "Indian/Reunion",
+          "label": {
+            "fr": "La Réunion, Maurice",
+            "en": "Réunion, Mauritius"
+          }
+        },
+        {
+          "value": "Asia/Dubai",
+          "label": {
+            "fr": "Dubaï",
+            "en": "Dubai"
+          }
+        },
+        {
+          "value": "Asia/Kolkata",
+          "label": {
+            "fr": "Inde",
+            "en": "India"
+          }
+        },
+        {
+          "value": "Asia/Bangkok",
+          "label": {
+            "fr": "Bangkok, Hanoï",
+            "en": "Bangkok, Hanoi"
+          }
+        },
+        {
+          "value": "Asia/Shanghai",
+          "label": {
+            "fr": "Pékin, Singapour",
+            "en": "Beijing, Singapore"
+          }
+        },
+        {
+          "value": "Asia/Tokyo",
+          "label": {
+            "fr": "Tokyo, Séoul",
+            "en": "Tokyo, Seoul"
+          }
+        },
+        {
+          "value": "Australia/Sydney",
+          "label": {
+            "fr": "Sydney, Melbourne",
+            "en": "Sydney, Melbourne"
+          }
+        },
+        {
+          "value": "Pacific/Noumea",
+          "label": {
+            "fr": "Nouméa",
+            "en": "Nouméa"
+          }
+        },
+        {
+          "value": "Pacific/Auckland",
+          "label": {
+            "fr": "Auckland",
+            "en": "Auckland"
+          }
+        },
+        {
+          "value": "America/Montreal",
+          "label": {
+            "fr": "Montréal, New York",
+            "en": "Montréal, New York"
+          }
+        },
+        {
+          "value": "America/Chicago",
+          "label": {
+            "fr": "Chicago, Mexico",
+            "en": "Chicago, Mexico City"
+          }
+        },
+        {
+          "value": "America/Denver",
+          "label": {
+            "fr": "Denver",
+            "en": "Denver"
+          }
+        },
+        {
+          "value": "America/Los_Angeles",
+          "label": {
+            "fr": "Los Angeles, Vancouver",
+            "en": "Los Angeles, Vancouver"
+          }
+        },
+        {
+          "value": "America/Sao_Paulo",
+          "label": {
+            "fr": "São Paulo",
+            "en": "São Paulo"
+          }
+        },
+        {
+          "value": "UTC",
+          "label": {
+            "fr": "Temps universel (UTC)",
+            "en": "Universal time (UTC)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "resultsDefault",
+      "type": "select",
+      "default": "always",
+      "label": {
+        "fr": "Résultats pour les nouveaux sondages",
+        "en": "Results for new polls"
+      },
+      "help": {
+        "fr": "Vous pouvez toujours changer ce choix sondage par sondage.",
+        "en": "You can still change it poll by poll."
+      },
+      "options": [
+        {
+          "value": "always",
+          "label": {
+            "fr": "Visibles tout de suite",
+            "en": "Visible right away"
+          }
+        },
+        {
+          "value": "after",
+          "label": {
+            "fr": "Visibles après le vote",
+            "en": "Visible after voting"
+          }
+        }
+      ]
+    },
+    {
+      "key": "retentionDays",
+      "type": "number",
+      "default": 30,
+      "advanced": true,
+      "label": {
+        "fr": "Jours de conservation des bulletins après la fin",
+        "en": "Days to keep ballots after the end"
+      },
+      "help": {
+        "fr": "De 1 à 90. Ensuite, seuls les totaux restent.",
+        "en": "From 1 to 90. After that only the totals remain."
+      }
+    },
+    {
+      "key": "ratePerHour",
+      "type": "number",
+      "default": 30,
+      "advanced": true,
+      "label": {
+        "fr": "Votes par heure et par connexion",
+        "en": "Votes per hour and connection"
+      },
+      "help": {
+        "fr": "De 3 à 300. Une classe ou un salon partageant la même connexion en a parfois besoin de plus.",
+        "en": "From 3 to 300. A class or an event sharing one connection may need more."
+      }
+    },
+    {
+      "key": "obsRefreshSeconds",
+      "type": "number",
+      "default": 5,
+      "advanced": true,
+      "label": {
+        "fr": "Secondes entre deux mises à jour à l'écran",
+        "en": "Seconds between two on-screen updates"
+      },
+      "help": {
+        "fr": "De 3 à 30. L'écran ralentit tout seul quand rien ne change.",
+        "en": "From 3 to 30. The screen slows down by itself when nothing changes."
+      }
+    },
+    {
+      "key": "obsPosition",
+      "type": "select",
+      "group": "appearance",
+      "default": "left",
+      "label": {
+        "fr": "Place à l'écran",
+        "en": "Position on screen"
+      },
+      "options": [
+        {
+          "value": "left",
+          "label": {
+            "fr": "En bas à gauche",
+            "en": "Bottom left"
+          }
+        },
+        {
+          "value": "center",
+          "label": {
+            "fr": "En bas au centre",
+            "en": "Bottom centre"
+          }
+        },
+        {
+          "value": "right",
+          "label": {
+            "fr": "En bas à droite",
+            "en": "Bottom right"
+          }
+        }
+      ]
+    },
+    {
+      "key": "obsAccent",
+      "type": "color",
+      "group": "appearance",
+      "default": "theme:accent",
+      "label": {
+        "fr": "Couleur des barres à l'écran",
+        "en": "Bar colour on screen"
+      }
+    },
+    {
+      "key": "obsText",
+      "type": "color",
+      "group": "appearance",
+      "default": "theme:fg",
+      "label": {
+        "fr": "Couleur du texte à l'écran",
+        "en": "Text colour on screen"
+      }
+    },
+    {
+      "key": "obsCard",
+      "type": "color",
+      "group": "appearance",
+      "default": "theme:surface",
+      "label": {
+        "fr": "Couleur du fond à l'écran",
+        "en": "Background colour on screen"
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "polls_list",
+      "readOnly": true,
+      "description": "List the polls kept on the site, newest first, with their state (open or closed), number of voters and public link.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "description": "Only open or only closed polls."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many at most (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "poll_results",
+      "readOnly": true,
+      "description": "Read the current results of one poll: votes and percentage for each choice. Percentages are shares of voters (they can add up to more than 100 when several choices are allowed).",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Poll id (from polls_list) or its address name."
+          }
+        }
+      }
+    },
+    {
+      "name": "poll_create",
+      "description": "Create and open a new poll (2 to 8 different choices). Visitors can vote right away at the returned link.",
+      "input": {
+        "type": "object",
+        "required": [
+          "question",
+          "choices"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 140,
+            "description": "The question."
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "2 to 8 different choices, 60 characters each at most."
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "How many choices one person may tick (1 = single choice, default)."
+          },
+          "resultsMode": {
+            "type": "string",
+            "enum": [
+              "always",
+              "after"
+            ],
+            "description": "always = results visible right away; after = visible only after voting."
+          },
+          "endsAt": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Optional end, ISO 8601 with offset, e.g. 2026-11-03T20:00:00+01:00. Must be in the future, within a year."
+          }
+        }
+      }
+    },
+    {
+      "name": "poll_close",
+      "description": "Close an open poll now. Nobody can vote any more and the final result is shown.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Poll id (from polls_list)."
+          }
+        }
+      }
+    }
+  ]
+}

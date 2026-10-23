@@ -1,0 +1,324 @@
+{
+  "apiVersion": 2,
+  "id": "legal-pages",
+  "name": {
+    "en": "Legal pages",
+    "fr": "Mentions légales"
+  },
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "description": {
+    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English, for Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice.",
+    "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais, pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "⚖️",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "legal",
+  "permissions": [
+    "slots",
+    "pages",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "minCore": "0.2.5",
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mes pages légales",
+        "en": "My legal pages"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "footerLinks",
+      "type": "select",
+      "default": "one",
+      "label": {
+        "fr": "Liens en bas de chaque page",
+        "en": "Links at the bottom of every page"
+      },
+      "help": {
+        "fr": "Quand vos pages sont publiées, le site peut afficher un lien discret en bas de chaque page.",
+        "en": "Once your pages are published, the site can show a discreet link at the bottom of every page."
+      },
+      "options": [
+        {
+          "value": "one",
+          "label": {
+            "fr": "Un seul lien : « Mentions légales »",
+            "en": "One link: “Legal notice”"
+          }
+        },
+        {
+          "value": "all",
+          "label": {
+            "fr": "Trois liens : mentions légales, confidentialité, cookies",
+            "en": "Three links: legal notice, privacy, cookies"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Aucun (je place les liens moi-même)",
+            "en": "None (I place the links myself)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "reviewMonths",
+      "type": "number",
+      "default": 12,
+      "advanced": true,
+      "label": {
+        "fr": "Me rappeler de relire mes textes après (mois)",
+        "en": "Remind me to review my texts after (months)"
+      },
+      "help": {
+        "fr": "Les règles et votre site évoluent : une relecture de temps en temps évite les mauvaises surprises.",
+        "en": "Rules and your site change: a review from time to time avoids surprises."
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "publish",
+      "label": {
+        "fr": "publier ou retirer les mentions légales",
+        "en": "publish or withdraw the legal pages"
+      },
+      "help": {
+        "fr": "Ces textes engagent le site : seules les personnes de confiance devraient pouvoir les mettre en ligne.",
+        "en": "These texts commit the site: only trusted people should be able to put them online."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "legal_status",
+      "readOnly": true,
+      "description": "Where the site's legal pages stand: published or not, what is still missing or needs the owner's confirmation, reminders (new extensions, old texts), and which installed extensions collect visitor information. Start here. These texts are help templates, not legal advice.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "legal_preview",
+      "readOnly": true,
+      "description": "Read the draft text of one legal page (notice, privacy or cookies) in French or English, built from the owner's current answers. A line starting with ⚠ marks an answer that is still missing. Nothing is published.",
+      "input": {
+        "type": "object",
+        "required": [
+          "page"
+        ],
+        "properties": {
+          "page": {
+            "type": "string",
+            "enum": [
+              "notice",
+              "privacy",
+              "cookies"
+            ],
+            "description": "Which page."
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "description": "Language (default fr)."
+          }
+        }
+      }
+    },
+    {
+      "name": "legal_set_answers",
+      "default": false,
+      "description": "Record answers in the draft, for example when the owner dictates them (address, host, what the site collects...). Only the fields you give are changed; each is checked for shape. It never publishes and never marks a step as confirmed: the owner still opens each step to confirm, then publishes. Never invent a value: leave a field out if you do not know it.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "enum": [
+              "BE",
+              "FR",
+              "CH",
+              "CA_QC",
+              "CA",
+              "OTHER"
+            ],
+            "description": "Country of the editor: BE, FR, CH, CA_QC (Canada, Quebec), CA (Canada, elsewhere) or OTHER."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "person",
+              "self",
+              "association",
+              "company"
+            ],
+            "description": "Who publishes the site: person (private individual), self (self-employed), association, company."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Name of the person, association or company that publishes the site (a pseudonym is allowed for a private individual in France)."
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Public contact e-mail address."
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Postal address shown in the legal notice."
+          },
+          "hideAddress": {
+            "type": "boolean",
+            "description": "France, private individual only: do not publish the address (the identity was given to the host)."
+          },
+          "hostAck": {
+            "type": "boolean",
+            "description": "France: the owner confirms the identity was given to the host (needed when hideAddress is true)."
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 30,
+            "description": "Public phone number (required in France when the identity is published)."
+          },
+          "legalForm": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Legal form, e.g. SRL, SAS, ASBL."
+          },
+          "regNumber": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Company registration number (BCE, SIRET/RCS, IDE, NEQ...)."
+          },
+          "vat": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "VAT or tax number (optional)."
+          },
+          "capital": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "France, company only: share capital."
+          },
+          "director": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "France: name of the publication director."
+          },
+          "hostName": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Name of the company that hosts the site."
+          },
+          "hostAddress": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Postal address of the host."
+          },
+          "hostPhone": {
+            "type": "string",
+            "maxLength": 30,
+            "description": "Phone number of the host."
+          },
+          "hostCountry": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Country where the host's servers are (optional)."
+          },
+          "collect_messages": {
+            "type": "boolean",
+            "description": "The site receives private messages (name, e-mail, message)."
+          },
+          "collect_publicPosts": {
+            "type": "boolean",
+            "description": "Visitors can post something shown publicly (nickname, text)."
+          },
+          "collect_memory": {
+            "type": "boolean",
+            "description": "A small cookie remembers a visitor's choice (for example a vote)."
+          },
+          "collect_chat": {
+            "type": "boolean",
+            "description": "A chat bot keeps nicknames and commands in a short log."
+          },
+          "collect_list": {
+            "type": "boolean",
+            "description": "An e-mail list (newsletter) is managed outside the site."
+          },
+          "collect_thirdParty": {
+            "type": "boolean",
+            "description": "Content from another service is embedded (video player...)."
+          },
+          "thirdPartyNames": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Names of the embedded services (required when collect_thirdParty is true)."
+          },
+          "listTool": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Name of the tool that manages the e-mail list (optional)."
+          },
+          "unknownExt": {
+            "type": "string",
+            "enum": [
+              "none",
+              "some"
+            ],
+            "description": "Extensions unknown to this tool: none (they collect nothing) or some (they collect something, describe it in otherCollect)."
+          },
+          "otherCollect": {
+            "type": "string",
+            "maxLength": 600,
+            "description": "Other information or cookies collected (required when unknownExt is some)."
+          },
+          "retention": {
+            "type": "string",
+            "enum": [
+              "m6",
+              "y1",
+              "y3"
+            ],
+            "description": "How long private messages are kept after the last exchange: m6 (6 months), y1 (1 year), y3 (3 years)."
+          },
+          "sells": {
+            "type": "string",
+            "enum": [
+              "no",
+              "here",
+              "elsewhere"
+            ],
+            "description": "no, here (sells on this site) or elsewhere (sells on another service)."
+          },
+          "sellsWhere": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Where the sales happen (required when sells is elsewhere)."
+          }
+        }
+      }
+    }
+  ]
+}

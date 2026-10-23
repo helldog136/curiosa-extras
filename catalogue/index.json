@@ -122,6 +122,34 @@
       "icon": "🗂️"
     },
     {
+      "id": "commissions",
+      "name": "Commandes",
+      "description": "Une file de commandes claire pour les créatrices : ouvert, complet ou fermé avec les places libres, vos formules avec leurs prix indicatifs, un formulaire court, un lien de suivi privé pour chaque cliente et une liste de demandes simple pour vous. Aucun paiement.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/commissions",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "🎨",
+      "requires": {
+        "core": "0.2.5"
+      },
+      "offers": [
+        {
+          "service": "privacy.subject",
+          "each": true
+        }
+      ],
+      "needs": [
+        {
+          "service": "contact.book",
+          "min": 2,
+          "optional": true
+        }
+      ]
+    },
+    {
       "id": "community-stats",
       "name": "Statistiques de la communauté",
       "description": "Garde les chiffres de vos réseaux (abonnés, abonnés payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
@@ -193,6 +221,36 @@
       ]
     },
     {
+      "id": "content-planner",
+      "name": "Cahier de contenu",
+      "description": "Votre cahier privé pour vos vidéos, articles et posts : idées, en préparation et publié, avec des étapes à cocher et une date visée. Rien n'est jamais montré sur votre site.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/content-planner",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "📓",
+      "requires": {
+        "core": "0.2.5"
+      }
+    },
+    {
+      "id": "countdown",
+      "name": "Compte à rebours",
+      "description": "Annoncez une sortie, un lancement, un anniversaire ou une convention : vos visiteurs voient le temps qui reste et l'heure chez eux, et peuvent l'ajouter à leur agenda. Une page, un morceau d'accueil et une source pour OBS.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/countdown",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "⏳",
+      "requires": {
+        "core": "0.2.5"
+      }
+    },
+    {
       "id": "discord",
       "name": "Discord",
       "description": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs.",
@@ -243,6 +301,21 @@
       "provides": [
         "social.link"
       ]
+    },
+    {
+      "id": "faq",
+      "name": "Questions fréquentes",
+      "description": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a aidé » et une boîte pour les questions des visiteurs.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/faq",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "❓",
+      "requires": {
+        "core": "0.2.5"
+      }
     },
     {
       "id": "game-suggestions",
@@ -338,6 +411,21 @@
       "provides": [
         "social.link"
       ]
+    },
+    {
+      "id": "legal-pages",
+      "name": "Mentions légales",
+      "description": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais, pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/legal-pages",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "⚖️",
+      "requires": {
+        "core": "0.2.5"
+      }
     },
     {
       "id": "links",
@@ -487,6 +575,21 @@
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
+      "requires": {
+        "core": "0.2.5"
+      }
+    },
+    {
+      "id": "polls",
+      "name": "Sondages",
+      "description": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS).",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/polls",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "📊",
       "requires": {
         "core": "0.2.5"
       }
@@ -657,6 +760,51 @@
       "icon": "✈️",
       "provides": [
         "social.link"
+      ]
+    },
+    {
+      "id": "testimonials",
+      "name": "Témoignages",
+      "description": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/testimonials",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "💬",
+      "provides": [
+        "overlay.item"
+      ],
+      "requires": {
+        "core": "0.2.5"
+      }
+    },
+    {
+      "id": "thanks-wall",
+      "name": "Mur des remerciements",
+      "description": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-testeurs…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/thanks-wall",
+      "ref": "v1.13.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "💛",
+      "requires": {
+        "core": "0.2.5"
+      },
+      "offers": [
+        {
+          "service": "privacy.subject",
+          "each": true
+        }
+      ],
+      "needs": [
+        {
+          "service": "contact.book",
+          "min": 2
+        }
       ]
     },
     {

@@ -1,0 +1,575 @@
+{
+  "apiVersion": 2,
+  "id": "testimonials",
+  "name": {
+    "fr": "Témoignages",
+    "en": "Testimonials"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
+    "en": "Collect reviews: a shareable “Leave a review” link, every review waits for your approval before it appears, with optional stars, a grid or slow scrolling, favourites and three reviews on the home page."
+  },
+  "author": "Helldog136",
+  "privacy": {
+    "fr": "Si vous laissez un avis, votre prénom ou pseudo, votre note, votre texte et votre accord de publication (avec sa date) sont enregistrés. L'avis est lu avant d'être publié, puis visible par tous. Votre e-mail, si vous en donnez un, reste privé et s'efface tout seul. Un lien privé vous permet de retirer votre avis à tout moment. Aucun cookie, adresse IP non gardée.",
+    "en": "If you leave a review, your first name or nickname, rating, text and permission to publish (with its date) are saved. The review is read before it is published, then visible to everyone. Your e-mail, if you give one, stays private and erases itself. A private link lets you withdraw your review at any time. No cookie, IP address not kept."
+  },
+  "license": "MIT",
+  "icon": "💬",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "avis",
+  "permissions": [
+    "pages",
+    "routes",
+    "storage",
+    "sections",
+    "admin",
+    "mcp",
+    "topics",
+    "mail"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Avis",
+        "en": "Reviews"
+      }
+    },
+    {
+      "id": "share",
+      "label": {
+        "fr": "Partager",
+        "en": "Share"
+      },
+      "panel": true
+    }
+  ],
+  "settings": [
+    {
+      "key": "title",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Titre de la page",
+        "en": "Page title"
+      },
+      "help": {
+        "fr": "Un titre par langue. Vide : « Avis ».",
+        "en": "One title per language. Empty: “Reviews”."
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Petit texte d'accueil (facultatif)",
+        "en": "Short welcome text (optional)"
+      },
+      "help": {
+        "fr": "Montré au-dessus des avis, sur la page des avis.",
+        "en": "Shown above the reviews, on the reviews page."
+      }
+    },
+    {
+      "key": "display",
+      "type": "select",
+      "default": "grid",
+      "label": {
+        "fr": "Présentation des avis",
+        "en": "How reviews are shown"
+      },
+      "help": {
+        "fr": "Le défilement lent s'arrête avec un bouton pause, et n'existe pas pour les personnes qui préfèrent moins de mouvement.",
+        "en": "Slow scrolling stops with a pause button, and does not move for people who prefer less motion."
+      },
+      "options": [
+        {
+          "value": "grid",
+          "label": {
+            "fr": "En grille",
+            "en": "In a grid"
+          }
+        },
+        {
+          "value": "slow",
+          "label": {
+            "fr": "Défilement lent",
+            "en": "Slow scrolling"
+          }
+        }
+      ]
+    },
+    {
+      "key": "order",
+      "type": "select",
+      "default": "favorites",
+      "label": {
+        "fr": "Ordre des avis",
+        "en": "Order of the reviews"
+      },
+      "help": {
+        "fr": "« À la main » suit le numéro de place que vous donnez à chaque avis, en le modifiant.",
+        "en": "“By hand” follows the place number you give to each review when you edit it."
+      },
+      "options": [
+        {
+          "value": "favorites",
+          "label": {
+            "fr": "Favoris d'abord, puis les plus récents",
+            "en": "Favourites first, then the newest"
+          }
+        },
+        {
+          "value": "newest",
+          "label": {
+            "fr": "Les plus récents d'abord",
+            "en": "Newest first"
+          }
+        },
+        {
+          "value": "best",
+          "label": {
+            "fr": "Les mieux notés d'abord",
+            "en": "Best rated first"
+          }
+        },
+        {
+          "value": "manual",
+          "label": {
+            "fr": "À la main",
+            "en": "By hand"
+          }
+        }
+      ]
+    },
+    {
+      "key": "ratingMode",
+      "type": "select",
+      "default": "optional",
+      "label": {
+        "fr": "Étoiles",
+        "en": "Stars"
+      },
+      "help": {
+        "fr": "Les étoiles sont une aide : sans elles, l'avis reste valable.",
+        "en": "Stars are a help: without them, the review is still valid."
+      },
+      "options": [
+        {
+          "value": "optional",
+          "label": {
+            "fr": "Facultatives",
+            "en": "Optional"
+          }
+        },
+        {
+          "value": "required",
+          "label": {
+            "fr": "Obligatoires",
+            "en": "Required"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Pas d'étoiles",
+            "en": "No stars"
+          }
+        }
+      ]
+    },
+    {
+      "key": "showAverage",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Montrer la note moyenne",
+        "en": "Show the average rating"
+      },
+      "help": {
+        "fr": "Elle compte tous les avis publiés qui ont une note, et n'apparaît qu'à partir de 3 notes.",
+        "en": "It counts every published review that has a rating, and only appears from 3 ratings."
+      }
+    },
+    {
+      "key": "askEmail",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "fr": "Demander l'adresse e-mail",
+        "en": "Ask for the e-mail address"
+      },
+      "help": {
+        "fr": "La personne peut ne pas la donner. Elle reste privée, n'est jamais publiée et s'efface toute seule. Utile pour répondre.",
+        "en": "The person may leave it empty. It stays private, is never published, and erases itself. Useful to reply."
+      }
+    },
+    {
+      "key": "notify",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Me prévenir par e-mail à chaque nouvel avis",
+        "en": "E-mail me for each new review"
+      },
+      "help": {
+        "fr": "Envoyé à l'adresse de contact du site. Demande le serveur d'e-mail réglé dans les Réglages ; les avis arrivent de toute façon ici.",
+        "en": "Sent to the site's contact address. Needs the e-mail server set in Settings; the reviews arrive here anyway."
+      }
+    },
+    {
+      "key": "perPage",
+      "type": "number",
+      "default": 12,
+      "advanced": true,
+      "label": {
+        "fr": "Avis par page",
+        "en": "Reviews per page"
+      }
+    },
+    {
+      "key": "maxLength",
+      "type": "number",
+      "default": 600,
+      "advanced": true,
+      "label": {
+        "fr": "Longueur maximale d'un avis (caractères)",
+        "en": "Maximum length of a review (characters)"
+      }
+    },
+    {
+      "key": "rateLimit",
+      "type": "number",
+      "default": 3,
+      "advanced": true,
+      "label": {
+        "fr": "Avis par heure et par visiteur",
+        "en": "Reviews per hour and visitor"
+      }
+    },
+    {
+      "key": "emailDays",
+      "type": "number",
+      "default": 90,
+      "advanced": true,
+      "label": {
+        "fr": "Jours de conservation de l'e-mail",
+        "en": "Days the e-mail is kept"
+      },
+      "help": {
+        "fr": "Passé ce délai, l'adresse est effacée toute seule (l'avis reste).",
+        "en": "After that, the address is erased by itself (the review stays)."
+      }
+    },
+    {
+      "key": "structuredData",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "fr": "Aider les moteurs de recherche à lire la note moyenne",
+        "en": "Help search engines read the average rating"
+      },
+      "help": {
+        "fr": "À activer seulement si les avis parlent d'un produit, d'un service ou d'un cours précis (pas de vous-même ni de votre site) : les moteurs n'affichent pas d'étoiles pour des avis sur soi-même. Il faut au moins 5 notes réelles, et tous les avis publiés comptent.",
+        "en": "Turn on only if the reviews are about a specific product, service or course (not about yourself or your site): search engines do not show stars for reviews about oneself. At least 5 real ratings are needed, and every published review counts."
+      }
+    },
+    {
+      "key": "aboutName",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "advanced": true,
+      "label": {
+        "fr": "Ce que les avis décrivent (nom)",
+        "en": "What the reviews are about (name)"
+      },
+      "help": {
+        "fr": "Exemple : Cours de dessin en ligne. Sans nom, rien n'est ajouté.",
+        "en": "Example: Online drawing course. Without a name, nothing is added."
+      }
+    },
+    {
+      "key": "aboutType",
+      "type": "select",
+      "default": "Service",
+      "advanced": true,
+      "label": {
+        "fr": "Ce que les avis décrivent (sorte)",
+        "en": "What the reviews are about (kind)"
+      },
+      "options": [
+        {
+          "value": "Service",
+          "label": {
+            "fr": "Un service",
+            "en": "A service"
+          }
+        },
+        {
+          "value": "Product",
+          "label": {
+            "fr": "Un produit",
+            "en": "A product"
+          }
+        },
+        {
+          "value": "Course",
+          "label": {
+            "fr": "Un cours",
+            "en": "A course"
+          }
+        },
+        {
+          "value": "SoftwareApplication",
+          "label": {
+            "fr": "Une application",
+            "en": "An app"
+          }
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "featured",
+      "size": "large",
+      "label": {
+        "fr": "Avis à la une",
+        "en": "Featured reviews"
+      },
+      "options": [
+        {
+          "key": "count",
+          "type": "number",
+          "default": 3,
+          "label": {
+            "fr": "Combien d'avis",
+            "en": "How many reviews"
+          }
+        },
+        {
+          "key": "layout",
+          "type": "select",
+          "default": "grid",
+          "label": {
+            "fr": "Présentation",
+            "en": "Layout"
+          },
+          "options": [
+            {
+              "value": "grid",
+              "label": {
+                "fr": "En grille",
+                "en": "In a grid"
+              }
+            },
+            {
+              "value": "slow",
+              "label": {
+                "fr": "Défilement lent",
+                "en": "Slow scrolling"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rating",
+      "size": "small",
+      "label": {
+        "fr": "Note moyenne",
+        "en": "Average rating"
+      }
+    },
+    {
+      "id": "invite",
+      "size": "small",
+      "label": {
+        "fr": "Invitation à laisser un avis",
+        "en": "Invitation to leave a review"
+      }
+    }
+  ],
+  "provides": [
+    {
+      "topic": "overlay.item",
+      "label": {
+        "fr": "Avis en favori (pour une source de stream)",
+        "en": "Favourite reviews (for a stream source)"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "reviews.moderate",
+      "label": {
+        "fr": "valider, refuser, modifier et mettre en avant les avis",
+        "en": "approve, refuse, edit and favourite reviews"
+      },
+      "help": {
+        "fr": "Sans ce droit, la personne lit les avis mais ne peut rien décider.",
+        "en": "Without it, the person reads the reviews but cannot decide anything."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "reviews.delete",
+      "label": {
+        "fr": "supprimer des avis",
+        "en": "delete reviews"
+      },
+      "help": {
+        "fr": "La suppression est définitive.",
+        "en": "Deleting is permanent."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "email.view",
+      "label": {
+        "fr": "voir les adresses e-mail des auteurs",
+        "en": "see authors' e-mail addresses"
+      },
+      "help": {
+        "fr": "Sans ce droit, la personne ne voit jamais une adresse e-mail.",
+        "en": "Without it, the person never sees an e-mail address."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "reviews.export",
+      "label": {
+        "fr": "télécharger la liste des avis",
+        "en": "download the list of reviews"
+      },
+      "help": {
+        "fr": "Le fichier contient les prénoms, les textes et les preuves d'accord.",
+        "en": "The file holds first names, texts and proofs of permission."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "testimonials_list",
+      "readOnly": true,
+      "description": "List the reviews left by visitors, newest first, 20 per page. Optional filters: status (pending, approved, rejected or all) and rating (1 to 5). Never returns e-mail addresses. Pass the returned next value as cursor to read the following page.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "all"
+            ],
+            "description": "Which reviews (default: all)."
+          },
+          "stars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Only this rating."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many at most (default 20)."
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "The next value of the previous answer."
+          }
+        }
+      }
+    },
+    {
+      "name": "testimonials_summary",
+      "readOnly": true,
+      "description": "Counts of reviews waiting, published and refused, with the average rating and how many reviews got each rating. Only published reviews count in the average.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "testimonials_decide",
+      "description": "Decide about one review: approve (publish it, only possible if its author gave permission), reject, pending (take it off the site and put it back to be checked), feature or unfeature (favourite shown first). Never approve a review just because it is positive, and never reject one just because it is critical.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "action"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Review identifier (from testimonials_list)."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject",
+              "pending",
+              "feature",
+              "unfeature"
+            ],
+            "description": "What to do: approve (publish), reject, pending (take off the site), feature or unfeature (favourite)."
+          }
+        }
+      }
+    },
+    {
+      "name": "testimonials_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Permanently delete one review and everything kept with it (text, rating, e-mail address, permission record). This cannot be undone. Use it when its author asks for it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Review identifier (from testimonials_list)."
+          }
+        }
+      }
+    }
+  ]
+}
