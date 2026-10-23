@@ -12,7 +12,7 @@ const webhook = await import(`./webhook.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
 const entry = await import(`./entry.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
-const { ensureListening, diagnose, twitch } = await import(`./listen.mjs${v}`);
+const { ensureListening, ensureRedeemListening, diagnose, twitch } = await import(`./listen.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { tidy } = await import(`./commands.mjs${v}`);
 const es = await import(`./eventsub.mjs${v}`);
@@ -28,7 +28,7 @@ export default {
 
   tasks: {
     // Twitch coupe un abonnement dont le site n'a pas répondu assez de fois : on vérifie qu'il existe et fonctionne, et on le recrée sinon.
-    listen: { everyMinutes: 10, run: async (ctx) => { await ensureListening(ctx, settingsOf(ctx)); } },
+    listen: { everyMinutes: 10, run: async (ctx) => { await ensureListening(ctx, settingsOf(ctx)); await ensureRedeemListening(ctx, settingsOf(ctx)).catch(() => {}); } },
     // Une fiche de partenaire supprimée, un réseau retiré : la commande est en pause, puis disparaît après deux semaines.
     tidy: {
       everyMinutes: 60,
@@ -63,6 +63,8 @@ export default {
           const list = await twitch(ctx, d.main.channel, es.listRequest());
           const ours = list.ok ? (list.json?.data ?? []).filter((x) => x.transport?.callback === callback) : [];
           for (const x of ours) await twitch(ctx, d.main.channel, es.deleteRequest(x.id));
+          const more = await twitch(ctx, d.main.channel, es.redeemListRequest());   // l'abonnement aux échanges de points aussi
+          for (const x of more.ok ? (more.json?.data ?? []).filter((y) => y.transport?.callback === callback) : []) await twitch(ctx, d.main.channel, es.deleteRequest(x.id));
           for (const slot of ["main", "bot"]) await ctx.api.services.callAll("twitch.api", "wantScopes", { channel: d.main.channel, consumer: ctx.instance.key, slot, scopes: [] });
         }
       } catch { /* au pire, Twitch coupera l'abonnement tout seul */ }

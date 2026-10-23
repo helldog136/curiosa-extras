@@ -8,6 +8,7 @@ const { render, used, pseudo, clean } = await import(`./variables.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
+const { handleKill } = await import(`./kill.mjs${v}`);
 
 /* ───────────── Les valeurs des variables ───────────── */
 
@@ -82,6 +83,7 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   if (st.isOwnMessage(ctx, chat.messageId)) return { handled: false, why: "own" };
   if (s.bots.has(chat.login)) return { handled: false, why: "bot" };
 
+  if (word === "stop" || word === "start") return handleKill(ctx, s, chat, word, { now });
   const cfg = (await loadConfig(ctx)).data;
   const d = await diagnose(ctx, s, { declare: false });
   const channel = d.channel ?? null;

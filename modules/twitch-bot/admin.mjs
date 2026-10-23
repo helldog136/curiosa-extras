@@ -5,9 +5,10 @@ const { ROLES, catalog, loadConfig, proposeNetwork, saveCommand, saveSourced, re
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
-const { diagnose, ensureListening } = await import(`./listen.mjs${v}`);
+const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
 const { allowedFor } = await import(`./variables.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
+const RA = await import(`./rewardsAdmin.mjs${v}`);
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (v, n) => { const s = String(v ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
@@ -283,6 +284,7 @@ export async function panel(ctx, { query }) {
   if (!edit) blocks.push(...createForm(ctx, info.s));
   blocks.push(...partnersSection(ctx, info), ...networksSection(ctx, info));
   blocks.push(...(await logBlocks(ctx, info.s)));
+  blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
   return blocks;
 }
 
@@ -301,6 +303,7 @@ export const actions = {
   async unmute(ctx) { await st.setMuted(ctx, false); return { ok: ctx.t("unmuted_done") }; },
   async check(ctx) {
     const r = await ensureListening(ctx, settingsOf(ctx), { settle: true });
+    await ensureRedeemListening(ctx, settingsOf(ctx), { settle: true }).catch(() => {});
     return r.code === "listening" ? { ok: ctx.t("check_ok") } : { ok: ctx.t("check_done") };
   },
   async relisten(ctx) {
@@ -339,6 +342,7 @@ export const actions = {
     const r = await saveCommand(ctx, { kind, id }, { text: c.defaultText }, info.env);
     return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${v.key}#edit` };
   },
+  ...RA.actions,
   async clearLog(ctx) { await st.clearLog(ctx); return { ok: ctx.t("log_cleared") }; },
   async disconnectBot(ctx) {
     const info = await context(ctx, { declare: false });

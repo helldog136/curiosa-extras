@@ -1,9 +1,9 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.2.5",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.2.2",
+  "version": "1.3.0",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -18,10 +18,31 @@
   "page": false,
   "requires": [
     { "service": "twitch.api", "min": 3 },
-    { "service": "twitch.live" }
+    { "service": "twitch.live" },
+    { "service": "home-assistant.bridge", "optional": true }
   ],
   "dataVersion": 2,
   "consumes": [
+    {
+      "topic": "ha.result",
+      "label": { "en": "What your home did with the rewards (from Home Assistant, if installed)", "fr": "Ce que votre maison a fait des récompenses (fourni par Home Assistant, s'il est installé)" },
+      "schema": [
+        { "key": "ref", "type": "string", "required": true },
+        { "key": "id", "type": "string" },
+        { "key": "status", "type": "string" },
+        { "key": "code", "type": "string" }
+      ]
+    },
+    {
+      "topic": "ha.state",
+      "label": { "en": "Whether your home is switched on and you are live (from Home Assistant, if installed)", "fr": "Si votre maison est branchée et si vous êtes en direct (fourni par Home Assistant, s'il est installé)" },
+      "schema": [
+        { "key": "enabled", "type": "boolean" },
+        { "key": "live", "type": "boolean" },
+        { "key": "paired", "type": "boolean" },
+        { "key": "lastSeenAt", "type": "string" }
+      ]
+    },
     {
       "topic": "social.stat",
       "label": { "en": "Your Twitch follower count (from My Twitch channel)", "fr": "Votre nombre de followers Twitch (fourni par Ma Chaîne Twitch)" },
@@ -67,9 +88,18 @@
     }
   ],
   "permissions": ["routes", "storage", "admin", "topics", "mcp"],
+  "rights": [
+    {
+      "id": "rewards.manage",
+      "label": { "en": "create, change and delete the channel point rewards", "fr": "créer, modifier et supprimer les récompenses en points de chaîne" },
+      "help": { "en": "These rewards really exist on Twitch and can switch things on in your home.", "fr": "Ces récompenses existent vraiment sur Twitch et peuvent allumer des choses chez vous." },
+      "sensitive": true,
+      "default": { "admin": true, "editor": false }
+    }
+  ],
   "privacy": {
-    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page.",
-    "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot."
+    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page. If you use channel point rewards, it also keeps, for each exchange (the last 50), the viewer's Twitch username, the reward and what happened; the message a viewer writes with a reward is passed on to the action and never kept.",
+    "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Si vous utilisez les récompenses en points de chaîne, il garde aussi, pour chaque échange (les 50 derniers), le pseudo Twitch du viewer, la récompense et ce qui s'est passé ; le message écrit par le viewer avec une récompense est transmis à l'action et jamais gardé."
   },
   "tabs": [
     {
@@ -78,9 +108,44 @@
         "fr": "Commandes",
         "en": "Commands"
       }
-    }
+    },
+    { "id": "rewards", "label": { "fr": "Récompenses", "en": "Rewards" }, "panel": true }
   ],
   "settings": [
+    {
+      "key": "rewardsNotice",
+      "type": "boolean",
+      "default": false,
+      "tab": "rewards",
+      "label": { "en": "Tell the chat when points are given back", "fr": "Prévenir le chat quand des points sont rendus" },
+      "help": { "en": "When a reward could not be played (home switched off, not live…), the bot writes a short message in the chat. Off by default.", "fr": "Quand une récompense n'a pas pu être jouée (maison coupée, pas en direct…), le bot écrit un court message dans le chat. Désactivé par défaut." }
+    },
+    {
+      "key": "stopMods",
+      "type": "text",
+      "optional": true,
+      "tab": "rewards",
+      "label": { "en": "Moderators who may type !stop", "fr": "Modérateurs qui peuvent taper !stop" },
+      "help": { "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.", "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. Les modérateurs ne peuvent pas redémarrer : vous seule le pouvez." }
+    },
+    {
+      "key": "rewardWaitSeconds",
+      "type": "number",
+      "default": 120,
+      "advanced": true,
+      "tab": "rewards",
+      "label": { "en": "How long to wait for the home before giving points back (seconds)", "fr": "Attente de la maison avant de rendre les points (secondes)" },
+      "help": { "en": "Between 30 and 600. If the home has not answered after this delay, the points are given back the next time something happens on your channel or when you open this page.", "fr": "Entre 30 et 600. Si la maison n'a pas répondu après ce délai, les points sont rendus la prochaine fois qu'il se passe quelque chose sur votre chaîne ou que vous ouvrez cette page." }
+    },
+    {
+      "key": "extraActions",
+      "type": "text",
+      "optional": true,
+      "advanced": true,
+      "tab": "rewards",
+      "label": { "en": "Other actions you can pick (advanced)", "fr": "Autres actions à choisir (avancé)" },
+      "help": { "en": "Words separated by commas that your home understands, for example lumieres:orange, scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. They then appear in the action list.", "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple lumieres:orange, scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Ils apparaissent alors dans la liste des actions." }
+    },
     {
       "key": "onlyWhenLive",
       "type": "boolean",
@@ -168,6 +233,31 @@
     }
   ],
   "mcp": [
+    {
+      "name": "rewards_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the channel point rewards created by this site on Twitch: name, cost in points, delay in seconds, help text, whether the viewer writes a message, the action it triggers (a short key like lumieres:rouge, or chat:repondre to answer in the chat), and its state (active, paused, refused, gone). Also gives the maximum number of rewards and the actions that may be used. Use it before creating or changing anything.",
+      "input": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "reward_create",
+      "default": false,
+      "description": "Create a REAL channel point reward on Twitch (needs a Twitch Affiliate or Partner channel). 'name' is the title viewers see (45 characters at most, unique). 'costPoints' is a whole number from 1. 'action' must be one of the actions given by rewards_list; home actions need the Home Assistant module. 'chatReply' is required for chat:repondre and may contain {utilisateur} and {recompense}. Refused with an explanation otherwise.",
+      "input": { "type": "object", "required": ["name", "costPoints", "action"], "properties": { "name": { "type": "string", "maxLength": 45 }, "costPoints": { "type": "integer", "minimum": 1, "maximum": 1000000000 }, "action": { "type": "string", "maxLength": 40 }, "delaySeconds": { "type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses, 0 for none." }, "helpText": { "type": "string", "maxLength": 200 }, "viewerWritesMessage": { "type": "boolean" }, "chatReply": { "type": "string", "maxLength": 300 } } }
+    },
+    {
+      "name": "twitch_reward_simulate",
+      "default": false,
+      "description": "Simulate one reward WITHOUT Twitch and without points: runs the same path as a real exchange with a fake viewer named Test. A home action is really sent to the home (lights change, voice speaks) and the result is awaited for a few seconds; a chat answer is only previewed, never sent. Refused when the home emergency switch is on. For the voice reward 'text' is required (300 characters at most). Limits: one test every 3 seconds, 30 per hour.",
+      "input": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 45 }, "text": { "type": "string", "maxLength": 300 } } }
+    },
+    {
+      "name": "reward_update",
+      "default": false,
+      "description": "Change a reward created by this site, found by its current 'name'. Give only what changes. Same limits as reward_create. Cannot delete a reward.",
+      "input": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 45 }, "newName": { "type": "string", "maxLength": 45 }, "costPoints": { "type": "integer", "minimum": 1, "maximum": 1000000000 }, "action": { "type": "string", "maxLength": 40 }, "delaySeconds": { "type": "integer", "minimum": 0, "maximum": 86400 }, "helpText": { "type": "string", "maxLength": 200 }, "viewerWritesMessage": { "type": "boolean" }, "chatReply": { "type": "string", "maxLength": 300 } } }
+    },
     {
       "name": "bot_commands_list",
       "readOnly": true,

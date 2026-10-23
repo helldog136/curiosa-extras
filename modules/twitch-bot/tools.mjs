@@ -3,6 +3,10 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const { saveCommand, saveSourced } = await import(`./commands.mjs${v}`);
 const { context, saveError } = await import(`./admin.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
+const R = await import(`./rewards.mjs${v}`);
+const J = await import(`./redeem.mjs${v}`);
+const { settingsOf } = await import(`./settings.mjs${v}`);
+const RA = await import(`./rewardsAdmin.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 const view = (c) => ({
@@ -21,6 +25,10 @@ const changes = (a) => {
   if (a.delayPerPersonSeconds !== undefined) f.cdUser = a.delayPerPersonSeconds;
   return f;
 };
+
+const rewardView = (r) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
+const fieldsOf = (a, cur = {}) => ({ title: a.name ?? cur.title, cost: a.costPoints ?? cur.cost, cooldown: a.delaySeconds ?? cur.cooldown ?? 0, prompt: a.helpText ?? cur.prompt ?? "", needsInput: a.viewerWritesMessage ?? cur.needsInput ?? false, action: a.action ?? cur.action, reply: a.chatReply ?? cur.reply ?? "" });
+const refuse = (ctx, r) => { const f = RA.failure(ctx, r); throw expose(f.error ?? Object.values(f.errors ?? {})[0] ?? ctx.t("rw_err_twitch")); };
 
 export default {
   async bot_commands_list(ctx, args) {
@@ -44,5 +52,37 @@ export default {
     const r = c.kind === "partner" || c.kind === "network" ? await saveSourced(ctx, c.kind, c.id, f, info.env) : await saveCommand(ctx, { kind: c.kind, id: c.id }, f, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
     return { updated: true, name: f.name ? String(f.name).toLowerCase().replace(info.s.prefix, "") : c.name };
+  },
+  async rewards_list(ctx) {
+    const s = settingsOf(ctx);
+    await R.sync(ctx, s).catch(() => {});
+    return { rewards: (await R.list(ctx)).map(rewardView), maximum: R.MAX_REWARDS, allowedActions: R.allowedKeys(s) };
+  },
+  async reward_create(ctx, args) {
+    const s = settingsOf(ctx);
+    const c = R.check(fieldsOf(args), { s, others: await R.list(ctx), prefix: s.prefix });
+    if (!c.ok) throw expose(Object.values(RA.fieldErrors(ctx, c.errors)).join(" "));
+    if (R.isHome(c.value.action) && !(await J.bridgeInstalled(ctx))) throw expose(ctx.t("rw_err_action_home"));
+    const r = await R.create(ctx, s, c.value);
+    if (!r.ok) refuse(ctx, r);
+    return { created: true, name: c.value.title };
+  },
+  async reward_update(ctx, args) {
+    const s = settingsOf(ctx), all = await R.list(ctx);
+    const cur = all.find((r) => r.title.toLowerCase() === String(args.name).toLowerCase());
+    if (!cur) throw expose(`no reward named "${args.name}"`);
+    const c = R.check(fieldsOf({ ...args, name: args.newName ?? cur.title }, cur), { s, others: all.filter((r) => r.id !== cur.id), prefix: s.prefix });
+    if (!c.ok) throw expose(Object.values(RA.fieldErrors(ctx, c.errors)).join(" "));
+    if (R.isHome(c.value.action) && !(await J.bridgeInstalled(ctx))) throw expose(ctx.t("rw_err_action_home"));
+    const r = await R.update(ctx, s, cur.id, c.value);
+    if (!r.ok) refuse(ctx, r);
+    return { updated: true, name: c.value.title };
+  },
+  async twitch_reward_simulate(ctx, args) {
+    const s = settingsOf(ctx), cur = (await R.list(ctx)).find((r) => r.title.toLowerCase() === String(args.name).toLowerCase());
+    if (!cur) throw expose(`no reward named "${args.name}"`);
+    const r = await J.simulate(ctx, s, cur.id, { text: args.text ?? "", waitMs: 8000 });
+    if (!r.ok) { const f = RA.simResult(ctx, r); throw expose(f.error ?? Object.values(f.errors ?? {})[0]); }
+    return r.mode === "preview" ? { simulated: true, preview: r.text, sent: false } : r.mode === "pending" ? { simulated: true, answered: false } : { simulated: true, answered: true, success: r.status === "done", reason: r.reason };
   },
 };
