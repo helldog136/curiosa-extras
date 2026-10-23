@@ -58,6 +58,9 @@ const mods = manifests.filter((m) => m.dir.startsWith("modules/") && !m.content 
 const text = (v) => (typeof v === "string" ? [v] : Object.values(v ?? {}).map(String));
 const norm = (s) => s.toLowerCase().replace(/\s*\((obs|interne|internal)\)\s*/g, " ").replace(/\s+/g, " ").trim();
 
+// Noms de modules qui sont aussi de simples mots d'une phrase (« live status » dans la description de Ma Chaîne Twitch désigne l'état du direct, pas le module Statut du live).
+const PLAIN_WORDS = new Set(["live status"]);
+
 test("catalogue : la description d'un module dit ce que fait CE module — jamais un autre module, ni ce qui le consomme ou l'alimente", () => {
   assert.ok(mods.length >= 8);
   for (const m of mods) {
@@ -67,7 +70,7 @@ test("catalogue : la description d'un module dit ce que fait CE module — jamai
       for (const other of mods) {
         if (other.id === m.id) continue;
         for (const name of text(other.name).map(norm)) {
-          if (own.has(name) || !name.includes(" ")) continue;
+          if (own.has(name) || !name.includes(" ") || PLAIN_WORDS.has(name)) continue;
           assert.ok(!norm(description).includes(name), `${m.id} cite « ${name} » (module ${other.id}) → « ${description} »`);
         }
       }
