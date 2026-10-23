@@ -75,7 +75,7 @@
   "dev_unpair": "Dissocier",
   "dev_unpair_confirm": "Dissocier Home Assistant ? Il ne recevra plus rien et ce qui attend sera refusé.",
   "dev_another": "Associer un autre Home Assistant",
-  "dev_another_help": "Le nouveau remplace l'ancien dès qu'il utilise le code : l'ancien ne reçoit plus rien.",
+  "dev_another_help": "Le nouvel appareil prend la place du précédent dès qu'il utilise le code : le précédent ne reçoit plus rien.",
   "test_title": "Tester le pont",
   "test_help": "Simule un échange de points de chaîne, sans toucher à Twitch : aucun point n'est pris ni rendu. Le texte passe par la même modération que celui d'un viewer. Marche aussi hors direct.",
   "test_btn": "Envoyer un test",

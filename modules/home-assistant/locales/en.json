@@ -75,7 +75,7 @@
   "dev_unpair": "Unpair",
   "dev_unpair_confirm": "Unpair Home Assistant? It will receive nothing any more and whatever is waiting will be refused.",
   "dev_another": "Pair another Home Assistant",
-  "dev_another_help": "The new one replaces the old one as soon as it uses the code: the old one receives nothing any more.",
+  "dev_another_help": "The new device takes the place of the previous one as soon as it uses the code: the previous one receives nothing any more.",
   "test_title": "Test the link",
   "test_help": "Simulates a channel points reward, without touching Twitch: no point is taken or given back. The text goes through the same moderation as a viewer's. Works outside a live too.",
   "test_btn": "Send a test",
