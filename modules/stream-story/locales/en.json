@@ -186,5 +186,7 @@
   "ui_type_premiere": "Premiere",
   "ui_type_video": "Video",
   "ui_type_event": "Event",
-  "ui_type_other": "Other"
+  "ui_type_other": "Other",
+  "ui_watermark_label": "Add a small “Made with Curiosa” mark at the bottom of the video",
+  "ui_watermark_help": "Off by default: nothing is added unless you choose it. Your choice is remembered for your next stories."
 }

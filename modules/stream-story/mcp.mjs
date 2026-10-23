@@ -22,9 +22,10 @@ export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.co
 /**
  * Vérifie ce que l'IA demande et en tire { config, manual } (réglages complets et stream manuel éventuel) ; lève une erreur claire (visible de l'IA) sinon.
  * `models` : les modèles enregistrés. Un modèle sert de point de départ ; les autres valeurs le complètent ou le remplacent.
+ * `watermarkDefault` : la valeur de la case « Made with Curiosa » de la personne, utilisée quand l'IA ne dit rien.
  * `events` : les événements à venir de toutes les sources (pour `event`) ; `sourcesDown` : toutes les sources se sont tues (le message le dit).
  */
-export function strictPrepare(args, { models, tz, events = [], sourcesDown = false }) {
+export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false }) {
   const a = args && typeof args === "object" ? args : {};
   let base = P.DEFAULT_CONFIG;
   if (a.model !== undefined) {
@@ -33,7 +34,8 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     if (!m) throw expose(`No saved model named '${P.oneLine(a.model, 60)}'. Call story_models to list them.`);
     base = m.config;
   }
-  const next = { ...base };
+  const next = { ...base, watermark: watermarkDefault === true };   // la mention : le réglage de la personne, sauf si l'IA le dit autrement (jamais un modèle)
+  if (a.watermark !== undefined) { if (typeof a.watermark !== "boolean") throw expose("'watermark' must be true or false."); next.watermark = a.watermark; }
   if (a.style !== undefined) { if (!P.STYLES.includes(a.style)) throw expose(`'style' must be one of: ${P.STYLES.join(", ")}.`); next.style = a.style; }
   if (a.format !== undefined) { if (!P.FORMATS.some((f) => f.id === a.format)) throw expose(`'format' must be one of: ${P.FORMATS.map((f) => f.id).join(", ")}.`); next.format = a.format; }
   if (a.language !== undefined) { if (!P.LANGS.includes(a.language)) throw expose(`'language' must be one of: ${P.LANGS.join(", ")}.`); next.lang = a.language; }
