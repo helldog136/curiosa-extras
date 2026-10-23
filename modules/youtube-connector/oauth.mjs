@@ -257,7 +257,9 @@ export function disconnect(ctx) {
     const token = typeof tok?.refresh === "string" ? tok.refresh : null;
     if (!token) return { ok: true, revoked: null };
     const r = await post(ctx, URLS.revoke, { token }, { fp: c.fp || String(tok.fp ?? "") });
-    return { ok: true, revoked: r.ok && r.status === 200 };
+    const revoked = r.ok && r.status === 200;
+    if (!revoked) await note(ctx, "revoke_failed");   // l'écran le dit : déconnecté ici, Google n'a pas répondu
+    return { ok: true, revoked };
   });
 }
 

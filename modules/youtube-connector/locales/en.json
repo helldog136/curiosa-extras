@@ -71,5 +71,6 @@
   "last_google": "Google answered something unexpected. Start again from the beginning.",
   "last_scope_missing": "You unticked the permission on Google's screen: nothing is connected. Start again and leave the box ticked.",
   "last_write_missing": "Account connected, but Google did not grant the permission to write in the chat: the site will not be able to answer. Connect the account again and leave the box ticked.",
-  "last_expired": "Google has removed the account's access (removed from your Google account, or expired). Connect it again."
+  "last_expired": "Google has removed the account's access (removed from your Google account, or expired). Connect it again.",
+  "last_revoke_failed": "Account disconnected here, but Google did not answer: you can also remove the access at myaccount.google.com/permissions."
 }

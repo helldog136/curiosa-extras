@@ -89,7 +89,7 @@ test("textes : parité exacte FR/EN, toutes les clés utilisées existent (y com
   const used = [...src["index.mjs"].matchAll(/\bt\("([\w]+)"/g)].map((m) => m[1]);
   for (const k of used) assert.ok(k in fr, `clé absente : ${k}`);
   for (const code of ["client_id", "client_secret", "too_fast", "too_many", "client", "scope", "rate", "timeout", "network", "google", "no_pending", "expired", "denied", "policy"]) assert.ok(`err_${code}` in fr && `err_${code}` in en, `err_${code}`);
-  for (const code of ["code_expired", "denied", "policy", "client", "google", "scope_missing", "write_missing", "expired"]) assert.ok(`last_${code}` in fr && `last_${code}` in en, `last_${code}`);
+  for (const code of ["code_expired", "denied", "policy", "client", "google", "scope_missing", "write_missing", "expired", "revoke_failed"]) assert.ok(`last_${code}` in fr && `last_${code}` in en, `last_${code}`);
   const visible = Object.entries(fr).filter(([k]) => /^(acc_|btn_|pend_|err_|last_|check_|cancel_|connect_|disconnect_)/.test(k)).map(([, v]) => v).join(" ");
   assert.ok(!/oauth|token|jeton|endpoint|payload|slug|scope/i.test(visible), "mots simples, pas de jargon");
   for (const k of ["acc_step1", "acc_step2", "acc_step3", "acc_step4"]) assert.match(fr[k], /\*\*/, "chaque étape met en gras ce qu'il faut chercher à l'écran");
@@ -367,6 +367,7 @@ test("« Déconnecter » : les jetons sont effacés ICI avant même d'appeler Go
   const down = await run(d, "accountDisconnect");
   assert.equal(down.ok, fr.disconnect_local);
   assert.equal(collection(d, "oauth-tokens").length, 0);
+  assert.match(plain(await def.adminPanel(d.ctx)), /Compte déconnecté ici, mais Google n'a pas répondu/, "le message du cœur est perdu à la redirection : l'écran garde la trace");
   // Trou noir : borné.
   const h = mk();
   api.resetState(); g = fakeGoogle(); globalThis.fetch = g.fetch;
@@ -659,7 +660,7 @@ test("panneau, première fois : une mise en route en 4 étapes avec les liens de
   assert.equal(blocks.filter((b) => b.type === "adminForm").length, 0);
   const steps = blocks.find((b) => b.type === "html" && /<ol/.test(b.html)).html;
   assert.equal((steps.match(/<li/g) ?? []).length, 4, "quatre étapes");
-  assert.match(steps, /<a href="https:\/\/console\.cloud\.google\.com\/[^"]+" target="_blank" rel="noopener noreferrer">/);
+  assert.match(steps, /<a href="https:\/\/console\.cloud\.google\.com\/[^"]+" target="_blank" rel="noopener noreferrer"[^>]*>/);
   // En anglais aussi.
   const e = makeConnector({ apiKey: API_KEY, locale: "en" });
   const en4 = plain(await def.adminPanel(e.ctx));

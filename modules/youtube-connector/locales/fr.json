@@ -71,5 +71,6 @@
   "last_google": "Google a répondu quelque chose d'inattendu. Recommencez depuis le début.",
   "last_scope_missing": "Vous avez décoché l'autorisation sur l'écran de Google : rien n'est connecté. Recommencez en laissant la case cochée.",
   "last_write_missing": "Compte connecté, mais Google n'a pas accordé l'autorisation d'écrire dans le chat : le site ne pourra pas répondre. Reconnectez le compte en laissant la case cochée.",
-  "last_expired": "Google a retiré l'accès au compte (retiré depuis votre compte Google, ou expiré). Reconnectez-le."
+  "last_expired": "Google a retiré l'accès au compte (retiré depuis votre compte Google, ou expiré). Reconnectez-le.",
+  "last_revoke_failed": "Compte déconnecté ici, mais Google n'a pas répondu : vous pouvez aussi retirer l'accès sur myaccount.google.com/permissions."
 }
