@@ -4,132 +4,231 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.15.0
 
-*Huit nouveaux modules, pour Curiosa 0.2.5 ou plus : Mentions légales, Mur des remerciements, Commandes, Questions fréquentes, Témoignages, Sondages, Compte à rebours et Cahier de contenu.*
-
-### Nouveautés
-
-- Une page « Commandes » qui dit si vos commandes sont ouvertes, complètes ou fermées, avec le nombre de places libres et la date de réouverture.
-- Vos formules (nom, prix indicatif, délai, ce qui est inclus) et un formulaire court pour les demandes.
-- Un lien de suivi privé pour chaque cliente : elle voit où en est sa commande et sa place dans la file, sans créer de compte.
-- Une liste de demandes simple : nouvelle, acceptée, en cours, livrée (ou refusée, annulée), avec des notes privées et un message pour la cliente.
-- Des e-mails de confirmation et de changement d'état, si votre site sait envoyer des e-mails.
-- Une fiche Contacts créée en un clic quand vous acceptez une commande (si le module Contacts est installé).
-- Un fichier à télécharger avec toutes les demandes.
-- Un cahier privé pour vos idées de vidéos, d'articles et de posts, en trois endroits : Idées, En préparation, Publié (plus les Archivées).
-- Un gros bouton « J'ai une idée ! » : un titre suffit, le reste vient après.
-- Pour chaque idée : une phrase, des étapes à cocher, une date visée, les réseaux concernés et des notes.
-- Un rythme facultatif (« 1 par semaine ») avec un message doux quand la dernière publication date un peu.
-- Recherche, listes de 50 idées par page, archivage, suppression définitive avec une question claire.
-- Téléchargement en CSV et sauvegarde lisible. Rien n'est jamais affiché sur votre site.
-- Votre assistant IA peut ajouter une idée, les lister, les déplacer et cocher une étape.
-- Nouveau module « Compte à rebours » pour annoncer une sortie, un lancement, un anniversaire ou une convention.
-- Vos visiteurs voient le temps qui reste et l'heure chez eux, écrite en toutes lettres (« samedi à 21 h chez vous »).
-- Un bouton « Ajouter à mon agenda » pour chaque événement.
-- Un message de fin de votre choix quand l'heure arrive, avec un bouton ; l'événement disparaît tout seul après le délai que vous choisissez.
-- Plusieurs comptes à rebours, dont un « à la une », sur une page, sur l'accueil et dans votre stream (OBS).
-- Une page « Questions fréquentes » prête à l'emploi : questions rangées par thèmes, qui s'ouvrent et se referment, même sans JavaScript.
-- Recherche en tapant (les accents et les majuscules ne gênent pas), lien direct vers chaque question.
-- Boutons « Cela m'a aidé / Pas vraiment » sous chaque réponse, sans compte et sans cookie de suivi.
-- Boîte « Vous ne trouvez pas votre réponse ? » : vous répondez et publiez d'un clic, la question quitte la boîte.
-- Chaque question peut exister en français, en anglais ou dans les deux.
-- Un assistant IA peut proposer des brouillons de réponse ; il ne publie jamais.
-- Nouvelle extension « Mentions légales » : 6 à 8 questions simples, puis trois pages en français et en anglais (mentions légales, confidentialité, cookies) pour la Belgique, la France, la Suisse, le Canada et un autre pays.
-- Un aperçu avant publication, avec ce qui manque écrit en clair. Une page n'est jamais publiée avec un trou.
-- Un lien discret en bas de chaque page, et un rappel visible quand une extension qui récolte des informations est ajoutée.
-- Ce sont des modèles d'aide, pas un conseil juridique : c'est dit à chaque étape.
-- Créez un sondage en une minute : une question, 2 à 8 choix, un choix ou plusieurs par personne.
-- Un lien à partager, une page publique avec les sondages en cours et l'historique des sondages passés, et un petit encart « Le sondage en cours » pour l'accueil.
-- Une date de fin facultative (l'heure et le fuseau sont écrits clairement) : le sondage se ferme tout seul et affiche son résultat final.
-- Résultats en barres lisibles (texte et pourcentage, jamais seulement la couleur), visibles tout de suite ou seulement après le vote, au choix.
-- Un vote par personne, sans compte ni cookie.
-- Un affichage en direct pour OBS, protégé par une adresse secrète.
-- L'assistant IA peut lister, lire, créer et fermer des sondages.
-- Un lien « Laisser un avis » à partager (et son QR code), pensé pour le téléphone.
-- Chaque avis arrive « à valider » : rien n'est publié sans que vous l'ayez lu, ni sans l'accord de la personne (case obligatoire, enregistrée avec sa date).
-- Étoiles facultatives, note moyenne, filtre par note, avis en grille ou en défilement lent avec un bouton pause (sans mouvement pour qui préfère moins d'animation).
-- Favoris, ordre au choix, trois avis à la une sur la page d'accueil, note moyenne et invitation à laisser un avis en encarts.
-- La personne peut retirer son avis elle-même avec un lien privé ; vous pouvez aussi le supprimer à sa demande.
-- Téléchargement des avis (tableur) avec la preuve d'accord de chacun.
-- Une page « Merci ! » qui montre, en cartes avec photos, les personnes de vos catégories de Contacts : modération, mécènes, bêta-testeurs… (jusqu'à six groupes).
-- Une personne à l'honneur chaque mois, préparée à l'avance si vous voulez, avec un petit mot.
-- Un petit message sous le nom de chaque personne, dans chaque langue de votre site.
-- Quelqu'un ne veut pas apparaître ? Rangez sa fiche dans la catégorie « Ne pas montrer » de Contacts : elle disparaît du mur en moins de deux minutes.
+*Dix nouveaux modules (Mentions légales, Mur des remerciements, Commandes, Questions fréquentes, Témoignages, Sondages avec manches, Compte à rebours, Cahier de contenu, Participation, Autres plateformes) et une Story d'annonce qui propose tous vos événements. Pour Curiosa 0.2.5 ou plus (0.2.6 pour Questions fréquentes) ; Story d'annonce et ses sources restent compatibles avec Curiosa 0.2.2.*
 
 ### Améliorations
 
-- Les commandes terminées s'effacent toutes seules après 12 mois (réglable).
-- Votre adresse e-mail et vos notes ne sont jamais montrées à la cliente ; seules les personnes autorisées voient les adresses.
-- Sur téléphone, tout se lit et se touche sans défilement de côté ; les erreurs s'affichent sous le champ avec un exemple.
-- Pensé pour le téléphone : grandes zones à toucher, aucune barre de défilement sur le côté, pas de glisser-déposer obligatoire.
-- Les erreurs s'affichent sous le champ, avec un exemple.
-- Le passage à l'heure d'été et d'hiver est toujours juste, même pour un événement dans plusieurs mois ou dans un pays lointain. Si l'heure choisie n'existe pas ou existe deux fois, le module vous le dit.
-- Fonctionne sans réglage dès l'installation, sur téléphone, en français et en anglais.
-- Respecte la demande « moins de mouvement » des visiteurs ; sans JavaScript, la date et l'heure restent lisibles.
-- Aucune donnée de visiteur n'est gardée.
-- Pas de glisser-déposer : l'ordre se change avec « ↑ Haut / ↓ Bas ».
-- Deux exemples de réponses sont prêts en brouillon à l'installation.
-- Les questions reçues s'effacent d'elles-mêmes après 90 jours au plus et ne contiennent aucune donnée personnelle.
-- Google et les autres moteurs de recherche peuvent afficher vos questions publiées.
-- Le site préremplit ce qu'il sait déjà : son nom, son adresse de contact, les extensions reconnues. Pour une extension qu'il ne connaît pas, il pose la question.
-- Les erreurs s'affichent sous le champ, avec un exemple.
-- Utilisable sur téléphone, sans défilement de côté.
-- Messages d'erreur sous chaque champ, avec un exemple.
-- Actions graves (fermer, archiver, supprimer) avec une case de confirmation claire.
-- Les votes détaillés (sans aucun nom) sont effacés 30 jours après la fin ; les totaux restent.
-- Sauvegarde lisible (tableur) de tous les sondages.
-- Les erreurs du formulaire s'affichent sous chaque champ, avec un exemple, et la personne ne retape rien.
-- L'adresse e-mail est facultative, jamais publiée, et s'efface toute seule au bout de 90 jours.
-- Les avis refusés s'effacent tout seuls après 30 jours ; aucun cookie, aucune adresse IP gardée.
-- Vous pouvez ajouter un avis reçu ailleurs (message, e-mail) en indiquant que la personne est d'accord.
-- Rien à retaper : les noms et les photos viennent de Contacts et restent à jour.
-- Si Contacts ne répond plus, la page garde le dernier mur connu ; sinon elle affiche un message aimable.
-- Pensé pour le téléphone : deux cartes par ligne, grands boutons, erreurs sous le champ concerné.
-- Le nom peut s'afficher en entier, en prénom seulement ou en pseudo : le mur est public, vous choisissez.
+- **Story d'annonce 2.1 : « Pour quoi veux-tu une story ? »** Une seule liste de tout ce qui arrive bientôt : vos agendas, vos vidéos et directs YouTube programmés et votre planning Twitch. Modules touchés : Story d'annonce 2.1.0, Chaîne YouTube 1.3.0, Ma Chaîne Twitch 2.1.0, Connecteur YouTube 1.1.0, Connecteur Twitch 1.1.0.
+  - **Story d'annonce : « Pour quoi veux-tu une story ? »** Une seule liste rassemble ce qui arrive bientôt, de toutes vos sources, **classé par date et heure** : vos streams (Agenda en ligne, Streams saisis à la main), vos **vidéos et directs YouTube programmés** et votre **planning Twitch**. Chaque ligne a une pastille de sa source, le jour et l'heure dans votre fuseau, et le titre. **Un clic choisit l'événement** : la vidéo se remplit toute seule. Rien à régler : une source installée apparaît toute seule.
+  - **Chercher et filtrer.** Tapez un mot du titre ou du jeu ; un bouton par source ne garde que celle-là. La liste se lit 20 par 20 (« Voir plus d'événements ») et s'arrête aux 200 prochains.
+  - **Pas de doublon.** Un stream annoncé à la fois par votre agenda et par votre planning Twitch n'apparaît qu'une fois, avec la mention « Aussi dans : Twitch ».
+  - **Une source ne répond pas ? Ce n'est jamais bloquant.** Une phrase polie sous la liste (« YouTube ne répond pas pour l'instant »), un bouton « Réessayer », et les autres sources restent là. Vous pouvez toujours écrire l'événement vous-même.
+  - **Chaîne YouTube : vos directs et premières programmés.** Dès que la clé YouTube du site est là, ils rejoignent la liste. La page dit honnêtement ce que YouTube ne permet pas : **une vidéo privée programmée n'est pas visible** avec la clé du site (pour celle-là, écrivez l'événement vous-même).
+  - **Ma Chaîne Twitch : votre planning Twitch.** Les rendez-vous publiés sur votre chaîne rejoignent la liste ; ceux qui sont annulés ou pendant vos vacances sont ignorés. Rien de privé n'est demandé.
+  - **Votre assistant** peut lister tous ces événements (nouvel outil `story_events`) et préparer la vidéo pour l'un d'eux. L'événement choisi est gardé dans la demande ; si un événement a disparu entre-temps, la page le dit et prend le prochain.
+  - Sur téléphone, un clic sur un événement vous amène directement à l'aperçu, le bouton « Générer la vidéo » en vue ; les lignes de la liste sont de grandes zones à toucher.
+  - Quand un événement a son propre fuseau horaire et que l'heure n'est pas la même que chez vous, l'heure sur place est écrite entre parenthèses.
+  - Les anciens outils et les anciens liens de votre assistant continuent de marcher (`story_next_streams` et `story_prepare` avec une clé de stream sont inchangés).
+  - Les connecteurs YouTube et Twitch laissent passer ce dont les sources ont besoin (début programmé des vidéos ; planning public d'une chaîne), et rien d'autre. Mettez-les à jour avec les modules qui s'en servent : sans cela, la source dit « le connecteur doit être mis à jour » au lieu de planter.
+- **Mentions légales** (nouveau module).
+  - Nouvelle extension « Mentions légales » : 6 à 8 questions simples, puis trois pages en français et en anglais (mentions légales, confidentialité, cookies) pour la Belgique, la France, la Suisse, le Canada et un autre pays.
+  - Un aperçu avant publication, avec ce qui manque écrit en clair. Une page n'est jamais publiée avec un trou.
+  - Un lien discret en bas de chaque page, et un rappel visible quand une extension qui récolte des informations est ajoutée.
+  - Ce sont des modèles d'aide, pas un conseil juridique : c'est dit à chaque étape.
+  - Le site préremplit ce qu'il sait déjà : son nom, son adresse de contact, les extensions reconnues. Pour une extension qu'il ne connaît pas, il pose la question.
+  - Les erreurs s'affichent sous le champ, avec un exemple.
+  - Utilisable sur téléphone, sans défilement de côté.
+- **Mur des remerciements** (nouveau module).
+  - Une page « Merci ! » qui montre, en cartes avec photos, les personnes de vos catégories de Contacts : modération, mécènes, bêta-testeurs… (jusqu'à six groupes).
+  - Une personne à l'honneur chaque mois, préparée à l'avance si vous voulez, avec un petit mot.
+  - Un petit message sous le nom de chaque personne, dans chaque langue de votre site.
+  - Quelqu'un ne veut pas apparaître ? Rangez sa fiche dans la catégorie « Ne pas montrer » de Contacts : elle disparaît du mur en moins de deux minutes.
+  - Rien à retaper : les noms et les photos viennent de Contacts et restent à jour.
+  - Si Contacts ne répond plus, la page garde le dernier mur connu ; sinon elle affiche un message aimable.
+  - Pensé pour le téléphone : deux cartes par ligne, grands boutons, erreurs sous le champ concerné.
+  - Le nom peut s'afficher en entier, en prénom seulement ou en pseudo : le mur est public, vous choisissez.
+- **Commandes (la file de commandes)** (nouveau module).
+  - Une page « Commandes » qui dit si vos commandes sont ouvertes, complètes ou fermées, avec le nombre de places libres et la date de réouverture.
+  - Vos formules (nom, prix indicatif, délai, ce qui est inclus) et un formulaire court pour les demandes.
+  - Un lien de suivi privé pour chaque cliente : elle voit où en est sa commande et sa place dans la file, sans créer de compte.
+  - Une liste de demandes simple : nouvelle, acceptée, en cours, livrée (ou refusée, annulée), avec des notes privées et un message pour la cliente.
+  - Des e-mails de confirmation et de changement d'état, si votre site sait envoyer des e-mails.
+  - Une fiche Contacts créée en un clic quand vous acceptez une commande (si le module Contacts est installé).
+  - Un fichier à télécharger avec toutes les demandes.
+  - Les commandes terminées s'effacent toutes seules après 12 mois (réglable).
+  - Votre adresse e-mail et vos notes ne sont jamais montrées à la cliente ; seules les personnes autorisées voient les adresses.
+  - Sur téléphone, tout se lit et se touche sans défilement de côté ; les erreurs s'affichent sous le champ avec un exemple.
+- **Questions fréquentes** (nouveau module).
+  - Une page « Questions fréquentes » prête à l'emploi : questions rangées par thèmes, qui s'ouvrent et se referment, même sans JavaScript.
+  - Recherche en tapant (les accents et les majuscules ne gênent pas), lien direct vers chaque question.
+  - Boutons « Cela m'a aidé / Pas vraiment » sous chaque réponse, sans compte et sans cookie de suivi.
+  - Boîte « Vous ne trouvez pas votre réponse ? » : vous répondez et publiez d'un clic, la question quitte la boîte.
+  - Chaque question peut exister en français, en anglais ou dans les deux.
+  - Un assistant IA peut proposer des brouillons de réponse ; il ne publie jamais.
+  - Pas de glisser-déposer : l'ordre se change avec « ↑ Haut / ↓ Bas ».
+  - Deux exemples de réponses sont prêts en brouillon à l'installation.
+  - Les questions reçues s'effacent d'elles-mêmes après 90 jours au plus et ne contiennent aucune donnée personnelle.
+  - Google et les autres moteurs de recherche peuvent afficher vos questions publiées.
+- **Témoignages** (nouveau module).
+  - Un lien « Laisser un avis » à partager (et son QR code), pensé pour le téléphone.
+  - Chaque avis arrive « à valider » : rien n'est publié sans que vous l'ayez lu, ni sans l'accord de la personne (case obligatoire, enregistrée avec sa date).
+  - Étoiles facultatives, note moyenne, filtre par note, avis en grille ou en défilement lent avec un bouton pause (sans mouvement pour qui préfère moins d'animation).
+  - Favoris, ordre au choix, trois avis à la une sur la page d'accueil, note moyenne et invitation à laisser un avis en encarts.
+  - La personne peut retirer son avis elle-même avec un lien privé ; vous pouvez aussi le supprimer à sa demande.
+  - Téléchargement des avis (tableur) avec la preuve d'accord de chacun.
+  - Les erreurs du formulaire s'affichent sous chaque champ, avec un exemple, et la personne ne retape rien.
+  - L'adresse e-mail est facultative, jamais publiée, et s'efface toute seule au bout de 90 jours.
+  - Les avis refusés s'effacent tout seuls après 30 jours ; aucun cookie, aucune adresse IP gardée.
+  - Vous pouvez ajouter un avis reçu ailleurs (message, e-mail) en indiquant que la personne est d'accord.
+- **Sondages, avec des manches** (nouveau module).
+  - **Des manches : « toutes les 10 minutes, le chat décide ».** Une question qui revient en boucle ; à la fin de chaque manche le choix qui a le plus de voix l'emporte, s'affiche en grand à l'écran, puis la manche suivante démarre. En cas d'égalité, le sort tranche, et l'écran le dit. L'historique des décisions est public (`/polls/decisions`) et téléchargeable.
+  - **Un lien à partager qui montre toujours la manche du moment** (`/polls/now`), avec son compte à rebours.
+  - **Un sondage rapide « A ou B ? »** en un geste (2 à 4 choix, 30 secondes à 5 minutes) : il passe tout de suite à l'écran.
+  - **Une télécommande pour votre téléphone** avec de gros boutons (lancer, suivant, arrêter, A ou B ?), grâce au nouveau module Participation, qui s'installe d'un clic depuis l'onglet « En direct ».
+  - L'écran de votre stream affiche le numéro de la manche, le compte à rebours, les résultats en direct et la décision prise.
+  - L'assistant IA peut lancer, passer ou arrêter les manches, lire l'historique et lancer un sondage rapide (ces gestes ne sont jamais autorisés d'office).
+  - L'onglet « À l'écran » devient « En direct » et rassemble les manches, le sondage rapide et l'écran OBS.
+  - Les votes d'une manche sont effacés dès que la décision est prise (au lieu de 30 jours après la fin).
+  - Avec Participation : une voix par personne gérée en commun, la possibilité de mettre quelqu'un en sourdine, et une mise à jour de l'écran plus douce qui ralentit toute seule quand il y a beaucoup de monde. Sans elle, tout marche comme avant.
+  - Créez un sondage en une minute : une question, 2 à 8 choix, un choix ou plusieurs par personne.
+  - Un lien à partager, une page publique avec les sondages en cours et l'historique des sondages passés, et un petit encart « Le sondage en cours » pour l'accueil.
+  - Une date de fin facultative (l'heure et le fuseau sont écrits clairement) : le sondage se ferme tout seul et affiche son résultat final.
+  - Résultats en barres lisibles (texte et pourcentage, jamais seulement la couleur), visibles tout de suite ou seulement après le vote, au choix.
+  - Un vote par personne, sans compte ni cookie.
+  - Un affichage en direct pour OBS, protégé par une adresse secrète.
+  - L'assistant IA peut lister, lire, créer et fermer des sondages.
+  - Messages d'erreur sous chaque champ, avec un exemple.
+  - Actions graves (fermer, archiver, supprimer) avec une case de confirmation claire.
+  - Les votes détaillés (sans aucun nom) sont effacés 30 jours après la fin ; les totaux restent.
+  - Sauvegarde lisible (tableur) de tous les sondages.
+- **Compte à rebours** (nouveau module).
+  - Nouveau module « Compte à rebours » pour annoncer une sortie, un lancement, un anniversaire ou une convention.
+  - Vos visiteurs voient le temps qui reste et l'heure chez eux, écrite en toutes lettres (« samedi à 21 h chez vous »).
+  - Un bouton « Ajouter à mon agenda » pour chaque événement.
+  - Un message de fin de votre choix quand l'heure arrive, avec un bouton ; l'événement disparaît tout seul après le délai que vous choisissez.
+  - Plusieurs comptes à rebours, dont un « à la une », sur une page, sur l'accueil et dans votre stream (OBS).
+  - Le passage à l'heure d'été et d'hiver est toujours juste, même pour un événement dans plusieurs mois ou dans un pays lointain. Si l'heure choisie n'existe pas ou existe deux fois, le module vous le dit.
+  - Fonctionne sans réglage dès l'installation, sur téléphone, en français et en anglais.
+  - Respecte la demande « moins de mouvement » des visiteurs ; sans JavaScript, la date et l'heure restent lisibles.
+  - Aucune donnée de visiteur n'est gardée.
+- **Cahier de contenu** (nouveau module).
+  - Un cahier privé pour vos idées de vidéos, d'articles et de posts, en trois endroits : Idées, En préparation, Publié (plus les Archivées).
+  - Un gros bouton « J'ai une idée ! » : un titre suffit, le reste vient après.
+  - Pour chaque idée : une phrase, des étapes à cocher, une date visée, les réseaux concernés et des notes.
+  - Un rythme facultatif (« 1 par semaine ») avec un message doux quand la dernière publication date un peu.
+  - Recherche, listes de 50 idées par page, archivage, suppression définitive avec une question claire.
+  - Téléchargement en CSV et sauvegarde lisible. Rien n'est jamais affiché sur votre site.
+  - Votre assistant IA peut ajouter une idée, les lister, les déplacer et cocher une étape.
+  - Pensé pour le téléphone : grandes zones à toucher, aucune barre de défilement sur le côté, pas de glisser-déposer obligatoire.
+  - Les erreurs s'affichent sous le champ, avec un exemple.
+- **Participation** (nouveau module).
+  - Un nouveau module, **Participation**, qui s'installe tout seul avec les animations de stream qui en profitent (Sondages pour commencer).
+  - **Un pseudo sans compte** : chaque personne peut choisir son pseudo (unique, sans insulte grâce à une liste de mots interdits que vous modifiez), ou ne pas en choisir. Une page « Participation » lui permet de l'effacer, avec toutes ses données, d'un bouton.
+  - **Une voix par personne** et des limites contre les abus, sans jamais garder l'adresse de personne.
+  - **Une télécommande pour votre téléphone** : une page secrète avec de GROS boutons (lancer, arrêter, suivant, « A ou B ? », sourdine, vider la salle). Un code à flasher dans l'administration pour l'ouvrir sans rien taper, une nouvelle adresse en un clic si quelqu'un l'a vue.
+  - **Un écran qui se met à jour doucement** : l'écran de votre stream et les pages publiques se rafraîchissent sans surcharger le site, et ralentissent quand il y a beaucoup de monde ou quand rien ne change.
+  - **Un journal** de qui a décidé quoi et quand, et un ménage automatique : personnes inactives effacées après 14 jours, journal après 30 jours.
+  - L'assistant IA peut lire les salles et le journal, mettre quelqu'un en sourdine ou vider une salle (ces deux gestes ne sont jamais autorisés d'office).
+  - Tout est en français et en anglais, utilisable au doigt (boutons de 44 à 76 px), avec des erreurs sous le champ et un exemple.
+  - Les personnes en sourdine restent en sourdine si elles reviennent ; vider une salle est immédiat.
+- **Autres plateformes** (nouveau module).
+  - Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi, Tipeee, Liberapay, Buy Me a Coffee, Linktree ou n'importe quelle page en icône, à côté de vos autres réseaux en haut du site.
+  - Collez l'adresse comme vous l'avez : « onlyfans.com/monnom » est complété tout seul. Jusqu'à 20 liens, rangés avec Monter et Descendre.
+  - Une page d'avertissement « contenu pour adultes » peut s'afficher avant l'ouverture d'un lien : prévue par défaut pour OnlyFans, Mym et Fansly, jamais pour les autres, et vous pouvez la couper pour tous ou pour un seul lien. Elle ne vérifie pas l'âge. Elle fonctionne sans JavaScript, ne laisse aucune trace chez le visiteur et n'est pas référencée par les moteurs de recherche.
+  - Un assistant IA peut lister, ajouter et modifier vos liens si vous lui en donnez l'accès.
+  - Le message d'erreur sous le champ dit quoi écrire, avec un exemple, en français et en anglais.
+  - Pour que la plateforme sache d'où viennent les visites, le nom de votre site est ajouté automatiquement à chaque lien (sans rien régler ; réglages fins en mode avancé).
+  - Sur téléphone, la liste et les boutons tiennent à l'écran, sans défilement sur le côté.
 
 ### Pour les développeurs
+
+**Story d'annonce 2.1.0 et sources d'événements**
+
+- **Nouveau contrat `event.source`** (service version 1, `each: true`, besoin **facultatif** `requires[].optional` chez le consommateur) : `upcoming({ from, to, limit, locale })` → `{ ok, source: { kind, label }, state: "ok" | "setup" | "down", message?, note?, events: [{ id, title, start (UTC), timezone, end?, allDay?/day?, type, url?, image?, games? }] }`. Décrit dans le README du dépôt. Un module qui publie des événements datés n'a qu'à l'offrir ; aucun consommateur n'est à changer. Les agendas gardent le sujet `planning.slot`.
+- **Story d'annonce** : `events.mjs` (contrat, `cleanEvent`, `aggregate` : doublons à 15 minutes près, tri sur l'instant UTC, 100 par source, 200 au total ; `pageOf` : curseur opaque, 50 par page ; `filterEvents`), `sources.mjs` (`loadEvents` : un appel borné par source, 10 sources, liste gardée 45 s, dernière bonne liste 15 min, partage des demandes simultanées, aucun minuteur de fond), routes `events` et `cover`, outil `story_events`, `story_prepare` accepte `event`. Les réglages gardent `eventId` et `eventSource` (jamais les modèles) ; `streamKey` reste rempli pour un événement d'agenda. `minCore` inchangé (0.2.2).
+- **Chaîne YouTube** : `events.mjs`, service `event.source` (`channels.list` → `playlistItems.list` → `videos.list` avec `snippet,contentDetails,liveStreamingDetails`, 3 unités par chaîne et par 10 minutes). **Ma Chaîne Twitch** : `events.mjs`, `channelSchedule` dans `helix.mjs` (`GET schedule`, 15 minutes de cache, 404 = pas de planning). **Connecteurs** : `liveStreamingDetails` ajouté aux parties permises de `videos.list` (YouTube) ; `GET schedule` ajouté à la liste fermée des appels d'application (Twitch). Services `youtube.api` v1 et `twitch.api` v3 inchangés.
+- Tests : `stream-story-events`, `stream-story-events-editor`, `youtube-channel-events`, `twitch-channel-events`, `event-source-contract` ; `fakeTwitch` sait répondre à `/helix/schedule`.
+
+**Mentions légales** (`legal-pages`)
+
+- Module `legal-pages` 1.0.0, `minCore` 0.2.5, une instance, page publique `/legal` (sous-pages `notice`, `privacy`, `cookies`), emplacement `layout.footer`, droit `publish`, outils `legal_status`, `legal_preview`, `legal_set_answers`.
+- `known.mjs` : table de préremplissage des extensions (testée contre les manifestes) ; le cœur n'expose pas les déclarations `privacy`.
+- Les textes publiés sont un instantané fabriqué en mode « final » (erreur au moindre manque) ; aperçu en mode « preview ».
+- Ne pas oublier de classer chaque nouvelle extension du catalogue dans `known.mjs`.
+
+**Mur des remerciements** (`thanks-wall`)
+
+- Dépend de `contact.book` v2 (obligatoire, `min: 2`) : `categories`, `categoriesResolve`, `list` (curseur, 500 au plus), `resolve`, `search`. Réglages `choice` à source service (`createCategory` pour « Créer »). Aucun nom, photo ni pseudo n'est stocké : seuls `messages` et `honors`, par identifiant de fiche.
+- Offre `privacy.subject` (`each`) : `export`, `erase`, `remap` ; `moved` suivi et `missing` retiré par l'action « Vérifier mes messages ».
+- Mémoire du mur en processus (2 minutes, secours 24 h, 20 murs, reconstruction partagée), appels à Contacts bornés, aucun `fetch`, aucun minuteur de fond ; en cas de doute sur « ne pas montrer », rien de nouveau n'est publié.
+- Photos : chargées par le navigateur du visiteur (liste blanche pour les photos de réseau). Droit `messages.edit`. Six outils MCP (écritures jamais accordées d'office). `minCore` 0.2.5.
+- Tests : `tests/thanks-wall.test.mjs`, `tests/thanks-wall-admin.test.mjs`, `tests/helpers/thanks-wall-world.mjs` (avec `fakeContactBook`, non modifié).
+
+**Commandes (la file de commandes)** (`commissions`)
 
 - Module en code, une instance ; demande Curiosa 0.2.5 ; dépendance facultative à `contact.book` (v2), offre `privacy.subject`.
 - Lien de suivi : 160 bits, seule l'empreinte SHA-256 est gardée (clé d'index du stockage), comparaison `timingSafeEqual`, réponse identique pour tout lien inconnu.
 - Droits `manage`, `email.view`, `export` ; export par `adminDownloads` ; tâche quotidienne de conservation ; 5 outils MCP sans suppression.
 - Détail : `docs/ideas/commissions.md`.
-- Module `content-planner` 1.0.0 (`minCore` 0.2.5), une instance, permissions `admin`, `storage`, `mcp`. Aucune route, page, section ni sujet.
-- Données : collection `ideas` (1 000 documents au plus), lue par pages de 500 ; tri, recherche et pages calculés en mémoire sur ce plafond.
-- Actions d'administration en forme fonction : la forme `{ right, run }` n'est pas reconnue par la règle `def.matches` du kit de conformité (panneau → action), qui exige une fonction. Seul `adminDownloads.ideas` porte un droit (`ideas.export`).
-- Outils MCP : `ideas_list` (curseur opaque, 50 au plus), `idea_get`, `idea_add`, `idea_update`, `idea_move`, `idea_step`.
-- Tests : `tests/content-planner.test.mjs`, `tests/content-planner-tools.test.mjs`.
-- Heure d'un événement = jour + heure du mur + nom du fuseau, instant calculé à la lecture (`time.mjs`) ; fonctions communes serveur et navigateur envoyées par `Function.prototype.toString`.
-- Fichier .ics écrit à la main (pliage 75 octets, échappements, UID stable, SEQUENCE, DTSTAMP) et validé par un lecteur strict dans les tests.
-- Source OBS (permission `overlay`) alimentée par une route en lecture seule `state` ; routes `ics`, `now`, `live.js` ; emplacement `layout.head`.
-- Aucune tâche de fond ; disparition évaluée à la lecture ; 100 événements au plus.
-- Actions d'administration en forme de fonction avec contrôle `ctx.can` (le kit refuse la forme objet pour les formulaires).
-- Tests : `tests/countdown*.test.mjs`, aides `tests/helpers/countdownDom.mjs` (navigateur factice, horloge manuelle) et `countdownIcs.mjs` (lecteur strict).
-- Module à code (`type: content` seulement pour le rangement du menu), `minCore` 0.2.5, onglets « Ma FAQ » et « Questions reçues ».
+
+**Questions fréquentes** (`faq`)
+
+- Module à code (`type: content` seulement pour le rangement du menu), `minCore` 0.2.6 (script de page), onglets « Ma FAQ » et « Questions reçues ».
 - Fichiers : `text.mjs`, `data.mjs`, `ops.mjs`, `view.mjs`, `client.mjs`, `routes.mjs`, `admin.mjs`, `mcp.mjs`.
-- Routes : `ask`, `vote` (JSON si `Accept: application/json`, sinon redirection 303 vers `#faq-…` construite côté serveur), `client.js` (GET).
+- Routes : `ask`, `vote` (JSON si `Accept: application/json`, sinon redirection 303 vers `#faq-…` construite côté serveur). Le script de confort n'est plus dans `layout.head` de toutes les pages : la page renvoie `scripts: ["faq.js"]` (`PageResult.scripts`, cœur 0.2.6) et le fichier `scripts/faq.js` est la copie exacte de `CLIENT_JS` (`client.mjs`), vérifiée par `tests/faq-public.test.mjs` (à régénérer si `client.mjs` change). La route `client.js` est retirée.
 - FAQPage en JSON-LD dans le corps de la page (échappé, ≤ 17 000 caractères, ≤ 100 questions) via `ctx.api.seo.jsonLd`.
 - Pas d'usage de `getByKey` ni de `generation` (absents du faux contexte du kit) ; écritures sérialisées par un verrou en mémoire.
 - Tests : `tests/faq-public.test.mjs`, `tests/faq-routes.test.mjs`, `tests/faq-admin.test.mjs`, aide `tests/helpers/faqKit.mjs`.
-- Module `legal-pages` 1.0.0, `minCore` 0.2.5, une instance, page publique `/legal` (sous-pages `notice`, `privacy`, `cookies`), emplacement `layout.footer`, droit `publish`, outils `legal_status`, `legal_preview`, `legal_set_answers`.
-- `known.mjs` : table de préremplissage des extensions (testée contre les manifestes) ; le cœur n'expose pas les déclarations `privacy`.
-- Les textes publiés sont un instantané fabriqué en mode « final » (erreur au moindre manque) ; aperçu en mode « preview ».
-- Ne pas oublier de classer chaque nouvelle extension du catalogue dans `known.mjs`.
-- Module `polls` 1.0.0, `minCore` 0.2.5, type widget, instance unique, droits `manage` et `obs.view`.
-- Stockage : `polls` (≤ 200), `archive` (≤ 800), `b-<id>` (≤ 5 000 bulletins), `meta`. Écritures sérialisées par instance, bulletin unique par clé (le plus ancien gagne), « Recompter » pour réparer.
-- Limite de débit par empreinte HMAC à sel quotidien en mémoire ; aucun minuteur ni tâche de fond ; source OBS à interrogation douce bornée.
-- Les actions d'admin sont des fonctions qui vérifient `ctx.can` (le kit 0.2.5 ne reconnaît pas la forme `{ right, run }` pour les actions liées à un formulaire).
+
+**Témoignages** (`testimonials`)
+
 - Module à code (`index.mjs`, `lib.mjs`, `data.mjs`, `view.mjs`, `admin.mjs`), `minCore` 0.2.5, onglet « Avis » (renommé) + un onglet ajouté « Partager » (blocs rangés par `tab`).
 - Droits : `reviews.moderate`, `reviews.delete`, `email.view`, `reviews.export` ; téléchargement `adminDownloads.reviews` (flux, 500 lignes par lecture).
 - Actions MCP : `testimonials_list`, `testimonials_summary`, `testimonials_decide`, `testimonials_delete` (destructive). Sujet fourni : `overlay.item`.
 - Données : collections `reviews` et `drafts` ; tâche `tidy` quotidienne et idempotente.
 - Données structurées d'évaluation : éteintes par défaut, JSON-LD posé dans le corps de la page des avis uniquement (le `layout.head` du cœur vaut pour tout le site).
 - Limites de débit en mémoire, visiteur = dernier nom de `x-forwarded-for`, empreinte salée.
-- Dépend de `contact.book` v2 (obligatoire, `min: 2`) : `categories`, `categoriesResolve`, `list` (curseur, 500 au plus), `resolve`, `search`. Réglages `choice` à source service (`createCategory` pour « Créer »). Aucun nom, photo ni pseudo n'est stocké : seuls `messages` et `honors`, par identifiant de fiche.
-- Offre `privacy.subject` (`each`) : `export`, `erase`, `remap` ; `moved` suivi et `missing` retiré par l'action « Vérifier mes messages ».
-- Mémoire du mur en processus (2 minutes, secours 24 h, 20 murs, reconstruction partagée), appels à Contacts bornés, aucun `fetch`, aucun minuteur de fond ; en cas de doute sur « ne pas montrer », rien de nouveau n'est publié.
-- Photos : chargées par le navigateur du visiteur (liste blanche pour les photos de réseau). Droit `messages.edit`. Six outils MCP (écritures jamais accordées d'office). `minCore` 0.2.5.
-- Tests : `tests/thanks-wall.test.mjs`, `tests/thanks-wall-admin.test.mjs`, `tests/helpers/thanks-wall-world.mjs` (avec `fakeContactBook`, non modifié).
+
+**Sondages, avec des manches** (`polls`)
+
+- Module `polls` 1.1.0, `minCore` 0.2.5. Offre `audience.remote` v1 (`each`) ; demande `audience.session` en facultatif (mode autonome conservé, délai de 3 s puis repli).
+- Données ajoutées : `rounds` (≤ 500), `series` dans `meta`, file d'attente du ménage dans `cfg` ; aucune migration (`dataVersion` 1).
+- Une manche = un sondage (`round: { n, run }`, caché des listes). La série avance « à la lecture » (verrou `series:` distinct du verrou des votes) ; `syncLive` publie `screen` (privé, clé = adresse secrète) et `now` (public) chez Participation, regroupé quand plusieurs votes arrivent ensemble.
+- Nouveaux fichiers : `bridge.mjs` (pont vers Participation), fonctions pures `pickWinner`, `validateSeriesForm`, `validateQuick` dans `lib.mjs`. Route `client` désormais asynchrone (bibliothèque du direct livrée devant si Participation est là).
+- Nouveaux outils MCP : `rounds_status`, `rounds_history`, `round_control`, `poll_quick`.
+# Sondages 1.0.0
+- Module `polls` 1.0.0, `minCore` 0.2.5, type widget, instance unique, droits `manage` et `obs.view`.
+- Stockage : `polls` (≤ 200), `archive` (≤ 800), `b-<id>` (≤ 5 000 bulletins), `meta`. Écritures sérialisées par instance, bulletin unique par clé (le plus ancien gagne), « Recompter » pour réparer.
+- Limite de débit par empreinte HMAC à sel quotidien en mémoire ; aucun minuteur ni tâche de fond ; source OBS à interrogation douce bornée.
+- Les actions d'admin sont des fonctions qui vérifient `ctx.can` (le kit 0.2.5 ne reconnaît pas la forme `{ right, run }` pour les actions liées à un formulaire).
+
+**Compte à rebours** (`countdown`)
+
+- Heure d'un événement = jour + heure du mur + nom du fuseau, instant calculé à la lecture (`time.mjs`) ; fonctions communes serveur et navigateur envoyées par `Function.prototype.toString`.
+- Fichier .ics écrit à la main (pliage 75 octets, échappements, UID stable, SEQUENCE, DTSTAMP) et validé par un lecteur strict dans les tests.
+- Source OBS (permission `overlay`) alimentée par une route en lecture seule `state` ; routes `ics`, `now`, `live.js` ; emplacement `layout.head`.
+- Aucune tâche de fond ; disparition évaluée à la lecture ; 100 événements au plus.
+- Actions d'administration en forme de fonction avec contrôle `ctx.can` (le kit refuse la forme objet pour les formulaires).
+- Tests : `tests/countdown*.test.mjs`, aides `tests/helpers/countdownDom.mjs` (navigateur factice, horloge manuelle) et `countdownIcs.mjs` (lecteur strict).
+
+**Cahier de contenu** (`content-planner`)
+
+- Module `content-planner` 1.0.0 (`minCore` 0.2.5), une instance, permissions `admin`, `storage`, `mcp`. Aucune route, page, section ni sujet.
+- Données : collection `ideas` (1 000 documents au plus), lue par pages de 500 ; tri, recherche et pages calculés en mémoire sur ce plafond.
+- Actions d'administration en forme fonction : la forme `{ right, run }` n'est pas reconnue par la règle `def.matches` du kit de conformité (panneau → action), qui exige une fonction. Seul `adminDownloads.ideas` porte un droit (`ideas.export`).
+- Outils MCP : `ideas_list` (curseur opaque, 50 au plus), `idea_get`, `idea_add`, `idea_update`, `idea_move`, `idea_step`.
+- Tests : `tests/content-planner.test.mjs`, `tests/content-planner-tools.test.mjs`.
+
+**Participation** (`audience`)
+
+- Module `audience` 1.0.0, `minCore` 0.2.5, type widget, instance unique, droits `remote.use` et `moderate`.
+- Offre `audience.session` v1 (16 méthodes, `mute` et `clearRoom` en `callerRights`) ; demande `audience.remote` en facultatif (offert `each` par les modules d'animation : `describe`, `press`, `tick`). Contrat exécutable : `tests/contract-ext/audience.md` + `audience.contract.mjs` + `tests/helpers/fakeAudience.mjs`.
+- Stockage : `rooms` (≤ 200), `p-<salle>-<génération>` (personnes ≤ 5 000, index des pseudos), `c-<salle>-<génération>` (voix ≤ 20 000), `live` (≤ 100), `audit` (≤ 500), `meta`. Vider une salle = nouvelle génération et nouveau sel ; les anciennes collections partent au ménage.
+- Aucun `fetch`, aucun minuteur ni tâche de fond ; limiteur en mémoire à sel quotidien ; un verrou d'écriture par instance.
+
+**Autres plateformes** (`platform-links`)
+
+- Fournit le sujet `social.link` (rendu par l'en-tête du cœur, comme les modules de réseaux) ; type `widget`, instance unique, `minCore` 0.2.5, droit `links.edit` sur chaque action d'administration, stockage `links`.
+- Page d'avertissement : route `go` (`/m/<instance>/go?l=<clé>`), HTML sans script, `X-Robots-Tag: noindex`, CSP `default-src 'none'`, destination uniquement issue de la configuration ; l'icône directe et le bouton « continuer » utilisent la même fonction `destinationOf` (utm ajoutés côté serveur, fusion sans écrasement, encodage strict).
+- Validation d'adresse pure (`links.mjs`, `normalizeUrl`) testée : schémas, identifiants, adresses internes ou numériques, ports, faux sites.
+- Outils : `platform_links_list`, `platform_link_create`, `platform_link_update` (noms ≤ 31 caractères).
+- Tests : `tests/platform-links.test.mjs`.
+
+**Pour tout le dépôt**
+
+- `catalogue/index.json` régénéré (`node scripts/build-index.mjs`).
 
 ## 1.14.0
 
