@@ -48,7 +48,7 @@ test("manifeste valide ; clés de traduction utilisées présentes et en parité
   for (const a of manifestJson.mcp) assert.ok(a.name.length <= 31);
   assert.deepEqual(manifestJson.rights.map((x) => x.id).sort(), ["manage", "obs.view"]);
   assert.equal(manifestJson.minCore, "0.2.5");
-  assert.equal(manifestJson.version, "1.0.0");
+  assert.equal(manifestJson.version, "1.1.0");
 });
 
 test("ni appel réseau direct, ni minuteur, ni tâche de fond côté serveur ; les deux scripts du navigateur se compilent, sans boucle serrée", () => {
@@ -385,10 +385,10 @@ test("script des visiteurs : servi en GET seulement, mis en cache, uniquement qu
   await make(c);
   const head = await def.slots["layout.head"](c);
   assert.ok(head[0].tags[0].src.startsWith(`/m/${c.instance.key}/client`) && head[0].tags[0].defer);
-  const r = def.routes.client(new Request("https://x.test/"));
+  const r = await def.routes.client(new Request("https://x.test/"), c);
   assert.equal(r.headers.get("content-type"), "text/javascript; charset=utf-8");
   assert.match(r.headers.get("cache-control"), /max-age/);
-  assert.equal(def.routes.client(new Request("https://x.test/", { method: "POST", body: "x" })).status, 405);
+  assert.equal((await def.routes.client(new Request("https://x.test/", { method: "POST", body: "x" }), c)).status, 405);
   assert.equal((await r.text()).includes("localStorage"), true);
 });
 
@@ -589,7 +589,8 @@ test("administration : droits (sans le droit, rien n'est écrit) ; adresse secr�
   const blocks = flat(await def.adminPanel(c, { query: {} }));
   assert.ok(!blocks.includes('"action":"create"'), "pas de formulaire de création sans le droit");
   assert.ok(blocks.includes("/overlays/"), "avec le droit obs.view : l'adresse est là");
-  const k1 = (await c.api.store.list("meta"))[0].data.obsKey;
+  const cfgDoc = async () => (await c.api.store.list("meta")).find((r) => r.data.k === "cfg");
+  const k1 = (await cfgDoc()).data.obsKey;
   assert.ok(blocks.includes(k1));
   c.can = (r) => r === "manage";
   const noObs = flat(await def.adminPanel(c, { query: {} }));
@@ -599,11 +600,11 @@ test("administration : droits (sans le droit, rien n'est écrit) ; adresse secr�
   c.can = () => true;
   assert.ok((await def.adminActions.regenerate(c, {})).errors.confirm, "confirmation exigée, sous le champ");
   assert.ok((await def.adminActions.regenerate(c, { confirm: "on" })).ok);
-  const k2 = (await c.api.store.list("meta"))[0].data.obsKey;
+  const k2 = (await cfgDoc()).data.obsKey;
   assert.notEqual(k1, k2);
   assert.equal((await def.routes.live(new Request(`https://x.test/m/k/live?k=${k1}`), c)).status, 404, "l'ancienne adresse est morte");
   assert.equal((await def.routes.live(new Request(`https://x.test/m/k/live?k=${k2}`), c)).status, 200);
-  assert.equal((await c.api.store.list("meta")).length, 1, "un seul document de configuration");
+  assert.equal((await c.api.store.list("meta")).filter((r) => r.data.k === "cfg").length, 1, "un seul document de configuration");
 });
 
 test("administration : détails d'un sondage inconnu, curseur de liste, aucun secret dans les messages", async () => {

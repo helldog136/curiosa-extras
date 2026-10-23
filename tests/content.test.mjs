@@ -18,7 +18,7 @@ test("dépôt : identifiants uniques, les 10 modules de base (ex-livrés avec le
     assert.ok(ids.includes(id), id);
   }
   assert.ok(!ids.includes("blocks"), "« Blocs de page » est une fonction du cœur, plus un module (migration automatique)");
-  assert.equal(ids.length, 59, "10 modules de base + 19 modules (dont les Connecteurs Twitch et YouTube) + 20 réseaux sociaux + 2 exemples + 8 modules « idées » (mentions légales, mur des remerciements, commandes, FAQ, témoignages, sondages, compte à rebours, cahier de contenu)");
+  assert.equal(ids.length, 60, "10 modules de base + 19 modules (dont les Connecteurs Twitch et YouTube) + 20 réseaux sociaux + 2 exemples + 9 modules « idées » (mentions légales, mur des remerciements, commandes, FAQ, témoignages, sondages, compte à rebours, cahier de contenu, participation)");
 });
 
 for (const [name, m] of Object.entries(content)) {

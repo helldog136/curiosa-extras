@@ -1,0 +1,266 @@
+{
+  "apiVersion": 2,
+  "id": "audience",
+  "name": {
+    "fr": "Participation",
+    "en": "Audience"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
+    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone and a gentle live update for the screen. Installs itself with the activities that need it."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "🙌",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "participation",
+  "privacy": {
+    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, différente dans chaque salle, avec le pseudo choisi (facultatif) et la date de votre dernière visite. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert à freiner les abus. Effacement après 14 jours d'inactivité (réglable) ou sur demande : page « Participation », bouton « Effacer mes données ».",
+    "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different in each room, with the nickname you chose (optional) and your last visit date. Your IP address is never saved: scrambled with a daily salt never written to disk, it only slows down abuse. Erased after 14 days of inactivity (adjustable) or on request: \"Participation\" page, \"Erase my data\" button."
+  },
+  "permissions": [
+    "slots",
+    "pages",
+    "routes",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "offers": [
+    {
+      "service": "audience.session",
+      "version": 1,
+      "readOnly": [
+        "info",
+        "who",
+        "checkPseudo",
+        "liveRead",
+        "directClient"
+      ],
+      "callerRights": [
+        "mute",
+        "clearRoom"
+      ]
+    }
+  ],
+  "requires": [
+    {
+      "service": "audience.remote",
+      "optional": true
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "En direct",
+        "en": "Live"
+      }
+    },
+    {
+      "id": "people",
+      "label": {
+        "fr": "Salles et pseudos",
+        "en": "Rooms and nicknames"
+      },
+      "panel": true
+    }
+  ],
+  "rights": [
+    {
+      "id": "remote.use",
+      "label": {
+        "fr": "voir l'adresse secrète de la télécommande et la changer",
+        "en": "see the secret address of the remote control and change it"
+      },
+      "help": {
+        "fr": "Cette adresse donne accès aux boutons « En direct » (lancer, arrêter, vider la salle…) à toute personne qui la connaît.",
+        "en": "This address gives anyone who knows it access to the live buttons (start, stop, clear the room…)."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "moderate",
+      "label": {
+        "fr": "mettre en sourdine, vider une salle et voir le journal",
+        "en": "mute people, clear a room and read the journal"
+      },
+      "help": {
+        "fr": "Permet aussi de retirer une personne d'une salle et de télécharger le journal.",
+        "en": "Also lets the person remove someone from a room and download the journal."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "bannedWords",
+      "type": "textarea",
+      "tab": "people",
+      "default": "# Une ligne par mot. « mot » bloque ce mot seul ; « mot* » tout ce qui commence ainsi ; « *mot* » tout ce qui le contient. Accents et majuscules ne comptent pas.\n# Se faire passer pour l'équipe\nadmin\nadministrateur\nadministrator\nmodo\nmoderateur\nmoderator\nstaff\nstreamer\nstreameuse\nbot\nsystem\nsysteme\n# Insultes courantes (français)\n*merde*\n*putain*\n*connard*\n*connasse*\n*salope*\n*encul*\n*enfoire*\n*batard*\npute\npd\nntm\nfdp\ntg\n# Insultes courantes (anglais)\n*fuck*\n*shit*\n*bitch*\n*asshole*\n*cunt*\n*dick*\n*whore*\n*slut*\nretard\nidiot\n# Haine et sujets graves\n*nazi*\n*hitler*\n*nigg*\n*fagg*\n*pedo*\n*rapist*\nvioleur\n# Liens et publicités\n*http*\nwww*\n*discord gg*\n*porn*",
+      "label": {
+        "fr": "Mots interdits dans les pseudos",
+        "en": "Words not allowed in nicknames"
+      },
+      "help": {
+        "fr": "Un mot par ligne. « mot » bloque ce mot seul ; « mot* » tout ce qui commence ainsi ; « *mot* » tout ce qui le contient. Accents et majuscules ne comptent pas. Cette liste de départ est à vous : ajoutez, retirez.",
+        "en": "One word per line. \"word\" blocks that word alone; \"word*\" anything starting with it; \"*word*\" anything containing it. Accents and capitals do not matter. This starter list is yours: add or remove."
+      }
+    },
+    {
+      "key": "pseudoMin",
+      "type": "number",
+      "default": 3,
+      "advanced": true,
+      "label": {
+        "fr": "Longueur minimale d'un pseudo",
+        "en": "Minimum nickname length"
+      },
+      "help": {
+        "fr": "De 2 à 10 caractères.",
+        "en": "From 2 to 10 characters."
+      }
+    },
+    {
+      "key": "pseudoMax",
+      "type": "number",
+      "default": 20,
+      "advanced": true,
+      "label": {
+        "fr": "Longueur maximale d'un pseudo",
+        "en": "Maximum nickname length"
+      },
+      "help": {
+        "fr": "De 8 à 30 caractères.",
+        "en": "From 8 to 30 characters."
+      }
+    },
+    {
+      "key": "retentionDays",
+      "type": "number",
+      "default": 14,
+      "advanced": true,
+      "label": {
+        "fr": "Jours avant d'effacer un participant inactif",
+        "en": "Days before erasing an inactive participant"
+      },
+      "help": {
+        "fr": "De 1 à 90. Une salle sans activité pendant ce temps est aussi retirée.",
+        "en": "From 1 to 90. A room with no activity for that long is removed too."
+      }
+    },
+    {
+      "key": "joinsPerHour",
+      "type": "number",
+      "default": 200,
+      "advanced": true,
+      "label": {
+        "fr": "Nouveaux participants par heure et par connexion",
+        "en": "New participants per hour and connection"
+      },
+      "help": {
+        "fr": "De 5 à 5000. Une salle de classe ou un salon partageant la même connexion en a parfois besoin de plus.",
+        "en": "From 5 to 5000. A class or an event sharing one connection may need more."
+      }
+    },
+    {
+      "key": "directSeconds",
+      "type": "number",
+      "default": 3,
+      "advanced": true,
+      "label": {
+        "fr": "Secondes minimales entre deux mises à jour en direct",
+        "en": "Minimum seconds between two live updates"
+      },
+      "help": {
+        "fr": "De 2 à 30. Plus il y a de monde, plus le site demande lui-même d'espacer.",
+        "en": "From 2 to 30. The more people, the more the site asks to space them out."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "audience_rooms",
+      "readOnly": true,
+      "description": "List the rooms (spaces where people take part) with the number of participants and the last activity.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "audience_journal",
+      "readOnly": true,
+      "description": "Read the latest lines of the audit journal: who decided what and when (remote control presses, mutes, rooms cleared, round winners).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many lines at most (default 30)."
+          }
+        }
+      }
+    },
+    {
+      "name": "audience_mute",
+      "description": "Mute or unmute one person in a room, found by nickname. A muted person stays in the room but cannot vote or change nickname.",
+      "input": {
+        "type": "object",
+        "required": [
+          "room",
+          "pseudo"
+        ],
+        "properties": {
+          "room": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Room key (from audience_rooms)."
+          },
+          "pseudo": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "The person's nickname."
+          },
+          "muted": {
+            "type": "boolean",
+            "description": "true = mute (default), false = unmute."
+          }
+        }
+      }
+    },
+    {
+      "name": "audience_clear_room",
+      "destructive": true,
+      "default": false,
+      "description": "Clear a room: everyone in it is forgotten and must join again. Cannot be undone.",
+      "input": {
+        "type": "object",
+        "required": [
+          "room"
+        ],
+        "properties": {
+          "room": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Room key (from audience_rooms)."
+          }
+        }
+      }
+    }
+  ]
+}
