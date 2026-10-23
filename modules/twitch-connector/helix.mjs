@@ -47,6 +47,8 @@ export const ALLOWED = {
     ["GET channels", shape({ one: { broadcaster_id: digits } })],
     ["GET videos", shape({ one: { user_id: digits }, opt: { first: count, after: single(cursor), type: single((x) => ["all", "archive", "highlight", "upload"].includes(x)) } })],
     ["GET clips", shape({ one: { broadcaster_id: digits }, opt: { first: count, after: single(cursor), started_at: single(isoDate), ended_at: single(isoDate) } })],
+    // Le planning Twitch d'une chaîne (public) : les prochains rendez-vous, 25 au plus par page. Une chaîne sans planning répond 404 (à l'appelant d'en tirer « rien à venir »).
+    ["GET schedule", shape({ one: { broadcaster_id: digits }, opt: { first: single((x) => /^[0-9]{1,2}$/.test(x) && Number(x) >= 1 && Number(x) <= 25), after: single(cursor), start_time: single(isoDate) } })],
     ["GET eventsub/subscriptions", any20],
     ["POST eventsub/subscriptions", any20],
     ["DELETE eventsub/subscriptions", any20],

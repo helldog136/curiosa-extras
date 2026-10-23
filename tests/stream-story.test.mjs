@@ -39,17 +39,17 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.0.2");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.1.0");
   assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
-  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, true]], "Contacts (v2) : un besoin FACULTATIF, jamais dur");
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, true], ["event.source", 1, true]], "Contacts (v2) et les sources d'événements : des besoins FACULTATIFS, jamais durs");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "Story garde des identifiants de fiche : elle offre privacy.subject");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["planning.slot"], "le sujet stream.partner n'est plus lu : les co-streamers viennent de Contacts");
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);
   assert.ok(manifest.privacy.fr && manifest.privacy.en && !/visiteur/.test("") );
   assert.match(manifest.privacy.fr, /Rien n'est collecté sur vos visiteurs/); assert.match(manifest.privacy.fr, /Aucune vidéo n'est gardée/); assert.match(manifest.privacy.fr, /restent dans Contacts/);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "data", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "people", "prep", "streams", "studio"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "people", "prep", "streams", "studio"]);
 });
 
 test("réglages : seules les couleurs de la vidéo et le fuseau, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
@@ -59,10 +59,10 @@ test("réglages : seules les couleurs de la vidéo et le fuseau, tous en mode av
   assert.equal(manifest.settings.find((s) => s.key === "timezone").optional, true);
 });
 
-test("outils pour l'IA : deux lectures accordées d'office, la préparation JAMAIS d'office ; noms ≤ 31 ; la préparation n'est ni lecture seule ni destructrice ; décrits", () => {
+test("outils pour l'IA : trois lectures accordées d'office, la préparation JAMAIS d'office ; noms ≤ 31 ; la préparation n'est ni lecture seule ni destructrice ; décrits", () => {
   const byName = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
-  assert.deepEqual(Object.keys(byName), ["story_models", "story_next_streams", "story_prepare"]);
-  for (const n of ["story_models", "story_next_streams"]) { assert.equal(byName[n].readOnly, true); assert.ok(byName[n].default !== false, "lecture : accordée par défaut"); }
+  assert.deepEqual(Object.keys(byName), ["story_models", "story_next_streams", "story_events", "story_prepare"]);
+  for (const n of ["story_models", "story_next_streams", "story_events"]) { assert.equal(byName[n].readOnly, true); assert.ok(byName[n].default !== false, "lecture : accordée par défaut"); }
   assert.equal(byName.story_prepare.default, false); assert.ok(!byName.story_prepare.readOnly && !byName.story_prepare.destructive);
   assert.ok(manifest.mcp.every((t) => t.name.length <= 31 && t.description.length > 40));
   assert.deepEqual(Object.keys(def.mcp).sort(), Object.keys(byName).sort());

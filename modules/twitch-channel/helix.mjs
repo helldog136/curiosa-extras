@@ -10,7 +10,8 @@ const FAIL_TTL = 20_000;   // après une erreur : on ne harcèle pas Twitch à c
 const RATE_TTL = 60_000;   // après un 429
 const STAT_TTL = 5 * 60_000;   // followers / abonnés payants : une requête par chaîne et par statistique toutes les 5 minutes
 const LIST_TTL = 30 * 60_000;   // vidéos et clips (vues par vidéo) : une série de requêtes par chaîne toutes les 30 minutes
-const state = { ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map(), videos: new Map(), topClips: new Map(), games: new Map() };
+const SCHEDULE_TTL = 15 * 60_000;   // le planning publié change rarement : une lecture par chaîne tous les quarts d'heure
+const state = { ids: new Map(), live: new Map(), clips: new Map(), stats: new Map(), inflight: new Map(), videos: new Map(), topClips: new Map(), games: new Map(), schedule: new Map() };
 /** Délais (ms), modifiables par les tests : `sharedMs` borne tout travail partagé par plusieurs demandes. */
 export const timing = { sharedMs: 15000 };
 export const resetCache = () => { for (const m of Object.values(state)) m.clear(); };
@@ -89,6 +90,29 @@ async function channelId(c) {
   state.ids.set(c.channel, String(id));
   cap(state.ids);
   return { id: String(id) };
+}
+
+/**
+ * Le planning Twitch de la chaîne : { data } (la réponse de Twitch, `{ segments: [] }` pour une chaîne sans planning), ou { error: "config" | "auth" | "rate" | "network" | "forbidden" }.
+ * Une page de 25 rendez-vous au plus, 15 minutes de cache par chaîne (20 s après une erreur, 60 s après un 429) ; deux demandes simultanées partagent le même appel.
+ */
+export async function channelSchedule(c) {
+  if (!valid(c)) return { error: "config" };
+  const hit = state.schedule.get(c.channel);
+  if (hit && hit.until > Date.now()) return hit.value;
+  return share(`schedule|${c.channel}`, async () => {
+    const who = await channelId(c);
+    if (who.error) return { error: who.error };
+    const r = await c.call({ as: "app", method: "GET", path: "schedule", query: { broadcaster_id: [who.id], first: ["25"] } });
+    if (r.error) return { error: r.error };
+    if (r.status === 404) return { data: { segments: [] } };   // la chaîne n'a pas publié de planning : rien à venir, ce n'est pas une panne
+    if (r.status !== 200 || !r.json || typeof r.json !== "object") return { error: "network" };
+    return { data: r.json.data && typeof r.json.data === "object" ? r.json.data : { segments: [] } };
+  }, NETWORK, (value) => {
+    state.schedule.set(c.channel, { value, until: Date.now() + (value.error === "rate" ? RATE_TTL : value.error ? FAIL_TTL : SCHEDULE_TTL) });
+    cap(state.schedule);
+    return value;
+  });
 }
 
 export async function recentClips(c) {
