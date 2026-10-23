@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { world, pollsMod, pollsDef, pollsFr, pollsEn, post, get, tok } from "./helpers/audienceWorld.mjs";
 
 const L = await import("../modules/polls/lib.mjs");
-const T0 = Date.parse("2026-10-22T20:00:00Z");
+const T0 = Math.floor(Date.now() / 60_000) * 60_000; // l'heure réelle, arrondie à la minute : certains outils du module lisent l'horloge réelle
 const MIN = 60_000;
 const alone = (o) => world({ audience: false, ...o });
 const polls = async (c) => (await c.api.store.list("polls")).map((r) => ({ id: r.id, ...r.data }));
