@@ -186,5 +186,5 @@ test("le Connecteur YouTube laisse passer le début programmé (liveStreamingDet
   assert.equal(connectorApi.normalize("videos.list", { part: "snippet,status", id: [ID(1)] }), null, "« status » (vidéos privées) reste refusé");
   assert.equal(connectorApi.normalize("videos.list", { part: "fileDetails", id: [ID(1)] }), null);
   assert.equal(connectorApi.normalize("search.list", { part: "snippet" }), null, "la recherche (100 unités) reste exclue");
-  assert.equal(JSON.parse(fs.readFileSync(new URL("../modules/youtube-connector/module.json", import.meta.url), "utf8")).version, "1.2.0");
+  assert.equal(JSON.parse(fs.readFileSync(new URL("../modules/youtube-connector/module.json", import.meta.url), "utf8")).version, "1.3.0");
 });

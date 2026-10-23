@@ -97,7 +97,7 @@ export async function handleDonation(ctx, s, rules, ev, { now = Date.now() } = {
   return lines;
 }
 
-/** Répond dans le chat SI c'est possible (le connecteur dit qu'il sait écrire) ; sinon rien, sans erreur. Aujourd'hui le connecteur ne sait pas écrire : voir README. */
+/** Répond dans le chat SI c'est possible (`chat.write` du Connecteur YouTube : compte connecté, autorisation d'écrire donnée et « répondre dans le chat » activé) ; sinon rien, sans erreur. Seulement pour répondre à « !stop » / « !start ». */
 async function reply(ctx, chatId, text) {
   try {
     const st = await B.youtube(ctx, "status", {});
@@ -169,7 +169,11 @@ async function tickNow(ctx, now) {
   if (!s.readChat) return set("off");
   if (!(await B.installed(ctx, B.BRIDGE))) return set("no_bridge");
   if (!(await B.installed(ctx, B.API))) return set("no_api");
-  if (st.backoffUntil > now) return st.status === "backoff" ? st : set("backoff");
+  // Le chat peut-il être lu ? Le Connecteur YouTube le dit (connexion au compte, ou clé non refusée pour le chat). Un ancien connecteur ne dit rien : on essaie comme avant.
+  const api = await B.youtube(ctx, "status", {});
+  const chatRead = api?.chat?.read !== false;
+  if (!chatRead) return set("connect");   // « Connectez votre compte YouTube » : ni lecture, ni attente cachée
+  if (st.backoffUntil > now && !(st.error?.code === "chat_denied")) return st.status === "backoff" ? st : set("backoff");   // un refus du chat n'attend plus : le connecteur dit lui-même quand la lecture redevient possible
   if (st.usage.units + COST_CHAT > budgetUnits(s)) return set("budget");
   if (st.lastPollAt && now - st.lastPollAt > timing.restartAfterMs && st.chatId) await S.updateState(ctx, (d) => { d.cursor = null; d.nextPollAt = 0; });   // page rouverte après une longue absence
   let cur = await S.readState(ctx);
