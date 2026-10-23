@@ -188,5 +188,5 @@
   "ui_type_event": "Événement",
   "ui_type_other": "Autre",
   "ui_watermark_label": "Ajouter la mention “Made with Curiosa” en bas de la vidéo",
-  "ui_watermark_help": "Décochée par défaut : rien n'est ajouté sans votre choix. Votre choix est retenu pour vos prochaines stories."
+  "ui_watermark_help": "Rien n'est ajouté sans votre choix. Votre choix est retenu pour vos prochaines stories."
 }
