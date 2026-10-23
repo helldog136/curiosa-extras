@@ -52,7 +52,7 @@ test("manifeste : la source d'événements est offerte (une réponse par chaîne
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   const offer = manifestJson.offers.find((o) => o.service === "event.source");
   assert.deepEqual([offer.version, offer.each, offer.readOnly], [1, true, ["upcoming"]]);
-  assert.equal(manifestJson.version, "1.3.0");
+  assert.equal(manifestJson.version, "1.4.0");
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional]), [["youtube.api", 1, true]], "le service youtube.api reste un besoin FACULTATIF");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const words = Object.entries(fr).filter(([k]) => k.startsWith("events_")).map(([, v]) => v).join(" ") + Object.entries(en).filter(([k]) => k.startsWith("events_")).map(([, v]) => v).join(" ");
@@ -186,5 +186,5 @@ test("le Connecteur YouTube laisse passer le début programmé (liveStreamingDet
   assert.equal(connectorApi.normalize("videos.list", { part: "snippet,status", id: [ID(1)] }), null, "« status » (vidéos privées) reste refusé");
   assert.equal(connectorApi.normalize("videos.list", { part: "fileDetails", id: [ID(1)] }), null);
   assert.equal(connectorApi.normalize("search.list", { part: "snippet" }), null, "la recherche (100 unités) reste exclue");
-  assert.equal(JSON.parse(fs.readFileSync(new URL("../modules/youtube-connector/module.json", import.meta.url), "utf8")).version, "1.1.0");
+  assert.equal(JSON.parse(fs.readFileSync(new URL("../modules/youtube-connector/module.json", import.meta.url), "utf8")).version, "1.2.0");
 });

@@ -125,7 +125,7 @@
   "jr_note": "50 events at most. The text of messages is never kept.",
   "jr_clear": "Clear the log",
   "jr_test": "Test",
-  "ev_old": "{count} donation(s) too old, ignored: they date from before this page was opened.",
+  "ev_old": "{count} donation(s) ignored as too old: they date from before this page was opened.",
   "kind_superchat_amount": "Super Chat of {amount}",
   "kind_supersticker_amount": "Super Sticker of {amount}",
   "kind_member": "New membership",
