@@ -1,6 +1,6 @@
 {
   "st_off": "Chat reading is turned off in Settings: nothing is read.",
-  "st_no_bridge": "The Home Assistant module is missing: without it nothing can start at your place. You can still write your rules and read the log.",
+  "st_no_bridge": "The Home Assistant module is missing: without it nothing can start at your place. You can still write your rules and read the log. To only show on-screen alerts, tick “Read the chat even without Home Assistant” in the settings.",
   "st_no_api": "The site's YouTube key is missing: without it the chat cannot be read.",
   "st_no_channel": "The “YouTube channel” module is missing (with your channel's id): it is what tells when you are live.",
   "st_ambiguous": "You have several YouTube channels: choose the one to read in the Settings tab.",
@@ -161,5 +161,6 @@
   "limit_text": "Today this module used about {used}% of your YouTube daily limit (it stops gently at {max}%). Reading a live chat costs about {hour}% per hour; looking for a live, almost nothing.",
   "reload_note": "This page reloads by itself while it is open: that is what lets the chat be read.",
   "chat_stopped": "Everything is cut.",
-  "chat_started": "Everything is resumed."
+  "chat_started": "Everything is resumed.",
+  "res_alert_only": "Shown as an alert only (no Home Assistant)"
 }

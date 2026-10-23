@@ -10,6 +10,7 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const S = await import(`./store.mjs${v}`);
 const R = await import(`./rules.mjs${v}`);
 const C = await import(`./chat.mjs${v}`);
+const EV = await import(`./events.mjs${v}`);
 const B = await import(`./bridge.mjs${v}`);
 const { settingsOf, budgetUnits } = await import(`./settings.mjs${v}`);
 
@@ -136,7 +137,13 @@ export async function processItems(ctx, s, st, items, now) {
       if (now - ev.at > timing.commandMaxAgeMs) { old++; continue; }
       lines.push(await handleCommand(ctx, s, ev, st.chatId));
     } else if (now - ev.at > s.maxAgeMs) old++;
-    else lines.push(...(await handleDonation(ctx, s, rules, ev, { now })));
+    else {
+      // Les autres modules (l'overlay d'alertes) peuvent afficher le don, qu'une règle l'attende ou non (sujet `live.event`, en mémoire, voir events.mjs).
+      if (s.shareAlerts) EV.remember(ctx, ev, fp, now);
+      // Sans la maison (lecture « alertes seulement ») : rien à jouer, on le note dans le journal.
+      if (s.houseless) lines.push(lineOf(ev, { status: "skipped", reason: "alert_only" }));
+      else lines.push(...(await handleDonation(ctx, s, rules, ev, { now })));
+    }
   }
   return { lines, old };
 }
@@ -167,7 +174,8 @@ async function tickNow(ctx, now) {
   const set = (status, extra = {}) => S.updateState(ctx, (d) => { d.status = status; Object.assign(d, extra); });
   const st = await S.updateState(ctx, (d) => { d.lastBeatAt = now; rollover(d, now); });
   if (!s.readChat) return set("off");
-  if (!(await B.installed(ctx, B.BRIDGE))) return set("no_bridge");
+  // Sans Home Assistant, rien ne peut se déclencher chez vous : le chat n'est alors lu que si la propriétaire l'a demandé (pour les alertes de l'overlay).
+  if (!(await B.installed(ctx, B.BRIDGE))) { if (!s.readWithoutHouse) return set("no_bridge"); s.houseless = true; }
   if (!(await B.installed(ctx, B.API))) return set("no_api");
   if (st.backoffUntil > now) return st.status === "backoff" ? st : set("backoff");
   if (st.usage.units + COST_CHAT > budgetUnits(s)) return set("budget");

@@ -5,9 +5,12 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const admin = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
+const events = await import(`./events.mjs${v}`);
 
 export default {
   adminPanel: admin.panel,
   adminActions: admin.actions,
   mcp: tools,
+  // Les dons vus dans le chat, pour l'overlay d'alertes (voir events.mjs). Vide si le partage est coupé.
+  exports: { "live.event": (ctx, args) => (ctx.setting("shareAlerts") === false ? [] : events.recent(ctx, { limit: args?.limit })) },
 };

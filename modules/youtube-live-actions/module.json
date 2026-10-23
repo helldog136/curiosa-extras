@@ -6,15 +6,15 @@
     "fr": "Actions du live YouTube",
     "en": "YouTube live actions"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "platform": "youtube",
   "description": {
     "fr": "Quand quelqu'un soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",
     "en": "When someone supports your YouTube live (Super Chat, Super Sticker, new membership, gifted memberships), an action starts at your place: a light colour, a message read aloud. You write the rules and try them without asking YouTube anything. The chat is only read while the “Live” page is open."
   },
   "privacy": {
-    "fr": "Pour chaque évènement de son journal, le module garde le pseudo YouTube de la personne, le montant et la devise, et le résultat, visibles des seuls administrateurs (50 lignes au plus). Le texte d'un message n'est jamais gardé : il est envoyé une fois pour être lu à voix haute s'il est accepté, puis oublié. Le module garde aussi de courtes empreintes de messages (illisibles, 600 au plus) pour ne pas rejouer un don. « Vider le journal » efface le journal.",
-    "en": "For each event in its log, the module keeps the person's YouTube name, the amount and currency, and the result, visible only to administrators (50 lines at most). The text of a message is never kept: it is sent once to be read aloud if accepted, then forgotten. The module also keeps short message fingerprints (unreadable, 600 at most) so a donation is not replayed. “Clear the log” erases the log."
+    "fr": "Le journal garde le pseudo YouTube, le montant, la devise et le résultat (50 lignes au plus, visibles des seuls administrateurs). Le texte d'un message n'est jamais écrit sur le disque : il est lu à voix haute s'il est accepté, puis oublié ; si le partage avec l'overlay d'alertes est actif, pseudo, montant et texte restent 15 minutes au plus en mémoire (50 au plus). Courtes empreintes illisibles de messages (600 au plus) contre les doublons. « Vider le journal » efface le journal.",
+    "en": "The log keeps the YouTube name, amount, currency and result (50 lines at most, visible to administrators only). A message's text is never written to disk: it is read aloud if accepted, then forgotten; if sharing with the alerts overlay is on, name, amount and text stay in memory for 15 minutes at most (50 at most). Short unreadable message fingerprints (600 at most) prevent replays. “Clear the log” erases the log."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -193,6 +193,32 @@
       }
     },
     {
+      "key": "shareAlerts",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Laisser l'overlay d'alertes afficher les dons",
+        "en": "Let the alerts overlay show donations"
+      },
+      "help": {
+        "fr": "Les Super Chats, Super Stickers et adhésions vus dans le chat sont mis à la disposition de l'Overlay alertes (OBS), 15 minutes au plus et seulement en mémoire (rien n'est écrit sur le disque). Sans cet overlay, ce réglage ne fait rien.",
+        "en": "Super Chats, Super Stickers and memberships seen in the chat are made available to the Alerts overlay (OBS), for 15 minutes at most and only in memory (nothing is written to disk). Without that overlay, this setting does nothing."
+      }
+    },
+    {
+      "key": "readWithoutHouse",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "fr": "Lire le chat même sans Home Assistant (alertes OBS seulement)",
+        "en": "Read the chat even without Home Assistant (OBS alerts only)"
+      },
+      "help": {
+        "fr": "Sans Home Assistant, rien ne se déclenche chez vous. Cochez si vous voulez seulement les alertes à l'écran : le chat est alors lu (même limite du jour de YouTube) et les dons sont notés « rien à jouer » dans le journal.",
+        "en": "Without Home Assistant, nothing happens at your place. Tick this if you only want on-screen alerts: the chat is then read (same YouTube daily limit) and donations are logged as “nothing to play”."
+      }
+    },
+    {
       "key": "ifRefused",
       "type": "select",
       "default": "silent",
@@ -364,6 +390,15 @@
             "description": "Text of the Super Chat message, which may be read aloud after Home Assistant's moderation."
           }
         }
+      }
+    }
+  ],
+  "provides": [
+    {
+      "topic": "live.event",
+      "label": {
+        "fr": "Dons et adhésions de votre direct YouTube (pour l'overlay d'alertes)",
+        "en": "Donations and memberships on your YouTube live (for the alerts overlay)"
       }
     }
   ]
