@@ -5,11 +5,11 @@
     "en": "YouTube connector",
     "fr": "Connecteur YouTube"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "platform": "youtube",
   "description": {
-    "en": "Keeps your site's YouTube key in one place, entered once and never shown again. Reads channel names, pictures and subscriber counts, while watching YouTube's daily allowance so the site never runs out.",
-    "fr": "Garde la clé YouTube de votre site à un seul endroit, saisie une fois et jamais réaffichée. Lit le nom, la photo et le nombre d'abonnés des chaînes, en surveillant la limite du jour de YouTube pour que le site ne tombe jamais à court."
+    "en": "Keeps your site's YouTube key in one place, entered once and never shown again. Reads channel names, pictures and subscriber counts while watching YouTube's daily allowance. Optionally connects your YouTube account, so the site can read your live chat and, only if you allow it, answer in it.",
+    "fr": "Garde la clé YouTube de votre site à un seul endroit, saisie une fois et jamais réaffichée. Lit le nom, la photo et le nombre d'abonnés des chaînes, en surveillant la limite du jour de YouTube. Peut aussi connecter votre compte YouTube, pour lire le chat de votre direct et, seulement si vous l'autorisez, y répondre."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -26,7 +26,12 @@
     {
       "service": "youtube.api",
       "version": 1,
-      "readOnly": ["request", "channels", "status"]
+      "readOnly": [
+        "request",
+        "channels",
+        "status",
+        "chatPost"
+      ]
     }
   ],
   "tabs": [
@@ -50,6 +55,32 @@
       }
     },
     {
+      "key": "oauthClientId",
+      "type": "text",
+      "optional": true,
+      "label": {
+        "en": "Google client ID (YouTube account)",
+        "fr": "ID client Google (compte YouTube)"
+      },
+      "help": {
+        "en": "Only to connect your YouTube account (see the steps above). It ends with .apps.googleusercontent.com.",
+        "fr": "Seulement pour connecter votre compte YouTube (voir les étapes ci-dessus). Il se termine par .apps.googleusercontent.com."
+      }
+    },
+    {
+      "key": "oauthClientSecret",
+      "type": "secret",
+      "optional": true,
+      "label": {
+        "en": "Google client secret (YouTube account)",
+        "fr": "Code secret du client Google (compte YouTube)"
+      },
+      "help": {
+        "en": "The secret code shown next to the client ID. Entered once, never shown again.",
+        "fr": "Le code secret affiché à côté de l'ID client. Saisi une fois, jamais réaffiché."
+      }
+    },
+    {
       "key": "dailyBudget",
       "type": "number",
       "default": 9000,
@@ -61,6 +92,20 @@
       "help": {
         "en": "YouTube gives 10,000 units a day. The site stops before this number (1,000 of them are kept for what you do in the administration). Between 100 and 10,000.",
         "fr": "YouTube donne 10 000 unités par jour. Le site s'arrête avant ce nombre (dont 1 000 gardées pour ce que vous faites dans l'administration). Entre 100 et 10 000."
+      }
+    },
+    {
+      "key": "chatReply",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "Let the site answer in your live chat",
+        "fr": "Laisser le site répondre dans le chat de votre direct"
+      },
+      "help": {
+        "en": "Off by default. When on, the site may write short messages in your live chat (for example “Stopped”) when another feature asks for it. Google will ask your permission to write in your chat when you connect your account (a new connection is needed after switching this on). You can switch it off or disconnect at any time.",
+        "fr": "Désactivé par défaut. Activé, le site peut écrire de courts messages dans le chat de votre direct (par exemple « C'est arrêté ») quand une autre fonction le demande. Google vous demandera l'autorisation d'écrire dans votre chat quand vous connecterez votre compte (une nouvelle connexion est nécessaire après l'avoir activé). Vous pouvez le couper ou vous déconnecter à tout moment."
       }
     }
   ],
