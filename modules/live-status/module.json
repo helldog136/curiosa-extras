@@ -3,19 +3,19 @@
   "minCore": "0.2.2",
   "id": "live-status",
   "name": {
-    "en": "Twitch live status",
-    "fr": "Statut live Twitch"
+    "en": "Live status",
+    "fr": "Statut du live"
   },
-  "version": "1.3.2",
+  "version": "1.4.0",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
-    "en": "Shows your Twitch player on the home page and a banner when you are live, whichever of your channels it is.",
-    "fr": "Affiche votre lecteur Twitch sur l'accueil et une bannière quand vous êtes en direct, quelle que soit la chaîne."
+    "en": "Shows a “live now” banner and your player on the home page when you are live on Twitch, on YouTube, or on both.",
+    "fr": "Affiche une bannière « en direct » et votre lecteur sur l'accueil quand vous êtes en direct sur Twitch, sur YouTube ou sur les deux."
   },
   "privacy": {
-    "en": "This module collects nothing itself. When the Twitch player is shown on the page, your browser contacts Twitch to play the stream, so Twitch sees your address and may set its own cookies, under its own privacy policy. The player appears only while the channel is live (or if the owner chose to always show it). If you only see the “live” banner or the “Watch” link, nothing is loaded from Twitch until you click.",
-    "fr": "Ce module ne collecte rien lui-même. Quand le lecteur Twitch est affiché sur la page, votre navigateur contacte Twitch pour lire le direct : Twitch voit alors votre adresse et peut déposer ses propres cookies, selon sa propre politique de confidentialité. Le lecteur n'apparaît que pendant un direct (ou si le propriétaire a choisi de l'afficher en permanence). Si vous ne voyez que la bannière « en direct » ou le lien « Regarder », rien n'est chargé depuis Twitch tant que vous ne cliquez pas."
+    "en": "This module collects nothing itself. Twitch: the Twitch player appears only while you are live (or always, if the owner chose so); your browser then contacts Twitch, which sees your address and may set its own cookies. YouTube: the player (youtube-nocookie.com) is loaded only after you click “Start the YouTube player”, unless the owner chose otherwise; your browser then contacts YouTube (Google), which sees your address. A banner or a “Watch” link loads nothing until you click.",
+    "fr": "Ce module ne collecte rien lui-même. Twitch : le lecteur n'apparaît que pendant un direct (ou toujours, si le propriétaire l'a choisi) ; votre navigateur contacte alors Twitch, qui voit votre adresse et peut déposer ses cookies. YouTube : le lecteur (youtube-nocookie.com) n'est chargé qu'après votre clic sur « Lancer le lecteur YouTube », sauf choix contraire du propriétaire ; YouTube (Google) voit alors votre adresse. Un lien « Regarder » ne charge rien avant votre clic."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -27,8 +27,8 @@
     {
       "id": "player",
       "label": {
-        "en": "Twitch player",
-        "fr": "Lecteur Twitch"
+        "en": "Live player",
+        "fr": "Lecteur du direct"
       }
     }
   ],
@@ -49,8 +49,8 @@
       "type": "select",
       "default": "auto",
       "label": {
-        "en": "When to show the player",
-        "fr": "Quand afficher le lecteur"
+        "en": "When to show the Twitch player",
+        "fr": "Quand afficher le lecteur Twitch"
       },
       "help": {
         "en": "“Only when live” needs your site to be connected to Twitch (Twitch connector): without it the player is not shown (Twitch's offline player is a big white panel). “Always” shows it regardless.",
@@ -74,6 +74,64 @@
       ]
     },
     {
+      "key": "playerPlatform",
+      "type": "select",
+      "default": "twitch",
+      "label": {
+        "en": "If you are live on both, which player?",
+        "fr": "En direct sur les deux : quel lecteur ?"
+      },
+      "help": {
+        "en": "Only one player is shown. The other platform stays as a “Watch” link in the banner.",
+        "fr": "Un seul lecteur est affiché. L'autre plateforme reste un lien « Regarder » dans la bannière."
+      },
+      "options": [
+        {
+          "value": "twitch",
+          "label": {
+            "en": "Twitch",
+            "fr": "Twitch"
+          }
+        },
+        {
+          "value": "youtube",
+          "label": {
+            "en": "YouTube",
+            "fr": "YouTube"
+          }
+        }
+      ]
+    },
+    {
+      "key": "youtubeLoad",
+      "type": "select",
+      "default": "click",
+      "label": {
+        "en": "YouTube player",
+        "fr": "Lecteur YouTube"
+      },
+      "help": {
+        "en": "“After a click” respects your visitors' privacy: nothing is loaded from YouTube until they press the button. “As soon as the page opens” plays it right away, like the Twitch player.",
+        "fr": "« Après un clic » respecte la vie privée des visiteurs : rien n'est chargé depuis YouTube tant qu'ils n'ont pas appuyé sur le bouton. « Dès l'ouverture de la page » l'affiche tout de suite, comme le lecteur Twitch."
+      },
+      "options": [
+        {
+          "value": "click",
+          "label": {
+            "en": "After a click (recommended)",
+            "fr": "Après un clic (recommandé)"
+          }
+        },
+        {
+          "value": "auto",
+          "label": {
+            "en": "As soon as the page opens",
+            "fr": "Dès l'ouverture de la page"
+          }
+        }
+      ]
+    },
+    {
       "key": "channels",
       "type": "text",
       "label": {
@@ -89,7 +147,20 @@
   ],
   "requires": [
     {
-      "service": "twitch.live"
+      "service": "twitch.live",
+      "optional": true,
+      "label": {
+        "en": "Know when you are live on Twitch (My Twitch channel)",
+        "fr": "Savoir quand vous êtes en direct sur Twitch (Ma Chaîne Twitch)"
+      }
+    },
+    {
+      "service": "youtube.live",
+      "optional": true,
+      "label": {
+        "en": "Know when you are live on YouTube (YouTube channel)",
+        "fr": "Savoir quand vous êtes en direct sur YouTube (Chaîne YouTube)"
+      }
     }
   ],
   "dataVersion": 2,

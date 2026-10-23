@@ -14,5 +14,12 @@
   "colResult": "Result",
   "resultOk": "sent",
   "resultFailed": "failed ({status}) · {attempts} attempt(s): {error}",
-  "noLog": "Nothing announced yet."
+  "noLog": "Nothing announced yet.",
+  "platformTwitch": "Twitch",
+  "platformYoutube": "YouTube",
+  "platformBoth": "Twitch and YouTube",
+  "linkLine": "{platform}: {url}",
+  "liveDefault": "🔴 Live on {platform}: {title}",
+  "ytOn": "Your YouTube lives are announced too (checked every {minutes} minutes at most, one message per live).",
+  "ytOff": "Your YouTube lives are not announced. To do so, tick “Announce my YouTube lives too” in the settings."
 }

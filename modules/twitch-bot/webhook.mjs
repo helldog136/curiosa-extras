@@ -5,6 +5,7 @@ const es = await import(`./eventsub.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { readState, updateState, seenBefore } = await import(`./state.mjs${v}`);
 const { processChat } = await import(`./engine.mjs${v}`);
+const { processRedemption, reconcile } = await import(`./redeem.mjs${v}`);
 const { ensureListening } = await import(`./listen.mjs${v}`);
 
 const MAX_BODY = 100_000;
@@ -49,7 +50,13 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
       })().catch(() => {});
       return { response: reply(204), done };
     }
+    if (body.kind === "redemption") {
+      // Un échange de points : traité une seule fois (identifiant du message, puis identifiant de l'échange gardé en mémoire durable) ; la réponse à Twitch part tout de suite
+      const done = processRedemption(ctx, body.redemption, { now }).catch((e) => { console.error(`[twitch-bot] ${ctx.instance.key}: échange en échec (${e?.message ?? e})`); });
+      return { response: reply(204), done };
+    }
     const done = (async () => {
+      await reconcile(ctx, { now }).catch(() => {});   // à chaque évènement : les résultats de la maison et les échanges trop longs sont vus (au plus toutes les 5 secondes)
       if ((lastNote.get(ctx.instance.key) ?? 0) < now - 60_000) { lastNote.set(ctx.instance.key, now); await updateState(ctx, (d) => { d.lastMessageAt = now; }); }
       await processChat(ctx, body.chat, { now });
     })().catch((e) => { console.error(`[twitch-bot] ${ctx.instance.key}: traitement d'un message en échec (${e?.message ?? e})`); });

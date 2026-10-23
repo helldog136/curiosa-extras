@@ -30,7 +30,7 @@ const RENAMED = {
   "modules/youtube-channel": ["Statistiques", "Statistics"],
 };
 // Modules dont le panneau range des blocs dans un autre onglet que « Utiliser » (clé `tab` d'un bloc, cœur 0.2.5).
-const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical"];
+const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical", "modules/twitch-bot"];
 // Ces modules comptent leurs visiteurs par ctx.api.visitor.fingerprint (cœur 0.2.6, qui couvre aussi les onglets).
 const VISITOR_API = ["modules/game-suggestions", "examples/guestbook"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];

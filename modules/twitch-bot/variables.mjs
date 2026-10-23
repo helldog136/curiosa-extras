@@ -5,7 +5,7 @@ const { MAX_MESSAGE } = await import(`./eventsub.mjs${v}`);
 
 export const COMMON = ["followers", "jeu", "titre", "uptime", "prochain_stream", "utilisateur"];
 /** Variables propres à un type de commande (en plus des communes). */
-export const EXTRA = { custom: [], builtin: [], partner: ["partenaire", "adresse"], network: ["reseau", "lien"], group: ["liste"] };
+export const EXTRA = { custom: [], builtin: [], partner: ["partenaire", "adresse"], network: ["reseau", "lien"], group: ["liste"], reward: ["recompense"] };
 export const allowedFor = (kind) => [...COMMON, ...(EXTRA[kind] ?? [])];
 export const MAX_TEMPLATE = 450;
 

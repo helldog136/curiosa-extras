@@ -39,7 +39,7 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
   assert.ok(used.size >= 5, "des sujets doivent être trouvés");
   // Sujets que le cœur publié (0.1.27) ne liste pas encore dans son tableau : une entrée = une exception expliquée, à retirer quand le cœur les documente.
   // (vide : le sujet « stream.partner » a été retiré avec Story 2.0)
-  const NOT_YET_DOCUMENTED = new Set([]);
+  const NOT_YET_DOCUMENTED = new Set(["ha.result", "ha.state", "live.event"]);   // pont Home Assistant (home-assistant, lus par twitch-bot et youtube-live-actions) : documentés par la branche `core/docs-sujets-ha` du cœur (0.2.8) ; RETIRER cette exception dès que le cœur publié les liste ; « live.event » (dons et adhésions du direct, publié par youtube-live-actions, lu par alerts-overlay) : à ajouter au tableau « Sujets connus » du cœur, puis retirer
   for (const topic of used) {
     assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
     assert.ok(NOT_YET_DOCUMENTED.has(topic) || doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
@@ -58,6 +58,9 @@ const mods = manifests.filter((m) => m.dir.startsWith("modules/") && !m.content 
 const text = (v) => (typeof v === "string" ? [v] : Object.values(v ?? {}).map(String));
 const norm = (s) => s.toLowerCase().replace(/\s*\((obs|interne|internal)\)\s*/g, " ").replace(/\s+/g, " ").trim();
 
+// Noms de modules qui sont aussi de simples mots d'une phrase (« live status » dans la description de Ma Chaîne Twitch désigne l'état du direct, pas le module Statut du live).
+const PLAIN_WORDS = new Set(["live status"]);
+
 test("catalogue : la description d'un module dit ce que fait CE module — jamais un autre module, ni ce qui le consomme ou l'alimente", () => {
   assert.ok(mods.length >= 8);
   for (const m of mods) {
@@ -67,7 +70,7 @@ test("catalogue : la description d'un module dit ce que fait CE module — jamai
       for (const other of mods) {
         if (other.id === m.id) continue;
         for (const name of text(other.name).map(norm)) {
-          if (own.has(name) || !name.includes(" ")) continue;
+          if (own.has(name) || !name.includes(" ") || PLAIN_WORDS.has(name)) continue;
           assert.ok(!norm(description).includes(name), `${m.id} cite « ${name} » (module ${other.id}) → « ${description} »`);
         }
       }

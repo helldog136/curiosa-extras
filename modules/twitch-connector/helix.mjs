@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 const version = new URL(import.meta.url).search;
 const oauth = await import(new URL(`./oauth.mjs${version}`, import.meta.url).href);
 const store = await import(new URL(`./store.mjs${version}`, import.meta.url).href);
+const { REWARD_ROUTES } = await import(new URL(`./rewards.mjs${version}`, import.meta.url).href);
 const { timing, within } = oauth;
 const { LOGIN } = store;
 
@@ -59,8 +60,11 @@ export const ALLOWED = {
     ["GET subscriptions", [["channel:read:subscriptions"], shape({ one: { broadcaster_id: digits }, opt: { first: count, after: single(cursor) } })]],
   ]),
 };
+/** Points de chaîne (récompenses) : appels du compte de la chaîne, forme et corps fermés (voir rewards.mjs). */
+const REWARD_BODY = new Map();
+for (const [route, [scopes, shapeOf, bodyOf]] of REWARD_ROUTES) { ALLOWED.user.set(route, [scopes, (q) => shapeOf(q)]); if (bodyOf) REWARD_BODY.set(route, bodyOf); }
 /** Un corps n'est permis que pour ces appels. */
-const WITH_BODY = new Set(["POST eventsub/subscriptions", "POST chat/messages"]);
+const WITH_BODY = new Set(["POST eventsub/subscriptions", "POST chat/messages", ...REWARD_BODY.keys()]);
 /** Réponses publiques et stables, gardées 10 minutes (identité d'une chaîne, nom d'un jeu). */
 const CACHED = new Set(["GET users", "GET games"]);
 const CACHE_TTL = 10 * 60_000, CACHE_MAX = 300;
@@ -98,6 +102,7 @@ export function check(args) {
     if (size > MAX_BODY) return { error: "invalid" };
     body = a.body;
   }
+  if (REWARD_BODY.has(route) && (body === undefined || !REWARD_BODY.get(route)(body))) return { error: "invalid" };
   return { as, route, method, path, query, ...(body === undefined ? {} : { body }), scopes: as === "user" ? ALLOWED.user.get(route)[0] : [] };
 }
 

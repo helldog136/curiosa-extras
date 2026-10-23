@@ -51,7 +51,7 @@ test("manifeste : valide, une seule instance, offre youtube.api v1, clé secrèt
   assert.ok(manifest.settings.find((s) => s.key === "dailyBudget").advanced, "le budget est un réglage avancé (défaut 9 000)");
   assert.equal(def.tasks, undefined, "aucune tâche en arrière-plan : tout se fait à la demande");
   assert.ok(!/setInterval|\bfetch\(/.test(source), "ni minuteur répétitif, ni fetch direct (ctx.api.net seulement)");
-  assert.deepEqual(Object.keys(def.services["youtube.api"]).sort(), ["adopt", "channels", "request", "status"]);
+  assert.deepEqual(Object.keys(def.services["youtube.api"]).sort(), ["adopt", "channels", "chatPost", "request", "status"]);
   assert.deepEqual(api.COSTS, { "channels.list": 1, "playlistItems.list": 1, "videos.list": 1 }, "coût annoncé de chaque appel (search.list exclu)");
 });
 

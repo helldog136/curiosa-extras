@@ -12,6 +12,8 @@ export const NAME_RE = /^[\p{L}\p{N}_-]{1,25}$/u;
 export const MAX_ALIASES = 5;
 export const MAX_CUSTOM = 100;
 export const MAX_DELAY = 3600;
+/** Mots réservés aux commandes d'arrêt de la maison (kill.mjs) : aucune autre commande ne peut les prendre. */
+export const RESERVED = ["stop", "start"];
 export const GROUP_ID = "reseaux";
 
 /** Les commandes toutes prêtes. `needs` : ce dont elles ont besoin pour répondre. Le texte par défaut vient des textes traduits (`cmd_<id>_text`). */
@@ -236,6 +238,8 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
       if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed });
     }
     // Collisions : seulement avec les AUTRES commandes enregistrées.
+    const reserved = [draft.name, ...draft.aliases].find((w) => RESERVED.includes(w));
+    if (reserved) return errorOf("collision", { word: reserved, with: reserved, withLabel: "", withKind: "builtin" });
     const clash = collisions(list.filter((c) => !(creating && c.key === key)), key, [draft.name, ...draft.aliases]);
     if (clash.length) return errorOf("collision", { word: clash[0].word, with: clash[0].with.name, withLabel: clash[0].with.label, withKind: clash[0].with.kind });
 

@@ -10,5 +10,16 @@
   "kind_raid": "Raid",
   "kind_test": "Test",
   "kind_alert": "Alert",
-  "noToken": "No push token set: only the test alert works. To set one: “Settings” tab, “Push token” option (advanced mode)."
+  "noToken": "No push token set: only the test alert works. To set one: “Settings” tab, “Push token” option (advanced mode).",
+  "kind_superchat": "Super Chat",
+  "kind_supersticker": "Super Sticker",
+  "kind_member": "New member",
+  "kind_gift": "Gifted memberships",
+  "ytTitle": "YouTube alerts",
+  "ytHelp": "Super Chats, Super Stickers and memberships on your YouTube live appear here, one after the other. They come from the YouTube live actions module, which reads the chat **only while its “Live” page is open**: keep it open during the live. Message texts stay hidden unless you tick “Show the text of YouTube messages” in the settings.",
+  "ytTestTitle": "Send a fake Super Chat",
+  "ytTestWho": "Lea",
+  "ytTestText": "Great stream!",
+  "ytTestError": "The test alert could not be prepared.",
+  "ytAbsent": "To also show Super Chats and memberships from your YouTube live, install the “YouTube live actions” module."
 }

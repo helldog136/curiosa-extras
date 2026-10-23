@@ -1,0 +1,405 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.6",
+  "id": "youtube-live-actions",
+  "name": {
+    "fr": "Actions du live YouTube",
+    "en": "YouTube live actions"
+  },
+  "version": "1.1.0",
+  "platform": "youtube",
+  "description": {
+    "fr": "Quand quelqu'un soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",
+    "en": "When someone supports your YouTube live (Super Chat, Super Sticker, new membership, gifted memberships), an action starts at your place: a light colour, a message read aloud. You write the rules and try them without asking YouTube anything. The chat is only read while the “Live” page is open."
+  },
+  "privacy": {
+    "fr": "Le journal garde le pseudo YouTube, le montant, la devise et le résultat (50 lignes au plus, visibles des seuls administrateurs). Le texte d'un message n'est jamais écrit sur le disque : il est lu à voix haute s'il est accepté, puis oublié ; si le partage avec l'overlay d'alertes est actif, pseudo, montant et texte restent 15 minutes au plus en mémoire (50 au plus). Courtes empreintes illisibles de messages (600 au plus) contre les doublons. « Vider le journal » efface le journal.",
+    "en": "The log keeps the YouTube name, amount, currency and result (50 lines at most, visible to administrators only). A message's text is never written to disk: it is read aloud if accepted, then forgotten; if sharing with the alerts overlay is on, name, amount and text stay in memory for 15 minutes at most (50 at most). Short unreadable message fingerprints (600 at most) prevent replays. “Clear the log” erases the log."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "homepage": "https://github.com/helldog136/curiosa-extras",
+  "icon": "🎁",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "storage",
+    "admin",
+    "topics",
+    "mcp"
+  ],
+  "dataVersion": 1,
+  "requires": [
+    {
+      "service": "home-assistant.bridge",
+      "optional": true,
+      "label": {
+        "fr": "Agir chez vous (lumières, message à voix haute)",
+        "en": "Act at your place (lights, message read aloud)"
+      }
+    },
+    {
+      "service": "youtube.api",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "fr": "Lire le chat de votre direct YouTube",
+        "en": "Read your YouTube live chat"
+      }
+    },
+    {
+      "service": "youtube.live",
+      "optional": true,
+      "label": {
+        "fr": "Savoir si votre chaîne YouTube est en direct",
+        "en": "Know whether your YouTube channel is live"
+      }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "ha.result",
+      "label": {
+        "fr": "Ce qui est arrivé aux ordres envoyés à la maison",
+        "en": "What happened to the orders sent to your home"
+      },
+      "schema": [
+        {
+          "key": "ref",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "code",
+          "type": "string"
+        },
+        {
+          "key": "at",
+          "type": "datetime"
+        }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "En direct",
+        "en": "Live"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "yt.manage",
+      "label": {
+        "fr": "régler les règles et reprendre la maison",
+        "en": "edit the rules and resume the house"
+      },
+      "help": {
+        "fr": "Créer, modifier et supprimer les règles, vider le journal, remettre la maison en route après « Tout couper ».",
+        "en": "Create, edit and delete rules, clear the log, put the house back in service after “Cut everything”."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "yt.stop",
+      "label": {
+        "fr": "tout couper",
+        "en": "cut everything"
+      },
+      "help": {
+        "fr": "Le gros bouton rouge qui coupe la maison tout de suite.",
+        "en": "The big red button that cuts the house right now."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "yt.test",
+      "label": {
+        "fr": "simuler un don",
+        "en": "simulate a donation"
+      },
+      "help": {
+        "fr": "Essayer les règles avec un faux Super Chat, sans rien demander à YouTube. Si la maison est ouverte, l'action se joue vraiment chez vous.",
+        "en": "Try the rules with a fake Super Chat, without asking YouTube anything. If the house is open, the action really plays at your place."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "channel",
+      "type": "choice",
+      "optional": true,
+      "refersTo": "channel",
+      "source": {
+        "kind": "providers",
+        "service": "youtube.live"
+      },
+      "label": {
+        "fr": "Chaîne YouTube",
+        "en": "YouTube channel"
+      },
+      "help": {
+        "fr": "La chaîne dont on lit le direct. Avec une seule chaîne installée, il n'y a rien à choisir.",
+        "en": "The channel whose live is read. With only one channel installed, there is nothing to choose."
+      }
+    },
+    {
+      "key": "readChat",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Lire le chat pendant le direct",
+        "en": "Read the chat during the live"
+      },
+      "help": {
+        "fr": "Le chat n'est lu que pendant que la page « En direct » du module est ouverte. Décochez pour tout mettre en pause.",
+        "en": "The chat is only read while the module's “Live” page is open. Untick to pause everything."
+      }
+    },
+    {
+      "key": "modsStop",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Les modérateurs YouTube peuvent écrire !stop",
+        "en": "YouTube moderators may write !stop"
+      },
+      "help": {
+        "fr": "Pour tout couper depuis le chat. Seule la propriétaire de la chaîne peut écrire !start pour reprendre. Ça ne marche que pendant que la page est ouverte : le gros bouton « Tout couper » et l'interrupteur dans Home Assistant restent vos vraies protections.",
+        "en": "To cut everything from the chat. Only the channel owner can write !start to resume. It only works while the page is open: the big “Cut everything” button and the switch in Home Assistant remain your real protections."
+      }
+    },
+    {
+      "key": "shareAlerts",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Laisser l'overlay d'alertes afficher les dons",
+        "en": "Let the alerts overlay show donations"
+      },
+      "help": {
+        "fr": "Les Super Chats, Super Stickers et adhésions vus dans le chat sont mis à la disposition de l'Overlay alertes (OBS), 15 minutes au plus et seulement en mémoire (rien n'est écrit sur le disque). Sans cet overlay, ce réglage ne fait rien.",
+        "en": "Super Chats, Super Stickers and memberships seen in the chat are made available to the Alerts overlay (OBS), for 15 minutes at most and only in memory (nothing is written to disk). Without that overlay, this setting does nothing."
+      }
+    },
+    {
+      "key": "readWithoutHouse",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "fr": "Lire le chat même sans Home Assistant (alertes OBS seulement)",
+        "en": "Read the chat even without Home Assistant (OBS alerts only)"
+      },
+      "help": {
+        "fr": "Sans Home Assistant, rien ne se déclenche chez vous. Cochez si vous voulez seulement les alertes à l'écran : le chat est alors lu (même limite du jour de YouTube) et les dons sont notés « rien à jouer » dans le journal.",
+        "en": "Without Home Assistant, nothing happens at your place. Tick this if you only want on-screen alerts: the chat is then read (same YouTube daily limit) and donations are logged as “nothing to play”."
+      }
+    },
+    {
+      "key": "ifRefused",
+      "type": "select",
+      "default": "silent",
+      "label": {
+        "fr": "Si le message d'un Super Chat est refusé à la lecture",
+        "en": "If a Super Chat message is refused for reading aloud"
+      },
+      "options": [
+        {
+          "value": "silent",
+          "label": {
+            "fr": "Ne pas le lire (les autres règles jouent quand même)",
+            "en": "Do not read it (the other rules still play)"
+          }
+        },
+        {
+          "value": "thanks",
+          "label": {
+            "fr": "Dire seulement un merci à la place",
+            "en": "Only say a thank-you instead"
+          }
+        }
+      ],
+      "help": {
+        "fr": "Un don ne peut pas être remboursé : si Home Assistant refuse le message (mot interdit, lien…), rien d'autre n'est perdu. Les lumières et les autres règles jouent normalement.",
+        "en": "A donation cannot be refunded: if Home Assistant refuses the message (banned word, link…), nothing else is lost. The lights and the other rules play as usual."
+      }
+    },
+    {
+      "key": "thanks",
+      "type": "text",
+      "default": "Merci pour votre soutien !",
+      "advanced": true,
+      "label": {
+        "fr": "Phrase de remerciement",
+        "en": "Thank-you sentence"
+      },
+      "help": {
+        "fr": "Dite à voix haute quand une règle de voix n'a pas de message à lire, ou si vous avez choisi « un merci à la place ».",
+        "en": "Said aloud when a voice rule has no message to read, or if you chose “a thank-you instead”."
+      }
+    },
+    {
+      "key": "intervalSec",
+      "type": "number",
+      "default": 15,
+      "advanced": true,
+      "label": {
+        "fr": "Lire le chat au plus souvent toutes les (secondes)",
+        "en": "Read the chat at most every (seconds)"
+      },
+      "help": {
+        "fr": "Entre 5 et 60. Plus c'est rapide, plus la limite du jour de YouTube se consomme vite : à 15 secondes, environ 12 % de la limite par heure de direct. YouTube peut demander d'aller plus lentement : on obéit.",
+        "en": "Between 5 and 60. The faster, the quicker YouTube's daily limit is used: at 15 seconds, about 12% of the limit per hour of live. YouTube may ask to go slower: we obey."
+      }
+    },
+    {
+      "key": "budgetPercent",
+      "type": "number",
+      "default": 50,
+      "advanced": true,
+      "label": {
+        "fr": "Part de la limite du jour de YouTube utilisable (%)",
+        "en": "Share of YouTube's daily limit that can be used (%)"
+      },
+      "help": {
+        "fr": "Entre 5 et 90. Au-delà, la lecture s'arrête doucement jusqu'à la remise à zéro. Le reste de la limite sert aux autres modules YouTube du site.",
+        "en": "Between 5 and 90. Past it, reading stops gently until the reset. The rest of the limit is for the site's other YouTube modules."
+      }
+    },
+    {
+      "key": "maxAgeSec",
+      "type": "number",
+      "default": 120,
+      "advanced": true,
+      "label": {
+        "fr": "Ignorer les dons plus anciens que (secondes)",
+        "en": "Ignore donations older than (seconds)"
+      },
+      "help": {
+        "fr": "Entre 30 et 600. Quand vous ouvrez la page en plein direct, un don d'il y a vingt minutes ne doit pas allumer vos lumières maintenant.",
+        "en": "Between 30 and 600. When you open the page mid-live, a donation from twenty minutes ago must not turn your lights on now."
+      }
+    },
+    {
+      "key": "extraCurrencies",
+      "type": "text",
+      "optional": true,
+      "advanced": true,
+      "label": {
+        "fr": "Autres devises proposées dans les règles",
+        "en": "Other currencies offered in the rules"
+      },
+      "help": {
+        "fr": "Codes de trois lettres séparés par des virgules, par exemple : ISK, UAH. Les devises courantes sont déjà dans la liste.",
+        "en": "Three-letter codes separated by commas, for example: ISK, UAH. The common currencies are already in the list."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "youtube_live_status",
+      "readOnly": true,
+      "description": "Current state of the YouTube live chat reading: whether a page of the module is open and reading, the live found, the last error, the share of YouTube's daily limit used, and the state of the house bridge. Reads only: never contacts YouTube and never starts a reading.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "youtube_live_journal",
+      "readOnly": true,
+      "description": "The latest events handled (Super Chats, Super Stickers, memberships, !stop/!start) with the rule applied and the result. At most 50. Message texts are never kept.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "How many lines (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "youtube_live_rules",
+      "readOnly": true,
+      "description": "The rules that turn a donation or membership into a home action: type, currency and minimum, cooldown, action name.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "youtube_action_simulate",
+      "description": "Simulate a donation through the same rules and the same Home Assistant bridge as a real one. YouTube is not contacted. If the house is open (paired, not cut, seeing you live) the action really plays at the owner's home, so ask first. Limited to 1 every 3 seconds and 30 per hour.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "superchat",
+              "supersticker",
+              "member",
+              "gift"
+            ],
+            "description": "Kind of event (default superchat)."
+          },
+          "amount": {
+            "type": "string",
+            "maxLength": 12,
+            "description": "Amount in the given currency, for example 5 or 2,50 (Super Chat and Super Sticker)."
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "Three-letter currency code, for example EUR (default EUR)."
+          },
+          "count": {
+            "type": "string",
+            "maxLength": 4,
+            "description": "Number of gifted memberships (gift only, default 5)."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Text of the Super Chat message, which may be read aloud after Home Assistant's moderation."
+          }
+        }
+      }
+    }
+  ],
+  "provides": [
+    {
+      "topic": "live.event",
+      "label": {
+        "fr": "Dons et adhésions de votre direct YouTube (pour l'overlay d'alertes)",
+        "en": "Donations and memberships on your YouTube live (for the alerts overlay)"
+      }
+    }
+  ]
+}

@@ -5,10 +5,10 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": {
-    "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Tools such as Streamer.bot, a webhook relay or a script can send it alerts.",
-    "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Des outils comme Streamer.bot, un relais de webhook ou un script peuvent lui envoyer des alertes."
+    "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Tools such as Streamer.bot, a webhook relay or a script can send it alerts. Super Chats, Super Stickers and memberships on your YouTube live can appear too.",
+    "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Des outils comme Streamer.bot, un relais de webhook ou un script peuvent lui envoyer des alertes. Les Super Chats, Super Stickers et adhésions de votre direct YouTube peuvent aussi s'afficher."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -19,6 +19,7 @@
   "permissions": [
     "overlay",
     "routes",
+    "topics",
     "admin"
   ],
   "settings": [
@@ -33,6 +34,19 @@
       "help": {
         "en": "Whatever sends alerts must present it: Authorization: Bearer <token>. Without a token, nothing can push (except the test button).",
         "fr": "Ce qui envoie les alertes doit le présenter : Authorization: Bearer <jeton>. Sans jeton, rien ne peut pousser (sauf le bouton de test)."
+      }
+    },
+    {
+      "key": "youtubeText",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Show the text of YouTube messages",
+        "fr": "Afficher le texte des messages YouTube"
+      },
+      "help": {
+        "en": "A Super Chat message can contain anything your viewers write. Unticked (recommended), only the name and the amount are shown. Ticked, the text is shown too, cut to 140 characters, always as plain text.",
+        "fr": "Le message d'un Super Chat peut contenir tout ce que vos spectateurs écrivent. Décoché (recommandé), seuls le pseudo et le montant s'affichent. Coché, le texte s'affiche aussi, coupé à 140 caractères, toujours en texte brut."
       }
     },
     {
@@ -79,6 +93,56 @@
         "en": "Seconds on screen",
         "fr": "Secondes à l'écran"
       }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "live.event",
+      "label": {
+        "en": "Donations and memberships on your live (YouTube…)",
+        "fr": "Dons et adhésions de votre direct (YouTube…)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "kind",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "platform",
+          "type": "string"
+        },
+        {
+          "key": "who",
+          "type": "string"
+        },
+        {
+          "key": "at",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "amount",
+          "type": "number"
+        },
+        {
+          "key": "currency",
+          "type": "string"
+        },
+        {
+          "key": "count",
+          "type": "number"
+        },
+        {
+          "key": "text",
+          "type": "string"
+        }
+      ]
     }
   ]
 }

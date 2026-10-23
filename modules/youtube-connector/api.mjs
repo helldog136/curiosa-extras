@@ -7,7 +7,12 @@
 //     du jour est gardé dans le stockage ; un appel qui dépasserait le budget est refusé AVANT de partir (`quota`, sans réseau).
 //   - Cache de 10 minutes par demande ; en panne, le dernier résultat connu est rendu avec sa date (`stale: true`, `at`).
 //   - Aucune tâche en arrière-plan : rien ne part sans une demande d'un module (page, panneau, chiffre demandé).
+//   - Chat (1.3.0) : si le compte YouTube est connecté (oauth.mjs), la lecture du chat passe avec le jeton d'accès, JAMAIS avec la clé ; sinon avec la clé (YouTube peut la refuser : `chat_denied`).
+//     Écrire dans le chat (`chatPost`) exige la connexion ET le réglage « répondre dans le chat » ET la portée accordée.
 import { createHash } from "node:crypto";
+
+const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+const O = await import(`./oauth.mjs${v}`);
 
 export const HOST = "www.googleapis.com";
 const BASE = `https://${HOST}/youtube/v3/`;
@@ -15,6 +20,12 @@ const BASE = `https://${HOST}/youtube/v3/`;
 export const DAILY_QUOTA = 10_000;
 /** Coût de chaque appel permis, en unités de quota (barème publié par YouTube). `search.list` (100 unités) est volontairement exclu. */
 export const COSTS = Object.freeze({ "channels.list": 1, "playlistItems.list": 1, "videos.list": 1 });
+/** Lecture du chat d'un direct (1.2.0) : 5 unités l'appel, jamais gardée en cache (un chat périmé n'a aucun sens), aucune réponse de repli. */
+export const LIVE_CHAT = "liveChatMessages.list";
+export const LIVE_CHAT_COST = 5;
+/** Écrire un message dans le chat (liveChatMessages.insert, 1.3.0) : 20 unités l'appel (barème publié par YouTube), texte de 200 caractères au plus, jamais en cache. */
+export const CHAT_POST_COST = 20;
+export const CHAT_POST_MAX = 200;
 /** Bornes (dans un objet pour que les tests puissent les raccourcir). */
 export const LIMITS = {
   timeoutMs: 8000,        // un appel réseau (ctx.api.net), file d'attente et lecture comprises
@@ -27,6 +38,9 @@ export const LIMITS = {
   cacheMax: 300,          // entrées gardées en mémoire (les plus anciennes partent)
   handleConcurrency: 3,   // recherches par pseudo (@nom) en même temps
   maxItems: 50,           // identifiants ou pseudos par appel
+  postGapMs: 3000,        // deux messages écrits dans le chat : au moins 3 s entre les deux
+  postPerHour: 30,        // et 30 par heure
+  writeDenyMs: 10 * 60_000, // YouTube refuse d'écrire (portée, droit) : plus d'essai pendant 10 minutes
 };
 export const DEFAULT_BUDGET = 9000;
 const NO_NETWORK = new Set(["rate", "quota", "circuit", "busy", "invalid"]);   // erreurs de ctx.api.net qui garantissent qu'aucun appel n'est parti
@@ -38,6 +52,12 @@ const HANDLE_RE = /^@[\p{L}\p{N}._·-]{3,30}$/u;
 const PLAYLIST_RE = /^[\w-]{10,64}$/;
 const VIDEO_RE = /^[\w-]{11}$/;
 const PAGE_TOKEN_RE = /^[\w-]{1,100}$/;
+const CHAT_ID_RE = /^[\w.=-]{6,200}$/;
+const CHAT_TOKEN_RE = /^[\w.=-]{1,400}$/;
+/** Raisons de YouTube qui disent « ce chat-là n'est (plus) pas lisible », sans rien dire de la clé. */
+const CHAT_ENDED = new Set(["liveChatEnded", "liveChatNotFound"]);
+const CHAT_OFF = new Set(["liveChatDisabled"]);
+const CHAT_DENIED = new Set(["forbidden", "insufficientPermissions", "liveChatForbidden", "authError", "required"]);
 
 // ── Outils ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 /** Attend `p` au plus `ms` ; au-delà, `fallback()`. Le minuteur est toujours libéré et ne retient pas le processus. */
@@ -83,8 +103,10 @@ function parts(value, allowed) {
  *   channels.list      part ⊂ snippet,statistics,contentDetails ; `id` (1 à 50 identifiants UC…) OU `forHandle` (un pseudo @nom)
  *   playlistItems.list part ⊂ snippet,contentDetails ; `playlistId` ; `maxResults` 1 à 50 (50 par défaut) ; `pageToken` facultatif
  *   videos.list        part ⊂ snippet,contentDetails,statistics,liveStreamingDetails ; `id` (1 à 50 identifiants de vidéo) — liveStreamingDetails : début programmé d'une première ou d'un direct
+ *   liveChatMessages.list (1.2.0) part ⊂ snippet,authorDetails ; `liveChatId` ; `maxResults` 200 à 500 (500 par défaut) ; `pageToken` facultatif — 5 unités, jamais en cache
  */
 export function normalize(endpoint, params = {}) {
+  if (endpoint === LIVE_CHAT) return normalizeChat(params);
   if (!Object.hasOwn(COSTS, endpoint) || !params || typeof params !== "object") return null;
   const q = {};
   if (endpoint === "channels.list") {
@@ -116,7 +138,21 @@ export function normalize(endpoint, params = {}) {
   }
   if (!q.part) return null;
   const query = new URLSearchParams(Object.entries(q).sort(([a], [b]) => a.localeCompare(b)));
-  return { endpoint, url: `${BASE}${endpoint.split(".")[0]}?${query}`, key: `${endpoint}?${query}` };
+  return { endpoint, url: `${BASE}${endpoint.split(".")[0]}?${query}`, key: `${endpoint}?${query}`, cost: COSTS[endpoint] };
+}
+function normalizeChat(params) {
+  if (!params || typeof params !== "object" || typeof params.liveChatId !== "string" || !CHAT_ID_RE.test(params.liveChatId)) return null;
+  const part = parts(params.part ?? "snippet,authorDetails", ["snippet", "authorDetails"]);
+  if (!part) return null;
+  const q = { liveChatId: params.liveChatId, part };
+  if (params.maxResults !== undefined) {
+    const max = Number(params.maxResults);
+    if (!Number.isInteger(max) || max < 200 || max > 500) return null;
+    q.maxResults = String(max);
+  }
+  if (params.pageToken !== undefined) { if (typeof params.pageToken !== "string" || !CHAT_TOKEN_RE.test(params.pageToken)) return null; q.pageToken = params.pageToken; }
+  const query = new URLSearchParams(Object.entries(q).sort(([a], [b]) => a.localeCompare(b)));
+  return { endpoint: LIVE_CHAT, url: `${BASE}liveChat/messages?${query}`, key: `${LIVE_CHAT}?${query}`, cost: LIVE_CHAT_COST, chat: true };
 }
 
 // ── État d'une instance (mémoire, borné) ─────────────────────────────────────────────────────────────────────────────
@@ -125,13 +161,13 @@ function stateOf(ctx) {
   const id = String(ctx.instance?.id ?? ctx.instance?.key ?? "default");
   let st = states.get(id);
   if (!st) {
-    st = { cache: new Map(), lastGood: new Map(), failUntil: new Map(), quota: null, quotaUntil: 0, rateUntil: 0, auth: null, lastGoodAt: null };
+    st = { cache: new Map(), lastGood: new Map(), failUntil: new Map(), quota: null, quotaUntil: 0, rateUntil: 0, auth: null, chatDeniedUntil: 0, writeDeniedUntil: 0, postUntil: 0, posts: [], lastGoodAt: null };
     remember(states, id, st, 20);
   }
   return st;
 }
 /** Pour les tests : oublie tout (caches, compteur en mémoire, pauses). */
-export function resetState() { states.clear(); }
+export function resetState() { states.clear(); O.resetOauth(); }
 
 // ── La clé ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // Deux sources : le réglage « Clé YouTube » (saisi par la personne) l'emporte ; sinon la clé reprise d'un autre module par `adopt`, gardée dans le stockage.
@@ -196,20 +232,31 @@ function errorReasons(json) {
 export async function request(ctx, args = {}) {
   const spec = normalize(args?.endpoint, args?.params);
   if (!spec) return { ok: false, error: "invalid" };
-  const key = await currentKey(ctx);
-  if (!key) return { ok: false, error: "config" };
   const st = stateOf(ctx);
-  const fp = fingerprint(key);
+  // Qui parle à YouTube ? Le chat passe avec le jeton du compte connecté (jamais avec la clé en même temps) ; tout le reste, et le chat d'un site non connecté, avec la clé.
+  let auth = null;
+  if (spec.chat) {
+    const b = await O.bearer(ctx, "read", { priority: args.priority === "interactive" ? "interactive" : "background" });
+    if (b.ok) auth = { kind: "oauth", token: b.token, fp: `oauth:${O.clientOf(ctx).fp}` };
+  }
+  if (!auth) {
+    const key = await currentKey(ctx);
+    if (!key) return { ok: false, error: spec.chat ? "chat_denied" : "config" };   // pas de clé et pas de compte : « Connectez votre compte YouTube »
+    auth = { kind: "key", key, fp: fingerprint(key) };
+  }
+  const fp = auth.fp;
   const ck = `${fp}|${spec.key}`;
   const now = Date.now();
-  const cost = COSTS[spec.endpoint];
-  const hit = st.cache.get(ck);
+  const cost = spec.cost;
+  const noCache = spec.chat === true || args.fresh === true;   // le chat, et toute demande « à jour » (par exemple : un direct a-t-il commencé ?) : ni lue ni gardée en cache, aucune réponse de repli
+  const hit = noCache ? null : st.cache.get(ck);
   if (hit && hit.until > now) return { ok: true, status: 200, json: clone(hit.json), cost: 0, cached: true, at: iso(hit.at) };
   const fallback = (error, extra = {}) => {
-    const last = st.lastGood.get(ck);
+    const last = noCache ? null : st.lastGood.get(ck);
     return last ? { ok: true, status: 200, json: clone(last.json), cost: 0, stale: true, error, at: iso(last.at), ...extra } : { ok: false, error, ...extra };
   };
-  if (refused(st, fp, now)) return fallback("auth");
+  if (auth.kind === "key" && refused(st, fp, now)) return fallback("auth");
+  if (spec.chat && st.chatDeniedUntil > now) return fallback("chat_denied", { retryAt: st.chatDeniedUntil });
   if (st.quotaUntil > now) return fallback("quota", { retryAt: st.quotaUntil });
   if (st.rateUntil > now) return fallback("rate", { retryAt: st.rateUntil });
   if ((st.failUntil.get(ck) ?? 0) > now) return fallback("network");
@@ -221,8 +268,9 @@ export async function request(ctx, args = {}) {
   if (q.used + cost > limit) return fallback("quota", { retryAt: nextPacificMidnight(now), budget: true });
   q.used += cost;
   const timeoutMs = Math.min(LIMITS.timeoutMs, Math.max(500, Number(args.timeoutMs) || LIMITS.timeoutMs));
+  const headers = auth.kind === "oauth" ? { accept: "application/json", authorization: `Bearer ${auth.token}` } : { accept: "application/json", "x-goog-api-key": auth.key };
   const r = await ctx.api.net.request({
-    url: spec.url, method: "GET", headers: { accept: "application/json", "x-goog-api-key": key },
+    url: spec.url, method: "GET", headers,
     timeoutMs, maxBytes: LIMITS.maxBytes, priority: interactive ? "interactive" : "background", bucket: `youtube-data:${fp}`,
   });
   const charged = r.ok ? !r.shared : !NO_NETWORK.has(r.error);
@@ -231,28 +279,115 @@ export async function request(ctx, args = {}) {
   if (!r.ok) {
     if (r.error === "quota") { st.quotaUntil = r.retryAt ?? nextPacificMidnight(done); return fallback("quota", { retryAt: st.quotaUntil }); }
     if (r.error === "rate") return fallback("rate", r.retryAt ? { retryAt: r.retryAt } : {});
-    if (r.error === "timeout" || r.error === "network") remember(st.failUntil, ck, done + LIMITS.failMs);
+    if ((r.error === "timeout" || r.error === "network") && !spec.chat) remember(st.failUntil, ck, done + LIMITS.failMs);
     return fallback(r.error, r.retryAt ? { retryAt: r.retryAt } : {});
   }
   const status = r.status;
   if (status === 200) {
-    if (!r.json || typeof r.json !== "object" || Array.isArray(r.json)) { remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }   // JSON tronqué ou illisible
-    remember(st.cache, ck, { json: r.json, at: done, until: done + LIMITS.cacheMs });
-    remember(st.lastGood, ck, { json: r.json, at: done });
+    if (!r.json || typeof r.json !== "object" || Array.isArray(r.json)) { if (!spec.chat) remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }   // JSON tronqué ou illisible
+    if (!noCache) {
+      remember(st.cache, ck, { json: r.json, at: done, until: done + LIMITS.cacheMs });
+      remember(st.lastGood, ck, { json: r.json, at: done });
+    }
     st.lastGoodAt = done;
     st.failUntil.delete(ck);
     return { ok: true, status, json: clone(r.json), cost: charged ? cost : 0, at: iso(done) };
   }
   const { reasons, message } = errorReasons(r.json);
   if ([...reasons].some((x) => RATE_REASONS.has(x))) { st.rateUntil = done + LIMITS.rateMs; return fallback("rate", { retryAt: st.rateUntil }); }
+  if (spec.chat) {
+    // Le chat a ses propres réponses : un direct fini ou sans chat n'est PAS une clé refusée (sinon toute lecture de YouTube s'arrêterait 10 minutes).
+    const list = [...reasons];
+    if (status === 404 || list.some((x) => CHAT_ENDED.has(x))) return { ok: false, error: "chat_ended", status };
+    if (list.some((x) => CHAT_OFF.has(x))) return { ok: false, error: "chat_disabled", status };
+    if (auth.kind === "oauth") {
+      // Le jeton d'accès est refusé : il sera renouvelé ; si YouTube le refuse encore, ou si le droit manque, c'est « connectez votre compte ».
+      if (status === 401 && !args.retried) { await O.invalidateAccess(ctx); return request(ctx, { ...args, retried: true }); }
+      if (status === 401 || status === 403) { st.chatDeniedUntil = done + LIMITS.authPauseMs; return { ok: false, error: "chat_denied", status, retryAt: st.chatDeniedUntil }; }
+    } else {
+      const keyProblem = list.some((x) => AUTH_REASONS.has(x) && !CHAT_DENIED.has(x)) || /api key/i.test(message);
+      if (!keyProblem && (status === 401 || status === 403)) { st.chatDeniedUntil = done + LIMITS.authPauseMs; return { ok: false, error: "chat_denied", status, retryAt: st.chatDeniedUntil }; }
+    }
+  }
   if (status === 401 || status === 403 || (status === 400 && ([...reasons].some((x) => AUTH_REASONS.has(x)) || /api key/i.test(message)))) {
     st.auth = { fp, until: done + LIMITS.authPauseMs };
     return fallback("auth", { status });
   }
   if (status === 400) return { ok: false, error: "invalid", status };
-  if (status >= 500) { remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }
+  if (status >= 500) { if (!spec.chat) remember(st.failUntil, ck, done + LIMITS.failMs); return fallback("network", { status }); }
   return { ok: true, status, json: r.json && typeof r.json === "object" ? clone(r.json) : null, cost: charged ? cost : 0, at: iso(done) };   // 404… : l'appelant juge
 }
+
+// ── Écrire dans le chat (1.3.0) ──────────────────────────────────────────────────────────────────────────────────────
+/** Le texte d'un message : sans caractère de commande ni espace en double, 1 à 200 caractères ; sinon null. */
+export function cleanChatText(value) {
+  if (typeof value !== "string") return null;
+  const t = value.normalize("NFKC").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, " ").replace(/\s+/g, " ").trim();
+  return t && [...t].length <= CHAT_POST_MAX ? t : null;
+}
+/**
+ * `youtube.api` → chatPost({ liveChatId, text, priority? }) : écrit UN message dans le chat d'un direct (liveChatMessages.insert, 20 unités). Réponse : { ok: true, cost, at } ou { ok: false, error } avec
+ * error ∈ invalid · write_off (« répondre dans le chat » n'est pas activé) · chat_denied (compte non connecté, portée absente ou refus de YouTube : pause de 10 minutes) · chat_ended · chat_disabled · quota · rate · timeout · network · circuit · busy.
+ * Limites : 1 message toutes les 3 s, 30 par heure. Jamais le texte ni un jeton dans la réponse.
+ */
+export async function chatPost(ctx, args = {}) {
+  const chatId = args?.liveChatId;
+  const text = cleanChatText(args?.text);
+  if (typeof chatId !== "string" || !CHAT_ID_RE.test(chatId) || text === null) return { ok: false, error: "invalid" };
+  if (!O.writeWanted(ctx)) return { ok: false, error: "write_off" };
+  const st = stateOf(ctx);
+  const now = Date.now();
+  if (st.writeDeniedUntil > now) return { ok: false, error: "chat_denied", retryAt: st.writeDeniedUntil };
+  if (st.quotaUntil > now) return { ok: false, error: "quota", retryAt: st.quotaUntil };
+  if (st.rateUntil > now) return { ok: false, error: "rate", retryAt: st.rateUntil };
+  if (st.postUntil > now) return { ok: false, error: "rate", retryAt: st.postUntil };
+  const b = await O.bearer(ctx, "write", { priority: "interactive" });
+  if (!b.ok) return { ok: false, error: b.error === "network" ? "network" : "chat_denied" };
+  st.posts = st.posts.filter((t) => now - t < 3_600_000);
+  if (st.posts.length && now - st.posts[st.posts.length - 1] < LIMITS.postGapMs) return { ok: false, error: "rate", retryAt: st.posts[st.posts.length - 1] + LIMITS.postGapMs };
+  if (st.posts.length >= LIMITS.postPerHour) return { ok: false, error: "rate", retryAt: st.posts[0] + 3_600_000 };
+  const q = await quotaOf(ctx, st, now);
+  const budget = budgetOf(ctx);
+  if (q.used + CHAT_POST_COST > budget - reserveOf(budget)) return { ok: false, error: "quota", retryAt: nextPacificMidnight(now), budget: true };
+  q.used += CHAT_POST_COST;
+  st.posts.push(now);
+  const fp = `oauth:${O.clientOf(ctx).fp}`;
+  const r = await ctx.api.net.request({
+    url: `${BASE}liveChat/messages?part=snippet`, method: "POST", headers: { accept: "application/json", authorization: `Bearer ${b.token}` },
+    body: { snippet: { liveChatId: chatId, type: "textMessageEvent", textMessageDetails: { messageText: text } } },
+    timeoutMs: LIMITS.timeoutMs, maxBytes: LIMITS.maxBytes, priority: "interactive", bucket: `youtube-data:${fp}`,
+  });
+  const charged = r.ok || !NO_NETWORK.has(r.error);
+  if (charged) await saveQuota(ctx, st); else { q.used = Math.max(0, q.used - CHAT_POST_COST); st.posts.pop(); }
+  const done = Date.now();
+  if (!r.ok) {
+    if (r.error === "quota") { st.quotaUntil = r.retryAt ?? nextPacificMidnight(done); return { ok: false, error: "quota", retryAt: st.quotaUntil }; }
+    return { ok: false, error: r.error, ...(r.retryAt ? { retryAt: r.retryAt } : {}) };
+  }
+  if (r.status === 200) return { ok: true, cost: CHAT_POST_COST, at: iso(done) };
+  const { reasons } = errorReasons(r.json);
+  const list = [...reasons];
+  if (list.some((x) => RATE_REASONS.has(x))) { st.postUntil = done + LIMITS.rateMs; return { ok: false, error: "rate", retryAt: st.postUntil }; }
+  if (r.status === 404 || list.some((x) => CHAT_ENDED.has(x))) return { ok: false, error: "chat_ended", status: r.status };
+  if (list.some((x) => CHAT_OFF.has(x))) return { ok: false, error: "chat_disabled", status: r.status };
+  if (r.status === 401) await O.invalidateAccess(ctx);
+  if (r.status === 401 || r.status === 403) { st.writeDeniedUntil = done + LIMITS.writeDenyMs; return { ok: false, error: "chat_denied", status: r.status, retryAt: st.writeDeniedUntil }; }
+  if (r.status === 400) return { ok: false, error: "invalid", status: r.status };
+  return { ok: false, error: r.status >= 500 ? "network" : "invalid", status: r.status };
+}
+
+// ── Le compte YouTube : connecter, vérifier, déconnecter (appelés par le panneau d'administration) ───────────────────
+/** Une connexion, un refus ou une déconnexion remettent les pauses du chat à zéro (le résultat doit se voir tout de suite). */
+function clearPauses(ctx) {
+  const st = stateOf(ctx);
+  st.chatDeniedUntil = 0; st.writeDeniedUntil = 0; st.postUntil = 0;
+  return st;
+}
+export const accountConnection = (ctx) => O.connection(ctx);
+export async function accountStart(ctx, opts) { const r = await O.startConnect(ctx, opts); return r; }
+export async function accountCheck(ctx, opts) { const r = await O.checkConnect(ctx, opts); if (r.ok && r.connected) clearPauses(ctx); return r; }
+export const accountCancel = (ctx) => O.cancelConnect(ctx);
+export async function accountDisconnect(ctx) { const r = await O.disconnect(ctx); clearPauses(ctx); return r; }
 
 // ── Infos de chaînes (nom, photo, abonnés) ───────────────────────────────────────────────────────────────────────────
 const num = (v) => (/^\d{1,15}$/.test(String(v ?? "")) ? Number(v) : null);
@@ -340,7 +475,12 @@ export async function isReady(ctx) {
   const key = await currentKey(ctx);
   return !!key && !refused(stateOf(ctx), fingerprint(key));
 }
-/** `youtube.api` → status() : { ready, key: "set"|"missing"|"refused", quota: { used, budget, reserve, day, resetAt, exhausted }, costs, lastGoodAt }. Aucun appel réseau. */
+/**
+ * `youtube.api` → status() : { ready, key: "set"|"missing"|"refused", quota: { used, budget, reserve, day, resetAt, exhausted }, costs, chat: { read, write }, oauth, lastGoodAt }. Aucun appel réseau.
+ *   chat.read   le chat peut être lu : le compte est connecté avec une portée de lecture, ou une clé est là et YouTube ne l'a pas refusée pour le chat.
+ *   chat.write  on peut écrire dans le chat : compte connecté avec la portée d'écriture ET « répondre dans le chat » activé ET YouTube ne l'a pas refusé.
+ *   oauth       { state: "none"|"pending"|"connected"|"stale", configured, read, write, writeWanted, scopes: ["read"|"manage"], since } — jamais un jeton, un code ou un secret.
+ */
 export async function status(ctx) {
   const now = Date.now();
   const key = await currentKey(ctx);
@@ -349,9 +489,16 @@ export async function status(ctx) {
   const budget = budgetOf(ctx);
   const resetAt = nextPacificMidnight(now);
   const keyState = !key ? "missing" : refused(st, fingerprint(key), now) ? "refused" : "set";
+  let c = null;
+  try { c = await O.connection(ctx, now); } catch { /* stockage illisible : comme « pas connecté » */ }
+  const wanted = O.writeWanted(ctx);
+  const read = st.chatDeniedUntil <= now && (!!c?.read && c.state === "connected" || keyState === "set");
+  const write = !!c?.write && c.state === "connected" && wanted && st.writeDeniedUntil <= now;
   return {
     ready: keyState === "set", key: keyState,
     quota: { used: q.used, budget, reserve: reserveOf(budget), day: q.day, resetAt: iso(resetAt), exhausted: st.quotaUntil > now || q.used >= budget - reserveOf(budget), until: iso(st.quotaUntil > now ? st.quotaUntil : resetAt) },
-    costs: { ...COSTS }, lastGoodAt: st.lastGoodAt ? iso(st.lastGoodAt) : null,
+    costs: { ...COSTS, [LIVE_CHAT]: LIVE_CHAT_COST, chatPost: CHAT_POST_COST }, chat: { read, write },
+    oauth: { state: c?.state ?? "none", configured: !!c?.configured, read: !!c?.read, write: !!c?.write, writeWanted: wanted, scopes: c?.scopes ?? [], since: c?.since ?? null },
+    lastGoodAt: st.lastGoodAt ? iso(st.lastGoodAt) : null,
   };
 }

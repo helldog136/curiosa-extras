@@ -12,14 +12,14 @@ export async function providerInfo(ctx) {
 }
 
 /** Interroge TOUTES les instances du service (cœur 0.1.14+), sinon (vieux cœur : pas de `callAll`) l'unique réponse de `call`. → [{ instance, name, value }] des réponses valides. */
-async function askAll(ctx, method, args) {
+export async function askAll(ctx, method, args, service = SERVICE) {
   const svc = ctx.api.services;
   if (typeof svc.callAll === "function") {
     try {
-      return (await svc.callAll(SERVICE, method, args)).filter((r) => r.ok && r.value && typeof r.value === "object").map((r) => ({ instance: r.instance, name: r.name, value: r.value }));
+      return (await svc.callAll(service, method, args)).filter((r) => r.ok && r.value && typeof r.value === "object").map((r) => ({ instance: r.instance, name: r.name, value: r.value }));
     } catch { return []; }
   }
-  const r = await svc.call(SERVICE, method, args);
+  const r = await svc.call(service, method, args);
   return r.ok && r.value && typeof r.value === "object" ? [{ instance: "", name: undefined, value: r.value }] : [];
 }
 

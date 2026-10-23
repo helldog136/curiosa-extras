@@ -10,6 +10,7 @@
 // qui renvoie vers YouTube.
 const v = new URL(import.meta.url).search;   // la version du module se propage au fichier voisin (sinon l'ancien code resterait en mémoire après une mise à jour)
 const events = await import(new URL(`./events.mjs${v}`, import.meta.url).href);
+const live = await import(new URL(`./live.mjs${v}`, import.meta.url).href);
 const CHANNEL_RE = /^UC[\w-]{22}$/;
 const SHORT_MAX_SECONDS = 60;
 const TTL = 10 * 60_000;
@@ -122,7 +123,7 @@ export async function listVideos(ctx, channelId) {
   if (items.length) { remember(cache, channelId, { items, at: Date.now() }); return items; }
   return hit?.items ?? [];
 }
-export const resetCache = () => { cache.clear(); shortCache.clear(); shortPending.clear(); events.resetEvents(); };
+export const resetCache = () => { cache.clear(); shortCache.clear(); shortPending.clear(); events.resetEvents(); live.resetLive(); };
 
 /**
  * Sans durée connue : /shorts/<id> répond 200 pour un vrai Short, redirige pour une vidéo classique (ctx.api.net ne suit pas les redirections).
@@ -255,6 +256,16 @@ export default {
   },
 
   services: {
+    /**
+     * Le direct EN COURS de la chaîne (service `youtube.live`, méthode `current`, depuis la 1.4.0) : { ok: true, live: false, channelId, at }
+     * ou { ok: true, live: true, videoId, title, chatId (ou null : direct sans chat), startedAt, channelId, at, cost } ou { ok: false, error }.
+     * Deux unités de limite YouTube par vérification, gardée 45 s ; `args.fresh` la refait. Rien ne tourne en arrière-plan : seul l'appelant décide quand demander.
+     */
+    "youtube.live": {
+      async current(ctx, args) {
+        return live.readLive((method, a) => youtube(ctx, method, a), channelOf(ctx), { fresh: args?.fresh === true });
+      },
+    },
     /**
      * Les vidéos et directs PROGRAMMÉS de la chaîne, pour les modules qui annoncent des événements (contrat commun `event.source`, méthode `upcoming`) :
      * { ok: true, source: { kind: "youtube", label }, state: "ok" | "setup" | "down", message?, note?, events: [{ id, title, start (UTC), type, url, image }] }.

@@ -6,6 +6,14 @@
 //   - autorisations : `user:read:chat` pour lire, `user:write:chat` pour répondre (POST /chat/messages), `user:bot` et `channel:bot` quand l'abonnement est créé avec le jeton d'application ;
 //   - signature : HMAC-SHA256 de « id + horodatage + corps brut », en-tête `Twitch-Eventsub-Message-Signature: sha256=<hex>` ;
 //   - messages : `webhook_callback_verification` (répondre le « challenge » en texte brut), `notification`, `revocation` ; un message de plus de 10 minutes est à refuser ;
+//   - RÉCOMPENSES (points de chaîne), ajoutées ensuite — TOUT CE QUI SUIT EST NON VÉRIFIÉ AUPRÈS DE LA DOCUMENTATION (dev.twitch.tv injoignable) :
+//       · création / lecture / modification / suppression : POST, GET, PATCH, DELETE `channel_points/custom_rewards` (`broadcaster_id`, `id`) avec le jeton de LA CHAÎNE et l'autorisation `channel:manage:redemptions` (on suppose qu'elle couvre aussi la lecture) ;
+//         `only_manageable_rewards=true` ne rend que les récompenses créées par notre application, qui sont les seules qu'elle puisse modifier ou supprimer ;
+//       · champs d'une récompense : title (45 car. au plus, unique dans la chaîne), cost (≥ 1), prompt (200 car.), is_enabled, is_paused, is_user_input_required, is_global_cooldown_enabled, global_cooldown_seconds,
+//         should_redemptions_skip_request_queue (faux : l'échange reste « UNFULFILLED » et peut être validé ou remboursé) ; 50 récompenses par chaîne au plus (nous nous limitons à 20) ;
+//       · valider ou rembourser : PATCH `channel_points/custom_rewards/redemptions?id=&broadcaster_id=&reward_id=` avec { status: "FULFILLED" | "CANCELED" } ; CANCELED rend les points ; seul un échange « UNFULFILLED » d'une récompense de notre application est modifiable ;
+//       · comptes sans points de chaîne : 403 dont le message parle d'« affiliate » ou de « partner » ;
+//       · abonnement `channel.channel_points_custom_reward_redemption.add` (version 1), condition { broadcaster_user_id }, même transport webhook et même signature que le chat ; évènement : id, user_login, user_name, user_input, status, reward { id, title, cost, prompt }, redeemed_at.
 //   - un message du chat fait au plus 500 caractères ; environ 20 messages par 30 secondes pour un compte ordinaire (donc nous restons bien en dessous).
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -60,6 +68,7 @@ export function parseBody(messageType, rawBody) {
   if (messageType === "webhook_callback_verification") return typeof json.challenge === "string" && json.challenge.length <= 500 ? { kind: "challenge", challenge: json.challenge } : { kind: "invalid" };
   if (messageType === "revocation") return { kind: "revocation", status: String(json.subscription?.status ?? "").slice(0, 80), type: String(json.subscription?.type ?? "").slice(0, 80) };
   if (messageType === "notification") {
+    if (json.subscription?.type === TYPE_REDEEM) { const redemption = parseRedemption(json.event); return redemption ? { kind: "redemption", redemption } : { kind: "invalid" }; }
     if (json.subscription?.type !== TYPE) return { kind: "ignored" };
     const chat = parseChat(json.event);
     return chat ? { kind: "chat", chat } : { kind: "invalid" };
@@ -156,4 +165,70 @@ export function readSend(res) {
   if (res.status === 401 || res.status === 403) return { sent: false, code: "denied" };
   if (res.status >= 400 && res.status < 500) return { sent: false, code: "refused", detail: str(res.json?.message, 200) };
   return { sent: false, code: "twitch" };
+}
+
+/* ───────────── Récompenses en points de chaîne (voir les hypothèses en tête de fichier) ───────────── */
+
+export const TYPE_REDEEM = "channel.channel_points_custom_reward_redemption.add";
+/** Autorisation à demander à la chaîne (jeton du compte de la chaîne, jamais celui d'un compte bot). */
+export const REWARD_SCOPES = ["channel:manage:redemptions"];
+export const LIMITS = { title: 45, prompt: 200, maxRewards: 20, maxCooldown: 86_400, maxCost: 1_000_000_000 };
+const RID = /^[A-Za-z0-9-]{8,64}$/;
+export const validTwitchId = (x) => typeof x === "string" && RID.test(x);
+
+/** Un échange de points, réduit à ce dont on a besoin ; null si ce n'en est pas un. Le message du viewer (`input`) est borné et n'est jamais gardé par nous. */
+export function parseRedemption(event) {
+  if (!event || typeof event !== "object") return null;
+  const r = {
+    id: str(event.id, 64), broadcasterId: str(event.broadcaster_user_id, 40), login: str(event.user_login, 40).toLowerCase(), name: str(event.user_name, 60),
+    input: str(event.user_input, 500), status: str(event.status, 30).toLowerCase(), rewardId: str(event.reward?.id, 64), rewardTitle: str(event.reward?.title, 80),
+    at: Date.parse(str(event.redeemed_at, 40)),
+  };
+  return validTwitchId(r.id) && validTwitchId(r.rewardId) && r.broadcasterId && r.login ? r : null;
+}
+
+export const redeemListRequest = () => ({ as: "app", method: "GET", path: "eventsub/subscriptions", query: { type: TYPE_REDEEM } });
+export const redeemCreateRequest = ({ broadcasterId, callback, secret }) => ({ as: "app", method: "POST", path: "eventsub/subscriptions", body: { type: TYPE_REDEEM, version: "1", condition: { broadcaster_user_id: String(broadcasterId) }, transport: { method: "webhook", callback, secret } } });
+/** Même idée que `classify` pour l'abonnement aux échanges (condition : la chaîne seulement). */
+export function classifyRedeem(json, { callback, broadcasterId }) {
+  const rows = (Array.isArray(json?.data) ? json.data : []).filter((s) => s?.type === TYPE_REDEEM && s.transport?.method === "webhook" && s.transport?.callback === callback);
+  const ours = rows.filter((s) => String(s.condition?.broadcaster_user_id) === String(broadcasterId)), foreign = rows.filter((s) => !ours.includes(s)).map((s) => String(s.id));
+  const good = ours.find((s) => s.status === "enabled"), pending = ours.find((s) => s.status === "webhook_callback_verification_pending"), keep = good ?? pending;
+  const stale = [...ours.filter((s) => s !== keep).map((s) => String(s.id)), ...foreign];
+  if (good) return { state: "enabled", id: String(good.id), stale };
+  if (pending) return { state: "pending", id: String(pending.id), stale };
+  return { state: ours.length ? "failed" : "missing", stale };
+}
+
+const rewardQuery = (broadcasterId, extra = {}) => ({ broadcaster_id: String(broadcasterId), ...extra });
+const base = "channel_points/custom_rewards";
+/** Le corps d'une récompense pour Twitch. `r` : { title, cost, prompt, needsInput, cooldown (secondes) } ; `paused` s'ajoute à la modification. */
+export function rewardBody(r, extra = {}) {
+  return { title: r.title, cost: r.cost, prompt: r.prompt ?? "", is_enabled: true, is_user_input_required: r.needsInput === true, is_global_cooldown_enabled: r.cooldown > 0, global_cooldown_seconds: r.cooldown > 0 ? r.cooldown : 1, should_redemptions_skip_request_queue: false, ...extra };
+}
+export const rewardRequests = {
+  list: (b) => ({ as: "user", slot: "main", method: "GET", path: base, query: rewardQuery(b, { only_manageable_rewards: "true" }) }),
+  create: (b, r) => ({ as: "user", slot: "main", method: "POST", path: base, query: rewardQuery(b), body: rewardBody(r) }),
+  update: (b, id, r) => ({ as: "user", slot: "main", method: "PATCH", path: base, query: rewardQuery(b, { id }), body: rewardBody(r) }),
+  pause: (b, id, paused) => ({ as: "user", slot: "main", method: "PATCH", path: base, query: rewardQuery(b, { id }), body: { is_paused: paused === true } }),
+  remove: (b, id) => ({ as: "user", slot: "main", method: "DELETE", path: base, query: rewardQuery(b, { id }) }),
+  settle: (b, rewardId, redemptionId, status) => ({ as: "user", slot: "main", method: "PATCH", path: `${base}/redemptions`, query: { id: redemptionId, broadcaster_id: String(b), reward_id: rewardId }, body: { status: status === "FULFILLED" ? "FULFILLED" : "CANCELED" } }),
+};
+
+const reward = (x) => (x && validTwitchId(x.id) ? { id: x.id, title: str(x.title, 80), cost: Number.isFinite(x.cost) ? x.cost : 0, enabled: x.is_enabled !== false, paused: x.is_paused === true } : null);
+/**
+ * Lit la réponse de Twitch à une opération sur les récompenses : { ok: true, rewards: [..] } ou { ok: false, code, detail? } avec code :
+ * "na" (compte sans points de chaîne : ni Affilié ni Partenaire) · "denied" (autorisation à redonner) · "duplicate" (titre déjà pris) · "limit" (trop de récompenses) · "gone" (n'existe plus ou n'est pas à nous) · "refused" · "twitch".
+ */
+export function readReward(res) {
+  const msg = str(res.json?.message, 200), low = msg.toLowerCase();
+  if (res.status === 200 || res.status === 204) return { ok: true, rewards: (Array.isArray(res.json?.data) ? res.json.data : []).map(reward).filter(Boolean) };
+  if (res.status === 403 && /affiliate|partner/.test(low)) return { ok: false, code: "na" };
+  if (res.status === 401 || res.status === 403) return { ok: false, code: "denied" };
+  if (res.status === 404) return { ok: false, code: "gone" };
+  if (res.status === 400 && /duplicate/.test(low)) return { ok: false, code: "duplicate" };
+  if (res.status === 400 && /too_many|max/.test(low)) return { ok: false, code: "limit" };
+  if (res.status === 429) return { ok: false, code: "rate" };
+  if (res.status >= 400 && res.status < 500) return { ok: false, code: "refused", detail: msg };
+  return { ok: false, code: "twitch" };
 }

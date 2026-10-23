@@ -66,7 +66,9 @@ test("SRP : seul le Connecteur Twitch parle à Twitch (adresses, jetons, connexi
     if (m.id === "twitch-connector") continue;
     assert.ok(!/(?:id|api)\.twitch\.tv\/|oauth2\/(?:token|authorize|revoke|validate)|helix\//.test(m.code), `${m.id} parle à Twitch : passez par le service twitch.api`);
     if (m.id === "twitch-channel") continue;   // ses anciennes collections de jetons ne sont plus que LUES une fois, pour les confier au Connecteur (handover.mjs)
-    assert.ok(!/twitchConnection|twitchPending|refresh_token/.test(m.code), `${m.id} touche aux jetons Twitch`);
+    // Le Connecteur YouTube écrit « refresh_token » parce que c'est le nom du champ de Google (connexion au compte YouTube, 1.3.0) : ce qui compte ici, ce sont les collections de jetons Twitch.
+    const twitchTokens = m.id === "youtube-connector" ? /twitchConnection|twitchPending/ : /twitchConnection|twitchPending|refresh_token/;
+    assert.ok(!twitchTokens.test(m.code), `${m.id} touche aux jetons Twitch`);
   }
   const channel = mods.find((m) => m.id === "twitch-channel");
   assert.ok(!/refresh_token|grant_type|access_token/.test(channel.code), "Ma Chaîne Twitch ne gère plus aucun jeton");
