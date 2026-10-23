@@ -7,7 +7,8 @@
 //   - le visiteur n'attend jamais plus de 2,5 secondes : passé ce délai il ne voit pas YouTube pour cette page, et la réponse, quand elle arrive, remplit quand même la mémoire ;
 //   - aucun minuteur de fond : tout part d'une page affichée ; sans visiteur, plus aucune vérification.
 // Sans Chaîne YouTube installée, `callAll` répond tout de suite « aucun fournisseur » : rien n'est mémorisé, aucun appel.
-import { askAll } from "./source.mjs";
+// Même « version » que ce fichier (voir index.mjs) : un `import … from "./source.mjs"` sans elle reprend l'ANCIEN source.mjs resté en mémoire après une mise à jour.
+const { askAll } = await import(new URL(`./source.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
 export const SERVICE = "youtube.live";
 export const VIDEO_RE = /^[\w-]{11}$/;

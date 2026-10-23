@@ -2,7 +2,8 @@
 // Twitch par le service `twitch.live` (méthode `adopt`), puis effacés d'ici. Un module n'écrit jamais dans les réglages d'un autre : la copie passe par le service, qui ne
 // remplit que ses champs vides (une valeur déjà présente n'est jamais écrasée). Les valeurs ne transitent qu'en mémoire : jamais affichées, journalisées ni renvoyées.
 // Appelée par la migration des données (version 2) ; rejouée par la tâche `adopt` tant qu'il reste quelque chose (Chaîne Twitch momentanément indisponible).
-import { SERVICE, CHANNEL_RE } from "./source.mjs";
+// Même « version » que ce fichier (voir index.mjs) : un `import … from "./source.mjs"` sans elle garderait l'ANCIEN source.mjs en mémoire après une mise à jour.
+const { SERVICE, CHANNEL_RE } = await import(new URL(`./source.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
 export const FIELDS = ["channel", "clientId", "clientSecret"];
 const text = (v) => (typeof v === "string" ? v.trim() : "");

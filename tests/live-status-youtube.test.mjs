@@ -49,7 +49,7 @@ const player = (ctx) => def.sections.player(ctx);
 test("manifeste : même identifiant et même plateforme, nom « Statut du live », deux sources facultatives, réglages simples avec valeurs par défaut sensées", async () => {
   const m = await assertValidManifest(manifest);
   assert.equal(m.id, "live-status");
-  assert.equal(m.version, "1.4.0");
+  assert.equal(m.version, "1.4.1");
   assert.deepEqual(m.name, { en: "Live status", fr: "Statut du live" });
   assert.equal(m.platform, "twitch");
   assert.ok(m.requires.every((r) => r.optional === true && r.label.fr && r.label.en));
