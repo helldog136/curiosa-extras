@@ -90,7 +90,9 @@ export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
 export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false });
 
 /** La mention de marque, dessinée en bas de la vidéo quand la case est cochée. C'est un nom de marque : elle n'est JAMAIS traduite (donc absente des locales). */
-export const WATERMARK_TEXT = "Made with Curiosa";
+export const WATERMARK_LEAD = "Made with ", WATERMARK_NAME = "Curiosa", WATERMARK_TEXT = WATERMARK_LEAD + WATERMARK_NAME;
+/** Le nom « Curiosa » suit la charte du logo : Fraunces italique 600 (fichier du module, licence SIL OFL), à 1,15 fois la taille du texte voisin comme dans le pied de page du site. */
+export const WORDMARK = { family: "CuriosaWordmark", weight: 600, scale: 1.15, fallback: "Georgia, serif" };
 
 /** Remet n'importe quelle entrée (modèle enregistré, IA, navigateur) au bon format : valeurs inconnues écartées, durées et longueurs bornées. Ne lève jamais. */
 export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {

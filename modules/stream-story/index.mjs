@@ -9,7 +9,7 @@
 // Aucune vidéo, aucune image n'est gardée sur le serveur : le fichier est téléchargé par le navigateur et c'est tout.
 //
 // Routes (toutes servies par `/m/<clé>/…`) :
-//   studio, lib/*.mjs      la page de l'éditeur et son code (rien de personnel : aucun jeton requis) ;
+//   studio, lib/*.mjs, wordmark   la page de l'éditeur, son code et la police du nom « Curiosa » (rien de personnel : aucun jeton requis) ;
 //   events, cover          la liste « Pour quoi veux-tu une story ? » (événements de toutes les sources, par pages) et la jaquette d'un jeu ;
 //   data, streams, prep    lectures, avec le jeton de l'éditeur (en-tête X-Story-Token) ;
 //   people, members        la recherche d'une personne dans Contacts, et la relecture des fiches d'un modèle ;
@@ -132,6 +132,11 @@ const routes = {
     if (!r.ok) return new Response(null, { status: r.error === "refused" ? 400 : r.error === "busy" ? 503 : r.error === "missing" ? 404 : 502, headers: NO_STORE });
     return new Response(r.bytes, { headers: { "Content-Type": r.type, "Cache-Control": "private, max-age=300", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'" } });
   }),
+};
+// La police du nom « Curiosa » pour la mention : un petit fichier fixe (rien de personnel, aucun jeton).
+routes.wordmark = async (request) => {
+  const no = only(request, "GET"); if (no) return no;
+  return new Response(await page.wordmarkFont(), { headers: { "Content-Type": "font/woff2", "Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff" } });
 };
 for (const name of page.LIB) routes[`lib/${name}`] = libRoute(name);
 

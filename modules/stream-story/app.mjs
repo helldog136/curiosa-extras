@@ -81,6 +81,25 @@ function loadImage(url) {
   return job;
 }
 
+/* ───────────── La police du nom « Curiosa » ───────────── */
+// Le logo du site met « Curiosa » en Fraunces italique 600 : le fichier vient du module (route `wordmark`), est chargé par FontFace et doit être PRÊT avant le premier dessin (sinon le canvas
+// prend en silence une police de secours). Délai court (3 s) : en cas d'échec ou de lenteur, Georgia italique prend le relais et la vidéo se fabrique quand même.
+let fontJob = null;
+function loadWordmarkFont() {
+  fontJob ??= (async () => {
+    try {
+      if (typeof FontFace !== "function" || !document.fonts) return false;
+      const work = (async () => {
+        const res = await fetch(`${C.base}/wordmark`); if (!res.ok) return false;
+        const face = new FontFace(P.WORDMARK.family, await res.arrayBuffer(), { style: "italic", weight: String(P.WORDMARK.weight) });
+        await face.load(); document.fonts.add(face); return true;
+      })();
+      return await Promise.race([work, new Promise((r) => setTimeout(() => r(false), 3000))]);
+    } catch { return false; }
+  })();
+  return fontJob;
+}
+
 /* ───────────── La scène et l'aperçu ───────────── */
 function contentNow() {
   const stream = selectedStream();
@@ -89,6 +108,7 @@ function contentNow() {
 async function buildScene(nowMs = Date.now()) {
   const mine = ++S.building;
   S.nowMs = nowMs;
+  const wordmarkOk = S.cfg.watermark === true && (await loadWordmarkFont());
   const { stream, content } = contentNow();
   const members = chosenMembers();
   const [logo, cover, ...av] = await Promise.all([
@@ -97,7 +117,7 @@ async function buildScene(nowMs = Date.now()) {
   ]);
   if (mine !== S.building) return null;
   const avatars = Object.fromEntries(members.map((m, i) => [m.login, av[i]]));
-  const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true });
+  const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
   return { scene, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
 let rebuildTimer = null;

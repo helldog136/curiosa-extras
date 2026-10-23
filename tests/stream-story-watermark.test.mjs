@@ -119,12 +119,13 @@ test("MCP : `watermark` facultatif (défaut = le choix de la personne), vrai/fau
 
 const THEME = { accent: "#7c5cff", accent2: "#ff4d8d", bg: "#101018", fg: "#f2f2f2" };
 const members = ["Alice", "Bob"].map((name, i) => ({ login: `chaine_${i}`, name }));
-function scene({ style = "neon", format = "vertical", watermark, colors = THEME, n = 2, text = "Ce soir, on rigole bien !", duration = 15, font } = {}) {
+function scene({ style = "neon", format = "vertical", watermark, colors = THEME, n = 2, text = "Ce soir, on rigole bien !", duration = 15, font, wordmarkFont = "CuriosaWordmark" } = {}) {
   const content = P.buildContent({ ...P.DEFAULT_CONFIG, style, format, text, costreamers: members.slice(0, n).map((m) => m.login) }, { stream: { title: "Grande soirée découverte", startMs: Date.parse("2026-10-22T17:30:00Z"), allDay: false, games: ["Hades"], timezone: "Europe/Brussels" }, coStreamers: members.slice(0, n), site: { name: "Emma Live" }, nowMs: NOW, tz: "Europe/Brussels" });
-  return S.createScene({ style, format, duration, content, assets: { logo: fakeImage(200, 200), cover: fakeImage(600, 338), avatars: {} }, colors, font, measureContext: fakeCanvasContext(), ...(watermark === undefined ? {} : { watermark }) });
+  return S.createScene({ style, format, duration, content, assets: { logo: fakeImage(200, 200), cover: fakeImage(600, 338), avatars: {} }, colors, font, measureContext: fakeCanvasContext(), wordmarkFont, ...(watermark === undefined ? {} : { watermark }) });
 }
 const frame = (sc, t) => { const ctx = fakeCanvasContext(); sc.draw(ctx, t); return ctx.log; };
-const marks = (log) => log.filter((l) => l[0] === "fillText" && l[1] === TEXT);
+/** Les mentions d'une image : des paires [« Made with », « Curiosa »] (deux dessins de texte qui se suivent). */
+const marks = (log) => log.flatMap((l, i) => (l[0] === "fillText" && l[1] === P.WATERMARK_LEAD && log[i + 1]?.[1] === P.WATERMARK_NAME ? [[l, log[i + 1]]] : []));
 const px = (font) => Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
 
 test("pas de case cochée, pas de mention : ni dessin ni place réservée, la mise en page est identique à celle de la 2.1 (aucun ajout sans la case)", () => {
@@ -140,7 +141,7 @@ test("la mention est demandée au moteur de rendu sur TOUTES les images (du prem
   for (const style of P.STYLES) for (const format of ["vertical", "passeport"]) {
     const sc = scene({ style, format, watermark: true }), first = marks(frame(sc, 0));
     assert.equal(first.length, 1, `${style}/${format} : présente dès la première image`);
-    assert.equal(first[0][5], "center"); assert.equal(first[0][6], 1, "pleinement opaque (jamais en fondu)");
+    assert.equal(first[0][0][5], "left"); assert.equal(first[0][0][6], 1); assert.equal(first[0][1][6], 1, "pleinement opaque (jamais en fondu)");
     for (let i = 0; i <= 15 * 30; i++) {
       const m = marks(frame(sc, i / 30));
       assert.equal(m.length, 1, `${style}/${format} image ${i}`);
@@ -154,8 +155,13 @@ test("la mention est demandée au moteur de rendu sur TOUTES les images (du prem
 test("la place : centrée, en bas de la zone sûre (au-dessus de la zone qu'Instagram recouvre), dans les marges, sans toucher le contenu ni une zone cachée, 28 à 32 px, police de la vidéo", () => {
   for (const style of P.STYLES) for (const format of ["vertical", "passeport"]) for (const n of [0, 3, 6]) for (const text of ["", "Une phrase de trois lignes pour remplir au maximum la zone sûre de la vidéo, vraiment !"]) {
     const sc = scene({ style, format, n, text, watermark: true, font: "Inter, sans-serif" }), f = P.formatOf(format), A = P.safeArea(f), w = sc.watermark, where = `${style}/${format}/${n}/${text.length}`;
-    const [, , x, y, font] = marks(frame(sc, 3))[0];
-    assert.ok(Math.abs(x - f.width / 2) <= 1, `${where} : centrée (${x})`);
+    const [lead, name] = marks(frame(sc, 3))[0], font = lead[4], x = lead[2], [p1, p2] = w.parts;
+    assert.equal(lead[3], name[3], `${where} : même ligne de base`);
+    const w1 = P.WATERMARK_LEAD.length * px(lead[4]) * 0.55, w2 = P.WATERMARK_NAME.length * px(name[4]) * 0.55;
+    assert.ok(Math.abs(x + (w1 + w2) / 2 - f.width / 2) <= 1.5, `${where} : l'ensemble est centré (${x})`);
+    assert.ok(Math.abs(name[2] - (x + w1)) <= 1, "« Curiosa » suit « Made with » sans trou");
+    assert.match(name[4], /^italic 600 34\.5px "CuriosaWordmark", Georgia, serif$/, "Fraunces italique 600, 1,15 fois plus grand");
+    assert.ok(p1.x === x && p2.x === name[2]);
     assert.ok(w.x >= A.x && w.x + w.w <= A.x + A.w && w.y >= A.y && w.y + w.h <= A.y + A.h + 0.5, `${where} : dans la zone sûre`);
     assert.ok(Math.abs(w.x + w.w / 2 - f.width / 2) <= 1);
     assert.ok(A.y + A.h - (w.y + w.h) < 1, `${where} : tout en bas de la zone sûre, donc juste au-dessus de la barre de réponse d'Instagram`);
@@ -163,10 +169,9 @@ test("la place : centrée, en bas de la zone sûre (au-dessus de la zone qu'Inst
     for (const z of f.zones) assert.ok(w.x + w.w <= z.x || w.x >= z.x + z.w || w.y + w.h <= z.y || w.y >= z.y + z.h, `${where} : hors de la zone « ${z.id} »`);
     for (const b of sc.boxes) assert.ok(b.y + b.h <= w.y, `${where} : ${b.id} reste au-dessus de la mention`);
     assert.ok(px(font) >= 28 && px(font) <= 32, `${where} : ${font}`);
-    assert.match(font, /Inter, sans-serif$/, "la police du reste de la vidéo");
-    const text0 = marks(frame(sc, 3))[0], width = TEXT.length * px(font) * 0.55;
-    assert.ok(width + 20 < w.w, `${where} : le texte tient dans sa pastille`);
-    assert.ok(text0[3] > w.y && text0[3] < w.y + w.h, "le texte est dans sa pastille");
+    assert.match(font, /Inter, sans-serif$/, "« Made with » : la police du reste de la vidéo");
+    assert.ok(w1 + w2 + 40 < w.w && x > w.x && name[2] + w2 < w.x + w.w, `${where} : les deux segments tiennent dans leur pastille`);
+    assert.ok(lead[3] > w.y && lead[3] < w.y + w.h, "le texte est dans sa pastille");
   }
 });
 
@@ -188,7 +193,7 @@ test("contraste : le texte est lisible (≥ 4,5:1) sur la couleur de fond du mod
 
 test("anti-crénelage et coût : positions entières, aucun flou ni ombre résiduelle, une pastille arrondie + un trait + un texte par image (≤ 12 appels de plus, toujours les mêmes) ; le dessin reste dans save/restore", () => {
   const sc = scene({ style: "poster", watermark: true }), base = scene({ style: "poster" });
-  const [, , x, y] = marks(frame(sc, 1))[0];
+  const [lead] = marks(frame(sc, 1))[0], x = lead[2], y = lead[3];
   assert.ok(Number.isInteger(sc.watermark.x) && Number.isInteger(sc.watermark.y) && Number.isInteger(sc.watermark.w) && Number.isInteger(x), "x entier");
   assert.ok(Number.isInteger(y * 2), "y au demi-pixel au plus");
   const counts = [0, 0.4, 3, 9, 15].map((t) => frame(sc, t).length - frame(base, t).length);
@@ -235,7 +240,7 @@ function installDom(html, token) {
   }
   els.get("story-config").textContent = /<script type="application\/json" id="story-config">(.*?)<\/script>/s.exec(html)[1];
   const body = new El("body"); body.classList = { toggle() {} };
-  const document = { getElementById: (id) => els.get(id) ?? null, createElement: (t) => new El(t), createTextNode: (t) => new Text(t), querySelectorAll: () => [], body };
+  const document = { getElementById: (id) => els.get(id) ?? null, createElement: (t) => new El(t), createTextNode: (t) => new Text(t), querySelectorAll: () => [], body, fonts: globalThis.__fonts };
   Object.assign(globalThis, {
     document, Image: class { set src(v) { this._src = v; setTimeout(() => this.onload?.(), 0); } get src() { return this._src; } width = 100; height = 100; naturalWidth = 100; naturalHeight = 100; },
     location: { hash: `#t=${token}`, pathname: "/m/story/studio", search: "" }, history: { replaceState() {} }, matchMedia: () => ({ matches: true }) /* mouvement réduit : la vidéo est dessinée au repos */, requestAnimationFrame: () => 0,
@@ -266,7 +271,7 @@ async function boot(ctx, tag) {
   return { els, server, token };
 }
 
-const drawnMarks = (els) => els.get("preview").getContext().log.filter((l) => l[0] === "fillText" && l[1] === TEXT).length;
+const drawnMarks = (els) => els.get("preview").getContext().log.filter((l) => l[0] === "fillText" && l[1] === P.WATERMARK_NAME).length;
 const bootStudio = async (ctx, tag, { prep } = {}) => {
   const token = await data.mintToken(ctx);
   const html = await (await def.routes.studio(new Request(`${SITE}/m/story/studio`), ctx)).text();
@@ -331,6 +336,70 @@ test("éditeur en anglais : la case et son aide sont traduites, la mention dessi
     els.get("watermark").checked = true; els.get("watermark").fire("change"); await wait(500);
     assert.ok(drawnMarks(els) >= 1);
     const texts = els.get("preview").getContext().log.filter((l) => l[0] === "fillText").map((l) => l[1]);
-    assert.ok(texts.includes(TEXT) && !texts.some((t) => /Fait avec|Créé avec/.test(t)));
+    assert.ok(texts.includes(P.WATERMARK_LEAD) && texts.includes(P.WATERMARK_NAME) && !texts.some((t) => /Fait avec|Créé avec/.test(t)));
   } finally { server.restore(); }
+});
+
+/* ───────────── La police du nom « Curiosa » (charte du logo) ───────────── */
+
+test("police du nom : copie EXACTE du fichier du cœur (Fraunces italique, ≈ 1,7 Ko) avec sa licence SIL OFL à côté ; servie par une route du module, sans jeton ni appel extérieur", async () => {
+  const bytes = fs.readFileSync(`${DIR}/curiosa-wordmark.woff2`);
+  assert.equal(bytes.subarray(0, 4).toString("latin1"), "wOF2"); assert.ok(bytes.length > 1000 && bytes.length < 3000, String(bytes.length));
+  const core = process.env.CURIOSA_DIR ? `${process.env.CURIOSA_DIR}/src/components/brand/curiosa-wordmark.woff2` : "";
+  if (core && fs.existsSync(core)) assert.ok(bytes.equals(fs.readFileSync(core)), "identique à celle du cœur");
+  assert.match(read("curiosa-wordmark.OFL.txt"), /SIL Open Font License, Version 1\.1/); assert.match(read("curiosa-wordmark.OFL.txt"), /Fraunces/);
+  const real = globalThis.fetch; let calls = 0; globalThis.fetch = async () => { calls++; throw new Error("réseau"); };
+  try {
+    const r = await def.routes.wordmark(new Request(`${SITE}/m/story/wordmark`), mkCtx());
+    assert.deepEqual([r.status, r.headers.get("content-type")], [200, "font/woff2"]); assert.ok(Buffer.from(await r.arrayBuffer()).equals(bytes));
+    assert.equal((await def.routes.wordmark(new Request(`${SITE}/m/story/wordmark`, { method: "POST" }), mkCtx())).status, 405);
+  } finally { globalThis.fetch = real; }
+  assert.equal(calls, 0, "aucun appel réseau");
+  assert.match(read("README.md"), /OFL/);
+});
+
+test("deux segments : « Made with » dans la police de la vidéo, « Curiosa » en Fraunces italique 600 (C majuscule, 1,15×), même ligne de base ; sans la police chargée, Georgia italique 600 prend le relais", () => {
+  const ok = scene({ watermark: true, font: "Inter, sans-serif" }), [lead, name] = marks(frame(ok, 2))[0];
+  assert.match(lead[4], /^600 30px Inter, sans-serif$/); assert.match(name[4], /^italic 600 34\.5px "CuriosaWordmark", Georgia, serif$/); assert.equal(name[1][0], "C");
+  const fb = scene({ watermark: true, font: "Inter, sans-serif", wordmarkFont: "" }), [, name2] = marks(frame(fb, 2))[0];
+  assert.equal(name2[4], "italic 600 34.5px Georgia, serif", "repli propre");
+  const bad = scene({ watermark: true, wordmarkFont: 'x"; evil' }), [, name3] = marks(frame(bad, 2))[0];
+  assert.ok(!name3[4].includes("evil"), "nom de police inconnu refusé");
+  assert.ok(fb.watermark.w >= 0 && ok.watermark.parts.length === 2);
+});
+
+const namesDrawn = (els) => els.get("preview").getContext().log.filter((l) => l[0] === "fillText" && l[1] === P.WATERMARK_NAME).map((l) => l[4]);
+async function withFont(mode, tag) {
+  const faces = [], added = [];
+  globalThis.FontFace = class { constructor(family, data, desc) { this.family = family; this.bytes = data.byteLength; this.desc = desc; faces.push(this); } load() { return mode === "ok" ? Promise.resolve(this) : mode === "fail" ? Promise.reject(new Error("police illisible")) : new Promise(() => {}); } };
+  globalThis.__fonts = { add: (f) => added.push(f) };
+  const ctx = mkCtx(); await data.setWatermarkPref(ctx, true);
+  const { els, server } = await bootStudio(ctx, tag);
+  try { await manualEvent(els); await wait(mode === "slow" ? 3600 : 300); return { faces, added, drawn: namesDrawn(els), log: server.log, generate: els.get("generate") }; }
+  finally { server.restore(); delete globalThis.FontFace; delete globalThis.__fonts; }
+}
+
+test("éditeur : la police du nom est chargée avant le premier dessin (FontFace depuis le fichier du module, via sa route), et le dessin l'utilise", async () => {
+  const r = await withFont("ok", "g");
+  assert.equal(r.faces.length, 1); assert.deepEqual([r.faces[0].family, r.faces[0].desc], ["CuriosaWordmark", { style: "italic", weight: "600" }]);
+  assert.ok(r.faces[0].bytes > 1000 && r.faces[0].bytes < 3000, "le fichier du module, pas autre chose");
+  assert.equal(r.added.length, 1, "ajoutée à document.fonts");
+  assert.ok(r.log.some(([m, route]) => m === "GET" && route === "wordmark"));
+  assert.ok(r.drawn.length > 0 && r.drawn.every((f) => /^italic 600 34\.5px "CuriosaWordmark", Georgia, serif$/.test(f)), r.drawn[0]);
+});
+
+test("éditeur : police illisible → repli Georgia italique 600, la mention est dessinée et la génération reste possible", async () => {
+  const r = await withFont("fail", "h");
+  assert.equal(r.added.length, 0);
+  assert.ok(r.drawn.length > 0 && r.drawn.every((f) => f === "italic 600 34.5px Georgia, serif"), r.drawn[0]);
+  assert.equal(r.generate.isDisabled, false, "le bouton « Générer la vidéo » n'est pas bloqué");
+});
+
+test("éditeur : police trop lente (délai de 3 s) → repli, rien ne reste bloqué ; navigateur sans FontFace → repli aussi", async () => {
+  const t0 = Date.now(), r = await withFont("slow", "i");
+  assert.ok(Date.now() - t0 < 9000);
+  assert.ok(r.drawn.length > 0 && r.drawn.every((f) => f === "italic 600 34.5px Georgia, serif"));
+  const ctx = mkCtx(); await data.setWatermarkPref(ctx, true);
+  const { els, server } = await bootStudio(ctx, "j");
+  try { await manualEvent(els); await wait(300); assert.ok(namesDrawn(els).every((f) => f === "italic 600 34.5px Georgia, serif") && namesDrawn(els).length > 0); } finally { server.restore(); }
 });

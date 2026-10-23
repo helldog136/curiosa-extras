@@ -31,6 +31,9 @@ export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`u
 /** Les fichiers que la page charge : la liste est fermée (jamais un nom donné par la requête). */
 export const LIB = ["pure.mjs", "scenes.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
 const sourceCache = new Map();
+/** La police du nom « Curiosa » (copie exacte du fichier du cœur, licence SIL OFL à côté) : servie par le module lui-même, aucun appel extérieur. */
+let fontBytes = null;
+export async function wordmarkFont() { return (fontBytes ??= await readFile(new URL("./curiosa-wordmark.woff2", import.meta.url))); }
 export async function libSource(name) {
   if (!LIB.includes(name)) return null;
   if (!sourceCache.has(name)) sourceCache.set(name, await readFile(new URL(`./${name}`, import.meta.url), "utf8"));
