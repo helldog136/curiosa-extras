@@ -2,6 +2,7 @@
 //
 // Ce que fait ce module, et rien d'autre : composer l'animation et l'emballer en fichier vidéo. Ce qui appartient aux autres reste chez eux :
 //   - les streams : les agendas (sujet `planning.slot`, n'importe quel agenda installé) ;
+//   - les autres événements datés (vidéos et directs programmés, planning d'une chaîne…) : les modules qui offrent le service `event.source` (facultatif, aucun n'est nommé ici) ;
 //   - les personnes (co-streamers) et leurs photos : Contacts (service `contact.book`, version 2), FACULTATIF. Story ne garde que des identifiants de fiche ; sans Contacts, il reste
 //     la saisie « pour cette vidéo seulement » ;
 //   - les jaquettes : le service du cœur (ctx.api.rawg) ; le logo et les couleurs : le thème du site.
@@ -9,6 +10,7 @@
 //
 // Routes (toutes servies par `/m/<clé>/…`) :
 //   studio, lib/*.mjs      la page de l'éditeur et son code (rien de personnel : aucun jeton requis) ;
+//   events, cover          la liste « Pour quoi veux-tu une story ? » (événements de toutes les sources, par pages) et la jaquette d'un jeu ;
 //   data, streams, prep    lectures, avec le jeton de l'éditeur (en-tête X-Story-Token) ;
 //   people, members        la recherche d'une personne dans Contacts, et la relecture des fiches d'un modèle ;
 //   categories, category   les catégories de Contacts, et les comptes d'une catégorie (par pages) ;
@@ -18,6 +20,7 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const P = await import(`./pure.mjs${v}`);
 const data = await import(`./data.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
+const E = await import(`./events.mjs${v}`);
 const book = await import(`./contacts.mjs${v}`);
 const migrate = await import(`./migrate.mjs${v}`);
 const images = await import(`./images.mjs${v}`);
@@ -105,6 +108,18 @@ const routes = {
     return json({ ok: true, ...(await book.categoryPeople(ctx, { categoryId: q.get("id") ?? "", cursor: q.get("cursor") ?? "" })) });
   }),
   streams: guarded("GET", async (request, ctx) => json({ ok: true, ...(await src.loadStreams(ctx, { zone: zoneSetting(ctx) })) })),
+  // La liste « Pour quoi veux-tu une story ? » : tous les événements à venir de toutes les sources, par pages (50 au plus), avec recherche et filtre par source.
+  // `id` / `key` : retrouver l'événement déjà choisi (même s'il n'est pas sur cette page) ; la réponse dit aussi quelles sources ont répondu.
+  events: guarded("GET", async (request, ctx) => {
+    const q = new URL(request.url).searchParams;
+    const all = await src.loadEvents(ctx, { zone: zoneSetting(ctx), force: q.get("fresh") === "1" });
+    const list = E.filterEvents(all.events, { q: q.get("q") ?? "", source: q.get("source") ?? "" });
+    const page = E.pageOf(list, { cursor: q.get("cursor") ?? "", limit: q.get("limit") ?? E.LIMITS.pageDefault });
+    const wanted = (q.get("id") ?? "").slice(0, 100), key = (q.get("key") ?? "").slice(0, 20);
+    const selected = wanted || key ? E.findEvent(all.events, { id: P.EVENT_ID.test(wanted) ? wanted : "", key: /^[a-z0-9]{1,20}$/.test(key) ? key : "" }) : null;
+    return json({ ok: true, items: page.items.map(E.publicEvent), next: page.next, total: list.length, totalAll: all.events.length, sources: all.sources, selected: selected ? E.publicEvent(selected) : null, at: all.at });
+  }),
+  cover: guarded("GET", async (request, ctx) => json({ ok: true, ...(await src.coverOf(ctx, new URL(request.url).searchParams.get("game") ?? "")) })),
   prep: guarded("GET", async (request, ctx) => {
     const id = new URL(request.url).searchParams.get("id") ?? "";
     const prep = await data.readPrep(ctx, id);
@@ -171,9 +186,23 @@ export default {
       const r = await src.loadStreams(ctx, { zone: zoneSetting(ctx), max: 8 });
       return { state: r.state, streams: r.streams.map((s) => ({ key: s.key, title: s.title, start: s.start, allDay: s.allDay, games: s.games, timezone: s.timezone || null })) };
     },
+    /** Lecture seule : les prochains événements de TOUTES les sources (agenda, vidéos et directs programmés…), triés par date et heure, par pages. */
+    async story_events(ctx, args = {}) {
+      const all = await src.loadEvents(ctx, { zone: zoneSetting(ctx) });
+      const list = E.filterEvents(all.events, { q: typeof args.q === "string" ? args.q : "", source: typeof args.source === "string" ? args.source : "" });
+      const page = E.pageOf(list, { cursor: typeof args.cursor === "string" ? args.cursor : "", limit: args.limit ?? E.LIMITS.pageDefault });
+      const state = all.events.length ? "ok" : all.sources.length && all.sources.every((s) => s.state === "down") ? "slow" : "empty";
+      return {
+        state, total: list.length, next: page.next,
+        events: page.items.map((e) => ({ id: e.id, title: e.title, start: e.start, allDay: e.allDay, timezone: e.timezone || null, type: e.type, source: e.source, sourceLabel: e.sourceLabel, alsoIn: e.alsoIn.map((s) => s.label), url: e.url || null, image: e.image || null, games: e.games })),
+        sources: all.sources.map((s) => ({ source: s.kind, label: s.label, state: s.state, count: s.count, ...(s.message ? { message: s.message } : {}), ...(s.note ? { note: s.note } : {}), ...(s.stale ? { stale: true } : {}) })),
+      };
+    },
     /** Écriture limitée à une « préparation » (gardée 7 jours) : rend le lien de la page préparée. Ne fabrique rien, ne publie rien. */
     async story_prepare(ctx, args) {
-      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx) });
+      const wantsEvent = args && typeof args === "object" && args.event !== undefined;
+      const all = wantsEvent ? await src.loadEvents(ctx, { zone: zoneSetting(ctx) }) : null;
+      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down") });
       const { manual } = prepared;
       const linked = await src.within(linkLogins(ctx, prepared.config), src.timing.bookMs * 2, { config: prepared.config, known: new Map() });
       const config = linked.config;
@@ -183,7 +212,7 @@ export default {
       const path = typeof mine?.adminPath === "string" && /^\/admin\//.test(mine.adminPath) ? mine.adminPath : `/admin/instances/${ctx.instance.id}`;
       return {
         ok: true, link: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}${path}?prep=${pid}`, expiresAt: new Date(expiresAt).toISOString(),
-        prepared: { style: config.style, format: config.format, durationSeconds: config.duration, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : config.streamKey || "next" },
+        prepared: { style: config.style, format: config.format, durationSeconds: config.duration, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
         note: "Nothing has been generated or published. The owner opens this link while signed in to the admin, checks the preview, then clicks 'Generate the video' and saves the file.",
       };
     },

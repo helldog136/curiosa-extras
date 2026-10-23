@@ -6,11 +6,11 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.0.2",
+  "version": "2.1.0",
   "platform": "instagram",
   "description": {
-    "en": "Make a short animated video that announces your next stream, ready to post as an Instagram story (vertical) or a portrait post. Pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
-    "fr": "Fabriquez une petite vidéo animée qui annonce votre prochain stream, prête à publier en story Instagram (vertical) ou en publication portrait. Choisissez un style, ce qu'elle montre, votre propre phrase et sa durée : elle se fabrique dans votre navigateur et se télécharge comme un fichier."
+    "en": "Make a short animated video that announces one of your upcoming events, ready to post as an Instagram story (vertical) or a portrait post. Pick the event from one list that gathers your streams and, when they are set up, your scheduled YouTube videos and your Twitch schedule, sorted by date and time. Then pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
+    "fr": "Fabriquez une petite vidéo animée qui annonce l'un de vos prochains événements, prête à publier en story Instagram (vertical) ou en publication portrait. Choisissez l'événement dans une seule liste qui rassemble vos streams et, s'ils sont réglés, vos vidéos YouTube programmées et votre planning Twitch, triés par date et heure. Choisissez ensuite un style, ce qu'elle montre, votre propre phrase et sa durée : elle se fabrique dans votre navigateur et se télécharge comme un fichier."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -28,8 +28,8 @@
     "rawg"
   ],
   "privacy": {
-    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (for each guest streamer only the number of their card in Contacts), a short list of one-off people without a card and, for 7 days at most, the settings an assistant prepared (administrators only). Names, handles and pictures stay in Contacts. No video is kept: it is made in your browser. To draw a cover or a picture, the site fetches it for you.",
-    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels sans fiche et, 7 jours au plus, les réglages préparés par un assistant (administrateurs seulement). Les noms, pseudos et photos restent dans Contacts. Aucune vidéo n'est gardée : elle se fabrique dans votre navigateur. Pour dessiner une jaquette ou une photo, le site va la chercher pour vous."
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events are read live and held in memory for under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
+    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels et, 7 jours au plus, ce qu'un assistant a préparé (avec l'identifiant de l'événement choisi). Les événements à venir sont lus en direct et gardés en mémoire moins d'une minute. Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée : elle se fabrique dans votre navigateur."
   },
   "tabs": [
     {
@@ -184,6 +184,15 @@
         "en": "Your contacts (the Contacts module): guest streamers are looked up there, with their picture. Optional: without it you can still add someone for one video only",
         "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter quelqu'un pour une seule vidéo"
       }
+    },
+    {
+      "service": "event.source",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "Other dated events: scheduled YouTube videos and premieres, your Twitch schedule… (any module that offers them). Optional: without them the list shows your streams only",
+        "fr": "Les autres événements datés : vidéos et directs YouTube programmés, planning Twitch… (tout module qui les propose). Facultatif : sans eux, la liste ne montre que vos streams"
+      }
     }
   ],
   "mcp": [
@@ -199,16 +208,47 @@
     {
       "name": "story_next_streams",
       "readOnly": true,
-      "description": "The next streams found in the owner's calendar (up to 8): a 'key' (to give to story_prepare), the title, the start (UTC, ISO 8601), whether it is a whole-day event, the games and the time zone when known. 'state' is 'ok', 'empty' (no calendar installed, or nothing planned) or 'slow' (the calendar did not answer in time). Read only.",
+      "description": "The next streams found in the owner's calendar (up to 8): a 'key' (to give to story_prepare), the title, the start (UTC, ISO 8601), whether it is a whole-day event, the games and the time zone when known. 'state' is 'ok', 'empty' (no calendar installed, or nothing planned) or 'slow' (the calendar did not answer in time). Calendar only: for every kind of upcoming event (scheduled YouTube videos, Twitch schedule…) use story_events. Read only.",
       "input": {
         "type": "object",
         "properties": {}
       }
     },
     {
+      "name": "story_events",
+      "readOnly": true,
+      "description": "The upcoming events the owner can make a story for, from ALL active sources (the calendar, scheduled YouTube videos and premieres, the Twitch schedule…), merged, without duplicates, sorted by date and time. Each event has a stable 'id' (to give to story_prepare as 'event'), title, start (UTC, ISO 8601), whole-day flag, time zone when known, type (stream, live, premiere, video, event), source and link. Pages of up to 50 ('next' is the cursor for the following page, at most 200 events in all); 'q' searches the titles and games; 'source' keeps one source. 'sources' says which sources answered ('ok'), need setting up ('setup') or did not answer ('down'). 'state' is 'ok', 'empty' (nothing planned) or 'slow' (no source answered). Read only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Words to look for in the titles, games and source names."
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Keep one source only: the 'source' value of an event (for example calendar, youtube, twitch)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Events per page (1 to 50, default 20)."
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 260,
+            "description": "The 'next' value of the previous page."
+          }
+        }
+      }
+    },
+    {
       "name": "story_prepare",
       "default": false,
-      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The stream is 'next' (default), a key from story_next_streams, or a hand-written stream (streamTitle + streamDate [+ streamTime]). Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation.",
+      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The event is chosen with 'event' (an id from story_events, any source), or the stream with 'stream' ('next' by default, or a key from story_next_streams), or hand-written (streamTitle + streamDate [+ streamTime]); give only one of the three. Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation.",
       "input": {
         "type": "object",
         "properties": {
@@ -270,6 +310,11 @@
             "type": "string",
             "maxLength": 20,
             "description": "'next' (default) or a key given by story_next_streams."
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "An event id given by story_events (any source). Use instead of 'stream'."
           },
           "streamTitle": {
             "type": "string",

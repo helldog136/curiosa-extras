@@ -16,5 +16,11 @@
   "err_config_channel": "YouTube ne trouve pas cette chaîne : vérifiez l'identifiant de chaîne dans Réglages (il commence par UC).",
   "err_config_connector": "Pour suivre vos statistiques, il faut la clé YouTube du site : installez ce qui est proposé ci-dessus, puis ajoutez-y votre clé.",
   "suggest_reason": "garde la clé YouTube du site et ajoute les chiffres de votre chaîne, les durées exactes et la détection des Shorts",
-  "key_waiting": "Votre clé YouTube est gardée en sécurité : dès que c'est installé, elle sera reprise toute seule, sans rien retaper."
+  "key_waiting": "Votre clé YouTube est gardée en sécurité : dès que c'est installé, elle sera reprise toute seule, sans rien retaper.",
+  "events_note": "Seuls les directs et premières publics sont visibles. Une vidéo privée programmée ne peut pas être vue avec la clé du site : pour l'annoncer, écrivez l'événement vous-même.",
+  "events_setup_channel": "Renseignez l'identifiant de votre chaîne (il commence par UC) dans les réglages de la chaîne YouTube pour voir vos vidéos programmées.",
+  "events_setup_connector": "Pour voir vos vidéos et directs programmés, il faut la clé YouTube du site : installez ce que propose la page de la chaîne YouTube, puis ajoutez-y votre clé.",
+  "events_setup_key": "Pour voir vos vidéos et directs programmés, ajoutez votre clé YouTube dans Réglages, sur la page du connecteur YouTube du site (elle est gratuite).",
+  "events_setup_refused": "La clé YouTube est refusée : vérifiez-la dans Réglages, sur la page du connecteur YouTube du site.",
+  "events_setup_update": "Pour voir vos vidéos programmées, le connecteur YouTube du site doit être mis à jour (Extensions, Chercher une mise à jour)."
 }

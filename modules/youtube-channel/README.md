@@ -26,8 +26,19 @@ Cochez **Suivre mes statistiques** (désactivé par défaut : il demande la clé
   - *« YouTube cache votre nombre d'abonnés »* : la chaîne a masqué son compteur. Rendez-le public dans YouTube Studio ; les vidéos et les vues continuent d'être suivies. Jamais de chiffre inventé : le compteur reste « caché » tant que YouTube ne le donne pas.
   - *« YouTube a atteint sa limite de demandes »* : la limite du jour est atteinte, cela reprend tout seul.
 
+## Vos vidéos et directs programmés (annoncer un événement)
+
+Depuis la 1.3, le module sait aussi dire **ce que vous avez programmé sur YouTube**, pour les modules qui annoncent des événements (par exemple « Story d'annonce » : votre première ou votre direct apparaît dans sa liste « Pour quoi veux-tu une story ? », avec les autres événements, triés par date et heure). Il n'y a **rien à régler** : dès que la clé YouTube du site est là, c'est fait.
+
+- **Ce qui est visible** : les **directs et premières publics** dont YouTube donne l'heure de début. Le module les range en « direct » (sans durée) ou « première » (avec une durée).
+- **Ce qui ne l'est pas, et pourquoi** : une vidéo **privée** (ou non répertoriée) programmée **n'est pas visible** avec la clé du site, quelle que soit la clé : YouTube ne la montre qu'à votre propre compte, et ce module ne se connecte jamais à votre compte. Les modules qui affichent la liste l'écrivent noir sur blanc ; pour annoncer une telle vidéo, écrivez l'événement vous-même.
+- **Ce qu'il faut** : l'identifiant de la chaîne et la clé YouTube du site. Sans eux, la réponse est « à régler » avec une phrase qui dit quoi faire (identifiant de chaîne à saisir ; clé à ajouter sur la page du connecteur YouTube ; clé refusée ; connecteur à mettre à jour).
+- **Combien ça coûte** : 3 unités sur les 10 000 par jour de YouTube, **une fois toutes les 10 minutes** au plus par chaîne, et seulement quand un module demande la liste. Jamais de recherche (100 unités), jamais d'appel en arrière-plan.
+- **En cas de panne** : « YouTube ne répond pas pour le moment » côté liste ; rien n'est inventé.
+
 ## Pour les développeurs
 
+- **Service offert `event.source`** (version 1, `each: true`, `readOnly: ["upcoming"]`, depuis la 1.3.0) : `upcoming({ from?, to?, limit?, locale? })` → `{ ok: true, source: { kind: "youtube", label: "YouTube" }, state: "ok" | "setup" | "down", message?, note?, events: [{ id: "youtube:<vidéo>", title, start (UTC), end?, timezone: "", type: "live" | "premiere", url, image }] }`. Le contrat commun est décrit dans le README de Story d'annonce et celui du dépôt. Trois appels du service `youtube.api` (`channels.list`, `playlistItems.list` 50, `videos.list` avec `snippet,contentDetails,liveStreamingDetails`) ; on garde les vidéos dont `snippet.liveBroadcastContent` vaut `upcoming` et dont `liveStreamingDetails.scheduledStartTime` est lisible, dans les 90 jours à venir (ou commencées depuis moins de 3 h) ; 50 événements au plus ; 10 minutes de cache par chaîne (`events.mjs`). Le besoin `youtube.api` reste **facultatif** : sans lui, `state: "setup"`. Un connecteur d'avant la 1.1.0 refuse `liveStreamingDetails` : réponse « à mettre à jour ».
 - Sujets fournis : `social.link`, `feed.item` (rubrique `video`), `maze.poster`, `social.stat`. Le module ne connaît aucun consommateur.
 - Besoin **facultatif** `youtube.api` (min 1) : sans fournisseur, le panneau renvoie un bloc `suggestInstall` (par service, jamais par nom de module) et le module passe par le flux RSS public.
 - Clé reprise : réglage hérité `apiKey` (`legacySettings`, secret, jamais affiché). Migration `dataVersion` 2 et ouverture du panneau : `adopt({ apiKey })`, puis `ctx.legacy.clear("apiKey")` **seulement** si la réponse dit `ready: true`. Rejouable sans effet ; un échec n'efface rien et ne fait jamais échouer la mise à jour.
