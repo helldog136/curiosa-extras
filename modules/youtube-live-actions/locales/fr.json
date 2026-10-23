@@ -14,7 +14,7 @@
   "err_config": "La clé YouTube du site est absente : ajoutez-la dans le module « Connecteur YouTube ».",
   "err_unavailable": "Il manque le module « Connecteur YouTube » : c'est lui qui porte la clé YouTube du site.",
   "err_auth": "YouTube refuse la clé du site. Vérifiez-la dans le module « Connecteur YouTube ». Nouvel essai {when}.",
-  "err_chat_denied": "YouTube ne laisse pas lire ce chat avec la seule clé du site : rien ne peut être lu pour l'instant. Nouvel essai {when}.",
+  "err_chat_denied": "Connectez votre compte YouTube dans le Connecteur YouTube : YouTube ne laisse pas lire ce chat avec la seule clé du site.",
   "err_quota": "La limite du jour de YouTube est atteinte. La lecture reprend {when}.",
   "err_rate": "YouTube demande une pause. Nouvel essai {when}.",
   "err_timeout": "YouTube ne répond pas. Nouvel essai {when}.",
@@ -161,5 +161,7 @@
   "limit_text": "Aujourd'hui, ce module a utilisé environ {used} % de votre limite YouTube du jour (il s'arrête doucement à {max} %). Lire le chat d'un direct coûte environ {hour} % par heure ; chercher un direct, presque rien.",
   "reload_note": "Cette page se recharge toute seule tant qu'elle est ouverte : c'est ce qui permet de lire le chat.",
   "chat_stopped": "Tout est coupé.",
-  "chat_started": "Tout est repris."
+  "chat_started": "Tout est repris.",
+  "st_connect": "Connectez votre compte YouTube dans le Connecteur YouTube : YouTube ne laisse pas lire ce chat avec la seule clé du site.",
+  "connect_link": "Ouvrir le Connecteur YouTube"
 }

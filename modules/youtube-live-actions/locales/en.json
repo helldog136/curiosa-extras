@@ -14,7 +14,7 @@
   "err_config": "The site's YouTube key is missing: add it in the “YouTube connector” module.",
   "err_unavailable": "The “YouTube connector” module is missing: it holds the site's YouTube key.",
   "err_auth": "YouTube refuses the site's key. Check it in the “YouTube connector” module. Next try {when}.",
-  "err_chat_denied": "YouTube does not let this chat be read with the site's key alone: nothing can be read for now. Next try {when}.",
+  "err_chat_denied": "Connect your YouTube account in the YouTube connector: YouTube does not let this chat be read with the site's key alone.",
   "err_quota": "YouTube's daily limit is reached. Reading resumes {when}.",
   "err_rate": "YouTube asks for a pause. Next try {when}.",
   "err_timeout": "YouTube is not answering. Next try {when}.",
@@ -161,5 +161,7 @@
   "limit_text": "Today this module used about {used}% of your YouTube daily limit (it stops gently at {max}%). Reading a live chat costs about {hour}% per hour; looking for a live, almost nothing.",
   "reload_note": "This page reloads by itself while it is open: that is what lets the chat be read.",
   "chat_stopped": "Everything is cut.",
-  "chat_started": "Everything is resumed."
+  "chat_started": "Everything is resumed.",
+  "st_connect": "Connect your YouTube account in the YouTube connector: YouTube does not let this chat be read with the site's key alone.",
+  "connect_link": "Open the YouTube connector"
 }

@@ -93,6 +93,9 @@ function errorText(ctx, e, now) {
   return ctx.t(`err_${code}`, { when: retry });
 }
 
+/** Un lien vers l'écran du Connecteur YouTube (là où l'on connecte le compte). */
+const connectLink = (ctx, o) => (o.connectorPath ? [{ type: "links", items: [{ label: ctx.t("connect_link"), href: o.connectorPath }] }] : []);
+
 function statusBlocks(ctx, o) {
   const t = ctx.t;
   const st = o.state;
@@ -106,7 +109,8 @@ function statusBlocks(ctx, o) {
     case "ambiguous": out.push({ type: "banner", tone: "warning", text: t("st_ambiguous") }); break;
     case "unverified": out.push({ type: "banner", tone: "warning", text: t("st_unverified") }); break;
     case "budget": out.push({ type: "banner", tone: "warning", text: t("st_budget", { percent: o.s.budgetPercent, when: whenText(ctx, nextReset(o.now), o.now) }) }); break;
-    case "backoff": out.push({ type: "banner", tone: "warning", text: errorText(ctx, st.error, o.now) }); break;
+    case "connect": out.push({ type: "banner", tone: "warning", text: t("st_connect") }, ...connectLink(ctx, o)); break;
+    case "backoff": out.push({ type: "banner", tone: "warning", text: errorText(ctx, st.error, o.now) }, ...(st.error?.code === "chat_denied" ? connectLink(ctx, o) : [])); break;
     case "no_chat": out.push({ type: "banner", tone: "info", text: t("st_no_chat", { title }) }); break;
     case "idle": out.push({ type: "banner", tone: "info", text: t("st_idle") }); break;
     case "reading": out.push({ type: "banner", tone: "success", text: t("st_reading", { title, when: st.lastPollAt ? ago(ctx, st.lastPollAt, o.now) : t("st_just_now") }) }); break;
@@ -302,6 +306,9 @@ export async function panel(ctx, { query } = {}) {
   await B.within(E.tick(ctx), E.timing.renderBudgetMs, null);
   await E.reconcile(ctx);
   const o = await E.overview(ctx);
+  if (o.state.status === "connect" || o.state.error?.code === "chat_denied") {
+    try { o.connectorPath = (await B.within(ctx.api.instances.list({ module: "youtube-connector" }), 2000, []))[0]?.adminPath ?? null; } catch { o.connectorPath = null; }
+  }
   return [
     ...statusBlocks(ctx, o),
     ...houseBlocks(ctx, o),

@@ -16,10 +16,10 @@ const done = () => { globalThis.fetch = realFetch; };
 
 /* ───────────── Connecteur YouTube 1.2.0 ───────────── */
 
-test("connecteur : version 1.2.0, manifeste valide, coûts anciens inchangés (search.list reste exclu), le chat coûte 5", () => {
+test("connecteur : version 1.3.0 (1.2.0 + connexion au compte), manifeste valide, coûts anciens inchangés (search.list reste exclu), le chat coûte 5", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../modules/youtube-connector/module.json", import.meta.url), "utf8"));
   assert.ok(parseManifest(manifest).ok);
-  assert.equal(manifest.version, "1.2.0");
+  assert.equal(manifest.version, "1.3.0");
   assert.deepEqual(api.COSTS, { "channels.list": 1, "playlistItems.list": 1, "videos.list": 1 });
   assert.equal(api.LIVE_CHAT_COST, 5);
   assert.equal(api.normalize("search.list", { q: "x" }), null);
@@ -103,7 +103,7 @@ test("budget du connecteur : un appel de chat qui dépasserait la part accordée
   done();
 });
 
-test("la clé YouTube ne voyage jamais dans l'adresse du chat, et le connecteur dit qu'il ne sait pas écrire dans un chat", async () => {
+test("la clé YouTube ne voyage jamais dans l'adresse du chat, et, sans compte connecté, le connecteur dit qu'il ne sait pas écrire dans un chat", async () => {
   const c = setup();
   await c.methods.request(chatReq());
   const call = yt.fetch.calls.at(-1);
@@ -112,7 +112,7 @@ test("la clé YouTube ne voyage jamais dans l'adresse du chat, et le connecteur 
   const st = await c.methods.status();
   assert.deepEqual(st.chat, { read: true, write: false });
   assert.equal(st.costs["liveChatMessages.list"], 5);
-  assert.deepEqual(Object.keys(connectorModule.default.services["youtube.api"]).sort(), ["adopt", "channels", "request", "status"], "la liste des méthodes n'a pas changé");
+  assert.deepEqual(Object.keys(connectorModule.default.services["youtube.api"]).sort(), ["adopt", "channels", "chatPost", "request", "status"], "une seule méthode de plus : chatPost (1.3.0)");
   done();
 });
 
