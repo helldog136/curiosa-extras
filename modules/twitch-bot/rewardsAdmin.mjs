@@ -124,7 +124,8 @@ export async function blocks(ctx, info, query = {}) {
   // À l'ouverture : le retard éventuel est rattrapé (résultats de la maison, échanges trop longs), l'écoute des échanges vérifiée, la liste remise d'accord avec Twitch.
   await J.reconcile(ctx, { force: true }).catch(() => {});
   const sub = state.redeemSub ?? {};
-  if (!sub.at || (sub.code !== "listening" && Date.now() - sub.at > 120_000) || (sub.code === "pending" && Date.now() - sub.at > 5000)) await ensureRedeemListening(ctx, s, { settle: true }).catch(() => {});
+  if (!sub.at || (sub.code !== "listening" && Date.now() - sub.at > 5000))   // tout est prêt mais l'écoute n'est pas (ou plus) vérifiée : une demande à Twitch, au plus toutes les 5 s
+    await ensureRedeemListening(ctx, s, { settle: true }).catch(() => {});
   await R.sync(ctx, s).catch(() => {});
   const fresh = await st.readState(ctx);
   const rows = await R.list(ctx);

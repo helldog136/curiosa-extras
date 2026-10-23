@@ -206,8 +206,7 @@ export function applyHouseState(ctx, s, state, { now = Date.now() } = {}) {
     const d = await st.readState(ctx);
     const want = ready ? "run" : "paused";
     if (d.applied === want) return { ok: true, same: true };
-    if ((lastApply.get(k) ?? 0) > now - 30_000) return { ok: true, skipped: true };
-    lastApply.set(k, now);
+    if ((lastApply.get(k) ?? 0) > now - 30_000) return { ok: true, skipped: true };   // seulement après un échec : on ne harcèle pas Twitch
     const rows = await list(ctx);
     const todo = rows.filter((r) => !r.gone && (ready ? r.pause === "auto" : isHome(r.action) && !r.pause));
     let done = true;
@@ -219,7 +218,7 @@ export function applyHouseState(ctx, s, state, { now = Date.now() } = {}) {
         if (!r.ok && r.code !== "gone") { done = false; if (r.code === "rate" || r.code === "denied" || r.code === "na") break; }
       }
     }
-    if (done) await st.updateState(ctx, (x) => { x.applied = want; });
+    if (done) await st.updateState(ctx, (x) => { x.applied = want; }); else lastApply.set(k, now);
     return { ok: done };
   }).catch(() => ({ ok: false, code: "twitch" }));
 }

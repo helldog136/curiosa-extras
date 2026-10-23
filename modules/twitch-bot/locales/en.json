@@ -268,7 +268,7 @@
   "rw_err_denied": "Twitch's permission to manage rewards is missing. Use the “Allow” button above.",
   "rw_err_setup": "The bot is not ready: see “Is the bot listening” in the Commands tab.",
   "rw_err_twitch": "Twitch is not answering right now. Nothing was changed: try again in a moment.",
-  "rw_err_action_home": "This action needs the Home Assistant module. Install it with the “Install” button at the bottom of this tab, then try again.",
+  "rw_err_action_home": "This action needs the Home Assistant module. Install it from the “The home” section of this tab, then try again.",
   "rw_created": "The reward “{title}” is created at Twitch.",
   "rw_saved": "Saved at Twitch.",
   "rw_paused": "“{title}” is paused.",

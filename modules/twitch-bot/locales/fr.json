@@ -268,7 +268,7 @@
   "rw_err_denied": "Il manque l'autorisation de Twitch pour gérer les récompenses. Utilisez le bouton « Autoriser » plus haut.",
   "rw_err_setup": "Le bot n'est pas prêt : voir « Le bot écoute » dans l'onglet Commandes.",
   "rw_err_twitch": "Twitch ne répond pas pour le moment. Rien n'a été changé : réessayez dans un instant.",
-  "rw_err_action_home": "Cette action a besoin du module Home Assistant. Installez-le avec le bouton « Installer » en bas de cet onglet, puis réessayez.",
+  "rw_err_action_home": "Cette action a besoin du module Home Assistant. Installez-le depuis la rubrique « La maison » de cet onglet, puis réessayez.",
   "rw_created": "La récompense « {title} » est créée chez Twitch.",
   "rw_saved": "Enregistré chez Twitch.",
   "rw_paused": "« {title} » est en pause.",
