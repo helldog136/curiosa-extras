@@ -7,7 +7,7 @@
 //   await ha.step();                         // une interrogation + exécution + accusés, comme le coordinateur de l'intégration
 //
 // Comportement imité de l'intégration : curseur avancé après traitement, dédoublonnage par `id`, action expirée ignorée (horloge locale contre `serverTime`, tolérance 5 s),
-// interrupteur local (`switchOn`), liaison locale des clés (`bindings` : clé → fonction qui exécute), repli exponentiel (3 s → 60 s) sur erreur, arrêt sur 401.
+// champ facultatif `test: true` d'une action (essai de la propriétaire ou simulation d'un module : exécutée comme les autres, `executed` la garde avec son `test`), interrupteur local (`switchOn`), liaison locale des clés (`bindings` : clé → fonction qui exécute), repli exponentiel (3 s → 60 s) sur erreur, arrêt sur 401.
 
 export class FakeHaClient {
   constructor({ send, now = () => Date.now(), bindings = {}, switchOn = true, tolerance = 5000 } = {}) {
@@ -20,7 +20,7 @@ export class FakeHaClient {
     this.instance = null;
     this.cursor = 0;
     this.seen = new Set();
-    this.executed = [];   // les actions réellement exécutées (pour les assertions)
+    this.executed = [];   // les actions réellement exécutées (pour les assertions) ; `action.test === true` pour un essai (champ facultatif de `pull`)
     this.calls = [];      // tout ce qui est parti : { path, method, status }
     this.interval = 3;
     this.backoff = 3;

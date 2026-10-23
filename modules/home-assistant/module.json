@@ -40,7 +40,19 @@
   "requires": [
     {
       "service": "twitch.live",
-      "optional": true
+      "optional": true,
+      "label": {
+        "fr": "Savoir si votre chaîne Twitch est en direct",
+        "en": "Know whether your Twitch channel is live"
+      }
+    },
+    {
+      "service": "youtube.live",
+      "optional": true,
+      "label": {
+        "fr": "Savoir si votre chaîne YouTube est en direct",
+        "en": "Know whether your YouTube channel is live"
+      }
     }
   ],
   "provides": [

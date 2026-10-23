@@ -1,12 +1,14 @@
 // Faux fournisseur du service `home-assistant.bridge` (contrat v1 de la spec Pont Twitch → Home Assistant), pour tester `twitch-bot` sans dépendre du module home-assistant.
 //   const ha = fakeHaBridge({ enabled: true, live: true });
 //   fakeCtx({ services: { "home-assistant.bridge": ha.methods }, topics: ha.topics })        // `topics` : des FONCTIONS (opts) => éléments, lues à chaque collecte
+// `test: true` (seul `true` compte) : un essai — peut passer HORS direct, jamais avec le coupe-circuit actif ni sans appairage ; `busy` au-delà de `state.testsPerHour` essais (absent par défaut = pas de limite ;
+// pas d'horloge : on compte sur la durée de vie du faux) ; l'action en file porte `test: true` ; la réponse de `pull` d'un vrai pont porte alors `test: true`. Aucun point : le faux ne touche à rien.
 // Contrat : enqueue({ key, text?, viewer?, ref, test? }) → { ok:true, id } | { ok:false, reason } avec reason ∈ off | offline | not_live | blocked | busy | unknown_key | not_paired ;
 // status() → { enabled, paired, lastSeenAt, live, queued } ; stop({ by }) / start({ by }) ; sujets `ha.result` { ref, id, status, code } et `ha.state` { enabled, live, paired, lastSeenAt }.
 const KEY = /^[a-z0-9][a-z0-9:_-]{0,39}$/;
 export function fakeHaBridge(opts = {}) {
   const s = { enabled: true, paired: true, live: true, offline: false, busy: false, blockWords: ["gros-mot"], knownKeys: null, lastSeenAt: "2026-10-14T19:59:30Z", ...opts };
-  const api = { state: s, queue: [], results: [], calls: [], stops: [], throwOn: null };
+  const api = { state: s, queue: [], results: [], calls: [], stops: [], throwOn: null, tests: 0 };
   let n = 0;
   const reason = (a) => {
     if (!s.paired) return "not_paired";
@@ -15,7 +17,7 @@ export function fakeHaBridge(opts = {}) {
     if (!s.live && a?.test !== true) return "not_live";   // un essai (test: true) peut se faire hors direct, jamais coupe-circuit actif
     if (!a || typeof a.key !== "string" || !KEY.test(a.key) || (s.knownKeys && !s.knownKeys.includes(a.key))) return "unknown_key";
     if (a.text !== undefined && s.blockWords.some((w) => String(a.text).toLowerCase().includes(w))) return "blocked";
-    if (s.busy || api.queue.length >= (s.maxQueue ?? 50)) return "busy";
+    if (s.busy || api.queue.length >= (s.maxQueue ?? 50) || (a.test === true && s.testsPerHour !== undefined && api.tests >= s.testsPerHour)) return "busy";
     return null;
   };
   api.methods = {
@@ -25,6 +27,7 @@ export function fakeHaBridge(opts = {}) {
       const r = reason(a);
       if (r) return { ok: false, reason: r };
       if (typeof a.ref !== "string" || !a.ref) return { ok: false, reason: "unknown_key" };
+      if (a.test === true) api.tests += 1;
       const id = `ha${++n}`;
       api.queue.push({ id, ref: a.ref, key: a.key, text: a.text, viewer: a.viewer, test: a.test === true });
       return { ok: true, id };

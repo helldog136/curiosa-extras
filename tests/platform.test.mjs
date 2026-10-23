@@ -12,7 +12,7 @@ const byId = Object.fromEntries(manifests.map((m) => [m.id, m]));
 const groups = {
   twitch: ["live-status", "twitch-bot", "twitch-channel", "twitch-connector", "twitch-raid"],
   discord: ["discord", "discord-announcer"],
-  youtube: ["youtube-channel", "youtube-connector"],
+  youtube: ["youtube-channel", "youtube-connector", "youtube-live-actions"],   // Actions du live YouTube : c'est une fonction YouTube (le direct, le chat), comme la Chaîne et le Connecteur ; le pont maison reste sans plateforme
   instagram: ["instagram", "stream-story"], tiktok: ["tiktok"], x: ["x-twitter"], facebook: ["facebook"], bluesky: ["bluesky"], mastodon: ["mastodon"], threads: ["threads"],
   kick: ["kick"], spotify: ["spotify"], reddit: ["reddit"], patreon: ["patreon"], "ko-fi": ["kofi"], snapchat: ["snapchat"], pinterest: ["pinterest"],
   telegram: ["telegram"], steam: ["steam"], soundcloud: ["soundcloud"], bandcamp: ["bandcamp"], github: ["github"],

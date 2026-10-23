@@ -45,10 +45,10 @@
   "st_never": "Associé {when}, mais Home Assistant ne s'est pas encore connecté. Vérifiez que l'intégration Curiosa est bien installée.",
   "live_yes": "**Direct :** Twitch dit que vous êtes en direct. Les viewers peuvent déclencher des actions.",
   "live_grace": "**Direct :** le direct est fini, mais la porte reste ouverte {minutes} minutes pour finir ce qui est en cours.",
-  "live_no": "**Direct :** vous n'êtes pas en direct. Les actions des viewers sont refusées et leurs points rendus (le bouton de test marche quand même).",
-  "live_unknown": "**Direct :** Twitch ne répond pas pour le moment. Par prudence, rien n'est joué tant qu'on ne sait pas si vous êtes en direct.",
-  "live_none": "**Direct :** on ne peut pas savoir si vous êtes en direct. Sans cela, rien n'est joué pour les viewers, par prudence. Installez « Ma chaîne Twitch ».",
-  "live_reason": "dit si vous êtes en direct",
+  "live_no": "**Direct :** vous n'êtes pas en direct (ni sur Twitch ni sur YouTube, selon les chaînes installées). Les actions des viewers sont refusées et leurs points rendus (le bouton de test marche quand même).",
+  "live_unknown": "**Direct :** Twitch ou YouTube ne répond pas pour le moment. Par prudence, rien n'est joué tant qu'on ne sait pas si vous êtes en direct.",
+  "live_none": "**Direct :** on ne peut pas savoir si vous êtes en direct. Sans cela, rien n'est joué pour les viewers, par prudence. Installez « Ma Chaîne Twitch » ou « Chaîne YouTube ».",
+  "live_reason": "dit si vous êtes en direct sur Twitch",
   "big_stop": "Tout couper",
   "big_start": "Reprendre",
   "big_no_right": "Vous n'avez pas le droit de tout couper. Demandez-le à la personne qui gère le site.",
@@ -75,7 +75,7 @@
   "dev_another": "Associer un autre Home Assistant",
   "dev_another_help": "Le nouvel appareil prend la place du précédent dès qu'il utilise le code : le précédent ne reçoit plus rien.",
   "test_title": "Tester le pont",
-  "test_help": "Simule un échange de points de chaîne, sans toucher à Twitch : aucun point n'est pris ni rendu. Le texte passe par la même modération que celui d'un viewer. Marche aussi hors direct.",
+  "test_help": "Simule un échange de points de chaîne, sans toucher à Twitch ni à YouTube : aucun point n'est pris ni rendu. Le texte passe par la même modération que celui d'un viewer. Marche aussi hors direct.",
   "test_btn": "Envoyer un test",
   "test_key": "Action à tester",
   "test_key_help": "Les actions déjà reçues sont proposées ici.",
@@ -104,5 +104,8 @@
   "keys_seen": "**Actions déjà reçues :** {keys}",
   "keys_none": "**Actions déjà reçues :** aucune pour le moment.",
   "dev_row": "{name} · associé {since} · repère {mark}",
-  "res_points_back": ", points rendus"
+  "res_points_back": ", points rendus",
+  "live_yes_youtube": "**Direct :** YouTube dit que vous êtes en direct. Les viewers peuvent déclencher des actions.",
+  "live_yes_both": "**Direct :** Twitch et YouTube disent que vous êtes en direct. Les viewers peuvent déclencher des actions.",
+  "live_reason_youtube": "dit si vous êtes en direct sur YouTube"
 }

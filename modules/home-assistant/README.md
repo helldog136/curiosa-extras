@@ -2,14 +2,14 @@
 
 Vos viewers changent la couleur de vos lumières ou font lire un message à voix haute chez vous, **avec leurs points de chaîne Twitch**. Vous gardez la main : un gros bouton **« Tout couper »** arrête tout en un clic, et rien ne se joue quand vous n'êtes pas en direct.
 
-**Il faut Curiosa 0.2.6 ou plus**, l'intégration gratuite « Curiosa » dans Home Assistant (installée avec HACS) et, pour que les viewers puissent déclencher des actions, le Bot Twitch (qui gère les récompenses en points de chaîne). Pour savoir si vous êtes en direct, ce module s'appuie sur « Ma chaîne Twitch » (facultatif, mais sans lui rien n'est joué pour les viewers, par prudence).
+**Il faut Curiosa 0.2.6 ou plus**, l'intégration gratuite « Curiosa » dans Home Assistant (installée avec HACS) et, pour que les viewers puissent déclencher des actions, le Bot Twitch (qui gère les récompenses en points de chaîne) ou « Actions du live YouTube » (Super Chats et adhésions). Pour savoir si vous êtes en direct, ce module s'appuie sur « Ma Chaîne Twitch » **ou** sur « Chaîne YouTube » (facultatifs, mais sans l'un des deux rien n'est joué pour les viewers, par prudence) : il suffit qu'une des deux dise que vous êtes en direct.
 
 ## Pour commencer (3 étapes, sur la page du module)
 1. **Installez l'intégration** dans Home Assistant avec HACS (le lien est sur la page).
 2. **Copiez le code à 8 caractères** affiché sur la page, avec l'adresse de votre site, dans Home Assistant.
 3. **C'est tout.** La page affiche « Home Assistant est connecté ».
 
-Pour vérifier sans attendre un viewer : bloc **« Tester le pont »** de la page. Il simule un échange de points de chaîne (sans toucher à Twitch), même hors direct, et vous montre le trajet : envoyé, récupéré par Home Assistant, exécuté.
+Pour vérifier sans attendre un viewer : bloc **« Tester le pont »** de la page. Il simule un échange de points de chaîne (sans toucher à Twitch ni à YouTube), même hors direct, et vous montre le trajet : envoyé, récupéré par Home Assistant, exécuté.
 
 ## Ce que ça protège
 - **Rien n'est ouvert chez vous.** C'est Home Assistant qui vient chercher les ordres toutes les quelques secondes ; Curiosa n'appelle jamais chez vous, et Home Assistant n'envoie rien de votre maison (pas de liste d'appareils).

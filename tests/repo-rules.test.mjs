@@ -39,7 +39,7 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
   assert.ok(used.size >= 5, "des sujets doivent être trouvés");
   // Sujets que le cœur publié (0.1.27) ne liste pas encore dans son tableau : une entrée = une exception expliquée, à retirer quand le cœur les documente.
   // (vide : le sujet « stream.partner » a été retiré avec Story 2.0)
-  const NOT_YET_DOCUMENTED = new Set(["ha.result", "ha.state"]);   // pont Twitch → Home Assistant (twitch-bot et home-assistant) : à documenter dans le cœur
+  const NOT_YET_DOCUMENTED = new Set(["ha.result", "ha.state"]);   // pont Home Assistant (home-assistant, lus par twitch-bot et youtube-live-actions) : documentés par la branche `core/docs-sujets-ha` du cœur (0.2.8) ; RETIRER cette exception dès que le cœur publié les liste
   for (const topic of used) {
     assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
     assert.ok(NOT_YET_DOCUMENTED.has(topic) || doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);

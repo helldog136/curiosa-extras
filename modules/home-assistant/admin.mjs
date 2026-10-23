@@ -103,9 +103,9 @@ function statusBlocks(ctx, o) {
 function liveBlocks(ctx, o) {
   const t = ctx.t;
   const l = o.live;
-  if (l.source === "none") return [{ type: "markdown", text: t("live_none") }, { type: "suggestInstall", service: "twitch.live", reason: t("live_reason") }];
+  if (l.source === "none") return [{ type: "markdown", text: t("live_none") }, { type: "suggestInstall", service: "twitch.live", reason: t("live_reason") }, { type: "suggestInstall", service: "youtube.live", reason: t("live_reason_youtube") }];
   if (l.source === "unknown") return [{ type: "markdown", text: t("live_unknown") }];
-  if (l.live) return [{ type: "markdown", text: t("live_yes") }];
+  if (l.live) return [{ type: "markdown", text: t(l.source === "both" ? "live_yes_both" : l.source === "youtube" ? "live_yes_youtube" : "live_yes") }];
   if (o.graceOnly) return [{ type: "markdown", text: t("live_grace", { minutes: Math.round(GRACE_MS / 60_000) }) }];
   return [{ type: "markdown", text: t("live_no") }];
 }

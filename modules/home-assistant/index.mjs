@@ -20,8 +20,10 @@ export default {
   services: {
     "home-assistant.bridge": {
       enqueue: async (ctx, args) => {
-        const r = await B.enqueue(ctx, args);
-        return r.ok ? { ok: true, id: r.id } : { ok: false, reason: r.reason };   // le détail de la modération reste dans le journal
+        // `test: true` (et rien d'autre) : un essai de l'appelant (simulation) — marqué, jamais de points, possible hors direct mais jamais coupé ni sans appairage ; 30 par heure.
+        const r = await B.enqueue(ctx, args, { test: args?.test === true });
+        if (r.ok) return { ok: true, id: r.id };
+        return { ok: false, reason: r.reason === "rate" ? "busy" : r.reason };   // le détail de la modération reste dans le journal ; « trop d'essais » se dit « busy »
       },
       status: (ctx) => B.status(ctx),
       stop: (ctx, args) => B.stop(ctx, args),

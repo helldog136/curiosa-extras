@@ -15,7 +15,7 @@ export const CODE_LENGTH = 8, CODE_TTL_MS = 10 * 60_000, CODE_TRIES = 5;
 export const ACK_STATUSES = ["done", "failed", "ignored"];
 export const ACK_CODES = ["ok", "unmapped", "disabled", "expired", "error"];
 export const REASONS = ["off", "offline", "not_live", "blocked", "busy", "unknown_key", "not_paired"];
-export const TEST_LIMITS = { gapMs: 3000, perHour: 30 };
+export const TEST_LIMITS = { gapMs: 3000, perHour: 30, burst: 5 };
 
 const iso = (ms) => new Date(ms).toISOString();
 export const sha256hex = (s) => createHash("sha256").update(String(s)).digest("hex");
@@ -55,6 +55,19 @@ export function takePull(ctx, now) {
   return 0;
 }
 export const takeAck = (ctx, now) => slide(mem(ctx).acks, now, 10_000, 60);
+/**
+ * Un essai (`test: true`) : 30 par heure, et pas plus de TEST_LIMITS.burst par fenêtre de 3 s (une simulation d'un autre module peut viser plusieurs règles d'un coup ;
+ * le bouton « Tester » de l'administration, lui, est limité à un seul toutes les 3 s : voir testSend). 0 si ça passe, sinon les secondes à attendre.
+ */
+export function takeTest(ctx, now) {
+  const m = mem(ctx);
+  while (m.tests.length && now - m.tests[0] >= 3600_000) m.tests.shift();
+  const recent = m.tests.filter((t) => now - t < TEST_LIMITS.gapMs);
+  if (recent.length >= TEST_LIMITS.burst) return Math.max(1, Math.ceil((TEST_LIMITS.gapMs - (now - recent[0])) / 1000));
+  if (m.tests.length >= TEST_LIMITS.perHour) return Math.max(1, Math.ceil((3600_000 - (now - m.tests[0])) / 1000));
+  m.tests.push(now);
+  return 0;
+}
 /** Débit de l'appairage : 10 essais par heure et par visiteur, 60 en tout. */
 export function takePair(ctx, who, now) {
   const m = mem(ctx);
@@ -211,11 +224,17 @@ const isTts = (key) => key.startsWith("tts:");
 
 /**
  * Le contrat de service : enqueue({ key, text?, viewer?, ref }) → { ok: true, id } | { ok: false, reason }.
- * `options.test` : un essai de la propriétaire (voir testSend) — même chemin, mais il peut partir hors direct, ne touche jamais à Twitch et porte `test: true`.
+ * `options.test` : un essai (`test: true` dans le contrat de service, ou le bouton « Tester » : voir testSend) — même chemin, mais il peut partir hors direct (jamais coupe-circuit actif, jamais sans
+ * appairage, Home Assistant doit être là), ne touche jamais à Twitch ni à YouTube, ne rapporte ni ne rend aucun point, et porte `test: true` (journal « Test »). Il n'a jamais de préfixe « Pseudo dit : ».
+ * `options.counted` : la limite d'essais a déjà été prise par l'appelant (testSend).
  * Rend en plus `why` ({ code, detail? }) quand c'est la modération qui refuse : réservé à l'administration, jamais renvoyé par le service.
  */
-export async function enqueue(ctx, args, { test = false, now = Date.now() } = {}) {
+export async function enqueue(ctx, args, { test = false, counted = false, now = Date.now() } = {}) {
   const a = args && typeof args === "object" ? args : {};
+  if (test && !counted) {
+    const wait = takeTest(ctx, now);
+    if (wait) return { ok: false, reason: "rate", retryAfter: wait };
+  }
   const key = typeof a.key === "string" ? a.key : "";
   const ref = typeof a.ref === "string" && REF_RE.test(a.ref) ? a.ref : null;
   const s = settingsOf(ctx);
@@ -285,9 +304,9 @@ export async function testSend(ctx, { key, text, by = "admin" }, now = Date.now(
   const m = mem(ctx);
   const gap = m.tests.length ? Math.ceil((TEST_LIMITS.gapMs - (now - m.tests[m.tests.length - 1])) / 1000) : 0;
   if (gap > 0) return { ok: false, reason: "rate", retryAfter: gap };
-  const wait = slide(m.tests, now - 0, 3600_000, TEST_LIMITS.perHour);
+  const wait = takeTest(ctx, now);
   if (wait) return { ok: false, reason: "rate", retryAfter: wait };
-  const r = await enqueue(ctx, { key, text, viewer: "Test", ref: null }, { test: true, now });
+  const r = await enqueue(ctx, { key, text, viewer: "Test", ref: null }, { test: true, counted: true, now });
   await S.transact(ctx, async (db) => { await S.addLog(db, { kind: "system", event: "test", by: label(by), detail: label(key) }); }, { now, sweep: false });
   return r;
 }
@@ -296,7 +315,9 @@ export async function testSend(ctx, { key, text, by = "admin" }, now = Date.now(
 
 /** Livre les actions à Home Assistant : celles qui suivent `cursor`, jamais plus de 3 fois chacune, seulement si c'est ouvert (pas coupé, en direct). */
 export async function pull(ctx, { cursor, limit }, now = Date.now()) {
-  const live = await liveNow(ctx, now);
+  // Rien n'attend dans la file : on ne réveille pas YouTube (voir liveNow, `passive`) ; la réponse reprend sa dernière réponse connue.
+  const idle = (await S.peek(ctx, "queue")).items.length === 0;
+  const live = await liveNow(ctx, now, { passive: idle });
   const s = settingsOf(ctx);
   noteSeen(ctx, now);
   return S.transact(ctx, async (db) => {

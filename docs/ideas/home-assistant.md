@@ -10,7 +10,7 @@ Pour la créatrice qui a Home Assistant à la maison. Le module tient la file de
 Rien : le module n'a aucune page publique. Les viewers ne voient que leurs récompenses Twitch ; leurs points sont rendus si l'ordre n'a pas pu partir.
 
 ## Ce que fait Emma, pas à pas
-1. Installe le module (le Bot Twitch et « Ma Chaîne Twitch » aident ; sans « Ma Chaîne Twitch », le pont reste fermé et le dit).
+1. Installe le module (le Bot Twitch ou Actions du live YouTube, et « Ma Chaîne Twitch » ou « Chaîne YouTube » aident ; sans l'une des deux chaînes, le pont reste fermé et le dit).
 2. Ouvre la page du module, onglet « Utiliser » : l'assistant en 3 étapes (installer l'intégration par HACS avec le lien du dépôt ; copier le code à 8 caractères et l'adresse du site dans Home Assistant ; c'est tout). La page affiche « Home Assistant est connecté ».
 3. Teste avec « Tester le pont » (envoie un faux échange de points de chaîne, même hors direct, avec le suivi : envoyé, récupéré, exécuté / ignoré / expiré / refusé, et le délai total).
 4. En cas de souci : le gros bouton rouge **« Tout couper »** en haut de page (visible sans défiler sur téléphone). « Reprendre » le remet en route. Un message d'état confirme (pas de boîte de dialogue).
@@ -26,7 +26,7 @@ Délai avant d'abandonner un ordre 60 s (15–300) ; longueur maximale du messag
 - Débit : 1 s entre deux interrogations, 60 accusés / 10 s, 20 jetons refusés / 5 min, 10 appairages / heure / visiteur.
 - Coupe-circuit : bouton, outil assistant (`ha_stop`), service `stop` (commande `!stop` du Bot Twitch) ; reprendre est réservé (droit `ha.manage`, jamais un modérateur).
 - Texte lu : nettoyage NFKC, caractères de contrôle, balises SSML/HTML/Markdown, liens et adresses, mentions, emojis (3 au plus), répétitions, longueur, numéros, mots (insensible aux accents, majuscules, chiffres glissés, lettres espacées ou répétées, alphabets proches). Refus : le viewer est remboursé, le motif est au journal, le texte refusé n'est pas gardé.
-- « Seulement en direct » : Twitch dit « en direct » (+ 5 minutes de marge). Sans détection fiable, fermé.
+- « Seulement en direct » : Twitch OU YouTube dit « en direct » (services facultatifs `twitch.live` et `youtube.live`, lus sans rien copier ; + 5 minutes de marge). Une personne qui ne diffuse que sur YouTube peut donc s'en servir. Sans détection fiable, fermé, et la page dit « installez Ma Chaîne Twitch ou Chaîne YouTube ».
 - Aucun minuteur de fond : expiration et purge à la lecture.
 
 ## Données gardées et vie privée
@@ -42,7 +42,7 @@ File 50 ; journal 100 (50 à l'écran) ; résultats 50 ; clés vues 50 ; corps 4
 `ha_status`, `ha_journal` (lecture, accordés d'office) ; `ha_stop` et `home_assistant_test` (écritures, jamais accordées d'office). Aucun outil ne reprend, n'associe ni ne dissocie.
 
 ## Intégrations
-Offre le service `home-assistant.bridge` v1 (utilisé par le Bot Twitch) ; publie les sujets `ha.result` et `ha.state` ; utilise facultativement `twitch.live`. Contrat exact : `home-assistant-contract.md`.
+Offre le service `home-assistant.bridge` v1 (utilisé par le Bot Twitch) ; publie les sujets `ha.result` et `ha.state` ; utilise facultativement `twitch.live` et `youtube.live`. Le service `enqueue` accepte `test: true` (simulations du Bot Twitch et d'Actions du live YouTube : hors direct possible, jamais coupé ni sans appairage, 30 par heure). Contrat exact : `home-assistant-contract.md`.
 
 ## Décisions prises seules
 - Pas d'interrupteur manuel « Je suis en direct » : un oubli ouvrirait la maison hors direct ; sans détection, reste fermé et le dit. Le bouton « Tester » est la seule porte hors direct.

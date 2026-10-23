@@ -45,10 +45,10 @@
   "st_never": "Paired {when}, but Home Assistant has not connected yet. Check that the Curiosa integration is installed.",
   "live_yes": "**Live:** Twitch says you are live. Viewers can trigger actions.",
   "live_grace": "**Live:** the stream is over, but the door stays open {minutes} minutes to finish what is in progress.",
-  "live_no": "**Live:** you are not live. Viewers' actions are refused and their points given back (the test button still works).",
-  "live_unknown": "**Live:** Twitch is not answering right now. To be safe, nothing is played until we know whether you are live.",
-  "live_none": "**Live:** we cannot tell whether you are live. Without it, nothing is played for viewers, to be safe. Install “My Twitch channel”.",
-  "live_reason": "tells whether you are live",
+  "live_no": "**Live:** you are not live (neither on Twitch nor on YouTube, depending on the channels installed). Viewers' actions are refused and their points given back (the test button still works).",
+  "live_unknown": "**Live:** Twitch or YouTube is not answering right now. To be safe, nothing is played until we know whether you are live.",
+  "live_none": "**Live:** we cannot tell whether you are live. Without it, nothing is played for viewers, to be safe. Install “My Twitch channel” or “YouTube channel”.",
+  "live_reason": "tells whether you are live on Twitch",
   "big_stop": "Cut everything",
   "big_start": "Resume",
   "big_no_right": "You are not allowed to cut everything. Ask the person who manages the site.",
@@ -75,7 +75,7 @@
   "dev_another": "Pair another Home Assistant",
   "dev_another_help": "The new device takes the place of the previous one as soon as it uses the code: the previous one receives nothing any more.",
   "test_title": "Test the link",
-  "test_help": "Simulates a channel points reward, without touching Twitch: no point is taken or given back. The text goes through the same moderation as a viewer's. Works outside a live too.",
+  "test_help": "Simulates a channel points reward, without touching Twitch or YouTube: no point is taken or given back. The text goes through the same moderation as a viewer's. Works outside a live too.",
   "test_btn": "Send a test",
   "test_key": "Action to test",
   "test_key_help": "Actions already received are offered here.",
@@ -104,5 +104,8 @@
   "keys_seen": "**Actions already received:** {keys}",
   "keys_none": "**Actions already received:** none yet.",
   "dev_row": "{name} · paired {since} · mark {mark}",
-  "res_points_back": ", points given back"
+  "res_points_back": ", points given back",
+  "live_yes_youtube": "**Live:** YouTube says you are live. Viewers can trigger actions.",
+  "live_yes_both": "**Live:** Twitch and YouTube both say you are live. Viewers can trigger actions.",
+  "live_reason_youtube": "tells whether you are live on YouTube"
 }

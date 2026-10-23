@@ -25,7 +25,7 @@ const ALL_RIGHTS = manifest.rights.map((r) => r.id);
 const defaults = Object.fromEntries(manifest.settings.filter((s) => s.default !== undefined).map((s) => [s.key, s.default]));
 const bridge = (ctx) => def.services["home-assistant.bridge"];
 
-/** Un site avec le pont installé. `live` : ce que répond « Ma Chaîne Twitch » (null = non installé). Horloge simulée à T0. */
+/** Un site avec le pont installé. `live` : ce que répond « Ma Chaîne Twitch » (null = non installé) ; `yt` : ce que répond « Chaîne YouTube » (`youtube.live`, absent = non installé ; ex. { live: true }). Horloge simulée à T0. */
 function world(o = {}) {
   B.resetMemory(); L.resetLive();
   mock.timers.reset();
@@ -34,7 +34,10 @@ function world(o = {}) {
   const ctx = fakeCtx({
     key: "ha", moduleId: "home-assistant", name: "Home Assistant", basePath: "", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.locale === "en" ? en : fr,
     settings: { ...defaults, ...o.settings }, permissions: manifest.permissions, siteUrl: "https://site.example.org",
-    serviceInstances: o.live === null ? {} : { "twitch.live": [{ instance: "chan", methods: { status: o.liveFn ?? (() => live) } }] },
+    serviceInstances: {
+      ...(o.live === null ? {} : { "twitch.live": [{ instance: "chan", methods: { status: o.liveFn ?? (() => live) } }] }),
+      ...(o.yt === undefined ? {} : { "youtube.live": [{ instance: "yt", methods: { current: o.ytFn ?? (() => ({ ok: true, ...o.yt })) } }] }),
+    },
   });
   const rights = o.rights ?? ALL_RIGHTS;
   ctx.can = (r) => rights.includes(r);
@@ -63,7 +66,7 @@ test("le manifeste est valide et déclare le contrat exact", () => {
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.0.0"); assert.equal(manifest.minCore, "0.2.6");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
-  assert.deepEqual(manifest.requires, [{ service: "twitch.live", optional: true }]);
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
   assert.deepEqual(Object.keys(def.services["home-assistant.bridge"]).sort(), ["enqueue", "start", "status", "stop"]);
   assert.deepEqual(Object.keys(def.exports).sort(), ["ha.result", "ha.state"]);
@@ -457,6 +460,8 @@ test("sans « Ma Chaîne Twitch » : reste fermé et la page le dit (et propose 
   const text = JSON.stringify(blocks);
   assert.match(text, /on ne peut pas savoir si vous êtes en direct/);
   assert.ok(blocks.some((b) => b.type === "suggestInstall" && b.service === "twitch.live"));
+  assert.ok(blocks.some((b) => b.type === "suggestInstall" && b.service === "youtube.live"));
+  assert.match(text, /Chaîne YouTube/);
   w.done();
 });
 
@@ -472,7 +477,7 @@ test("trou noir : Twitch ne répond jamais, la réponse reste rapide, fermée, e
     const r = await ha.pull();
     assert.equal(r.body.live, false);
     refreshLive();
-    assert.match(JSON.stringify(await A.panel(w.ctx)), /Twitch ne répond pas/);
+    assert.match(JSON.stringify(await A.panel(w.ctx)), /Twitch ou YouTube ne répond pas/);
   } finally { L.timing.callMs = 2500; }
   w.done();
 });
@@ -490,6 +495,134 @@ test("plusieurs chaînes : une seule en direct suffit", async () => {
   w.ctx.api.services.callAll = async () => [{ ok: true, value: { known: true, live: false } }, { ok: true, value: { known: true, live: true } }];
   await pairUp(w);
   assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+  w.done();
+});
+
+/* ───────────── Direct : Twitch, YouTube, ou les deux ───────────── */
+
+test("direct : YouTube seul (pas de Chaîne Twitch) : en direct => ouvert, la page dit « YouTube »", async () => {
+  const w = world({ live: null, yt: { live: true } });
+  const ha = await pairUp(w);
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+  const r = await ha.pull();
+  assert.equal(r.body.live, true);
+  assert.equal((await bridge().status(w.ctx)).live, true);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /YouTube dit que vous êtes en direct/);
+  w.done();
+});
+
+test("direct : YouTube seul, fin du direct => marge de 5 minutes, puis fermé (not_live)", async () => {
+  const yt = { live: true };
+  const w = world({ live: null, yt: {}, ytFn: () => ({ ok: true, live: yt.live }) });
+  const ha = await pairUp(w);
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+  yt.live = false;
+  refreshLive(); w.tick(4 * 60_000); await ha.pull();
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r2" })).ok, true, "dans la marge");
+  refreshLive(); w.tick(61_000); await ha.pull();
+  assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "r3" }), { ok: false, reason: "not_live" });
+  refreshLive();
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /vous n'êtes pas en direct/);
+  w.done();
+});
+
+test("direct : Twitch seul inchangé ; Twitch en direct n'interroge pas YouTube (économie de limite)", async () => {
+  let asked = 0;
+  const w = world({ yt: { live: true }, ytFn: () => { asked += 1; return { ok: true, live: true }; } });
+  await pairUp(w);
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+  assert.equal(asked, 0);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Twitch dit que vous êtes en direct/);
+  w.done();
+});
+
+test("direct : Twitch pas en direct, YouTube en direct => ouvert", async () => {
+  const w = world({ live: { live: false }, yt: { live: true } });
+  await pairUp(w);
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+  assert.equal((await L.liveNow(w.ctx)).source, "youtube");
+  w.done();
+});
+
+test("direct : les deux disent « en direct » => « les deux » ; les deux « pas en direct » => fermé", async () => {
+  const w = world({ live: { live: true }, yt: { live: true } });
+  await pairUp(w);
+  // Twitch en direct : YouTube n'est pas interrogé ; on le force en vidant le cache et en rendant Twitch muet pour voir les deux côtés
+  const both = world({ live: { live: false }, yt: { live: false } });
+  await pairUp(both);
+  assert.deepEqual(await enq(both, { key: "lumieres:rouge", ref: "r1" }), { ok: false, reason: "not_live" });
+  const l = await L.liveNow(both.ctx);
+  assert.deepEqual([l.source, l.live, l.known, l.twitch, l.youtube], ["both", false, true, "off", "off"]);
+  both.done(); w.done();
+});
+
+test("direct : aucune source => fermé, la page dit « Chaîne Twitch ou Chaîne YouTube »", async () => {
+  const w = world({ live: null });
+  await pairUp(w);
+  assert.equal((await L.liveNow(w.ctx)).source, "none");
+  assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "r1" }), { ok: false, reason: "not_live" });
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Ma Chaîne Twitch.*Chaîne YouTube/);
+  w.done();
+});
+
+test("direct : pannes (YouTube en erreur, Twitch inconnu) => fermé, jamais ouvert par erreur ; une source saine suffit", async () => {
+  const bad = world({ live: null, yt: {}, ytFn: () => ({ ok: false, error: "quota" }) });
+  await pairUp(bad);
+  assert.equal((await L.liveNow(bad.ctx)).source, "unknown");
+  assert.equal((await enq(bad, { key: "lumieres:rouge", ref: "r1" })).reason, "not_live");
+  assert.match(JSON.stringify(await A.panel(bad.ctx)), /Twitch ou YouTube ne répond pas/);
+  const throws = world({ live: { known: false, live: true }, yt: {}, ytFn: () => { throw new Error("panne"); } });
+  await pairUp(throws);
+  assert.equal((await enq(throws, { key: "lumieres:rouge", ref: "r1" })).reason, "not_live");
+  const mixed = world({ live: { known: false, live: false }, yt: { live: true } });
+  await pairUp(mixed);
+  assert.equal((await enq(mixed, { key: "lumieres:rouge", ref: "r1" })).ok, true, "Twitch muet mais YouTube dit direct");
+  bad.done(); throws.done(); mixed.done();
+});
+
+test("direct : trou noir YouTube (ne répond jamais) : réponse rapide, fermée ; Twitch en direct reste ouvert", async () => {
+  L.timing.callMs = 40;
+  try {
+    const w = world({ live: null, yt: {}, ytFn: () => new Promise(() => {}) });
+    await pairUp(w);
+    const t0 = performance.now();
+    assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "r1" }), { ok: false, reason: "not_live" });
+    assert.ok(performance.now() - t0 < 1500);
+    w.done();
+    const w2 = world({ live: { live: true }, yt: {}, ytFn: () => new Promise(() => {}) });
+    await pairUp(w2);
+    assert.equal((await enq(w2, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+    w2.done();
+  } finally { L.timing.callMs = 2500; }
+});
+
+test("direct : YouTube « pas en direct » est gardé 60 s (économie de limite), « en direct » 20 s", async () => {
+  let asked = 0;
+  const w = world({ live: null, yt: {}, ytFn: () => { asked += 1; return { ok: true, live: false }; } });
+  await pairUp(w);
+  await L.liveNow(w.ctx); await L.liveNow(w.ctx); w.tick(30_000); await L.liveNow(w.ctx);
+  assert.equal(asked, 1);
+  w.tick(31_000); await L.liveNow(w.ctx);
+  assert.equal(asked, 2);
+  w.done();
+});
+
+test("direct : l'interrogation de Home Assistant (toutes les 3 s) n'appelle jamais YouTube quand rien n'attend ; une mise en file, si", async () => {
+  let asked = 0;
+  const w = world({ live: null, yt: {}, ytFn: () => { asked += 1; return { ok: true, live: true }; } });
+  const ha = await pairUp(w);
+  asked = 0; refreshLive();
+  for (let i = 0; i < 5; i++) { w.tick(3100); await ha.pull(); }
+  assert.equal(asked, 0, "5 interrogations à vide : aucun appel YouTube");
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r1" })).ok, true);
+  assert.equal(asked, 1, "la mise en file demande");
+  w.tick(1100);
+  assert.equal((await ha.pull()).body.live, true, "l'interrogation reprend la dernière réponse connue");
+  assert.equal(asked, 1);
+  w.tick(1100); await ha.step();   // l'action est jouée et acquittée : la file est vide
+  asked = 0; w.tick(11 * 60_000);
+  assert.equal((await ha.pull()).body.live, false, "plus de 10 minutes sans nouvelle de YouTube et plus de marge : on ne prétend pas être en direct");
+  assert.equal(asked, 0);
   w.done();
 });
 
@@ -940,6 +1073,85 @@ test("test : ne touche jamais à Twitch (aucun appel de service) et ne demande m
   assert.deepEqual(w.ctx.calls.net, []);
   const code = ["admin", "bridge", "tools", "http", "index"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
   assert.ok(!/twitch\.api|redemption|refund|reward/i.test(code.replace(/\/\/.*$/gm, "")), "aucun appel à Twitch dans le module");
+  w.done();
+});
+
+/* ───────────── Service : enqueue({ …, test: true }) (twitch-bot, youtube-live-actions) ───────────── */
+
+test("service `enqueue` + test:true : marqué, possible hors direct, livré avec test:true, journal « Test », jamais d'appel à Twitch ni à YouTube", async () => {
+  const w = world({ live: { live: false }, yt: { live: false } });
+  const ha = await pairUp(w);
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "r0" })).reason, "not_live", "un vrai échange hors direct reste refusé");
+  w.ctx.calls.services.length = 0;
+  const r = await enq(w, { key: "lumieres:rouge", viewer: "Léa", ref: "test-1", test: true });
+  assert.equal(r.ok, true);
+  assert.deepEqual(w.ctx.calls.services.filter(([n]) => n === "twitch.live" || n === "youtube.live"), [], "un test ne demande pas si on est en direct");
+  const pulled = (await ha.pull()).body;
+  assert.equal(pulled.live, false);
+  assert.equal(pulled.actions.length, 1);
+  assert.equal(pulled.actions[0].test, true);
+  assert.equal(pulled.actions[0].viewer, "Test", "le pseudo d'un test est « Test »");
+  const log = JSON.stringify(await A.panel(w.ctx));
+  assert.match(log, /Test/);
+  const st = await S.peek(w.ctx, "log");
+  assert.ok(st.lines.some((l) => l.test === true && l.status !== "refused"));
+  // le résultat existe pour que l'appelant montre l'issue de SA simulation ; rien d'autre ne peut en faire un remboursement : `ref` d'un test
+  w.tick(1100); await ha.step();
+  assert.deepEqual((await def.exports["ha.result"](w.ctx, {})).map((x) => [x.ref, x.status]), [["test-1", "done"]]);
+  w.done();
+});
+
+test("service `enqueue` + test:true : jamais avec le coupe-circuit actif, jamais sans appairage, Home Assistant doit être là", async () => {
+  const w = world({ live: { live: false } });
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "t0", test: true })).reason, "not_paired");
+  await pairUp(w);
+  await bridge().stop(w.ctx, { by: "owner" });
+  assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "t1", test: true }), { ok: false, reason: "off" });
+  await bridge().start(w.ctx, { by: "owner" });
+  w.tick(61_000);
+  assert.deepEqual(await enq(w, { key: "lumieres:rouge", ref: "t2", test: true }), { ok: false, reason: "offline" });
+  assert.deepEqual(await enq(w, { key: "pas valide", ref: "t3", test: true }), { ok: false, reason: "unknown_key" });
+  w.done();
+});
+
+test("service `enqueue` : seul `test: true` compte (\"true\", 1, objets : un vrai échange)", async () => {
+  const w = world({ live: { live: false } });
+  await pairUp(w);
+  for (const t of ["true", 1, {}, [true], "yes"]) assert.equal((await enq(w, { key: "lumieres:rouge", ref: "x1", test: t })).reason, "not_live", String(t));
+  w.done();
+});
+
+test("service `enqueue` + test:true : la modération est la vraie, pas de « Pseudo dit : », pas d'attente par viewer, un test ne bloque pas un vrai message", async () => {
+  const w = world({ settings: { prefixViewer: true } });
+  const ha = await pairUp(w);
+  assert.deepEqual(await enq(w, { key: "tts:lire", text: "salut ta gueule", ref: "t1", test: true }), { ok: false, reason: "blocked" });
+  const ok = await enq(w, { key: "tts:lire", text: "Bonjour", ref: "t2", test: true });
+  assert.equal(ok.ok, true);
+  assert.equal((await enq(w, { key: "tts:lire", text: "Encore", ref: "t3", test: true })).ok, true, "pas d'attente par viewer pour un test");
+  const real = await enq(w, { key: "tts:lire", text: "Vrai message", viewer: "Léa", ref: "r1" });
+  assert.equal(real.ok, true, "les essais n'ont pas réservé l'attente de la voix");
+  const texts = (await ha.pull()).body.actions.map((a) => [a.text, a.test === true]);
+  assert.deepEqual(texts, [["Bonjour", true], ["Encore", true], ["Léa dit : Vrai message", false]]);
+  w.done();
+});
+
+test("service `enqueue` + test:true : 30 par heure et 5 par 3 secondes au plus (refus `busy`) ; le bouton de l'administration reste à un toutes les 3 s", async () => {
+  const w = world({ live: { live: false }, settings: { globalDelaySeconds: 0, viewerDelaySeconds: 0 } });
+  const ha = await pairUp(w);
+  let ok = 0, last;
+  for (let i = 0; i < 8; i++) { last = await enq(w, { key: "lumieres:rouge", ref: `b${i}`, test: true }); if (last.ok) ok++; }
+  assert.equal(ok, 5, "rafale de 5 en 3 s");
+  assert.deepEqual(last, { ok: false, reason: "busy" });
+  assert.match((await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" })).error, /un test toutes les 3 secondes/);
+  for (let i = 0; i < 40; i++) {
+    w.tick(3100);
+    if (i % 5 === 0) await ha.step();
+    const r = await enq(w, { key: "lumieres:rouge", ref: `c${i}`, test: true });
+    if (r.ok) ok++;
+  }
+  assert.equal(ok, 30);
+  w.tick(3600_000); await ha.step();
+  assert.equal((await enq(w, { key: "lumieres:rouge", ref: "d1", test: true })).ok, true);
   w.done();
 });
 
