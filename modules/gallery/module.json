@@ -226,7 +226,7 @@
         "en": "Album order"
       },
       "help": {
-        "fr": "« Selon le point de départ » : du plus récent au plus ancien pour des rétrospectives, à la main pour un portfolio.",
+        "fr": "« Selon le point de départ » : les plus récents d'abord pour des rétrospectives, à la main pour un portfolio.",
         "en": "“Starting point's choice”: newest first for event recaps, by hand for a portfolio."
       },
       "options": [
@@ -240,7 +240,7 @@
         {
           "value": "date",
           "label": {
-            "fr": "Du plus récent au plus ancien",
+            "fr": "Les plus récents d'abord",
             "en": "Newest first"
           }
         },

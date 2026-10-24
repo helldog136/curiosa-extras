@@ -263,7 +263,7 @@ test("ordre des albums à la main : monter / descendre ; en ordre par date, la v
   await makeAlbum(byDate, { title: "A" });
   await makeAlbum(byDate, { title: "B" });
   assert.doesNotMatch(text(await panel(byDate)), /Changer l'ordre des albums/);
-  assert.match(text(await panel(byDate)), /Les albums sont montrés du plus récent/);
+  assert.match(text(await panel(byDate)), /Les albums sont montrés par date/);
 });
 
 test("panneau d'un album : grille des miniatures (avec la clé d'aperçu), photos sans description signalées, liens d'envoi et d'aperçu, place restante", async () => {
