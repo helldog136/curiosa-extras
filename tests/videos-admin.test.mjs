@@ -1,7 +1,7 @@
 // Vidéothèque : le parcours d'Emma. Coller une adresse (titre et miniature qui se remplissent), erreurs sous le champ, ajout en lot avec aperçu, catégories, séries, publier, masquer.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withFakeFetch, netReplies } from "/dev/shm/core-assoc/testsupport/index.mjs";
+const { withFakeFetch, netReplies } = await import(`file://${process.env.CURIOSA_DIR ?? process.cwd()}/testsupport/index.mjs`); // le kit de test du cœur (CURIOSA_DIR, comme les autres tests)
 import { ctxFor, def, D, P, R, manifest, platform, seedVideos, seedCategory, seedSeries, keepThumb, id, messages } from "./helpers/videosKit.mjs";
 
 /** Lance une action d'administration comme le cœur : droit déclaré dans le manifeste, vérifié pour la personne, puis `run`. */

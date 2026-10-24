@@ -1,7 +1,7 @@
 // Vidéothèque : les outils de l'assistant IA. Lire, ajouter par adresse (toujours en brouillon), modifier un brouillon ; jamais publier ; écritures non accordées d'office.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { withFakeFetch } from "/dev/shm/core-assoc/testsupport/index.mjs";
+const { withFakeFetch } = await import(`file://${process.env.CURIOSA_DIR ?? process.cwd()}/testsupport/index.mjs`); // le kit de test du cœur (CURIOSA_DIR, comme les autres tests)
 import { ctxFor, def, D, manifest, platform, seedVideos, seedCategory, id } from "./helpers/videosKit.mjs";
 
 const call = (ctx, name, args = {}) => def.mcp[name](ctx, args, { name: "test" });

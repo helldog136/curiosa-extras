@@ -1,7 +1,7 @@
 // Vidéothèque : les deux routes publiques. La miniature (lue dans le stockage, jamais récupérée chez la plateforme) et la recherche (redirection fabriquée, jamais une adresse reçue).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { blockNetwork } from "/dev/shm/core-assoc/testsupport/index.mjs";
+const { blockNetwork } = await import(`file://${process.env.CURIOSA_DIR ?? process.cwd()}/testsupport/index.mjs`); // le kit de test du cœur (CURIOSA_DIR, comme les autres tests)
 import { ctxFor, def, seedVideos, seedCategory, keepThumb, id } from "./helpers/videosKit.mjs";
 
 const get = (ctx, route, qs = "") => def.routes[route](new Request(`https://example.test/m/${ctx.instance.key}/${route}${qs}`), ctx);

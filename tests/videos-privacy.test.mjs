@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { withFakeFetch } from "/dev/shm/core-assoc/testsupport/index.mjs";
+const { withFakeFetch } = await import(`file://${process.env.CURIOSA_DIR ?? process.cwd()}/testsupport/index.mjs`); // le kit de test du cœur (CURIOSA_DIR, comme les autres tests)
 import { ctxFor, manifest, DIR, platform, def, id, O, D } from "./helpers/videosKit.mjs";
 
 const files = (dir, ext) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(path.join(dir, e.name), ext) : ext.some((x) => e.name.endsWith(x)) ? [path.join(dir, e.name)] : []));

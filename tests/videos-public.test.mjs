@@ -1,7 +1,7 @@
 // Vidéothèque : ce que voit le visiteur. Catalogue, catégories, recherche, pagination par curseur, page d'une vidéo (lecteur seulement après un clic), séries, données structurées, vie privée.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { blockNetwork } from "/dev/shm/core-assoc/testsupport/index.mjs";
+const { blockNetwork } = await import(`file://${process.env.CURIOSA_DIR ?? process.cwd()}/testsupport/index.mjs`); // le kit de test du cœur (CURIOSA_DIR, comme les autres tests)
 import { ctxFor, def, P, D, seedVideos, seedCategory, seedSeries, keepThumb, pageHtml, id, messages } from "./helpers/videosKit.mjs";
 
 const page = (ctx, segments = []) => def.page(ctx, { segments });
