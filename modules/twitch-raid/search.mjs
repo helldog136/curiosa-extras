@@ -94,3 +94,59 @@ export async function findRandom(ctx, partners, settings = {}, { rng = Math.rand
   if (result) return result;
   return seen.ok ? { state: "none", listed: partners.length } : failure(seen.errors.length ? seen.errors : ["network"]);
 }
+
+/**
+ * PLUSIEURS membres en direct (2.2, « Sélection du moment » d'une communauté de plus de 500 chaînes) : comme `findRandom`, avec les MÊMES bornes (paquets de 100 tirés
+ * au hasard, jamais vus depuis une minute, 6 paquets au plus, 12 recherches par minute pour toute l'instance, `timing.searchMs` pour l'ensemble), mais on continue jusqu'à en
+ * avoir `want` (ou plus) au lieu de s'arrêter au premier paquet qui en a. Rien n'est écrit sur le disque ; une recherche en cours est rejointe, pas doublée.
+ *   `exclude` : pseudos à ne jamais demander ni rendre. `rng` : comme Math.random.
+ * Rend { state: "found", entries: [...], listed } (au moins un) · { state: "none", listed } · { state: "limited" } · { state: "no_partners" } · { state: "not_ready", reason } · { state: "error", reason }.
+ */
+export async function findMany(ctx, partners, settings = {}, { want = 5, rng = Math.random, exclude = new Set() } = {}) {
+  if (!partners.length) return { state: "no_partners" };
+  const key = `${ctx.instance.key}|many`, run = { closed: false, fatal: false }, seen = { ok: 0, errors: [] };
+  const target = Math.max(1, Math.floor(Number(want)) || 1);
+  const search = async () => {
+    const c = await pickChannel(ctx, settings?.channel).catch(() => ({ problem: "slow" }));
+    if (c.problem === "slow") return { state: "error", reason: "network" };
+    if (c.problem) return { state: "not_ready", reason: c.problem, ...(c.adminPath ? { adminPath: c.adminPath } : {}) };
+    const everyone = withoutChannel(dedupe(partners.map((p, pos) => ({ ...p, pos }))), c.channel).filter((p) => !exclude.has(p.login));
+    if (!everyone.length) return { state: "no_partners" };
+    const listed = everyone.length, inList = new Set(everyone.map((p) => p.login));
+    const known = () => [...remembered(key).values()].filter((e) => e.entry && inList.has(e.entry.login)).map((e) => e.entry);
+    if (known().length >= target) return { state: "found", entries: known(), listed };
+    const other = running.get(key);
+    if (other && performance.now() - other.since < timing.searchMs) {   // une recherche est déjà en cours : on la rejoint
+      await within(other.job, timing.searchMs, null);
+      const all = known();
+      return all.length ? { state: "found", entries: all, listed } : { state: "none", listed };
+    }
+    const job = (async () => {
+      const mem = remembered(key);
+      const deck = drawer(everyone.filter((p) => !mem.has(p.login)), rng);
+      if (!deck.left()) return;   // tout a déjà été vu dans la dernière minute : rien de nouveau à demander
+      if (!takeSlot(ctx.instance.key)) { seen.limited = true; return; }   // le même plafond que « au hasard » : 12 recherches par minute pour toute l'instance
+      for (let attempt = 0; attempt < SEARCH_TRIES && deck.left() > 0 && !run.closed; attempt++) {
+        const batch = deck.take(PACKET_SIZES[0]);
+        const r = await lookup(ctx, c.channel, ctx.instance.key, batch, run);
+        if (run.closed) return;
+        if (r.checked) seen.ok++;
+        if (r.error) seen.errors.push(r.error);
+        const until = Date.now() + timing.knownMs;
+        for (const x of r.live) mem.set(x.login, { until, entry: x });
+        if (r.checked === batch.length) for (const p of batch) if (!mem.has(p.login)) mem.set(p.login, { until, entry: null });
+        if (r.fatal || known().length >= target) return;
+      }
+    })().catch(() => {});
+    running.set(key, { job, since: performance.now() });
+    try { await job; } finally { if (running.get(key)?.job === job) running.delete(key); }
+    const all = known();
+    if (all.length) return { state: "found", entries: all, listed };
+    if (seen.limited) return { state: "limited" };
+    return seen.ok || !seen.errors.length ? { state: "none", listed } : failure(seen.errors);
+  };
+  const result = await within(search().catch(() => ({ state: "error", reason: "network" })), timing.searchMs, null);
+  run.closed = true;
+  if (result) return result;
+  return seen.ok ? { state: "none", listed: partners.length } : failure(seen.errors.length ? seen.errors : ["network"]);
+}

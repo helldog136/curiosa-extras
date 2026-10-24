@@ -224,7 +224,7 @@ const CLIENT = `
   message(L.loading, ""); refresh();
 })();`;
 
-const CSS = (accent) => `
+export const CSS = (accent) => `
 :root{color-scheme:dark;--bg:#0e0e10;--panel:#18181b;--panel2:#1f1f23;--line:#2f2f35;--fg:#efeff1;--muted:#adadb8;--accent:${accent};--ok:#3ddc84;--warn:#f5b041}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.35 system-ui,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
@@ -298,7 +298,7 @@ export function dockPage(ctx, { sorts = pure.SORTS, liveUrl, pickUrl }) {
 }
 
 const baseHeaders = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" };
-const headers = (nonce) => ({
+export const headers = (nonce) => ({
   ...baseHeaders, "Content-Type": "text/html; charset=utf-8",
   "Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'`,
 });
