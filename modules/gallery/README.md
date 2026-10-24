@@ -22,17 +22,19 @@ Les photos sont **hébergées sur votre site, dans des limites que vous réglez*
 5. **Publiez** quand c'est prêt. Un brouillon a un **lien d'aperçu privé** pour le relire sur le site avant de le montrer.
 6. Dans l'onglet **Retraits**, lisez les demandes des visiteurs : un clic sur **« Masquer la photo »** la retire du site et clôt la demande.
 
-## Photos : ce qui est vérifié et nettoyé
+## Photos : où elles vont, ce qui est vérifié et nettoyé
 
-- Seuls les formats **JPEG, PNG et WebP** sont acceptés, reconnus **par le contenu du fichier** (pas par son nom). Les images animées sont refusées.
-- Les **informations cachées** dans les fichiers (position GPS, appareil, date, vignette, commentaires) sont **retirées** : votre navigateur ré-encode la photo, et le site refait le nettoyage de son côté.
-- Les noms de fichiers sont nettoyés ; aucun fichier n'est jamais exécuté.
-- Des **limites** protègent le site (réglables dans les réglages avancés) : poids d'une photo (300 Ko par défaut, 1 000 au plus), photos par album (120 par défaut, 300 au plus), nombre d'albums (100 par défaut, 500 au plus), espace total (150 Mo par défaut). Dépassez-les : un message clair s'affiche, rien n'est coupé en deux.
+- Les photos sont envoyées par le **mécanisme d'envoi d'images du site** (le même que pour le logo ou l'image d'un article) : ce sont de vrais fichiers du site, dans ses sauvegardes. Le module ne garde que leur adresse.
+- Seuls les formats **JPEG, PNG et WebP** sont acceptés (le site vérifie le type par le contenu du fichier, 5 Mo au plus). Les images animées (GIF) sont refusées.
+- Les **informations cachées** dans les photos (position GPS, appareil, date) sont **retirées** : votre navigateur ré-encode chaque photo avant l'envoi, et les pages publiques n'affichent qu'une **version propre fabriquée par le site** (jamais le fichier d'origine).
+- Chaque photo est envoyée **une par une**, avec sa barre de progression ; l'erreur d'une photo s'écrit sous elle sans bloquer les autres.
+- Des **limites** protègent le site (réglables dans les réglages avancés) : poids visé d'une photo (300 Ko par défaut), photos par album (120 par défaut, 300 au plus), nombre d'albums (100 par défaut, 500 au plus), photos sur tout le site (1 500 par défaut, 10 000 au plus).
+- **Retirer ou masquer** : masquer une photo la fait disparaître des pages du site tout de suite. Retirer une photo d'un album ou supprimer un album retire aussi les pages, **mais le fichier reste sur le disque du site** : un module ne peut pas encore effacer un fichier envoyé (voir « Ce que le module ne fait pas »). Quelqu'un qui connaîtrait l'adresse exacte du fichier pourrait donc encore l'ouvrir ; ces adresses sont longues et jamais écrites sur les pages.
 - Une photo peut aussi rester **chez un autre site** (« par adresse »), mais seulement si vous avez autorisé ce site dans les réglages avancés.
 
 ## Réglages
 
-Tout marche sans rien régler. Pour changer : titre et introduction de la page, mention de consentement, lien de retrait, e-mail à chaque demande, ordre et dates des albums, aide aux moteurs de recherche (désactivée d'office). En mode avancé : les mots du lien de retour, les limites ci-dessus, les sites autorisés pour des photos par adresse, la durée de garde des demandes (90 jours au plus).
+Tout marche sans rien régler. Pour changer : titre et introduction de la page, mention de consentement, lien de retrait, e-mail à chaque demande, ordre et dates des albums, aide aux moteurs de recherche (désactivée d'office). En mode avancé : les mots du lien de retour, les limites ci-dessus (poids visé, photos par album, albums, photos sur tout le site), les sites autorisés pour des photos par adresse, la durée de garde des demandes (90 jours au plus).
 
 ## Vie privée
 
@@ -48,7 +50,7 @@ Il peut lister les albums et leurs photos, **créer un album en brouillon**, **a
 - Pas de glisser-déposer pour envoyer ou ranger (les boutons suffisent, et c'est plus sûr au doigt).
 - Pas de retouche de photo, pas de recadrage.
 - Pas de commentaires ni de « j'aime » sur les photos.
-- Les photos sont gardées dans la base de votre site : pour de très gros albums, utilisez la carte « vers un autre service ».
+- Effacer vraiment le fichier d'une photo retirée : pas encore (limite du site de base). Pour de très gros albums, utilisez la carte « vers un autre service ».
 
 ## Pour les développeurs
 

@@ -5,7 +5,7 @@
 ### Nouveautés
 
 - Albums de photos avec visionneuse plein écran accessible, lien par photo, mention de consentement et demande de retrait en un clic.
-- Photos hébergées avec des limites réglables (poids, nombre, espace), nettoyées de leurs informations cachées (GPS compris), ou carte vers un album d'un autre service.
+- Photos envoyées avec l'envoi d'images du site (une par une, réduites et nettoyées de leurs informations cachées, GPS compris, dans le navigateur), limites réglables (poids visé, nombre), ou carte vers un album d'un autre service. Retirer une photo n'efface pas encore son fichier (limite du site de base).
 - Points de départ Rétrospectives, Portfolio, Vide ; plusieurs galeries ; service `gallery.albums` pour lier un album à un événement ; outils pour l'assistant IA (jamais de publication).
 
 ### Pour les développeurs
