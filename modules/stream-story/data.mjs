@@ -6,7 +6,7 @@ const P = await import(`./pure.mjs${v}`);
 const images = await import(`./images.mjs${v}`);
 const { LIMITS, oneLine, normalizeLogin, cleanConfig, safeImageUrl } = P;
 
-const CO = "story_costreamers", ADHOC = "story_adhoc", MODELS = "story_models", PREPS = "story_preps", KEY = "story_key";
+const CO = "story_costreamers", ADHOC = "story_adhoc", MODELS = "story_models", PREFS = "story_prefs", PREPS = "story_preps", KEY = "story_key";
 export const PREP_TTL_MS = 7 * 24 * 3600 * 1000, TOKEN_TTL_MS = 12 * 3600 * 1000, MAX_PREPS = 30;
 
 async function readList(ctx, collection) {
@@ -155,7 +155,7 @@ export async function remapReferences(ctx, from, to) {
 
 const cleanModel = (x) => {
   const name = oneLine(x?.name, LIMITS.modelName), id = /^[a-z0-9]{6,24}$/.test(String(x?.id ?? "")) ? String(x.id) : "";
-  return name && id ? { id, name, config: { ...cleanConfig(x.config), streamKey: "" } } : null;
+  return name && id ? { id, name, config: { ...cleanConfig(x.config), streamKey: "", watermark: false } } : null;   // la mention ne fait jamais partie d'un modèle : elle suit le choix de la personne
 };
 export async function readModels(ctx) { return (await readList(ctx, MODELS)).items.map(cleanModel).filter(Boolean).slice(0, LIMITS.models); }
 /** Enregistre un modèle sous un nom. Un nom déjà pris n'est remplacé que si `replaceId` le dit (la confirmation est demandée par la page). Rend { ok, items } ou { error: "name" | "exists" | "full" | "missing" }. */
@@ -166,7 +166,7 @@ export async function saveModel(ctx, { name, config, replaceId }) {
   const at = replaceId ? items.findIndex((x) => x.id === String(replaceId)) : -1;
   if (replaceId && at < 0) return { error: "missing" };
   if (clash >= 0 && clash !== at) return { error: "exists", id: items[clash].id };
-  const entry = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), name: nm, config: { ...tidyConfig(config), streamKey: "", eventId: "", eventSource: "" } };
+  const entry = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), name: nm, config: { ...tidyConfig(config), streamKey: "", eventId: "", eventSource: "", watermark: false } };
   if (at >= 0) items[at] = entry; else { if (items.length >= LIMITS.models) return { error: "full" }; items.push(entry); }
   await writeList(ctx, MODELS, items);
   return { ok: true, items, id: entry.id };
@@ -176,6 +176,26 @@ export async function removeModel(ctx, id) {
   if (rest.length === items.length) return { error: "missing" };
   await writeList(ctx, MODELS, rest);
   return { ok: true, items: rest };
+}
+
+/* ───────────── La mention « Made with Curiosa » : le choix retenu ───────────── */
+// Décochée tant que la personne n'a rien choisi. Le cœur ne laisse pas un module écrire ses propres réglages : le choix de la case est donc gardé ici (un simple oui/non, un seul document),
+// et le réglage `watermark` du module (mode avancé) donne la valeur de départ tant qu'aucun choix n'a été fait.
+/** Le choix retenu par la personne : true / false, ou null si elle n'a jamais touché à la case. */
+export async function readWatermarkPref(ctx) {
+  const doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
+  return typeof doc?.data?.watermark === "boolean" ? doc.data.watermark : null;
+}
+/** La valeur de la case pour une nouvelle vidéo : le choix retenu, sinon le réglage du module, sinon NON. */
+export async function watermarkDefault(ctx) {
+  let pref = null;
+  try { pref = await readWatermarkPref(ctx); } catch { pref = null; }
+  return pref ?? ctx.setting("watermark") === true;
+}
+export async function setWatermarkPref(ctx, on) {
+  const value = on === true, doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
+  if (doc) await ctx.api.store.update(doc.id, { watermark: value }); else await ctx.api.store.add(PREFS, { watermark: value });
+  return value;
 }
 
 /* ───────────── Préparations (venues d'une IA) ───────────── */

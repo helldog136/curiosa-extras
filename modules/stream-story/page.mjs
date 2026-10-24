@@ -16,7 +16,7 @@ export const KEYS = [
   "h_elements", "el_title", "el_when", "el_countdown", "el_game", "el_brand", "el_text", "el_costreamers", "countdown_is", "no_stream_info",
   "h_texts", "text_label", "text_help", "channel_label", "channel_help", "lang_label", "lang_fr", "lang_en",
   "h_look", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown", "style_countdown_hint", "style_minimal", "style_minimal_hint",
-  "format_label", "format_vertical", "format_passeport", "format_help_vertical", "format_help_passeport", "duration_label", "duration_help", "seconds",
+  "watermark_label", "watermark_help", "format_label", "format_vertical", "format_passeport", "format_help_vertical", "format_help_passeport", "duration_label", "duration_help", "seconds",
   "h_members", "members_help", "members_chosen", "members_none", "members_max", "member_missing", "member_unreadable", "member_loading", "only_this_video", "legacy_tag",
   "search_label", "search_placeholder", "search_hint", "search_busy", "search_none", "search_slow", "search_refine", "show_more", "add", "already", "remove",
   "cat_title", "cat_label", "cat_choose", "cat_none", "cat_empty", "cat_gone", "cat_more", "cat_add_first", "cat_added", "cat_full", "book_absent",
@@ -31,6 +31,9 @@ export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`u
 /** Les fichiers que la page charge : la liste est fermée (jamais un nom donné par la requête). */
 export const LIB = ["pure.mjs", "scenes.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
 const sourceCache = new Map();
+/** La police du nom « Curiosa » (copie exacte du fichier du cœur, licence SIL OFL à côté) : servie par le module lui-même, aucun appel extérieur. */
+let fontBytes = null;
+export async function wordmarkFont() { return (fontBytes ??= await readFile(new URL("./curiosa-wordmark.woff2", import.meta.url))); }
 export async function libSource(name) {
   if (!LIB.includes(name)) return null;
   if (!sourceCache.has(name)) sourceCache.set(name, await readFile(new URL(`./${name}`, import.meta.url), "utf8"));
@@ -50,7 +53,7 @@ p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var
 @media (max-width:719px){.layout{display:flex;flex-direction:column;gap:0}#controls{display:contents}section.pick{order:-2}.previewcol{order:-1}}
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
 fieldset{border:0;margin:0;padding:0;min-width:0}legend{font-weight:600;padding:0;margin-bottom:6px}
-label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}
+label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}label.check.tap{min-height:44px;align-items:center;margin-top:8px}label.check.tap input{width:24px;height:24px;margin:0}
 input[type=text],input[type=search],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;padding:10px;font:inherit;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px}
 textarea{min-height:76px;resize:vertical}input[type=range]{width:100%}
 input[type=checkbox],input[type=radio]{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--accent)}
@@ -128,7 +131,8 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <fieldset style="margin-top:12px"><legend>${T("format_label")}</legend><div class="cards">
 <label for="format-vertical"><input type="radio" name="format" id="format-vertical"><span>${T("format_vertical")}</span></label>
 <label for="format-passeport"><input type="radio" name="format" id="format-passeport"><span>${T("format_passeport")}</span></label></div><p id="fmt-note" class="muted"></p></fieldset>
-<label for="duration" style="margin-top:12px">${T("duration_label")} : <strong id="duration-out"></strong></label><input type="range" id="duration" min="${P.LIMITS.durationMin}" max="${P.LIMITS.durationMax}" step="1"><p class="muted">${T("duration_help")}</p></section>
+<label for="duration" style="margin-top:12px">${T("duration_label")} : <strong id="duration-out"></strong></label><input type="range" id="duration" min="${P.LIMITS.durationMin}" max="${P.LIMITS.durationMax}" step="1"><p class="muted">${T("duration_help")}</p>
+<label class="check tap" for="watermark"><input type="checkbox" id="watermark" aria-describedby="watermark-help"><span>${T("watermark_label")}</span></label><p id="watermark-help" class="muted" style="margin-top:0">${T("watermark_help")}</p></section>
 <section aria-labelledby="h-members"><h2 id="h-members">${T("h_members")}</h2><p class="muted">${T("members_help")}</p>
 <p id="migrated" class="banner" hidden></p>
 <p class="sub">${T("members_chosen")}</p><ul class="list" id="chosen"></ul><p id="members-note" class="muted" role="status"></p>

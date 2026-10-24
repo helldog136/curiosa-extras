@@ -9,12 +9,12 @@
 // Aucune vidéo, aucune image n'est gardée sur le serveur : le fichier est téléchargé par le navigateur et c'est tout.
 //
 // Routes (toutes servies par `/m/<clé>/…`) :
-//   studio, lib/*.mjs      la page de l'éditeur et son code (rien de personnel : aucun jeton requis) ;
+//   studio, lib/*.mjs, wordmark   la page de l'éditeur, son code et la police du nom « Curiosa » (rien de personnel : aucun jeton requis) ;
 //   events, cover          la liste « Pour quoi veux-tu une story ? » (événements de toutes les sources, par pages) et la jaquette d'un jeu ;
 //   data, streams, prep    lectures, avec le jeton de l'éditeur (en-tête X-Story-Token) ;
 //   people, members        la recherche d'une personne dans Contacts, et la relecture des fiches d'un modèle ;
 //   categories, category   les catégories de Contacts, et les comptes d'une catégorie (par pages) ;
-//   act                    écritures (POST) : saisie ponctuelle, ponctuels, modèles ;
+//   act                    écritures (POST) : saisie ponctuelle, ponctuels, modèles, choix de la mention « Made with Curiosa » ;
 //   img                    le relais d'images (liste blanche d'hôtes).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const P = await import(`./pure.mjs${v}`);
@@ -70,6 +70,7 @@ async function act(request, ctx) {
   switch (body.op) {
     case "adhoc.check": return reply(data.adhocEntry({ login: body.login, name: body.name, image: body.image }));
     case "adhoc.remove": return reply(await data.removeAdhoc(ctx, String(body.id ?? "")));
+    case "prefs.watermark": return typeof body.watermark === "boolean" ? reply({ watermark: await data.setWatermarkPref(ctx, body.watermark) }) : json({ ok: false, error: "invalid" }, 400);
     case "model.save": return reply(await data.saveModel(ctx, { name: body.name, config: body.config, replaceId: typeof body.replaceId === "string" ? body.replaceId : undefined }));
     case "model.remove": return reply(await data.removeModel(ctx, String(body.id ?? "")));
     default: return json({ ok: false, error: "invalid" }, 400);
@@ -85,9 +86,9 @@ const routes = {
   data: guarded("GET", async (request, ctx) => {
     // L'ancienne liste de co-streamers est confiée à Contacts dès que Contacts répond (l'éditeur ouvert par une personne est le seul moment : jamais en arrière-plan).
     const moved = await migrate.ensureMigrated(ctx, { waitMs: Math.floor(src.timing.routeMs * 0.6) });
-    const [models, adhoc, hasBook, brand] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readPickable(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx)]);
+    const [models, adhoc, hasBook, brand, watermark] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readPickable(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false)]);
     return json({
-      ok: true, models, adhoc, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr" },
+      ok: true, models, adhoc, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true },
       migrated: moved.state === "done" && (moved.created || moved.existing || moved.kept) ? { created: moved.created, existing: moved.existing, kept: moved.kept } : null,
     });
   }),
@@ -131,6 +132,11 @@ const routes = {
     if (!r.ok) return new Response(null, { status: r.error === "refused" ? 400 : r.error === "busy" ? 503 : r.error === "missing" ? 404 : 502, headers: NO_STORE });
     return new Response(r.bytes, { headers: { "Content-Type": r.type, "Cache-Control": "private, max-age=300", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'" } });
   }),
+};
+// La police du nom « Curiosa » pour la mention : un petit fichier fixe (rien de personnel, aucun jeton).
+routes.wordmark = async (request) => {
+  const no = only(request, "GET"); if (no) return no;
+  return new Response(await page.wordmarkFont(), { headers: { "Content-Type": "font/woff2", "Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff" } });
 };
 for (const name of page.LIB) routes[`lib/${name}`] = libRoute(name);
 
@@ -202,7 +208,7 @@ export default {
     async story_prepare(ctx, args) {
       const wantsEvent = args && typeof args === "object" && args.event !== undefined;
       const all = wantsEvent ? await src.loadEvents(ctx, { zone: zoneSetting(ctx) }) : null;
-      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down") });
+      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false) });
       const { manual } = prepared;
       const linked = await src.within(linkLogins(ctx, prepared.config), src.timing.bookMs * 2, { config: prepared.config, known: new Map() });
       const config = linked.config;
@@ -212,7 +218,7 @@ export default {
       const path = typeof mine?.adminPath === "string" && /^\/admin\//.test(mine.adminPath) ? mine.adminPath : `/admin/instances/${ctx.instance.id}`;
       return {
         ok: true, link: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}${path}?prep=${pid}`, expiresAt: new Date(expiresAt).toISOString(),
-        prepared: { style: config.style, format: config.format, durationSeconds: config.duration, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
+        prepared: { style: config.style, format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
         note: "Nothing has been generated or published. The owner opens this link while signed in to the admin, checks the preview, then clicks 'Generate the video' and saves the file.",
       };
     },

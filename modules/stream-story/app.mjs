@@ -81,6 +81,25 @@ function loadImage(url) {
   return job;
 }
 
+/* ───────────── La police du nom « Curiosa » ───────────── */
+// Le logo du site met « Curiosa » en Fraunces italique 600 : le fichier vient du module (route `wordmark`), est chargé par FontFace et doit être PRÊT avant le premier dessin (sinon le canvas
+// prend en silence une police de secours). Délai court (3 s) : en cas d'échec ou de lenteur, Georgia italique prend le relais et la vidéo se fabrique quand même.
+let fontJob = null;
+function loadWordmarkFont() {
+  fontJob ??= (async () => {
+    try {
+      if (typeof FontFace !== "function" || !document.fonts) return false;
+      const work = (async () => {
+        const res = await fetch(`${C.base}/wordmark`); if (!res.ok) return false;
+        const face = new FontFace(P.WORDMARK.family, await res.arrayBuffer(), { style: "italic", weight: String(P.WORDMARK.weight) });
+        await face.load(); document.fonts.add(face); return true;
+      })();
+      return await Promise.race([work, new Promise((r) => setTimeout(() => r(false), 3000))]);
+    } catch { return false; }
+  })();
+  return fontJob;
+}
+
 /* ───────────── La scène et l'aperçu ───────────── */
 function contentNow() {
   const stream = selectedStream();
@@ -89,6 +108,7 @@ function contentNow() {
 async function buildScene(nowMs = Date.now()) {
   const mine = ++S.building;
   S.nowMs = nowMs;
+  const wordmarkOk = S.cfg.watermark === true && (await loadWordmarkFont());
   const { stream, content } = contentNow();
   const members = chosenMembers();
   const [logo, cover, ...av] = await Promise.all([
@@ -97,7 +117,7 @@ async function buildScene(nowMs = Date.now()) {
   ]);
   if (mine !== S.building) return null;
   const avatars = Object.fromEntries(members.map((m, i) => [m.login, av[i]]));
-  const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx });
+  const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
   return { scene, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
 let rebuildTimer = null;
@@ -418,7 +438,7 @@ async function removeSaved(m) {
 }
 
 /* ───────────── Les modèles ───────────── */
-function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "" }; }
+function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "", watermark: false }; }   // la mention n'est jamais dans un modèle : elle suit la case
 function renderModels() {
   const box = $("model-list");
   box.replaceChildren(...(S.models.length ? S.models.map((m) => {
@@ -431,7 +451,7 @@ function renderModels() {
   }) : [h("li", { class: "muted", text: L("models_none") })]));
 }
 function loadModel(m) {
-  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource };
+  const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
   syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok");
 }
@@ -462,7 +482,7 @@ function syncControls() {
   for (const f of P.FORMATS) $(`format-${f.id}`).checked = S.cfg.format === f.id;
   $("duration").value = S.cfg.duration; $("duration-out").textContent = L("seconds", { n: S.cfg.duration });
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
-  $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang;
+  $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang; $("watermark").checked = S.cfg.watermark === true;
   renderStreamPicker();
 }
 function updateInfo() {
@@ -483,6 +503,12 @@ function bind() {
   on("text", "input", () => { S.cfg.text = P.freeText($("text").value, P.LIMITS.text); $("text-count").textContent = `${[...$("text").value].length}/${P.LIMITS.text}`; rebuild(); });
   on("channel", "input", () => { S.cfg.channelName = P.oneLine($("channel").value, P.LIMITS.channelName); rebuild(); });
   on("lang", "change", () => { S.cfg.lang = $("lang").value === "en" ? "en" : "fr"; renderStreamPicker(); rebuild(); });
+  // La mention « Made with Curiosa » : l'aperçu suit tout de suite ; le choix est retenu pour les prochaines vidéos (un échec n'empêche pas de fabriquer celle-ci).
+  on("watermark", "change", async () => {
+    S.cfg.watermark = $("watermark").checked; rebuild();
+    const r = await api("act", { method: "POST", body: { op: "prefs.watermark", watermark: S.cfg.watermark } });
+    if (!r.ok) say(errText(r.error), "error");
+  });
   on("event-q", "input", onEventSearch);
   on("event-more", "click", () => loadEvents(true));
   on("event-retry", "click", () => loadEvents(false, { fresh: true }));
@@ -548,6 +574,7 @@ async function start() {
   const [data, prep] = await Promise.all([api("data"), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
   if (data.ok) {
+    if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // la case retenue ; une préparation de l'IA dit déjà la sienne
     S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
     if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
