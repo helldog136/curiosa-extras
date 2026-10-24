@@ -99,14 +99,14 @@ test("réglage « afficher le texte » : le texte s'affiche, borné à 140, en t
 test("Super Sticker, adhésion et cadeau : libellés et formes ; pseudo borné à 40, caractères de contrôle et de sens d'écriture retirés", async () => {
   const o = overlay({ items: [
     item({ id: "a", kind: "supersticker", amount: 2, currency: "USD", who: "Max" }),
-    item({ id: "b", kind: "member", who: `Nina\u202e\u0007${"x".repeat(100)}`, amount: undefined, currency: undefined }),
+    item({ id: "b", kind: "member", who: `Nina‮\u0007${"x".repeat(100)}`, amount: undefined, currency: undefined }),
     item({ id: "c", kind: "gift", count: 5, who: "Zoé", amount: undefined, currency: undefined }),
   ] });
   await pull(o);
   assert.equal(o.got.length, 3);
   const by = Object.fromEntries(o.got.map((e) => [e.kind, e]));
   assert.match(by.supersticker.message, /^Max · .*2/);
-  assert.ok(by.member.message.length <= 40 && !/[\u202e\u0007]/.test(by.member.message) && by.member.message.startsWith("Nina"));
+  assert.ok(by.member.message.length <= 40 && !/[‮\u0007]/.test(by.member.message) && by.member.message.startsWith("Nina"));
   assert.equal(by.gift.message, "Zoé · ×5");
   o.off();
 });

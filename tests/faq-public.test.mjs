@@ -78,9 +78,9 @@ test("réponse : gras, italique, listes, liens ; tout le reste est échappé", (
 });
 
 test("données pour les moteurs : JSON sûr dans une balise, taille bornée, jamais coupé en deux", () => {
-  const nasty = text.safeJson({ a: "</script><script>alert(1)</script>", b: "a\u2028b\u2029c&d" });
-  assert.ok(!nasty.includes("<") && !nasty.includes(">") && !nasty.includes("\u2028") && !nasty.includes("&"), nasty);
-  assert.deepEqual(JSON.parse(nasty), { a: "</script><script>alert(1)</script>", b: "a\u2028b\u2029c&d" });
+  const nasty = text.safeJson({ a: "</script><script>alert(1)</script>", b: "a b c&d" });
+  assert.ok(!nasty.includes("<") && !nasty.includes(">") && !nasty.includes(" ") && !nasty.includes("&"), nasty);
+  assert.deepEqual(JSON.parse(nasty), { a: "</script><script>alert(1)</script>", b: "a b c&d" });
 
   const items = Array.from({ length: 300 }, (_, i) => ({ q: `Question ${i} ?`, html: `<p>${"réponse longue ".repeat(40)}${i}</p>`, other: false, lang: "fr" }));
   const { doc, count, omitted } = text.faqMarkup(items, "fr");

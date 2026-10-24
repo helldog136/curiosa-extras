@@ -22,7 +22,7 @@ test("nettoyage NFKC : lettres pleine chasse, ligatures et exposants sont ramen�
 });
 
 test("caractères de contrôle et invisibles retirés", () => {
-  assert.equal(clean("a\u0000b\u0007c​d\u202ee").text, "abcde");
+  assert.equal(clean("a\u0000b\u0007c​d‮e").text, "abcde");
   assert.equal(clean("ligne1\nligne2\ttab").text, "ligne1 ligne2 tab");
   assert.equal(ok("hi​t​ler").code, "word");
 });
@@ -131,7 +131,7 @@ test("tout est refusé ou nettoyé proprement : vide, symboles, valeurs inattend
 test("passage au hasard : jamais d'erreur, jamais de balise ni de lien, toujours rapide", () => {
   let seed = 12345;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
-  const pieces = ["<speak>", "</speak>", "<", ">", "&amp;", "http://x.example/", "www.a.fr", "@bob", "**", "_", "​", "\u202e", "\u0000", "😀", "👨‍👩‍👧", "０６１２", "m3rde", "f u c k", "aaaaaaa", " ", "\n", "é", "ß", "ﷺ", "ǅ", "a".repeat(50), "[x](y)", "{{x}}", "javascript:", "09 12 34", "ｆｕｃｋ", "\uD800"];
+  const pieces = ["<speak>", "</speak>", "<", ">", "&amp;", "http://x.example/", "www.a.fr", "@bob", "**", "_", "​", "‮", "\u0000", "😀", "👨‍👩‍👧", "０６１２", "m3rde", "f u c k", "aaaaaaa", " ", "\n", "é", "ß", "ﷺ", "ǅ", "a".repeat(50), "[x](y)", "{{x}}", "javascript:", "09 12 34", "ｆｕｃｋ", "\uD800"];
   const started = Date.now();
   for (let i = 0; i < 4000; i++) {
     const n = 1 + Math.floor(rnd() * 25);
@@ -141,7 +141,7 @@ test("passage au hasard : jamais d'erreur, jamais de balise ni de lien, toujours
     assert.equal(typeof r.ok, "boolean");
     if (r.ok) {
       const body = r.text.replace(/^.* dit : /su, "");
-      assert.ok(!/[<>]|:\/\/|@|[\u0000-\u0008​\u202e]/u.test(body), JSON.stringify([s, r.text]));
+      assert.ok(!/[<>]|:\/\/|@|[\u0000-\u0008​‮]/u.test(body), JSON.stringify([s, r.text]));
       assert.ok([...r.text].length <= MAX_CHARS.max + 40);
     }
   }

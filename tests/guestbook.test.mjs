@@ -162,11 +162,11 @@ test("signer : nom ou message vide/espaces, trop de liens → 400, rien de stock
 
 test("signer : les textes sont bornés et nettoyés (longueur, caractères de contrôle, inversion de sens)", async () => {
   const ctx = ctxFor({ maxLength: 50 });
-  await sign(ctx, { name: "N".repeat(500), message: `a\u0000b\u202ec${"z".repeat(500)}` });
+  await sign(ctx, { name: "N".repeat(500), message: `a\u0000b‮c${"z".repeat(500)}` });
   const { data } = (await ctx.api.store.list("messages"))[0];
   assert.equal(data.name.length, 60);
   assert.equal(data.message.length, 50);
-  assert.ok(!/[\u0000\u202e]/.test(data.message));
+  assert.ok(!/[\u0000‮]/.test(data.message));
   // un maxLength absurde est ramené dans [20, 2000]
   const big = ctxFor({ maxLength: 99999 });
   await sign(big, { name: "a", message: "m".repeat(5000) });

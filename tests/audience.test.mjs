@@ -56,7 +56,7 @@ test("pseudos : longueur, caractères, nettoyage, jamais tronqué ; forme pliée
   assert.equal(v("<b>x</b>").code, "pseudo_chars"); assert.equal(v("a'b").code, "pseudo_chars"); assert.equal(v('a"b').code, "pseudo_chars"); assert.equal(v("a.b").code, "pseudo_chars");
   assert.equal(v("_abc").code, "pseudo_chars"); assert.equal(v("-abc").code, "pseudo_chars");
   assert.equal(v("Zoë-42 Åke").ok, true); assert.equal(v("日本語").ok, true, "d'autres alphabets sont permis");
-  assert.equal(v("a\u202eb c").value, "a b c", "les marques de sens de lecture deviennent des espaces");
+  assert.equal(v("a‮b c").value, "a b c", "les marques de sens de lecture deviennent des espaces");
   assert.equal(L.fold("Éloïse L-U_n3"), L.fold("eloise lune"), "chiffre pour lettre et accents ne comptent pas");
   assert.equal(v("zz", { min: 2 }).ok, true); assert.equal(v("z".repeat(30), { max: 30 }).ok, true);
   assert.equal(v("abcdef", { max: 5 }).code, "pseudo_long", "refusé, jamais coupé en silence");

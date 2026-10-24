@@ -67,11 +67,11 @@ test("question : les noms de liens sont uniques, même pour deux questions ident
 
 test("question : texte nettoyé et borné (rien de démesuré n'entre dans le stockage)", async () => {
   const ctx = ctxFor();
-  await act(ctx, "saveItem", { state: "draft", q_fr: `${"Q".repeat(1000)}\u202e`, a_fr: "A".repeat(100_000) });
+  await act(ctx, "saveItem", { state: "draft", q_fr: `${"Q".repeat(1000)}‮`, a_fr: "A".repeat(100_000) });
   const [i] = items(ctx);
   assert.equal(i.tr.fr.q.length, 200);
   assert.equal(i.tr.fr.a.length, 3000);
-  assert.ok(!i.tr.fr.q.includes("\u202e"));
+  assert.ok(!i.tr.fr.q.includes("‮"));
 });
 
 test("droits : sans le droit de publier, tout reste en brouillon ; sans le droit d'écrire, rien ne se montre", async () => {
