@@ -1,0 +1,55 @@
+// Événements : les fuseaux horaires proposés dans les listes (les autres s'écrivent par leur nom officiel).
+// [nom officiel, libellé français, libellé anglais]. 46 au plus (la liste d'un réglage est limitée à 50 choix).
+export const ZONES = [
+  ["Europe/Paris", "Europe centrale : Paris, Berlin, Madrid, Rome, Amsterdam…", "Central Europe: Paris, Berlin, Madrid, Rome, Amsterdam…"],
+  ["Europe/London", "Londres, Dublin", "London, Dublin"],
+  ["Europe/Lisbon", "Lisbonne", "Lisbon"],
+  ["Europe/Athens", "Athènes, Helsinki, Kiev, Bucarest", "Athens, Helsinki, Kyiv, Bucharest"],
+  ["Europe/Moscow", "Moscou", "Moscow"],
+  ["Europe/Istanbul", "Istanbul", "Istanbul"],
+  ["Atlantic/Reykjavik", "Reykjavik", "Reykjavik"],
+  ["Africa/Casablanca", "Casablanca", "Casablanca"],
+  ["Africa/Algiers", "Alger, Tunis", "Algiers, Tunis"],
+  ["Africa/Lagos", "Lagos, Kinshasa, Douala", "Lagos, Kinshasa, Douala"],
+  ["Africa/Cairo", "Le Caire", "Cairo"],
+  ["Africa/Johannesburg", "Johannesburg", "Johannesburg"],
+  ["Africa/Nairobi", "Nairobi", "Nairobi"],
+  ["America/St_Johns", "Terre-Neuve (Saint-Jean)", "Newfoundland (St. John's)"],
+  ["America/Halifax", "Halifax", "Halifax"],
+  ["America/New_York", "New York, Montréal, Toronto", "New York, Montreal, Toronto"],
+  ["America/Chicago", "Chicago, Winnipeg", "Chicago, Winnipeg"],
+  ["America/Denver", "Denver, Calgary", "Denver, Calgary"],
+  ["America/Phoenix", "Phoenix", "Phoenix"],
+  ["America/Los_Angeles", "Los Angeles, Vancouver", "Los Angeles, Vancouver"],
+  ["America/Anchorage", "Anchorage", "Anchorage"],
+  ["Pacific/Honolulu", "Honolulu", "Honolulu"],
+  ["America/Mexico_City", "Mexico", "Mexico City"],
+  ["America/Bogota", "Bogota, Lima, Quito", "Bogota, Lima, Quito"],
+  ["America/Santiago", "Santiago", "Santiago"],
+  ["America/Sao_Paulo", "São Paulo, Brasilia", "São Paulo, Brasilia"],
+  ["America/Argentina/Buenos_Aires", "Buenos Aires", "Buenos Aires"],
+  ["Asia/Dubai", "Dubaï, Abou Dabi", "Dubai, Abu Dhabi"],
+  ["Asia/Karachi", "Karachi, Tachkent", "Karachi, Tashkent"],
+  ["Asia/Kolkata", "Inde (Delhi, Bombay)", "India (Delhi, Mumbai)"],
+  ["Asia/Dhaka", "Dacca", "Dhaka"],
+  ["Asia/Bangkok", "Bangkok, Hanoï", "Bangkok, Hanoi"],
+  ["Asia/Jakarta", "Jakarta", "Jakarta"],
+  ["Asia/Singapore", "Singapour, Kuala Lumpur", "Singapore, Kuala Lumpur"],
+  ["Asia/Hong_Kong", "Hong Kong", "Hong Kong"],
+  ["Asia/Shanghai", "Pékin, Shanghai, Taipei", "Beijing, Shanghai, Taipei"],
+  ["Asia/Manila", "Manille", "Manila"],
+  ["Asia/Seoul", "Séoul", "Seoul"],
+  ["Asia/Tokyo", "Tokyo, Osaka", "Tokyo, Osaka"],
+  ["Australia/Perth", "Perth", "Perth"],
+  ["Australia/Adelaide", "Adélaïde", "Adelaide"],
+  ["Australia/Sydney", "Sydney, Melbourne", "Sydney, Melbourne"],
+  ["Pacific/Auckland", "Auckland, Wellington", "Auckland, Wellington"],
+  ["Pacific/Fiji", "Fidji", "Fiji"],
+  ["UTC", "Heure universelle (UTC)", "Universal time (UTC)"],
+];
+
+/** Les choix d'une liste, dans la langue demandée (français, sinon anglais). */
+export function zoneOptions(lang) {
+  const i = String(lang).slice(0, 2) === "fr" ? 1 : 2;
+  return ZONES.map((z) => ({ value: z[0], label: `${z[i]} (${z[0]})` }));
+}
