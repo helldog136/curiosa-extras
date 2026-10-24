@@ -9,6 +9,7 @@ const search = await import(`./search.mjs${v}`);
 const source = await import(`./source.mjs${v}`);
 const migrate = await import(`./migrate.mjs${v}`);
 const addAdmin = await import(`./add-admin.mjs${v}`);
+const momentAdmin = await import(`./moment-admin.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 export { settingsOf };
 const { FULL_VIEW_MAX, MAX_TARGETS, oneLine, modeFor, fold } = await import(`./pure.mjs${v}`);
@@ -84,6 +85,8 @@ export async function panel(ctx, { query = {} } = {}) {
   blocks.push({ type: "links", items: [{ label: t("addr_open"), href: address }] });
   blocks.push({ type: "adminForm", action: "check", title: t("check_title"), submitLabel: t("check_btn"), fields: [] });
   blocks.push({ type: "table", columns: [t("renew_title")], rows: [[t("renew_help")]], rowIds: ["dock"], rowActions: [{ label: t("renew_btn"), action: "renew", confirm: t("renew_confirm"), danger: true }] });
+  // 2.2 : l'onglet « Sélection du moment » (ses blocs portent `tab: "moment"`).
+  blocks.push(...await within(momentAdmin.blocks(ctx), source.timing.readMs + 3000, []));
   return blocks;
 }
 
@@ -92,6 +95,7 @@ const forget = () => { source.resetSource(); live.resetLive(); };
 
 export const actions = {
   ...addAdmin.actions,
+  ...momentAdmin.actions,
   async renew(ctx) {
     await data.renewSecret(ctx);
     return back(ctx.t("renewed"));
