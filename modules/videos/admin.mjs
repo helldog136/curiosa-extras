@@ -86,7 +86,7 @@ async function mainBlocks(ctx, snap, q, editor) {
   if (!snap.items.length) return out; // le message de bienvenue, plus haut, dit déjà quoi faire
   out.push({ type: "heading", text: t("listTitle", { n: snap.items.length }) });
   out.push({ type: "links", items: [["", "filterAll", counts.all], ["published", "st_published", counts.published], ["draft", "st_draft", counts.draft], ["hidden", "st_hidden", counts.hidden]].map(([s, key, n]) => ({ label: `${st === s ? "▸ " : ""}${t(key)} (${n})`, href: `${here(ctx)}${s ? `?st=${s}` : ""}` })) });
-  if (snap.items.length > LIMITS.adminPage || search) out.push({ type: "adminForm", action: "search", submitLabel: t("searchButton"), fields: [{ name: "q", kind: "text", label: t("searchLabel"), value: search, help: t("searchHelp") }, { name: "st", kind: "hidden", value: st }] });
+  if (snap.items.length > LIMITS.adminPage || search) out.push({ type: "adminForm", action: "search", submitLabel: t("searchButton"), fields: [{ name: "q", kind: "text", label: t("findLabel"), value: search, help: t("searchHelp") }, { name: "st", kind: "hidden", value: st }] });
   const words = P.searchWords(search);
   const rows = snap.items.filter((x) => (!st || x.status === st) && (!words.length || words.every((w) => `${x.hay} ${P.fold(x.ext)}`.includes(w))));
   const pages = Math.max(1, Math.ceil(rows.length / LIMITS.adminPage));
@@ -262,7 +262,7 @@ function seriesScreen(ctx, snap, p, vq) {
   } else out.push({ type: "markdown", text: t("seriesItemsNone") });
   // Chercher une vidéo à ajouter
   const words = P.searchWords(vq);
-  out.push({ type: "adminForm", action: "seriesSearch", title: t("seriesFindTitle"), submitLabel: t("searchButton"), fields: [{ name: "id", kind: "hidden", value: String(p) }, { name: "q", kind: "text", label: t("searchLabel"), value: clean(vq, LIMITS.searchMax), help: t("seriesFindHelp") }] });
+  out.push({ type: "adminForm", action: "seriesSearch", title: t("seriesFindTitle"), submitLabel: t("searchButton"), fields: [{ name: "id", kind: "hidden", value: String(p) }, { name: "q", kind: "text", label: t("findLabel"), value: clean(vq, LIMITS.searchMax), help: t("seriesFindHelp") }] });
   const inSet = new Set(s.items);
   const found = snap.items.filter((x) => !inSet.has(x.n) && x.status !== "hidden" && (!words.length || words.every((w) => x.hay.includes(w)))).slice(0, 20);
   if (found.length) out.push({ type: "table", columns: [t("colTitle")], rows: found.map((x) => [`${untitled(ctx, x)} — ${statusLabel(ctx, x.status)}`]), rowIds: found.map((x) => `${p}:${x.n}`), rowActions: [{ label: t("actAddToSeries"), action: "seriesItemAdd" }] });
