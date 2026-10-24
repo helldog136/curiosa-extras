@@ -520,7 +520,7 @@ test("l'ajout vide le cache de la liste : le dock voit tout de suite la nouvelle
   assert.equal((await source.targets(ctx)).partners.length, 0);
   await act(ctx, "find", { q: "@alice_tv" });
   assert.deepEqual((await source.targets(ctx)).partners.map((p) => [p.login, p.name]), [["alice_tv", "Alice Tv"]]);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "live", "pick"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "featured", "featured-again", "featured-data", "live", "members", "pick"]);
 });
 
 /* ───────────── Textes, FR + EN, rien d'affiché en secret ───────────── */
