@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { ctxFor, addEvent, html, L, A, rows } from "./helpers/eventsKit.mjs";
 import { fakeGallery } from "./helpers/fakeGalleryEvents.mjs";
-import { fakeVideos } from "./helpers/fakeVideos.mjs";
+import { fakeVideos } from "./helpers/fakeVideosEvents.mjs";
 
 const ALBUMS = [{ id: "a1", title: "Soirée d'ouverture", count: 24, url: "/galerie/ouverture" }, { id: "a2", title: "Atelier d'été", count: 8, url: "https://photos.example.org/ete" }];
 const VIDEOS = [{ id: "v1", title: "Masterclass d'ouverture", url: "/videos/ouverture" }];
