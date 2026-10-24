@@ -49,7 +49,7 @@ Le module *Story d'annonce* (et tout module qui annonce des événements) montre
     url: "https://…", image: "https://…", games: ["Hades"],   // facultatifs (https)
   }] }
 ```
-Sources fournies aujourd'hui : *Chaîne YouTube* (directs et premières **publics** programmés) et *Ma Chaîne Twitch* (planning de la chaîne). Le consommateur borne tout (100 événements par source, 10 sources, 200 au total, délai par source), vérifie chaque champ, écarte seul un événement illisible, dédoublonne un même événement vu par deux sources et trie sur l'instant UTC. Un module qui publie des événements datés n'a qu'à offrir ce service : aucun consommateur n'est à modifier.
+Sources fournies aujourd'hui : *Chaîne YouTube* (directs et premières **publics** programmés), *Ma Chaîne Twitch* (planning de la chaîne) et *Événements* (les rendez-vous **publiés** de vos agendas). Le consommateur borne tout (100 événements par source, 10 sources, 200 au total, délai par source), vérifie chaque champ, écarte seul un événement illisible, dédoublonne un même événement vu par deux sources et trie sur l'instant UTC. Un module qui publie des événements datés n'a qu'à offrir ce service : aucun consommateur n'est à modifier.
 
 ## Tests
 ```

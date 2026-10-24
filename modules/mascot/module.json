@@ -1,0 +1,383 @@
+{
+  "apiVersion": 2,
+  "id": "mascot",
+  "name": {
+    "fr": "Mascotte",
+    "en": "Mascot"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.5",
+  "description": {
+    "fr": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
+    "en": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "🐾",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": false,
+  "privacy": {
+    "fr": "La mascotte ne collecte rien et n'envoie rien. Votre navigateur retient seulement vos choix (fermée, réduite en pastille, coupée pour toujours), le nombre de messages du jour et les dernières phrases dites, pour qu'elle ne se répète pas ; aucun cookie n'est utilisé. Pour tout effacer, videz les données du site dans votre navigateur, ou ouvrez une page avec ?mascot=voir à la fin de l'adresse.",
+    "en": "The mascot collects nothing and sends nothing. Your browser only remembers your choices (closed, reduced to a small badge, switched off for good), the number of messages today and the last sentences said, so that it does not repeat itself; no cookie is used. To erase everything, clear the site data in your browser, or open a page with ?mascot=voir at the end of the address."
+  },
+  "permissions": [
+    "slots",
+    "routes",
+    "storage",
+    "topics",
+    "mcp",
+    "admin"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Ma mascotte",
+        "en": "My mascot"
+      }
+    },
+    {
+      "id": "phrases",
+      "label": {
+        "fr": "Phrases",
+        "en": "Sentences"
+      },
+      "panel": true
+    },
+    {
+      "id": "settings",
+      "label": {
+        "fr": "Quand et où",
+        "en": "When and where"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "edit",
+      "label": {
+        "fr": "changer l'apparence et écrire les phrases",
+        "en": "change the look and write the sentences"
+      },
+      "help": {
+        "fr": "Choisir le dessin ou l'image, le nom, ajouter, modifier et supprimer des phrases, appliquer un gabarit.",
+        "en": "Choose the drawing or the picture, the name, add, edit and delete sentences, apply a template."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "publish",
+      "label": {
+        "fr": "montrer ou cacher la mascotte aux visiteurs",
+        "en": "show or hide the mascot to visitors"
+      },
+      "help": {
+        "fr": "Publier la mascotte sur le site, ou la remettre en brouillon.",
+        "en": "Publish the mascot on the site, or put it back to draft."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "requires": [
+    {
+      "service": "event.source",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "fr": "Vos événements à venir (n'importe quel module qui les propose). Facultatif : sans eux, les phrases sur le prochain événement ne sont pas dites",
+        "en": "Your upcoming events (any module that offers them). Optional: without them, sentences about the next event are not said"
+      }
+    },
+    {
+      "service": "twitch.live",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "fr": "Votre chaîne Twitch, pour dire quand vous êtes en direct. Facultatif",
+        "en": "Your Twitch channel, to say when you are live. Optional"
+      }
+    },
+    {
+      "service": "youtube.live",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "fr": "Votre chaîne YouTube, pour dire quand vous êtes en direct. Facultatif",
+        "en": "Your YouTube channel, to say when you are live. Optional"
+      }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "feed.item",
+      "label": {
+        "fr": "Vos nouveautés publiées (articles, vidéos…), pour dire « Nouveau sur le site »",
+        "en": "Your published news (articles, videos…), to say “New on the site”"
+      },
+      "schema": [
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "publishedAt",
+          "type": "datetime"
+        }
+      ]
+    },
+    {
+      "topic": "mascot.hint",
+      "label": {
+        "fr": "Nouveautés à annoncer (le jeu du jour, une nouvelle page…), confiées par d'autres modules",
+        "en": "Things to announce (the daily game, a new page…), handed over by other modules"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "text",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "url"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "where",
+      "type": "select",
+      "default": "all",
+      "tab": "settings",
+      "label": {
+        "fr": "Sur quelles pages",
+        "en": "On which pages"
+      },
+      "help": {
+        "fr": "Elle ne s'impose jamais : une apparition par visite, après quelques secondes.",
+        "en": "It is never pushy: one appearance per visit, after a few seconds."
+      },
+      "options": [
+        {
+          "value": "all",
+          "label": {
+            "fr": "Toutes les pages",
+            "en": "All pages"
+          }
+        },
+        {
+          "value": "home",
+          "label": {
+            "fr": "Seulement l'accueil",
+            "en": "Home page only"
+          }
+        },
+        {
+          "value": "some",
+          "label": {
+            "fr": "Certaines pages (à lister ci-dessous)",
+            "en": "Some pages (listed below)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "pages",
+      "type": "textarea",
+      "optional": true,
+      "tab": "settings",
+      "label": {
+        "fr": "Les pages concernées",
+        "en": "The pages concerned"
+      },
+      "help": {
+        "fr": "Utile seulement avec « Certaines pages ». Une page par ligne. Exemples : /agenda (cette page), /blog/* (le blog et tout ce qu'il contient).",
+        "en": "Only used with “Some pages”. One page per line. Examples: /events (this page), /blog/* (the blog and everything in it)."
+      }
+    },
+    {
+      "key": "corner",
+      "type": "select",
+      "default": "right",
+      "tab": "settings",
+      "label": {
+        "fr": "Dans quel coin",
+        "en": "In which corner"
+      },
+      "options": [
+        {
+          "value": "right",
+          "label": {
+            "fr": "En bas à droite",
+            "en": "Bottom right"
+          }
+        },
+        {
+          "value": "left",
+          "label": {
+            "fr": "En bas à gauche",
+            "en": "Bottom left"
+          }
+        }
+      ]
+    },
+    {
+      "key": "announce",
+      "type": "boolean",
+      "default": true,
+      "tab": "settings",
+      "label": {
+        "fr": "Annoncer aussi les nouveautés des autres modules",
+        "en": "Also announce news from other modules"
+      },
+      "help": {
+        "fr": "Par exemple le jeu du jour, quand un module le propose. Décochez pour que seules vos phrases soient dites.",
+        "en": "For example the daily game, when a module offers it. Untick so that only your own sentences are said."
+      }
+    },
+    {
+      "key": "footerLink",
+      "type": "boolean",
+      "default": false,
+      "tab": "settings",
+      "label": {
+        "fr": "Un lien « Réveiller la mascotte » en bas des pages",
+        "en": "A “Wake the mascot” link at the bottom of pages"
+      },
+      "help": {
+        "fr": "Utile si un visiteur l'a coupée pour toujours et veut la retrouver.",
+        "en": "Handy if a visitor switched it off for good and wants it back."
+      }
+    },
+    {
+      "key": "delay",
+      "type": "number",
+      "default": 8,
+      "advanced": true,
+      "tab": "settings",
+      "label": {
+        "fr": "Attente avant d'apparaître (secondes, de 3 à 60)",
+        "en": "Wait before appearing (seconds, from 3 to 60)"
+      },
+      "help": {
+        "fr": "Le temps pendant lequel le visiteur est tranquille en arrivant sur la page.",
+        "en": "How long the visitor is left alone after arriving on the page."
+      }
+    },
+    {
+      "key": "show",
+      "type": "number",
+      "default": 8,
+      "advanced": true,
+      "tab": "settings",
+      "label": {
+        "fr": "Durée minimale d'une bulle (secondes, de 4 à 20)",
+        "en": "Minimum time a bubble stays (seconds, from 4 to 20)"
+      },
+      "help": {
+        "fr": "Les phrases longues restent plus longtemps ; la bulle ne se ferme jamais pendant qu'on la survole ou qu'on la lit au clavier.",
+        "en": "Longer sentences stay longer; the bubble never closes while it is hovered or focused."
+      }
+    },
+    {
+      "key": "max",
+      "type": "number",
+      "default": 3,
+      "advanced": true,
+      "tab": "settings",
+      "label": {
+        "fr": "Messages au plus par jour et par visiteur (de 1 à 10)",
+        "en": "Most messages per day and per visitor (from 1 to 10)"
+      },
+      "help": {
+        "fr": "Compté dans le navigateur du visiteur. Une apparition par visite, quoi qu'il arrive.",
+        "en": "Counted in the visitor's browser. One appearance per visit, whatever happens."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "mascot_phrases_list",
+      "readOnly": true,
+      "description": "List the sentences the site mascot can say (greetings, tips, announcements), with their language, pages and state (published or draft), plus the limits and the variables available. Use it before proposing a sentence so that you never repeat an existing one.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "published",
+              "draft"
+            ],
+            "description": "Which sentences to list (default: all)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many sentences to return, 1 to 100 (default 50)."
+          }
+        }
+      }
+    },
+    {
+      "name": "mascot_phrase_add",
+      "description": "Propose a new sentence for the site mascot. It is ALWAYS saved as a draft and stays invisible to visitors until the site team publishes it from the administration. Keep it short (140 characters at most), friendly, factual, in the language of the site visitors; do not invent facts. You may use the variables returned by mascot_phrases_list, for example {site_name}.",
+      "input": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "The sentence, 140 characters at most, plain text."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hello",
+              "tip",
+              "news"
+            ],
+            "description": "hello = greeting, tip = advice, news = announcement (default: hello)."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 12,
+            "description": "Language code such as fr or en, or 'all' (default: all languages)."
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Only on these pages, for example ['/events', '/blog/*']. Leave empty for every page."
+          }
+        }
+      }
+    }
+  ]
+}

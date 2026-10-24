@@ -16,8 +16,8 @@ const mods = ["modules", "examples"].flatMap((group) => fs.readdirSync(path.join
 const strip = (code) => code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/ .*$/gm, "");
 const providers = mods.filter((m) => (m.manifest.offers ?? []).some((o) => o.service === "event.source"));
 
-test("fournisseurs : Chaîne YouTube et Ma Chaîne Twitch offrent `event.source` (version 1, une réponse par instance, lecture seule) ; personne d'autre ne l'offre sans le déclarer de même", () => {
-  assert.deepEqual(providers.map((m) => m.id).sort(), ["twitch-channel", "youtube-channel"]);
+test("fournisseurs : Chaîne YouTube, Ma Chaîne Twitch et Événements offrent `event.source` (version 1, une réponse par instance, lecture seule) ; personne d'autre ne l'offre sans le déclarer de même", () => {
+  assert.deepEqual(providers.map((m) => m.id).sort(), ["events", "twitch-channel", "youtube-channel"]);
   for (const m of providers) {
     const offer = m.manifest.offers.find((o) => o.service === "event.source");
     assert.deepEqual([offer.version, offer.each, offer.readOnly], [1, true, ["upcoming"]], `${m.id} : même déclaration pour tous (le service est « each » : plusieurs fournisseurs voulus)`);

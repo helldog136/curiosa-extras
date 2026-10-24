@@ -57,9 +57,22 @@ export function readStreams(json, partners) {
     const startedAt = Date.parse(s.started_at);
     if (!Number.isInteger(s.viewer_count) || s.viewer_count < 0 || !Number.isFinite(startedAt)) continue;
     seen.add(login);
-    live.push({ login, name: mine.p.name || str(s.user_name, 40) || login, game: str(s.game_name, 100), title: str(s.title, 140), viewers: s.viewer_count, startedAt, pos: mine.pos });
+    const entry = { login, name: mine.p.name || str(s.user_name, 40) || login, game: str(s.game_name, 100), title: str(s.title, 140), viewers: s.viewer_count, startedAt, pos: mine.pos };
+    live.push(entry);
+    const thumb = thumbUrl(s.thumbnail_url);
+    if (thumb) thumbs.set(entry, thumb);
   }
   return live;
+}
+
+/** L'aperçu d'un direct (2.2), gardé À CÔTÉ de l'entrée et non dedans : la forme des entrées (donc ce que le dock lit) ne change pas. */
+const thumbs = new WeakMap();
+/** L'adresse de l'aperçu d'une entrée lue par `readStreams`, ou "" s'il n'y en a pas. */
+export const thumbOf = (entry) => thumbs.get(entry) ?? "";
+/** Une adresse d'aperçu de Twitch (modèle `…{width}x{height}.jpg`) → 320×180 ; seulement https, sur un domaine de Twitch (`jtvnw.net`), sans rien d'autre. */
+export function thumbUrl(raw) {
+  const s = typeof raw === "string" ? raw.trim().replace("{width}", "320").replace("{height}", "180") : "";
+  return s.length <= 300 && /^https:\/\/([a-z0-9-]+\.)*jtvnw\.net\/[A-Za-z0-9_\-./]+\.(jpg|jpeg|png)$/i.test(s) ? s : "";
 }
 
 /** Un appel `GET streams` pour ces pseudos. Rend { json } ou { error } (`config`, `auth`, `forbidden`, `invalid`, `rate`, `network`, `twitch`, ou `param` : Twitch refuse les paramètres, erreur 400). Ne lève jamais, n'attend jamais plus de `timing.packetMs`. */

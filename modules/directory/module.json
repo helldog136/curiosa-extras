@@ -1,0 +1,586 @@
+{
+  "apiVersion": 2,
+  "id": "directory",
+  "minCore": "0.2.6",
+  "name": {
+    "fr": "Annuaire",
+    "en": "Directory"
+  },
+  "version": "1.0.0",
+  "description": {
+    "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
+    "en": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🗂️",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "multiple",
+  "page": true,
+  "basePath": "annuaire",
+  "permissions": [
+    "pages",
+    "routes",
+    "storage",
+    "admin",
+    "mcp",
+    "topics"
+  ],
+  "requires": [
+    {
+      "service": "contact.book",
+      "min": 2,
+      "label": {
+        "fr": "Le carnet d'adresses (module Contacts) : les personnes de l'annuaire sont ses fiches, dans les catégories que vous rendez publiques",
+        "en": "The address book (Contacts module): the people of the directory are its cards, in the categories you make public"
+      }
+    }
+  ],
+  "offers": [
+    {
+      "service": "privacy.subject",
+      "each": true,
+      "label": {
+        "fr": "Ce que l'annuaire sait d'une personne de Contacts (export, effacement, fusion)",
+        "en": "What the directory knows about a person of Contacts (export, erase, merge)"
+      }
+    }
+  ],
+  "provides": [
+    {
+      "topic": "map.place",
+      "label": {
+        "fr": "Lieux pour la carte : les personnes qui ont accepté d'y figurer, au niveau de leur ville",
+        "en": "Places for the map: the people who agreed to be on it, at city level"
+      }
+    }
+  ],
+  "privacy": {
+    "fr": "Aucun cookie, formulaire ni adresse de visiteur gardés ; le texte cherché n'est pas conservé. Publié depuis Contacts : nom (ou prénom, ou pseudo), catégories choisies, liens et photo si autorisés ; « Ne pas montrer » l'emporte. Gardé par fiche : présentation, ville, titre d'équipe, « masquée ». Photo hébergée ailleurs : chargée après un clic. Carte : ville seulement, avec accord. Retrait : écrivez au contact du site ; effacer la fiche dans Contacts efface tout ici.",
+    "en": "No cookie, form or visitor address kept; searched text is not stored. Published from Contacts: name (or first name, or nickname), chosen categories, links and photo if you allow them. “Do not show” always wins. The module keeps per card: presentation, city, team title, “hidden”. A photo hosted elsewhere only loads after a click. Map: only the city of people who agreed. Withdrawal: write to the site's contact; erasing in Contacts erases everything here."
+  },
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mon annuaire",
+        "en": "My directory"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "edit",
+      "label": {
+        "fr": "choisir ce qui est public et écrire les fiches",
+        "en": "choose what is public and write the profiles"
+      },
+      "help": {
+        "fr": "Catégories publiques, libellés, équipe, présentation et ville des personnes, modèle de départ. Sans ce droit, la personne voit l'annuaire mais ne change rien.",
+        "en": "Public categories, labels, team, people's presentation and city, starting template. Without it, the person sees the directory but changes nothing."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "hide",
+      "label": {
+        "fr": "masquer ou remontrer une personne",
+        "en": "hide or show a person again"
+      },
+      "help": {
+        "fr": "Retirer quelqu'un de l'annuaire d'un clic (sa fiche reste dans Contacts) ou le remontrer.",
+        "en": "Take someone out of the directory with one click (their card stays in Contacts) or show them again."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "title",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Titre de la page",
+        "en": "Page title"
+      },
+      "help": {
+        "fr": "Par exemple « Membres » ou « Annuaire ». Laissé vide, le mot du modèle choisi (ou « Annuaire ») est utilisé.",
+        "en": "For example “Members” or “Directory”. Left empty, the word of the chosen template (or “Directory”) is used."
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Quelques mots sous le titre",
+        "en": "A few words under the title"
+      },
+      "help": {
+        "fr": "Facultatif. Une ou deux phrases pour présenter l'annuaire.",
+        "en": "Optional. One or two sentences to introduce the directory."
+      }
+    },
+    {
+      "key": "noun",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Mot pour une personne",
+        "en": "Word for one person"
+      },
+      "help": {
+        "fr": "Au singulier, par exemple « membre » ou « créateur ». Sert aux compteurs (« 1 membre »).",
+        "en": "In the singular, for example “member” or “creator”. Used in counters (“1 member”)."
+      }
+    },
+    {
+      "key": "nouns",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Mot pour plusieurs personnes",
+        "en": "Word for several people"
+      },
+      "help": {
+        "fr": "Au pluriel, par exemple « membres » ou « créateurs » (« 24 membres »).",
+        "en": "In the plural, for example “members” or “creators” (“24 members”)."
+      }
+    },
+    {
+      "key": "teamTitle",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Titre de la section équipe",
+        "en": "Title of the team section"
+      },
+      "help": {
+        "fr": "Par exemple « Équipe » ou « Le bureau ». Laissé vide : « Équipe ».",
+        "en": "For example “Team” or “The board”. Left empty: “Team”."
+      }
+    },
+    {
+      "key": "nameStyle",
+      "type": "select",
+      "default": "card",
+      "label": {
+        "fr": "Comment afficher les noms",
+        "en": "How to show names"
+      },
+      "help": {
+        "fr": "L'annuaire est public : choisissez ce qui vous convient.",
+        "en": "The directory is public: choose what suits you."
+      },
+      "options": [
+        {
+          "value": "card",
+          "label": {
+            "fr": "Comme sur la fiche",
+            "en": "As on the card"
+          }
+        },
+        {
+          "value": "first",
+          "label": {
+            "fr": "Prénom seulement",
+            "en": "First name only"
+          }
+        },
+        {
+          "value": "nickname",
+          "label": {
+            "fr": "Pseudo du compte en ligne",
+            "en": "Online account nickname"
+          }
+        }
+      ]
+    },
+    {
+      "key": "photos",
+      "type": "select",
+      "default": "request",
+      "label": {
+        "fr": "Photos",
+        "en": "Photos"
+      },
+      "help": {
+        "fr": "Une photo hébergée ailleurs (Twitch, YouTube…) prévient ce site de la visite : par défaut, elle ne s'affiche qu'après un clic du visiteur.",
+        "en": "A photo hosted elsewhere (Twitch, YouTube…) tells that site about the visit: by default it only shows after the visitor clicks."
+      },
+      "options": [
+        {
+          "value": "request",
+          "label": {
+            "fr": "Seulement si le visiteur le demande (conseillé)",
+            "en": "Only if the visitor asks (recommended)"
+          }
+        },
+        {
+          "value": "always",
+          "label": {
+            "fr": "Toujours",
+            "en": "Always"
+          }
+        },
+        {
+          "value": "never",
+          "label": {
+            "fr": "Jamais (initiales)",
+            "en": "Never (initials)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "links",
+      "type": "select",
+      "default": "detail",
+      "label": {
+        "fr": "Liens vers les comptes en ligne",
+        "en": "Links to online accounts"
+      },
+      "help": {
+        "fr": "Où montrer les liens vers Twitch, YouTube, etc.",
+        "en": "Where to show the links to Twitch, YouTube, etc."
+      },
+      "options": [
+        {
+          "value": "detail",
+          "label": {
+            "fr": "Dans la fiche de la personne",
+            "en": "On the person's page"
+          }
+        },
+        {
+          "value": "list",
+          "label": {
+            "fr": "Dans la liste et la fiche",
+            "en": "In the list and on the page"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Nulle part",
+            "en": "Nowhere"
+          }
+        }
+      ]
+    },
+    {
+      "key": "bio",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Montrer la présentation courte",
+        "en": "Show the short presentation"
+      },
+      "help": {
+        "fr": "Le petit texte que vous écrivez pour chaque personne, dans sa fiche.",
+        "en": "The little text you write for each person, on their page."
+      }
+    },
+    {
+      "key": "hide",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "fr": "Catégorie « Ne pas montrer »",
+        "en": "Category “Do not show”"
+      },
+      "help": {
+        "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît d'ici en moins de deux minutes. Laissé vide, une catégorie nommée « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.",
+        "en": "A person who asks not to appear: put her card in this Contacts category and she disappears from here within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
+      }
+    },
+    {
+      "key": "consent",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "fr": "Catégorie « a accepté d'apparaître »",
+        "en": "Category “agreed to appear”"
+      },
+      "help": {
+        "fr": "Facultatif, pour plus de prudence : si vous en choisissez une, seules les personnes rangées à la fois dans une catégorie publique ET dans celle-ci sont affichées.",
+        "en": "Optional, for extra care: if you pick one, only people filed in both a public category AND this one are shown."
+      }
+    },
+    {
+      "key": "mapConsent",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "fr": "Catégorie « accepte d'être sur la carte »",
+        "en": "Category “agrees to be on the map”"
+      },
+      "help": {
+        "fr": "Facultatif. Sans elle, aucune personne n'est jamais placée sur une carte. Avec elle, seules les personnes de cette catégorie qui ont une ville sont proposées à la carte du site (au niveau de la ville, jamais une adresse).",
+        "en": "Optional. Without it, nobody is ever placed on a map. With it, only the people in this category who have a city are offered to the site's map (at city level, never an address)."
+      }
+    },
+    {
+      "key": "proposeLink",
+      "type": "link",
+      "optional": true,
+      "label": {
+        "fr": "Page pour « Proposer ma fiche »",
+        "en": "Page for “Suggest my profile”"
+      },
+      "help": {
+        "fr": "Par exemple /contact : la page de votre formulaire de contact. Laissé vide, un e-mail est proposé à la place.",
+        "en": "For example /contact: the page of your contact form. Left empty, an e-mail is offered instead."
+      }
+    },
+    {
+      "key": "proposeEmail",
+      "type": "text",
+      "optional": true,
+      "label": {
+        "fr": "E-mail pour « Proposer ma fiche »",
+        "en": "E-mail for “Suggest my profile”"
+      },
+      "help": {
+        "fr": "Par exemple contact@monsite.be. Utilisé quand aucune page n'est choisie ci-dessus ; sinon l'e-mail du site est utilisé.",
+        "en": "For example contact@mysite.org. Used when no page is chosen above; otherwise the site's e-mail is used."
+      }
+    },
+    {
+      "key": "proposeLabel",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Texte du bouton pour proposer sa fiche",
+        "en": "Text of the button to suggest a profile"
+      },
+      "help": {
+        "fr": "Laissé vide : « Proposer ma fiche ».",
+        "en": "Left empty: “Suggest my profile”."
+      }
+    },
+    {
+      "key": "sort",
+      "type": "select",
+      "default": "az",
+      "advanced": true,
+      "label": {
+        "fr": "Tri de départ",
+        "en": "Starting order"
+      },
+      "help": {
+        "fr": "L'ordre de la liste avant que le visiteur ne choisisse.",
+        "en": "The order of the list before the visitor chooses."
+      },
+      "options": [
+        {
+          "value": "az",
+          "label": {
+            "fr": "Alphabétique",
+            "en": "Alphabetical"
+          }
+        },
+        {
+          "value": "new",
+          "label": {
+            "fr": "Les plus récents d'abord",
+            "en": "Newest first"
+          }
+        },
+        {
+          "value": "mix",
+          "label": {
+            "fr": "Au hasard (le même toute la journée)",
+            "en": "Random (the same all day)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "perPage",
+      "type": "number",
+      "default": 24,
+      "advanced": true,
+      "label": {
+        "fr": "Personnes par page",
+        "en": "People per page"
+      },
+      "help": {
+        "fr": "Entre 6 et 50.",
+        "en": "Between 6 and 50."
+      }
+    },
+    {
+      "key": "downloads",
+      "type": "boolean",
+      "default": true,
+      "advanced": true,
+      "label": {
+        "fr": "Version imprimable et fichier CSV",
+        "en": "Printable version and CSV file"
+      },
+      "help": {
+        "fr": "Propose aux visiteurs d'imprimer la liste ou de la télécharger. Seul ce qui est déjà public y figure.",
+        "en": "Lets visitors print the list or download it. Only what is already public is included."
+      }
+    },
+    {
+      "key": "structured",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "fr": "Données pour les moteurs de recherche",
+        "en": "Data for search engines"
+      },
+      "help": {
+        "fr": "Ajoute à chaque fiche une description lisible par les moteurs de recherche (personne ou organisation). Seulement ce que la fiche affiche déjà. Désactivé par défaut.",
+        "en": "Adds to each profile a description that search engines can read (person or organisation). Only what the profile already shows. Off by default."
+      }
+    },
+    {
+      "key": "roleFromContacts",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "fr": "Reprendre le champ « Rôle » de Contacts",
+        "en": "Use the “Role” field of Contacts"
+      },
+      "help": {
+        "fr": "Pour un membre de l'équipe sans titre écrit ici. Attention : ce champ de Contacts est privé à l'origine, relisez-le avant d'activer.",
+        "en": "For a team member without a title written here. Careful: that Contacts field is private to begin with, check it before turning this on."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "directory_status",
+      "readOnly": true,
+      "description": "State of the public directory: 'state' ('ok', or 'unready' when no public category is chosen yet, 'absent' without Contacts, 'slow' when Contacts does not answer), how many people are shown, the team size, how many people Contacts hides ('Do not show'), how many are hidden here, how many lack the optional consent category, how many are on the map, and the public categories with their people count. Public data only. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "directory_categories",
+      "readOnly": true,
+      "description": "The public categories of the directory (slug to use as a filter, public label, number of people). Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "directory_search",
+      "readOnly": true,
+      "description": "Search the PUBLIC directory like a visitor: by name (accents ignored), by one or more categories (any of them), with a sort ('az', 'new' or 'mix') and a cursor for the next page. Returns only public fields (shown name, role in the team, city, categories, page address). Read only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Text to look for in names, nicknames, cities and team titles."
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Category slugs from directory_categories (a person in any of them matches)."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "az",
+              "new",
+              "mix"
+            ],
+            "description": "Order: az (alphabetical), new (newest first) or mix (random, stable for the day). Default az, or relevance when q is given."
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "The 'next' value of a previous answer."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "People per page (default 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "directory_person",
+      "readOnly": true,
+      "description": "One public profile by its slug (from directory_search): shown name, role, city, categories, short presentation and public links, exactly what a visitor sees. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The slug of the person, as returned by directory_search."
+          }
+        },
+        "required": [
+          "slug"
+        ]
+      }
+    },
+    {
+      "name": "directory_team",
+      "readOnly": true,
+      "description": "The team section in the owner's order, with each person's public title. Public data only. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "dataVersion": 1
+}

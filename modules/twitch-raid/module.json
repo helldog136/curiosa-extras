@@ -1,16 +1,16 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.2.6",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.1.0",
+  "version": "2.2.0",
   "platform": "twitch",
   "description": {
-    "fr": "Un petit panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid », créée toute seule). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien, ou collez-en plusieurs : nom et photo viennent de Twitch. « Retirer » sort une chaîne de la liste sans toucher à sa fiche. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard.",
-    "en": "A small panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts (“Raid target” category, created by itself). Add a channel by typing a name, a Twitch name or a link, or paste several: name and picture come from Twitch. “Remove” takes a channel out of the list without touching its card. One click copies the raid command; beyond 500 channels, a button finds one at random."
+    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 membres en direct tirés au hasard, pour OBS et pour une page publique.",
+    "en": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts (“Raid target” category). Add a channel by typing a name, a Twitch name or a link: name and picture come from Twitch. One click copies the raid command; beyond 500 channels, a button finds one at random. Optional: “Featured picks”, 1 to 10 live members drawn at random, for OBS and for a public page."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -18,7 +18,8 @@
   "main": "index.mjs",
   "type": "utility",
   "instances": "single",
-  "page": false,
+  "page": true,
+  "basePath": "en-direct",
   "requires": [
     {
       "service": "twitch.api",
@@ -57,13 +58,14 @@
   "dataVersion": 3,
   "permissions": [
     "routes",
+    "pages",
     "storage",
     "admin",
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts : noms et photos ne sont jamais copiés ici (à l'ajout, ceux de Twitch vont dans la fiche de Contacts). Le module garde l'adresse secrète du dock, 30 minutes au plus les pseudos publics d'un envoi en gros en attente, et une copie inchangée de l'ancienne liste 1.x (jamais affichée, retirée à une mise à jour d'entretien). Le dock montre des informations publiques de Twitch et se souvient une minute de qui était en direct.",
-    "en": "Collects nothing about your visitors. The list is read in Contacts: names and pictures are never copied here (when you add a channel, those from Twitch go into the Contacts card). The module keeps the secret address of the dock, for 30 minutes at most the public names of a bulk paste waiting to be confirmed, and an unchanged copy of the old 1.x list (never shown, removed by a maintenance update). The dock shows public Twitch information and remembers for one minute who was live."
+    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et spectateurs des membres tirés (jamais ceux « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si le visiteur clique.",
+    "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the members drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
   },
   "tabs": [
     {
@@ -71,6 +73,13 @@
       "label": {
         "fr": "Ma liste",
         "en": "My list"
+      }
+    },
+    {
+      "id": "moment",
+      "label": {
+        "fr": "Sélection du moment",
+        "en": "Featured picks"
       }
     }
   ],
@@ -116,6 +125,208 @@
         "en": "Only asked when your site has several Twitch channels. Leave empty to use the first one that is ready.",
         "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch. Laissez vide pour utiliser la première qui est prête."
       }
+    },
+    {
+      "key": "dockMode",
+      "type": "select",
+      "tab": "moment",
+      "default": "list",
+      "options": [
+        {
+          "value": "list",
+          "label": {
+            "fr": "Liste des partenaires (comme avant)",
+            "en": "Partner list (as before)"
+          }
+        },
+        {
+          "value": "selection",
+          "label": {
+            "fr": "Sélection du moment",
+            "en": "Featured picks"
+          }
+        }
+      ],
+      "label": {
+        "fr": "Que montre le dock ordinaire ?",
+        "en": "What does the ordinary dock show?"
+      },
+      "help": {
+        "fr": "Laissez « comme avant » pour ne rien changer. En choisissant la sélection, l'adresse que vous avez déjà collée dans OBS montre la sélection du moment à la place de la liste. L'adresse propre à la sélection (plus bas) marche dans tous les cas.",
+        "en": "Leave “as before” to change nothing. Choosing the featured picks makes the address you already pasted in OBS show the featured picks instead of the list. The address dedicated to the picks (below) works in every case."
+      }
+    },
+    {
+      "key": "count",
+      "type": "number",
+      "tab": "moment",
+      "default": 5,
+      "label": {
+        "fr": "Combien de membres montrer",
+        "en": "How many members to show"
+      },
+      "help": {
+        "fr": "De 1 à 10 (5 par défaut). Si moins de membres sont en direct, vous voyez ceux qui le sont.",
+        "en": "From 1 to 10 (5 by default). If fewer members are live, you see those who are."
+      }
+    },
+    {
+      "key": "duration",
+      "type": "number",
+      "tab": "moment",
+      "default": 10,
+      "label": {
+        "fr": "Durée de la sélection (en minutes)",
+        "en": "How long a selection lasts (in minutes)"
+      },
+      "help": {
+        "fr": "La sélection ne change pas pendant ce temps, pour tous les visiteurs, puis elle se renouvelle. 10 minutes par défaut (de 1 à 240).",
+        "en": "The selection does not change during this time, for every visitor, then it renews itself. 10 minutes by default (1 to 240)."
+      }
+    },
+    {
+      "key": "smallFirst",
+      "type": "boolean",
+      "tab": "moment",
+      "advanced": true,
+      "default": false,
+      "label": {
+        "fr": "Mettre en avant les petites chaînes",
+        "en": "Favour small channels"
+      },
+      "help": {
+        "fr": "Coché : moins une chaîne a de spectateurs, plus elle a de chances d'être tirée. Décoché (défaut) : tirage égal pour tous.",
+        "en": "Ticked: the fewer viewers a channel has, the more likely it is drawn. Unticked (default): everyone has the same chance."
+      }
+    },
+    {
+      "key": "exclude",
+      "type": "textarea",
+      "tab": "moment",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "fr": "Ne jamais tirer ces pseudos",
+        "en": "Never draw these names"
+      },
+      "help": {
+        "fr": "Un pseudo Twitch ou un lien par ligne (par exemple vous-même, ou une personne qui préfère ne pas être mise en avant). Votre propre chaîne n'est de toute façon jamais tirée.",
+        "en": "One Twitch name or link per line (for example yourself, or someone who prefers not to be featured). Your own channel is never drawn anyway."
+      }
+    },
+    {
+      "key": "hide",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "advanced": true,
+      "tab": "moment",
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "fr": "Catégorie « Ne pas montrer »",
+        "en": "Category “Do not show”"
+      },
+      "help": {
+        "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle ne sera plus jamais tirée ni montrée dans la sélection. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.",
+        "en": "A person who asks not to appear: put her card in this Contacts category and she will never be drawn or shown in the picks again. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
+      }
+    },
+    {
+      "key": "publicPage",
+      "type": "boolean",
+      "tab": "moment",
+      "default": false,
+      "label": {
+        "fr": "Afficher la page publique sur le site",
+        "en": "Show the public page on the site"
+      },
+      "help": {
+        "fr": "Une page que vos visiteurs peuvent ouvrir : elle montre les mêmes membres que la sélection, avec un bouton pour les regarder sur Twitch. Son adresse se règle en mode avancé (« Adresse de la page » en haut de cette page) ; pensez à l'ajouter au menu du site.",
+        "en": "A page your visitors can open: it shows the same members as the picks, with a button to watch them on Twitch. Its address is set in advanced mode (“Page address” at the top of this page); remember to add it to the site menu."
+      }
+    },
+    {
+      "key": "pageTitle",
+      "type": "text",
+      "tab": "moment",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Titre de la page",
+        "en": "Page title"
+      },
+      "help": {
+        "fr": "Par exemple « En direct chez nos membres ». Laissé vide, un titre simple est utilisé.",
+        "en": "For example “Live now among our members”. Left empty, a simple title is used."
+      }
+    },
+    {
+      "key": "pageIntro",
+      "type": "textarea",
+      "tab": "moment",
+      "translatable": true,
+      "optional": true,
+      "advanced": true,
+      "label": {
+        "fr": "Phrase d'introduction",
+        "en": "Introduction sentence"
+      },
+      "help": {
+        "fr": "Une ou deux phrases sous le titre. Laissé vide, une phrase simple est utilisée.",
+        "en": "One or two sentences under the title. Left empty, a simple sentence is used."
+      }
+    },
+    {
+      "key": "emptyText",
+      "type": "text",
+      "tab": "moment",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Texte quand personne n'est en direct",
+        "en": "Text when nobody is live"
+      },
+      "help": {
+        "fr": "Par exemple « Personne n'est en direct pour le moment ». Laissé vide, une phrase simple est utilisée.",
+        "en": "For example “Nobody is live right now”. Left empty, a simple sentence is used."
+      }
+    },
+    {
+      "key": "watchLabel",
+      "type": "text",
+      "tab": "moment",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Texte du bouton",
+        "en": "Button text"
+      },
+      "help": {
+        "fr": "Le bouton qui ouvre la chaîne sur Twitch. Laissé vide : « Regarder sur Twitch ».",
+        "en": "The button that opens the channel on Twitch. Left empty: “Watch on Twitch”."
+      }
+    },
+    {
+      "key": "thumbs",
+      "type": "boolean",
+      "tab": "moment",
+      "advanced": true,
+      "default": false,
+      "label": {
+        "fr": "Proposer les aperçus des directs",
+        "en": "Offer stream previews"
+      },
+      "help": {
+        "fr": "Coché : la page propose un bouton « Afficher les aperçus ». Les images viennent de Twitch et ne se chargent que si le visiteur clique. Décoché (défaut) : aucune image de Twitch.",
+        "en": "Ticked: the page offers a “Show previews” button. The images come from Twitch and load only if the visitor clicks. Unticked (default): no Twitch image at all."
+      }
     }
   ],
   "mcp": [
@@ -124,6 +335,16 @@
       "readOnly": true,
       "default": false,
       "description": "Which of the owner's partner Twitch channels are live right now, for choosing who to raid. For each live channel: name, game, title, viewers, how many minutes it has been live and the chat command to raid it ('/raid name', to be pasted by the owner: nothing is sent). Fewest viewers first. 'listed' is the number of partner channels in the raid list (the Twitch channels of the people of a Contacts category, 'Raid target' by default). With more than 500 channels the list is not shown: 'mode' is 'random' and 'live' holds at most ONE channel picked at random among those live (empty if nobody was found online). If Twitch or Contacts is unreachable or not set up, 'state' says so ('not_ready' or 'error', with a 'reason' such as 'contacts_missing', 'category_gone' or 'no_category') and the list is empty. Use it for 'who could I raid?'. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "raid_featured_now",
+      "readOnly": true,
+      "default": false,
+      "description": "The 'Featured picks' of the owner's community right now: the few partner channels (1 to 10, 5 by default) drawn at random among those live, the same ones the OBS featured dock and the public page show. For each: name, game, title, viewers, minutes live and the raid command ('/raid name', to be pasted by the owner: nothing is sent). 'endsAt' is when the selection renews (ISO time). People filed in Contacts as 'Do not show' are never listed. If Twitch or Contacts is unreachable, the last known picks are returned with 'stale' set (10 minutes at most); otherwise 'state' says what is missing. Read only: it never forces a new draw.",
       "input": {
         "type": "object",
         "properties": {}
