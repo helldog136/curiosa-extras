@@ -40,7 +40,7 @@ export const RIGHT_CREATE_CATEGORY = "categories.create";
 
 // ── Nettoyage et clés de comparaison ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 export const clean = (v, max, multiline = false) => {
-  let t = String(v ?? "").normalize("NFC").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f‪-‮⁦-⁩]/g, "");
+  let t = String(v ?? "").normalize("NFC").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "");
   t = multiline ? t.replace(/\n{3,}/g, "\n\n") : t.replace(/\s+/g, " ");
   return t.trim().slice(0, max);
 };

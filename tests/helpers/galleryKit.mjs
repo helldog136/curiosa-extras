@@ -1,0 +1,64 @@
+// Aides communes aux tests du module « Galeries photos » : faux contexte avec les vrais textes, requêtes de formulaire, albums et photos prêts.
+import fs from "node:fs";
+import { fakeCtx } from "./fakeCtx.mjs";
+import { IMAGES } from "./galleryImages.mjs";
+
+export { IMAGES };
+export const DIR = new URL("../../modules/gallery", import.meta.url).pathname;
+export const manifest = JSON.parse(fs.readFileSync(`${DIR}/module.json`, "utf8"));
+export const messages = (lang) => JSON.parse(fs.readFileSync(`${DIR}/locales/${lang}.json`, "utf8"));
+export const def = (await import("../../modules/gallery/index.mjs")).default;
+export const data = await import("../../modules/gallery/data.mjs");
+export const text = await import("../../modules/gallery/text.mjs");
+export const view = await import("../../modules/gallery/view.mjs");
+export const ops = await import("../../modules/gallery/ops.mjs");
+export const images = await import("../../modules/gallery/images.mjs");
+export const admin = await import("../../modules/gallery/admin.mjs");
+
+let seq = 0;
+/** Contexte factice : chaque appel a sa propre clé d'instance (les limiteurs et la mémoire sont par instance). `rights` : droits de la personne qui regarde l'administration. */
+export function ctxFor(settings = {}, opts = {}) {
+  const { rights = ["edit", "publish", "requests"], locale = "fr", basePath = "galeries", ...rest } = opts;
+  const ctx = fakeCtx({
+    key: `gal${++seq}`, basePath, moduleId: "gallery", name: locale === "fr" ? "Galeries" : "Galleries",
+    locale, defaultLocale: "fr", locales: ["fr", "en"], messages: messages(["fr", "en"].includes(locale) ? locale : "en"), permissions: manifest.permissions, settings, ...rest,
+  });
+  ctx.can = (right) => rights.includes(right);
+  return ctx;
+}
+
+/** Une requête POST de formulaire. */
+export function post(route, fields, { ip = "203.0.113.7", headers = {} } = {}) {
+  const body = new FormData();
+  for (const [k, v] of Object.entries(fields)) body.set(k, v);
+  return new Request(`https://example.org/m/x/${route}`, { method: "POST", body, headers: { "x-forwarded-for": ip, origin: "https://example.org", ...headers } });
+}
+export const get = (route, query = "") => new Request(`https://example.org/m/x/${route}${query}`, { method: "GET" });
+export const json = { accept: "application/json" };
+
+export const rows = (ctx, collection) => ctx.dumpStore().filter((r) => r.collection === collection).map((r) => ({ id: r.id, ...r.data }));
+
+/** Un album prêt (publié par défaut), avec `n` photos envoyées (images de test). Renvoie { id, photos: [id…], album }. */
+export async function makeAlbum(ctx, { title = "Soirée de printemps", n = 0, status = "published", mode = "hosted", link = "", date = "2025-03-14", desc = "", hidden = [] } = {}) {
+  const made = await ops.createAlbum(ctx, { title, status, mode, link, date, desc });
+  if (!made.ok) throw new Error(`createAlbum : ${made.error}`);
+  const photos = [];
+  for (let i = 0; i < n; i++) {
+    const full = images.sanitizeImage(IMAGES.jpegPlain);
+    const thumb = images.sanitizeImage(IMAGES.jpegPlain);
+    const r = await ops.addHostedPhoto(ctx, made.id, { full, thumb, name: `photo-${i + 1}.jpg`, caption: `Légende ${i + 1}`, alt: `Description ${i + 1}`, hidden: hidden.includes(i) });
+    if (!r.ok) throw new Error(`addHostedPhoto : ${r.error}`);
+    photos.push(r.id);
+  }
+  return { id: made.id, photos, album: await data.getAlbum(ctx, made.id) };
+}
+
+/** Efface l'adresse d'une carte « autre service » (une sauvegarde abîmée, une ancienne version…) : le module ne doit pas la montrer. */
+export async function breakLink(ctx, id) {
+  const row = ctx.dumpStore().find((r) => r.id === id);
+  await ctx.api.store.update(id, { ...row.data, link: "" });
+  data.invalidate(ctx);
+}
+
+/** Les champs d'un envoi de photo comme le fait l'outil d'envoi (texte base64). */
+export const upload = (album, buf, extra = {}) => ({ album, photo: buf.toString("base64"), thumb: buf.toString("base64"), name: "IMG_0001.jpg", caption: "", alt: "", ...extra });

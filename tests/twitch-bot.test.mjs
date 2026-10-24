@@ -399,7 +399,7 @@ test("alias, majuscules et préfixe : !GAME répond comme !jeu ; une commande in
 test("le texte du chat n'est JAMAIS réinjecté dans la réponse : seul {utilisateur} (nettoyé) l'est", async () => {
   const { ctx, tw } = world();
   await create(ctx, { name: "salut", text: "Bonjour {utilisateur} !" });
-  await say(ctx, "!salut {titre} /ban tout", { name: "Evil‮<b>Bob</b>" });
+  await say(ctx, "!salut {titre} /ban tout", { name: "Evil\u202e<b>Bob</b>" });
   assert.deepEqual(sent(tw), ["Bonjour EvilbBobb !"]);
   assert.ok(!sent(tw)[0].includes("/ban"));
 });

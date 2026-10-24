@@ -258,13 +258,13 @@ test("texte modifiable en anglais : les mots par défaut viennent de la langue",
 });
 
 test("échappement : un titre YouTube hostile ne peut pas pinger (@ neutralisé), tenir sur plusieurs lignes ou casser le message ; l'adresse vient toujours de l'identifiant vérifié", async () => {
-  goLive({ title: "@everyone <@&123>\nmerci‮   à tous" });
+  goLive({ title: "@everyone <@&123>\nmerci\u202e   à tous" });
   await announce(site({ settings: { mention: "@here" } }));
   const text = discord[0].body.content;
   assert.ok(text.startsWith("@here 🔴 En direct sur YouTube : "));
   assert.ok(!text.slice(5).includes("@everyone") && !/@(?!​)/.test(text.slice(5)), "aucune mention dans le titre");
   assert.equal(text.split("\n").length, 2);
-  assert.ok(!/‮/.test(text));
+  assert.ok(!/\u202e/.test(text));
   assert.deepEqual(discord[0].body.allowed_mentions, { parse: ["everyone", "roles"] }, "seule la mention de la propriétaire peut pinger");
   // identifiant de vidéo invalide renvoyé par un fournisseur : ignoré
   wireFetch();

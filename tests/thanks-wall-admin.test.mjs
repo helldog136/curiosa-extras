@@ -141,7 +141,7 @@ test("action messageSave : enregistre le message de CETTE fiche, par langue ; me
 
 test("action messageSave : le texte est nettoyé (caractères de contrôle, espaces) et reste du texte", async () => {
   const { ctx, list } = setup(1);
-  await run(ctx, "messageSave", { contactId: list[0].id, text_fr: "a\u0000b‮  c\n\nd", text_en: "" });
+  await run(ctx, "messageSave", { contactId: list[0].id, text_fr: "a\u0000b\u202e  c\n\nd", text_en: "" });
   assert.equal((await D.readData(ctx, { fresh: true })).messages.get(list[0].id).texts.fr, "ab c d");
 });
 

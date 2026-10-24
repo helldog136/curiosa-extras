@@ -113,7 +113,7 @@ test("texte : trop court, trop long, trop de liens ; nom vide ; note imposée ; 
   assert.equal(L.validateReview(get({ ...ok, email: "" }), cfg).errors.email, undefined, "l'e-mail est facultatif");
   assert.equal(L.validateReview(get({ ...ok, email: "ada@example.org" }), { ...cfg, askEmail: false }).values.email, "", "pas demandé : jamais gardé");
   assert.equal(L.validateReview(get({ ...ok, consent: "on" }), cfg).errors.consent, "consent", "seule la valeur du formulaire compte");
-  assert.equal(L.validateReview(get({ ...ok, name: "A\u0007‮B   C" }), cfg).values.name, "AB C", "caractères de contrôle retirés");
+  assert.equal(L.validateReview(get({ ...ok, name: "A\u0007\u202eB   C" }), cfg).values.name, "AB C", "caractères de contrôle retirés");
 });
 
 test("e-mail : demandé seulement si le réglage est actif, facultatif, gardé avec une date de fin, jamais affiché", async () => {

@@ -165,11 +165,11 @@ test("événement : l'heure qui n'existe pas ou qui existe deux fois est signal�
 });
 
 test("événement : textes nettoyés et bornés, liens sûrs seulement", () => {
-  const r = build({ ...good, title: `  ${"A".repeat(200)}‮\n\tfin `, description: "x".repeat(2000), where: "L".repeat(500), endMessage: "M".repeat(500), endLinkLabel: "B".repeat(200), endLink: "https://example.org/a b" });
+  const r = build({ ...good, title: `  ${"A".repeat(200)}\u202e\n\tfin `, description: "x".repeat(2000), where: "L".repeat(500), endMessage: "M".repeat(500), endLinkLabel: "B".repeat(200), endLink: "https://example.org/a b" });
   assert.equal(r.ok, false, "une adresse avec espace est refusée");
-  const ok = build({ ...good, title: `  ${"A".repeat(200)}‮\n\tfin `, description: "x".repeat(2000), where: "L".repeat(500), endMessage: "M".repeat(500), endLinkLabel: "B".repeat(200), endLink: "https://example.org/a" });
+  const ok = build({ ...good, title: `  ${"A".repeat(200)}\u202e\n\tfin `, description: "x".repeat(2000), where: "L".repeat(500), endMessage: "M".repeat(500), endLinkLabel: "B".repeat(200), endLink: "https://example.org/a" });
   assert.equal(ok.data.title.length, 80);
-  assert.ok(!/[‮\n\t]/.test(ok.data.title));
+  assert.ok(!/[\u202e\n\t]/.test(ok.data.title));
   assert.equal(ok.data.description.length, 600);
   assert.equal(ok.data.where.length, 120);
   assert.equal(ok.data.endMessage.length, 140);
