@@ -30,7 +30,17 @@
     "routes",
     "storage",
     "admin",
-    "mcp"
+    "mcp",
+    "topics"
+  ],
+  "provides": [
+    {
+      "topic": "mascot.hint",
+      "label": {
+        "fr": "Une invitation à jouer au jeu du jour (pour la mascotte)",
+        "en": "An invitation to play the daily game (for the mascot)"
+      }
+    }
   ],
   "requires": [
     {
@@ -439,6 +449,33 @@
       "help": {
         "fr": "Doit contenir {n}, remplacé par le nombre de jours. Vide : « {n} jours de suite ! ». Exemple : {n} jours d'affilée !",
         "en": "Must contain {n}, replaced by the number of days. Empty: “{n} days in a row!”. Example: {n} days on the run!"
+      }
+    },
+    {
+      "key": "mascotHint",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Laisser la mascotte inviter à jouer",
+        "en": "Let the mascot invite people to play"
+      },
+      "help": {
+        "fr": "Si le module « Mascotte » est installé, elle peut dire « Le jeu du jour t'attend », une fois par jour, tant qu'il y a une question. Sans lui, ce réglage ne change rien. Le message ne contient jamais la réponse.",
+        "en": "If the “Mascot” module is installed, it can say “Today's game is waiting for you”, once a day, as long as there is a question. Without it, this setting changes nothing. The message never contains the answer."
+      }
+    },
+    {
+      "key": "hintText",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Message de la mascotte",
+        "en": "Mascot message"
+      },
+      "help": {
+        "fr": "140 caractères au plus. Vide : « Le jeu du jour t'attend ! ».",
+        "en": "140 characters at most. Empty: “Today's game is waiting for you!”."
       }
     },
     {

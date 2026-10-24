@@ -28,6 +28,16 @@ export function vocab(ctx) {
   };
 }
 
+/**
+ * Le message confié à la mascotte (sujet `mascot.hint`) : jamais la réponse, jamais la question, seulement une invitation.
+ * Le serveur ignore si CE visiteur a déjà joué (son état reste dans son navigateur) : l'invitation vaut pour tout le monde, une fois par jour.
+ */
+export function hintOf(ctx, day) {
+  const text = clean(ctx.setting("hintText"), 140) || ctx.t("hintText");
+  const url = pageHref(ctx);
+  return { id: `daily-game:${ctx.instance.key}:${day}`.slice(0, 100), text, ...(url ? { url } : {}) };
+}
+
 const paragraphs = (text) => String(text).split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("");
 
 /** JSON sûr dans une balise de la page (aucune séquence qui ferme la balise ou casse une ligne). */

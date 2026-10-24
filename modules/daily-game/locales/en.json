@@ -26,6 +26,7 @@
   "streakOne": "First day of your streak",
   "streakMany": "{n} days in a row!",
   "comeBack": "Come back tomorrow for a new question.",
+  "hintText": "Today's game is waiting for you!",
   "srGood": "right answer",
   "srBad": "wrong answer",
   "srYours": "your answer",

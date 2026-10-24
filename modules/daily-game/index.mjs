@@ -32,6 +32,16 @@ export default {
 
   routes,
 
+  // SUJET « mascot.hint » (facultatif : sans le module mascotte, rien ne l'appelle). Pas de minuteur : la mascotte lit, et le jour change tout seul
+  // (l'identifiant contient la date du site, donc un nouveau message chaque jour, jamais deux le même jour). Une seule invitation par instance.
+  exports: {
+    async "mascot.hint"(ctx, { limit } = {}) {
+      if (!D.flag(ctx, "mascotHint", true) || limit === 0) return [];
+      const { day, item } = await D.getToday(ctx);
+      return item ? [V.hintOf(ctx, day)] : [];
+    },
+  },
+
   // ACCUEIL : « Le jeu du jour » (invitation ; son état — à jouer, déjà joué, série — vient du navigateur).
   sections: {
     today: (ctx) => V.renderCard(ctx),

@@ -13,6 +13,7 @@
 - Un classement de la semaine, facultatif, avec pseudo (grâce à Participation).
 - Plusieurs jeux possibles (un quiz par thème) et des mots que vous changez.
 - Pour votre assistant : lire les questions et proposer des brouillons (jamais accordé d'office).
+- Si le module Mascotte est installé, elle peut inviter à jouer (« Le jeu du jour t'attend ! », texte réglable, décochable) : une invitation par jour, jamais la réponse. Sans mascotte, rien ne change.
 
 ### Améliorations
 - Accessible : clavier, lecteur d'écran, mouvement réduit, contrastes du thème.
@@ -20,6 +21,6 @@
 
 ### Pour les développeurs
 - `minCore` 0.2.6. Fichiers : `lib`, `games` (table des types de jeu extensible), `plan` (choix de la question, fonctions pures), `data`, `packs`, `csv`, `bridge`, `view`, `client`, `routes`, `admin`, `mcp`. Tous les imports voisins portent la version (`await import(`./x.mjs${q}`)`) ; test de mise à jour à chaud.
-- Routes `answer`, `board` (POST) et `card.js` (GET). `scripts/daily-game.js` = copie exacte de `CLIENT_JS` (test). Collections `dg_questions`, `dg_plan`, `dg_board`. Service facultatif `audience.session`.
+- Routes `answer`, `board` (POST) et `card.js` (GET). `scripts/daily-game.js` = copie exacte de `CLIENT_JS` (test). Collections `dg_questions`, `dg_plan`, `dg_board`. Service facultatif `audience.session`. Sujet fourni `mascot.hint` (`exports`, permission `topics`) ; test `daily-game-hint`.
 - Outils : `daily_questions_list`, `daily_question_add`. Droits : `edit`, `publish`, `moderate`.
 - Tests : `daily-game-plan`, `-public`, `-routes`, `-admin`, `-packs`, `-types`, `-update` ; aide `tests/helpers/dailyGameKit.mjs` (avec `fakeAudience`).

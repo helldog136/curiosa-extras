@@ -11,6 +11,7 @@
 - Un classement de la semaine, facultatif, avec pseudo (grâce à Participation).
 - Plusieurs jeux possibles (un quiz par thème) et des mots que vous changez.
 - Pour votre assistant : lire les questions et proposer des brouillons (jamais accordé d'office).
+- Si le module Mascotte est installé, elle peut inviter à jouer (« Le jeu du jour t'attend ! », texte réglable, décochable) : une invitation par jour, jamais la réponse. Sans mascotte, rien ne change.
 
 ## Améliorations
 - Accessible : clavier, lecteur d'écran, mouvement réduit, contrastes du thème.
