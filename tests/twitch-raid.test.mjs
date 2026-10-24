@@ -64,7 +64,8 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.1.0"); assert.equal(manifest.minCore, "0.2.2"); assert.equal(manifest.dataVersion, 3);
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.2.0"); assert.equal(manifest.minCore, "0.2.6");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
+  assert.equal(manifest.dataVersion, 3);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false], ["contact.curate", 1, false]], "sans Contacts, Raid n'a plus de liste : besoin dur ; son extension sert à ajouter et retirer");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");
   assert.deepEqual(Object.keys(def.services["privacy.subject"]).sort(), ["erase", "export", "remap"]);
@@ -73,15 +74,15 @@ test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un rég
   assert.deepEqual(cat.source, { kind: "service", service: "contact.book", list: "categories", get: "categoriesResolve", create: "createCategory" });
   assert.ok(!("default" in cat) && !("translatable" in cat), "un choix n'a ni défaut ni traduction");
   assert.deepEqual([ch.key, ch.type, ch.source, ch.fromText, ch.refersTo, ch.advanced, ch.optional], ["channel", "choice", { kind: "providers", service: "twitch.live" }, true, "channel", true, true]);
-  assert.equal(manifest.settings.length, 2);
+  assert.deepEqual(manifest.settings.slice(2).map((x) => x.key), ["dockMode", "count", "duration", "smallFirst", "exclude", "hide", "publicPage", "pageTitle", "pageIntro", "emptyText", "watchLabel", "thumbs"], "2.2 : les réglages de la sélection du moment s'ajoutent aux deux d'origine");
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function");
   assert.ok(!("provides" in manifest) && !def.exports, "plus de sujet fourni : le sujet « stream.partner » est retiré (Story lit Contacts)");
-  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage"]);
+  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "pages", "routes", "storage"]);
   assert.ok(manifest.mcp.every((t) => t.readOnly === true && t.default === false), "lecture seule, jamais accordé d'office");
-  assert.deepEqual(manifest.mcp.map((t) => t.name), ["raid_partners_live"]);
+  assert.deepEqual(manifest.mcp.map((t) => t.name), ["raid_partners_live", "raid_featured_now"]);   // 2.2 : l'outil d'origine, inchangé, puis la sélection du moment
   assert.ok(manifest.privacy.fr && manifest.privacy.en);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "live", "pick"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "featured", "featured-again", "featured-data", "live", "members", "pick"]);
   assert.equal(def.backup, undefined, "plus de liste à sauvegarder ici : elle est dans Contacts (qui a son export)");
   // Raid n'appelle createCategory qu'à UN endroit (source.mjs, ensureCategory), toujours avec { asCaller: true } : les droits sont ceux de la personne qui a cliqué, vérifiés par Contacts.
   const uses = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).flatMap((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").split("\n").filter((l) => /createCategory/.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l)).map((l) => `${f}: ${l.trim()}`));
@@ -430,7 +431,8 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
   assert.ok(blocks.some((b) => b.type === "markdown" && b.text.includes("**2** chaînes Twitch dans la catégorie « Cible de raid » de Contacts")), "un compteur");
   const link = blocks.find((b) => b.type === "links" && b.items[0].label === "Gérer mes partenaires dans Contacts");
   assert.equal(link.items[0].href, `/admin/instances/id-contact.book-provider?category=${CAT}`, "la page de Contacts, filtrée sur la catégorie");
-  assert.deepEqual(blocks.filter((b) => b.type === "adminForm").map((b) => b.action), ["find", "bulkPreview", "listSearch", "check"], "ajouter (un champ, ou plusieurs lignes), chercher dans la liste, vérifier : l'ancien ajout/import/tri est resté sorti");
+  assert.deepEqual(blocks.filter((b) => b.type === "adminForm" && !b.tab).map((b) => b.action), ["find", "bulkPreview", "listSearch", "check"], "ajouter (un champ, ou plusieurs lignes), chercher dans la liste, vérifier : l'ancien ajout/import/tri est resté sorti");
+  assert.deepEqual(blocks.filter((b) => b.type === "adminForm" && b.tab === "moment").map((b) => b.action), ["momentCheck", "momentReroll"], "2.2 : la sélection du moment a son onglet à part");
   assert.ok(!blocks.some((b) => b.type === "table" && b.rowActions?.some((a) => ["up", "down", "save"].includes(a.action))));
   assert.deepEqual(blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "remove").rowActions.map((a) => a.action), ["remove"], "« Retirer » seulement : la fiche reste dans Contacts");
   const renew = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "renew");
@@ -445,7 +447,7 @@ test("admin : l'adresse du dock (copiable) avec le secret, les étapes pour OBS,
 
 test("admin : nouvelle adresse (confirmée) ; les actions sont celles de l'ajout rapide, de la liste et de la migration (rien de l'ancien tri)", async () => {
   const ctx = mk();
-  assert.deepEqual(Object.keys(admin.actions).sort(), ["attach", "bulkApply", "bulkCancel", "bulkPreview", "check", "create", "find", "finish", "listSearch", "migrate", "pick", "remove", "renew"]);
+  assert.deepEqual(Object.keys(admin.actions).sort(), ["attach", "bulkApply", "bulkCancel", "bulkPreview", "check", "create", "find", "finish", "listSearch", "migrate", "momentCheck", "momentReroll", "pick", "remove", "renew"]);
   const before = await data.dockSecret(ctx);
   assert.match((await act(ctx, "renew")).ok, /nouvelle adresse/);
   assert.notEqual(await data.dockSecret(ctx), before);
