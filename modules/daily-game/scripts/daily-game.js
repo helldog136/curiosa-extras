@@ -166,7 +166,7 @@
         sl.hidden = n < 1;
       }
       say(one("[data-dg-comeback]", root), texts.comeBack);
-      shareText = d.title + " \u2014 " + (played.ok ? (n >= 2 ? line(texts.streakMany, n) : texts.shareGood) : texts.shareBad) + (d.url ? "\n" + d.url : "");
+      shareText = d.title + " \u2014 " + (n >= 2 ? line(texts.streakMany, n) : played.ok ? texts.shareGood : texts.shareBad) + (d.url ? "\n" + d.url : "");
       var area = one("[data-dg-sharetext]", root);
       if (area) area.value = shareText;
       var nat = one("[data-dg-share]", root);

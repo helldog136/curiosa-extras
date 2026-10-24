@@ -38,7 +38,7 @@ export const CSS = `
 .dg *,.dg *::before,.dg *::after{box-sizing:border-box}
 .dg [hidden]{display:none!important}
 .dg-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.dg-date{margin:0 0 .5rem;color:var(--v-muted);font-size:.95rem;text-transform:capitalize}
+.dg-date{margin:0 0 .5rem;color:var(--v-muted);font-size:.95rem}.dg-date::first-letter{text-transform:uppercase}
 .dg-intro{margin:0 0 1rem;color:var(--v-muted)}
 .dg-intro p{margin:0 0 .5rem}
 .dg-meta{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 1rem;padding:0;list-style:none}
@@ -180,7 +180,7 @@ export async function renderPage(ctx, now = D.clock.now()) {
     `<div class="dg-result" data-dg-result hidden><h2 class="dg-verdict" data-dg-verdict tabindex="-1"></h2><p class="dg-explain" data-dg-explain></p><p class="dg-score" data-dg-score></p>`
     + `<p class="dg-streak" data-dg-streak></p><p class="dg-comeback" data-dg-comeback></p>`
     + (shareOn
-      ? `<div class="dg-share"><label class="dg-sr" for="dg-share-${key}">${esc(ctx.t("shareLabel"))}</label><textarea class="dg-share-text" id="dg-share-${key}" rows="2" readonly data-dg-sharetext></textarea>`
+      ? `<div class="dg-share"><label class="dg-sr" for="dg-share-${key}">${esc(ctx.t("shareLabel"))}</label><textarea class="dg-share-text" id="dg-share-${key}" rows="3" readonly data-dg-sharetext></textarea>`
         + `<div class="dg-row"><button type="button" class="dg-btn dg-btn-main" data-dg-copy>${esc(ctx.t("copyResult"))}</button><button type="button" class="dg-btn" data-dg-share hidden>${esc(ctx.t("shareNative"))}</button></div>`
         + `<p class="dg-status" role="status" data-dg-copystatus></p></div>`
       : "")
