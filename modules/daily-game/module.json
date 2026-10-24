@@ -1,0 +1,636 @@
+{
+  "apiVersion": 2,
+  "id": "daily-game",
+  "name": {
+    "fr": "Jeu du jour",
+    "en": "Daily game"
+  },
+  "version": "1.0.0",
+  "minCore": "0.2.6",
+  "description": {
+    "fr": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque visiteur, sans compte. Classement de la semaine en option.",
+    "en": "A small game once a day to make people want to come back: one question, a few answers, an explanation, then “come back tomorrow”. The streak of days is kept in each visitor's browser, with no account. Weekly ranking as an option."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "🎲",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "multiple",
+  "page": true,
+  "basePath": "jeu-du-jour",
+  "privacy": {
+    "fr": "Aucun compte, aucun cookie. Votre réponse est jugée par le site, pas enregistrée. Votre série, vos scores et vos choix restent dans votre navigateur (bouton « Effacer mes données » sur la page du jeu). Une empreinte brouillée de votre adresse, en mémoire quelques heures seulement, freine les abus. Classement (facultatif) : si vous y apparaissez, le site garde votre pseudo et vos points 4 semaines au plus, sans adresse ; « Quitter le classement » ou « Effacer mes données » les retire.",
+    "en": "No account, no cookie. Your answer is judged by the site but not saved. Your streak, scores and choices stay in your browser (“Erase my data” button on the game page). A scrambled fingerprint of your address, kept in memory for a few hours and never on disk, slows down abuse. Ranking (optional): if you choose to appear on it, the site keeps your nickname and points for 4 weeks at most, with no address; “Leave the ranking” or “Erase my data” removes them."
+  },
+  "permissions": [
+    "slots",
+    "sections",
+    "pages",
+    "routes",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "requires": [
+    {
+      "service": "audience.session",
+      "min": 1,
+      "optional": true
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mes questions",
+        "en": "My questions"
+      }
+    },
+    {
+      "id": "tools",
+      "label": {
+        "fr": "Packs et fichiers",
+        "en": "Packs and files"
+      },
+      "panel": true
+    }
+  ],
+  "rights": [
+    {
+      "id": "edit",
+      "label": {
+        "fr": "écrire, importer et organiser les questions",
+        "en": "write, import and organise the questions"
+      },
+      "help": {
+        "fr": "Ajouter, modifier, planifier, ranger, importer et exporter des questions. Sans le droit de publier, tout reste en brouillon.",
+        "en": "Add, edit, schedule, sort, import and export questions. Without the right to publish, everything stays a draft."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "publish",
+      "label": {
+        "fr": "publier ou retirer une question, activer un pack",
+        "en": "publish or take down a question, turn on a pack"
+      },
+      "help": {
+        "fr": "Rendre une question visible dans le jeu, la retirer, choisir la question d'aujourd'hui, activer ou retirer un pack.",
+        "en": "Make a question appear in the game, take it down, choose today's question, turn a pack on or off."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "moderate",
+      "label": {
+        "fr": "modérer le classement de la semaine",
+        "en": "moderate the weekly ranking"
+      },
+      "help": {
+        "fr": "Retirer une ligne du classement ou le vider.",
+        "en": "Remove a row from the ranking or clear it."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "order",
+      "type": "select",
+      "default": "sequence",
+      "label": {
+        "fr": "Ordre des questions",
+        "en": "Order of the questions"
+      },
+      "help": {
+        "fr": "« Dans l'ordre » : une par jour, dans l'ordre que vous choisissez. « Au hasard » : une par jour, sans jamais répéter tant que toutes ne sont pas passées. Dans les deux cas, tout le monde a la même question le même jour.",
+        "en": "“In order”: one a day, in the order you choose. “Random”: one a day, never repeating until all of them have come up. Either way, everyone gets the same question on the same day."
+      },
+      "options": [
+        {
+          "value": "sequence",
+          "label": {
+            "fr": "Dans l'ordre",
+            "en": "In order"
+          }
+        },
+        {
+          "value": "random",
+          "label": {
+            "fr": "Au hasard, sans répétition",
+            "en": "Random, without repeats"
+          }
+        }
+      ]
+    },
+    {
+      "key": "timezone",
+      "type": "select",
+      "default": "Europe/Paris",
+      "label": {
+        "fr": "Votre fuseau horaire",
+        "en": "Your time zone"
+      },
+      "help": {
+        "fr": "Le jour change à minuit dans ce fuseau, pour tout le monde. Une nouvelle question arrive à ce moment-là.",
+        "en": "The day changes at midnight in this time zone, for everyone. A new question arrives at that moment."
+      },
+      "options": [
+        {
+          "value": "Europe/Paris",
+          "label": {
+            "fr": "Paris, Genève, Berlin, Madrid",
+            "en": "Paris, Geneva, Berlin, Madrid"
+          }
+        },
+        {
+          "value": "Europe/London",
+          "label": {
+            "fr": "Londres, Dublin",
+            "en": "London, Dublin"
+          }
+        },
+        {
+          "value": "Europe/Lisbon",
+          "label": {
+            "fr": "Lisbonne",
+            "en": "Lisbon"
+          }
+        },
+        {
+          "value": "Europe/Athens",
+          "label": {
+            "fr": "Athènes, Helsinki, Bucarest",
+            "en": "Athens, Helsinki, Bucharest"
+          }
+        },
+        {
+          "value": "Europe/Moscow",
+          "label": {
+            "fr": "Moscou, Istanbul",
+            "en": "Moscow, Istanbul"
+          }
+        },
+        {
+          "value": "Africa/Casablanca",
+          "label": {
+            "fr": "Casablanca",
+            "en": "Casablanca"
+          }
+        },
+        {
+          "value": "Africa/Dakar",
+          "label": {
+            "fr": "Dakar, Abidjan",
+            "en": "Dakar, Abidjan"
+          }
+        },
+        {
+          "value": "Africa/Algiers",
+          "label": {
+            "fr": "Alger, Tunis",
+            "en": "Algiers, Tunis"
+          }
+        },
+        {
+          "value": "Indian/Reunion",
+          "label": {
+            "fr": "La Réunion, Maurice",
+            "en": "Réunion, Mauritius"
+          }
+        },
+        {
+          "value": "Asia/Dubai",
+          "label": {
+            "fr": "Dubaï",
+            "en": "Dubai"
+          }
+        },
+        {
+          "value": "Asia/Kolkata",
+          "label": {
+            "fr": "Inde",
+            "en": "India"
+          }
+        },
+        {
+          "value": "Asia/Bangkok",
+          "label": {
+            "fr": "Bangkok, Hanoï",
+            "en": "Bangkok, Hanoi"
+          }
+        },
+        {
+          "value": "Asia/Shanghai",
+          "label": {
+            "fr": "Pékin, Singapour",
+            "en": "Beijing, Singapore"
+          }
+        },
+        {
+          "value": "Asia/Tokyo",
+          "label": {
+            "fr": "Tokyo, Séoul",
+            "en": "Tokyo, Seoul"
+          }
+        },
+        {
+          "value": "Australia/Sydney",
+          "label": {
+            "fr": "Sydney, Melbourne",
+            "en": "Sydney, Melbourne"
+          }
+        },
+        {
+          "value": "Pacific/Noumea",
+          "label": {
+            "fr": "Nouméa",
+            "en": "Nouméa"
+          }
+        },
+        {
+          "value": "Pacific/Auckland",
+          "label": {
+            "fr": "Auckland",
+            "en": "Auckland"
+          }
+        },
+        {
+          "value": "America/Montreal",
+          "label": {
+            "fr": "Montréal, New York",
+            "en": "Montréal, New York"
+          }
+        },
+        {
+          "value": "America/Chicago",
+          "label": {
+            "fr": "Chicago, Mexico",
+            "en": "Chicago, Mexico City"
+          }
+        },
+        {
+          "value": "America/Denver",
+          "label": {
+            "fr": "Denver",
+            "en": "Denver"
+          }
+        },
+        {
+          "value": "America/Los_Angeles",
+          "label": {
+            "fr": "Los Angeles, Vancouver",
+            "en": "Los Angeles, Vancouver"
+          }
+        },
+        {
+          "value": "America/Sao_Paulo",
+          "label": {
+            "fr": "São Paulo",
+            "en": "São Paulo"
+          }
+        },
+        {
+          "value": "UTC",
+          "label": {
+            "fr": "Temps universel (UTC)",
+            "en": "Universal time (UTC)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "timerMode",
+      "type": "select",
+      "default": "on",
+      "label": {
+        "fr": "Chronomètre",
+        "en": "Timer"
+      },
+      "help": {
+        "fr": "Un bonus de points pour qui répond vite, jamais une limite : chaque visiteur peut le décocher. Choisissez s'il est coché au départ, décoché, ou absent.",
+        "en": "A bonus of points for answering fast, never a limit: each visitor can untick it. Choose whether it starts ticked, unticked, or absent."
+      },
+      "options": [
+        {
+          "value": "on",
+          "label": {
+            "fr": "Proposé, coché au départ",
+            "en": "Offered, ticked at the start"
+          }
+        },
+        {
+          "value": "off",
+          "label": {
+            "fr": "Proposé, décoché au départ",
+            "en": "Offered, unticked at the start"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Pas de chronomètre",
+            "en": "No timer"
+          }
+        }
+      ]
+    },
+    {
+      "key": "shareButton",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Proposer de copier le résultat",
+        "en": "Offer to copy the result"
+      },
+      "help": {
+        "fr": "Après la réponse, un texte à partager comme « Quiz du jour — 3 jours de suite ! », sans dévoiler la réponse.",
+        "en": "After answering, a text to share like “Daily quiz — 3 days in a row!”, without revealing the answer."
+      }
+    },
+    {
+      "key": "leaderboard",
+      "type": "boolean",
+      "default": false,
+      "optional": true,
+      "label": {
+        "fr": "Classement de la semaine (facultatif)",
+        "en": "Weekly ranking (optional)"
+      },
+      "help": {
+        "fr": "Les visiteurs qui le veulent choisissent un pseudo et apparaissent au classement de la semaine. Demande l'outil de participation du site ; sinon rien n'est affiché. Désactivé au départ.",
+        "en": "Visitors who want to choose a nickname and appear on the week's ranking. Needs the site's participation tool; otherwise nothing is shown. Off at the start."
+      }
+    },
+    {
+      "key": "homeState",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Montrer l'état du jeu dans le bloc d'accueil",
+        "en": "Show the game state in the home block"
+      },
+      "help": {
+        "fr": "Si vous placez le bloc « Le jeu du jour » sur l'accueil, il dit « à jouer », « déjà joué » ou la série en cours. Décoché, le bloc reste une simple invitation.",
+        "en": "If you place the “The daily game” block on the home page, it says “to play”, “already played” or the current streak. Unticked, the block stays a simple invitation."
+      }
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Nom du jeu",
+        "en": "Name of the game"
+      },
+      "help": {
+        "fr": "Vide : « Quiz du jour » (ou « Daily quiz »). Exemple : Le défi du jour.",
+        "en": "Empty: “Daily quiz” (or “Quiz du jour”). Example: Today's challenge."
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Texte d'introduction",
+        "en": "Introduction text"
+      },
+      "help": {
+        "fr": "Affiché au-dessus de la question. Laissez vide pour ne rien afficher. Exemple : Une question par jour, 15 secondes de jeu !",
+        "en": "Shown above the question. Leave empty to show nothing. Example: One question a day, 15 seconds of play!"
+      }
+    },
+    {
+      "key": "playLabel",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Texte du bouton d'invitation",
+        "en": "Text of the invitation button"
+      },
+      "help": {
+        "fr": "Sur le bloc d'accueil. Vide : « Jouer ». Exemple : Relever le défi.",
+        "en": "On the home block. Empty: “Play”. Example: Take the challenge."
+      }
+    },
+    {
+      "key": "streakText",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Phrase de série",
+        "en": "Streak sentence"
+      },
+      "help": {
+        "fr": "Doit contenir {n}, remplacé par le nombre de jours. Vide : « {n} jours de suite ! ». Exemple : {n} jours d'affilée !",
+        "en": "Must contain {n}, replaced by the number of days. Empty: “{n} days in a row!”. Example: {n} days on the run!"
+      }
+    },
+    {
+      "key": "comeBack",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "fr": "Message « revenez demain »",
+        "en": "“Come back tomorrow” message"
+      },
+      "help": {
+        "fr": "Affiché après la réponse. Vide : « Revenez demain pour une nouvelle question. ».",
+        "en": "Shown after the answer. Empty: “Come back tomorrow for a new question.”."
+      }
+    },
+    {
+      "key": "seconds",
+      "type": "number",
+      "default": 15,
+      "advanced": true,
+      "label": {
+        "fr": "Secondes du bonus de rapidité",
+        "en": "Seconds of the speed bonus"
+      },
+      "help": {
+        "fr": "De 5 à 60. Le bonus diminue pendant ce temps ; ensuite on peut répondre sans limite.",
+        "en": "From 5 to 60. The bonus goes down during this time; after that you can answer with no limit."
+      }
+    },
+    {
+      "key": "answerLimit",
+      "type": "number",
+      "default": 40,
+      "advanced": true,
+      "label": {
+        "fr": "Réponses permises par visiteur et par heure",
+        "en": "Answers allowed per visitor per hour"
+      },
+      "help": {
+        "fr": "De 5 à 500. Protège le jeu contre les envois en masse.",
+        "en": "From 5 to 500. Protects the game against mass sending."
+      }
+    },
+    {
+      "key": "gameType",
+      "type": "select",
+      "default": "quiz",
+      "advanced": true,
+      "label": {
+        "fr": "Type de jeu",
+        "en": "Type of game"
+      },
+      "help": {
+        "fr": "Le quiz est le seul type pour l'instant ; d'autres jeux du jour pourront s'ajouter.",
+        "en": "The quiz is the only type for now; other daily games may be added."
+      },
+      "options": [
+        {
+          "value": "quiz",
+          "label": {
+            "fr": "Quiz (une question, 2 à 4 réponses)",
+            "en": "Quiz (one question, 2 to 4 answers)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalGroups": [
+    {
+      "id": "words",
+      "label": {
+        "fr": "Mes mots",
+        "en": "My words"
+      },
+      "addLabel": {
+        "fr": "Personnaliser les mots du jeu",
+        "en": "Customise the words of the game"
+      },
+      "removeLabel": {
+        "fr": "Revenir aux mots d'origine",
+        "en": "Go back to the original words"
+      },
+      "fields": [
+        "title",
+        "intro",
+        "playLabel",
+        "streakText",
+        "comeBack"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "today",
+      "size": "small",
+      "label": {
+        "fr": "Le jeu du jour",
+        "en": "The daily game"
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "daily_questions_list",
+      "readOnly": true,
+      "description": "List the questions of the daily game bank (published and drafts), with category, level, planned date and languages, plus today's question id and how many days of questions are left. Use it before adding a question so that you never duplicate one. Right answers are only returned with full=true. Paginated: pass 'next' as 'cursor' to continue.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "published",
+              "draft"
+            ],
+            "description": "Which questions to list (default: all)."
+          },
+          "full": {
+            "type": "boolean",
+            "description": "Also return answers, right answer and explanations (default: false)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size, 1 to 100 (default 30)."
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Opaque cursor: the 'next' value of the previous page."
+          }
+        }
+      }
+    },
+    {
+      "name": "daily_question_add",
+      "description": "Add a DRAFT quiz question to the daily game bank. It is never published: it stays invisible and out of the daily rotation until the site team reads it and publishes it from the administration. Give the question (300 characters at most), 2 to 4 different answers (120 characters at most each), the number of the right answer (1 to 4) and, if you can, a short factual explanation shown after the answer. Do not invent facts you do not know.",
+      "input": {
+        "type": "object",
+        "required": [
+          "question",
+          "answers",
+          "correct"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "The question."
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "2 to 4 different answers, in the order they will be shown."
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Number of the right answer in 'answers' (1 = first)."
+          },
+          "explanation": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Short explanation shown after the answer."
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 12,
+            "description": "Language code of the texts, e.g. fr or en (default: the site's default language)."
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Optional category, e.g. History."
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "description": "Optional difficulty."
+          }
+        }
+      }
+    }
+  ]
+}
