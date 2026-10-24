@@ -87,7 +87,12 @@ export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).
 /** L'identifiant d'un événement (donné par sa source, stable) et le type de sa source (« calendar », « youtube »…) : de courtes chaînes sûres, jamais une adresse. */
 export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,99}$/;
 export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
-export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr" });
+export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false });
+
+/** La mention de marque, dessinée en bas de la vidéo quand la case est cochée. C'est un nom de marque : elle n'est JAMAIS traduite (donc absente des locales). */
+export const WATERMARK_LEAD = "Made with ", WATERMARK_NAME = "Curiosa", WATERMARK_TEXT = WATERMARK_LEAD + WATERMARK_NAME;
+/** Le nom « Curiosa » suit la charte du logo : Fraunces italique 600 (fichier du module, licence SIL OFL), à 1,15 fois la taille du texte voisin comme dans le pied de page du site. */
+export const WORDMARK = { family: "CuriosaWordmark", weight: 600, scale: 1.15, fallback: "Georgia, serif" };
 
 /** Remet n'importe quelle entrée (modèle enregistré, IA, navigateur) au bon format : valeurs inconnues écartées, durées et longueurs bornées. Ne lève jamais. */
 export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
@@ -112,6 +117,8 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
     // L'événement choisi pour la vidéo : son identifiant (donné par sa source) et le type de sa source. L'un sans l'autre n'a pas de sens : tous deux valides, sinon rien.
     ...pickEvent(r, d),
     lang: LANGS.includes(r.lang) ? r.lang : LANGS.includes(d.lang) ? d.lang : "fr",
+    // La mention « Made with Curiosa » : un simple oui/non, NON par défaut. Seul un `true` explicite l'ajoute (jamais une chaîne, un 1 ou un objet).
+    watermark: typeof r.watermark === "boolean" ? r.watermark : r.watermark === undefined && d.watermark === true,
   };
 }
 function pickEvent(r, d) {

@@ -1,7 +1,7 @@
 // Les quatre animations de « Story d'annonce ». Chacune est une FONCTION DU TEMPS : `scene.draw(ctx, t)` dessine l'image qu'il faut à la seconde `t`, toujours la même
 // pour le même `t` (aucun hasard non reproductible, aucune horloge) : c'est ce qui permet de fabriquer la vidéo image par image, aussi vite que l'ordinateur le peut.
 // Ce fichier ne connaît ni la page, ni le réseau : il reçoit un contexte de dessin 2D (canvas) et dessine avec `fillText` (jamais de HTML).
-import { formatOf, safeArea, STYLES, LIMITS, wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, clamp01, easeOutCubic, easeInOutCubic, easeOutBack, progress, seeded } from "./pure.mjs";
+import { formatOf, safeArea, STYLES, LIMITS, WATERMARK_TEXT, WATERMARK_LEAD, WATERMARK_NAME, WORDMARK, wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, clamp01, easeOutCubic, easeInOutCubic, easeOutBack, progress, seeded } from "./pure.mjs";
 
 const FAMILY = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const cleanFamily = (f) => (typeof f === "string" && /^[A-Za-z0-9 ,'"\-_.]{1,200}$/.test(f) ? f : FAMILY);
@@ -85,7 +85,10 @@ const STYLE_PARAMS = {
 };
 
 export function createScene(opts = {}) {
-  const fmt = formatOf(opts.format), W = fmt.width, H = fmt.height, A = safeArea(fmt);
+  const fmt = formatOf(opts.format), W = fmt.width, H = fmt.height, safe = safeArea(fmt);
+  // La mention « Made with Curiosa » (seulement si la case est cochée : un `true` explicite). Elle occupe le bas de la zone sûre ; le contenu se met en page au-dessus d'elle.
+  const wmOn = opts.watermark === true, WM = { px: 30, h: 54, padX: 26, gap: 28, alpha: 0.6 };
+  const A = wmOn ? { ...safe, h: safe.h - WM.h - WM.gap } : safe;
   const style = STYLES.includes(opts.style) ? opts.style : "neon";
   const duration = Math.min(LIMITS.durationMax, Math.max(LIMITS.durationMin, Number(opts.duration) || LIMITS.durationDefault));
   const content = opts.content ?? {}, assets = opts.assets ?? {}, lang = content.lang === "en" ? "en" : "fr", words = WORDS[lang];
@@ -93,6 +96,38 @@ export function createScene(opts = {}) {
   const mctx = opts.measureContext;
   const font = (weight, px, italic) => `${italic ? "italic " : ""}${weight} ${Math.max(6, Math.round(px))}px ${family}`;
   const measureWith = (f) => { mctx.font = f; return (s) => mctx.measureText(s).width; };
+  /* La mention : placée au centre, juste au-dessus de la zone que l'interface d'Instagram recouvre (le bas de la zone sûre : 340 px en vertical, plus prudent que les ~250 px
+     habituels, la barre de réponse et le nom du compte varient d'un téléphone à l'autre), donc toujours visible. Même police que le reste de la vidéo, gras moyen, 30 px à 1080 de large.
+     Les couleurs viennent du fond du modèle : le texte est le blanc ou le presque-noir qui contraste le mieux avec les couleurs du fond DU BAS (début, fin du dégradé et moyenne), sur une
+     pastille semi-transparente de la couleur du fond. Aucun mouvement : la même image à chaque instant, du premier au dernier fond. */
+  const watermark = (() => {
+    if (!wmOn) return null;
+    // Deux segments sur la MÊME ligne de base : « Made with » dans la police de la vidéo, puis « Curiosa » en Fraunces italique 600 (1,15 fois plus grand, comme le logo du site). Si la police
+    // du nom n'a pas pu être chargée (`wordmarkFont` vide), le canvas retombe sur Georgia italique, même graisse.
+    const fam = typeof opts.wordmarkFont === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(opts.wordmarkFont) ? `"${opts.wordmarkFont}", ${WORDMARK.fallback}` : WORDMARK.fallback;
+    const f1 = font(600, WM.px), f2 = `italic ${WORDMARK.weight} ${Math.round(WM.px * WORDMARK.scale * 10) / 10}px ${fam}`;
+    const w1 = measureWith(f1)(WATERMARK_LEAD), w2 = measureWith(f2)(WATERMARK_NAME), tw = Math.ceil(w1 + w2), w = Math.ceil((tw + WM.padX * 2) / 2) * 2;   // largeur paire : centre sur un pixel entier
+    const left = Math.round((W - tw) / 2), base = Math.round(safe.y + safe.h - WM.h / 2 + WM.px * 0.35);
+    const parts = [{ text: WATERMARK_LEAD, font: f1, x: left, y: base }, { text: WATERMARK_NAME, font: f2, x: left + Math.round(w1), y: base }];
+    const bgs = [...new Set([pal.base, pal.bg0, pal.bg1])];
+    const worst = (c, pill = null) => Math.min(...bgs.map((b) => contrast(c, pill ? mix(b, pill, WM.alpha) : b)));
+    const color = worst("#ffffff") >= worst("#111111") ? "#ffffff" : "#111111";
+    // la pastille a la couleur du fond ; si le fond est un gris moyen où ni le blanc ni le noir n'atteignent 4,5:1, elle s'assombrit (ou s'éclaircit) juste ce qu'il faut
+    const toward = color === "#ffffff" ? "#000000" : "#ffffff";
+    let pill = pal.base;
+    for (let k = 1; k <= 10 && worst(color, pill) < 4.5; k++) pill = mix(pal.base, toward, k / 10);
+    return { text: WATERMARK_TEXT, parts, color, pill, ratio: worst(color, pill), x: Math.round((W - w) / 2), y: Math.round(safe.y + safe.h - WM.h), w, h: WM.h };
+  })();
+  function drawWatermark(ctx) {
+    const m = watermark;
+    ctx.save();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.shadowColor = "rgba(0,0,0,0)"; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+    roundRectPath(ctx, m.x, m.y, m.w, m.h, m.h / 2); ctx.fillStyle = rgba(m.pill, WM.alpha); ctx.fill();
+    ctx.strokeStyle = rgba(m.color, 0.28); ctx.lineWidth = 2; ctx.stroke();
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.fillStyle = m.color;
+    for (const q of m.parts) { ctx.font = q.font; ctx.fillText(q.text, q.x, q.y); }
+    ctx.restore();
+  }
   const hasLogo = usable(assets.logo);
   const members = (content.costreamers ?? []).slice(0, LIMITS.costreamers);
   const digitsOn = style === "countdown" && !!content.parts && !!content.countdown;
@@ -373,8 +408,9 @@ export function createScene(opts = {}) {
     ctx.save();
     background(ctx, t);
     blocks.forEach((b, i) => { const fx = fxFor(i, t); if (fx.alpha > 0.001) drawBlock(ctx, b, fx, t); });
+    if (watermark) drawWatermark(ctx);
     ctx.restore();
   }
 
-  return { width: W, height: H, duration, fps: LIMITS.fps, style, format: fmt.id, draw, boxes, scale: u, palette: pal, blocks: blocks.map((b) => ({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h })), restTime: duration * 0.78 };
+  return { width: W, height: H, duration, fps: LIMITS.fps, style, format: fmt.id, draw, boxes, scale: u, palette: pal, blocks: blocks.map((b) => ({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h })), restTime: duration * 0.78, watermark: watermark ? { text: watermark.text, x: watermark.x, y: watermark.y, w: watermark.w, h: watermark.h, color: watermark.color, parts: watermark.parts.map((q) => ({ ...q })), background: watermark.pill, contrast: watermark.ratio } : null };
 }

@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.1.0",
+  "version": "2.2.0",
   "platform": "instagram",
   "description": {
     "en": "Make a short animated video that announces one of your upcoming events, ready to post as an Instagram story (vertical) or a portrait post. Pick the event from one list that gathers your streams and, when they are set up, your scheduled YouTube videos and your Twitch schedule, sorted by date and time. Then pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
@@ -28,8 +28,8 @@
     "rawg"
   ],
   "privacy": {
-    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events are read live and held in memory for under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
-    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels et, 7 jours au plus, ce qu'un assistant a préparé (avec l'identifiant de l'événement choisi). Les événements à venir sont lus en direct et gardés en mémoire moins d'une minute. Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée : elle se fabrique dans votre navigateur."
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events are read live and held in memory for under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
+    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
   },
   "tabs": [
     {
@@ -113,6 +113,20 @@
       "help": {
         "en": "Example: Europe/Brussels. Empty = the one of your calendar, otherwise the one of your browser.",
         "fr": "Exemple : Europe/Brussels. Vide = celui de votre agenda, sinon celui de votre navigateur."
+      }
+    },
+    {
+      "key": "watermark",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "Add the “Made with Curiosa” mark by default",
+        "fr": "Ajouter la mention « Made with Curiosa » par défaut"
+      },
+      "help": {
+        "en": "Starting value of the tick box on the story screen (off unless you choose otherwise). Once you tick or untick that box, your last choice is remembered and used for the next stories.",
+        "fr": "Valeur de départ de la case de l'écran de création (décochée sauf choix contraire). Dès que vous cochez ou décochez cette case, votre dernier choix est retenu pour les prochaines stories."
       }
     }
   ],
@@ -337,6 +351,10 @@
               "type": "string"
             },
             "description": "Up to 6 Twitch names (4 to 25 letters, digits or _) of guest streamers to show. A name that matches a person in the owner's Contacts is linked to that card (name and picture come from Contacts); any other name is shown for this video only."
+          },
+          "watermark": {
+            "type": "boolean",
+            "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless she chose otherwise). Never add it unless the owner asked for it."
           }
         }
       }
