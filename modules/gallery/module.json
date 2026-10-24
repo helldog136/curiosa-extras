@@ -349,12 +349,12 @@
       "default": 300,
       "advanced": true,
       "label": {
-        "fr": "Poids d'une photo envoyée (Ko, 1 000 au plus)",
-        "en": "Weight of an uploaded photo (KB, 1,000 at most)"
+        "fr": "Poids visé d'une photo envoyée (Ko, 4 000 au plus)",
+        "en": "Target weight of an uploaded photo (KB, 4,000 at most)"
       },
       "help": {
-        "fr": "Les photos sont réduites dans votre navigateur pour tenir dans cette limite ; le site refuse ce qui la dépasse.",
-        "en": "Photos are shrunk in your browser to fit this limit; the site refuses anything above it."
+        "fr": "Les photos sont réduites dans votre navigateur pour tenir dans cette limite avant d'être envoyées ; le site de base refuse de toute façon plus de 5 Mo.",
+        "en": "Photos are shrunk in your browser to fit this limit before being sent; the site itself refuses more than 5 MB anyway."
       }
     },
     {
@@ -396,17 +396,17 @@
       }
     },
     {
-      "key": "maxTotalMB",
+      "key": "maxTotalPhotos",
       "type": "number",
-      "default": 150,
+      "default": 1500,
       "advanced": true,
       "label": {
-        "fr": "Espace total des photos (Mo, 2 000 au plus)",
-        "en": "Total space for photos (MB, 2,000 at most)"
+        "fr": "Nombre de photos sur tout le site (10 000 au plus)",
+        "en": "Number of photos on the whole site (10,000 at most)"
       },
       "help": {
-        "fr": "Les photos sont gardées dans la base de votre site et font donc grossir ses sauvegardes : gardez cette limite raisonnable.",
-        "en": "Photos are kept in your site's database and make its backups bigger: keep this limit reasonable."
+        "fr": "Les photos envoyées sont des fichiers du site, comptés dans ses sauvegardes. Retirer une photo d'un album n'efface pas son fichier : le site de base ne sait pas encore le faire.",
+        "en": "Uploaded photos are files of the site, counted in its backups. Removing a photo from an album does not erase its file: the base site cannot do that yet."
       }
     },
     {

@@ -1,9 +1,7 @@
 // Aides communes aux tests du module « Galeries photos » : faux contexte avec les vrais textes, requêtes de formulaire, albums et photos prêts.
 import fs from "node:fs";
 import { fakeCtx } from "./fakeCtx.mjs";
-import { IMAGES } from "./galleryImages.mjs";
 
-export { IMAGES };
 export const DIR = new URL("../../modules/gallery", import.meta.url).pathname;
 export const manifest = JSON.parse(fs.readFileSync(`${DIR}/module.json`, "utf8"));
 export const messages = (lang) => JSON.parse(fs.readFileSync(`${DIR}/locales/${lang}.json`, "utf8"));
@@ -12,7 +10,6 @@ export const data = await import("../../modules/gallery/data.mjs");
 export const text = await import("../../modules/gallery/text.mjs");
 export const view = await import("../../modules/gallery/view.mjs");
 export const ops = await import("../../modules/gallery/ops.mjs");
-export const images = await import("../../modules/gallery/images.mjs");
 export const admin = await import("../../modules/gallery/admin.mjs");
 
 let seq = 0;
@@ -38,16 +35,18 @@ export const json = { accept: "application/json" };
 
 export const rows = (ctx, collection) => ctx.dumpStore().filter((r) => r.collection === collection).map((r) => ({ id: r.id, ...r.data }));
 
-/** Un album prêt (publié par défaut), avec `n` photos envoyées (images de test). Renvoie { id, photos: [id…], album }. */
+const hex = (n) => Array.from({ length: n }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+/** Une adresse comme celle que renvoie le mécanisme d'envoi du cœur. */
+export const uploadUrl = (ext = "jpg") => `/uploads/${hex(8)}-${hex(4)}-${hex(4)}-${hex(4)}-${hex(12)}.${ext}`;
+
+/** Un album prêt (publié par défaut), avec `n` photos « envoyées » (adresses /uploads/…). Renvoie { id, photos: [id…], album }. */
 export async function makeAlbum(ctx, { title = "Soirée de printemps", n = 0, status = "published", mode = "hosted", link = "", date = "2025-03-14", desc = "", hidden = [] } = {}) {
   const made = await ops.createAlbum(ctx, { title, status, mode, link, date, desc });
   if (!made.ok) throw new Error(`createAlbum : ${made.error}`);
   const photos = [];
   for (let i = 0; i < n; i++) {
-    const full = images.sanitizeImage(IMAGES.jpegPlain);
-    const thumb = images.sanitizeImage(IMAGES.jpegPlain);
-    const r = await ops.addHostedPhoto(ctx, made.id, { full, thumb, name: `photo-${i + 1}.jpg`, caption: `Légende ${i + 1}`, alt: `Description ${i + 1}`, hidden: hidden.includes(i) });
-    if (!r.ok) throw new Error(`addHostedPhoto : ${r.error}`);
+    const r = await ops.addUploadedPhoto(ctx, made.id, { full: uploadUrl(), thumb: uploadUrl(), w: 1600, h: 1200, bytes: 200_000, tbytes: 20_000, name: `photo-${i + 1}.jpg`, caption: `Légende ${i + 1}`, alt: `Description ${i + 1}`, hidden: hidden.includes(i) });
+    if (!r.ok) throw new Error(`addUploadedPhoto : ${r.error}`);
     photos.push(r.id);
   }
   return { id: made.id, photos, album: await data.getAlbum(ctx, made.id) };
@@ -60,5 +59,5 @@ export async function breakLink(ctx, id) {
   data.invalidate(ctx);
 }
 
-/** Les champs d'un envoi de photo comme le fait l'outil d'envoi (texte base64). */
-export const upload = (album, buf, extra = {}) => ({ album, photo: buf.toString("base64"), thumb: buf.toString("base64"), name: "IMG_0001.jpg", caption: "", alt: "", ...extra });
+/** Les champs que la page d'envoi donne à l'action « addPhoto » une fois les deux fichiers envoyés au cœur. */
+export const photoFields = (album, extra = {}) => ({ album, full: uploadUrl(), thumb: uploadUrl(), w: "1600", h: "1200", bytes: "210000", tbytes: "21000", name: "IMG_0001.jpg", caption: "", alt: "", ...extra });

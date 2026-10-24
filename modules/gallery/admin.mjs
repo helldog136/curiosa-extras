@@ -3,8 +3,7 @@
 // L'envoi de plusieurs photos avec progression se fait dans une page à part (voir view.mjs, renderStudio) qui appelle les actions ci-dessous.
 
 const { TEMPLATES, freshAlbums, getAlbum, getRow, hostsOf, limitsOf, loadMeta, loadPhotos, loadRequests, locked, purgeRequests, saveMeta, showDates, sortMode, usage } = await import(new URL(`./data.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { decodeBase64, sanitizeImage } = await import(new URL(`./images.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { addExternalPhoto, addHostedPhoto, closeRequest, createAlbum, deleteAlbum, deletePhoto, hidePhoto, movePhoto, moveAlbum, setCover, setStatus, updateAlbum, updatePhoto } = await import(new URL(`./ops.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const { addExternalPhoto, addUploadedPhoto, closeRequest, createAlbum, deleteAlbum, deletePhoto, hidePhoto, movePhoto, moveAlbum, setCover, setStatus, updateAlbum, updatePhoto } = await import(new URL(`./ops.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const { HARD, clean, dayLabel, esc, httpsUrl, megabytes, plainText } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const { albumHref, imgSrc, pageHref, previewHref, studioHref } = await import(new URL(`./view.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
@@ -27,7 +26,7 @@ function fullUrl(ctx, path) {
 const SMALL = `<style>.ga-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.5rem,1fr));gap:.5rem;margin:0 0 1rem;padding:0;list-style:none}.ga-grid li{position:relative;aspect-ratio:1;overflow:hidden;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:8px}.ga-grid img{display:block;width:100%;height:100%;object-fit:cover}.ga-n{position:absolute;left:.25rem;top:.25rem;min-width:1.5rem;padding:0 .35rem;border-radius:999px;background:#000c;color:#fff;font-size:.8rem;text-align:center}.ga-flag{position:absolute;left:0;right:0;bottom:0;padding:.1rem .25rem;background:#000c;color:#fff;font-size:.7rem;text-align:center}.ga-hid img{opacity:.35}.ga-prev{display:block;max-width:100%;max-height:14rem;margin:0 0 1rem;border-radius:8px}</style>`;
 
 function thumbSrc(ctx, a, p) {
-  return imgSrc(ctx, p, "thumb", a.preview);
+  return imgSrc(ctx, p, "thumb");
 }
 
 function photoGrid(ctx, a, photos, offset) {
@@ -102,7 +101,7 @@ function starter(ctx) {
 function usageLine(ctx, albums) {
   const u = usage(albums);
   const l = limitsOf(ctx);
-  return ctx.t("usageLine", { used: megabytes(u.bytes, ctx.locale), max: megabytes(l.totalBytes, ctx.locale), albums: u.albums, maxAlbums: l.albums, photos: u.photos });
+  return ctx.t("usageLine", { albums: u.albums, maxAlbums: l.albums, photos: u.photos, maxPhotos: l.totalPhotos });
 }
 
 export async function adminPanel(ctx, { query } = {}) {
@@ -214,7 +213,7 @@ async function albumView(ctx, a, q, rights, blocks) {
   const asked = splitId(q.photo);
   const wanted = asked && asked.album === a.id ? photos.find((p) => p.id === asked.photo) : null;
   if (wanted && editor) {
-    blocks.push({ type: "html", html: `${SMALL}<img class="ga-prev" src="${imgSrc(ctx, wanted, "full", a.preview)}" alt="${esc(wanted.alt)}" referrerpolicy="no-referrer">` });
+    blocks.push({ type: "html", html: `${SMALL}<img class="ga-prev" src="${imgSrc(ctx, wanted, "full")}" alt="${esc(wanted.alt)}" referrerpolicy="no-referrer">` });
     blocks.push(photoForm(ctx, a, wanted));
     const rows = [{ label: ctx.t("actCover"), action: "makeCover" }, { label: ctx.t("actDeletePhoto"), action: "removePhoto", confirm: ctx.t("confirmDeletePhoto"), danger: true }];
     blocks.push(extraActions(ctx, wanted.caption || wanted.name || ctx.t("noCaption"), joinId(a.id, wanted.id), rows));
@@ -251,8 +250,7 @@ async function albumView(ctx, a, q, rights, blocks) {
     blocks.push({ type: "markdown", text: ctx.t(a.link ? "externalAlbumHelp" : "externalAlbumNoLink") });
     blocks.push({ type: "markdown", text: ctx.t("externalCoverHelp") });
   }
-  const spaceLeft = Math.max(0, limits.totalBytes - usage(await freshAlbums(ctx)).bytes);
-  blocks.push({ type: "markdown", text: ctx.t("albumRoom", { count: photos.length, max: limits.photos, left: megabytes(spaceLeft, ctx.locale) }) });
+  blocks.push({ type: "markdown", text: ctx.t("albumRoom", { count: photos.length, max: limits.photos }) });
 
   if (photos.length) {
     const missing = photos.filter((p) => !p.alt).length;
@@ -290,13 +288,13 @@ export async function adminBadge(ctx) {
 // ── Les actions ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
 const REASONS = {
-  not_found: "errNotFound", title: "errTitle", link_needed: "errLinkNeeded", full_albums: "errFullAlbums", full_photos: "errFullPhotos", full_space: "errFullSpace",
+  not_found: "errNotFound", title: "errTitle", link_needed: "errLinkNeeded", full_albums: "errFullAlbums", full_photos: "errFullPhotos", full_total: "errFullTotal", bad_upload: "errBadUpload", duplicate: "errDuplicate",
   bad_url: "errBadUrl", no_hosts: "errNoHosts", host_not_allowed: "errHostNotAllowed", cover_hidden: "errCoverHidden",
 };
 /** Une phrase pour un refus de `ops`. */
 export function reasonText(ctx, r) {
   const key = REASONS[r.error];
-  return ctx.t(key || "errGeneric", { max: r.max ?? "", mb: r.max ? megabytes(r.max, ctx.locale) : "", hosts: hostsOf(ctx).join(", ") });
+  return ctx.t(key || "errGeneric", { max: r.max ?? "", hosts: hostsOf(ctx).join(", ") });
 }
 
 async function chooseTemplate(ctx, values) {
@@ -432,7 +430,7 @@ async function addByUrl(ctx, values) {
   });
 }
 
-// ── L'envoi de photos (appelé par la page d'envoi, via la route fichier du cœur) ─────────────────────────────────────
+// ── L'envoi de photos (la page d'envoi envoie chaque fichier au cœur, puis appelle ces actions) ─────────────────────────────────────
 
 /** Les bornes et le titre de l'album, pour la page d'envoi. Réservé à l'équipe (le cœur vérifie le droit avant d'arriver ici). */
 async function studioInfo(ctx, values) {
@@ -440,7 +438,7 @@ async function studioInfo(ctx, values) {
   if (!a) return { error: ctx.t("errNotFound") };
   const limits = limitsOf(ctx);
   const photos = await loadPhotos(ctx, a);
-  const used = usage(await freshAlbums(ctx)).bytes;
+  const total = usage(await freshAlbums(ctx)).photos;
   const info = {
     title: a.title,
     count: photos.length,
@@ -449,39 +447,23 @@ async function studioInfo(ctx, values) {
     side: limits.side,
     thumbSide: limits.thumbSide,
     thumbBytes: limits.thumbBytes,
-    spaceLeft: Math.max(0, limits.totalBytes - used),
+    room: Math.max(0, Math.min(limits.photos - photos.length, limits.totalPhotos - total)),
     back: `${here(ctx)}?album=${a.id}`,
   };
   return { ok: JSON.stringify(info) };
 }
 
-const IMAGE_ERRORS = { type: "errImageType", corrupt: "errImageCorrupt", animated: "errImageAnimated", toolarge: "errImageSize", dimensions: "errImageDimensions" };
-
-/** Une photo (la grande et sa miniature, en texte base64) : vérifiée et nettoyée ICI, quoi qu'ait fait le navigateur. */
+/**
+ * Une photo déjà envoyée par la page d'envoi au mécanisme d'envoi du CŒUR (une grande, une miniature) : le module ne reçoit que leurs adresses `/uploads/…`.
+ * Il ne peut pas relire les fichiers (aucun accès aux fichiers pour un module) : il vérifie la forme des adresses et rogne les tailles annoncées.
+ * Le cœur a déjà vérifié le type par le contenu et la taille (5 Mo) ; le navigateur a ré-encodé les images (plus d'informations cachées) et les pages publiques
+ * n'affichent que la version propre fabriquée par le cœur.
+ */
 async function addPhoto(ctx, values) {
-  const limits = limitsOf(ctx);
   const a = await getAlbum(ctx, values.album);
   if (!a) return { error: ctx.t("errNotFound") };
-  // Le texte reçu est du base64 STRICT ; la taille est vérifiée avant de décoder (trop gros : jamais décodé).
-  const asBytes = (text, max) => {
-    const t = String(text ?? "").trim();
-    if (!t) return { error: "empty" };
-    if (t.length > Math.ceil((max * 4) / 3) + 8) return { error: "toolarge" };
-    const buf = decodeBase64(t, max * 2);
-    if (!buf) return { error: "type" };
-    return buf.length > max ? { error: "toolarge" } : { buf };
-  };
-  const big = asBytes(values.photo, limits.photoBytes);
-  const small = asBytes(values.thumb, limits.thumbBytes);
-  const fail = (reason) => { const message = ctx.t(IMAGE_ERRORS[reason] ?? "errImageCorrupt", { kb: Math.round(limits.photoBytes / 1000) }); return { error: message, errors: { photo: message } }; };
-  if (big.error) return fail(big.error === "empty" ? "corrupt" : big.error);
-  if (small.error) return fail(small.error === "empty" ? "corrupt" : small.error);
-  const full = sanitizeImage(big.buf, { maxBytes: limits.photoBytes, maxSide: limits.side });
-  if (!full.ok) return fail(full.reason);
-  const thumb = sanitizeImage(small.buf, { maxBytes: limits.thumbBytes, maxSide: HARD.thumbSide });
-  if (!thumb.ok) return fail(thumb.reason);
   return locked(ctx, async () => {
-    const r = await addHostedPhoto(ctx, a.id, { full, thumb, name: values.name, caption: values.caption, alt: values.alt, hidden: false });
+    const r = await addUploadedPhoto(ctx, a.id, { full: values.full, thumb: values.thumb, w: values.w, h: values.h, bytes: values.bytes, tbytes: values.tbytes, name: values.name, caption: values.caption, alt: values.alt, hidden: false });
     if (r.ok) return { ok: ctx.t("okPhotoAdded") };
     const message = reasonText(ctx, r);
     return { error: message, errors: { photo: message } };

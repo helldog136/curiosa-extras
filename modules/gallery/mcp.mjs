@@ -18,6 +18,7 @@ const WHY = {
   link_needed: "An album on another service needs the full https:// address of that album in 'link'.",
   full_albums: "The album limit is reached.",
   full_photos: "This album already holds its maximum number of photos.",
+  full_total: "The site already holds its maximum number of photos.",
   bad_url: "The address must be a full https:// address.",
   no_hosts: "No allowed host is set: the site owner must first list the allowed photo sites in the module settings (advanced mode).",
   host_not_allowed: "That address is not on an allowed host. The site owner must add the host in the module settings (advanced mode).",

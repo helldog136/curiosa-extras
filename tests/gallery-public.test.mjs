@@ -26,7 +26,7 @@ test("liste : seuls les albums publiés, avec couverture, date et nombre de phot
   assert.match(body(r), /14 mars 2025 · 3 photos/);
   assert.match(body(r), new RegExp(`href="/galeries/${a.album.slug}"`));
   assert.doesNotMatch(body(r), /Secret/);
-  assert.match(body(r), /<img src="\/m\/gal\d+\/img\?b=\w+" alt="" loading="lazy"/, "couverture décorative (le titre nomme l'album)");
+  assert.match(body(r), /<img src="\/uploads\/[0-9a-f-]{36}\.jpg\?c=o_1_0\.5_0\.5_ffffff" alt="" loading="lazy"/, "couverture décorative (le titre nomme l'album), version propre du cœur");
   assert.equal((await page(ctx, draft.album.slug)).notFound, true);
   assert.equal((await page(ctx, "n-existe-pas")).notFound, true);
   assert.equal((await page(ctx, a.album.slug, "inconnue")).notFound, true);
@@ -124,14 +124,15 @@ test("album avec un lien « toutes les photos ailleurs » : sentence de sortie d
   assert.match(b, /vous quittez ce site/);
 });
 
-test("aperçu d'un brouillon : seulement avec la bonne clé, bandeau visible, images servies avec la clé", async () => {
+test("aperçu d'un brouillon : seulement avec la bonne clé, bandeau visible", async () => {
   const ctx = ctxFor();
   const d = await makeAlbum(ctx, { title: "Brouillon", n: 2, status: "draft" });
   assert.equal((await page(ctx, "apercu", d.id, "mauvaise")).notFound, true);
   assert.equal((await page(ctx, "apercu", "inconnu", d.album.preview)).notFound, true);
   const r = await page(ctx, "apercu", d.id, d.album.preview);
   assert.match(body(r), /Aperçu : cet album n&#39;est pas encore publié/);
-  assert.match(body(r), new RegExp(`img\\?b=\\w+&amp;k=${d.album.preview}`));
+  assert.match(body(r), /<img src="\/uploads\/[0-9a-f-]{36}\.jpg\?c=/);
+  assert.doesNotMatch(body(r), new RegExp(d.album.preview), "la clé d'aperçu n'est écrite nulle part dans la page");
   const p = await page(ctx, "apercu", d.id, d.album.preview, d.photos[0]);
   assert.match(body(p), /Aperçu/);
   assert.equal((await page(ctx, "apercu", d.id)).notFound, true);
@@ -197,7 +198,7 @@ test("données structurées ImageGallery : éteintes d'office, échappées quand
   const doc = JSON.parse(m[1]);
   assert.equal(doc["@type"], "ImageGallery");
   assert.equal(doc.image.length, 2);
-  assert.match(doc.image[0].contentUrl, /^https?:\/\/.+\/m\/gal\d+\/img\?b=/);
+  assert.match(doc.image[0].contentUrl, /^https:\/\/example\.test\/uploads\/[0-9a-f-]{36}\.jpg\?c=/);
   const d = await makeAlbum(on, { title: "Brouillon", n: 1, status: "draft" });
   assert.doesNotMatch(html(await page(on, "apercu", d.id, d.album.preview)), /ld\+json/);
 });

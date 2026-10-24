@@ -6,9 +6,9 @@
 export const HARD = {
   albums: 500,        // albums par instance
   photos: 300,        // photos par album
-  photoBytes: 1_000_000, // octets d'une photo (après réduction)
-  thumbBytes: 120_000,   // octets d'une miniature
-  totalMB: 2000,      // espace total des photos envoyées
+  photoBytes: 4_000_000, // octets d'une photo (le cœur en accepte 5 Mo au plus)
+  thumbBytes: 150_000,   // octets d'une miniature
+  totalPhotos: 10_000, // photos envoyées sur toute l'instance
   side: 4096,         // plus grand côté d'une photo gardée (pixels)
   thumbSide: 640,     // plus grand côté d'une miniature
   pixels: 16_000_000, // pixels d'une photo
@@ -24,7 +24,7 @@ export const HARD = {
 };
 
 /** Valeurs par défaut des bornes réglables (sûres pour un petit site ; voir les réglages avancés). */
-export const DEFAULTS = { photoKB: 300, side: 1600, photos: 120, albums: 100, totalMB: 150, removalLimit: 3, retentionDays: 90 };
+export const DEFAULTS = { photoKB: 300, side: 1600, photos: 120, albums: 100, totalPhotos: 1500, removalLimit: 3, retentionDays: 90 };
 
 const ENTITIES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 /** Échappe un texte avant de le mettre dans du HTML (le bloc `html` du cœur est brut). */
@@ -73,6 +73,15 @@ export const safeSlug = (value) => String(value ?? "").toLowerCase().replace(/[^
 
 /** Identifiant d'une ligne du stockage ou d'une photo. */
 export const isId = (value) => typeof value === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(value);
+
+/** Une image envoyée par le cœur : `/uploads/<uuid>.jpg|png|webp` (et rien d'autre : ni GIF, ni SVG, ni adresse d'un autre site). Renvoie le chemin ou "". */
+export function uploadPath(value) {
+  const v = String(value ?? "").trim();
+  return /^\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(v) ? v : "";
+}
+
+/** La version « propre » d'une image envoyée : fabriquée et mise en cache par le cœur (moteur d'images), sans aucune information cachée (GPS compris), redressée. */
+export const cleanUpload = (path) => `${path}?c=o_1_0.5_0.5_ffffff`;
 
 /** JSON sûr dans une balise <script> : `<`, `>`, `&` et les séparateurs de ligne Unicode sont écrits en \uXXXX. */
 export const safeJson = (value) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);

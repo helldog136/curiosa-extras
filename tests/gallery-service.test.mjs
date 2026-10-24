@@ -32,7 +32,7 @@ test("list : seulement les albums publiés, avec id, titre, couverture complète
   assert.deepEqual(Object.keys(mine).sort(), ["count", "cover", "id", "title", "url"]);
   assert.equal(mine.count, 2, "les photos masquées ne comptent pas");
   assert.equal(mine.url, "https://example.test/galeries/soiree-de-printemps");
-  assert.match(mine.cover, /^https:\/\/example\.test\/m\/gal\d+\/img\?b=\w+$/);
+  assert.match(mine.cover, /^https:\/\/example\.test\/uploads\/[0-9a-f-]{36}\.jpg\?c=o_1_0\.5_0\.5_ffffff$/);
   const other = r.albums.find((x) => x.id === ext.id);
   assert.equal(other.count, 0, "une carte vers un autre service n'a pas de photos chez nous");
   assert.equal(other.url, "https://example.test/galeries/gros-album", "l'adresse est celle de la page du site, qui dit qu'on le quitte");

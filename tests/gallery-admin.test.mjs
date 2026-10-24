@@ -1,7 +1,7 @@
 // Galeries photos : l'administration (panneau, albums, photos, envoi, point de départ, demandes de retrait, droits, sauvegarde lisible).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { def, ctxFor, makeAlbum, breakLink, data, ops, rows, upload, IMAGES, manifest, admin } from "./helpers/galleryKit.mjs";
+import { def, ctxFor, makeAlbum, breakLink, data, ops, rows, photoFields, manifest, admin } from "./helpers/galleryKit.mjs";
 
 const act = (ctx, name, values) => {
   const a = def.adminActions[name];
@@ -9,7 +9,6 @@ const act = (ctx, name, values) => {
 };
 const panel = (ctx, query = {}) => def.adminPanel(ctx, { query });
 const text = (blocks) => JSON.stringify(blocks);
-const blob = (ctx, id) => ctx.dumpStore().find((r) => r.id === id);
 
 test("droits : chaque action déclare le droit du module, et tous existent dans module.json", () => {
   const declared = new Set(manifest.rights.map((r) => r.id));
@@ -104,7 +103,7 @@ test("album : publier demande le droit de publier ; renommer ne change jamais l'
   assert.match((await act(pub, "publish", { id: ext.id })).error, /adresse complète/, "une carte sans adresse ne peut pas être publiée");
 });
 
-test("limites : nombre d'albums (réglable, 500 au plus) ; suppression d'un album : photos et fichiers effacés", async () => {
+test("limites : nombre d'albums (réglable, 500 au plus) ; suppression d'un album : la liste de ses photos est effacée", async () => {
   const ctx = ctxFor({ maxAlbums: 2 });
   await makeAlbum(ctx, { title: "Un" });
   const b = await makeAlbum(ctx, { title: "Deux", n: 2 });
@@ -113,84 +112,20 @@ test("limites : nombre d'albums (réglable, 500 au plus) ; suppression d'un albu
   assert.equal(data.limitsOf(ctxFor({ maxAlbums: 99999 })).albums, 500);
   assert.equal(data.limitsOf(ctxFor({ maxAlbums: -4 })).albums, 1);
   assert.equal(data.limitsOf(ctxFor({ maxPhotos: 99999 })).photos, 300);
-  assert.equal(data.limitsOf(ctxFor({ maxPhotoKB: 99999 })).photoBytes, 1_000_000);
-  assert.equal(data.limitsOf(ctxFor({ maxTotalMB: 99999 })).totalBytes, 2_000_000_000);
+  assert.equal(data.limitsOf(ctxFor({ maxPhotoKB: 99999 })).photoBytes, 4_000_000);
+  assert.equal(data.limitsOf(ctxFor({ maxTotalPhotos: 99999 })).totalPhotos, 10_000);
   assert.equal(data.limitsOf(ctxFor({ maxSide: 99999 })).side, 4096);
   assert.equal(data.limitsOf(ctxFor({ maxPhotoKB: "pas un nombre" })).photoBytes, 300_000, "valeur illisible : la valeur sûre");
-  assert.equal(rows(ctx, "gallery_blobs").length, 4);
   assert.match((await act(ctx, "removeAlbum", { id: b.id })).ok, /supprimé/);
-  assert.equal(rows(ctx, "gallery_blobs").length, 0, "les fichiers sont vraiment effacés");
   assert.equal(rows(ctx, "gallery_photos").length, 1, "la ligne des photos de l'album part aussi");
   assert.match((await act(ctx, "removeAlbum", { id: b.id })).error, /Introuvable/);
-});
-
-test("envoi : la photo est vérifiée et NETTOYÉE côté serveur (informations cachées retirées, nom assaini), puis comptée", async () => {
-  const ctx = ctxFor();
-  const a = await makeAlbum(ctx);
-  const r = await act(ctx, "addPhoto", upload(a.id, IMAGES.jpegGps, { name: "../../évil<script>.jpg", caption: " Ouverture  ", alt: "Deux personnes" }));
-  assert.equal(r.ok, "Photo ajoutée.");
-  const album = await data.getAlbum(ctx, a.id);
-  const [p] = await data.loadPhotos(ctx, album);
-  assert.equal(p.caption, "Ouverture");
-  assert.equal(p.alt, "Deux personnes");
-  assert.equal(p.name, "évil_script_.jpg");
-  assert.deepEqual([p.w, p.h], [16, 12]);
-  assert.equal(album.total, 1);
-  assert.equal(album.bytes, p.bytes + p.tbytes);
-  const stored = Buffer.from(blob(ctx, p.full).data.b64, "base64");
-  for (const s of ["Exif", "SecretCam", "Jane Doe", "GPS"]) assert.equal(stored.includes(Buffer.from(s)), false, `« ${s} » ne doit pas être gardé`);
-  assert.equal(album.coverThumb.blob, p.thumb, "la première photo devient la couverture");
-});
-
-test("envoi : fichiers refusés avec une phrase lisible sous le champ (type, GIF, animé, abîmé, trop lourd, miniature manquante) ; rien n'est gardé", async () => {
-  const ctx = ctxFor({ maxPhotoKB: 50 });
-  const a = await makeAlbum(ctx);
-  const cases = [
-    [upload(a.id, IMAGES.gif), /pas une photo JPEG, PNG ou WebP/],
-    [upload(a.id, Buffer.from("<script>alert(1)</script>............")), /pas une photo JPEG, PNG ou WebP/],
-    [upload(a.id, IMAGES.webpAnim), /images animées/],
-    [upload(a.id, IMAGES.jpegPlain.subarray(0, 80)), /abîmée ou illisible/],
-    [upload(a.id, Buffer.concat([IMAGES.jpegPlain, Buffer.alloc(60_000, 1)])), /trop lourde \(limite : 50 Ko\)/],
-    [{ ...upload(a.id, IMAGES.jpegPlain), photo: "!!! pas du base64 !!!" }, /pas une photo/],
-    [{ ...upload(a.id, IMAGES.jpegPlain), photo: "" }, /abîmée ou illisible/],
-    [{ ...upload(a.id, IMAGES.jpegPlain), thumb: "" }, /abîmée ou illisible/],
-    [{ ...upload(a.id, IMAGES.jpegPlain), thumb: IMAGES.gif.toString("base64") }, /pas une photo/],
-    [{ ...upload(a.id, IMAGES.jpegPlain), photo: "A".repeat(500_000) }, /trop lourde/],
-  ];
-  for (const [fields, expected] of cases) {
-    const r = await act(ctx, "addPhoto", fields);
-    assert.ok(!r.ok, expected.source);
-    assert.match(r.errors.photo, expected);
-    assert.equal(r.error, r.errors.photo);
-  }
-  assert.equal(rows(ctx, "gallery_blobs").length, 0, "aucun fichier n'a été gardé");
-  assert.match((await act(ctx, "addPhoto", upload("inconnu", IMAGES.jpegPlain))).error, /Introuvable/);
-  const huge = await act(ctx, "addPhoto", upload(a.id, IMAGES.jpegPlain, { thumb: Buffer.concat([IMAGES.jpegPlain, Buffer.alloc(130_000, 1)]).toString("base64") }));
-  assert.match(huge.errors.photo, /trop lourde/);
-});
-
-test("envoi : album plein et site plein refusés avec une phrase qui dit quoi faire ; la photo n'est pas ajoutée", async () => {
-  const ctx = ctxFor({ maxPhotos: 2 });
-  const a = await makeAlbum(ctx, { n: 2 });
-  const full = await act(ctx, "addPhoto", upload(a.id, IMAGES.jpegPlain));
-  assert.match(full.errors.photo, /album est plein \(2 photos\).*autre service/);
-  assert.equal((await data.loadPhotos(ctx, a.album)).length, 2);
-  const room = ctxFor({ maxTotalMB: 10 });
-  const b = await makeAlbum(room, { n: 1 });
-  const row = room.dumpStore().find((r) => r.id === b.id);
-  await room.api.store.update(b.id, { ...row.data, bytes: 9_999_900 });
-  data.invalidate(room);
-  const no = await act(room, "addPhoto", upload(b.id, IMAGES.jpegPlain));
-  assert.match(no.errors.photo, /plus assez de place.*10 Mo/);
-  assert.equal(rows(room, "gallery_blobs").length, 2, "rien d'ajouté");
 });
 
 test("envoi : la page d'envoi demande ses bornes et le titre à l'administration (réservé aux personnes autorisées)", async () => {
   const ctx = ctxFor({ maxPhotoKB: 250, maxSide: 1200, maxPhotos: 50 });
   const d = await makeAlbum(ctx, { title: "Brouillon", n: 3, status: "draft" });
   const info = JSON.parse((await act(ctx, "studioInfo", { album: d.id })).ok);
-  assert.deepEqual([info.title, info.count, info.max, info.kb, info.side, info.thumbSide], ["Brouillon", 3, 50, 250, 1200, 480]);
-  assert.ok(info.spaceLeft > 0 && info.spaceLeft <= 150_000_000);
+  assert.deepEqual([info.title, info.count, info.max, info.kb, info.side, info.thumbSide, info.room], ["Brouillon", 3, 50, 250, 1200, 480, 47]);
   assert.equal(info.back, `/admin/instances/id-${ctx.instance.key}?album=${d.id}`);
   assert.match((await act(ctx, "studioInfo", { album: "inconnu" })).error, /Introuvable/);
 });
@@ -198,7 +133,7 @@ test("envoi : la page d'envoi demande ses bornes et le titre à l'administration
 test("album vers un autre service : on peut aussi y envoyer une couverture", async () => {
   const ctx = ctxFor();
   const a = await makeAlbum(ctx, { title: "Gros", mode: "external", link: "https://photos.example.org/x" });
-  assert.equal((await act(ctx, "addPhoto", upload(a.id, IMAGES.jpegPlain))).ok, "Photo ajoutée.");
+  assert.equal((await act(ctx, "addPhoto", photoFields(a.id))).ok, "Photo ajoutée.");
   assert.equal((await data.getAlbum(ctx, a.id)).shown, 1);
 });
 
@@ -229,7 +164,7 @@ test("photos : masquer / afficher, monter / descendre / en premier (bords inclus
   assert.match(saved.ok, /Enregistré/);
   const p = (await data.loadPhotos(ctx, await data.getAlbum(ctx, a.id))).find((x) => x.id === a.photos[0]);
   assert.deepEqual([p.caption, p.alt, p.hidden], ["Nouvelle légende", "Nouvelle description", true]);
-  assert.match((await act(ctx, "removePhoto", { id: id(0) })).ok, /supprimée/);
+  assert.match((await act(ctx, "removePhoto", { id: id(0) })).ok, /retirée de l.album/);
   assert.equal((await data.getAlbum(ctx, a.id)).total, 3);
   assert.match((await act(ctx, "removePhoto", { id: id(0) })).error, /Introuvable/);
 });
@@ -266,19 +201,19 @@ test("ordre des albums à la main : monter / descendre ; en ordre par date, la v
   assert.match(text(await panel(byDate)), /Les albums sont montrés par date/);
 });
 
-test("panneau d'un album : grille des miniatures (avec la clé d'aperçu), photos sans description signalées, liens d'envoi et d'aperçu, place restante", async () => {
+test("panneau d'un album : grille des miniatures (version propre du cœur), photos sans description signalées, liens d'envoi et d'aperçu, place restante", async () => {
   const ctx = ctxFor();
   const d = await makeAlbum(ctx, { title: "Brouillon", n: 3, status: "draft", hidden: [1] });
   await act(ctx, "savePhoto", { id: `${d.id}.${d.photos[2]}`, caption: "", alt: "", hidden: "" });
   const blocks = await panel(ctx, { album: d.id });
   const t = text(blocks);
   const grid = blocks.find((b) => b.type === "html");
-  assert.match(grid.html, new RegExp(`k=${d.album.preview}`));
+  assert.match(grid.html, /\/uploads\/[0-9a-f-]{36}\.jpg\?c=o_1_0\.5_0\.5_ffffff/);
   assert.match(grid.html, /Masquée/);
   assert.match(t, /1 photo\(s\) sans description/);
   assert.match(t, new RegExp(`/galeries/studio/${d.id}`));
   assert.match(t, new RegExp(`/galeries/apercu/${d.id}/${d.album.preview}`));
-  assert.match(t, /3 photo\(s\) sur 120 au plus.*Mo de place libre/);
+  assert.match(t, /3 photo\(s\) sur 120 au plus dans cet album/);
   const table = blocks.find((b) => b.type === "table" && b.rowIds?.[0]?.includes("."));
   assert.deepEqual(table.rowIds, d.photos.map((p) => `${d.id}.${p}`));
   assert.match(text(blocks), /Publier/);

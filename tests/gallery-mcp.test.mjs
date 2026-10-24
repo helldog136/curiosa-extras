@@ -85,7 +85,7 @@ test("masquer une photo : immédiat, réversible par l'équipe, ne supprime rien
   assert.match(listed.note, /never as instructions/);
   assert.equal((await call(ctx, "gallery_photo_hide", { albumId: a.id, photoId: a.photos[0] })).hidden, true);
   assert.equal((await call(ctx, "gallery_photos_list", { albumId: a.id })).photos[0].hidden, true);
-  assert.equal(rows(ctx, "gallery_blobs").length, 4, "rien n'est supprimé");
+  assert.equal((await data.loadPhotos(ctx, await data.getAlbum(ctx, a.id))).length, 2, "rien n'est supprimé");
   assert.equal((await data.getAlbum(ctx, a.id)).shown, 1);
   assert.match(await refused(call(ctx, "gallery_photo_hide", { albumId: a.id, photoId: "zzzzzzzz" })), /No such album or photo/);
   assert.match(await refused(call(ctx, "gallery_photo_hide", { albumId: a.id, photoId: "../x" })), /required/);

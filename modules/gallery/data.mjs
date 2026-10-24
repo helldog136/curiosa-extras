@@ -4,13 +4,13 @@
 //   gallery_albums   { title, slug, desc, date, status: "published" | "draft", mode: "hosted" | "external", link, cover, pos, pid, bytes, total, shown, coverThumb, preview }
 //                    (une ligne légère par album : la liste des albums ne lit jamais les photos)
 //   gallery_photos   { album, items: [ { id, caption, alt, hidden, full, thumb, url, turl, w, h, bytes, tbytes, name, at } ] }   (une ligne par album : l'ordre des photos = l'ordre du tableau)
-//   gallery_blobs    { album, photo, kind: "f" | "t", mime, b64, live }   (les images envoyées, une ligne par image ; jamais lues en même temps que les albums)
+//                    `full` et `thumb` : adresses `/uploads/…` des images envoyées par le mécanisme d'envoi du CŒUR (le module ne garde AUCUN octet d'image) ; `url` et `turl` : photos chez un autre site
 //   gallery_requests { album, photo, label, message, contact?, at, status: "new" | "done" | "dismissed", handledAt? }
 //   gallery_meta     { template }   (le gabarit choisi)
 
-const { DEFAULTS, HARD, clean, isId, isoDay, num, parseHosts, safeName, httpsUrl, safeSlug } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const { DEFAULTS, HARD, clean, isId, isoDay, num, parseHosts, safeName, httpsUrl, safeSlug, uploadPath } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
-export const C = { albums: "gallery_albums", photos: "gallery_photos", blobs: "gallery_blobs", requests: "gallery_requests", meta: "gallery_meta" };
+export const C = { albums: "gallery_albums", photos: "gallery_photos", requests: "gallery_requests", meta: "gallery_meta" };
 export const HOUR = 3_600_000;
 export const DAY = 24 * HOUR;
 
@@ -27,7 +27,7 @@ export function limitsOf(ctx) {
     side: num(ctx.setting("maxSide"), DEFAULTS.side, 600, HARD.side),
     photos: num(ctx.setting("maxPhotos"), DEFAULTS.photos, 1, HARD.photos),
     albums: num(ctx.setting("maxAlbums"), DEFAULTS.albums, 1, HARD.albums),
-    totalBytes: num(ctx.setting("maxTotalMB"), DEFAULTS.totalMB, 10, HARD.totalMB) * 1_000_000,
+    totalPhotos: num(ctx.setting("maxTotalPhotos"), DEFAULTS.totalPhotos, 10, HARD.totalPhotos),
     thumbBytes: HARD.thumbBytes,
     thumbSide: 480,
   };
@@ -95,7 +95,7 @@ function album(r) {
     bytes: Math.max(0, Math.trunc(Number(d.bytes)) || 0),
     total: Math.max(0, Math.trunc(Number(d.total)) || 0),
     shown: Math.max(0, Math.trunc(Number(d.shown)) || 0),
-    coverThumb: { blob: isId(thumb.blob) ? thumb.blob : "", url: httpsUrl(thumb.url) ?? "", alt: clean(thumb.alt, HARD.alt) },
+    coverThumb: { src: uploadPath(thumb.src), url: httpsUrl(thumb.url) ?? "", alt: clean(thumb.alt, HARD.alt) },
     preview: /^[a-z0-9]{8,32}$/.test(String(d.preview ?? "")) ? d.preview : "",
   };
 }
@@ -109,8 +109,8 @@ function photo(p) {
     caption: clean(p.caption, HARD.caption),
     alt: clean(p.alt, HARD.alt),
     hidden: p.hidden === true,
-    full: isId(p.full) ? p.full : "",
-    thumb: isId(p.thumb) ? p.thumb : "",
+    full: uploadPath(p.full),
+    thumb: uploadPath(p.thumb),
     url: httpsUrl(p.url) ?? "",
     turl: httpsUrl(p.turl) ?? "",
     w: num(p.w, 0, 0, HARD.side),
@@ -164,7 +164,6 @@ export async function getRow(ctx, id, expect) {
   const d = row.data;
   if (expect === "album" && !("slug" in d && "pid" in d)) return null;
   if (expect === "photos" && !("items" in d && "album" in d)) return null;
-  if (expect === "blob" && !("b64" in d)) return null;
   if (expect === "request" && !("message" in d && "status" in d)) return null;
   return row;
 }
@@ -214,7 +213,7 @@ export async function photoRefs(ctx, albumId, photoId) {
   return { album: a.id, photo: items[at].id, label: `${a.title} #${at + 1}`.slice(0, HARD.label) };
 }
 
-/** Espace utilisé par toutes les photos envoyées (octets) et nombre d'albums. */
+/** Octets annoncés par le navigateur (à titre indicatif : le module ne peut pas mesurer les fichiers du cœur), nombre d'albums et de photos. */
 export function usage(albums) {
   return { bytes: albums.reduce((t, a) => t + a.bytes, 0), albums: albums.length, photos: albums.reduce((t, a) => t + a.total, 0) };
 }
@@ -237,7 +236,7 @@ export function locked(ctx, fn) {
 export async function refreshAlbum(ctx, a, items) {
   const visible = items.filter((p) => !p.hidden && hasImage(p));
   const chosen = items.find((p) => p.id === a.cover && !p.hidden && hasImage(p)) ?? visible[0] ?? null;
-  const coverThumb = chosen ? { blob: chosen.thumb || chosen.full || "", url: chosen.thumb || chosen.full ? "" : chosen.turl || chosen.url, alt: chosen.alt || chosen.caption } : { blob: "", url: "", alt: "" };
+  const coverThumb = chosen ? { src: chosen.thumb || chosen.full || "", url: chosen.thumb || chosen.full ? "" : chosen.turl || chosen.url, alt: chosen.alt || chosen.caption } : { src: "", url: "", alt: "" };
   const bytes = items.reduce((t, p) => t + p.bytes + p.tbytes, 0);
   invalidate(ctx);
   const row = await getRow(ctx, a.id, "album");

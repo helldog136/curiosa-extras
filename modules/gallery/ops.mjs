@@ -5,7 +5,7 @@
 // seul un humain rend un album ou une photo visible.
 
 const { C, getRow, getAlbum, freshAlbums, invalidate, loadPhotos, writePhotos, refreshAlbum, newPhotoId, uniqueSlug, renumber, limitsOf, hostsOf, usage, hasImage } = await import(new URL(`./data.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { HARD, clean, hostAllowed, httpsUrl, isoDay, randomId, safeName, slugify } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const { HARD, clean, hostAllowed, httpsUrl, isoDay, num, randomId, safeName, slugify, uploadPath } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
 const ok = (extra = {}) => ({ ok: true, ...extra });
 const no = (error, extra = {}) => ({ ok: false, error, ...extra });
@@ -42,7 +42,7 @@ export async function createAlbum(ctx, input, { by = "admin" } = {}) {
     bytes: 0,
     total: 0,
     shown: 0,
-    coverThumb: { blob: "", url: "", alt: "" },
+    coverThumb: { src: "", url: "", alt: "" },
     preview: randomId(16),
     by,
   });
@@ -70,11 +70,10 @@ export async function setStatus(ctx, id, status) {
   return ok();
 }
 
-/** Supprime un album, ses photos et leurs images (la place est rendue). Les demandes de retrait gardent leur libellé. */
+/** Supprime un album et la liste de ses photos (les fichiers du cœur restent sur le disque). Les demandes de retrait gardent leur libellé. */
 export async function deleteAlbum(ctx, id) {
   const a = await getAlbum(ctx, id);
   if (!a) return no("not_found");
-  for (const p of await loadPhotos(ctx, a)) await removeBlobs(ctx, p);
   if (a.pid) await ctx.api.store.remove(a.pid);
   await ctx.api.store.remove(id);
   await renumber(ctx, (await freshAlbums(ctx, "manual")).filter((x) => x.id !== id));
@@ -94,35 +93,22 @@ export async function moveAlbum(ctx, id, step) {
 
 // ── Photos ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-async function removeBlobs(ctx, p) {
-  for (const b of [p.full, p.thumb]) if (b) await ctx.api.store.remove(b);
-}
-
-async function setLive(ctx, p, live) {
-  for (const b of [p.full, p.thumb]) {
-    if (!b) continue;
-    const row = await getRow(ctx, b, "blob");
-    if (row && row.data.live !== live) await ctx.api.store.update(b, { ...row.data, live });
-  }
-}
-
 const textOf = (input) => ({ caption: clean(input?.caption, HARD.caption), alt: clean(input?.alt, HARD.alt) });
 
-/** Ajoute une photo déjà vérifiée et nettoyée par `sanitizeImage` (la grande et sa miniature). */
-export async function addHostedPhoto(ctx, albumId, { full, thumb, name = "", caption = "", alt = "", hidden = false }) {
+/** Ajoute une photo déjà envoyée par le mécanisme d'envoi du cœur : le module ne garde que les adresses `/uploads/…` (la grande et sa miniature). */
+export async function addUploadedPhoto(ctx, albumId, { full, thumb, w = 0, h = 0, bytes = 0, tbytes = 0, name = "", caption = "", alt = "", hidden = false }) {
   const a = await getAlbum(ctx, albumId);
   if (!a) return no("not_found");
+  const big = uploadPath(full);
+  const small = uploadPath(thumb);
+  if (!big || !small) return no("bad_upload");
   const limits = limitsOf(ctx);
   const items = await loadPhotos(ctx, a);
   if (items.length >= limits.photos) return no("full_photos", { max: limits.photos });
-  const used = usage(await freshAlbums(ctx)).bytes;
-  const size = full.bytes.length + thumb.bytes.length;
-  if (used + size > limits.totalBytes) return no("full_space", { max: limits.totalBytes });
+  if (usage(await freshAlbums(ctx)).photos >= limits.totalPhotos) return no("full_total", { max: limits.totalPhotos });
+  if (items.some((p) => p.full === big)) return no("duplicate");
   const id = newPhotoId(items, () => randomId(10));
-  const fullId = await ctx.api.store.add(C.blobs, { album: a.id, photo: id, kind: "f", mime: full.mime, b64: full.bytes.toString("base64"), live: !hidden });
-  const thumbId = await ctx.api.store.add(C.blobs, { album: a.id, photo: id, kind: "t", mime: thumb.mime, b64: thumb.bytes.toString("base64"), live: !hidden });
-  const entry = { id, ...textOf({ caption, alt }), hidden: !!hidden, full: fullId, thumb: thumbId, url: "", turl: "", w: full.width, h: full.height, bytes: full.bytes.length, tbytes: thumb.bytes.length, name: safeName(name), at: Date.now() };
-  items.push(entry);
+  items.push({ id, ...textOf({ caption, alt }), hidden: !!hidden, full: big, thumb: small, url: "", turl: "", w: num(w, 0, 0, HARD.side), h: num(h, 0, 0, HARD.side), bytes: num(bytes, 0, 0, HARD.photoBytes), tbytes: num(tbytes, 0, 0, HARD.thumbBytes), name: safeName(name), at: Date.now() });
   await writePhotos(ctx, a, items);
   await refreshAlbum(ctx, a, items);
   return ok({ id });
@@ -145,6 +131,7 @@ export async function addExternalPhoto(ctx, albumId, { url, thumbUrl = "", capti
   }
   const items = await loadPhotos(ctx, a);
   if (items.length >= limitsOf(ctx).photos) return no("full_photos", { max: limitsOf(ctx).photos });
+  if (usage(await freshAlbums(ctx)).photos >= limitsOf(ctx).totalPhotos) return no("full_total", { max: limitsOf(ctx).totalPhotos });
   const id = newPhotoId(items, () => randomId(10));
   items.push({ id, ...textOf({ caption, alt }), hidden: !!hidden, full: "", thumb: "", url: full, turl: small, w: 0, h: 0, bytes: 0, tbytes: 0, name: "", at: Date.now() });
   await writePhotos(ctx, a, items);
@@ -160,7 +147,6 @@ export async function updatePhoto(ctx, albumId, photoId, input) {
   if (!p) return no("not_found");
   const text = textOf(input);
   const hidden = input?.hidden === true || input?.hidden === "on";
-  if (hidden !== p.hidden) await setLive(ctx, p, !hidden);
   Object.assign(p, text, { hidden });
   await writePhotos(ctx, a, items);
   await refreshAlbum(ctx, a, items);
@@ -175,7 +161,6 @@ export async function hidePhoto(ctx, albumId, photoId, hide = true) {
   const p = items.find((x) => x.id === photoId);
   if (!p) return no("not_found");
   if (p.hidden !== hide) {
-    await setLive(ctx, p, !hide);
     p.hidden = hide;
     await writePhotos(ctx, a, items);
     await refreshAlbum(ctx, a, items);
@@ -189,8 +174,7 @@ export async function deletePhoto(ctx, albumId, photoId) {
   const items = await loadPhotos(ctx, a);
   const at = items.findIndex((x) => x.id === photoId);
   if (at < 0) return no("not_found");
-  const [gone] = items.splice(at, 1);
-  await removeBlobs(ctx, gone);
+  items.splice(at, 1); // les fichiers du cœur restent sur le disque : un module ne peut pas les effacer
   await writePhotos(ctx, a, items);
   await refreshAlbum(ctx, a, items);
   return ok();

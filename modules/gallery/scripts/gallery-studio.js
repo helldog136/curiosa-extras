@@ -1,8 +1,8 @@
 /* Galeries photos : l'outil d'envoi de photos de l'équipe (page /…/studio/<album>).
  * On choisit des fichiers (plusieurs d'un coup, jamais de glisser-déposer obligatoire) ; chaque photo est RÉDUITE ET RÉ-ENCODÉE dans le navigateur
- * (le ré-encodage supprime d'office les informations cachées du fichier : position GPS, appareil, date…), avec sa miniature, puis envoyée une par une
- * avec une barre de progression et les erreurs écrites SOUS chaque fichier. Le serveur revérifie tout (type par le contenu, taille, nettoyage).
- * Les envois passent par la route du cœur réservée à l'équipe connectée ; sans connexion, rien n'est accepté.
+ * (le ré-encodage supprime d'office les informations cachées du fichier : position GPS, appareil, date…), avec sa miniature, puis envoyée UNE PAR UNE
+ * au mécanisme d'envoi d'images du CŒUR (/api/admin/upload : connexion exigée, type vérifié par le contenu, 5 Mo au plus) avec une barre de progression
+ * et les erreurs écrites SOUS chaque fichier. Le module ne reçoit ensuite que les adresses /uploads/… (action « addPhoto »).
  * Aucun texte en dur (tout vient d'un attribut de la page), aucun innerHTML, aucun appel à un autre site. */
 (function () {
   "use strict";
@@ -31,17 +31,15 @@
   var summary = one("[data-studio-summary]");
   var backLink = one("[data-studio-back]");
 
-  // ── Appel d'une action de l'équipe (route du cœur) ─────────────────────────────────
-  function call(action, fields, files, onProgress) {
+  // ── Appel d'une action de l'équipe (route du cœur ; des champs texte seulement) ─────────────────────────────────
+  function call(action, fields) {
     return new Promise(function (resolve) {
       var fd = new w.FormData();
       Object.keys(fields || {}).forEach(function (k) { fd.append(k, fields[k]); });
-      Object.keys(files || {}).forEach(function (k) { fd.append(k, files[k], "photo.txt"); });
       var xhr = new w.XMLHttpRequest();
       xhr.open("POST", cfg.endpoint + encodeURIComponent(cfg.instance) + "/action/" + encodeURIComponent(action));
       xhr.setRequestHeader("accept", "application/json");
       xhr.timeout = 120000;
-      if (xhr.upload && onProgress) xhr.upload.onprogress = function (e) { if (e.lengthComputable) onProgress(e.loaded / e.total); };
       xhr.onload = function () {
         var json = null;
         try { json = JSON.parse(xhr.responseText); } catch (e) { json = null; }
@@ -124,13 +122,31 @@
     }
     return attempt(width, height, 0);
   }
-  function toBase64Blob(blob) {
-    return new Promise(function (resolve, reject) {
-      var r = new w.FileReader();
-      r.onload = function () { var s = String(r.result); resolve(new w.Blob([s.slice(s.indexOf(",") + 1)], { type: "text/plain" })); };
-      r.onerror = function () { reject(new Error("read")); };
-      r.readAsDataURL(blob);
+  /** Envoie une image au mécanisme d'envoi du cœur ; renvoie { status, json } (json.url = adresse /uploads/…). */
+  function uploadFile(blob, name, onProgress) {
+    return new Promise(function (resolve) {
+      var fd = new w.FormData();
+      fd.append("file", blob, name);
+      var xhr = new w.XMLHttpRequest();
+      xhr.open("POST", cfg.upload || "/api/admin/upload");
+      xhr.setRequestHeader("accept", "application/json");
+      xhr.timeout = 120000;
+      if (xhr.upload && onProgress) xhr.upload.onprogress = function (e) { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+      xhr.onload = function () {
+        var json = null;
+        try { json = JSON.parse(xhr.responseText); } catch (e) { json = null; }
+        resolve({ status: xhr.status, json: json });
+      };
+      xhr.onerror = xhr.ontimeout = function () { resolve({ status: 0, json: null }); };
+      xhr.send(fd);
     });
+  }
+  function uploadMessage(res) {
+    if (!res || res.status === 0) return T.studioErrNetwork;
+    if (res.status === 401) return T.studioLogin;
+    if (res.status === 403) return T.studioErrDenied;
+    if (res.status === 400) return (res.json && res.json.error === "format") ? T.studioErrType : fill(T.studioErrSize, { kb: info ? info.kb : 300 });
+    return T.studioErrOther;
   }
 
   // ── Les lignes ─────────────────────────────────────────────────────────────────────
@@ -213,21 +229,41 @@
     row.bar.hidden = false; row.bar.removeAttribute("value");
     text(row.status, T.studioPreparing);
     var maxBytes = (info.kb || 300) * 1000;
-    return shrink(row.img, info.side || 1600, maxBytes).then(function (big) {
-      if (!big) throw new Error("size");
-      return shrink(row.img, info.thumbSide || 480, info.thumbBytes || 120000).then(function (small) {
-        if (!small) throw new Error("size");
-        return Promise.all([toBase64Blob(big.blob), toBase64Blob(small.blob)]);
-      });
-    }).then(function (blobs) {
+    var big = null;
+    var small = null;
+    var sizes = [1, 1];
+    var done = [0, 0];
+    function progress() {
+      var total = sizes[0] + sizes[1];
+      var f = (done[0] + done[1]) / total;
+      row.bar.value = Math.round(f * 100);
+    }
+    return shrink(row.img, info.side || 1600, maxBytes).then(function (b1) {
+      if (!b1) throw new Error("size");
+      big = b1;
+      return shrink(row.img, info.thumbSide || 480, info.thumbBytes || 120000);
+    }).then(function (b2) {
+      if (!b2) throw new Error("size");
+      small = b2;
+      sizes = [big.blob.size, small.blob.size];
       row.bar.value = 0; row.bar.max = 100;
       text(row.status, T.studioSending);
-      return call("addPhoto", { album: cfg.album, caption: row.caption.value, alt: row.alt.value, name: row.file.name || "" }, { photo: blobs[0], thumb: blobs[1] }, function (f) {
-        row.bar.value = Math.round(f * 100);
-        if (f >= 1) { row.bar.removeAttribute("value"); text(row.status, T.studioSaving); }
+      return uploadFile(big.blob, "photo.jpg", function (l) { done[0] = l; progress(); });
+    }).then(function (r1) {
+      if (r1.status !== 200 || !r1.json || !r1.json.url) return { stop: uploadMessage(r1) };
+      done[0] = sizes[0];
+      return uploadFile(small.blob, "miniature.jpg", function (l) { done[1] = l; progress(); }).then(function (r2) {
+        if (r2.status !== 200 || !r2.json || !r2.json.url) return { stop: uploadMessage(r2) };
+        row.bar.removeAttribute("value");
+        text(row.status, T.studioSaving);
+        return call("addPhoto", { album: cfg.album, full: r1.json.url, thumb: r2.json.url, w: String(big.width), h: String(big.height), bytes: String(big.blob.size), tbytes: String(small.blob.size), caption: row.caption.value, alt: row.alt.value, name: row.file.name || "" });
       });
     }).then(function (res) {
-      if (res.status === 200 && res.json && res.json.ok) {
+      if (res.stop) {
+        row.fields.querySelectorAll("input").forEach(function (i) { i.disabled = false; });
+        row.removeBtn.hidden = false;
+        fail(row, res.stop);
+      } else if (res.status === 200 && res.json && res.json.ok) {
         row.state = "done";
         row.bar.hidden = true;
         row.fields.hidden = true;

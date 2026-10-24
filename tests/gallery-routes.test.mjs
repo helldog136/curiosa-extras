@@ -1,83 +1,12 @@
 // Galeries photos : les routes publiques (service des images, demande de retrait) : confidentialité, protections, redirections, services facultatifs.
 import test, { mock } from "node:test";
 import assert from "node:assert/strict";
-import { def, ctxFor, makeAlbum, data, ops, rows, post, get, json, IMAGES, images } from "./helpers/galleryKit.mjs";
+import { def, ctxFor, makeAlbum, data, rows, post, get, json } from "./helpers/galleryKit.mjs";
 
-const img = (ctx, query, headers = {}, method = "GET") => def.routes.img(new Request(`https://example.org/m/x/img${query}`, { method, headers }), ctx);
-const blobOf = (ctx, photoId, kind = "full") => ctx.dumpStore().find((r) => r.collection === "gallery_blobs" && r.data.photo === photoId && r.data.kind === (kind === "full" ? "f" : "t"));
 const remove = (ctx, fields, opts) => def.routes.removal(post("removal", fields, opts), ctx);
 
-// ── Images ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-test("image : un album publié sert ses photos visibles, avec des en-têtes prudents et un cache court", async () => {
-  const ctx = ctxFor();
-  const a = await makeAlbum(ctx, { n: 1 });
-  const blob = blobOf(ctx, a.photos[0]);
-  const res = await img(ctx, `?b=${blob.id}`);
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get("content-type"), "image/jpeg");
-  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
-  assert.match(res.headers.get("content-security-policy"), /sandbox/);
-  assert.equal(res.headers.get("cache-control"), "public, max-age=600");
-  assert.ok(Buffer.from(await res.arrayBuffer()).equals(images.sanitizeImage(IMAGES.jpegPlain).bytes));
-  const again = await img(ctx, `?b=${blob.id}`, { "if-none-match": res.headers.get("etag") });
-  assert.equal(again.status, 304);
-  const head = await img(ctx, `?b=${blob.id}`, {}, "HEAD");
-  assert.equal(head.status, 200);
-  assert.equal((await head.arrayBuffer()).byteLength, 0);
-});
-
-test("image : un brouillon ne se sert pas, sauf avec sa clé d'aperçu (alors jamais mise en cache)", async () => {
-  const ctx = ctxFor();
-  const d = await makeAlbum(ctx, { n: 1, status: "draft" });
-  const blob = blobOf(ctx, d.photos[0]);
-  assert.equal((await img(ctx, `?b=${blob.id}`)).status, 404);
-  assert.equal((await img(ctx, `?b=${blob.id}&k=mauvaisecle`)).status, 404);
-  assert.equal((await img(ctx, `?b=${blob.id}&k=`)).status, 404);
-  const ok = await img(ctx, `?b=${blob.id}&k=${d.album.preview}`);
-  assert.equal(ok.status, 200);
-  assert.equal(ok.headers.get("cache-control"), "private, no-store");
-  await ops.setStatus(ctx, d.id, "published");
-  assert.equal((await img(ctx, `?b=${blob.id}`)).status, 200, "publié : tout le monde la voit");
-  await ops.setStatus(ctx, d.id, "draft");
-  assert.equal((await img(ctx, `?b=${blob.id}`)).status, 404, "retiré du site : elle ne se sert plus");
-});
-
-test("image : masquer une photo la retire AU MÊME INSTANT (grande et miniature) ; l'afficher la rend ; la supprimer efface ses fichiers", async () => {
-  const ctx = ctxFor();
-  const a = await makeAlbum(ctx, { n: 2 });
-  const full = blobOf(ctx, a.photos[0]);
-  const thumb = blobOf(ctx, a.photos[0], "thumb");
-  assert.equal((await img(ctx, `?b=${full.id}`)).status, 200);
-  await ops.hidePhoto(ctx, a.id, a.photos[0], true);
-  assert.equal((await img(ctx, `?b=${full.id}`)).status, 404);
-  assert.equal((await img(ctx, `?b=${thumb.id}`)).status, 404);
-  assert.equal((await img(ctx, `?b=${blobOf(ctx, a.photos[1]).id}`)).status, 200, "les autres photos ne bougent pas");
-  assert.equal((await img(ctx, `?b=${full.id}&k=${a.album.preview}`)).status, 200, "l'équipe la voit toujours avec la clé");
-  await ops.hidePhoto(ctx, a.id, a.photos[0], false);
-  assert.equal((await img(ctx, `?b=${full.id}`)).status, 200);
-  await ops.deletePhoto(ctx, a.id, a.photos[0]);
-  assert.equal((await img(ctx, `?b=${full.id}&k=${a.album.preview}`)).status, 404);
-  assert.equal(blobOf(ctx, a.photos[0]), undefined, "le fichier est vraiment effacé du stockage");
-});
-
-test("image : identifiants inventés, lignes d'une autre sorte, méthodes, types ou contenus illisibles : 404 ou 405, jamais d'erreur ni d'indice", async () => {
-  const ctx = ctxFor();
-  const a = await makeAlbum(ctx, { n: 1 });
-  for (const q of ["", "?b=", "?b=../../etc/passwd", `?b=${a.id}`, `?b=${a.album.pid}`, "?b=inconnu", `?b=${"x".repeat(200)}`, "?b[]=1"]) {
-    const res = await img(ctx, q);
-    assert.equal(res.status, 404, q);
-    assert.equal(await res.text(), "Not found");
-  }
-  assert.equal((await def.routes.img(post("img", { b: "x" }), ctx)).status, 405);
-  const blob = blobOf(ctx, a.photos[0]);
-  const raw = ctx.dumpStore().find((r) => r.id === blob.id);
-  await ctx.api.store.update(blob.id, { ...raw.data, mime: "text/html" });
-  assert.equal((await img(ctx, `?b=${blob.id}`)).status, 404, "un type qui n'est pas une image n'est jamais servi");
-  await ctx.api.store.update(blob.id, { ...raw.data, b64: "pas du base64 !" });
-  assert.equal((await img(ctx, `?b=${blob.id}`)).status, 404);
-  await ctx.api.store.update(blob.id, { ...raw.data, b64: undefined });
-  assert.equal((await img(ctx, `?b=${blob.id}`)).status, 404);
+test("plus de route d'image : les photos sont servies par le cœur (/uploads/…), la seule route du module est la demande de retrait", () => {
+  assert.deepEqual(Object.keys(def.routes), ["removal"]);
 });
 
 // ── Demande de retrait ───────────────────────────────────────────────────────────────────────────────────────────────

@@ -78,7 +78,11 @@ test("les ordres et les noms que le script utilise existent côté serveur : act
   const actions = [...code.matchAll(/call\("([A-Za-z]+)"/g)].map((m) => m[1]);
   assert.deepEqual([...new Set(actions)].sort(), ["addPhoto", "studioInfo"]);
   for (const a of actions) assert.ok(def.adminActions[a], a);
-  for (const field of ["album", "caption", "alt", "name"]) assert.match(code, new RegExp(`\\b${field}:`), `champ ${field} envoyé`);
-  for (const file of ["photo", "thumb"]) assert.match(code, new RegExp(`\\b${file}:`), `fichier ${file} envoyé`);
-  assert.match(code, /"\/action\/"/, "route du cœur pour les actions avec fichier");
+  for (const field of ["album", "full", "thumb", "w", "h", "bytes", "tbytes", "caption", "alt", "name"]) assert.match(code, new RegExp(`\\b${field}:`), `champ ${field} envoyé à l'action`);
+  assert.match(code, /"\/action\/"/, "route du cœur pour les actions");
+  assert.match(code, /cfg\.upload \|\| "\/api\/admin\/upload"/, "envoi des images par le mécanisme du cœur");
+  assert.match(code, /fd\.append\("file", blob, name\)/, "un fichier à la fois, champ « file » du cœur");
+  assert.doesNotMatch(code, /FileReader\(\);[\s\S]{0,80}readAsDataURL/, "plus de base64");
+  const page = view.renderStudio(ctxFor(), "abc123");
+  assert.match(page.html, /upload&quot;:&quot;\/api\/admin\/upload&quot;/);
 });

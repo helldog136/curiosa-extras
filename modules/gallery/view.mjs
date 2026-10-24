@@ -3,7 +3,7 @@
 // Le script (scripts/gallery.js) ajoute le confort : visionneuse plein écran (clavier, balayage, compteur, légende), lien copié, demande envoyée sans recharger.
 
 const { flag, loadAlbums, loadMeta, loadPhotos, hasImage, limitsOf, showDates, sortMode } = await import(new URL(`./data.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { clean, dayLabel, esc, hostOf, plainText, renderText, safeJson } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const { clean, cleanUpload, dayLabel, esc, hostOf, plainText, renderText, safeJson } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
 export const PAGE_SIZE = 12;
 
@@ -24,12 +24,9 @@ export const removalHref = (ctx, a, p) => { const r = pageHref(ctx); return r ==
 export const previewHref = (ctx, a) => { const r = pageHref(ctx, false); return r === null || !a.preview ? null : join(r, "apercu", a.id, a.preview); };
 export const studioHref = (ctx, a) => { const r = pageHref(ctx, false); return r === null ? null : join(r, "studio", a.id); };
 
-/** L'adresse d'une image : envoyée chez nous (route du module) ou gardée chez un site autorisé. `preview` : clé d'aperçu d'un album non publié. */
-export function imgSrc(ctx, p, kind, preview = "") {
-  if (p.full) {
-    const id = kind === "thumb" ? p.thumb || p.full : p.full;
-    return `/m/${esc(ctx.instance.key)}/img?b=${esc(id)}${preview ? `&amp;k=${esc(preview)}` : ""}`;
-  }
+/** L'adresse d'une image : envoyée par le cœur (version propre, sans informations cachées, fabriquée et gardée par le cœur) ou gardée chez un site autorisé. */
+export function imgSrc(ctx, p, kind) {
+  if (p.full) return esc(cleanUpload(kind === "thumb" ? p.thumb || p.full : p.full));
   return esc((kind === "thumb" && p.turl) || p.url);
 }
 const isExternal = (p) => !p.full && !!p.url;
@@ -174,7 +171,7 @@ export async function publicAlbums(ctx, meta) {
 
 function coverImg(ctx, a) {
   const c = a.coverThumb;
-  if (c.blob) return `<img src="/m/${esc(ctx.instance.key)}/img?b=${esc(c.blob)}" alt="" loading="lazy" decoding="async" width="400" height="300">`;
+  if (c.src) return `<img src="${esc(cleanUpload(c.src))}" alt="" loading="lazy" decoding="async" width="400" height="300">`;
   if (c.url) return `<img src="${esc(c.url)}" alt="" loading="lazy" decoding="async" width="400" height="300" referrerpolicy="no-referrer">`;
   return `<span class="gal-nocover" aria-hidden="true">▣</span>`;
 }
@@ -233,8 +230,7 @@ export async function visiblePhotos(ctx, a) {
 function galleryMarkup(ctx, a, items) {
   if (!flag(ctx, "markup", false) || a.status !== "published") return "";
   const site = ctx.api.siteUrl;
-  const key = ctx.instance.key;
-  const abs = (p, kind) => (p.full ? `${site}/m/${key}/img?b=${kind === "thumb" ? p.thumb || p.full : p.full}` : (kind === "thumb" && p.turl) || p.url);
+  const abs = (p, kind) => (p.full ? `${site}${cleanUpload(kind === "thumb" ? p.thumb || p.full : p.full)}` : (kind === "thumb" && p.turl) || p.url);
   const images = items.slice(0, 50).map((p, i) => ({ "@type": "ImageObject", contentUrl: abs(p, "full"), thumbnailUrl: abs(p, "thumb"), name: plainText(p.caption || altOf(ctx, a, p, i + 1), 150), ...(p.alt ? { description: plainText(p.alt, 300) } : {}) }));
   const doc = { "@type": "ImageGallery", name: a.title, ...(a.desc ? { description: plainText(a.desc, 300) } : {}), ...(a.date ? { dateCreated: a.date } : {}), url: `${site}${albumHref(ctx, a, false) ?? ""}`, image: images };
   const tag = ctx.api?.seo?.jsonLd ? ctx.api.seo.jsonLd(doc) : null;
@@ -246,7 +242,6 @@ export async function renderAlbum(ctx, a, { preview = false } = {}) {
   const meta = await loadMeta(ctx);
   const w = words(ctx, meta);
   const dates = showDates(ctx, meta);
-  const key = preview ? a.preview : "";
   const parts = [];
   const root = pageHref(ctx) ?? "/";
   if (preview) parts.push(`<p class="gal-preview" role="status">${esc(ctx.t("previewBanner"))}</p>`);
@@ -262,7 +257,7 @@ export async function renderAlbum(ctx, a, { preview = false } = {}) {
   if (a.mode === "external") {
     const host = hostOf(a.link);
     const first = (await visiblePhotos(ctx, a))[0];
-    if (first) parts.push(`<p class="gal-stage"><img src="${imgSrc(ctx, first, "full", key)}" alt="${esc(altOf(ctx, a, first, 1))}"${refAttr(first)}></p>`);
+    if (first) parts.push(`<p class="gal-stage"><img src="${imgSrc(ctx, first, "full")}" alt="${esc(altOf(ctx, a, first, 1))}"${refAttr(first)}></p>`);
     if (a.link) {
       parts.push(`<p class="gal-tools"><a class="gal-btn gal-btn-main" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">${esc(ctx.t("externalOpen", { host }))} ↗</a></p><p class="gal-hint">${esc(ctx.t("externalOut", { host }))}</p>`);
     }
@@ -273,8 +268,8 @@ export async function renderAlbum(ctx, a, { preview = false } = {}) {
       parts.push(`<ul class="gal-grid" data-gal-grid>${items.map((p, i) => {
         const href = photoHref(ctx, a, p) ?? "#";
         const rm = flag(ctx, "removal", true) && people ? removalHref(ctx, a, p) : null;
-        return `<li><a class="gal-tile" href="${esc(href)}" data-gal-photo data-n="${i + 1}" data-full="${imgSrc(ctx, p, "full", key)}" data-caption="${esc(p.caption)}" data-alt="${esc(altOf(ctx, a, p, i + 1))}"${rm ? ` data-removal="${esc(rm)}"` : ""}>`
-          + `<img src="${imgSrc(ctx, p, "thumb", key)}" alt="${esc(altOf(ctx, a, p, i + 1))}" loading="lazy" decoding="async" width="${p.w && p.h ? Math.round((p.w / Math.max(p.w, p.h)) * 480) : 480}" height="${p.w && p.h ? Math.round((p.h / Math.max(p.w, p.h)) * 480) : 480}"${refAttr(p)}></a></li>`;
+        return `<li><a class="gal-tile" href="${esc(href)}" data-gal-photo data-n="${i + 1}" data-full="${imgSrc(ctx, p, "full")}" data-caption="${esc(p.caption)}" data-alt="${esc(altOf(ctx, a, p, i + 1))}"${rm ? ` data-removal="${esc(rm)}"` : ""}>`
+          + `<img src="${imgSrc(ctx, p, "thumb")}" alt="${esc(altOf(ctx, a, p, i + 1))}" loading="lazy" decoding="async" width="${p.w && p.h ? Math.round((p.w / Math.max(p.w, p.h)) * 480) : 480}" height="${p.w && p.h ? Math.round((p.h / Math.max(p.w, p.h)) * 480) : 480}"${refAttr(p)}></a></li>`;
       }).join("")}</ul>`);
     }
     if (a.link) {
@@ -294,7 +289,6 @@ export async function renderPhoto(ctx, a, photoId, { preview = false } = {}) {
   const at = items.findIndex((p) => p.id === photoId);
   if (at < 0 || a.mode !== "hosted") return null;
   const p = items[at];
-  const key = preview ? a.preview : "";
   const prev = items[at - 1];
   const next = items[at + 1];
   const albumUrl = albumHref(ctx, a) ?? "/";
@@ -304,7 +298,7 @@ export async function renderPhoto(ctx, a, photoId, { preview = false } = {}) {
   const parts = [
     preview ? `<p class="gal-preview" role="status">${esc(ctx.t("previewBanner"))}</p>` : "",
     `<p class="gal-crumb"><a href="${esc(albumUrl)}">← ${esc(ctx.t("backToAlbum", { title: a.title }))}</a></p>`,
-    `<figure class="gal-stage"><img src="${imgSrc(ctx, p, "full", key)}" alt="${esc(altOf(ctx, a, p, at + 1))}"${refAttr(p)}${p.w && p.h ? ` width="${p.w}" height="${p.h}"` : ""}>${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ""}</figure>`,
+    `<figure class="gal-stage"><img src="${imgSrc(ctx, p, "full")}" alt="${esc(altOf(ctx, a, p, at + 1))}"${refAttr(p)}${p.w && p.h ? ` width="${p.w}" height="${p.h}"` : ""}>${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ""}</figure>`,
     `<p class="gal-meta" role="status">${esc(ctx.t("photoOf", { n: at + 1, total: items.length }))}</p>`,
     `<nav class="gal-pn" aria-label="${esc(ctx.t("photoNav"))}">${nav(prev, ctx.t("prevPhoto"), "prev")}${nav(next, ctx.t("nextPhoto"), "next")}</nav>`,
     `<p class="gal-tools"><button type="button" class="gal-btn" data-gal-copy="${esc(photoHref(ctx, a, p, false) ?? "")}">${esc(ctx.t("copyLink"))}</button>${rm ? `<a href="${esc(rm)}">${esc(w.removal)}</a>` : ""}</p><p class="gal-status" role="status" data-gal-copied></p>`,
@@ -352,10 +346,10 @@ export function renderStudio(ctx, albumId) {
   const t = (k, v) => ctx.t(k, v);
   const texts = Object.fromEntries([
     "studioLoading", "studioLogin", "studioLoginLink", "studioNoAlbum", "studioReady", "studioPreparing", "studioSending", "studioSaving", "studioDone", "studioRetry", "studioRemove", "studioCaption", "studioAlt", "studioAltHelp",
-    "studioErrType", "studioErrDecode", "studioErrSize", "studioErrFull", "studioErrSpace", "studioErrNetwork", "studioErrDenied", "studioErrOther", "studioSend", "studioSendOne", "studioSummary", "studioAllDone", "studioWaiting", "studioPickMore", "studioHeic", "studioGif",
+    "studioErrType", "studioErrDecode", "studioErrSize", "studioErrFull", "studioErrNetwork", "studioErrDenied", "studioErrOther", "studioSend", "studioSendOne", "studioSummary", "studioAllDone", "studioWaiting", "studioPickMore", "studioHeic", "studioGif",
     "studioProgress", "studioOpenAlbum", "studioCapacity", "studioTooMany",
   ].map((k) => [k, t(k)]));
-  const data = { endpoint: "/api/admin/modules/", instance: ctx.instance.id, album: albumId, texts };
+  const data = { endpoint: "/api/admin/modules/", upload: "/api/admin/upload", instance: ctx.instance.id, album: albumId, texts };
   const html = `<div class="gal-studio" data-gal-studio data-config="${esc(JSON.stringify(data))}">`
     + `<p class="gal-desc">${esc(t("studioIntro", { kb: Math.round(limits.photoBytes / 1000) }))}</p>`
     + `<noscript><p class="gal-empty">${esc(t("studioNoScript"))}</p></noscript>`

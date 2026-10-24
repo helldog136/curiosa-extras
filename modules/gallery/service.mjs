@@ -5,7 +5,7 @@
 // Aucune méthode ne lève : { ok: false, error } si le stockage ne répond pas.
 
 const { getAlbum, loadAlbums, loadMeta, sortMode } = await import(new URL(`./data.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
-const { clean, fold, isId, num } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
+const { clean, cleanUpload, fold, isId, num } = await import(new URL(`./text.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 const { albumHref } = await import(new URL(`./view.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 
 function describe(ctx, a) {
@@ -13,7 +13,7 @@ function describe(ctx, a) {
   const path = albumHref(ctx, a, false);
   const out = { id: a.id, title: a.title, count: a.mode === "external" ? 0 : a.shown, url: path === null ? (a.link || site) : `${site}${path === "/" ? "" : path}` };
   const c = a.coverThumb;
-  if (c.blob) out.cover = `${site}/m/${ctx.instance.key}/img?b=${c.blob}`;
+  if (c.src) out.cover = `${site}${cleanUpload(c.src)}`;
   else if (c.url) out.cover = c.url;
   return out;
 }
