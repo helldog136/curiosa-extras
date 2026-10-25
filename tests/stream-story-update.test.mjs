@@ -44,6 +44,30 @@ test("mise à jour 2.1.0 → version courante dans le même processus : le modul
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test("mise à jour 2.3.0 → 2.4.0 (éditeur refait) dans le même processus : la page sert la nouvelle interface, les nouvelles fonctions de pure.mjs existent, les anciens réglages et outils sont toujours là", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "story-update-"));
+  try {
+    copy(path.join(here, "fixtures/stream-story-2.3.0"), dir);
+    const before = (await load(dir, "v23")).default;
+    const oldPage = await (await before.routes.studio(new Request("http://x/studio"), { instance: { key: "k" }, locale: "fr", t: (k) => k, setting: () => "", theme: {} })).text();
+    assert.ok(oldPage.includes('id="event-q"') && !oldPage.includes('id="custom"'), "2.3.0 : l'ancienne interface");
+    copy(path.join(here, "../modules/stream-story"), dir);
+    const after = (await load(dir, "v24")).default;
+    const pure = await import(`${pathToFileURL(path.join(dir, "pure.mjs")).href}?v=v24`);
+    assert.equal(typeof pure.nextEvent, "function"); assert.equal(typeof pure.isUpcoming, "function");
+    const fr = JSON.parse(fs.readFileSync(path.join(dir, "locales/fr.json"), "utf8"));
+    const html = await (await after.routes.studio(new Request("http://x/studio"), { instance: { key: "k" }, locale: "fr", t: (k) => fr[k] ?? k, setting: () => "", theme: {} })).text();
+    assert.ok(html.includes('id="custom"') && html.includes('id="event-change"'), "2.4.0 : la nouvelle interface est servie");
+    assert.ok(html.includes("Changer d&#39;événement") || html.includes("Changer d'événement"));
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
+    assert.equal(manifest.version, "2.4.0"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");
+    for (const tool of ["story_models", "story_next_streams", "story_events", "story_prepare"]) assert.ok(manifest.mcp.some((t) => t.name === tool) && typeof after.mcp[tool] === "function", tool);
+    for (const route of ["studio", "events", "cover", "data", "prep", "act", "people", "members", "categories", "category", "streams", "img", "wordmark"]) assert.equal(typeof after.routes[route], "function", route);
+    const keys = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8")).settings.map((x) => x.key);
+    assert.deepEqual(keys, ["colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone", "watermark"], "les réglages sont inchangés");
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test("aucun fichier de Story d'annonce chargé par le serveur n'importe un voisin sans la version du fichier principal", () => {
   const dir = path.join(here, "../modules/stream-story");
   for (const f of fs.readdirSync(dir).filter((n) => n.endsWith(".mjs") && !BROWSER.has(n))) {

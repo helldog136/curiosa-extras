@@ -49,13 +49,13 @@ main{max-width:1180px;margin:0 auto;padding:16px}
 h1{font-size:1.25rem;margin:0 0 4px}h2{font-size:1.05rem;margin:0 0 8px}
 p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var(--ok)}
 .layout{display:grid;gap:14px}.layout>*{margin:0}
-@media (min-width:720px){.layout{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"pick side" "custom side";align-items:start}section.pick{grid-area:pick}details.custom{grid-area:custom}.previewcol{grid-area:side;position:sticky;top:12px}}
+@media (min-width:720px){.layout{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"pick side" "custom side";grid-template-rows:auto 1fr;align-items:start}section.pick{grid-area:pick}details.custom{grid-area:custom}.previewcol{grid-area:side;position:sticky;top:12px}}
 @media (max-width:719px){.previewcol{display:contents}main#app{padding-bottom:calc(88px + env(safe-area-inset-bottom))}}
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
 fieldset{border:0;margin:0;padding:0;min-width:0}legend{font-weight:600;padding:0;margin-bottom:6px}
-label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}label.check.tap{min-height:44px;align-items:center;margin-top:8px}label.check.tap input{width:24px;height:24px;margin:0}
+label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:44px;align-items:center}label.check.tap{min-height:44px;align-items:center;margin-top:8px}label.check.tap input{width:24px;height:24px;margin:0}
 input[type=text],input[type=search],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;padding:10px;font:inherit;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px}
-textarea{min-height:76px;resize:vertical}input[type=range]{width:100%}
+textarea{min-height:76px;resize:vertical}input[type=range]{width:100%;height:44px}
 input[type=checkbox],input[type=radio]{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--accent)}
 button,a.button{font:inherit;padding:9px 14px;min-height:40px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-block}
 button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700;width:100%;min-height:48px}
@@ -76,7 +76,7 @@ ul.list{list-style:none;margin:6px 0;padding:0}.row{display:flex;gap:8px;flex-wr
 canvas#preview{display:block;width:100%;max-width:340px;max-height:70vh;margin:0 auto;border-radius:10px;background:#000;object-fit:contain}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.bar .grow{flex:1}
 progress{width:100%;height:14px}
-details>summary{cursor:pointer;font-weight:600;padding:6px 0;min-height:32px}
+details>summary{cursor:pointer;font-weight:600;padding:6px 0;min-height:44px;display:list-item}
 .sr{position:absolute;left:-9999px}
 [hidden]{display:none!important}
 .chosen{padding:10px 12px;border:1px solid var(--accent);border-radius:10px;background:var(--field);margin:0 0 12px;overflow-wrap:anywhere}
@@ -100,8 +100,8 @@ button,a.button{min-height:44px}
 details.custom{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 0 14px}details.custom>summary{padding:12px 14px;min-height:48px;font-size:1.05rem;list-style-position:inside}
 details.custom>.inner{padding:0 14px 14px}details.sub-d{border:1px solid var(--line);border-radius:10px;background:var(--field);margin:10px 0}details.sub-d>summary{padding:10px 12px;min-height:48px}details.sub-d>.inner{padding:0 12px 12px}
 .field{margin-top:12px}.advtoggle{margin-top:12px;border-top:1px solid var(--line);padding-top:6px}.advanced{margin-top:8px;padding:12px;border:1px dashed var(--line);border-radius:10px}
-.genbar{margin:0 0 14px}#models-box .bar{flex-wrap:wrap}#models-box .bar input{flex:1 1 200px;width:auto;min-width:0}
-@media (max-width:719px){.genbar{position:fixed;left:0;right:0;bottom:0;z-index:3;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);box-shadow:0 -4px 12px rgba(0,0,0,.12);max-height:60vh;overflow:auto}
+.genbar{margin:0 0 14px}.genbar #result p,.genbar #progress-box p{margin:.25rem 0;font-size:.9rem}.genbar #result a.button{width:100%;text-align:center;margin-top:4px}#models-box .bar{flex-wrap:wrap}#models-box .bar input{flex:1 1 200px;width:auto;min-width:0}
+@media (max-width:719px){.genbar{position:fixed;left:0;right:0;bottom:0;z-index:3;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);box-shadow:0 -4px 12px rgba(0,0,0,.12);max-height:42vh;overflow:auto}
 body.editing #pv{position:sticky;top:0;z-index:2;padding:8px 14px}body.editing #pv h2,body.editing #pv>p:not([role=alert]):not(#cover-warn){display:none}body.editing #pv .bar{margin:6px 0 0}body.editing canvas#preview{max-height:24vh}canvas#preview{max-height:44vh}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 button.busy{position:relative}button[aria-busy=true]{cursor:progress}
@@ -123,6 +123,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <section class="pick" aria-labelledby="h-event"><h2 id="h-event">${T("h_event")}</h2>
 <div id="event-chosen" class="chosen" role="status" aria-live="polite"></div>
 <p id="event-same" class="muted" hidden></p>
+<p id="nostream" class="warn" hidden>${T("no_stream_info")}</p>
 <div id="event-alert" class="srcnotes" role="status" aria-live="polite"></div>
 <div class="bar"><button type="button" id="event-change" class="wide" aria-expanded="false" aria-controls="event-picker">${T("event_change")}</button><button type="button" id="event-retry" class="wide" hidden>${T("event_retry")}</button></div>
 <div id="event-picker" class="picker" role="group" aria-labelledby="h-pick" hidden><h3 id="h-pick" tabindex="-1">${T("event_pick_title")}</h3>
@@ -168,7 +169,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div class="advtoggle"><label class="check tap" for="adv"><input type="checkbox" id="adv" aria-controls="advanced" aria-describedby="adv-help"><span>${T("adv_label")}</span></label><p id="adv-help" class="muted" style="margin-top:0">${T("adv_help")}</p></div>
 <div id="advanced" class="advanced" hidden><h2>${T("h_advanced")}</h2>
 <fieldset><legend>${T("h_elements")}</legend>${check("title", "el_title")}${check("when", "el_when")}${check("countdown", "el_countdown")}${check("game", "el_game")}${check("brand", "el_brand")}${check("text", "el_text")}${check("costreamers", "el_costreamers")}
-<p id="countdown-note" class="muted"></p><p id="nostream" class="warn" hidden>${T("no_stream_info")}</p></fieldset>
+<p id="countdown-note" class="muted"></p></fieldset>
 <fieldset style="margin-top:12px"><legend>${T("format_label")}</legend><div class="cards">
 <label for="format-vertical"><input type="radio" name="format" id="format-vertical"><span>${T("format_vertical")}</span></label>
 <label for="format-passeport"><input type="radio" name="format" id="format-passeport"><span>${T("format_passeport")}</span></label></div><p id="fmt-note" class="muted"></p></fieldset>

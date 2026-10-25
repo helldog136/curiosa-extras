@@ -239,6 +239,8 @@ function renderEvents() {
   $("event-change").textContent = L(open ? "event_change_close" : "event_change");
   $("event-change").setAttribute("aria-expanded", open ? "true" : "false");
   $("event-change").hidden = S.useManual;
+  const bare = S.ev.state !== "loading" && !S.ev.totalAll && !S.ev.q && !S.ev.source;   // rien à choisir : on va droit à la saisie, sans titre de liste ni « revenir à la liste »
+  $("h-pick").hidden = bare; $("event-list").hidden = bare; $("event-count").hidden = bare; $("event-manual-toggle").hidden = bare && S.useManual;
   $("manual").hidden = !S.useManual;
   $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
   $("event-manual-toggle").setAttribute("aria-expanded", S.useManual ? "true" : "false");

@@ -7,12 +7,12 @@ Rien à installer sur votre ordinateur, rien à régler pour commencer : tout se
 ## Pour commencer
 1. **Installez le module.** Si vous avez un agenda (« Agenda en ligne » ou « Streams saisis à la main », dans le catalogue), vos prochains streams apparaissent tout seuls. Si vous avez aussi la chaîne YouTube ou la chaîne Twitch du site, vos vidéos et directs programmés et votre planning Twitch s'ajoutent à la même liste. Sans rien de tout cela, le module vous dit quoi installer, et vous pouvez **écrire l'événement à la main** (titre, jour, heure) pour la vidéo.
 2. **Ouvrez la page du module** (« Story d'annonce » dans le menu, ou dans Extensions).
-3. **Répondez à « Pour quoi veux-tu une story ? »** en cliquant sur un événement de la liste, puis choisissez ce que la vidéo montre, le style, le format et la durée.
-4. **Regardez l'aperçu**, puis cliquez sur **« Générer la vidéo »**. Une barre vous montre l'avancement, et un bouton « Annuler » arrête tout quand vous voulez. Le fichier se télécharge : il s'appelle par exemple `annonce-2026-10-22-vertical.mp4`.
+3. **C'est déjà prêt** : à l'ouverture, **le prochain événement** (parmi toutes vos sources, trié par date et heure) est déjà choisi et l'aperçu bouge. Pour en prendre un autre, cliquez sur **« Changer d'événement »**. Tout le reste (style, phrase, co-streamers, modèles…) est dans **« Personnaliser la vidéo »**, replié, et facultatif.
+4. **Cliquez sur « Générer la vidéo »** (le bouton reste toujours visible, même sur téléphone). Il affiche l'avancement (« Création en cours… 42 % »), et un bouton « Annuler » arrête tout quand vous voulez. Le fichier se télécharge : il s'appelle par exemple `annonce-2026-10-22-vertical.mp4`.
 
 ## Ce que vous choisissez, à chaque vidéo
-- **L'événement** : le prochain par défaut, ou un autre dans la liste « Pour quoi veux-tu une story ? » (voir plus bas), ou un événement que vous écrivez vous-même.
-- **Ce qui s'affiche** (chaque élément se coche ou se décoche) : le titre, le jour et l'heure, le compte à rebours, le jeu et sa jaquette (quand on la connaît), le logo et le nom de votre chaîne, votre phrase, les co-streamers.
+- **L'événement** : le prochain à venir par défaut (jamais un événement déjà commencé tant qu'il en reste un à venir), ou un autre dans la liste courte « Changer d'événement » (voir plus bas), ou un événement que vous écrivez vous-même. Changer d'événement ne touche à rien d'autre : style, phrase et co-streamers restent.
+- **Ce qui s'affiche** (dans « Options avancées », chaque élément se coche ou se décoche) : le titre, le jour et l'heure, le compte à rebours, le jeu et sa jaquette (quand on la connaît), le logo et le nom de votre chaîne, votre phrase, les co-streamers.
 - **Votre phrase** : 140 caractères au plus, sur 3 lignes au plus. Elle s'écrit telle que vous la tapez.
 - **Le style** (le contenu est le même, seule l'animation change) :
   - **Néon / glitch** : un texte lumineux qui clignote et se brouille, sur fond sombre.
@@ -22,13 +22,13 @@ Rien à installer sur votre ordinateur, rien à régler pour commencer : tout se
 - **Le format** :
   - **Vertical (9:16)** : 1080 × 1920, le format d'une story.
   - **Passeport (4:5)** : 1080 × 1350, le portrait presque carré d'Instagram.
-- **La durée** : de 5 à 15 secondes (15 par défaut, la durée d'une story).
-- **La langue des mots écrits dans la vidéo** : français ou anglais (les jours, le compte à rebours).
+- **La durée** (dans « Options avancées ») : de 5 à 15 secondes (15 par défaut, la durée d'une story).
+- **La langue des mots écrits dans la vidéo** (dans « Options avancées ») : français ou anglais (les jours, le compte à rebours).
 - **La petite mention « Made with Curiosa »** (case à cocher, **décochée par défaut** : rien n'est ajouté sans votre choix) : un petit texte discret, centré en bas de la vidéo, sur une pastille semi-transparente aux couleurs du fond, lisible sur fond clair comme sombre. Elle est placée **juste au-dessus de la zone que l'interface d'Instagram recouvre** (nom du compte, barre de réponse), pour rester visible, et le reste de la vidéo se met en page au-dessus. Elle ne bouge jamais, présente du début à la fin, aussi dans l'aperçu. Le mot « Curiosa » suit la charte du logo (Fraunces italique, comme dans le pied de page du site). Elle reste en anglais quelle que soit la langue de la vidéo (c'est un nom de marque). Aucun lien, rien n'est envoyé nulle part. **Votre choix est retenu** pour vos prochaines stories ; un modèle ne la garde pas.
 
 La vidéo est **muette**, ce qui convient très bien à Instagram. Les couleurs et le logo sont ceux de votre site.
 
-## Pour quoi veux-tu une story ? La liste des événements
+## Changer d'événement : la liste
 Une seule liste rassemble **tout ce qui est daté et à venir**, de toutes les sources que vous avez installées, **classé par date et heure** :
 
 | Source | Ce qu'elle apporte | Ce qu'il faut |
@@ -40,21 +40,21 @@ Une seule liste rassemble **tout ce qui est daté et à venir**, de toutes les s
 Aucune source n'est obligatoire, et il n'y a **rien à régler dans Story** : une source installée apparaît toute seule dans la liste. Un module qui publie d'autres événements datés peut s'y ajouter de la même façon (voir « Pour les développeurs »).
 
 - **Chaque ligne** montre une pastille de la source, le type (stream, direct, première, vidéo…), le jour et l'heure **dans le fuseau de votre site** (ou celui du réglage « Fuseau horaire », voir plus bas) et le titre. Quand l'événement a son propre fuseau et que l'heure n'est pas la même, l'heure sur place est ajoutée entre parenthèses.
-- **Un clic** choisit l'événement : la vidéo se remplit toute seule (titre, jour, heure, compte à rebours, jeu et jaquette quand on les connaît). Sur téléphone, la page vous amène à l'aperçu, bouton « Générer la vidéo » en vue.
-- **Chercher** : tapez un mot du titre, du jeu ou d'une source. **Filtrer** : les boutons au-dessus de la liste gardent une seule source (avec le nombre d'événements de chacune).
-- **Par pages** : 20 événements à la fois, un bouton « Voir plus d'événements » pour la suite. La liste s'arrête aux **200 prochains** événements, de toutes les sources.
+- **Un clic** choisit l'événement : la vidéo se remplit toute seule (titre, jour, heure, compte à rebours, jeu et jaquette quand on les connaît) et la liste se referme.
+- **Chercher** : la recherche et les boutons de source n'apparaissent que lorsqu'il y a beaucoup d'événements (plus de 8) ; tapez un mot du titre, du jeu ou d'une source. **Filtrer** : les boutons gardent une seule source (avec le nombre d'événements de chacune).
+- **Liste courte** : 5 événements d'abord, puis « Voir plus d'événements » en ajoute 10. La liste s'arrête aux **200 prochains** événements, de toutes les sources. Un événement déjà commencé (moins de 3 h) reste dans la liste, marqué « Déjà commencé » ; deux événements au même moment sont signalés sous l'événement choisi.
 - **Pas de doublon** : un stream annoncé à la fois par votre agenda et par votre planning Twitch (même titre, début à 15 minutes près) n'apparaît **qu'une fois**, avec la mention « Aussi dans : Twitch ». Deux événements au titre différent restent deux lignes.
 - **Si une source ne répond pas**, la liste le dit poliment **sous elle** (« YouTube ne répond pas pour l'instant ») et montre les autres sources ; si elle a répondu il y a moins de 15 minutes, ses dernières dates sont gardées et la phrase prévient qu'elles ont pu changer. Un bouton « Réessayer » apparaît. Ce n'est **jamais** une erreur bloquante, et vous pouvez toujours **écrire l'événement vous-même**.
 - **Source à régler** : la ligne sous la liste dit quoi faire en mots simples (par exemple « Pour voir vos vidéos et directs programmés, ajoutez votre clé YouTube dans Réglages, sur la page du connecteur YouTube du site »).
 - **Ce que YouTube ne montre pas** : avec la clé du site, YouTube ne donne que les **directs et premières publics**. Une vidéo **privée** (ou non répertoriée) programmée **ne se voit pas** : aucune clé ne le permet, il faudrait se connecter à votre compte YouTube, ce que le site ne demande pas. La page l'écrit sous la liste ; pour ces vidéos, écrivez l'événement vous-même.
-- **Écrire l'événement vous-même** : le bouton sous la liste ouvre un titre, un jour et une heure facultative. Le bouton « Revenir à la liste d'événements » le referme.
+- **Écrire l'événement vous-même** : le bouton sous la liste ouvre un titre, un jour et une heure facultative. Le bouton « Revenir à la liste d'événements » le referme. S'il n'y a aucun événement, cette saisie s'ouvre toute seule.
 
 L'événement que vous choisissez est **mémorisé dans la demande de story** (son identifiant, donné par sa source et stable, et la source). Quand c'est votre assistant qui prépare la vidéo, il est retrouvé à l'ouverture du lien, même s'il est loin dans la liste ; s'il n'existe plus (passé, déplacé, ou source muette), la page le dit et prend le prochain événement.
 
 ## Les zones de sécurité
 Instagram cache une partie de l'image : en haut et en bas d'une story (le nom du compte, la barre de réponse), et sur les côtés d'un portrait quand il s'affiche dans la grille du profil. Le module garde **tout ce qui compte au milieu**, dans des marges sûres (vertical : environ 250 pixels en haut, 340 en bas et 64 de chaque côté ; passeport : 60 en haut et en bas, 64 de chaque côté).
 
-Pour vérifier, cochez **« Montrer les zones de sécurité »** : elles apparaissent hachurées sur l'aperçu, avec leur explication. Elles ne sont **jamais** dessinées dans la vidéo.
+Pour vérifier, cochez **« Montrer les zones de sécurité »** (dans « Options avancées ») : elles apparaissent hachurées sur l'aperçu, avec leur explication. Elles ne sont **jamais** dessinées dans la vidéo.
 
 ## Vos co-streamers
 Ils viennent de **Contacts** : Story n'en garde ni le nom, ni les pseudos, ni la photo, seulement le numéro de la fiche (donc rien à retaper, et un nom corrigé dans Contacts l'est aussi dans vos vidéos).
