@@ -7,7 +7,9 @@
 // Ordre : coupe à 2 000 caractères → normalisation Unicode (NFKC) → caractères de contrôle et invisibles → balises (SSML, HTML) et Markdown → adresses et liens
 // → mentions → emojis (3 au plus) → répétitions → espaces → [vide ? trop long ? numéros ? mot de la liste ?].
 
-import { DEFAULT_WORDS } from "./words.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { DEFAULT_WORDS } = await import(`./words.mjs${v}`);
 
 export const RAW_MAX = 2000;
 export const MAX_CHARS = { min: 20, max: 300, default: 140 };
