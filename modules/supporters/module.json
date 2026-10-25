@@ -1,0 +1,544 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.12",
+  "id": "supporters",
+  "name": {
+    "en": "Supporters",
+    "fr": "Soutiens"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Thank the people who support your site through a membership platform. Connect your platform (or import a file), see who supports you, file them in Contacts if you want, and show on a public page only the nickname each person agreed to show. No amount is ever displayed.",
+    "fr": "Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat. Connectez votre plateforme (ou importez un fichier), voyez qui vous soutient, rangez-les dans Contacts si vous le souhaitez, et montrez sur une page publique seulement le pseudo que chaque personne a accepté de montrer. Aucun montant n'est jamais affiché."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🤝",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "multiple",
+  "page": true,
+  "basePath": "soutiens",
+  "pageSetting": "publicPage",
+  "permissions": [
+    "pages",
+    "routes",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "requires": [
+    {
+      "service": "contact.book",
+      "min": 2,
+      "optional": true,
+      "label": {
+        "en": "The address book (Contacts module): supporters can be filed there, as a category you choose",
+        "fr": "Le carnet d'adresses (module Contacts) : les soutiens peuvent y être rangés, dans une catégorie que vous choisissez"
+      }
+    },
+    {
+      "service": "contact.curate",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "The address book, recent enough to take a person out of a category (only used for the optional link with the thank-you wall)",
+        "fr": "Le carnet d'adresses, assez récent pour retirer une personne d'une catégorie (seulement pour le lien facultatif avec le mur des remerciements)"
+      }
+    }
+  ],
+  "offers": [
+    {
+      "service": "privacy.subject",
+      "each": true,
+      "label": {
+        "en": "What the supporters module knows about a person of Contacts (export, erase, merge)",
+        "fr": "Ce que le module Soutiens sait d'une personne de Contacts (export, effacement, fusion)"
+      }
+    },
+    {
+      "service": "supporters.public",
+      "version": 1,
+      "each": true,
+      "readOnly": [
+        "list"
+      ],
+      "label": {
+        "en": "The nicknames supporters agreed to show, with the tier label you chose (never an amount, a name or an address)",
+        "fr": "Les pseudos que les soutiens ont accepté de montrer, avec le libellé de palier que vous avez choisi (jamais un montant, un nom ni une adresse)"
+      }
+    }
+  ],
+  "privacy": {
+    "en": "The page shows only a nickname the person chose and agreed to show, under a label chosen by the owner: never an amount, real name or e-mail. Signing up to the platform is NOT agreement: nothing shows until the person agrees on a personal link, and can withdraw there anytime. The module keeps the member number, tier and start date; the platform's name only until filed in Contacts. No e-mail kept. Stopped supporters are forgotten after a year. To be removed, write to the site's contact.",
+    "fr": "La page montre seulement un pseudo que la personne a choisi et accepté de montrer, : jamais un montant, un vrai nom ni un e-mail. S'inscrire sur la plateforme n'est PAS un accord : rien n'apparaît sans l'accord de la personne sur son lien personnel, où elle peut se retirer à tout moment. Le module garde le numéro de membre, le palier et la date de début, jamais d'e-mail. Les soutiens arrêtés sont oubliés après un an. Pour être retiré : contact du site."
+  },
+  "rights": [
+    {
+      "id": "people.manage",
+      "label": {
+        "fr": "gérer les soutiens (actualiser, importer, cacher, approuver un pseudo, oublier)",
+        "en": "manage supporters (refresh, import, hide, approve a nickname, forget)"
+      },
+      "help": {
+        "fr": "Sans ce droit, la personne voit la liste mais ne change rien.",
+        "en": "Without it, the person sees the list but changes nothing."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "labels.edit",
+      "label": {
+        "fr": "choisir les libellés publics des paliers",
+        "en": "choose the public labels of the tiers"
+      },
+      "help": {
+        "fr": "Les libellés sont les seuls mots sur les paliers que le public voit.",
+        "en": "The labels are the only words about tiers that the public sees."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "contacts.file",
+      "label": {
+        "fr": "ranger les soutiens dans Contacts",
+        "en": "file supporters in Contacts"
+      },
+      "help": {
+        "fr": "Crée ou complète des fiches dans le carnet d'adresses. Sans ce droit, rien n'est jamais écrit dans Contacts.",
+        "en": "Creates or completes cards in the address book. Without it, nothing is ever written to Contacts."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Mes soutiens",
+        "en": "My supporters"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "provider",
+      "type": "select",
+      "default": "patreon",
+      "label": {
+        "en": "Where do your supporters come from?",
+        "fr": "D'où viennent vos soutiens ?"
+      },
+      "help": {
+        "en": "Pick your platform, then follow the steps in the “My supporters” tab. Several platforms? Add one more instance of this module for each.",
+        "fr": "Choisissez votre plateforme, puis suivez les étapes de l'onglet « Mes soutiens ». Plusieurs plateformes ? Ajoutez une instance de ce module pour chacune."
+      },
+      "options": [
+        {
+          "value": "patreon",
+          "label": {
+            "en": "Patreon (the site asks Patreon for your members)",
+            "fr": "Patreon (le site demande vos membres à Patreon)"
+          }
+        },
+        {
+          "value": "kofi",
+          "label": {
+            "en": "Ko-fi (Ko-fi tells the site about each gift)",
+            "fr": "Ko-fi (Ko-fi prévient le site à chaque don)"
+          }
+        },
+        {
+          "value": "csv",
+          "label": {
+            "en": "A file I import myself (any platform)",
+            "fr": "Un fichier que j'importe moi-même (n'importe quelle plateforme)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "accessToken",
+      "type": "secret",
+      "optional": true,
+      "label": {
+        "en": "Secret key from the platform",
+        "fr": "Clé secrète de la plateforme"
+      },
+      "help": {
+        "en": "Patreon: your creator access key. Ko-fi: your verification key. Entered once, never shown again. Not needed for a file import.",
+        "fr": "Patreon : votre clé d'accès de créateur. Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
+      }
+    },
+    {
+      "key": "publicPage",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Show a public page of supporters",
+        "fr": "Montrer une page publique des soutiens"
+      },
+      "help": {
+        "en": "Off by default. Even when on, the page only shows nicknames that people agreed to show.",
+        "fr": "Désactivé par défaut. Même activée, la page ne montre que les pseudos que les personnes ont accepté de montrer."
+      }
+    },
+    {
+      "key": "review",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "I read each nickname before it appears",
+        "fr": "Je relis chaque pseudo avant qu'il apparaisse"
+      },
+      "help": {
+        "en": "Recommended. A nickname chosen by a person waits for your “Approve” click.",
+        "fr": "Conseillé. Un pseudo choisi par une personne attend votre clic sur « Approuver »."
+      }
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Page title",
+        "fr": "Titre de la page"
+      },
+      "help": {
+        "en": "Left empty, the page is titled “Thank you to our supporters”.",
+        "fr": "Laissé vide, la page s'appelle « Merci à nos soutiens »."
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "A few words under the title",
+        "fr": "Quelques mots sous le titre"
+      },
+      "help": {
+        "en": "Optional. For example: “Thanks to them, this site keeps going.”",
+        "fr": "Facultatif. Par exemple : « Grâce à elles et eux, ce site continue. »"
+      }
+    },
+    {
+      "key": "category",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Contacts category for supporters",
+        "fr": "Catégorie de Contacts pour les soutiens"
+      },
+      "help": {
+        "en": "Only used if you file supporters in Contacts. Starting suggestion: type “Supporters” and click “Create”. Nobody is filed until you click the button.",
+        "fr": "Seulement si vous rangez les soutiens dans Contacts. Suggestion de départ : tapez « Soutiens » et cliquez sur « Créer ». Personne n'est rangé avant que vous cliquiez sur le bouton."
+      }
+    },
+    {
+      "key": "showTiers",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Group people by tier label",
+        "fr": "Regrouper les personnes par libellé de palier"
+      },
+      "help": {
+        "en": "Only the labels you choose are shown, never the platform's own tier names or amounts.",
+        "fr": "Seuls les libellés que vous choisissez sont montrés, jamais les noms de palier de la plateforme ni les montants."
+      }
+    },
+    {
+      "key": "othersTitle",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Title of the group without a tier label",
+        "fr": "Titre du groupe sans libellé de palier"
+      },
+      "help": {
+        "en": "Left empty, “Supporters” is used.",
+        "fr": "Laissé vide, « Soutiens » est utilisé."
+      }
+    },
+    {
+      "key": "consentIntro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Words shown on the personal agreement page",
+        "fr": "Mots montrés sur la page d'accord personnelle"
+      },
+      "help": {
+        "en": "Optional, one or two sentences that welcome the person who opens their link.",
+        "fr": "Facultatif, une ou deux phrases pour accueillir la personne qui ouvre son lien."
+      }
+    },
+    {
+      "key": "wallCategory",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "advanced": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Category for the thank-you wall",
+        "fr": "Catégorie pour le mur des remerciements"
+      },
+      "help": {
+        "en": "Optional. People whose card name is exactly the nickname they agreed to show are also put in this category, so the thank-you wall can display them. Others are never put in it.",
+        "fr": "Facultatif. Les personnes dont le nom de fiche est exactement le pseudo qu'elles ont accepté de montrer sont aussi rangées dans cette catégorie, pour que le mur des remerciements puisse les afficher. Les autres n'y sont jamais rangées."
+      }
+    },
+    {
+      "key": "activeDays",
+      "type": "number",
+      "default": 40,
+      "advanced": true,
+      "label": {
+        "en": "Days a gift keeps someone listed as active",
+        "fr": "Jours pendant lesquels un don garde quelqu'un dans les actifs"
+      },
+      "help": {
+        "en": "For platforms that tell the site about each gift (not Patreon). Between 7 and 400.",
+        "fr": "Pour les plateformes qui préviennent le site à chaque don (pas Patreon). Entre 7 et 400."
+      }
+    },
+    {
+      "key": "keepDays",
+      "type": "number",
+      "default": 365,
+      "advanced": true,
+      "label": {
+        "en": "Days before a stopped supporter is forgotten",
+        "fr": "Jours avant d'oublier un soutien arrêté"
+      },
+      "help": {
+        "en": "Between 30 and 1100. The card in Contacts, if any, is never touched.",
+        "fr": "Entre 30 et 1100. La fiche dans Contacts, s'il y en a une, n'est jamais touchée."
+      }
+    },
+    {
+      "key": "cacheMinutes",
+      "type": "number",
+      "default": 360,
+      "advanced": true,
+      "label": {
+        "en": "Minutes between two automatic refreshes",
+        "fr": "Minutes entre deux actualisations automatiques"
+      },
+      "help": {
+        "en": "A refresh only happens when someone opens the page or the administration, never in the background. Between 15 and 1440.",
+        "fr": "Une actualisation n'a lieu que lorsque quelqu'un ouvre la page ou l'administration, jamais en arrière-plan. Entre 15 et 1440."
+      }
+    },
+    {
+      "key": "pageSize",
+      "type": "number",
+      "default": 48,
+      "advanced": true,
+      "label": {
+        "en": "Nicknames per page",
+        "fr": "Pseudos par page"
+      },
+      "help": {
+        "en": "Between 6 and 50.",
+        "fr": "Entre 6 et 50."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "supporters_status",
+      "readOnly": true,
+      "description": "State of the supporters module: platform ('provider'), whether it is set up ('state': 'ok', 'setup' when a key or step is missing, 'down' when the platform did not answer last time, with 'reason'), counts (active, ended, filed in Contacts, waiting for an agreement, nicknames waiting for approval, nicknames shown), last refresh time and the tiers (platform name, public label chosen by the owner, rank; never an amount). Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "supporters_list",
+      "readOnly": true,
+      "description": "List supporters, 50 per page. For each: pid (the id used by the other tools), platform, tier names, active or ended, 'consent' ('none', 'pending' = waiting for the owner's approval, 'approved'), 'hidden', 'filed' and contactId when filed in Contacts. The platform name is given only while the person is NOT yet filed in Contacts (afterwards it lives in Contacts only). Never an amount or an e-mail address. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Page number, 1 by default."
+          },
+          "filter": {
+            "type": "string",
+            "enum": [
+              "all",
+              "active",
+              "ended",
+              "pending",
+              "unfiled"
+            ],
+            "description": "all (default), active, ended, pending (nickname waiting for approval) or unfiled (not yet in Contacts)."
+          }
+        }
+      }
+    },
+    {
+      "name": "supporters_refresh",
+      "description": "Ask the platform for the member list now (Patreon only; other platforms push or import). Updates the supporters; shows nothing publicly by itself. Returns the result and counts.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "supporters_tier_label",
+      "description": "Set the public label of a tier (the only words about tiers that visitors see), in one language; empty text removes it. Never use an amount in a label. Use supporters_status to see the tier keys.",
+      "input": {
+        "type": "object",
+        "required": [
+          "tier",
+          "label"
+        ],
+        "properties": {
+          "tier": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Tier key, as given by supporters_status."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Public label, 40 characters at most. Empty to remove."
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Language, such as 'fr' or 'en'. Default: the default language of the site."
+          }
+        }
+      }
+    },
+    {
+      "name": "supporters_approve",
+      "description": "Approve (or refuse) the nickname a person agreed to show. Only a nickname the person chose themselves on their personal link can be approved; nothing can be shown without it. Refusing hides the nickname.",
+      "input": {
+        "type": "object",
+        "required": [
+          "pid"
+        ],
+        "properties": {
+          "pid": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Supporter id from supporters_list."
+          },
+          "approve": {
+            "type": "boolean",
+            "description": "true (default) to approve, false to refuse."
+          }
+        }
+      }
+    },
+    {
+      "name": "supporters_hide",
+      "description": "Hide a supporter from the public page, or show them again (they can only be shown if they gave their agreement and it is approved).",
+      "input": {
+        "type": "object",
+        "required": [
+          "pid"
+        ],
+        "properties": {
+          "pid": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Supporter id from supporters_list."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "true (default) to hide, false to show again."
+          }
+        }
+      }
+    },
+    {
+      "name": "supporters_consent_link",
+      "description": "Create (or show again) the personal link a supporter opens to agree, or refuse, to appear on the public page. The owner sends it to the person herself. Returns the path of the link. Creating a new one makes the previous link stop working.",
+      "input": {
+        "type": "object",
+        "required": [
+          "pid"
+        ],
+        "properties": {
+          "pid": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Supporter id from supporters_list."
+          },
+          "renew": {
+            "type": "boolean",
+            "description": "true to replace the link by a new one (the old one stops working). Default false."
+          }
+        }
+      }
+    },
+    {
+      "name": "supporters_file_contacts",
+      "description": "File the supporters who are not yet in Contacts into the chosen category (up to 100 at a time), creating or completing cards. Writes to the address book: grant it only if you want that. The platform name is then dropped from this module.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "supporters_forget",
+      "destructive": true,
+      "default": false,
+      "description": "Forget a supporter: removes everything this module keeps about the person (agreement included). The card in Contacts, if any, is not touched. Cannot be undone; the person comes back at the next refresh or gift if still active.",
+      "input": {
+        "type": "object",
+        "required": [
+          "pid"
+        ],
+        "properties": {
+          "pid": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Supporter id from supporters_list."
+          }
+        }
+      }
+    }
+  ]
+}
