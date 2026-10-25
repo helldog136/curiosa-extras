@@ -33,6 +33,8 @@ const RENAMED = {
 const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical", "modules/twitch-bot"];
 // Ces modules comptent leurs visiteurs par ctx.api.visitor.fingerprint (cœur 0.2.6, qui couvre aussi les onglets).
 const VISITOR_API = ["modules/game-suggestions", "examples/guestbook", "modules/twitch-raid"];   // twitch-raid 2.2 : route publique « members » limitée par visiteur, et script de page (cœur 0.2.6)
+// Modules qui lisent `ambiguous` de ctx.api.rawg.cover (lien « Ce n'est pas le bon jeu ? », cœur 0.2.10).
+const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules/stream-story"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
@@ -42,7 +44,7 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
     // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
-    const expected = dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    const expected = RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
     assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }
@@ -84,7 +86,7 @@ test("onglets : un module qui place un bloc du panneau dans un onglet demande le
   for (const dir of BLOCKS_IN_TABS) {
     const m = read(dir);
     assert.ok(parseManifest(m).ok, dir);
-    assert.equal(m.minCore, "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
+    assert.equal(m.minCore, RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
     const code = fs.readdirSync(new URL(`../${dir}/`, import.meta.url), { recursive: true }).filter((f) => /\.mjs$/.test(f))
       .map((f) => fs.readFileSync(new URL(`../${dir}/${f}`, import.meta.url), "utf8")).join("\n");
     const known = new Set(["settings", "sources", "general", ...(m.tabs ?? []).map((t) => t.id)]);
