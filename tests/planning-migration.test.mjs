@@ -141,7 +141,9 @@ test("catalogue : le module que la migration doit installer (calendar-ical) est 
     assert.ok(target, `${seed.module} absent de catalogue/index.json`);
     assert.ok(target.provides?.includes("planning.slot"), "l'index annonce le sujet : c'est lui que le cœur vérifie avant de télécharger");
     assert.equal(target.ref, planning.ref, "même étiquette que le Planning : publiés ensemble");
-    assert.ok(!target.requires || target.requires.core <= planning.requires.core);
+    const num = (v) => String(v).split(".").map(Number);
+    const cmp = (a, b) => { const x = num(a), y = num(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+    assert.ok(!target.requires?.core || cmp(target.requires.core, planning.requires.core) <= 0, "le cœur demandé par le module installé ne dépasse pas celui du Planning (comparaison numérique : 0.2.5 < 0.2.10)");
   }
 });
 
