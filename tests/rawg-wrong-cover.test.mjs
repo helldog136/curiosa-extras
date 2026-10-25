@@ -131,3 +131,21 @@ test("FR/EN : mêmes clés pour les trois modules ; minCore 0.2.10 ; versions au
   }
   assert.ok(fs.existsSync(new URL("../docs/changelog-parts/rawg-wrong-cover.md", import.meta.url)));
 });
+
+/* ───────────── Mise à jour à chaud ───────────── */
+test("mise à jour à chaud : Planning et Story d'annonce copiés dans un autre dossier et chargés avec ?v= montrent le lien (aucun fichier voisin d'une ancienne version)", async () => {
+  const os = await import("node:os"), path = await import("node:path"), { pathToFileURL } = await import("node:url");
+  const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), "rawg-link-update-"));
+  try {
+    for (const m of ["planning", "stream-story"]) fs.cpSync(new URL(`../modules/${m}`, import.meta.url).pathname, path.join(dir, m), { recursive: true });
+    const load = (m, v) => import(`${pathToFileURL(path.join(dir, m, "index.mjs")).href}?v=${v}`);
+    const p = await load("planning", "nouveau");
+    assert.equal(p.wrongCoverHref("A B"), HREF("A%20B"));
+    feed = calendar(vevent("1", hours(2), hours(3), "Soirée", ["DESCRIPTION:Jeu: Celeste"]));
+    assert.ok(textOf(await p.default.adminPanel(pctx("fr", { rawgCover: { ...FOUND, ambiguous: true } }))).includes(HREF("Celeste")));
+    const s = (await load("stream-story", "nouveau")).default;
+    const c = sctx({ ...FOUND, ambiguous: true });
+    const r = await (await s.routes.cover(new Request(`${SITE}/m/story/cover?game=Celeste`, { headers: { "x-story-token": await (await import(`${pathToFileURL(path.join(dir, "stream-story", "data.mjs")).href}?v=nouveau`)).mintToken(c) } }), c)).json();
+    assert.deepEqual([r.ambiguous, r.title], [true, "Celeste"]);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
