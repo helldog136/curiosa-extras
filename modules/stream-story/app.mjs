@@ -42,7 +42,7 @@ const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "full", 
 /* ───────────── L'état ───────────── */
 const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
-  ev: { items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
+  ev: { items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
   images: new Map(), scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
@@ -223,6 +223,7 @@ function renderNotes() {
 }
 
 function renderEvents() {
+  renderCoverWarn();
   renderEventChosen(); renderFilter(); renderEventList(); renderNotes();
   $("manual").hidden = !S.useManual;
   $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
@@ -237,7 +238,7 @@ function pickEvent(e, { quiet = false } = {}) {
   S.useManual = false;
   S.ev.selected = { ...e, cover: "" };
   S.cfg.eventId = e.id; S.cfg.eventSource = kindOf(e.source); S.cfg.streamKey = e.legacyKey || "";
-  S.ev.coverState = "";
+  S.ev.coverState = ""; S.ev.coverAmbiguous = false;
   renderEvents(); rebuild();
   if (!quiet) {
     say(L("event_ready", { title: e.title || L("untitled") }), "ok");
@@ -250,8 +251,21 @@ async function loadCover(e) {
   const r = await api(`cover?game=${encodeURIComponent(e.games[0])}`, { ms: 12000 });
   if (!r.ok || S.ev.selected?.id !== e.id) return;
   S.ev.coverState = r.coverState || "";
+  S.ev.coverAmbiguous = r.ambiguous === true && !!r.cover; S.ev.coverTitle = String(r.title || ""); S.ev.coverFound = String(r.found || "");
   if (r.cover) { S.ev.selected.cover = r.cover; rebuild(); }
-  renderNotes();
+  renderNotes(); renderCoverWarn();
+}
+/** Le lien stable du cœur vers l'écran qui permet de choisir le bon jeu (le titre est encodé). */
+const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title)}`;
+/** Avant de fabriquer la vidéo : si la jaquette est peut-être celle d'un autre jeu, on le dit, avec le lien. Ne bloque jamais la vidéo. */
+function renderCoverWarn() {
+  const E = S.ev, box = $("cover-warn");
+  box.replaceChildren();
+  const show = !S.useManual && E.coverAmbiguous && E.coverTitle && E.selected?.games?.length && S.cfg.elements.includes("game");
+  box.hidden = !show;
+  if (!show) return;
+  box.append(h("span", { text: `${L(E.coverFound ? "cover_ambiguous_named" : "cover_ambiguous", { game: E.coverTitle, found: E.coverFound })} ` }),
+    h("a", { href: wrongCoverHref(E.coverTitle), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
 }
 
 /** Lit la liste (`more` : la page suivante). Les réponses arrivées en retard d'une recherche précédente sont ignorées. */
@@ -496,7 +510,7 @@ function updateInfo() {
 
 function bind() {
   const on = (id, ev, fn) => $(id).addEventListener(ev, fn);
-  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); rebuild(); });
+  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); renderCoverWarn(); rebuild(); });
   for (const st of P.STYLES) on(`style-${st}`, "change", () => { S.cfg.style = st; rebuild(); });
   for (const f of P.FORMATS) on(`format-${f.id}`, "change", () => { S.cfg.format = f.id; rebuild(); });
   on("duration", "input", () => { S.cfg.duration = Number($("duration").value) || 15; $("duration-out").textContent = L("seconds", { n: S.cfg.duration }); rebuild(); });

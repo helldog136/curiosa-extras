@@ -12,7 +12,7 @@ export const KEYS = [
   "h_event", "event_help", "event_chosen", "event_none_chosen", "event_manual_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
   "event_zone", "event_local", "event_also", "event_picked", "event_row", "event_retry", "event_manual", "event_manual_close", "event_all_down", "event_busy", "event_ready", "ev_down", "ev_down_stale", "ev_setup", "ev_note",
   "type_stream", "type_live", "type_premiere", "type_video", "type_event", "type_other",
-  "cover_no_key", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
+  "cover_no_key", "cover_ambiguous", "cover_ambiguous_named", "cover_wrong", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
   "h_elements", "el_title", "el_when", "el_countdown", "el_game", "el_brand", "el_text", "el_costreamers", "countdown_is", "no_stream_info",
   "h_texts", "text_label", "text_help", "channel_label", "channel_help", "lang_label", "lang_fr", "lang_en",
   "h_look", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown", "style_countdown_hint", "style_minimal", "style_minimal_hint",
@@ -155,6 +155,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div class="bar"><button type="button" id="play" aria-pressed="true">${T("pause")}</button><button type="button" id="replay">${T("replay")}</button><span id="time" class="muted"></span></div>
 <label class="check" for="safe"><input type="checkbox" id="safe"><span>${T("safe_label")}</span></label><p class="muted">${T("safe_help")}</p>
 <p id="reduced" class="muted" hidden>${T("reduced")}</p><p id="empty" class="warn" role="alert" hidden>${T("empty")}</p><p class="muted">${T("silent_note")}</p>
+<p id="cover-warn" class="warn" hidden></p>
 <button type="button" class="primary" id="generate">${T("generate")}</button>
 <div id="progress-box" hidden><progress id="progress" max="1" value="0"></progress><p id="progress-text" class="muted" aria-live="polite"></p><button type="button" id="cancel">${T("cancel_video")}</button></div>
 <div id="result" hidden></div></div></aside></div></main>

@@ -42,6 +42,8 @@
   "coversDown": "RAWG est injoignable pour le moment. Rien n'a été modifié : réessayez plus tard.",
   "coversPartial": " Déjà trouvées avant l'arrêt : {found}.",
   "coversDone": "Recherche terminée : {found} jaquette(s) trouvée(s), {none} sans résultat sur RAWG.",
+  "coversAmbiguous": "Pour ces suggestions, la jaquette est peut-être celle d'un autre jeu :",
+  "coverWrong": "Ce n'est pas le bon jeu ?",
   "coversMore": " Il en reste {left} à essayer : relancez la recherche.",
   "rawgBanner": "Aucune clé RAWG n'est réglée sur le site : les suggestions n'auront pas d'image. Saisissez-la une seule fois, dans les Réglages du site.",
   "rawgOpenSettings": "Ouvrir les Réglages du site →"

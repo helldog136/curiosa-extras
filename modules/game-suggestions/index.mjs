@@ -17,6 +17,7 @@ const HOUR = 3_600_000;
 const MONTH = 30 * 24 * HOUR;
 const COOKIE = "vh_gs_votes";
 
+const escMd = (s) => String(s).replace(/([\\`*_[\]<>])/g, "\\$1");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const clean = (v, max, multiline = false) => {
   let t = String(v ?? "").normalize("NFC").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u2028\u2029‪-‮⁦-⁩]/g, "");
@@ -56,7 +57,9 @@ export async function coverFor(ctx, title) {
     const r = await svc.cover(title);
     const status = SVC_STATUS[r?.status] ?? "down";
     const url = status === "found" ? safeHttps(r.url) : null;
-    return status === "found" && !url ? { status: "none", url: null } : { status, url };
+    if (status === "found" && !url) return { status: "none", url: null };
+    // `ambiguous` (cœur 0.2.10) : le jeu trouvé n'est peut-être pas le bon ; ajouté seulement quand il est vrai.
+    return { status, url, ...(status === "found" && r?.ambiguous === true ? { ambiguous: true } : {}) };
   } catch { return { status: "down", url: null }; }
 }
 
@@ -125,7 +128,7 @@ export async function catchUpCovers(ctx, { force = false, now = Date.now(), paus
     const fresh = await ctx.api.store.get(row.id);          // relit : un vote arrivé entre-temps ne doit pas être écrasé
     if (!fresh) continue;
     const tries = fresh.data.coverKey === fp ? Number(fresh.data.coverTries) || 0 : 0;
-    await ctx.api.store.update(row.id, { ...fresh.data, ...(res.url ? { coverUrl: res.url } : {}), coverCheckedAt: new Date(now).toISOString(), coverResult: res.status, coverKey: fp, coverTries: tries + 1 });
+    await ctx.api.store.update(row.id, { ...fresh.data, ...(res.url ? { coverUrl: res.url } : {}), ...(res.ambiguous ? { coverAmbiguous: true } : {}), coverCheckedAt: new Date(now).toISOString(), coverResult: res.status, coverKey: fp, coverTries: tries + 1 });
     report[res.status === "found" ? "found" : "none"]++;
   }
   report.left = due.length - report.found - report.none;
@@ -153,8 +156,29 @@ export async function dropOldKey(ctx) {
 
 const rows = async (ctx) => (await ctx.api.store.list(COLLECTION, { limit: 1000 })).map((r) => ({
   id: r.id, at: r.createdAt, title: String(r.data.title ?? ""), status: isStatus(r.data.status) ? r.data.status : "proposed",
-  cover: safeHttps(r.data.coverUrl), by: String(r.data.submitterName ?? ""), note: String(r.data.note ?? ""), votes: Number(r.data.replayVotes) || 0,
+  cover: safeHttps(r.data.coverUrl), ambiguous: r.data.coverAmbiguous === true && !!safeHttps(r.data.coverUrl), by: String(r.data.submitterName ?? ""), note: String(r.data.note ?? ""), votes: Number(r.data.replayVotes) || 0,
 }));
+
+/** Lien stable du cœur vers l'écran de correction d'une jaquette (administration seulement). Le titre est encodé, et les signes qui casseraient un lien Markdown aussi. */
+export const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
+
+/**
+ * Les jaquettes douteuses (`coverAmbiguous`) sont redemandées au cœur quand l'admin s'ouvre : si la propriétaire a corrigé le choix, la nouvelle jaquette remplace l'ancienne
+ * et la mention disparaît. Au plus 10 titres par ouverture, jamais d'exception ; les réponses d'erreur ne changent rien.
+ */
+export async function refreshAmbiguous(ctx, list) {
+  const todo = list.filter((g) => g.ambiguous).slice(0, 10);
+  for (const g of todo) {
+    const res = await coverFor(ctx, g.title);
+    if (res.status !== "found" && res.status !== "none") continue;
+    if (res.ambiguous) continue;
+    const fresh = await ctx.api.store.get(g.id);
+    if (!fresh) continue;
+    const { coverAmbiguous, ...rest } = fresh.data;
+    await ctx.api.store.update(g.id, { ...rest, coverUrl: res.url ?? null, coverResult: res.status });
+    g.ambiguous = false; g.cover = res.url ?? "";
+  }
+}
 
 const baseHref = (ctx) => { const b = ctx.instance.basePath; return b === null || b === undefined ? "/" : b ? `/${b}` : "/"; };
 
@@ -201,7 +225,7 @@ export default {
       const found = await coverFor(ctx, title);
       // Une réponse claire de RAWG (jaquette ou « inconnu ») est mémorisée ; une panne ou une clé absente laisse la tâche de rattrapage s'en charger.
       const tried = found.status === "found" || found.status === "none" ? { coverCheckedAt: new Date().toISOString(), coverResult: found.status, coverKey: await currentEpoch(ctx), coverTries: 1 } : {};
-      await ctx.api.store.add(COLLECTION, { title, status: "proposed", coverUrl: found.url, ...tried, submitterName: clean(form.get("name"), 40) || null, note: note || null, replayVotes: 0, lastVotedAt: null });
+      await ctx.api.store.add(COLLECTION, { title, status: "proposed", coverUrl: found.url, ...tried, ...(found.ambiguous ? { coverAmbiguous: true } : {}), submitterName: clean(form.get("name"), 40) || null, note: note || null, replayVotes: 0, lastVotedAt: null });
       return Response.json({ ok: true });
     },
 
@@ -242,6 +266,7 @@ export default {
 
   async adminPanel(ctx) {
     const list = await rows(ctx);
+    try { await refreshAmbiguous(ctx, list); } catch { /* la vérification est un plus : l'admin s'affiche quand même */ }
     const missing = list.filter((g) => !g.cover).length;
     const state = await readState(ctx);
     const keyed = await hasKey(ctx);
@@ -265,6 +290,8 @@ export default {
         rowActions: [...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}` })), { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }],
       },
       ...coverBlocks,
+      // Administration seulement : pour chaque jaquette douteuse, le lien vers l'écran du cœur qui permet de choisir le bon jeu.
+      ...(list.some((g) => g.ambiguous) ? [{ type: "markdown", text: [ctx.t("coversAmbiguous"), ...list.filter((g) => g.ambiguous).slice(0, 50).map((g) => `- ${escMd(g.title)} : [${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})`)].join("\n") }] : []),
     ];
   },
 
