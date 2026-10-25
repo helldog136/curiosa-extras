@@ -6,7 +6,7 @@
     "en": "Contacts",
     "fr": "Contacts"
   },
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": {
     "en": "Your private address book: people and organisations, their accounts on the networks (Twitch, YouTube, Bluesky…), categories, notes and photo. Each person lives here once; the rest of the site only links to them.",
     "fr": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux (Twitch, YouTube, Bluesky…), catégories, notes et photo. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer."

@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.19.0
+
+*Des mises à jour plus sûres pour six modules, un lien pour corriger une jaquette qui n'est pas la bonne, et une administration du Raid Twitch aux mots plus neutres. Pour Curiosa 0.2.10 ou plus. Modules touchés : Questions fréquentes 1.0.1, Contacts 2.2.2, Mur des remerciements 1.0.1, Assistant maison 1.0.1, Autres plateformes 1.0.1, Labyrinthe en overlay 1.1.1, Planning 2.3.0, Story d'annonce 2.3.0, Suggestions de jeux 1.3.0 et Raid Twitch 2.2.3.*
+
+### Améliorations
+
+- **Mises à jour plus sûres pour six modules** (Questions fréquentes, Contacts, Mur des remerciements, Assistant maison, Autres plateformes, Labyrinthe en overlay). Mettre un module à jour sans redémarrer le site est maintenant vérifié automatiquement pour chacun des modules du dépôt, ce qui évite qu'une mise à jour le laisse « impossible à charger ». Ces six-là avaient un défaut caché, corrigé avant qu'il ne se produise. Rien ne change pour vous : mêmes pages, mêmes réglages, mêmes données.
+- **« Ce n'est pas le bon jeu ? » dans Planning, Story d'annonce et Suggestions de jeux** (Planning 2.3.0, Story d'annonce 2.3.0, Suggestions de jeux 1.3.0). Quand le site n'est pas sûr du jeu trouvé pour une jaquette, un lien discret ouvre l'écran de correction, déjà sur le bon titre : vous choisissez le bon jeu en deux clics. Dans la Story d'annonce, vous êtes prévenu avant de fabriquer la vidéo, qui n'est jamais bloquée. Les Suggestions de jeux prennent la bonne jaquette dès que vous rouvrez l'administration. Les visiteurs ne voient jamais ce lien.
+- **Raid Twitch : une administration aux mots neutres** (Raid Twitch 2.2.3). L'administration ne parle plus de « membres » ni de « communauté » mais de « chaînes » et de « la liste », en français comme en anglais. Le dock déjà ajouté dans OBS et vos réglages ne changent pas ; vos propres textes restent tels quels.
+
+### Pour les développeurs
+
+- **Test générique de mise à jour à chaud** : `tests/hot-update-all.test.mjs` (aides dans `tests/helpers/hotUpdate.mjs`, règle expliquée dans `docs/HOT-UPDATE.md`). Pour chaque module, analyse du code des fichiers chargés par le serveur (aucun `import` relatif statique, tout `import()` relatif porte la version ; liste blanche `ALLOWED_STATIC` et `BROWSER_ONLY`), puis rejeu de la mise à jour N-1 vers N dans un seul processus pour les 34 modules à plusieurs fichiers serveur. Il exige l'historique git complet avec les étiquettes : `.github/workflows/ci.yml` passe en `fetch-depth: 0` et `HOT_UPDATE_REQUIRE_HISTORY=1` ; sans historique, le rejeu se fait sur la version courante et un test est sauté (avec sa raison). Correctifs : `faq` 1.0.1, `contacts` 2.2.2, `thanks-wall` 1.0.1, `home-assistant` 1.0.1, `platform-links` 1.0.1 (`await import(\`./x.mjs${v}\`)`), `maze-overlay` 1.1.1 (`web/generate.js` importé avec la version).
+- **Jaquettes** : `ctx.api.rawg.cover(titre)` lit `ambiguous` et `name` (cœur 0.2.10, d'où `minCore` 0.2.10 pour Planning, Story d'annonce et Suggestions de jeux). Lien `/admin/settings/rawg-covers?titre=` + titre encodé, avec le même titre que celui passé à `cover`. Planning : `coverFor`/`coversForSlots` renvoient `ambiguous`, `wrongCoverHref` exporté. Story d'annonce : la route `cover` renvoie `title`, `ambiguous`, `found` et l'éditeur affiche `#cover-warn`. Suggestions de jeux : `coverAmbiguous` et `refreshAmbiguous` (10 titres au plus à l'ouverture de l'admin).
+- **Raid Twitch 2.2.3** : textes seulement (`locales/fr.json`, `en.json`, `module.json`, README), clés de réglages et outils MCP inchangés, dock 2.1 identique (`twitch-raid-compat`). Test `twitch-raid-page-optin` : plus de « membre(s) », « communauté » ni « association » dans les textes par défaut ; parité FR/EN.
+- **Test instable corrigé** : le test d'import de Contacts (`contacts-import`) supposait qu'un aperçu de 41 lignes n'était pas fini après 1 ms, ce qui échouait sur une machine rapide. Le réglage de test `importStepMs` accepte maintenant 0 (un seul lot par pas, sans dépendre de l'horloge) ; `modules/contacts/import.mjs` change donc, d'où Contacts 2.2.2 (aucun changement pour l'utilisateur).
+- **Assemblage** : `package.json` 1.19.0, `catalogue/index.json` régénéré (refs `v1.19.0`), toujours 70 modules. Extraits : `docs/changelog-parts/hot-update-all.md`, `rawg-wrong-cover.md` et `raid-admin-wording.md`. Aucun conflit de fusion ; seul `tests/contacts-v2.test.mjs` épingle la nouvelle version de Contacts.
+
 ## 1.18.1
 
 *Deux petits correctifs : la page « En direct » du Raid Twitch disparaît complètement quand vous l'éteignez, et le bouton « Près de moi » de la Carte peut enfin demander votre position. Pour Curiosa 0.2.12 ou plus. Modules touchés : Raid Twitch 2.2.2 et Carte 1.0.1.*

@@ -369,7 +369,7 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
 });
 
 test("manifeste 2.1 : version, minCore 0.2.2, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion], ["2.2.1", "0.2.2", 2]);
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion], ["2.2.2", "0.2.2", 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   assert.equal(typeof def.migrations[2], "function");
