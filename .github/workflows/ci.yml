@@ -8,6 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # tout l'historique et les étiquettes : tests/hot-update-all.test.mjs rejoue la mise à jour depuis la dernière version publiée
+          fetch-depth: 0
       - uses: actions/checkout@v4
         with:
           repository: helldog136/Curiosa
@@ -20,4 +23,4 @@ jobs:
         working-directory: core
       - run: node scripts/build-index.mjs --check
       - run: node scripts/test.mjs
-        env: { CURIOSA_DIR: core }
+        env: { CURIOSA_DIR: core, HOT_UPDATE_REQUIRE_HISTORY: "1" }
