@@ -58,6 +58,8 @@ CURIOSA_DIR=../Curiosa npm test
 ```
 Les tests passent par le chargeur du cœur : un module ne doit utiliser que l'API publique des modules.
 
+**Mises à jour à chaud.** Le serveur d'un module n'importe jamais un fichier voisin avec `import … from "./x.mjs"` (il garderait l'ancienne version après une mise à jour sans redémarrage) : ``await import(`./x.mjs${v}`)``. Un test générique (`tests/hot-update-all.test.mjs`) le vérifie pour tous les modules et rejoue la mise à jour depuis la dernière version publiée ; il a besoin des étiquettes git (`git fetch --tags`). Voir [docs/HOT-UPDATE.md](docs/HOT-UPDATE.md).
+
 ## Soutenir le projet
 
 Ces modules sont gratuits. Si vous les aimez, un pourboire est possible sur [helldog136.be/tip-me](https://helldog136.be/tip-me) ; c'est entièrement volontaire, rien n'en dépend.
