@@ -139,8 +139,8 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
   assert.equal((await page(wEn)).title, "Live right now");
 });
 
-test("mise à jour à chaud : version 2.2.2, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.2.2");
+test("mise à jour à chaud : version 2.2.3, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
+  assert.equal(manifest.version, "2.2.3");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));
@@ -164,4 +164,28 @@ test("le dock ordinaire et la sélection ne changent pas : la page éteinte n'al
     const l = await keep(() => def.routes.live(new Request(`${BASE}/m/${w.ctx.instance.key}/live?k=${encodeURIComponent(k)}`), w.ctx));
     assert.equal((await l.json()).state, "ok");
   }
+});
+
+/* ───────────── 2.2.3 : l'administration est neutre aussi ───────────── */
+
+// Les seuls textes que le dock 2.1 montre (verrouillés par les empreintes de twitch-raid-compat) : on ne les touche pas, on ne les contrôle pas ici.
+// « remember » contient « member » : on cherche le mot entier.
+const ADMIN_BAD = /\bmembres?\b|\bmembers?\b|communaut|communit|association|collectif/i;
+const DOCK_LOCKED = /^(?:random_|copy_failed$|none_to_pick$|empty_hint$|no_partners$|nr_|err_|viewers_|list_label$|sort_|manual_label$|rm_|default_category$|not_ready$)/;
+
+test("2.2.3 : AUCUN texte par défaut (hors dock verrouillé) ne dit « membre(s) », « communauté » ou « association », en FR comme en EN, administration et réglages compris", () => {
+  const keys = Object.keys(fr).filter((k) => !DOCK_LOCKED.test(k));
+  assert.ok(keys.length > 100, "presque tous les textes sont contrôlés");
+  assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort(), "parité FR/EN exacte");
+  for (const k of keys) { assert.ok(!ADMIN_BAD.test(fr[k]), `fr.${k} : ${fr[k]}`); assert.ok(!ADMIN_BAD.test(en[k]), `en.${k} : ${en[k]}`); }
+  // Le manifeste : description, réglages (libellés, aides, choix), vie privée, descriptions des outils MCP.
+  const texts = JSON.stringify({ d: manifest.description, s: manifest.settings, p: manifest.privacy, m: manifest.mcp });
+  assert.ok(!ADMIN_BAD.test(texts), (texts.match(new RegExp(".{40}(?:" + ADMIN_BAD.source + ").{40}", "i")) ?? [""])[0]);
+  // Le README du module et la documentation de conception.
+  assert.ok(!ADMIN_BAD.test(fs.readFileSync(`${DIR}/README.md`, "utf8")), "README");
+  // Le texte du dock verrouillé n'a pas bougé : il ne contenait déjà aucun de ces mots (donc rien à renommer).
+  for (const k of Object.keys(fr).filter((x) => DOCK_LOCKED.test(x))) assert.ok(fr[k] && en[k], k);
+  // Réglage `count` : la clé ne change pas, seuls les mots changent.
+  const c = manifest.settings.find((x) => x.key === "count");
+  assert.deepEqual([c.label.fr, c.label.en], ["Combien de chaînes montrer", "How many channels to show"]);
 });
