@@ -11,15 +11,17 @@
 // Fichiers : text.mjs (outils de texte) · data.mjs (données, limiteurs) · ops.mjs (écritures partagées) · view.mjs (pages) · client.mjs (le script de confort ; son texte est recopié dans scripts/faq.js, vérifié par les tests)
 //           routes.mjs (poser une question, avis, script) · admin.mjs (administration) · mcp.mjs (assistant IA)
 
-import { C, loadItems, loadThemes, loadAsked, flag, forget } from "./data.mjs";
-import { adminActions, adminBadge, adminPanel } from "./admin.mjs";
-import { mcp } from "./mcp.mjs";
-import { routes } from "./routes.mjs";
-import { cell, plainText, slugify } from "./text.mjs";
-import { pageHref, renderPage, renderTop } from "./view.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { C, loadItems, loadThemes, loadAsked, flag, forget } = await import(`./data.mjs${v}`);
+const { adminActions, adminBadge, adminPanel } = await import(`./admin.mjs${v}`);
+const { mcp } = await import(`./mcp.mjs${v}`);
+const { routes } = await import(`./routes.mjs${v}`);
+const { cell, plainText, slugify } = await import(`./text.mjs${v}`);
+const { pageHref, renderPage, renderTop } = await import(`./view.mjs${v}`);
 
 /** Doit rester égale à `version` de module.json (le script est mis en cache par son numéro). */
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 // Deux brouillons d'exemple, créés avec l'instance : invisibles pour les visiteurs, ils montrent à Emma comment ça marche.
 const SEED = {

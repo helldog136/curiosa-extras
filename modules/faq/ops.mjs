@@ -2,8 +2,10 @@
 // Toutes supposent d'être appelées DANS `locked(ctx, …)` (une écriture à la fois par instance).
 // Règle de fond : l'assistant IA n'a accès qu'à `createDraft` et `updateDraft` ; seul `publishRow` (humain) rend une réponse visible.
 
-import { C, getRow, loadItems, loadAsked, loadThemes, siblings, nextPos, uniqueSlug } from "./data.mjs";
-import { LIMITS, fold } from "./text.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { C, getRow, loadItems, loadAsked, loadThemes, siblings, nextPos, uniqueSlug } = await import(`./data.mjs${v}`);
+const { LIMITS, fold } = await import(`./text.mjs${v}`);
 
 /** Un thème désigné par son identifiant ou par son nom (accents et majuscules ignorés). `null` si aucun ne correspond. */
 export function resolveTheme(themes, ref) {
