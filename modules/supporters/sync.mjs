@@ -29,7 +29,7 @@ export const knobs = (ctx) => ({
 
 export function within(p, ms, fallback) {
   let t;
-  return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t));
+  return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); })]).finally(() => clearTimeout(t));
 }
 
 /** Écrit la personne si elle a changé. */
@@ -59,6 +59,7 @@ async function applyPull(ctx, provider, res) {
       base.status = p.active ? "active" : "ended";
       if (p.active) base.last = today();
       if (old) { if (await put(ctx, snap, old, base)) out.updated++; continue; }
+      if (!p.active) continue;   // une personne qui ne soutient plus et qu'on n'a jamais connue n'a rien à faire ici : on ne garde que le nécessaire
       const rec = { id: null, data: base };
       const r = await D.savePerson(ctx, snap, rec);
       if (r.ok) out.added++; else out.full = true;
@@ -170,6 +171,7 @@ export async function applyRows(ctx, provider, rows, { replace = false } = {}) {
       base.since = row.since ?? base.since;
       base.tiers = row.active && tierKey ? [tierKey] : row.active ? base.tiers : [];
       if (old) { if (await put(ctx, snap, old, base)) out.updated++; continue; }
+      if (!row.active) continue;   // une ligne « arrêté » pour quelqu'un d'inconnu : rien à garder
       const r = await D.savePerson(ctx, snap, { id: null, data: base });
       if (r.ok) out.added++; else out.full = true;
     }

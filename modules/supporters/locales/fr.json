@@ -190,5 +190,8 @@
   "tidyIntro": "Les soutiens arrêtés depuis plus de {days} jours sont oubliés d'eux-mêmes quand quelqu'un met la liste à jour. Vous pouvez le faire tout de suite. Les fiches de Contacts ne sont jamais touchées.",
   "tidyButton": "Oublier les anciens soutiens arrêtés",
   "tidyDone": "{n} anciens soutiens oubliés.",
-  "tidyNothing": "Rien à oublier pour l'instant."
+  "tidyNothing": "Rien à oublier pour l'instant.",
+  "tierRankField": "Niveau (plus grand = plus haut)",
+  "tierRankHelp": "Les niveaux les plus hauts sont montrés en premier. Exemple : 3.",
+  "errRank": "Entrez un nombre entier entre 1 et 60. Exemple : 3."
 }

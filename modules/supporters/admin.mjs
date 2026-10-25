@@ -191,6 +191,7 @@ async function tierScreen(ctx, k) {
     { type: "adminForm", action: "tierSave", submitLabel: t("save"), cancelHref: "?", fields: [
       { name: "k", kind: "hidden", value: k },
       ...ctx.locales.map((loc) => ({ name: `label_${loc}`, kind: "text", label: ctx.locales.length > 1 ? `${t("tierLabelField")} (${loc.toUpperCase()})` : t("tierLabelField"), value: tier.label?.[loc] ?? "", help: t("tierLabelHelp", { max: LIMITS.label }) })),
+      ...(R.PROVIDERS[String(tier.k).split(":")[0]]?.ranked ? [] : [{ name: "rank", kind: "number", label: t("tierRankField"), value: String(tier.rank ?? 1), help: t("tierRankHelp") }]),
     ] },
   ];
 }
@@ -280,7 +281,9 @@ export const actions = {
   tierSave: { right: RIGHT_LABELS, async run(ctx, values) {
     const k = clean(values.k, 120), texts = {};
     for (const loc of ctx.locales) { const x = clean(values[`label_${loc}`], 400); if (x) texts[loc] = x; }
-    const r = await O.tierLabel(ctx, k, texts);
+    const rankRaw = clean(values.rank, 6);
+    if (rankRaw && !/^\d{1,2}$/.test(rankRaw)) return { errors: { rank: ctx.t("errRank") } };
+    const r = await O.tierLabel(ctx, k, texts, rankRaw ? Number(rankRaw) : undefined);
     if (!r.ok) {
       if (r.code === "long") return { errors: { [`label_${r.field}`]: ctx.t("errLabelLong", { max: LIMITS.label }) } };
       if (r.code === "amount") return { errors: { [`label_${r.field}`]: ctx.t("errLabelAmount") } };

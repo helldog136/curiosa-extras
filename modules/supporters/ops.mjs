@@ -92,12 +92,12 @@ export async function fileContacts(ctx) {
 }
 
 /** Les libellés publics d'un palier (par langue ; vide = retiré). Refuse ce qui ressemble à un montant. */
-export async function tierLabel(ctx, k, texts) {
+export async function tierLabel(ctx, k, texts, rank) {
   for (const [loc, text] of Object.entries(texts)) {
     if ([...text].length > LIMITS.label) return { ok: false, code: "long", field: loc };
     if (P.looksLikeAmount(text)) return { ok: false, code: "amount", field: loc };
   }
-  return D.setTierLabel(ctx, k, texts);
+  return D.setTierLabel(ctx, k, texts, rank);
 }
 
 /** Les modèles de départ pour les libellés (gabarits) : appliqués aux paliers du plus bas au plus haut. */

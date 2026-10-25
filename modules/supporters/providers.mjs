@@ -55,6 +55,7 @@ const PATREON = {
   id: "patreon",
   label: { fr: "Patreon", en: "Patreon" },
   mode: "pull",
+  ranked: true,   // la plateforme donne les montants : le rang des paliers vient d'elle (on ne garde que le rang, jamais le montant)
   hosts: ["www.patreon.com"],
   expires: false,
   secret: { fr: "Le « Creator's Access Token » de votre page développeur Patreon. Il permet seulement de LIRE la liste de vos membres.", en: "The “Creator's Access Token” from your Patreon developer page. It only lets the site READ your member list." },

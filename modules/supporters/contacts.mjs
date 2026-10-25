@@ -14,7 +14,7 @@ export const SOURCE = "supporters";
 export const timing = { callMs: 4000, providersMs: 1500, resolveMs: 3500 };
 
 const SLOW = Symbol("slow");
-export const within = (p, ms, fallback = SLOW) => { let t; return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
+export const within = (p, ms, fallback = SLOW) => { let t; return Promise.race([Promise.resolve(p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); })]).finally(() => clearTimeout(t)); };
 
 export async function providers(ctx, service = SERVICE) {
   const list = await within(Promise.resolve().then(() => ctx.api.services.providers(service)), timing.providersMs, null);

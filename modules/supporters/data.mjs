@@ -85,7 +85,7 @@ export const stateOf = (snap) => snap.state?.data ?? {};
 export const newPid = () => randomBytes(6).toString("hex");
 
 /** Un soutien neuf, avec les valeurs de départ sûres : caché, sans accord. */
-export const blankPerson = (k, provider, over = {}) => ({ pid: newPid(), k, provider, name: "", contactId: null, tiers: [], since: null, last: null, status: "active", hidden: false, consent: null, approved: false, gen: 0, wall: false, ...over });
+export const blankPerson = (k, provider, over = {}) => ({ pid: newPid(), k, provider, name: "", contactId: null, tiers: [], since: null, first: P.dayOf(Date.now()), last: null, status: "active", hidden: false, consent: null, approved: false, gen: 0, wall: false, ...over });
 
 export async function savePerson(ctx, snap, rec) {
   if (rec.id) await ctx.api.store.update(rec.id, rec.data);
@@ -118,12 +118,12 @@ export async function upsertTier(ctx, snap, { k, name, rank }) {
   return rec;
 }
 
-export async function setTierLabel(ctx, k, label) {
+export async function setTierLabel(ctx, k, label, rank) {
   return withLock(ctx, async () => {
     const snap = await snapshot(ctx, { fresh: true });
     const t = snap.tiers.get(k);
     if (!t) return { ok: false, code: "unknown" };
-    await ctx.api.store.update(t.id, { ...t.data, label: P.cleanTexts(label, LIMITS.label) });
+    await ctx.api.store.update(t.id, { ...t.data, label: P.cleanTexts(label, LIMITS.label), ...(Number.isInteger(rank) ? { rank: Math.min(LIMITS.tiers, Math.max(1, rank)) } : {}) });
     return { ok: true };
   });
 }
@@ -136,7 +136,7 @@ export async function purge(ctx, snap, { keepDays, expiresOf, activeDays, now = 
   for (const rec of [...snap.people.values()]) {
     if (removed >= 200) break;
     const d = rec.data;
-    const stale = P.daysSince(d.last ?? d.since, now) > keepDays;
+    const stale = P.daysSince(d.last ?? d.first ?? d.since, now) > keepDays;
     const gone = d.status !== "active" || (!!expiresOf?.(d) && P.daysSince(d.last, now) > activeDays);
     if (stale && gone) { await removePerson(ctx, rec); snap.people.delete(d.k); snap.byPid.delete(d.pid); removed++; }
   }

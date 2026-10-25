@@ -190,5 +190,8 @@
   "tidyIntro": "Supporters who stopped more than {days} days ago are forgotten by themselves when someone refreshes the list. You can do it right now. Cards in Contacts are never touched.",
   "tidyButton": "Forget old stopped supporters",
   "tidyDone": "{n} old supporters forgotten.",
-  "tidyNothing": "Nothing to forget for now."
+  "tidyNothing": "Nothing to forget for now.",
+  "tierRankField": "Level (bigger = higher)",
+  "tierRankHelp": "Higher levels are shown first. Example: 3.",
+  "errRank": "Enter a whole number between 1 and 60. Example: 3."
 }
