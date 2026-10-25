@@ -11,8 +11,10 @@
 // Rejouable : une deuxième passe ne crée rien (organisations retrouvées par leur nom, fiches déjà converties sautées, notes déjà rangées).
 // Vérification avant de finir : même nombre de personnes, même nombre de notes, toutes rangées ; sinon la migration lève une erreur et le cœur
 // remet l'instance exactement dans son état d'avant (« Réessayer »). Lecture par pages de 1 000 : jamais tout le carnet en mémoire.
-import { fold, clean } from "./networks.mjs";
-import { forgetIndex, touchStamp, emailKey, validEmail, ORG_NAME_MAX, idOk, storeHasKeys } from "./data.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { fold, clean } = await import(`./networks.mjs${v}`);
+const { forgetIndex, touchStamp, emailKey, validEmail, ORG_NAME_MAX, idOk, storeHasKeys } = await import(`./data.mjs${v}`);
 
 const isV1Person = (d) => d && typeof d.name === "string" && (d.kind === undefined || "organisation" in d);
 async function* pages(store, collection) {

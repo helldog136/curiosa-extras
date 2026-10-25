@@ -3,9 +3,11 @@
 // redirection vers la page de la FAQ quand le navigateur envoie le formulaire lui-même (sans JavaScript). La destination de
 // la redirection est TOUJOURS construite ici, jamais lue dans la requête.
 
-import { C, locked, getRow, loadAsked, purgeAsked, limited, alreadyVoted, visitorId, mailDue, flag, askedKey, HOUR } from "./data.mjs";
-import { LIMITS, clean, num } from "./text.mjs";
-import { pageHref } from "./view.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { C, locked, getRow, loadAsked, purgeAsked, limited, alreadyVoted, visitorId, mailDue, flag, askedKey, HOUR } = await import(`./data.mjs${v}`);
+const { LIMITS, clean, num } = await import(`./text.mjs${v}`);
+const { pageHref } = await import(`./view.mjs${v}`);
 
 const json = (body, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
 const wantsJson = (request) => /application\/json/i.test(request.headers.get("accept") ?? "");

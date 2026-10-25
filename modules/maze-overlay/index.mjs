@@ -7,6 +7,8 @@
 import fs from "node:fs";
 
 const webDir = new URL("./web/", import.meta.url);
+// Version du fichier principal (`?v=…`) : le tracé aléatoire (web/generate.js, partagé avec le navigateur) est importé avec elle, sinon une mise à jour à chaud garderait l'ancienne copie.
+const q = new URL(import.meta.url).search;
 const clean = (list, max = 5) =>
   list.map((u) => String(u ?? "").trim()).filter((u) => /^(https?:\/\/|\/uploads\/)/.test(u)).slice(0, max);
 const num = (v, def, min, max) => Math.min(max, Math.max(min, Number(v) || def));
@@ -130,7 +132,7 @@ export default {
     },
     // Génère un tracé aléatoire (de la taille choisie dans les réglages) et le RENVOIE pour l'éditeur : rien n'est enregistré ici.
     async generate(ctx) {
-      const { generateMaze } = await import("./web/generate.js");
+      const { generateMaze } = await import(`./web/generate.js${q}`);
       const grid = generateMaze(["small", "medium", "large"].includes(ctx.setting("size")) ? ctx.setting("size") : "medium");
       return { grid: { width: grid.width, height: grid.height, cells: toCells(grid) } };
     },

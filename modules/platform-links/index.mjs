@@ -7,10 +7,12 @@
 // Un lien peut passer par une page d'avertissement (« contenu pour adultes ») : le bouton du site mène alors à /m/<clé>/go?l=<clé du lien>, une page
 // simple, sans JavaScript, qui n'est jamais indexée. Sans avertissement, l'icône mène directement à la destination.
 // La destination vient TOUJOURS de la configuration (jamais d'un paramètre de l'adresse visitée) ; l'origine des visites (utm_*) est ajoutée côté serveur.
-import {
-  MAX_LINKS, PLATFORMS, cleanLabel, cleanText, destinationOf, flag, inOrder, isKey, isPlatform, move, newKey,
-  normalizeUrl, originChoice, platformById, shouldAddOrigin, shouldWarn, warnChoice,
-} from "./links.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const {
+  MAX_LINKS, PLATFORMS, cleanLabel, cleanText, destinationOf, flag, inOrder, isKey, isPlatform, move, newKey, normalizeUrl, originChoice,
+  platformById, shouldAddOrigin, shouldWarn, warnChoice,
+} = await import(`./links.mjs${v}`);
 
 const COLLECTION = "links";
 const RIGHT = "links.edit";

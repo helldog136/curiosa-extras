@@ -7,7 +7,9 @@
 // Seul le nom (ou un compte, dont le pseudo sert de nom) est obligatoire. Une colonne inconnue est ignorée (jamais une erreur).
 // « comptes » : « twitch:pseudo | youtube:@nom | web:monsite.be » (ou simplement des liens de profil collés, le réseau se devine).
 // « notes » : « 2026-05-01 · auteur⏎texte » ; plusieurs notes séparées par une ligne « --- ».
-import { NETWORKS, normalizeAccount, detectNetwork, clean, fold } from "./networks.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { NETWORKS, normalizeAccount, detectNetwork, clean, fold } = await import(`./networks.mjs${v}`);
 
 export const COLUMNS = [
   { key: "name", fr: "nom", en: "name", alias: ["nom complet", "full name", "fiche", "contact", "prenom nom"] },

@@ -1,13 +1,15 @@
 // Contacts — le carnet : règles métier (fiches, comptes, organisations, catégories, notes, fusion, effacement).
 // Utilisé par le service « contact.book » (service.mjs), l'administration (admin.mjs) et les outils MCP (tools.mjs). Chaque fonction rend
 // { ok: true, … } ou { ok: false, error: "<code>" } et ne lève pas (sauf `Busy` : index ou stockage injoignable dans le temps imparti).
-import { normalizeAccount, accountKey, pickPhoto, clean, fold, NETWORKS } from "./networks.mjs";
-import {
-  LIMITS, FIELDS, ORG_NAME_MAX, KINDS, STATUSES, PALETTE, idOk, validEmail, emailKey, maxContacts, getIndex, withLock, forgetIndex, readContact, readMany,
-  latestNotes, allNotes, movedTarget, liveCategory, liveCategories, categoryView, indexPut, indexDrop, indexPutCategory, indexDropCategory,
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { normalizeAccount, accountKey, pickPhoto, clean, fold, NETWORKS } = await import(`./networks.mjs${v}`);
+const {
+  LIMITS, FIELDS, ORG_NAME_MAX, KINDS, STATUSES, PALETTE, idOk, validEmail, emailKey, maxContacts, getIndex, withLock, forgetIndex, readContact,
+  readMany, latestNotes, allNotes, movedTarget, liveCategory, liveCategories, categoryView, indexPut, indexDrop, indexPutCategory, indexDropCategory,
   encCursor, decCursor, after, kindOf, getByKey, collectionOf, CARD_COLLECTIONS, keysOf, SEP,
-} from "./data.mjs";
-import { callSubjects } from "./subjects.mjs";
+} = await import(`./data.mjs${v}`);
+const { callSubjects } = await import(`./subjects.mjs${v}`);
 
 export { NETWORKS, KINDS, STATUSES, FIELDS, LIMITS };
 export const RIGHT_CREATE_CATEGORY = "categories.create";

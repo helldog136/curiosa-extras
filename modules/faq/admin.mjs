@@ -1,10 +1,12 @@
 // Questions fréquentes : l'administration. Deux onglets : « Ma FAQ » (questions, brouillons, thèmes) et « Questions reçues » (la boîte des visiteurs).
 // Tout se fait avec des boutons : ordre des thèmes et des questions par « Monter / Descendre », jamais de glisser-déposer obligatoire.
 
-import { C, locked, getRow, loadThemes, loadItems, loadAsked, purgeAsked, siblings, nextPos, renumber, flag, retentionDays } from "./data.mjs";
-import { LIMITS, clean, day, languageName, plainText } from "./text.mjs";
-import { complete, createRow, deleteRow, linkAsked, publishRow } from "./ops.mjs";
-import { buildView, markupHtml, pageHref, themeName } from "./view.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { C, locked, getRow, loadThemes, loadItems, loadAsked, purgeAsked, siblings, nextPos, renumber, flag, retentionDays } = await import(`./data.mjs${v}`);
+const { LIMITS, clean, day, languageName, plainText } = await import(`./text.mjs${v}`);
+const { complete, createRow, deleteRow, linkAsked, publishRow } = await import(`./ops.mjs${v}`);
+const { buildView, markupHtml, pageHref, themeName } = await import(`./view.mjs${v}`);
 
 const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 
