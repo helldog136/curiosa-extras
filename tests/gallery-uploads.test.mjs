@@ -86,7 +86,7 @@ test("supprimer une photo ou un album : la liste est mise à jour et le module l
   const a = await makeAlbum(ctx, { n: 2 });
   const blocks = await def.adminPanel(ctx, { query: { album: a.id, photo: `${a.id}.${a.photos[0]}` } });
   assert.match(JSON.stringify(blocks), /Supprimer cette photo/);
-  assert.match(JSON.stringify(blocks), /effacé du disque/);
+  assert.match(JSON.stringify(blocks), /effacés du disque/);
   assert.match((await act(ctx, "removePhoto", { id: `${a.id}.${a.photos[0]}` })).ok, /Photo supprimée\. Ses fichiers ont été effacés/);
   assert.equal((await data.getAlbum(ctx, a.id)).total, 1);
   assert.match((await act(ctx, "removeAlbum", { id: a.id })).ok, /supprimé/);

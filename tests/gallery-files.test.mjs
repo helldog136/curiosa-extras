@@ -108,18 +108,18 @@ test("anciennes photos (avant la 0.2.13) : suppression sans erreur, dite honnêt
   const [fresh] = await data.loadPhotos(ctx, a.album);
   // L'écran d'une ancienne photo le dit avant la suppression ; celui d'une nouvelle photo ne le dit pas.
   const panel = (id) => def.adminPanel(ctx, { query: { album: a.id, photo: `${a.id}.${id}` } }).then((b) => JSON.stringify(b));
-  assert.match(await panel(old), /Ancienne photo : elle a été envoyée avant la mise à jour du site/);
-  assert.doesNotMatch(await panel(fresh.id), /Ancienne photo/);
+  assert.match(await panel(old), /Photo envoyée avant la mise à jour du site : si vous la supprimez/);
+  assert.doesNotMatch(await panel(fresh.id), /avant la mise à jour du site/);
   const r = await act(ctx, "removePhoto", { id: `${a.id}.${old}` });
   assert.ok(r.ok, "pas d'erreur");
-  assert.match(r.ok, /ancienne photo : ce module ne peut pas effacer son fichier d'origine, qui reste sur le disque du site/);
+  assert.match(r.ok, /avait été envoyée avant la mise à jour du site : ce module ne peut pas effacer son fichier d'origine, qui reste sur le disque du site/);
   assert.doesNotMatch(r.ok, /ont été effacés/);
   assert.equal(ctx.calls.files.filter((c) => c.op === "remove").length, 0, "rien à supprimer, aucun appel inutile");
   // Album mélangé : nouvelles photos effacées, anciennes comptées.
   await addLegacyPhoto(ctx, a.id);
   await addLegacyPhoto(ctx, a.id);
   const mixed = await act(ctx, "removeAlbum", { id: a.id });
-  assert.match(mixed.ok, /Album supprimé\. Les fichiers de ses photos ont été effacés du disque\. Fichiers d'anciennes photos restés sur le disque : 4\. Ce module ne peut pas les effacer\./);
+  assert.match(mixed.ok, /Album supprimé\. Les fichiers de ses photos ont été effacés du disque\. Fichiers de photos envoyées avant la mise à jour du site restés sur le disque : 4\. Ce module ne peut pas les effacer\./);
   assert.ok(gone(ctx, fresh.full, fresh.thumb));
 });
 
@@ -246,4 +246,37 @@ test("les phrases de refus existent en français ET en anglais, avec les mêmes 
 test("neutralité : ni nom de site ni nom propre dans les textes ajoutés", () => {
   const added = ["errFileExpired", "errFileQuota", "okFilesOldAlbum", "legacyPhotoNote"].map((k) => messages("fr")[k] + messages("en")[k]).join(" ");
   assert.doesNotMatch(added, /helldog|rosalia|belgi|\.be\b/i);
+});
+
+test("après une suppression l'écran change : le résultat honnête voyage dans l'adresse et s'affiche en bandeau (le message de l'action serait perdu par la redirection)", async () => {
+  const ctx = ctxFor();
+  const a = await makeAlbum(ctx, { n: 1 });
+  const old = await addLegacyPhoto(ctx, a.id);
+  const [fresh] = await data.loadPhotos(ctx, a.album);
+  const r1 = await act(ctx, "removePhoto", { id: `${a.id}.${fresh.id}` });
+  assert.equal(r1.redirect, `?album=${a.id}&gone=p-2-0-0`);
+  const banner = (blocks) => blocks.find((b) => b.type === "banner" && /supprimée/i.test(b.text));
+  assert.match(banner(await def.adminPanel(ctx, { query: { album: a.id, gone: "p-2-0-0" } })).text, /Photo supprimée\. Ses fichiers ont été effacés du disque\./);
+  const r2 = await act(ctx, "removePhoto", { id: `${a.id}.${old}` });
+  assert.equal(r2.redirect, `?album=${a.id}&gone=p-0-2-0`);
+  const b2 = banner(await def.adminPanel(ctx, { query: { album: a.id, gone: "p-0-1-0" } }));
+  assert.match(b2.text, /avant la mise à jour du site : ce module ne peut pas effacer son fichier d'origine/);
+  assert.equal(b2.tone, "info");
+  const failed = banner(await def.adminPanel(ctx, { query: { gone: "p-0-0-2" } }));
+  assert.equal(failed.tone, "warning");
+  const r3 = await act(ctx, "removeAlbum", { id: a.id });
+  assert.match(r3.redirect, /^\?gone=a-0-0-0$/);
+  // Une valeur piégée dans l'adresse ne fabrique aucun bandeau.
+  for (const bad of ["<script>", "p-1-2", "x-1-1-1", "p-99999-0-0", "p-1-1-1-1", "", undefined]) {
+    assert.equal((await def.adminPanel(ctx, { query: { gone: bad } })).some((b) => b.type === "banner" && /supprim/i.test(b.text)), false, String(bad));
+  }
+});
+
+test("les textes visibles n'emploient pas « ancien » ni « legacy » (règle du dépôt) et ne citent aucun nom propre", () => {
+  const all = { ...messages("fr"), ...messages("en") };
+  for (const [k, v] of Object.entries(messages("fr")).concat(Object.entries(messages("en")))) {
+    if (!/^(err|ok|legacy|confirm|act)/.test(k) && k !== "legacyPhotoNote") continue;
+    assert.doesNotMatch(String(v), /\b(ancien\w*|legacy|older|old)\b/i, k);
+  }
+  assert.ok(all.legacyPhotoNote);
 });

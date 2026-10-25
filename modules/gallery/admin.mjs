@@ -140,6 +140,8 @@ export async function adminPanel(ctx, { query } = {}) {
   }
 
   // ── Onglet « Mes albums » ───────────────────────────────────────────────────────
+  const gone = goneNotice(ctx, q.gone);
+  if (gone) blocks.push({ type: "banner", tone: gone.failed ? "warning" : "info", text: gone.text });
   if (fresh.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("bannerRequests", { count: fresh.length }), href: `${here(ctx)}?tab=requests` });
   if (root === null) blocks.push({ type: "banner", tone: "warning", text: ctx.t("noPageBanner") });
 
@@ -365,6 +367,16 @@ async function setAlbumStatus(ctx, values, status) {
   });
 }
 
+/** Après une suppression, l'écran change (redirection) : le résultat voyage dans l'adresse sous forme de trois nombres (`p-1-0-0` : photo, effacés, gardés, non effacés) et s'affiche en bandeau. */
+const goneCode = (kind, files) => `${kind === "photo" ? "p" : "a"}-${Math.min(files?.removed ?? 0, 9999)}-${Math.min(files?.legacy ?? 0, 9999)}-${Math.min(files?.failed ?? 0, 9999)}`;
+function goneNotice(ctx, code) {
+  const m = /^([pa])-(\d{1,4})-(\d{1,4})-(\d{1,4})$/.exec(String(code ?? ""));
+  if (!m) return null;
+  const kind = m[1] === "p" ? "photo" : "album";
+  const text = `${ctx.t(kind === "photo" ? "okPhotoDeleted" : "okAlbumDeleted")}${filesNote(ctx, { removed: Number(m[2]), legacy: Number(m[3]), failed: Number(m[4]) }, kind)}`;
+  return { text, failed: Number(m[4]) > 0 };
+}
+
 /** Ce qui est arrivé aux fichiers, en mots simples : supprimés, gardés parce que la photo date d'avant la 0.2.13, ou pas supprimés pour l'instant. Vide s'il n'y avait rien à dire. */
 function filesNote(ctx, files, kind) {
   if (!files) return "";
@@ -378,7 +390,7 @@ function filesNote(ctx, files, kind) {
 async function removeAlbum(ctx, values) {
   return locked(ctx, async () => {
     const r = await deleteAlbum(ctx, values.id);
-    return r.ok ? { ok: `${ctx.t("okAlbumDeleted")}${filesNote(ctx, r.files, "album")}`, redirect: "?" } : { error: reasonText(ctx, r) };
+    return r.ok ? { ok: `${ctx.t("okAlbumDeleted")}${filesNote(ctx, r.files, "album")}`, redirect: `?gone=${goneCode("album", r.files)}` } : { error: reasonText(ctx, r) };
   });
 }
 
@@ -435,7 +447,7 @@ async function removePhoto(ctx, values) {
   if (!ids) return { error: ctx.t("errNotFound") };
   return locked(ctx, async () => {
     const r = await deletePhoto(ctx, ids.album, ids.photo);
-    return r.ok ? { ok: `${ctx.t("okPhotoDeleted")}${filesNote(ctx, r.files, "photo")}`, redirect: `?album=${ids.album}` } : { error: reasonText(ctx, r) };
+    return r.ok ? { ok: `${ctx.t("okPhotoDeleted")}${filesNote(ctx, r.files, "photo")}`, redirect: `?album=${ids.album}&gone=${goneCode("photo", r.files)}` } : { error: reasonText(ctx, r) };
   });
 }
 
