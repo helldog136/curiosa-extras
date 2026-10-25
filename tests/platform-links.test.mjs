@@ -187,7 +187,7 @@ test("icônes : le module fournit « social.link » (label, url https, icône du
   const c = await add(ctx, "other", "example.org/boutique", { label: "Ma boutique" });
   const out = await links(ctx);
   assert.deepEqual(out.map((x) => x.label), ["OnlyFans", "Patreon", "Ma boutique"]);
-  assert.deepEqual(out.map((x) => Object.keys(x).sort().join()), ["icon,label,referrerPolicy,rel,target,url", "icon,label,referrerPolicy,rel,target,url", "icon,label,referrerPolicy,rel,target,url"]);
+  assert.deepEqual(out.map((x) => Object.keys(x).sort().join()), ["icon,label,rel,target,url" /* OnlyFans : page 18+ */, "icon,label,referrerPolicy,rel,target,url", "icon,label,referrerPolicy,rel,target,url"]);
   for (const x of out) assert.ok(isSafeExternalUrl(x.url) && x.url.startsWith("http"), x.url);
   await mod.saveLink(ctx, { visible: false }, b.id);
   assert.deepEqual((await links(ctx)).map((x) => x.label), ["OnlyFans", "Ma boutique"]);
