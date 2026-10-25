@@ -10,7 +10,7 @@ afterEach(() => reset());
 
 const page = (ctx, ...segments) => def.page(ctx, { segments });
 const peopleOf = async (ctx) => [...(await D.snapshot(ctx, { fresh: true })).people.values()].map((r) => r.data);
-const T = { a: { id: 11, title: "Petit", cents: 300 }, b: { id: 12, title: "Moyen", cents: 800 }, c: { id: 13, title: "Grand", cents: 2500 } };
+const T = { a: { id: 11, title: "Petit", cents: 7100191 }, b: { id: 12, title: "Moyen", cents: 7200193 }, c: { id: 13, title: "Grand", cents: 7300197 } };
 const M = (id, name, status = "active_patron", tiers = [11], since = "2025-02-03T10:00:00.000+00:00") => ({ id, name, status, since, tiers });
 
 /* ───────────── Les petites fonctions ───────────── */
@@ -130,7 +130,7 @@ test("Patreon : actualiser lit les membres actifs, leur palier (rang, jamais le 
   const tiers = [...(await D.snapshot(ctx, { fresh: true })).tiers.values()].map((r) => r.data);
   assert.deepEqual(tiers.map((t) => [t.name, t.rank]).sort((a, b) => a[1] - b[1]), [["Petit", 1], ["Moyen", 2], ["Grand", 3]], "rang du plus bas au plus haut");
   const dump = JSON.stringify(ctx.dumpStore());
-  for (const secret of ["300", "800", "2500", "must-never-be-read", "amount", "cents", "tok-creator"]) assert.ok(!dump.includes(secret), `« ${secret} » ne doit jamais être gardé`);
+  for (const secret of ["7100191", "7200193", "7300197", "must-never-be-read", "amount", "cents", "tok-creator"]) assert.ok(!dump.includes(secret), `« ${secret} » ne doit jamais être gardé`);
   assert.ok(pat.calls.every((c) => new URL(c.url).hostname === "www.patreon.com"));
   assert.ok(pat.calls.every((c) => !/email/i.test(c.url)), "aucune adresse e-mail n'est demandée");
 });
