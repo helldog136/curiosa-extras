@@ -42,6 +42,8 @@
   "coversDown": "RAWG cannot be reached right now. Nothing was changed: try again later.",
   "coversPartial": " Found before stopping: {found}.",
   "coversDone": "Search finished: {found} cover(s) found, {none} with no result on RAWG.",
+  "coversAmbiguous": "For these suggestions, the cover may belong to another game:",
+  "coverWrong": "Not the right game?",
   "coversMore": " {left} left to try: run the search again.",
   "rawgBanner": "No RAWG key is set on the site, so suggestions will have no cover. Enter it once, in the site Settings.",
   "rawgOpenSettings": "Open the site Settings →"

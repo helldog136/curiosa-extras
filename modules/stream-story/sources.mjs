@@ -132,13 +132,17 @@ export async function loadEvents(ctx, { zone = "", now = Date.now(), force = fal
   } finally { state.inflight.delete(k); }
 }
 
-/** La jaquette d'un jeu (service du cœur), bornée : { cover, coverState: "" | "no_key" | "down" }. */
+/**
+ * La jaquette d'un jeu (service du cœur), bornée : { cover, coverState: "" | "no_key" | "down", title, ambiguous, found }.
+ * `title` : le titre demandé au cœur (le même que celui du lien « Ce n'est pas le bon jeu ? ») ; `ambiguous` : la jaquette est peut-être celle d'un autre jeu
+ * (cœur 0.2.10) ; `found` : le nom du jeu trouvé par RAWG. L'éditeur est réservé aux administrateurs : le visiteur ne voit jamais cela.
+ */
 export async function coverOf(ctx, game) {
   const name = P.oneLine(game, 80);
-  if (!name) return { cover: "", coverState: "" };
+  if (!name) return { cover: "", coverState: "", title: "", ambiguous: false, found: "" };
   const configured = await within(Promise.resolve().then(() => ctx.api?.rawg?.configured?.()), timing.coverMs, false);
-  if (!configured) return { cover: "", coverState: "no_key" };
+  if (!configured) return { cover: "", coverState: "no_key", title: name, ambiguous: false, found: "" };
   const r = await within(Promise.resolve().then(() => ctx.api.rawg.cover(name)), timing.coverMs, null);
-  if (r?.status === "found" && images.allowedUrl(r.url)) return { cover: String(r.url), coverState: "" };
-  return { cover: "", coverState: r?.status === "unreachable" || r?.status === "refused" || r === null ? "down" : "" };
+  if (r?.status === "found" && images.allowedUrl(r.url)) return { cover: String(r.url), coverState: "", title: name, ambiguous: r.ambiguous === true, found: typeof r.name === "string" ? P.oneLine(r.name, 120) : "" };
+  return { cover: "", coverState: r?.status === "unreachable" || r?.status === "refused" || r === null ? "down" : "", title: name, ambiguous: false, found: "" };
 }
