@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.18.1
+
+*Deux petits correctifs : la page « En direct » du Raid Twitch disparaît complètement quand vous l'éteignez, et le bouton « Près de moi » de la Carte peut enfin demander votre position. Pour Curiosa 0.2.12 ou plus. Modules touchés : Raid Twitch 2.2.2 et Carte 1.0.1.*
+
+### Améliorations
+
+- **Raid Twitch : les textes de la page publique sont neutres ; une page éteinte n'apparaît plus nulle part** (Raid Twitch 2.2.2). Les mots par défaut ne parlent plus de « membres » ni de « communauté » : « En direct en ce moment », « Voici qui est en direct sur Twitch maintenant. Passez leur dire bonjour ! » (vos propres mots ne changent pas). Quand la case « Afficher la page publique » est décochée, la page n'existe plus pour vos visiteurs et elle disparaît aussi du menu et du plan du site : il n'y a plus rien à retirer à la main. L'administration vous dit ce qui se passe.
+- **Carte : la position n'est demandée qu'après un clic et seulement si le module est installé** (Carte 1.0.1). Sans cette autorisation côté site, le navigateur refusait la position même après le clic. Maintenant « Près de moi » la demande normalement, uniquement quand le visiteur clique ; la position reste sur son appareil.
+
+### Pour les développeurs
+
+- **Raid Twitch 2.2.2** : fusion de `fix/raid-page-optin` (2.2.1 : textes `pub_*` neutres FR/EN, page éteinte = 404, route `members` identique à une route inconnue, `mo_page_off_addr`), puis `minCore` 0.2.12 et `"pageSetting": "publicPage"` (booléen, défaut `false`, `page: true`) : le cœur retire la page éteinte du plan du site, de `llms.txt`, du menu et de la résolution des adresses. `mo_page_off_addr` et la documentation ne parlent plus d'une entrée restante du plan du site. Les empreintes du dock 2.1 restent verrouillées par `twitch-raid-compat`.
+- **Carte 1.0.1** : permission `visitor.geolocation` et `minCore` 0.2.12 (le cœur n'ouvre `Permissions-Policy: geolocation=(self)` que si un module installé la déclare). `navigator.geolocation` n'est appelé que dans le gestionnaire de clic de « Près de moi ».
+- **Assemblage** : `package.json` 1.18.1, `catalogue/index.json` régénéré (refs `v1.18.1`, Carte 1.0.1, Raid Twitch 2.2.2), toujours 70 modules. Extraits : `docs/changelog-parts/raid-page-optin.md` et `map-geolocation.md`. Tests mis à jour : `map-module`, `twitch-raid`, `twitch-raid-large`, `twitch-raid-page-optin`, `tabs-modules` (Raid demande le cœur 0.2.12).
+
 ## 1.18.0
 
 *Sept nouveaux modules pour une association, un club ou une petite communauté : un agenda d'événements, des galeries photos, une vidéothèque, un annuaire des membres, une carte des lieux, un petit jeu quotidien et une mascotte. Et le Raid Twitch peut mettre en avant une sélection de membres en direct. Pour Curiosa 0.2.6 ou plus (0.2.5 pour la Mascotte seule). Modules nouveaux : Événements 1.0.0, Galeries photos 1.0.0, Vidéothèque 1.0.0, Annuaire 1.0.0, Carte 1.0.0, Jeu du jour 1.0.0 et Mascotte 1.0.0. Module touché : Raid Twitch 2.2.0.*

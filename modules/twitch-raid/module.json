@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.6",
+  "minCore": "0.2.12",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.2.0",
+  "version": "2.2.2",
   "platform": "twitch",
   "description": {
     "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 membres en direct tirés au hasard, pour OBS et pour une page publique.",
@@ -19,6 +19,7 @@
   "type": "utility",
   "instances": "single",
   "page": true,
+  "pageSetting": "publicPage",
   "basePath": "en-direct",
   "requires": [
     {
@@ -64,8 +65,8 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et spectateurs des membres tirés (jamais ceux « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si le visiteur clique.",
-    "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the members drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
+    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et spectateurs des chaînes tirées (jamais ceux « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si le visiteur clique.",
+    "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the channels drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
   },
   "tabs": [
     {
@@ -248,8 +249,8 @@
         "en": "Show the public page on the site"
       },
       "help": {
-        "fr": "Une page que vos visiteurs peuvent ouvrir : elle montre les mêmes membres que la sélection, avec un bouton pour les regarder sur Twitch. Son adresse se règle en mode avancé (« Adresse de la page » en haut de cette page) ; pensez à l'ajouter au menu du site.",
-        "en": "A page your visitors can open: it shows the same members as the picks, with a button to watch them on Twitch. Its address is set in advanced mode (“Page address” at the top of this page); remember to add it to the site menu."
+        "fr": "Une page que vos visiteurs peuvent ouvrir : elle montre les mêmes chaînes que la sélection, avec un bouton pour les regarder sur Twitch. Décochée, la page n'existe pas pour vos visiteurs : ils voient « page introuvable » et elle n'apparaît ni dans le menu du site ni dans le plan du site. Son adresse se règle à part, en mode avancé (« Adresse de la page » en haut de cette page) : cochez ici, puis ajoutez la page au menu du site si vous le souhaitez.",
+        "en": "A page your visitors can open: it shows the same channels as the picks, with a button to watch them on Twitch. Unticked, the page does not exist for your visitors: they see “page not found” and it appears neither in the site menu nor in the site map. Its address is set separately, in advanced mode (“Page address” at the top of this page): tick this box, then add the page to the site menu."
       }
     },
     {
@@ -263,8 +264,8 @@
         "en": "Page title"
       },
       "help": {
-        "fr": "Par exemple « En direct chez nos membres ». Laissé vide, un titre simple est utilisé.",
-        "en": "For example “Live now among our members”. Left empty, a simple title is used."
+        "fr": "Par exemple « Les chaînes à découvrir ». Laissé vide, le titre « En direct en ce moment » est utilisé.",
+        "en": "For example “Channels to discover”. Left empty, the title “Live right now” is used."
       }
     },
     {
@@ -279,8 +280,8 @@
         "en": "Introduction sentence"
       },
       "help": {
-        "fr": "Une ou deux phrases sous le titre. Laissé vide, une phrase simple est utilisée.",
-        "en": "One or two sentences under the title. Left empty, a simple sentence is used."
+        "fr": "Une ou deux phrases sous le titre. Laissé vide, la phrase « Voici qui est en direct sur Twitch maintenant. Passez leur dire bonjour ! » est utilisée.",
+        "en": "One or two sentences under the title. Left empty, the sentence “Here is who is live on Twitch right now. Come and say hello!” is used."
       }
     },
     {

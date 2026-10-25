@@ -1,4 +1,4 @@
-// LA PAGE PUBLIQUE FACULTATIVE (2.2) : « En direct chez nos membres ». Elle montre les N membres de la sélection du moment (moment.mjs), les MÊMES que ceux du dock de sélection :
+// LA PAGE PUBLIQUE FACULTATIVE (2.2) : « En direct en ce moment » (titre par défaut, réglable). Elle montre les N membres de la sélection du moment (moment.mjs), les MÊMES que ceux du dock de sélection :
 // nom (celui de la fiche de Contacts), jeu, titre, spectateurs, durée du direct, un bouton « Regarder sur Twitch » (lien sortant) et, si la propriétaire l'a permis, un bouton
 // « Afficher les aperçus ». La liste complète des membres n'est JAMAIS publique : seulement les N tirés, et jamais une personne « Ne pas montrer » (voir consent.mjs).
 //   - Aucune donnée de visiteur, aucun cookie. La page est écrite côté serveur (elle marche sans script), puis `scripts/live-members.js` la rafraîchit doucement (environ chaque
@@ -6,6 +6,9 @@
 //   - Tout ce qui vient de Twitch ou de Contacts est échappé ; les liens sont construits ici à partir d'un pseudo validé (jamais une adresse reçue) ; les images de Twitch ne se
 //     chargent qu'après le clic du visiteur.
 //   - La route publique `members` répond avec un cache court, borne le débit par visiteur et ne révèle rien d'autre que ce que montre la page.
+//   - 2.2.1 — ÉTEINTE = AUCUNE TRACE : la page répond 404 (`notFound`, sans titre ni script annoncé) et `members` répond EXACTEMENT comme une route qui n'existe pas (404 « Not found »,
+//     même corps que le cœur : pas même un « off » pour dire qu'il y a quelque chose). 2.2.2 : le manifeste déclare `pageSetting: "publicPage"`, donc le cœur (0.2.12) retire
+//     lui-même l'entrée du plan du site, le lien de menu et la ligne de llms.txt tant que le réglage est faux (voir README, « Page éteinte »).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const D = await import(`./draw.mjs${v}`);
 const { durationText, oneLine } = await import(`./pure.mjs${v}`);
@@ -135,10 +138,10 @@ function allowed(ctx, request) {
 export const resetPublic = () => hits.clear();
 
 const headers = { "Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
-/** La route publique `members` : ce que la page lit toutes les minutes. GET seulement ; éteinte, elle répond comme une page qui n'existe pas. */
+/** La route publique `members` : ce que la page lit toutes les minutes. GET seulement ; éteinte, elle répond comme une route qui n'existe pas. */
 export async function membersRoute(request, ctx) {
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
-  if (!enabled(ctx)) return Response.json({ state: "off" }, { status: 404, headers: { ...headers, "Cache-Control": "no-store" } });
+  if (!enabled(ctx)) return new Response("Not found", { status: 404 });   // la réponse du cœur pour une route inconnue, mot pour mot
   if (!allowed(ctx, request)) return Response.json({ state: "limited" }, { status: 429, headers: { ...headers, "Cache-Control": "no-store", "Retry-After": "30" } });
   const res = await waitFor(M.momentNow(ctx), timing.routeWaitMs);
   const body = payload(ctx, res);

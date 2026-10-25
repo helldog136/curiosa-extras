@@ -1,4 +1,4 @@
-// Raid Twitch 2.2 — LA PAGE PUBLIQUE « En direct chez nos membres », sa route de rafraîchissement, le dock de la sélection (OBS), l'onglet d'administration,
+// Raid Twitch 2.2 — LA PAGE PUBLIQUE « En direct en ce moment », sa route de rafraîchissement, le dock de la sélection (OBS), l'onglet d'administration,
 // le vocabulaire réglable, le consentement, Twitch lent ou en panne, la parité FR/EN, la neutralité et la mise à jour à chaud. Contacts et Twitch sont des doubles.
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
@@ -43,14 +43,14 @@ const secretUrl = async (w, route) => `${BASE}/m/${w.ctx.instance.key}/${route}?
 test("éteinte par défaut : la page publique répond comme une page qui n'existe pas (404), la route aussi ; allumée : titre, intro, N membres", async () => {
   const off = world({ partners: logins(5), live: lives(5) });
   assert.equal((await keep(() => def.page(off.ctx, { segments: [] }))).notFound, true);
-  const r = await members(off); assert.equal(r.status, 404); assert.equal((await r.json()).state, "off");
+  const r = await members(off); assert.equal(r.status, 404); assert.equal(await r.text(), "Not found", "éteinte : la réponse du cœur pour une route inconnue, mot pour mot");
   assert.equal(manifest.settings.find((s) => s.key === "publicPage").default, false);
   assert.equal(manifest.page, true, "le cœur peut monter la page (un site existant n'a pas d'adresse : rien n'est publié)");
   const w = site();
   const { p, html: h } = await html(w);
-  assert.equal(p.title, "En direct chez nos membres"); assert.equal(p.scripts[0], "live-members.js");
+  assert.equal(p.title, "En direct en ce moment"); assert.equal(p.scripts[0], "live-members.js");
   assert.equal(cards(h).length, 5, "5 membres par défaut");
-  assert.match(h, /Quelques membres de la communauté sont en direct/);
+  assert.match(h, /Voici qui est en direct sur Twitch maintenant/);
   assert.equal((await keep(() => def.page(w.ctx, { segments: ["x"] }))).notFound, true, "pas de sous-pages");
   assert.ok(fs.statSync(`${DIR}/scripts/live-members.js`).size < 32 * 1024, "le script tient dans la limite du cœur (32 Ko)");
 });
@@ -87,7 +87,7 @@ test("vocabulaire réglable : titre, introduction, texte « personne en direct �
   assert.equal(p.title, "Nos créateurs en live"); assert.match(h, /Allez les voir !/); assert.match(h, /Aller voir/); assert.ok(!/Regarder sur Twitch/.test(text(h)));
   assert.match(text((await html(site({ partners: logins(3), live: {}, settings: set }))).html), /Calme plat ce soir\./);
   const e = world({ partners: logins(3), live: lives(3), settings: { publicPage: true }, locale: "en", messages: { ...en } });
-  const eh = await html(e); assert.equal(eh.p.title, "Live now among our members"); assert.match(eh.html, /Watch on Twitch/); assert.match(eh.html, /opens in a new tab/);
+  const eh = await html(e); assert.equal(eh.p.title, "Live right now"); assert.match(eh.html, /Watch on Twitch/); assert.match(eh.html, /opens in a new tab/);
   const en0 = world({ partners: logins(3), live: {}, settings: { publicPage: true }, locale: "en", messages: { ...en } });
   assert.match(text((await html(en0)).html), /Nobody is live right now\./);
   assert.match(text((await html(site({ partners: logins(3), live: {} }))).html), /Personne n'est en direct pour le moment\./);

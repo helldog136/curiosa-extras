@@ -1,12 +1,12 @@
-# Raid Twitch 2.2 : « Sélection du moment » et page « En direct chez nos membres » (`twitch-raid`), description complète
+# Raid Twitch 2.2 : « Sélection du moment » et page « En direct en ce moment » (`twitch-raid`), description complète
 
 Version **2.2.0** (mineure) du module existant `twitch-raid`, `minCore` **0.2.6** (le script de la page publique est un script de page, cœur 0.2.6). Aucun module ajouté. Branche `ideas/assoc-raid-random`.
 
 ## Le problème
-Une communauté (association, collectif, réseau de créateurs) veut **favoriser les raids entre membres** : montrer, à ses visiteurs comme dans OBS, quelques membres **en direct**, tirés au hasard et de façon juste, sans que la liste change à chaque rafraîchissement, sans exposer la liste complète ni les personnes qui ne veulent pas apparaître. Avant, Raid montrait tous les partenaires en direct (ou un seul tiré au hasard au-delà de 500 chaînes), seulement pour la propriétaire, dans un dock.
+Un groupe de streameurs (réseau de créateurs, équipe, amis) veut **favoriser les raids entre ses chaînes** : montrer, à ses visiteurs comme dans OBS, quelques membres **en direct**, tirés au hasard et de façon juste, sans que la liste change à chaque rafraîchissement, sans exposer la liste complète ni les personnes qui ne veulent pas apparaître. Avant, Raid montrait tous les partenaires en direct (ou un seul tiré au hasard au-delà de 500 chaînes), seulement pour la propriétaire, dans un dock.
 
 ## Pour qui
-La propriétaire (Emma) qui anime la communauté ; ses membres qui ajoutent le dock dans OBS ; les visiteurs du site. Aucun nom de communauté n'est codé : titre, introduction, texte vide et libellé du bouton sont des réglages (FR et EN), avec des mots simples par défaut.
+La propriétaire (Emma) qui anime la communauté ; ses membres qui ajoutent le dock dans OBS ; les visiteurs du site. Aucun nom de groupe ni type de site n'est codé : titre, introduction, texte vide et libellé du bouton sont des réglages (FR et EN), avec des mots simples par défaut.
 
 ## Ce que voit le visiteur
 Une page facultative (chemin réglable, « en-direct » proposé) : titre, phrase d'introduction, puis N cartes (nom de la fiche, jeu, titre, spectateurs, « en direct depuis … », bouton « Regarder sur Twitch » = lien sortant `rel="noopener noreferrer"` dans un nouvel onglet). Mobile d'abord (une colonne, cibles ≥ 44 px, aucun défilement horizontal), thème du site (jetons `--v-*`), clavier et lecteur d'écran (liens nommés, zone « la sélection a changé » annoncée seulement quand elle change, mouvement réduit respecté). Elle est écrite par le serveur (marche sans script) puis rafraîchie environ toutes les 60 s (+ 0 à 5 s) par `scripts/live-members.js` : seules les valeurs qui changent sont réécrites, les cartes sont réutilisées (pas de clignotement, le focus reste). Si Twitch ne répond pas : dernière sélection connue (10 min au plus) avec un mot ; au-delà : message aimable « Les informations en direct ne sont pas disponibles… » ; personne en direct : « Personne n'est en direct pour le moment. ». Les aperçus (option) ne se chargent qu'après un clic sur « Afficher les aperçus » (choix gardé dans le stockage du navigateur, rien d'autre).
@@ -52,9 +52,15 @@ Aucune nouvelle. Contacts (`contact.book` v2 : `resolve`, `categories`, `categor
 ## Ce qui n'est pas fait, et pourquoi
 - Pas de rotation mémorisée sur disque : elle repart de zéro après un redémarrage (documenté ; la graine garde le tirage de la tranche).
 - Pas de bouton « Tirer de nouveau » public (action de la propriétaire seulement).
-- Sur un **site existant**, le cœur ne donne pas d'adresse à la page tant que la propriétaire n'en choisit pas une (mode avancé) ; le sitemap d'une instance qui a une adresse mais une page éteinte l'inclut (la page répond 404).
+- Sur un **site existant**, le cœur ne donne pas d'adresse à la page tant que la propriétaire n'en choisit pas une (mode avancé) ; la page éteinte répond 404 et, depuis le cœur 0.2.12, n'est plus dans le plan du site, `llms.txt` ni le menu (`pageSetting`).
 - Pas de liste d'exclusions par fiche de Contacts (la catégorie « Ne pas montrer » joue ce rôle).
 - Le script de page n'est pas couvert par un test automatique de navigateur (vérifié à la main avec Chromium).
 
 ## Idées pour la suite
 Mettre en avant les nouveaux membres ; filtrer par jeu ; une sélection par langue ; un widget d'accueil (section) qui montre la même sélection.
+
+## 2.2.1 : une page éteinte est une page absente, et des mots neutres
+- **Textes par défaut neutres** (FR et EN) : « En direct en ce moment » / « Live right now », « Voici qui est en direct sur Twitch maintenant. Passez leur dire bonjour ! » (aucun « membres », « communauté » ni « association » ; avant, le titre par défaut était propre à un type de site). Titre, introduction, texte vide et libellé du bouton restent réglables ; un titre déjà saisi ne change pas.
+- **Éteinte = aucune trace côté module** : la page répond 404 sans titre ni script annoncé ; la route publique `members` répond comme une route inconnue (404 « Not found », plus de `{"state":"off"}`).
+- **Page éteinte et cœur 0.2.12** : le manifeste déclare `"pageSetting": "publicPage"` (`minCore` 0.2.12). Tant que ce réglage booléen (défaut `false`) est faux, le cœur traite l'instance comme sans adresse pour le plan du site, `llms.txt`, le menu, la résolution `[...path]` et le script de page. Aucun changement de code du module : le texte `mo_page_off_addr` dit seulement que la page n'apparaît nulle part.
+- **Case et adresse** : le module ne peut pas écrire l'adresse (champ du cœur, mode avancé). L'onglet « Sélection du moment » dit clairement lequel des deux manque ou reste en place.
