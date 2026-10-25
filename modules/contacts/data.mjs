@@ -15,7 +15,9 @@
 // le module à chacune de SES écritures et jeté quand `store.generation()` change (restauration, annulation de migration), quand une écriture
 // échoue à moitié, ou quand le nombre de fiches ne correspond plus. Sa reconstruction lit des pages de 1 000, avec une durée bornée ; une seule
 // reconstruction à la fois (promesse partagée), et chaque attente a une EXPIRATION : rien n'attend jamais sans fin.
-import { fold, accountKey, NETWORKS } from "./networks.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { fold, accountKey, NETWORKS } = await import(`./networks.mjs${v}`);
 
 export const LIMITS = {
   maxContacts: 100_000,          // plafond technique du carnet (personnes + organisations)

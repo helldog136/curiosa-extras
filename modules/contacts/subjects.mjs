@@ -2,7 +2,9 @@
 // Contacts est le SEUL appelant : il demande à chaque fournisseur (Raid, Story, Partenariats…), un par un via `call(…, { provider })`,
 // avec une attente bornée PAR fournisseur (8 s ; raccourcie en test). Un module muet, en panne ou absent est listé `ok: false` dans le bilan,
 // sans retarder les autres au-delà de sa propre borne et sans jamais faire échouer l'opération.
-import { within, privacyMs } from "./data.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { within, privacyMs } = await import(`./data.mjs${v}`);
 
 export const SUBJECT = "privacy.subject";
 const okShape = (method, v) => {
