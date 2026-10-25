@@ -196,6 +196,11 @@ function countText(ctx, total, hidden) {
   return hidden > 0 ? `${base} (${ctx.t("hiddenCount", { n: hidden })})` : base;
 }
 
+/** Ce module garde-t-il le fichier de cette photo (envoyée depuis la 0.2.13) ? Faux pour une ancienne photo. */
+async function ownsFile(ctx, url) {
+  try { return (await ctx.api.files.owns(url)) === true; } catch { return false; }
+}
+
 async function albumView(ctx, a, q, rights, blocks) {
   const { editor, publisher } = rights;
   const photos = await loadPhotos(ctx, a);
@@ -215,6 +220,7 @@ async function albumView(ctx, a, q, rights, blocks) {
   if (wanted && editor) {
     blocks.push({ type: "html", html: `${SMALL}<img class="ga-prev" src="${imgSrc(ctx, wanted, "full")}" alt="${esc(wanted.alt)}" referrerpolicy="no-referrer">` });
     blocks.push(photoForm(ctx, a, wanted));
+    if (wanted.full && !(await ownsFile(ctx, wanted.full))) blocks.push({ type: "markdown", text: ctx.t("legacyPhotoNote") });
     const rows = [{ label: ctx.t("actCover"), action: "makeCover" }, { label: ctx.t("actDeletePhoto"), action: "removePhoto", confirm: ctx.t("confirmDeletePhoto"), danger: true }];
     blocks.push(extraActions(ctx, wanted.caption || wanted.name || ctx.t("noCaption"), joinId(a.id, wanted.id), rows));
     return blocks;
@@ -291,8 +297,13 @@ const REASONS = {
   not_found: "errNotFound", title: "errTitle", link_needed: "errLinkNeeded", full_albums: "errFullAlbums", full_photos: "errFullPhotos", full_total: "errFullTotal", bad_upload: "errBadUpload", duplicate: "errDuplicate",
   bad_url: "errBadUrl", no_hosts: "errNoHosts", host_not_allowed: "errHostNotAllowed", cover_hidden: "errCoverHidden",
 };
+const FILE_REASONS = {
+  expired: "errFileExpired", taken: "errFileTaken", "not-uploader": "errFileNotUploader", quota: "errFileQuota", unknown: "errFileUnknown", invalid: "errBadUpload",
+  missing: "errFileMissing", "no-person": "errFileNoPerson", "no-permission": "errFileNoPermission",
+};
 /** Une phrase pour un refus de `ops`. */
 export function reasonText(ctx, r) {
+  if (r.error === "file") return ctx.t(FILE_REASONS[r.reason] || "errGeneric"); // le cœur a refusé de confier le fichier au module (motifs de `files.claim`)
   const key = REASONS[r.error];
   return ctx.t(key || "errGeneric", { max: r.max ?? "", hosts: hostsOf(ctx).join(", ") });
 }
@@ -354,10 +365,20 @@ async function setAlbumStatus(ctx, values, status) {
   });
 }
 
+/** Ce qui est arrivé aux fichiers, en mots simples : supprimés, gardés parce que la photo date d'avant la 0.2.13, ou pas supprimés pour l'instant. Vide s'il n'y avait rien à dire. */
+function filesNote(ctx, files, kind) {
+  if (!files) return "";
+  const parts = [];
+  if (files.removed) parts.push(ctx.t(kind === "photo" ? "okFilesGonePhoto" : "okFilesGoneAlbum"));
+  if (files.legacy) parts.push(ctx.t(kind === "photo" ? "okFilesOldPhoto" : "okFilesOldAlbum", { n: files.legacy }));
+  if (files.failed) parts.push(ctx.t("okFilesFailed", { n: files.failed }));
+  return parts.length ? ` ${parts.join(" ")}` : "";
+}
+
 async function removeAlbum(ctx, values) {
   return locked(ctx, async () => {
     const r = await deleteAlbum(ctx, values.id);
-    return r.ok ? { ok: ctx.t("okAlbumDeleted"), redirect: "?" } : { error: reasonText(ctx, r) };
+    return r.ok ? { ok: `${ctx.t("okAlbumDeleted")}${filesNote(ctx, r.files, "album")}`, redirect: "?" } : { error: reasonText(ctx, r) };
   });
 }
 
@@ -414,7 +435,7 @@ async function removePhoto(ctx, values) {
   if (!ids) return { error: ctx.t("errNotFound") };
   return locked(ctx, async () => {
     const r = await deletePhoto(ctx, ids.album, ids.photo);
-    return r.ok ? { ok: ctx.t("okPhotoDeleted"), redirect: `?album=${ids.album}` } : { error: reasonText(ctx, r) };
+    return r.ok ? { ok: `${ctx.t("okPhotoDeleted")}${filesNote(ctx, r.files, "photo")}`, redirect: `?album=${ids.album}` } : { error: reasonText(ctx, r) };
   });
 }
 

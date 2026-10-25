@@ -81,15 +81,16 @@ test("le module ne garde, ne lit et ne sert plus aucune image : pas de route d'i
   }
 });
 
-test("retirer une photo ou un album : la liste est mise à jour, le module le dit honnêtement (les fichiers du cœur restent sur le disque)", async () => {
+test("supprimer une photo ou un album : la liste est mise à jour et le module le dit (les fichiers sont effacés ; voir gallery-files.test.mjs pour le détail)", async () => {
   const ctx = ctxFor();
   const a = await makeAlbum(ctx, { n: 2 });
   const blocks = await def.adminPanel(ctx, { query: { album: a.id, photo: `${a.id}.${a.photos[0]}` } });
-  assert.match(JSON.stringify(blocks), /Retirer cette photo de l'album/);
-  assert.match(JSON.stringify(blocks), /reste sur le disque du site/);
-  assert.match((await act(ctx, "removePhoto", { id: `${a.id}.${a.photos[0]}` })).ok, /son fichier reste sur le disque/);
+  assert.match(JSON.stringify(blocks), /Supprimer cette photo/);
+  assert.match(JSON.stringify(blocks), /effacé du disque/);
+  assert.match((await act(ctx, "removePhoto", { id: `${a.id}.${a.photos[0]}` })).ok, /Photo supprimée\. Ses fichiers ont été effacés/);
   assert.equal((await data.getAlbum(ctx, a.id)).total, 1);
   assert.match((await act(ctx, "removeAlbum", { id: a.id })).ok, /supprimé/);
   assert.equal(rows(ctx, "gallery_photos").length, 0);
+  assert.equal(ctx.dumpFiles().filter((f) => f.owner === "me").length, 0, "plus aucun fichier du module");
   assert.equal(view.imgSrc(ctx, { full: "" , url: "", thumb: "", turl: "" }, "full"), "");
 });

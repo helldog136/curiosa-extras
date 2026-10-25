@@ -29,7 +29,8 @@ Les photos sont **hébergées sur votre site, dans des limites que vous réglez*
 - Les **informations cachées** dans les photos (position GPS, appareil, date) sont **retirées** : votre navigateur ré-encode chaque photo avant l'envoi, et les pages publiques n'affichent qu'une **version propre fabriquée par le site** (jamais le fichier d'origine).
 - Chaque photo est envoyée **une par une**, avec sa barre de progression ; l'erreur d'une photo s'écrit sous elle sans bloquer les autres.
 - Des **limites** protègent le site (réglables dans les réglages avancés) : poids visé d'une photo (300 Ko par défaut), photos par album (120 par défaut, 300 au plus), nombre d'albums (100 par défaut, 500 au plus), photos sur tout le site (1 500 par défaut, 10 000 au plus).
-- **Retirer ou masquer** : masquer une photo la fait disparaître des pages du site tout de suite. Retirer une photo d'un album ou supprimer un album retire aussi les pages, **mais le fichier reste sur le disque du site** : un module ne peut pas encore effacer un fichier envoyé (voir « Ce que le module ne fait pas »). Quelqu'un qui connaîtrait l'adresse exacte du fichier pourrait donc encore l'ouvrir ; ces adresses sont longues et jamais écrites sur les pages.
+- **Masquer ou supprimer** : « Masquer » cache une photo des visiteurs tout de suite, **sans rien effacer** (vous pouvez la réafficher). « Supprimer cette photo » la retire de l'album **et efface ses fichiers du disque du site** (l'original et la miniature) ; « Supprimer cet album » fait de même pour toutes ses photos et sa couverture. Le site garde ainsi la place libre et le fichier n'est plus dans les prochaines sauvegardes. À l'écran, le module dit ce qui a été effacé.
+- **Les anciennes photos** (envoyées avant la mise à jour du site vers Curiosa 0.2.13) : le site ne permet pas à ce module d'effacer leur fichier d'origine. Elles se suppriment sans erreur (elles quittent l'album), mais leur fichier reste sur le disque ; l'écran de la photo et le message de suppression le disent honnêtement. Pour ne plus les montrer sans attendre, « Masquer » suffit. Seules les photos envoyées après la mise à jour sont effacées pour de bon.
 - Une photo peut aussi rester **chez un autre site** (« par adresse »), mais seulement si vous avez autorisé ce site dans les réglages avancés.
 
 ## Réglages
@@ -50,7 +51,7 @@ Il peut lister les albums et leurs photos, **créer un album en brouillon**, **a
 - Pas de glisser-déposer pour envoyer ou ranger (les boutons suffisent, et c'est plus sûr au doigt).
 - Pas de retouche de photo, pas de recadrage.
 - Pas de commentaires ni de « j'aime » sur les photos.
-- Effacer vraiment le fichier d'une photo retirée : pas encore (limite du site de base). Pour de très gros albums, utilisez la carte « vers un autre service ».
+- Effacer le fichier d'origine d'une **ancienne** photo (envoyée avant Curiosa 0.2.13) : impossible pour un module. Pour de très gros albums, utilisez la carte « vers un autre service ».
 
 ## Pour les développeurs
 
