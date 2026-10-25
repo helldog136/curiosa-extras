@@ -20,6 +20,10 @@ Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi, Tipeee, Liberapay, Buy Me a
 
 Pour que la plateforme sache d'où viennent les visites, le module ajoute à chaque adresse le nom de votre site (`utm_source`) et `utm_medium=link`. Rien de personnel n'est transmis, certaines plateformes ignorent ces informations, et vos propres paramètres ne sont jamais remplacés. Cela se règle en mode avancé (interrupteur général, nom de campagne, choix lien par lien) ; en mode simple il n'y a rien à faire.
 
+## Comment les liens s'ouvrent (automatique)
+
+Rien à régler. Un lien direct s'ouvre dans un **nouvel onglet** et indique à la plateforme d'où vient la visite (le nom de domaine de votre site seulement, jamais la page exacte) ; il est marqué « nofollow » pour ne pas être recommandé aux moteurs de recherche. Un lien avec page d'avertissement ouvre cette page dans le même onglet, puis le bouton « continuer » mène à la plateforme.
+
 ## Ce que le module ne fait pas
 
 - Il ne vérifie pas l'âge des visiteurs et ne garde aucune donnée sur eux (pas de cookie, pas de compteur).
@@ -40,3 +44,5 @@ Seules les personnes autorisées (droit « modifier les liens des autres platefo
 ## Pour les développeurs
 
 Sujet fourni : `social.link`. Données : collection `links` (une ligne par lien). Page d'avertissement : route `go?l=<clé du lien>` de l'instance (`/m/<instance>/go?l=…`), car la page d'un module ne peut pas, dans ce cœur, se déclarer « non indexée » ; elle répond avec `X-Robots-Tag: noindex, nofollow`. La destination vient toujours de la configuration.
+
+Depuis la 1.1.0 (cœur 0.2.13 ou plus), chaque bouton de `social.link` déclare `rel`, `referrerPolicy` et `target` (valeurs de la liste fermée du cœur) : `DIRECT_LINK` pour une icône directe, `NOTICE_LINK` pour une icône vers `/go`. Le bouton de la page `/go` partage `OUTBOUND_REL` / `OUTBOUND_REFERRER`. Sur un cœur plus ancien, ces champs sont ignorés sans danger.

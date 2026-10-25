@@ -10,6 +10,53 @@ const { HARD, clean, hostAllowed, httpsUrl, isoDay, num, randomId, safeName, slu
 const ok = (extra = {}) => ({ ok: true, ...extra });
 const no = (error, extra = {}) => ({ ok: false, error, ...extra });
 
+// ── Fichiers envoyés (ctx.api.files, cœur 0.2.13) : garder à l'envoi, supprimer avec la photo ─────────────────────────
+
+const CLAIM_REASONS = new Set(["expired", "taken", "not-uploader", "quota", "unknown", "invalid", "missing", "no-person", "no-permission"]);
+const FILES_BATCH = 8; // suppressions simultanées au plus : un album a au plus quelques centaines de fichiers, jamais de minuteur de fond
+
+/** `ctx.api.files` ou null (cœur plus ancien, permission refusée) : l'accès lui-même peut lever. */
+function filesApi(ctx) {
+  try { return ctx.api.files && typeof ctx.api.files.claim === "function" ? ctx.api.files : null; } catch { return null; }
+}
+
+/** Revendique un fichier ; ne lève jamais : { ok: true, already } ou { ok: false, reason }. */
+async function claimFile(ctx, url) {
+  const files = filesApi(ctx);
+  if (!files) return { ok: false, reason: "no-permission" };
+  try {
+    const r = await files.claim(url);
+    if (r?.ok) return { ok: true, already: r.already === true };
+    return { ok: false, reason: CLAIM_REASONS.has(r?.reason) ? r.reason : "unknown" };
+  } catch {
+    return { ok: false, reason: "unknown" };
+  }
+}
+
+/**
+ * Supprime les fichiers `/uploads/…` donnés, par lots bornés. Un fichier que ce module n'a pas revendiqué (photo envoyée avant la 0.2.13) ne peut pas être supprimé :
+ * il est compté à part (`legacy`), ce n'est pas une erreur. Ne lève jamais : { removed, legacy, failed }.
+ */
+export async function dropFiles(ctx, urls) {
+  const list = [...new Set(urls.map((u) => uploadPath(u)).filter(Boolean))];
+  const out = { removed: 0, legacy: 0, failed: 0 };
+  const files = filesApi(ctx);
+  if (!files) { out.legacy = list.length; return out; }
+  for (let i = 0; i < list.length; i += FILES_BATCH) {
+    await Promise.all(list.slice(i, i + FILES_BATCH).map(async (url) => {
+      try {
+        if (!(await files.owns(url))) { out.legacy += 1; return; }
+        const r = await files.remove(url);
+        if (r?.ok) out.removed += 1;
+        else out.failed += 1;
+      } catch {
+        out.failed += 1;
+      }
+    }));
+  }
+  return out;
+}
+
 // ── Albums ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Les champs d'un album, nettoyés. */
@@ -70,14 +117,19 @@ export async function setStatus(ctx, id, status) {
   return ok();
 }
 
-/** Supprime un album et la liste de ses photos (les fichiers du cœur restent sur le disque). Les demandes de retrait gardent leur libellé. */
+/**
+ * Supprime un album, la liste de ses photos, PUIS les fichiers de toutes ses photos (originaux, miniatures) et de sa couverture, par lots bornés.
+ * Les fichiers d'anciennes photos (avant la 0.2.13) ne peuvent pas être supprimés : `files.legacy` les compte. Les demandes de retrait gardent leur libellé.
+ */
 export async function deleteAlbum(ctx, id) {
   const a = await getAlbum(ctx, id);
   if (!a) return no("not_found");
+  const items = a.pid ? await loadPhotos(ctx, a) : [];
+  const urls = [a.coverThumb?.src, ...items.flatMap((p) => [p.full, p.thumb])].filter(Boolean);
   if (a.pid) await ctx.api.store.remove(a.pid);
   await ctx.api.store.remove(id);
   await renumber(ctx, (await freshAlbums(ctx, "manual")).filter((x) => x.id !== id));
-  return ok();
+  return ok({ files: await dropFiles(ctx, urls) });
 }
 
 export async function moveAlbum(ctx, id, step) {
@@ -95,7 +147,7 @@ export async function moveAlbum(ctx, id, step) {
 
 const textOf = (input) => ({ caption: clean(input?.caption, HARD.caption), alt: clean(input?.alt, HARD.alt) });
 
-/** Ajoute une photo déjà envoyée par le mécanisme d'envoi du cœur : le module ne garde que les adresses `/uploads/…` (la grande et sa miniature). */
+/** Ajoute une photo déjà envoyée par le mécanisme d'envoi du cœur : le module ne garde que les adresses `/uploads/…` (la grande et sa miniature) et revendique les deux fichiers (`files.claim`). */
 export async function addUploadedPhoto(ctx, albumId, { full, thumb, w = 0, h = 0, bytes = 0, tbytes = 0, name = "", caption = "", alt = "", hidden = false }) {
   const a = await getAlbum(ctx, albumId);
   if (!a) return no("not_found");
@@ -107,11 +159,27 @@ export async function addUploadedPhoto(ctx, albumId, { full, thumb, w = 0, h = 0
   if (items.length >= limits.photos) return no("full_photos", { max: limits.photos });
   if (usage(await freshAlbums(ctx)).photos >= limits.totalPhotos) return no("full_total", { max: limits.totalPhotos });
   if (items.some((p) => p.full === big)) return no("duplicate");
-  const id = newPhotoId(items, () => randomId(10));
-  items.push({ id, ...textOf({ caption, alt }), hidden: !!hidden, full: big, thumb: small, url: "", turl: "", w: num(w, 0, 0, HARD.side), h: num(h, 0, 0, HARD.side), bytes: num(bytes, 0, 0, HARD.photoBytes), tbytes: num(tbytes, 0, 0, HARD.thumbBytes), name: safeName(name), at: Date.now() });
-  await writePhotos(ctx, a, items);
-  await refreshAlbum(ctx, a, items);
-  return ok({ id });
+  // Garder les deux fichiers tout de suite (le cœur n'attend que 30 minutes après l'envoi). Rien n'est enregistré si l'un des deux est refusé.
+  const keepBig = await claimFile(ctx, big);
+  if (!keepBig.ok) return no("file", { reason: keepBig.reason });
+  const keepSmall = await claimFile(ctx, small);
+  if (!keepSmall.ok || keepBig.already || keepSmall.already) {
+    // Un fichier déjà gardé par une autre photo de ce module ne doit jamais être supprimé avec celle-ci : doublon, on ne touche à rien d'existant.
+    if (!keepBig.already) await dropFiles(ctx, [big]);
+    if (!keepSmall.ok) return no("file", { reason: keepSmall.reason });
+    if (!keepSmall.already) await dropFiles(ctx, [small]);
+    return no("duplicate");
+  }
+  try {
+    const id = newPhotoId(items, () => randomId(10));
+    items.push({ id, ...textOf({ caption, alt }), hidden: !!hidden, full: big, thumb: small, url: "", turl: "", w: num(w, 0, 0, HARD.side), h: num(h, 0, 0, HARD.side), bytes: num(bytes, 0, 0, HARD.photoBytes), tbytes: num(tbytes, 0, 0, HARD.thumbBytes), name: safeName(name), at: Date.now() });
+    await writePhotos(ctx, a, items);
+    await refreshAlbum(ctx, a, items);
+    return ok({ id });
+  } catch (e) {
+    await dropFiles(ctx, [big, small]); // l'enregistrement a échoué : pas de photo à moitié enregistrée, pas de fichier orphelin
+    throw e;
+  }
 }
 
 /** Ajoute une photo qui reste chez un autre site (adresse https d'un site autorisé). Rien n'est copié. */
@@ -153,7 +221,7 @@ export async function updatePhoto(ctx, albumId, photoId, input) {
   return ok();
 }
 
-/** Masque (ou remontre) une photo en un clic : elle n'est plus servie à personne, son fichier reste pour pouvoir la remontrer. */
+/** Masque (ou remontre) une photo en un clic : elle n'est plus servie à personne, ses fichiers restent pour pouvoir la remontrer (rien n'est supprimé). */
 export async function hidePhoto(ctx, albumId, photoId, hide = true) {
   const a = await getAlbum(ctx, albumId);
   if (!a) return no("not_found");
@@ -174,10 +242,10 @@ export async function deletePhoto(ctx, albumId, photoId) {
   const items = await loadPhotos(ctx, a);
   const at = items.findIndex((x) => x.id === photoId);
   if (at < 0) return no("not_found");
-  items.splice(at, 1); // les fichiers du cœur restent sur le disque : un module ne peut pas les effacer
-  await writePhotos(ctx, a, items);
+  const [gone] = items.splice(at, 1);
+  await writePhotos(ctx, a, items); // d'abord la photo disparaît des données (plus servie à personne), ensuite seulement ses fichiers
   await refreshAlbum(ctx, a, items);
-  return ok();
+  return ok({ files: await dropFiles(ctx, [gone.full, gone.thumb]) });
 }
 
 /** Déplace une photo : -1 monte d'un cran, 1 descend d'un cran, "first" la met en tête, "last" à la fin. */
