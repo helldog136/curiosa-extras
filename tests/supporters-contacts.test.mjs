@@ -37,6 +37,7 @@ test("rien n'est jamais écrit dans Contacts par un parcours complet qui n'utili
   const cat = book.seedCategory("Soutiens");
   const spy = spyOn(book);
   const { ctx } = makeWorld({ book, settings: { provider: "patreon", category: cat, review: false }, extra: { services: { ...spy.wrapped } } });
+  await ctx.api.services.call("contact.book", "categories", {});   // sonde : prouve que l'espion voit les appels
   const pat = fakePatreon({ tiers: [{ id: 1, title: "A", cents: 100 }], members: [{ id: 1, name: "Ada", status: "active_patron", since: "2025-01-01", tiers: [1] }] });
   await kit.withFakeFetch({ "*": pat.reply }, async () => { await S.refresh(ctx, { force: true }); });
   const [p] = await peopleOf(ctx);
@@ -46,7 +47,8 @@ test("rien n'est jamais écrit dans Contacts par un parcours complet qui n'utili
   await Admin.panel(ctx, { query: {} }); await Admin.panel(ctx, { query: { p: p.pid } });
   for (const tool of ["supporters_status", "supporters_list"]) await Mcp.default[tool](ctx, {});
   await O.setHidden(ctx, p.pid, true); await O.setApproval(ctx, p.pid, true);
-  assert.ok(spy.log.length > 0 && spy.log.every((l) => !WRITES.includes(l.split(".")[1])), "Contacts a bien été lu, jamais écrit");
+  assert.ok(spy.log.includes("contact.book.categories"), "l'espion fonctionne (la sonde de départ est notée)");
+  assert.ok(spy.log.every((l) => !WRITES.includes(l.split(".")[1])), "Contacts n'a jamais été écrit");
   const writes = spy.log.filter((l) => WRITES.includes(l.split(".")[1]));
   assert.deepEqual(writes, [], "aucune écriture dans Contacts");
   assert.equal(book.dump().contacts.length, 0);

@@ -7,7 +7,7 @@ Une créatrice est soutenue sur une plateforme de mécénat (Patreon, Ko-fi…).
 - elle ne veut pas afficher de montants, ni dépendre d'une seule plateforme.
 
 ## Pour qui
-Toute personne qui a un site Curiosa et un soutien payant sur une plateforme (ou une liste tenue à la main). Le module ne connaît aucun site ni aucune association : mots, titres et libellés sont réglables.
+Toute personne qui a un site Curiosa et un soutien payant sur une plateforme (ou une liste tenue à la main). Le module ne connaît aucun site en particulier : mots, titres et libellés sont réglables.
 
 ## Ce que voit le visiteur
 - Une page (éteinte au départ) « Merci à nos soutiens » : des pastilles avec **uniquement des pseudos**, groupées sous les libellés de palier choisis par la propriétaire (jamais un montant, un vrai nom, une date). Vide et aimable tant que personne n'a accepté. 48 pseudos par page (réglable, 50 au plus).
