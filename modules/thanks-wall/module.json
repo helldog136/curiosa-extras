@@ -6,7 +6,7 @@
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "A “Thank you!” page for your community: the people of one or more Contacts categories (moderators, supporters, beta testers…) as a grid of cards with their photos, a person in the spotlight each month and a short message for anyone you like. Names and photos stay in Contacts, so there is nothing to retype.",
     "fr": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-testeurs…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper."
