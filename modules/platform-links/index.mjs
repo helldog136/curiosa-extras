@@ -122,9 +122,19 @@ const HEADERS = {
   "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
 };
 
-/** Le bouton qui ouvre la destination : un vrai lien, même onglet, sans transmettre le chemin de la page d'origine. */
+/**
+ * UNE SEULE source de vérité pour la façon dont un lien SORT du site (page d'avertissement ET icône directe de l'en-tête).
+ * `nofollow` : le lien appartient à un autre site, on ne le recommande pas aux moteurs de recherche ; `noreferrer` n'est pas demandé, pour que la plateforme
+ * voie l'origine (le nom du site) ; la politique « strict-origin-when-cross-origin » ne transmet que le domaine du site, jamais le chemin de la page.
+ */
 export const OUTBOUND_REL = "noopener nofollow";
 export const OUTBOUND_REFERRER = "strict-origin-when-cross-origin";
+/** Icône directe vers l'extérieur : nouvel onglet (le site reste ouvert), comme les autres réseaux. Le bouton de la page /go reste dans le même onglet. */
+export const OUTBOUND_TARGET_DIRECT = "_blank";
+export const OUTBOUND_TARGET_NOTICE = "_self";
+/** Icône qui mène à la page /go de CE site : navigation interne, même onglet, rien à cacher (la page transmet elle-même seulement le domaine). */
+export const NOTICE_LINK = Object.freeze({ rel: "noopener", target: OUTBOUND_TARGET_NOTICE });
+export const DIRECT_LINK = Object.freeze({ rel: OUTBOUND_REL, referrerPolicy: OUTBOUND_REFERRER, target: OUTBOUND_TARGET_DIRECT });
 
 async function goRoute(request, ctx) {
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405, headers: { allow: "GET, HEAD" } });
@@ -144,7 +154,7 @@ async function goRoute(request, ctx) {
   const warns = shouldWarn(link, cfg);
   const title = warns ? cleanLabel(ctx.setting("warnTitle"), 120) || ctx.t("p_title") : ctx.t("p_leave_title");
   const message = warns ? cleanText(ctx.setting("warnMessage")) || ctx.t("p_message") : ctx.t("p_leave_message", { label: name });
-  const go = `<a class="btn primary" href="${esc(dest)}" rel="${OUTBOUND_REL}" referrerpolicy="${OUTBOUND_REFERRER}">${esc(ctx.t(warns ? "p_continue_adult" : "p_continue"))}</a>`;
+  const go = `<a class="btn primary" href="${esc(dest)}" rel="${OUTBOUND_REL}" referrerpolicy="${OUTBOUND_REFERRER}" target="${OUTBOUND_TARGET_NOTICE}">${esc(ctx.t(warns ? "p_continue_adult" : "p_continue"))}</a>`;
   const host = new URL(dest).hostname;
   const html = pagehtml(ctx, { title, body: `${paragraphs(message)}<p class="to">${esc(ctx.t("p_to", { label: name, host }))}</p>`, buttons: go + backButton, siteName });
   return new Response(request.method === "HEAD" ? null : html, { status: 200, headers: HEADERS });
@@ -292,8 +302,10 @@ export default {
         if (!l.visible) continue;
         const dest = destinationOf(l, cfg);
         if (!dest) continue;
-        const url = shouldWarn(l, cfg) ? `${String(ctx.api.siteUrl).replace(/\/+$/, "")}/m/${ctx.instance.key}/go?l=${l.key}${locale ? `&lang=${encodeURIComponent(locale)}` : ""}` : dest;
-        out.push({ label: nameOf(ctx, l), url, icon: platformById(l.platform).icon });
+        const warns = shouldWarn(l, cfg);
+        const url = warns ? `${String(ctx.api.siteUrl).replace(/\/+$/, "")}/m/${ctx.instance.key}/go?l=${l.key}${locale ? `&lang=${encodeURIComponent(locale)}` : ""}` : dest;
+        // Attributs du lien déclarés au cœur (0.2.13 ; ignorés sans danger par un cœur plus ancien).
+        out.push({ label: nameOf(ctx, l), url, icon: platformById(l.platform).icon, ...(warns ? NOTICE_LINK : DIRECT_LINK) });
       }
       return out;
     },

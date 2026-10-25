@@ -32,10 +32,10 @@ const links = (ctx, q = { locale: "fr" }) => def.exports["social.link"](ctx, q);
 
 // ── Manifeste, langues, droits ──────────────────────────────────────────
 
-test("manifeste : valide, un seul exemplaire, fournit « social.link » comme les autres réseaux, minCore 0.2.5", () => {
+test("manifeste : valide, un seul exemplaire, fournit « social.link » comme les autres réseaux, minCore 0.2.13", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.minCore, "0.2.5");
+  assert.equal(manifest.minCore, "0.2.13");
   assert.equal(manifest.instances, "single");
   assert.deepEqual(manifest.provides.map((p) => p.topic), ["social.link"]);
   assert.deepEqual(Object.keys(def.exports), ["social.link"]);
@@ -187,7 +187,7 @@ test("icônes : le module fournit « social.link » (label, url https, icône du
   const c = await add(ctx, "other", "example.org/boutique", { label: "Ma boutique" });
   const out = await links(ctx);
   assert.deepEqual(out.map((x) => x.label), ["OnlyFans", "Patreon", "Ma boutique"]);
-  assert.deepEqual(out.map((x) => Object.keys(x).sort().join()), ["icon,label,url", "icon,label,url", "icon,label,url"]);
+  assert.deepEqual(out.map((x) => Object.keys(x).sort().join()), ["icon,label,rel,target,url" /* OnlyFans : page 18+ */, "icon,label,referrerPolicy,rel,target,url", "icon,label,referrerPolicy,rel,target,url"]);
   for (const x of out) assert.ok(isSafeExternalUrl(x.url) && x.url.startsWith("http"), x.url);
   await mod.saveLink(ctx, { visible: false }, b.id);
   assert.deepEqual((await links(ctx)).map((x) => x.label), ["OnlyFans", "Ma boutique"]);
@@ -315,7 +315,7 @@ test("page 18+ (avertissement actif) : titre, message par défaut, vrai lien « 
   assert.match(a, /href="https:\/\/onlyfans\.com\/moi\?utm_source=monsite\.example&amp;utm_medium=link"/);
   assert.match(a, /rel="noopener nofollow"/);
   assert.match(a, /referrerpolicy="strict-origin-when-cross-origin"/);
-  assert.ok(!/target=/.test(a), "même onglet");
+  assert.match(a, /target="_self"/, "même onglet");
   assert.ok(html.includes("J'ai 18 ans ou plus, continuer"));
   assert.match(html, /<a class="btn secondary" href="\/">Retour au site<\/a>/);
   assert.ok(!/<script|javascript:|onclick|<img|<iframe|https?:\/\/[^"' ]*\.(js|css)/i.test(html), "aucun script, aucune ressource extérieure");
@@ -445,4 +445,45 @@ test("README : métier, l'avertissement n'est pas une vérification d'âge", () 
   assert.match(readme, /pas forcément du contenu pour adultes/);
   assert.match(readme, /Ce n'est pas une vérification d'âge/);
   for (const f of ["docs/ideas/platform-links.md", "docs/ideas/platform-links.changelog.md"]) assert.ok(fs.existsSync(new URL(`../${f}`, import.meta.url)), f);
+});
+
+// ── Contrat des liens du cœur 0.2.13 : rel / referrerPolicy / target ─────
+
+const RELS = ["noopener", "noreferrer", "nofollow", "sponsored", "ugc"];
+const POLICIES = ["no-referrer", "no-referrer-when-downgrade", "origin", "origin-when-cross-origin", "same-origin", "strict-origin", "strict-origin-when-cross-origin"];
+const valid = (x) => (x.rel === undefined || x.rel.split(" ").every((r) => RELS.includes(r))) && (x.referrerPolicy === undefined || POLICIES.includes(x.referrerPolicy)) && ["_blank", "_self"].includes(x.target);
+
+test("liens du cœur : lien direct = rel prudent + politique de référent + nouvel onglet, mêmes constantes que la page /go", async () => {
+  const ctx = ctxFor();
+  const l = await add(ctx, "onlyfans", "onlyfans.com/moi", { warn: "off" });
+  await add(ctx, "patreon", "patreon.com/moi");
+  const out = await links(ctx);
+  assert.equal(out.length, 2);
+  for (const x of out) {
+    assert.ok(valid(x), JSON.stringify(x));
+    assert.equal(x.rel, mod.OUTBOUND_REL);
+    assert.equal(x.referrerPolicy, mod.OUTBOUND_REFERRER);
+    assert.equal(x.target, "_blank");
+    assert.ok(!x.rel.includes("noreferrer"), "la plateforme doit voir d'où vient la visite");
+  }
+  // la page /go (avertissement) utilise les MÊMES constantes pour son bouton
+  const w = await add(ctxFor(), "mym", "mym.fans/moi");
+  assert.ok(l && w);
+});
+
+test("liens du cœur : lien avec page 18+ = navigation interne (noopener, même onglet, pas de politique) ; le bouton de /go reprend les constantes sortantes", async () => {
+  const ctx = ctxFor();
+  const l = await add(ctx, "onlyfans", "onlyfans.com/moi");
+  const [x] = await links(ctx);
+  assert.ok(x.url.startsWith(`${SITE}/m/platform-links/go?l=`));
+  assert.deepEqual({ rel: x.rel, target: x.target, referrerPolicy: x.referrerPolicy }, { rel: "noopener", target: "_self", referrerPolicy: undefined });
+  assert.ok(valid(x));
+  const html = await (await go(ctx, l.key)).text();
+  const a = html.match(/<a class="btn primary"[^>]*>/)[0];
+  assert.ok(a.includes(`rel="${mod.OUTBOUND_REL}"`) && a.includes(`referrerpolicy="${mod.OUTBOUND_REFERRER}"`) && a.includes('target="_self"'));
+});
+
+test("liens du cœur : aucun réglage technique exposé à la propriétaire (rel, target, référent absents des réglages)", () => {
+  for (const s of manifest.settings) assert.ok(!/^(rel|target|referrer)/i.test(s.key), s.key);
+  assert.ok(!/rel=|referrer|target=/i.test(JSON.stringify(manifest.settings.map((s) => [s.label, s.help]))));
 });
