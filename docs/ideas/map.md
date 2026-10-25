@@ -30,8 +30,8 @@ Sujet lu en lecture seule (200 éléments au plus, limite du cœur), schéma id,
 ## Outils pour l'assistant
 `map_places_list` (lecture), `map_types_list` (lecture), `map_place_add` (écriture non accordée d'office : BROUILLON seulement, 200 en attente au plus, doublon refusé, pas de publication).
 
-## Constat sur le cœur (à traiter hors de ce module)
-Le cœur envoie `Permissions-Policy: camera=(), microphone=(), geolocation=()` (next.config.mjs) : le navigateur refuse alors TOUJOURS la position, même après clic (vérifié dans Chromium : « Permissions policy violation »). Sans changement, « Près de moi » tombe sur le repli (villes, coordonnées) ; il faut `geolocation=(self)`. Aucune politique CSP : les tuiles ne sont pas bloquées. Le sujet `map.place` n'est pas dans le tableau « Sujets connus » de docs/MODULES.md du cœur (fait échouer tests/repo-rules.test.mjs tant que ce n'est pas ajouté).
+## Constat sur le cœur (réglé par le cœur 0.2.12)
+Le cœur envoie `Permissions-Policy: camera=(), microphone=(), geolocation=()` : sans la permission, le navigateur refuse TOUJOURS la position, même après clic (vérifié dans Chromium : « Permissions policy violation »). Depuis le cœur 0.2.12, le module déclare `visitor.geolocation` (`minCore` 0.2.12, Carte 1.0.1) et le cœur ouvre `geolocation=(self)` seulement si un module installé la déclare ; sans cette permission le navigateur refuse la position, et « Près de moi » tombe sur le repli (villes, coordonnées). Aucune politique CSP : les tuiles ne sont pas bloquées. Le sujet `map.place` n'est pas dans le tableau « Sujets connus » de docs/MODULES.md du cœur (fait échouer tests/repo-rules.test.mjs tant que ce n'est pas ajouté).
 
 ## Pas fait
 Alertes poussées (idée), géocodage d'adresses, descriptions traduites par langue, mini-carte de choix dans l'administration, tuiles autres qu'OSM, itinéraire intégré.

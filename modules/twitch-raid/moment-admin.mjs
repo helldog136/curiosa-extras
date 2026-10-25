@@ -57,7 +57,7 @@ export async function blocks(ctx) {
   out.push(tab({ type: "heading", text: t("mo_page_title") }));
   if (!pub.enabled(ctx)) {
     out.push(tab({ type: "markdown", text: t("mo_page_off") }));
-    // Éteinte mais avec une adresse : dire ce que voient les visiteurs, et le seul reste que le module ne peut pas effacer (le plan du site du cœur).
+    // Éteinte mais avec une adresse : dire ce que voient les visiteurs (page introuvable, absente du menu et du plan du site : le cœur 0.2.12 s'en charge via `pageSetting`).
     const kept = ctx.instance.basePath;
     if (kept !== null && kept !== undefined && kept !== "") out.push(tab({ type: "banner", tone: "info", text: t("mo_page_off_addr", { path: String(kept).replace(/^\/+|\/+$/g, "") }) }));
   } else {

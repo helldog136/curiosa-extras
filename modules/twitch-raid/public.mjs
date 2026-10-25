@@ -7,8 +7,8 @@
 //     chargent qu'après le clic du visiteur.
 //   - La route publique `members` répond avec un cache court, borne le débit par visiteur et ne révèle rien d'autre que ce que montre la page.
 //   - 2.2.1 — ÉTEINTE = AUCUNE TRACE : la page répond 404 (`notFound`, sans titre ni script annoncé) et `members` répond EXACTEMENT comme une route qui n'existe pas (404 « Not found »,
-//     même corps que le cœur : pas même un « off » pour dire qu'il y a quelque chose). Ce que le module ne peut pas retirer lui-même : l'entrée du plan du site, le lien de menu et la ligne de
-//     llms.txt que le cœur (0.2.11) construit à partir de l'adresse de l'instance seule, sans demander au module (voir README, « Page éteinte »).
+//     même corps que le cœur : pas même un « off » pour dire qu'il y a quelque chose). 2.2.2 : le manifeste déclare `pageSetting: "publicPage"`, donc le cœur (0.2.12) retire
+//     lui-même l'entrée du plan du site, le lien de menu et la ligne de llms.txt tant que le réglage est faux (voir README, « Page éteinte »).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const D = await import(`./draw.mjs${v}`);
 const { durationText, oneLine } = await import(`./pure.mjs${v}`);

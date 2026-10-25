@@ -11,14 +11,14 @@ const body = async (res) => JSON.parse(await res.text());
 const inDays = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 const valid = (schema, args) => { try { validateArgs(schema, args); return true; } catch { return false; } };
 
-test("manifeste : valide, FR+EN, instances multiples, page, cœur 0.2.6, ce que le code fait est ce que module.json annonce", () => {
+test("manifeste : valide, FR+EN, instances multiples, page, cœur 0.2.12, ce que le code fait est ce que module.json annonce", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(r.manifest.id, "map");
   assert.equal(r.manifest.apiVersion, 2);
-  assert.equal(manifest.version, "1.0.0");
+  assert.equal(manifest.version, "1.0.1");
   assert.equal(index.VERSION, manifest.version, "VERSION suit le manifeste");
-  assert.equal(manifest.minCore, "0.2.6");
+  assert.equal(manifest.minCore, "0.2.12");
   assert.equal(manifest.instances, "multiple");
   assert.equal(manifest.page, true);
   assert.equal(manifest.name.fr, "Carte"); assert.equal(manifest.name.en, "Map");
@@ -31,7 +31,7 @@ test("manifeste : valide, FR+EN, instances multiples, page, cœur 0.2.6, ce que 
 });
 
 test("manifeste : permissions = capacités utilisées ; réglages utiles, par défaut sensés, techniques en mode avancé, tous lus par le code", () => {
-  const used = { slots: !!def.slots, routes: !!def.routes, storage: src.includes("ctx.api.store"), sections: !!def.sections, pages: !!def.page, topics: src.includes("ctx.api.topics"), mcp: !!def.mcp, admin: !!def.adminPanel, mail: src.includes("ctx.api.mail") };
+  const used = { slots: !!def.slots, routes: !!def.routes, storage: src.includes("ctx.api.store"), sections: !!def.sections, pages: !!def.page, topics: src.includes("ctx.api.topics"), mcp: !!def.mcp, admin: !!def.adminPanel, mail: src.includes("ctx.api.mail"), "visitor.geolocation": /navigator\.geolocation/.test(fs.readFileSync(`${DIR}/scripts/map-page.js`, "utf8")) };
   assert.deepEqual([...manifest.permissions].sort(), Object.keys(used).filter((k) => used[k]).sort());
   const byKey = Object.fromEntries(manifest.settings.map((s) => [s.key, s]));
   for (const k of ["showMap", "showNear", "showExternal", "hidePast"]) assert.equal(byKey[k].default, true, k);
@@ -265,6 +265,16 @@ test("vie privée : aucune route ne lit une position ; envoyer latitude/longitud
   assert.equal(plain, spied);
   assert.equal(rows(ctx, "map_meta").length, 0, "rien n'est gardé par visiteur");
   for (const k of ctx.api.store.rows.values()) assert.ok(!/visitor|203\.0\.113/.test(JSON.stringify(k.data)));
+});
+
+test("position : navigator.geolocation n'est appelée qu'après le clic sur « Près de moi », et la permission visitor.geolocation est déclarée (cœur 0.2.12)", () => {
+  const js = fs.readFileSync(`${DIR}/scripts/map-page.js`, "utf8").replace(/\/\/.*$/gm, "");
+  const click = js.indexOf('nearBtn.addEventListener("click"'), uses = [...js.matchAll(/navigator\s*\.\s*geolocation/g)].map((m) => m.index);
+  assert.ok(click > 0 && uses.length >= 1, "le bouton et l'appel existent");
+  assert.ok(uses.every((i) => i > click), "aucun appel avant le gestionnaire de clic");
+  assert.ok(!/getCurrentPosition|watchPosition/.test(js.slice(0, click)), "aucune demande de position au chargement");
+  assert.ok(manifest.permissions.includes("visitor.geolocation"));
+  for (const l of ["README.md", "../../docs/ideas/map.md"]) assert.match(fs.readFileSync(`${DIR}/${l}`, "utf8"), /sans cette permission le navigateur refuse la position/);
 });
 
 test("route « place » : la fiche en HTML échappé ; code invalide, brouillon ou inconnu = 404", async () => {

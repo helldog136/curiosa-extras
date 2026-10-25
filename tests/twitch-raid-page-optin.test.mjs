@@ -1,6 +1,6 @@
-// Raid Twitch 2.2.1 — la page publique facultative : ÉTEINTE = ABSENTE, et des mots par défaut neutres (FR/EN) qui ne remplacent jamais ceux de la propriétaire.
+// Raid Twitch 2.2.2 — la page publique facultative : ÉTEINTE = ABSENTE, et des mots par défaut neutres (FR/EN) qui ne remplacent jamais ceux de la propriétaire.
 // Ce que le module peut garantir seul : la page répond 404 sans titre ni script, la route `members` répond comme une route inconnue, le plan du site du module (aucun) ne cite rien,
-// et l'administration dit clairement ce que voient les visiteurs. Le plan du site du cœur (0.2.11) part de l'adresse de l'instance seule : voir le README (« Page éteinte »).
+// et l'administration dit clairement ce que voient les visiteurs. Le cœur 0.2.12 retire lui-même la page éteinte du plan du site, de llms.txt et du menu grâce à `pageSetting` : voir le README (« Page éteinte »).
 import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -79,6 +79,7 @@ test("administration : page éteinte avec adresse → dit ce que voient les visi
   assert.ok(on.some((b) => b.tab === "moment" && b.type === "links" && b.items[0].href === "/en-direct"));
   const np = await admin.panel(site({ publicPage: true }, { basePath: null }).ctx, { query: {} });
   assert.ok(np.some((b) => b.tab === "moment" && b.type === "banner" && /Adresse de la page/.test(b.text)));
+  for (const l of [fr, en]) assert.ok(!/peut encore|may still|retirez-la du menu|take it out of the menu/.test(l.mo_page_off_addr), "plus de limite : le cœur 0.2.12 masque la page éteinte partout");
   for (const l of [fr, en]) assert.ok(!/webhook|token|oauth|payload|endpoint|slug|sitemap|basepath/i.test(l.mo_page_off + l.mo_page_off_addr), "mots simples");
   const help = manifest.settings.find((s) => s.key === "publicPage").help;
   assert.match(help.fr, /page introuvable/); assert.match(help.en, /page not found/);
@@ -103,6 +104,13 @@ test("textes par défaut NEUTRES en FR et EN : aucun « membres », « communaut
     const T = pub.texts(w.ctx); assert.equal(T.title, title);
     assert.ok(!NEUTRAL_BAD.test(JSON.stringify(T)), JSON.stringify(T));
   }
+});
+
+test("manifeste 2.2.2 : pageSetting désigne le réglage booléen publicPage (défaut faux), page: true, cœur 0.2.12", () => {
+  assert.equal(manifest.pageSetting, "publicPage"); assert.equal(manifest.page, true); assert.equal(manifest.minCore, "0.2.12");
+  const s = manifest.settings.find((x) => x.key === "publicPage");
+  assert.equal(s.type, "boolean"); assert.strictEqual(s.default, false);
+  assert.ok(!/le plan du site (?:peut|que lisent)/.test(fs.readFileSync(`${DIR}/README.md`, "utf8")), "README sans l'ancienne limite");
 });
 
 test("neutralité du dépôt : README, documentation et réglages de la page sans vocabulaire d'association (le titre par défaut n'est plus « chez nos membres »)", () => {
@@ -131,8 +139,8 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
   assert.equal((await page(wEn)).title, "Live right now");
 });
 
-test("mise à jour à chaud : version 2.2.1, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.2.1");
+test("mise à jour à chaud : version 2.2.2, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
+  assert.equal(manifest.version, "2.2.2");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));
@@ -140,7 +148,7 @@ test("mise à jour à chaud : version 2.2.1, index.mjs et public.mjs importent l
     for (const m of imports) assert.ok(/\$\{v\}/.test(m[1]), `${f} : ${m[1]}`);
   }
   const url = new URL(`../modules/twitch-raid/index.mjs`, import.meta.url).href;
-  const a = (await import(`${url}?v=2.2.0-x`)).default, b = (await import(`${url}?v=2.2.1-x`)).default;
+  const a = (await import(`${url}?v=2.2.0-x`)).default, b = (await import(`${url}?v=2.2.2-x`)).default;
   const w = site({ publicPage: false });
   assert.equal((await keep(() => b.routes.members(new Request(`${BASE}/m/x/members`), w.ctx))).status, 404);
   assert.equal(typeof a.page, "function"); assert.deepEqual(await keep(() => b.page(w.ctx, { segments: [] })), { notFound: true });

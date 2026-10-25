@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.6",
+  "minCore": "0.2.12",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.2.1",
+  "version": "2.2.2",
   "platform": "twitch",
   "description": {
     "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 membres en direct tirés au hasard, pour OBS et pour une page publique.",
@@ -19,6 +19,7 @@
   "type": "utility",
   "instances": "single",
   "page": true,
+  "pageSetting": "publicPage",
   "basePath": "en-direct",
   "requires": [
     {
@@ -248,8 +249,8 @@
         "en": "Show the public page on the site"
       },
       "help": {
-        "fr": "Une page que vos visiteurs peuvent ouvrir : elle montre les mêmes chaînes que la sélection, avec un bouton pour les regarder sur Twitch. Décochée, la page n'existe pas pour vos visiteurs : ils voient « page introuvable ». Son adresse se règle à part, en mode avancé (« Adresse de la page » en haut de cette page) : cochez ici, puis ajoutez la page au menu du site.",
-        "en": "A page your visitors can open: it shows the same channels as the picks, with a button to watch them on Twitch. Unticked, the page does not exist for your visitors: they see “page not found”. Its address is set separately, in advanced mode (“Page address” at the top of this page): tick this box, then add the page to the site menu."
+        "fr": "Une page que vos visiteurs peuvent ouvrir : elle montre les mêmes chaînes que la sélection, avec un bouton pour les regarder sur Twitch. Décochée, la page n'existe pas pour vos visiteurs : ils voient « page introuvable » et elle n'apparaît ni dans le menu du site ni dans le plan du site. Son adresse se règle à part, en mode avancé (« Adresse de la page » en haut de cette page) : cochez ici, puis ajoutez la page au menu du site si vous le souhaitez.",
+        "en": "A page your visitors can open: it shows the same channels as the picks, with a button to watch them on Twitch. Unticked, the page does not exist for your visitors: they see “page not found” and it appears neither in the site menu nor in the site map. Its address is set separately, in advanced mode (“Page address” at the top of this page): tick this box, then add the page to the site menu."
       }
     },
     {

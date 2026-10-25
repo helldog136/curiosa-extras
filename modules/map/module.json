@@ -5,8 +5,8 @@
     "fr": "Carte",
     "en": "Map"
   },
-  "version": "1.0.0",
-  "minCore": "0.2.6",
+  "version": "1.0.1",
+  "minCore": "0.2.12",
   "description": {
     "fr": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande du visiteur, avec un bouton « Près de moi ».",
     "en": "A list of useful places (studios, good addresses, events…) with filters by type and search, and an OpenStreetMap map that only shows when the visitor asks for it, with a “Near me” button."
@@ -31,7 +31,8 @@
     "pages",
     "topics",
     "mcp",
-    "admin"
+    "admin",
+    "visitor.geolocation"
   ],
   "tabs": [
     {
