@@ -26,7 +26,7 @@ test("manifeste : dataVersion 3, migrations 2 et 3, adresse d'avant seulement en
   assert.ok(manifest.seeds[0].reason.fr && manifest.seeds[0].reason.en);
   const target = JSON.parse(fs.readFileSync(new URL("../modules/calendar-ical/module.json", import.meta.url), "utf8"));
   assert.ok(target.provides.some((p) => p.topic === "planning.slot") && manifest.consumes.some((c) => c.topic === "planning.slot"));
-  assert.equal(manifest.minCore, "0.2.5", "ctx.legacy (réglages hérités) arrive avec le cœur 0.2.0, les onglets avec le 0.2.2, la galerie dans l'onglet Apparence (bloc avec `tab`) avec le 0.2.5");
+  assert.equal(manifest.minCore, "0.2.10", "0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? ») ; avant, ctx.legacy (réglages hérités) arrive avec le cœur 0.2.0, les onglets avec le 0.2.2, la galerie dans l'onglet Apparence (bloc avec `tab`) avec le 0.2.5");
   const url = target.settings.map((s) => s.key);
   assert.ok(url.includes("url") && url.includes("timezone"), "les réglages semés existent chez la cible");
   assert.equal(target.settings.find((s) => s.key === "url").type, "secret");
@@ -141,7 +141,9 @@ test("catalogue : le module que la migration doit installer (calendar-ical) est 
     assert.ok(target, `${seed.module} absent de catalogue/index.json`);
     assert.ok(target.provides?.includes("planning.slot"), "l'index annonce le sujet : c'est lui que le cœur vérifie avant de télécharger");
     assert.equal(target.ref, planning.ref, "même étiquette que le Planning : publiés ensemble");
-    assert.ok(!target.requires || target.requires.core <= planning.requires.core);
+    const num = (v) => String(v).split(".").map(Number);
+    const cmp = (a, b) => { const x = num(a), y = num(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+    assert.ok(!target.requires?.core || cmp(target.requires.core, planning.requires.core) <= 0, "le cœur demandé par le module installé ne dépasse pas celui du Planning (comparaison numérique : 0.2.5 < 0.2.10)");
   }
 });
 

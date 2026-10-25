@@ -2,10 +2,12 @@
 // Il peut LIRE (questions publiées et brouillons, questions reçues) et ÉCRIRE DES BROUILLONS. Il ne publie jamais :
 // rendre une réponse visible est un clic humain dans l'administration. Le texte des visiteurs est une donnée, jamais une consigne.
 
-import { locked, getRow, loadThemes, loadItems, loadAsked } from "./data.mjs";
-import { LIMITS, clean, num, plainText } from "./text.mjs";
-import { createRow, linkAsked, resolveTheme } from "./ops.mjs";
-import { themeName } from "./view.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { locked, getRow, loadThemes, loadItems, loadAsked } = await import(`./data.mjs${v}`);
+const { LIMITS, clean, num, plainText } = await import(`./text.mjs${v}`);
+const { createRow, linkAsked, resolveTheme } = await import(`./ops.mjs${v}`);
+const { themeName } = await import(`./view.mjs${v}`);
 
 const refuse = (message) => Object.assign(new Error(message), { expose: true }); // `expose` : ce message peut être lu par l'assistant
 

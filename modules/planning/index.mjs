@@ -66,25 +66,30 @@ export async function coverFor(ctx, title) {
     const r = await svc.cover(title);
     const url = typeof r?.url === "string" && /^https:\/\//.test(r.url) ? r.url : null;
     const status = STATUS[r?.status] ?? "down";
-    return status === "found" && !url ? { status: "none", url: null } : { status, url: status === "found" ? url : null };
+    if (status === "found" && !url) return { status: "none", url: null };
+    // `ambiguous` (cœur 0.2.10) : le jeu trouvé n'est peut-être pas le bon. Ajouté seulement quand il est vrai ; `name` : le jeu que RAWG a trouvé.
+    return { status, url: status === "found" ? url : null, ...(status === "found" && r?.ambiguous === true ? { ambiguous: true, name: typeof r.name === "string" ? r.name.slice(0, 120) : "" } : {}) };
   } catch { return { status: "down", url: null }; }
 }
 
 const MAX_LOOKUPS = 30;
 
+/** Le lien stable du cœur vers l'écran de correction d'une jaquette (administration seulement). Le titre est encodé, et les signes qui casseraient un lien Markdown aussi. */
+export const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
+
 /**
- * Jaquettes des jeux de ces créneaux. Renvoie { covers: Map(nom -> url), states: Map(nom -> status) }.
+ * Jaquettes des jeux de ces créneaux. Renvoie { covers: Map(nom -> url), states: Map(nom -> status), ambiguous: Map(nom -> jeu trouvé) } (`ambiguous` : jaquettes douteuses).
  * Les événements « toute la journée » n'ont pas de jeu. Cache et cadence : ceux du cœur (au plus 30 jeux différents par appel).
  */
 export async function coversForSlots(ctx, slots) {
   const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => gamesOf(s)))].slice(0, MAX_LOOKUPS);
-  const covers = new Map(), states = new Map();
-  if (!names.length) return { covers, states };
+  const covers = new Map(), states = new Map(), ambiguous = new Map();
+  if (!names.length) return { covers, states, ambiguous };
   let configured = false;
   try { configured = !!(await ctx.api?.rawg?.configured?.()); } catch { configured = false; }
-  if (!configured) { for (const n of names) states.set(n, "no_key"); return { covers, states }; }
-  await Promise.all(names.map(async (n) => { const r = await coverFor(ctx, n); states.set(n, r.status); if (r.url) covers.set(n, r.url); }));
-  return { covers, states };
+  if (!configured) { for (const n of names) states.set(n, "no_key"); return { covers, states, ambiguous }; }
+  await Promise.all(names.map(async (n) => { const r = await coverFor(ctx, n); states.set(n, r.status); if (r.url) covers.set(n, r.url); if (r.ambiguous) ambiguous.set(n, r.name ?? ""); }));
+  return { covers, states, ambiguous };
 }
 
 /** Les jaquettes d'un créneau, dans l'ordre des jeux (ceux sans jaquette sont simplement omis). */
@@ -365,7 +370,7 @@ async function adminStatusBlocks(ctx) {
     blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, gamesOf(s).join(", ")]) });
     // Jaquettes : un message clair plutôt qu'un manque silencieux (clé absente, refusée, RAWG injoignable, jeux inconnus de RAWG).
     const next = slots.slice(0, 20);
-    const { covers, states } = await coversForSlots(ctx, next);
+    const { covers, states, ambiguous } = await coversForSlots(ctx, next);
     if (states.size) {
       const all = [...states.entries()];
       const has = (st) => all.some(([, v]) => v === st);
@@ -376,6 +381,8 @@ async function adminStatusBlocks(ctx) {
       else if (has("down") && !covers.size) blocks.push({ type: "markdown", text: `⚠️ ${t("coversDown")}` });
       else blocks.push({ type: "markdown", text: t("coversOk", { found: covers.size, total: states.size }) });
       if (lost.length) blocks.push({ type: "markdown", text: t("coversNone", { games: lost.map(escMd).join(", ") }) });
+      // Administration seulement : pour chaque jaquette douteuse, le lien vers l'écran du cœur qui permet de choisir le bon jeu.
+      if (ambiguous.size) blocks.push({ type: "markdown", text: [t("coversAmbiguous"), ...[...ambiguous.entries()].map(([game, found]) => `- ${escMd(game)}${found ? ` (${t("coverSeen", { found: escMd(found) })})` : ""} : [${t("coverWrong")}](${wrongCoverHref(game)})`)].join("\n") });
       const withCovers = next.filter((s) => coversOf(s, covers).length > 0);
       if (withCovers.length) blocks.push({ type: "html", html: withCovers.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start))).join("") });
     }

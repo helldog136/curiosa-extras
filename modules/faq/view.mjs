@@ -2,8 +2,10 @@
 // Le HTML des questions est de vrai HTML (`details` / `summary`) : il s'ouvre et se referme sans JavaScript.
 // Le JavaScript (client.mjs) n'ajoute que du confort : recherche, « tout ouvrir », lien copié, avis envoyé sans recharger la page.
 
-import { loadThemes, loadItems, flag } from "./data.mjs";
-import { esc, renderAnswer, faqMarkup, safeJson, safeLang, safeSlug, num } from "./text.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { loadThemes, loadItems, flag } = await import(`./data.mjs${v}`);
+const { esc, renderAnswer, faqMarkup, safeJson, safeLang, safeSlug, num } = await import(`./text.mjs${v}`);
 
 /** Adresse de la page de l'instance (null si elle n'est pas montée sur un chemin). Préfixe la langue si ce n'est pas la langue par défaut. */
 export function pageHref(ctx, localized = true) {

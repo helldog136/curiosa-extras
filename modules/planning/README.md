@@ -7,13 +7,14 @@ Vos prochains streams, jour par jour, **affichés** dans l'apparence de votre ch
 
 Installez l'un des deux, ou les deux : leurs streams s'ajoutent (un stream écrit deux fois n'est montré qu'une fois). Le **bot Twitch** lit les mêmes agendas : il peut répondre à `!planning` même sans Planning.
 
-Il faut Curiosa 0.2.2 ou plus.
+Il faut Curiosa 0.2.10 ou plus.
 
 - **Page publique** `/planning` : les *N* prochains jours (7 par défaut, réglage avancé).
 - **Section d'accueil** « Prochains streams » et « Prochain stream » (à placer depuis *Page d'accueil*).
 - **Sans agenda installé** : le planning ne casse rien. Il dit « Pas de stream planifié pour l'instant » aux visiteurs, et l'administration vous explique quoi installer.
 - **Fuseau horaire** : par défaut, celui de vos agendas (réglage avancé « Fuseau horaire d'affichage » pour en imposer un autre).
 - **Assistants IA** : `planning_upcoming` (lecture seule, accordée par défaut).
+- **Jaquette peut-être fausse** (administration seulement, Curiosa 0.2.10 ou plus) : quand RAWG n'est pas sûr du jeu (`ambiguous`), l'administration liste le jeu avec un lien « Ce n'est pas le bon jeu ? » vers `/admin/settings/rawg-covers?titre=<titre encodé>`, l'écran du cœur où l'on choisit le bon jeu. Rien n'est ajouté côté visiteur.
 - **Admin** : les prochains streams vus, les jaquettes, et l'aperçu de chaque apparence.
 
 ## Apparences au choix (réglage « Apparence du planning »)

@@ -22,7 +22,7 @@ const LOG_CAP = { error: 1000, created: 200, linked: 200, skipped: 200 };
 const STALE_MS = 7 * 86_400_000;   // un import abandonné est effacé au bout de 7 jours
 const OVERLAY_MS = 30 * 60_000;
 const opt = (ctx, k, def) => { const n = ctx?.__contactsTest?.[k]; return Number.isInteger(n) && n > 0 ? n : def; };
-export const stepMs = (ctx) => opt(ctx, "importStepMs", 8000);
+export const stepMs = (ctx) => { const n = ctx?.__contactsTest?.importStepMs; return n === 0 ? 0 : opt(ctx, "importStepMs", 8000); }; // 0 : réservé aux tests (un seul lot par pas, sans dépendre de l'horloge)
 const lockRows = (ctx) => opt(ctx, "importLockRows", 100);
 const today = () => new Date().toISOString().slice(0, 10);
 const fold = N.fold;

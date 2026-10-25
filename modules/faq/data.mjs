@@ -6,7 +6,9 @@
 //   faq_asked   { text, lang, count, last, status: "new" | "drafted", draft? }
 // Rien n'est lu sans borne : au plus LIMITS.items questions, LIMITS.themes thèmes, LIMITS.asked questions reçues.
 
-import { LIMITS, clean, num, safeSlug, slugify, fold } from "./text.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { LIMITS, clean, num, safeSlug, slugify, fold } = await import(`./text.mjs${v}`);
 
 export const C = { items: "faq_items", themes: "faq_themes", asked: "faq_asked" };
 export const HOUR = 3_600_000;

@@ -1,9 +1,9 @@
 # Raid Twitch 2.2.0
 
 ## Nouveautés
-- **Sélection du moment** : le dock peut montrer 5 membres en direct tirés au hasard (de 1 à 10), au lieu de toute la liste. La sélection reste la même pendant 10 minutes pour tout le monde, puis se renouvelle. Un bouton « Tirer de nouveau » en tire une autre tout de suite.
+- **Sélection du moment** : le dock peut montrer 5 chaînes en direct tirés au hasard (de 1 à 10), au lieu de toute la liste. La sélection reste la même pendant 10 minutes pour tout le monde, puis se renouvelle. Un bouton « Tirer de nouveau » en tire une autre tout de suite.
 - **Équitable** : les mêmes personnes ne reviennent pas tant que d'autres sont en direct. Option « petites chaînes d'abord » et liste de pseudos à ne jamais tirer.
-- **Page publique « En direct chez nos membres »** (facultative, éteinte au départ) : mêmes membres, avec jeu, titre, spectateurs, durée et un bouton « Regarder sur Twitch ». Elle se met à jour toute seule, garde la dernière sélection si Twitch ne répond pas, et dit gentiment quand personne n'est en direct. Titre, texte et bouton se changent dans les réglages.
+- **Page publique « En direct en ce moment »** (facultative, éteinte au départ) : mêmes chaînes, avec jeu, titre, spectateurs, durée et un bouton « Regarder sur Twitch ». Elle se met à jour toute seule, garde la dernière sélection si Twitch ne répond pas, et dit gentiment quand personne n'est en direct. Titre, texte et bouton se changent dans les réglages.
 - **Une adresse à part pour OBS**, secrète comme celle du dock (la même clé).
 
 ## Améliorations

@@ -255,3 +255,52 @@ test("en anglais : titre, boutons et messages sont traduits", async () => {
   assert.equal(els.get("event-manual-toggle").textContent, en.ui_event_manual);
   assert.match(rowsOf(els.get("event-list"))[0].textContent, /Schedule/, "la pastille de l'agenda est traduite");
 });
+
+/* ───────────── « Ce n'est pas le bon jeu ? » (cœur 0.2.10) ───────────── */
+const warnLink = (els) => els.get("cover-warn").children.find((c) => c.tagName === "a");
+const COVER_OK = "https://media.rawg.io/media/games/abc/abcdef0123456789.jpg";
+const pickFirst = async (ctx) => {
+  const r = current = await boot(ctx);
+  await wait(300);
+  return r;
+};
+
+test("jaquette ambiguë : une phrase et le lien « Ce n'est pas le bon jeu ? » (titre encodé, nouvel onglet) apparaissent au-dessus de « Générer la vidéo », qui reste utilisable ; masqués ensuite si on décoche le jeu", async () => {
+  const ctx = mk({ calendar: [slot(1, 6, { games: ["Hades (II) & l'été"] })] });
+  ctx.api.rawg.cover = async () => ({ status: "found", url: COVER_OK, name: "Autre jeu", id: 3, ambiguous: true });
+  const { els } = await pickFirst(ctx);
+  const box = els.get("cover-warn");
+  assert.equal(box.hidden, false);
+  assert.match(box.textContent, /La jaquette de « Hades \(II\) & l'été » est peut-être celle d'un autre jeu \(RAWG a pris « Autre jeu »\)\. La vidéo se fait quand même\./);
+  const a = warnLink(els);
+  assert.equal(a.textContent, "Ce n'est pas le bon jeu ?");
+  assert.equal(a.attrs.href, `/admin/settings/rawg-covers?titre=${encodeURIComponent("Hades (II) & l'été")}`);
+  assert.deepEqual([a.attrs.target, a.attrs.rel], ["_blank", "noopener"], "nouvel onglet : le travail en cours reste là");
+  assert.equal(els.get("generate").isDisabled, false, "la vidéo n'est jamais bloquée");
+  els.get("el-game").checked = false; els.get("el-game").fire("change");
+  assert.equal(box.hidden, true, "sans le jeu dans la vidéo, plus d'avertissement");
+});
+
+test("jaquette sûre (ambiguous faux ou absent), sans jaquette, ou jeu absent : aucun avertissement", async () => {
+  for (const cover of [{ status: "found", url: COVER_OK, ambiguous: false }, { status: "found", url: COVER_OK }, { status: "none", url: null }]) {
+    const ctx = mk({ calendar: [slot(1, 6, { games: ["Celeste"] })] });
+    ctx.api.rawg.cover = async () => cover;
+    const { els } = await pickFirst(ctx);
+    assert.equal(els.get("cover-warn").hidden, true, JSON.stringify(cover));
+    current.server.restore();
+  }
+  const { els } = await pickFirst(mk({ calendar: [slot(1, 6)] }));
+  assert.equal(els.get("cover-warn").hidden, true, "pas de jeu, pas d'avertissement");
+});
+
+test("en anglais : l'avertissement et le lien sont traduits (avec ou sans le nom du jeu trouvé)", async () => {
+  const ctx = mk({ locale: "en", calendar: [slot(1, 6, { games: ["Celeste"] })] });
+  ctx.api.rawg.cover = async () => ({ status: "found", url: COVER_OK, ambiguous: true });
+  const { els } = await pickFirst(ctx);
+  assert.equal(els.get("cover-warn").textContent, "The cover for “Celeste” may belong to another game. You can still make the video. Not the right game?");
+  assert.equal(warnLink(els).textContent, "Not the right game?");
+});
+
+test("l'éditeur et la page ne lisent ces phrases que dans les locales (parité FR/EN)", () => {
+  for (const k of ["ui_cover_ambiguous", "ui_cover_ambiguous_named", "ui_cover_wrong"]) assert.ok(k in fr && k in en, k);
+});

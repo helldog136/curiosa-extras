@@ -1,7 +1,9 @@
 // Contacts — rendu HTML de l'administration (cartes, pastilles de réseaux, barre de recherche, filtres, en-tête de fiche). Fonctions PURES :
 // elles reçoivent des données déjà lues et rendent du texte HTML échappé. Mobile d'abord (une colonne, grandes zones à toucher), couleurs du
 // thème de l'admin (variables --v-*), accessibles (listes, libellés, texte pour les lecteurs d'écran, focus visible).
-import { NETWORK_LOOK } from "./networks.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { NETWORK_LOOK } = await import(`./networks.mjs${v}`);
 
 export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** Adresse d'admin relative avec ces paramètres (vides retirés). */

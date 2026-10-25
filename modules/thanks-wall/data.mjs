@@ -3,7 +3,9 @@
 //   honors   : { month: "2026-10", contactId, why: { fr: "…" } }   la personne mise à l'honneur un mois donné (une par mois)
 // Ni nom, ni photo, ni pseudo : tout cela reste dans Contacts et se relit à chaque affichage (voir contacts.mjs). Les lectures passent par une petite mémoire de 30 secondes
 // (vidée à chaque écriture) pour qu'une page publique très visitée ne relise pas le stockage à chaque fois.
-import { LIMITS, clean, idOk, monthOk } from "./pure.mjs";
+// Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { LIMITS, clean, idOk, monthOk } = await import(`./pure.mjs${v}`);
 
 export const MESSAGES = "messages";
 export const HONORS = "honors";
