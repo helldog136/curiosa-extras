@@ -32,8 +32,8 @@ const prepOf = async (ctx, r) => data.readPrep(ctx, /prep=([A-Za-z0-9_-]{22})/.e
 
 /* ───────────── Le manifeste, les textes, la case ───────────── */
 
-test("manifeste : version 2.3.0, réglage « watermark » (oui/non, NON par défaut, mode avancé : rien de visible en mode simple), paramètre MCP facultatif décrit ; la mention n'est pas un élément", () => {
-  assert.equal(manifest.version, "2.3.0");
+test("manifeste : version 2.4.0, réglage « watermark » (oui/non, NON par défaut, mode avancé : rien de visible en mode simple), paramètre MCP facultatif décrit ; la mention n'est pas un élément", () => {
+  assert.equal(manifest.version, "2.4.0");
   const s = manifest.settings.find((x) => x.key === "watermark");
   assert.deepEqual([s.type, s.default, s.advanced], ["boolean", false, true]);
   assert.ok(s.label.fr && s.label.en && s.help.fr && s.help.en);
@@ -60,7 +60,8 @@ test("la page : la case est DÉCOCHÉE (aucun attribut checked), fait au moins 4
   const box = /<input type="checkbox" id="watermark"[^>]*>/.exec(html)[0];
   assert.ok(!/checked/.test(box), box); assert.ok(!/tabindex/.test(box), "dans l'ordre naturel du clavier");
   assert.match(html, /label\.check\.tap\{[^}]*min-height:44px/);
-  assert.ok(html.indexOf('id="duration"') < html.indexOf('id="watermark"') && html.indexOf('id="watermark"') < html.indexOf('id="h-members"'), "dans la section « Apparence », avant les co-streamers");
+  assert.ok(html.indexOf('id="text"') < html.indexOf('id="watermark"') && html.indexOf('id="watermark"') < html.indexOf('id="members-box"'), "dans « Personnaliser », juste après le style et la phrase, avant les co-streamers");
+  assert.ok(html.indexOf('id="watermark"') < html.indexOf('id="advanced"'), "le choix de la mention n'est pas rangé dans les options avancées");
   assert.ok(/aria-describedby="watermark-help"/.test(box) && html.includes('id="watermark-help"'));
 });
 

@@ -9,7 +9,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 /** Les phrases de la page (clés `ui_…` des locales, sans le préfixe). */
 export const KEYS = [
   "title", "no_access", "no_access_hint", "prep_note", "prep_expired", "prep_stream_gone", "help_intro",
-  "h_event", "event_help", "event_chosen", "event_none_chosen", "event_manual_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
+  "h_event", "event_next", "event_started", "event_change", "event_change_close", "event_manual_tag", "event_pick_title", "event_same", "h_custom", "custom_optional", "adv_label", "adv_help", "h_advanced", "progress_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "event_chosen", "event_none_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
   "event_zone", "event_local", "event_also", "event_picked", "event_row", "event_retry", "event_manual", "event_manual_close", "event_all_down", "event_busy", "event_ready", "ev_down", "ev_down_stale", "ev_setup", "ev_note",
   "type_stream", "type_live", "type_premiere", "type_video", "type_event", "type_other",
   "cover_no_key", "cover_ambiguous", "cover_ambiguous_named", "cover_wrong", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
@@ -48,9 +48,9 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-app
 main{max-width:1180px;margin:0 auto;padding:16px}
 h1{font-size:1.25rem;margin:0 0 4px}h2{font-size:1.05rem;margin:0 0 8px}
 p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var(--ok)}
-.layout{display:grid;gap:16px}
-@media (min-width:720px){.layout{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.previewcol{position:sticky;top:12px}}
-@media (max-width:719px){.layout{display:flex;flex-direction:column;gap:0}#controls{display:contents}section.pick{order:-2}.previewcol{order:-1}}
+.layout{display:grid;gap:14px}.layout>*{margin:0}
+@media (min-width:720px){.layout{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"pick side" "custom side";align-items:start}section.pick{grid-area:pick}details.custom{grid-area:custom}.previewcol{grid-area:side;position:sticky;top:12px}}
+@media (max-width:719px){.previewcol{display:contents}main#app{padding-bottom:calc(88px + env(safe-area-inset-bottom))}}
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
 fieldset{border:0;margin:0;padding:0;min-width:0}legend{font-weight:600;padding:0;margin-bottom:6px}
 label{display:block}label.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;min-height:32px}label.check.tap{min-height:44px;align-items:center;margin-top:8px}label.check.tap input{width:24px;height:24px;margin:0}
@@ -92,6 +92,19 @@ button.event[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 2px 
 .src::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot,var(--muted));flex:none}
 .src-calendar{--dot:#4f46e5}.src-youtube{--dot:#d92d20}.src-twitch{--dot:#8b5cf6}
 .srcnotes p{margin:.35rem 0}button.wide{min-height:48px}
+header{margin:0 0 12px}h3{font-size:1rem;margin:12px 0 6px}
+.chosen{display:grid;gap:4px}.chosen .lead{font-size:.85rem;color:var(--muted)}.chosen .ttl2{font-size:1.15rem;font-weight:700}.chosen .when{font-size:1rem}
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:999px;padding:1px 9px;background:var(--accent);color:var(--accent-fg)}
+.picker{margin-top:12px;padding-top:4px;border-top:1px solid var(--line)}
+button,a.button{min-height:44px}
+details.custom{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 0 14px}details.custom>summary{padding:12px 14px;min-height:48px;font-size:1.05rem;list-style-position:inside}
+details.custom>.inner{padding:0 14px 14px}details.sub-d{border:1px solid var(--line);border-radius:10px;background:var(--field);margin:10px 0}details.sub-d>summary{padding:10px 12px;min-height:48px}details.sub-d>.inner{padding:0 12px 12px}
+.field{margin-top:12px}.advtoggle{margin-top:12px;border-top:1px solid var(--line);padding-top:6px}.advanced{margin-top:8px;padding:12px;border:1px dashed var(--line);border-radius:10px}
+.genbar{margin:0 0 14px}#models-box .bar{flex-wrap:wrap}#models-box .bar input{flex:1 1 200px;width:auto;min-width:0}
+@media (max-width:719px){.genbar{position:fixed;left:0;right:0;bottom:0;z-index:3;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);box-shadow:0 -4px 12px rgba(0,0,0,.12);max-height:60vh;overflow:auto}
+body.editing #pv{position:sticky;top:0;z-index:2;padding:8px 14px}body.editing #pv h2,body.editing #pv>p:not([role=alert]):not(#cover-warn){display:none}body.editing #pv .bar{margin:6px 0 0}body.editing canvas#preview{max-height:24vh}canvas#preview{max-height:44vh}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+button.busy{position:relative}button[aria-busy=true]{cursor:progress}
 `;
 
 /** La page. `cfg` : ce que l'éditeur sait déjà (couleurs, fuseau, adresse des routes). */
@@ -103,37 +116,40 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
   const check = (id, key) => `<label class="check" for="el-${id}"><input type="checkbox" id="el-${id}"><span>${T(key)}</span></label>`;
   const style = (id) => `<label for="style-${id}"><input type="radio" name="style" id="style-${id}"><span>${T(`style_${id}`)}<small>${T(`style_${id}_hint`)}</small></span></label>`;
   const body = `<main id="app">
-<h1>${T("title")}</h1><p class="muted">${T("help_intro")}</p>
+<header><h1>${T("title")}</h1><p class="muted">${T("help_intro")}</p></header>
 <div id="status" class="status" role="status" aria-live="polite" hidden></div>
 <p id="prep-note" class="banner" hidden>${T("prep_note")}</p><p id="prep-expired" class="banner" hidden>${T("prep_expired")}</p><p id="prep-stream-gone" class="banner" hidden>${T("prep_stream_gone")}</p>
-<div class="layout"><div id="controls">
-<section class="pick" aria-labelledby="h-event"><h2 id="h-event">${T("h_event")}</h2><p class="muted">${T("event_help")}</p>
+<div class="layout">
+<section class="pick" aria-labelledby="h-event"><h2 id="h-event">${T("h_event")}</h2>
 <div id="event-chosen" class="chosen" role="status" aria-live="polite"></div>
-<div id="event-picker"><label for="event-q">${T("event_search")}</label><input type="search" id="event-q" maxlength="80" autocomplete="off" placeholder="${T("event_search_ph")}">
-<div id="event-filter" class="chips" role="group" aria-label="${T("event_sources")}" hidden></div>
+<p id="event-same" class="muted" hidden></p>
+<div id="event-alert" class="srcnotes" role="status" aria-live="polite"></div>
+<div class="bar"><button type="button" id="event-change" class="wide" aria-expanded="false" aria-controls="event-picker">${T("event_change")}</button><button type="button" id="event-retry" class="wide" hidden>${T("event_retry")}</button></div>
+<div id="event-picker" class="picker" role="group" aria-labelledby="h-pick" hidden><h3 id="h-pick" tabindex="-1">${T("event_pick_title")}</h3>
+<div id="event-search-box" hidden><label for="event-q">${T("event_search")}</label><input type="search" id="event-q" maxlength="80" autocomplete="off" placeholder="${T("event_search_ph")}">
+<div id="event-filter" class="chips" role="group" aria-label="${T("event_sources")}" hidden></div></div>
 <p id="event-note" class="muted" role="status" aria-live="polite"></p>
 <ul id="event-list" class="events"></ul>
 <p id="event-count" class="muted" role="status" aria-live="polite"></p>
-<div class="bar"><button type="button" id="event-more" class="wide" hidden>${T("event_more")}</button><button type="button" id="event-retry" class="wide" hidden>${T("event_retry")}</button></div>
-<div id="event-sources" class="srcnotes" role="status" aria-live="polite"></div></div>
+<div class="bar"><button type="button" id="event-more" class="wide" hidden>${T("event_more")}</button></div>
+<div id="event-sources" class="srcnotes" role="status" aria-live="polite"></div>
 <button type="button" id="event-manual-toggle" class="wide" aria-expanded="false" aria-controls="manual">${T("event_manual")}</button>
-<div id="manual" hidden><div class="grid2"><div style="grid-column:1/-1"><label for="m-title">${T("m_title")}</label><input type="text" id="m-title" maxlength="80" autocomplete="off"></div>
-<div><label for="m-date">${T("m_date")}</label><input type="date" id="m-date"></div><div><label for="m-time">${T("m_time")}</label><input type="time" id="m-time"></div></div>
-<p class="muted">${T("m_time_hint")}</p><p id="manual-error" class="warn" role="alert"></p></div></section>
-<section><fieldset><legend>${T("h_elements")}</legend>${check("title", "el_title")}${check("when", "el_when")}${check("countdown", "el_countdown")}${check("game", "el_game")}${check("brand", "el_brand")}${check("text", "el_text")}${check("costreamers", "el_costreamers")}
-<p id="countdown-note" class="muted"></p><p id="nostream" class="warn" hidden>${T("no_stream_info")}</p></fieldset></section>
-<section><h2>${T("h_texts")}</h2>
-<label for="text">${T("text_label")}</label><textarea id="text" maxlength="400"></textarea><p class="muted"><span id="text-count"></span> · ${T("text_help")}</p>
-<label for="channel">${T("channel_label")}</label><input type="text" id="channel" maxlength="40" autocomplete="off"><p class="muted">${T("channel_help")}</p>
-<label for="lang">${T("lang_label")}</label><select id="lang"><option value="fr">${T("lang_fr")}</option><option value="en">${T("lang_en")}</option></select></section>
-<section><h2>${T("h_look")}</h2>
+<div id="manual" hidden><div class="grid2"><div style="grid-column:1/-1"><label for="m-title">${T("m_title")}</label><input type="text" id="m-title" maxlength="80" autocomplete="off" aria-describedby="manual-error"></div>
+<div><label for="m-date">${T("m_date")}</label><input type="date" id="m-date" aria-describedby="manual-error"></div><div><label for="m-time">${T("m_time")}</label><input type="time" id="m-time" aria-describedby="m-time-hint manual-error"></div></div>
+<p id="m-time-hint" class="muted">${T("m_time_hint")}</p><p id="manual-error" class="warn" role="alert"></p></div></div></section>
+<aside class="previewcol"><div class="card" id="pv"><h2>${T("h_preview")}</h2>
+<canvas id="preview" width="540" height="960" role="img" aria-label="${T("preview_label")}"></canvas>
+<div class="bar"><button type="button" id="play" aria-pressed="true">${T("pause")}</button><button type="button" id="replay">${T("replay")}</button><span id="time" class="muted"></span></div>
+<p id="reduced" class="muted" hidden>${T("reduced")}</p><p id="empty" class="warn" role="alert" hidden>${T("empty")}</p><p class="muted">${T("silent_note")}</p>
+<p id="cover-warn" class="warn" hidden></p></div>
+<div class="genbar"><button type="button" class="primary" id="generate">${T("generate")}</button>
+<div id="progress-box" hidden><progress id="progress" max="1" value="0" aria-label="${T("progress_label")}"></progress><p id="progress-text" class="muted" aria-live="polite"></p><button type="button" id="cancel">${T("cancel_video")}</button></div>
+<div id="result" hidden></div></div></aside>
+<details id="custom" class="custom"><summary>${T("h_custom")} <span class="muted">${T("custom_optional")}</span></summary><div class="inner">
 <fieldset><legend>${T("style_label")}</legend><div class="cards">${style("neon")}${style("poster")}${style("countdown")}${style("minimal")}</div></fieldset>
-<fieldset style="margin-top:12px"><legend>${T("format_label")}</legend><div class="cards">
-<label for="format-vertical"><input type="radio" name="format" id="format-vertical"><span>${T("format_vertical")}</span></label>
-<label for="format-passeport"><input type="radio" name="format" id="format-passeport"><span>${T("format_passeport")}</span></label></div><p id="fmt-note" class="muted"></p></fieldset>
-<label for="duration" style="margin-top:12px">${T("duration_label")} : <strong id="duration-out"></strong></label><input type="range" id="duration" min="${P.LIMITS.durationMin}" max="${P.LIMITS.durationMax}" step="1"><p class="muted">${T("duration_help")}</p>
-<label class="check tap" for="watermark"><input type="checkbox" id="watermark" aria-describedby="watermark-help"><span>${T("watermark_label")}</span></label><p id="watermark-help" class="muted" style="margin-top:0">${T("watermark_help")}</p></section>
-<section aria-labelledby="h-members"><h2 id="h-members">${T("h_members")}</h2><p class="muted">${T("members_help")}</p>
+<div class="field"><label for="text">${T("text_label")}</label><textarea id="text" maxlength="400" aria-describedby="text-help"></textarea><p id="text-help" class="muted"><span id="text-count"></span> · ${T("text_help")}</p></div>
+<label class="check tap" for="watermark"><input type="checkbox" id="watermark" aria-describedby="watermark-help"><span>${T("watermark_label")}</span></label><p id="watermark-help" class="muted" style="margin-top:0">${T("watermark_help")}</p>
+<details id="members-box" class="sub-d"><summary>${T("h_members")} <span id="members-count" class="muted"></span></summary><div class="inner" aria-labelledby="h-members"><p id="h-members" class="muted">${T("members_help")}</p>
 <p id="migrated" class="banner" hidden></p>
 <p class="sub">${T("members_chosen")}</p><ul class="list" id="chosen"></ul><p id="members-note" class="muted" role="status"></p>
 <div id="book-box" hidden><label for="q">${T("search_label")}</label><input type="search" id="q" maxlength="100" autocomplete="off" placeholder="${T("search_placeholder")}" aria-describedby="q-note"><p id="q-note" class="muted" role="status" aria-live="polite">${T("search_hint")}</p>
@@ -142,23 +158,26 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <p id="cat-note" class="muted" role="status" aria-live="polite"></p><ul class="list" id="cat-results"></ul>
 <div class="bar"><button type="button" id="cat-add-first" hidden></button><button type="button" id="cat-more" hidden>${T("show_more")}</button></div></details></div>
 <p id="book-absent" class="banner" hidden>${T("book_absent")}</p>
-<details id="adhoc-box" open><summary>${T("adhoc_title")}</summary><p class="muted">${T("adhoc_help")}</p>
-<div class="grid2"><div><label for="a-login">${T("a_login")}</label><input type="text" id="a-login" maxlength="40" autocomplete="off"></div><div><label for="a-name">${T("a_name")}</label><input type="text" id="a-name" maxlength="40" autocomplete="off"></div>
-<div style="grid-column:1/-1"><label for="a-image">${T("a_image")}</label><input type="url" id="a-image" maxlength="400" autocomplete="off" aria-describedby="a-image-help"><p id="a-image-help" class="muted">${T("a_image_help")}</p></div></div>
+<details id="adhoc-box"><summary>${T("adhoc_title")}</summary><p class="muted">${T("adhoc_help")}</p>
+<div class="grid2"><div><label for="a-login">${T("a_login")}</label><input type="text" id="a-login" maxlength="40" autocomplete="off" aria-describedby="a-error"></div><div><label for="a-name">${T("a_name")}</label><input type="text" id="a-name" maxlength="40" autocomplete="off" aria-describedby="a-error"></div>
+<div style="grid-column:1/-1"><label for="a-image">${T("a_image")}</label><input type="url" id="a-image" maxlength="400" autocomplete="off" aria-describedby="a-image-help a-error"><p id="a-image-help" class="muted">${T("a_image_help")}</p></div></div>
 <p id="a-error" class="warn" role="alert"></p><div class="bar"><button type="button" id="adhoc-add">${T("add")}</button></div></details>
-<div id="saved-box" hidden><p class="sub">${T("saved_title")}</p><p class="muted">${T("saved_help")}</p><ul class="list" id="saved-list"></ul></div></section>
-<section><h2>${T("h_models")}</h2><p class="muted">${T("models_help")}</p>
-<label for="model-name">${T("model_name")}</label><div class="bar"><input type="text" id="model-name" class="grow" maxlength="60" autocomplete="off"><button type="button" id="model-save">${T("model_save")}</button></div><ul class="list" id="model-list"></ul></section>
-</div>
-<aside class="previewcol"><div class="card"><h2>${T("h_preview")}</h2>
-<canvas id="preview" width="540" height="960" role="img" aria-label="${T("preview_label")}"></canvas>
-<div class="bar"><button type="button" id="play" aria-pressed="true">${T("pause")}</button><button type="button" id="replay">${T("replay")}</button><span id="time" class="muted"></span></div>
-<label class="check" for="safe"><input type="checkbox" id="safe"><span>${T("safe_label")}</span></label><p class="muted">${T("safe_help")}</p>
-<p id="reduced" class="muted" hidden>${T("reduced")}</p><p id="empty" class="warn" role="alert" hidden>${T("empty")}</p><p class="muted">${T("silent_note")}</p>
-<p id="cover-warn" class="warn" hidden></p>
-<button type="button" class="primary" id="generate">${T("generate")}</button>
-<div id="progress-box" hidden><progress id="progress" max="1" value="0"></progress><p id="progress-text" class="muted" aria-live="polite"></p><button type="button" id="cancel">${T("cancel_video")}</button></div>
-<div id="result" hidden></div></div></aside></div></main>
+<div id="saved-box" hidden><p class="sub">${T("saved_title")}</p><p class="muted">${T("saved_help")}</p><ul class="list" id="saved-list"></ul></div></div></details>
+<details id="models-box" class="sub-d"><summary>${T("h_models")}</summary><div class="inner"><p class="muted">${T("models_help")}</p>
+<label for="model-name">${T("model_name")}</label><div class="bar"><input type="text" id="model-name" class="grow" maxlength="60" autocomplete="off" aria-describedby="model-error"><button type="button" id="model-save">${T("model_save")}</button></div><p id="model-error" class="warn" role="alert"></p><ul class="list" id="model-list"></ul></div></details>
+<div class="advtoggle"><label class="check tap" for="adv"><input type="checkbox" id="adv" aria-controls="advanced" aria-describedby="adv-help"><span>${T("adv_label")}</span></label><p id="adv-help" class="muted" style="margin-top:0">${T("adv_help")}</p></div>
+<div id="advanced" class="advanced" hidden><h2>${T("h_advanced")}</h2>
+<fieldset><legend>${T("h_elements")}</legend>${check("title", "el_title")}${check("when", "el_when")}${check("countdown", "el_countdown")}${check("game", "el_game")}${check("brand", "el_brand")}${check("text", "el_text")}${check("costreamers", "el_costreamers")}
+<p id="countdown-note" class="muted"></p><p id="nostream" class="warn" hidden>${T("no_stream_info")}</p></fieldset>
+<fieldset style="margin-top:12px"><legend>${T("format_label")}</legend><div class="cards">
+<label for="format-vertical"><input type="radio" name="format" id="format-vertical"><span>${T("format_vertical")}</span></label>
+<label for="format-passeport"><input type="radio" name="format" id="format-passeport"><span>${T("format_passeport")}</span></label></div><p id="fmt-note" class="muted"></p></fieldset>
+<div class="field"><label for="duration">${T("duration_label")} : <strong id="duration-out"></strong></label><input type="range" id="duration" min="${P.LIMITS.durationMin}" max="${P.LIMITS.durationMax}" step="1" aria-describedby="duration-help"><p id="duration-help" class="muted">${T("duration_help")}</p></div>
+<div class="field"><label for="channel">${T("channel_label")}</label><input type="text" id="channel" maxlength="40" autocomplete="off" aria-describedby="channel-help"><p id="channel-help" class="muted">${T("channel_help")}</p></div>
+<div class="field"><label for="lang">${T("lang_label")}</label><select id="lang"><option value="fr">${T("lang_fr")}</option><option value="en">${T("lang_en")}</option></select></div>
+<label class="check tap" for="safe"><input type="checkbox" id="safe" aria-describedby="safe-help"><span>${T("safe_label")}</span></label><p id="safe-help" class="muted" style="margin-top:0">${T("safe_help")}</p></div>
+</div></details>
+</div></main>
 <main id="noaccess" hidden><h1>${T("no_access")}</h1><p>${T("no_access_hint")}</p></main>`;
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${T("title")}</title>
 <style>${CSS}:root{--accent:${esc(accent)};--accent-fg:${esc(accentFg)}}</style></head><body>${body}
