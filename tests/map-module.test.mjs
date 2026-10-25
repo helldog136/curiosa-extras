@@ -274,7 +274,7 @@ test("position : navigator.geolocation n'est appelée qu'après le clic sur « P
   assert.ok(uses.every((i) => i > click), "aucun appel avant le gestionnaire de clic");
   assert.ok(!/getCurrentPosition|watchPosition/.test(js.slice(0, click)), "aucune demande de position au chargement");
   assert.ok(manifest.permissions.includes("visitor.geolocation"));
-  for (const l of ["README.md", "../../docs/ideas/map.md"]) assert.match(fs.readFileSync(`${DIR}/${l}`, "utf8"), /sans cette permission le navigateur refuse la position/);
+  for (const l of ["README.md", "../../docs/ideas/map.md"]) assert.match(fs.readFileSync(`${DIR}/${l}`, "utf8"), /sans cette permission le navigateur refuse la position/i);
 });
 
 test("route « place » : la fiche en HTML échappé ; code invalide, brouillon ou inconnu = 404", async () => {

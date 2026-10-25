@@ -22,7 +22,7 @@ const { exportText } = await import(new URL(`./csvio.mjs${q}`, import.meta.url).
 const { pageHref, parseSegments, renderPage, renderPlace, metaDescription } = await import(new URL(`./view.mjs${q}`, import.meta.url).href);
 
 /** Doit rester égale à `version` de module.json. */
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 const SCRIPTS = ["map-engine.js", "map-page.js"];
 
 export default {
