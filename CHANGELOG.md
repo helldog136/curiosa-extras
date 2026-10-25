@@ -4,6 +4,23 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.20.0
+
+*Les galeries photos effacent vraiment ce que vous supprimez, les liens vers les autres plateformes s'ouvrent plus prudemment, et un nouveau module permet de remercier ceux qui vous soutiennent. Pour Curiosa 0.2.13 ou plus. Modules touchés : Galeries photos 1.1.0, Autres plateformes 1.1.0 et Soutiens 1.0.0 (nouveau).*
+
+### Améliorations
+
+- **Galeries photos : supprimer une photo ou un album efface vraiment ses fichiers du serveur** (Galeries photos 1.1.0). La place est rendue et les fichiers ne partent plus dans les prochaines sauvegardes. Les photos envoyées avant cette mise à jour gardent leur fichier, et le module le dit. « Masquer » reste un simple masquage.
+- **Autres plateformes : les liens s'ouvrent de la façon la plus prudente, automatiquement** (Autres plateformes 1.1.0). Les liens directs s'ouvrent dans un nouvel onglet, sans dire à la plateforme quelle page de votre site la visite quitte. Il n'y a rien à régler.
+- **Nouveau module Soutiens : remercier les personnes qui vous soutiennent sur une plateforme de mécénat (Patreon, Ko-fi ou fichier), avec leur accord explicite et sans jamais montrer de montant** (Soutiens 1.0.0). Chaque personne reçoit un lien personnel, choisit son pseudo et peut se retirer quand elle veut. Les clés secrètes ne sont jamais réaffichées et aucune adresse e-mail n'est gardée.
+
+### Pour les développeurs
+
+- **Galeries photos 1.1.0** : `minCore` 0.2.13, permission `files`. `addUploadedPhoto` revendique l'original et la miniature (`ctx.api.files.claim`) après chaque envoi, avant d'écrire ; un refus renvoie `{ ok: false, error: "file", reason }` et rend ce qui était déjà revendiqué. `deletePhoto` et `deleteAlbum` retirent les données puis appellent `remove` (lots de 8, ni minuteur ni boucle de fond) ; une ancienne photo non revendiquée est comptée `legacy`, sans erreur. Tests : `gallery-files`, mise à jour à chaud dans `gallery-update`.
+- **Autres plateformes 1.1.0** : l'export `social.link` déclare `rel`, `referrerPolicy` et `target` (contrat du cœur 0.2.13) : lien direct `noopener nofollow`, `strict-origin-when-cross-origin`, `_blank` ; lien vers la page `/go` du module `noopener`, `_self`. `minCore` 0.2.13 ; sur un cœur plus ancien ces champs sont ignorés.
+- **Soutiens 1.0.0** : table de fournisseurs extensible (`providers.mjs`) : Patreon (API v2, liste blanche d'hôtes, `ctx.api.net`), Ko-fi (webhook vérifié, limité en débit, idempotent), import CSV ; aucun minuteur. Service `supporters.public` v1 (pseudos montrables), `contact.book` v2 et `contact.curate` facultatifs sous le droit `contacts.file`, offre `privacy.subject`. `minCore` 0.2.12. Neuf outils MCP. Tests : `tests/supporters*.test.mjs`.
+- **Assemblage** : `package.json` 1.20.0, `catalogue/index.json` régénéré (refs `v1.20.0`, 71 modules). Extraits : `docs/changelog-parts/gallery-delete-files.md`, `platform-links-social.md` et `supporters.md`. Aucun conflit de fusion.
+
 ## 1.19.0
 
 *Des mises à jour plus sûres pour six modules, un lien pour corriger une jaquette qui n'est pas la bonne, et une administration du Raid Twitch aux mots plus neutres. Pour Curiosa 0.2.10 ou plus. Modules touchés : Questions fréquentes 1.0.1, Contacts 2.2.2, Mur des remerciements 1.0.1, Assistant maison 1.0.1, Autres plateformes 1.0.1, Labyrinthe en overlay 1.1.1, Planning 2.3.0, Story d'annonce 2.3.0, Suggestions de jeux 1.3.0 et Raid Twitch 2.2.3.*
