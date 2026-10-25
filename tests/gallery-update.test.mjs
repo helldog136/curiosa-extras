@@ -50,3 +50,25 @@ test("mise à jour dans le même processus : chaque version a SES fichiers voisi
     assert.equal((await list()).albums[0].title, "Après");
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test("mise à jour à chaud : le nouveau code garde et supprime les fichiers avec SON ops.mjs (la permission files, l'API files)", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-update-files-"));
+  try {
+    fs.cpSync(SRC, dir, { recursive: true });
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
+    assert.ok(manifest.permissions.includes("files"));
+    const oldOps = await load(dir, "ops.mjs", "ancien");
+    const newOps = await load(dir, "ops.mjs", "nouveau");
+    assert.notEqual(oldOps, newOps);
+    const full = "/uploads/aaaaaaaa-1111-2222-3333-bbbbbbbbbbbb.jpg";
+    const thumb = "/uploads/cccccccc-1111-2222-3333-dddddddddddd.jpg";
+    const ctx = fakeCtx({ key: "maj-files", moduleId: "gallery", basePath: "galeries", locale: "fr", defaultLocale: "fr", locales: ["fr"], permissions: manifest.permissions, uploads: [full, thumb] });
+    const album = await newOps.createAlbum(ctx, { title: "A", status: "published", mode: "hosted" });
+    const photo = await newOps.addUploadedPhoto(ctx, album.id, { full, thumb });
+    assert.ok(photo.ok);
+    assert.equal(ctx.dumpFiles().filter((f) => f.owner === "me").length, 2);
+    const gone = await newOps.deletePhoto(ctx, album.id, photo.id);
+    assert.deepEqual(gone.files, { removed: 2, legacy: 0, failed: 0 });
+    assert.equal(ctx.dumpFiles().length, 0);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

@@ -5,8 +5,8 @@
     "fr": "Galeries photos",
     "en": "Photo galleries"
   },
-  "version": "1.0.0",
-  "minCore": "0.2.6",
+  "version": "1.1.0",
+  "minCore": "0.2.13",
   "description": {
     "fr": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Les photos sont réduites et hébergées sur votre site (dans des limites que vous réglez), ou l'album mène vers un autre service. Visionneuse plein écran, lien par photo, demande de retrait.",
     "en": "Photo albums for your site: event recaps, portfolio, behind the scenes. Photos are shrunk and kept on your site (within limits you set), or the album leads to another service. Full-screen viewer, a link for each photo, takedown requests."
@@ -20,8 +20,8 @@
   "page": true,
   "basePath": "galeries",
   "privacy": {
-    "fr": "Aucun cookie de suivi. Si vous demandez le retrait d'une photo, votre message et votre e-mail (facultatif) sont lus par l'équipe, qui peut les copier dans son carnet d'adresses ; l'e-mail est effacé dès la demande traitée, le reste 30 jours après (90 au plus). Une empreinte de votre connexion, gardée en mémoire 24 h, limite le nombre de demandes. Une photo gardée chez un autre site est chargée depuis ce site, qui voit alors votre adresse. Pour effacer une demande, écrivez au contact du site.",
-    "en": "No tracking cookie. If you ask for a photo to be taken down, your message and e-mail (optional) are read by the team, who may copy them into their address book; the e-mail is erased once the request is handled, the rest 30 days later (90 at most). A fingerprint of your connection, kept in memory for 24 h, limits how many requests can be sent. A photo kept on another site is loaded from that site, which then sees your address. To have a request erased, write to the site's contact."
+    "fr": "Aucun cookie de suivi. Les fichiers envoyés sont supprimés du serveur avec la photo ou l'album (sauf les anciens, d'avant la mise à jour du site). Si vous demandez le retrait d'une photo, votre message et votre e-mail (facultatif) sont lus par l'équipe ; l'e-mail est effacé dès la demande traitée, le reste 30 jours après (90 au plus). Une empreinte de connexion, gardée 24 h en mémoire, limite les demandes. Une photo gardée chez un autre site est chargée depuis ce site, qui voit votre adresse.",
+    "en": "No tracking cookie. Uploaded files are deleted from the server with the photo or album (except older ones, from before the site update). If you ask for a photo to be taken down, your message and e-mail (optional) are read by the team; the e-mail is erased once handled, the rest 30 days later (90 at most). A connection fingerprint, kept 24 h in memory, limits requests. A photo kept on another site is loaded from that site, which sees your address."
   },
   "permissions": [
     "routes",
@@ -30,7 +30,8 @@
     "pages",
     "mcp",
     "admin",
-    "mail"
+    "mail",
+    "files"
   ],
   "tabs": [
     {

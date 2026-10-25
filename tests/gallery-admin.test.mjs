@@ -164,7 +164,7 @@ test("photos : masquer / afficher, monter / descendre / en premier (bords inclus
   assert.match(saved.ok, /Enregistré/);
   const p = (await data.loadPhotos(ctx, await data.getAlbum(ctx, a.id))).find((x) => x.id === a.photos[0]);
   assert.deepEqual([p.caption, p.alt, p.hidden], ["Nouvelle légende", "Nouvelle description", true]);
-  assert.match((await act(ctx, "removePhoto", { id: id(0) })).ok, /retirée de l.album/);
+  assert.match((await act(ctx, "removePhoto", { id: id(0) })).ok, /Photo supprimée/);
   assert.equal((await data.getAlbum(ctx, a.id)).total, 3);
   assert.match((await act(ctx, "removePhoto", { id: id(0) })).error, /Introuvable/);
 });
