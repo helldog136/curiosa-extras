@@ -94,7 +94,7 @@ export default {
     },
   },
 
-  // 2.2 : la page publique facultative « En direct chez nos membres » (éteinte tant que le réglage « Afficher la page publique » n'est pas coché : elle répond alors comme une page qui n'existe pas).
+  // 2.2 : la page publique facultative « En direct en ce moment » (éteinte tant que le réglage « Afficher la page publique » n'est pas coché : elle répond alors comme une page qui n'existe pas : 404, aucune route publique).
   page: (ctx, { segments }) => pub.page(ctx, segments),
 
   adminPanel: admin.panel,
