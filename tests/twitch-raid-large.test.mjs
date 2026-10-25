@@ -507,8 +507,8 @@ test("admin : 2 000 chaînes dans Contacts → compteur, mode, lien vers Contact
 test("admin : la phrase du mode dit où on en est (FR et EN), l'avertissement « Nouvelle adresse » est clair pour tout le monde", async () => {
   const text = (blocks, tone) => blocks.filter((b) => b.type === "banner" && b.tone === tone).map((b) => b.text).join("|");
   const r = text(await def.adminPanel(mkList(612), { query: {} }), "info");
-  assert.match(r, /Vous avez 612 chaînes : le dock propose un bouton « au hasard » plutôt que la liste complète\. Jusqu'à 500 chaînes il montre tous les membres en direct\./); assert.match(r, /100 chaînes à la fois/);
-  assert.match(text(await def.adminPanel(mkList(40), { query: {} }), "info"), /Vous avez 40 chaînes : le dock montre tous vos membres en direct\. Au-delà de 500 chaînes/);
+  assert.match(r, /Vous avez 612 chaînes : le dock propose un bouton « au hasard » plutôt que la liste complète\. Jusqu'à 500 chaînes il montre toutes celles qui sont en direct\./); assert.match(r, /100 chaînes à la fois/);
+  assert.match(text(await def.adminPanel(mkList(40), { query: {} }), "info"), /Vous avez 40 chaînes : le dock montre toutes celles qui sont en direct\. Au-delà de 500 chaînes/);
   const e = text(await def.adminPanel(mkList(612, { locale: "en", messages: { ...en } }), { query: {} }), "info");
   assert.match(e, /You have 612 channels: the dock offers a “random” button rather than the full list\. Up to 500 channels/);
   const blocks = await def.adminPanel(mkList(3), { query: {} });
@@ -548,7 +548,7 @@ test("vie privée : le dock n'expose ni notes, ni secret, ni identifiant de fich
   for (const t of seen) { assert.ok(!t.includes("NOTE-PRIVEE"), "aucune note"); assert.ok(!t.includes(`"${ids[3]}"`), "aucun identifiant de fiche"); }
   for (const t of seen.slice(0, -2)) if (!t.includes("<script")) assert.ok(!t.includes(secret.slice(0, 12)) || t.length < 0, "le secret ne revient jamais dans les données");
   assert.ok(/une minute/.test(manifest.privacy.fr) && /one minute/.test(manifest.privacy.en) && /Contacts/.test(manifest.privacy.fr) && /adresse/.test(manifest.privacy.fr));
-  assert.equal(manifest.version, "2.2.2");
+  assert.equal(manifest.version, "2.2.3");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   for (const k of ["dock_rm_button", "dock_rm_none", "dock_limited", "dock_partial", "mode_random", "mode_full", "manage_link", "dock_nr_category_gone", "dock_nr_contacts_missing"]) assert.ok(fr[k] && en[k], k);
 });

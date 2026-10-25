@@ -270,7 +270,7 @@ test("onglet « Sélection du moment » : explication, adresse du dock (copiable
   assert.equal(copy.text.split("?k=")[1], (await secretUrl(w, "featured")).split("?k=")[1], "la même clé secrète que le dock ordinaire : « Nouvelle adresse » les change toutes les deux");
   assert.deepEqual(mine.filter((b) => b.type === "adminForm").map((b) => b.action), ["momentCheck", "momentReroll"]);
   assert.ok(mine.some((b) => b.type === "markdown" && /éteinte/.test(b.text)));
-  assert.ok(mine.some((b) => b.type === "markdown" && /5 membre\(s\)/.test(b.text) && /10 minutes/.test(b.text)));
+  assert.ok(mine.some((b) => b.type === "markdown" && /5 chaîne\(s\)/.test(b.text) && /10 minutes/.test(b.text)));
   const on = await admin.panel(site().ctx, { query: {} });
   assert.ok(on.some((b) => b.tab === "moment" && b.type === "links" && b.items[0].href === "/en-direct"));
   const np = await admin.panel(site({ extra: { basePath: null } }).ctx, { query: {} });
@@ -282,12 +282,12 @@ test("onglet « Sélection du moment » : explication, adresse du dock (copiable
 
 test("administration : « Voir la sélection » et « Tirer de nouveau » disent ce qui se passe, avec des mots simples", async () => {
   const w = site();
-  assert.match((await admin.actions.momentCheck(w.ctx)).ok, /Sélection actuelle : .*MEMBRE_00.*20 membre\(s\) peuvent être tirés/);
+  assert.match((await admin.actions.momentCheck(w.ctx)).ok, /Sélection actuelle : .*MEMBRE_00.*20 chaîne\(s\) peuvent être tirées/);
   clock = T0 + 30_000;
   assert.match((await admin.actions.momentReroll(w.ctx)).ok, /Nouvelle sélection : /);
   clock = T0 + 31_000;
   assert.match((await admin.actions.momentReroll(w.ctx)).error, /Patientez quelques secondes/);
-  assert.match((await admin.actions.momentCheck(site({ live: {} }).ctx)).ok, /Personne n'est en direct parmi les membres/);
+  assert.match((await admin.actions.momentCheck(site({ live: {} }).ctx)).ok, /Aucune chaîne pouvant être montrée n'est en direct/);
   const down = site(); down.api.fail = "network";
   assert.match((await admin.actions.momentCheck(down.ctx)).error, /Twitch ne répond pas/);
   assert.ok((await admin.actions.momentCheck(world({ partners: [], settings: {} }).ctx)).error);

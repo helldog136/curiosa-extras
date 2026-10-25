@@ -6,11 +6,11 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.2.2",
+  "version": "2.2.3",
   "platform": "twitch",
   "description": {
-    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 membres en direct tirés au hasard, pour OBS et pour une page publique.",
-    "en": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts (“Raid target” category). Add a channel by typing a name, a Twitch name or a link: name and picture come from Twitch. One click copies the raid command; beyond 500 channels, a button finds one at random. Optional: “Featured picks”, 1 to 10 live members drawn at random, for OBS and for a public page."
+    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 chaînes en direct tirées au hasard, pour OBS et pour une page publique.",
+    "en": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts (“Raid target” category). Add a channel by typing a name, a Twitch name or a link: name and picture come from Twitch. One click copies the raid command; beyond 500 channels, a button finds one at random. Optional: “Featured picks”, 1 to 10 live channels drawn at random, for OBS and for a public page."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -163,12 +163,12 @@
       "tab": "moment",
       "default": 5,
       "label": {
-        "fr": "Combien de membres montrer",
-        "en": "How many members to show"
+        "fr": "Combien de chaînes montrer",
+        "en": "How many channels to show"
       },
       "help": {
-        "fr": "De 1 à 10 (5 par défaut). Si moins de membres sont en direct, vous voyez ceux qui le sont.",
-        "en": "From 1 to 10 (5 by default). If fewer members are live, you see those who are."
+        "fr": "De 1 à 10 (5 par défaut). Si moins de chaînes sont en direct, vous voyez celles qui le sont.",
+        "en": "From 1 to 10 (5 by default). If fewer channels are live, you see those that are."
       }
     },
     {
@@ -345,7 +345,7 @@
       "name": "raid_featured_now",
       "readOnly": true,
       "default": false,
-      "description": "The 'Featured picks' of the owner's community right now: the few partner channels (1 to 10, 5 by default) drawn at random among those live, the same ones the OBS featured dock and the public page show. For each: name, game, title, viewers, minutes live and the raid command ('/raid name', to be pasted by the owner: nothing is sent). 'endsAt' is when the selection renews (ISO time). People filed in Contacts as 'Do not show' are never listed. If Twitch or Contacts is unreachable, the last known picks are returned with 'stale' set (10 minutes at most); otherwise 'state' says what is missing. Read only: it never forces a new draw.",
+      "description": "The 'Featured picks' of the owner's list right now: the few partner channels (1 to 10, 5 by default) drawn at random among those live, the same ones the OBS featured dock and the public page show. For each: name, game, title, viewers, minutes live and the raid command ('/raid name', to be pasted by the owner: nothing is sent). 'endsAt' is when the selection renews (ISO time). People filed in Contacts as 'Do not show' are never listed. If Twitch or Contacts is unreachable, the last known picks are returned with 'stale' set (10 minutes at most); otherwise 'state' says what is missing. Read only: it never forces a new draw.",
       "input": {
         "type": "object",
         "properties": {}
