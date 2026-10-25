@@ -5,7 +5,7 @@
     "en": "3D maze overlay (OBS)",
     "fr": "Overlay labyrinthe 3D (OBS)"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.2.2",
   "description": {
     "en": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",

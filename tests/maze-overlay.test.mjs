@@ -480,7 +480,7 @@ test("tracé : textes fr — libellés demandés par le propriétaire", () => {
 
 test("manifeste : le tracé dépend des nouvelles propriétés du bloc gridEditor → cœur 0.2.2 minimum (onglets, 1.1.0)", () => {
   assert.equal(manifestJson.minCore, "0.2.2");
-  assert.equal(manifestJson.version, "1.1.0");
+  assert.equal(manifestJson.version, "1.1.1");
 });
 
 test("tracé : la page de l'overlay le réclame au démarrage (route /map), main.js retombe sur un tracé automatique s'il est invalide", () => {
