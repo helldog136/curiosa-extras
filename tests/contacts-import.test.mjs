@@ -221,7 +221,7 @@ test("fichier : erreurs SOUS le champ avec un exemple — vide, titres inconnus,
 const C_MAX = 100_000;
 
 test("écran : formulaire (collage + fichier de 5 Mo), modèle à télécharger ; l'import se déroule en pas avec barre de progression, résumé, lignes à corriger et rapport", async () => {
-  const ctx = makeCtx({ locale: "fr", test: { importLockRows: 5, importStepMs: 1 } });
+  const ctx = makeCtx({ locale: "fr", test: { importLockRows: 5, importStepMs: 0 } }); // 0 ms : un seul lot par pas, quelle que soit la vitesse de la machine (1 ms laissait parfois tout passer dans la même milliseconde)
   const first = await def.adminPanel(ctx, { query: { view: "import" } });
   const form = first.find((b) => b.action === "importStart");
   assert.deepEqual(form.fields.map((f) => [f.name, f.kind]), [["csv", "textarea"], ["file", "file"]]);
@@ -232,6 +232,7 @@ test("écran : formulaire (collage + fichier de 5 Mo), modèle à télécharger 
   const started = await def.adminActions.importStart(ctx, { csv });
   assert.equal(started.redirect, "?view=import");
   assert.match(started.ok, /^41 lignes lues\./);
+  assert.equal(I.stepMs(ctx), 0);
   let page = await def.adminPanel(ctx, { query: { view: "import" } });
   assert.match(htmlOf(page), /role="progressbar"[^>]*aria-valuenow="\d+"/, "la barre de progression de la vérification");
   assert.match(htmlOf(page), /Vérification en cours/);
