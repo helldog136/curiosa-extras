@@ -3,19 +3,45 @@ on:
   push:
     branches: [dev, master]
   pull_request:
+# Les modules sont testés contre un cœur PUBLIÉ, pas contre une branche de travail :
+#  - « publié » (bloquant) : la dernière version stable du cœur (étiquette vX.Y.Z). C'est celle que les sites installent ; un module
+#    qui exige une capacité pas encore publiée doit attendre la publication du cœur (voir docs/ideas/CAPACITES.md).
+#  - « dev » (information, jamais bloquant) : le cœur en préparation, pour voir venir une cassure avant la publication du cœur.
+# On ne teste pas contre le plus petit cœur exigé par un module : chaque module a son propre minCore, un seul cœur ancien ferait
+# échouer à bon droit ceux qui en demandent un plus récent ; la compatibilité par module est déjà vérifiée par minCore et la suite de conformité.
 jobs:
   test:
+    name: Tests (cœur ${{ matrix.label }})
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.informational }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: publié, core: published, informational: false }
+          - { label: dev (information), core: dev, informational: true }
     steps:
       - uses: actions/checkout@v4
         with:
           # tout l'historique et les étiquettes : tests/hot-update-all.test.mjs rejoue la mise à jour depuis la dernière version publiée
           fetch-depth: 0
+      - name: Choisir la version du cœur
+        id: core
+        env:
+          CORE: ${{ matrix.core }}
+        run: |
+          if [ "$CORE" = "published" ]; then
+            ref=$(git ls-remote --tags --refs https://github.com/helldog136/Curiosa 'refs/tags/v*' | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          else
+            ref=dev
+          fi
+          test -n "$ref" || { echo "Aucune version publiée du cœur trouvée"; exit 1; }
+          echo "Cœur testé : $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
           repository: helldog136/Curiosa
-          # dev teste contre dev, master contre master
-          ref: ${{ github.base_ref || github.ref_name }}
+          ref: ${{ steps.core.outputs.ref }}
           path: core
       - uses: actions/setup-node@v4
         with: { node-version: 22 }

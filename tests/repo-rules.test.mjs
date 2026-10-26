@@ -68,6 +68,16 @@ test("sujets : chaque fournisseur et consommateur déclaré dans un module figur
   }
 });
 
+test("CI : modules testés contre le dernier cœur publié (bloquant) et contre dev (information), historique complet conservé", () => {
+  const ci = read(".github/workflows/ci.yml");
+  assert.match(ci, /fetch-depth: 0/, "tests de mise à jour à chaud : historique complet");
+  assert.match(ci, /HOT_UPDATE_REQUIRE_HISTORY: "1"/);
+  assert.doesNotMatch(ci, /ref: \$\{\{ github\.(base_ref|ref_name)/, "le cœur ne se choisit plus par le nom de la branche du module");
+  assert.match(ci, /refs\/tags\/v\*/, "le cœur publié se lit dans ses étiquettes de version");
+  assert.match(ci, /informational: true/, "le cœur dev ne bloque jamais");
+  assert.match(ci, /continue-on-error: \$\{\{ matrix\.informational \}\}/);
+});
+
 test("le bandeau d'accueil n'accepte que la vidéo envoyée au site, Contacts signale les messages à vérifier", () => {
   const hero = read("modules/hero/index.mjs");
   assert.ok(manifests.find((m) => m.id === "hero").settings.some((s) => s.type === "video"), "hero : réglage de type video");
