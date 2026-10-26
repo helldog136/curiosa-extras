@@ -6,7 +6,6 @@ import path from "node:path";
 import { listModuleDirs, loadModule } from "./helpers/moduleLoader.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
-const core = process.cwd(); // les tests tournent dans le dossier de Curiosa
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 const walk = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)])) : []);
 const dirs = listModuleDirs();
@@ -26,10 +25,25 @@ test("le kit presse ne stocke rien : il lit l'identité du cœur (ctx.api.brand)
   for (const forbidden of ["ctx.api.store", "adminActions", "adminPanel", "setSetting", "prisma"]) assert.ok(!code.includes(forbidden), `le kit presse ne doit pas utiliser « ${forbidden} »`);
 });
 
-// Exception EXPLIQUÉE : sujets déjà utilisés ici et pas encore dans le tableau « Sujets connus » du cœur (0.1.16). À retirer dès que le cœur les documente.
+// Registre des sujets : docs/TOPICS.md de CE dépôt (le cœur ne tient plus de registre ; un dépôt tiers de modules tient le sien au même format).
+function readTopicsRegistry() {
+  const rows = new Map();
+  for (const line of read("docs/TOPICS.md").split("\n")) {
+    if (!line.startsWith("| `")) continue;
+    const cells = line.slice(1, line.lastIndexOf("|")).split(/ \| /).map((c) => c.trim());
+    rows.set(cells[0].replace(/`/g, ""), cells);
+  }
+  return rows;
+}
 
-test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés dans docs/MODULES.md du cœur", () => {
-  const doc = fs.readFileSync(path.join(core, "docs/MODULES.md"), "utf8");
+test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés dans docs/TOPICS.md (une ligne par sujet)", () => {
+  const registry = readTopicsRegistry();
+  assert.ok(registry.size >= 10, "le registre doit contenir les sujets connus");
+  for (const [topic, cells] of registry) {
+    assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
+    assert.equal(cells.length, 5, `sujet « ${topic} » : 5 colonnes attendues (sujet | fournisseurs | consommateurs | champs | depuis)`);
+    for (const c of cells) assert.ok(c.length > 0, `sujet « ${topic} » : colonne vide`);
+  }
   const used = new Set();
   for (const { dir } of dirs) {
     for (const m of read(`${dir}/module.json`).matchAll(/"topic": *"([^"]+)"/g)) used.add(m[1]);
@@ -37,11 +51,20 @@ test("sujets : ceux de nos modules sont en anglais, en minuscules, et listés da
     if (main) for (const m of read(`${dir}/${main}`).matchAll(/\btopic: "([^"]+)"/g)) used.add(m[1]);
   }
   assert.ok(used.size >= 5, "des sujets doivent être trouvés");
-  // Sujets que le cœur publié (0.1.27) ne liste pas encore dans son tableau : une entrée = une exception expliquée, à retirer quand le cœur les documente.
-  // (aucune exception : le cœur 0.2.9 documente tous les sujets, dont ha.result, ha.state et live.event)
-  for (const topic of used) {
-    assert.match(topic, /^[a-z]+(\.[a-z]+)+$/, `sujet « ${topic} » : minuscules, domaine.objet`);
-    assert.ok(doc.includes(`\`${topic}\``), `sujet « ${topic} » absent du tableau « Sujets connus » de docs/MODULES.md (cœur)`);
+  for (const topic of used) assert.ok(registry.has(topic), `sujet « ${topic} » absent de docs/TOPICS.md : ajoutez une ligne au registre`);
+});
+
+test("sujets : chaque fournisseur et consommateur déclaré dans un module figure dans la ligne du registre", () => {
+  const registry = readTopicsRegistry();
+  for (const m of manifests) {
+    for (const [key, col] of [["provides", 1], ["consumes", 2]]) {
+      for (const t of m[key] ?? []) {
+        const cells = registry.get(t.topic);
+        if (!cells) continue; // déjà signalé par le test précédent
+        const listed = cells[col];
+        assert.ok(listed.includes(`\`${path.basename(m.dir)}\``) || /\*|cœur|tout module/.test(listed), `docs/TOPICS.md : « ${path.basename(m.dir)} » ${key === "provides" ? "fournit" : "consomme"} ${t.topic} mais n'est pas dans la colonne`);
+      }
+    }
   }
 });
 
