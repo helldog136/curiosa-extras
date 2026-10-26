@@ -11,7 +11,7 @@
   "ui_prep_expired": "La préparation demandée n'existe plus ou a expiré. Vous pouvez régler la vidéo vous-même.",
   "ui_prep_stream_gone": "L'événement choisi par votre assistant n'est plus dans la liste (passé, déplacé, ou source qui ne répond pas) : c'est le prochain événement qui est utilisé.",
   "ui_help_intro": "Choisissez l'événement, ce que la vidéo montre et son style. L'aperçu bouge en direct. Rien n'est gardé sur le site : le fichier est seulement téléchargé.",
-  "ui_cover_no_key": "Les jaquettes de jeux ne s'affichent pas : le propriétaire du site peut régler l'accès aux jaquettes dans Réglages, Services externes. La vidéo marche très bien sans.",
+  "ui_cover_no_key": "Les jaquettes de jeux ne s'affichent pas : le propriétaire du site peut régler l'accès aux jaquettes dans le module « Jaquettes de jeux ». La vidéo marche très bien sans.",
   "ui_cover_ambiguous": "La jaquette de « {game} » est peut-être celle d'un autre jeu. La vidéo se fait quand même.",
   "ui_cover_ambiguous_named": "La jaquette de « {game} » est peut-être celle d'un autre jeu (RAWG a pris « {found} »). La vidéo se fait quand même.",
   "ui_cover_wrong": "Ce n'est pas le bon jeu ?",

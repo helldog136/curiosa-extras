@@ -200,7 +200,7 @@ test("admin : colonne jaquette, compteur des manquantes, bouton ; rien d'affich�
   assert.ok(!(await gs.adminPanel(full)).some((b) => b.type === "adminForm"));
 });
 
-test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans image, avec le lien vers les Réglages du site ; clé présente → aucun bandeau", async () => {
+test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans image, avec la proposition d'installer « Jaquettes de jeux » (ou le lien vers lui s'il est là) ; clé présente → aucun bandeau", async () => {
   const svc = service({}, { configured: false });
   const c = gsCtx(svc);
   await addGame(c, "Avec", { coverUrl: IMG });
@@ -208,7 +208,8 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
   assert.equal(blocks[0].type, "banner");
   assert.equal(blocks[0].tone, "warning");
   assert.match(blocks[0].text, /Aucune clé RAWG/);
-  assert.match(blocks[1].text, /\(\/admin\/settings\)/);
+  assert.equal(blocks[1].type, "suggestInstall");
+  assert.equal(blocks[1].service, "game.cover");
   svc.state.configured = true;
   assert.ok(!(await gs.adminPanel(c)).some((b) => b.type === "banner"));
   const nosvc = fakeCtx({ key: "gsx", messages: gsMsg, settings: {}, locale: "fr" }); delete nosvc.api.rawg;
@@ -218,8 +219,8 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
 test("game-suggestions : manifeste valide, version et données montées, permission rawg, clé RAWG du module seulement en legacySettings (secret, jamais affichée), textes fr/en alignés", () => {
   const m = readJson("game-suggestions/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.3.0");
-  assert.equal(m.minCore, "0.2.10");   // 0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? »)
+  assert.equal(m.version, "1.4.0");
+  assert.equal(m.minCore, "0.2.10");   // 0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? ») ; le service game.cover est un besoin facultatif, l'ancienne interface sert de repli
   assert.equal(m.dataVersion, 2);
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"), "plus de champ visible");
   assert.deepEqual(m.legacySettings, [{ key: "rawgApiKey", secret: true }]);
@@ -287,7 +288,7 @@ test("service du cœur : les cinq statuts sont traduits ; https seulement ; une 
   assert.equal(await gsMod.hasKey(c), false);
 });
 
-test("service du cœur : clé absente → message clair avec lien vers les Réglages, aucune recherche, rien de marqué ; dès que la clé existe, tout est de nouveau dû", async () => {
+test("service de jaquettes : clé absente → message clair qui renvoie vers « Jaquettes de jeux », aucune recherche, rien de marqué ; dès que la clé existe, tout est de nouveau dû", async () => {
   const svc = service({ Inconnu: "none", Celeste: "found" }, { configured: false });
   const c = gsCtx(svc);
   const a = await addGame(c, "Celeste");
@@ -295,8 +296,8 @@ test("service du cœur : clé absente → message clair avec lien vers les Régl
   assert.equal((await run(c)).status, "no_key");
   assert.equal(svc.calls.length, 0);
   const res = await gs.adminActions.findCovers(c);
-  assert.match(res.error, /Aucune clé RAWG/); assert.match(res.error, /\/admin\/settings/);
-  assert.match(JSON.stringify(await gs.adminPanel(c)), /\/admin\/settings/);
+  assert.match(res.error, /Aucune clé RAWG/); assert.match(res.error, /Jaquettes de jeux/);
+  assert.match(JSON.stringify(await gs.adminPanel(c)), /suggestInstall/);
   svc.state.configured = true;                                   // l'administrateur saisit la clé dans Réglages
   const r = await run(c, { now: NOW + 60_000 });
   assert.equal(r.found, 1);
@@ -408,7 +409,7 @@ test("planning : panneau d'admin — clé absente (avec lien), clé refusée, RA
   const cal = calendar(vevent("1", hours(2), "S", ["DESCRIPTION:Jeu: Celeste\\, Fantôme"]));
   const text = async (svc) => JSON.stringify(await pl.adminPanel(plCtx(svc)));
   calendarOnly(cal);
-  const none = await text(service({}, { configured: false })); assert.match(none, /Aucune clé RAWG/); assert.match(none, /\/admin\/settings/);
+  const none = await text(service({}, { configured: false })); assert.match(none, /Aucune clé RAWG/); assert.match(none, /Jaquettes de jeux/); assert.match(none, /suggestInstall/);
   assert.match(await text(service({ Celeste: "refused", "Fantôme": "refused" })), /RAWG refuse la clé/);
   assert.match(await text(service({ Celeste: "unreachable", "Fantôme": "unreachable" })), /RAWG est injoignable/);
   const ok = await text(service({ Celeste: "found" }));
@@ -451,7 +452,7 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
 test("planning : plus de réglage de clé, permission rawg déclarée (pas de storage), version montée, textes alignés", () => {
   const m = readJson("planning/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "2.3.0");
+  assert.equal(m.version, "2.4.0");
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"));
   assert.ok(m.permissions.includes("rawg") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(readJson("planning/locales/fr.json")).sort(), Object.keys(readJson("planning/locales/en.json")).sort());

@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.21.0
+
+*Les jaquettes de jeux deviennent un module à part entière, et le dépôt des modules est mieux rangé pour ceux qui en écrivent. Pour Curiosa 0.2.14 ou plus : mettez d'abord Curiosa à jour, c'est lui qui installe le nouveau module et lui confie votre clé. Modules touchés : Jaquettes de jeux 1.0.0 (nouveau), Suggestions de jeux 1.4.0, Planning 2.4.0 et Story d'annonce 2.4.0.*
+
+### Améliorations
+
+- **Nouveau module « Jaquettes de jeux »** (Jaquettes de jeux 1.0.0). Votre clé RAWG s'y saisit une seule fois, elle n'est jamais réaffichée, et un bouton « Tester la clé » dit en mots simples si elle fonctionne. Les modules qui montrent des jaquettes passent par lui.
+- **Rien à refaire si vous aviez déjà une clé.** À la mise à jour de Curiosa, le module s'installe tout seul sur les sites qui utilisaient RAWG, avec votre clé et vos corrections « Quel est le bon jeu ? ». Si vous le retirez, l'ancien réglage du site reprend.
+- **Les liens « Ce n'est pas le bon jeu ? » déjà publiés continuent de marcher**, et l'assistant IA garde ses deux outils de jaquettes, avec les mêmes noms.
+- **Suggestions de jeux, Planning et Story d'annonce demandent la jaquette au nouveau module** (Suggestions de jeux 1.4.0, Planning 2.4.0, Story d'annonce 2.4.0). Sans lui, ils continuent comme avant : aucune jaquette ne disparaît. Quand la clé manque, ils renvoient vers « Jaquettes de jeux » ou proposent de l'installer d'un clic.
+
+### Pour les développeurs
+
+- **Jaquettes de jeux 1.0.0** : `minCore` 0.2.13. Service `game.cover` v1 (`status`, `cover`, `candidates`, `fix` avec droit `fix` et `asCaller`, `adopt`). Clé en réglage `secret` (`apiKey`) ou reprise (`adoptedKey`, jamais affichée) ; requêtes par `ctx.api.net` (5 s, 256 Ko) ; cache mémoire borné ; corrections dans `fixes` (1 000) ; journal `todo` (100, 60 jours). Outils MCP `rawg_covers_to_check` et `rawg_cover_set`.
+- **Suggestions de jeux 1.4.0, Planning 2.4.0, Story d'annonce 2.4.0** : besoin facultatif `"requires": [{ "service": "game.cover", "optional": true }]`, repli sur `ctx.api.rawg` tant que la cale du cœur existe (retrait prévu en 0.3.0). `minCore` inchangé (0.2.10). Test : `tests/game-covers-consumers.test.mjs`.
+- **Dépôt** : registre des sujets `docs/TOPICS.md` (lu par `tests/repo-rules.test.mjs`) ; la CI teste contre le dernier cœur publié (bloquant) et contre `dev` (information) ; `docs/ideas/CAPACITES.md` (revue de capacités avant de construire un module) ; test de neutralité : termes locaux par variable d'environnement.
+- **Assemblage** : `package.json` 1.21.0, `catalogue/index.json` régénéré (refs `v1.21.0`, 72 modules). Extraits : `docs/changelog-parts/game-covers.md` et `topics-registry.md`. La CI échoue tant que le cœur 0.2.14 n'est pas publié si un module en exige une capacité ; ce n'est pas le cas ici (`minCore` 0.2.13 au plus).
+
 ## 1.20.0
 
 *Les galeries photos effacent vraiment ce que vous supprimez, les liens vers les autres plateformes s'ouvrent plus prudemment, et un nouveau module permet de remercier ceux qui vous soutiennent. Pour Curiosa 0.2.13 ou plus. Modules touchés : Galeries photos 1.1.0, Autres plateformes 1.1.0 et Soutiens 1.0.0 (nouveau).*

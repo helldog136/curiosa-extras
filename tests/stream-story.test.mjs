@@ -39,11 +39,11 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.3.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.4.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
-  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, true], ["event.source", 1, true]], "Contacts (v2) et les sources d'événements : des besoins FACULTATIFS, jamais durs");
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, true], ["event.source", 1, true], ["game.cover", undefined, true]], "Contacts (v2), les sources d'événements et les jaquettes : des besoins FACULTATIFS, jamais durs");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "Story garde des identifiants de fiche : elle offre privacy.subject");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["planning.slot"], "le sujet stream.partner n'est plus lu : les co-streamers viennent de Contacts");
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);

@@ -51,6 +51,9 @@ Le module *Story d'annonce* (et tout module qui annonce des événements) montre
 ```
 Sources fournies aujourd'hui : *Chaîne YouTube* (directs et premières **publics** programmés), *Ma Chaîne Twitch* (planning de la chaîne) et *Événements* (les rendez-vous **publiés** de vos agendas). Le consommateur borne tout (100 événements par source, 10 sources, 200 au total, délai par source), vérifie chaque champ, écarte seul un événement illisible, dédoublonne un même événement vu par deux sources et trie sur l'instant UTC. Un module qui publie des événements datés n'a qu'à offrir ce service : aucun consommateur n'est à modifier.
 
+## Les jaquettes de jeux : le service `game.cover`
+Le module *Jaquettes de jeux* (`game-covers`) trouve la jaquette d'un jeu (clé RAWG saisie une seule fois, corrections « Ce n'est pas le bon jeu ? »). Il **offre** le service `game.cover` (version 1) : `status`, `cover({ title })`, `candidates({ title, search? })`, `fix` et `adopt`. Les modules qui montrent des jaquettes (*Suggestions de jeux*, *Planning*, *Story d'annonce*) le déclarent en **besoin facultatif** (`"requires": [{ "service": "game.cover", "optional": true }]`) : sans lui, ils s'affichent sans jaquette (ou utilisent l'ancienne interface du cœur tant qu'elle existe). Le cœur installe ce module tout seul sur les sites qui utilisaient RAWG.
+
 ## Tests
 ```
 git clone https://github.com/helldog136/Curiosa ../Curiosa && (cd ../Curiosa && npm ci)

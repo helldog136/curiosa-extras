@@ -159,7 +159,7 @@ test("déclarations : tout ce que le manifeste annonce est implémenté, et réc
   assert.deepEqual(m.mcp.map((a) => a.name).sort(), Object.keys(def.mcp).sort());
   assert.deepEqual(m.provides, [], "il ne fournit plus planning.slot");
   assert.ok(m.consumes.some((c) => c.topic === "planning.slot"));
-  assert.equal(m.requires, undefined, "aucune dépendance forte : sans agenda, il affiche « pas de stream planifié »");
+  assert.deepEqual((m.requires ?? []).filter((r) => !r.optional), [], "aucune dépendance forte : sans agenda, il affiche « pas de stream planifié »");
   assert.deepEqual(m.seeds.map((x) => x.module), ["calendar-ical"]);
   assert.equal(m.dataVersion, 3); assert.deepEqual(Object.keys(def.migrations), ["2", "3"]);
   assert.equal(typeof def.page, "function");
