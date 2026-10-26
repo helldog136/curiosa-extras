@@ -41,15 +41,33 @@ Fichiers : `docs/ideas/stream-story-ux/maquette-A.html` et `maquette-B.html` (HT
 
 **Choix : A.** B coûte 3 clics au lieu d'1 pour la vidéo par défaut (le cas de loin le plus fréquent), sépare l'aperçu des réglages (il faut changer d'étape pour voir l'effet), impose un état « étape en cours » à retenir et un retour arrière, et se prête mal aux modèles et aux préparations d'un assistant, qui remplissent tout d'un coup. A garde un seul écran, l'aperçu toujours là, et ajoute la profondeur seulement à la demande.
 
-## 4. Ce qui est construit (A, dans le vrai module)
+## 4. Changement de choix : la propriétaire préfère la maquette B
 
-- **Prochain événement par défaut** : le premier événement **qui n'a pas commencé**, toutes sources confondues, déjà trié par date et heure par l'agrégation qui existait (`events.mjs`, rien de dupliqué). Une journée entière d'aujourd'hui compte encore. Si tout est déjà commencé, le premier. Étiquette « Prochain événement » ; « Déjà commencé » sur ce qui a débuté ; « Au même moment : … » quand deux événements ont la même heure.
-- **Changer d'événement** : un bouton ouvre une liste **courte** (5, puis « Voir plus » +10) avec source, jour et heure ; la recherche et les filtres de source n'apparaissent que s'il y a plus de 8 événements. Un clic choisit et referme ; style, phrase, mention et co-streamers restent.
-- **Aucun événement** : message clair, saisie manuelle ouverte d'emblée. **Source en panne** : message sous l'événement choisi (pas dans la liste repliée) + « Réessayer ».
-- **Personnaliser** (replié) : style, phrase, mention « Made with Curiosa », co-streamers, modèles. **Options avancées** (case, mémorisée dans le navigateur, ouverte d'office si un réglage avancé a été modifié par un modèle ou un assistant) : ce que la vidéo montre, format, durée, nom de la chaîne, langue, zones de sécurité.
-- **Aperçu et bouton** : l'aperçu est visible à l'ouverture ; sur téléphone, le bouton « Générer la vidéo » est une barre fixe en bas ; pendant qu'on personnalise, l'aperçu se réduit et reste collé en haut. « Générer » affiche « Création en cours… 42 % ».
-- **Accessibilité** : ordre du code = ordre visuel (événement, aperçu, bouton, réglages) ; focus rendu au bouton « Changer » après un choix, Échap referme la liste ; `aria-expanded`, `aria-busy`, `aria-invalid`, `aria-describedby` sur les champs ; cibles ≥ 44 px ; mouvement réduit respecté.
+Après avoir vu les maquettes, la propriétaire a choisi **B (assistant en 3 étapes)**. A avait été construite et vérifiée (commits 530e052 et e9e58ae) ; B la remplace dans 2.4.0, en gardant tout ce qui était déjà vérifié (prochain événement par défaut, liste courte, options avancées repliées et mémorisées, cas vides et pannes, jaquette incertaine, erreurs sous le champ, 44 px, FR/EN, clavier).
 
-## 5. Vérification dans Chromium
+Les trois défauts reprochés à B plus haut, et la réponse apportée pour que l'objectif « 1 clic » tienne :
 
-Voir le rapport du chantier : parcours de bout en bout à 390 et 1280 px, FR et EN, clair et sombre (une vidéo produite à chaque fois), changement d'événement, aucun événement, source en panne, personnalisation avec jaquette incertaine (le lien « Ce n'est pas le bon jeu ? » est conservé), clavier. Captures lues : `before-390-clair-fr-{fold,full}`, `before-1280-clair-fr-{fold,full}`, `mock-*`, `after-*`, `e2e-*`, `scen-*`, `s4-*` (dossier de travail, non versionné).
+1. **« 3 clics au lieu d'1 »** : **« Générer maintenant »** est visible dès l'étape 1 (et à l'étape 2). Le prochain événement y est déjà choisi : le cas courant reste à **1 clic**. Le bouton mène à l'étape 3, où la progression s'affiche, puis lance la création.
+2. **« L'aperçu est loin des réglages »** : l'aperçu n'appartient à aucune étape, il est visible à **chaque** étape et se met à jour en direct : à côté sur grand écran (collé), réduit et collé en haut sur téléphone (24 % de la hauteur), avec Pause et Rejouer.
+3. **« Mal adapté aux modèles et aux préparations d'un assistant »** : une préparation `story_prepare`, ou le chargement d'un modèle, ouvre (ou envoie) l'assistant sur l'**étape 3**, dont le récapitulatif offre un lien **« Modifier »** par réglage qui ramène à l'étape concernée. Le travail n'est jamais perdu en revenant en arrière (les étapes gardent leur état).
+
+Comportement de l'assistant :
+- Indicateur d'étapes cliquable (3 boutons, l'étape en cours porte `aria-current="step"`, les étapes vues un pastille verte) ; Précédent / Suivant ; sur téléphone la barre de boutons est fixe en bas, sur grand écran elle est collée en bas du panneau. Un changement d'étape remonte en haut de page, met le focus sur le titre de l'étape et l'annonce (« Étape 2 sur 3 : Look »). Pendant la création, la navigation est désactivée.
+- **1 Événement** : prochain événement présélectionné (badge), « Changer d'événement » (liste courte de 5, « Voir plus » +10, recherche et filtres au-delà de 8 événements), saisie manuelle (ouverte d'emblée s'il n'y a rien), avertissements de source en panne, jaquette incertaine et lien « Ce n'est pas le bon jeu ? ».
+- **2 Look** : style, phrase, mention « Made with Curiosa », co-streamers, modèles ; options avancées derrière une case mémorisée (ouverte d'office si un réglage avancé a changé).
+- **3 Vidéo** : progression et résultat en haut du panneau, puis récapitulatif (événement, style, format et durée, phrase, mention, co-streamers), avec le même avertissement de jaquette et le lien.
+
+## 5. Mesures (Chromium, serveur jetable, 41 streams d'agenda + YouTube + Twitch simulés)
+
+| À l'ouverture | 2.3.0 (390) | 2.3.0 (1280) | 2.4.0 B (390) | 2.4.0 B (1280) |
+|---|---|---|---|---|
+| Champs de saisie visibles | 24 | 24 | **0** | **0** |
+| Boutons visibles | 31 | 31 | 8 (3 étapes, Pause, Rejouer, Changer, Suivant, Générer maintenant) | 8 |
+| Hauteur de la page | 6 975 px | 4 399 px | 852 px | 900 px |
+| Bouton pour obtenir la vidéo | à 3 883 px (4,6 écrans) | à 928 px | **toujours visible** | visible |
+| Aperçu visible à l'ouverture | non (sous la liste) | oui | oui (203 px de haut, collé) | oui (551 px) |
+| Clics : vidéo du prochain événement | 1 (+ 4,6 écrans à descendre) | 1 | **1** (« Générer maintenant ») | **1** |
+| Clics : en passant par les 3 étapes | n/a | n/a | 3 (Suivant, Suivant, Générer) | 3 |
+| Cibles < 44 px | 20 | 20 | 0 | 0 |
+
+À l'étape 2, 7 champs sont visibles (4 styles, phrase, mention, case des options avancées) ; tout ouvert, 21 (autant que l'ancien écran moins ceux de l'événement), seulement sur demande.

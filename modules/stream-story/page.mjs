@@ -9,7 +9,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 /** Les phrases de la page (clés `ui_…` des locales, sans le préfixe). */
 export const KEYS = [
   "title", "no_access", "no_access_hint", "prep_note", "prep_expired", "prep_stream_gone", "help_intro",
-  "h_event", "event_next", "event_started", "event_change", "event_change_close", "event_manual_tag", "event_pick_title", "event_same", "steps_label", "step_1", "step_2", "step_3", "prev", "next_look", "next_video", "gen_now", "h_video", "recap_intro", "recap_edit_hint", "recap_event", "recap_style", "recap_format", "recap_text", "recap_mark", "recap_people", "recap_yes", "recap_no", "recap_none", "recap_edit", "recap_edit_aria", "step_now", "adv_label", "adv_help", "h_advanced", "progress_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "event_chosen", "event_none_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
+  "h_event", "event_next", "event_started", "event_change", "event_change_close", "event_manual_tag", "event_pick_title", "event_same", "steps_label", "step_1", "step_2", "step_3", "prev", "next_look", "next_video", "gen_now", "h_video", "recap_intro", "recap_edit_hint", "recap_event", "recap_style", "recap_format", "recap_text", "recap_mark", "recap_people", "recap_yes", "recap_no", "recap_none", "recap_none_f", "recap_edit", "recap_edit_aria", "step_now", "adv_label", "adv_help", "h_advanced", "progress_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "event_chosen", "event_none_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
   "event_zone", "event_local", "event_also", "event_picked", "event_row", "event_retry", "event_manual", "event_manual_close", "event_all_down", "event_busy", "event_ready", "ev_down", "ev_down_stale", "ev_setup", "ev_note",
   "type_stream", "type_live", "type_premiere", "type_video", "type_event", "type_other",
   "cover_no_key", "cover_ambiguous", "cover_ambiguous_named", "cover_wrong", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
@@ -53,7 +53,7 @@ p{margin:.3rem 0}.muted{color:var(--muted)}.warn{color:var(--warn)}.ok{color:var
 .stepbtn{width:100%;display:flex;gap:6px;justify-content:center;align-items:center;padding:6px 8px;border-radius:10px}.stepbtn b{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;border:1px solid var(--line);font-size:.85rem}
 .stepbtn[aria-current=step]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}.stepbtn[aria-current=step] b{border-color:var(--accent-fg)}
 .stepbtn.done b{background:var(--ok);color:var(--bg);border-color:var(--ok)}
-@media (min-width:720px){.wiz{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"steps side" "panels side" "nav side";grid-template-rows:auto auto 1fr;align-items:start}.stepper{grid-area:steps}.panels{grid-area:panels}.navbar{grid-area:nav}.previewcol{grid-area:side;position:sticky;top:12px;grid-row:1/4}}
+@media (min-width:720px){.wiz{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"steps side" "panels side";grid-template-rows:auto 1fr;align-items:start}.stepper{grid-area:steps}.panels{grid-area:panels}.navbar{position:sticky;bottom:0;background:var(--bg);padding:10px 0;border-top:1px solid var(--line);margin-top:14px}.previewcol{grid-area:side;position:sticky;top:12px;grid-row:1/3}}
 @media (max-width:719px){.top{display:block;position:sticky;top:0;z-index:4;background:var(--bg);padding:6px 0 8px;margin:0 -16px;padding-left:16px;padding-right:16px;border-bottom:1px solid var(--line)}.stepper{margin-bottom:6px}.stepbtn span{font-size:.9rem}main#app{padding-bottom:calc(132px + env(safe-area-inset-bottom))}
 #pv{display:flex;gap:12px;align-items:center;padding:6px 10px;margin:0}#pv .pvh,#pv>p:not([role=alert]),#pv #time{display:none}#pv canvas#preview{margin:0;width:auto;height:24vh;max-height:24vh;flex:none}#pv .bar{flex-direction:column;align-items:stretch;margin:0;flex:1}#pv .bar button{min-height:44px}
 .navbar{position:fixed;left:0;right:0;bottom:0;z-index:5;margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);box-shadow:0 -4px 12px rgba(0,0,0,.12)}}
@@ -185,12 +185,13 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div class="field"><label for="channel">${T("channel_label")}</label><input type="text" id="channel" maxlength="40" autocomplete="off" aria-describedby="channel-help"><p id="channel-help" class="muted">${T("channel_help")}</p></div>
 <div class="field"><label for="lang">${T("lang_label")}</label><select id="lang"><option value="fr">${T("lang_fr")}</option><option value="en">${T("lang_en")}</option></select></div>
 <label class="check tap" for="safe"><input type="checkbox" id="safe" aria-describedby="safe-help"><span>${T("safe_label")}</span></label><p id="safe-help" class="muted" style="margin-top:0">${T("safe_help")}</p></div></section>
-<section id="step-3" class="step" aria-labelledby="h-video" hidden><h2 id="h-video" tabindex="-1">${T("h_video")}</h2><p class="muted">${T("recap_intro")}</p>
+<section id="step-3" class="step" aria-labelledby="h-video" hidden><h2 id="h-video" tabindex="-1">${T("h_video")}</h2><div id="progress-box" hidden><progress id="progress" max="1" value="0" aria-label="${T("progress_label")}"></progress><p id="progress-text" class="muted" aria-live="polite"></p><button type="button" id="cancel">${T("cancel_video")}</button></div>
+<div id="result" hidden></div>
+<p class="muted">${T("recap_intro")}</p>
 <ul id="recap" class="recap"></ul><p class="muted">${T("recap_edit_hint")}</p><p id="cover-warn-3" class="warn" hidden></p>
-<div id="progress-box" hidden><progress id="progress" max="1" value="0" aria-label="${T("progress_label")}"></progress><p id="progress-text" class="muted" aria-live="polite"></p><button type="button" id="cancel">${T("cancel_video")}</button></div>
-<div id="result" hidden></div></section></div>
+</section>
 <div class="navbar" role="group" aria-label="${T("steps_label")}"><div class="navrow"><button type="button" id="step-prev" hidden>${T("prev")}</button><button type="button" class="primary" id="step-next">${T("next_look")}</button><button type="button" class="primary" id="generate" hidden>${T("generate")}</button></div>
-<button type="button" class="nowbtn" id="generate-now">${T("gen_now")}</button></div>
+<button type="button" class="nowbtn" id="generate-now">${T("gen_now")}</button></div></div>
 </div></main>
 <main id="noaccess" hidden><h1>${T("no_access")}</h1><p>${T("no_access_hint")}</p></main>`;
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${T("title")}</title>

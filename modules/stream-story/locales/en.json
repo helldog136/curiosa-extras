@@ -227,5 +227,6 @@
   "ui_recap_none": "none",
   "ui_recap_edit": "Change",
   "ui_recap_edit_aria": "Change: {what}",
-  "ui_step_now": "Step {n} of 3: {name}"
+  "ui_step_now": "Step {n} of 3: {name}",
+  "ui_recap_none_f": "none"
 }

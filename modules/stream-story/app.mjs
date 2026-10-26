@@ -488,7 +488,7 @@ function renderRecap() {
     [1, L("recap_event"), e ? `${e.title || L("untitled")} · ${whenText(e)}` : L("event_none_chosen")],
     [2, L("recap_style"), L(`style_${S.cfg.style}`)],
     [2, L("recap_format"), `${L(`format_${fmt.id}`)} · ${L("seconds", { n: S.cfg.duration })}`],
-    [2, L("recap_text"), S.cfg.text ? S.cfg.text : L("recap_none")],
+    [2, L("recap_text"), S.cfg.text ? S.cfg.text : L("recap_none_f")],
     [2, L("recap_mark"), L(S.cfg.watermark === true ? "recap_yes" : "recap_no")],
     [2, L("recap_people"), people ? S.cfg.costreamers.map((x) => { const m = viewOf(x); return m.name || m.login; }).filter(Boolean).join(", ") || String(people) : L("recap_none")],
   ];
@@ -659,6 +659,7 @@ async function generate() {
     resultBox.replaceChildren(...[h("p", { class: "ok", text: L("done", { name, size: (blob.size / 1048576).toFixed(1) }) }), link,
       out.mime !== "video/mp4" ? h("p", { class: "warn", text: L("webm_notice") }) : null, out.mode === "recorder" ? h("p", { class: "muted", text: L("recorder_notice") }) : null].filter(Boolean));
     resultBox.hidden = false; link.click();
+    try { resultBox.scrollIntoView?.({ block: "nearest", behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
   } catch (e) {
     say(e?.code === "aborted" ? L("cancelled") : e?.code === "unsupported" ? L("err_unsupported") : L("err_encoder"), e?.code === "aborted" ? "" : "error");
   } finally { S.job = null; setBusy(false); setPlaying(prevPlaying); rebuild(); }

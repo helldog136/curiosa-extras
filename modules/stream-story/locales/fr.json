@@ -227,5 +227,6 @@
   "ui_recap_none": "aucun",
   "ui_recap_edit": "Modifier",
   "ui_recap_edit_aria": "Modifier : {what}",
-  "ui_step_now": "Étape {n} sur 3 : {name}"
+  "ui_step_now": "Étape {n} sur 3 : {name}",
+  "ui_recap_none_f": "aucune"
 }
