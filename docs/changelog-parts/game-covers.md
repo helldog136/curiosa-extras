@@ -1,6 +1,6 @@
 ## Jaquettes de jeux 1.0.0 : un module pour les jaquettes
 
-*Les jaquettes de jeux quittent le cœur de Curiosa et deviennent un module à part entière. Pour Curiosa 0.2.13 ou plus (la reprise automatique demande la version du cœur qui l'accompagne). Modules touchés : Jaquettes de jeux 1.0.0 (nouveau), Suggestions de jeux 1.4.0, Planning 2.4.0, Story d'annonce 2.4.0.*
+*Les jaquettes de jeux quittent le cœur de Curiosa et deviennent un module à part entière. Mettez d'abord Curiosa à jour : c'est lui qui installe le module et lui confie votre clé. Modules touchés : Jaquettes de jeux 1.0.0 (nouveau), Suggestions de jeux 1.4.0, Planning 2.4.0, Story d'annonce 2.4.0.*
 
 ### Nouveautés
 
