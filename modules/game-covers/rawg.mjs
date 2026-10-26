@@ -30,7 +30,7 @@ export const isValidKey = (key) => typeof key === "string" && KEY_RE.test(key);
 
 /** La clé : celle du réglage de cette page, sinon celle reprise du site (les réglages saisis ont toujours le dessus). { key, source: "setting" | "adopted" | null, valid }. Aucune valeur n'en sort. */
 export async function keyOf(ctx) {
-  const own = String(ctx.setting("apiKey") ?? "").trim();
+  const own = String(ctx.setting("rawgKey") ?? "").trim();
   if (own) return { key: own, source: "setting", valid: isValidKey(own) };
   const adopted = String((await fx.readOne(ctx, COL.key))?.key ?? "").trim();
   if (adopted) return { key: adopted, source: "adopted", valid: isValidKey(adopted) };
@@ -94,18 +94,18 @@ async function query(ctx, key, search) {
 }
 
 /** Les résultats de RAWG pour cette recherche : cache, état de la clé mémorisé. Ne lève jamais. → { kind: "ok", list, fresh } | { kind: "refused" } | { kind: "unreachable" } */
-async function lookup(ctx, key, search) {
+async function lookup(ctx, key, search, quiet = false) {
   const id = search.toLowerCase();
   const hit = cache.get(id);
   if (hit && hit.until > Date.now()) return { kind: "ok", list: hit.list, fresh: false };
   const outcome = await query(ctx, key, search);
   if (outcome.kind === "ok") {
-    await rememberState(ctx, "ok");
+    if (!quiet) await rememberState(ctx, "ok");
     if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value);
     cache.set(id, { list: outcome.list, until: Date.now() + (outcome.list.some((r) => r.image) ? FOUND_TTL : NONE_TTL) });
     return { kind: "ok", list: outcome.list, fresh: true };
   }
-  await rememberState(ctx, outcome.kind);
+  if (!quiet) await rememberState(ctx, outcome.kind);
   return outcome;
 }
 
@@ -149,9 +149,9 @@ export async function cover(ctx, title) {
 
 /**
  * Les jeux que RAWG propose pour ce titre (6 au plus, jaquette obligatoire, du plus ressemblant au moins ressemblant). `search` : une autre recherche
- * (l'écran de correction laisse taper le vrai nom) ; ce texte n'est qu'un mot de recherche envoyé à RAWG, jamais une adresse. Ne lève jamais.
+ * (l'écran de correction laisse taper le vrai nom) ; ce texte n'est qu'un mot de recherche envoyé à RAWG, jamais une adresse. `quiet` : n'écrit rien (outil de lecture de l'assistant). Ne lève jamais.
  */
-export async function candidates(ctx, title, search) {
+export async function candidates(ctx, title, search, { quiet = false } = {}) {
   try {
     const asked = cleanTitle(title);
     const words = cleanTitle(search) || asked;
@@ -159,7 +159,7 @@ export async function candidates(ctx, title, search) {
     if (!key) return { status: "no-key", candidates: [] };
     if (!valid) return { status: "refused", candidates: [] };
     if (!words) return { status: "none", candidates: [] };
-    const looked = await lookup(ctx, key, words);
+    const looked = await lookup(ctx, key, words, quiet);
     if (looked.kind !== "ok") return { status: looked.kind, candidates: [] };
     const out = [];
     for (const c of rank(words, looked.list)) {

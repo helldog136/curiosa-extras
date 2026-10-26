@@ -2,9 +2,10 @@
 //
 // Le public propose un jeu (liste publique, statut « proposé ») ; l'administrateur le fait avancer (planifié, accepté, déjà joué, fini…).
 // Sur les jeux « déjà joués », le public vote « rejoue-le » : N votes par mois et par visiteur (un cookie + une mémoire côté serveur).
-// La jaquette vient de RAWG par le service du cœur (`ctx.api.rawg`, permission `rawg`) — au mieux : sans clé, la suggestion n'a simplement pas d'image.
-// La clé RAWG se saisit UNE seule fois, dans Admin → Réglages du site (jamais dans ce module) ; tant qu'elle manque, l'admin du module le dit avec un lien.
-// Le module n'appelle jamais RAWG lui-même. L'ancienne clé qu'il pouvait garder (`legacySettings`, jamais affichée) n'est plus lue : elle est effacée dès que le cœur a la sienne.
+// La jaquette vient du module « Jaquettes de jeux » (service `game.cover`, besoin facultatif) — au mieux : sans clé, la suggestion n'a simplement pas d'image.
+// La clé RAWG se saisit UNE seule fois, dans ce module (jamais dans celui-ci) ; tant qu'elle manque, l'admin du module le dit avec un lien. Un site qui avait déjà sa clé n'a rien à refaire :
+// le cœur installe « Jaquettes de jeux » et lui confie la clé tout seul, et en attendant l'ancienne interface du cœur (`ctx.api.rawg`, permission `rawg`) sert de repli.
+// Le module n'appelle jamais RAWG lui-même. L'ancienne clé qu'il pouvait garder (`legacySettings`, jamais affichée) n'est plus lue : elle est effacée dès qu'une clé est réglée sur le site.
 // Une suggestion restée sans jaquette (migrée, restaurée d'une sauvegarde, créée pendant une panne de RAWG) est rattrapée plus tard :
 // une tâche du cœur en traite quelques-unes à la fois, et un bouton de l'admin lance la même opération tout de suite. Tout ce qui
 // sert à ne pas marteler RAWG (date et résultat de chaque essai) est écrit dans les données de l'instance : rien ne vit en mémoire seulement.
@@ -39,28 +40,52 @@ function limited(bucket, max, windowMs, now = Date.now()) {
   return recent.length > max;
 }
 
-const SVC_STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };   // statuts du cœur → ceux de ce module
+const SVC_STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };   // statuts du service → ceux de ce module
 const coreRawg = (ctx) => (ctx.api?.rawg && typeof ctx.api.rawg.cover === "function" ? ctx.api.rawg : null);
+
+/**
+ * Le service de jaquettes est le module « Jaquettes de jeux » (service `game.cover`, besoin facultatif). Rend `null` quand il n'est pas là, sinon `{ ok, value | reason }`.
+ * À défaut du module, ou quand il n'a pas (encore) de clé, on retombe sur l'ancienne interface du cœur (`ctx.api.rawg`, permission `rawg`, cale à retirer en 0.3.0) :
+ * un site dont le cœur garde encore la clé ne perd donc aucune jaquette entre deux mises à jour.
+ */
+const viaModule = async (ctx, method, args) => {
+  try { return (await ctx.api?.services?.call?.("game.cover", method, args)) ?? null; } catch { return null; }
+};
 
 /** Une clé RAWG est-elle réglée sur le site ? Ne lève jamais. */
 export async function hasKey(ctx) {
+  const m = await viaModule(ctx, "status", {});
+  if (m?.ok && m.value?.configured === true) return true;
   const svc = coreRawg(ctx);
   if (!svc) return false;
   try { return !!(await svc.configured()); } catch { return false; }
 }
 
-/** Cherche une jaquette par le service du cœur (statuts du cœur traduits : found · none · no_key · denied · down). Jamais d'exception. */
+/** Cherche une jaquette (statuts du service traduits : found · none · no_key · denied · down). Jamais d'exception. */
 export async function coverFor(ctx, title) {
-  const svc = coreRawg(ctx);
-  if (!svc) return { status: "no_key", url: null };
-  try {
-    const r = await svc.cover(title);
-    const status = SVC_STATUS[r?.status] ?? "down";
-    const url = status === "found" ? safeHttps(r.url) : null;
-    if (status === "found" && !url) return { status: "none", url: null };
-    // `ambiguous` (cœur 0.2.10) : le jeu trouvé n'est peut-être pas le bon ; ajouté seulement quand il est vrai.
-    return { status, url, ...(status === "found" && r?.ambiguous === true ? { ambiguous: true } : {}) };
-  } catch { return { status: "down", url: null }; }
+  let r;
+  const m = await viaModule(ctx, "cover", { title });
+  if (m?.ok && m.value && m.value.status !== "no-key") r = m.value;                       // le module a répondu
+  else if (m && !m.ok && m.reason === "failed") return { status: "down", url: null };    // le module est en panne : pas de repli, il garde la clé
+  else {
+    const svc = coreRawg(ctx);
+    if (!svc) return { status: "no_key", url: null };
+    try { r = await svc.cover(title); } catch { return { status: "down", url: null }; }
+  }
+  const status = SVC_STATUS[r?.status] ?? "down";
+  const url = status === "found" ? safeHttps(r.url) : null;
+  if (status === "found" && !url) return { status: "none", url: null };
+  // `ambiguous` : le jeu trouvé n'est peut-être pas le bon ; ajouté seulement quand il est vrai.
+  return { status, url, ...(status === "found" && r?.ambiguous === true ? { ambiguous: true } : {}) };
+}
+
+/** Où saisir la clé : l'écran du module « Jaquettes de jeux » s'il est installé, sinon une proposition de l'installer (jamais installé sans un clic du propriétaire). */
+async function keySetupBlocks(ctx) {
+  let path = "";
+  try { path = (await ctx.api?.instances?.list?.({ module: "game-covers" }))?.[0]?.adminPath ?? ""; } catch { path = ""; }
+  return path
+    ? [{ type: "banner", tone: "warning", text: ctx.t("rawgBanner") }, { type: "markdown", text: `[${ctx.t("rawgOpenSettings")}](${path})` }]
+    : [{ type: "banner", tone: "warning", text: ctx.t("rawgBanner") }, { type: "suggestInstall", service: "game.cover", reason: ctx.t("rawgSuggestReason") }];
 }
 
 /* ───────────── Rattrapage des jaquettes manquantes ───────────── */
@@ -271,7 +296,7 @@ export default {
     const state = await readState(ctx);
     const keyed = await hasKey(ctx);
     // Sans clé RAWG, aucune suggestion n'aura d'image : on le dit tout en haut, avec le lien vers l'endroit où la saisir (une seule fois pour tout le site).
-    const keyBanner = keyed ? [] : [{ type: "banner", tone: "warning", text: ctx.t("rawgBanner") }, { type: "markdown", text: `[${ctx.t("rawgOpenSettings")}](/admin/settings)` }];
+    const keyBanner = keyed ? [] : await keySetupBlocks(ctx);
     const coverBlocks = [{ type: "heading", text: ctx.t("coversTitle") }];
     if (missing === 0) coverBlocks.push({ type: "markdown", text: ctx.t("coversAll") });
     else {

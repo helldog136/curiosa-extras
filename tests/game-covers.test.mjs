@@ -39,7 +39,7 @@ const serve = (answer = (s) => ({ json: { results: DB[s.toLowerCase()] ?? [] } }
 };
 let n = 0;
 const makeCtx = (extra = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { apiKey: KEY }, permissions: ["storage", "admin", "mcp"], ...extra });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY }, permissions: ["storage", "admin", "mcp"], ...extra });
   c.can = () => true;
   return c;
 };
@@ -54,7 +54,7 @@ test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["game.cover", 1]]);
   assert.deepEqual(manifest.offers[0].readOnly.sort(), ["candidates", "cover", "status"]);
   assert.deepEqual(manifest.offers[0].callerRights, ["fix"]);
-  const key = manifest.settings.find((s) => s.key === "apiKey");
+  const key = manifest.settings.find((s) => s.key === "rawgKey");
   assert.equal(key.type, "secret"); assert.equal(key.optional, true);
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["rawg_covers_to_check", "rawg_cover_set"]);
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_cover_set").default, false, "l'écriture n'est jamais accordée d'office");
@@ -68,7 +68,7 @@ test("sans clé : no-key, aucune requête ; clé mal formée : refused, aucune r
   assert.deepEqual(await svc.cover(none, { title: "Hades" }), { status: "no-key", url: null });
   assert.deepEqual(await svc.candidates(none, { title: "Hades" }), { status: "no-key", candidates: [] });
   assert.deepEqual(await svc.status(none), { ready: false, configured: false, source: null, state: null });
-  const bad = makeCtx({ settings: { apiKey: "pas bon !" } });
+  const bad = makeCtx({ settings: { rawgKey: "pas bon !" } });
   assert.equal((await svc.cover(bad, { title: "Hades" })).status, "refused");
   assert.equal(f.calls.length, 0);
 });
@@ -236,7 +236,7 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
   await svc.adopt(c, input);
   assert.equal((await fixes.fixFor(c, "Rien")).kind, "game");
   // La clé saisie dans les réglages l'emporte sur la clé reprise ; une autre clé ne remplace pas la reprise.
-  const own = makeCtx({ settings: { apiKey: "UNE-AUTRE-CLE-1234" }, rows: { adoptedKey: [{ key: KEY, at: "x" }] } });
+  const own = makeCtx({ settings: { rawgKey: "UNE-AUTRE-CLE-1234" }, rows: { adoptedKey: [{ key: KEY, at: "x" }] } });
   assert.equal((await rawg.keyOf(own)).key, "UNE-AUTRE-CLE-1234");
   const other = await svc.adopt(makeCtx({ settings: {} }), { key: "n'importe quoi" });
   assert.equal(other.keyAdopted, false); assert.equal(other.ready, false);
@@ -274,7 +274,7 @@ test("« Tester la clé » : ok, refusée, injoignable, absente, mal formée ; l
   serve(() => ({ status: 500, json: {} }));
   assert.match((await mod.adminActions.testKey(makeCtx())).error, /injoignable/);
   assert.match((await mod.adminActions.testKey(makeCtx({ settings: {} }))).error, /Aucune clé/);
-  assert.match((await mod.adminActions.testKey(makeCtx({ settings: { apiKey: "x y" } }))).error, /format/);
+  assert.match((await mod.adminActions.testKey(makeCtx({ settings: { rawgKey: "x y" } }))).error, /format/);
 });
 
 test("écran « Quel est le bon jeu ? » : titre, jaquettes proposées (images de RAWG seulement), boutons de choix, recherche d'un autre nom", async () => {

@@ -5,8 +5,8 @@
 // `planning.slot`, que fournissent les modules « calendrier » (Agenda en ligne, Streams saisis à la main…), sans qu'il sache lesquels.
 // La logique pure (grille de jours, mise au format des créneaux) est exportée pour être testée ; le module lui-même est l'export par défaut.
 //
-// Jaquettes : pour chaque jeu d'un stream, la jaquette est demandée au service RAWG du cœur
-// (`ctx.api.rawg`, permission `rawg` ; la clé se règle dans Admin → Réglages, le module ne la voit jamais) et montrée sur la page,
+// Jaquettes : pour chaque jeu d'un stream, la jaquette est demandée au module « Jaquettes de jeux » (service `game.cover`, besoin facultatif ; la clé se règle chez lui, ce module
+// ne la voit jamais ; l'ancienne interface du cœur `ctx.api.rawg`, permission `rawg`, sert de repli) et montrée sur la page,
 // les morceaux d'accueil, l'admin et l'image PNG de la semaine (`/m/<clé>/image`, pour un panneau Twitch). Au mieux : sans clé,
 // clé refusée ou RAWG injoignable, on affiche simplement le nom du jeu. Le cache et la limite de demandes sont ceux du cœur.
 
@@ -54,22 +54,50 @@ export function isValidTimeZone(tz) {
   }
 }
 
-/* ───────────────────────────── Jaquettes (service RAWG du cœur) ───────────────────────────── */
+/* ───────────────────────────── Jaquettes (module « Jaquettes de jeux ») ───────────────────────────── */
 
 const STATUS = { found: "found", none: "none", "no-key": "no_key", refused: "denied", unreachable: "down" };
 
-/** Une jaquette via le cœur. Jamais d'exception ; https seulement. `status` : found · none · no_key · denied (clé refusée) · down (injoignable). */
+/**
+ * Le service de jaquettes est le module « Jaquettes de jeux » (service `game.cover`, besoin facultatif). À défaut du module, ou quand il n'a pas (encore) de clé, on retombe sur l'ancienne
+ * interface du cœur (`ctx.api.rawg`, permission `rawg`, cale à retirer en 0.3.0) : un site dont le cœur garde encore la clé ne perd aucune jaquette entre deux mises à jour.
+ */
+const viaModule = async (ctx, method, args) => {
+  try { return (await ctx.api?.services?.call?.("game.cover", method, args)) ?? null; } catch { return null; }
+};
+
+/** Une clé RAWG est-elle réglée sur le site ? Ne lève jamais. */
+export async function hasKey(ctx) {
+  const m = await viaModule(ctx, "status", {});
+  if (m?.ok && m.value?.configured === true) return true;
+  try { return !!(await ctx.api?.rawg?.configured?.()); } catch { return false; }
+}
+
+/** Une jaquette. Jamais d'exception ; https seulement. `status` : found · none · no_key · denied (clé refusée) · down (injoignable). */
 export async function coverFor(ctx, title) {
-  const svc = ctx.api?.rawg;
-  if (!svc || typeof svc.cover !== "function") return { status: "no_key", url: null };   // cœur sans service RAWG : comme « pas de clé »
-  try {
-    const r = await svc.cover(title);
-    const url = typeof r?.url === "string" && /^https:\/\//.test(r.url) ? r.url : null;
-    const status = STATUS[r?.status] ?? "down";
-    if (status === "found" && !url) return { status: "none", url: null };
-    // `ambiguous` (cœur 0.2.10) : le jeu trouvé n'est peut-être pas le bon. Ajouté seulement quand il est vrai ; `name` : le jeu que RAWG a trouvé.
-    return { status, url: status === "found" ? url : null, ...(status === "found" && r?.ambiguous === true ? { ambiguous: true, name: typeof r.name === "string" ? r.name.slice(0, 120) : "" } : {}) };
-  } catch { return { status: "down", url: null }; }
+  let r;
+  const m = await viaModule(ctx, "cover", { title });
+  if (m?.ok && m.value && m.value.status !== "no-key") r = m.value;                       // le module a répondu
+  else if (m && !m.ok && m.reason === "failed") return { status: "down", url: null };    // le module est en panne : pas de repli, il garde la clé
+  else {
+    const svc = ctx.api?.rawg;
+    if (!svc || typeof svc.cover !== "function") return { status: "no_key", url: null };   // ni module ni ancienne interface : comme « pas de clé »
+    try { r = await svc.cover(title); } catch { return { status: "down", url: null }; }
+  }
+  const url = typeof r?.url === "string" && /^https:\/\//.test(r.url) ? r.url : null;
+  const status = STATUS[r?.status] ?? "down";
+  if (status === "found" && !url) return { status: "none", url: null };
+  // `ambiguous` : le jeu trouvé n'est peut-être pas le bon. Ajouté seulement quand il est vrai ; `name` : le jeu que RAWG a trouvé.
+  return { status, url: status === "found" ? url : null, ...(status === "found" && r?.ambiguous === true ? { ambiguous: true, name: typeof r.name === "string" ? r.name.slice(0, 120) : "" } : {}) };
+}
+
+/** Où régler la clé : l'écran du module « Jaquettes de jeux » s'il est installé, sinon une proposition de l'installer (jamais installé sans un clic du propriétaire). */
+async function keySetupBlocks(ctx) {
+  let path = "";
+  try { path = (await ctx.api?.instances?.list?.({ module: "game-covers" }))?.[0]?.adminPath ?? ""; } catch { path = ""; }
+  return path
+    ? [{ type: "markdown", text: ctx.t("coversNoKey", { link: path }) }]
+    : [{ type: "markdown", text: ctx.t("coversNoKeyNoModule") }, { type: "suggestInstall", service: "game.cover", reason: ctx.t("coversSuggestReason") }];
 }
 
 const MAX_LOOKUPS = 30;
@@ -85,8 +113,7 @@ export async function coversForSlots(ctx, slots) {
   const names = [...new Set(slots.filter((s) => !s.allDay).flatMap((s) => gamesOf(s)))].slice(0, MAX_LOOKUPS);
   const covers = new Map(), states = new Map(), ambiguous = new Map();
   if (!names.length) return { covers, states, ambiguous };
-  let configured = false;
-  try { configured = !!(await ctx.api?.rawg?.configured?.()); } catch { configured = false; }
+  const configured = await hasKey(ctx);
   if (!configured) { for (const n of names) states.set(n, "no_key"); return { covers, states, ambiguous }; }
   await Promise.all(names.map(async (n) => { const r = await coverFor(ctx, n); states.set(n, r.status); if (r.url) covers.set(n, r.url); if (r.ambiguous) ambiguous.set(n, r.name ?? ""); }));
   return { covers, states, ambiguous };
@@ -376,7 +403,7 @@ async function adminStatusBlocks(ctx) {
       const has = (st) => all.some(([, v]) => v === st);
       const lost = all.filter(([n, v]) => v === "none" && !covers.has(n)).map(([n]) => n);
       blocks.push({ type: "heading", text: t("coversTitle") });
-      if (has("no_key")) blocks.push({ type: "markdown", text: t("coversNoKey") });
+      if (has("no_key")) blocks.push(...(await keySetupBlocks(ctx)));
       else if (has("denied")) blocks.push({ type: "markdown", text: `⚠️ ${t("coversDenied")}` });
       else if (has("down") && !covers.size) blocks.push({ type: "markdown", text: `⚠️ ${t("coversDown")}` });
       else blocks.push({ type: "markdown", text: t("coversOk", { found: covers.size, total: states.size }) });

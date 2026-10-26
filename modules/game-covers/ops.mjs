@@ -30,9 +30,9 @@ export function checkTitle(input) {
 }
 
 /** Les jeux proposés pour ce titre (6 au plus), à la demande. */
-export async function candidatesFor(ctx, who, title, search) {
+export async function candidatesFor(ctx, who, title, search, opts) {
   if (!takeRate(who, "read")) return { status: "rate", candidates: [] };
-  return rawg.candidates(ctx, title, search);
+  return rawg.candidates(ctx, title, search, opts);
 }
 
 const finish = (r) => (r.ok ? r : { ok: false, error: r.error });

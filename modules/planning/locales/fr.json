@@ -18,8 +18,8 @@
   "imageEmpty": "Rien de prévu pour l'instant",
   "imageEmptyHint": "Repasse bientôt pour le prochain live !",
   "coversTitle": "Jaquettes des jeux",
-  "coversNoKey": "Aucune clé RAWG : les jeux s'affichent sans jaquette. Saisissez-la dans [Réglages](/admin/settings).",
-  "coversDenied": "RAWG refuse la clé : les jeux s'affichent sans jaquette. Vérifiez-la dans [Réglages](/admin/settings).",
+  "coversNoKey": "Aucune clé RAWG : les jeux s'affichent sans jaquette. Saisissez-la dans [Jaquettes de jeux]({link}).",
+  "coversDenied": "RAWG refuse la clé : les jeux s'affichent sans jaquette. Vérifiez-la dans le module « Jaquettes de jeux ».",
   "coversDown": "RAWG est injoignable pour le moment : les jeux s'affichent sans jaquette, et la recherche sera retentée.",
   "coversOk": "{found} jaquette(s) trouvée(s) pour {total} jeu(x) à venir.",
   "coversNone": "RAWG ne connaît pas : {games}. Vérifiez l'orthographe dans la description de l'événement (ligne « Jeu : … »).",
@@ -70,5 +70,7 @@
   "weekOf": "Semaine du {date}",
   "upNext": "À suivre",
   "seedNickname": "Agenda en ligne",
-  "adminNoSlots": "Aucun stream à venir pour l'instant. Le planning montre les streams de vos agendas : installez et réglez « Agenda en ligne » (Google Agenda…) ou « Streams saisis à la main » dans [Extensions](/admin/extensions). C'est déjà fait ? Alors il n'y a simplement rien de prévu."
+  "adminNoSlots": "Aucun stream à venir pour l'instant. Le planning montre les streams de vos agendas : installez et réglez « Agenda en ligne » (Google Agenda…) ou « Streams saisis à la main » dans [Extensions](/admin/extensions). C'est déjà fait ? Alors il n'y a simplement rien de prévu.",
+  "coversNoKeyNoModule": "Aucune clé RAWG : les jeux s'affichent sans jaquette. Un module gratuit, « Jaquettes de jeux », s'en occupe.",
+  "coversSuggestReason": "trouve les jaquettes de vos jeux"
 }

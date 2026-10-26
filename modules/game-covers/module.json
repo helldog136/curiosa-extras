@@ -64,7 +64,7 @@
   ],
   "settings": [
     {
-      "key": "apiKey",
+      "key": "rawgKey",
       "type": "secret",
       "optional": true,
       "label": {

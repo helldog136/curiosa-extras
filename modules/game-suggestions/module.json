@@ -5,7 +5,7 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "minCore": "0.2.10",
   "description": {
     "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played, covers fetched from RAWG.",
@@ -30,6 +30,12 @@
     "admin",
     "mcp",
     "rawg"
+  ],
+  "requires": [
+    {
+      "service": "game.cover",
+      "optional": true
+    }
   ],
   "tabs": [
     {

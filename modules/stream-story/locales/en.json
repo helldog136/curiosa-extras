@@ -11,7 +11,7 @@
   "ui_prep_expired": "The requested preparation no longer exists or has expired. You can set up the video yourself.",
   "ui_prep_stream_gone": "The event picked by your assistant is no longer in the list (over, moved, or a source that is not answering): the next event is used instead.",
   "ui_help_intro": "Pick the event, what the video shows and its style. The preview moves live. Nothing is kept on the site: the file is only downloaded.",
-  "ui_cover_no_key": "Game covers are not shown: the site owner can set up access to covers in Settings, External services. The video works fine without them.",
+  "ui_cover_no_key": "Game covers are not shown: the site owner can set up covers in the “Game covers” module. The video works fine without.",
   "ui_cover_ambiguous": "The cover for “{game}” may belong to another game. You can still make the video.",
   "ui_cover_ambiguous_named": "The cover for “{game}” may belong to another game (RAWG picked “{found}”). You can still make the video.",
   "ui_cover_wrong": "Not the right game?",

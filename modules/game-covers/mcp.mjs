@@ -27,7 +27,7 @@ export const tools = {
     if (args?.title === undefined) return { items, total: items.length };
     const title = ops.checkTitle(args.title);
     if (!title) throw fail(WHY.title);
-    const found = await ops.candidatesFor(ctx, who(actor), title, args.search);
+    const found = await ops.candidatesFor(ctx, who(actor), title, args.search, { quiet: true });   // une lecture n'écrit rien (pas même l'état de la clé)
     if (found.status === "rate") throw fail(WHY.rate);
     return { items, total: items.length, title, status: found.status, candidates: found.candidates.map((c) => ({ rawgId: c.id, name: c.name, year: c.year, platforms: c.platforms, coverUrl: c.url })) };
   },

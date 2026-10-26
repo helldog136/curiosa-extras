@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.3.0",
+  "version": "2.4.0",
   "platform": "instagram",
   "description": {
     "en": "Make a short animated video that announces one of your upcoming events, ready to post as an Instagram story (vertical) or a portrait post. Pick the event from one list that gathers your streams and, when they are set up, your scheduled YouTube videos and your Twitch schedule, sorted by date and time. Then pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
@@ -206,6 +206,14 @@
       "label": {
         "en": "Other dated events: scheduled YouTube videos and premieres, your Twitch schedule… (any module that offers them). Optional: without them the list shows your streams only",
         "fr": "Les autres événements datés : vidéos et directs YouTube programmés, planning Twitch… (tout module qui les propose). Facultatif : sans eux, la liste ne montre que vos streams"
+      }
+    },
+    {
+      "service": "game.cover",
+      "optional": true,
+      "label": {
+        "en": "The Game covers module: finds the cover picture of each game. Optional: without it, games are shown without a picture",
+        "fr": "Le module Jaquettes de jeux : trouve la jaquette de chaque jeu. Facultatif : sans lui, les jeux s'affichent sans image"
       }
     }
   ],
