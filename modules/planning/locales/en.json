@@ -18,8 +18,8 @@
   "imageEmpty": "Nothing planned yet",
   "imageEmptyHint": "Come back soon for the next stream!",
   "coversTitle": "Game covers",
-  "coversNoKey": "No RAWG key: games are shown without a cover. Enter it in [Settings](/admin/settings).",
-  "coversDenied": "RAWG refuses the key: games are shown without a cover. Check it in [Settings](/admin/settings).",
+  "coversNoKey": "No RAWG key: games are shown without a cover. Enter it in [Game covers]({link}).",
+  "coversDenied": "RAWG refuses the key: games are shown without a cover. Check it in the “Game covers” module.",
   "coversDown": "RAWG cannot be reached right now: games are shown without a cover, and the search will be tried again.",
   "coversOk": "{found} cover(s) found for {total} upcoming game(s).",
   "coversNone": "RAWG does not know: {games}. Check the spelling in the event description (the “Jeu: …” line).",
@@ -70,5 +70,7 @@
   "weekOf": "Week of {date}",
   "upNext": "Up next",
   "seedNickname": "Online calendar",
-  "adminNoSlots": "No upcoming stream for now. The schedule shows the streams of your calendars: install and set up “Online calendar” (Google Calendar…) or “Hand-written streams” in [Extensions](/admin/extensions). Already done? Then nothing is planned."
+  "adminNoSlots": "No upcoming stream for now. The schedule shows the streams of your calendars: install and set up “Online calendar” (Google Calendar…) or “Hand-written streams” in [Extensions](/admin/extensions). Already done? Then nothing is planned.",
+  "coversNoKeyNoModule": "No RAWG key: games are shown without a cover. A free module, “Game covers”, takes care of it.",
+  "coversSuggestReason": "finds the cover pictures of your games"
 }

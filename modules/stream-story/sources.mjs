@@ -1,5 +1,5 @@
 // Ce que « Story d'annonce » lit chez les autres, sans jamais les connaître par leur nom : les streams à venir (sujet `planning.slot`, fourni par n'importe quel agenda),
-// et les jaquettes (service du cœur, via ctx.api.rawg). Les co-streamers, eux, viennent de Contacts (contacts.mjs). Chaque lecture est facultative et BORNÉE :
+// et les jaquettes (module « Jaquettes de jeux », service `game.cover` ; repli : l'ancienne interface du cœur ctx.api.rawg). Les co-streamers, eux, viennent de Contacts (contacts.mjs). Chaque lecture est facultative et BORNÉE :
 // un agenda ou un service qui ne répond jamais rend « slow » au bout de quelques secondes, jamais une attente sans fin.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const P = await import(`./pure.mjs${v}`);
@@ -20,6 +20,27 @@ export function within(p, ms, fallback) {
 }
 
 /**
+ * Les jaquettes viennent du module « Jaquettes de jeux » (service `game.cover`, besoin facultatif). À défaut du module, ou quand il n'a pas (encore) de clé, on retombe sur l'ancienne
+ * interface du cœur (`ctx.api.rawg`, permission `rawg`, cale à retirer en 0.3.0) : un site dont le cœur garde encore la clé ne perd aucune jaquette entre deux mises à jour.
+ */
+const viaModule = (ctx, method, args) => Promise.resolve().then(() => ctx.api?.services?.call?.("game.cover", method, args)).then((r) => r ?? null, () => null);
+/** Une clé RAWG est-elle réglée sur le site ? Ne lève jamais. */
+export async function hasKey(ctx) {
+  const m = await viaModule(ctx, "status", {});
+  if (m?.ok && m.value?.configured === true) return true;
+  return !!(await Promise.resolve().then(() => ctx.api?.rawg?.configured?.()).catch(() => false));
+}
+/** La réponse brute du service pour ce titre : `{ status, url, name?, ambiguous? }` (jamais `no-key` si une ancienne interface répond mieux). */
+async function coverRaw(ctx, name) {
+  const m = await viaModule(ctx, "cover", { title: name });
+  if (m?.ok && m.value && typeof m.value === "object" && m.value.status !== "no-key") return m.value;
+  if (m && !m.ok && m.reason === "failed") return { status: "unreachable", url: null };   // le module est en panne : il garde la clé, pas de repli
+  const svc = ctx.api?.rawg;
+  if (!svc || typeof svc.cover !== "function") return { status: "no-key", url: null };
+  return svc.cover(name);
+}
+
+/**
  * Les prochains streams, avec la jaquette du premier jeu quand elle est connue.
  * { state: "ok" | "empty" | "slow", streams: [...], coverState: "" | "no_key" | "down" }
  */
@@ -33,12 +54,12 @@ export async function loadStreams(ctx, { zone = "", now = Date.now(), max = P.LI
   let coverState = "";
   const names = [...new Set(streams.slice(0, 8).map((s) => s.games[0]).filter(Boolean))];
   if (names.length) {
-    const configured = await within(Promise.resolve().then(() => ctx.api?.rawg?.configured?.()), timing.coverMs, false);
+    const configured = await within(hasKey(ctx), timing.coverMs, false);
     if (!configured) coverState = "no_key";
     else {
       const found = new Map();
       await within(Promise.all(names.map(async (n) => {
-        const r = await ctx.api.rawg.cover(n);
+        const r = await coverRaw(ctx, n);
         if (r?.status === "found" && images.allowedUrl(r.url)) found.set(n, String(r.url));
         else if (r?.status === "unreachable" || r?.status === "refused") coverState = "down";
       })), timing.coverMs, null);
@@ -140,9 +161,9 @@ export async function loadEvents(ctx, { zone = "", now = Date.now(), force = fal
 export async function coverOf(ctx, game) {
   const name = P.oneLine(game, 80);
   if (!name) return { cover: "", coverState: "", title: "", ambiguous: false, found: "" };
-  const configured = await within(Promise.resolve().then(() => ctx.api?.rawg?.configured?.()), timing.coverMs, false);
+  const configured = await within(hasKey(ctx), timing.coverMs, false);
   if (!configured) return { cover: "", coverState: "no_key", title: name, ambiguous: false, found: "" };
-  const r = await within(Promise.resolve().then(() => ctx.api.rawg.cover(name)), timing.coverMs, null);
+  const r = await within(coverRaw(ctx, name), timing.coverMs, null);
   if (r?.status === "found" && images.allowedUrl(r.url)) return { cover: String(r.url), coverState: "", title: name, ambiguous: r.ambiguous === true, found: typeof r.name === "string" ? P.oneLine(r.name, 120) : "" };
   return { cover: "", coverState: r?.status === "unreachable" || r?.status === "refused" || r === null ? "down" : "", title: name, ambiguous: false, found: "" };
 }

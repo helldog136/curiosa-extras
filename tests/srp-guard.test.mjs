@@ -26,7 +26,7 @@ test("SRP : les agendas de streams fournissent `planning.slot`, le Planning et l
   }
   const planning = mods.find((m) => m.id === "planning");
   const code = strip(planning.code);
-  assert.equal(planning.manifest.requires, undefined, "pas de dépendance forte");
+  assert.deepEqual((planning.manifest.requires ?? []).filter((r) => !r.optional), [], "pas de dépendance forte");
   assert.ok(!/VEVENT|VCALENDAR|RRULE|DTSTART|\bfetch\(/.test(code), "le Planning ne lit aucun agenda et ne parle à aucun réseau");
   assert.ok(!/\bcalendar-manual\b/.test(code), "le Planning ne nomme pas un agenda");
   assert.deepEqual([...code.matchAll(/\bcalendar-ical\b/g)].length, 1, "…sauf pour semer l'instance de la migration temporaire");

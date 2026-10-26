@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.3.0",
+  "version": "2.4.0",
   "minCore": "0.2.10",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
@@ -217,6 +217,12 @@
     "topics",
     "mcp",
     "rawg"
+  ],
+  "requires": [
+    {
+      "service": "game.cover",
+      "optional": true
+    }
   ],
   "tabs": [
     {
