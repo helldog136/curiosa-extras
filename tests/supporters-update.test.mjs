@@ -54,8 +54,10 @@ test("mise à jour à chaud : v1 chargée, puis les fichiers sont remplacés et 
 });
 
 test("neutralité : aucun nom de site, d'association, de lieu ni de couleur propre dans le module, ses textes, ses tests et sa documentation (les noms de plateformes sont des données des fournisseurs)", () => {
+  // Termes locaux facultatifs : NEUTRALITY_TERMS_FILE, sinon .neutrality-terms du cœur de test (CURIOSA_DIR) ; absents, seules les règles ci-dessous s'appliquent.
+  const termsFile = process.env.NEUTRALITY_TERMS_FILE ?? (process.env.CURIOSA_DIR ? path.join(process.env.CURIOSA_DIR, ".neutrality-terms") : "");
   const rules = [/rosali/i, /helldog/i, /bruxelles/i, /brussels/i, /belgi/i, /asbl/i, /\bvzw\b/i, /association/i, /\bnpo\b/i];
-  const extra = fs.existsSync("/dev/shm/core-ref/.neutrality-terms") ? fs.readFileSync("/dev/shm/core-ref/.neutrality-terms", "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((l) => new RegExp(l.split("=>")[0].trim(), "i")) : [];
+  const extra = termsFile && fs.existsSync(termsFile) ? fs.readFileSync(termsFile, "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((l) => new RegExp(l.split("=>")[0].trim(), "i")) : [];
   const files = [];
   const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else files.push(p); } };
   walk(SRC);
