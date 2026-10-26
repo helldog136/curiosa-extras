@@ -1,0 +1,111 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.13",
+  "id": "game-covers",
+  "name": {
+    "en": "Game covers",
+    "fr": "Jaquettes de jeux"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Finds the cover picture of a video game for the other modules of your site (planning, announcement story, game suggestions). Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
+    "fr": "Trouve la jaquette d'un jeu vidéo pour les autres modules de votre site (planning, story d'annonce, suggestions de jeux). Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
+  },
+  "privacy": {
+    "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the title of the game to RAWG (a video-game database), together with your RAWG key. When another module shows a cover, the visitor's browser loads the picture from RAWG, which therefore sees the visitor's address under its own privacy policy.",
+    "fr": "Ce module ne collecte rien sur vos visiteurs. Pour trouver une jaquette, le serveur de votre site envoie à RAWG (une base de données de jeux vidéo) le titre du jeu, avec votre clé RAWG. Quand un autre module affiche une jaquette, le navigateur du visiteur charge l'image depuis RAWG, qui voit donc son adresse selon sa propre politique de confidentialité."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "🎮",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "offers": [
+    {
+      "service": "game.cover",
+      "version": 1,
+      "label": {
+        "en": "Find the cover picture of a video game (and let the owner correct a wrong one)",
+        "fr": "Trouver la jaquette d'un jeu vidéo (et laisser la propriétaire corriger une mauvaise)"
+      },
+      "readOnly": [
+        "status",
+        "cover",
+        "candidates"
+      ],
+      "callerRights": [
+        "fix"
+      ]
+    }
+  ],
+  "rights": [
+    {
+      "id": "fix",
+      "label": {
+        "en": "choose the right game for a cover",
+        "fr": "choisir le bon jeu pour une jaquette"
+      },
+      "help": {
+        "en": "Changes the picture visitors see for a game title.",
+        "fr": "Change l'image que les visiteurs voient pour un titre de jeu."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "apiKey",
+      "type": "secret",
+      "optional": true,
+      "label": {
+        "en": "RAWG key",
+        "fr": "Clé RAWG"
+      },
+      "help": {
+        "en": "A free key from rawg.io/apidocs. Never shown again once saved. Leave empty if the page above says your key is already there.",
+        "fr": "Une clé gratuite sur rawg.io/apidocs. Jamais réaffichée une fois enregistrée. Laissez vide si la page indique que votre clé est déjà là."
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "rawg_covers_to_check",
+      "readOnly": true,
+      "description": "Lists the game titles whose cover is doubtful (the game RAWG gave is not an almost identical title, or two games looked as good), the 100 most recent first. Each has: title (as asked by a module), foundGame, rawgId, coverUrl, candidates (how many games RAWG proposed) and checkedAt. Pass \"title\" to also get up to 6 candidate games to choose from (rawgId, name, year, platforms, coverUrl); it asks RAWG once. The owner fixes titles in the Game covers module; with the right to, you can use rawg_cover_set. No key is ever shown.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "maxLength": 120, "description": "Optional. A title from the list (or any title): also returns up to 6 candidate games from RAWG with their rawgId, year and main platforms." },
+          "search": { "type": "string", "maxLength": 100, "description": "Optional, with title: other words to look for at RAWG (for example the game's real name)." }
+        }
+      }
+    },
+    {
+      "name": "rawg_cover_set",
+      "default": false,
+      "description": "Saves the right cover for one game title, for the whole site (modules get it at once). Pass \"title\" and exactly ONE of: rawgId (the right game, chosen among the candidates of rawg_covers_to_check), none=true (no cover for this title), imageUrl (an https://media.rawg.io/media/... picture), forget=true (remove the saved correction). The cover comes from RAWG's own answer; no other address is ever used. At most 1000 corrections are kept. Changes the pictures visitors see: ask the owner before using it.",
+      "input": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 120, "description": "The title as modules ask for it (as shown by rawg_covers_to_check)." },
+          "rawgId": { "type": "integer", "minimum": 1, "maximum": 2000000000, "description": "The RAWG id of the right game, taken from the candidates of rawg_covers_to_check." },
+          "search": { "type": "string", "maxLength": 100, "description": "Optional, with rawgId: the words used to find the candidates (when you listed them with a different search)." },
+          "none": { "type": "boolean", "description": "true: this title gets no cover at all." },
+          "imageUrl": { "type": "string", "maxLength": 400, "description": "An https://media.rawg.io/media/... picture chosen by the owner. No other address is accepted." },
+          "forget": { "type": "boolean", "description": "true: forget the saved correction of this title (the automatic choice comes back)." }
+        }
+      }
+    }
+  ]
+}
