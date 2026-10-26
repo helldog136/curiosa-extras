@@ -44,7 +44,7 @@ const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
   ev: { items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -282,13 +282,14 @@ async function loadCover(e) {
 const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title)}`;
 /** Avant de fabriquer la vidéo : si la jaquette est peut-être celle d'un autre jeu, on le dit, avec le lien. Ne bloque jamais la vidéo. */
 function renderCoverWarn() {
-  const E = S.ev, box = $("cover-warn");
-  box.replaceChildren();
+  const E = S.ev, boxes = [$("cover-warn"), $("cover-warn-3")];
   const show = !S.useManual && E.coverAmbiguous && E.coverTitle && E.selected?.games?.length && S.cfg.elements.includes("game");
-  box.hidden = !show;
-  if (!show) return;
-  box.append(h("span", { text: `${L(E.coverFound ? "cover_ambiguous_named" : "cover_ambiguous", { game: E.coverTitle, found: E.coverFound })} ` }),
-    h("a", { href: wrongCoverHref(E.coverTitle), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
+  for (const box of boxes) {
+    box.replaceChildren(); box.hidden = !show;
+    if (!show) continue;
+    box.append(h("span", { text: `${L(E.coverFound ? "cover_ambiguous_named" : "cover_ambiguous", { game: E.coverTitle, found: E.coverFound })} ` }),
+      h("a", { href: wrongCoverHref(E.coverTitle), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
+  }
 }
 
 /** Lit la liste (`more` : la page suivante). Les réponses arrivées en retard d'une recherche précédente sont ignorées. */
@@ -377,6 +378,7 @@ function renderSaved() {
 function renderMembers() {
   $("book-box").hidden = S.contacts !== "ok"; $("book-absent").hidden = S.contacts !== "absent";
   renderChosen(); renderResults(); renderCategory(); renderSaved();
+  if (S.step === 3) renderRecap();
 }
 
 /** Relit les fiches de Contacts nommées par la vidéo (modèle chargé, préparation de l'IA) : nom, pseudo, photo. Une fiche fusionnée est suivie, une fiche effacée est signalée. */
@@ -476,6 +478,44 @@ async function removeSaved(m) {
   S.adhoc = S.adhoc.filter((x) => x.id !== m.id); renderSaved();
 }
 
+/* ───────────── Les trois étapes ───────────── */
+const STEPS = [1, 2, 3];
+const stepName = (n) => L(`step_${n}`);
+/** Résumé de l'étape 3 : chaque ligne a son bouton « Modifier » qui ramène à l'étape où elle se règle (rien n'est perdu : les étapes gardent leur état). */
+function renderRecap() {
+  const e = selectedStream(), people = S.cfg.costreamers.length;
+  const fmt = P.formatOf(S.cfg.format), rows = [
+    [1, L("recap_event"), e ? `${e.title || L("untitled")} · ${whenText(e)}` : L("event_none_chosen")],
+    [2, L("recap_style"), L(`style_${S.cfg.style}`)],
+    [2, L("recap_format"), `${L(`format_${fmt.id}`)} · ${L("seconds", { n: S.cfg.duration })}`],
+    [2, L("recap_text"), S.cfg.text ? S.cfg.text : L("recap_none")],
+    [2, L("recap_mark"), L(S.cfg.watermark === true ? "recap_yes" : "recap_no")],
+    [2, L("recap_people"), people ? S.cfg.costreamers.map((x) => { const m = viewOf(x); return m.name || m.login; }).filter(Boolean).join(", ") || String(people) : L("recap_none")],
+  ];
+  $("recap").replaceChildren(...rows.map(([n, what, value]) => h("li", {}, h("span", { class: "what" }, h("small", { text: what }), h("span", { text: value })),
+    h("button", { type: "button", text: L("recap_edit"), "aria-label": L("recap_edit_aria", { what }), onclick: () => setStep(n) }))));
+}
+function renderSteps() {
+  for (const n of STEPS) {
+    const sec = $(`step-${n}`), btn = $(`step-btn-${n}`);
+    sec.hidden = S.step !== n;
+    btn.setAttribute("aria-current", S.step === n ? "step" : "false");
+    btn.className = `stepbtn${S.visited.has(n) && S.step !== n ? " done" : ""}`;
+  }
+  const last = S.step === 3;
+  $("step-prev").hidden = S.step === 1; $("step-next").hidden = last; $("generate").hidden = !last; $("generate-now").hidden = last;
+  $("step-next").textContent = L(S.step === 1 ? "next_look" : "next_video");
+  if (last) renderRecap();
+}
+function setStep(n, { focus = true } = {}) {
+  if (S.job) return;
+  S.step = Math.min(3, Math.max(1, n)); S.visited.add(S.step);
+  renderSteps();
+  $("step-live").textContent = L("step_now", { n: S.step, name: stepName(S.step) });
+  try { globalThis.scrollTo?.({ top: 0, behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
+  if (focus) { try { $(["h-event", "h-look", "h-video"][S.step - 1]).focus?.(); } catch { /* sans importance */ } }
+}
+
 /* ───────────── Les modèles ───────────── */
 function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "", watermark: false }; }   // la mention n'est jamais dans un modèle : elle suit la case
 function renderModels() {
@@ -492,7 +532,7 @@ function renderModels() {
 function loadModel(m) {
   const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
-  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok");
+  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);   // le modèle remplit tout : on arrive sur le récapitulatif, avec « Modifier » pour chaque réglage
 }
 const modelError = (text) => { $("model-error").textContent = text || ""; $("model-name").setAttribute("aria-invalid", text ? "true" : "false"); };
 async function withBusy(id, key, work) {
@@ -543,7 +583,7 @@ function syncControls() {
 function updateInfo() {
   const { stream, content } = contentNow(), s = S.scene;
   $("empty").hidden = !S.empty;
-  $("generate").disabled = !!S.job || !s || S.empty;
+  $("generate").disabled = !!S.job || !s || S.empty; $("generate-now").disabled = $("generate").disabled;
   $("fmt-note").textContent = L(S.cfg.format === "vertical" ? "format_help_vertical" : "format_help_passeport");
   $("countdown-note").textContent = content.countdown && S.cfg.elements.includes("countdown") ? L("countdown_is", { text: content.countdown }) : "";
   $("nostream").hidden = !!stream || !S.cfg.elements.some((e) => ["title", "when", "countdown", "game"].includes(e));
@@ -565,7 +605,9 @@ function bind() {
     if (!r.ok) say(errText(r.error), "error");
   });
   on("adv", "change", () => setAdvanced($("adv").checked, { remember: true }));
-  on("custom", "toggle", () => { try { document.body.classList.toggle("editing", $("custom").open === true); } catch { /* sans importance */ } });
+  for (const n of STEPS) on(`step-btn-${n}`, "click", () => setStep(n));
+  on("step-prev", "click", () => setStep(S.step - 1)); on("step-next", "click", () => setStep(S.step + 1));
+  on("generate-now", "click", () => { setStep(3, { focus: false }); generate(); });
   on("event-q", "input", onEventSearch);
   on("event-more", "click", () => loadEvents(true));
   on("event-retry", "click", async () => { const b = $("event-retry"); b.disabled = true; b.textContent = L("busy_reading"); b.setAttribute("aria-busy", "true"); await loadEvents(false, { fresh: true }); b.disabled = false; b.textContent = L("event_retry"); b.setAttribute("aria-busy", "false"); const r = S.ev; if (!S.ev.selected && !S.useManual) { const n = P.nextEvent(r.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); } });
@@ -589,10 +631,10 @@ function bind() {
 
 /* ───────────── Fabriquer la vidéo ───────────── */
 function setBusy(on) {
-  $("progress-box").hidden = !on; $("generate").disabled = on || !S.scene || S.empty;
+  $("progress-box").hidden = !on; $("generate").disabled = on || !S.scene || S.empty; $("generate-now").disabled = $("generate").disabled;
   $("generate").setAttribute("aria-busy", on ? "true" : "false"); if (!on) $("generate").textContent = L("generate");
   document.body.classList.toggle("busy", on);
-  for (const el of document.querySelectorAll("section.pick input, section.pick button, details.custom input, details.custom select, details.custom textarea, details.custom button")) el.disabled = on ? true : el.dataset.keepDisabled === "1";
+  for (const el of document.querySelectorAll(".panels input, .panels select, .panels textarea, .panels button:not(#cancel), .stepbtn, #step-prev, #step-next")) el.disabled = on ? true : el.dataset.keepDisabled === "1";
   if (!on) { renderMembers(); renderModels(); renderStreamPicker(); updateInfo(); }
 }
 async function generate() {
@@ -640,7 +682,7 @@ async function start() {
     if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
   else say(errText(data.error), "error");
-  if (PREP) { if (prep?.ok && prep.prep) applyPrep(prep.prep); else { $("prep-expired").hidden = false; } }
+  if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // une préparation de l'assistant remplit tout : on ouvre sur le récapitulatif
   syncControls();
   // Les événements de toutes les sources. L'événement déjà choisi (par une préparation) est retrouvé même s'il n'est pas dans la première page.
   const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
@@ -655,7 +697,7 @@ async function start() {
   syncControls(); renderMembers(); renderModels();
   const r = await buildScene();
   if (r) { S.scene = r.scene; S.empty = r.empty; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }
-  setPlaying(S.playing);
+  setPlaying(S.playing); renderSteps();
   refreshMembers(); // les fiches de Contacts nommées par un modèle ou une préparation : nom, pseudo et photo arrivent ensuite, sans retarder l'aperçu
   $("reduced").hidden = !REDUCED;
   requestAnimationFrame(loop);

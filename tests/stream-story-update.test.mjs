@@ -50,14 +50,14 @@ test("mise à jour 2.3.0 → 2.4.0 (éditeur refait) dans le même processus : l
     copy(path.join(here, "fixtures/stream-story-2.3.0"), dir);
     const before = (await load(dir, "v23")).default;
     const oldPage = await (await before.routes.studio(new Request("http://x/studio"), { instance: { key: "k" }, locale: "fr", t: (k) => k, setting: () => "", theme: {} })).text();
-    assert.ok(oldPage.includes('id="event-q"') && !oldPage.includes('id="custom"'), "2.3.0 : l'ancienne interface");
+    assert.ok(oldPage.includes('id="event-q"') && !oldPage.includes('id="step-btn-1"'), "2.3.0 : l'ancienne interface");
     copy(path.join(here, "../modules/stream-story"), dir);
     const after = (await load(dir, "v24")).default;
     const pure = await import(`${pathToFileURL(path.join(dir, "pure.mjs")).href}?v=v24`);
     assert.equal(typeof pure.nextEvent, "function"); assert.equal(typeof pure.isUpcoming, "function");
     const fr = JSON.parse(fs.readFileSync(path.join(dir, "locales/fr.json"), "utf8"));
     const html = await (await after.routes.studio(new Request("http://x/studio"), { instance: { key: "k" }, locale: "fr", t: (k) => fr[k] ?? k, setting: () => "", theme: {} })).text();
-    assert.ok(html.includes('id="custom"') && html.includes('id="event-change"'), "2.4.0 : la nouvelle interface est servie");
+    assert.ok(html.includes('id="step-btn-3"') && html.includes('id="generate-now"') && html.includes('id="event-change"'), "2.4.0 : l'assistant en 3 étapes est servi");
     assert.ok(html.includes("Changer d&#39;événement") || html.includes("Changer d'événement"));
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
     assert.equal(manifest.version, "2.4.0"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");

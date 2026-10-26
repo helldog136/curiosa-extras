@@ -1,5 +1,6 @@
-// Refonte ergonomique de l'éditeur (Story d'annonce 2.4.0), exécutée pour de vrai (app.mjs) dans un faux navigateur : le PROCHAIN événement (toutes sources) est choisi à l'ouverture,
-// la liste est repliée et courte, changer d'événement ne perd rien, les options avancées sont cachées tant qu'on ne les demande pas, les erreurs sont sous leur champ.
+// Refonte ergonomique de l'éditeur (Story d'annonce 2.4.0), exécutée pour de vrai (app.mjs) dans un faux navigateur : l'assistant en 3 étapes (Événement, Look, Vidéo), le PROCHAIN événement
+// (toutes sources) choisi à l'ouverture, « Générer maintenant » dès l'étape 1, la liste courte et repliée, le travail jamais perdu en changeant d'étape ou d'événement, les options avancées cachées,
+// l'ouverture sur le récapitulatif quand un modèle ou un assistant remplit tout, les erreurs sous leur champ.
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -181,15 +182,80 @@ test("une phrase par réglage, en français comme en anglais : mêmes clés, mê
   assert.deepEqual(keys(fr), keys(en));
   for (const k of keys(fr)) assert.equal(vars(fr[k]), vars(en[k]), k);
   for (const k of page.KEYS) { assert.ok(fr[`ui_${k}`], `fr ${k}`); assert.ok(en[`ui_${k}`], `en ${k}`); }
-  for (const k of ["event_next", "event_started", "event_change", "event_pick_title", "event_same", "h_custom", "adv_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding"]) assert.ok(page.KEYS.includes(k), k);
+  for (const k of ["event_next", "event_started", "event_change", "event_pick_title", "event_same", "adv_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "step_1", "step_2", "step_3", "prev", "next_look", "next_video", "gen_now", "h_video", "recap_intro", "recap_edit", "recap_edit_aria", "step_now"]) assert.ok(page.KEYS.includes(k), k);
 });
 
-test("la page : un seul bouton principal, 44 px partout, aperçu avant les réglages, « Personnaliser » et « Options avancées » repliés ou cachés", async () => {
+test("la page : trois étapes, aperçu avant les réglages dans le code, étapes 2 et 3 et options avancées cachées, barre de navigation fixe sur téléphone, 44 px, mouvement réduit", async () => {
   const html = await (await page.studioPage(mk({}), { base: "/m/story", colors: {}, timezone: "", font: "", accent: "#4f46e5", accentFg: "#ffffff" })).text();
-  assert.equal((html.match(/class="primary"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="stepbtn"/g) ?? []).length, 3, "un indicateur cliquable par étape");
+  assert.match(html, /<nav class="stepper" aria-label="Étapes">/);
+  assert.ok(html.indexOf('class="stepper"') < html.indexOf('id="preview"') && html.indexOf('id="preview"') < html.indexOf('id="step-1"'), "étapes, aperçu, puis réglages (dans le code, donc au clavier)");
+  assert.ok(html.indexOf('id="preview"') < html.indexOf('class="panels"') && !/<div class="panels">[\s\S]*id="preview"/.test(html), "l'aperçu n'est dans aucune étape : il reste là à chacune");
+  for (const id of ["step-2", "step-3", "advanced"]) assert.match(new RegExp(`<(?:section|div) id="${id}"[^>]*>`).exec(html)[0], /hidden/, id);
+  assert.doesNotMatch(/<section id="step-1"[^>]*>/.exec(html)[0], /hidden/);
+  assert.match(/<button[^>]*id="generate"[^>]*>/.exec(html)[0], /hidden/, "« Générer la vidéo » est à l'étape 3 ; « Générer maintenant » sert avant");
+  assert.ok(html.includes('id="generate-now"') && html.includes('id="step-prev"') && html.includes('id="step-next"'));
+  assert.match(html, /\.navbar\{position:fixed;left:0;right:0;bottom:0/, "les boutons restent atteignables sur téléphone");
+  assert.match(html, /\.top\{display:block;position:sticky;top:0/, "étapes et aperçu réduit collés en haut sur téléphone");
   assert.match(html, /button,a\.button\{min-height:44px\}/);
-  assert.ok(html.indexOf('id="event-chosen"') < html.indexOf('id="preview"') && html.indexOf('id="preview"') < html.indexOf('id="custom"'), "l'événement, puis l'aperçu, puis les réglages (dans le code, donc au clavier)");
-  assert.doesNotMatch(/<details id="custom"[^>]*>/.exec(html)[0], /open/); assert.match(/<div id="advanced"[^>]*>/.exec(html)[0], /hidden/);
-  assert.match(html, /\.genbar\{position:fixed;left:0;right:0;bottom:0/, "le bouton principal reste atteignable sur téléphone");
   assert.match(html, /prefers-reduced-motion:reduce/);
+});
+
+const go = async (els, id) => { els.get(id).click(); await wait(80); };
+const shown = (els) => [1, 2, 3].filter((n) => !els.get(`step-${n}`).hidden);
+
+test("l'assistant : ouverture à l'étape 1 avec « Générer maintenant » ; Suivant/Précédent et l'indicateur cliquable ; le travail n'est jamais perdu en revenant en arrière ; l'aperçu suit à chaque étape", async () => {
+  const ctx = mk({ calendar: [slot(1, 5), slot(2, 30, { games: ["Zelda"] })] });
+  const { els } = current = await boot(ctx);
+  assert.deepEqual(shown(els), [1]); assert.equal(els.get("step-btn-1").attrs["aria-current"], "step"); assert.equal(els.get("step-btn-2").attrs["aria-current"], "false");
+  assert.equal(els.get("generate-now").hidden, false, "le raccourci est là dès l'étape 1"); assert.equal(els.get("generate-now").isDisabled, false); assert.equal(els.get("generate").hidden, true);
+  assert.equal(els.get("step-prev").hidden, true); assert.equal(els.get("step-next").textContent, fr.ui_next_look);
+  await go(els, "step-next");
+  assert.deepEqual(shown(els), [2]); assert.equal(els.get("step-prev").hidden, false); assert.equal(els.get("step-next").textContent, fr.ui_next_video); assert.equal(els.get("generate-now").hidden, false);
+  assert.equal(els.get("step-live").textContent, "Étape 2 sur 3 : Look");
+  els.get("text").value = "À ce soir !"; els.get("text").fire("input"); els.get("style-minimal").checked = true; els.get("style-minimal").fire("change"); await wait(500);
+  assert.ok(drawn(els).some((t) => /soir/.test(t)), "l'aperçu se met à jour à l'étape 2");
+  await go(els, "step-next");
+  assert.deepEqual(shown(els), [3]); assert.equal(els.get("generate").hidden, false); assert.equal(els.get("generate-now").hidden, true); assert.equal(els.get("step-next").hidden, true);
+  const recap = els.get("recap").children.map((li) => li.textContent).join(" | ");
+  assert.match(recap, /Stream 1/); assert.match(recap, /Minimal/); assert.match(recap, /À ce soir !/); assert.match(recap, /Mention « Made with Curiosa »non/);
+  await go(els, "step-btn-1");   // retour direct à l'étape 1 par l'indicateur
+  els.get("event-change").click(); rowsOf(els.get("event-list"))[1].click(); await wait(700);
+  await go(els, "step-btn-2");
+  assert.equal(els.get("text").value, "À ce soir !"); assert.equal(els.get("style-minimal").checked, true, "rien n'est perdu en revenant en arrière");
+  await go(els, "step-prev"); assert.deepEqual(shown(els), [1]); assert.match(els.get("event-chosen").textContent, /Stream 2/);
+  await go(els, "step-btn-3");
+  assert.match(els.get("recap").children[0].textContent, /Stream 2/, "le récapitulatif suit l'événement changé");
+  assert.ok(drawn(els).some((t) => /Stream 2/.test(t)), "l'aperçu est toujours là à l'étape 3");
+});
+
+test("« Générer maintenant » depuis l'étape 1 : on arrive à l'étape 3 et la création démarre (ici sans encodeur : la phrase le dit) ; « Modifier » ramène à l'étape du réglage", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  const { els } = current = await boot(ctx);
+  await go(els, "generate-now"); await wait(300);
+  assert.deepEqual(shown(els), [3], "la progression et le résultat sont à l'étape 3");
+  assert.equal(els.get("status").hidden, false); assert.equal(els.get("status").textContent, fr.ui_err_unsupported, "la création a bien été lancée (ce faux navigateur ne sait pas encoder)");
+  const edit = buttons(els.get("recap")).find((b) => b.attrs["aria-label"] === "Modifier : Style");
+  edit.click(); assert.deepEqual(shown(els), [2]);
+  const evt = els.get("recap").children[0]; assert.equal(buttons(evt)[0].attrs["aria-label"], "Modifier : Événement");
+  await go(els, "step-btn-3"); buttons(els.get("recap").children[0])[0].click(); assert.deepEqual(shown(els), [1]);
+});
+
+test("un modèle ou une préparation de l'assistant remplit tout : l'éditeur s'ouvre (ou arrive) sur l'étape 3, avec « Modifier » pour chaque réglage", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  const out = await def.mcp.story_prepare(ctx, { style: "poster", text: "Prêt !", durationSeconds: 9 });
+  const { els, server } = current = await boot(ctx, { prep: new URL(out.link).searchParams.get("prep") });
+  assert.deepEqual(shown(els), [3], "ouverture sur le récapitulatif"); assert.equal(els.get("prep-note").hidden, false);
+  const recap = els.get("recap").children.map((li) => li.textContent).join(" | ");
+  assert.match(recap, /Stream 1/); assert.match(recap, /Affiche qui glisse/); assert.match(recap, /Prêt !/); assert.match(recap, /9 s/);
+  assert.equal(els.get("advanced").hidden, false, "la durée (avancée) a changé : l'étape 2 la montre");
+  server.restore();
+  const b = current = await boot(ctx);
+  assert.deepEqual(shown(b.els), [1], "sans préparation : étape 1");
+  await go(b.els, "step-btn-2");
+  b.els.get("model-name").value = "Mon modèle"; b.els.get("models-box").open = true; b.els.get("model-save").click(); await wait(500);
+  b.els.get("style-poster").checked = true; b.els.get("style-poster").fire("change");
+  const load = buttons(b.els.get("model-list")).find((x) => x.textContent === fr.ui_load); load.click(); await wait(500);
+  assert.deepEqual(shown(b.els), [3], "charger un modèle ouvre le récapitulatif");
+  assert.match(b.els.get("status").textContent, /Modèle « Mon modèle » chargé/);
 });
