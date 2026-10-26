@@ -20,7 +20,7 @@ test("manifeste : dataVersion 3, migrations 2 et 3, adresse d'avant seulement en
   assert.deepEqual(Object.keys(mod.default.migrations), ["2", "3"]);
   assert.deepEqual(manifest.legacySettings, [{ key: "icsUrl", secret: true }]);
   assert.ok(!manifest.settings.some((s) => s.key === "icsUrl"), "plus de champ visible");
-  assert.equal(manifest.requires, undefined, "aucune dépendance forte : le Planning marche sans agenda");
+  assert.deepEqual((manifest.requires ?? []).filter((r) => !r.optional), [], "aucune dépendance forte : le Planning marche sans agenda (seul le service de jaquettes est un besoin facultatif)");
   assert.equal(manifest.seeds.length, 1);
   assert.equal(manifest.seeds[0].module, "calendar-ical");
   assert.ok(manifest.seeds[0].reason.fr && manifest.seeds[0].reason.en);

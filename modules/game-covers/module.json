@@ -8,8 +8,8 @@
   },
   "version": "1.0.0",
   "description": {
-    "en": "Finds the cover picture of a video game for the other modules of your site (planning, announcement story, game suggestions). Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
-    "fr": "Trouve la jaquette d'un jeu vidéo pour les autres modules de votre site (planning, story d'annonce, suggestions de jeux). Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
+    "en": "Finds the cover picture of a video game for everything about games on your site. Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
+    "fr": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
   },
   "privacy": {
     "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the title of the game to RAWG (a video-game database), together with your RAWG key. When another module shows a cover, the visitor's browser loads the picture from RAWG, which therefore sees the visitor's address under its own privacy policy.",
@@ -85,8 +85,16 @@
       "input": {
         "type": "object",
         "properties": {
-          "title": { "type": "string", "maxLength": 120, "description": "Optional. A title from the list (or any title): also returns up to 6 candidate games from RAWG with their rawgId, year and main platforms." },
-          "search": { "type": "string", "maxLength": 100, "description": "Optional, with title: other words to look for at RAWG (for example the game's real name)." }
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Optional. A title from the list (or any title): also returns up to 6 candidate games from RAWG with their rawgId, year and main platforms."
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Optional, with title: other words to look for at RAWG (for example the game's real name)."
+          }
         }
       }
     },
@@ -96,14 +104,39 @@
       "description": "Saves the right cover for one game title, for the whole site (modules get it at once). Pass \"title\" and exactly ONE of: rawgId (the right game, chosen among the candidates of rawg_covers_to_check), none=true (no cover for this title), imageUrl (an https://media.rawg.io/media/... picture), forget=true (remove the saved correction). The cover comes from RAWG's own answer; no other address is ever used. At most 1000 corrections are kept. Changes the pictures visitors see: ask the owner before using it.",
       "input": {
         "type": "object",
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "properties": {
-          "title": { "type": "string", "maxLength": 120, "description": "The title as modules ask for it (as shown by rawg_covers_to_check)." },
-          "rawgId": { "type": "integer", "minimum": 1, "maximum": 2000000000, "description": "The RAWG id of the right game, taken from the candidates of rawg_covers_to_check." },
-          "search": { "type": "string", "maxLength": 100, "description": "Optional, with rawgId: the words used to find the candidates (when you listed them with a different search)." },
-          "none": { "type": "boolean", "description": "true: this title gets no cover at all." },
-          "imageUrl": { "type": "string", "maxLength": 400, "description": "An https://media.rawg.io/media/... picture chosen by the owner. No other address is accepted." },
-          "forget": { "type": "boolean", "description": "true: forget the saved correction of this title (the automatic choice comes back)." }
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "The title as modules ask for it (as shown by rawg_covers_to_check)."
+          },
+          "rawgId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2000000000,
+            "description": "The RAWG id of the right game, taken from the candidates of rawg_covers_to_check."
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Optional, with rawgId: the words used to find the candidates (when you listed them with a different search)."
+          },
+          "none": {
+            "type": "boolean",
+            "description": "true: this title gets no cover at all."
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "An https://media.rawg.io/media/... picture chosen by the owner. No other address is accepted."
+          },
+          "forget": {
+            "type": "boolean",
+            "description": "true: forget the saved correction of this title (the automatic choice comes back)."
+          }
         }
       }
     }
