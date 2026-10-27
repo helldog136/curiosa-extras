@@ -1,0 +1,33 @@
+{
+  "apiVersion": 2,
+  "id": "my-module",
+  "name": { "en": "My module", "fr": "Mon module" },
+  "version": "1.0.0",
+  "minCore": "0.2.14",
+  "description": {
+    "en": "Shows a short welcome message on the home page. A starting point for your own module.",
+    "fr": "Affiche un court message d'accueil sur la page d'accueil. Un point de départ pour votre propre module."
+  },
+  "author": "Your name",
+  "license": "MIT",
+  "icon": "👋",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "multiple",
+  "permissions": ["sections"],
+  "settings": [
+    {
+      "key": "message", "type": "text", "default": "Welcome!", "translatable": true,
+      "label": { "en": "Welcome message", "fr": "Message d'accueil" },
+      "help": { "en": "The sentence shown on the home page.", "fr": "La phrase affichée sur la page d'accueil." }
+    },
+    {
+      "key": "signature", "type": "text", "optional": true, "translatable": true,
+      "label": { "en": "Signature (optional)", "fr": "Signature (facultatif)" },
+      "help": { "en": "Shown under the message. Leave empty for none.", "fr": "Affichée sous le message. Laissez vide pour n'en mettre aucune." }
+    }
+  ],
+  "sections": [
+    { "id": "welcome", "size": "small", "label": { "en": "Welcome message", "fr": "Message d'accueil" } }
+  ]
+}
