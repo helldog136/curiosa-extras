@@ -4,6 +4,17 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.22.1
+
+*Un module de départ pour ceux qui veulent publier leur propre module, et des explications d'installation corrigées. Aucun module du Catalogue ne change. Pour Curiosa 0.2.10 ou plus.*
+
+### Améliorations
+
+- **Un module de départ à copier, le dossier « starter ».** Il contient tout ce qu'il faut pour publier son propre module dans son dépôt : le module, ses textes en français et en anglais, un test, des tests automatiques sur GitHub et un texte d'installation prêt à coller. Il n'est pas proposé dans le Catalogue.
+- **Les explications d'installation des deux exemples sont justes.** Le module est installé tout de suite et actif, puis on clique sur « Mettre en place ». Avant, elles parlaient d'un module « désactivé » et d'un menu qui n'existe plus.
+- **Le guide « Publier son propre module »** (dans la documentation de Curiosa) explique, de zéro, comment publier un module dans son dépôt GitHub, le tester et le faire installer.
+- Rien d'autre ne change : les modules du Catalogue gardent leur version.
+
 ## 1.22.0
 
 *Vous ajoutez vous-même un jeu à votre liste, et la vidéo d'annonce se prépare en trois étapes simples. Pour Curiosa 0.2.10 ou plus. Modules touchés : Suggestions de jeux 1.5.0 et Story d'annonce 2.5.0.*
