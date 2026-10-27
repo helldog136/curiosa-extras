@@ -323,7 +323,7 @@ function coverScreen(ctx, g) {
   return [
     { type: "heading", text: ctx.t("coverScreenTitle", { title: g.title }) },
     { type: "markdown", text: `${ctx.t(g.cover ? "coverStateHas" : "coverStateNone")}\n\n[${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})` },
-    { type: "adminForm", action: "setImage", title: ctx.t("imageTitle"), submitLabel: ctx.t("imageSubmit"), fields: [{ name: "id", kind: "hidden", value: g.id }, { name: "image", label: ctx.t("addImageLabel"), kind: "text", required: true, help: ctx.t("addImageHelp") }] },
+    { type: "adminForm", action: "setImage", title: ctx.t("imageTitle"), submitLabel: ctx.t("imageSubmit"), fields: [{ name: "id", kind: "hidden", value: g.id }, { name: "image", label: ctx.t("imageLabel"), kind: "text", required: true, help: ctx.t("addImageHelp") }] },
     linkRow(adminLink("?tab=use", ctx.t("backToList"))),
   ];
 }

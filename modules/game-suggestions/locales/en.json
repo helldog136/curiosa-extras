@@ -103,5 +103,6 @@
   "pagerLabel": "List pages",
   "pagerInfo": "Games {from} to {to} of {total}",
   "pagerPrev": "← Previous",
-  "pagerNext": "Next →"
+  "pagerNext": "Next →",
+  "imageLabel": "Image address"
 }

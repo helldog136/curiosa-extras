@@ -103,5 +103,6 @@
   "pagerLabel": "Pages de la liste",
   "pagerInfo": "Jeux {from} à {to} sur {total}",
   "pagerPrev": "← Précédents",
-  "pagerNext": "Suivants →"
+  "pagerNext": "Suivants →",
+  "imageLabel": "Adresse de l'image"
 }
