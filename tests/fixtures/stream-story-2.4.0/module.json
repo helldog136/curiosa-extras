@@ -1,0 +1,372 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.2.10",
+  "id": "stream-story",
+  "name": {
+    "en": "Announcement story",
+    "fr": "Story d'annonce"
+  },
+  "version": "2.4.0",
+  "platform": "instagram",
+  "description": {
+    "en": "Make a short animated video that announces one of your upcoming events, ready to post as an Instagram story (vertical) or a portrait post. Pick the event from one list that gathers your streams and, when they are set up, your scheduled YouTube videos and your Twitch schedule, sorted by date and time. Then pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
+    "fr": "Fabriquez une petite vidéo animée qui annonce l'un de vos prochains événements, prête à publier en story Instagram (vertical) ou en publication portrait. Choisissez l'événement dans une seule liste qui rassemble vos streams et, s'ils sont réglés, vos vidéos YouTube programmées et votre planning Twitch, triés par date et heure. Choisissez ensuite un style, ce qu'elle montre, votre propre phrase et sa durée : elle se fabrique dans votre navigateur et se télécharge comme un fichier."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📱",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "permissions": [
+    "routes",
+    "storage",
+    "admin",
+    "topics",
+    "mcp",
+    "rawg"
+  ],
+  "privacy": {
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events are read live and held in memory for under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
+    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
+  },
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Fabriquer la vidéo",
+        "en": "Make the video"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "colorAccent",
+      "type": "color",
+      "default": "theme:accent",
+      "advanced": true,
+      "label": {
+        "en": "Main color of the video",
+        "fr": "Couleur principale de la vidéo"
+      },
+      "help": {
+        "en": "By default the main color of your site.",
+        "fr": "Par défaut, la couleur principale de votre site."
+      },
+      "group": "appearance"
+    },
+    {
+      "key": "colorAccent2",
+      "type": "color",
+      "default": "theme:accent2",
+      "advanced": true,
+      "label": {
+        "en": "Second color of the video",
+        "fr": "Deuxième couleur de la vidéo"
+      },
+      "help": {
+        "en": "By default the second color of your site.",
+        "fr": "Par défaut, la deuxième couleur de votre site."
+      },
+      "group": "appearance"
+    },
+    {
+      "key": "colorBackground",
+      "type": "color",
+      "default": "theme:bg",
+      "advanced": true,
+      "label": {
+        "en": "Background of the plain style",
+        "fr": "Fond du style « Minimal »"
+      },
+      "help": {
+        "en": "Only the Minimal style uses a plain background. By default the background of your site.",
+        "fr": "Seul le style « Minimal » a un fond uni. Par défaut, le fond de votre site."
+      },
+      "group": "appearance"
+    },
+    {
+      "key": "colorText",
+      "type": "color",
+      "default": "theme:fg",
+      "advanced": true,
+      "label": {
+        "en": "Text color of the plain style",
+        "fr": "Couleur du texte du style « Minimal »"
+      },
+      "help": {
+        "en": "Made more readable automatically if it does not stand out enough on the background.",
+        "fr": "Rendue plus lisible automatiquement si elle ne ressort pas assez sur le fond."
+      },
+      "group": "appearance"
+    },
+    {
+      "key": "timezone",
+      "type": "text",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "en": "Time zone for the dates (optional)",
+        "fr": "Fuseau horaire des dates (facultatif)"
+      },
+      "help": {
+        "en": "Example: Europe/Brussels. Empty = the one of your calendar, otherwise the one of your browser.",
+        "fr": "Exemple : Europe/Brussels. Vide = celui de votre agenda, sinon celui de votre navigateur."
+      }
+    },
+    {
+      "key": "watermark",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "Add the “Made with Curiosa” mark by default",
+        "fr": "Ajouter la mention « Made with Curiosa » par défaut"
+      },
+      "help": {
+        "en": "Starting value of the tick box on the story screen (off unless you choose otherwise). Once you tick or untick that box, your last choice is remembered and used for the next stories.",
+        "fr": "Valeur de départ de la case de l'écran de création (décochée sauf choix contraire). Dès que vous cochez ou décochez cette case, votre dernier choix est retenu pour les prochaines stories."
+      }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "planning.slot",
+      "label": {
+        "en": "Your streams (from your calendars, if installed)",
+        "fr": "Vos streams (fournis par vos agendas, s'ils sont installés)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "start",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "end",
+          "type": "datetime"
+        },
+        {
+          "key": "allDay",
+          "type": "boolean"
+        },
+        {
+          "key": "day",
+          "type": "string"
+        },
+        {
+          "key": "games",
+          "type": "string[]"
+        },
+        {
+          "key": "status",
+          "type": "string"
+        },
+        {
+          "key": "timezone",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "offers": [
+    {
+      "service": "privacy.subject",
+      "each": true,
+      "label": {
+        "en": "What Story keeps about a person (export, erase, follow a merge)",
+        "fr": "Ce que Story garde d'une personne (export, effacement, suivi d'une fusion)"
+      }
+    }
+  ],
+  "requires": [
+    {
+      "service": "contact.book",
+      "min": 2,
+      "optional": true,
+      "label": {
+        "en": "Your contacts (the Contacts module): guest streamers are looked up there, with their picture. Optional: without it you can still add someone for one video only",
+        "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter quelqu'un pour une seule vidéo"
+      }
+    },
+    {
+      "service": "event.source",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "Other dated events: scheduled YouTube videos and premieres, your Twitch schedule… (any module that offers them). Optional: without them the list shows your streams only",
+        "fr": "Les autres événements datés : vidéos et directs YouTube programmés, planning Twitch… (tout module qui les propose). Facultatif : sans eux, la liste ne montre que vos streams"
+      }
+    },
+    {
+      "service": "game.cover",
+      "optional": true,
+      "label": {
+        "en": "The Game covers module: finds the cover picture of each game. Optional: without it, games are shown without a picture",
+        "fr": "Le module Jaquettes de jeux : trouve la jaquette de chaque jeu. Facultatif : sans lui, les jeux s'affichent sans image"
+      }
+    }
+  ],
+  "mcp": [
+    {
+      "name": "story_models",
+      "readOnly": true,
+      "description": "The video models the owner saved for the announcement story (a model = a style, a format, a length, the elements to show, a sentence and guest streamers (people from the owner's Contacts, or typed in for one video), saved under a name). Use it before story_prepare to reuse a model by its name. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "story_next_streams",
+      "readOnly": true,
+      "description": "The next streams found in the owner's calendar (up to 8): a 'key' (to give to story_prepare), the title, the start (UTC, ISO 8601), whether it is a whole-day event, the games and the time zone when known. 'state' is 'ok', 'empty' (no calendar installed, or nothing planned) or 'slow' (the calendar did not answer in time). Calendar only: for every kind of upcoming event (scheduled YouTube videos, Twitch schedule…) use story_events. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "story_events",
+      "readOnly": true,
+      "description": "The upcoming events the owner can make a story for, from ALL active sources (the calendar, scheduled YouTube videos and premieres, the Twitch schedule…), merged, without duplicates, sorted by date and time. Each event has a stable 'id' (to give to story_prepare as 'event'), title, start (UTC, ISO 8601), whole-day flag, time zone when known, type (stream, live, premiere, video, event), source and link. Pages of up to 50 ('next' is the cursor for the following page, at most 200 events in all); 'q' searches the titles and games; 'source' keeps one source. 'sources' says which sources answered ('ok'), need setting up ('setup') or did not answer ('down'). 'state' is 'ok', 'empty' (nothing planned) or 'slow' (no source answered). Read only.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Words to look for in the titles, games and source names."
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Keep one source only: the 'source' value of an event (for example calendar, youtube, twitch)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Events per page (1 to 50, default 20)."
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 260,
+            "description": "The 'next' value of the previous page."
+          }
+        }
+      }
+    },
+    {
+      "name": "story_prepare",
+      "default": false,
+      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The event is chosen with 'event' (an id from story_events, any source), or the stream with 'stream' ('next' by default, or a key from story_next_streams), or hand-written (streamTitle + streamDate [+ streamTime]); give only one of the three. Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Name of a saved model to start from (see story_models)."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "neon",
+              "poster",
+              "countdown",
+              "minimal"
+            ],
+            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers; minimal = plain background, letters typed one by one."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "passeport"
+            ],
+            "description": "vertical = 1080x1920 (9:16 story); passeport = 1080x1350 (4:5 portrait post)."
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 15,
+            "description": "Length of the video in seconds (5 to 15, default 15)."
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What to show, taken from: title, when, countdown, game, brand, text, costreamers. Default: all of them."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 140,
+            "description": "Optional custom sentence (up to 140 characters, up to 3 lines). Plain text only."
+          },
+          "channelName": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Optional name shown next to the logo (default: the site name)."
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "description": "Language of the words written in the video (dates and countdown)."
+          },
+          "stream": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "'next' (default) or a key given by story_next_streams."
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "An event id given by story_events (any source). Use instead of 'stream'."
+          },
+          "streamTitle": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Hand-written stream: its title (use instead of 'stream')."
+          },
+          "streamDate": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Hand-written stream: the day, written YYYY-MM-DD."
+          },
+          "streamTime": {
+            "type": "string",
+            "maxLength": 5,
+            "description": "Hand-written stream: the start time, written HH:MM (24 h). Leave out for a whole day."
+          },
+          "costreamers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 6 Twitch names (4 to 25 letters, digits or _) of guest streamers to show. A name that matches a person in the owner's Contacts is linked to that card (name and picture come from Contacts); any other name is shown for this video only."
+          },
+          "watermark": {
+            "type": "boolean",
+            "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless she chose otherwise). Never add it unless the owner asked for it."
+          }
+        }
+      }
+    }
+  ],
+  "dataVersion": 2
+}

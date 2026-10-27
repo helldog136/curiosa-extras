@@ -100,9 +100,9 @@ test("la liste : toutes les sources, triées, avec la pastille de chacune, la da
     tw: twOk([{ id: "twitch:me:1", title: "Surprise du vendredi", start: iso(13), type: "stream", games: ["Zelda"] }]),
   });
   const { els, server, html } = current = await boot(ctx);
-  assert.match(html, new RegExp(fr.ui_h_event.replace("?", "\\?")), "le titre demandé : « Pour quoi veux-tu une story ? »");
+  assert.match(html, new RegExp(fr.ui_h_event.replace("?", "\\?")), "le titre demandé : « Pour quel événement ? »");
   const rows = rowsOf(els.get("event-list"));
-  assert.equal(rows.length, 20, "20 par page");
+  assert.equal(rows.length, 5, "liste courte : 5 événements d'abord"); assert.equal(els.get("event-picker").hidden, true, "la liste est repliée : le prochain événement est déjà choisi"); assert.equal(els.get("event-search-box").hidden, false, "beaucoup d'événements : la recherche est proposée");
   assert.match(rows[0].textContent, /Planning/); assert.match(rows[0].textContent, /Stream 0/); assert.match(rows[0].textContent, /Choisi/);
   assert.equal(rows[0].attrs["aria-pressed"], "true"); assert.equal(rows[1].attrs["aria-pressed"], "false");
   const titles = rows.slice(0, 4).map((r) => /Stream \d+|Première du clip|Surprise du vendredi/.exec(r.textContent)[0]);
@@ -110,14 +110,14 @@ test("la liste : toutes les sources, triées, avec la pastille de chacune, la da
   const yt = rows[1].textContent, start = Date.parse(iso(9));
   assert.match(yt, /YouTube/); assert.match(yt, /Première/); assert.ok(yt.includes(P.formatTime(start, "Europe/Paris", "fr")), "l'heure est celle du fuseau du site");
   assert.ok(yt.includes(P.formatDay(start, "Europe/Paris", "fr")), "le jour s'écrit en toutes lettres");
-  assert.match(els.get("event-chosen").textContent, /Story pour : Stream 0/);
-  assert.match(els.get("event-count").textContent, /20 sur 32 événements/); assert.equal(els.get("event-more").hidden, false);
+  assert.match(els.get("event-chosen").textContent, /Story pour :.*Prochain événement.*Stream 0/);
+  assert.match(els.get("event-count").textContent, /5 sur 32 événements/); assert.equal(els.get("event-more").hidden, false);
   const chips = buttons(els.get("event-filter")).map((b) => b.textContent);
   assert.deepEqual(chips, ["Tout", "Planning (30)", "Twitch (1)", "YouTube (1)"]); assert.equal(els.get("event-filter").hidden, false);
   assert.match(els.get("event-sources").textContent, /YouTube : Seuls les directs et premières publics sont visibles/, "ce que YouTube ne montre pas est dit");
   assert.match(els.get("event-sources").textContent, /Les heures sont affichées pour : Europe\/Paris/);
   assert.equal(els.get("manual").hidden, true);
-  assert.ok(server.log.some(([, r]) => r === "events?limit=20"));
+  assert.ok(server.log.some(([, r]) => r === "events?limit=5"));
   assert.ok(!server.log.some(([, r]) => r.startsWith("streams")), "l'ancienne liste de streams n'est plus demandée");
   await wait(300);
   assert.ok(drawn(els).some((t) => /Stream 0/.test(t)), "la vidéo est déjà remplie avec le premier événement");
@@ -132,17 +132,17 @@ test("un clic sur un événement le choisit : la vidéo se remplit, la jaquette 
   const { els, server } = current = await boot(ctx);
   rowsOf(els.get("event-list"))[3].click();   // « Surprise du vendredi »
   await wait(700);
-  assert.match(els.get("event-chosen").textContent, /Story pour : Surprise du vendredi/);
+  assert.match(els.get("event-chosen").textContent, /Story pour :.*Surprise du vendredi/);
   assert.equal(rowsOf(els.get("event-list"))[3].attrs["aria-pressed"], "true"); assert.equal(rowsOf(els.get("event-list"))[0].attrs["aria-pressed"], "false");
   assert.ok(drawn(els).some((t) => /Surprise/.test(t)), "l'aperçu montre l'événement choisi");
   assert.ok(drawn(els).some((t) => /Zelda/.test(t)), "son jeu aussi");
   assert.equal(server.log.filter(([, r]) => r.startsWith("cover?")).length, 1, "une seule jaquette demandée"); assert.ok(server.log.some(([, r]) => r === "cover?game=Zelda"));
   assert.match(els.get("status").textContent, /Événement choisi : Surprise du vendredi/);
   els.get("event-more").click(); await wait(500);
-  assert.equal(rowsOf(els.get("event-list")).length, 40);
-  assert.ok(server.log.some(([, r]) => /^events\?limit=20&cursor=/.test(r)));
-  assert.match(els.get("event-count").textContent, /40 sur 47 événements/);
-  els.get("event-more").click(); await wait(500);
+  assert.equal(rowsOf(els.get("event-list")).length, 15, "« voir plus » ajoute 10 événements");
+  assert.ok(server.log.some(([, r]) => /^events\?limit=10&cursor=/.test(r)));
+  assert.match(els.get("event-count").textContent, /15 sur 47 événements/);
+  for (let i = 0; i < 5 && !els.get("event-more").hidden; i++) { els.get("event-more").click(); await wait(500); }
   assert.equal(rowsOf(els.get("event-list")).length, 47); assert.equal(els.get("event-more").hidden, true, "plus rien à charger");
   assert.equal(new Set(rowsOf(els.get("event-list")).map((r) => r.textContent)).size, 47, "aucun doublon");
   assert.equal(rowsOf(els.get("event-list"))[3].attrs["aria-pressed"], "true", "le choix est gardé quand la liste s'allonge");
@@ -167,19 +167,19 @@ test("recherche et filtre par source : la liste est redemandée avec les mots ta
   assert.deepEqual(rowsOf(els.get("event-list")).map((r) => /Surprise du vendredi/.exec(r.textContent)?.[0]), ["Surprise du vendredi"]);
   assert.equal(buttons(els.get("event-filter")).find((b) => b.textContent.startsWith("Twitch")).attrs["aria-pressed"], "true");
   buttons(els.get("event-filter")).find((b) => b.textContent === "Tout").click(); await wait(500);
-  assert.equal(rowsOf(els.get("event-list")).length, 12);
+  assert.equal(rowsOf(els.get("event-list")).length, 5);
 });
 
 test("une source en panne : message poli sous la liste, jamais d'erreur bloquante ; les autres événements restent choisissables ; « Réessayer » apparaît", async () => {
   const ctx = mk({ calendar: [slot(1, 6), slot(2, 30)], yt: () => { throw new Error("jeton-secret-abc"); }, tw: twOk([{ id: "twitch:me:1", title: "Surprise", start: iso(10) }]) });
   const { els } = current = await boot(ctx);
   assert.equal(rowsOf(els.get("event-list")).length, 3, "l'agenda et Twitch répondent");
-  assert.match(els.get("event-sources").textContent, /Ma chaîne ne répond pas pour l'instant/);
+  assert.match(els.get("event-alert").textContent, /Ma chaîne ne répond pas pour l'instant/, "le message est visible sans ouvrir la liste");
   assert.equal(els.get("event-retry").hidden, false);
   assert.equal(els.get("status").hidden, true, "pas de bandeau d'erreur");
   assert.ok(!JSON.stringify([...els.values()].map((e) => e.textContent)).includes("jeton-secret-abc"), "jamais le message d'une panne");
   rowsOf(els.get("event-list"))[1].click(); await wait(300);
-  assert.match(els.get("event-chosen").textContent, /Story pour : Surprise/);
+  assert.match(els.get("event-chosen").textContent, /Story pour :.*Surprise/);
   const setup = mk({ calendar: [slot(1, 6)], yt: () => ({ ok: true, source: YT, state: "setup", message: "Ajoutez votre clé YouTube dans Réglages.", events: [] }) });
   current.server.restore();
   const again = current = await boot(setup);
@@ -194,11 +194,11 @@ test("rien ne répond et rien n'est planifié : la phrase le dit, l'écriture à
     const ctx = mk({ yt: never, tw: never }); ctx.api.topics.collect = never;
     const { els } = current = await boot(ctx);
     assert.equal(rowsOf(els.get("event-list")).length, 0);
-    assert.match(els.get("event-sources").textContent, new RegExp(fr.ui_event_all_down.slice(0, 30)));
+    assert.match(els.get("event-alert").textContent, new RegExp(fr.ui_event_all_down.slice(0, 30)));
     assert.equal(els.get("manual").hidden, false, "la saisie à la main est ouverte");
     els.get("m-title").value = "Mon événement"; els.get("m-title").fire("input");
     els.get("m-date").value = "2031-03-04"; els.get("m-date").fire("input"); await wait(500);
-    assert.match(els.get("event-chosen").textContent, /Story pour : Mon événement — .*4 mars/);
+    assert.match(els.get("event-chosen").textContent, /Story pour :.*Mon événement.*4 mars.*à la main/);
     assert.ok(drawn(els).some((t) => /Mon/.test(t)));
     const empty = mk({});
     current.server.restore();
@@ -218,7 +218,7 @@ test("écrire soi-même : le bouton ouvre et ferme la saisie, la liste reste ; r
   els.get("event-manual-toggle").click();
   assert.equal(els.get("manual").hidden, true); assert.equal(rowsOf(els.get("event-list")).length, 2);
   rowsOf(els.get("event-list"))[1].click(); await wait(200);
-  assert.match(els.get("event-chosen").textContent, /Story pour : Stream 2/);
+  assert.match(els.get("event-chosen").textContent, /Story pour :.*Stream 2/);
 });
 
 test("la demande d'un assistant : l'événement choisi (identifiant + source) est retrouvé, même loin dans la liste ; un événement disparu est dit et remplacé par le prochain", async () => {
@@ -231,7 +231,7 @@ test("la demande d'un assistant : l'événement choisi (identifiant + source) es
   const pid = new URL(out.link).searchParams.get("prep");
   const { els, server } = current = await boot(ctx, { prep: pid });
   assert.ok(server.log.some(([, r]) => r.includes("id=youtube%3Av1")), "l'identifiant est redemandé à la liste");
-  assert.match(els.get("event-chosen").textContent, /Story pour : Première du clip/);
+  assert.match(els.get("event-chosen").textContent, /Story pour :.*Première du clip/);
   assert.equal(els.get("prep-note").hidden, false); assert.equal(els.get("prep-stream-gone").hidden, true);
   await wait(300);
   assert.ok(drawn(els).some((t) => /Première/.test(t)));
@@ -243,15 +243,15 @@ test("la demande d'un assistant : l'événement choisi (identifiant + source) es
   const prep = await data.savePrep(later, { config: P.cleanConfig({ eventId: "youtube:parti", eventSource: "youtube" }), manual: null });
   const b = current = await boot(later, { prep: prep.pid });
   assert.equal(b.els.get("prep-stream-gone").hidden, false);
-  assert.match(b.els.get("event-chosen").textContent, /Story pour : Stream 0/);
+  assert.match(b.els.get("event-chosen").textContent, /Story pour :.*Stream 0/);
 });
 
 test("en anglais : titre, boutons et messages sont traduits", async () => {
   const ctx = mk({ locale: "en", calendar: [slot(1, 6)], yt: () => { throw new Error("x"); } });
   const { els, html } = current = await boot(ctx);
-  assert.match(html, /What do you want a story for\?/);
-  assert.match(els.get("event-chosen").textContent, /Story for: Stream 1/);
-  assert.match(els.get("event-sources").textContent, /Ma chaîne is not answering right now/);
+  assert.match(html, /For which event\?/);
+  assert.match(els.get("event-chosen").textContent, /Story for:.*Stream 1/);
+  assert.match(els.get("event-alert").textContent, /Ma chaîne is not answering right now/);
   assert.equal(els.get("event-manual-toggle").textContent, en.ui_event_manual);
   assert.match(rowsOf(els.get("event-list"))[0].textContent, /Schedule/, "la pastille de l'agenda est traduite");
 });
