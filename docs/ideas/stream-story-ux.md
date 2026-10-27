@@ -7,7 +7,7 @@ Personne de référence (archétype, pas une vraie personne) : « Emma », créa
 
 Mesures dans Chromium sur un serveur jetable (agenda de 41 streams, YouTube et Twitch simulés, jeux avec jaquettes dont une ambiguë), à l'ouverture de l'écran.
 
-| Mesure à l'ouverture | 2.3.0, 390 px | 2.3.0, 1280 px | 2.4.0, 390 px | 2.4.0, 1280 px |
+| Mesure à l'ouverture | 2.3.0, 390 px | 2.3.0, 1280 px | 2.5.0, 390 px | 2.5.0, 1280 px |
 |---|---|---|---|---|
 | Champs de saisie visibles (cases, boutons radio, textes, listes) | 24 | 24 | **0** | **0** |
 | Boutons visibles | 31 | 31 | **5** | **5** |
@@ -59,7 +59,7 @@ Comportement de l'assistant :
 
 ## 5. Mesures (Chromium, serveur jetable, 41 streams d'agenda + YouTube + Twitch simulés)
 
-| À l'ouverture | 2.3.0 (390) | 2.3.0 (1280) | 2.4.0 B (390) | 2.4.0 B (1280) |
+| À l'ouverture | 2.3.0 (390) | 2.3.0 (1280) | 2.5.0 B (390) | 2.5.0 B (1280) |
 |---|---|---|---|---|
 | Champs de saisie visibles | 24 | 24 | **0** | **0** |
 | Boutons visibles | 31 | 31 | 8 (3 étapes, Pause, Rejouer, Changer, Suivant, Générer maintenant) | 8 |
@@ -71,3 +71,7 @@ Comportement de l'assistant :
 | Cibles < 44 px | 20 | 20 | 0 | 0 |
 
 À l'étape 2, 7 champs sont visibles (4 styles, phrase, mention, case des options avancées) ; tout ouvert, 21 (autant que l'ancien écran moins ceux de l'événement), seulement sur demande.
+
+## 6. Re-vérification sur la base 2.4.0 (jaquettes via `game.cover`), version 2.5.0
+
+Chromium, serveur jetable (cœur 0.2.14, modules Agenda, Jaquettes de jeux et Story, faux RAWG local), prochain événement = un jeu dont la jaquette est incertaine ; 390 px et 1280 px, clair et sombre, français et anglais. À l'ouverture : **0 champ de saisie, 8 boutons** aux deux largeurs ; hauteur de l'éditeur 952 px à 390 px (la ligne d'avertissement de jaquette est en plus des 852 px d'origine) et 867 px à 1280 px ; « Générer maintenant » visible sans défilement ; l'aperçu est affiché. Étape 2 : 11 champs, étape 3 : 0 champ. « Générer maintenant » produit et télécharge la vidéo. La jaquette est demandée au service `game.cover` (une seule recherche chez le faux RAWG), l'avertissement « Ce n'est pas le bon jeu ? » et son lien sont là aux étapes 1 et 3. Les gains tiennent (24 → 0 champs, 31 → 8 boutons, 6 975 → moins de 1 000 px en mobile).
