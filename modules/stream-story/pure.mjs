@@ -444,3 +444,15 @@ export function seeded(seed) {
   let a = (Number(seed) || 0) >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
+
+/** Un événement est « à venir » s'il n'a pas encore commencé ; une journée entière compte jusqu'à la fin du jour. `e` : { startMs, allDay, day }. */
+export function isUpcoming(e, nowMs, tz = "UTC") {
+  if (!e || !Number.isFinite(e.startMs)) return false;
+  if (e.allDay) return typeof e.day === "string" && e.day >= isoDay(nowMs, validZone(tz) ? tz : "UTC");
+  return e.startMs > nowMs;
+}
+/** Le prochain événement d'une liste déjà triée par date : le premier qui n'a pas commencé ; à défaut (tout est en cours), le premier. Jamais d'exception. */
+export function nextEvent(items, nowMs, tz = "UTC") {
+  const list = Array.isArray(items) ? items : [];
+  return list.find((e) => isUpcoming(e, nowMs, tz)) ?? list[0] ?? null;
+}

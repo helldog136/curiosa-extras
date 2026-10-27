@@ -44,7 +44,7 @@ const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
   ev: { items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -160,6 +160,7 @@ function setPlaying(on) {
 }
 
 /* ───────────── Les éléments de l'éditeur ───────────── */
+const FIRST_PAGE = 5, NEXT_PAGE = 10, SEARCH_FROM = 8;   // une liste courte ; la recherche n'apparaît que s'il y en a beaucoup
 const ELEMENT_KEYS = P.ELEMENTS;
 const kindOf = (k) => (P.SOURCE_KIND.test(String(k)) ? String(k) : "other");
 const typeLabel = (t) => L(`type_${["stream", "live", "premiere", "video", "event"].includes(t) ? t : "other"}`);
@@ -174,10 +175,16 @@ function whenText(e) {
 function pill(kind, label) { return h("span", { class: `src src-${kindOf(kind)}`, text: label }); }
 
 function renderEventChosen() {
-  const box = $("event-chosen"), e = selectedStream();
-  if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.textContent = m.error ? L("event_none_chosen") : L("event_manual_chosen", { title: m.title, when: whenText(m) }); return; }
+  const box = $("event-chosen"), e = selectedStream(), same = $("event-same");
+  same.hidden = true;
+  if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.replaceChildren(...(m.error ? [h("span", { text: L("event_none_chosen") })] : [h("span", { class: "lead", text: L("event_chosen") }), h("span", { class: "ttl2", text: m.title }), h("span", { class: "when", text: `${whenText(m)} (${L("event_manual_tag")})` })])); return; }
   if (!e) { box.textContent = L("event_none_chosen"); return; }
-  box.replaceChildren(h("strong", { text: L("event_chosen") }), h("span", { text: ` ${e.title || L("untitled")} — ${whenText(e)}` }));
+  const isNext = e.id === S.defaultId && P.isUpcoming(e, Date.now(), TZ), started = !P.isUpcoming(e, Date.now(), TZ);
+  box.replaceChildren(h("span", { class: "lead" }, L("event_chosen"), " ", isNext ? h("span", { class: "badge", text: L("event_next") }) : null, started ? h("span", { class: "tag", text: L("event_started") }) : null),
+    h("span", { class: "ttl2", text: e.title || L("untitled") }),
+    h("span", { class: "when" }, pill(e.source, e.sourceLabel), " ", typeLabel(e.type), " · ", whenText(e)));
+  const twins = S.ev.items.filter((x) => x.id !== e.id && x.startMs === e.startMs && x.allDay === e.allDay).slice(0, 3);
+  same.hidden = !twins.length; same.textContent = twins.length ? L("event_same", { titles: twins.map((x) => x.title || L("untitled")).join(", ") }) : "";
 }
 
 function renderFilter() {
@@ -195,26 +202,28 @@ function renderEventList() {
     const also = e.alsoIn.length ? h("span", { class: "more", text: L("event_also", { sources: e.alsoIn.map((x) => x.label).join(", ") }) }) : null;
     const on = e.id === picked || (picked && e.ids?.includes?.(picked));
     const row = h("button", { type: "button", class: "event", "aria-pressed": on ? "true" : "false", "aria-label": L("event_row", { title: e.title || L("untitled"), when: whenText(e) }), onclick: () => pickEvent(e) },
-      h("span", { class: "top" }, pill(e.source, e.sourceLabel), h("span", { text: typeLabel(e.type) }), h("span", { text: whenText(e) }), on ? h("strong", { text: L("event_picked") }) : null),
+      h("span", { class: "top" }, pill(e.source, e.sourceLabel), h("span", { text: typeLabel(e.type) }), h("span", { text: whenText(e) }), on ? h("strong", { text: L("event_picked") }) : null, P.isUpcoming(e, Date.now(), TZ) ? null : h("em", { class: "tag", text: L("event_started") })),
       h("span", { class: "ttl", text: e.title || L("untitled") }), also);
     return h("li", {}, row);
   }));
   $("event-count").textContent = E.items.length ? L("event_count", { shown: E.items.length, total: E.total }) + (E.totalAll >= 200 && !E.q && !E.source ? ` · ${L("event_capped")}` : "") : "";
-  $("event-more").hidden = !E.next; $("event-more").disabled = E.busy;
+  $("event-more").hidden = !E.next; $("event-more").disabled = E.busy; $("event-more").textContent = L(E.busy && E.more ? "busy_reading" : "event_more"); $("event-more").setAttribute("aria-busy", E.busy && E.more ? "true" : "false");
+  $("event-search-box").hidden = !(E.totalAll > SEARCH_FROM || E.q || E.source);
 }
 
 function renderNotes() {
-  const E = S.ev, box = $("event-sources"), note = $("event-note");
+  const E = S.ev, box = $("event-sources"), alert = $("event-alert"), note = $("event-note");
   note.textContent = "";
-  box.replaceChildren();
-  if (E.state === "loading") { note.textContent = L("event_loading"); return; }
+  box.replaceChildren(); alert.replaceChildren();
+  const retry = $("event-retry");
+  if (E.state === "loading") { note.textContent = L("event_loading"); retry.hidden = true; return; }
   const down = E.sources.filter((x) => x.state === "down");
-  $("event-retry").hidden = !down.length || E.state === "loading";
-  if (E.state === "slow") box.append(h("p", { class: "warn", text: L("event_all_down") }));
+  retry.hidden = !down.length;
+  if (E.state === "slow") alert.append(h("p", { class: "warn", text: L("event_all_down") }));
   else if (!E.total && !E.q && !E.source) note.textContent = L("event_none");
   else if (!E.total) note.textContent = L("event_no_match");
   for (const x of E.sources) {
-    if (x.state === "down" && E.state !== "slow") box.append(h("p", { class: "warn", text: L(x.stale ? "ev_down_stale" : "ev_down", { source: x.label }) }));
+    if (x.state === "down" && E.state !== "slow") alert.append(h("p", { class: "warn", text: L(x.stale ? "ev_down_stale" : "ev_down", { source: x.label }) }));
     else if (x.state === "setup" && x.message) box.append(h("p", { class: "warn", text: L("ev_setup", { source: x.label, message: x.message }) }));
     else if (x.state === "ok" && x.note) box.append(h("p", { class: "muted", text: L("ev_note", { source: x.label, note: x.note }) }));
   }
@@ -225,25 +234,39 @@ function renderNotes() {
 function renderEvents() {
   renderCoverWarn();
   renderEventChosen(); renderFilter(); renderEventList(); renderNotes();
+  const open = S.pickerOpen || S.useManual;
+  $("event-picker").hidden = !open;
+  $("event-change").textContent = L(open ? "event_change_close" : "event_change");
+  $("event-change").setAttribute("aria-expanded", open ? "true" : "false");
+  $("event-change").hidden = S.useManual;
+  const bare = S.ev.state !== "loading" && !S.ev.totalAll && !S.ev.q && !S.ev.source;   // rien à choisir : on va droit à la saisie, sans titre de liste ni « revenir à la liste »
+  $("h-pick").hidden = bare; $("event-list").hidden = bare; $("event-count").hidden = bare; $("event-manual-toggle").hidden = bare && S.useManual;
   $("manual").hidden = !S.useManual;
   $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
   $("event-manual-toggle").setAttribute("aria-expanded", S.useManual ? "true" : "false");
   const { error } = S.useManual ? P.manualStream(S.manual, TZ) : {};
   $("manual-error").textContent = S.useManual && error && (S.manual.title || S.manual.date) ? L(`manual_${error}`) : "";
+  for (const f of ["title", "date", "time"]) $(`m-${f}`).setAttribute("aria-invalid", S.useManual && error && (S.manual.title || S.manual.date) && error === f ? "true" : "false");
+}
+function togglePicker(on) {
+  S.pickerOpen = on ?? !S.pickerOpen;
+  renderEvents();
+  try { if (S.pickerOpen) $("h-pick").focus?.(); else $("event-change").focus?.(); } catch { /* sans importance */ }
 }
 const renderStreamPicker = renderEvents;
 
 /** Choisit un événement de la liste : la vidéo se remplit, et le choix (identifiant + source) est gardé dans les réglages de la demande. */
-function pickEvent(e, { quiet = false } = {}) {
+function pickEvent(e, { quiet = false, auto = false } = {}) {
   S.useManual = false;
   S.ev.selected = { ...e, cover: "" };
+  if (auto) S.defaultId = e.id;
   S.cfg.eventId = e.id; S.cfg.eventSource = kindOf(e.source); S.cfg.streamKey = e.legacyKey || "";
   S.ev.coverState = ""; S.ev.coverAmbiguous = false;
+  const wasOpen = S.pickerOpen; S.pickerOpen = false;
   renderEvents(); rebuild();
   if (!quiet) {
     say(L("event_ready", { title: e.title || L("untitled") }), "ok");
-    // Sur téléphone l'aperçu est tout en haut : on y emmène la personne, bouton « Générer la vidéo » en vue. Sur grand écran il reste visible à droite.
-    try { if (matchMedia("(max-width: 719px)").matches) document.querySelector?.(".previewcol")?.scrollIntoView?.({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); } catch { /* sans importance */ }
+    try { if (wasOpen) $("event-change").focus?.(); } catch { /* sans importance */ }   // le travail en cours (style, phrase, co-streamers…) n'est pas touché : seul l'événement change
   }
   if (e.games?.[0]) loadCover(e);
 }
@@ -259,20 +282,21 @@ async function loadCover(e) {
 const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title)}`;
 /** Avant de fabriquer la vidéo : si la jaquette est peut-être celle d'un autre jeu, on le dit, avec le lien. Ne bloque jamais la vidéo. */
 function renderCoverWarn() {
-  const E = S.ev, box = $("cover-warn");
-  box.replaceChildren();
+  const E = S.ev, boxes = [$("cover-warn"), $("cover-warn-3")];
   const show = !S.useManual && E.coverAmbiguous && E.coverTitle && E.selected?.games?.length && S.cfg.elements.includes("game");
-  box.hidden = !show;
-  if (!show) return;
-  box.append(h("span", { text: `${L(E.coverFound ? "cover_ambiguous_named" : "cover_ambiguous", { game: E.coverTitle, found: E.coverFound })} ` }),
-    h("a", { href: wrongCoverHref(E.coverTitle), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
+  for (const box of boxes) {
+    box.replaceChildren(); box.hidden = !show;
+    if (!show) continue;
+    box.append(h("span", { text: `${L(E.coverFound ? "cover_ambiguous_named" : "cover_ambiguous", { game: E.coverTitle, found: E.coverFound })} ` }),
+      h("a", { href: wrongCoverHref(E.coverTitle), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
+  }
 }
 
 /** Lit la liste (`more` : la page suivante). Les réponses arrivées en retard d'une recherche précédente sont ignorées. */
 async function loadEvents(more, { fresh = false, id = "", key = "" } = {}) {
   const E = S.ev, mine = ++E.seq;
-  E.busy = true; if (!more) { E.state = E.items.length ? E.state : "loading"; } renderEventList(); renderNotes();
-  const qs = new URLSearchParams({ limit: "20" });
+  E.busy = true; E.more = !!more; if (!more) { E.state = E.items.length ? E.state : "loading"; } renderEventList(); renderNotes();
+  const qs = new URLSearchParams({ limit: String(more ? NEXT_PAGE : FIRST_PAGE) });
   if (E.q) qs.set("q", E.q);
   if (E.source) qs.set("source", E.source);
   if (more && E.next) qs.set("cursor", E.next);
@@ -329,6 +353,7 @@ function renderChosen() {
     return personRow(m, remove);
   });
   $("chosen").replaceChildren(...(rows.length ? rows : [h("li", { class: "muted", text: L("members_none") })]));
+  $("members-count").textContent = S.cfg.costreamers.length ? `(${S.cfg.costreamers.length})` : "";
   $("members-note").textContent = isFull() ? L("members_max", { n: P.LIMITS.costreamers }) : "";
 }
 function renderResults() {
@@ -353,6 +378,7 @@ function renderSaved() {
 function renderMembers() {
   $("book-box").hidden = S.contacts !== "ok"; $("book-absent").hidden = S.contacts !== "absent";
   renderChosen(); renderResults(); renderCategory(); renderSaved();
+  if (S.step === 3) renderRecap();
 }
 
 /** Relit les fiches de Contacts nommées par la vidéo (modèle chargé, préparation de l'IA) : nom, pseudo, photo. Une fiche fusionnée est suivie, une fiche effacée est signalée. */
@@ -439,7 +465,8 @@ async function addFirstOfCategory() {
 /* Une personne « pour cette vidéo seulement » : le serveur remet la saisie en ordre (et refuse une photo qu'il ne saurait pas relayer) ; rien n'est enregistré dans Contacts. */
 async function addAdhoc() {
   $("a-error").textContent = "";
-  const r = await api("act", { method: "POST", body: { op: "adhoc.check", login: $("a-login").value, name: $("a-name").value, image: $("a-image").value.trim() } });
+  const r = await withBusy("adhoc-add", "busy_adding", () => api("act", { method: "POST", body: { op: "adhoc.check", login: $("a-login").value, name: $("a-name").value, image: $("a-image").value.trim() } }));
+  for (const id of ["a-login", "a-name", "a-image"]) $(id).setAttribute("aria-invalid", !r.ok ? "true" : "false");
   if (!r.ok) { $("a-error").textContent = errText(r.error); return; }
   if (!addEntry(r.entry)) { say(L("members_max", { n: P.LIMITS.costreamers }), "error"); return; }
   for (const id of ["a-login", "a-name", "a-image"]) $(id).value = "";
@@ -449,6 +476,44 @@ async function removeSaved(m) {
   const r = await api("act", { method: "POST", body: { op: "adhoc.remove", id: m.id } });
   if (!r.ok) return say(errText(r.error), "error");
   S.adhoc = S.adhoc.filter((x) => x.id !== m.id); renderSaved();
+}
+
+/* ───────────── Les trois étapes ───────────── */
+const STEPS = [1, 2, 3];
+const stepName = (n) => L(`step_${n}`);
+/** Résumé de l'étape 3 : chaque ligne a son bouton « Modifier » qui ramène à l'étape où elle se règle (rien n'est perdu : les étapes gardent leur état). */
+function renderRecap() {
+  const e = selectedStream(), people = S.cfg.costreamers.length;
+  const fmt = P.formatOf(S.cfg.format), rows = [
+    [1, L("recap_event"), e ? `${e.title || L("untitled")} · ${whenText(e)}` : L("event_none_chosen")],
+    [2, L("recap_style"), L(`style_${S.cfg.style}`)],
+    [2, L("recap_format"), `${L(`format_${fmt.id}`)} · ${L("seconds", { n: S.cfg.duration })}`],
+    [2, L("recap_text"), S.cfg.text ? S.cfg.text : L("recap_none_f")],
+    [2, L("recap_mark"), L(S.cfg.watermark === true ? "recap_yes" : "recap_no")],
+    [2, L("recap_people"), people ? S.cfg.costreamers.map((x) => { const m = viewOf(x); return m.name || m.login; }).filter(Boolean).join(", ") || String(people) : L("recap_none")],
+  ];
+  $("recap").replaceChildren(...rows.map(([n, what, value]) => h("li", {}, h("span", { class: "what" }, h("small", { text: what }), h("span", { text: value })),
+    h("button", { type: "button", text: L("recap_edit"), "aria-label": L("recap_edit_aria", { what }), onclick: () => setStep(n) }))));
+}
+function renderSteps() {
+  for (const n of STEPS) {
+    const sec = $(`step-${n}`), btn = $(`step-btn-${n}`);
+    sec.hidden = S.step !== n;
+    btn.setAttribute("aria-current", S.step === n ? "step" : "false");
+    btn.className = `stepbtn${S.visited.has(n) && S.step !== n ? " done" : ""}`;
+  }
+  const last = S.step === 3;
+  $("step-prev").hidden = S.step === 1; $("step-next").hidden = last; $("generate").hidden = !last; $("generate-now").hidden = last;
+  $("step-next").textContent = L(S.step === 1 ? "next_look" : "next_video");
+  if (last) renderRecap();
+}
+function setStep(n, { focus = true } = {}) {
+  if (S.job) return;
+  S.step = Math.min(3, Math.max(1, n)); S.visited.add(S.step);
+  renderSteps();
+  $("step-live").textContent = L("step_now", { n: S.step, name: stepName(S.step) });
+  try { globalThis.scrollTo?.({ top: 0, behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
+  if (focus) { try { $(["h-event", "h-look", "h-video"][S.step - 1]).focus?.(); } catch { /* sans importance */ } }
 }
 
 /* ───────────── Les modèles ───────────── */
@@ -467,13 +532,19 @@ function renderModels() {
 function loadModel(m) {
   const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
-  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok");
+  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);   // le modèle remplit tout : on arrive sur le récapitulatif, avec « Modifier » pour chaque réglage
+}
+const modelError = (text) => { $("model-error").textContent = text || ""; $("model-name").setAttribute("aria-invalid", text ? "true" : "false"); };
+async function withBusy(id, key, work) {
+  const b = $(id), label = b.textContent; b.disabled = true; b.textContent = L(key); b.setAttribute("aria-busy", "true");
+  try { return await work(); } finally { b.disabled = false; b.textContent = label; b.setAttribute("aria-busy", "false"); }
 }
 async function saveModel() {
+  modelError("");
   const name = $("model-name").value, clash = S.models.find((m) => m.name.toLowerCase() === P.oneLine(name, 60).toLowerCase());
   if (clash) { S.confirm = { kind: "model-replace", id: clash.id }; renderModels(); return say(L("model_exists", { name: clash.name }), "error"); }
-  const r = await api("act", { method: "POST", body: { op: "model.save", name, config: configForModel() } });
-  if (!r.ok) return say(errText(r.error), "error");
+  const r = await withBusy("model-save", "busy_saving", () => api("act", { method: "POST", body: { op: "model.save", name, config: configForModel() } }));
+  if (!r.ok) return r.error === "name" || r.error === "exists" ? modelError(errText(r.error)) : say(errText(r.error), "error");
   S.models = r.items; $("model-name").value = ""; say(L("model_saved"), "ok"); renderModels();
 }
 async function replaceModel(m) {
@@ -490,6 +561,15 @@ async function removeModel(m) {
 }
 
 /* ───────────── Les réglages visibles ───────────── */
+const ADV_KEY = "story-advanced";
+function advancedUsed() {
+  const d = P.DEFAULT_CONFIG, c = S.cfg;
+  return c.elements.join() !== d.elements.join() || c.format !== d.format || c.duration !== d.duration || !!c.channelName || c.lang !== (C.lang === "en" ? "en" : "fr");
+}
+function setAdvanced(on, { remember = false } = {}) {
+  S.advanced = !!on; $("adv").checked = S.advanced; $("advanced").hidden = !S.advanced;
+  if (remember) { try { localStorage.setItem(ADV_KEY, S.advanced ? "1" : "0"); } catch { /* sans importance */ } }
+}
 function syncControls() {
   for (const e of ELEMENT_KEYS) $(`el-${e}`).checked = S.cfg.elements.includes(e);
   for (const st of P.STYLES) $(`style-${st}`).checked = S.cfg.style === st;
@@ -497,12 +577,13 @@ function syncControls() {
   $("duration").value = S.cfg.duration; $("duration-out").textContent = L("seconds", { n: S.cfg.duration });
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
   $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang; $("watermark").checked = S.cfg.watermark === true;
+  if (advancedUsed() && !S.advanced) setAdvanced(true);   // un réglage avancé déjà modifié (modèle, assistant) ne reste jamais caché
   renderStreamPicker();
 }
 function updateInfo() {
   const { stream, content } = contentNow(), s = S.scene;
   $("empty").hidden = !S.empty;
-  $("generate").disabled = !!S.job || !s || S.empty;
+  $("generate").disabled = !!S.job || !s || S.empty; $("generate-now").disabled = $("generate").disabled;
   $("fmt-note").textContent = L(S.cfg.format === "vertical" ? "format_help_vertical" : "format_help_passeport");
   $("countdown-note").textContent = content.countdown && S.cfg.elements.includes("countdown") ? L("countdown_is", { text: content.countdown }) : "";
   $("nostream").hidden = !!stream || !S.cfg.elements.some((e) => ["title", "when", "countdown", "game"].includes(e));
@@ -523,9 +604,15 @@ function bind() {
     const r = await api("act", { method: "POST", body: { op: "prefs.watermark", watermark: S.cfg.watermark } });
     if (!r.ok) say(errText(r.error), "error");
   });
+  on("adv", "change", () => setAdvanced($("adv").checked, { remember: true }));
+  for (const n of STEPS) on(`step-btn-${n}`, "click", () => setStep(n));
+  on("step-prev", "click", () => setStep(S.step - 1)); on("step-next", "click", () => setStep(S.step + 1));
+  on("generate-now", "click", () => { setStep(3, { focus: false }); generate(); });
   on("event-q", "input", onEventSearch);
   on("event-more", "click", () => loadEvents(true));
-  on("event-retry", "click", () => loadEvents(false, { fresh: true }));
+  on("event-retry", "click", async () => { const b = $("event-retry"); b.disabled = true; b.textContent = L("busy_reading"); b.setAttribute("aria-busy", "true"); await loadEvents(false, { fresh: true }); b.disabled = false; b.textContent = L("event_retry"); b.setAttribute("aria-busy", "false"); const r = S.ev; if (!S.ev.selected && !S.useManual) { const n = P.nextEvent(r.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); } });
+  on("event-change", "click", () => togglePicker());
+  on("event-picker", "keydown", (e) => { if (e.key === "Escape" && S.pickerOpen && !S.useManual) { e.preventDefault?.(); togglePicker(false); } });
   on("event-manual-toggle", "click", () => { S.useManual = !S.useManual; if (S.useManual) { S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; } renderEvents(); rebuild(); });
   for (const f of ["title", "date", "time"]) on(`m-${f}`, "input", () => { S.manual[f] = $(`m-${f}`).value; renderStreamPicker(); rebuild(); });
   on("play", "click", () => setPlaying(!S.playing));
@@ -544,9 +631,10 @@ function bind() {
 
 /* ───────────── Fabriquer la vidéo ───────────── */
 function setBusy(on) {
-  $("progress-box").hidden = !on; $("generate").disabled = on || !S.scene || S.empty;
+  $("progress-box").hidden = !on; $("generate").disabled = on || !S.scene || S.empty; $("generate-now").disabled = $("generate").disabled;
+  $("generate").setAttribute("aria-busy", on ? "true" : "false"); if (!on) $("generate").textContent = L("generate");
   document.body.classList.toggle("busy", on);
-  for (const el of document.querySelectorAll("#controls input, #controls select, #controls textarea, #controls button")) el.disabled = on ? true : el.dataset.keepDisabled === "1";
+  for (const el of document.querySelectorAll(".panels input, .panels select, .panels textarea, .panels button:not(#cancel), .stepbtn, #step-prev, #step-next")) el.disabled = on ? true : el.dataset.keepDisabled === "1";
   if (!on) { renderMembers(); renderModels(); renderStreamPicker(); updateInfo(); }
 }
 async function generate() {
@@ -560,9 +648,9 @@ async function generate() {
   const ctl = new AbortController();
   S.job = ctl; setBusy(true); say("", "");
   const prevPlaying = S.playing; setPlaying(false);
-  $("progress").value = 0; $("progress-text").textContent = L("progress_start");
+  $("progress").value = 0; $("progress-text").textContent = L("progress_start"); $("generate").textContent = L("busy_generate", { pct: 0 });
   try {
-    const out = await renderVideo({ scene, caps, env, signal: ctl.signal, onProgress: (f, phase) => { $("progress").value = f; $("progress-text").textContent = phase === "finish" ? L("progress_finish") : L("progress", { pct: Math.round(f * 100) }); } });
+    const out = await renderVideo({ scene, caps, env, signal: ctl.signal, onProgress: (f, phase) => { $("progress").value = f; $("generate").textContent = phase === "finish" ? L("progress_finish") : L("busy_generate", { pct: Math.round(f * 100) }); $("progress-text").textContent = phase === "finish" ? L("progress_finish") : L("progress", { pct: Math.round(f * 100) }); } });
     const blob = out.blob ?? new Blob([out.bytes], { type: out.mime });
     const { stream } = contentNow();
     const name = P.fileName({ startMs: stream?.startMs, tz: zoneOf(stream), format: S.cfg.format, lang: S.cfg.lang, ext: out.ext, nowMs: Date.now() });
@@ -571,6 +659,7 @@ async function generate() {
     resultBox.replaceChildren(...[h("p", { class: "ok", text: L("done", { name, size: (blob.size / 1048576).toFixed(1) }) }), link,
       out.mime !== "video/mp4" ? h("p", { class: "warn", text: L("webm_notice") }) : null, out.mode === "recorder" ? h("p", { class: "muted", text: L("recorder_notice") }) : null].filter(Boolean));
     resultBox.hidden = false; link.click();
+    try { resultBox.scrollIntoView?.({ block: "nearest", behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
   } catch (e) {
     say(e?.code === "aborted" ? L("cancelled") : e?.code === "unsupported" ? L("err_unsupported") : L("err_encoder"), e?.code === "aborted" ? "" : "error");
   } finally { S.job = null; setBusy(false); setPlaying(prevPlaying); rebuild(); }
@@ -584,6 +673,7 @@ function applyPrep(prep) {
 }
 async function start() {
   if (!TOKEN) { $("app").hidden = true; $("noaccess").hidden = false; return; }
+  try { if (localStorage.getItem(ADV_KEY) === "1") setAdvanced(true); } catch { /* sans importance */ }
   bind(); syncControls(); renderMembers(); renderModels();
   const [data, prep] = await Promise.all([api("data"), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
@@ -593,22 +683,22 @@ async function start() {
     if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
   else say(errText(data.error), "error");
-  if (PREP) { if (prep?.ok && prep.prep) applyPrep(prep.prep); else { $("prep-expired").hidden = false; } }
+  if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // une préparation de l'assistant remplit tout : on ouvre sur le récapitulatif
   syncControls();
   // Les événements de toutes les sources. L'événement déjà choisi (par une préparation) est retrouvé même s'il n'est pas dans la première page.
   const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
   const ev = await loadEvents(false, { id: wantId, key: wantKey });
   if (ev?.error === "auth") return;
-  const first = S.ev.items[0] ?? null;
-  if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true });
+  const first = P.nextEvent(S.ev.items, Date.now(), TZ);   // le PROCHAIN à venir (pas un événement déjà commencé), toutes sources confondues
+  if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true, auto: ev.selected.id === first?.id });
   else {
     if (wantId || wantKey) { if (first) $("prep-stream-gone").hidden = false; }
-    if (first) pickEvent(first, { quiet: true }); else { S.useManual = true; S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; renderEvents(); }
+    if (first) pickEvent(first, { quiet: true, auto: true }); else { S.useManual = true; S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; renderEvents(); }
   }
   syncControls(); renderMembers(); renderModels();
   const r = await buildScene();
   if (r) { S.scene = r.scene; S.empty = r.empty; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }
-  setPlaying(S.playing);
+  setPlaying(S.playing); renderSteps();
   refreshMembers(); // les fiches de Contacts nommées par un modèle ou une préparation : nom, pseudo et photo arrivent ensuite, sans retarder l'aperçu
   $("reduced").hidden = !REDUCED;
   requestAnimationFrame(loop);
