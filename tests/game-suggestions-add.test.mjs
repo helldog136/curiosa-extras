@@ -198,7 +198,7 @@ test("écran « Jaquette… » d'une ligne : lien « Ce n'est pas le bon jeu ? �
   const md = panel.filter((b) => b.type === "markdown").map((b) => b.text).join("\n");
   assert.ok(md.includes(`](${mod.wrongCoverHref("Zelda (Tears) & l'été !")})`) && md.includes("Ce n'est pas le bon jeu ?"));
   const table = panel.find((b) => b.type === "table");
-  assert.ok(table.rowActions.some((a) => a.href === "?jaquette={id}"));
+  assert.ok(table.rowActions.some((a) => a.href === "?tab=use&jaquette={id}"));
   const f = panel.find((b) => b.action === "setImage");
   assert.deepEqual(f.fields.map((x) => x.name), ["id", "image"]);
   assert.match((await def.adminActions.setImage(c, { id: g.id, image: "nope" })).errors.image, /https:\/\//);
@@ -257,11 +257,11 @@ test("pagination du tableau d'admin : 50 par page, liens en mode conservé, page
   const p1 = await def.adminPanel(c, { query: {} });
   assert.equal(p1.find((b) => b.type === "table").rows.length, 50);
   const nav = p1.find((b) => b.type === "html" && /Jeux/.test(b.html)).html;
-  assert.match(nav, /Jeux 1 à 50 sur 120/); assert.match(nav, /href="\?page=2"/); assert.ok(!/Précédents/.test(nav));
+  assert.match(nav, /Jeux 1 à 50 sur 120/); assert.match(nav, /href="\?tab=use&amp;page=2"/); assert.ok(!/Précédents/.test(nav));
   const p3 = await def.adminPanel(c, { query: { page: "3", ajout: "plusieurs" } });
   assert.equal(p3.find((b) => b.type === "table").rows.length, 20);
   const nav3 = p3.find((b) => b.type === "html" && /Jeux/.test(b.html)).html;
-  assert.match(nav3, /Jeux 101 à 120 sur 120/); assert.match(nav3, /href="\?page=2&amp;ajout=plusieurs"/); assert.ok(!/Suivants/.test(nav3));
+  assert.match(nav3, /Jeux 101 à 120 sur 120/); assert.match(nav3, /href="\?tab=use&amp;page=2&amp;ajout=plusieurs"/); assert.ok(!/Suivants/.test(nav3));
   assert.equal((await def.adminPanel(c, { query: { page: "99" } })).find((b) => b.type === "table").rows.length, 20);
   assert.equal((await def.adminPanel(c, { query: { page: "abc" } })).find((b) => b.type === "table").rows.length, 50);
 });

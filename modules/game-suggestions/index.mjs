@@ -301,7 +301,7 @@ function addBlocks(ctx, mode) {
   if (mode === "plusieurs") {
     return [
       { type: "adminForm", action: "addGames", title: ctx.t("manyTitle"), submitLabel: ctx.t("manySubmit"), fields: [{ name: "titles", label: ctx.t("manyLabel"), kind: "textarea", required: true, help: ctx.t("manyHelp", { max: MAX_BATCH }) }, statusField] },
-      linkRow(adminLink("?", ctx.t("linkOne"))),
+      linkRow(adminLink("?tab=use", ctx.t("linkOne"))),
     ];
   }
   return [
@@ -314,7 +314,7 @@ function addBlocks(ctx, mode) {
         ...(mode === "image" ? [{ name: "image", label: ctx.t("addImageLabel"), kind: "text", help: ctx.t("addImageHelp") }] : []),
       ],
     },
-    linkRow(adminLink("?ajout=plusieurs", ctx.t("linkMany")) + (mode === "image" ? adminLink("?", ctx.t("linkNoImage")) : adminLink("?ajout=image", ctx.t("linkImage")))),
+    linkRow(adminLink("?tab=use&ajout=plusieurs", ctx.t("linkMany")) + (mode === "image" ? adminLink("?tab=use", ctx.t("linkNoImage")) : adminLink("?tab=use&ajout=image", ctx.t("linkImage")))),
   ];
 }
 
@@ -324,12 +324,12 @@ function coverScreen(ctx, g) {
     { type: "heading", text: ctx.t("coverScreenTitle", { title: g.title }) },
     { type: "markdown", text: `${ctx.t(g.cover ? "coverStateHas" : "coverStateNone")}\n\n[${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})` },
     { type: "adminForm", action: "setImage", title: ctx.t("imageTitle"), submitLabel: ctx.t("imageSubmit"), fields: [{ name: "id", kind: "hidden", value: g.id }, { name: "image", label: ctx.t("addImageLabel"), kind: "text", required: true, help: ctx.t("addImageHelp") }] },
-    linkRow(adminLink("?", ctx.t("backToList"))),
+    linkRow(adminLink("?tab=use", ctx.t("backToList"))),
   ];
 }
 
 function pager(ctx, page, pages, total, mode) {
-  const to = (p) => `?page=${p}${mode ? `&ajout=${mode}` : ""}`;
+  const to = (p) => `?tab=use&page=${p}${mode ? `&ajout=${mode}` : ""}`;
   const from = (page - 1) * PAGE_SIZE + 1;
   return `<nav aria-label="${esc(ctx.t("pagerLabel"))}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span>${esc(ctx.t("pagerInfo", { from, to: Math.min(total, page * PAGE_SIZE), total }))}</span>` +
     (page > 1 ? adminLink(to(page - 1), ctx.t("pagerPrev")) : "") + (page < pages ? adminLink(to(page + 1), ctx.t("pagerNext")) : "") + `</nav>`;
@@ -451,7 +451,7 @@ export default {
         type: "table", columns: [ctx.t("colDate"), ctx.t("colGame"), ctx.t("colCover"), ctx.t("colBy"), ctx.t("colStatus"), ctx.t("colVotes")],
         rows: slice.map((g) => [new Date(g.at).toISOString().slice(0, 10), g.title, g.cover ? "✓" : "—", g.origin === "admin" ? ctx.t("byAdmin") : g.by, ctx.t(`status_${g.status}`), String(g.votes)]),
         rowIds: slice.map((g) => g.id),
-        rowActions: [...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}` })), { label: ctx.t("rowCover"), href: "?jaquette={id}" }, { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }],
+        rowActions: [...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}` })), { label: ctx.t("rowCover"), href: "?tab=use&jaquette={id}" }, { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }],
       },
       ...(pages > 1 ? [{ type: "html", html: pager(ctx, page, pages, list.length, mode) }] : []),
       ...coverBlocks,
