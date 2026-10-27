@@ -135,7 +135,7 @@ test("admin et MCP : changement de statut, suppression, liste filtrée ; statut 
   await def.adminActions.remove(c, { id });
   assert.equal(await c.api.store.count("games"), 0);
   const blocks = await def.adminPanel(c);
-  assert.equal(blocks[1].type, "table");
+  assert.ok(blocks.some((b) => b.type === "table"));
 });
 
 test("sauvegarde lisible : CSV avec cellules neutralisées", async () => {

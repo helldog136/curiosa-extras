@@ -87,7 +87,6 @@
   "errRoom_one": "Il ne reste de la place que pour 1 jeu (la liste en garde {max} au plus). Retirez des lignes ou supprimez des jeux dans le tableau.",
   "okAdded": "« {title} » est dans la liste ({status}).",
   "okAddedMany": "{n} jeux ajoutés ({status}).",
-  "okAddedMany_one": "1 jeu ajouté ({status}).",
   "coverFound": "La jaquette a été trouvée toute seule.",
   "coverNone": "Aucune jaquette trouvée : vous pouvez choisir l'image vous-même (bouton « Jaquette… » sur sa ligne).",
   "coverLater": "La jaquette sera cherchée un peu plus tard, toute seule.",

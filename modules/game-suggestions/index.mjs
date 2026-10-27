@@ -286,7 +286,7 @@ export async function addGames(ctx, { lines, status, note = "", image = "", fiel
 function addedMessage(ctx, r) {
   const status = ctx.t(`status_${r.status}`);
   if (r.added === 1) return `${ctx.t("okAdded", { title: r.titles[0], status })} ${ctx.t({ manual: "coverManual", found: "coverFound", none: "coverNone", later: "coverLater" }[r.cover])}`;
-  return `${plural(ctx, "okAddedMany", r.added, { status })} ${ctx.t("coversFoundMany", { found: r.found })}`;
+  return `${ctx.t("okAddedMany", { n: r.added, status })} ${ctx.t("coversFoundMany", { found: r.found })}`;
 }
 const firstError = (r) => r.error ?? Object.values(r.errors ?? {})[0];
 

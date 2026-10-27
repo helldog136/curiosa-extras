@@ -87,7 +87,6 @@
   "errRoom_one": "There is only room for 1 more game (the list keeps {max} at most). Remove some lines or delete games in the table.",
   "okAdded": "\"{title}\" is in the list ({status}).",
   "okAddedMany": "{n} games added ({status}).",
-  "okAddedMany_one": "1 game added ({status}).",
   "coverFound": "The cover was found by itself.",
   "coverNone": "No cover found: you can pick the image yourself (\"Cover...\" button on its row).",
   "coverLater": "The cover will be looked up a little later, by itself.",
