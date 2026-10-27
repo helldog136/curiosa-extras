@@ -8,8 +8,8 @@
   "version": "1.5.0",
   "minCore": "0.2.10",
   "description": {
-    "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played. You can also add games to the list yourself (one, or a whole list). Covers come from the \"Game covers\" module.",
-    "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste (un seul ou toute une liste). Les jaquettes viennent du module « Jaquettes de jeux »."
+    "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played. You can also add games to the list yourself, one at a time or a whole list. Covers are found automatically.",
+    "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
   },
   "author": "Helldog136",
   "privacy": {
