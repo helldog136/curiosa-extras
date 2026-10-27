@@ -1,0 +1,33 @@
+name: Tests
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+# Le module est testé contre la DERNIÈRE version publiée de Curiosa (la dernière étiquette vX.Y.Z de son dépôt), celle que les sites installent.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trouver la dernière version publiée de Curiosa
+        id: core
+        run: |
+          ref=$(git ls-remote --tags --refs https://github.com/helldog136/Curiosa 'refs/tags/v*' | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          test -n "$ref" || { echo "Aucune version publiée de Curiosa trouvée"; exit 1; }
+          echo "Curiosa testé : $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: helldog136/Curiosa
+          ref: ${{ steps.core.outputs.ref }}
+          path: curiosa-core
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Préparer le kit de test (sans lancer le site)
+        run: npm ci --omit=dev --ignore-scripts && npx prisma generate
+        working-directory: curiosa-core
+      - name: Rapport de conformité (lisible)
+        run: node curiosa-core/testsupport/check.mjs .
+      - name: Tests
+        run: npm test
+        env: { CURIOSA_DIR: curiosa-core }

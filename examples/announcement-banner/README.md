@@ -5,13 +5,9 @@ C'est le plus petit module utile : `module.json` + `index.mjs`.
 
 ## Installer
 
-Dans l'admin : **Modules → Installer un module**, puis l'adresse de ce dépôt :
+Dans l'admin : **Extensions → Catalogue** → « Bannière d'annonce » → **Installer sur mon site**. Le module est installé et actif ; cliquez sur **Mettre en place** pour créer la bannière, puis réglez-la.
 
-```
-https://github.com/<vous>/<ce-depot>
-```
-
-Le module s'installe *désactivé*. Activez-le, puis configurez-le depuis son entrée dans le menu.
+(Un module d'un dépôt personnel, lui, s'installe par **Installer un dépôt personnel (non vérifié)**, en mode avancé : `https://github.com/<vous>/<depot>#v1.0.0`.)
 
 ## Fichiers
 

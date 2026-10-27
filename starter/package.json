@@ -1,0 +1,11 @@
+{
+  "name": "my-curiosa-module",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Module de départ pour Curiosa. Aucune dépendance : le fichier est chargé tel quel par le site.",
+  "scripts": {
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/*.test.mjs",
+    "check": "node \"$CURIOSA_DIR/testsupport/check.mjs\" ."
+  }
+}
