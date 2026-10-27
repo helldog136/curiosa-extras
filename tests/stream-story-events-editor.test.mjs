@@ -94,9 +94,10 @@ beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 300, provider
 afterEach(() => { current?.server.restore(); current = null; Object.assign(src.timing, timing0); });
 
 test("la liste : toutes les sources, triées, avec la pastille de chacune, la date dans le fuseau du site, la note honnête de YouTube ; le premier événement est déjà choisi", async () => {
+  const premiereAt = iso(9); // calculée une seule fois : sinon un changement de minute entre deux appels fausse la comparaison de l'heure
   const ctx = mk({
     calendar: Array.from({ length: 30 }, (_, i) => slot(i, 4 + i * 6, i === 0 ? { games: ["Hades"] } : {})),
-    yt: ytOk([{ id: "youtube:v1", title: "Première du clip", start: iso(9), type: "premiere", url: "https://www.youtube.com/watch?v=v1" }]),
+    yt: ytOk([{ id: "youtube:v1", title: "Première du clip", start: premiereAt, type: "premiere", url: "https://www.youtube.com/watch?v=v1" }]),
     tw: twOk([{ id: "twitch:me:1", title: "Surprise du vendredi", start: iso(13), type: "stream", games: ["Zelda"] }]),
   });
   const { els, server, html } = current = await boot(ctx);
@@ -107,7 +108,7 @@ test("la liste : toutes les sources, triées, avec la pastille de chacune, la da
   assert.equal(rows[0].attrs["aria-pressed"], "true"); assert.equal(rows[1].attrs["aria-pressed"], "false");
   const titles = rows.slice(0, 4).map((r) => /Stream \d+|Première du clip|Surprise du vendredi/.exec(r.textContent)[0]);
   assert.deepEqual(titles, ["Stream 0", "Première du clip", "Stream 1", "Surprise du vendredi"], "triés par date et heure, toutes sources mêlées");
-  const yt = rows[1].textContent, start = Date.parse(iso(9));
+  const yt = rows[1].textContent, start = Date.parse(premiereAt);
   assert.match(yt, /YouTube/); assert.match(yt, /Première/); assert.ok(yt.includes(P.formatTime(start, "Europe/Paris", "fr")), "l'heure est celle du fuseau du site");
   assert.ok(yt.includes(P.formatDay(start, "Europe/Paris", "fr")), "le jour s'écrit en toutes lettres");
   assert.match(els.get("event-chosen").textContent, /Story pour :.*Prochain événement.*Stream 0/);
