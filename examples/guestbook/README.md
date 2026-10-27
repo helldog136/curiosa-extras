@@ -7,8 +7,8 @@ le pourquoi. Le tutoriel [docs/CREATE-A-MODULE.md](../../docs/CREATE-A-MODULE.md
 
 ## Installer
 
-Dans l'admin : **Catalogue** (ou **Modules → Installer un module**) → « Livre d'or ». Le module s'installe *désactivé* ;
-activez-le, ajoutez une instance, puis ouvrez-la pour régler. Dépôt personnel : voir « Tester son module en local » du tutoriel.
+Dans l'admin : **Extensions → Catalogue** → « Livre d'or » → **Installer sur mon site**. Le module est installé et actif ;
+cliquez sur **Mettre en place** pour ajouter une instance, puis ouvrez-la pour régler. Dépôt personnel : voir « Tester son module en local » du tutoriel.
 
 ## Fichiers
 
