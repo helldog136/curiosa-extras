@@ -189,15 +189,16 @@ test("admin : colonne jaquette, compteur des manquantes, bouton ; rien d'affich�
   const c = gsCtx();
   await addGame(c, "Avec", { coverUrl: IMG }); await addGame(c, "Sans");
   const blocks = await gs.adminPanel(c);
-  assert.deepEqual(blocks.slice(0, 2).map((b) => b.type), ["heading", "table"], "clé présente : aucun bandeau");
-  const form = blocks.find((b) => b.type === "adminForm");
-  assert.equal(form.action, "findCovers");
+  assert.ok(!blocks.some((b) => b.type === "banner" || b.type === "suggestInstall"), "clé présente : aucun bandeau");
+  assert.ok(blocks.some((b) => b.type === "table"));
+  const form = blocks.find((b) => b.type === "adminForm" && b.action === "findCovers");
+  assert.ok(form);
   assert.equal(form.submitLabel, "Rechercher les jaquettes manquantes");
   const table = blocks.find((b) => b.type === "table");
   assert.deepEqual(table.rows.map((r) => r[2]).sort(), ["—", "✓"]);
   assert.equal(table.rows.length, table.rowIds.length);
   const full = gsCtx(); await addGame(full, "Avec", { coverUrl: IMG });
-  assert.ok(!(await gs.adminPanel(full)).some((b) => b.type === "adminForm"));
+  assert.ok(!(await gs.adminPanel(full)).some((b) => b.type === "adminForm" && b.action === "findCovers"));
 });
 
 test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans image, avec la proposition d'installer « Jaquettes de jeux » (ou le lien vers lui s'il est là) ; clé présente → aucun bandeau", async () => {
@@ -219,7 +220,7 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
 test("game-suggestions : manifeste valide, version et données montées, permission rawg, clé RAWG du module seulement en legacySettings (secret, jamais affichée), textes fr/en alignés", () => {
   const m = readJson("game-suggestions/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.4.0");
+  assert.equal(m.version, "1.5.0");
   assert.equal(m.minCore, "0.2.10");   // 0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? ») ; le service game.cover est un besoin facultatif, l'ancienne interface sert de repli
   assert.equal(m.dataVersion, 2);
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"), "plus de champ visible");
