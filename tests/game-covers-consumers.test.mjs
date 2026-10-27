@@ -41,7 +41,7 @@ const ST = mk("stream-story", { siteUrl: "https://site.example.test", topics: { 
 const withOld = (ctx, svc = oldService()) => { ctx.api.rawg = svc; return ctx; };
 
 test("manifestes : besoin FACULTATIF du service game.cover, permission rawg conservée (repli), minCore inchangé, versions augmentées, FR/EN alignés", () => {
-  for (const [m, v] of [["game-suggestions", "1.4.0"], ["planning", "2.4.0"], ["stream-story", "2.4.0"]]) {
+  for (const [m, v] of [["game-suggestions", "1.5.0"], ["planning", "2.4.0"], ["stream-story", "2.5.0"]]) {
     const man = readJson(m, "module.json");
     assert.ok(parseManifest(man).ok, m);
     assert.equal(man.version, v, m);

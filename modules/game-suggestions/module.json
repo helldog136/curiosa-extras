@@ -5,16 +5,16 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "minCore": "0.2.10",
   "description": {
-    "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played, covers fetched from RAWG.",
-    "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués, des jaquettes récupérées via RAWG."
+    "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played. You can also add games to the list yourself, one at a time or a whole list. Covers are found automatically.",
+    "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
   },
   "author": "Helldog136",
   "privacy": {
-    "en": "If you suggest a game, the game's name, your first name or nickname (if you give one) and your note are saved and shown publicly on the suggestions page. If you vote to replay a game, a small cookie on your browser remembers your votes for the month. Game covers are loaded by your browser from RAWG, which sees your address. To have a suggestion removed, write to the site's contact.",
-    "fr": "Si vous proposez un jeu, le nom du jeu, votre prénom ou pseudo (si vous en donnez un) et votre note sont enregistrés et affichés publiquement sur la page des suggestions. Si vous votez pour rejouer un jeu, un petit cookie sur votre navigateur retient vos votes du mois. Les jaquettes sont chargées par votre navigateur depuis RAWG, qui voit votre adresse. Pour faire retirer une suggestion, écrivez au contact du site."
+    "en": "If you suggest a game, the game's name, your first name or nickname (if you give one) and your note are saved and shown publicly on the suggestions page. If you vote to replay a game, a small cookie on your browser remembers your votes for the month. Game covers are loaded by your browser from RAWG (or from the image address chosen by the site), which sees your address. To have a suggestion removed, write to the site's contact.",
+    "fr": "Si vous proposez un jeu, le nom du jeu, votre prénom ou pseudo (si vous en donnez un) et votre note sont enregistrés et affichés publiquement sur la page des suggestions. Si vous votez pour rejouer un jeu, un petit cookie sur votre navigateur retient vos votes du mois. Les jaquettes sont chargées par votre navigateur depuis RAWG (ou depuis l'adresse d'image choisie par le site), qui voit votre adresse. Pour faire retirer une suggestion, écrivez au contact du site."
   },
   "license": "MIT",
   "icon": "🎮",
@@ -109,6 +109,51 @@
             "minimum": 1,
             "maximum": 100,
             "description": "How many at most (default 30)."
+          }
+        }
+      }
+    },
+    {
+      "name": "game_suggestions_add",
+      "description": "Add one or several games to the list (50 at most at a time), as the site's administration would. Default status: already_played. A title already in the list is refused and nothing is added. The cover is looked up automatically.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Name of the game (use this or titles)."
+          },
+          "titles": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Several names at once, one game each."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "planned",
+              "accepted",
+              "rejected",
+              "already_played",
+              "finished"
+            ],
+            "description": "Default already_played."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 280,
+            "description": "Optional note (single title only)."
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Optional https:// address of an image, if no cover is found (single title only)."
           }
         }
       }

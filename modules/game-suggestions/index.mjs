@@ -3,9 +3,11 @@
 // Le public propose un jeu (liste publique, statut « proposé ») ; l'administrateur le fait avancer (planifié, accepté, déjà joué, fini…).
 // Sur les jeux « déjà joués », le public vote « rejoue-le » : N votes par mois et par visiteur (un cookie + une mémoire côté serveur).
 // La jaquette vient du module « Jaquettes de jeux » (service `game.cover`, besoin facultatif) — au mieux : sans clé, la suggestion n'a simplement pas d'image.
-// La clé RAWG se saisit UNE seule fois, dans ce module (jamais dans celui-ci) ; tant qu'elle manque, l'admin du module le dit avec un lien. Un site qui avait déjà sa clé n'a rien à refaire :
+// La clé RAWG se saisit UNE seule fois, dans le module « Jaquettes de jeux » (jamais dans celui-ci) ; tant qu'elle manque, l'admin du module le dit avec un lien. Un site qui avait déjà sa clé n'a rien à refaire :
 // le cœur installe « Jaquettes de jeux » et lui confie la clé tout seul, et en attendant l'ancienne interface du cœur (`ctx.api.rawg`, permission `rawg`) sert de repli.
 // Le module n'appelle jamais RAWG lui-même. L'ancienne clé qu'il pouvait garder (`legacySettings`, jamais affichée) n'est plus lue : elle est effacée dès qu'une clé est réglée sur le site.
+// L'administration peut aussi ajouter elle-même un jeu (ou une liste, un par ligne) : même liste, mêmes statuts, même jaquette automatique ; la ligne porte `origin: "admin"`
+// (les lignes d'avant n'ont pas ce champ : elles valent « visiteur »), sans pseudo, et reste hors de la page publique tant que son statut est « rejeté ».
 // Une suggestion restée sans jaquette (migrée, restaurée d'une sauvegarde, créée pendant une panne de RAWG) est rattrapée plus tard :
 // une tâche du cœur en traite quelques-unes à la fois, et un bouton de l'admin lance la même opération tout de suite. Tout ce qui
 // sert à ne pas marteler RAWG (date et résultat de chaque essai) est écrit dans les données de l'instance : rien ne vit en mémoire seulement.
@@ -14,6 +16,12 @@ const STATE = "state";                // un seul document : dernière recherche 
 const STATUSES = ["proposed", "planned", "accepted", "rejected", "already_played", "finished"];
 const PUBLIC = ["proposed", "planned", "accepted", "already_played", "finished"];   // « rejeté » n'est pas public
 const MAX_STORED = 2000;
+const TITLE_MAX = 100;                // longueur d'un nom de jeu (visiteur comme administration)
+const NOTE_MAX = 280;
+const MAX_BATCH = 50;                 // jeux ajoutés d'un coup par l'administration (une ligne = un jeu)
+const INLINE_COVERS = 10;             // jaquettes cherchées pendant un ajout en lot ; le reste est rattrapé par la tâche (5 toutes les 15 min) ou par le bouton de l'admin
+const PAGE_SIZE = 50;                 // lignes du tableau d'admin par page
+const ADD_ORDER = ["already_played", "finished", "planned", "accepted", "proposed", "rejected"];   // ordre des choix du formulaire d'ajout (« déjà joué » d'abord)
 const HOUR = 3_600_000;
 const MONTH = 30 * 24 * HOUR;
 const COOKIE = "vh_gs_votes";
@@ -130,7 +138,7 @@ function isDue(data, fp, now) {
  */
 export async function catchUpCovers(ctx, { force = false, now = Date.now(), pauseMs = PAUSE_MS } = {}) {
   const report = { status: "done", found: 0, none: 0, left: 0, missing: 0 };
-  const missing = (await ctx.api.store.list(COLLECTION, { limit: 1000 })).filter((r) => !safeHttps(r.data.coverUrl) && String(r.data.title ?? "").trim());
+  const missing = (await ctx.api.store.list(COLLECTION, { limit: MAX_STORED })).filter((r) => !safeHttps(r.data.coverUrl) && String(r.data.title ?? "").trim());
   report.missing = missing.length;
   if (!missing.length) return { ...report, status: "nothing" };
   const state = await readState(ctx);
@@ -179,8 +187,8 @@ export async function dropOldKey(ctx) {
   } catch { return false; }
 }
 
-const rows = async (ctx) => (await ctx.api.store.list(COLLECTION, { limit: 1000 })).map((r) => ({
-  id: r.id, at: r.createdAt, title: String(r.data.title ?? ""), status: isStatus(r.data.status) ? r.data.status : "proposed",
+const rows = async (ctx, limit = 1000) => (await ctx.api.store.list(COLLECTION, { limit })).map((r) => ({
+  id: r.id, at: r.createdAt, title: String(r.data.title ?? ""), status: isStatus(r.data.status) ? r.data.status : "proposed", origin: r.data.origin === "admin" ? "admin" : "visitor",
   cover: safeHttps(r.data.coverUrl), ambiguous: r.data.coverAmbiguous === true && !!safeHttps(r.data.coverUrl), by: String(r.data.submitterName ?? ""), note: String(r.data.note ?? ""), votes: Number(r.data.replayVotes) || 0,
 }));
 
@@ -203,6 +211,128 @@ export async function refreshAmbiguous(ctx, list) {
     await ctx.api.store.update(g.id, { ...rest, coverUrl: res.url ?? null, coverResult: res.status });
     g.ambiguous = false; g.cover = res.url ?? "";
   }
+}
+
+/* ───────────── Ajout par l'administration ───────────── */
+
+/** Clé de comparaison des titres : sans accents, sans majuscules, sans espaces ni ponctuation (« Pokémon  : Rouge ! » = « pokemon rouge »). */
+export const titleKey = (title) => {
+  const t = String(title ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return t.replace(/[^\p{L}\p{N}]+/gu, "") || t.trim();
+};
+/** Une adresse d'image à la main : https seulement, sans espace ni signe qui casserait une page, 500 caractères au plus. Rend l'adresse ou `null`. */
+export const imageUrlOf = (v) => { const t = String(v ?? "").trim(); return t.length <= 500 && /^https:\/\/[^\s"'<>\\]+$/.test(t) ? t : null; };
+/** Les lignes d'une liste collée : une ligne = un jeu, puces au début retirées, lignes vides ignorées. */
+export const linesOf = (text) => String(text ?? "").split(/\r\n?|\n/).map((l) => l.replace(/^\s*[-*•]\s+/, "")).map((l) => clean(l, 100_000)).filter(Boolean);
+const plural = (ctx, key, n, vars = {}) => ctx.t(n === 1 ? `${key}_one` : key, { n, ...vars });
+
+/**
+ * Ajoute à la liste des jeux écrits par l'administration (un seul, ou une liste d'au plus 50). Tout ou rien : à la moindre ligne à corriger, rien n'est enregistré.
+ * `lines` : les noms ; `field` : le champ du formulaire où afficher l'erreur (`title` ou `titles`). Ne lève jamais à cause du service de jaquettes.
+ * Rend `{ errors }` (par champ), `{ error }` (général) ou `{ added, found, titles, status }`.
+ */
+export async function addGames(ctx, { lines, status, note = "", image = "", field = "title" }) {
+  const many = field === "titles";
+  const errors = {};
+  const st = status ? String(status) : "already_played";
+  if (!isStatus(st)) errors.status = ctx.t("errStatus");
+  const cleanNote = clean(note, 10_000, true);
+  if (cleanNote.length > NOTE_MAX) errors.note = ctx.t("errNoteLong", { max: NOTE_MAX });
+  const rawImage = String(image ?? "").trim();
+  const manualImage = rawImage ? imageUrlOf(rawImage) : null;
+  if (rawImage && !manualImage) errors.image = ctx.t("errImage");
+  if (!lines.length) errors[field] = ctx.t(many ? "errManyEmpty" : "errTitleEmpty");
+  else if (lines.length > MAX_BATCH) errors[field] = ctx.t("errManyTooMany", { n: lines.length, max: MAX_BATCH });
+  if (!errors[field]) {
+    const existing = new Map();
+    for (const g of await rows(ctx, MAX_STORED)) if (!existing.has(titleKey(g.title))) existing.set(titleKey(g.title), g);
+    const seen = new Map();
+    const problems = [];
+    lines.forEach((title, i) => {
+      const n = i + 1, at = (msg) => (many ? ctx.t("errManyLine", { n, problem: msg }) : msg);
+      const key = titleKey(title);
+      if (title.length > TITLE_MAX) problems.push(at(ctx.t(many ? "errLongShort" : "errTitleLong", { max: TITLE_MAX })));
+      else if (existing.has(key)) problems.push(at(ctx.t("errDup", { title: existing.get(key).title, status: ctx.t(`status_${existing.get(key).status}`) })));
+      else if (seen.has(key)) problems.push(at(ctx.t("errSame", { title, first: seen.get(key) })));
+      else seen.set(key, n);
+    });
+    if (problems.length) errors[field] = many ? `${ctx.t("errManyIntro")} ${problems.slice(0, 5).join(" ")}${problems.length > 5 ? " " + plural(ctx, "errManyMore", problems.length - 5) : ""} ${ctx.t("errManyOutro")}` : problems[0];
+  }
+  if (Object.keys(errors).length) return { errors };
+  const room = MAX_STORED - (await ctx.api.store.count(COLLECTION));
+  if (room <= 0) return { error: ctx.t("errFull", { max: MAX_STORED }) };
+  if (lines.length > room) return { errors: { [field]: plural(ctx, "errRoom", room, { max: MAX_STORED }) } };
+
+  const now = new Date().toISOString();
+  let found = 0, searched = 0, stop = false, first = manualImage ? "manual" : "later";
+  for (const [i, title] of lines.entries()) {
+    let data = { title, status: st, coverUrl: null, origin: "admin", submitterName: null, note: many ? null : cleanNote || null, replayVotes: 0, lastVotedAt: null };
+    if (manualImage) data = { ...data, coverUrl: manualImage, coverResult: "manual", coverCheckedAt: now };
+    else if (!stop && searched < (many ? INLINE_COVERS : 1)) {
+      searched++;
+      const res = await coverFor(ctx, title);
+      // Réponse claire (jaquette ou « inconnu ») : mémorisée. Panne, clé absente ou refusée : on arrête de chercher, la tâche de rattrapage prendra la suite.
+      if (res.status === "found" || res.status === "none") data = { ...data, coverUrl: res.url, coverCheckedAt: now, coverResult: res.status, coverKey: await currentEpoch(ctx), coverTries: 1, ...(res.ambiguous ? { coverAmbiguous: true } : {}) };
+      else stop = true;
+      if (res.url) found++;
+      if (i === 0) first = stop ? "later" : res.url ? "found" : "none";
+    }
+    await ctx.api.store.add(COLLECTION, data);
+  }
+  return { added: lines.length, found, titles: lines, status: st, cover: first };
+}
+
+/** Le bilan d'un ajout en mots simples (pour le message vert de l'administration). */
+function addedMessage(ctx, r) {
+  const status = ctx.t(`status_${r.status}`);
+  if (r.added === 1) return `${ctx.t("okAdded", { title: r.titles[0], status })} ${ctx.t({ manual: "coverManual", found: "coverFound", none: "coverNone", later: "coverLater" }[r.cover])}`;
+  return `${ctx.t("okAddedMany", { n: r.added, status })} ${ctx.t("coversFoundMany", { found: r.found })}`;
+}
+const firstError = (r) => r.error ?? Object.values(r.errors ?? {})[0];
+
+/* ───────────── Écrans de l'administration : ajout, jaquette d'une ligne, pages ───────────── */
+
+const adminLink = (href, label, current = false) => `<a href="${esc(href)}"${current ? ' aria-current="page"' : ""} style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid currentColor;border-radius:10px;text-decoration:none;color:inherit">${esc(label)}</a>`;
+const linkRow = (html) => ({ type: "html", html: `<nav style="display:flex;flex-wrap:wrap;gap:8px">${html}</nav>` });
+
+/** « Ajouter un jeu » : un champ obligatoire, le reste facultatif ; deux variantes derrière un lien (plusieurs jeux d'un coup, image choisie à la main). */
+function addBlocks(ctx, mode) {
+  const statusField = { name: "status", label: ctx.t("addStatusLabel"), kind: "select", value: "already_played", help: ctx.t("addStatusHelp"), options: ADD_ORDER.map((s) => ({ value: s, label: ctx.t(`status_${s}`) })) };
+  if (mode === "plusieurs") {
+    return [
+      { type: "adminForm", action: "addGames", title: ctx.t("manyTitle"), submitLabel: ctx.t("manySubmit"), fields: [{ name: "titles", label: ctx.t("manyLabel"), kind: "textarea", required: true, help: ctx.t("manyHelp", { max: MAX_BATCH }) }, statusField] },
+      linkRow(adminLink("?tab=use", ctx.t("linkOne"))),
+    ];
+  }
+  return [
+    {
+      type: "adminForm", action: "addGame", title: ctx.t("addTitle"), submitLabel: ctx.t("addSubmit"),
+      fields: [
+        { name: "title", label: ctx.t("addGameLabel"), required: true, help: ctx.t("addGameHelp") },
+        statusField,
+        { name: "note", label: ctx.t("addNoteLabel"), kind: "textarea", help: ctx.t("addNoteHelp") },
+        ...(mode === "image" ? [{ name: "image", label: ctx.t("addImageLabel"), kind: "text", help: ctx.t("addImageHelp") }] : []),
+      ],
+    },
+    linkRow(adminLink("?tab=use&ajout=plusieurs", ctx.t("linkMany")) + (mode === "image" ? adminLink("?tab=use", ctx.t("linkNoImage")) : adminLink("?tab=use&ajout=image", ctx.t("linkImage")))),
+  ];
+}
+
+/** L'écran « Jaquette » d'une ligne : choisir le bon jeu (écran du module de jaquettes) ou donner soi-même l'adresse d'une image. */
+function coverScreen(ctx, g) {
+  return [
+    { type: "heading", text: ctx.t("coverScreenTitle", { title: g.title }) },
+    { type: "markdown", text: `${ctx.t(g.cover ? "coverStateHas" : "coverStateNone")}\n\n[${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})` },
+    { type: "adminForm", action: "setImage", title: ctx.t("imageTitle"), submitLabel: ctx.t("imageSubmit"), fields: [{ name: "id", kind: "hidden", value: g.id }, { name: "image", label: ctx.t("imageLabel"), kind: "text", required: true, help: ctx.t("addImageHelp") }] },
+    linkRow(adminLink("?tab=use", ctx.t("backToList"))),
+  ];
+}
+
+function pager(ctx, page, pages, total, mode) {
+  const to = (p) => `?tab=use&page=${p}${mode ? `&ajout=${mode}` : ""}`;
+  const from = (page - 1) * PAGE_SIZE + 1;
+  return `<nav aria-label="${esc(ctx.t("pagerLabel"))}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span>${esc(ctx.t("pagerInfo", { from, to: Math.min(total, page * PAGE_SIZE), total }))}</span>` +
+    (page > 1 ? adminLink(to(page - 1), ctx.t("pagerPrev")) : "") + (page < pages ? adminLink(to(page + 1), ctx.t("pagerNext")) : "") + `</nav>`;
 }
 
 const baseHref = (ctx) => { const b = ctx.instance.basePath; return b === null || b === undefined ? "/" : b ? `/${b}` : "/"; };
@@ -289,9 +419,12 @@ export default {
     2: async (ctx) => { await dropOldKey(ctx); },
   },
 
-  async adminPanel(ctx) {
-    const list = await rows(ctx);
-    try { await refreshAmbiguous(ctx, list); } catch { /* la vérification est un plus : l'admin s'affiche quand même */ }
+  async adminPanel(ctx, { query } = {}) {
+    const list = await rows(ctx, MAX_STORED);
+    const q = query ?? {};
+    const row = q.jaquette ? list.find((g) => g.id === String(q.jaquette)) : null;
+    const shown = list.slice(0, 1000);
+    try { await refreshAmbiguous(ctx, shown); } catch { /* la vérification est un plus : l'admin s'affiche quand même */ }
     const missing = list.filter((g) => !g.cover).length;
     const state = await readState(ctx);
     const keyed = await hasKey(ctx);
@@ -305,18 +438,25 @@ export default {
       if (state?.lastStatus === "denied") coverBlocks.push({ type: "markdown", text: `⚠️ ${ctx.t("coversDeniedHint")}` });
       coverBlocks.push({ type: "adminForm", action: "findCovers", submitLabel: ctx.t("coversButton"), fields: [] });
     }
+    const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    const page = Math.min(pages, num(q.page, 1, 1, 100_000));
+    const slice = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const mode = q.ajout === "plusieurs" || q.ajout === "image" ? q.ajout : "";
     return [
       ...keyBanner,
-      { type: "heading", text: ctx.t("adminTitle", { count: list.length, proposed: list.filter((g) => g.status === "proposed").length }) },
+      ...(row ? coverScreen(ctx, row) : []),
+      ...addBlocks(ctx, mode),
+      { type: "heading", text: ctx.t("adminTitle", { count: list.length, proposed: list.filter((g) => g.status === "proposed" && g.origin !== "admin").length }) },
       {
         type: "table", columns: [ctx.t("colDate"), ctx.t("colGame"), ctx.t("colCover"), ctx.t("colBy"), ctx.t("colStatus"), ctx.t("colVotes")],
-        rows: list.map((g) => [new Date(g.at).toISOString().slice(0, 10), g.title, g.cover ? "✓" : "—", g.by, ctx.t(`status_${g.status}`), String(g.votes)]),
-        rowIds: list.map((g) => g.id),
-        rowActions: [...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}` })), { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }],
+        rows: slice.map((g) => [new Date(g.at).toISOString().slice(0, 10), g.title, g.cover ? "✓" : "—", g.origin === "admin" ? ctx.t("byAdmin") : g.by, ctx.t(`status_${g.status}`), String(g.votes)]),
+        rowIds: slice.map((g) => g.id),
+        rowActions: [...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}` })), { label: ctx.t("rowCover"), href: "?tab=use&jaquette={id}" }, { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }],
       },
+      ...(pages > 1 ? [{ type: "html", html: pager(ctx, page, pages, list.length, mode) }] : []),
       ...coverBlocks,
       // Administration seulement : pour chaque jaquette douteuse, le lien vers l'écran du cœur qui permet de choisir le bon jeu.
-      ...(list.some((g) => g.ambiguous) ? [{ type: "markdown", text: [ctx.t("coversAmbiguous"), ...list.filter((g) => g.ambiguous).slice(0, 50).map((g) => `- ${escMd(g.title)} : [${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})`)].join("\n") }] : []),
+      ...(shown.some((g) => g.ambiguous) ? [{ type: "markdown", text: [ctx.t("coversAmbiguous"), ...shown.filter((g) => g.ambiguous).slice(0, 50).map((g) => `- ${escMd(g.title)} : [${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})`)].join("\n") }] : []),
     ];
   },
 
@@ -337,6 +477,25 @@ export default {
       if (r.status === "down") return { error: `${ctx.t("coversDown")}${partial}` };
       return { ok: `${ctx.t("coversDone", { found: r.found, none: r.none })}${r.left > 0 ? ctx.t("coversMore", { left: r.left }) : ""}` };
     },
+    // « Ajouter un jeu » : l'administration seulement (comme le changement de statut). Journal d'audit : le cœur consigne chaque action, sans son contenu.
+    async addGame(ctx, values) {
+      const r = await addGames(ctx, { lines: [clean(values.title, 100_000)].filter(Boolean), status: values.status, note: values.note, image: values.image, field: "title" });
+      return r.errors || r.error ? { ...(r.errors ? { errors: r.errors } : {}), ...(r.error ? { error: r.error } : {}) } : { ok: addedMessage(ctx, r) };
+    },
+    async addGames(ctx, values) {
+      const r = await addGames(ctx, { lines: linesOf(values.titles), status: values.status, field: "titles" });
+      return r.errors || r.error ? { ...(r.errors ? { errors: r.errors } : {}), ...(r.error ? { error: r.error } : {}) } : { ok: addedMessage(ctx, r) };
+    },
+    // Une image choisie à la main pour une ligne (jamais remplacée ensuite par la recherche automatique).
+    async setImage(ctx, values) {
+      const record = values.id ? await ctx.api.store.get(values.id) : null;
+      if (!record) return { error: ctx.t("errNotFound") };
+      const url = imageUrlOf(values.image);
+      if (!url) return { errors: { image: ctx.t("errImage") } };
+      const { coverAmbiguous, ...rest } = record.data;
+      await ctx.api.store.update(record.id, { ...rest, coverUrl: url, coverResult: "manual", coverCheckedAt: new Date().toISOString() });
+      return { ok: ctx.t("okImage") };
+    },
     async remove(ctx, values) {
       if (!values.id || !(await ctx.api.store.get(values.id))) return { error: ctx.t("errNotFound") };
       await ctx.api.store.remove(values.id);
@@ -346,8 +505,16 @@ export default {
 
   mcp: {
     async game_suggestions_list(ctx, args) {
-      return (await rows(ctx)).filter((g) => !args?.status || g.status === args.status).slice(0, num(args?.limit, 30, 1, 100))
-        .map((g) => ({ id: g.id, title: g.title, status: g.status, submitter: g.by || null, note: g.note || null, replayVotes: g.votes, createdAt: new Date(g.at).toISOString() }));
+      return (await rows(ctx, MAX_STORED)).filter((g) => !args?.status || g.status === args.status).slice(0, num(args?.limit, 30, 1, 100))
+        .map((g) => ({ id: g.id, title: g.title, status: g.status, origin: g.origin, submitter: g.by || null, note: g.note || null, replayVotes: g.votes, createdAt: new Date(g.at).toISOString() }));
+    },
+    // Ajoute à la liste un ou plusieurs jeux (50 au plus) ; mêmes règles que le formulaire de l'administration : doublon refusé, tout ou rien, plafond de 2000.
+    async game_suggestions_add(ctx, args) {
+      const titles = Array.isArray(args?.titles) ? args.titles.map((t) => clean(t, 100_000)).filter(Boolean) : [clean(args?.title, 100_000)].filter(Boolean);
+      if (titles.length > 1 && (args?.imageUrl || args?.note)) throw Object.assign(new Error("note and imageUrl go with a single title"), { expose: true });
+      const r = await addGames(ctx, { lines: titles, status: args?.status, note: args?.note, image: args?.imageUrl, field: titles.length > 1 ? "titles" : "title" });
+      if (r.errors || r.error) throw Object.assign(new Error(firstError(r)), { expose: true });
+      return { added: r.added, status: r.status, titles: r.titles, coversFound: r.found };
     },
     async game_suggestions_set_status(ctx, args) {
       const record = typeof args?.id === "string" && args.id ? await ctx.api.store.get(args.id) : null;
@@ -361,8 +528,8 @@ export default {
   backup: {
     async readable(ctx) {
       const cell = (v) => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
-      const lines = (await rows(ctx)).map((g) => [g.id, new Date(g.at).toISOString(), g.status, g.title, g.by, g.note, g.votes].map(cell).join(","));
-      return [{ path: "games.csv", content: `﻿${[["id", "date", "status", "game", "by", "note", "votes"].map(cell).join(","), ...lines].join("\r\n")}\r\n` }];
+      const lines = (await rows(ctx, MAX_STORED)).map((g) => [g.id, new Date(g.at).toISOString(), g.status, g.title, g.by, g.note, g.votes, g.origin].map(cell).join(","));
+      return [{ path: "games.csv", content: `﻿${[["id", "date", "status", "game", "by", "note", "votes", "origin"].map(cell).join(","), ...lines].join("\r\n")}\r\n` }];
     },
   },
 

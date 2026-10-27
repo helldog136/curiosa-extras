@@ -34,7 +34,7 @@ test("action « addPhoto » : le module ne garde que les adresses, les tailles a
   assert.deepEqual([p.caption, p.alt, p.name], ["Ouverture", "Deux personnes", "évil_script_.jpg"]);
   assert.deepEqual([p.w, p.h, p.bytes, p.tbytes], [4096, 0, 4_000_000, 0]);
   const stored = JSON.stringify(ctx.dumpStore());
-  assert.doesNotMatch(stored, /b64|base64|"mime"/);
+  assert.doesNotMatch(stored, /"(?:b64|base64|mime)"/); // clés ou valeurs exactes : un identifiant au hasard peut contenir « b64 » par hasard
   assert.equal(rows(ctx, "gallery_blobs").length, 0);
 });
 
