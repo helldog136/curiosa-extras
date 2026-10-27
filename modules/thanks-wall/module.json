@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.5",
+  "minCore": "0.4.0",
   "id": "thanks-wall",
   "name": {
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": {
     "en": "A “Thank you!” page for your community: the people of one or more Contacts categories (moderators, supporters, beta testers…) as a grid of cards with their photos, a person in the spotlight each month and a short message for anyone you like. Names and photos stay in Contacts, so there is nothing to retype.",
     "fr": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-testeurs…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper."
@@ -25,6 +25,166 @@
     "admin",
     "mcp"
   ],
+  "skin": {
+    "since": 1,
+    "parts": [
+      {
+        "id": "thanks-wall.spotlight",
+        "kind": "panel",
+        "name": {
+          "fr": "Personne à l'honneur",
+          "en": "Spotlight"
+        },
+        "description": {
+          "fr": "Le grand cadre de la personne mise à l'honneur ce mois-ci.",
+          "en": "The large frame of the person in the spotlight this month."
+        },
+        "tokens": [
+          {
+            "name": "--sk-m-thanks-wall-spotlight-radius",
+            "type": "length",
+            "default": "1.25rem"
+          },
+          {
+            "name": "--sk-m-thanks-wall-spotlight-bg",
+            "type": "color",
+            "default": "var(--v-surface)"
+          },
+          {
+            "name": "--sk-m-thanks-wall-spotlight-border",
+            "type": "color",
+            "default": "var(--v-line)"
+          },
+          {
+            "name": "--sk-m-thanks-wall-spotlight-shadow",
+            "type": "shadow",
+            "default": "0 1px 2px color-mix(in srgb,var(--v-fg) 12%,transparent),0 14px 34px -16px color-mix(in srgb,var(--v-fg) 40%,transparent)"
+          }
+        ]
+      },
+      {
+        "id": "thanks-wall.card",
+        "kind": "card",
+        "name": {
+          "fr": "Carte d'une personne",
+          "en": "Person card"
+        },
+        "description": {
+          "fr": "La carte d'une personne dans la grille : photo ou initiales, nom et petit mot.",
+          "en": "The card of one person in the grid: photo or initials, name and short message."
+        },
+        "tokens": [
+          {
+            "name": "--sk-m-thanks-wall-card-radius",
+            "type": "length",
+            "default": "var(--sk-radius-panel)"
+          },
+          {
+            "name": "--sk-m-thanks-wall-card-bg",
+            "type": "color",
+            "default": "var(--v-surface)"
+          },
+          {
+            "name": "--sk-m-thanks-wall-card-border",
+            "type": "color",
+            "default": "var(--v-line)"
+          },
+          {
+            "name": "--sk-m-thanks-wall-card-shadow",
+            "type": "shadow",
+            "default": "var(--sk-shadow-card)"
+          }
+        ]
+      },
+      {
+        "id": "thanks-wall.grid",
+        "kind": "list",
+        "name": {
+          "fr": "Grille des cartes",
+          "en": "Cards grid"
+        },
+        "description": {
+          "fr": "La grille qui range les cartes d'un groupe.",
+          "en": "The grid that lays out the cards of a group."
+        },
+        "tokens": [
+          {
+            "name": "--sk-m-thanks-wall-grid-gap",
+            "type": "length",
+            "default": ".75rem"
+          },
+          {
+            "name": "--sk-m-thanks-wall-grid-gap-wide",
+            "type": "length",
+            "default": "1rem"
+          }
+        ]
+      },
+      {
+        "id": "thanks-wall.avatar",
+        "kind": "avatar",
+        "name": {
+          "fr": "Photo ou initiales",
+          "en": "Photo or initials"
+        },
+        "description": {
+          "fr": "Le rond qui montre la photo, ou les initiales quand il n'y a pas de photo.",
+          "en": "The circle showing the photo, or the initials when there is no photo."
+        },
+        "tokens": [
+          {
+            "name": "--sk-m-thanks-wall-avatar-bg",
+            "type": "color",
+            "default": "color-mix(in srgb,var(--v-accent) 24%,var(--v-surface))"
+          },
+          {
+            "name": "--sk-m-thanks-wall-avatar-border",
+            "type": "color",
+            "default": "var(--v-line)"
+          }
+        ]
+      },
+      {
+        "id": "thanks-wall.badge",
+        "kind": "badge",
+        "name": {
+          "fr": "Étiquette « à l'honneur »",
+          "en": "Spotlight label"
+        },
+        "description": {
+          "fr": "La petite étiquette au-dessus du nom de la personne à l'honneur.",
+          "en": "The small label above the name of the person in the spotlight."
+        },
+        "tokens": [
+          {
+            "name": "--sk-m-thanks-wall-badge-radius",
+            "type": "length",
+            "default": "999px"
+          }
+        ]
+      },
+      {
+        "id": "thanks-wall.button",
+        "kind": "button",
+        "name": {
+          "fr": "Bouton",
+          "en": "Button"
+        },
+        "description": {
+          "fr": "Les boutons « Tout voir », « Précédent » et « Suivant ».",
+          "en": "The “See everyone”, “Previous” and “Next” buttons."
+        },
+        "tokens": [
+          {
+            "name": "--sk-m-thanks-wall-button-radius",
+            "type": "length",
+            "default": ".7rem"
+          }
+        ]
+      }
+    ],
+    "demo": "skin-demo.html"
+  },
   "requires": [
     {
       "service": "contact.book",
