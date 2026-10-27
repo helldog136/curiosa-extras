@@ -15,7 +15,7 @@ Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne
 
 ## Installer sur votre site Curiosa
 
-1. Dans l'administration, passez en **mode avancé** (menu de gauche, « Afficher les réglages avancés »), puis ouvrez **Extensions → Catalogue**.
+1. Dans l'administration, ouvrez le menu de gauche et cliquez sur **« Afficher les réglages avancés »** (l'installation depuis une adresse n'existe que là), puis ouvrez **Extensions → Catalogue**.
 2. Ouvrez **Installer un dépôt personnel (non vérifié)**, collez l'adresse ci-dessous et cliquez sur **Voir le README avant d'installer**.
 
    ```
