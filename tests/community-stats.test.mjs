@@ -433,7 +433,7 @@ test("admin : cartes lisibles (compte, chiffre, évolution en phrase, origine, m
   const visibility = blocks.find((b) => b.type === "adminForm" && b.action === "saveVisibility");
   assert.equal(visibility.fields.length, 3);
   assert.ok(visibility.fields.every((f) => f.value === "no" && f.options.length === 2), "tout est privé au départ");
-  assert.match(JSON.stringify(blocks), /« Montrer sur mon site » autorise l'affichage d'un chiffre aux visiteurs/);
+  assert.match(JSON.stringify(blocks), /« Montrer sur mon site » autorise l'affichage d'un chiffre au public/);
   assert.match(visibility.fields[0].options[1].label, /Oui, le montrer sur mon site/);
   const manual = tables.find((t) => t.rowActions?.some((a) => a.action === "forget" && /Supprimer/.test(a.label)));
   assert.ok(manual.rowActions.every((a) => !a.action || a.confirm), "toute suppression demande confirmation");

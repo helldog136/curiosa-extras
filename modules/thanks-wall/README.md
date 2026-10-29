@@ -51,7 +51,7 @@ La page publique garde le **dernier mur connu** (jusqu'à 24 heures) ; sans rien
 - 6 groupes au plus ; 1 000 fiches lues par groupe (au-delà, seules les 1 000 premières sont montrées, et l'administration le dit) ; 50 cartes par page ; 1 000 messages au plus ; 24 mises à l'honneur gardées.
 - Le mur se reconstruit au plus toutes les 2 minutes : un changement dans Contacts se voit en moins de deux minutes.
 - Le mois à l'honneur change à minuit (heure universelle).
-- Pas de récupération automatique des abonnements Twitch : cela demande des droits que vous n'avez pas toujours. Le mur s'appuie sur vos fiches.
+- Pas de récupération automatique des personnes abonnées sur Twitch : cela demande des droits que vous n'avez pas toujours. Le mur s'appuie sur vos fiches.
 - Aucune saisie du public, aucun cookie, aucun message du public.
 
 ## Pour l'assistant IA

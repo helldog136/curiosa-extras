@@ -564,7 +564,7 @@ test("panneau « Mes directs » : phrase d'honnêteté, suivi actif depuis, dern
   assert.match(lives.rows[0][1], /150 personnes en moyenne/); assert.match(lives.rows[0][1], /\+40 followers/);
   // en direct : une bannière
   L.live("777", { viewer_count: 321 }); await tick(ctx, 200);
-  assert.match(JSON.stringify(await def.adminPanel(ctx)), /Vous êtes en direct : 321 spectateurs/);
+  assert.match(JSON.stringify(await def.adminPanel(ctx)), /Vous êtes en direct : 321 personnes qui regardent/);
 });
 
 test("panneau : Twitch en panne = message simple ; pas connecté = on dit comment compter les followers par jeu", async () => {

@@ -63,7 +63,7 @@
   "removalContactName": "Demande de retrait de photo",
   "removalNote": "Demande de retrait de photo (galerie).",
   "mailSubject": "Une demande de retrait de photo vous attend",
-  "mailBody": "Une personne demande le retrait d'une photo. Il a écrit :",
+  "mailBody": "Une personne demande le retrait d'une photo. Elle a écrit :",
   "mailAdmin": "Pour la traiter (masquer la photo en un clic) :",
   "mailThrottle": "Vous recevrez au plus un e-mail de ce genre toutes les 6 heures.",
   "studioTitle": "Ajouter des photos",

@@ -234,7 +234,7 @@
   "doc.notice.editor.self": "Le site {site} est édité par {name}, qui exerce à titre indépendant.",
   "doc.notice.editor.association": "Le site {site} est édité par l'association {name}.",
   "doc.notice.editor.company": "Le site {site} est édité par la société {name}.",
-  "doc.notice.hidden": "L'éditeur est un particulier. Il a choisi de ne pas rendre public son identité complète ni son adresse : conformément à l'article 6 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, il les a communiquées à l'hébergeur indiqué plus bas.",
+  "doc.notice.hidden": "Le site est édité par un particulier, qui a choisi de ne pas rendre publics son identité complète ni son adresse : conformément à l'article 6 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, ces informations ont été communiquées à l'hébergeur indiqué plus bas.",
   "doc.notice.address": "Adresse : {value}",
   "doc.notice.email": "E-mail : {value}",
   "doc.notice.phone": "Téléphone : {value}",
