@@ -225,7 +225,7 @@ test("après la suppression : adresse publique neutre (même réponse qu'une adr
   const gone = await pollsDef.page(c, { segments: [p.slug] });
   const never = await pollsDef.page(c, { segments: ["jamais-existe-0000"] });
   assert.deepEqual(gone, never, "aucune fuite : supprimé ou jamais créé, c'est la même page");
-  assert.equal(gone.title, "Ce sondage n'existe plus"); assert.equal(gone.robots, "noindex");
+  assert.equal(gone.title, "Ce sondage n'existe plus"); assert.equal(gone.robots, undefined, "pas de robots:noindex, qui exigerait un minCore plus récent");
   const html = gone.blocks[0].html;
   assert.ok(html.includes("Cette adresse ne mène à aucun sondage.") && /href="(\/fr)?\/polls"/.test(html) && !html.includes("Part ?") && !html.includes(p.slug), "ni question, ni adresse, ni chiffre");
   assert.equal(flat(gone).includes("Part ?"), false);

@@ -637,13 +637,13 @@ async function decisionsPage(ctx, n) {
 
 /**
  * Une adresse de sondage qui ne mène à rien (supprimé, jamais existé, mal copié) : le MÊME message neutre dans tous les cas, sans le nom du sondage ni rien qui dise
- * s'il a existé. Une adresse qui ne ressemble pas à un nom de sondage reste une page « introuvable » ordinaire. Jamais indexée.
+ * s'il a existé. Une adresse qui ne ressemble pas à un nom de sondage reste une page « introuvable » ordinaire. (Pas de consigne aux moteurs de recherche : elle exigerait minCore 0.2.14.)
  */
 function gonePage(ctx, segment) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(segment ?? "")) || String(segment).length > 80) return { notFound: true, blocks: [] };
   const b = baseOf(ctx) ?? "";
   const html = `<style>${CSS}</style><section class="vp"><p class="vp-q" role="status">${esc(ctx.t("goneText"))}</p><p class="vp-nav"><a href="${esc(loc(ctx, b || "/"))}">${esc(ctx.t("allPolls"))}</a></p></section>`;
-  return { title: ctx.t("goneTitle"), description: ctx.t("goneTitle"), robots: "noindex", blocks: [{ type: "html", html }] };
+  return { title: ctx.t("goneTitle"), description: ctx.t("goneTitle"), blocks: [{ type: "html", html }] };
 }
 
 /** Une manche déjà décidée : son ancien lien montre ce que le chat a choisi. */
