@@ -42,7 +42,7 @@ Toutes les écritures d'une instance passent par une file en mémoire (verrou pa
 Type overlay du cœur (étudiés : ticker-overlay, alerts-overlay) : page `/overlays/<clé>?k=<secret>`, fond transparent. Sans le code secret : un message « adresse incomplète », aucun résultat. Le code (18 octets au hasard) est dans les données du module, montré seulement avec le droit `obs.view`, régénérable. Mise à jour par interrogation douce de `/m/<clé>/live` : toutes les 5 s au départ, ralentit ×1,5 (jusqu'à 30 s) quand rien ne change, 30 s mini quand le sondage est fini, quasi arrêtée quand l'onglet est caché, double à chaque erreur (jusqu'à 60 s), jamais de boucle serrée ; réponse minuscule si rien n'a changé ; 120 demandes/minute au plus. Montre le sondage choisi, sinon le plus récent ouvert. Les résultats y sont toujours en direct, même pour un sondage dont le public ne voit les résultats qu'après le vote.
 
 ## Outils pour l'assistant IA
-`polls_list`, `poll_results` (lecture seule) ; `poll_create`, `poll_close` (écritures, désactivées par défaut). Pas de suppression ni d'archivage par l'assistant.
+`polls_list`, `poll_results` (lecture seule) ; `poll_create`, `poll_close` (écritures, désactivées par défaut) ; `poll_delete` (1.2.0, destructrice : jamais accordée d'office, un sondage ouvert demande `allowOpen: true`). Pas d'archivage par l'assistant.
 
 ## Intégrations
 Aucune obligatoire. Intégration avec `game-suggestions` : **non faite**. Ce module n'offre ni service ni sujet exploitable (ni `provides` ni `offers`), et le cœur n'a pas de sujet « jeux suggérés » ; la faire demanderait de modifier l'autre module ou d'inventer un sujet. Voir « Idées ».
