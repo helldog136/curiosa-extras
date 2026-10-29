@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.23.0
+
+*Ajouter une personne dans Contacts se fait en quelques secondes. Pour Curiosa 0.2.2 ou plus. Module touché : Contacts 2.3.0.*
+
+### Améliorations
+
+- **« Nouvelle personne » en deux onglets.** **Ajouter via** (par défaut) : on choisit la plateforme, on colle un lien ou on tape un pseudo, on enregistre. Le nom affiché est facultatif (le pseudo sert de nom, ou le nom trouvé sur Twitch ou YouTube quand leur connecteur est installé). **Ajout manuel** : fonction, organisation, e-mail, téléphone, relation, catégories, et deux emplacements pour des comptes.
+- **Les plateformes proposées sont celles de votre site** : celles dont le connecteur est installé, celles qui ont déjà un compte dans votre carnet, ou les plus courantes quand il n'y en a aucune. La dernière plateforme utilisée est déjà choisie.
+- **Chaque erreur est sous le champ, avec un exemple** (lien d'une autre plateforme, vidéo au lieu d'une chaîne, pseudo trop court…).
+- **Pas de seconde fiche par erreur** : si le compte est déjà dans le carnet, le site propose d'ouvrir la fiche existante.
+- **La fiche s'ouvre juste après**, avec un message pour la compléter.
+- **« Statut » quitte le formulaire** (il ne servait qu'aux messages du formulaire de contact, qui gardent leur bouton « C'est vérifié » sur la fiche). Les catégories se lisent « Dans la catégorie « Cible de raid » », avec une phrase d'aide. Textes sans accord de genre.
+- Rien d'autre ne change : données, outils pour assistants IA, droits et services (Partenariats, Raid, Story…) sont les mêmes.
+
 ## 1.22.1
 
 *Un module de départ pour ceux qui veulent publier leur propre module, et des explications d'installation corrigées. Aucun module du Catalogue ne change. Pour Curiosa 0.2.10 ou plus.*

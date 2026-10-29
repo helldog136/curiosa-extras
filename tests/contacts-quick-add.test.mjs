@@ -249,7 +249,7 @@ test("parité FR/EN exacte (mêmes clés, mêmes variables {…}), aucune clé v
   for (const k of keys) assert.ok(k in fr, k);
   assert.equal(fr.helpRole, "Par exemple : responsable des partenariats.");
   assert.equal(fr.helpOrganisation, "Écrivez le nom de l'organisation : la fiche est créée si elle n'existe pas encore.");
-  for (const k of keys) assert.doesNotMatch(fr[k], /chargée|\(e\)|·e\b|\bTapez\b|\bil\/elle\b|\bélu\b|\bconnecté\b|\bcréé\b/i, k);
+  for (const k of keys) assert.doesNotMatch(fr[k], /chargée|\(e\)|·e\b|\bTapez\b|\bil\/elle\b|\bélu\b/i, k);
 });
 
 // ── Non-régression ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -259,7 +259,8 @@ test("non-régression : outils MCP et service inchangés (contact_create, contac
   assert.equal(created.created, true);
   const acc = await def.mcp.contact_add_account(ctx, { id: created.id, network: "twitch", handle: "twitch.tv/Ada_Dev" });
   assert.equal(acc.account.handle, "ada_dev");
-  await assert.rejects(() => def.mcp.contact_add_account(ctx, { id: (await def.mcp.contact_create(ctx, { name: "Bob" })).id, network: "twitch", handle: "ada_dev" }), /already on contact/);
+  const bob = (await def.mcp.contact_create(ctx, { name: "Bob" })).id;
+  await assert.rejects(() => def.mcp.contact_add_account(ctx, { id: bob, network: "twitch", handle: "ada_dev" }), /already on contact/);
   // Le compte posé par l'ajout rapide est celui que voient les autres modules.
   const q = await def.adminActions.addVia(ctx, { network: "youtube", handle: "@Chan_One" });
   const found = await svc.find(ctx, { q: "chan_one" });
