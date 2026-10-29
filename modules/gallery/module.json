@@ -5,7 +5,7 @@
     "fr": "Galeries photos",
     "en": "Photo galleries"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.2.13",
   "description": {
     "fr": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Les photos sont réduites et hébergées sur votre site (dans des limites que vous réglez), ou l'album mène vers un autre service. Visionneuse plein écran, lien par photo, demande de retrait.",

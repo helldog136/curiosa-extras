@@ -124,7 +124,7 @@ export async function page(ctx, segments) {
   return { title: T.title, description: ctx.t("pub_description"), blocks: [{ type: "html", html: renderHtml(ctx, pub, T) }], scripts: ["live-members.js"] };
 }
 
-const hits = new Map();   // empreinte de la personne qui visite → heures de ses demandes récentes (en mémoire, jamais l'adresse en clair)
+const hits = new Map();   // empreinte du visiteur → heures de ses demandes récentes (en mémoire, jamais l'adresse en clair)
 function allowed(ctx, request) {
   let who = "";
   try { who = String(ctx.api.visitor?.fingerprint?.(request, "members") ?? ""); } catch { who = ""; }

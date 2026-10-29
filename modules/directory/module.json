@@ -6,7 +6,7 @@
     "fr": "Annuaire",
     "en": "Directory"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
     "en": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype."
@@ -57,7 +57,7 @@
     }
   ],
   "privacy": {
-    "fr": "Aucun cookie, formulaire ni adresse de visiteur gardés ; le texte cherché n'est pas conservé. Publié depuis Contacts : nom (ou prénom, ou pseudo), catégories choisies, liens et photo si autorisés ; « Ne pas montrer » l'emporte. Gardé par fiche : présentation, ville, titre d'équipe, « masquée ». Photo hébergée ailleurs : chargée après un clic. Carte : ville seulement, avec accord. Retrait : écrivez au contact du site ; effacer la fiche dans Contacts efface tout ici.",
+    "fr": "Aucun cookie, aucun formulaire et aucune adresse du public n'est gardée ; le texte cherché n'est pas conservé. Publié depuis Contacts : nom (ou prénom, ou pseudo), catégories choisies, liens et photo si autorisés ; « Ne pas montrer » l'emporte. Gardé par fiche : présentation, ville, titre d'équipe, « masquée ». Photo hébergée ailleurs : chargée après un clic. Carte : ville seulement, avec accord. Retrait : écrivez au contact du site ; effacer la fiche dans Contacts efface tout ici.",
     "en": "No cookie, form or visitor address kept; searched text is not stored. Published from Contacts: name (or first name, or nickname), chosen categories, links and photo if you allow them. “Do not show” always wins. The module keeps per card: presentation, city, team title, “hidden”. A photo hosted elsewhere only loads after a click. Map: only the city of people who agreed. Withdrawal: write to the site's contact; erasing in Contacts erases everything here."
   },
   "tabs": [

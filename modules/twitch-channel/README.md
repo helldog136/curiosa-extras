@@ -1,6 +1,6 @@
 # Ma Chaîne Twitch
 
-Votre chaîne Twitch, mise en avant sur votre site : le **bouton Twitch** de l'en-tête, le **direct en cours** (repris par la bannière « en direct », le planning et les annonces Discord), vos **derniers clips**, et, si vous le souhaitez, vos **followers**, vos **abonnés payants** et les chiffres de vos **directs** (audience, heures, followers gagnés par jeu, vues de vos vidéos).
+Votre chaîne Twitch, mise en avant sur votre site : le **bouton Twitch** de l'en-tête, le **direct en cours** (repris par la bannière « en direct », le planning et les annonces Discord), vos **derniers clips**, et, si vous le souhaitez, vos **followers**, vos **abonnements payants** et les chiffres de vos **directs** (audience, heures, followers gagnés par jeu, vues de vos vidéos).
 
 ## Pour commencer
 1. **Installez « Ma Chaîne Twitch ».** Le **Connecteur Twitch** s'installe avec lui : c'est lui qui relie votre site à Twitch, une seule fois pour tous vos modules Twitch.
@@ -15,10 +15,10 @@ Sans Connecteur Twitch, le bouton de votre chaîne et son lien restent affichés
 Ajoutez une « Ma Chaîne Twitch » par chaîne. Toutes passent par **la même application Twitch**, celle du Connecteur : chaque chaîne se connecte avec son propre compte Twitch. La bannière « en direct » les annonce toutes.
 
 ## Vos statistiques
-**Suivre mes statistiques** (désactivé par défaut) compte vos **followers** et, si votre chaîne est dans le programme Affilié ou Partenaire de Twitch, vos **abonnés payants**. Twitch doit d'abord vous demander votre accord : une fois l'interrupteur activé et enregistré, le bouton **Connecter ma chaîne Twitch** apparaît en haut de la page. Cliquez, puis « Autoriser » chez Twitch. C'est tout. Il faut se connecter avec le compte de la chaîne : un autre compte est refusé, avec un message qui dit lequel.
+**Suivre mes statistiques** (désactivé par défaut) compte vos **followers** et, si votre chaîne est dans le programme Affilié ou Partenaire de Twitch, vos **abonnements payants**. Twitch doit d'abord vous demander votre accord : une fois l'interrupteur activé et enregistré, le bouton **Connecter ma chaîne Twitch** apparaît en haut de la page. Cliquez, puis « Autoriser » chez Twitch. C'est tout. Il faut se connecter avec le compte de la chaîne : un autre compte est refusé, avec un message qui dit lequel.
 
-- *Compter mes followers* / *Compter mes abonnés payants* : Twitch n'autorise que le **minimum** nécessaire. Cocher une case après coup demande de reconnecter la chaîne (la page le dit).
-- Les **abonnements ne sont disponibles que pour les chaînes du programme Affilié ou Partenaire** de Twitch. Twitch peut compter votre propre chaîne parmi les abonnés : un écart de 1 est possible.
+- *Compter mes followers* / *Compter mes abonnements payants* : Twitch n'autorise que le **minimum** nécessaire. Cocher une case après coup demande de reconnecter la chaîne (la page le dit).
+- Les **abonnements ne sont disponibles que pour les chaînes du programme Affilié ou Partenaire** de Twitch. Twitch peut compter votre propre chaîne parmi les personnes abonnées : un écart de 1 est possible.
 - Aucun chiffre n'est jamais inventé ni périmé : sans connexion ou si Twitch ne répond pas, le chiffre manque, avec la raison.
 - Si Twitch ne reconnaît plus votre accord (mot de passe changé, accès retiré), la page affiche « Twitch demande de nouveau votre autorisation » avec le bouton. **Déconnecter** retire l'accord chez Twitch.
 
@@ -50,7 +50,7 @@ Depuis la 2.1, le module sait dire **les rendez-vous que vous avez publiés dans
 Identifiant technique **conservé** : `twitch-channel` (sauvegardes, adresses de retour déjà enregistrées chez Twitch, catalogue). Nom affiché : « Ma Chaîne Twitch ». Version 2.0.0, `minCore` 0.2.0, données en version 2.
 
 ### Ce que le module fournit
-- `social.link` (bouton), `stream.live` (live en cours, vide hors ligne), `maze.poster` (derniers clips, 60 jours), `social.stat` (followers, abonnés payants, chiffres de période).
+- `social.link` (bouton), `stream.live` (live en cours, vide hors ligne), `maze.poster` (derniers clips, 60 jours), `social.stat` (followers, abonnements payants, chiffres de période).
 - **Service offert `event.source`** (version 1, `each: true`, `readOnly: ["upcoming"]`, depuis la 2.1.0) : `upcoming({ limit?, locale? })` → `{ ok: true, source: { kind: "twitch", label: "Twitch" }, state: "ok" | "setup" | "down", message?, note?, events: [{ id: "twitch:<chaîne>:<empreinte du rendez-vous>", title, start (UTC), end?, timezone: "", type: "stream", url: "https://www.twitch.tv/<chaîne>", games? }] }` (contrat commun : README de Story d'annonce et du dépôt). `GET schedule` (`broadcaster_id`, `first` 25) par le jeton d'application du Connecteur Twitch (1.1.0 et plus : ajouté à sa liste fermée) ; 404 = pas de planning = `ok` sans événement ; 15 minutes de cache par chaîne (20 s après une erreur, 60 s après un 429), un appel partagé entre demandes simultanées ; `events.mjs` (pur) transforme la réponse. Un Connecteur plus ancien refuse l'appel : réponse « à mettre à jour ». Le besoin `twitch.api` (min 3) ne change pas.
 - Service `twitch.live` (`each` : chaque instance répond pour sa chaîne) : `channel()` → `{ channel, url, configured, ready, missing }` (sans réseau ; `configured` : l'application est réglée dans le Connecteur) ; `status({ channel?, legacy? })` → `{ configured, known, live, channel, url, id?, title?, game?, viewers?, startedAt?, thumbnail?, displayName?, error? }` ; `adopt({ channel, clientId, clientSecret })` → `{ adopted, ready }` (la chaîne va dans cette instance si elle est vide, l'application va au Connecteur par son `adopt`, qui n'écrase jamais).
 - Il **n'offre plus** `twitch.api` : c'est le Connecteur Twitch (`twitch.api` version 3, non `each`, une seule instance). Sans quoi un mélange `each` / non-`each` demanderait à l'administrateur de choisir un maître.

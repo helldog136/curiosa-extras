@@ -5,10 +5,10 @@
     "fr": "Questions fréquentes",
     "en": "FAQ"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minCore": "0.2.6",
   "description": {
-    "fr": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a aidé » et une boîte pour les questions du public.",
+    "fr": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a été utile » et une boîte pour les questions du public.",
     "en": "A page of questions and answers grouped by category, that open and close, with search, “It helped” feedback and a box for visitors' questions."
   },
   "author": "Helldog136",
@@ -115,7 +115,7 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Proposer « Cela m'a aidé / Pas vraiment »",
+        "fr": "Proposer « Cela m'a été utile / Pas vraiment »",
         "en": "Offer “It helped / Not really”"
       },
       "help": {

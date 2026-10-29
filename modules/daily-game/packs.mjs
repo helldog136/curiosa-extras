@@ -22,7 +22,7 @@ const GAMES = [
     ["Dans un jeu, que signifie « PNJ » (« NPC » en anglais) ?", ["Personnage non joueur", "Point de niveau perdu", "Passage nécessaire pour jouer", "Partie nocturne jouée"], "Un PNJ est un personnage contrôlé par le jeu et non par une personne qui joue : marchand, guide, passant…"],
     ["In a game, what does “NPC” stand for?", ["Non-player character", "New player challenge", "Necessary path to continue", "Night party chat"], "An NPC is a character controlled by the game, not by a player: a merchant, a guide, a passer-by…"]),
   Q(C.vocab, "easy", 3,
-    ["Que veut dire « GG » à la fin d'une partie ?", ["Gros gain", "Grand gagnant", "Bien joué (« good game »)", "Gentille galère"], "« GG » vient de l'anglais « good game » : une façon polie de saluer l'adversaire, qu'on ait gagné ou perdu."],
+    ["Que veut dire « GG » à la fin d'une partie ?", ["Gros gain", "Grand gala", "Bien joué (« good game »)", "Gentille galère"], "« GG » vient de l'anglais « good game » : une façon polie de saluer l'adversaire, qu'on ait gagné ou perdu."],
     ["What does “GG” mean at the end of a match?", ["Great gear", "Go ghost", "Good game", "Game guide"], "“GG” stands for “good game”: a polite way to greet your opponent, whether you won or lost."]),
   Q(C.vocab, "easy", 2,
     ["Dans un jeu en ligne, que signifie « PvP » ?", ["Pause vidéo programmée", "Joueur contre joueur", "Points de vie perdus", "Partie vue de profil"], "« PvP » veut dire « player versus player » : des personnes s'affrontent."],

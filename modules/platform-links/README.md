@@ -29,7 +29,7 @@ Rien à régler. Un lien direct s'ouvre dans un **nouvel onglet** et indique à 
 - Il ne vérifie pas l'âge du public et ne garde aucune donnée sur lui (pas de cookie, pas de compteur).
 - Il ne montre pas plus de **10 icônes en tout** en haut du site, réseaux compris : c'est la limite du site.
 - Les logos de Mym, Fansly et Tipeee ne sont pas fournis par le site : une pastille de lettre sobre les remplace. « Autre » a une flèche générique.
-- Il ne copie rien depuis les plateformes (pas de nombre d'abonnés, pas d'images).
+- Il ne copie rien depuis les plateformes (pas de nombre de followers, pas d'images).
 
 ## Réglages
 

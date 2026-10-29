@@ -5,7 +5,7 @@
     "en": "Commissions",
     "fr": "Commandes"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.5",
   "description": {
     "en": "A clear commission queue for anyone who creates on request: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment.",

@@ -69,7 +69,7 @@ Le module sait servir **des centaines de chaînes** avec un seul dock (par exemp
 - **Votre propre chaîne n'est jamais proposée** : on ne se raide pas soi-même.
 
 ### Installer un site central
-Une seule personne tient la liste, sur **un seul site**. Les personnes de la liste n'ont **rien à installer** et n'ont pas besoin de Curiosa ni d'un accès Twitch : ils ajoutent simplement l'adresse du dock dans OBS.
+Une seule personne tient la liste, sur **un seul site**. Les personnes de la liste n'ont **rien à installer** et n'ont pas besoin de Curiosa ni d'un accès Twitch : il leur suffit d'ajouter l'adresse du dock dans OBS.
 
 1. Installez **« Raid Twitch »** sur le site central : le **Connecteur Twitch** et **Ma Chaîne Twitch** s'installent avec lui. Dans le Connecteur, renseignez l'**identifiant client** et le **secret** de votre application Twitch ; dans Ma Chaîne Twitch, la chaîne du site. Aucune connexion de compte n'est nécessaire.
 2. Ouvrez la page de **« Raid Twitch »**.

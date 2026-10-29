@@ -1,6 +1,6 @@
 /* Événements : le petit script de confort de la page. Il n'ajoute que deux choses ; sans lui, tout reste lisible et utilisable.
    1. L'heure CHEZ LE VISITEUR, en toutes lettres (« Samedi à 20 h chez vous »), seulement quand elle diffère de l'heure de l'événement.
-   2. Une vidéo YouTube ne se charge qu'APRÈS un clic (avant, YouTube ne reçoit rien de la personne qui visite ; sans le script, le bouton est un simple lien).
+   2. Une vidéo YouTube ne se charge qu'APRÈS un clic (avant, YouTube ne reçoit rien du visiteur ; sans le script, le bouton est un simple lien).
    Aucun texte n'est écrit ici : les phrases viennent de la page (attribut data-ev-cfg). Aucun minuteur, aucune requête, rien n'est gardé. */
 (function () {
   "use strict";

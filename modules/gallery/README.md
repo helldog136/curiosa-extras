@@ -39,7 +39,7 @@ Tout marche sans rien régler. Pour changer : titre et introduction de la page, 
 
 ## Vie privée
 
-Aucun cookie de suivi, aucune adresse de visiteur gardée. Les demandes de retrait contiennent seulement la photo, un message et, si la personne le veut, un e-mail (effacé dès que la demande est traitée) ; elles sont effacées 30 jours après leur traitement. Si le module Contacts est installé, une demande qui contient un e-mail y est aussi copiée.
+Aucun cookie de suivi, aucune adresse du public gardée. Les demandes de retrait contiennent seulement la photo, un message et, si la personne le veut, un e-mail (effacé dès que la demande est traitée) ; elles sont effacées 30 jours après leur traitement. Si le module Contacts est installé, une demande qui contient un e-mail y est aussi copiée.
 
 ## Avec un assistant IA
 

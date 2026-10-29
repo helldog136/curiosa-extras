@@ -39,7 +39,7 @@ Aucune personne n'est jamais placée sur une carte par défaut. Si vous choisiss
 - La liste se reconstruit au plus toutes les 2 minutes : un changement dans Contacts se voit en moins de deux minutes. Si Contacts ne répond plus, la page garde la dernière liste (24 heures au plus).
 - Contacts ne sait ni chercher dans une grande liste ni filtrer par plusieurs catégories : l'annuaire lit chaque catégorie publique par paquets de 500 et cherche/filtre/trie lui-même, en mémoire.
 - Plusieurs annuaires sont possibles (membres, partenaires…), chacun avec son chemin et ses catégories.
-- Pas de compte visiteur, pas de cookie, aucun texte de visiteur gardé.
+- Pas de compte pour le public, pas de cookie, aucun texte saisi par le public n'est gardé.
 
 ## Pour l'assistant IA
 

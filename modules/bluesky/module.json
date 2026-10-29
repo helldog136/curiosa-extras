@@ -6,7 +6,7 @@
     "en": "Bluesky",
     "fr": "Bluesky"
   },
-  "version": "1.1.2",
+  "version": "1.1.3",
   "platform": "bluesky",
   "description": {
     "en": "Shows your Bluesky button in the site header and shares your follower and post counts. Add one per account if you have several.",

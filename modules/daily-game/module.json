@@ -5,7 +5,7 @@
     "fr": "Jeu du jour",
     "en": "Daily game"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.6",
   "description": {
     "fr": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",

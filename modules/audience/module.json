@@ -5,7 +5,7 @@
     "fr": "Participation",
     "en": "Audience"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.5",
   "description": {
     "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",

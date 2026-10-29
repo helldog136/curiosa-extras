@@ -33,7 +33,7 @@ cliquez sur **Mettre en place** pour ajouter une instance, puis ouvrez-la pour r
 | Panneau d'admin : tableau + boutons de ligne + formulaire de modification | `adminPanel`, `adminActions` |
 | Actions MCP : `guestbook_list` (lecture), `guestbook_approve` (écriture, non accordée d'office), `guestbook_delete` (destructive) | `mcp` |
 | Sauvegarde lisible sans le framework (`messages.csv`, injection de formule neutralisée) | `backup.readable` |
-| Thème du site (variables CSS et `ctx.theme`), i18n, échappement de tout texte de visiteur, URL sûres | `card()`, `esc()`, `safeSrc()` |
+| Thème du site (variables CSS et `ctx.theme`), i18n, échappement de tout texte saisi par le public, URL sûres | `card()`, `esc()`, `safeSrc()` |
 | Crochets d'instance | `hooks` |
 
 Non utilisés ici car sans intérêt pour un livre d'or (mais décrits dans le tutoriel) : `consumes` (lire les données d'autres

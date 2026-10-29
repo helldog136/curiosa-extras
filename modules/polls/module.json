@@ -5,11 +5,11 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.2.5",
   "description": {
     "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS). New: rounds (\"every 10 minutes the chat decides\", with the winner shown on screen) and a quick \"A or B?\" poll from your phone.",
-    "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS). Nouveau : des manches (« toutes les 10 minutes, le chat décide », avec le vainqueur à l'écran) et un sondage rapide « A ou B ? » depuis votre téléphone."
+    "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS). Nouveau : des manches (« toutes les 10 minutes, le chat décide », avec le choix gagnant à l'écran) et un sondage rapide « A ou B ? » depuis votre téléphone."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -379,7 +379,7 @@
         "en": "Seconds the decision stays on screen"
       },
       "help": {
-        "fr": "De 5 à 120. Le vainqueur d'une manche reste affiché ce temps-là.",
+        "fr": "De 5 à 120. Le choix gagnant d'une manche reste affiché ce temps-là.",
         "en": "From 5 to 120. The winner of a round stays displayed that long."
       }
     },

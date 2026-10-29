@@ -55,7 +55,7 @@ Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *
 - 100 événements au plus. Au-delà, supprimez les plus anciens (bouton « Supprimer ces événements masqués »).
 - Pas d'événement qui se répète tout seul chaque année : utilisez **Réutiliser** sur un événement masqué.
 - Le fichier d'agenda donne l'heure exacte (heure universelle) : tous les agendas l'affichent à la bonne heure locale.
-- Aucune donnée de visiteur n'est gardée : pas de cookie, pas de compteur, pas d'adresse.
+- Aucune donnée sur le public n'est gardée : pas de cookie, pas de compteur, pas d'adresse.
 
 ## Pour les développeurs
 

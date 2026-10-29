@@ -8,7 +8,7 @@ Fini de répéter les mêmes réponses en direct, par message ou en commentaire 
 
 - Une liste de questions qui s'ouvrent et se referment (cela marche même si JavaScript est coupé dans son navigateur).
 - Une **recherche** qui filtre en tapant, sans tenir compte des accents ni des majuscules.
-- Un bouton **« Cela m'a aidé / Pas vraiment »** sous chaque réponse. Un seul avis par question et par personne ; aucun compte, aucun cookie de suivi.
+- Un bouton **« Cela m'a été utile / Pas vraiment »** sous chaque réponse. Un seul avis par question et par personne ; aucun compte, aucun cookie de suivi.
 - Un **lien direct** vers chaque question (à coller dans un message ou dans le chat) : la question s'ouvre toute seule.
 - Une petite boîte **« Vous ne trouvez pas votre réponse ? »** pour poser sa question. Aucune donnée personnelle n'est demandée.
 - Sur un téléphone, tout est pensé pour le pouce : grands boutons, pas de défilement de côté.
@@ -35,7 +35,7 @@ Tout marche sans rien régler. Pour changer :
 
 - **Texte d'introduction** (facultatif), affiché au-dessus des questions.
 - **Laisser le public poser une question** (oui).
-- **Proposer « Cela m'a aidé / Pas vraiment »** (oui).
+- **Proposer « Cela m'a été utile / Pas vraiment »** (oui).
 - **Montrer aussi les questions écrites dans une autre langue** (oui).
 - **Aider les moteurs de recherche à comprendre vos questions** (oui) : la page décrit ses questions publiées à Google et aux autres moteurs.
 - **Me prévenir par e-mail d'une nouvelle question** (oui, au plus un e-mail toutes les 6 heures ; demande l'e-mail réglé dans les Réglages du site).

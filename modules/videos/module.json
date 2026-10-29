@@ -6,7 +6,7 @@
     "fr": "Vidéothèque",
     "en": "Video library"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "fr": "Une page de vidéos (masterclass, rétrospectives, tutoriels, présentations…) qui viennent de YouTube, sans rien héberger : grille avec miniatures, catégories, recherche, séries à regarder dans l'ordre, transcription, partage. Vous collez une adresse et le titre se remplit tout seul. Le lecteur ne se charge qu'après un clic de la personne qui visite.",
     "en": "A page of videos (masterclasses, retrospectives, tutorials, presentations…) that come from YouTube, with nothing hosted here: grid with thumbnails, categories, search, series to watch in order, transcript, sharing. You paste an address and the title fills in by itself. The player only loads after a click from the visitor."

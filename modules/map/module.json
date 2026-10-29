@@ -5,7 +5,7 @@
     "fr": "Carte",
     "en": "Map"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minCore": "0.2.12",
   "description": {
     "fr": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande de la personne qui visite, avec un bouton « Près de moi ».",

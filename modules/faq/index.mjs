@@ -27,7 +27,7 @@ export const VERSION = "1.0.1";
 const SEED = {
   fr: { theme: "Général", items: [
     { q: "Exemple : comment fonctionne cette page ?", a: "Ceci est un exemple de réponse : modifiez-la, publiez-la ou supprimez-la depuis l'administration.\n\nVous pouvez écrire en **gras**, en *italique*, ajouter un [lien](https://example.org) et des listes :\n- une première idée\n- une deuxième idée" },
-    { q: "Exemple : où trouver les dernières nouvelles ?", a: "Remplacez ce texte par votre réponse. Une personne peut dire si elle l'a aidé ; vous voyez le résultat dans votre administration." },
+    { q: "Exemple : où trouver les dernières nouvelles ?", a: "Remplacez ce texte par votre réponse. Une personne peut dire si elle l'a aidée ; vous voyez le résultat dans votre administration." },
   ] },
   en: { theme: "General", items: [
     { q: "Example: how does this page work?", a: "This is an example answer: edit it, publish it or delete it from the administration.\n\nYou can write in **bold**, in *italics*, add a [link](https://example.org) and lists:\n- a first idea\n- a second idea" },

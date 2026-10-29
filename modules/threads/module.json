@@ -5,7 +5,7 @@
     "en": "Threads",
     "fr": "Threads"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "threads",
   "description": {
     "en": "Shows your Threads button in the site header. Add one per account if you have several.",

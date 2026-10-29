@@ -6,7 +6,7 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.2.3",
+  "version": "2.2.4",
   "platform": "twitch",
   "description": {
     "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 chaînes en direct tirées au hasard, pour OBS et pour une page publique.",

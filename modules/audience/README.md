@@ -8,7 +8,7 @@ La base commune des animations de votre stream : **un pseudo par personne sans c
 - **Des limites contre les abus** : nombre de nouvelles personnes et de votes par heure et par connexion, sans jamais garder l'adresse de la personne.
 - **La télécommande** : une page secrète pour votre téléphone, avec de GROS boutons : lancer, arrêter, passer au suivant, « A ou B ? » en un geste, mettre une personne en sourdine, vider une salle. Les modules d'animation y ajoutent eux-mêmes leurs boutons.
 - **Le direct** : l'écran de votre stream (OBS) et les pages publiques se mettent à jour tout seuls, sans surcharger le site : la mise à jour est douce, ralentit quand rien ne change, s'arrête quand la page est cachée et demande plus d'espace quand il y a beaucoup de monde.
-- **Le journal** : qui a décidé quoi et quand (appuis sur la télécommande, sourdines, salles vidées, vainqueurs des manches). Il se vide tout seul après 30 jours.
+- **Le journal** : qui a décidé quoi et quand (appuis sur la télécommande, sourdines, salles vidées, choix gagnants des manches). Il se vide tout seul après 30 jours.
 
 ## Comment l'utiliser
 1. **Rien à faire** pour que ça marche : installez Sondages (ou un autre module d'animation) et Participation arrive avec lui.

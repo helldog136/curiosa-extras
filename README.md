@@ -6,7 +6,7 @@ Les modules de [Curiosa](https://github.com/helldog136/Curiosa). Le cœur de Cur
 |---|---|
 | `modules/` | Les fonctionnalités de base (blog, réseaux sociaux, codes promo, pages, bandeau, formulaire de contact, statut live…) et les modules pour la création de contenu (sponsors, planning, contacts, partenariats, overlays de stream…). |
 | `examples/` | Deux petits modules à lire pour apprendre à en écrire un. |
-| `starter/` | **Le module de départ des auteurs externes** : un dépôt de module complet (module à la racine, tests, workflow GitHub Actions, README avec le texte d'installation) à copier dans son propre dépôt. Il n'est **pas** au Catalogue. Guide : `docs/PUBLIER-SON-MODULE.md` du dépôt du cœur. |
+| `starter/` | **Le module de départ pour publier son propre module** : un dépôt de module complet (module à la racine, tests, workflow GitHub Actions, README avec le texte d'installation) à copier dans son propre dépôt. Il n'est **pas** au Catalogue. Guide : `docs/PUBLIER-SON-MODULE.md` du dépôt du cœur. |
 | `catalogue/index.json` | L'index que le Catalogue de l'admin relit (généré par `scripts/build-index.mjs`). |
 | `tests/` | Les tests des modules. |
 
