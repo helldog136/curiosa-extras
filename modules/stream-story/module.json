@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.5.0",
+  "version": "2.5.1",
   "platform": "instagram",
   "description": {
     "en": "Make a short animated video that announces one of your upcoming events, ready to post as an Instagram story (vertical) or a portrait post. Pick the event from one list that gathers your streams and, when they are set up, your scheduled YouTube videos and your Twitch schedule, sorted by date and time. Then pick a style, what it shows, your own sentence and the length; it is made right in your browser and downloaded as a file.",
@@ -29,7 +29,7 @@
   ],
   "privacy": {
     "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events are read live and held in memory for under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
-    "fr": "Rien n'est collecté sur vos visiteurs, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
+    "fr": "Rien n'est collecté sur votre public, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
   },
   "tabs": [
     {
@@ -196,7 +196,7 @@
       "optional": true,
       "label": {
         "en": "Your contacts (the Contacts module): guest streamers are looked up there, with their picture. Optional: without it you can still add someone for one video only",
-        "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter quelqu'un pour une seule vidéo"
+        "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter une personne pour une seule vidéo"
       }
     },
     {
@@ -362,7 +362,7 @@
           },
           "watermark": {
             "type": "boolean",
-            "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless she chose otherwise). Never add it unless the owner asked for it."
+            "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless they chose otherwise). Never add it unless the owner asked for it."
           }
         }
       }

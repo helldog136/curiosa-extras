@@ -5,7 +5,7 @@
     "fr": "Mascotte",
     "en": "Mascot"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.5",
   "description": {
     "fr": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
@@ -73,7 +73,7 @@
     {
       "id": "publish",
       "label": {
-        "fr": "montrer ou cacher la mascotte aux visiteurs",
+        "fr": "montrer ou cacher la mascotte au public",
         "en": "show or hide the mascot to visitors"
       },
       "help": {
@@ -265,7 +265,7 @@
         "en": "A “Wake the mascot” link at the bottom of pages"
       },
       "help": {
-        "fr": "Utile si un visiteur l'a coupée pour toujours et veut la retrouver.",
+        "fr": "Utile si une personne l'a coupée pour toujours et veut la retrouver.",
         "en": "Handy if a visitor switched it off for good and wants it back."
       }
     },
@@ -280,7 +280,7 @@
         "en": "Wait before appearing (seconds, from 3 to 60)"
       },
       "help": {
-        "fr": "Le temps pendant lequel le visiteur est tranquille en arrivant sur la page.",
+        "fr": "Le temps pendant lequel la personne qui visite est tranquille en arrivant sur la page.",
         "en": "How long the visitor is left alone after arriving on the page."
       }
     },
@@ -306,11 +306,11 @@
       "advanced": true,
       "tab": "settings",
       "label": {
-        "fr": "Messages au plus par jour et par visiteur (de 1 à 10)",
+        "fr": "Messages au plus par jour et par personne (de 1 à 10)",
         "en": "Most messages per day and per visitor (from 1 to 10)"
       },
       "help": {
-        "fr": "Compté dans le navigateur du visiteur. Une apparition par visite, quoi qu'il arrive.",
+        "fr": "Compté dans le navigateur de la personne qui visite. Une apparition par visite, quoi qu'il arrive.",
         "en": "Counted in the visitor's browser. One appearance per visit, whatever happens."
       }
     }

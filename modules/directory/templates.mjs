@@ -7,8 +7,8 @@ export const TEMPLATES = {
     cats: [{ fr: "Membres", en: "Members" }, { fr: "Bénévoles", en: "Volunteers" }, { fr: "Anciens membres", en: "Former members" }],
   },
   collective: {
-    vocab: { fr: { title: "Créateurs", noun: "créateur", nouns: "créateurs", team: "Équipe" }, en: { title: "Creators", noun: "creator", nouns: "creators", team: "Team" } },
-    cats: [{ fr: "Créateurs", en: "Creators" }, { fr: "Invités", en: "Guests" }],
+    vocab: { fr: { title: "Artistes", noun: "artiste", nouns: "artistes", team: "Équipe" }, en: { title: "Creators", noun: "creator", nouns: "creators", team: "Team" } },
+    cats: [{ fr: "Artistes", en: "Creators" }, { fr: "Personnes invitées", en: "Guests" }],
   },
   empty: { vocab: {}, cats: [] },
 };

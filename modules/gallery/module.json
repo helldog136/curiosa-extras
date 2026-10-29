@@ -5,7 +5,7 @@
     "fr": "Galeries photos",
     "en": "Photo galleries"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.2.13",
   "description": {
     "fr": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Les photos sont réduites et hébergées sur votre site (dans des limites que vous réglez), ou l'album mène vers un autre service. Visionneuse plein écran, lien par photo, demande de retrait.",
@@ -88,7 +88,7 @@
         "en": "handle photo takedown requests"
       },
       "help": {
-        "fr": "Lire les demandes des visiteurs, masquer la photo concernée ou écarter la demande.",
+        "fr": "Lire les demandes du public, masquer la photo concernée ou écarter la demande.",
         "en": "Read visitors' requests, hide the photo concerned or dismiss the request."
       },
       "default": {
@@ -213,7 +213,7 @@
         "en": "Also copy requests into my address book"
       },
       "help": {
-        "fr": "Seulement si le visiteur a laissé son e-mail et si le module Contacts est installé. Sans lui, rien ne change.",
+        "fr": "Seulement si la personne qui visite a laissé son e-mail et si le module Contacts est installé. Sans lui, rien ne change.",
         "en": "Only if the visitor left an e-mail and the Contacts module is installed. Without it, nothing changes."
       }
     },
@@ -340,7 +340,7 @@
         "en": "Sites allowed for photos by address"
       },
       "help": {
-        "fr": "Un site par ligne, par exemple : images.example.org ou *.example.org. Une photo « par adresse » reste chez ce site et est chargée depuis lui : le visiteur lui montre son adresse. Laissé vide, cette façon d'ajouter une photo est fermée.",
+        "fr": "Un site par ligne, par exemple : images.example.org ou *.example.org. Une photo « par adresse » reste chez ce site et est chargée depuis lui : la personne qui visite lui montre son adresse. Laissé vide, cette façon d'ajouter une photo est fermée.",
         "en": "One site per line, for example: images.example.org or *.example.org. A photo “by address” stays on that site and is loaded from it: the visitor shows it their address. Left empty, this way of adding a photo is closed."
       }
     },
@@ -416,7 +416,7 @@
       "default": 3,
       "advanced": true,
       "label": {
-        "fr": "Demandes de retrait permises par visiteur et par heure",
+        "fr": "Demandes de retrait permises par personne et par heure",
         "en": "Takedown requests allowed per visitor per hour"
       },
       "help": {

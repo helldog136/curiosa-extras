@@ -26,7 +26,7 @@
   "err_url_scheme": "Écrivez une adresse de site web, par exemple {example}.",
   "fLabel": "Nom affiché (facultatif)",
   "fLabelHelp": "Montré quand on survole l'icône et lu par les lecteurs d'écran. Obligatoire pour « Autre ».",
-  "fOrigin": "Indiquer d'où vient le visiteur",
+  "fOrigin": "Indiquer d'où vient la personne qui visite",
   "fPlatform": "Plateforme",
   "fUrl": "Adresse de votre page",
   "fUrlHelp": "Collez l'adresse, même sans « https:// ». Exemple : onlyfans.com/monnom. Pour une plateforme de la liste, votre nom seul suffit.",

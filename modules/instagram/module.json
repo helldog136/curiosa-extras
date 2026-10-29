@@ -5,7 +5,7 @@
     "en": "Instagram",
     "fr": "Instagram"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "instagram",
   "description": {
     "en": "Shows your Instagram button in the site header. Add one per account if you have several.",

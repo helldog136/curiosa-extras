@@ -5,10 +5,10 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.6",
   "description": {
-    "fr": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez le visiteur, programme, intervenants, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
+    "fr": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
     "en": "An agenda of events and trainings: upcoming dates with a filter by type and search, a monthly calendar, a detailed page (time where the visitor lives, programme, speakers, sign-up, video, add to one's calendar) and a look back at past events."
   },
   "author": "Helldog136",
@@ -393,7 +393,7 @@
         "en": "Time zone of the site"
       },
       "help": {
-        "fr": "Les heures que vous écrivez sont celles de ce fuseau, sauf indication contraire sur un événement. Un visiteur d'un autre fuseau voit aussi l'heure chez lui.",
+        "fr": "Les heures que vous écrivez sont celles de ce fuseau, sauf indication contraire sur un événement. Une personne d'un autre fuseau voit aussi l'heure chez lui.",
         "en": "The times you write are in this time zone unless an event says otherwise. A visitor in another time zone also sees the time where they live."
       }
     },
@@ -407,7 +407,7 @@
         "en": "Introduction (optional)"
       },
       "help": {
-        "fr": "Affiché au-dessus de la liste. Exemple : « Tous nos rendez-vous, ouverts à toutes et tous. »",
+        "fr": "Affiché au-dessus de la liste. Exemple : « Tous nos rendez-vous, ouverts à tout le monde. »",
         "en": "Shown above the list. Example: “All our dates, open to everyone.”"
       }
     },
@@ -488,7 +488,7 @@
         "en": "Show “See on the map” when the place has coordinates"
       },
       "help": {
-        "fr": "Un simple lien : rien ne se charge avant que le visiteur clique.",
+        "fr": "Un simple lien : rien ne se charge avant que la personne qui visite clique.",
         "en": "A simple link: nothing loads before the visitor clicks."
       }
     },

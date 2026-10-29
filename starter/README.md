@@ -1,6 +1,6 @@
 # Mon module
 
-Une phrase pour dire à quoi sert votre module, pour quelqu'un qui n'a aucun bagage technique. (Ce fichier est affiché à la personne **avant** l'installation : c'est votre vitrine.)
+Une phrase pour dire à quoi sert votre module, pour une personne qui n'a aucun bagage technique. (Ce fichier est affiché à la personne **avant** l'installation : c'est votre vitrine.)
 
 Ce module de départ affiche un court message d'accueil sur la page d'accueil du site.
 
@@ -11,7 +11,7 @@ Ce module de départ affiche un court message d'accueil sur la page d'accueil du
 
 ## Ce que le module demande
 
-Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne contacte aucun site et ne collecte aucune donnée sur vos visiteurs.
+Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne contacte aucun site et ne collecte aucune donnée sur votre public.
 
 ## Installer sur votre site Curiosa
 
@@ -32,7 +32,7 @@ MIT (voir `LICENSE`).
 
 ---
 
-## Pour les développeurs (à supprimer avant de publier)
+## Pour qui développe (à supprimer avant de publier)
 
 Ce dossier est un dépôt de module **complet**. Copiez-le dans un nouveau dépôt git (le fichier `module.json` doit être à la **racine** du dépôt) et changez, dans cet ordre : l'identifiant `id` (à vous pour toujours), `author`, `license`, les textes, `LICENSE`, puis cette page.
 

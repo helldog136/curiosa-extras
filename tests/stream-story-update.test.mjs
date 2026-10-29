@@ -65,7 +65,7 @@ for (const from of ["2.3.0", "2.4.0"]) {
       assert.ok(html.includes('id="step-btn-3"') && html.includes('id="generate-now"') && html.includes('id="event-change"'), "2.5.0 : l'assistant en 3 étapes est servi");
       assert.ok(html.includes("Changer d&#39;événement") || html.includes("Changer d'événement"));
       const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
-      assert.equal(manifest.version, "2.5.0"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");
+      assert.equal(manifest.version, "2.5.1"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");
       for (const tool of ["story_models", "story_next_streams", "story_events", "story_prepare"]) assert.ok(manifest.mcp.some((t) => t.name === tool) && typeof after.mcp[tool] === "function", tool);
       for (const route of ["studio", "events", "cover", "data", "prep", "act", "people", "members", "categories", "category", "streams", "img", "wordmark"]) assert.equal(typeof after.routes[route], "function", route);
       const keys = manifest.settings.map((x) => x.key);

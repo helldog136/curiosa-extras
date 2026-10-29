@@ -60,7 +60,7 @@ const PATREON = {
   expires: false,
   secret: { fr: "Le « Creator's Access Token » de votre page développeur Patreon. Il permet seulement de LIRE la liste de vos membres.", en: "The “Creator's Access Token” from your Patreon developer page. It only lets the site READ your member list." },
   what: {
-    fr: "Le site demande à Patreon la liste de vos membres (leur nom, leur palier, leur date de début) quand vous le demandez, ou quand quelqu'un ouvre la page des soutiens après quelques heures. Aucun montant n'est gardé et aucune adresse e-mail n'est demandée.",
+    fr: "Le site demande à Patreon la liste de vos membres (leur nom, leur palier, leur date de début) quand vous le demandez, ou quand une personne ouvre la page des soutiens après quelques heures. Aucun montant n'est gardé et aucune adresse e-mail n'est demandée.",
     en: "The site asks Patreon for your member list (name, tier, start date) when you ask, or when someone opens the supporters page after a few hours. No amount is kept and no e-mail address is requested.",
   },
   steps: {

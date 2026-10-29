@@ -27,7 +27,7 @@ Le Connecteur est **une seule application Twitch**, avec autant de comptes conne
 - L'adresse de votre site doit commencer par https:// pour que Twitch accepte la connexion.
 - Si Twitch dit « trop de demandes », tout le site fait une pause jusqu'à l'heure indiquée par Twitch, puis reprend seul.
 
-## Pour les développeurs
+## Pour qui développe
 
 Identifiant `twitch-connector`, `instances: "single"`, `minCore` 0.2.2. La clé d'instance par défaut est celle que le cœur 0.2.0 dérive de l'identifiant du module (`twitch-connector`) : l'adresse de retour des **nouvelles** configurations est donc `<site>/m/twitch-connector/oauth/callback` (le cœur 0.2.0 n'a pas de réglage de clé par défaut ; voir le CHANGELOG). Réglages : `appClientId` (texte, `refersTo: "external"`) et `appSecret` (secret). Les valeurs reprises vivent dans le stockage (`twitchApp`) ; un réglage saisi a toujours le dessus, champ par champ.
 

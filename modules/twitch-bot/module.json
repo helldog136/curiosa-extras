@@ -3,7 +3,7 @@
   "minCore": "0.2.5",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.3.0",
+  "version": "1.3.1",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -99,7 +99,7 @@
   ],
   "privacy": {
     "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page. For channel point rewards it also keeps, for the last 50 exchanges, the username, the reward and the outcome, never the viewer's message.",
-    "fr": "Quand quelqu'un tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Pour les récompenses en points de chaîne, il garde aussi, pour les 50 derniers échanges, le pseudo, la récompense et le résultat, jamais le message du viewer."
+    "fr": "Quand une personne tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Pour les récompenses en points de chaîne, il garde aussi, pour les 50 derniers échanges, le pseudo, la récompense et le résultat, jamais le message du viewer."
   },
   "tabs": [
     {
@@ -125,8 +125,8 @@
       "type": "text",
       "optional": true,
       "tab": "rewards",
-      "label": { "en": "Moderators who may type !stop", "fr": "Modérateurs qui peuvent taper !stop" },
-      "help": { "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.", "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. Les modérateurs ne peuvent pas redémarrer : vous seule le pouvez." }
+      "label": { "en": "Moderators who may type !stop", "fr": "Équipe de modération qui peut taper !stop" },
+      "help": { "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.", "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. L'équipe de modération ne peut pas redémarrer : vous êtes la seule personne à pouvoir le faire." }
     },
     {
       "key": "rewardWaitSeconds",

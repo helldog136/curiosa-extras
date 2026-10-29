@@ -2,7 +2,7 @@
   "stats_title": "Vos statistiques",
   "col_stat": "Chiffre suivi",
   "col_value": "Actuellement",
-  "stat_followers": "Abonnés Mastodon",
+  "stat_followers": "Followers Mastodon",
   "stat_content": "Publications Mastodon",
   "err_hidden": "Ce serveur Mastodon ne montre pas ses chiffres au public. Demandez à son administrateur, ou décochez « Suivre mes statistiques ».",
   "err_rate": "Ce serveur Mastodon limite les demandes pour le moment : rien à faire, cela reprendra tout seul.",

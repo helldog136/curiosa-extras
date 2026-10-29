@@ -89,7 +89,7 @@ export default {
   async supporters_consent_link(ctx, args) {
     const r = await O.consentLink(ctx, pidArg(args.pid), { renew: args.renew === true });
     if (!r.ok) throw fail("No such supporter.");
-    return { pid: args.pid, path: r.path, url: r.url, renewed: r.renewed, note: "Send this link to the person herself. Nothing is shown before she agrees on it." };
+    return { pid: args.pid, path: r.path, url: r.url, renewed: r.renewed, note: "Send this link to the person directly. Nothing is shown before they agree on it." };
   },
 
   async supporters_file_contacts(ctx) {

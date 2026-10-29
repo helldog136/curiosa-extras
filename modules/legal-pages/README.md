@@ -3,7 +3,7 @@
 Un site a besoin de mentions légales, d'une page sur la vie privée et d'une information sur les cookies. Ce module vous pose **6 à 8 questions en mots simples** (« Qui édite ce site ? », « Qui l'héberge ? », « Récoltez-vous des adresses e-mail ? », « Vendez-vous quelque chose ? »…) et prépare pour vous **trois pages**, en **français et en anglais** :
 
 - **Mentions légales** : qui édite le site, comment le contacter, qui l'héberge ;
-- **Confidentialité** : ce que le site récolte, pourquoi, combien de temps, avec qui c'est partagé, et les droits de vos visiteurs (avec l'autorité à qui s'adresser) ;
+- **Confidentialité** : ce que le site récolte, pourquoi, combien de temps, avec qui c'est partagé, et les droits de votre public (avec l'autorité à qui s'adresser) ;
 - **Cookies** : ce que le site dépose dans le navigateur. Le texte dit honnêtement quand le site n'en dépose aucun de suivi, et il n'ajoute **aucun bandeau inutile**.
 
 Pays pris en compte : **Belgique, France, Suisse, Canada (Québec, ou une autre province)** et **un autre pays** (textes généraux).
@@ -36,7 +36,7 @@ Vous pouvez recommencer, corriger une réponse ou **retirer** les pages à tout 
 
 - Il **ne remplace pas un avocat** et ne vérifie pas que vos réponses sont vraies.
 - Il **n'écrit pas de conditions de vente** ni l'information sur le droit de rétractation. Si vous vendez, elles sont à écrire à part (le module vous le rappelle).
-- Il **ne fabrique pas de bandeau de consentement** et ne bloque pas les contenus d'autres services (lecteur vidéo…). Si vous en intégrez, il vous prévient : en Belgique et en France, il faut en principe l'accord du visiteur avant de les afficher.
+- Il **ne fabrique pas de bandeau de consentement** et ne bloque pas les contenus d'autres services (lecteur vidéo…). Si vous en intégrez, il vous prévient : en Belgique et en France, il faut en principe l'accord de la personne qui visite avant de les afficher.
 - Il **n'efface pas vos messages** à votre place : la durée de conservation que vous choisissez est un engagement que vous prenez.
 - Il **n'empêche pas** le site d'ajouter par défaut un lien « Mentions légales » dans le menu du haut : décochez « Afficher dans le menu de mon site » (onglet « Général ») pour le garder seulement en bas de page.
 - Il ne connaît que les extensions du catalogue au moment de son écriture. Pour une extension qu'il ne connaît pas, il vous **pose la question** au lieu de deviner.
@@ -44,6 +44,6 @@ Vous pouvez recommencer, corriger une réponse ou **retirer** les pages à tout 
 
 ## Vie privée de ce module
 
-Le module lui-même ne récolte **rien** chez vos visiteurs : aucune route publique, aucun formulaire, aucun cookie. Il garde sur le site vos réponses (jamais publiées telles quelles) et les trois textes publiés. Ils sont inclus dans la sauvegarde lisible du site (`answers.md`, `published-fr.md`, `published-en.md`).
+Le module lui-même ne récolte **rien** chez votre public : aucune route publique, aucun formulaire, aucun cookie. Il garde sur le site vos réponses (jamais publiées telles quelles) et les trois textes publiés. Ils sont inclus dans la sauvegarde lisible du site (`answers.md`, `published-fr.md`, `published-en.md`).
 
 Permissions : pages publiques, emplacement du pied de page, stockage, administration, assistants IA.

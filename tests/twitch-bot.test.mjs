@@ -199,7 +199,7 @@ test("variables : liste fermée vérifiée à l'enregistrement, adaptée au type
 test("rendu : une passe (une valeur contenant {titre} n'est pas remplacée à son tour), pseudo nettoyé, jamais de départ en / . ou préfixe, coupé à 500", () => {
   const values = { titre: "Mon {jeu} préféré", jeu: "Zelda", utilisateur: V.pseudo("Vi​ewer<script>") };
   assert.equal(V.render("{titre} / {jeu} / {utilisateur}", values), "Mon {jeu} préféré / Zelda / Viewerscript");
-  assert.equal(V.pseudo("😀😀"), "ami"); assert.equal(V.pseudo("A".repeat(60)).length, 25); assert.equal(V.pseudo("Jean-Luc_2"), "Jean-Luc_2");
+  assert.equal(V.pseudo("😀😀"), "chat"); assert.equal(V.pseudo("A".repeat(60)).length, 25); assert.equal(V.pseudo("Jean-Luc_2"), "Jean-Luc_2");
   assert.equal(V.render("{titre}", { titre: "/mod tout" }), "• /mod tout");
   assert.equal(V.render("{titre}", { titre: ".disconnect" }), "• .disconnect");
   assert.equal(V.render("{titre}", { titre: "!sr une chanson" }), "• !sr une chanson");
@@ -378,7 +378,7 @@ test("commandes toutes prêtes : !jeu !titre !uptime lisent le direct, !follower
     "On joue à Zelda !",
     "Titre du direct : Soirée détente",
     "En direct depuis 1 h 41 min.",
-    "Viewer, la communauté compte 1 234 followers, merci à tous !",   // espace insécable normalisée en espace simple
+    "Viewer, la communauté compte 1 234 followers, merci à tout le monde !",   // espace insécable normalisée en espace simple
     "Prochain stream : samedi 17 octobre à 20:30 (Zelda en soirée)",
   ]);
   assert.deepEqual(tw.chat.map((m) => [m.broadcaster_id, m.sender_id]), Array(5).fill(["100", "100"]));
@@ -1151,7 +1151,7 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.3.0", "0.2.5", "twitch", "multiple", 2]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.3.1", "0.2.5", "twitch", "multiple", 2]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function");

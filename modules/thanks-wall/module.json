@@ -6,10 +6,10 @@
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": {
     "en": "A “Thank you!” page for your community: the people of one or more Contacts categories (moderators, supporters, beta testers…) as a grid of cards with their photos, a person in the spotlight each month and a short message for anyone you like. Names and photos stay in Contacts, so there is nothing to retype.",
-    "fr": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-testeurs…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper."
+    "fr": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-test…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -47,7 +47,7 @@
   ],
   "privacy": {
     "en": "Nothing is collected about your visitors: no cookie, no form, no address kept. The wall shows what you put in Contacts (name, photo); a card in the “Do not show” category never appears. The module keeps only the short messages you write and the monthly spotlight, tied to the card number (never a name or photo). Photos are loaded by the visitor's browser from where they live (your site, Twitch, YouTube or Bluesky), which sees the visitor's address, as for any image.",
-    "fr": "Rien n'est collecté sur vos visiteurs : ni cookie, ni formulaire, aucune adresse gardée. Le mur montre ce que vous avez mis dans Contacts (nom, photo) ; une fiche de la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement vos petits messages et la mise à l'honneur du mois, rattachés au numéro de la fiche (jamais un nom ni une photo). Les photos sont chargées par le navigateur du visiteur là où elles sont (votre site, Twitch, YouTube, Bluesky) : ce service voit son adresse."
+    "fr": "Rien n'est collecté sur le public : ni cookie, ni formulaire, aucune adresse gardée. Le mur montre ce que vous avez mis dans Contacts (nom, photo) ; une fiche de la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement vos petits messages et la mise à l'honneur du mois, rattachés au numéro de la fiche (jamais un nom ni une photo). Les photos sont chargées par le navigateur de chaque personne là où elles sont (votre site, Twitch, YouTube, Bluesky) : ce service voit l'adresse."
   },
   "rights": [
     {
@@ -94,7 +94,7 @@
       },
       "help": {
         "en": "Everyone in this Contacts category appears on the wall. No category yet? Type its name (for example “Moderators”), click “Create”, then put your cards in it from Contacts.",
-        "fr": "Toutes les personnes de cette catégorie de Contacts apparaissent sur le mur. Pas encore de catégorie ? Tapez son nom (par exemple « Modérateurs »), cliquez sur « Créer », puis rangez vos fiches dedans depuis Contacts."
+        "fr": "Toutes les personnes de cette catégorie de Contacts apparaissent sur le mur. Pas encore de catégorie ? Tapez son nom (par exemple « Modération »), cliquez sur « Créer », puis rangez vos fiches dedans depuis Contacts."
       }
     },
     {
@@ -264,7 +264,7 @@
         "fr": "Catégorie « Ne pas montrer »"
       },
       "help": {
-        "en": "A person who asks not to appear: put her card in this Contacts category and she disappears from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.",
+        "en": "A person who asks not to appear: put their card in this Contacts category and they disappear from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.",
         "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît du mur en moins de deux minutes. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe."
       }
     },

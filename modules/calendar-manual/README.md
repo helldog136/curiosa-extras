@@ -1,6 +1,6 @@
 # Streams saisis à la main — module communautaire de Curiosa
 
-Pour celles et ceux qui **n'ont pas d'agenda en ligne** : écrivez vos streams directement dans l'administration de votre site. Ils apparaissent tout seuls sur le **Planning des streams** et le **bot Twitch** s'en sert pour répondre à `!planning`.
+Pour qui **n'a pas d'agenda en ligne** : écrivez vos streams directement dans l'administration de votre site. Ils apparaissent tout seuls sur le **Planning des streams** et le **bot Twitch** s'en sert pour répondre à `!planning`.
 
 Il faut Curiosa 0.2.2 ou plus.
 
@@ -28,6 +28,6 @@ Ajoutez un module « Streams saisis à la main » par liste si vous le souhaitez
 
 *Retirer et garder mes données* met vos streams de côté : réinstaller le module les retrouve tels quels. *Retirer et tout effacer* les supprime pour de bon, après confirmation.
 
-## Pour les développeurs
+## Pour qui développe
 
 Ce module fournit le sujet **`planning.slot`** (le Planning et le bot Twitch le lisent ; aucun ne connaît ce module). Contrat d'un élément : `id`, `title`, `start` et `end` (instants ISO 8601 en UTC), `allDay`, `day` (journée entière : la date `AAAA-MM-JJ`, `end` est le début du jour suivant), `games`, `text`, `status` (`confirmed` ou `cancelled`), `timezone`. Les streams sont gardés dans le stockage du module (collection `streams`) ; la logique pure est dans `schedule.mjs`.
