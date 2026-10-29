@@ -393,7 +393,7 @@
   "rw_action_saved": "L'action « {name} » est enregistrée.",
   "rw_action_removed": "Action retirée de la liste.",
   "rw_action_used": "Une récompense utilise encore cette action : changer d'abord la récompense.",
-  "rw_action_legacy": "Cette action vient de l'ancien réglage « Autres actions à choisir » (mode avancé) : la retirer de là-bas.",
+  "rw_action_legacy": "Cette action vient du réglage « Autres actions à choisir » (mode avancé) : la retirer de là-bas.",
   "rw_delete_title": "Supprimer cette récompense",
   "rw_sim_row_btn": "Simuler cette récompense"
 }

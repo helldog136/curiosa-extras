@@ -149,8 +149,8 @@
       "optional": true,
       "advanced": true,
       "tab": "rewards",
-      "label": { "en": "Other actions you can pick (advanced, old setting)", "fr": "Autres actions à choisir (avancé, ancien réglage)" },
-      "help": { "en": "Old setting, still working: words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.", "fr": "Ancien réglage, qui marche toujours : des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Tes actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom." }
+      "label": { "en": "Other actions you can pick (advanced)", "fr": "Autres actions à choisir (avancé)" },
+      "help": { "en": "Words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.", "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Tes actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom." }
     },
     {
       "key": "showKeys",

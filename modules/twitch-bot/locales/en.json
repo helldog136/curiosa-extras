@@ -393,7 +393,7 @@
   "rw_action_saved": "The action “{name}” is saved.",
   "rw_action_removed": "Action removed from the list.",
   "rw_action_used": "A reward still uses this action: change the reward first.",
-  "rw_action_legacy": "This action comes from the old “Other actions you can pick” setting (advanced mode): remove it from there.",
+  "rw_action_legacy": "This action comes from the “Other actions you can pick” setting (advanced mode): remove it from there.",
   "rw_delete_title": "Delete this reward",
   "rw_sim_row_btn": "Simulate this reward"
 }
