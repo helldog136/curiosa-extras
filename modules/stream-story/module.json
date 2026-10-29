@@ -196,7 +196,7 @@
       "optional": true,
       "label": {
         "en": "Your contacts (the Contacts module): guest streamers are looked up there, with their picture. Optional: without it you can still add someone for one video only",
-        "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter quelqu'un pour une seule vidéo"
+        "fr": "Vos contacts (le module Contacts) : les co-streamers y sont cherchés, avec leur photo. Facultatif : sans lui, vous pouvez quand même ajouter une personne pour une seule vidéo"
       }
     },
     {

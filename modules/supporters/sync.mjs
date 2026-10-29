@@ -171,7 +171,7 @@ export async function applyRows(ctx, provider, rows, { replace = false } = {}) {
       base.since = row.since ?? base.since;
       base.tiers = row.active && tierKey ? [tierKey] : row.active ? base.tiers : [];
       if (old) { if (await put(ctx, snap, old, base)) out.updated++; continue; }
-      if (!row.active) continue;   // une ligne « arrêté » pour quelqu'un d'inconnu : rien à garder
+      if (!row.active) continue;   // une ligne « arrêté » pour une personne inconnue : rien à garder
       const r = await D.savePerson(ctx, snap, { id: null, data: base });
       if (r.ok) out.added++; else out.full = true;
     }

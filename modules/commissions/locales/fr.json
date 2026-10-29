@@ -133,7 +133,7 @@
   "filter_done": "Terminées ({n})",
   "filter_all": "Toutes ({n})",
   "emptyFilter": "Aucune demande dans cette liste.",
-  "emptyAll": "Aucune demande pour l'instant. Quand quelqu'un en enverra une, elle apparaîtra ici (et dans la pastille du menu).",
+  "emptyAll": "Aucune demande pour l'instant. Quand une personne en enverra une, elle apparaîtra ici (et dans la pastille du menu).",
   "colDate": "Date",
   "colStatus": "État",
   "status_new": "Nouvelle",

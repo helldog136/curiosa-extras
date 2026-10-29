@@ -1,6 +1,6 @@
 {
   "tts_says": "{viewer} dit : ",
-  "tts_someone": "Quelqu'un",
+  "tts_someone": "Une personne",
   "res_queued": "En file, pas encore récupérée",
   "res_delivered": "Récupérée par Home Assistant, en attente du résultat",
   "res_done": "Faite",

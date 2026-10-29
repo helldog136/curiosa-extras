@@ -127,7 +127,7 @@
   "fieldSeriesStateHelp": "Brouillon : la série n'est pas visible. Publiée : elle apparaît sur la page.",
   "fieldState": "État",
   "fieldStateAddHelp": "Brouillon : seule l'équipe la voit. Vous pourrez la publier juste après.",
-  "fieldStateHelp": "Brouillon : seule l'équipe la voit. Publiée : visible par tous. Masquée : retirée du site sans être supprimée.",
+  "fieldStateHelp": "Brouillon : seule l'équipe la voit. Publiée : visible par tout le monde. Masquée : retirée du site sans être supprimée.",
   "fieldTitle": "Titre",
   "fieldTitleHelp": "Exemple : Atelier lumière, épisode 1",
   "fieldTitleOptional": "Titre (facultatif)",

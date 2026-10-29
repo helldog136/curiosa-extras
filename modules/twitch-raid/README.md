@@ -24,7 +24,7 @@ Vous finissez votre live et vous voulez **raider une personne amie**. Mais qui e
 Au lieu de montrer **tous** vos partenaires en direct, ce mode en choisit **quelques-uns au hasard** (de 1 à 10, 5 par défaut) pour donner envie de les raider, ou de les découvrir. Il est **éteint par défaut** : tant que vous n'y touchez pas, le dock ne change pas d'un pixel. Tout se règle dans l'onglet **« Sélection du moment »** de la page de Raid.
 
 - **Stable** : les chaînes choisies ne changent pas à chaque rafraîchissement ni d'une personne à l'autre. La sélection dure **10 minutes** (réglable de 1 à 240), puis une nouvelle est tirée. « **Tirer de nouveau** » (dans le dock de la sélection, ou dans l'administration) en tire une autre tout de suite, pour tout le monde.
-- **Équitable** : les mêmes personnes ne reviennent pas tant que d'autres sont en direct ; quand tout le monde est passé, on recommence par ceux montrés il y a le plus longtemps.
+- **Équitable** : les mêmes personnes ne reviennent pas tant que d'autres sont en direct ; quand tout le monde est passé, on recommence par celles montrées il y a le plus longtemps.
 - **Moins de chaînes en direct que demandé ?** On montre celles qui le sont, et la sélection se complète toute seule quand d'autres arrivent. Une chaîne qui s'arrête est remplacée, les autres ne bougent pas.
 - **Petites chaînes d'abord** (option avancée, éteinte par défaut) : moins une chaîne a d'audience, plus elle a de chances d'être tirée.
 - **Ne jamais tirer** (option avancée) : une liste de pseudos (par exemple vous-même). Votre propre chaîne n'est de toute façon jamais tirée.
@@ -76,10 +76,10 @@ Une seule personne tient la liste, sur **un seul site**. Les personnes de la lis
 3. Mettez les chaînes dans Contacts, dans la catégorie « Cible de raid » (l'import de Contacts accepte une liste collée ou un fichier).
 4. Copiez **l'adresse du dock** et donnez-la aux personnes concernées : dans OBS, **Docks**, **Docks de navigateur personnalisés**, un nom, l'adresse, **Appliquer**.
 
-Le site central **n'interroge Twitch que lorsque quelqu'un regarde ou clique**, et le nombre de demandes **ne dépend pas du nombre de chaînes** : tout le monde partage les mêmes réponses (30 secondes pour la liste complète, une minute pour le mode « au hasard »). Rien n'est écrit sur le disque : si le site redémarre, les réponses gardées sont simplement oubliées.
+Le site central **n'interroge Twitch que lorsqu'une personne regarde ou clique**, et le nombre de demandes **ne dépend pas du nombre de chaînes** : tout le monde partage les mêmes réponses (30 secondes pour la liste complète, une minute pour le mode « au hasard »). Rien n'est écrit sur le disque : si le site redémarre, les réponses gardées sont simplement oubliées.
 
 ## Son adresse reste secrète
-L'adresse du dock contient un code secret, créé pour vous : sans lui, la page ne montre rien. **Pour votre seul usage, gardez-la pour vous. Pour la partager, donnez-la aux personnes concernées** : toutes les personnes concernées voient le même dock, qui n'affiche que ce que Twitch montre déjà à tout le monde (nom, jeu, titre, audience), **jamais vos notes**. Si elle a été partagée par erreur, ou si une personne ne doit plus y avoir accès, « Nouvelle adresse » en crée une autre (avec une confirmation) : **l'ancienne cesse de marcher aussitôt pour tout le monde**, et chaque personne doit coller la nouvelle dans OBS. Il n'y a pas d'adresse par personne pour l'instant : une même adresse pour tous.
+L'adresse du dock contient un code secret, créé pour vous : sans lui, la page ne montre rien. **Pour votre seul usage, gardez-la pour vous. Pour la partager, donnez-la aux personnes concernées** : toutes les personnes concernées voient le même dock, qui n'affiche que ce que Twitch montre déjà à tout le monde (nom, jeu, titre, audience), **jamais vos notes**. Si elle a été partagée par erreur, ou si une personne ne doit plus y avoir accès, « Nouvelle adresse » en crée une autre (avec une confirmation) : **l'ancienne cesse de marcher aussitôt pour tout le monde**, et chaque personne doit coller la nouvelle dans OBS. Il n'y a pas d'adresse par personne pour l'instant : une même adresse pour tout le monde.
 
 ## Votre IA
 Deux outils, **non accordés d'office** (administration, accès de votre IA) :

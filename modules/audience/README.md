@@ -6,7 +6,7 @@ La base commune des animations de votre stream : **un pseudo par personne sans c
 - **Un pseudo, sans compte** : la personne choisit le nom que les autres voient (ou n'en choisit pas : il n'est jamais obligatoire pour voter). Un pseudo est **unique dans une salle**, sans tenir compte des accents ni des majuscules (« Éloïse » et « eloise » sont le même pseudo), de 3 à 20 caractères, avec des lettres, des chiffres, des espaces et des tirets. Une **liste de mots interdits** (modifiable) refuse les insultes et les noms qui se font passer pour l'équipe.
 - **Une voix par personne et par salle** : une salle est l'espace d'une animation. Rejouer le même vote est refusé poliment.
 - **Des limites contre les abus** : nombre de nouvelles personnes et de votes par heure et par connexion, sans jamais garder l'adresse de la personne.
-- **La télécommande** : une page secrète pour votre téléphone, avec de GROS boutons : lancer, arrêter, passer au suivant, « A ou B ? » en un geste, mettre quelqu'un en sourdine, vider une salle. Les modules d'animation y ajoutent eux-mêmes leurs boutons.
+- **La télécommande** : une page secrète pour votre téléphone, avec de GROS boutons : lancer, arrêter, passer au suivant, « A ou B ? » en un geste, mettre une personne en sourdine, vider une salle. Les modules d'animation y ajoutent eux-mêmes leurs boutons.
 - **Le direct** : l'écran de votre stream (OBS) et les pages publiques se mettent à jour tout seuls, sans surcharger le site : la mise à jour est douce, ralentit quand rien ne change, s'arrête quand la page est cachée et demande plus d'espace quand il y a beaucoup de monde.
 - **Le journal** : qui a décidé quoi et quand (appuis sur la télécommande, sourdines, salles vidées, vainqueurs des manches). Il se vide tout seul après 30 jours.
 
@@ -22,14 +22,14 @@ Tout marche sans rien régler. Visible tout de suite : la **liste des mots inter
 ## Vie privée : ce qui est gardé
 - Aucun compte, aucun cookie. Le navigateur de la personne garde un **code privé au hasard** (dans son stockage local). Le site n'en garde qu'une **version brouillée, différente dans chaque salle** (deux salles ne peuvent pas être reliées), le pseudo choisi (facultatif), un « en sourdine » éventuel et la date de la dernière visite.
 - **L'adresse de connexion n'est jamais enregistrée ni journalisée.** Elle sert seulement, brouillée avec un sel qui change chaque jour et n'est jamais écrit sur le disque, à freiner les abus.
-- Les personnes inactives sont **effacées au bout de 14 jours** (réglable de 1 à 90), les salles abandonnées aussi, le journal après 30 jours. Aucun minuteur : le ménage se fait quand quelqu'un regarde, par petites tranches.
-- Chaque personne peut **tout effacer d'un bouton** (page Participation). Vous pouvez retirer quelqu'un, ou vider une salle.
+- Les personnes inactives sont **effacées au bout de 14 jours** (réglable de 1 à 90), les salles abandonnées aussi, le journal après 30 jours. Aucun minuteur : le ménage se fait quand une personne regarde, par petites tranches.
+- Chaque personne peut **tout effacer d'un bouton** (page Participation). Vous pouvez retirer une personne, ou vider une salle.
 
 ## Ce que Participation ne garantit pas (honnêtement)
 - « Une personne » veut dire « un navigateur ». Qui vide ses données, change de navigateur ou utilise la navigation privée est une nouvelle personne. C'est le prix de la simplicité et de la vie privée.
 - Les protections arrêtent les curieux et les scripts simples, **pas une personne déterminée** qui change de connexion. Pour un enjeu important (tirage au sort, concours), ne vous fiez pas à ces seules protections.
-- Les pseudos qui imitent d'autres lettres (des lettres d'un autre alphabet qui ressemblent aux nôtres) ne sont pas détectés. La liste de mots interdits aide, elle ne remplace pas votre vigilance : vous pouvez toujours mettre quelqu'un en sourdine.
-- Le sel du jour est en mémoire : si le site redémarre, il change (c'est voulu). Derrière un relais qui ne transmet pas l'adresse réelle, tous le public aurait la même empreinte et partageraient la même limite.
+- Les pseudos qui imitent d'autres lettres (des lettres d'un autre alphabet qui ressemblent aux nôtres) ne sont pas détectés. La liste de mots interdits aide, elle ne remplace pas votre vigilance : vous pouvez toujours mettre une personne en sourdine.
+- Le sel du jour est en mémoire : si le site redémarre, il change (c'est voulu). Derrière un relais qui ne transmet pas l'adresse réelle, tout le public aurait la même empreinte et partageraient la même limite.
 
 ## Bornes
 200 salles ; 5 000 personnes et 20 000 voix par salle ; 100 points de direct (16 Ko chacun) ; 500 mots interdits ; 500 lignes de journal ; 50 personnes par page dans l'administration ; 8 modules branchés sur la télécommande au plus, 4 salles montrées dessus. Rien ne tourne en arrière-plan.

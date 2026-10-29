@@ -1,6 +1,6 @@
 # Actions du live YouTube
 
-Quand quelqu'un soutient votre **direct YouTube**, quelque chose se passe chez vous : vos lumières changent de couleur, un message est lu à voix haute. Le module ne fait que **décider** (« ce Super Chat déclenche telle action ») ; c'est le module **Home Assistant** qui exécute chez vous, avec son gros bouton « Tout couper », sa vérification du texte lu et son interrupteur.
+Quand une personne soutient votre **direct YouTube**, quelque chose se passe chez vous : vos lumières changent de couleur, un message est lu à voix haute. Le module ne fait que **décider** (« ce Super Chat déclenche telle action ») ; c'est le module **Home Assistant** qui exécute chez vous, avec son gros bouton « Tout couper », sa vérification du texte lu et son interrupteur.
 
 C'est le pendant, pour YouTube, des récompenses de points de chaîne Twitch.
 

@@ -86,7 +86,7 @@
   "cmd_planning_text": "Prochain stream : {prochain_stream}",
   "cmd_jeu_text": "On joue à {jeu} !",
   "cmd_titre_text": "Titre du direct : {titre}",
-  "cmd_followers_text": "{utilisateur}, la communauté compte {followers} followers, merci à tous !",
+  "cmd_followers_text": "{utilisateur}, la communauté compte {followers} followers, merci à tout le monde !",
   "cmd_uptime_text": "En direct depuis {uptime}.",
   "cmd_partner_text": "Découvrez mon parrainage {partenaire} : {adresse}",
   "cmd_network_text": "Retrouvez-moi sur {reseau} : {lien}",

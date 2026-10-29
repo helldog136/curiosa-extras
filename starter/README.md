@@ -1,6 +1,6 @@
 # Mon module
 
-Une phrase pour dire à quoi sert votre module, pour quelqu'un qui n'a aucun bagage technique. (Ce fichier est affiché à la personne **avant** l'installation : c'est votre vitrine.)
+Une phrase pour dire à quoi sert votre module, pour une personne qui n'a aucun bagage technique. (Ce fichier est affiché à la personne **avant** l'installation : c'est votre vitrine.)
 
 Ce module de départ affiche un court message d'accueil sur la page d'accueil du site.
 

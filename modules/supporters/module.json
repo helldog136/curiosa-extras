@@ -327,7 +327,7 @@
       "advanced": true,
       "label": {
         "en": "Days a gift keeps someone listed as active",
-        "fr": "Jours pendant lesquels un don garde quelqu'un dans les actifs"
+        "fr": "Jours pendant lesquels un don garde une personne dans les actifs"
       },
       "help": {
         "en": "For platforms that tell the site about each gift (not Patreon). Between 7 and 400.",
@@ -359,7 +359,7 @@
       },
       "help": {
         "en": "A refresh only happens when someone opens the page or the administration, never in the background. Between 15 and 1440.",
-        "fr": "Une actualisation n'a lieu que lorsque quelqu'un ouvre la page ou l'administration, jamais en arrière-plan. Entre 15 et 1440."
+        "fr": "Une actualisation n'a lieu que lorsqu'une personne ouvre la page ou l'administration, jamais en arrière-plan. Entre 15 et 1440."
       }
     },
     {

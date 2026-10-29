@@ -9,7 +9,7 @@
   "version": "1.1.0",
   "platform": "youtube",
   "description": {
-    "fr": "Quand quelqu'un soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",
+    "fr": "Quand une personne soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",
     "en": "When someone supports your YouTube live (Super Chat, Super Sticker, new membership, gifted memberships), an action starts at your place: a light colour, a message read aloud. You write the rules and try them without asking YouTube anything. The chat is only read while the “Live” page is open."
   },
   "privacy": {

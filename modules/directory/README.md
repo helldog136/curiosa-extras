@@ -4,7 +4,7 @@ Une vitrine **publique** de vos membres, artistes ou partenaires, et de votre é
 
 ## À quoi ça sert
 
-Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur » ne suffit plus : il faut pouvoir **retrouver** quelqu'un. L'annuaire sert à chercher et à filtrer. (Pour simplement **remercier** des gens, le module « Mur des remerciements » est fait pour cela.)
+Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur » ne suffit plus : il faut pouvoir **retrouver** une personne. L'annuaire sert à chercher et à filtrer. (Pour simplement **remercier** des gens, le module « Mur des remerciements » est fait pour cela.)
 
 ## Pour commencer (3 minutes)
 
@@ -17,13 +17,13 @@ Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur
 - Une **liste** de cartes : photo (ou initiales), nom, ville, catégories en pastilles, titre pour l'équipe.
 - Une **recherche** par nom (sans tenir compte des accents ni des majuscules), des **filtres** par catégorie (une ou plusieurs : l'une ou l'autre), un **tri** (A–Z, récents, au hasard stable toute la journée) et un **compteur**. 24 personnes par page (50 au plus), « Précédent / Suivant ».
 - Une **fiche** par personne : nom, titre, ville, catégories, présentation courte, liens vers ses comptes, et « autres personnes de la même catégorie ». L'adresse de la fiche reste la même si le nom change.
-- La section **Équipe**, avec le titre de chacun (« Présidente », « Trésorier »…), dans l'ordre que vous avez choisi.
+- La section **Équipe**, avec le titre de chaque personne (« Présidence », « Trésorerie »…), dans l'ordre que vous avez choisi.
 - Une **version imprimable** et un **fichier CSV** : seulement ce qui est déjà public.
 - Un bouton **« Proposer ma fiche »** : il mène à la page que vous choisissez (par exemple celle de votre formulaire de contact), sinon à un e-mail (réglable). Aucun compte pour le public.
 
 ## Ce que fait la personne qui gère l'annuaire
 
-Dans l'onglet **Mon annuaire** : choisir les **catégories publiques** (cases à cocher avec recherche, libellé public par langue, ordre), composer l'**équipe** (titre par langue, ordre), voir **les personnes visibles**, écrire leur **présentation courte** et leur **ville**, et **masquer** quelqu'un d'un clic. Les mots (« Membres », « Artistes », « Annuaire », « Équipe ») se changent dans les Réglages.
+Dans l'onglet **Mon annuaire** : choisir les **catégories publiques** (cases à cocher avec recherche, libellé public par langue, ordre), composer l'**équipe** (titre par langue, ordre), voir **les personnes visibles**, écrire leur **présentation courte** et leur **ville**, et **masquer** une personne d'un clic. Les mots (« Membres », « Artistes », « Annuaire », « Équipe ») se changent dans les Réglages.
 
 ## Une personne ne veut pas apparaître
 

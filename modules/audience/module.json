@@ -153,7 +153,7 @@
       "default": 14,
       "advanced": true,
       "label": {
-        "fr": "Jours avant d'effacer un participant inactif",
+        "fr": "Jours avant d'effacer une personne inactive",
         "en": "Days before erasing an inactive participant"
       },
       "help": {
@@ -167,7 +167,7 @@
       "default": 200,
       "advanced": true,
       "label": {
-        "fr": "Nouveaux participants par heure et par connexion",
+        "fr": "Nouvelles personnes par heure et par connexion",
         "en": "New participants per hour and connection"
       },
       "help": {

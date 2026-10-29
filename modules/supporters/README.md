@@ -1,6 +1,6 @@
 # Soutiens
 
-Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat, **sans jamais rendre quelqu'un public sans son accord**.
+Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat, **sans jamais rendre une personne publique sans son accord**.
 
 ## À quoi ça sert
 - Votre plateforme (Patreon, Ko-fi, ou n'importe laquelle par un fichier) dit qui vous soutient. Ce module le sait, sans que vous retapiez rien.
@@ -34,6 +34,6 @@ Plusieurs plateformes ? Ajoutez une instance du module par plateforme (chacune a
 - Contacts peut exporter, effacer ou fusionner ce que le module sait d'une personne.
 
 ## Limites
-5 000 soutiens, 2 000 membres lus par actualisation, 1 000 lignes par import, 25 par page d'administration, 50 pseudos par page publique. Aucune tâche de fond : une actualisation n'a lieu que si vous la demandez ou si quelqu'un ouvre la page après plusieurs heures.
+5 000 soutiens, 2 000 membres lus par actualisation, 1 000 lignes par import, 25 par page d'administration, 50 pseudos par page publique. Aucune tâche de fond : une actualisation n'a lieu que si vous la demandez ou si une personne ouvre la page après plusieurs heures.
 
 Documentation complète : `docs/ideas/supporters.md`.

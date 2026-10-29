@@ -25,7 +25,7 @@ Pour remercier plusieurs groupes (« Modération », « Mécènes »…), clique
 
 ## Un petit mot par personne
 
-Onglet **Mon mur**, section « Un petit mot pour chacun » : cherchez la personne, cliquez sur « Écrire un message » (160 caractères, dans chaque langue de votre site). Le message est gardé ici, rattaché à la fiche : si la fiche est fusionnée avec une autre dans Contacts, il la suit ; si elle est supprimée, il disparaît.
+Onglet **Mon mur**, section « Un petit mot pour chaque personne » : cherchez la personne, cliquez sur « Écrire un message » (160 caractères, dans chaque langue de votre site). Le message est gardé ici, rattaché à la fiche : si la fiche est fusionnée avec une autre dans Contacts, il la suit ; si elle est supprimée, il disparaît.
 
 ## À l'honneur ce mois-ci
 

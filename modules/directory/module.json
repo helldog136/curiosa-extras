@@ -92,7 +92,7 @@
         "en": "hide or show a person again"
       },
       "help": {
-        "fr": "Retirer quelqu'un de l'annuaire d'un clic (sa fiche reste dans Contacts) ou le remontrer.",
+        "fr": "Retirer une personne de l'annuaire d'un clic (sa fiche reste dans Contacts) ou la remontrer.",
         "en": "Take someone out of the directory with one click (their card stays in Contacts) or show them again."
       },
       "default": {
