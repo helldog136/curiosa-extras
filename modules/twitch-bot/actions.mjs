@@ -37,14 +37,16 @@ export const slug = (x) => fold(x).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/
 export const nameKey = (x) => { const s = fold(x).replace(/[^\p{L}\p{N}]+/gu, " ").trim(); return s || fold(x).trim(); };
 export const sameName = (a, b) => nameKey(a) === nameKey(b);
 
+/** Sans balises ni chevrons : « <b>Salon</b> » devient « Salon ». */
+const noTags = (x) => String(x ?? "").replace(/<[^>]*>/g, " ").replace(/[<>]+/g, "");
 /** Le nom tel qu'on le garde : une ligne, sans caractère de contrôle ni balise, 60 caractères (points de code) au plus ; `ok` vaut false si c'est vide ou trop long. */
 export function cleanName(x) {
-  const text = clean(String(x ?? "").replace(/[<>]+/g, ""), 400);
+  const text = clean(noTags(x), 400);
   const long = [...text].length > MAX_LABEL;
   return { text, ok: !!text && !long, code: !text ? "empty" : long ? "long" : null };
 }
 /** Un libellé sûr pour le sujet `home.actions` : nettoyé, 60 caractères (points de code) au plus. */
-export const safeLabel = (x) => [...clean(String(x ?? "").replace(/[<>]+/g, ""), 400)].slice(0, MAX_LABEL).join("").trim();
+export const safeLabel = (x) => [...clean(noTags(x), 400)].slice(0, MAX_LABEL).join("").trim();
 
 /**
  * La clé fabriquée à partir d'un nom : `perso:` + le nom en minuscules sans accents (lettres, chiffres, « - »), 40 caractères au plus au total ; si elle est prise, `-2`, `-3`…

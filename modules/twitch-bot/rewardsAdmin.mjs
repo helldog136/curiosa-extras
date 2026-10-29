@@ -1,6 +1,6 @@
 // L'onglet « Récompenses » de la page du bot : les récompenses en points de chaîne créées par Curiosa, leur état, la création et la modification (de vraies opérations chez Twitch),
 // l'état de la maison (Connecteur Home Assistant, facultatif) et le journal des 50 derniers échanges. Les mots sont ceux d'Emma : jamais « jeton », « webhook », « EventSub » ni « clé »
-// (la clé technique d'une action n'est montrée qu'en mode avancé : réglage « Montrer les clés des actions »).
+// (la clé technique d'une action n'est montrée qu'en mode avancé : réglage « Montrer les identifiants techniques des actions »).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
