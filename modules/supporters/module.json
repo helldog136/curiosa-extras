@@ -177,7 +177,7 @@
       },
       "help": {
         "en": "Patreon: your creator access key. Ko-fi: your verification key. Entered once, never shown again. Not needed for a file import.",
-        "fr": "Patreon : la clé d'accès de votre page (Creator's Access Token). Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
+        "fr": "Patreon : la clé d'accès de votre page. Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
       }
     },
     {

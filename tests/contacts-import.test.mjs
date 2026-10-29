@@ -207,7 +207,7 @@ test("fichier : erreurs SOUS le champ avec un exemple — vide, titres inconnus,
   assert.deepEqual((await start({ csv: "  " })).errors, { csv: "Collez des lignes ou choisissez un fichier. Exemple de première ligne : nom;comptes;catégories" });
   assert.match((await start({ csv: "couleur;taille\nbleu;grand\n" })).errors.csv, /^Je ne reconnais aucune colonne dans la première ligne \(j'ai lu : couleur, taille\)\. Commencez par une ligne de titres, par exemple : nom;comptes;catégories/);
   assert.match((await start({ file: 'nom,note\nA,"jamais fermé\nB,c\n' })).errors.file, /^Un guillemet n'est pas refermé à la ligne 2\./, "l'erreur est sous le champ du fichier quand c'est lui qu'on a utilisé");
-  assert.match((await start({ csv: "nom;comptes\n" })).errors.csv, /Je ne vois aucune ligne sous les titres\. Ajoutez au moins une personne, par exemple : Marie Exemple;twitch:marie_exemple/);
+  assert.match((await start({ csv: "nom;comptes\n" })).errors.csv, /Je ne vois aucune ligne sous les titres\. Ajoutez au moins une personne, par exemple : Camille Exemple;twitch:camille_exemple/);
   const huge = `n\n${"a\n".repeat(C_MAX + 1)}`;
   assert.match((await start({ file: huge.replace("n\n", "nom\n") })).errors.file, /Ce fichier a plus de 100\s?000 lignes/);
   assert.equal(await ctx.api.store.count("importRows"), 0, "un fichier refusé ne laisse rien derrière lui");
@@ -242,7 +242,7 @@ test("écran : formulaire (collage + fichier de 5 Mo), modèle à télécharger 
   assert.ok(page.some((b) => b.type === "download" && b.name === "importReport"), "les lignes à corriger se téléchargent");
   assert.match(htmlOf(page), /<b>40<\/b><span>fiches créées<\/span>/);
   assert.match(htmlOf(page), /<b>1<\/b><span>lignes à corriger<\/span>/);
-  assert.match(htmlOf(page), /Ligne 42 : « @pseudo » : on ne sait pas de quel réseau il s(&#39;|')agit\. Écrivez le réseau devant, par exemple twitch:marie_exemple/);
+  assert.match(htmlOf(page), /Ligne 42 : « @pseudo » : on ne sait pas de quel réseau il s(&#39;|')agit\. Écrivez le réseau devant, par exemple twitch:camille_exemple/);
   assert.equal((await allCards(ctx)).length, 0, "rien n'est ajouté avant le clic « Importer maintenant »");
   const cancel = page.find((b) => b.type === "table");
   assert.deepEqual([cancel.columns.length, cancel.rowActions[0].action, cancel.rowActions[0].danger, typeof cancel.rowActions[0].confirm], [1, "importCancel", true, "string"]);

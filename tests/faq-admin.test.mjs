@@ -208,7 +208,7 @@ test("panneau : vide, il explique par où commencer ; rempli, brouillons / publi
   const texts = empty.map((b) => b.text ?? "").join(" | ");
   assert.match(texts, /Rien n'est encore publié\. Cliquez sur « Ajouter une question »/);
   assert.match(texts, /Pas de thème pour l'instant/);
-  assert.match(texts, /Aucune question pour l'instant\. Quand un visiteur pose une question/);
+  assert.match(texts, /Aucune question pour l'instant\. Quand une personne pose une question/);
   assert.ok(empty.some((b) => b.type === "adminForm" && b.action === "saveTheme"));
   assert.ok(empty.find((b) => b.type === "links").items.some((l) => /^\/admin\/instances\/id-faq\d+\?new=1$/.test(l.href)), "un lien d'administration complet (« ?new=1 » seul serait refusé)");
   assert.ok(!empty.some((b) => b.type === "adminForm" && b.action === "saveItem"), "le formulaire s'ouvre à la demande");

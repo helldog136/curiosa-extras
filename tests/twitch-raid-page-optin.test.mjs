@@ -140,7 +140,7 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
 });
 
 test("mise à jour à chaud : version 2.2.3, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.2.3");
+  assert.equal(manifest.version, "2.2.4");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));

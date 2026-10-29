@@ -53,6 +53,6 @@ Avant la version 2.0.0, le Planning gardait lui-même l'adresse de l'agenda. En 
 
 Adresse en `https://` et publique seulement : les adresses internes (localhost, réseaux privés) sont refusées, y compris à chaque redirection (3 au plus). Lecture limitée à 5 secondes (redirections comprises) et 5 Mo.
 
-## Pour les développeurs
+## Pour qui développe
 
 Ce module fournit le sujet **`planning.slot`** (le Planning et le bot Twitch le lisent ; aucun ne connaît ce module). Contrat d'un élément : `id`, `title`, `start` et `end` (instants ISO 8601 en UTC), `allDay`, `day` (pour une journée entière : la date `AAAA-MM-JJ` dans le fuseau de l'agenda ; `end` est alors le début du jour suivant), `games` (liste, de la ligne `Jeu :`), `text` (les jeux en une ligne), `status` (`confirmed` ou `cancelled` : les annulés sont fournis, c'est au lecteur de décider), `timezone` (fuseau retenu). Le lecteur reçoit une période `from` / `to` et ne reçoit jamais l'adresse. Fichiers : `fetch.mjs` (seul fichier qui parle au réseau : une borne de temps pour tout le téléchargement, `timing.totalMs`), `ical.mjs` (lecteur, fonctions pures), `games.mjs`, `tutorial.mjs`.

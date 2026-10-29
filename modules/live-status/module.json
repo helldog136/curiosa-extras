@@ -15,7 +15,7 @@
   },
   "privacy": {
     "en": "This module collects nothing itself. Twitch: the Twitch player appears only while you are live (or always, if the owner chose so); your browser then contacts Twitch, which sees your address and may set its own cookies. YouTube: the player (youtube-nocookie.com) is loaded only after you click “Start the YouTube player”, unless the owner chose otherwise; your browser then contacts YouTube (Google), which sees your address. A banner or a “Watch” link loads nothing until you click.",
-    "fr": "Ce module ne collecte rien lui-même. Twitch : le lecteur n'apparaît que pendant un direct (ou toujours, si la personne propriétaire du site l'a choisi) ; votre navigateur contacte alors Twitch, qui voit votre adresse et peut déposer ses cookies. YouTube : le lecteur (youtube-nocookie.com) n'est chargé qu'après votre clic sur « Lancer le lecteur YouTube », sauf choix contraire de la personne propriétaire ; YouTube (Google) voit alors votre adresse. Un lien « Regarder » ne charge rien avant votre clic."
+    "fr": "Ce module ne collecte rien lui-même. Twitch : le lecteur n'apparaît que pendant un direct (ou toujours, si le site est réglé ainsi) ; votre navigateur contacte alors Twitch, qui voit votre adresse et peut déposer ses cookies. YouTube : le lecteur (youtube-nocookie.com) n'est chargé qu'après votre clic sur « Lancer le lecteur YouTube », sauf réglage contraire du site ; YouTube (Google) voit alors votre adresse. Un lien « Regarder » ne charge rien avant votre clic."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",

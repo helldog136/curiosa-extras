@@ -64,7 +64,7 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.2.3"); assert.equal(manifest.minCore, "0.2.12"); assert.equal(manifest.pageSetting, "publicPage");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.2.4"); assert.equal(manifest.minCore, "0.2.12"); assert.equal(manifest.pageSetting, "publicPage");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
   assert.equal(manifest.dataVersion, 3);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false], ["contact.curate", 1, false]], "sans Contacts, Raid n'a plus de liste : besoin dur ; son extension sert à ajouter et retirer");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");

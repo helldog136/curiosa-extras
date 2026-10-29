@@ -22,7 +22,7 @@ Les jaquettes elles-mêmes ne sont pas téléchargées : le site garde seulement
 ## Vie privée
 Le module ne collecte rien sur votre public. Il envoie à RAWG le titre du jeu (depuis le serveur de votre site) avec votre clé. Quand une jaquette est affichée, le navigateur de la personne qui visite charge l'image depuis RAWG, qui voit donc son adresse.
 
-## Pour les développeurs
+## Pour qui développe
 - **Service `game.cover` (version 1)**, à déclarer en besoin facultatif : `"requires": [{ "service": "game.cover", "optional": true }]`.
   - `cover({ title })` → `{ status: "found" | "none" | "no-key" | "refused" | "unreachable", url, name?, id?, ambiguous? }` ;
   - `candidates({ title, search? })` → `{ status, candidates: [{ id, name, year, platforms, url }] }` (6 au plus) ;

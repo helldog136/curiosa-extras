@@ -45,7 +45,7 @@ Depuis la 2.1, le module sait dire **les rendez-vous que vous avez publiés dans
 - **Combien ça coûte** : un appel à Twitch par chaîne tous les quarts d'heure au plus, seulement quand un module demande la liste (aucune tâche en arrière-plan).
 - **Si ça ne marche pas** : phrase en mots simples (nom de chaîne à saisir, application Twitch à régler, Connecteur Twitch à mettre à jour) ; si Twitch ne répond pas, la liste dit « Twitch ne répond pas pour l'instant ».
 
-## Pour les développeurs
+## Pour qui développe
 
 Identifiant technique **conservé** : `twitch-channel` (sauvegardes, adresses de retour déjà enregistrées chez Twitch, catalogue). Nom affiché : « Ma Chaîne Twitch ». Version 2.0.0, `minCore` 0.2.0, données en version 2.
 

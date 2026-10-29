@@ -57,7 +57,7 @@ Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *
 - Le fichier d'agenda donne l'heure exacte (heure universelle) : tous les agendas l'affichent à la bonne heure locale.
 - Aucune donnée sur le public n'est gardée : pas de cookie, pas de compteur, pas d'adresse.
 
-## Pour les développeurs
+## Pour qui développe
 
 - Une page publique (`/<chemin>`, `/<chemin>/<nom-court>`), deux morceaux d'accueil, un emplacement `layout.head` (script d’environ 12 Ko, chargé seulement s'il y a des événements), une source `overlay`, des routes en lecture seule (`ics`, `now`, `state`, `live.js`) et des outils pour les assistants (`events_list`, `event_create`, `event_update`, `event_set_featured`, `event_delete`).
 - `time.mjs` : tout le calcul du temps, sans dépendance. Les fonctions communes au serveur et au navigateur sont envoyées au navigateur telles quelles (`Function.prototype.toString`) : mêmes résultats partout, testés directement.

@@ -70,7 +70,7 @@ Pour chaque jeu d'un stream, le module demande sa jaquette à RAWG **par le serv
 
 Différence avec l'ancien site : pas de page d'admin dédiée avec bouton « Enregistrer l'image » ni de choix de semaine en un clic — l'adresse `?week=N` en tient lieu, et la route est publique (comme l'ancienne adresse destinée à l'extension Twitch).
 
-## Pour les développeurs
+## Pour qui développe
 
 Le Planning est un **lecteur** : il *consomme* le sujet `planning.slot` (voir le contrat dans le README de « Agenda en ligne »), validé par le cœur, et ne connaît aucun module qui le fournit. Chaque créneau arrive avec son état (`status`), ses jeux (`games`) et le fuseau de son agenda (`timezone`) ; une journée entière porte sa date (`day`). Le Planning écarte les doublons (même titre, mêmes heures) et affiche dans son fuseau d'affichage (réglage, sinon fuseau le plus courant des agendas, sinon UTC). Il ne lit plus de description : les jeux viennent de l'agenda.
 

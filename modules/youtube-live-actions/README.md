@@ -59,6 +59,6 @@ Le module **publie** les Super Chats, Super Stickers, adhésions et adhésions o
 
 Le journal garde le pseudo YouTube, le montant et le résultat (50 lignes). **Le texte des messages n'est jamais écrit sur le disque.** « Vider le journal » efface tout. Si le partage avec l'overlay d'alertes est actif (réglage ci-dessous), le pseudo, le montant et le texte du message restent 15 minutes au plus **en mémoire** (50 évènements au plus), le temps que l'overlay les lise.
 
-## Pour les développeurs
+## Pour qui développe
 
 Service demandés (tous facultatifs) : `home-assistant.bridge` (`enqueue`, `stop`, `start`, `status`), `youtube.api` (`request` avec `liveChatMessages.list`, version 1.2.0 du connecteur ; `status` (champ `chat: { read, write }`, connecteur 1.3.0) ; `chatPost` seulement pour répondre à `!stop` / `!start` quand `chat.write` est vrai) et `youtube.live` (`current`, Chaîne YouTube 1.4.0). Sujet consommé : `ha.result` (suivi de ce qui s'est passé chez vous). Sujet publié : `live.event` (`{ id, platform, kind, who, at, amount?, currency?, count?, text? }`, `amount` seulement avec `currency` ; file en mémoire de `events.mjs`, 50 évènements, 15 minutes). Outils pour les assistants : `youtube_live_status`, `youtube_live_journal`, `youtube_live_rules` (lecture) et `youtube_action_simulate` (écriture, jamais accordée d'office).

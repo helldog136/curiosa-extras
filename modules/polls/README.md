@@ -45,5 +45,5 @@ Tout marche sans rien régler. Trois réglages simples : votre fuseau horaire (p
 ## Ce que le module ne fait pas
 Pas de vote pondéré, pas de classement des choix par ordre de préférence, pas de choix libres proposés par le public, pas de résultats par ville ou par appareil, pas d'envoi d'e-mail aux votants. Pas de lien automatique avec les suggestions de jeux (voir `docs/ideas/polls.md`).
 
-## Pour les développeurs
+## Pour qui développe
 Données dans le stockage de l'instance : `polls`, `archive`, `b-<id>` (bulletins), `rounds` (décisions), `meta` (configuration, série de manches). Les compteurs sont écrits dans une section exclusive par instance (une file en mémoire) ; le bulletin unique par code est garanti par la clé du bulletin (le plus ancien gagne), et « Recompter les voix » refait les totaux depuis les bulletins. Source OBS : `/overlays/<clé>?k=<secret>`, mise à jour douce par `/m/<clé>/live`. Droits : `polls:manage`, `polls:obs.view`. Actions pour l'assistant : `polls_list`, `poll_results`, `poll_create`, `poll_close`, `rounds_status`, `rounds_history`, `round_control`, `poll_quick` (les écritures ne sont jamais accordées d'office). Service offert : `audience.remote` (version 1, `each`) : `describe`, `press`, `tick` ; service demandé en facultatif : `audience.session` (voir `modules/audience`).

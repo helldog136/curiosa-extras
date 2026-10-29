@@ -53,6 +53,6 @@ Il peut lister les albums et leurs photos, **créer un album en brouillon**, **a
 - Pas de commentaires ni de « j'aime » sur les photos.
 - Effacer le fichier d'origine d'une **ancienne** photo (envoyée avant Curiosa 0.2.13) : impossible pour un module. Pour de très gros albums, utilisez la carte « vers un autre service ».
 
-## Pour les développeurs
+## Pour qui développe
 
 Le module offre le service `gallery.albums` (lecture seule, version 1) : `list({ limit, cursor, q })` et `get(id)`, pour lier un album à un événement par exemple. Détails dans `docs/ideas/gallery.md` du dépôt.

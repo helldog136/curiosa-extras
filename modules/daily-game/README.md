@@ -49,7 +49,7 @@ Désactivé au départ. Activé, et si l'outil de participation du site est inst
 ## Ce que le module ne fait pas
 Pas de compte, pas de classement par défaut, pas de jeu d'image ni de mot du jour pour l'instant (la table des types de jeu est faite pour les accueillir, voir plus bas), pas de statistiques sur les réponses du public.
 
-## Pour les développeurs
+## Pour qui développe
 - **Types de jeu** : `games.mjs` contient la table des types (`registerGameType`). Le quiz est le premier. Pour en ajouter un : écrire un objet qui respecte le contrat décrit en tête de `games.mjs`, ajouter une option au réglage `gameType` de `module.json` et les textes de `locales/`, ajouter l'entrée du type dans `TYPES` de `client.mjs` (lire la réponse, montrer le résultat), puis régénérer `scripts/daily-game.js` (copie exacte de `CLIENT_JS`). Le choix de la question du jour, la série, le partage, le classement, le planning, l'import et les packs marchent sans autre changement.
 - **Choix de la question du jour** (`plan.mjs`) : fonctions pures. Question planifiée à la date, sinon tirage dans un « sac » (dans l'ordre ou au hasard déterministe selon la date et une graine), figé dans l'historique à la première visite du jour (400 jours gardés).
 - **Routes** : `answer` (POST, juge la réponse), `board` (POST, classement), `card.js` (GET, petit script du bloc d'accueil). Limites par personne (empreinte du cœur) et limite globale, piège à robots, corps bornés.

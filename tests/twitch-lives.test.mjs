@@ -561,7 +561,7 @@ test("panneau « Mes directs » : phrase d'honnêteté, suivi actif depuis, dern
   assert.match(videos.rows[0][0], /Vidéo 2/); assert.match(videos.rows[0][1], /999 vues/);
   assert.ok(blocks.filter((b) => b.type === "table" && !b.rowActions).every((b) => b.columns.length <= 2));
   const lives = blocks.find((b) => b.type === "table" && b.columns[0] === "Direct");
-  assert.match(lives.rows[0][1], /150 spectateurs en moyenne/); assert.match(lives.rows[0][1], /\+40 followers/);
+  assert.match(lives.rows[0][1], /150 personnes en moyenne/); assert.match(lives.rows[0][1], /\+40 followers/);
   // en direct : une bannière
   L.live("777", { viewer_count: 321 }); await tick(ctx, 200);
   assert.match(JSON.stringify(await def.adminPanel(ctx)), /Vous êtes en direct : 321 spectateurs/);

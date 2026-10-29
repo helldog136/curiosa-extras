@@ -54,7 +54,7 @@ Aucun cookie, aucun nom ni e-mail demandé. Une vidéo YouTube ne se charge qu'a
 - Aucun paiement : l'inscription est un lien vers votre formulaire ; les places restantes sont un nombre que vous mettez à jour vous-même.
 - Les inscriptions ne sont pas gérées ici (pas de liste des personnes inscrites).
 
-## Pour les développeurs
+## Pour qui développe
 
 - Service offert `event.source` (méthode `upcoming`) et sujet publié `map.place`. Services facultatifs consommés : `gallery.albums` et `videos.library`.
 - Toutes les heures sont gardées comme « jour + heure du mur + nom de fuseau » : l'instant exact se calcule à la lecture (changements d'heure justes, y compris dans une répétition).

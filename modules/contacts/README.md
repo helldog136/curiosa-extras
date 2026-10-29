@@ -57,7 +57,7 @@ Chaque sauvegarde contient `contacts.csv` et `notes.csv`, lisibles dans un table
 
 ---
 
-## Pour les développeurs
+## Pour qui développe
 
 - **Services offerts** : `contact.book` **version 2** (sur-ensemble de la v1 : Partenariats garde `min: 1`) et `contact.store` inchangé. Contrat complet et suite exécutable : `tests/contract/README.md`, `tests/contract/contactBook.contract.mjs` (le module la passe : `tests/contacts-v2-contract.test.mjs`). Aucune méthode ne lève ; si le carnet ne peut pas répondre dans le temps imparti, `{ ok: false, error: "busy" }`.
 - **Extension `contact.curate` v1 (2.2, additive)** : `lookupAccounts` (200 pseudos, index seulement), `searchAccounts` (50 par page, curseur), `addAccount` (un compte à une fiche existante, jamais de doublon), `removeCategory` (retire UNE catégorie d'une fiche). Texte du contrat et suite exécutable : `tests/contract-ext/` (passée par le double ET par ce module). Le contrat `contact.book` v2 ne change pas. `createCategory` est listé dans `offers[].callerRights` de `contact.book` : depuis une action d'administration d'un autre module qui l'appelle avec `{ asCaller: true }` (cœur 0.2.4), il reçoit le droit « créer des catégories » de la personne qui a cliqué ; sur un cœur plus ancien l'option est ignorée et la réponse reste `denied`.

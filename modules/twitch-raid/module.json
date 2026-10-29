@@ -65,7 +65,7 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur votre public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et audience des chaînes tirées (jamais les personnes « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si la personne qui visite clique.",
+    "fr": "Ne collecte rien sur le public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et audience des chaînes tirées (jamais celles « Ne pas montrer »), sans cookie ; Twitch n'est contacté qu'après un clic.",
     "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the channels drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
   },
   "tabs": [

@@ -16,7 +16,7 @@ test("manifeste : valide, FR+EN, instances multiples, page, cœur 0.2.12, ce que
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(r.manifest.id, "map");
   assert.equal(r.manifest.apiVersion, 2);
-  assert.equal(manifest.version, "1.0.1");
+  assert.equal(manifest.version, "1.0.2");
   assert.equal(index.VERSION, manifest.version, "VERSION suit le manifeste");
   assert.equal(manifest.minCore, "0.2.12");
   assert.equal(manifest.instances, "multiple");

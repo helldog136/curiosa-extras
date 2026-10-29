@@ -32,7 +32,7 @@ MIT (voir `LICENSE`).
 
 ---
 
-## Pour les développeurs (à supprimer avant de publier)
+## Pour qui développe (à supprimer avant de publier)
 
 Ce dossier est un dépôt de module **complet**. Copiez-le dans un nouveau dépôt git (le fichier `module.json` doit être à la **racine** du dépôt) et changez, dans cet ordre : l'identifiant `id` (à vous pour toujours), `author`, `license`, les textes, `LICENSE`, puis cette page.
 

@@ -41,7 +41,7 @@ Rien à régler. Un lien direct s'ouvre dans un **nouvel onglet** et indique à 
 
 Seules les personnes autorisées (droit « modifier les liens des autres plateformes », donné aux administrateurs) peuvent changer la liste. Un assistant IA peut lister, ajouter et modifier des liens si vous lui en donnez l'accès ; il ne peut pas en retirer.
 
-## Pour les développeurs
+## Pour qui développe
 
 Sujet fourni : `social.link`. Données : collection `links` (une ligne par lien). Page d'avertissement : route `go?l=<clé du lien>` de l'instance (`/m/<instance>/go?l=…`), car la page d'un module ne peut pas, dans ce cœur, se déclarer « non indexée » ; elle répond avec `X-Robots-Tag: noindex, nofollow`. La destination vient toujours de la configuration.
 

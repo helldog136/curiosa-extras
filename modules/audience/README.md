@@ -37,5 +37,5 @@ Tout marche sans rien régler. Visible tout de suite : la **liste des mots inter
 ## Ce que le module ne fait pas
 Pas de compte ni de mot de passe, pas de lien avec une fiche Contacts (idée pour la suite : seulement si la personne le demande), pas de messagerie ni de chat, pas d'envoi d'e-mail, pas de classement.
 
-## Pour les développeurs
+## Pour qui développe
 Service `audience.session` version 1 (méthodes : `info`, `join`, `who`, `setPseudo`, `checkPseudo`, `claim`, `release`, `limit`, `mute`, `clearRoom`, `forget`, `journal`, `livePublish`, `liveRead`, `liveDrop`, `directClient` ; ne lève jamais, répond `{ ok, … }`) ; `mute` et `clearRoom` demandent le droit `moderate` (appel avec `{ asCaller: true }`). Un module d'animation l'exige en **facultatif** (`requires[].optional`) et garde un mode autonome. Les modules qui ont des boutons à montrer offrent `audience.remote` (`describe`, `press`, `tick`). Contrat exécutable : `tests/contract-ext/audience.md`, suite `audience.contract.mjs`, double `tests/helpers/fakeAudience.mjs`. Droits : `audience:remote.use`, `audience:moderate`. Outils pour l'assistant : `audience_rooms`, `audience_journal`, `audience_mute`, `audience_clear_room` (jamais accordés d'office pour les écritures). Détails : `docs/ideas/audience.md`.

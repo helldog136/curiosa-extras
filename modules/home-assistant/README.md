@@ -27,5 +27,5 @@ Délai avant d'abandonner un ordre, longueur maximale du message, attentes, pseu
 - Il ne lit pas les messages avant de les laisser passer : la modération est automatique, sans validation humaine.
 - Il n'agit jamais hors direct pour les viewers (seul le bouton « Tester » peut le faire).
 
-## Pour les développeurs
+## Pour qui développe
 Service offert : `home-assistant.bridge` (version 1). Sujets fournis : `ha.result`, `ha.state`. Routes publiques : `pair`, `pull`, `ack`. Le contrat exact est dans `docs/ideas/home-assistant-contract.md` du dépôt de modules.

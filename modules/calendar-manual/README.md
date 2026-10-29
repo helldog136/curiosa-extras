@@ -28,6 +28,6 @@ Ajoutez un module « Streams saisis à la main » par liste si vous le souhaitez
 
 *Retirer et garder mes données* met vos streams de côté : réinstaller le module les retrouve tels quels. *Retirer et tout effacer* les supprime pour de bon, après confirmation.
 
-## Pour les développeurs
+## Pour qui développe
 
 Ce module fournit le sujet **`planning.slot`** (le Planning et le bot Twitch le lisent ; aucun ne connaît ce module). Contrat d'un élément : `id`, `title`, `start` et `end` (instants ISO 8601 en UTC), `allDay`, `day` (journée entière : la date `AAAA-MM-JJ`, `end` est le début du jour suivant), `games`, `text`, `status` (`confirmed` ou `cancelled`), `timezone`. Les streams sont gardés dans le stockage du module (collection `streams`) ; la logique pure est dans `schedule.mjs`.

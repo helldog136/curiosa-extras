@@ -56,6 +56,6 @@ Sur l'accueil, vous pouvez aussi placer le morceau **« Les questions les plus u
 - Au plus 500 questions, 30 catégories et 200 questions reçues en attente ; une réponse fait 3 000 caractères au plus (une réponse plus longue mérite un article).
 - Sans JavaScript : la recherche et le « Tout ouvrir » sont absents, et un lien vers une question amène à la bonne ligne, mais il faut un clic pour l'ouvrir.
 
-## Pour les développeurs
+## Pour qui développe
 
 Voir `docs/ideas/faq.md` du dépôt : choix du type de module, données, routes, limites et outils pour l'assistant.

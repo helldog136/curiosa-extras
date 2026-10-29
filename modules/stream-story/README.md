@@ -37,7 +37,7 @@ Une seule liste rassemble **tout ce qui est daté et à venir**, de toutes les s
 | **YouTube** | vos **directs et premières publics** programmés | la chaîne YouTube du site, avec son identifiant de chaîne, et la clé YouTube du site (gratuite, saisie une fois pour tout le site) |
 | **Twitch** | le **planning publié sur votre chaîne Twitch** (les rendez-vous annulés et les vacances sont ignorés) | la chaîne Twitch du site avec l'application Twitch réglée |
 
-Aucune source n'est obligatoire, et il n'y a **rien à régler dans Story** : une source installée apparaît toute seule dans la liste. Un module qui publie d'autres événements datés peut s'y ajouter de la même façon (voir « Pour les développeurs »).
+Aucune source n'est obligatoire, et il n'y a **rien à régler dans Story** : une source installée apparaît toute seule dans la liste. Un module qui publie d'autres événements datés peut s'y ajouter de la même façon (voir « Pour qui développe »).
 
 - **Chaque ligne** montre une pastille de la source, le type (stream, direct, première, vidéo…), le jour et l'heure **dans le fuseau de votre site** (ou celui du réglage « Fuseau horaire », voir plus bas) et le titre. Quand l'événement a son propre fuseau et que l'heure n'est pas la même, l'heure sur place est ajoutée entre parenthèses.
 - **Un clic** choisit l'événement : la vidéo se remplit toute seule (titre, jour, heure, compte à rebours, jeu et jaquette quand on les connaît) et la liste se referme.
@@ -95,7 +95,7 @@ L'assistant **ne fabrique pas la vidéo** (cela ne se fait que dans un navigateu
 - **Sur téléphone**, l'éditeur s'adapte à l'écran : l'aperçu est en haut, les réglages dessous.
 - **Vie privée** : le module ne collecte rien sur votre public et n'a pas de page publique. Ses données sont visibles des seuls administrateurs.
 
-## Pour les développeurs
+## Pour qui développe
 - **Fabrication dans le navigateur** : chaque style est une fonction du temps, `draw(ctx, t)` (`scenes.mjs`), exécutée image par image (déterministe, aucun hasard non reproductible). L'encodage utilise l'encodeur H.264 du navigateur (WebCodecs, 30 images/s, environ 8 Mb/s, une image clé par seconde, détecté avant de commencer par `VideoEncoder.isConfigSupported`), et un emballeur MP4 d'environ 150 lignes écrit pour ce module (`mp4.mjs` : `ftyp`, `moov` puis `mdat`, `avcC`, listes de temps d'affichage si l'encodeur réordonne les images ; il convertit aussi un flux « Annex B »). Repli : `MediaRecorder` (MP4 si le navigateur le sait, sinon WebM). Une seule image est en mémoire à la fois. Aucune bibliothèque tierce, aucun CDN.
 - **Fichiers purs** : `pure.mjs` (formats, textes, dates, compte à rebours, découpe en lignes, mise en page des co-streamers, couleurs), `scenes.mjs`, `mp4.mjs` et `encode.mjs` n'ont aucune dépendance et tournent aussi dans un `vm` vierge ; ils sont servis tels quels à la page par les routes `lib/*.mjs`.
 - **Formats** : une seule table, `FORMATS` dans `pure.mjs` : `{ id, width, height, margins, zones }`. Le ratio 4:5 du « Passeport » s'y change en une ligne.

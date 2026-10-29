@@ -33,7 +33,7 @@ const prepOf = async (ctx, r) => data.readPrep(ctx, /prep=([A-Za-z0-9_-]{22})/.e
 /* ───────────── Le manifeste, les textes, la case ───────────── */
 
 test("manifeste : version 2.5.0, réglage « watermark » (oui/non, NON par défaut, mode avancé : rien de visible en mode simple), paramètre MCP facultatif décrit ; la mention n'est pas un élément", () => {
-  assert.equal(manifest.version, "2.5.0");
+  assert.equal(manifest.version, "2.5.1");
   const s = manifest.settings.find((x) => x.key === "watermark");
   assert.deepEqual([s.type, s.default, s.advanced], ["boolean", false, true]);
   assert.ok(s.label.fr && s.label.en && s.help.fr && s.help.en);

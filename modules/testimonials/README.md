@@ -39,6 +39,6 @@ La moyenne compte **tous** les avis publiés qui ont une note, à partir de 3 no
 - Pas d'avis publié automatiquement : jamais.
 - Pas de cookie, pas d'adresse IP gardée (les limites contre le spam vivent en mémoire, sans adresse lisible).
 
-## Pour les développeurs
+## Pour qui développe
 
 Module à code (page publique, route d'envoi, administration, tâche quotidienne de ménage). Données : un document par avis (`reviews`) et quelques brouillons de 30 minutes (`drafts`). Plafonds : 1 000 avis, 500 publiés, 200 en attente. Actions pour assistants : `testimonials_list`, `testimonials_summary`, `testimonials_decide`, `testimonials_delete` (destructive, désactivée par défaut) ; jamais d'adresse e-mail. Sujet fourni : `overlay.item` (favoris). Droits : `reviews.moderate`, `reviews.delete`, `email.view`, `reviews.export`.
