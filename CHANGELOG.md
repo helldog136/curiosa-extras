@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.24.0
+
+*Vous pouvez supprimer un sondage, terminé ou en cours, en sachant exactement ce qui sera perdu. Pour Curiosa 0.2.5 ou plus. Module touché : Sondages 1.2.0.*
+
+### Nouveautés
+
+- **Un bouton « Supprimer » pour chaque sondage**, dans la liste et dans ses détails, pour les sondages terminés, en cours et archivés (ceux-ci apparaissent maintenant dans l'administration, 50 par page). Il ouvre une page qui dit ce qui sera perdu : « Ce sondage et ses 12 votes seront supprimés définitivement. » Rien n'est supprimé tant que la case n'est pas cochée.
+- **Pour un sondage en cours, une confirmation renforcée.** La page prévient que des personnes peuvent encore voter, que les votes en cours seront perdus et que la page disparaîtra tout de suite, y compris à l'écran du stream. Elle demande une seconde case et propose de **fermer le sondage plutôt** (le résultat reste visible).
+- **Tout part avec lui** : le sondage, ses choix, ses votes et ses totaux. S'il était affiché à l'écran, l'écran est libéré ; avec Participation, l'écran du stream et la page « en cours » se mettent à jour tout de suite. Les décisions des manches déjà prises ne sont jamais touchées.
+- **L'ancienne adresse reste propre** : elle affiche « Ce sondage n'existe plus » (le même message qu'une adresse qui n'a jamais existé, sans rien révéler). Une source OBS réglée sur ce sondage n'affiche plus rien, au lieu de montrer un autre sondage.
+- **Votre assistant IA peut supprimer un sondage** avec le nouvel outil `poll_delete`, mais seulement si vous le lui accordez expressément (jamais d'office). Un sondage encore ouvert est refusé tant que l'assistant ne précise pas `allowOpen: true`.
+
+### Améliorations
+
+- La manche en cours ne se supprime pas ici : la page l'explique et renvoie vers « Suivant » ou « Arrêter ».
+- Beaucoup de votes ne posent pas de problème : ils s'effacent par petites tranches. Si le travail est trop long, le sondage est fermé, le message le dit et un nouveau clic termine la suppression.
+- Le message de réussite dit combien de votes sont partis.
+- Rien à refaire : aucune donnée n'est modifiée, droits et réglages sont ceux d'avant (le droit « créer, modifier, fermer et supprimer des sondages » couvrait déjà la suppression).
+
+### Pour les développeurs
+
+- **Sondages 1.2.0** : voir `docs/changelog-parts/polls-delete.md`. `minCore` 0.2.5 et `apiVersion` 2 inchangés, aucune migration, aucun nouveau droit. `deletePoll` (relecture côté serveur, bulletins par tranches de 200, ligne retirée en dernier), outil `poll_delete` (destructeur, jamais accordé d'office), page `?delete=<id>`.
+- Tests : `tests/polls-delete.test.mjs` (nouveau) ; `polls.test.mjs` et `polls-rounds.test.mjs` ajustés.
+
 ## 1.23.0
 
 *Les textes ne supposent plus le genre de personne, ajouter un contact prend quelques secondes, et une récompense de points de chaîne peut lancer « quelque chose chez vous » en mots simples. Pour Curiosa 0.2.6 ou plus. Modules touchés : Contacts 2.3.0, Bot Twitch 1.4.0, Connecteur Home Assistant 1.1.0 (le module Home Assistant change de nom), Actions du live YouTube 1.1.1 et 54 autres modules en version corrective (textes seulement).*

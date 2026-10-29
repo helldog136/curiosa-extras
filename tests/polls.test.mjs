@@ -48,7 +48,7 @@ test("manifeste valide ; clés de traduction utilisées présentes et en parité
   for (const a of manifestJson.mcp) assert.ok(a.name.length <= 31);
   assert.deepEqual(manifestJson.rights.map((x) => x.id).sort(), ["manage", "obs.view"]);
   assert.equal(manifestJson.minCore, "0.2.5");
-  assert.equal(manifestJson.version, "1.1.1");
+  assert.equal(manifestJson.version, "1.2.0");
 });
 
 test("ni appel réseau direct, ni minuteur, ni tâche de fond côté serveur ; les deux scripts du navigateur se compilent, sans boucle serrée", () => {
@@ -338,7 +338,9 @@ test("page publique : liste, page d'un sondage, échappement, pagination, 404", 
   assert.ok(!ph.includes("<script>alert") && !ph.includes("onerror=alert(1)>") && ph.includes("&lt;script&gt;"), "échappé dans la page");
   assert.equal(page.title.includes("<img"), true, "le titre est du texte (le cœur l'échappe)");
   assert.ok(page.blocks.some((b) => b.type === "copy" && b.text === `https://example.test/polls/${hostile.slug}`), "lien à partager");
-  assert.equal((await def.page(c, { segments: ["nope"] })).notFound, true);
+  const gone = await def.page(c, { segments: ["nope"] });
+  assert.equal(gone.notFound, undefined, "une adresse inconnue dit « ce sondage n'existe plus » (voir polls-delete.test.mjs)");
+  assert.equal((await def.page(c, { segments: ["Nope_!"] })).notFound, true, "une adresse qui n'a pas la forme d'un sondage reste introuvable");
   assert.equal((await def.page(c, { segments: ["page", "2"] })).notFound, true);
   assert.equal((await def.page(c, { segments: ["page", "abc"] })).notFound, true);
   assert.equal((await def.page(c, { segments: ["a", "b", "c"] })).notFound, true);
@@ -470,7 +472,8 @@ test("administration : créer (erreurs sous les champs, avec exemple), puis lien
   const main = await def.adminPanel(c, { query: {} });
   assert.ok(main.some((b) => b.type === "adminForm" && b.action === "create"));
   const det = await def.adminPanel(c, { query: { poll: id } });
-  const del = det.find((b) => b.action === "remove");
+  assert.ok(flat(det).includes(`?delete=${encodeURIComponent(id)}`), "un lien « Supprimer » mène à la page de confirmation");
+  const del = (await def.adminPanel(c, { query: { delete: id } })).find((b) => b.action === "remove");
   assert.ok(del.fields.some((f) => f.name === "confirm" && f.required), "suppression confirmée par une case");
   assert.equal((await def.adminActions.remove(c, { id })).errors.confirm.length > 0, true, "sans la case, rien n'est supprimé");
   assert.equal(await c.api.store.count("polls"), 1);
@@ -523,9 +526,10 @@ test("administration : fermer, rouvrir, archiver (bulletins effacés, totaux gar
   assert.equal((await vote(c, slug, ["c1"], 20)).error, "closed", "un sondage archivé ne reçoit plus de vote");
   const d = ctx(); const m = await make(d);
   await vote(d, m.slug, ["c1"], 1);
-  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on" })).ok);
+  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on" })).errors.confirmOpen, "un sondage en cours demande la confirmation renforcée");
+  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on", confirmOpen: "on" })).ok);
   assert.equal(await d.api.store.count("polls"), 0); assert.equal(await d.api.store.count(`b-${m.id}`), 0);
-  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on" })).error);
+  assert.ok((await def.adminActions.remove(d, { id: m.id, confirm: "on", confirmOpen: "on" })).error);
 });
 
 test("plafond de 200 sondages : le plus ancien sondage terminé est archivé ; si tous sont ouverts, on le dit clairement ; 800 archives au plus", async () => {

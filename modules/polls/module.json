@@ -5,7 +5,7 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.1.1",
+  "version": "1.2.0",
   "minCore": "0.2.5",
   "description": {
     "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS). New: rounds (\"every 10 minutes the chat decides\", with the winner shown on screen) and a quick \"A or B?\" poll from your phone.",
@@ -561,6 +561,29 @@
             "type": "string",
             "maxLength": 120,
             "description": "Poll id (from polls_list)."
+          }
+        }
+      }
+    },
+    {
+      "name": "poll_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Permanently delete one poll with its choices, votes and results. It cannot be undone: ask the person first, and check the poll id with polls_list. A poll that is still open is refused unless allowOpen is true; to keep the result, use poll_close instead. The running round of the rounds cannot be deleted (use round_control).",
+      "input": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Poll id (from polls_list)."
+          },
+          "allowOpen": {
+            "type": "boolean",
+            "description": "Set to true only if the person agreed to delete a poll that is still open and to lose its current votes (default false)."
           }
         }
       }

@@ -82,7 +82,7 @@ async function byKey(ctx, collection, key, field) {
   return rows.filter((r) => r.data?.[field] === key).pop() ?? null;   // le plus ancien, comme getByKey
 }
 
-const pollOf = (r, kind = "live") => (r ? { ...r.data, id: r.id, archived: kind === "archive" } : null);
+const pollOf = (r, kind = "live") => (r ? { ...r.data, id: r.id, archived: kind === "archive" || !!r.data?.archivedAt } : null);
 /** Les manches en cours ne sont pas des sondages « à lister » : elles vivent sur la page « en cours » et à l'écran. */
 const listed = (p) => !p.round;
 const can = (ctx, right) => (typeof ctx.can === "function" ? !!ctx.can(right) : true);   // le cœur refuse déjà l'action elle-même : ici, on ne fait que cacher ce qu'on ne peut pas utiliser
@@ -96,7 +96,7 @@ async function findPoll(ctx, slug) {
   return pollOf(await byKey(ctx, POLLS, s, "slug")) ?? pollOf(await byKey(ctx, ARCHIVE, s, "slug"), "archive");
 }
 async function findById(ctx, id) {
-  const r = typeof id === "string" && id ? await ctx.api.store.get(id) : null;
+  const r = typeof id === "string" && id && id.length <= 100 ? await ctx.api.store.get(id) : null;   // seule une vraie ligne de sondage passe : un identifiant de vote, de réglage ou de décision est refusé
   return r && r.data?.slug && Array.isArray(r.data?.choices) ? pollOf(r) : null;
 }
 async function getCfg(ctx) { const r = await byKey(ctx, META, "cfg", "k"); return r ? { id: r.id, ...r.data } : null; }
@@ -266,11 +266,41 @@ const closeNow = (ctx, id, now = Date.now()) => withLock(ctx, async () => {
   return { ok: true };
 });
 
-async function removePoll(ctx, p) {
-  while (await purgeBallots(ctx, p.id, { pages: 10 })) { /* tout */ }
-  await ctx.api.store.remove(p.id);
-  const cfg = await getCfg(ctx);
-  if (cfg?.onAir === p.slug) await saveCfg(ctx, { ...cfg, onAir: null });
+/** Tranches de 200 bulletins : 30 tranches couvrent les 5 000 votants au plus, avec de la marge. Jamais de lecture sans borne. */
+const DELETE_SLICES = Math.ceil(LIMITS.voters / 200) + 5;
+
+/**
+ * Supprime UN sondage et tout ce que le module garde à son sujet : ses votes (par tranches), sa place à l'écran (si c'était lui), puis le sondage lui-même,
+ * en dernier : si quelque chose s'interrompt, le sondage existe encore et un nouvel essai reprend là où l'on s'était arrêté (jamais de votes sans sondage).
+ * Tout est relu ICI, côté serveur, à partir du seul identifiant : le sondage, son état (ouvert ou non), son nombre de votes. Rien ne vient du formulaire.
+ * `allowOpen` : la personne a confirmé, en plus, que le sondage est en cours et que ses votes seront perdus.
+ * Rend { ok: true, voters, wasOpen } ou { ok: false, error: "gone" | "round" | "open" | "partial" }.
+ */
+export async function deletePoll(ctx, id, { allowOpen = false, now = Date.now() } = {}) {
+  const first = await findById(ctx, id);
+  if (!first) return { ok: false, error: "gone" };
+  const body = () => withLock(ctx, async () => {
+    const p = await findById(ctx, id);   // relu sous le verrou : un vote ou une fermeture qui vient d'arriver est vu
+    if (!p) return { ok: false, error: "gone" };
+    const series = await getSeries(ctx);
+    if (series?.status === "running" && series.current === p.slug) return { ok: false, error: "round" };   // la manche en cours appartient aux manches : « Arrêter » ou « Suivant »
+    const wasOpen = L.stateOf(p, now) === "open";
+    if (wasOpen && !allowOpen) return { ok: false, error: "open", voters: Number(p.voters) || 0 };
+    if (wasOpen) {   // d'abord fermé : si la suppression devait s'arrêter en route, personne ne peut revoter dans un sondage dont des bulletins sont déjà partis
+      const f = await ctx.api.store.get(p.id);
+      if (f) await ctx.api.store.update(p.id, { ...f.data, closedAt: new Date(now).toISOString(), rev: (Number(f.data.rev) || 0) + 1 });
+    }
+    let left = !p.archived;
+    for (let i = 0; i < DELETE_SLICES && left; i++) left = await purgeBallots(ctx, p.id, { pages: 1 });
+    if (left) return { ok: false, error: "partial" };
+    const cfg = await getCfg(ctx);
+    if (cfg?.onAir === p.slug) await saveCfg(ctx, { ...cfg, onAir: null, onAirUntil: null });
+    await ctx.api.store.remove(p.id);
+    return { ok: true, voters: Number(p.voters) || 0, wasOpen };
+  });
+  const r = await (first.round ? withLock(ctx, body, "series:") : body());
+  if (r.ok) await syncLive(ctx);   // l'écran du stream et la page « en cours » se mettent à jour tout de suite (avec Participation)
+  return r;
 }
 
 /* ───────────── Manches : « toutes les N minutes, le chat décide » ───────────── */
@@ -605,6 +635,17 @@ async function decisionsPage(ctx, n) {
   return { title: ctx.t("decisionsTitle"), description: ctx.t("decisionsDescription"), blocks: [{ type: "html", html }] };
 }
 
+/**
+ * Une adresse de sondage qui ne mène à rien (supprimé, jamais existé, mal copié) : le MÊME message neutre dans tous les cas, sans le nom du sondage ni rien qui dise
+ * s'il a existé. Une adresse qui ne ressemble pas à un nom de sondage reste une page « introuvable » ordinaire. (Pas de consigne aux moteurs de recherche : elle exigerait minCore 0.2.14.)
+ */
+function gonePage(ctx, segment) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(segment ?? "")) || String(segment).length > 80) return { notFound: true, blocks: [] };
+  const b = baseOf(ctx) ?? "";
+  const html = `<style>${CSS}</style><section class="vp"><p class="vp-q" role="status">${esc(ctx.t("goneText"))}</p><p class="vp-nav"><a href="${esc(loc(ctx, b || "/"))}">${esc(ctx.t("allPolls"))}</a></p></section>`;
+  return { title: ctx.t("goneTitle"), description: ctx.t("goneTitle"), blocks: [{ type: "html", html }] };
+}
+
 /** Une manche déjà décidée : son ancien lien montre ce que le chat a choisi. */
 function decisionPage(ctx, r) {
   const b = baseOf(ctx) ?? "";
@@ -618,7 +659,7 @@ function decisionPage(ctx, r) {
 /** Ce qui est à l'écran : le sondage demandé dans l'adresse, puis celui qu'Emma a choisi (ou le sondage rapide, le temps qu'il dure), puis la manche en cours, puis le plus récent. */
 async function onAirPoll(ctx, cfg, query, now = Date.now()) {
   const asked = query?.get?.("poll");
-  if (asked) { const p = await findPoll(ctx, asked); if (p) return p; }
+  if (asked) return findPoll(ctx, asked);   // une source épinglée sur un sondage qui n'existe plus (supprimé) n'affiche RIEN : jamais un autre sondage à sa place
   if (cfg?.onAir && (!cfg.onAirUntil || Date.parse(cfg.onAirUntil) > now)) { const p = await findPoll(ctx, cfg.onAir); if (p) return p; }
   const series = await getSeries(ctx);
   if (series?.status === "running") { const p = await bySlug(ctx, series.current); if (p) return p; }
@@ -856,7 +897,7 @@ export default {
       const p = await findPoll(ctx, segments[0]);
       if (!p) {
         const done = await byKey(ctx, ROUNDS, clean(segments[0], 80).toLowerCase(), "k");   // une manche déjà décidée : son lien montre la décision
-        return done ? decisionPage(ctx, done.data) : { notFound: true, blocks: [] };
+        return done ? decisionPage(ctx, done.data) : gonePage(ctx, segments[0]);
       }
       const href = pollHref(ctx, p.slug);
       const blocks = [{ type: "html", html: pollHtml(ctx, p, { title: null }) }];
@@ -1024,6 +1065,33 @@ export default {
       ];
     }
 
+    // ── Supprimer un sondage : page de confirmation (ce qui sera perdu, dit en clair) ──
+    if (query?.delete) {
+      const p = await findById(ctx, String(query.delete));
+      if (!p) return [{ type: "banner", tone: "warning", text: ctx.t("errGone") }, { type: "markdown", text: `[${ctx.t("back")}](?)` }];
+      const open = L.stateOf(p, now) === "open";
+      const n = Number(p.voters) || 0;
+      const series = await getSeries(ctx);
+      const isRound = series?.status === "running" && series.current === p.slug;
+      const detail = `?poll=${encodeURIComponent(p.id)}`;
+      const lost = (what) => ctx.t(`${what}_${n === 0 ? "zero" : n === 1 ? "one" : "many"}`, { n });
+      const out = [{ type: "markdown", text: `[${ctx.t("back")}](${detail})` }, { type: "heading", text: ctx.t("deleteTitle", { question: p.question }) },
+        { type: "markdown", text: `**${ctx.t(open ? "stateOpen" : p.archived ? "stateArchived" : "stateClosed")}** · ${votersText(ctx, n)}` }];
+      if (!manage) return [...out, { type: "markdown", text: ctx.t("errRight") }];
+      if (isRound) return [...out, { type: "banner", tone: "warning", text: ctx.t("deleteRound") }];
+      if (open) out.push(
+        { type: "banner", tone: "warning", text: lost("deleteOpenWarn") },
+        { type: "markdown", text: ctx.t("deleteInstead") },
+        { type: "adminForm", action: "close", submitLabel: ctx.t("actClose"), fields: [{ name: "id", kind: "hidden", value: p.id }, { name: "confirm", kind: "checkbox", label: ctx.t("confirmClose"), required: true }] },
+      );
+      out.push(
+        { type: "markdown", text: lost("deleteLost") },
+        { type: "adminForm", action: "remove", title: ctx.t("dangerTitle"), submitLabel: ctx.t("deleteBtn"), cancelHref: detail,
+          fields: [{ name: "id", kind: "hidden", value: p.id }, ...(open ? [{ name: "confirmOpen", kind: "checkbox", label: ctx.t("confirmDeleteOpen"), required: true }] : []), { name: "confirm", kind: "checkbox", label: ctx.t("confirmDelete"), required: true }] },
+      );
+      return out;
+    }
+
     // ── Détails d'un sondage ──
     if (query?.poll) {
       const p = await findById(ctx, String(query.poll));
@@ -1035,19 +1103,20 @@ export default {
       const id = { name: "id", kind: "hidden", value: p.id };
       const sure = (label) => ({ name: "confirm", kind: "checkbox", label, required: true });
       const act = (action, submitLabel, title, extra = []) => ({ type: "adminForm", action, title, submitLabel, fields: [id, ...extra] });
-      const actions = manage ? [
+      const del = { type: "markdown", text: `**[${ctx.t("actDelete")}](?delete=${encodeURIComponent(p.id)})**` };   // mène à la page de confirmation : rien ne part d'un seul clic
+      const actions = !manage ? [] : p.archived ? [del] : [
         { type: "markdown", text: `[${ctx.t("actEdit")}](?edit=${encodeURIComponent(p.id)}) · [${ctx.t("actCopy")}](?copy=${encodeURIComponent(p.id)})` },
         act("onAir", ctx.t("actOnAir"), null),
         ...(state === "open" ? [act("close", ctx.t("actClose"), null, [sure(ctx.t("confirmClose"))])]
           : [act("reopen", ctx.t("actReopen"), null, [sure(ctx.t("confirmReopen"))]), act("archive", ctx.t("actArchive"), null, [sure(ctx.t("confirmArchive"))])]),
         ...(p.purgedAt ? [] : [act("recount", ctx.t("actRecount"), null)]),
-        act("remove", ctx.t("actDelete"), ctx.t("dangerTitle"), [sure(ctx.t("confirmDelete"))]),
-      ] : [];
+        del,
+      ];
       return [
         { type: "markdown", text: `[${ctx.t("back")}](?)` },
         { type: "heading", text: p.question },
         { type: "markdown", text: [
-          `**${ctx.t(state === "open" ? "stateOpen" : "stateClosed")}** · ${votersText(ctx, Number(p.voters) || 0)}`,
+          `**${ctx.t(state === "open" ? "stateOpen" : p.archived ? "stateArchived" : "stateClosed")}** · ${votersText(ctx, Number(p.voters) || 0)}`,
           p.endsAt ? ctx.t(state === "open" ? "endsOn" : "endedOn", { date: L.formatEnd(p.endsAt, zone, ctx.locale) }) : ctx.t("noEnd"),
           ctx.t("detailRules", { max: Math.min(p.max || 1, p.choices.length), mode: ctx.t(p.resultsMode === "after" ? "resAfter" : "resAlways") }),
           p.purgedAt ? ctx.t("ballotsGone") : ctx.t("ballotsKept", { days: num(ctx.setting("retentionDays"), 30, 1, 90) }),
@@ -1073,10 +1142,17 @@ export default {
     });
     if (polls.length) {
       blocks.push({ type: "heading", text: ctx.t("listTitle", { n: await ctx.api.store.count(POLLS), open }) });
-      blocks.push({ type: "markdown", text: polls.map((p) => `- [${p.question.replace(/[\[\]\\]/g, "")}](?poll=${encodeURIComponent(p.id)}) — ${ctx.t(L.stateOf(p, now) === "open" ? "stateOpen" : "stateClosed")} · ${votersText(ctx, Number(p.voters) || 0)}${p.endsAt ? ` · ${stamp(ctx, p.endsAt, p.tz || tz)}` : ""}`).join("\n") });
+      blocks.push({ type: "markdown", text: polls.map((p) => `- [${p.question.replace(/[\[\]\\]/g, "")}](?poll=${encodeURIComponent(p.id)}) — ${ctx.t(L.stateOf(p, now) === "open" ? "stateOpen" : "stateClosed")} · ${votersText(ctx, Number(p.voters) || 0)}${p.endsAt ? ` · ${stamp(ctx, p.endsAt, p.tz || tz)}` : ""}${manage ? ` · [${ctx.t("actDelete")}](?delete=${encodeURIComponent(p.id)})` : ""}`).join("\n") });
       if (page.next) blocks.push({ type: "markdown", text: `[${ctx.t("nextPage")}](?c=${encodeURIComponent(page.next)})` });
-      const archived = await ctx.api.store.count(ARCHIVE);
-      if (archived) blocks.push({ type: "markdown", text: ctx.t("archivedCount", { n: archived }) });
+    }
+    // Les sondages archivés (totaux seulement) se voient et se suppriment aussi : 50 par page.
+    const archived = await ctx.api.store.count(ARCHIVE);
+    if (archived) {
+      blocks.push({ type: "markdown", text: ctx.t("archivedCount", { n: archived }) });
+      const ac = typeof query?.ac === "string" && query.ac.length < 400 ? query.ac : null;
+      const arch = await ctx.api.store.page(ARCHIVE, { limit: PAGE, cursor: ac });
+      blocks.push({ type: "markdown", text: arch.items.map((r) => pollOf(r, "archive")).map((p) => `- [${p.question.replace(/[\[\]\\]/g, "")}](?poll=${encodeURIComponent(p.id)}) — ${votersText(ctx, Number(p.voters) || 0)}${manage ? ` · [${ctx.t("actDelete")}](?delete=${encodeURIComponent(p.id)})` : ""}`).join("\n") });
+      if (arch.next) blocks.push({ type: "markdown", text: `[${ctx.t("nextPage")}](?ac=${encodeURIComponent(arch.next)})` });
     }
     blocks.push({ type: "heading", text: ctx.t("limitsTitle") }, { type: "markdown", text: ctx.t("limitsText") });
     if (polls.length && manage) blocks.push({ type: "download", name: "results", label: ctx.t("downloadResults") });
@@ -1136,11 +1212,11 @@ export default {
     }),
 
     remove: needs("manage", async (ctx, values) => {
-      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
-      const p = await findById(ctx, values.id);
-      if (!p) return { error: ctx.t("errGone") };
-      await withLock(ctx, () => removePoll(ctx, p));
-      return { ok: ctx.t("okDeleted"), redirect: "?" };
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirmDelete") } };   // sans la case cochée, rien n'est lu ni supprimé
+      const r = await deletePoll(ctx, values.id, { allowOpen: values.confirmOpen === "on" });   // le sondage, son état et ses votes sont relus côté serveur
+      if (r.ok) return { ok: r.voters === 0 ? ctx.t("okDeleted") : r.voters === 1 ? ctx.t("okDeletedOne") : ctx.t("okDeletedMany", { n: r.voters }), redirect: "?" };
+      if (r.error === "open") return { errors: { confirmOpen: ctx.t("errConfirmOpen") }, error: ctx.t("errConfirmOpenBanner") };
+      return { error: ctx.t(r.error === "round" ? "deleteRound" : r.error === "partial" ? "errDeletePartial" : "errGone") };
     }),
 
     recount: needs("manage", async (ctx, values) => {
@@ -1298,6 +1374,13 @@ export default {
       if (r.errors) throw Object.assign(new Error(`invalid: ${Object.keys(r.errors).join(", ")} (2 to 4 different choices of 60 characters at most, seconds between 15 and 900)`), { expose: true });
       if (!r.ok) throw Object.assign(new Error(`the site already keeps ${LIMITS.livePolls} polls and none is finished yet`), { expose: true });
       return { id: r.id, endsAt: r.endsAt, link: baseOf(ctx) === null ? null : `${ctx.api.siteUrl}${baseOf(ctx)}/now` };
+    },
+    // Suppression : jamais accordée d'office (manifeste : destructive). Un sondage ouvert demande `allowOpen: true`, comme la case de confirmation renforcée de l'administration.
+    async poll_delete(ctx, args) {
+      const r = await deletePoll(ctx, args?.id, { allowOpen: args?.allowOpen === true });
+      if (r.ok) return { id: args.id, deleted: true, votesDeleted: r.voters };
+      const why = { gone: "poll not found", round: "this is the running round: use round_control (next or stop) instead", open: `the poll is open with ${r.voters} votes: close it with poll_close to keep its result, or pass allowOpen: true to delete it and lose those votes`, partial: "the poll has many votes and was only partly deleted (it is now closed): call poll_delete again to finish" }[r.error] ?? "poll not found";
+      throw Object.assign(new Error(why), { expose: true });
     },
     async poll_close(ctx, args) {
       const r = await closeNow(ctx, args?.id);

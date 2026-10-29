@@ -253,7 +253,8 @@ test("pages publiques : « en cours » avec compte à rebours et décision, hist
   assert.ok(after.includes("/polls/decisions"));
   const old = await pollsDef.page(c, { segments: [r1.slug] });
   assert.ok(old.blocks[0].html.includes("Le chat a décidé : On fait une pause") && old.title === pollsFr.roundQuestion, "l'ancien lien montre la décision");
-  assert.deepEqual(await pollsDef.page(c, { segments: ["inconnu-zzzz"] }), { notFound: true, blocks: [] });
+  assert.equal((await pollsDef.page(c, { segments: ["inconnu-zzzz"] })).notFound, undefined, "adresse inconnue : message neutre (voir polls-delete.test.mjs)");
+  assert.deepEqual(await pollsDef.page(c, { segments: ["inconnu_zzzz!"] }), { notFound: true, blocks: [] });
   for (let i = 0; i < 60; i++) await c.api.store.add("rounds", { k: `r-${i}`, n: 100 + i, question: `Q${i}`, choices: [{ text: "A", count: 1 }], voters: 1, winner: "A", tie: null, at: "x", decidedAt: new Date(T0 + i * 1000).toISOString(), via: "timer" }, { key: `r-${i}` });
   const p1 = flat((await pollsDef.page(c, { segments: ["decisions"] })).blocks), p2 = flat((await pollsDef.page(c, { segments: ["decisions", "page", "2"] })).blocks);
   assert.equal((p1.match(/class=\\"vp-dec\\"/g) ?? []).length, 50); assert.equal((p2.match(/class=\\"vp-dec\\"/g) ?? []).length, 11);
