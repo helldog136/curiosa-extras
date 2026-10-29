@@ -102,6 +102,8 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "tests", "ideas", "changelog-
 const SKIP_FILES = new Set(["CHANGELOG.md", "package-lock.json", "modules/maze-overlay/web/engine.js"]);
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join("/");
 
+// Seuls ces dossiers et fichiers sont lus (la CI clone le cœur dans ./core : il ne fait pas partie de ce dépôt).
+const ROOTS = ["modules", "examples", "starter", "docs", "catalogue", "README.md", "package.json"];
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (SKIP_DIRS.has(e.name)) continue;
@@ -111,6 +113,7 @@ function walk(dir, out = []) {
   }
   return out;
 }
+const allFiles = () => ROOTS.flatMap((r) => { const p = path.join(ROOT, r); return !fs.existsSync(p) ? [] : fs.statSync(p).isDirectory() ? walk(p) : [p]; });
 
 /** Valeurs texte d'un JSON (les clés sont des identifiants, pas des textes) avec leur langue : « fr » / « en » d'après la clé ou le nom du fichier, sinon « ? ». */
 function jsonValues(value, lang, out = []) {
@@ -188,7 +191,7 @@ const allowed = (file, term, text) => ALLOWED.find((a) => (file === a.file || fi
 const used = new Set();
 function findings() {
   const out = [];
-  for (const file of walk(ROOT)) {
+  for (const file of allFiles()) {
     const f = rel(file);
     for (const { text, lang } of textsOf(file)) {
       for (const rule of FORBIDDEN) {
