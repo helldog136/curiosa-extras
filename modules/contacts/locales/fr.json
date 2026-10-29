@@ -409,6 +409,6 @@
   "slotHelp": "Facultatif. D'autres comptes s'ajoutent ensuite sur la fiche.",
   "slotNeedNetwork": "Choisissez la plateforme de ce compte (elle se choisit toute seule si vous collez un lien).",
   "freshBanner": "La fiche est créée. Complétez-la quand vous voulez : fonction, organisation, e-mail, autres comptes, catégories…",
-  "helpEmail": "Facultatif. Visible seulement par les personnes autorisées.",
+  "helpEmail": "Facultatif. Reste privé : seule l'équipe autorisée peut le voir.",
   "helpCategories": "Une catégorie regroupe des personnes (par exemple « Cible de raid » : celles que vous pouvez raider). Cochez celles qui conviennent."
 }

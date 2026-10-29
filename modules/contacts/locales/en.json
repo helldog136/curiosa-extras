@@ -409,6 +409,6 @@
   "slotHelp": "Optional. More accounts can be added later on the card.",
   "slotNeedNetwork": "Choose the platform of this account (it is chosen for you if you paste a link).",
   "freshBanner": "The card is created. Complete it whenever you like: function, organisation, e-mail, other accounts, categories…",
-  "helpEmail": "Optional. Only seen by the people who are allowed to.",
-  "helpCategories": "A category groups people (for example « Raid target »: those you can raid). Tick the ones that fit."
+  "helpEmail": "Optional. Stays private: only authorized team members can see it.",
+  "helpCategories": "A category groups people (for example \"Raid target\": the people you can raid). Tick the ones that fit."
 }
