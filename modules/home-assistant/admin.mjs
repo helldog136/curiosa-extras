@@ -4,12 +4,15 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const B = await import(`./bridge.mjs${v}`);
 const S = await import(`./store.mjs${v}`);
 const { liveNow, GRACE_MS } = await import(`./live.mjs${v}`);
+const { catalogNow, catalogLabel } = await import(`./catalog.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { DEFAULT_WORDS } = await import(`./words.mjs${v}`);
 
 /** Le dépôt de l'intégration à installer dans Home Assistant (par HACS). */
 export const INTEGRATION_REPO = "https://github.com/helldog136/homeassistant-curiosa";
 export const EXAMPLE_KEYS = ["lumieres:rouge", "tts:lire"];
+/** Où ouvrir la page d'administration du Bot Twitch : l'onglet « Récompenses ». */
+export const BOT_TAB = "?tab=rewards";
 export const TEST_FOLLOW_MS = 60_000;
 
 const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -24,6 +27,8 @@ export function ago(ctx, ms, now = Date.now()) {
   if (s < 86400) return rtf.format(-Math.round(s / 3600), "hour");
   return rtf.format(-Math.round(s / 86400), "day");
 }
+/** Le nom d'une action si le Bot Twitch l'a donné ; sinon null (on montre alors son identifiant). */
+const nameOf = (o, key) => catalogLabel(o.catalog ?? [], key);
 const seconds = (ctx, ms) => `${(Math.max(0, ms) / 1000).toFixed(1).replace(/\.0$/, "").replace(".", ctx.locale === "en" ? "." : ",")} s`;
 
 /* ───────────── Ce que la page sait ───────────── */
@@ -31,6 +36,7 @@ const seconds = (ctx, ms) => `${(Math.max(0, ms) / 1000).toFixed(1).replace(/\.0
 /** Tout ce qu'il faut pour dessiner la page (et pour les outils des assistants), lu en une fois. */
 export async function overview(ctx, now = Date.now()) {
   const live = await liveNow(ctx, now);
+  const catalog = await catalogNow(ctx, now);   // les noms des actions, donnés par le Bot Twitch (facultatif, borné)
   return S.transact(ctx, async (db) => {
     const core = await db.core();
     const open = await B.openNow(db, live, { note: false });
@@ -44,6 +50,7 @@ export async function overview(ctx, now = Date.now()) {
       lastSeenAt: seen || null, online: !!seen && now - seen <= B.OFFLINE_MS,
       live, open, graceOnly: open && !live.live, lastLiveAt: core.lastLiveAt || 0,
       queued: queue.items.length, keys: core.keys.slice(), lines: log.lines.slice(),
+      catalog, unmapped: core.unmapped.slice(0, S.LIMITS.unmapped),
     };
   }, { now });
 }
@@ -130,7 +137,7 @@ function bigButton(ctx, o) {
   return [{ type: "html", html: BIG_CSS }, { type: "adminForm", action: "start", submitLabel: t("big_start"), fields: [hidden("start")] }];
 }
 
-function wizardBlocks(ctx, o) {
+function wizardBlocks(ctx, o, botPath) {
   const t = ctx.t;
   const site = String(ctx.api.siteUrl ?? "").replace(/\/+$/, "");
   const out = [{ type: "heading", text: t("wiz_title") }];
@@ -145,7 +152,32 @@ function wizardBlocks(ctx, o) {
     out.push({ type: "adminForm", action: "pair", submitLabel: t("wiz_make"), fields: [] });
   }
   out.push({ type: "markdown", text: t("wiz_3") });
+  out.push(...botLink(ctx, botPath));
   return out;
+}
+
+/** Le bouton vers l'onglet « Récompenses » du Bot Twitch ; sans Bot Twitch, une phrase simple et le chemin du Catalogue. */
+function botLink(ctx, botPath) {
+  const t = ctx.t;
+  if (botPath) return [{ type: "links", items: [{ label: t("next_btn"), href: `${botPath}${BOT_TAB}` }] }];
+  return [{ type: "markdown", text: t("next_no_bot") }, { type: "links", items: [{ label: t("next_catalogue"), href: "/admin/catalogue" }] }];
+}
+
+/** « Étape suivante » : créer ou modifier les récompenses, dans le Bot Twitch (les récompenses n'existent pas ici : chacun son rôle). */
+function nextStepBlocks(ctx, o, botPath) {
+  const t = ctx.t;
+  return [{ type: "heading", text: t("next_title") }, { type: "markdown", text: t(botPath ? "next_text" : "next_text_no_bot") }, ...botLink(ctx, botPath)];
+}
+
+/** « Actions en attente de liaison » : Home Assistant a reçu ces actions mais n'a pas encore de script pour elles (20 au plus, les plus récentes d'abord). */
+function pendingBlocks(ctx, o) {
+  const t = ctx.t;
+  if (!o.unmapped.length) return [];
+  return [
+    { type: "heading", text: t("pend_title") },
+    { type: "markdown", text: t("pend_help") },
+    { type: "table", columns: [t("pend_col_action"), t("pend_col_when")], rows: o.unmapped.slice(0, 20).map((u) => [nameOf(o, u.key) ?? u.key, ago(ctx, u.at, o.now)]) },
+  ];
 }
 
 function deviceBlocks(ctx, o) {
@@ -166,7 +198,7 @@ function followBlocks(ctx, o) {
   const l = o.lines.find((x) => x.kind === "action" && x.test && x.id);
   if (!l) return [];
   const finished = !["queued", "delivered"].includes(l.status);
-  const steps = [t("fol_sent", { key: l.key })];
+  const steps = [t("fol_sent", { key: nameOf(o, l.key) ?? l.key })];
   if (l.deliveredAt) steps.push(t("fol_fetched", { after: seconds(ctx, l.deliveredAt - l.at) }));
   else if (!finished) steps.push(t("fol_waiting_fetch"));
   if (finished) steps.push(t(`fol_end_${["done", "failed", "ignored", "expired", "refused"].includes(l.status) ? l.status : "failed"}`, { after: seconds(ctx, (l.doneAt ?? o.now) - l.at), result: resultText(ctx, l) }));
@@ -180,12 +212,13 @@ function followBlocks(ctx, o) {
 function testBlocks(ctx, o) {
   const t = ctx.t;
   if (!can(ctx, "ha.test")) return [];
-  const seen = o.keys.length ? o.keys : EXAMPLE_KEYS;
+  const seen = [...new Set([...(o.catalog ?? []).map((i) => i.key), ...(o.keys.length ? o.keys : EXAMPLE_KEYS)])].slice(0, 50);
+  const label = (k) => nameOf(o, k) ?? (EXAMPLE_KEYS.includes(k) ? t(`ex_${k.replace(/[^a-z0-9]/g, "_")}`) : k);
   return [
     { type: "heading", text: t("test_title") },
     { type: "markdown", text: t("test_help") },
     { type: "adminForm", action: "test", submitLabel: t("test_btn"), fields: [
-      { name: "key", kind: "select", label: t("test_key"), value: seen[0], options: seen.map((k) => ({ value: k, label: k })), help: t("test_key_help") },
+      { name: "key", kind: "select", label: t("test_key"), value: seen[0], options: seen.map((k) => ({ value: k, label: label(k) })), help: t("test_key_help") },
       { name: "customKey", kind: "text", label: t("test_custom"), help: t("test_custom_help") },
       { name: "text", kind: "textarea", label: t("test_text"), help: t("test_text_help", { max: settingsOf(ctx).maxChars }) },
     ] },
@@ -200,7 +233,7 @@ function journalHtml(ctx, o) {
     if (l.kind === "system") return `<li class="hj-row hj-sys"><span class="hj-when">${when}</span><span class="hj-what">${esc(systemText(ctx, l))}</span></li>`;
     const tone = l.status === "done" ? "ok" : ["refused", "failed", "expired"].includes(l.status) ? "bad" : "mid";
     const who = l.test ? "" : esc(l.viewer || "");
-    return `<li class="hj-row hj-${tone}"><span class="hj-when">${when}</span><span class="hj-what"><code>${esc(l.key)}</code>${l.test ? ` <b class="hj-pill">${esc(t("jr_test"))}</b>` : ""}${who ? ` <span class="hj-who">${who}</span>` : ""}${l.text ? `<span class="hj-text">« ${esc(l.text)} »</span>` : ""}</span><span class="hj-res">${esc(resultText(ctx, l))}</span></li>`;
+    return `<li class="hj-row hj-${tone}"><span class="hj-when">${when}</span><span class="hj-what">${nameOf(o, l.key) ? `<b>${esc(nameOf(o, l.key))}</b>` : `<code>${esc(l.key)}</code>`}${l.test ? ` <b class="hj-pill">${esc(t("jr_test"))}</b>` : ""}${who ? ` <span class="hj-who">${who}</span>` : ""}${l.text ? `<span class="hj-text">« ${esc(l.text)} »</span>` : ""}</span><span class="hj-res">${esc(resultText(ctx, l))}</span></li>`;
   });
   const css = `<style>
 .hj{list-style:none;margin:0;padding:0;border:1px solid rgba(128,128,128,.35);border-radius:.75rem;overflow:hidden}
@@ -239,7 +272,7 @@ function settingsBlocks(ctx, o) {
   return [
     { type: "markdown", text: t("words_intro", { count: s.matcher.size }), tab: "settings" },
     { type: "html", html: list, tab: "settings" },
-    { type: "markdown", text: o.keys.length ? t("keys_seen", { keys: o.keys.map((k) => `\`${k}\``).join(", ") }) : t("keys_none"), tab: "settings" },
+    { type: "markdown", text: o.keys.length ? t("keys_seen", { keys: o.keys.map((k) => nameOf(o, k) ?? `\`${k}\``).join(", ") }) : t("keys_none"), tab: "settings" },
   ];
 }
 
@@ -247,15 +280,29 @@ function settingsBlocks(ctx, o) {
 export async function panel(ctx) {
   const o = await overview(ctx);
   const manage = can(ctx, "ha.manage");
+  const botPath = await pathOf(ctx, "twitch-bot");
+  const wizard = manage && !o.paired;
   return [
     ...statusBlocks(ctx, o),
     ...bigButton(ctx, o),
     ...liveBlocks(ctx, o),
-    ...(manage ? (o.paired ? deviceBlocks(ctx, o) : wizardBlocks(ctx, o)) : []),
+    ...(wizard ? wizardBlocks(ctx, o, botPath) : manage ? deviceBlocks(ctx, o) : []),
+    ...(wizard ? [] : nextStepBlocks(ctx, o, botPath)),
+    ...pendingBlocks(ctx, o),
     ...(o.paired ? testBlocks(ctx, o) : []),
     ...journalBlocks(ctx, o),
     ...settingsBlocks(ctx, o),
   ];
+}
+
+/** La page d'administration du premier module `module` installé (un chemin « /admin/… »), ou null. Borné à 2 s. */
+export async function pathOf(ctx, module) {
+  let t;
+  try {
+    const list = await Promise.race([Promise.resolve().then(() => ctx.api.instances.list({ module })).catch(() => []), new Promise((r) => { t = setTimeout(() => r([]), 2000); t.unref?.(); })]);
+    const path = Array.isArray(list) ? list.find((i) => !i?.module || i.module === module)?.adminPath : null;
+    return typeof path === "string" && path.startsWith("/admin/") ? path : null;
+  } catch { return null; } finally { clearTimeout(t); }
 }
 
 export const badge = async (ctx) => (await S.peek(ctx, "core")).enabled === false ? 1 : 0;

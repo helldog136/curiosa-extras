@@ -33,7 +33,7 @@ test("la page : blocs valides, état clair, gros bouton « Tout couper », règl
 test("état de la page selon la situation : chaque cas a sa phrase et dit quoi faire", async () => {
   const cases = [
     [{ settings: { readChat: false } }, /coupée dans les Réglages/],
-    [{ noBridge: true }, /Il manque le module Home Assistant/],
+    [{ noBridge: true }, /Il manque le Connecteur Home Assistant/],
     [{ noConnector: true }, /clé YouTube du site/],
     [{ noChannel: true }, /Chaîne YouTube/],
     [{ choice: { status: "ambiguous" } }, /plusieurs chaînes/],

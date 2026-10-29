@@ -6,7 +6,7 @@
     "fr": "Actions du live YouTube",
     "en": "YouTube live actions"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "youtube",
   "description": {
     "fr": "Quand quelqu'un soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",

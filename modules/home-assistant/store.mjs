@@ -1,6 +1,7 @@
 // La mémoire du module : quatre documents bornés, lus et écrits une opération après l'autre (jamais deux écritures en même temps pour une instance).
 //
-//   haCore     l'état : coupe-circuit, appareil associé (EMPREINTE du jeton seulement), code d'association en attente, curseur, dernier signe de vie, dernier direct, clés vues
+//   haCore     l'état : coupe-circuit, appareil associé (EMPREINTE du jeton seulement), code d'association en attente, curseur, dernier signe de vie, dernier direct, clés vues,
+//              actions « en attente de liaison » (celles que Home Assistant a dit ne pas connaître : 20 au plus)
 //   haQueue    les actions en attente de Home Assistant (50 au plus)
 //   haResults  ce qui est arrivé aux actions (fait, refusé, expiré…) pour les modules qui les ont demandées (50 au plus, 24 h)
 //   haLog      le journal pour la propriétaire (100 lignes au plus, 7 jours)
@@ -8,11 +9,11 @@
 // Rien ne tourne en arrière-plan : l'expiration, le tri et la purge se font À LA LECTURE (`transact` les fait avant chaque opération).
 import { randomBytes } from "node:crypto";
 
-export const LIMITS = { queue: 50, log: 100, logMs: 7 * 24 * 3600_000, results: 50, resultsMs: 24 * 3600_000, keys: 50, deliveries: 3 };
+export const LIMITS = { queue: 50, log: 100, logMs: 7 * 24 * 3600_000, results: 50, resultsMs: 24 * 3600_000, keys: 50, deliveries: 3, unmapped: 20 };
 export const COLLECTIONS = { core: "haCore", queue: "haQueue", results: "haResults", log: "haLog" };
 
 const DEFAULTS = {
-  core: () => ({ enabled: true, stoppedAt: null, stoppedBy: null, seq: 0, paired: null, pending: null, lastSeenAt: 0, lastLiveAt: 0, keys: [] }),
+  core: () => ({ enabled: true, stoppedAt: null, stoppedBy: null, seq: 0, paired: null, pending: null, lastSeenAt: 0, lastLiveAt: 0, keys: [], unmapped: [] }),
   queue: () => ({ items: [] }),
   results: () => ({ items: [] }),
   log: () => ({ lines: [] }),
@@ -20,7 +21,7 @@ const DEFAULTS = {
 const rec = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 const normalize = (name, data) => {
   const d = { ...DEFAULTS[name](), ...rec(data) };
-  for (const k of ["items", "lines", "keys"]) if (k in DEFAULTS[name]() && !Array.isArray(d[k])) d[k] = [];
+  for (const k of ["items", "lines", "keys", "unmapped"]) if (k in DEFAULTS[name]() && !Array.isArray(d[k])) d[k] = [];
   return d;
 };
 
@@ -119,6 +120,15 @@ export async function closeExpired(db) {
 /* ───────────── Identifiants ───────────── */
 
 export const newId = () => randomBytes(8).toString("hex");
+
+/** Home Assistant a répondu « pas de script relié » pour cette action : elle attend d'être reliée (20 au plus, la plus récente en tête). */
+export function noteUnmapped(core, key, at) {
+  core.unmapped = [{ key, at }, ...core.unmapped.filter((u) => u && u.key !== key)].slice(0, LIMITS.unmapped);
+}
+/** L'action a fini par marcher : elle n'attend plus d'être reliée. */
+export function dropUnmapped(core, key) {
+  if (core.unmapped.some((u) => u && u.key === key)) core.unmapped = core.unmapped.filter((u) => u && u.key !== key);
+}
 
 /** Retient une clé d'action vue (50 au plus, la plus récente en tête). */
 export function rememberKey(core, key) {

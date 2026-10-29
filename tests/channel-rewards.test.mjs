@@ -86,7 +86,7 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.3.0");
+  assert.equal(manifest.version, "1.4.0");
   assert.equal(manifest.minCore, "0.2.5");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
@@ -197,7 +197,7 @@ test("action de la maison sans Home Assistant : refusée sous le champ Action, a
   assert.ok(panel.every((b) => b.tab === "rewards"));
   // les actions de maison sont signalées dans la liste de choix
   const form = panel.find((b) => b.type === "adminForm" && b.action === "rewardCreate");
-  assert.ok(form.fields.find((f) => f.name === "action").options.some((o) => /Home Assistant/.test(o.label)));
+  assert.ok(form.fields.find((f) => f.name === "what").options.some((o) => /Connecteur Home Assistant/.test(o.label)));
 });
 
 test("avec Home Assistant installé : pas de bloc « installer » ; la voix impose le message du viewer ; la saisie libre vient des réglages avancés", async () => {
@@ -205,8 +205,8 @@ test("avec Home Assistant installé : pas de bloc « installer » ; la voix impo
   const panel = await (await import("../modules/twitch-bot/rewardsAdmin.mjs")).blocks(w.ctx, await A.context(w.ctx, { declare: false }));
   assert.ok(!panel.some((b) => b.type === "suggestInstall"));
   assert.ok(panel.some((b) => b.type === "banner" && /cle!/.test(b.text)), "la clé mal écrite est signalée avec un exemple");
-  const opts = panel.find((b) => b.action === "rewardCreate").fields.find((f) => f.name === "action").options.map((o) => o.value);
-  assert.ok(opts.includes("lumieres:turquoise") && opts.includes("scene:cinema") && !opts.includes("cle!"));
+  const opts = panel.find((b) => b.action === "rewardCreate").fields.find((f) => f.name === "what").options.map((o) => o.value);
+  assert.ok(opts.includes("named:lumieres:turquoise") && opts.includes("named:scene:cinema") && !opts.some((o) => o.includes("cle!")), "l'ancien réglage continue de marcher : ses mots sont dans « Tes actions »");
   const tts = await mk(w, { title: "Parle", action: "tts:lire", cost: "100" });
   assert.equal(tts.needsInput, true);
   assert.equal(w.tw.log.find((c) => c.body?.title === "Parle").body.is_user_input_required, true);

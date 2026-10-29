@@ -13,7 +13,7 @@ const DIR = new URL("../modules/youtube-live-actions", import.meta.url).pathname
 test("le manifeste est valide et déclare ce qu'il faut : une seule instance, cœur 0.2.6, besoins facultatifs, sujet consommé, aucun minuteur", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "youtube-live-actions"); assert.equal(manifest.version, "1.1.0"); assert.equal(manifest.instances, "single"); assert.equal(manifest.minCore, "0.2.6");
+  assert.equal(manifest.id, "youtube-live-actions"); assert.equal(manifest.version, "1.1.1"); assert.equal(manifest.instances, "single"); assert.equal(manifest.minCore, "0.2.6");
   assert.equal(manifest.platform, "youtube"); assert.equal(manifest.type, "integration"); assert.equal(manifest.page, false);
   assert.deepEqual(manifest.requires.map((x) => [x.service, !!x.optional]).sort(), [["home-assistant.bridge", true], ["youtube.api", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.consumes.map((x) => x.topic), ["ha.result"]);

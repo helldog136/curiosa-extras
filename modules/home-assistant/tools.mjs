@@ -3,6 +3,7 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const B = await import(`./bridge.mjs${v}`);
 const A = await import(`./admin.mjs${v}`);
+const { catalogLabel } = await import(`./catalog.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 const iso = (ms) => (ms ? new Date(ms).toISOString() : null);
@@ -12,7 +13,7 @@ export default {
   async ha_status(ctx) {
     const st = await B.status(ctx);
     const o = await A.overview(ctx);
-    return { ...st, online: o.online, liveSource: o.live.source, deviceName: o.paired?.name ?? null, cutBy: o.enabled ? null : o.stoppedBy, cutAt: iso(o.stoppedAt) };
+    return { ...st, online: o.online, liveSource: o.live.source, deviceName: o.paired?.name ?? null, cutBy: o.enabled ? null : o.stoppedBy, cutAt: iso(o.stoppedAt), waitingToBeLinked: o.unmapped.map((u) => ({ key: u.key, name: catalogLabel(o.catalog, u.key), lastTryAt: iso(u.at) })) };
   },
   async ha_journal(ctx, args) {
     const o = await A.overview(ctx);
