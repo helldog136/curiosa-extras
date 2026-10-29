@@ -108,7 +108,7 @@
       "advanced": true,
       "default": true,
       "label": {
-        "fr": "Indiquer d'où vient le visiteur",
+        "fr": "Indiquer d'où vient la personne qui visite",
         "en": "Tell the platform where the visitor comes from"
       },
       "help": {

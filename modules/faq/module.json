@@ -8,7 +8,7 @@
   "version": "1.0.1",
   "minCore": "0.2.6",
   "description": {
-    "fr": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a aidé » et une boîte pour les questions des visiteurs.",
+    "fr": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a aidé » et une boîte pour les questions du public.",
     "en": "A page of questions and answers grouped by category, that open and close, with search, “It helped” feedback and a box for visitors' questions."
   },
   "author": "Helldog136",
@@ -102,7 +102,7 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Laisser les visiteurs poser une question",
+        "fr": "Laisser le public poser une question",
         "en": "Let visitors ask a question"
       },
       "help": {
@@ -119,7 +119,7 @@
         "en": "Offer “It helped / Not really”"
       },
       "help": {
-        "fr": "Chaque visiteur peut noter une réponse. Vous voyez les résultats ; les visiteurs voient seulement le nombre de personnes aidées.",
+        "fr": "Chaque personne peut noter une réponse. Vous voyez les résultats ; le public voit seulement le nombre de personnes aidées.",
         "en": "Each visitor can rate an answer. You see the results; visitors only see how many people were helped."
       }
     },
@@ -132,7 +132,7 @@
         "en": "Also show questions written in another language"
       },
       "help": {
-        "fr": "Quand une question n'existe pas dans la langue du visiteur, elle est montrée dans l'autre langue, avec une mention. Décoché : elle est cachée à ce visiteur.",
+        "fr": "Quand une question n'existe pas dans la langue de la personne qui visite, elle est montrée dans l'autre langue, avec une mention. Décoché : elle est cachée à cette personne.",
         "en": "When a question does not exist in the visitor's language, it is shown in the other language, with a note. Unticked: it is hidden from that visitor."
       }
     },
@@ -195,7 +195,7 @@
       "default": 3,
       "advanced": true,
       "label": {
-        "fr": "Questions permises par visiteur et par heure",
+        "fr": "Questions permises par personne et par heure",
         "en": "Questions allowed per visitor per hour"
       },
       "help": {
@@ -209,7 +209,7 @@
       "default": 30,
       "advanced": true,
       "label": {
-        "fr": "Avis permis par visiteur et par heure",
+        "fr": "Avis permis par personne et par heure",
         "en": "Ratings allowed per visitor per hour"
       },
       "help": {

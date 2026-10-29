@@ -1,6 +1,6 @@
 // Statistiques de la communauté — vocabulaire fixe, réglages, validation d'un chiffre reçu d'un module de réseau.
 export const TOPIC = "social.stat";
-export const METRICS = ["followers", "paying", "content", "views"]; // abonnés, abonnés payants, publications, vues
+export const METRICS = ["followers", "paying", "content", "views"]; // followers, abonnements payants, publications, vues
 // Chiffres de PÉRIODE (30 jours glissants), publiés par un module qui mesure lui-même (Chaîne Twitch : ses directs). Entiers >= 0 ; les durées sont en MINUTES entières
 // (hours_streamed, hours_watched : le nom est celui du contrat, l'unité est la minute). Jamais saisis à la main.
 export const PERIOD_METRICS = ["avg_viewers", "peak_viewers", "hours_streamed", "hours_watched", "followers_gained"];

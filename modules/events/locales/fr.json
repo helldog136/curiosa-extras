@@ -109,7 +109,7 @@
   "state_ok": "Normale",
   "byAssistant": "préparé par l'assistant, à relire",
   "brokenDate": "date à corriger",
-  "brokenHelp": "La date de ce rendez-vous est illisible : corrigez-la ci-dessous. Tant qu'elle ne l'est pas, il reste invisible pour les visiteurs.",
+  "brokenHelp": "La date de ce rendez-vous est illisible : corrigez-la ci-dessous. Tant qu'elle ne l'est pas, il reste invisible pour le public.",
   "note_gap": "Cette heure n'existe pas ce jour-là (passage à l'heure d'été) : c'est l'heure d'après qui est utilisée.",
   "note_fold": "Cette heure existe deux fois ce jour-là (retour à l'heure d'hiver) : c'est la première qui est utilisée.",
   "fToSeries": "Appliquer aussi aux {n} prochains rendez-vous de cette série",

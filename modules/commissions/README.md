@@ -1,8 +1,8 @@
 # Commandes — la file de commandes de votre site
 
-Vous êtes illustratrice, créatrice de modèles pour VTubers, de bijoux ou d'autre chose, et vous répondez cent fois aux mêmes questions : « vos commandes sont-elles ouvertes ? », « combien ? », « où en est ma commande ? ». Ce module les règle une fois pour toutes.
+Vous faites de l'illustration, des modèles pour VTubers, des bijoux ou autre chose sur commande, et vous répondez cent fois aux mêmes questions : « vos commandes sont-elles ouvertes ? », « combien ? », « où en est ma commande ? ». Ce module les règle une fois pour toutes.
 
-## Ce que voient vos visiteurs
+## Ce que voit votre public
 
 - Une page **Commandes** (`/commandes`) qui dit clairement l'état : « Commandes ouvertes — 2 places libres », « Complet pour le moment — réouverture prévue le 12 mars 2027 » ou « Commandes fermées ».
 - Vos **formules** : nom, prix indicatif, délai, ce qui est inclus.
@@ -15,7 +15,7 @@ Vous êtes illustratrice, créatrice de modèles pour VTubers, de bijoux ou d'au
 1. Dans **Mes commandes**, vous cliquez sur « Ouvertes », « Complet » ou « Fermées » (au départ, les commandes sont fermées : rien n'est visible tant que vous n'avez pas ouvert).
 2. Vous réglez le **nombre de places** (3 au départ). Les places libres se calculent toutes seules d'après vos commandes acceptées et en cours ; quand il n'y en a plus, la page affiche « complet ».
 3. Dans **Formules**, vous ajoutez ce que vous proposez. Les prix sont du texte libre (« à partir de 40 € ») : le module ne touche jamais à l'argent.
-4. Les demandes arrivent dans la liste (une pastille dans le menu vous prévient). Vous ouvrez une demande, vous la faites avancer : **nouvelle → acceptée → en cours → livrée** (ou refusée / annulée). Vous pouvez écrire un petit message que la cliente verra sur sa page de suivi, et garder des **notes privées**.
+4. Les demandes arrivent dans la liste (une pastille dans le menu vous prévient). Vous ouvrez une demande, vous la faites avancer : **nouvelle → acceptée → en cours → livrée** (ou refusée / annulée). Vous pouvez écrire un petit message que la personne verra sur sa page de suivi, et garder des **notes privées**.
 5. Si vous avez le module Contacts, vous pouvez cocher « créer aussi sa fiche dans Contacts » en acceptant. L'adresse e-mail est alors gardée dans Contacts et n'est plus dans la commande.
 6. Vous pouvez **télécharger la liste** (fichier CSV lisible dans un tableur).
 
@@ -24,14 +24,14 @@ Vous êtes illustratrice, créatrice de modèles pour VTubers, de bijoux ou d'au
 - L'adresse e-mail et les notes privées ne sont visibles que par l'équipe (et seulement par les personnes qui ont le droit « voir les adresses e-mail »).
 - La page de suivi montre un prénom ou pseudo et l'état, jamais l'adresse e-mail ni vos notes.
 - Les commandes **terminées** sont effacées toutes seules après 12 mois (réglable, 0 = jamais). Les commandes en cours ne sont jamais effacées.
-- La cliente peut annuler ou effacer sa demande depuis son lien.
+- La personne peut annuler ou effacer sa demande depuis son lien.
 - Le site ne garde aucune adresse IP et ne dépose aucun cookie.
 
 ## Ce que le module ne fait pas
 
 - Pas de paiement, pas de facture, pas de devis calculé : tout est indicatif.
-- Pas de fichiers envoyés par la cliente (elle colle un lien d'inspiration).
-- Pas de messagerie : si la cliente doit vous répondre, vous écrivez par e-mail comme d'habitude.
+- Pas de fichiers envoyés par la personne qui commande (un lien d'inspiration à coller suffit).
+- Pas de messagerie : si la personne doit vous répondre, vous écrivez par e-mail comme d'habitude.
 - Les formules sont écrites dans une seule langue (la vôtre).
 
 ## Limites

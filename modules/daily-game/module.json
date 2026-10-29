@@ -8,7 +8,7 @@
   "version": "1.0.0",
   "minCore": "0.2.6",
   "description": {
-    "fr": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque visiteur, sans compte. Classement de la semaine en option.",
+    "fr": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
     "en": "A small game once a day to make people want to come back: one question, a few answers, an explanation, then “come back tomorrow”. The streak of days is kept in each visitor's browser, with no account. Weekly ranking as an option."
   },
   "author": "Helldog136",
@@ -328,7 +328,7 @@
         "en": "Timer"
       },
       "help": {
-        "fr": "Un bonus de points pour qui répond vite, jamais une limite : chaque visiteur peut le décocher. Choisissez s'il est coché au départ, décoché, ou absent.",
+        "fr": "Un bonus de points pour qui répond vite, jamais une limite : chaque personne peut le décocher. Choisissez s'il est coché au départ, décoché, ou absent.",
         "en": "A bonus of points for answering fast, never a limit: each visitor can untick it. Choose whether it starts ticked, unticked, or absent."
       },
       "options": [
@@ -378,7 +378,7 @@
         "en": "Weekly ranking (optional)"
       },
       "help": {
-        "fr": "Les visiteurs qui le veulent choisissent un pseudo et apparaissent au classement de la semaine. Demande l'outil de participation du site ; sinon rien n'est affiché. Désactivé au départ.",
+        "fr": "Les personnes qui le veulent choisissent un pseudo et apparaissent au classement de la semaine. Demande l'outil de participation du site ; sinon rien n'est affiché. Désactivé au départ.",
         "en": "Visitors who want to choose a nickname and appear on the week's ranking. Needs the site's participation tool; otherwise nothing is shown. Off at the start."
       }
     },
@@ -512,7 +512,7 @@
       "default": 40,
       "advanced": true,
       "label": {
-        "fr": "Réponses permises par visiteur et par heure",
+        "fr": "Réponses permises par personne et par heure",
         "en": "Answers allowed per visitor per hour"
       },
       "help": {

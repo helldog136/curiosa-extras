@@ -11,10 +11,10 @@ Il faut Curiosa 0.2.10 ou plus.
 
 - **Page publique** `/planning` : les *N* prochains jours (7 par défaut, réglage avancé).
 - **Section d'accueil** « Prochains streams » et « Prochain stream » (à placer depuis *Page d'accueil*).
-- **Sans agenda installé** : le planning ne casse rien. Il dit « Pas de stream planifié pour l'instant » aux visiteurs, et l'administration vous explique quoi installer.
+- **Sans agenda installé** : le planning ne casse rien. Il dit « Pas de stream planifié pour l'instant » au public, et l'administration vous explique quoi installer.
 - **Fuseau horaire** : par défaut, celui de vos agendas (réglage avancé « Fuseau horaire d'affichage » pour en imposer un autre).
 - **Assistants IA** : `planning_upcoming` (lecture seule, accordée par défaut).
-- **Jaquette peut-être fausse** (administration seulement, Curiosa 0.2.10 ou plus) : quand RAWG n'est pas sûr du jeu (`ambiguous`), l'administration liste le jeu avec un lien « Ce n'est pas le bon jeu ? » vers `/admin/settings/rawg-covers?titre=<titre encodé>`, l'écran du cœur où l'on choisit le bon jeu. Rien n'est ajouté côté visiteur.
+- **Jaquette peut-être fausse** (administration seulement, Curiosa 0.2.10 ou plus) : quand RAWG n'est pas sûr du jeu (`ambiguous`), l'administration liste le jeu avec un lien « Ce n'est pas le bon jeu ? » vers `/admin/settings/rawg-covers?titre=<titre encodé>`, l'écran du cœur où l'on choisit le bon jeu. Rien n'est ajouté côté public.
 - **Admin** : les prochains streams vus, les jaquettes, et l'aperçu de chaque apparence.
 
 ## Apparences au choix (réglage « Apparence du planning »)
@@ -41,7 +41,7 @@ Captures décrites : toutes les apparences ont été vérifiées dans le vrai si
 
 - **« Prochain stream »** : une carte encadrée (bordure, arrondi, relief, filet aux couleurs du thème) : à gauche la **jaquette** du jeu (jusqu'à 3, superposées), puis une pastille d'état (« En cours », « Dans 40 min », « Dans 3 h », « Aujourd'hui », « Demain », « Dans 4 jours »), le **titre**, l'**heure** en grand et le jour, le jeu, les autres streams du même jour et un bouton « Regarder sur Twitch ». Son lien est celui de la Chaîne Twitch si elle est installée (un seul endroit pour saisir votre chaîne) ; sinon, c'est « Lien de votre chaîne » dans les réglages du planning. Les balises `<time>` sont sémantiques, les jaquettes ont un texte alternatif, aucune animation sans `prefers-reduced-motion`.
 - **« Prochains streams »** : une liste dans une carte, une ligne par stream (tuile de jour, vignette, titre, heure, jeu, pastille d'état) et un lien « Voir le planning complet » (si l'instance a une page publique).
-- **Rien de prévu** (ou aucun agenda installé) : une carte « Pas de stream planifié pour l'instant » avec le lien vers le planning complet. Jamais d'erreur affichée aux visiteurs.
+- **Rien de prévu** (ou aucun agenda installé) : une carte « Pas de stream planifié pour l'instant » avec le lien vers le planning complet. Jamais d'erreur affichée au public.
 - **Stream sans jeu** (soirée caritative, discussion…) : pas de jeu indiqué, donc ni nom de jeu ni recherche de jaquette ; à la place de la jaquette, un visuel aux mêmes proportions : le **logo du site** (variante « fond sombre » si elle existe, sinon le logo principal sur un disque blanc) sur le **mauve Twitch** `#9146FF` (seule couleur fixe du module, c'est la couleur de marque de Twitch) ; sans logo, l'initiale du nom du site. Le même visuel sert dans la liste et, pour un jour qui mêle streams avec et sans jeu, sur la page publique. L'image PNG à partager ne l'utilise pas encore (elle n'affiche rien pour un stream sans jaquette).
 - Les couleurs viennent des variables de thème du site (`--v-surface`, `--v-line`, `--v-fg`, `--v-muted`, `--v-accent`, `--v-gradient`…) : la carte suit toutes les palettes, claires ou sombres, avec ou sans couleur secondaire. La mise en page suit la largeur de la case, pas celle de l'écran.
 

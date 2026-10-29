@@ -10,7 +10,7 @@ export default {
     // Bannière tout en haut de chaque page.
     "layout.banner": (ctx) => {
       if (!ctx.setting("enabled")) return null;
-      const text = ctx.setting("text"); // déjà résolu pour la langue du visiteur
+      const text = ctx.setting("text"); // déjà résolu pour la langue de la personne qui visite
       if (!text) return null;
       return [{ type: "banner", text, href: /^(https?:\/\/|mailto:|\/(?!\/))/i.test(String(ctx.setting("link") ?? "").trim()) ? String(ctx.setting("link")).trim() : undefined, tone: ctx.setting("tone") }];
     },

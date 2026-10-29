@@ -36,7 +36,7 @@ Tout marche sans rien régler. Trois réglages simples : votre fuseau horaire (p
 ## Ce que le sondage ne garantit pas (honnêtement)
 - « Un vote par personne » veut dire « un vote par navigateur ». Quelqu'un qui vide les données de son navigateur, en change, ou vote en navigation privée peut voter de nouveau. Il n'y a pas de compte : c'est le prix de la simplicité et de la vie privée.
 - Le site freine les abus : au plus 30 votes par heure et par connexion (réglable), 8 essais par sondage en 10 minutes, 120 nouveaux votes par minute pour tout le site, 5 000 votants par sondage, piège à robots. Cela arrête les curieux et les scripts simples, **pas une personne déterminée** qui change de connexion.
-- Le sel de l'empreinte est en mémoire : si le site redémarre, il change (c'est voulu). Derrière un relais qui ne transmet pas l'adresse réelle, tous les visiteurs partageraient la même empreinte : la limite par heure serait alors plus vite atteinte.
+- Le sel de l'empreinte est en mémoire : si le site redémarre, il change (c'est voulu). Derrière un relais qui ne transmet pas l'adresse réelle, tous le public partagerait la même empreinte : la limite par heure serait alors plus vite atteinte.
 - Pour un enjeu qui compte (concours, tirage au sort, décision d'association), **ne vous fiez pas à ce résultat seul**.
 
 ## Bornes

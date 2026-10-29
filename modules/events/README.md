@@ -4,11 +4,11 @@ Un **agenda d'événements et de formations** pour votre site : vos prochains re
 
 Il convient à une association, à une créatrice ou un créateur seul, à une boutique : les mots, les types et les couleurs sont les vôtres. Rien n'est écrit « en dur » pour un public précis.
 
-## Ce que voit un visiteur
+## Ce que voit une personne
 
 - **Les prochains rendez-vous**, du plus proche au plus lointain, avec un filtre par type, une recherche et des pages.
 - **Un calendrier du mois**, lisible au clavier et sur téléphone. Il marche sans JavaScript ; sur un petit écran il devient une simple liste de jours.
-- **La fiche d'un rendez-vous** : titre, date et heure (dans le fuseau de votre site **et** chez le visiteur, écrites en toutes lettres : « Samedi à 20 h chez vous »), lieu, programme en créneaux, intervenants, image, inscription, places restantes, vidéo, et un bouton **Ajouter à mon agenda**.
+- **La fiche d'un rendez-vous** : titre, date et heure (dans le fuseau de votre site **et** chez la personne qui visite, écrites en toutes lettres : « Samedi à 20 h chez vous »), lieu, programme en créneaux, intervenants, image, inscription, places restantes, vidéo, et un bouton **Ajouter à mon agenda**.
 - **Une situation claire** : complet, annulé, reporté.
 - **La rétrospective** : les rendez-vous terminés y passent tout seuls, sans que vous fassiez rien, avec un lien vers l'album photo et la vidéo.
 - Les moteurs de recherche reçoivent aussi les informations de chaque rendez-vous (nom, date, lieu, situation).
@@ -46,7 +46,7 @@ Exportez tous vos rendez-vous, ou importez un fichier (2 000 lignes au plus). On
 
 ## Vie privée
 
-Aucun cookie, aucun nom ni e-mail demandé. Une vidéo YouTube ne se charge qu'après le clic du visiteur. Le lien « Voir sur la carte » est un simple lien.
+Aucun cookie, aucun nom ni e-mail demandé. Une vidéo YouTube ne se charge qu'après le clic de la personne qui visite. Le lien « Voir sur la carte » est un simple lien.
 
 ## Limites
 

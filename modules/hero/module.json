@@ -119,7 +119,7 @@
       "default": false,
       "label": {
         "en": "Let visitors turn the sound on",
-        "fr": "Permettre aux visiteurs d'activer le son"
+        "fr": "Permettre au public d'activer le son"
       },
       "help": {
         "en": "The video always starts muted (browsers require it); a button lets visitors unmute it.",

@@ -131,7 +131,7 @@
         "en": "Your time zone"
       },
       "help": {
-        "fr": "Les dates de fin que vous écrivez sont lues dans ce fuseau, et l'heure est toujours écrite avec son fuseau pour vos visiteurs.",
+        "fr": "Les dates de fin que vous écrivez sont lues dans ce fuseau, et l'heure est toujours écrite avec son fuseau pour votre public.",
         "en": "End dates you write are read in this time zone, and visitors always see the time written with its zone."
       },
       "options": [

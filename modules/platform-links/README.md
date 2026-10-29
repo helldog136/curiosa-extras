@@ -16,7 +16,7 @@ Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi, Tipeee, Liberapay, Buy Me a
 - Elle fonctionne sans JavaScript, n'est pas indexée par les moteurs de recherche, ne pose aucun cookie et ne compte aucune visite.
 - **Ce n'est pas une vérification d'âge** : elle prévient, elle ne contrôle rien et ne remplace pas ce que la loi de votre pays peut demander.
 
-## Ce que le visiteur ne voit pas
+## Ce que la personne qui visite ne voit pas
 
 Pour que la plateforme sache d'où viennent les visites, le module ajoute à chaque adresse le nom de votre site (`utm_source`) et `utm_medium=link`. Rien de personnel n'est transmis, certaines plateformes ignorent ces informations, et vos propres paramètres ne sont jamais remplacés. Cela se règle en mode avancé (interrupteur général, nom de campagne, choix lien par lien) ; en mode simple il n'y a rien à faire.
 
@@ -26,7 +26,7 @@ Rien à régler. Un lien direct s'ouvre dans un **nouvel onglet** et indique à 
 
 ## Ce que le module ne fait pas
 
-- Il ne vérifie pas l'âge des visiteurs et ne garde aucune donnée sur eux (pas de cookie, pas de compteur).
+- Il ne vérifie pas l'âge du public et ne garde aucune donnée sur lui (pas de cookie, pas de compteur).
 - Il ne montre pas plus de **10 icônes en tout** en haut du site, réseaux compris : c'est la limite du site.
 - Les logos de Mym, Fansly et Tipeee ne sont pas fournis par le site : une pastille de lettre sobre les remplace. « Autre » a une flèche générique.
 - Il ne copie rien depuis les plateformes (pas de nombre d'abonnés, pas d'images).
@@ -35,7 +35,7 @@ Rien à régler. Un lien direct s'ouvre dans un **nouvel onglet** et indique à 
 
 - **Prévenir avant d'ouvrir OnlyFans, Mym et Fansly** (oui par défaut).
 - **Titre** et **message** de la page d'avertissement (facultatifs, par langue).
-- Mode avancé : **Indiquer d'où vient le visiteur** (oui par défaut), **nom de campagne**, **choisir l'origine lien par lien**.
+- Mode avancé : **Indiquer d'où vient la personne qui visite** (oui par défaut), **nom de campagne**, **choisir l'origine lien par lien**.
 
 ## Droits et assistant IA
 

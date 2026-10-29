@@ -17,7 +17,7 @@ On veut remercier sa communauté, mais personne n'a le temps de recopier des nom
 
 Pour remercier plusieurs groupes (« Modération », « Mécènes »…), cliquez sur « Ajouter un deuxième groupe » (jusqu'à six groupes), et donnez-leur un titre.
 
-## Ce que voient vos visiteurs
+## Ce que voient votre public
 
 - En haut, la **personne à l'honneur** du mois, en grand, avec votre petit mot.
 - Puis chaque **groupe** : son titre, le nombre de personnes, et une grille de cartes (photo ou initiales, nom, petit mot). Un bouton « Voir tout le monde » ouvre le groupe entier, 50 cartes par page.
@@ -40,7 +40,7 @@ Dans Contacts, créez une catégorie **« Ne pas montrer »**, puis rangez dedan
 ## Les noms et les photos
 
 - **Noms** : « comme sur la fiche » (par défaut), « prénom seulement » ou « pseudo en ligne ». Le mur est public : choisissez ce qui vous convient.
-- **Photos** : celles de Contacts (photo envoyée à la main, sinon celle du compte Twitch, YouTube ou Bluesky). Le navigateur du visiteur les charge directement là où elles sont. Une photo qui vient d'un autre endroit, ou qui ne charge pas, est remplacée par les initiales. Vous pouvez couper les photos dans les réglages.
+- **Photos** : celles de Contacts (photo envoyée à la main, sinon celle du compte Twitch, YouTube ou Bluesky). Le navigateur de la personne qui visite les charge directement là où elles sont. Une photo qui vient d'un autre endroit, ou qui ne charge pas, est remplacée par les initiales. Vous pouvez couper les photos dans les réglages.
 
 ## Si Contacts ne répond plus
 
@@ -52,7 +52,7 @@ La page publique garde le **dernier mur connu** (jusqu'à 24 heures) ; sans rien
 - Le mur se reconstruit au plus toutes les 2 minutes : un changement dans Contacts se voit en moins de deux minutes.
 - Le mois à l'honneur change à minuit (heure universelle).
 - Pas de récupération automatique des abonnés Twitch : cela demande des droits que vous n'avez pas toujours. Le mur s'appuie sur vos fiches.
-- Aucune saisie des visiteurs, aucun cookie, aucun message de visiteur.
+- Aucune saisie du public, aucun cookie, aucun message de visiteur.
 
 ## Pour l'assistant IA
 

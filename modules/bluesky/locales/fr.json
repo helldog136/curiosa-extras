@@ -2,7 +2,7 @@
   "stats_title": "Vos statistiques",
   "col_stat": "Chiffre suivi",
   "col_value": "Actuellement",
-  "stat_followers": "Abonnés Bluesky",
+  "stat_followers": "Followers Bluesky",
   "stat_content": "Publications Bluesky",
   "err_hidden": "Bluesky ne donne pas ce chiffre pour ce compte.",
   "err_rate": "Bluesky limite les demandes pour le moment : rien à faire, cela reprendra tout seul.",

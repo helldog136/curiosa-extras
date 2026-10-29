@@ -20,7 +20,7 @@ export const LIMITS = {
   history: 30, page: 50, slots: 99,
   wantLinks: 2,          // au plus deux adresses dans la description d'une demande (anti-spam)
   mailsPerAddressPerDay: 4, requestsPerAddressPerDay: 3, ownerMailEveryMs: 3_600_000,
-  globalPerHour: 60,     // demandes acceptées en une heure, tous visiteurs confondus (même si l'adresse du visiteur est falsifiée)
+  globalPerHour: 60,     // demandes acceptées en une heure, toutes personnes confondues (même si l'adresse de la personne qui visite est falsifiée)
   purgeBatch: 200,
 };
 

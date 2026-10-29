@@ -262,7 +262,7 @@
     {
       "id": "countdown",
       "name": "Compte à rebours",
-      "description": "Annoncez une sortie, un lancement, un anniversaire ou une convention : vos visiteurs voient le temps qui reste et l'heure chez eux, et peuvent l'ajouter à leur agenda. Une page, un morceau d'accueil et une source pour OBS.",
+      "description": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/countdown",
       "ref": "v1.22.1",
@@ -277,7 +277,7 @@
     {
       "id": "daily-game",
       "name": "Jeu du jour",
-      "description": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque visiteur, sans compte. Classement de la semaine en option.",
+      "description": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/daily-game",
       "ref": "v1.22.1",
@@ -373,7 +373,7 @@
     {
       "id": "events",
       "name": "Événements",
-      "description": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez le visiteur, programme, intervenants, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
+      "description": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, intervenants, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/events",
       "ref": "v1.22.1",
@@ -423,7 +423,7 @@
     {
       "id": "faq",
       "name": "Questions fréquentes",
-      "description": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a aidé » et une boîte pour les questions des visiteurs.",
+      "description": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a aidé » et une boîte pour les questions du public.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/faq",
       "ref": "v1.22.1",
@@ -669,7 +669,7 @@
     {
       "id": "map",
       "name": "Carte",
-      "description": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande du visiteur, avec un bouton « Près de moi ».",
+      "description": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande de la personne qui visite, avec un bouton « Près de moi ».",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/map",
       "ref": "v1.22.1",
@@ -1307,7 +1307,7 @@
     {
       "id": "videos",
       "name": "Vidéothèque",
-      "description": "Une page de vidéos (masterclass, rétrospectives, tutoriels, présentations…) qui viennent de YouTube, sans rien héberger : grille avec miniatures, catégories, recherche, séries à regarder dans l'ordre, transcription, partage. Vous collez une adresse et le titre se remplit tout seul. Le lecteur ne se charge qu'après un clic du visiteur.",
+      "description": "Une page de vidéos (masterclass, rétrospectives, tutoriels, présentations…) qui viennent de YouTube, sans rien héberger : grille avec miniatures, catégories, recherche, séries à regarder dans l'ordre, transcription, partage. Vous collez une adresse et le titre se remplit tout seul. Le lecteur ne se charge qu'après un clic de la personne qui visite.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/videos",
       "ref": "v1.22.1",
@@ -1458,7 +1458,7 @@
     {
       "id": "guestbook",
       "name": "Livre d'or",
-      "description": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework.",
+      "description": "Un livre d'or modéré : le public signe, vous validez. Module d'exemple qui utilise toutes les capacités du framework.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/guestbook",
       "ref": "v1.22.1",

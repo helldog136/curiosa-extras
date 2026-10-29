@@ -192,7 +192,7 @@
   "seriesFindHelp": "Un mot du titre. Laissez vide pour voir les plus récentes.",
   "seriesFindNone": "Aucune vidéo ne correspond.",
   "seriesFindTitle": "Ajouter une vidéo à la série",
-  "seriesIntro": "Une série est une liste de vidéos à regarder dans l'ordre, par exemple une formation en plusieurs épisodes. Le visiteur a un bouton « Suivant ».",
+  "seriesIntro": "Une série est une liste de vidéos à regarder dans l'ordre, par exemple une formation en plusieurs épisodes. La personne qui visite a un bouton « Suivant ».",
   "seriesItemAdded": "Vidéo ajoutée à la série.",
   "seriesItemRemoved": "Vidéo retirée de la série (elle reste dans la vidéothèque).",
   "seriesItemsHelp": "L'ordre ci-dessous est l'ordre de lecture. Les vidéos qui ne sont pas publiées ne sont pas montrées au public.",

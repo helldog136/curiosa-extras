@@ -9,7 +9,7 @@
   "platform": "youtube",
   "description": {
     "en": "Keeps your site's YouTube key in one place, entered once and never shown again. Reads channel names, pictures and subscriber counts while watching YouTube's daily allowance. Optionally connects your YouTube account, so the site can read your live chat and, only if you allow it, answer in it.",
-    "fr": "Garde la clé YouTube de votre site à un seul endroit, saisie une fois et jamais réaffichée. Lit le nom, la photo et le nombre d'abonnés des chaînes, en surveillant la limite du jour de YouTube. Peut aussi connecter votre compte YouTube, pour lire le chat de votre direct et, seulement si vous l'autorisez, y répondre."
+    "fr": "Garde la clé YouTube de votre site à un seul endroit, saisie une fois et jamais réaffichée. Lit le nom, la photo et le nombre de followers des chaînes, en surveillant la limite du jour de YouTube. Peut aussi connecter votre compte YouTube, pour lire le chat de votre direct et, seulement si vous l'autorisez, y répondre."
   },
   "author": "Helldog136",
   "license": "MIT",

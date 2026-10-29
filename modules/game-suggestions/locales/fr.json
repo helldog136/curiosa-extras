@@ -52,7 +52,7 @@
   "addGameLabel": "Nom du jeu",
   "addGameHelp": "Par exemple : Celeste",
   "addStatusLabel": "Statut",
-  "addStatusHelp": "« Déjà joué » le met dans votre liste des jeux joués. « Rejeté » le garde caché des visiteurs.",
+  "addStatusHelp": "« Déjà joué » le met dans votre liste des jeux joués. « Rejeté » le garde caché du public.",
   "addNoteLabel": "Une note (facultatif)",
   "addNoteHelp": "Quelques mots, affichés sous le jeu.",
   "addSubmit": "Ajouter le jeu",

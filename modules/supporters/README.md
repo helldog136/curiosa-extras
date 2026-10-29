@@ -29,7 +29,7 @@ Plusieurs plateformes ? Ajoutez une instance du module par plateforme (chacune a
 
 ## Vie privée en bref
 - S'inscrire sur la plateforme **n'est pas** un accord : rien n'est montré sans l'accord séparé de la personne sur son lien personnel, où elle peut aussi se retirer.
-- Aucun montant n'est gardé ni montré, aucune adresse e-mail n'est gardée, aucun cookie, rien n'est chargé chez le visiteur.
+- Aucun montant n'est gardé ni montré, aucune adresse e-mail n'est gardée, aucun cookie, rien n'est chargé chez la personne qui visite.
 - Le nom donné par la plateforme n'est gardé ici que jusqu'au rangement dans Contacts ; les soutiens arrêtés sont oubliés après un an.
 - Contacts peut exporter, effacer ou fusionner ce que le module sait d'une personne.
 

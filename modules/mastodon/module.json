@@ -10,7 +10,7 @@
   "platform": "mastodon",
   "description": {
     "en": "Shows your Mastodon button in the site header and shares your follower and post counts. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Mastodon dans l'en-tête du site et partage le nombre de vos abonnés et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs."
+    "fr": "Affiche le bouton de votre Mastodon dans l'en-tête du site et partage le nombre de vos followers et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -31,7 +31,7 @@
       "topic": "social.stat",
       "label": {
         "en": "Mastodon followers and posts",
-        "fr": "Abonnés et publications Mastodon"
+        "fr": "Followers et publications Mastodon"
       }
     }
   ],
@@ -70,7 +70,7 @@
       },
       "help": {
         "en": "Counts your followers and posts for the site's statistics. These numbers are public: nothing to set up.",
-        "fr": "Compte vos abonnés et vos publications pour les statistiques du site. Ces chiffres sont publics : rien à régler."
+        "fr": "Compte vos followers et vos publications pour les statistiques du site. Ces chiffres sont publics : rien à régler."
       }
     }
   ]

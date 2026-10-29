@@ -10,7 +10,7 @@
   "platform": "github",
   "description": {
     "en": "Shows your GitHub button in the site header and shares your follower count. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site et partage le nombre de vos abonnés. Ajoutez-en un par compte si vous en avez plusieurs."
+    "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site et partage le nombre de vos followers. Ajoutez-en un par compte si vous en avez plusieurs."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -31,7 +31,7 @@
       "topic": "social.stat",
       "label": {
         "en": "GitHub followers",
-        "fr": "Abonnés GitHub"
+        "fr": "Followers GitHub"
       }
     }
   ],
@@ -70,7 +70,7 @@
       },
       "help": {
         "en": "Counts your followers for the site's statistics. This number is public: nothing to set up.",
-        "fr": "Compte vos abonnés pour les statistiques du site. Ce chiffre est public : rien à régler."
+        "fr": "Compte vos followers pour les statistiques du site. Ce chiffre est public : rien à régler."
       }
     }
   ]

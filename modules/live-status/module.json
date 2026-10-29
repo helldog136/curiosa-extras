@@ -112,7 +112,7 @@
       },
       "help": {
         "en": "“After a click” respects your visitors' privacy: nothing is loaded from YouTube until they press the button. “As soon as the page opens” plays it right away, like the Twitch player.",
-        "fr": "« Après un clic » respecte la vie privée des visiteurs : rien n'est chargé depuis YouTube tant qu'ils n'ont pas appuyé sur le bouton. « Dès l'ouverture de la page » l'affiche tout de suite, comme le lecteur Twitch."
+        "fr": "« Après un clic » respecte la vie privée du public : rien n'est chargé depuis YouTube tant qu'il n'a pas appuyé sur le bouton. « Dès l'ouverture de la page » l'affiche tout de suite, comme le lecteur Twitch."
       },
       "options": [
         {

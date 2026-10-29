@@ -11,7 +11,7 @@ Ce module de départ affiche un court message d'accueil sur la page d'accueil du
 
 ## Ce que le module demande
 
-Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne contacte aucun site et ne collecte aucune donnée sur vos visiteurs.
+Afficher une section sur la page d'accueil. Rien d'autre : il ne stocke rien, ne contacte aucun site et ne collecte aucune donnée sur votre public.
 
 ## Installer sur votre site Curiosa
 

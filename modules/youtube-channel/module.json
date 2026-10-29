@@ -9,7 +9,7 @@
   "platform": "youtube",
   "description": {
     "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, your videos in the site's RSS feed, and your subscriber, video and view counts. Works with just the channel id; the site's YouTube key, entered once for the whole site, adds the counts, Shorts detection and exact durations.",
-    "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos abonnés, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; la clé YouTube du site, saisie une fois pour tout le site, ajoute les chiffres, la détection des Shorts et les durées exactes."
+    "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos followers, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; la clé YouTube du site, saisie une fois pour tout le site, ajoute les chiffres, la détection des Shorts et les durées exactes."
   },
   "privacy": {
     "en": "This module collects nothing itself. When a video preview is shown, your browser loads its thumbnail picture from YouTube (Google), so YouTube sees your address, under its own privacy policy. The video itself is not played on this site: clicking the preview opens YouTube in a new tab.",
@@ -48,7 +48,7 @@
       "topic": "social.stat",
       "label": {
         "en": "YouTube subscribers, videos and views",
-        "fr": "Abonnés, vidéos et vues YouTube"
+        "fr": "Followers, vidéos et vues YouTube"
       }
     }
   ],
@@ -144,7 +144,7 @@
       },
       "help": {
         "en": "Counts your subscribers, videos and views for the site's statistics. Needs the site's YouTube key (entered once for the whole site); the subscriber count must be public on your channel.",
-        "fr": "Compte vos abonnés, vos vidéos et vos vues pour les statistiques du site. Demande la clé YouTube du site (saisie une fois pour tout le site) ; le nombre d'abonnés doit être public sur votre chaîne."
+        "fr": "Compte vos followers, vos vidéos et vos vues pour les statistiques du site. Demande la clé YouTube du site (saisie une fois pour tout le site) ; le nombre de followers doit être public sur votre chaîne."
       }
     },
     {

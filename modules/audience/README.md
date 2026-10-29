@@ -14,7 +14,7 @@ La base commune des animations de votre stream : **un pseudo par personne sans c
 1. **Rien à faire** pour que ça marche : installez Sondages (ou un autre module d'animation) et Participation arrive avec lui.
 2. **La télécommande** : onglet **En direct** → ouvrez l'adresse sur votre téléphone (ou flashez le code). Mettez-la en favori. Elle est **secrète** : toute personne qui la connaît peut utiliser les boutons ; « Créer une nouvelle adresse » rend l'ancienne inutile.
 3. **La modération** : onglet **Salles et pseudos** → vous voyez les salles, les personnes (pseudo, sourdine), le journal, et vous réglez les mots interdits en bas de l'onglet. Pendant un live, c'est plus simple depuis la télécommande : « Sourdine » à côté d'un pseudo, « Vider la salle » en bas.
-4. **Pour vos visiteurs** : la page **Participation** (`/participation`) leur permet de choisir leur pseudo et d'**effacer leurs données** d'un bouton.
+4. **Pour votre public** : la page **Participation** (`/participation`) leur permet de choisir leur pseudo et d'**effacer leurs données** d'un bouton.
 
 ## Réglages
 Tout marche sans rien régler. Visible tout de suite : la **liste des mots interdits** (une liste de départ sobre, en français et en anglais, que vous pouvez modifier ; « mot » bloque ce mot, « mot* » tout ce qui commence ainsi, « *mot* » tout ce qui le contient). En mode avancé : longueur minimale et maximale d'un pseudo, jours de conservation (14 par défaut), nouvelles personnes par heure et par connexion (200), secondes minimales entre deux mises à jour en direct (3).
@@ -29,7 +29,7 @@ Tout marche sans rien régler. Visible tout de suite : la **liste des mots inter
 - « Une personne » veut dire « un navigateur ». Qui vide ses données, change de navigateur ou utilise la navigation privée est une nouvelle personne. C'est le prix de la simplicité et de la vie privée.
 - Les protections arrêtent les curieux et les scripts simples, **pas une personne déterminée** qui change de connexion. Pour un enjeu important (tirage au sort, concours), ne vous fiez pas à ces seules protections.
 - Les pseudos qui imitent d'autres lettres (des lettres d'un autre alphabet qui ressemblent aux nôtres) ne sont pas détectés. La liste de mots interdits aide, elle ne remplace pas votre vigilance : vous pouvez toujours mettre quelqu'un en sourdine.
-- Le sel du jour est en mémoire : si le site redémarre, il change (c'est voulu). Derrière un relais qui ne transmet pas l'adresse réelle, tous les visiteurs auraient la même empreinte et partageraient la même limite.
+- Le sel du jour est en mémoire : si le site redémarre, il change (c'est voulu). Derrière un relais qui ne transmet pas l'adresse réelle, tous le public aurait la même empreinte et partageraient la même limite.
 
 ## Bornes
 200 salles ; 5 000 personnes et 20 000 voix par salle ; 100 points de direct (16 Ko chacun) ; 500 mots interdits ; 500 lignes de journal ; 50 personnes par page dans l'administration ; 8 modules branchés sur la télécommande au plus, 4 salles montrées dessus. Rien ne tourne en arrière-plan.

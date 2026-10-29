@@ -99,7 +99,7 @@ export async function render(ctx, segments) {
   const route = parseRoute(segments);
   if (!route) return { notFound: true, blocks: [] };
   if (route.kind === "me") return renderMe(ctx, route);
-  S.ensureFresh(ctx);   // données vieilles : une actualisation part, sans que le visiteur l'attende
+  S.ensureFresh(ctx);   // données vieilles : une actualisation part, sans que la personne qui visite l'attende
   const title = pageTitle(ctx), d = displayOf(ctx);
   const groups = await publicGroups(ctx);
   const flat = groups.flatMap((g) => g.people.map((p) => ({ ...p, group: g })));

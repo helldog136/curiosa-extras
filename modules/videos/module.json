@@ -8,7 +8,7 @@
   },
   "version": "1.0.0",
   "description": {
-    "fr": "Une page de vidéos (masterclass, rétrospectives, tutoriels, présentations…) qui viennent de YouTube, sans rien héberger : grille avec miniatures, catégories, recherche, séries à regarder dans l'ordre, transcription, partage. Vous collez une adresse et le titre se remplit tout seul. Le lecteur ne se charge qu'après un clic du visiteur.",
+    "fr": "Une page de vidéos (masterclass, rétrospectives, tutoriels, présentations…) qui viennent de YouTube, sans rien héberger : grille avec miniatures, catégories, recherche, séries à regarder dans l'ordre, transcription, partage. Vous collez une adresse et le titre se remplit tout seul. Le lecteur ne se charge qu'après un clic de la personne qui visite.",
     "en": "A page of videos (masterclasses, retrospectives, tutorials, presentations…) that come from YouTube, with nothing hosted here: grid with thumbnails, categories, search, series to watch in order, transcript, sharing. You paste an address and the title fills in by itself. The player only loads after a click from the visitor."
   },
   "author": "Helldog136",
@@ -29,7 +29,7 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Aucun cookie, rien n'est gardé sur vos visiteurs. Leur navigateur ne contacte YouTube qu'après un clic : sur « Lire ici » (le lecteur youtube-nocookie.com, chez Google, se charge alors et voit leur adresse) ou sur « Regarder sur YouTube ». Les miniatures sont des copies gardées par le site. Les liens de partage (e-mail, WhatsApp, Facebook, X) ne s'ouvrent qu'au clic. Seul le serveur du site interroge YouTube, quand l'équipe ajoute une vidéo (titre, miniature).",
+    "fr": "Aucun cookie, rien n'est gardé sur votre public. Leur navigateur ne contacte YouTube qu'après un clic : sur « Lire ici » (le lecteur youtube-nocookie.com, chez Google, se charge alors et voit leur adresse) ou sur « Regarder sur YouTube ». Les miniatures sont des copies gardées par le site. Les liens de partage (e-mail, WhatsApp, Facebook, X) ne s'ouvrent qu'au clic. Seul le serveur du site interroge YouTube, quand l'équipe ajoute une vidéo (titre, miniature).",
     "en": "No cookie, nothing is kept about your visitors. Their browser only contacts YouTube after a click: on “Play here” (the youtube-nocookie.com player, at Google, then loads and sees their address) or on “Watch on YouTube”. Thumbnails are copies kept by the site. The sharing links (email, WhatsApp, Facebook, X) only open on a click. Only the site's server asks YouTube, when the team adds a video (title, thumbnail)."
   },
   "requires": [
@@ -117,7 +117,7 @@
         "en": "Name of the page (plural)"
       },
       "help": {
-        "fr": "Le mot que voient vos visiteurs. Exemples : Replays, Formations, Masterclass. Laissé vide, la page s'appelle « Vidéos ».",
+        "fr": "Le mot que voient votre public. Exemples : Replays, Formations, Masterclass. Laissé vide, la page s'appelle « Vidéos ».",
         "en": "The word your visitors see. Examples: Replays, Courses, Masterclasses. Left empty, the page is called “Videos”."
       }
     },
@@ -200,7 +200,7 @@
         "en": "Thumbnails"
       },
       "help": {
-        "fr": "« Copie gardée » : le site garde une petite image de chaque vidéo, vos visiteurs ne contactent jamais YouTube pour la voir. « Fond sobre » : aucune miniature, un simple fond.",
+        "fr": "« Copie gardée » : le site garde une petite image de chaque vidéo, votre public ne contactent jamais YouTube pour la voir. « Fond sobre » : aucune miniature, un simple fond.",
         "en": "“Kept copy”: the site keeps a small picture of each video, your visitors never contact YouTube to see it. “Plain background”: no thumbnail, a simple background."
       },
       "options": [
@@ -229,7 +229,7 @@
         "en": "Sharing links"
       },
       "help": {
-        "fr": "Sous chaque vidéo : copier le lien, e-mail, WhatsApp, Facebook, X. Rien ne se charge tant que le visiteur ne clique pas.",
+        "fr": "Sous chaque vidéo : copier le lien, e-mail, WhatsApp, Facebook, X. Rien ne se charge tant que la personne qui visite ne clique pas.",
         "en": "Under each video: copy the link, email, WhatsApp, Facebook, X. Nothing loads until the visitor clicks."
       }
     },

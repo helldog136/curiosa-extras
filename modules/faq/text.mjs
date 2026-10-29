@@ -7,7 +7,7 @@ export const LIMITS = {
   asked: 200,       // questions reçues en attente
   question: 200,    // longueur d'une question publiée
   answer: 3000,     // longueur d'une réponse (une réponse plus longue mérite un article)
-  asking: 300,      // longueur d'une question posée par un visiteur
+  asking: 300,      // longueur d'une question posée par une personne
   themeName: 60,
   aiDrafts: 50,     // brouillons de l'assistant qui attendent une relecture
   markup: 17000,    // taille maximale des données pour les moteurs de recherche (le cœur coupe à 20 000)

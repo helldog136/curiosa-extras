@@ -7,7 +7,7 @@ Laissez votre communauté vous écrire un avis, et montrez les meilleurs sur vot
 - Vous partagez **un lien « Laisser un avis »** (ou son QR code, à imprimer ou à mettre à l'écran). La page s'ouvre très bien sur un téléphone.
 - Chaque avis arrive **« à valider »**. Vous le lisez, vous le **publiez** ou vous le **refusez** d'un clic. Un avis n'est jamais publié tout seul, et jamais sans l'accord de son auteur.
 - Vous choisissez vos **favoris** : ils passent en premier.
-- Les visiteurs voient une page d'avis en **grille** ou en **défilement lent** (avec un bouton pause ; sans mouvement du tout pour les personnes qui préfèrent moins d'animations), avec la **note moyenne**, et un filtre par note.
+- Le public voit une page d'avis en **grille** ou en **défilement lent** (avec un bouton pause ; sans mouvement du tout pour les personnes qui préfèrent moins d'animations), avec la **note moyenne**, et un filtre par note.
 - Vous pouvez montrer **3 avis sur la page d'accueil** (Accueil → ajouter une section → « Avis à la une »), la note moyenne, ou une invitation à laisser un avis.
 
 ## Ce que la personne remplit
@@ -34,7 +34,7 @@ La moyenne compte **tous** les avis publiés qui ont une note, à partir de 3 no
 
 ## Ce que le module ne fait pas
 
-- Pas de photo envoyée par les visiteurs (vous pouvez en ajouter une vous-même à un avis) : une photo est une donnée personnelle de plus à modérer, et le module ne peut pas la réduire.
+- Pas de photo envoyée par le public (vous pouvez en ajouter une vous-même à un avis) : une photo est une donnée personnelle de plus à modérer, et le module ne peut pas la réduire.
 - Pas de réponse publique aux avis, pas de vérification que la personne est vraiment cliente.
 - Pas d'avis publié automatiquement : jamais.
 - Pas de cookie, pas d'adresse IP gardée (les limites contre le spam vivent en mémoire, sans adresse lisible).

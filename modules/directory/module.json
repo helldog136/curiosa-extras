@@ -217,14 +217,14 @@
         "en": "Photos"
       },
       "help": {
-        "fr": "Une photo hébergée ailleurs (Twitch, YouTube…) prévient ce site de la visite : par défaut, elle ne s'affiche qu'après un clic du visiteur.",
+        "fr": "Une photo hébergée ailleurs (Twitch, YouTube…) prévient ce site de la visite : par défaut, elle ne s'affiche qu'après un clic de la personne qui visite.",
         "en": "A photo hosted elsewhere (Twitch, YouTube…) tells that site about the visit: by default it only shows after the visitor clicks."
       },
       "options": [
         {
           "value": "request",
           "label": {
-            "fr": "Seulement si le visiteur le demande (conseillé)",
+            "fr": "Seulement si la personne qui visite le demande (conseillé)",
             "en": "Only if the visitor asks (recommended)"
           }
         },
@@ -409,7 +409,7 @@
         "en": "Starting order"
       },
       "help": {
-        "fr": "L'ordre de la liste avant que le visiteur ne choisisse.",
+        "fr": "L'ordre de la liste avant que la personne qui visite ne choisisse.",
         "en": "The order of the list before the visitor chooses."
       },
       "options": [
@@ -460,7 +460,7 @@
         "en": "Printable version and CSV file"
       },
       "help": {
-        "fr": "Propose aux visiteurs d'imprimer la liste ou de la télécharger. Seul ce qui est déjà public y figure.",
+        "fr": "Propose au public d'imprimer la liste ou de la télécharger. Seul ce qui est déjà public y figure.",
         "en": "Lets visitors print the list or download it. Only what is already public is included."
       }
     },

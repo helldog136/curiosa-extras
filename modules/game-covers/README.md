@@ -17,10 +17,10 @@ Quand le site n'est pas sûr du jeu qui correspond à un titre (par exemple « P
 - vos corrections (1 000 au plus) et la liste des titres à vérifier (100 au plus, 60 jours) ;
 - le dernier état de la clé (« fonctionne », « refusée »…).
 
-Les jaquettes elles-mêmes ne sont pas téléchargées : le site garde seulement leur adresse, et le navigateur des visiteurs les charge depuis RAWG.
+Les jaquettes elles-mêmes ne sont pas téléchargées : le site garde seulement leur adresse, et le navigateur du public les charge depuis RAWG.
 
 ## Vie privée
-Le module ne collecte rien sur vos visiteurs. Il envoie à RAWG le titre du jeu (depuis le serveur de votre site) avec votre clé. Quand une jaquette est affichée, le navigateur du visiteur charge l'image depuis RAWG, qui voit donc son adresse.
+Le module ne collecte rien sur votre public. Il envoie à RAWG le titre du jeu (depuis le serveur de votre site) avec votre clé. Quand une jaquette est affichée, le navigateur de la personne qui visite charge l'image depuis RAWG, qui voit donc son adresse.
 
 ## Pour les développeurs
 - **Service `game.cover` (version 1)**, à déclarer en besoin facultatif : `"requires": [{ "service": "game.cover", "optional": true }]`.

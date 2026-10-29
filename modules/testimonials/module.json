@@ -252,7 +252,7 @@
       "default": 3,
       "advanced": true,
       "label": {
-        "fr": "Avis par heure et par visiteur",
+        "fr": "Avis par heure et par personne",
         "en": "Reviews per hour and visitor"
       }
     },

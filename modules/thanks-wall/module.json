@@ -47,7 +47,7 @@
   ],
   "privacy": {
     "en": "Nothing is collected about your visitors: no cookie, no form, no address kept. The wall shows what you put in Contacts (name, photo); a card in the “Do not show” category never appears. The module keeps only the short messages you write and the monthly spotlight, tied to the card number (never a name or photo). Photos are loaded by the visitor's browser from where they live (your site, Twitch, YouTube or Bluesky), which sees the visitor's address, as for any image.",
-    "fr": "Rien n'est collecté sur vos visiteurs : ni cookie, ni formulaire, aucune adresse gardée. Le mur montre ce que vous avez mis dans Contacts (nom, photo) ; une fiche de la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement vos petits messages et la mise à l'honneur du mois, rattachés au numéro de la fiche (jamais un nom ni une photo). Les photos sont chargées par le navigateur du visiteur là où elles sont (votre site, Twitch, YouTube, Bluesky) : ce service voit son adresse."
+    "fr": "Rien n'est collecté sur votre public : ni cookie, ni formulaire, aucune adresse gardée. Le mur montre ce que vous avez mis dans Contacts (nom, photo) ; une fiche de la catégorie « Ne pas montrer » n'apparaît jamais. Le module garde seulement vos petits messages et la mise à l'honneur du mois, rattachés au numéro de la fiche (jamais un nom ni une photo). Les photos sont chargées par le navigateur de la personne qui visite là où elles sont (votre site, Twitch, YouTube, Bluesky) : ce service voit son adresse."
   },
   "rights": [
     {

@@ -1,6 +1,6 @@
 # Guestbook (Livre d'or) — module d'exemple pour Curiosa
 
-Un livre d'or **modéré** : les visiteurs signent, l'administrateur valide. C'est un vrai module qui fonctionne, et aussi
+Un livre d'or **modéré** : le public signe, l'administrateur valide. C'est un vrai module qui fonctionne, et aussi
 le module d'exemple **le plus complet** : il utilise chaque capacité du framework, avec des commentaires qui expliquent
 le pourquoi. Le tutoriel [docs/CREATE-A-MODULE.md](../../docs/CREATE-A-MODULE.md) s'appuie dessus, la référence est
 [docs/MODULES.md](../../docs/MODULES.md).

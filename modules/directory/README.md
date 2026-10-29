@@ -1,6 +1,6 @@
 # Annuaire
 
-Une vitrine **publique** de vos membres, créateurs ou partenaires, et de votre équipe. Les visiteurs **cherchent** par nom, **filtrent** par catégorie, ouvrent la **fiche** d'une personne, impriment ou téléchargent la liste. Vous ne retapez rien : les personnes viennent de **Contacts**.
+Une vitrine **publique** de vos membres, créateurs ou partenaires, et de votre équipe. Le public **cherchent** par nom, **filtrent** par catégorie, ouvrent la **fiche** d'une personne, impriment ou téléchargent la liste. Vous ne retapez rien : les personnes viennent de **Contacts**.
 
 ## À quoi ça sert
 
@@ -12,14 +12,14 @@ Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur
 2. Ouvrez-le. Si rien n'est encore réglé, choisissez un **modèle** (Association, Collectif de créateurs, ou Vide) : il prépare les mots, des catégories à remplir et une équipe.
 3. Dans Contacts, rangez vos fiches dans ces catégories. L'annuaire se remplit tout seul, en ligne à l'adresse `/annuaire` (modifiable à la création).
 
-## Ce que voient vos visiteurs
+## Ce que voient votre public
 
 - Une **liste** de cartes : photo (ou initiales), nom, ville, catégories en pastilles, titre pour l'équipe.
 - Une **recherche** par nom (sans tenir compte des accents ni des majuscules), des **filtres** par catégorie (une ou plusieurs : l'une ou l'autre), un **tri** (A–Z, récents, au hasard stable toute la journée) et un **compteur**. 24 personnes par page (50 au plus), « Précédent / Suivant ».
 - Une **fiche** par personne : nom, titre, ville, catégories, présentation courte, liens vers ses comptes, et « autres personnes de la même catégorie ». L'adresse de la fiche reste la même si le nom change.
 - La section **Équipe**, avec le titre de chacun (« Présidente », « Trésorier »…), dans l'ordre que vous avez choisi.
 - Une **version imprimable** et un **fichier CSV** : seulement ce qui est déjà public.
-- Un bouton **« Proposer ma fiche »** : il mène à la page que vous choisissez (par exemple celle de votre formulaire de contact), sinon à un e-mail (réglable). Aucun compte pour les visiteurs.
+- Un bouton **« Proposer ma fiche »** : il mène à la page que vous choisissez (par exemple celle de votre formulaire de contact), sinon à un e-mail (réglable). Aucun compte pour le public.
 
 ## Ce que fait Emma
 
@@ -47,4 +47,4 @@ Cinq outils en lecture seule : l'état, les catégories publiques, la recherche,
 
 ## Vie privée
 
-Le module ne copie ni nom, ni photo, ni compte : il garde seulement, par numéro de fiche, une présentation courte, une ville, le titre dans l'équipe et « masquée ici ». Quand une fiche est exportée ou effacée depuis Contacts, tout cela est exporté ou effacé avec elle. Une photo hébergée ailleurs n'est chargée qu'après un clic du visiteur (sauf choix contraire). La déclaration complète est dans la page « Confidentialité » du site.
+Le module ne copie ni nom, ni photo, ni compte : il garde seulement, par numéro de fiche, une présentation courte, une ville, le titre dans l'équipe et « masquée ici ». Quand une fiche est exportée ou effacée depuis Contacts, tout cela est exporté ou effacé avec elle. Une photo hébergée ailleurs n'est chargée qu'après un clic de la personne qui visite (sauf choix contraire). La déclaration complète est dans la page « Confidentialité » du site.

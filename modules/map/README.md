@@ -1,8 +1,8 @@
 # Carte
 
-Une page qui montre vos lieux utiles (studios, bonnes adresses, événements…) : d'abord une **liste** claire, avec des filtres par type et une recherche ; puis, si le visiteur le demande, une **carte** OpenStreetMap et un bouton **« Près de moi »**.
+Une page qui montre vos lieux utiles (studios, bonnes adresses, événements…) : d'abord une **liste** claire, avec des filtres par type et une recherche ; puis, si la personne qui visite le demande, une **carte** OpenStreetMap et un bouton **« Près de moi »**.
 
-## Ce que voit le visiteur
+## Ce que voit la personne qui visite
 
 - La liste des lieux, toujours là (elle marche sans JavaScript et avec un lecteur d'écran) : nom, type, adresse, description, horaires, lien du site, lien « Itinéraire » (nouvelle fenêtre).
 - Des filtres par type et une recherche sans accents ni majuscules.
@@ -24,6 +24,6 @@ Introduction, mots du site (« lieu / lieux », « studio / studios »…), text
 
 - Pas de recherche d'adresse automatique : la position vient d'un lien de carte ou de nombres. Un lien raccourci (maps.app.goo.gl…) doit d'abord être ouvert pour copier l'adresse complète.
 - Au plus 5000 lieux saisis, 200 lieux venant d'autres parties du site, 200 marqueurs affichés avant regroupement.
-- Pas d'alerte envoyée au visiteur (idée pour plus tard).
+- Pas d'alerte envoyée à la personne qui visite (idée pour plus tard).
 - Le module déclare la permission `visitor.geolocation` (cœur 0.2.12 ou plus) : le cœur n'ouvre alors la position (`Permissions-Policy: geolocation=(self)`) que sur les sites où le module est installé. Sans cette permission le navigateur refuse la position, même après le clic ; « Près de moi » propose alors les villes et les coordonnées (voir `docs/ideas/map.md`).
 - Les fonds de carte sont ceux d'OpenStreetMap, gratuits et sans clé, à usage raisonnable.
