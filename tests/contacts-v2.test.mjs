@@ -215,12 +215,12 @@ test("admin — fiche : photo et son origine, comptes, encadré d'installation p
   const { ada } = await seedBook(ctx);
   const blocks = await def.adminPanel(ctx, { query: { contact: ada } });
   const all = textOf(blocks);
-  assert.match(all, /Photo YouTube \(12 400 abonnés\)/);
+  assert.match(all, /Photo YouTube \(12 400 followers\)/);
   assert.deepEqual(blocks.filter((b) => b.type === "suggestInstall").map((b) => [b.service, b.min]), [["twitch.api", 3], ["youtube.api", undefined]]);
   assert.ok(!all.includes("twitch-channel") && !all.includes("youtube-channel"), "on nomme un service, jamais un module");
   const accounts = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "removeAccount");
   assert.deepEqual(accounts.rows.map((r) => r[0].split(" · ")[0]), ["YouTube", "Twitch"]);
-  assert.match(accounts.rows[0][0], /^YouTube · @ada_channel · 12.400 abonnés$/);
+  assert.match(accounts.rows[0][0], /^YouTube · @ada_channel · 12.400 followers$/);
   assert.match(all, /Autres canaux \(texte d'avant\)/);
   const found = blocks.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "addFromText");
   assert.deepEqual(found.rows, [["Twitch · ada_live"]]);
@@ -369,7 +369,7 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
 });
 
 test("manifeste 2.1 : version, minCore 0.2.2, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion], ["2.2.2", "0.2.2", 2]);
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion], ["2.2.3", "0.2.2", 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   assert.equal(typeof def.migrations[2], "function");

@@ -5,7 +5,7 @@
     "en": "X (Twitter)",
     "fr": "X (Twitter)"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "x",
   "description": {
     "en": "Shows your X (Twitter) button in the site header. Add one per account if you have several.",

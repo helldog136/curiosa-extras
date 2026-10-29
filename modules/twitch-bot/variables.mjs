@@ -32,10 +32,10 @@ export function checkTemplate(raw, kind, prefix = "!") {
 export function clean(v, max = 200) {
   return String(v ?? "").normalize("NFKC").replace(/[\r\n\t\u2028\u2029]+/g, " ").replace(/\p{C}+/gu, "").replace(/\s+/g, " ").trim().slice(0, max);
 }
-/** Le pseudo de celui qui tape : lettres, chiffres, tiret, tiret bas et espace, 25 caractères ; « ami » si rien ne reste. */
+/** Le pseudo de la personne qui tape : lettres, chiffres, tiret, tiret bas et espace, 25 caractères ; « chat » si rien ne reste. */
 export function pseudo(v) {
   const s = clean(v, 60).replace(/[^\p{L}\p{N}_ -]+/gu, "").trim().slice(0, 25);
-  return s || "ami";
+  return s || "chat";
 }
 
 /** Début d'un message qu'on ne doit jamais envoyer tel quel : une commande de Twitch (/…), un point (.…), ou le préfixe des commandes (boucle entre bots). */

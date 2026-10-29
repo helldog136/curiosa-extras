@@ -5,10 +5,10 @@
     "fr": "Compte à rebours",
     "en": "Countdown"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.5",
   "description": {
-    "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention : vos visiteurs voient le temps qui reste et l'heure chez eux, et peuvent l'ajouter à leur agenda. Une page, un morceau d'accueil et une source pour OBS.",
+    "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS.",
     "en": "Announce a release, a launch, a birthday or a convention: visitors see the time left and the time where they live, and can add it to their calendar. A page, a home section and an OBS source."
   },
   "author": "Helldog136",
@@ -484,7 +484,7 @@
         "en": "Show seconds"
       },
       "help": {
-        "fr": "Les visiteurs qui demandent moins de mouvement sur leur appareil ne voient jamais les secondes.",
+        "fr": "Les personnes qui demandent moins de mouvement sur leur appareil ne voient jamais les secondes.",
         "en": "Visitors who ask their device for less motion never see the seconds."
       }
     },

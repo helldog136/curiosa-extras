@@ -7,7 +7,7 @@ Pour pousser une alerte depuis n'importe quel outil (Streamer.bot, relais de web
 ```
 POST https://votre-site/m/<clé>/push
 Authorization: Bearer <jeton d'envoi>
-{ "kind": "follow", "message": "Alice", "username": "alice" }
+{ "kind": "follow", "message": "Alex", "username": "alex" }
 ```
 
 `kind` : `follow`, `sub`, `raid`, `alert` (le texte est affiché tel quel, jamais interprété comme du HTML). Sans jeton défini, rien ne peut pousser ; le panneau d'admin a un bouton de **test**.

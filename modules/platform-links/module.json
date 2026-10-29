@@ -6,7 +6,7 @@
     "en": "Other platforms",
     "fr": "Autres plateformes"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": {
     "en": "Add your OnlyFans, Mym, Fansly, Patreon, Ko-fi or any other page as an icon next to your social networks, with an optional notice page (18+) before the link opens.",
     "fr": "Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi ou une autre page en icône à côté de vos réseaux, avec en option une page d'avertissement (18 ans et plus) avant l'ouverture du lien."
@@ -108,7 +108,7 @@
       "advanced": true,
       "default": true,
       "label": {
-        "fr": "Indiquer d'où vient le visiteur",
+        "fr": "Indiquer d'où vient la personne qui visite",
         "en": "Tell the platform where the visitor comes from"
       },
       "help": {

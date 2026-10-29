@@ -220,7 +220,7 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
 test("game-suggestions : manifeste valide, version et données montées, permission rawg, clé RAWG du module seulement en legacySettings (secret, jamais affichée), textes fr/en alignés", () => {
   const m = readJson("game-suggestions/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.5.0");
+  assert.equal(m.version, "1.5.1");
   assert.equal(m.minCore, "0.2.10");   // 0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? ») ; le service game.cover est un besoin facultatif, l'ancienne interface sert de repli
   assert.equal(m.dataVersion, 2);
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"), "plus de champ visible");
@@ -453,7 +453,7 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
 test("planning : plus de réglage de clé, permission rawg déclarée (pas de storage), version montée, textes alignés", () => {
   const m = readJson("planning/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "2.4.0");
+  assert.equal(m.version, "2.4.1");
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"));
   assert.ok(m.permissions.includes("rawg") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(readJson("planning/locales/fr.json")).sort(), Object.keys(readJson("planning/locales/en.json")).sort());

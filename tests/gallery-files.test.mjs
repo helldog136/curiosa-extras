@@ -11,7 +11,7 @@ const here = (ctx, url) => ctx.dumpFiles().find((f) => f.url === url);
 test("le manifeste demande la permission « files », le cœur 0.2.13, et le dit dans la déclaration de vie privée (500 caractères au plus, FR et EN)", () => {
   assert.ok(manifest.permissions.includes("files"));
   assert.equal(manifest.minCore, "0.2.13");
-  assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.version, "1.1.1");
   for (const lang of ["fr", "en"]) assert.ok(manifest.privacy[lang].length <= 500, `${lang} : ${manifest.privacy[lang].length}`);
   assert.match(manifest.privacy.fr, /supprimés du serveur avec la photo ou l'album/);
   assert.match(manifest.privacy.en, /deleted from the server with the photo or album/);

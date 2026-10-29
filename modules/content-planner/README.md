@@ -45,6 +45,6 @@ Si vous avez branché un assistant IA, il peut **lister** vos idées, en **lire*
 - Il ne crée pas de créneau dans le planning (voir les idées pour la suite dans `docs/ideas/content-planner.md`).
 - Il garde au plus **1 000 idées** (archivées comprises).
 
-## Pour les développeurs
+## Pour qui développe
 
 Une seule instance, aucun service offert ni requis, trois permissions (`admin`, `storage`, `mcp`). Les idées sont des documents de la collection `ideas`. Les actions de l'administration sont réservées aux administrateurs ; seul le téléchargement a un droit propre (`ideas.export`). Outils MCP : `ideas_list`, `idea_get` (lecture), `idea_add`, `idea_update`, `idea_move`, `idea_step` (écriture, jamais accordée d'office). Voir `docs/ideas/content-planner.md`.

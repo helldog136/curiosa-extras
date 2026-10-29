@@ -28,9 +28,9 @@ function make({ items = [], settings = {}, locale = "fr", messages } = {}) {
 const statOf = async (ctx, id) => (await loadStats(ctx)).find((s) => s.id === id);
 const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
-test("manifeste : valide, 1.1.2, minCore 0.2.2, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
+test("manifeste : valide, 1.1.3, minCore 0.2.2, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.1.2"); assert.equal(manifestJson.minCore, "0.2.2"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.1.3"); assert.equal(manifestJson.minCore, "0.2.2"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });
@@ -224,12 +224,12 @@ test("évolution : 7 et 30 jours, pourcentage, division par zéro, recul insuffi
   assert.equal(changeOf(pts([[0, 10], [40, 20]]), 7), null, "point de référence trop ancien pour parler de « cette semaine »");
 });
 
-test("phrase d'évolution : +120 abonnés cette semaine, −3 ce mois-ci, singulier, aucun changement, sans recul ; en français ET en anglais", () => {
+test("phrase d'évolution : +120 followers cette semaine, −3 ce mois-ci, singulier, aucun changement, sans recul ; en français ET en anglais", () => {
   const fc = make().ctx, ec = make({ locale: "en" }).ctx;
   const up = { days: 7, delta: 120, percent: 10 }, down = { days: 30, delta: -3, percent: -0.5 };
-  assert.equal(evolutionPhrase(fc, up, "followers"), "+120 abonnés cette semaine (+10 %)");
-  assert.equal(evolutionPhrase(fc, down, "followers"), "−3 abonnés ce mois-ci (−0,5 %)");
-  assert.equal(evolutionPhrase(fc, { days: 7, delta: 1, percent: null }, "paying"), "+1 abonné payant cette semaine");
+  assert.equal(evolutionPhrase(fc, up, "followers"), "+120 followers cette semaine (+10 %)");
+  assert.equal(evolutionPhrase(fc, down, "followers"), "−3 followers ce mois-ci (−0,5 %)");
+  assert.equal(evolutionPhrase(fc, { days: 7, delta: 1, percent: null }, "paying"), "+1 abonnement payant cette semaine");
   assert.equal(evolutionPhrase(fc, { days: 30, delta: -1, percent: null }, "content"), "−1 publication ce mois-ci");
   assert.equal(evolutionPhrase(fc, { days: 7, delta: 12000, percent: null }, "views").replace(/\s/g, " "), "+12 000 vues cette semaine");
   assert.equal(evolutionPhrase(fc, { days: 7, delta: 0, percent: 0 }, "views"), "Pas de changement cette semaine");
@@ -241,7 +241,7 @@ test("phrase d'évolution : +120 abonnés cette semaine, −3 ce mois-ci, singul
 test("explications des chiffres manquants : une raison humaine ET une action, propre à la plateforme quand il y en a une", () => {
   const { ctx } = make();
   const s = (error, platform) => ({ state: "error", error, platform });
-  assert.match(reasonText(ctx, s("hidden", "youtube")), /YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio/);
+  assert.match(reasonText(ctx, s("hidden", "youtube")), /YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio/);
   assert.match(reasonText(ctx, s("auth", "twitch")), /Twitch demande votre autorisation : cliquez sur « Connecter ma chaîne »/);
   assert.match(reasonText(ctx, s("auth", "bluesky")), /Bluesky demande votre autorisation.*reconnectez/);
   assert.match(reasonText(ctx, s("rate", "github")), /GitHub demande de patienter.*Rien à faire/);
@@ -423,17 +423,17 @@ test("admin : cartes lisibles (compte, chiffre, évolution en phrase, origine, m
   const blocks = await def.adminPanel(ctx, { query: {}, now: NOW + DAY });
   const tables = blocks.filter((b) => b.type === "table");
   const cards = tables[0].rows.map((r) => r.join(" | ")).join("\n");
-  assert.match(cards, /Twitch · emma_live\nAbonnés : 1\s120\nGardé pour vous/);
-  assert.match(cards, /\+84 abonnés cette semaine \(\+8,1 %\)/);
+  assert.match(cards, /Twitch · emma_live\nFollowers : 1\s120\nGardé pour vous/);
+  assert.match(cards, /\+84 followers cette semaine \(\+8,1 %\)/);
   assert.match(cards, /Twitch demande votre autorisation : cliquez sur « Connecter ma chaîne »/);
   assert.match(cards, /Dernier chiffre connu/);
-  assert.match(cards, /YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio/);
-  assert.match(cards, /Instagram · @emma\nAbonnés : 4\s200/);
+  assert.match(cards, /YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio/);
+  assert.match(cards, /Instagram · @emma\nFollowers : 4\s200/);
   assert.match(cards, /Saisi à la main/);
   const visibility = blocks.find((b) => b.type === "adminForm" && b.action === "saveVisibility");
   assert.equal(visibility.fields.length, 3);
   assert.ok(visibility.fields.every((f) => f.value === "no" && f.options.length === 2), "tout est privé au départ");
-  assert.match(JSON.stringify(blocks), /« Montrer sur mon site » autorise l'affichage d'un chiffre aux visiteurs/);
+  assert.match(JSON.stringify(blocks), /« Montrer sur mon site » autorise l'affichage d'un chiffre au public/);
   assert.match(visibility.fields[0].options[1].label, /Oui, le montrer sur mon site/);
   const manual = tables.find((t) => t.rowActions?.some((a) => a.action === "forget" && /Supprimer/.test(a.label)));
   assert.ok(manual.rowActions.every((a) => !a.action || a.confirm), "toute suppression demande confirmation");
@@ -551,10 +551,10 @@ test("période : la page d'administration parle simplement (durées en heures et
   const { ctx } = make({ items: periodItems() });
   await collectNow(ctx, { now: NOW });
   const text = JSON.stringify(await def.adminPanel(ctx, { query: {}, now: NOW + 3600_000 }));
-  assert.match(text, /Spectateurs moyens \(30 jours\) : 150/);
-  assert.match(text, /Pic de spectateurs \(30 jours\) : 240/);
+  assert.match(text, /Audience moyenne \(30 jours\) : 150/);
+  assert.match(text, /Pic d'audience \(30 jours\) : 240/);
   assert.match(text, /Temps de direct \(30 jours\) : 12 h 30/);
-  assert.match(text, /Temps regardé par vos spectateurs \(30 jours\) : 294 h 40/);
+  assert.match(text, /Temps regardé par votre audience \(30 jours\) : 294 h 40/);
   assert.match(text, /Followers gagnés en direct \(30 jours\) : 40/);
   assert.match(text, /Calculé sur vos directs des 30 derniers jours, mesurés par votre site\./);
   const short = JSON.stringify(await def.adminPanel(make({ items: [item({ id: "twitch-channel:emma:hours_streamed", metric: "hours_streamed", value: 45 })] }).ctx, { query: {}, now: NOW }));

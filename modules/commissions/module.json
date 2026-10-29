@@ -5,11 +5,11 @@
     "en": "Commissions",
     "fr": "Commandes"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.5",
   "description": {
-    "en": "A clear commission queue for creators: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment.",
-    "fr": "Une file de commandes claire pour les créatrices : ouvert, complet ou fermé avec les places libres, vos formules avec leurs prix indicatifs, un formulaire court, un lien de suivi privé pour chaque cliente et une liste de demandes simple pour vous. Aucun paiement."
+    "en": "A clear commission queue for anyone who creates on request: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment.",
+    "fr": "Une file de commandes claire pour toute personne qui crée sur commande : ouvert, complet ou fermé avec les places libres, vos formules avec leurs prix indicatifs, un formulaire court, un lien de suivi privé pour chaque personne qui commande et une liste de demandes simple pour vous. Aucun paiement."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -106,12 +106,12 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Proposer des e-mails aux clientes",
+        "fr": "Proposer des e-mails aux personnes qui commandent",
         "en": "Offer e-mails to customers"
       },
       "help": {
-        "fr": "Si le site sait envoyer des e-mails, la cliente peut cocher « me prévenir » : elle reçoit une confirmation avec son lien de suivi, puis un court message à chaque changement d'état. Sans e-mails réglés, rien ne change : elle suit sa commande avec son lien.",
-        "en": "If the site can send e-mails, the customer can tick \"let me know\": she gets a confirmation with her tracking link, then a short message each time the state changes. Without e-mails set up, nothing changes: she follows her request with her link."
+        "fr": "Si le site sait envoyer des e-mails, la personne qui commande peut cocher « me prévenir » : une confirmation lui donne son lien de suivi, puis un court message arrive à chaque changement d'état. Sans e-mails réglés, rien ne change : le suivi se fait avec ce lien.",
+        "en": "If the site can send e-mails, the customer can tick \"let me know\": they get a confirmation with their tracking link, then a short message each time the state changes. Without e-mails set up, nothing changes: they follow their request with their link."
       }
     },
     {
@@ -119,12 +119,12 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Montrer sa place dans la file à chaque cliente",
-        "en": "Show each customer her place in the queue"
+        "fr": "Montrer sa place dans la file à chaque personne qui commande",
+        "en": "Show each customer their place in the queue"
       },
       "help": {
         "fr": "Sur sa page de suivi : « 2 commandes avant la vôtre ». Cela dit indirectement combien de commandes vous avez en cours.",
-        "en": "On her tracking page: \"2 requests before yours\". This tells indirectly how many requests you have in progress."
+        "en": "On their tracking page: \"2 requests before yours\". This tells indirectly how many requests you have in progress."
       }
     },
     {
@@ -146,7 +146,7 @@
       "default": 3,
       "advanced": true,
       "label": {
-        "fr": "Demandes acceptées par heure et par visiteur",
+        "fr": "Demandes acceptées par heure et par personne",
         "en": "Accepted requests per hour and visitor"
       }
     },
@@ -184,7 +184,7 @@
     {
       "id": "email.view",
       "label": {
-        "fr": "voir les adresses e-mail des clientes",
+        "fr": "voir les adresses e-mail des personnes qui commandent",
         "en": "see customers' e-mail addresses"
       },
       "help": {
@@ -220,8 +220,8 @@
       "min": 2,
       "optional": true,
       "label": {
-        "fr": "Votre carnet d'adresses (module Contacts) : pour créer la fiche d'une cliente quand vous acceptez sa commande",
-        "en": "Your address book (Contacts module): to create a customer's card when you accept her request"
+        "fr": "Votre carnet d'adresses (module Contacts) : pour créer la fiche de la personne qui commande quand vous acceptez sa commande",
+        "en": "Your address book (Contacts module): to create a customer's card when you accept their request"
       }
     }
   ],
@@ -290,7 +290,7 @@
     },
     {
       "name": "commission_set_status",
-      "description": "Change the state of one request: new, accepted, in_progress, delivered, refused or cancelled. Optionally set the short message the customer sees on her tracking page (empty text clears it). With notify true, and only if she asked for e-mails and the site can send them, a short message tells her the new state. Does not create a Contacts card and never deletes anything.",
+      "description": "Change the state of one request: new, accepted, in_progress, delivered, refused or cancelled. Optionally set the short message the customer sees on their tracking page (empty text clears it). With notify true, and only if they asked for e-mails and the site can send them, a short message tells them the new state. Does not create a Contacts card and never deletes anything.",
       "input": {
         "type": "object",
         "required": [

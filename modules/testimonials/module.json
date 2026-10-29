@@ -5,7 +5,7 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.2.5",
   "description": {
     "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
@@ -13,7 +13,7 @@
   },
   "author": "Helldog136",
   "privacy": {
-    "fr": "Si vous laissez un avis, votre prénom ou pseudo, votre note, votre texte et votre accord de publication (avec sa date) sont enregistrés. L'avis est lu avant d'être publié, puis visible par tous. Votre e-mail, si vous en donnez un, reste privé et s'efface tout seul. Un lien privé vous permet de retirer votre avis à tout moment. Aucun cookie, adresse IP non gardée.",
+    "fr": "Si vous laissez un avis, votre prénom ou pseudo, votre note, votre texte et votre accord de publication (avec sa date) sont enregistrés. L'avis est lu avant d'être publié, puis visible par tout le monde. Votre e-mail, si vous en donnez un, reste privé et s'efface tout seul. Un lien privé vous permet de retirer votre avis à tout moment. Aucun cookie, adresse IP non gardée.",
     "en": "If you leave a review, your first name or nickname, rating, text and permission to publish (with its date) are saved. The review is read before it is published, then visible to everyone. Your e-mail, if you give one, stays private and erases itself. A private link lets you withdraw your review at any time. No cookie, IP address not kept."
   },
   "license": "MIT",
@@ -252,7 +252,7 @@
       "default": 3,
       "advanced": true,
       "label": {
-        "fr": "Avis par heure et par visiteur",
+        "fr": "Avis par heure et par personne",
         "en": "Reviews per hour and visitor"
       }
     },
@@ -446,7 +446,7 @@
     {
       "id": "email.view",
       "label": {
-        "fr": "voir les adresses e-mail des auteurs",
+        "fr": "voir les adresses e-mail des personnes qui ont écrit un avis",
         "en": "see authors' e-mail addresses"
       },
       "help": {

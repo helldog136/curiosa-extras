@@ -202,7 +202,7 @@ ${pull ? `        .al-detail{font-size:1rem;color:var(--al-fg);opacity:.85;max-w
     return [
       { type: "heading", text: ctx.t("adminTitle") },
       { type: "markdown", text: ctx.t("adminHelp") },
-      { type: "copy", label: "POST", text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alice","username":"alice"}'` },
+      { type: "copy", label: "POST", text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alex","username":"alex"}'` },
       ...(hasToken ? [] : [{ type: "markdown", text: ctx.t("noToken") }]),
       { type: "adminForm", action: "test", title: ctx.t("testTitle"), submitLabel: ctx.t("testSubmit"), fields: [] },
       ...(await youtubeBlocks(ctx)),

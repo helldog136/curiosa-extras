@@ -6,7 +6,7 @@
     "fr": "Home Assistant",
     "en": "Home Assistant"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": {
     "fr": "Laisse vos viewers piloter vos lumières et faire lire un message à voix haute chez vous, avec leurs points de chaîne. Home Assistant vient chercher les ordres : rien n'est ouvert chez vous. Avec un gros bouton « Tout couper », une modération du texte lu et un journal.",
     "en": "Lets your viewers change your lights and have a message read aloud at your place, with their channel points. Home Assistant comes to fetch the orders: nothing is opened at your place. With a big “Cut everything” button, moderation of the text read aloud, and a log."
@@ -181,8 +181,8 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Dire le pseudo avant le message (« Léa dit : … »)",
-        "en": "Say the username before the message (“Lea says: …”)"
+        "fr": "Dire le pseudo avant le message (« Sacha dit : … »)",
+        "en": "Say the username before the message (“Sacha says: …”)"
       },
       "help": {
         "fr": "Pour qu'on sache qui parle.",

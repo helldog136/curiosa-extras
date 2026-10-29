@@ -69,7 +69,7 @@ async function withConsole(fn) {
 
 test("manifeste 1.3.0 : valide, secret saisi par la propriétaire, écriture désactivée par défaut et avancée, aucun outil MCP, onglets inchangés, service youtube.api v1", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.3.0");
+  assert.equal(manifest.version, "1.3.1");
   const by = (k) => manifest.settings.find((s) => s.key === k);
   assert.equal(by("oauthClientId").type, "text"); assert.equal(by("oauthClientId").optional, true);
   assert.equal(by("oauthClientSecret").type, "secret"); assert.equal(by("oauthClientSecret").optional, true);

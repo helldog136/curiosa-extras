@@ -4,7 +4,7 @@ Un petit personnage discret dans un coin de votre site. Il fait une petite appar
 
 Il s'adapte à n'importe quelle identité : le dessin inclus prend tout seul les couleurs de votre thème (clair ou sombre), ou vous montrez votre propre image. Les phrases sont les vôtres.
 
-## Ce que voit le visiteur
+## Ce que voit la personne qui visite
 
 - Une seule apparition par visite, après quelques secondes de calme (8 par défaut). Jamais deux fois la même phrase de suite, jamais plus de 3 messages par jour (réglable), jamais de son.
 - Une bulle courte : une salutation, puis une annonce ou une astuce. Un bouton « Voir » quand la phrase a un lien.
@@ -13,7 +13,7 @@ Il s'adapte à n'importe quelle identité : le dessin inclus prend tout seul les
 - Elle ne cache jamais le contenu : elle reste dans son coin, avec des marges, sous les fenêtres et le bandeau des cookies du site. Elle n'est pas imprimée.
 - « Mouvement réduit » : aucune animation. La bulle ne se ferme jamais pendant qu'on la survole ou qu'on la lit au clavier (Échap pour la fermer).
 
-## Ce que fait la propriétaire du site
+## Ce que fait la personne qui gère le site
 
 1. Installer le module : des phrases de départ (français et anglais, neutres) sont déjà là, la mascotte est en **brouillon** (personne ne la voit).
 2. Onglet **Ma mascotte** : regarder l'aperçu, choisir le dessin inclus (trois humeurs : contente, curieuse, endormie) ou **sa propre image** (rond ou carré, description de l'image obligatoire), donner un **nom**. Cliquer sur **Publier**.
@@ -23,7 +23,7 @@ Il s'adapte à n'importe quelle identité : le dessin inclus prend tout seul les
 
 ### Les informations du site dans une phrase
 
-Écrivez `{nom_du_site}`, `{nom}` (le nom de la mascotte), `{prochain_evenement}`, `{date_evenement}`, `{en_direct}`, `{titre_direct}`, `{derniere_nouveaute}` (les noms anglais `{site_name}`, `{name}`, `{next_event}`, `{event_date}`, `{live_now}`, `{live_title}`, `{latest_news}` marchent aussi). **Si l'information n'existe pas, la phrase n'est simplement pas dite** : pas d'erreur, pas de trou. La date est écrite dans la langue et l'heure du visiteur.
+Écrivez `{nom_du_site}`, `{nom}` (le nom de la mascotte), `{prochain_evenement}`, `{date_evenement}`, `{en_direct}`, `{titre_direct}`, `{derniere_nouveaute}` (les noms anglais `{site_name}`, `{name}`, `{next_event}`, `{event_date}`, `{live_now}`, `{live_title}`, `{latest_news}` marchent aussi). **Si l'information n'existe pas, la phrase n'est simplement pas dite** : pas d'erreur, pas de trou. La date est écrite dans la langue et l'heure de la personne qui visite.
 
 ## Fonctionne seule, s'enrichit avec les autres modules (tout est facultatif)
 
@@ -37,7 +37,7 @@ Il s'adapte à n'importe quelle identité : le dessin inclus prend tout seul les
 - Pas de son, pas de suivi, pas de compte, pas de cookie, rien d'envoyé à un service extérieur.
 - Une seule mascotte par site.
 - Elle ne se montre pas si le navigateur refuse tout stockage (on ne pourrait pas respecter « une fois par visite »).
-- Elle n'est pas un chat en direct : elle ne répond pas aux questions des visiteurs.
+- Elle n'est pas un chat en direct : elle ne répond pas aux questions du public.
 
 ## Pour un assistant IA
 
@@ -45,4 +45,4 @@ Deux outils : lister les phrases (lecture seule) et en proposer une (toujours en
 
 ## Vie privée
 
-Le navigateur du visiteur retient ses choix (fermée, pastille, coupée), le nombre de messages du jour et les dernières phrases dites. Rien ne part vers le site ni vers un tiers. Le module le déclare dans la politique de confidentialité du site.
+Le navigateur de la personne qui visite retient ses choix (fermée, pastille, coupée), le nombre de messages du jour et les dernières phrases dites. Rien ne part vers le site ni vers un tiers. Le module le déclare dans la politique de confidentialité du site.

@@ -64,7 +64,7 @@ const dump = (w) => JSON.stringify(w.ctx.dumpStore());
 test("le manifeste est valide et déclare le contrat exact", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.0.1"); assert.equal(manifest.minCore, "0.2.6");
+  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.0.2"); assert.equal(manifest.minCore, "0.2.6");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
@@ -804,7 +804,7 @@ test("le pseudo du viewer est nettoyé, et remplacé s'il est refusé", async ()
   await enq(w, { key: "tts:lire", text: "salut", viewer: "nazi_boy", ref: "b" });
   const [a, b] = (await ha.pull()).body.actions;
   assert.equal(a.text, "Léa dit : salut"); assert.equal(a.viewer, "Léa");
-  assert.equal(b.text, "Quelqu'un dit : salut"); assert.equal(b.viewer, "");
+  assert.equal(b.text, "Une personne dit : salut"); assert.equal(b.viewer, "");
   w.done();
 });
 

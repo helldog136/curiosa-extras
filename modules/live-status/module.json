@@ -6,7 +6,7 @@
     "en": "Live status",
     "fr": "Statut du live"
   },
-  "version": "1.4.1",
+  "version": "1.4.2",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
@@ -15,7 +15,7 @@
   },
   "privacy": {
     "en": "This module collects nothing itself. Twitch: the Twitch player appears only while you are live (or always, if the owner chose so); your browser then contacts Twitch, which sees your address and may set its own cookies. YouTube: the player (youtube-nocookie.com) is loaded only after you click “Start the YouTube player”, unless the owner chose otherwise; your browser then contacts YouTube (Google), which sees your address. A banner or a “Watch” link loads nothing until you click.",
-    "fr": "Ce module ne collecte rien lui-même. Twitch : le lecteur n'apparaît que pendant un direct (ou toujours, si le propriétaire l'a choisi) ; votre navigateur contacte alors Twitch, qui voit votre adresse et peut déposer ses cookies. YouTube : le lecteur (youtube-nocookie.com) n'est chargé qu'après votre clic sur « Lancer le lecteur YouTube », sauf choix contraire du propriétaire ; YouTube (Google) voit alors votre adresse. Un lien « Regarder » ne charge rien avant votre clic."
+    "fr": "Ce module ne collecte rien lui-même. Twitch : le lecteur n'apparaît que pendant un direct (ou toujours, si le site est réglé ainsi) ; votre navigateur contacte alors Twitch, qui voit votre adresse et peut déposer ses cookies. YouTube : le lecteur (youtube-nocookie.com) n'est chargé qu'après votre clic sur « Lancer le lecteur YouTube », sauf réglage contraire du site ; YouTube (Google) voit alors votre adresse. Un lien « Regarder » ne charge rien avant votre clic."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -112,7 +112,7 @@
       },
       "help": {
         "en": "“After a click” respects your visitors' privacy: nothing is loaded from YouTube until they press the button. “As soon as the page opens” plays it right away, like the Twitch player.",
-        "fr": "« Après un clic » respecte la vie privée des visiteurs : rien n'est chargé depuis YouTube tant qu'ils n'ont pas appuyé sur le bouton. « Dès l'ouverture de la page » l'affiche tout de suite, comme le lecteur Twitch."
+        "fr": "« Après un clic » respecte la vie privée du public : rien n'est chargé depuis YouTube tant qu'il n'a pas appuyé sur le bouton. « Dès l'ouverture de la page » l'affiche tout de suite, comme le lecteur Twitch."
       },
       "options": [
         {
@@ -140,7 +140,7 @@
       },
       "help": {
         "en": "Leave empty to announce all your Twitch channels. Otherwise type their logins separated by commas (for example mychannel, myfriend).",
-        "fr": "Laissez vide pour annoncer toutes vos chaînes Twitch. Sinon, saisissez leurs identifiants séparés par des virgules (par exemple machaine, monami)."
+        "fr": "Laissez vide pour annoncer toutes vos chaînes Twitch. Sinon, saisissez leurs identifiants séparés par des virgules (par exemple machaine, autrechaine)."
       },
       "optional": true
     }

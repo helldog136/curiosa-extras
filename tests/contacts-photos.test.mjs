@@ -46,7 +46,7 @@ test("ouvrir une fiche rafraîchit les profils de plus de 24 h (Twitch, YouTube 
     assert.equal(tlog.length, 1);
     assert.deepEqual(tlog[0], { as: "app", method: "GET", path: "users", query: { login: ["ada_live"] }, priority: "interactive" });
     assert.deepEqual([ylog.length, ylog[0].handles, ylog[0].priority], [1, ["@ada-chan"], "interactive"]);
-    assert.match(plain(page), /Photo YouTube \(12.400 abonnés\)/, "YouTube a la plus grosse communauté");
+    assert.match(plain(page), /Photo YouTube \(12.400 followers\)/, "YouTube a la plus grosse communauté");
     const c = (await svc.get(ctx, { id })).contact;
     assert.deepEqual(c.photo, { url: "https://yt3.example.test/a.jpg", source: "youtube", accountId: c.accounts.find((a) => a.network === "youtube").id });
     assert.deepEqual(c.accounts.map((a) => [a.network, a.followers, a.displayName]), [["twitch", undefined, "ada_live (Twitch)"], ["youtube", 12400, "Chaîne YT"], ["bluesky", 900, "Sky Person"]]);
@@ -127,9 +127,9 @@ test("sans connecteur : la fiche propose d'installer PAR SERVICE (Twitch, YouTub
     const page = await def.adminPanel(ctx, { query: { contact: id } });
     assert.deepEqual(page.filter((b) => b.type === "suggestInstall").map((b) => [b.service, b.min]), [["twitch.api", 3], ["youtube.api", undefined]]);
     assert.ok(!/twitch-connector|youtube-connector|twitch-channel|youtube-channel/.test(JSON.stringify(page)), "un service, jamais un nom de module");
-    assert.match(plain(page), /Photo Bluesky \(4.200 abonnés\)/, "Bluesky ne demande aucun connecteur");
+    assert.match(plain(page), /Photo Bluesky \(4.200 followers\)/, "Bluesky ne demande aucun connecteur");
     const r = await def.adminActions.refreshPhoto(ctx, { id });
-    assert.match(r.ok, /Photo et abonnés mis à jour\. Pour Twitch, YouTube, installez le module qui parle à ce service \(voir la proposition plus haut\)\./);
+    assert.match(r.ok, /Photo et followers mis à jour\. Pour Twitch, YouTube, installez le module qui parle à ce service \(voir la proposition plus haut\)\./);
   });
 });
 

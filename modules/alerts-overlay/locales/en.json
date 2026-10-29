@@ -18,7 +18,7 @@
   "ytTitle": "YouTube alerts",
   "ytHelp": "Super Chats, Super Stickers and memberships on your YouTube live appear here, one after the other. They come from the YouTube live actions module, which reads the chat **only while its “Live” page is open**: keep it open during the live. Message texts stay hidden unless you tick “Show the text of YouTube messages” in the settings.",
   "ytTestTitle": "Send a fake Super Chat",
-  "ytTestWho": "Lea",
+  "ytTestWho": "Sacha",
   "ytTestText": "Great stream!",
   "ytTestError": "The test alert could not be prepared.",
   "ytAbsent": "To also show Super Chats and memberships from your YouTube live, install the “YouTube live actions” module."

@@ -1,6 +1,6 @@
 # Bot Twitch
 
-Votre site **répond aux commandes tapées dans votre chat Twitch** : quelqu'un écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
+Votre site **répond aux commandes tapées dans votre chat Twitch** : une personne écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
 
 **Il faut Curiosa 0.2.5 ou plus.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent tout seuls avec le bot. Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
 
@@ -14,7 +14,7 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 
 ## Les commandes
 - **Toutes prêtes** : `!planning` (votre prochain stream), `!jeu`, `!titre`, `!followers`, `!uptime` (depuis combien de temps vous êtes en direct). Vous pouvez changer leur texte, leur nom, leurs autres noms, les désactiver.
-- **Les vôtres** : un nom (sans le `!`), la réponse, d'éventuels autres noms (`!insta` et `!ig` pour `!instagram`), qui peut l'utiliser (tout le monde, les abonnés, les modérateurs, seulement vous), et une attente entre deux réponses.
+- **Les vôtres** : un nom (sans le `!`), la réponse, d'éventuels autres noms (`!insta` et `!ig` pour `!instagram`), qui peut l'utiliser (tout le monde, les personnes abonnées, l'équipe de modération, seulement vous), et une attente entre deux réponses.
 - **Des morceaux qui se remplissent tout seuls** dans n'importe quel texte : `{followers}`, `{jeu}`, `{titre}`, `{uptime}`, `{prochain_stream}`, `{utilisateur}` (le pseudo de la personne qui tape). Si une information n'est pas disponible, le bot écrit une phrase lisible à la place (« bientôt, restez à l'écoute »). Un morceau inconnu est refusé tout de suite, avec ce qu'il faut corriger. Le bot ne recopie jamais ce que les gens écrivent, à part leur pseudo.
 - **Un aperçu** de la réponse s'affiche quand vous modifiez une commande.
 
@@ -35,7 +35,7 @@ Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n
 **Ce qui se passe quand un viewer prend une récompense** : l'échange est noté **une seule fois**, puis l'action est lancée. Si la maison accepte, **les points sont validés** quand elle a joué l'action ; si elle refuse (maison coupée, pas en direct, message refusé par la modération, trop de demandes…) ou n'a rien fait dans le délai (2 minutes par défaut), **les points sont rendus**. Un message dans le chat peut prévenir le viewer (réglage « Prévenir le chat quand des points sont rendus », désactivé par défaut).
 - **Rien ne tourne en arrière-plan** : les résultats de la maison et les délais dépassés sont pris en compte au prochain évènement sur votre chaîne ou quand vous ouvrez l'onglet.
 - **Hors direct, ou quand la maison est coupée**, les récompenses de la maison sont **mises en pause chez Twitch**, et remises en vente toutes seules ensuite (seulement celles que Curiosa a mises en pause : une pause que vous avez faite reste).
-- **`!stop`** dans le chat coupe la maison (vous et les modérateurs que vous nommez dans les réglages), **`!start`** la rebranche (vous seule). Sans le module Home Assistant, le bot le dit poliment.
+- **`!stop`** dans le chat coupe la maison (vous et l'équipe de modération que vous nommez dans les réglages), **`!start`** la rebranche (vous uniquement). Sans le module Home Assistant, le bot le dit poliment.
 - **Simuler** : le bouton « Simuler cette récompense » joue le même chemin avec un faux viewer « Test », **sans Twitch et sans points**. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée. Refusé si la maison est coupée. 1 test toutes les 3 secondes, 30 par heure.
 - **Journal** des 50 derniers échanges (pseudo, récompense, résultat) ; le message écrit par le viewer n'est **jamais gardé**.
 - **Limites** : 20 récompenses, 100 échanges en attente. Les points de chaîne n'existent que pour un compte **Affilié ou Partenaire** : sinon la page le dit en clair.
@@ -47,7 +47,7 @@ Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n
 - Il **ne répond jamais à lui-même ni aux autres bots**, et ses réponses ne peuvent pas déclencher une autre commande.
 - Une **limite de réponses** par tranche de 30 secondes, bien en dessous de ce que Twitch tolère.
 - Une réponse ne commence jamais par `/` ni par un point, et ne dépasse jamais 500 caractères.
-- Chaque commande a un rôle : tout le monde, abonnés, modérateurs ou seulement vous.
+- Chaque commande a un rôle : tout le monde, personnes abonnées, équipe de modération ou seulement vous.
 
 ## L'arrêt d'urgence
 En haut de la page : **« Couper toutes les réponses »**. Un clic, le bot se tait partout, immédiatement. Rien n'est supprimé ; « Réactiver les réponses » le remet en marche.

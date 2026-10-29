@@ -22,16 +22,16 @@ const YT = "UC" + "a".repeat(22);
 // Chaque plateforme : réglages, adresse appelée, réponse correcte → éléments attendus, et le code HTTP qui doit donner chaque erreur.
 const PLATFORMS = {
   "youtube-channel": { platform: "youtube", settings: { channelId: YT }, host: "www.googleapis.com", ok: { items: [{ id: YT, statistics: { subscriberCount: "1230000", viewCount: "987654321", videoCount: "321", hiddenSubscriberCount: false } }] },
-    values: { followers: 1230000, content: 321, views: 987654321 }, notFound: [200 /* items vides */], labels: { fr: ["Abonnés YouTube", "Vidéos YouTube", "Vues YouTube"], en: ["YouTube subscribers", "YouTube videos", "YouTube views"] } },
+    values: { followers: 1230000, content: 321, views: 987654321 }, notFound: [200 /* items vides */], labels: { fr: ["Followers YouTube", "Vidéos YouTube", "Vues YouTube"], en: ["YouTube subscribers", "YouTube videos", "YouTube views"] } },
   bluesky: { platform: "bluesky", settings: { profile: "nom.bsky.social" }, host: "public.api.bsky.app", ok: { followersCount: 120, postsCount: 45, handle: "nom.bsky.social" }, values: { followers: 120, content: 45 }, notFound: [400, 404],
-    labels: { fr: ["Abonnés Bluesky", "Publications Bluesky"], en: ["Bluesky followers", "Bluesky posts"] } },
+    labels: { fr: ["Followers Bluesky", "Publications Bluesky"], en: ["Bluesky followers", "Bluesky posts"] } },
   mastodon: { platform: "mastodon", settings: { profile: "https://mastodon.example/@nom" }, host: "mastodon.example", ok: { followers_count: 77, statuses_count: 1500, acct: "nom" }, values: { followers: 77, content: 1500 }, notFound: [404, 410, 422],
-    labels: { fr: ["Abonnés Mastodon", "Publications Mastodon"], en: ["Mastodon followers", "Mastodon posts"] } },
-  github: { platform: "github", settings: { profile: "helldog" }, host: "api.github.com", ok: { login: "helldog", followers: 9, public_repos: 3 }, values: { followers: 9 }, notFound: [404], labels: { fr: ["Abonnés GitHub"], en: ["GitHub followers"] } },
+    labels: { fr: ["Followers Mastodon", "Publications Mastodon"], en: ["Mastodon followers", "Mastodon posts"] } },
+  github: { platform: "github", settings: { profile: "helldog" }, host: "api.github.com", ok: { login: "helldog", followers: 9, public_repos: 3 }, values: { followers: 9 }, notFound: [404], labels: { fr: ["Followers GitHub"], en: ["GitHub followers"] } },
   discord: { platform: "discord", settings: { profile: "abcDEF" }, host: "discord.com", ok: { approximate_member_count: 321, approximate_presence_count: 10, guild: { name: "Ma communauté" } }, values: { followers: 321 }, notFound: [404],
     labels: { fr: ["Membres Discord"], en: ["Discord members"] } },
   reddit: { platform: "reddit", settings: { profile: "https://www.reddit.com/r/mon_sub" }, host: "www.reddit.com", ok: { data: { subscribers: 4321, display_name_prefixed: "r/mon_sub" } }, values: { followers: 4321 }, notFound: [404],
-    labels: { fr: ["Abonnés Reddit"], en: ["Reddit followers"] } },
+    labels: { fr: ["Followers Reddit"], en: ["Reddit followers"] } },
 };
 const ids = Object.keys(PLATFORMS);
 const mods = Object.fromEntries(await Promise.all(ids.map(async (id) => [id, await load(id)])));
@@ -47,7 +47,7 @@ beforeEach(() => { for (const id of ids) reset(id); });
 // ── La fonction de validation du contrat elle-même ──────────────────────────────────────────────────────────────────────────────────
 
 test("contrat : la fonction de validation accepte la forme exacte et refuse tout écart (champs, types, value absent si error)", () => {
-  const good = { id: "bluesky:a:followers", platform: "bluesky", account: "nom", accountKey: "a", metric: "followers", label: "Abonnés Bluesky", value: 0, asOf: "2026-10-15T10:00:00.000Z", url: "https://bsky.app/profile/nom" };
+  const good = { id: "bluesky:a:followers", platform: "bluesky", account: "nom", accountKey: "a", metric: "followers", label: "Followers Bluesky", value: 0, asOf: "2026-10-15T10:00:00.000Z", url: "https://bsky.app/profile/nom" };
   assert.deepEqual(problemsOf(good, { module: "bluesky", platform: "bluesky" }), []);
   const { value, ...noValue } = good;
   assert.deepEqual(problemsOf({ ...noValue, error: "rate" }), [], "erreur sans valeur : valide");
@@ -110,7 +110,7 @@ test("textes : fr et en alignés, toutes les clés utilisées existent, libellé
 
 test("chaque erreur dit quoi faire (phrases exactes demandées pour YouTube)", () => {
   const yt = mods["youtube-channel"].fr;
-  assert.equal(yt.err_hidden, "YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio.");
+  assert.equal(yt.err_hidden, "YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio.");
   assert.equal(yt.err_auth, "La clé YouTube est refusée : vérifiez-la dans Réglages, sur la page du connecteur YouTube du site.");
   assert.match(yt.err_config_key, /Ajoutez votre clé YouTube dans Réglages/);
   for (const id of ids) for (const k of Object.keys(mods[id].fr).filter((k) => /^err_/.test(k))) assert.match(mods[id].fr[k], /\p{L}+.*[.]$/su, `${id}.${k} : phrase complète`);
@@ -224,7 +224,7 @@ test("YouTube : compteur d'abonnés caché → abonnés en error « hidden » SA
   assert.deepEqual(problemsOfList(items, { module: "youtube-channel" }), []);
   assert.deepEqual(items.map((i) => [i.metric, i.error ?? i.value]), [["followers", "hidden"], ["content", 5], ["views", 100]]);
   const rows = (await def("youtube-channel").adminPanel(ctxOf("youtube-channel"))).find((b) => b.type === "table").rows;
-  assert.equal(rows[0][1], "YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio.");
+  assert.equal(rows[0][1], "YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio.");
   // abonnés ni cachés ni donnés : même chose (jamais 0 inventé)
   reset("youtube-channel");
   answer = () => reply(200, { items: [{ id: YT, statistics: { viewCount: "100", videoCount: "5", hiddenSubscriberCount: false } }] });

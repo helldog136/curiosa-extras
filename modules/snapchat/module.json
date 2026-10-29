@@ -5,7 +5,7 @@
     "en": "Snapchat",
     "fr": "Snapchat"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "snapchat",
   "description": {
     "en": "Shows your Snapchat button in the site header. Add one per account if you have several.",

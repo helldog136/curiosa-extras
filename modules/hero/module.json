@@ -5,7 +5,7 @@
     "en": "Home banner",
     "fr": "Bandeau d'accueil"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.mjs",
   "description": {
     "en": "Big title and intro for the top of the home page. Place its section where you want it.",
@@ -119,7 +119,7 @@
       "default": false,
       "label": {
         "en": "Let visitors turn the sound on",
-        "fr": "Permettre aux visiteurs d'activer le son"
+        "fr": "Permettre au public d'activer le son"
       },
       "help": {
         "en": "The video always starts muted (browsers require it); a button lets visitors unmute it.",

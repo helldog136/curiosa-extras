@@ -5,7 +5,7 @@
     "en": "Ko-fi",
     "fr": "Ko-fi"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "ko-fi",
   "description": {
     "en": "Shows your Ko-fi button in the site header. Add one per account if you have several.",

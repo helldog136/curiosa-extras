@@ -6,7 +6,7 @@
     "en": "Online calendar",
     "fr": "Agenda en ligne"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": {
     "en": "Reads your Google Calendar (or any online calendar in iCal format) so your site can show your streams: the schedule, the chat bot… Nothing to retype.",
     "fr": "Lit votre Google Agenda (ou tout agenda en ligne au format iCal) pour que votre site puisse montrer vos streams : le planning, le bot du chat… Rien à recopier."

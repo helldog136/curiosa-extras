@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": {
     "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Tools such as Streamer.bot, a webhook relay or a script can send it alerts. Super Chats, Super Stickers and memberships on your YouTube live can appear too.",
     "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Des outils comme Streamer.bot, un relais de webhook ou un script peuvent lui envoyer des alertes. Les Super Chats, Super Stickers et adhésions de votre direct YouTube peuvent aussi s'afficher."
@@ -46,7 +46,7 @@
       },
       "help": {
         "en": "A Super Chat message can contain anything your viewers write. Unticked (recommended), only the name and the amount are shown. Ticked, the text is shown too, cut to 140 characters, always as plain text.",
-        "fr": "Le message d'un Super Chat peut contenir tout ce que vos spectateurs écrivent. Décoché (recommandé), seuls le pseudo et le montant s'affichent. Coché, le texte s'affiche aussi, coupé à 140 caractères, toujours en texte brut."
+        "fr": "Le message d'un Super Chat peut contenir tout ce qu'écrit votre public. Décoché (recommandé), seuls le pseudo et le montant s'affichent. Coché, le texte s'affiche aussi, coupé à 140 caractères, toujours en texte brut."
       }
     },
     {

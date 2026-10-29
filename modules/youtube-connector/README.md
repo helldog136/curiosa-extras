@@ -37,12 +37,12 @@ Pour **répondre dans le chat** de votre direct (par exemple « Tout est coupé.
 ## Ce que fait le connecteur, et ce qu'il ne fait pas
 
 - Il ne travaille **que sur demande** (une page, un panneau, un chiffre demandé) : aucune tâche ne tourne en arrière-plan.
-- Une même réponse est gardée **10 minutes** : cent visiteurs ne font qu'une demande.
+- Une même réponse est gardée **10 minutes** : cent personnes ne font qu'une demande.
 - Si YouTube ne répond plus, le connecteur fait une pause au lieu d'insister, et le panneau dit depuis quand.
-- Il ne lit que des informations **publiques** (nom, photo, abonnés, vidéos d'une chaîne). La clé ne donne aucun accès à votre compte YouTube. Sans compte connecté, il n'écrit rien nulle part.
+- Il ne lit que des informations **publiques** (nom, photo, followers, vidéos d'une chaîne). La clé ne donne aucun accès à votre compte YouTube. Sans compte connecté, il n'écrit rien nulle part.
 - Il n'écrit dans un chat **que** si vous l'avez autorisé (compte connecté, autorisation d'écrire donnée, « répondre dans le chat » activé), un message à la fois, 200 caractères au plus, 30 par heure.
 
-## Pour les développeurs
+## Pour qui développe
 
 Service `youtube.api` version 1 (non `each`, une seule instance). Chaque méthode est bornée à 15 s et ne lève jamais ; aucune réponse ne contient la clé.
 
