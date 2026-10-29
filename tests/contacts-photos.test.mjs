@@ -115,7 +115,7 @@ test("JAMAIS hors interaction : lister, chercher, importer, exporter, fusionner,
   const callers = code.filter(([f, src]) => f !== "photos.mjs" && /refreshOnOpen|refreshNow|refreshFiche/.test(src.replace(/\/\/.*$/gm, ""))).map(([f]) => f);
   assert.deepEqual(callers, ["admin.mjs"]);
   const adminSrc = code.find(([f]) => f === "admin.mjs")[1];
-  assert.equal([...adminSrc.matchAll(/Ph\.refresh(?:OnOpen|Now)\(/g)].length, 2, "contactPage (ouverture) + l'action du bouton");
+  assert.equal([...adminSrc.matchAll(/Ph\.refresh(?:OnOpen|Now)\(/g)].length, 3, "contactPage (ouverture) + l'action du bouton + l'ajout rapide (clic sur Enregistrer, connecteur installé seulement)");
 });
 const ada2 = async (ctx) => (await svc.create(ctx, { name: "Ada Photo", organisation: "X" })).id;
 
