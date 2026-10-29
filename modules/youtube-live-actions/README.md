@@ -1,6 +1,6 @@
 # Actions du live YouTube
 
-Quand quelqu'un soutient votre **direct YouTube**, quelque chose se passe chez vous : vos lumières changent de couleur, un message est lu à voix haute. Le module ne fait que **décider** (« ce Super Chat déclenche telle action ») ; c'est le module **Home Assistant** qui exécute chez vous, avec son gros bouton « Tout couper », sa vérification du texte lu et son interrupteur.
+Quand quelqu'un soutient votre **direct YouTube**, quelque chose se passe chez vous : vos lumières changent de couleur, un message est lu à voix haute. Le module ne fait que **décider** (« ce Super Chat déclenche telle action ») ; c'est le **Connecteur Home Assistant** qui envoie l'ordre chez vous, avec son gros bouton « Tout couper », sa vérification du texte lu et son interrupteur.
 
 C'est le pendant, pour YouTube, des récompenses de points de chaîne Twitch.
 
@@ -17,7 +17,7 @@ Il n'y a **pas** de déclencheur sur un mot écrit dans le chat : seuls les dons
 
 ## Pas à pas
 
-1. Installez le module (avec **Home Assistant**, **Chaîne YouTube** et **Connecteur YouTube** : le module propose d'installer ce qui manque). La page « En direct » vous le dit à chaque étape.
+1. Installez le module (avec le **Connecteur Home Assistant**, **Chaîne YouTube** et **Connecteur YouTube** : le module propose d'installer ce qui manque). La page « En direct » vous le dit à chaque étape.
 2. Écrivez une première règle : par exemple **Super Chat de 5 € ou plus → `lumieres:rouge`**. Le nom de l'action est celui que vous avez relié dans Home Assistant.
 3. **Simulez un Super Chat** (« Simuler un don ») pour voir l'action arriver chez vous, sans rien demander à YouTube.
 4. Le jour du direct, **ouvrez la page « En direct » et gardez-la ouverte**.

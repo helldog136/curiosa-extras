@@ -3,7 +3,7 @@
   "minCore": "0.2.5",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "platform": "twitch",
   "description": {
     "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
@@ -21,11 +21,11 @@
     { "service": "twitch.live" },
     { "service": "home-assistant.bridge", "optional": true }
   ],
-  "dataVersion": 2,
+  "dataVersion": 3,
   "consumes": [
     {
       "topic": "ha.result",
-      "label": { "en": "What your home did with the rewards (from Home Assistant, if installed)", "fr": "Ce que votre maison a fait des récompenses (fourni par Home Assistant, s'il est installé)" },
+      "label": { "en": "What your home did with the rewards (from the Home Assistant connector, if installed)", "fr": "Ce que votre maison a fait des récompenses (fourni par le Connecteur Home Assistant, s'il est installé)" },
       "schema": [
         { "key": "ref", "type": "string", "required": true },
         { "key": "id", "type": "string" },
@@ -35,7 +35,7 @@
     },
     {
       "topic": "ha.state",
-      "label": { "en": "Whether your home is switched on and you are live (from Home Assistant, if installed)", "fr": "Si votre maison est branchée et si vous êtes en direct (fourni par Home Assistant, s'il est installé)" },
+      "label": { "en": "Whether your home is switched on and you are live (from the Home Assistant connector, if installed)", "fr": "Si votre maison est branchée et si vous êtes en direct (fourni par le Connecteur Home Assistant, s'il est installé)" },
       "schema": [
         { "key": "enabled", "type": "boolean" },
         { "key": "live", "type": "boolean" },
@@ -74,6 +74,12 @@
         { "key": "url", "type": "url", "required": true },
         { "key": "icon", "type": "string" }
       ]
+    }
+  ],
+  "provides": [
+    {
+      "topic": "home.actions",
+      "label": { "en": "The names of the actions your rewards can start at home (for the Home Assistant connector)", "fr": "Les noms des actions que vos récompenses peuvent lancer chez vous (pour le Connecteur Home Assistant)" }
     }
   ],
   "entryPanels": [
@@ -143,8 +149,17 @@
       "optional": true,
       "advanced": true,
       "tab": "rewards",
-      "label": { "en": "Other actions you can pick (advanced)", "fr": "Autres actions à choisir (avancé)" },
-      "help": { "en": "Words separated by commas that your home understands, for example lumieres:orange, scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. They then appear in the action list.", "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple lumieres:orange, scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Ils apparaissent alors dans la liste des actions." }
+      "label": { "en": "Other actions you can pick (advanced, old setting)", "fr": "Autres actions à choisir (avancé, ancien réglage)" },
+      "help": { "en": "Old setting, still working: words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.", "fr": "Ancien réglage, qui marche toujours : des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Tes actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom." }
+    },
+    {
+      "key": "showKeys",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "tab": "rewards",
+      "label": { "en": "Show the technical identifiers of the actions", "fr": "Montrer les identifiants techniques des actions" },
+      "help": { "en": "To link your home by hand: the identifier of each action (for example perso:start-the-vacuum) is shown next to its name, and can be written for a new action or changed. Unticked, it is never shown.", "fr": "Pour relier la maison à la main : l'identifiant de chaque action (par exemple perso:lancer-l-aspirateur) est montré à côté de son nom, et peut être écrit pour une nouvelle action ou modifié. Décoché, il n'est jamais montré." }
     },
     {
       "key": "onlyWhenLive",
@@ -273,14 +288,14 @@
       "name": "rewards_list",
       "readOnly": true,
       "default": false,
-      "description": "List the channel point rewards created by this site on Twitch: name, cost in points, delay in seconds, help text, whether the viewer writes a message, the action it triggers (a short key like lumieres:rouge, or chat:repondre to answer in the chat), and its state (active, paused, refused, gone). Also gives the maximum number of rewards and the actions that may be used. Use it before creating or changing anything.",
+      "description": "List the channel point rewards created by this site on Twitch: name, cost in points, delay in seconds, help text, whether the viewer writes a message, the action it triggers (its identifier, like lumieres:rouge or chat:repondre to answer in the chat, and its readable name), and its state (active, paused, refused, gone). Also gives the maximum number of rewards and the actions that may be used, with their names. Use it before creating or changing anything.",
       "input": { "type": "object", "properties": {} }
     },
     {
       "name": "reward_create",
       "default": false,
-      "description": "Create a REAL channel point reward on Twitch (needs a Twitch Affiliate or Partner channel). 'name' is the title viewers see (45 characters at most, unique). 'costPoints' is a whole number from 1. 'action' must be one of the actions given by rewards_list; home actions need the Home Assistant module. 'chatReply' is required for chat:repondre and may contain {utilisateur} and {recompense}. Refused with an explanation otherwise.",
-      "input": {"type": "object", "required": ["name", "costPoints", "action"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: a key from rewards_list allowedActions, for example lumieres:rouge."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
+      "description": "Create a REAL channel point reward on Twitch (needs a Twitch Affiliate or Partner channel). 'name' is the title viewers see (45 characters at most, unique). 'costPoints' is a whole number from 1. 'action' must be one of the actions given by rewards_list; or give 'customActionName' (for example 'Start the vacuum') to use or create a named action of your own; home actions need the Home Assistant connector. 'chatReply' is required for chat:repondre and may contain {utilisateur} and {recompense}. Refused with an explanation otherwise.",
+      "input": {"type": "object", "required": ["name", "costPoints", "action"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."}, "customActionName": {"type": "string", "maxLength": 60, "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
     },
     {
       "name": "reward_simulate",
@@ -292,7 +307,7 @@
       "name": "reward_update",
       "default": false,
       "description": "Change a REAL channel point reward created by this site on Twitch, found by its current 'name' (see rewards_list). Give only what changes: 'newName', 'costPoints', 'action', 'delaySeconds', 'helpText', 'viewerWritesMessage', 'chatReply'. Same limits and explanations as reward_create. It cannot delete a reward or pause it.",
-      "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "newName": {"type": "string", "maxLength": 45, "description": "New title, 45 characters at most."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: a key from rewards_list allowedActions, for example lumieres:rouge."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses in seconds, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
+      "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "newName": {"type": "string", "maxLength": 45, "description": "New title, 45 characters at most."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."}, "customActionName": {"type": "string", "maxLength": 60, "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses in seconds, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
     }
   ]
 }

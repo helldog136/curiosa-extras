@@ -1,3 +1,17 @@
+# Journal des changements : Connecteur Home Assistant
+
+## 1.1.0 : le module devient « Connecteur Home Assistant »
+
+### Nouveautés
+- Le module s'appelle maintenant **Connecteur Home Assistant** (comme « Connecteur Twitch »). Rien ne change dans votre installation : même identifiant, mêmes liens, mêmes réglages.
+- **Mise en route en 3 étapes** sur la page : installer l'intégration dans Home Assistant, l'associer avec le code, créer une première récompense (un bouton mène au Bot Twitch).
+- **« Étape suivante »** : un bouton « Créer ou modifier tes récompenses » vers l'onglet Récompenses du Bot Twitch ; le Bot Twitch a le lien inverse « Relier à ta maison ».
+- **« Actions en attente de liaison »** : quand Home Assistant n'a pas encore de script pour une action, la page la nomme (20 au plus) jusqu'à ce qu'elle marche.
+- **Les noms de vos actions** (« Lancer l'aspirateur ») viennent du Bot Twitch, en option, et sont donnés à Home Assistant pour qu'il propose de choisir un script. Aucune entité de votre maison n'est envoyée à Curiosa.
+
+### Pour les développeurs
+- `pull` ajoute le champ `catalog: [{ key, label }]` (50 au plus, libellé ≤ 60 caractères, toujours présent) : contrat HTTP v1 compatible. Sujet consommé (facultatif) : `home.actions`. `catalog.mjs` (nouveau) borne et met en cache la lecture (30 s, 1,5 s au plus). `haCore.unmapped` : 20 au plus. Aucun changement de route, de service (`home-assistant.bridge` v1), de sujet fourni ni d'identifiant.
+
 # Journal des changements : Home Assistant 1.0.0
 
 ## Nouveautés

@@ -7,6 +7,7 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const R = await import(`./rewards.mjs${v}`);
+const A = await import(`./actions.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
 const { render, pseudo, clean } = await import(`./variables.mjs${v}`);
@@ -16,6 +17,17 @@ export const KEEP_RESOLVED = 50, MAX_WAITING = 100, SERVICE = "home-assistant.br
 /** Les raisons de refus du pont (liste fermée du contrat) ; toute autre valeur est une erreur. */
 export const REASONS = ["off", "offline", "not_live", "blocked", "busy", "unknown_key", "not_paired"];
 const BOUND_MS = 3000;
+/** Pourquoi la maison n'a pas joué l'action, d'après SON accusé : le code précis quand elle a « ignoré » (pas de script relié, interrupteur coupé…), sinon le statut. */
+const IGNORED = ["unmapped", "disabled", "expired"];   // (« ignored / error » reste « ignored » : Home Assistant l'a ignorée, sans plus de détail)
+const reasonOf = (res) => (res.status === "done" ? "ok" : res.status === "ignored" && IGNORED.includes(res.code) ? res.code : String(res.status ?? "failed").slice(0, 20));
+/** Ce que la maison dit d'une action : « pas encore de script » (à relier) ou « ça a marché ». Sert à l'écrire sur la récompense. Ne lève jamais. */
+async function noteLink(ctx, action, res, now) {
+  try {
+    if (!R.isHome(action)) return;
+    if (res.status === "done") await A.noteLink(ctx, action, "ok", now);
+    else if (res.status === "ignored" && res.code === "unmapped") await A.noteLink(ctx, action, "unmapped", now);
+  } catch { /* un plus : le journal reste juste sans lui */ }
+}
 const within = (p, ms, fallback) => { let t; return Promise.race([Promise.resolve().then(() => p).catch(() => fallback), new Promise((r) => { t = setTimeout(() => r(fallback), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
 const rec = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
 
@@ -28,6 +40,14 @@ export async function bridge(ctx, method, args) {
 }
 export async function bridgeInstalled(ctx) {
   try { return (await within(ctx.api.services.providers(SERVICE), BOUND_MS, [])).length > 0; } catch { return false; }
+}
+/** Où ouvrir la page d'administration du premier module `module` installé (un chemin du site, « /admin/… »), ou null. Borné. */
+export async function adminPathOf(ctx, module) {
+  try {
+    const list = await within(ctx.api.instances.list({ module }), BOUND_MS, []);
+    const path = Array.isArray(list) ? list.find((i) => !i?.module || i.module === module)?.adminPath : null;
+    return typeof path === "string" && path.startsWith("/admin/") ? path : null;
+  } catch { return null; }
 }
 const collect = async (ctx, topic, limit) => { try { const a = await within(ctx.api.topics.collect(topic, { limit }), BOUND_MS, []); return Array.isArray(a) ? a : []; } catch { return []; } };
 
@@ -94,7 +114,8 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
     const acc = await R.access(ctx, s);
     if (acc.ok && acc.broadcasterId !== red.broadcasterId) return { handled: false, why: "other_channel" };
     const waiting = (await rows(ctx)).filter((r) => PENDING.has(r.status) && !r.test).length;
-    const doc0 = { rid: red.id, rewardTid: red.rewardId, title: reward.title, action: reward.action, user: red.login, name: red.name, at: now, status: "new", todo: null, reason: null, attempts: 0 };
+    const an = (await A.named(ctx, s)).find((a) => a.key === reward.action)?.label;   // le nom de l'action au moment de l'échange : le journal le garde lisible même si elle disparaît
+    const doc0 = { rid: red.id, rewardTid: red.rewardId, title: reward.title, action: reward.action, ...(an ? { an } : {}), user: red.login, name: red.name, at: now, status: "new", todo: null, reason: null, attempts: 0 };
     const id = await ctx.api.store.add(COL, doc0, { key: red.id });
     let doc = { id, ...doc0 };
     if (waiting >= MAX_WAITING) doc = verdict(doc, "CANCELED", "busy");
@@ -154,12 +175,12 @@ export async function reconcile(ctx, { now = Date.now(), force = false } = {}) {
         let doc = doc0;
         const res = results.get(doc.rid);
         if (doc.test) {   // une simulation : jamais d'appel à Twitch, elle se termine toute seule
-          const end = res ? { ...doc, status: res.status === "done" ? "done" : "failed", reason: res.status === "done" ? "ok" : String(res.status ?? "failed").slice(0, 20) } : now - doc.at > s.rewardWaitSec * 1000 ? { ...doc, status: "failed", reason: "timeout" } : doc;
-          if (end !== doc) { await write(ctx, end); n++; }
+          const end = res ? { ...doc, status: res.status === "done" ? "done" : "failed", reason: reasonOf(res) } : now - doc.at > s.rewardWaitSec * 1000 ? { ...doc, status: "failed", reason: "timeout" } : doc;
+          if (end !== doc) { await write(ctx, end); n++; if (res) await noteLink(ctx, doc.action, res, now); }
           continue;
         }
         if (doc.status === "waiting") {
-          if (res) doc = verdict(doc, res.status === "done" ? "FULFILLED" : "CANCELED", res.status === "done" ? "ok" : String(res.status ?? "failed").slice(0, 20));
+          if (res) { doc = verdict(doc, res.status === "done" ? "FULFILLED" : "CANCELED", reasonOf(res)); await noteLink(ctx, doc.action, res, now); }
           else if (now - doc.at > s.rewardWaitSec * 1000) doc = verdict(doc, "CANCELED", "timeout");
         } else if (doc.status === "new" && now - doc.at > 60_000) doc = verdict(doc, "CANCELED", "lost");   // interrompu en cours de route
         if (doc !== doc0) { await write(ctx, doc); n++; }
@@ -212,8 +233,9 @@ export async function simulate(ctx, s, rewardId, { text = "", now = Date.now(), 
   for (let waited = 0; waited < waitMs; waited += pollMs) {
     const res = (await collect(ctx, "ha.result", 100)).find((x) => x.ref === ref);
     if (res) {
-      const status = res.status === "done" ? "done" : "failed", reason = res.status === "done" ? "ok" : String(res.status ?? "failed").slice(0, 20);
+      const status = res.status === "done" ? "done" : "failed", reason = reasonOf(res);
       await write(ctx, { ...doc, status, reason });
+      await noteLink(ctx, reward.action, res, now);
       return { ok: true, mode: "result", status, reason };
     }
     await pause(pollMs);

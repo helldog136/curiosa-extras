@@ -7,7 +7,8 @@
 //   await ha.step();                         // une interrogation + exécution + accusés, comme le coordinateur de l'intégration
 //
 // Comportement imité de l'intégration : curseur avancé après traitement, dédoublonnage par `id`, action expirée ignorée (horloge locale contre `serverTime`, tolérance 5 s),
-// champ facultatif `test: true` d'une action (essai de la propriétaire ou simulation d'un module : exécutée comme les autres, `executed` la garde avec son `test`), interrupteur local (`switchOn`), liaison locale des clés (`bindings` : clé → fonction qui exécute), repli exponentiel (3 s → 60 s) sur erreur, arrêt sur 401.
+// champ additif `catalog` de `pull` (les NOMS des actions : [{ key, label }], 50 au plus, libellé de 60 caractères au plus ; un ancien client l'ignore) : gardé dans `catalog`, et `proposals()` dit ce que l'intégration proposerait de relier
+// (« Lancer l'aspirateur → [choisir un script] ») ; champ facultatif `test: true` d'une action (essai de la propriétaire ou simulation d'un module : exécutée comme les autres, `executed` la garde avec son `test`), interrupteur local (`switchOn`), liaison locale des clés (`bindings` : clé → fonction qui exécute), repli exponentiel (3 s → 60 s) sur erreur, arrêt sur 401.
 
 export class FakeHaClient {
   constructor({ send, now = () => Date.now(), bindings = {}, switchOn = true, tolerance = 5000 } = {}) {
@@ -26,6 +27,7 @@ export class FakeHaClient {
     this.backoff = 3;
     this.needsPairing = false;
     this.lastPull = null;
+    this.catalog = [];    // les noms d'actions donnés par Curiosa : [{ key, label }] (champ `catalog` de `pull`, tel que lu)
   }
 
   static overHttp(base, options = {}) {
@@ -55,6 +57,15 @@ export class FakeHaClient {
   /** POST ack. */
   ack(id, status, code) { return this.#call("ack", { method: "POST", body: JSON.stringify({ id, status, code }) }); }
 
+  /** Les entrées du catalogue valides : clé de la forme permise, libellé en texte de 60 caractères au plus ; 50 au plus. Un champ absent ou mal formé donne une liste vide (jamais d'erreur). */
+  static readCatalog(body) {
+    if (!Array.isArray(body?.catalog)) return [];
+    return body.catalog.filter((c) => c && typeof c.key === "string" && /^[a-z0-9][a-z0-9:_-]{0,39}$/.test(c.key) && typeof c.label === "string" && c.label.length > 0 && [...c.label].length <= 60).slice(0, 50).map((c) => ({ key: c.key, label: c.label }));
+  }
+
+  /** Ce que l'intégration proposerait de relier : les actions du catalogue qui n'ont pas encore de liaison locale (`bindings`). */
+  proposals() { return this.catalog.filter((c) => typeof this.bindings[c.key] !== "function"); }
+
   /** Exécute une action comme l'intégration : doublon, expirée, interrupteur coupé, clé sans liaison, ou exécution réelle. Rend { status, code }. */
   async handle(action, serverTime) {
     if (this.seen.has(action.id)) return null;   // déjà vue : pas de second accusé, pas de seconde exécution
@@ -69,7 +80,7 @@ export class FakeHaClient {
   }
 
   /**
-   * Un tour du coordinateur : interroge, exécute chaque action, accuse, avance le curseur. Rend { status, enabled, live, actions, acks, wait }.
+   * Un tour du coordinateur : interroge, exécute chaque action, accuse, avance le curseur. Rend { status, enabled, live, actions, acks, catalog, wait }.
    * `wait` : secondes avant le prochain tour (intervalle conseillé, ou repli exponentiel jusqu'à 60 s en cas d'erreur ; 401 => `needsPairing`, plus d'interrogation).
    */
   async step({ ackAll = true } = {}) {
@@ -78,13 +89,14 @@ export class FakeHaClient {
     if (r.status === 401) { this.needsPairing = true; return { status: 401, actions: [], acks: [], wait: null }; }
     if (!r.ok) { this.backoff = Math.min(60, Math.max(this.backoff, 3) * 2); return { status: r.status, actions: [], acks: [], wait: r.retryAfter ?? this.backoff }; }
     this.backoff = r.body.pollSeconds ?? this.interval;
+    this.catalog = FakeHaClient.readCatalog(r.body);
     const acks = [];
     for (const action of r.body.actions ?? []) {
       const out = await this.handle(action, r.body.serverTime);
       if (out && ackAll) acks.push({ id: action.id, ...out, response: await this.ack(action.id, out.status, out.code) });
     }
     this.cursor = r.body.cursor;
-    return { status: 200, enabled: r.body.enabled, live: r.body.live, actions: r.body.actions ?? [], acks, wait: this.backoff };
+    return { status: 200, enabled: r.body.enabled, live: r.body.live, actions: r.body.actions ?? [], acks, catalog: this.catalog, wait: this.backoff };
   }
 }
 

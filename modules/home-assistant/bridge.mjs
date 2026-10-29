@@ -5,6 +5,7 @@ const S = await import(`./store.mjs${v}`);
 const { liveNow, isOpen, shouldNoteLive } = await import(`./live.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { moderate, clean } = await import(`./moderation.mjs${v}`);
+const { catalogNow, catalogLabel, resetCatalog } = await import(`./catalog.mjs${v}`);
 
 export const KEY_RE = /^[a-z0-9][a-z0-9:_-]{0,39}$/;
 export const REF_RE = /^[A-Za-z0-9._:-]{1,80}$/;
@@ -16,7 +17,6 @@ export const ACK_STATUSES = ["done", "failed", "ignored"];
 export const ACK_CODES = ["ok", "unmapped", "disabled", "expired", "error"];
 export const REASONS = ["off", "offline", "not_live", "blocked", "busy", "unknown_key", "not_paired"];
 export const TEST_LIMITS = { gapMs: 3000, perHour: 30, burst: 5 };
-
 const iso = (ms) => new Date(ms).toISOString();
 export const sha256hex = (s) => createHash("sha256").update(String(s)).digest("hex");
 const safeEqualHex = (a, b) => a.length === b.length && a.length > 0 && timingSafeEqual(Buffer.from(a, "utf8"), Buffer.from(b, "utf8"));
@@ -30,7 +30,7 @@ const mem = (ctx) => {
   if (!mems.has(k)) mems.set(k, { seen: 0, pull: 0, ttsGlobal: 0, ttsViewer: new Map(), pairFp: new Map(), pairAll: [], fails: new Map(), acks: [], tests: [] });
   return mems.get(k);
 };
-export const resetMemory = () => mems.clear();
+export const resetMemory = () => { mems.clear(); resetCatalog(); };
 
 /** Fenêtre glissante : rend 0 si l'appel passe (et le compte), sinon les secondes à attendre. */
 function slide(list, now, windowMs, max) {
@@ -131,6 +131,7 @@ export function redeemCode(ctx, { code, name }, { now = Date.now() } = {}) {
     const replaced = !!core.paired;
     core.paired = { tokenHash, fp: tokenHash.slice(0, 8), name: label(name, 40) || "Home Assistant", at: now };
     core.pending = null;
+    core.unmapped = [];   // un nouvel appareil a ses propres liaisons
     core.lastSeenAt = 0;
     mem(ctx).seen = 0;
     await S.addLog(db, { kind: "system", event: replaced ? "repaired" : "paired", detail: core.paired.name });
@@ -145,6 +146,7 @@ export function unpair(ctx, { by = "admin", now = Date.now() } = {}) {
     if (!core.paired) return { ok: true, changed: false };
     core.paired = null;
     core.pending = null;
+    core.unmapped = [];
     core.lastSeenAt = 0;
     mem(ctx).seen = 0;
     await cancelQueue(db, "not_paired");
@@ -319,6 +321,7 @@ export async function pull(ctx, { cursor, limit }, now = Date.now()) {
   const idle = (await S.peek(ctx, "queue")).items.length === 0;
   const live = await liveNow(ctx, now, { passive: idle });
   const s = settingsOf(ctx);
+  const catalog = await catalogNow(ctx, now);
   noteSeen(ctx, now);
   return S.transact(ctx, async (db) => {
     const core = await db.core();
@@ -340,7 +343,7 @@ export async function pull(ctx, { cursor, limit }, now = Date.now()) {
       }
     }
     const delivered = actions.length ? maxSeq : Math.min(cursor, core.seq);
-    return { enabled: core.enabled !== false, live: open, serverTime: iso(now), cursor: delivered, pollSeconds: s.pollSeconds, actions };
+    return { enabled: core.enabled !== false, live: open, serverTime: iso(now), cursor: delivered, pollSeconds: s.pollSeconds, actions, catalog };
   }, { now });
 }
 
@@ -354,6 +357,8 @@ export function ack(ctx, { id, status, code }, now = Date.now()) {
     const [a] = queue.items.splice(i, 1);
     await S.addResult(db, { id: a.id, ref: a.ref ?? null, status, code });
     await S.updateLog(db, a.id, { status, code, doneAt: now });
+    if (status === "ignored" && code === "unmapped") S.noteUnmapped(await db.core(), a.key, now);   // pas de script relié : l'action attend d'être reliée (page du Connecteur)
+    else if (status === "done") S.dropUnmapped(await db.core(), a.key);
     return { ok: true, result: "recorded" };
   }, { now });
 }

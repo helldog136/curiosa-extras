@@ -1,7 +1,7 @@
 # Module « Actions du live YouTube » (youtube-live-actions 1.0.0)
 
 ## Le problème
-Emma a déjà, sur Twitch, des récompenses de points de chaîne qui allument ses lumières ou font lire un message chez elle (module Home Assistant). Sur YouTube, ses viewers soutiennent autrement : Super Chat, Super Sticker, adhésions. Elle veut le même plaisir, avec la même sécurité : rien d'ouvert chez elle, un bouton pour tout couper, un texte lu qui ne peut pas être n'importe quoi.
+Emma a déjà, sur Twitch, des récompenses de points de chaîne qui allument ses lumières ou font lire un message chez elle (Connecteur Home Assistant). Sur YouTube, ses viewers soutiennent autrement : Super Chat, Super Sticker, adhésions. Elle veut le même plaisir, avec la même sécurité : rien d'ouvert chez elle, un bouton pour tout couper, un texte lu qui ne peut pas être n'importe quoi.
 
 ## Pour qui, et ce qu'il fait
 Pour la créatrice qui a Home Assistant et diffuse sur YouTube. Le module **décide** (quelle règle, quelle action) ; Home Assistant **exécute** et protège. Le module ne connaît ni entité, ni scène, ni média de la maison : seulement des noms d'action (`lumieres:rouge`, `tts:lire`, même grammaire que Twitch). Type : intégration, instance unique, onglet « Utiliser » renommé « En direct ».

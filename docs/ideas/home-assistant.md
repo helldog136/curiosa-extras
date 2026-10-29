@@ -1,4 +1,6 @@
-# Module « Home Assistant » (home-assistant 1.0.0)
+# Connecteur « Home Assistant » (home-assistant 1.1.0 ; module `home-assistant`, affiché « Connecteur Home Assistant » depuis la 1.1.0)
+
+> **1.1.0 : le parcours « récompense → ordre pour la maison »** (voir `docs/changelog-parts/home-actions.md`). Les récompenses restent dans le Bot Twitch, qui demande « Que se passe-t-il quand quelqu'un prend cette récompense ? » et fabrique lui-même la clé technique d'une action nommée (`perso:lancer-l-aspirateur`). Le connecteur apprend les NOMS par le sujet facultatif `home.actions` et les ajoute à `pull` (champ `catalog`, voir `home-assistant-contract.md`) ; il liste les « Actions en attente de liaison » (celles pour lesquelles Home Assistant a répondu `ignored/unmapped`) ; sa page a un bloc « Étape suivante » vers l'onglet Récompenses du Bot Twitch, et le Bot Twitch a un lien « Relier à ta maison » vers sa page. Les 3 étapes de mise en route : installer l'intégration, associer avec le code, créer une première récompense.
 
 ## Le problème
 Emma veut que ses viewers puissent, avec leurs points de chaîne Twitch, changer la couleur de ses lumières ou faire lire un message à voix haute chez elle, sans jamais mettre sa maison en danger : rien d'ouvert chez elle, rien de joué hors direct, un bouton pour tout couper, et un texte lu à voix haute qui ne peut pas être n'importe quoi.
