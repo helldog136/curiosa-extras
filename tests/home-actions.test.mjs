@@ -1,6 +1,6 @@
 // Le parcours « récompense de points de chaîne → ordre pour la maison », tel qu'Emma (une personne qui n'est pas technicienne) le vit : Bot Twitch 1.4.0 + Connecteur Home Assistant 1.1.0.
 // Les VRAIS deux modules sont branchés l'un à l'autre (sujet `home.actions`, service `home-assistant.bridge`, sujets `ha.result` et `ha.state`) ; seuls Twitch et Home Assistant sont des faux.
-//   - formulaire : chaque choix de « Que se passe-t-il quand quelqu'un prend cette récompense ? », erreurs sous le champ avec un exemple ;
+//   - formulaire : chaque choix de « Que se passe-t-il quand une personne prend cette récompense ? », erreurs sous le champ avec un exemple ;
 //   - clé fabriquée à partir du nom : forme, unicité (-2), stabilité quand le nom change, jamais montrée hors mode avancé ;
 //   - migration « Autres actions » → actions nommées (rien ne casse, rien n'est perdu, rejouable) ;
 //   - sujet `home.actions` (50 au plus, libellé de 60 caractères) et champ additif `catalog` de `pull` ;
@@ -98,11 +98,11 @@ test("formulaire : la question simple, quatre choix lisibles, huit couleurs, un 
   assert.ok((await create(w, { title: "Aspi", what: "custom", actionName: "Lancer l'aspirateur" })).ok);
   const f = fieldsOf(await panel(w), "rewardCreate");
   const what = f.find((x) => x.name === "what");
-  assert.equal(what.label, "Que se passe-t-il quand quelqu'un prend cette récompense ?");
-  assert.deepEqual(what.options.map((o) => o.label), ["Répondre dans le chat", "Changer la couleur des lumières", "Lire son message à voix haute", "Autre chose chez moi", "Tes actions : Lancer l'aspirateur"]);
+  assert.equal(what.label, "Que se passe-t-il quand une personne prend cette récompense ?");
+  assert.deepEqual(what.options.map((o) => o.label), ["Répondre dans le chat", "Changer la couleur des lumières", "Lire son message à voix haute", "Autre chose chez moi", "Vos actions : Lancer l'aspirateur"]);
   assert.deepEqual(what.options.map((o) => o.value), ["chat", "lights", "voice", "custom", "named:perso:lancer-l-aspirateur"]);
   assert.deepEqual(f.find((x) => x.name === "color").options.map((o) => o.label), ["Rouge", "Vert", "Bleu", "Jaune", "Orange", "Violet", "Rose", "Blanc"]);
-  assert.equal(f.find((x) => x.name === "actionName").label, "Donne un nom à cette action");
+  assert.equal(f.find((x) => x.name === "actionName").label, "Donnez un nom à cette action");
   assert.ok(!f.some((x) => x.name === "action" || x.name === "actionKey"), "ni liste de clés brutes, ni champ de clé hors mode avancé");
   assert.ok(!/perso:|lumieres:|tts:lire|chat:repondre|clé d'action|webhook|token|jeton/i.test(visible(await panel(w))), "jamais de clé ni de jargon à l'écran");
   done();
@@ -131,11 +131,11 @@ test("formulaire : chaque choix crée la bonne action ; la voix impose le messag
 test("formulaire : les erreurs sont sous le bon champ, en mots simples, avec un exemple", async () => {
   const w = world(); await enable(w);
   let r = await create(w, { title: "A", what: "custom", actionName: "" });
-  assert.match(r.errors.actionName, /Donne un nom à cette action\. Exemple : Lancer l'aspirateur/);
+  assert.match(r.errors.actionName, /Donnez un nom à cette action\. Exemple : Lancer l'aspirateur/);
   r = await create(w, { title: "A", what: "custom", actionName: "x".repeat(61) });
   assert.match(r.errors.actionName, /60 caractères au plus\. Exemple/);
   r = await create(w, { title: "A", what: "lights", color: "turquoise" });
-  assert.match(r.errors.color, /Choisis une couleur dans la liste\. Exemple : Rouge/);
+  assert.match(r.errors.color, /Choisissez une couleur dans la liste\. Exemple : Rouge/);
   r = await create(w, { title: "A", what: "n'importe quoi" });
   assert.match(r.errors.what, /Exemple/);
   r = await create(w, { title: "A", what: "chat", reply: "" });
@@ -220,11 +220,11 @@ test("clé : stable quand le nom change — la liaison côté maison ne casse pa
   done();
 });
 
-test("« Tes actions » : la liste avec l'état de la maison, renommer, retirer une action qui ne sert plus (jamais une qui sert)", async () => {
+test("« Vos actions » : la liste avec l'état de la maison, renommer, retirer une action qui ne sert plus (jamais une qui sert)", async () => {
   const w = world(); await enable(w);
   await create(w, { title: "Aspi", what: "custom", actionName: "Lancer l'aspirateur" });
   let blocks = await panel(w, {});
-  const i = blocks.findIndex((b) => b.type === "heading" && b.text === "Tes actions");
+  const i = blocks.findIndex((b) => b.type === "heading" && b.text === "Vos actions");
   assert.ok(i > 0);
   const table = blocks[i + 2];
   assert.equal(table.type, "table");
@@ -286,7 +286,7 @@ test("migration : les mots de l'ancien réglage et les clés déjà portées par
   assert.equal(JSON.stringify((await rewards(w)).map((x) => [x.id, x.title, x.action, x.tid, x.cost])), before, "aucune récompense ne change");
   await botDef.migrations[3](w.bot);
   assert.equal((await ACT.list(w.bot)).length, 2, "rejouée, elle n'ajoute rien");
-  // elles se choisissent dans « Tes actions » et marchent comme avant
+  // elles se choisissent dans « Vos actions » et marchent comme avant
   const what = fieldsOf(await panel(w), "rewardCreate").find((f) => f.name === "what").options.map((o) => o.value);
   assert.ok(what.includes("named:scene:cinema") && what.includes("named:lumieres:turquoise"));
   assert.ok((await create(w, { title: "Cinéma 2", what: "named:scene:cinema" })).ok);
@@ -415,7 +415,7 @@ test("sans Bot Twitch : le connecteur marche comme avant (catalogue vide, aucune
 
 /* ───────────── D. « Pas encore de script » ───────────── */
 
-const UNMAPPED = "Home Assistant n'a pas encore de script pour cette action. Ouvre Home Assistant > Curiosa > Configurer pour la relier.";
+const UNMAPPED = "Home Assistant n'a pas encore de script pour cette action. Ouvrez Home Assistant > Curiosa > Configurer pour la relier.";
 
 test("pas encore de script : la récompense le dit (liste et journal), les points sont rendus, le connecteur liste l'action à relier ; une fois reliée, tout rentre dans l'ordre", async () => {
   const w = world(); await enable(w);
@@ -519,8 +519,8 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
   const w = world(); await enable(w);
   // Bot Twitch -> Connecteur
   let blocks = await panel(w);
-  let i = blocks.findIndex((b) => b.type === "links" && b.items[0].label === "Relier à ta maison");
-  assert.ok(i > 0, "le lien « Relier à ta maison »");
+  let i = blocks.findIndex((b) => b.type === "links" && b.items[0].label === "Relier à votre maison");
+  assert.ok(i > 0, "le lien « Relier à votre maison »");
   assert.equal(blocks[i].items[0].href, "/admin/instances/h1");
   assert.match(blocks[i - 1].text, /Tout couper/, "il dit ce qu'on y trouve : l'association, le coupe-circuit");
   assert.ok(blocks.every((b) => b.tab === "rewards"));
@@ -529,13 +529,13 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
   let ha = await hapanel(w);
   i = ha.findIndex((b) => b.type === "heading" && b.text === "Étape suivante");
   assert.ok(i >= 0);
-  assert.deepEqual(ha[i + 2], { type: "links", items: [{ label: "Créer ou modifier tes récompenses", href: "/admin/instances/b1?tab=rewards" }] });
+  assert.deepEqual(ha[i + 2], { type: "links", items: [{ label: "Créer ou modifier vos récompenses", href: "/admin/instances/b1?tab=rewards" }] });
   // pas de Connecteur : la proposition d'installation existante
   const noHa = world({ noHa: true }); await enable(noHa);
   blocks = await panel(noHa);
   const s = blocks.find((b) => b.type === "suggestInstall");
   assert.equal(s.service, "home-assistant.bridge"); assert.ok(s.reason);
-  assert.ok(!blocks.some((b) => b.type === "links" && b.items[0].label === "Relier à ta maison"));
+  assert.ok(!blocks.some((b) => b.type === "links" && b.items[0].label === "Relier à votre maison"));
   assert.match(JSON.stringify(blocks), /il faut le Connecteur Home Assistant/);
   // pas de Bot Twitch : une phrase simple et le chemin du Catalogue
   const noBot = world({ noBot: true }); await pairUp(noBot, {});
@@ -550,7 +550,7 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
 test("liens : seuls des chemins d'administration du site sont utilisés (jamais une adresse venue d'ailleurs)", async () => {
   const w = world(); await enable(w);
   w.bot.api.instances.list = async () => [{ module: "home-assistant", adminPath: "https://mauvais.example/x" }];
-  assert.ok(!(await panel(w)).some((b) => b.type === "links" && b.items[0].label === "Relier à ta maison"));
+  assert.ok(!(await panel(w)).some((b) => b.type === "links" && b.items[0].label === "Relier à votre maison"));
   w.ha.api.instances.list = async () => [{ module: "twitch-bot", adminPath: "//mauvais.example" }];
   assert.ok(!JSON.stringify(await hapanel(w)).includes("mauvais"));
   done();
@@ -567,7 +567,7 @@ test("mise en route : trois étapes (intégration HACS, code, première récompe
   assert.match(text, /2\. Associer/); assert.match(text, /3\. Créer une première récompense/);
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pair"));
   const i = blocks.findIndex((b) => b.type === "markdown" && /3\. Créer une première récompense/.test(b.text));
-  assert.deepEqual(blocks[i + 1], { type: "links", items: [{ label: "Créer ou modifier tes récompenses", href: "/admin/instances/b1?tab=rewards" }] });
+  assert.deepEqual(blocks[i + 1], { type: "links", items: [{ label: "Créer ou modifier vos récompenses", href: "/admin/instances/b1?tab=rewards" }] });
   assert.ok(!blocks.some((b) => b.type === "heading" && b.text === "Étape suivante"), "une seule porte vers le Bot Twitch à la fois");
   done();
 });
@@ -584,7 +584,7 @@ test("outils MCP : le nom de l'action partout, une action nommée par son nom, j
   assert.deepEqual(list.rewards.map((r) => [r.name, r.action, r.actionName]), [["Aspi", "perso:lancer-l-aspirateur", "Lancer l'aspirateur"], ["Aspi 2", "perso:lancer-l-aspirateur", "Lancer l'aspirateur"]]);
   assert.ok(list.allowedActions.includes("perso:lancer-l-aspirateur"));
   assert.deepEqual(list.actions.find((a) => a.key === "lumieres:rouge"), { key: "lumieres:rouge", name: "Lumières : rouge" });
-  await assert.rejects(botTools.reward_create(w.bot, { name: "X", costPoints: 5, customActionName: "" }), (e) => e.expose && /Donne un nom/.test(e.message));
+  await assert.rejects(botTools.reward_create(w.bot, { name: "X", costPoints: 5, customActionName: "" }), (e) => e.expose && /Donnez un nom/.test(e.message));
   await botTools.reward_update(w.bot, { name: "Aspi 2", customActionName: "Ouvrir les volets" });
   assert.equal((await rewards(w)).find((r) => r.title === "Aspi 2").action, "perso:ouvrir-les-volets");
   const mcp = Object.fromEntries(botManifest.mcp.map((m) => [m.name, m]));
@@ -646,10 +646,10 @@ test("textes : parité EXACTE FR/EN (mêmes clés, mêmes {variables}), rien de 
     assert.ok(!/\bkey\b|webhook|token|payload|endpoint|entity/i.test(haEn[k]), `${k}: ${haEn[k]}`);
   }
   // les textes exacts demandés
-  assert.equal(botFr.rw_f_what, "Que se passe-t-il quand quelqu'un prend cette récompense ?");
+  assert.equal(botFr.rw_f_what, "Que se passe-t-il quand une personne prend cette récompense ?");
   assert.equal(botFr.rw_reason_unmapped, UNMAPPED);
-  assert.equal(botFr.rw_house_link, "Relier à ta maison");
-  assert.equal(haFr.next_btn, "Créer ou modifier tes récompenses");
+  assert.equal(botFr.rw_house_link, "Relier à votre maison");
+  assert.equal(haFr.next_btn, "Créer ou modifier vos récompenses");
   assert.equal(haFr.pend_title, "Actions en attente de liaison");
 });
 

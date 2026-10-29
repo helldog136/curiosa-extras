@@ -39,7 +39,7 @@ Rien à régler. Un lien direct s'ouvre dans un **nouvel onglet** et indique à 
 
 ## Droits et assistant IA
 
-Seules les personnes autorisées (droit « modifier les liens des autres plateformes », donné aux administrateurs) peuvent changer la liste. Un assistant IA peut lister, ajouter et modifier des liens si vous lui en donnez l'accès ; il ne peut pas en retirer.
+Seules les personnes autorisées (droit « modifier les liens des autres plateformes », donné à l'administration) peuvent changer la liste. Un assistant IA peut lister, ajouter et modifier des liens si vous lui en donnez l'accès ; il ne peut pas en retirer.
 
 ## Pour qui développe
 

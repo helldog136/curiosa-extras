@@ -104,8 +104,8 @@
     }
   ],
   "privacy": {
-    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administrators) and nothing else. To empty it, use “Clear the log” on the bot's page. For channel point rewards it also keeps, for the last 50 exchanges, the username, the reward and the outcome, never the viewer's message.",
-    "fr": "Quand une personne tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles des seuls administrateurs du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Pour les récompenses en points de chaîne, il garde aussi, pour les 50 derniers échanges, le pseudo, la récompense et le résultat, jamais le message du viewer."
+    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administration team) and nothing else. To empty it, use “Clear the log” on the bot's page. For channel point rewards it also keeps, for the last 50 exchanges, the username, the reward and the outcome, never the viewer's message.",
+    "fr": "Quand une personne tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles de la seule équipe d'administration du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Pour les récompenses en points de chaîne, il garde aussi, pour les 50 derniers échanges, le pseudo, la récompense et le résultat, jamais le message du viewer."
   },
   "tabs": [
     {
@@ -150,7 +150,7 @@
       "advanced": true,
       "tab": "rewards",
       "label": { "en": "Other actions you can pick (advanced)", "fr": "Autres actions à choisir (avancé)" },
-      "help": { "en": "Words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.", "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Tes actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom." }
+      "help": { "en": "Words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.", "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Vos actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom." }
     },
     {
       "key": "showKeys",

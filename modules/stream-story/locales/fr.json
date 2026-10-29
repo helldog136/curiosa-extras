@@ -6,7 +6,7 @@
   "admin_open_tab": "Ouvrir l'éditeur dans un onglet",
   "ui_title": "Story d'annonce",
   "ui_no_access": "Cet éditeur s'ouvre depuis l'administration du site.",
-  "ui_no_access_hint": "Ouvrez la page « Story d'annonce » dans l'administration (connecté en tant qu'administrateur) : l'éditeur s'y affiche tout seul.",
+  "ui_no_access_hint": "Ouvrez la page « Story d'annonce » dans l'administration (avec un compte de l'équipe d'administration) : l'éditeur s'y affiche tout seul.",
   "ui_prep_note": "Votre assistant a préparé cette vidéo. Vérifiez l'aperçu, changez ce que vous voulez, puis cliquez sur « Générer la vidéo ».",
   "ui_prep_expired": "La préparation demandée n'existe plus ou a expiré. Vous pouvez régler la vidéo vous-même.",
   "ui_prep_stream_gone": "L'événement choisi par votre assistant n'est plus dans la liste (passé, déplacé, ou source qui ne répond pas) : c'est le prochain événement qui est utilisé.",

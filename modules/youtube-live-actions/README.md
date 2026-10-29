@@ -53,7 +53,7 @@ Le module **publie** les Super Chats, Super Stickers, adhésions et adhésions o
 
 ## Droits
 
-`yt.manage` (règles, journal, reprendre), `yt.stop` (Tout couper), `yt.test` (simuler). Administrateurs : oui ; rédacteurs : non.
+`yt.manage` (règles, journal, reprendre), `yt.stop` (Tout couper), `yt.test` (simuler). Administration : oui ; rédaction : non.
 
 ## Vie privée
 

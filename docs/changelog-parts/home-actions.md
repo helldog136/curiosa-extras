@@ -4,7 +4,7 @@
 
 ### Nouveautés
 
-- **Une seule question pour une récompense : « Que se passe-t-il quand quelqu'un prend cette récompense ? »** Les choix sont lisibles : « Répondre dans le chat », « Changer la couleur des lumières » (puis une couleur : rouge, vert, bleu, jaune, orange, violet, rose, blanc), « Lire son message à voix haute » et « Autre chose chez moi ». Les récompenses restent réglées dans le Bot Twitch, leur place naturelle.
+- **Une seule question pour une récompense : « Que se passe-t-il quand une personne prend cette récompense ? »** Les choix sont lisibles : « Répondre dans le chat », « Changer la couleur des lumières » (puis une couleur : rouge, vert, bleu, jaune, orange, violet, rose, blanc), « Lire son message à voix haute » et « Autre chose chez moi ». Les récompenses restent réglées dans le Bot Twitch, leur place naturelle.
 - **« Autre chose chez moi » : il suffit de donner un nom** (par exemple « Lancer l'aspirateur »). Curiosa fabrique toute seule ce qu'il faut pour relier l'action à Home Assistant. Si le nom existe déjà, c'est la même action qui est reprise ; le renommer plus tard ne casse rien. La liste **« Vos actions »** permet de les retrouver, de les renommer et de retirer celles dont aucune récompense ne se sert.
 - **Le nom de l'action partout, jamais un mot technique** : dans la liste des récompenses, dans le journal et dans les messages. Les erreurs s'affichent sous le champ concerné, avec un exemple.
 - **Home Assistant sait comment s'appellent vos actions.** Le Bot Twitch donne les noms de vos actions au Connecteur Home Assistant, qui les passe à l'intégration : elle peut proposer « Lancer l'aspirateur → choisir un script ». Rien de votre maison n'est jamais envoyé à Curiosa.

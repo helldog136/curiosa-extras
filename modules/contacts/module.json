@@ -424,7 +424,7 @@
       "name": "contact_delete",
       "destructive": true,
       "default": false,
-      "description": "Permanently delete a card and its notes (spam, true duplicates). The other modules that link to it are told to forget it first. Irreversible. Disabled unless an administrator grants it to the token.",
+      "description": "Permanently delete a card and its notes (spam, true duplicates). The other modules that link to it are told to forget it first. Irreversible. Disabled unless the administration grants it to the token.",
       "input": {
         "type": "object",
         "properties": {

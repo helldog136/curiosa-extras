@@ -6,11 +6,11 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## 1.23.0
 
-*Les textes ne supposent plus le genre de personne, ajouter un contact prend quelques secondes, et une récompense de points de chaîne peut lancer « quelque chose chez vous » en mots simples. Pour Curiosa 0.2.6 ou plus. Modules touchés : Contacts 2.3.0, Bot Twitch 1.4.0, Connecteur Home Assistant 1.1.0 (le module Home Assistant change de nom), Actions du live YouTube 1.1.1 et 53 autres modules en version corrective (textes seulement).*
+*Les textes ne supposent plus le genre de personne, ajouter un contact prend quelques secondes, et une récompense de points de chaîne peut lancer « quelque chose chez vous » en mots simples. Pour Curiosa 0.2.6 ou plus. Modules touchés : Contacts 2.3.0, Bot Twitch 1.4.0, Connecteur Home Assistant 1.1.0 (le module Home Assistant change de nom), Actions du live YouTube 1.1.1 et 54 autres modules en version corrective (textes seulement).*
 
 ### Nouveautés
 
-- **Une seule question pour une récompense : « Que se passe-t-il quand quelqu'un prend cette récompense ? »** Les choix sont lisibles : « Répondre dans le chat », « Changer la couleur des lumières » (puis une couleur : rouge, vert, bleu, jaune, orange, violet, rose, blanc), « Lire son message à voix haute » et « Autre chose chez moi ». Les récompenses restent réglées dans le Bot Twitch, leur place naturelle.
+- **Une seule question pour une récompense : « Que se passe-t-il quand une personne prend cette récompense ? »** Les choix sont lisibles : « Répondre dans le chat », « Changer la couleur des lumières » (puis une couleur : rouge, vert, bleu, jaune, orange, violet, rose, blanc), « Lire son message à voix haute » et « Autre chose chez moi ». Les récompenses restent réglées dans le Bot Twitch, leur place naturelle.
 - **« Autre chose chez moi » : il suffit de donner un nom** (par exemple « Lancer l'aspirateur »). Curiosa fabrique toute seule ce qu'il faut pour relier l'action à Home Assistant. Si le nom existe déjà, c'est la même action qui est reprise ; le renommer plus tard ne casse rien. La liste **« Vos actions »** permet de les retrouver, de les renommer et de retirer celles dont aucune récompense ne se sert.
 - **Le nom de l'action partout, jamais un mot technique** : dans la liste des récompenses, dans le journal et dans les messages. Les erreurs s'affichent sous le champ concerné, avec un exemple.
 - **Home Assistant sait comment s'appellent vos actions.** Le Bot Twitch donne les noms de vos actions au Connecteur Home Assistant, qui les passe à l'intégration : elle peut proposer « Lancer l'aspirateur → choisir un script ». Rien de votre maison n'est jamais envoyé à Curiosa.
@@ -38,7 +38,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **Des exemples qui ne sont pas tous de même genre** : prénoms d'exemple neutres (Camille, Alex, Sacha, Dominique), « Création en solo » au lieu de « Créateur seul », « Artistes » au lieu de « Créateurs » dans l'annuaire, « Personnes invitées » au lieu d'« Intervenants » dans Événements, « Pseudo » au lieu de « Joueur » dans le classement du Jeu du jour.
 - **Les modèles de texte du Bot Twitch** : si le pseudo est introuvable, le bot dit « chat » à la place de « ami ». La variable `{utilisateur}` ne change pas : vos commandes continuent de marcher.
 - Le dock du Raid Twitch reste exactement le même (ses empreintes de la 2.1 sont verrouillées) : seuls l'administration et le README changent.
-- **« L'administration » plutôt que « les administrateurs ».** Suggestions de jeux (« Réservé à l'administration »), Story d'annonce et Bot Twitch parlent de l'administration ou de l'équipe d'administration, comme le cœur de Curiosa qui renomme le rôle.
+- **« L'administration » plutôt que « les administrateurs ».** Suggestions de jeux (« Réservé à l'administration »), Story d'annonce, Bot Twitch, Connecteur Home Assistant et Actions du live YouTube parlent de l'administration ou de l'équipe d'administration, comme le cœur de Curiosa qui renomme le rôle.
 
 ### Pour les développeurs
 
@@ -52,7 +52,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Nouveau test `tests/neutral-wording.test.mjs` : lit les valeurs des `.json`, les `.md` et les chaînes du code (jamais les commentaires) et refuse les termes genrés connus (liste modifiable en tête de fichier). Sa liste blanche est commentée entrée par entrée et ne garde rien d'inutile.
 - Textes volontairement conservés : le dock du Raid Twitch (empreintes de la 2.1), la variable `{utilisateur}`, la liste de pseudos réservés d'Audience, « droit d'auteur », le badge « Gagnant » des Sondages (un choix, pas une personne), les sigles « PNJ » et « joueur contre joueur » du quiz, les alias de colonnes à l'import d'Événements.
 - Les titres de sections « Pour les développeurs » du CHANGELOG et des brouillons restent tels quels (des tests les vérifient) ; ceux des README deviennent « Pour qui développe ».
-- **Assemblage** : `package.json` 1.23.0, `catalogue/index.json` régénéré (refs `v1.23.0`). Extraits : `docs/changelog-parts/ecriture-neutre.md`, `contacts-quick-add.md` et `home-actions.md`. Versions finales là où plusieurs branches touchaient le même module : Contacts 2.3.0 (et non 2.2.3), Bot Twitch 1.4.0 (et non 1.3.1), Connecteur Home Assistant 1.1.0 (et non 1.0.2), Actions du live YouTube 1.1.1.
+- **Assemblage** : `package.json` 1.23.0, `catalogue/index.json` régénéré (refs `v1.23.0`). Extraits : `docs/changelog-parts/ecriture-neutre.md`, `contacts-quick-add.md` et `home-actions.md`. Versions finales là où plusieurs branches touchaient le même module : Contacts 2.3.0 (et non 2.2.3), Bot Twitch 1.4.0 (et non 1.3.1), Connecteur Home Assistant 1.1.0 (et non 1.0.2), Actions du live YouTube 1.1.1. Partenariats passe à 2.0.3 (un texte d'outil pour assistants IA parle de « l'administration »).
 
 ## 1.22.1
 

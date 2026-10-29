@@ -206,7 +206,7 @@ test("avec Home Assistant installé : pas de bloc « installer » ; la voix impo
   assert.ok(!panel.some((b) => b.type === "suggestInstall"));
   assert.ok(panel.some((b) => b.type === "banner" && /cle!/.test(b.text)), "la clé mal écrite est signalée avec un exemple");
   const opts = panel.find((b) => b.action === "rewardCreate").fields.find((f) => f.name === "what").options.map((o) => o.value);
-  assert.ok(opts.includes("named:lumieres:turquoise") && opts.includes("named:scene:cinema") && !opts.some((o) => o.includes("cle!")), "l'ancien réglage continue de marcher : ses mots sont dans « Tes actions »");
+  assert.ok(opts.includes("named:lumieres:turquoise") && opts.includes("named:scene:cinema") && !opts.some((o) => o.includes("cle!")), "l'ancien réglage continue de marcher : ses mots sont dans « Vos actions »");
   const tts = await mk(w, { title: "Parle", action: "tts:lire", cost: "100" });
   assert.equal(tts.needsInput, true);
   assert.equal(w.tw.log.find((c) => c.body?.title === "Parle").body.is_user_input_required, true);

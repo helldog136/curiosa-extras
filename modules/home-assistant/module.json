@@ -140,8 +140,8 @@
     }
   ],
   "privacy": {
-    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible des seuls administrateurs (100 lignes au plus, 7 jours au plus). Le message lu à voix haute n'est gardé que s'il a été accepté ; un message refusé n'est pas gardé, seulement le motif. Pour tout effacer : « Vider le journal » sur la page du connecteur.",
-    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to site administrators (100 lines at most, 7 days at most). The message read aloud is only kept if it was accepted; a refused message is not kept, only the reason. To erase everything: “Clear the log” on the connector's page."
+    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible de la seule équipe d'administration (100 lignes au plus, 7 jours au plus). Le message lu à voix haute n'est gardé que s'il a été accepté ; un message refusé n'est pas gardé, seulement le motif. Pour tout effacer : « Vider le journal » sur la page du connecteur.",
+    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to the site's administration team (100 lines at most, 7 days at most). The message read aloud is only kept if it was accepted; a refused message is not kept, only the reason. To erase everything: “Clear the log” on the connector's page."
   },
   "settings": [
     {

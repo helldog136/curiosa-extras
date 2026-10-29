@@ -7,7 +7,7 @@ Le connecteur entre vos points de chaîne et votre maison : vos viewers changent
 ## Pour commencer (3 étapes, sur la page du connecteur)
 1. **Installer l'intégration** dans Home Assistant avec HACS (le lien est sur la page : https://github.com/helldog136/homeassistant-curiosa).
 2. **Associer** : copier le code à 8 caractères affiché sur la page, avec l'adresse de votre site, dans Home Assistant. La page affiche « Home Assistant est connecté ».
-3. **Créer une première récompense** dans le Bot Twitch (un bouton de la page y mène : « Créer ou modifier tes récompenses »). Pour une action de votre choix, le Bot Twitch demande seulement un nom (« Lancer l'aspirateur ») ; ce nom apparaît ensuite dans Home Assistant (Curiosa > Configurer), où vous choisissez le script à lancer. Tant qu'aucun script n'est choisi, la page vous le dit (« Actions en attente de liaison ») et les points des viewers sont rendus.
+3. **Créer une première récompense** dans le Bot Twitch (un bouton de la page y mène : « Créer ou modifier vos récompenses »). Pour une action de votre choix, le Bot Twitch demande seulement un nom (« Lancer l'aspirateur ») ; ce nom apparaît ensuite dans Home Assistant (Curiosa > Configurer), où vous choisissez le script à lancer. Tant qu'aucun script n'est choisi, la page vous le dit (« Actions en attente de liaison ») et les points des viewers sont rendus.
 
 Pour vérifier sans attendre un viewer : bloc **« Tester le pont »** de la page. Il simule un échange de points de chaîne (sans toucher à Twitch ni à YouTube), même hors direct, et vous montre le trajet : envoyé, récupéré par Home Assistant, exécuté.
 

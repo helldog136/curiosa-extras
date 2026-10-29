@@ -216,7 +216,7 @@ export async function blocks(ctx, info, query = {}) {
   return tab(out);
 }
 
-/** « Tes actions » : les actions nommées, combien de récompenses les utilisent, ce que la maison en sait ; renommer (la clé ne bouge pas) ou retirer celles qui ne servent plus. */
+/** « Vos actions » : les actions nommées, combien de récompenses les utilisent, ce que la maison en sait ; renommer (la clé ne bouge pas) ou retirer celles qui ne servent plus. */
 function actionsBlocks(ctx, info, namedList, rows, state, query, advanced) {
   const t = ctx.t;
   if (!namedList.length) return [];

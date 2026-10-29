@@ -71,7 +71,7 @@
   "next_title": "Étape suivante",
   "next_text": "Les récompenses se créent dans le Bot Twitch : choisir ce qui se passe chez vous et, si besoin, donner un nom à l'action. Ce nom apparaîtra ensuite ici et dans Home Assistant (Curiosa > Configurer).",
   "next_text_no_bot": "Les récompenses en points de chaîne se créent dans le Bot Twitch, qui n'est pas installé pour le moment.",
-  "next_btn": "Créer ou modifier tes récompenses",
+  "next_btn": "Créer ou modifier vos récompenses",
   "next_no_bot": "Le Bot Twitch n'est pas installé : c'est lui qui crée les récompenses en points de chaîne. Il s'installe depuis le Catalogue.",
   "next_catalogue": "Ouvrir le Catalogue",
   "pend_title": "Actions en attente de liaison",

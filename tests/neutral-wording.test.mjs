@@ -47,6 +47,9 @@ export const FORBIDDEN = [
   ["propriétaire + article genré", W("(?:le|la|au|du|cette|un|une|sa|son)\\s+propriétaire"), "dire « la personne propriétaire » ; « Propriétaire » seul reste le nom du rôle"],
   ["quelqu'un", W("quelqu['’]un"), "dire « une personne »"],
   ["doublets lourds", W("celles et ceux|ceux et celles|toutes et tous|tous et toutes|toutes et à tous|elles et eux|ils et elles|elles ou eux"), "préférer un nom collectif (« tout le monde », « le public »)"],
+  // Le cœur renomme le rôle « Administrateur » en « Administration » : les textes parlent de l'administration, pas « des administrateurs »
+  ["administrateur·rice (rôle)", W("administrat(?:eur|rice)s?"), "dire « l'administration », « l'équipe d'administration » (le rôle s'appelle « Administration »)", "fr"],
+  ["administrators (rôle)", W("administrators?"), "écrire « the administration », « the administration team » (le rôle s'appelle « Administration »)", "en"],
   // Écriture typographique et marques de genre entre parenthèses : le propriétaire veut un français simple, sans point médian
   ["point médian", "[\\p{L}]·[\\p{L}]", "pas de point médian : reformuler"],
   ["(e) entre parenthèses", "(?<=[éèiuntlrsfcdv])\\((?:e|es|ne|le|ve|trice|rice|euse|ère|se)\\)(?![\\p{L}])", "reformuler (« session ouverte », « inscription »…)", "fr", true],
@@ -95,6 +98,16 @@ export const ALLOWED = [
     why: "phrase d'introduction du bouton « au hasard » du DOCK, figée par les empreintes de la 2.1 (voir plus haut). À reformuler (« Votre liste est longue ! ») dans le lot qui régénère les empreintes." },
   { file: "modules/legal-pages/locales/fr.json", term: "auteur·rice", text: "auteur",
     why: "« droit d'auteur » : expression juridique figée (copyright), sans équivalent courant." },
+  { file: "modules/audience/lib.mjs", term: "administrateur·rice (rôle)", text: "administrateur",
+    why: "liste de pseudos RÉSERVÉS : « administrateur » est bloqué pour qu'on ne se fasse pas passer pour l'équipe. Ce n'est pas un texte lu." },
+  { file: "modules/audience/lib.mjs", term: "administrators (rôle)", text: "administrator",
+    why: "même liste de pseudos réservés (forme anglaise)." },
+  { file: "modules/audience/module.json", term: "administrators (rôle)", text: "administrator",
+    why: "valeur par défaut de la liste de pseudos interdits (« administrator » doit être bloqué comme « administrateur »)." },
+  { file: "modules/mastodon/locales/fr.json", term: "administrateur·rice (rôle)", text: "administrateur",
+    why: "« Demandez à son administrateur » : la personne qui gère le SERVEUR Mastodon d'un autre, pas le rôle d'administration du site." },
+  { file: "modules/mastodon/locales/en.json", term: "administrators (rôle)", text: "administrator",
+    why: "même message en anglais : l'administration du serveur Mastodon distant, pas celle du site." },
 ];
 
 /* ───────────────────────── Lecture des textes ───────────────────────── */
@@ -234,8 +247,11 @@ test("le test sait reconnaître ce qu'il doit refuser (garde-fou du test lui-mê
   assert.ok(hits("Allumez la page quand vous êtes prête").includes("« vous êtes + adjectif accordé »"));
   assert.ok(hits("she gets a confirmation with her link").includes("he/she/his/her"));
   assert.ok(hits("les visiteurs voient").includes("visiteur·se"));
+  assert.ok(hits("Réservé aux administrateurs").includes("administrateur·rice (rôle)"));
+  assert.ok(hits("visible to administrators only").includes("administrators (rôle)"));
   // …et ce qu'il doit laisser passer
   assert.deepEqual(hits("Une file de commandes claire pour toute personne qui crée sur commande ; la personne propriétaire du site ; une personne ; they get their link"), []);
+  assert.deepEqual(hits("l'administration et l'équipe d'administration"), []);
   assert.deepEqual(hits("Merci {utilisateur} ! Le lecteur vidéo, l'ID client Google, 3 photo(s) et le rôle Propriétaire."), []);
 });
 
@@ -244,4 +260,37 @@ test("stringsOf lit le contenu des chaînes, pas les commentaires, ni les noms d
   const out = stringsOf(src);
   assert.deepEqual(out.filter((s) => s !== "ok"), ["https://x.test/a", "les   gens"]);
   assert.ok(out.includes("ok"));
+});
+
+/* ───────────────────────── Vouvoiement des textes de l'administration ───────────────────────── */
+// L'administration vouvoie (ou reste à l'infinitif). Contrôle volontairement étroit, sur les modules du lot 1.23.0 et sans tenir compte des invites pour assistants
+// IA (qui tutoient : « Tu remplis… ») ni des messages que le bot écrit dans le chat à un public (« {user}, ta récompense… »). Respecte la casse :
+// « Donne un nom » est refusé, « il donne un exemple » (3e personne) passe.
+const VOUVOIEMENT_FILES = ["modules/twitch-bot/locales/fr.json", "modules/home-assistant/locales/fr.json", "modules/youtube-live-actions/locales/fr.json", "modules/contacts/locales/fr.json",
+  "modules/twitch-bot/module.json", "modules/home-assistant/module.json", "modules/youtube-live-actions/module.json", "modules/contacts/module.json",
+  "modules/twitch-bot/README.md", "modules/home-assistant/README.md", "modules/youtube-live-actions/README.md", "modules/contacts/README.md"];
+const IMPERATIFS = "Donne|Choisis|Ouvre|Essaie|Retire|Clique|Crée|Colle|Tape|Écris|Saisis|Sélectionne|Utilise|Vérifie|Renomme|Regarde|Installe|Associe|Reviens|Lance|Coche|Ajoute|Nomme|Fais|Va|Mets|Garde|Prends|Pense";
+export const TUTOIEMENT = new RegExp(`(?<![\\p{L}\\p{N}_])(?:Tu|toi|ton|tes|Tes|Ton|Ta|ta(?= (?:maison|récompense|chaîne|liste|page|action|boutique|clé|connexion))|(?<=^|[.!?:»«"] |[»«"])(?:${IMPERATIFS})(?![\\p{L}\\p{N}_]))(?![\\p{L}\\p{N}_])`, "gmu");
+const TU_ALLOWED = [{ file: "modules/twitch-bot/locales/fr.json", text: "ta", why: "« {user}, ta récompense… n'a pas pu être jouée » : message écrit dans le chat à la personne du public qui a échangé ses points, pas texte de l'administration." },
+  { file: "modules/twitch-bot/locales/fr.json", text: "tes", why: "même message du chat (« tes points sont rendus »)." }];
+test("les textes de l'administration du lot vouvoient (ou restent à l'infinitif), jamais de tutoiement", () => {
+  const bad = [];
+  for (const f of VOUVOIEMENT_FILES) {
+    const file = path.join(ROOT, f);
+    for (const { text, lang } of textsOf(file)) {
+      if (lang === "en") continue;
+      for (const m of text.matchAll(TUTOIEMENT)) {
+        const w = m[0];
+        if (TU_ALLOWED.some((a) => a.file === f && a.text === w.toLowerCase() && /\{user\}/.test(text))) continue;
+        bad.push(`${f} : « ${m[0].trim()} » … ${text.slice(Math.max(0, m.index - 30), m.index + 60).replace(/\s+/g, " ")} …`);
+      }
+    }
+  }
+  assert.equal(bad.length, 0, `\n${bad.slice(0, 40).join("\n")}\n`);
+});
+
+test("le garde-fou de vouvoiement reconnaît le tutoiement et laisse passer le vouvoiement", () => {
+  const t = (s) => { TUTOIEMENT.lastIndex = 0; return TUTOIEMENT.test(s); };
+  for (const bad of ["Donne un nom à cette action", "Relier à ta maison", "Ce que tes récompenses peuvent lancer chez toi", "Tu as déjà 3 actions. Retire-en une", "Texte. Choisis une couleur", "Ouvre Home Assistant"]) assert.ok(t(bad), bad);
+  for (const ok of ["Donnez un nom à cette action", "Relier à votre maison", "Ce que vos récompenses peuvent lancer chez vous", "Donner un nom", "la fiche donne un exemple", "Le module garde la liste"]) assert.ok(!t(ok), ok);
 });
