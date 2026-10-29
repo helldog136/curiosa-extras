@@ -31,7 +31,7 @@ afterEach(() => {});
 
 test("manifeste : version mineure, consomme live.event (schéma), permission topics, réglage « texte des messages » éteint par défaut, parité fr/en", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.version, "1.1.1");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["live.event"]);
   assert.ok(manifest.permissions.includes("topics"));
   assert.ok(!manifest.requires, "aucune dépendance forte");
@@ -172,7 +172,7 @@ test("route pull : GET seulement, réponse minimale, jamais mise en cache", asyn
 test("test d'administration « faux Super Chat » : même mise en forme qu'un vrai, texte seulement si le réglage est coché", async () => {
   const a = overlay({ locale: "en" });
   assert.equal((await def.adminActions.testYoutube(a.ctx)).ok, "Test alert sent.");
-  assert.equal(a.got[0].kind, "superchat"); assert.match(a.got[0].message, /Lea · \$5\.00/); assert.ok(!("detail" in a.got[0]));
+  assert.equal(a.got[0].kind, "superchat"); assert.match(a.got[0].message, /Sacha · \$5\.00/); assert.ok(!("detail" in a.got[0]));
   const b = overlay({ settings: { youtubeText: true }, locale: "fr" });
   await def.adminActions.testYoutube(b.ctx);
   assert.equal(b.got[0].detail, "Bravo pour le live !");

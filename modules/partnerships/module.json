@@ -6,7 +6,7 @@
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
     "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
@@ -346,7 +346,7 @@
       "name": "partner_delete",
       "destructive": true,
       "default": false,
-      "description": "Permanently delete a partnership file together with its journal. The people linked to it are NOT deleted: they stay in the Contacts module. Irreversible. Off by default: an administrator must grant it to a token.",
+      "description": "Permanently delete a partnership file together with its journal. The people linked to it are NOT deleted: they stay in the Contacts module. Irreversible. Off by default: the administration must grant it to a token.",
       "input": {
         "type": "object",
         "required": [

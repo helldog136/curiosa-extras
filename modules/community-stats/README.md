@@ -1,8 +1,8 @@
 # Statistiques de la communauté
 
-Le site tient à jour **les chiffres de vos réseaux** : abonnés, abonnés payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 abonnés cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre, et cet affichage n'existe pas encore dans cette version (voir « Ce qui viendra »).
+Le site tient à jour **les chiffres de vos réseaux** : followers, abonnements payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 followers cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre, et cet affichage n'existe pas encore dans cette version (voir « Ce qui viendra »).
 
-**Il faut Curiosa 0.2.2 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (spectateurs moyens, pic, temps de direct et regardé, followers gagnés).
+**Il faut Curiosa 0.2.2 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (audience moyenne, pic, temps de direct et regardé, followers gagnés).
 
 ## Pour commencer : rien à régler
 1. Installez et activez ce module.
@@ -12,8 +12,8 @@ Les chiffres apparaissent d'eux-mêmes, au prochain passage (au plus 15 minutes)
 
 ## Ce que vous voyez
 - **Vos chiffres** : pour chaque compte, le dernier chiffre, l'évolution de la semaine et du mois en une phrase, d'où il vient (automatique ou saisi à la main) et quand il a été mis à jour.
-- **Quand un chiffre manque**, une explication simple et quoi faire : « YouTube cache votre nombre d'abonnés : rendez-le public dans YouTube Studio », « Twitch demande votre autorisation : cliquez sur Connecter ma chaîne »… Le dernier chiffre connu reste affiché, daté ; il n'est jamais présenté comme actuel.
-- **Ce que vous montrez sur votre site** : un choix par chiffre, **« Non, je le garde pour moi » par défaut**. Vous pouvez par exemple montrer vos followers Twitch sans montrer vos abonnés payants.
+- **Quand un chiffre manque**, une explication simple et quoi faire : « YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio », « Twitch demande votre autorisation : cliquez sur Connecter ma chaîne »… Le dernier chiffre connu reste affiché, daté ; il n'est jamais présenté comme actuel.
+- **Ce que vous montrez sur votre site** : un choix par chiffre, **« Non, je le garde pour moi » par défaut**. Vous pouvez par exemple montrer vos followers Twitch sans montrer vos abonnements payants.
 - **Comptes saisis à la main** : pour Instagram, TikTok, X, Facebook… qui ne donnent pas leurs chiffres tout seuls. Vous notez le chiffre, le site garde la date et l'historique, et vous rappelle quand il a plus de 30 jours.
 - **Réglages avancés** (mode avancé de l'administration) : à quelle fréquence noter les chiffres (toutes les heures, 6 h, 12 h, **une fois par jour par défaut**, une fois par semaine) et combien de temps garder l'historique (3 mois, 1 an, **2 ans par défaut**, 5 ans, pour toujours). Le dernier chiffre de chaque compte n'est jamais effacé.
 
@@ -28,7 +28,7 @@ Accordez-lui l'accès à ces outils (administration → API & MCP → accès du 
 | `community_stats_history` | L'historique d'UN chiffre (`id` pris dans la liste), sur 1 à 1830 jours, au plus 500 points. Lecture seule. |
 | `stats_set_manual` | Note à la main un chiffre pour un réseau sans lecture automatique. Refusé pour un compte lu automatiquement. Le nom du jeton est gardé dans l'historique. |
 
-Exemples de questions : « Combien d'abonnés ai-je gagnés ce mois-ci ? », « Quel réseau progresse le plus vite ? », « Mon nombre de vues YouTube a-t-il baissé depuis mars ? », « Note que j'ai 4 200 abonnés sur Instagram. » Les types de chiffres : `followers` (audience gratuite), `paying` (audience payante), `content` (publications), `views` (vues), et pour les directs Twitch `avg_viewers`, `peak_viewers`, `hours_streamed` et `hours_watched` (en minutes), `followers_gained` ; l'unité est dans le champ `unit`. Quand `status` vaut `no_data`, le chiffre est le dernier connu et `problem` dit pourquoi il manque.
+Exemples de questions : « Combien de followers ai-je gagnés ce mois-ci ? », « Quel réseau progresse le plus vite ? », « Mon nombre de vues YouTube a-t-il baissé depuis mars ? », « Note que j'ai 4 200 followers sur Instagram. » Les types de chiffres : `followers` (audience gratuite), `paying` (audience payante), `content` (publications), `views` (vues), et pour les directs Twitch `avg_viewers`, `peak_viewers`, `hours_streamed` et `hours_watched` (en minutes), `followers_gained` ; l'unité est dans le champ `unit`. Quand `status` vaut `no_data`, le chiffre est le dernier connu et `problem` dit pourquoi il manque.
 
 ## Contrat pour les modules de réseaux (pour les développeurs)
 Chaque module de réseau **possède ses chiffres** et les publie ; ce module les collecte. Pour participer, un module déclare dans son `module.json` `provides: [{ "topic": "social.stat" }]` (permission `topics`) et implémente `exports["social.stat"](ctx, { locale, limit, tags })`, qui renvoie un tableau d'éléments :
@@ -39,7 +39,7 @@ Chaque module de réseau **possède ses chiffres** et les publie ; ce module les
 | `platform` | texte | identifiant de la plateforme (`twitch`, `youtube`…), minuscules, 31 caractères au plus |
 | `account` | texte | nom lisible du compte (120 caractères au plus) |
 | `accountKey` | texte | clé d'instance |
-| `metric` | texte | `followers` (audience gratuite), `paying` (audience payante : abonnés, membres, mécènes), `content` (nombre de contenus), `views` (vues cumulées) ; et, pour un module qui mesure lui-même ses directs, les **chiffres de période** ci-dessous. Doit être le dernier morceau de `id` |
+| `metric` | texte | `followers` (audience gratuite), `paying` (audience payante : followers, membres, mécènes), `content` (nombre de contenus), `views` (vues cumulées) ; et, pour un module qui mesure lui-même ses directs, les **chiffres de période** ci-dessous. Doit être le dernier morceau de `id` |
 | `label` | texte | libellé humain de la statistique, ex. « Followers Twitch » (120 caractères au plus) |
 | `value` | nombre | entier de 0 à 1 000 000 000 000. **Absent** quand `error` est présent : jamais une valeur périmée |
 | `asOf` | date ISO 8601 | moment de la lecture |
@@ -51,10 +51,10 @@ Liste fermée, pour un module qui **mesure lui-même** une activité (aujourd'hu
 
 | `metric` | Sens | Unité (champ `unit` pour l'IA) |
 |---|---|---|
-| `avg_viewers` | spectateurs moyens par direct, pondérés par le temps | `viewers` |
+| `avg_viewers` | audience moyenne par direct, pondérés par le temps | `viewers` |
 | `peak_viewers` | le plus haut pic d'un direct | `viewers` |
 | `hours_streamed` | temps de direct | **minutes** entières (le nom est celui du contrat) |
-| `hours_watched` | spectateurs × temps (temps regardé par l'audience) | **minutes** entières |
+| `hours_watched` | audience × temps (temps regardé par l'audience) | **minutes** entières |
 | `followers_gained` | followers gagnés pendant les directs (net, jamais négatif dans ce chiffre) | `people` |
 
 Pourquoi des minutes : un entier, sans arrondi qui ferait disparaître un petit direct, et une durée sans ambiguïté pour une IA (qui lit `unit`). La page d'administration les écrit en « 12 h 30 » ; elle ne compare pas ces chiffres semaine après semaine (ce sont déjà des totaux glissants) mais les garde dans l'historique comme les autres. Ils ne se saisissent pas à la main.
@@ -70,7 +70,7 @@ Dans le stockage privé de ce module (rien ne sort du serveur ; aucun secret) :
 Au plus **un point par statistique et par période** : un deuxième passage dans la même période ne crée rien (le bouton « Mettre à jour maintenant » remplace le point du jour). Volume : environ 20 octets par point. Par défaut (un par jour, 2 ans), 730 points ≈ 15 Ko par statistique, soit environ 300 Ko pour 20 statistiques. Pire cas réglable (toutes les heures, 5 ans) : 43 800 points ≈ 900 Ko par statistique. Au plus 300 statistiques suivies (les suivantes sont ignorées). La rétention est appliquée à chaque passage, sans jamais retirer le dernier chiffre connu d'un compte.
 
 ## Ce qui viendra (pas dans cette version)
-L'affichage : une page « Les chiffres de la commu », ou un compteur glissé dans le texte d'une page, y compris un calcul de plusieurs chiffres (par exemple abonnés YouTube + Twitch) réglé dans la page qu'on édite. Le drapeau « Montrer sur mon site » et une lecture interne qui ne rend que les chiffres montrables (`readPublic`) existent déjà, pour que cet affichage n'ait rien à changer ici.
+L'affichage : une page « Les chiffres de la commu », ou un compteur glissé dans le texte d'une page, y compris un calcul de plusieurs chiffres (par exemple followers YouTube + Twitch) réglé dans la page qu'on édite. Le drapeau « Montrer sur mon site » et une lecture interne qui ne rend que les chiffres montrables (`readPublic`) existent déjà, pour que cet affichage n'ait rien à changer ici.
 
 ## Permissions
 Administration, stockage, sujets (lecture des chiffres publiés), MCP. Aucune page publique, aucun envoi hors du serveur.

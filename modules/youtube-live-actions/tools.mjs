@@ -1,5 +1,5 @@
 // Outils pour les assistants IA. Lecture (accordée d'office) : l'état, le journal, les règles. Écriture (jamais accordée d'office) : simuler un don.
-// Aucun outil ne coupe ni ne reprend la maison (c'est le rôle du module Home Assistant), n'écrit une règle ou ne lit le chat.
+// Aucun outil ne coupe ni ne reprend la maison (c'est le rôle du Connecteur Home Assistant), n'écrit une règle ou ne lit le chat.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const E = await import(`./engine.mjs${v}`);
 const R = await import(`./rules.mjs${v}`);

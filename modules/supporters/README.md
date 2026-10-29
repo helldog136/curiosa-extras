@@ -1,6 +1,6 @@
 # Soutiens
 
-Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat, **sans jamais rendre quelqu'un public sans son accord**.
+Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat, **sans jamais rendre une personne publique sans son accord**.
 
 ## À quoi ça sert
 - Votre plateforme (Patreon, Ko-fi, ou n'importe laquelle par un fichier) dit qui vous soutient. Ce module le sait, sans que vous retapiez rien.
@@ -10,7 +10,7 @@ Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat, **
 ## Pour commencer (rien d'obligatoire)
 1. Installez le module. Ouvrez l'onglet « Mes soutiens » : un assistant en étapes vous guide pour la plateforme choisie (réglage « D'où viennent vos soutiens ? »).
 2. Collez la clé secrète de la plateforme dans l'onglet Réglages (elle n'est jamais réaffichée), puis cliquez sur « Vérifier et actualiser ». Pas de plateforme connectable ? Importez un fichier CSV.
-3. Allumez la page publique quand vous êtes prête (elle est éteinte au départ, et reste vide tant que personne n'a donné son accord).
+3. Allumez la page publique quand vous voulez (elle est éteinte au départ, et reste vide tant que personne n'a donné son accord).
 4. Pour chaque personne, ouvrez sa ligne, copiez son **lien d'accord personnel** et envoyez-le-lui. Elle y choisit son pseudo et dit oui (ou non). Vous relisez le pseudo, vous cliquez sur « Approuver ».
 
 ## Réglages
@@ -29,11 +29,11 @@ Plusieurs plateformes ? Ajoutez une instance du module par plateforme (chacune a
 
 ## Vie privée en bref
 - S'inscrire sur la plateforme **n'est pas** un accord : rien n'est montré sans l'accord séparé de la personne sur son lien personnel, où elle peut aussi se retirer.
-- Aucun montant n'est gardé ni montré, aucune adresse e-mail n'est gardée, aucun cookie, rien n'est chargé chez le visiteur.
+- Aucun montant n'est gardé ni montré, aucune adresse e-mail n'est gardée, aucun cookie, rien n'est chargé chez la personne qui visite.
 - Le nom donné par la plateforme n'est gardé ici que jusqu'au rangement dans Contacts ; les soutiens arrêtés sont oubliés après un an.
 - Contacts peut exporter, effacer ou fusionner ce que le module sait d'une personne.
 
 ## Limites
-5 000 soutiens, 2 000 membres lus par actualisation, 1 000 lignes par import, 25 par page d'administration, 50 pseudos par page publique. Aucune tâche de fond : une actualisation n'a lieu que si vous la demandez ou si quelqu'un ouvre la page après plusieurs heures.
+5 000 soutiens, 2 000 membres lus par actualisation, 1 000 lignes par import, 25 par page d'administration, 50 pseudos par page publique. Aucune tâche de fond : une actualisation n'a lieu que si vous la demandez ou si une personne ouvre la page après plusieurs heures.
 
 Documentation complète : `docs/ideas/supporters.md`.

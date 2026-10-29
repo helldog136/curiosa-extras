@@ -1,10 +1,10 @@
 # Galeries photos
 
-Des albums de photos pour votre site : les moments forts de vos événements, votre portfolio, les coulisses de vos projets. Les visiteurs voient une grille de couvertures, ouvrent un album, parcourent des miniatures qui se chargent au fil du défilement, puis regardent chaque photo en grand dans une visionneuse plein écran.
+Des albums de photos pour votre site : les moments forts de vos événements, votre portfolio, les coulisses de vos projets. Le public voit une grille de couvertures, ouvrent un album, parcourent des miniatures qui se chargent au fil du défilement, puis regardent chaque photo en grand dans une visionneuse plein écran.
 
 Les photos sont **hébergées sur votre site, dans des limites que vous réglez** (photos réduites, nombre et espace comptés). Pour un gros album, une carte **mène vers l'album d'un autre service** de votre choix : aucun service tiers n'est imposé.
 
-## Ce que voit le visiteur
+## Ce que voit la personne qui visite
 
 - Une **liste d'albums** (grille de couvertures, 12 par page).
 - Un **album** : titre, date, description, miniatures à chargement progressif. Sur un téléphone comme sur un ordinateur, on touche une miniature et la photo s'ouvre en grand.
@@ -20,7 +20,7 @@ Les photos sont **hébergées sur votre site, dans des limites que vous réglez*
 3. **Ajoutez des photos** : « Ajouter des photos » ouvre une page où vous choisissez vos fichiers, plusieurs d'un coup. Chaque photo est réduite sur votre appareil puis envoyée avec sa barre de progression ; si une photo pose problème, l'erreur est écrite juste en dessous, avec ce qu'il faut faire. Vous pouvez écrire une légende et une **description pour les personnes qui ne voient pas l'image** (un rappel s'affiche).
 4. **Rangez** : boutons *Monter* / *Descendre* / *En premier*, choix de la couverture, *Masquer* une photo (elle disparaît du site tout de suite sans être effacée), *Supprimer*. Aucun glisser-déposer.
 5. **Publiez** quand c'est prêt. Un brouillon a un **lien d'aperçu privé** pour le relire sur le site avant de le montrer.
-6. Dans l'onglet **Retraits**, lisez les demandes des visiteurs : un clic sur **« Masquer la photo »** la retire du site et clôt la demande.
+6. Dans l'onglet **Retraits**, lisez les demandes du public : un clic sur **« Masquer la photo »** la retire du site et clôt la demande.
 
 ## Photos : où elles vont, ce qui est vérifié et nettoyé
 
@@ -29,7 +29,7 @@ Les photos sont **hébergées sur votre site, dans des limites que vous réglez*
 - Les **informations cachées** dans les photos (position GPS, appareil, date) sont **retirées** : votre navigateur ré-encode chaque photo avant l'envoi, et les pages publiques n'affichent qu'une **version propre fabriquée par le site** (jamais le fichier d'origine).
 - Chaque photo est envoyée **une par une**, avec sa barre de progression ; l'erreur d'une photo s'écrit sous elle sans bloquer les autres.
 - Des **limites** protègent le site (réglables dans les réglages avancés) : poids visé d'une photo (300 Ko par défaut), photos par album (120 par défaut, 300 au plus), nombre d'albums (100 par défaut, 500 au plus), photos sur tout le site (1 500 par défaut, 10 000 au plus).
-- **Masquer ou supprimer** : « Masquer » cache une photo des visiteurs tout de suite, **sans rien effacer** (vous pouvez la réafficher). « Supprimer cette photo » la retire de l'album **et efface ses fichiers du disque du site** (l'original et la miniature) ; « Supprimer cet album » fait de même pour toutes ses photos et sa couverture. Le site garde ainsi la place libre et le fichier n'est plus dans les prochaines sauvegardes. À l'écran, le module dit ce qui a été effacé.
+- **Masquer ou supprimer** : « Masquer » cache une photo du public tout de suite, **sans rien effacer** (vous pouvez la réafficher). « Supprimer cette photo » la retire de l'album **et efface ses fichiers du disque du site** (l'original et la miniature) ; « Supprimer cet album » fait de même pour toutes ses photos et sa couverture. Le site garde ainsi la place libre et le fichier n'est plus dans les prochaines sauvegardes. À l'écran, le module dit ce qui a été effacé.
 - **Les anciennes photos** (envoyées avant la mise à jour du site vers Curiosa 0.2.13) : le site ne permet pas à ce module d'effacer leur fichier d'origine. Elles se suppriment sans erreur (elles quittent l'album), mais leur fichier reste sur le disque ; l'écran de la photo et le message de suppression le disent honnêtement. Pour ne plus les montrer sans attendre, « Masquer » suffit. Seules les photos envoyées après la mise à jour sont effacées pour de bon.
 - Une photo peut aussi rester **chez un autre site** (« par adresse »), mais seulement si vous avez autorisé ce site dans les réglages avancés.
 
@@ -39,7 +39,7 @@ Tout marche sans rien régler. Pour changer : titre et introduction de la page, 
 
 ## Vie privée
 
-Aucun cookie de suivi, aucune adresse de visiteur gardée. Les demandes de retrait contiennent seulement la photo, un message et, si la personne le veut, un e-mail (effacé dès que la demande est traitée) ; elles sont effacées 30 jours après leur traitement. Si le module Contacts est installé, une demande qui contient un e-mail y est aussi copiée.
+Aucun cookie de suivi, aucune adresse du public gardée. Les demandes de retrait contiennent seulement la photo, un message et, si la personne le veut, un e-mail (effacé dès que la demande est traitée) ; elles sont effacées 30 jours après leur traitement. Si le module Contacts est installé, une demande qui contient un e-mail y est aussi copiée.
 
 ## Avec un assistant IA
 
@@ -53,6 +53,6 @@ Il peut lister les albums et leurs photos, **créer un album en brouillon**, **a
 - Pas de commentaires ni de « j'aime » sur les photos.
 - Effacer le fichier d'origine d'une **ancienne** photo (envoyée avant Curiosa 0.2.13) : impossible pour un module. Pour de très gros albums, utilisez la carte « vers un autre service ».
 
-## Pour les développeurs
+## Pour qui développe
 
 Le module offre le service `gallery.albums` (lecture seule, version 1) : `list({ limit, cursor, q })` et `get(id)`, pour lier un album à un événement par exemple. Détails dans `docs/ideas/gallery.md` du dépôt.

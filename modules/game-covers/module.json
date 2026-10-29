@@ -6,14 +6,14 @@
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "Finds the cover picture of a video game for everything about games on your site. Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
     "fr": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
   },
   "privacy": {
     "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the title of the game to RAWG (a video-game database), together with your RAWG key. When another module shows a cover, the visitor's browser loads the picture from RAWG, which therefore sees the visitor's address under its own privacy policy.",
-    "fr": "Ce module ne collecte rien sur vos visiteurs. Pour trouver une jaquette, le serveur de votre site envoie à RAWG (une base de données de jeux vidéo) le titre du jeu, avec votre clé RAWG. Quand un autre module affiche une jaquette, le navigateur du visiteur charge l'image depuis RAWG, qui voit donc son adresse selon sa propre politique de confidentialité."
+    "fr": "Ce module ne collecte rien sur votre public. Pour trouver une jaquette, le serveur de votre site envoie à RAWG (une base de données de jeux vidéo) le titre du jeu, avec votre clé RAWG. Quand un autre module affiche une jaquette, le navigateur de la personne qui visite charge l'image depuis RAWG, qui voit donc son adresse selon sa propre politique de confidentialité."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,7 +33,7 @@
       "version": 1,
       "label": {
         "en": "Find the cover picture of a video game (and let the owner correct a wrong one)",
-        "fr": "Trouver la jaquette d'un jeu vidéo (et laisser la propriétaire corriger une mauvaise)"
+        "fr": "Trouver la jaquette d'un jeu vidéo (et laisser la personne propriétaire corriger une mauvaise)"
       },
       "readOnly": [
         "status",
@@ -54,7 +54,7 @@
       },
       "help": {
         "en": "Changes the picture visitors see for a game title.",
-        "fr": "Change l'image que les visiteurs voient pour un titre de jeu."
+        "fr": "Change l'image que le public voit pour un titre de jeu."
       },
       "default": {
         "admin": true,

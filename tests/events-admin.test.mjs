@@ -47,7 +47,7 @@ test("parcours d'Emma : un modèle, un premier rendez-vous, une erreur volontair
   assert.deepEqual(field(forms(edit)[0], "type").options.map((o) => o.value), ["", "event", "workshop", "training", "masterclass", "meetup"]);
   assert.ok(edit.some((b) => b.type === "links" && b.items.some((i) => /more=1/.test(i.href))));
   const more = await A.panel(ctx, { query: { edit: ev.id, more: "1" } });
-  assert.deepEqual(forms(more).map((f) => f.title), ["Modifier le rendez-vous", "Fin, fuseau et coordonnées", "Programme et intervenants", "Image, inscription et vidéo", "Après le rendez-vous : photos et vidéo", "Répéter ce rendez-vous"]);
+  assert.deepEqual(forms(more).map((f) => f.title), ["Modifier le rendez-vous", "Fin, fuseau et coordonnées", "Programme et personnes invitées", "Image, inscription et vidéo", "Après le rendez-vous : photos et vidéo", "Répéter ce rendez-vous"]);
   const e1 = await act(ctx, "saveEvent", { id: ev.id, section: "program", program: "Accueil sans heure", speakers: "" });
   assert.match(e1.errors.program, /Ligne 1 : commencez par l'heure\. Exemple : 14:30/);
   const ok = await act(ctx, "saveEvent", { id: ev.id, section: "program", program: "14:00 Accueil\n15:00 Atelier", speakers: "Camille | Illustratrice | /equipe/camille" });

@@ -172,7 +172,7 @@ test("fiche : programme en créneaux, intervenants avec lien facultatif, heure l
   assert.match(h, /9 h – 10 h/);
   assert.match(h, /<small>café<\/small>/);
   assert.equal(count(h, /data-ev-slot="\d+" data-tz="Europe\/Paris"/g), 2);
-  assert.match(h, /<h2 class="ev-h">Intervenants<\/h2>/);
+  assert.match(h, /<h2 class="ev-h">Personnes invitées<\/h2>/);
   assert.match(h, /<a href="\/equipe\/camille">Camille<\/a><span>Illustratrice<\/span>/);
   assert.match(h, /<strong>Léo<\/strong>/);
 });

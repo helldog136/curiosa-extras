@@ -6,9 +6,9 @@
     "fr": "Annuaire",
     "en": "Directory"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
-    "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
+    "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
     "en": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype."
   },
   "author": "Helldog136",
@@ -57,7 +57,7 @@
     }
   ],
   "privacy": {
-    "fr": "Aucun cookie, formulaire ni adresse de visiteur gardés ; le texte cherché n'est pas conservé. Publié depuis Contacts : nom (ou prénom, ou pseudo), catégories choisies, liens et photo si autorisés ; « Ne pas montrer » l'emporte. Gardé par fiche : présentation, ville, titre d'équipe, « masquée ». Photo hébergée ailleurs : chargée après un clic. Carte : ville seulement, avec accord. Retrait : écrivez au contact du site ; effacer la fiche dans Contacts efface tout ici.",
+    "fr": "Aucun cookie, aucun formulaire et aucune adresse du public n'est gardée ; le texte cherché n'est pas conservé. Publié depuis Contacts : nom (ou prénom, ou pseudo), catégories choisies, liens et photo si autorisés ; « Ne pas montrer » l'emporte. Gardé par fiche : présentation, ville, titre d'équipe, « masquée ». Photo hébergée ailleurs : chargée après un clic. Carte : ville seulement, avec accord. Retrait : écrivez au contact du site ; effacer la fiche dans Contacts efface tout ici.",
     "en": "No cookie, form or visitor address kept; searched text is not stored. Published from Contacts: name (or first name, or nickname), chosen categories, links and photo if you allow them. “Do not show” always wins. The module keeps per card: presentation, city, team title, “hidden”. A photo hosted elsewhere only loads after a click. Map: only the city of people who agreed. Withdrawal: write to the site's contact; erasing in Contacts erases everything here."
   },
   "tabs": [
@@ -92,7 +92,7 @@
         "en": "hide or show a person again"
       },
       "help": {
-        "fr": "Retirer quelqu'un de l'annuaire d'un clic (sa fiche reste dans Contacts) ou le remontrer.",
+        "fr": "Retirer une personne de l'annuaire d'un clic (sa fiche reste dans Contacts) ou la remontrer.",
         "en": "Take someone out of the directory with one click (their card stays in Contacts) or show them again."
       },
       "default": {
@@ -140,7 +140,7 @@
         "en": "Word for one person"
       },
       "help": {
-        "fr": "Au singulier, par exemple « membre » ou « créateur ». Sert aux compteurs (« 1 membre »).",
+        "fr": "Au singulier, par exemple « membre » ou « artiste ». Sert aux compteurs (« 1 membre »).",
         "en": "In the singular, for example “member” or “creator”. Used in counters (“1 member”)."
       }
     },
@@ -154,7 +154,7 @@
         "en": "Word for several people"
       },
       "help": {
-        "fr": "Au pluriel, par exemple « membres » ou « créateurs » (« 24 membres »).",
+        "fr": "Au pluriel, par exemple « membres » ou « artistes » (« 24 membres »).",
         "en": "In the plural, for example “members” or “creators” (“24 members”)."
       }
     },
@@ -217,14 +217,14 @@
         "en": "Photos"
       },
       "help": {
-        "fr": "Une photo hébergée ailleurs (Twitch, YouTube…) prévient ce site de la visite : par défaut, elle ne s'affiche qu'après un clic du visiteur.",
+        "fr": "Une photo hébergée ailleurs (Twitch, YouTube…) prévient ce site de la visite : par défaut, elle ne s'affiche qu'après un clic de la personne qui visite.",
         "en": "A photo hosted elsewhere (Twitch, YouTube…) tells that site about the visit: by default it only shows after the visitor clicks."
       },
       "options": [
         {
           "value": "request",
           "label": {
-            "fr": "Seulement si le visiteur le demande (conseillé)",
+            "fr": "Seulement si la personne qui visite le demande (conseillé)",
             "en": "Only if the visitor asks (recommended)"
           }
         },
@@ -312,7 +312,7 @@
       },
       "help": {
         "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît d'ici en moins de deux minutes. Laissé vide, une catégorie nommée « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.",
-        "en": "A person who asks not to appear: put her card in this Contacts category and she disappears from here within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
+        "en": "A person who asks not to appear: put their card in this Contacts category and they disappear from here within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
       }
     },
     {
@@ -409,7 +409,7 @@
         "en": "Starting order"
       },
       "help": {
-        "fr": "L'ordre de la liste avant que le visiteur ne choisisse.",
+        "fr": "L'ordre de la liste avant que la personne qui visite ne choisisse.",
         "en": "The order of the list before the visitor chooses."
       },
       "options": [
@@ -460,7 +460,7 @@
         "en": "Printable version and CSV file"
       },
       "help": {
-        "fr": "Propose aux visiteurs d'imprimer la liste ou de la télécharger. Seul ce qui est déjà public y figure.",
+        "fr": "Propose au public d'imprimer la liste ou de la télécharger. Seul ce qui est déjà public y figure.",
         "en": "Lets visitors print the list or download it. Only what is already public is included."
       }
     },

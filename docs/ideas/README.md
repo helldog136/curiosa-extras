@@ -26,8 +26,8 @@ Deux nouveaux modules et une extension du Bot Twitch, qui font réagir la maison
 
 | Module | Pour résoudre quel problème |
 |---|---|
-| `home-assistant` Home Assistant | Le pont sûr : la file d'ordres, l'association, le coupe-circuit, la modération du texte lu, le journal ; le « en direct » vient de Twitch OU de YouTube. Contrat exact : `home-assistant-contract.md` |
-| `twitch-bot` Bot Twitch 1.3.0 | Les récompenses en points de chaîne qui lancent une action (lumières, message lu à voix haute) |
+| `home-assistant` Connecteur Home Assistant 1.1.0 | Le pont sûr : la file d'ordres, l'association, le coupe-circuit, la modération du texte lu, le journal ; le « en direct » vient de Twitch OU de YouTube. Contrat exact : `home-assistant-contract.md` |
+| `twitch-bot` Bot Twitch 1.4.0 | Les récompenses en points de chaîne qui lancent une action (lumières, message lu à voix haute, ou une action de la maison que l'on nomme soi-même) |
 | `youtube-live-actions` Actions du live YouTube 1.1.0 | Les Super Chats, Super Stickers et adhésions qui lancent la même action |
 
 ### Le direct YouTube, au même niveau que Twitch (version 1.16.0)

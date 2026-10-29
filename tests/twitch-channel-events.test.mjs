@@ -34,7 +34,7 @@ test("manifeste : le planning Twitch est offert comme source d'événements (cha
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   const offer = manifestJson.offers.find((o) => o.service === "event.source");
   assert.deepEqual([offer.version, offer.each, offer.readOnly], [1, true, ["upcoming"]]);
-  assert.equal(manifestJson.version, "2.1.0"); assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
+  assert.equal(manifestJson.version, "2.1.1"); assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   for (const k of ["events_untitled", "events_empty", "events_setup_channel", "events_setup_connector", "events_setup_refused", "events_setup_update"]) assert.ok(fr[k] && en[k], k);
   assert.deepEqual(manifestJson.requires.map((x) => [x.service, x.min, x.optional ?? false]), [["twitch.api", 3, false]], "pas de nouvelle dépendance");
 });

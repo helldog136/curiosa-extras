@@ -6,7 +6,7 @@
     "en": "Supporters",
     "fr": "Soutiens"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": {
     "en": "Thank the people who support your site through a membership platform. Connect your platform (or import a file), see who supports you, file them in Contacts if you want, and show on a public page only the nickname each person agreed to show. No amount is ever displayed.",
     "fr": "Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat. Connectez votre plateforme (ou importez un fichier), voyez qui vous soutient, rangez-les dans Contacts si vous le souhaitez, et montrez sur une page publique seulement le pseudo que chaque personne a accepté de montrer. Aucun montant n'est jamais affiché."
@@ -177,7 +177,7 @@
       },
       "help": {
         "en": "Patreon: your creator access key. Ko-fi: your verification key. Entered once, never shown again. Not needed for a file import.",
-        "fr": "Patreon : votre clé d'accès de créateur. Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
+        "fr": "Patreon : la clé d'accès de votre page. Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
       }
     },
     {
@@ -231,7 +231,7 @@
       },
       "help": {
         "en": "Optional. For example: “Thanks to them, this site keeps going.”",
-        "fr": "Facultatif. Par exemple : « Grâce à elles et eux, ce site continue. »"
+        "fr": "Facultatif. Par exemple : « Grâce à vos soutiens, ce site continue. »"
       }
     },
     {
@@ -327,7 +327,7 @@
       "advanced": true,
       "label": {
         "en": "Days a gift keeps someone listed as active",
-        "fr": "Jours pendant lesquels un don garde quelqu'un dans les actifs"
+        "fr": "Jours pendant lesquels un don garde une personne dans les actifs"
       },
       "help": {
         "en": "For platforms that tell the site about each gift (not Patreon). Between 7 and 400.",
@@ -359,7 +359,7 @@
       },
       "help": {
         "en": "A refresh only happens when someone opens the page or the administration, never in the background. Between 15 and 1440.",
-        "fr": "Une actualisation n'a lieu que lorsque quelqu'un ouvre la page ou l'administration, jamais en arrière-plan. Entre 15 et 1440."
+        "fr": "Une actualisation n'a lieu que lorsqu'une personne ouvre la page ou l'administration, jamais en arrière-plan. Entre 15 et 1440."
       }
     },
     {
@@ -494,7 +494,7 @@
     },
     {
       "name": "supporters_consent_link",
-      "description": "Create (or show again) the personal link a supporter opens to agree, or refuse, to appear on the public page. The owner sends it to the person herself. Returns the path of the link. Creating a new one makes the previous link stop working.",
+      "description": "Create (or show again) the personal link a supporter opens to agree, or refuse, to appear on the public page. The owner sends it to the person directly. Returns the path of the link. Creating a new one makes the previous link stop working.",
       "input": {
         "type": "object",
         "required": [

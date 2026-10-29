@@ -18,7 +18,7 @@
   "ytTitle": "Alertes YouTube",
   "ytHelp": "Les Super Chats, Super Stickers et adhésions de votre direct YouTube s'affichent ici, l'un après l'autre. Elles viennent du module Actions du live YouTube, qui ne lit le chat que **pendant que sa page « En direct » est ouverte** : gardez-la ouverte pendant le direct. Le texte des messages est masqué tant que vous ne cochez pas « Afficher le texte des messages YouTube » dans les réglages.",
   "ytTestTitle": "Envoyer un faux Super Chat",
-  "ytTestWho": "Léa",
+  "ytTestWho": "Sacha",
   "ytTestText": "Bravo pour le live !",
   "ytTestError": "Impossible de préparer l'alerte de test.",
   "ytAbsent": "Pour afficher aussi les Super Chats et adhésions de votre direct YouTube, installez le module « Actions du live YouTube »."

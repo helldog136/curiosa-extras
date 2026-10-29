@@ -29,7 +29,8 @@ export function settingsOf(ctx) {
     rewardsNotice: ctx.setting("rewardsNotice") === true,
     stopMods: new Set(String(ctx.setting("stopMods") ?? "").toLowerCase().split(/[\s,;]+/).map((x) => x.replace(/^@/, "")).filter((x) => /^[a-z0-9_]{2,25}$/.test(x)).slice(0, 20)),
     rewardWaitSec: int(ctx.setting("rewardWaitSeconds"), 30, 600, 120),
-    extraActions: String(ctx.setting("extraActions") ?? "").toLowerCase().split(/[\s,;]+/).filter(Boolean).slice(0, 20),
+    extraActions: String(ctx.setting("extraActions") ?? "").toLowerCase().split(/[\s,;]+/).filter(Boolean).slice(0, 20),   // ancien réglage : toujours lu (voir actions.mjs)
+    showKeys: ctx.setting("showKeys") === true,   // mode avancé : montrer et pouvoir écrire la clé technique des actions
     bots: new Set([...KNOWN_BOTS, ...extra]),
     timeZone,
   };

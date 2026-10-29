@@ -57,7 +57,7 @@ test("manifeste : valide, une seule instance, une page publique, cœur 0.2.5", (
   assert.equal(manifest.id, "legal-pages");
   assert.equal(manifest.name.fr, "Mentions légales");
   assert.equal(manifest.name.en, "Legal pages");
-  assert.equal(manifest.version, "1.0.0");
+  assert.equal(manifest.version, "1.0.1");
   assert.equal(manifest.minCore, "0.2.5");
   assert.equal(manifest.instances, "single");
   assert.equal(manifest.page, true);

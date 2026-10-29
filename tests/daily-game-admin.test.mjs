@@ -443,7 +443,7 @@ test("classement (administration) : voir, retirer une ligne, vider ; sans Partic
   await D.boardAdd(ctx, { week: "2026-W43", pid: "p1", nick: "Alice", pts: 120, win: true, day: "2026-10-24" });
   await D.boardAdd(ctx, { week: "2026-W43", pid: "p2", nick: "Bruno", pts: 100, win: true, day: "2026-10-24" });
   const blocks = await panel(ctx);
-  const t = tables(blocks).find((x) => x.columns[0] === "Joueur");
+  const t = tables(blocks).find((x) => x.columns[0] === "Pseudo");
   assert.deepEqual(t.rowIds, ["p1", "p2"]);
   assert.match(t.rows[0][0], /1\. Alice\n120 pts · 1 bonne\(s\) réponse\(s\) sur 1 partie\(s\)/);
   assert.equal((await act(ctx, "removeBoardRow", { id: "p1" })).ok, "Ligne retirée du classement.");
@@ -452,7 +452,7 @@ test("classement (administration) : voir, retirer une ligne, vider ; sans Partic
   assert.equal(rows(ctx, "dg_board").length, 0);
   const viewer = ctxFor({ leaderboard: true }, { services: audience.services, rights: ["edit"] });
   await D.boardAdd(viewer, { week: "2026-W43", pid: "p1", nick: "Alice", pts: 120, win: true, day: "2026-10-24" });
-  assert.deepEqual(tables(await panel(viewer)).find((x) => x.columns[0] === "Joueur").rowActions, []);
+  assert.deepEqual(tables(await panel(viewer)).find((x) => x.columns[0] === "Pseudo").rowActions, []);
   const absent = ctxFor({ leaderboard: true });
   await addMany(absent, 1);
   const b = await panel(absent);

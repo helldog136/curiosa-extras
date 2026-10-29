@@ -6,21 +6,13 @@ const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { accounts, twitch } = await import(`./listen.mjs${v}`);
 const { checkTemplate, clean } = await import(`./variables.mjs${v}`);
+const A = await import(`./actions.mjs${v}`);
 
 export const MAX_REWARDS = es.LIMITS.maxRewards;
-export const ACTION_RE = /^[a-z0-9][a-z0-9:_-]{0,39}$/;
-export const BOT_ACTION = "chat:repondre";
-/** Les actions connues. `home` : demande le module Home Assistant ; `input` : le viewer doit écrire un message ; l'intitulé vient des textes `act_<clé avec _>`. */
-export const KNOWN = [
-  { key: "lumieres:rouge", home: true }, { key: "lumieres:vert", home: true }, { key: "lumieres:bleu", home: true }, { key: "lumieres:jaune", home: true },
-  { key: "lumieres:orange", home: true }, { key: "lumieres:violet", home: true }, { key: "lumieres:rose", home: true }, { key: "lumieres:blanc", home: true },
-  { key: "tts:lire", home: true, input: true }, { key: BOT_ACTION, home: false },
-];
-export const labelKey = (key) => `act_${key.replace(/[^a-z0-9]/g, "_")}`;
-export const isHome = (key) => key !== BOT_ACTION;
-export const needsInputFor = (key) => key === "tts:lire";
-/** Les clés permises dans la liste : les connues, plus celles que la propriétaire a ajoutées en mode avancé (les invalides sont écartées). */
-export const allowedKeys = (s) => [...new Set([...KNOWN.map((k) => k.key), ...(s.extraActions ?? []).filter((k) => ACTION_RE.test(k))])];
+// Les actions (clés, noms, actions nommées) sont dans actions.mjs ; ils restent exportés d'ici pour ceux qui les ont toujours pris ici.
+export const { ACTION_RE, BOT_ACTION, KNOWN, labelKey, isHome, needsInputFor } = A;
+/** Les clés permises dans la liste : les actions de base, celles de l'ancien réglage « Autres actions » (les invalides sont écartées) et les actions nommées (`named` : leurs clés). */
+export const allowedKeys = (s, named = []) => [...new Set([...KNOWN.map((k) => k.key), ...(s.extraActions ?? []).filter((k) => ACTION_RE.test(k)), ...named.filter((k) => ACTION_RE.test(k))])];
 
 const rec = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
 const COL = "reward";
@@ -38,10 +30,10 @@ export const statusOf = (r) => (r.gone ? "gone" : r.refused ? "refused" : r.paus
 
 const num = (x) => { const n = typeof x === "number" ? x : Number(String(x ?? "").replace(",", ".").trim()); return Number.isFinite(n) ? n : NaN; };
 /**
- * Vérifie une récompense saisie. `raw` : { title, cost, cooldownMin | cooldown (secondes), prompt, needsInput, action, reply }. `except` : id local à ignorer pour le doublon de titre.
+ * Vérifie une récompense saisie. `raw` : { title, cost, cooldownMin | cooldown (secondes), prompt, needsInput, action (la clé), reply }. `others` : les autres récompenses (doublon de titre) ; `named` : les clés des actions nommées.
  * Rend { ok: true, value } ou { ok: false, errors: { champ: code } } ; codes : title, title_long, dup, cost, cooldown, prompt, action, reply, reply_vars (+ `vars`).
  */
-export function check(raw, { s, others = [], prefix = "!" }) {
+export function check(raw, { s, others = [], prefix = "!", named = [] }) {
   const errors = {}, r = rec(raw);
   const title = clean(r.title, 100);
   if (!title) errors.title = "title"; else if ([...title].length > es.LIMITS.title) errors.title = "title_long";
@@ -53,7 +45,7 @@ export function check(raw, { s, others = [], prefix = "!" }) {
   const prompt = clean(r.prompt, 400);
   if ([...prompt].length > es.LIMITS.prompt) errors.prompt = "prompt";
   const action = String(r.action ?? "").trim();
-  if (!ACTION_RE.test(action) || !allowedKeys(s).includes(action)) errors.action = "action";
+  if (!ACTION_RE.test(action) || !allowedKeys(s, named).includes(action)) errors.action = "action";
   let reply = "";
   if (action === BOT_ACTION) {
     const t = checkTemplate(r.reply, "reward", prefix);
@@ -139,6 +131,15 @@ export function remove(ctx, s, id) {
     }
     await ctx.api.store.remove(id);
     return { ok: true };
+  });
+}
+
+/** Une clé d'action change (mode avancé) : les récompenses qui la portaient portent la nouvelle. Rien n'est envoyé à Twitch (l'action ne s'y trouve pas). Rend le nombre de récompenses touchées. */
+export function retarget(ctx, from, to) {
+  return guard(ctx, async () => {
+    let n = 0;
+    for (const doc of await list(ctx)) if (doc.action === from) { await save(ctx, { ...doc, action: to }); n += 1; }
+    return n;
   });
 }
 

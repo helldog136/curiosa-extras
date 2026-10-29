@@ -355,7 +355,7 @@ export const adminActions = {
     return { ok: ctx.t("tplDone", { added: r.added, removed: r.removed }), redirect: back("tab=tools") };
   }),
 
-  // Villes (pour « Près de moi » quand le visiteur refuse la géolocalisation)
+  // Villes (pour « Près de moi » quand la personne qui visite refuse la géolocalisation)
   saveCity: act(EDIT, async (ctx, values) => {
     invalidate(ctx);
     const w = await world(ctx);

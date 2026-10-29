@@ -140,6 +140,39 @@ export function detectNetwork(input) {
   return "web";
 }
 
+// Premier segment de chemin qui n'est PAS un profil (x.com/home, instagram.com/p/…, tiktok.com/discover…).
+const NOT_PROFILE = {
+  x: new Set(["home", "i", "intent", "share", "search", "explore", "settings", "messages", "notifications", "compose", "hashtag", "login", "signup", "tos", "privacy"]),
+  instagram: new Set(["p", "reel", "reels", "explore", "stories", "accounts", "direct", "tv", "about", "legal", "web"]),
+};
+
+/**
+ * Vérifie ce que la personne a écrit POUR LA PLATEFORME QU'ELLE A CHOISIE (ajout rapide). PURE : aucune requête, aucun accès au stockage.
+ * Rend { status: "ok", network, handle, url } · { status: "empty" } · { status: "other_network", detected } (un lien d'une AUTRE plateforme connue) ·
+ * { status: "invalid" } (ni un pseudo ni un lien de cette plateforme : adresse d'une vidéo, d'une page qui n'est pas un profil, e-mail, espaces…).
+ * Accepte : pseudo, @pseudo, lien avec ou sans https://, avec ou sans www./m., majuscules, espaces autour, sous-pages (twitch.tv/nom/videos).
+ */
+export function checkAccountInput(network, input) {
+  if (!NETWORKS.includes(network)) return { status: "invalid" };
+  const s = tidy(input);
+  if (!s) return { status: "empty" };
+  if (s.length > 300 || (/\s/.test(s) && network !== "other")) return { status: "invalid" };
+  const detected = detectNetwork(s);
+  const isLink = /^(?:https?:\/\/|www\.)/i.test(s) || /^(?:[a-z0-9-]+\.)+[a-z]{2,}\//i.test(s);
+  if (isLink && detected && detected !== network && detected !== "web") return { status: "other_network", detected };
+  if (isLink && NOT_PROFILE[network]) {
+    const first = (fromUrl(s, network === "x" ? "x\\.com|twitter\\.com" : "instagram\\.com") ?? "").split("/")[0].toLowerCase();
+    if (NOT_PROFILE[network].has(first)) return { status: "invalid" };
+  }
+  if (isLink && network === "tiktok") {
+    const first = (fromUrl(s, "tiktok\\.com") ?? "").split("/")[0];
+    if (!first.startsWith("@")) return { status: "invalid" };
+  }
+  if (!isLink && network !== "mastodon" && network !== "other" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return { status: "invalid" }; // une adresse e-mail n'est pas un pseudo
+  const n = normalizeAccount(network, s);
+  return n.error ? { status: "invalid" } : { status: "ok", network: n.network, handle: n.handle, url: n.url };
+}
+
 /**
  * Comptes repérés dans un texte libre (« Autres canaux » d'une fiche d'avant la 2.0) : liens de réseaux connus, @nom@instance (Mastodon).
  * Rend [{ network, handle, url }] (10 au plus, sans doublon). Rien n'est deviné pour un « @pseudo » seul (réseau inconnu).

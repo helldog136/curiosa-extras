@@ -21,7 +21,7 @@ test("manifeste valide ; textes présents et alignés fr/en ; réglages lus ; ac
   for (const m of all.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)) assert.ok(declared.has(m[1]), m[1]);
   for (const a of manifest.mcp) { assert.equal(typeof def.mcp[a.name], "function", a.name); assert.ok(a.name.length <= 31); }
   assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["moderate", "remote.use"]);
-  assert.equal(manifest.minCore, "0.2.5"); assert.equal(manifest.version, "1.0.0"); assert.equal(manifest.instances, "single");
+  assert.equal(manifest.minCore, "0.2.5"); assert.equal(manifest.version, "1.0.1"); assert.equal(manifest.instances, "single");
   assert.equal(manifest.offers[0].service, "audience.session");
   assert.deepEqual(manifest.requires, [{ service: "audience.remote", optional: true }], "il ne dépend de rien : les modules branchés sont facultatifs");
   const byName = Object.fromEntries(manifest.mcp.map((a) => [a.name, a]));

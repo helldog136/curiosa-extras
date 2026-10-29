@@ -5,7 +5,7 @@
     "en": "Pinterest",
     "fr": "Pinterest"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "platform": "pinterest",
   "description": {
     "en": "Shows your Pinterest button in the site header. Add one per account if you have several.",

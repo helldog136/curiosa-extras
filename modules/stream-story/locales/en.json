@@ -6,7 +6,7 @@
   "admin_open_tab": "Open the editor in a tab",
   "ui_title": "Announcement story",
   "ui_no_access": "This editor opens from the site administration.",
-  "ui_no_access_hint": "Open the \"Announcement story\" page in the administration (signed in as an administrator): the editor shows up there by itself.",
+  "ui_no_access_hint": "Open the \"Announcement story\" page in the administration (signed in with an administration account): the editor shows up there by itself.",
   "ui_prep_note": "Your assistant prepared this video. Check the preview, change anything you like, then click \"Generate the video\".",
   "ui_prep_expired": "The requested preparation no longer exists or has expired. You can set up the video yourself.",
   "ui_prep_stream_gone": "The event picked by your assistant is no longer in the list (over, moved, or a source that is not answering): the next event is used instead.",

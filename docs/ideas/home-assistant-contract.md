@@ -1,6 +1,6 @@
-# Home Assistant : contrat HTTP et contrat de service, tels qu'IMPLÉMENTÉS
+# Connecteur Home Assistant : contrat HTTP et contrat de service, tels qu'IMPLÉMENTÉS
 
-Ce document décrit ce que le module `home-assistant` (version 1.0.0, Curiosa 0.2.6 ou plus ; livré dans la 1.16.0) fait réellement. Il prime sur le cahier des charges ; les écarts sont listés en fin de page. Le simulateur `tests/helpers/fakeHaClient.mjs` parle exactement ce contrat (transport direct ou `FakeHaClient.overHttp(base)` vers un vrai site).
+Ce document décrit ce que le module `home-assistant` (affiché « Connecteur Home Assistant » / « Home Assistant connector » depuis la 1.1.0 ; identifiant, service et routes inchangés ; version 1.1.0, Curiosa 0.2.6 ou plus ; livré dans la 1.16.0) fait réellement. Il prime sur le cahier des charges ; les écarts sont listés en fin de page. Le simulateur `tests/helpers/fakeHaClient.mjs` parle exactement ce contrat (transport direct ou `FakeHaClient.overHttp(base)` vers un vrai site).
 
 ## 1. HTTP public
 
@@ -20,10 +20,12 @@ Succès 200 (exactement ces clés) :
 ```json
 { "enabled": true, "live": true, "serverTime": "2026-10-14T20:00:03.000Z", "cursor": 12, "pollSeconds": 3,
   "actions": [ { "id": "a1b2c3d4e5f60718", "key": "tts:lire", "text": "Léa dit : Bonjour", "viewer": "Léa",
-                 "issuedAt": "…Z", "expiresAt": "…Z", "test": true } ] }
+                 "issuedAt": "…Z", "expiresAt": "…Z", "test": true } ],
+  "catalog": [ { "key": "perso:lancer-l-aspirateur", "label": "Lancer l'aspirateur" } ] }
 ```
 - `enabled` : faux si le coupe-circuit est actif ; `live` : vrai si **au moins une source** dit « en direct » (Chaîne Twitch ou Chaîne YouTube, voir §2) ou dans les 5 minutes qui suivent. Si `enabled` est faux : `actions` vide (la réponse reste 200 : c'est ainsi que l'intégration voit « coupé côté Curiosa »). Si `live` est faux : `actions` vide, SAUF pour une action marquée `test` (voir plus bas).
 - `actions[]` : `id` (16 hexadécimaux), `key` (`^[a-z0-9][a-z0-9:_-]{0,39}$`), `text` (déjà nettoyé et modéré ; chaîne vide sauf pour les clés `tts:*` ; **déjà préfixée « Pseudo dit : »** si le réglage est actif : l'intégration ne doit PAS ajouter de préfixe), `viewer` (pseudo nettoyé, ≤ 25 caractères, peut être vide ; informatif), `issuedAt`, `expiresAt` (ISO UTC), et le champ **facultatif `test: true`**, présent seulement pour un essai lancé par la propriétaire (absent sinon) : l'intégration l'exécute comme les autres (même chemin) ; elle peut l'afficher comme un test.
+- **`catalog`** (champ ADDITIF, depuis la 1.1.0 ; un client plus ancien l'ignore, le contrat v1 reste compatible) : les NOMS des actions que les récompenses de Curiosa peuvent lancer, pour que l'intégration propose « Lancer l'aspirateur → [choisir un script] ». Éléments `{ key, label }` : `key` de la forme permise (`^[a-z0-9][a-z0-9:_-]{0,39}$`, la même que `actions[].key`), `label` un texte déjà nettoyé de 60 caractères au plus (points de code), dans la langue du site ; 50 éléments au plus ; sans doublon de `key` ; toujours présent (liste vide sans nom connu : Bot Twitch absent, aucune action de la maison). Il vient du sujet facultatif `home.actions` du Bot Twitch (le connecteur ne possède ni les récompenses ni les noms : il les lit au plus toutes les 30 s, en 1,5 s au plus, et garde la dernière liste connue si le Bot Twitch ne répond pas). Il n'est PAS filtré par l'état (coupe-circuit, direct) : on peut relier ses actions à tout moment. **Aucune entité de la maison n'est jamais envoyée vers Curiosa** : la liaison « nom d'action → script » reste de l'autre côté ; l'intégration ne dit à Curiosa que ce qu'elle dit déjà, un accusé `ignored/unmapped` quand elle n'a pas de script pour une clé. Une clé sans entrée dans `catalog` (action écrite à la main, assistant, Actions du live YouTube) reste valable : `catalog` est une aide, pas une liste fermée.
 - Curseur : chaque action a un numéro croissant. Curiosa renvoie, dans l'ordre, les actions non acquittées, non expirées, de numéro > `cursor`, par lots de `limit` au plus. `cursor` (dans la réponse) = le plus grand numéro livré dans ce lot, sinon le `cursor` demandé (ramené au dernier numéro existant si l'intégration est « en avance »). **L'intégration renvoie ce `cursor` à l'appel suivant, après avoir traité le lot** ; si une réponse se perd, elle repasse l'ancien curseur et reçoit de nouveau les actions non acquittées.
 - Chaque action est livrée **au plus 3 fois** tant qu'elle n'est pas acquittée ; au-delà elle n'est plus livrée et expire. Déduplication par `id` à la charge de l'intégration.
 - Expiration : 60 s après `issuedAt` (réglable 15–300 s), constatée à la lecture (aucun minuteur) : une action expirée n'est jamais livrée. Comparer `expiresAt` à `serverTime` (et non à l'horloge de Home Assistant seule) ; tolérance conseillée 5 s.
@@ -34,7 +36,7 @@ Succès 200 (exactement ces clés) :
 ### 1.3 `POST ack`
 En-tête `Authorization: Bearer <jeton>`. Corps : `{ "id": "<id>", "status": "done|failed|ignored", "code": "ok|unmapped|disabled|expired|error" }`. Combinaisons : `status: "done"` ⇔ `code: "ok"`. Autre combinaison, valeur hors liste, `id` mal formé : 400 `bad_request` (rien n'est enregistré). Aucun texte libre.
 Succès 200 : `{ "ok": true, "result": "recorded" | "already" | "unknown" }` (`already` : déjà acquittée, expirée ou annulée ; `unknown` : identifiant inconnu ; ce n'est jamais une erreur : ne pas réessayer). Débit : 60 accusés / 10 s (429).
-Sens : `ignored/unmapped` = pas de scène liée à cette clé dans Home Assistant ; `ignored/disabled` = interrupteur local coupé ; `ignored/expired` = arrivée trop tard ; `failed/error` = l'exécution a échoué.
+Sens : `ignored/unmapped` = pas de script relié à cette clé dans Home Assistant (le Bot Twitch le dit sur la récompense : « Home Assistant n'a pas encore de script pour cette action » ; la page du connecteur la range dans « Actions en attente de liaison », 20 au plus, jusqu'à ce qu'elle réussisse) ; `ignored/disabled` = interrupteur local coupé ; `ignored/expired` = arrivée trop tard ; `failed/error` = l'exécution a échoué.
 
 ## 2. Service `home-assistant.bridge` (version 1)
 Appelé par `ctx.api.services.call("home-assistant.bridge", méthode, args)`.
@@ -50,6 +52,8 @@ Appelé par `ctx.api.services.call("home-assistant.bridge", méthode, args)`.
 - `ha.result` : éléments `{ ref, id, status, code, at }` (`at` ISO), les plus récents d'abord, 50 au plus, gardés 24 h, **seulement les actions qui ont un `ref`** (le bouton « Tester » de l'administration n'en a pas ; un essai d'un autre module en a un s'il en donne un). `status` ∈ `done` | `failed` | `ignored` (accusé de HA : `code` comme dans `ack`), `expired` (`code: "expired"`, constaté à la lecture), `refused` (`code` : `off` si coupé, `not_paired` si dissocié). Le consommateur déduplique par `id`. À rembourser : tout sauf `done`.
 - `ha.state` : un élément `{ enabled, live, paired, lastSeenAt? }` (`lastSeenAt` absent si jamais vu).
 
+**Sujet consommé (facultatif)** : `home.actions` (fourni par le Bot Twitch) : éléments `{ key, label }`, 50 au plus. Voir `catalog` au §1.2. Les actions de base (lumières, voix) n'y figurent que si une récompense les utilise ; les actions nommées par la personne y figurent toutes.
+
 ## 4. Essai de la propriétaire (administration et outil `home_assistant_test`)
 Même chemin que `enqueue(... test: true)` (§2), avec : `test: true` dans l'action de `pull`, `viewer: "Test"`, aucun `ref` (donc rien dans `ha.result`), jamais d'appel à Twitch ni à YouTube, **possible hors direct** (le coupe-circuit, l'appairage et la présence de Home Assistant restent obligatoires ; refus `off`/`not_paired`/`offline` dits en mots simples), pas d'attente par viewer, droit `ha.test`, limite 1 test / 3 s et 30 / heure, pastille « Test » dans le journal. Un test hors direct est livré même si `live` est faux dans la réponse de `pull`.
 
@@ -63,3 +67,4 @@ Même chemin que `enqueue(... test: true)` (§2), avec : `test: true` dans l'act
 7. Pas d'interrupteur manuel « Je suis en direct » : sans « Ma Chaîne Twitch » ni « Chaîne YouTube », le pont reste fermé (`not_live`) et la page le dit (« installez Ma Chaîne Twitch ou Chaîne YouTube »).
 8. Le service `enqueue` accepte `test?: true` (§2), ce que le cahier des charges ne prévoyait pas alors que le Bot Twitch et Actions du live YouTube l'envoient pour leurs simulations.
 9. Le « en direct » vient de Twitch OU de YouTube (une personne qui ne diffuse que sur YouTube peut utiliser le pont).
+10. **1.1.0** : `pull` ajoute le champ `catalog` (§1.2) ; le module consomme le sujet facultatif `home.actions` ; la page garde, pour chaque accusé `ignored/unmapped`, l'action à relier (20 au plus). Aucune route, aucun sujet, aucun service ni identifiant ne change : seul le nom affiché devient « Connecteur Home Assistant ».

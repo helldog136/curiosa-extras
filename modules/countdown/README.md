@@ -1,12 +1,12 @@
 # Compte à rebours
 
-Annoncez un **événement ponctuel** : la sortie d'un jeu, un lancement, un anniversaire, une convention. Vos visiteurs voient le temps qui reste, **l'heure chez eux** écrite en toutes lettres (« samedi à 21 h chez vous ») et peuvent ajouter l'événement à leur agenda. Une fois l'heure passée, un message de votre choix prend la place des chiffres (« C'est parti ! », avec un bouton), puis l'événement disparaît tout seul.
+Annoncez un **événement ponctuel** : la sortie d'un jeu, un lancement, un anniversaire, une convention. Votre public voit le temps qui reste, **l'heure chez lui** écrite en toutes lettres (« samedi à 21 h chez vous ») et peut ajouter l'événement à son agenda. Une fois l'heure passée, un message de votre choix prend la place des chiffres (« C'est parti ! », avec un bouton), puis l'événement disparaît tout seul.
 
 Ce module ne remplace pas le module **Planning** : le Planning montre vos *streams* réguliers, celui-ci sert aux *rendez-vous uniques* qu'on attend.
 
 ## À quoi ça sert
 
-- Tout le monde vit dans un fuseau horaire différent : « 20 h » n'a pas le même sens à Liège, à Montréal et à Tokyo. Le visiteur lit directement l'heure chez lui.
+- Tout le monde vit dans un fuseau horaire différent : « 20 h » n'a pas le même sens à Liège, à Montréal et à Tokyo. La personne qui visite lit directement l'heure chez lui.
 - Un seul endroit pour plusieurs rendez-vous : une page, un morceau pour l'accueil et une source pour votre stream (OBS).
 - Rien à surveiller : l'événement se masque tout seul quand vous l'avez décidé.
 
@@ -30,7 +30,7 @@ Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *
 - Pour un fuseau qui n'est pas dans la liste, écrivez son nom officiel (Asia/Kolkata, America/Montreal…).
 - Pour une **journée entière** (anniversaire, convention), cochez « Toute la journée » : pas d'heure, et la date ne bouge pas d'un pays à l'autre.
 
-## Ce que voit un visiteur
+## Ce que voit une personne
 
 - Les jours, heures, minutes (et secondes) qui avancent, exacts à la seconde : le compteur se recale sur l'heure de l'événement, il ne prend pas de retard, même si l'onglet reste longtemps en arrière-plan.
 - L'heure chez lui, et la date dans le fuseau de l'événement quand elles diffèrent.
@@ -55,9 +55,9 @@ Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *
 - 100 événements au plus. Au-delà, supprimez les plus anciens (bouton « Supprimer ces événements masqués »).
 - Pas d'événement qui se répète tout seul chaque année : utilisez **Réutiliser** sur un événement masqué.
 - Le fichier d'agenda donne l'heure exacte (heure universelle) : tous les agendas l'affichent à la bonne heure locale.
-- Aucune donnée de visiteur n'est gardée : pas de cookie, pas de compteur, pas d'adresse.
+- Aucune donnée sur le public n'est gardée : pas de cookie, pas de compteur, pas d'adresse.
 
-## Pour les développeurs
+## Pour qui développe
 
 - Une page publique (`/<chemin>`, `/<chemin>/<nom-court>`), deux morceaux d'accueil, un emplacement `layout.head` (script d’environ 12 Ko, chargé seulement s'il y a des événements), une source `overlay`, des routes en lecture seule (`ics`, `now`, `state`, `live.js`) et des outils pour les assistants (`events_list`, `event_create`, `event_update`, `event_set_featured`, `event_delete`).
 - `time.mjs` : tout le calcul du temps, sans dépendance. Les fonctions communes au serveur et au navigateur sont envoyées au navigateur telles quelles (`Function.prototype.toString`) : mêmes résultats partout, testés directement.

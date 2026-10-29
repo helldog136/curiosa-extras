@@ -1,6 +1,6 @@
 # Bot Twitch
 
-Votre site **répond aux commandes tapées dans votre chat Twitch** : quelqu'un écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
+Votre site **répond aux commandes tapées dans votre chat Twitch** : une personne écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
 
 **Il faut Curiosa 0.2.5 ou plus.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent tout seuls avec le bot. Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
 
@@ -14,7 +14,7 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 
 ## Les commandes
 - **Toutes prêtes** : `!planning` (votre prochain stream), `!jeu`, `!titre`, `!followers`, `!uptime` (depuis combien de temps vous êtes en direct). Vous pouvez changer leur texte, leur nom, leurs autres noms, les désactiver.
-- **Les vôtres** : un nom (sans le `!`), la réponse, d'éventuels autres noms (`!insta` et `!ig` pour `!instagram`), qui peut l'utiliser (tout le monde, les abonnés, les modérateurs, seulement vous), et une attente entre deux réponses.
+- **Les vôtres** : un nom (sans le `!`), la réponse, d'éventuels autres noms (`!insta` et `!ig` pour `!instagram`), qui peut l'utiliser (tout le monde, les personnes abonnées, l'équipe de modération, seulement vous), et une attente entre deux réponses.
 - **Des morceaux qui se remplissent tout seuls** dans n'importe quel texte : `{followers}`, `{jeu}`, `{titre}`, `{uptime}`, `{prochain_stream}`, `{utilisateur}` (le pseudo de la personne qui tape). Si une information n'est pas disponible, le bot écrit une phrase lisible à la place (« bientôt, restez à l'écoute »). Un morceau inconnu est refusé tout de suite, avec ce qu'il faut corriger. Le bot ne recopie jamais ce que les gens écrivent, à part leur pseudo.
 - **Un aperçu** de la réponse s'affiche quand vous modifiez une commande.
 
@@ -24,22 +24,25 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 - Les commandes des réseaux, les vôtres et les commandes toutes prêtes se règlent **sur la page du bot** : un résumé les montre avec leur état et un bouton « Modifier » (ou « Configurer »). La page ne remonte plus en haut quand vous cliquez : le message s'affiche à côté du bouton.
 - Une fiche pas encore publiée peut déjà avoir sa commande réglée : elle attend la publication. Sans le bot, la fiche du partenaire ne montre aucune section en plus.
 
-## Les récompenses en points de chaîne (onglet « Récompenses », depuis la 1.3.0)
-Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action** :
+## Les récompenses en points de chaîne (onglet « Récompenses », depuis la 1.3.0 ; actions nommées depuis la 1.4.0)
+Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action**, choisie en répondant à une seule question : « Que se passe-t-il quand une personne prend cette récompense ? »
 - **Répondre dans le chat** (marche sans rien d'autre) : « Merci {utilisateur} ! ».
-- **Une action de la maison**, si le module **Home Assistant** est installé : la couleur des lumières (`lumieres:rouge`, `lumieres:bleu`…) ou **lire le message du viewer à voix haute** (`tts:lire`). Sans ce module, l'onglet propose de l'installer ; il reste facultatif.
-- En **mode avancé**, le réglage « Autres actions à choisir » ajoute vos propres mots (`lumieres:orange`, `scene:cinema`) à la liste.
+- **Changer la couleur des lumières** (rouge, vert, bleu, jaune, orange, violet, rose, blanc) ou **Lire son message à voix haute** : des actions de la maison, qui demandent le **Connecteur Home Assistant**. Sans lui, l'onglet propose de l'installer ; il reste facultatif.
+- **Autre chose chez moi** : on **donne un nom** à l'action (par exemple « Lancer l'aspirateur »). Le nom est le seul mot à connaître : Curiosa fabrique elle-même l'identifiant technique, **qui ne change plus** même si vous renommez l'action (ce qui est relié dans Home Assistant ne casse donc pas). Un nom déjà utilisé reprend la même action ; la liste **« Vos actions »** permet de la choisir pour une autre récompense, de la renommer ou de la retirer quand aucune récompense ne s'en sert.
+- **Home Assistant apprend les noms** : le Bot Twitch publie le sujet `home.actions` (les noms de vos actions) que le Connecteur Home Assistant lit en option pour proposer « Lancer l'aspirateur → choisir un script » dans Home Assistant. Rien de votre maison n'est jamais envoyé à Curiosa.
+- Si Home Assistant répond qu'il **n'a pas encore de script pour une action**, la récompense (liste et journal) le dit en mots simples avec la marche à suivre (Home Assistant > Curiosa > Configurer), les points sont rendus et un bandeau nomme les actions à relier. Un lien **« Relier à votre maison »** mène à la page du Connecteur Home Assistant.
+- En **mode avancé**, le réglage « Montrer les identifiants techniques des actions » montre l'identifiant à côté du nom et permet d'en choisir un pour une nouvelle action. L'ancien réglage « Autres actions à choisir » (des mots comme `scene:cinema`) **marche toujours** : ses mots sont repris automatiquement dans « Vos actions », le mot servant de nom.
 
-Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n'est pas coupé), créer « Rouge » avec l'action « Lumières : rouge ».
+Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n'est pas coupé), créer « Rouge » avec « Changer la couleur des lumières » puis la couleur rouge.
 
 **Ce qui se passe quand un viewer prend une récompense** : l'échange est noté **une seule fois**, puis l'action est lancée. Si la maison accepte, **les points sont validés** quand elle a joué l'action ; si elle refuse (maison coupée, pas en direct, message refusé par la modération, trop de demandes…) ou n'a rien fait dans le délai (2 minutes par défaut), **les points sont rendus**. Un message dans le chat peut prévenir le viewer (réglage « Prévenir le chat quand des points sont rendus », désactivé par défaut).
 - **Rien ne tourne en arrière-plan** : les résultats de la maison et les délais dépassés sont pris en compte au prochain évènement sur votre chaîne ou quand vous ouvrez l'onglet.
 - **Hors direct, ou quand la maison est coupée**, les récompenses de la maison sont **mises en pause chez Twitch**, et remises en vente toutes seules ensuite (seulement celles que Curiosa a mises en pause : une pause que vous avez faite reste).
-- **`!stop`** dans le chat coupe la maison (vous et les modérateurs que vous nommez dans les réglages), **`!start`** la rebranche (vous seule). Sans le module Home Assistant, le bot le dit poliment.
+- **`!stop`** dans le chat coupe la maison (vous et l'équipe de modération que vous nommez dans les réglages), **`!start`** la rebranche (vous uniquement). Sans le Connecteur Home Assistant, le bot le dit poliment.
 - **Simuler** : le bouton « Simuler cette récompense » joue le même chemin avec un faux viewer « Test », **sans Twitch et sans points**. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée. Refusé si la maison est coupée. 1 test toutes les 3 secondes, 30 par heure.
 - **Journal** des 50 derniers échanges (pseudo, récompense, résultat) ; le message écrit par le viewer n'est **jamais gardé**.
 - **Limites** : 20 récompenses, 100 échanges en attente. Les points de chaîne n'existent que pour un compte **Affilié ou Partenaire** : sinon la page le dit en clair.
-- Le droit **« créer, modifier et supprimer les récompenses »** (`rewards.manage`) se donne dans les rôles. Outils pour l'assistant : `rewards_list` (lecture), `reward_create`, `reward_update`, `reward_simulate` (écritures, jamais accordées d'office).
+- Le droit **« créer, modifier et supprimer les récompenses »** (`rewards.manage`) se donne dans les rôles. Outils pour l'assistant : `rewards_list` (lecture), `reward_create`, `reward_update`, `reward_simulate` (écritures, jamais accordées d'office) ; `reward_create` et `reward_update` acceptent `customActionName` pour donner un nom à une action.
 
 ## Les protections
 - Le bot **répond seulement pendant vos directs** (vous pouvez le changer).
@@ -47,7 +50,7 @@ Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n
 - Il **ne répond jamais à lui-même ni aux autres bots**, et ses réponses ne peuvent pas déclencher une autre commande.
 - Une **limite de réponses** par tranche de 30 secondes, bien en dessous de ce que Twitch tolère.
 - Une réponse ne commence jamais par `/` ni par un point, et ne dépasse jamais 500 caractères.
-- Chaque commande a un rôle : tout le monde, abonnés, modérateurs ou seulement vous.
+- Chaque commande a un rôle : tout le monde, personnes abonnées, équipe de modération ou seulement vous.
 
 ## L'arrêt d'urgence
 En haut de la page : **« Couper toutes les réponses »**. Un clic, le bot se tait partout, immédiatement. Rien n'est supprimé ; « Réactiver les réponses » le remet en marche.
@@ -71,5 +74,5 @@ Réservés au mode avancé : le **signe des commandes** (`!` par défaut), un **
 - Le bot a besoin que **votre site soit joignable depuis Internet en `https://`** : Twitch envoie chaque message du chat à votre site. Un site en test sur votre ordinateur ne peut pas le recevoir ; la page vous le dit.
 - Le nombre de followers demande de cocher « Suivre mes statistiques » dans Ma Chaîne Twitch et de connecter votre chaîne ; sinon `!followers` est masquée et la page explique pourquoi.
 - Les heures de `!planning` suivent le fuseau horaire que vous indiquez dans les réglages ; sans fuseau, elles sont données en UTC et le disent.
-- **Vie privée** : le journal garde le pseudo, la commande et le résultat des 30 dernières commandes, visibles des seuls administrateurs. Rien d'autre n'est conservé de ce que les gens écrivent.
+- **Vie privée** : le journal garde le pseudo, la commande et le résultat des 30 dernières commandes, visibles de la seule équipe d'administration. Rien d'autre n'est conservé de ce que les gens écrivent.
 - Ce module ne lit les messages que pour y trouver des commandes ; les autres messages sont ignorés dès leur arrivée.

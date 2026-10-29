@@ -2,7 +2,7 @@
   "stats_title": "Vos statistiques",
   "col_stat": "Chiffre suivi",
   "col_value": "Actuellement",
-  "stat_followers": "Abonnés GitHub",
+  "stat_followers": "Followers GitHub",
   "err_hidden": "GitHub ne donne pas ce chiffre pour ce compte.",
   "err_rate": "GitHub limite les demandes anonymes pour le moment : rien à faire, cela reprendra tout seul dans l'heure.",
   "err_network": "GitHub ne répond pas pour le moment : rien à faire, on réessaie automatiquement.",

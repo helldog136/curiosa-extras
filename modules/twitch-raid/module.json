@@ -6,7 +6,7 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.2.3",
+  "version": "2.2.4",
   "platform": "twitch",
   "description": {
     "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 chaînes en direct tirées au hasard, pour OBS et pour une page publique.",
@@ -65,7 +65,7 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur vos visiteurs. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et spectateurs des chaînes tirées (jamais ceux « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si le visiteur clique.",
+    "fr": "Ne collecte rien sur le public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et audience des chaînes tirées (jamais celles « Ne pas montrer »), sans cookie ; Twitch n'est contacté qu'après un clic.",
     "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the channels drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
   },
   "tabs": [
@@ -181,7 +181,7 @@
         "en": "How long a selection lasts (in minutes)"
       },
       "help": {
-        "fr": "La sélection ne change pas pendant ce temps, pour tous les visiteurs, puis elle se renouvelle. 10 minutes par défaut (de 1 à 240).",
+        "fr": "La sélection ne change pas pendant ce temps, pour tout le public, puis elle se renouvelle. 10 minutes par défaut (de 1 à 240).",
         "en": "The selection does not change during this time, for every visitor, then it renews itself. 10 minutes by default (1 to 240)."
       }
     },
@@ -196,7 +196,7 @@
         "en": "Favour small channels"
       },
       "help": {
-        "fr": "Coché : moins une chaîne a de spectateurs, plus elle a de chances d'être tirée. Décoché (défaut) : tirage égal pour tous.",
+        "fr": "Coché : moins une chaîne a d'audience, plus elle a de chances d'être tirée. Décoché (défaut) : tirage égal pour toutes les chaînes.",
         "en": "Ticked: the fewer viewers a channel has, the more likely it is drawn. Unticked (default): everyone has the same chance."
       }
     },
@@ -236,7 +236,7 @@
       },
       "help": {
         "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle ne sera plus jamais tirée ni montrée dans la sélection. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.",
-        "en": "A person who asks not to appear: put her card in this Contacts category and she will never be drawn or shown in the picks again. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
+        "en": "A person who asks not to appear: put their card in this Contacts category and they will never be drawn or shown in the picks again. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
       }
     },
     {
@@ -249,7 +249,7 @@
         "en": "Show the public page on the site"
       },
       "help": {
-        "fr": "Une page que vos visiteurs peuvent ouvrir : elle montre les mêmes chaînes que la sélection, avec un bouton pour les regarder sur Twitch. Décochée, la page n'existe pas pour vos visiteurs : ils voient « page introuvable » et elle n'apparaît ni dans le menu du site ni dans le plan du site. Son adresse se règle à part, en mode avancé (« Adresse de la page » en haut de cette page) : cochez ici, puis ajoutez la page au menu du site si vous le souhaitez.",
+        "fr": "Une page que votre public peut ouvrir : elle montre les mêmes chaînes que la sélection, avec un bouton pour les regarder sur Twitch. Décochée, la page n'existe pas pour votre public : il voit « page introuvable » et elle n'apparaît ni dans le menu du site ni dans le plan du site. Son adresse se règle à part, en mode avancé (« Adresse de la page » en haut de cette page) : cochez ici, puis ajoutez la page au menu du site si vous le souhaitez.",
         "en": "A page your visitors can open: it shows the same channels as the picks, with a button to watch them on Twitch. Unticked, the page does not exist for your visitors: they see “page not found” and it appears neither in the site menu nor in the site map. Its address is set separately, in advanced mode (“Page address” at the top of this page): tick this box, then add the page to the site menu."
       }
     },
@@ -325,7 +325,7 @@
         "en": "Offer stream previews"
       },
       "help": {
-        "fr": "Coché : la page propose un bouton « Afficher les aperçus ». Les images viennent de Twitch et ne se chargent que si le visiteur clique. Décoché (défaut) : aucune image de Twitch.",
+        "fr": "Coché : la page propose un bouton « Afficher les aperçus ». Les images viennent de Twitch et ne se chargent que si la personne qui visite clique. Décoché (défaut) : aucune image de Twitch.",
         "en": "Ticked: the page offers a “Show previews” button. The images come from Twitch and load only if the visitor clicks. Unticked (default): no Twitch image at all."
       }
     }

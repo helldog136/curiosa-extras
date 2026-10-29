@@ -1,6 +1,6 @@
 # Actions du live YouTube
 
-Quand quelqu'un soutient votre **direct YouTube**, quelque chose se passe chez vous : vos lumières changent de couleur, un message est lu à voix haute. Le module ne fait que **décider** (« ce Super Chat déclenche telle action ») ; c'est le module **Home Assistant** qui exécute chez vous, avec son gros bouton « Tout couper », sa vérification du texte lu et son interrupteur.
+Quand une personne soutient votre **direct YouTube**, quelque chose se passe chez vous : vos lumières changent de couleur, un message est lu à voix haute. Le module ne fait que **décider** (« ce Super Chat déclenche telle action ») ; c'est le **Connecteur Home Assistant** qui envoie l'ordre chez vous, avec son gros bouton « Tout couper », sa vérification du texte lu et son interrupteur.
 
 C'est le pendant, pour YouTube, des récompenses de points de chaîne Twitch.
 
@@ -17,7 +17,7 @@ Il n'y a **pas** de déclencheur sur un mot écrit dans le chat : seuls les dons
 
 ## Pas à pas
 
-1. Installez le module (avec **Home Assistant**, **Chaîne YouTube** et **Connecteur YouTube** : le module propose d'installer ce qui manque). La page « En direct » vous le dit à chaque étape.
+1. Installez le module (avec le **Connecteur Home Assistant**, **Chaîne YouTube** et **Connecteur YouTube** : le module propose d'installer ce qui manque). La page « En direct » vous le dit à chaque étape.
 2. Écrivez une première règle : par exemple **Super Chat de 5 € ou plus → `lumieres:rouge`**. Le nom de l'action est celui que vous avez relié dans Home Assistant.
 3. **Simulez un Super Chat** (« Simuler un don ») pour voir l'action arriver chez vous, sans rien demander à YouTube.
 4. Le jour du direct, **ouvrez la page « En direct » et gardez-la ouverte**.
@@ -27,7 +27,7 @@ Il n'y a **pas** de déclencheur sur un mot écrit dans le chat : seuls les dons
 - **Le chat n'est lu que pendant que la page est ouverte** dans un navigateur. Aucun processus ne tourne en arrière-plan : page fermée, plus rien n'est lu et YouTube n'est plus interrogé. Plusieurs onglets ouverts partagent une seule lecture.
 - **Un don ne se rembourse pas.** Si Home Assistant refuse (tout est coupé, vous n'êtes pas en direct, le texte du message est refusé…), l'action n'est pas jouée et le motif est écrit dans le journal. Pour le message d'un Super Chat refusé, un réglage dit ce qui se passe : ne pas le lire (par défaut ; les autres règles jouent quand même) ou dire seulement un merci.
 - **Les devises ne sont jamais converties.** Une règle « 5 EUR au moins » ne se déclenche pas pour un don en dollars. « Toutes les devises » accepte n'importe quel montant, sans minimum ; sinon une règle par devise.
-- **« !stop » et « !start » dans le chat** : le propriétaire de la chaîne et les modérateurs YouTube (réglable) peuvent écrire « !stop » pour tout couper ; seul le propriétaire peut écrire « !start ». On reconnaît ces personnes aux indicateurs que YouTube donne sur l'auteur du message, jamais à leur pseudo. Ces commandes **ne marchent que pendant la lecture** : vos vraies protections sont le gros bouton « Tout couper » de la page, et l'interrupteur dans Home Assistant.
+- **« !stop » et « !start » dans le chat** : la personne propriétaire de la chaîne et l'équipe de modération YouTube (réglable) peuvent écrire « !stop » pour tout couper ; seule la personne propriétaire peut écrire « !start ». On reconnaît ces personnes aux indicateurs que YouTube donne sur la personne qui a écrit le message, jamais à leur pseudo. Ces commandes **ne marchent que pendant la lecture** : vos vraies protections sont le gros bouton « Tout couper » de la page, et l'interrupteur dans Home Assistant.
 - **Répondre dans le chat (facultatif)** : par défaut, le module n'écrit rien dans le chat. Si vous connectez votre compte YouTube dans le *Connecteur YouTube* et activez « Laisser le site répondre dans le chat » (options avancées du connecteur), il répond **seulement** à « !stop » et « !start » (« Tout est coupé. », « Tout est repris. »), un message par ordre. Jamais pour un don ni pour un autre message.
 - **« Connectez votre compte YouTube »** : si YouTube refuse de laisser lire le chat avec la seule clé du site, la page l'écrit en mots simples avec un lien vers le Connecteur YouTube, et ne retente rien tant que ce n'est pas réglé (la lecture reprend tout de suite après la connexion).
 - **Un seul état « en direct »**, celui de Home Assistant, qui le tient de Twitch. Si vous diffusez seulement sur YouTube, Home Assistant ne vous voit pas en direct et refuse les dons (la page le dit). Voir `docs/ideas/youtube-live-actions.md`.
@@ -48,17 +48,17 @@ Le module **publie** les Super Chats, Super Stickers, adhésions et adhésions o
 ## Réglages
 
 - **Chaîne YouTube** : rien à choisir s'il n'y en a qu'une.
-- **Lire le chat pendant le direct** (oui) ; **les modérateurs YouTube peuvent écrire !stop** (oui) ; **si le message d'un Super Chat est refusé** (ne pas le lire).
+- **Lire le chat pendant le direct** (oui) ; **l'équipe de modération YouTube peut écrire !stop** (oui) ; **si le message d'un Super Chat est refusé** (ne pas le lire).
 - Options avancées : phrase de remerciement, lecture au plus toutes les 15 s (5–60), part de la limite utilisable 50 % (5–90), ignorer les dons de plus de 120 s (30–600), autres devises.
 
 ## Droits
 
-`yt.manage` (règles, journal, reprendre), `yt.stop` (Tout couper), `yt.test` (simuler). Administrateurs : oui ; rédacteurs : non.
+`yt.manage` (règles, journal, reprendre), `yt.stop` (Tout couper), `yt.test` (simuler). Administration : oui ; rédaction : non.
 
 ## Vie privée
 
 Le journal garde le pseudo YouTube, le montant et le résultat (50 lignes). **Le texte des messages n'est jamais écrit sur le disque.** « Vider le journal » efface tout. Si le partage avec l'overlay d'alertes est actif (réglage ci-dessous), le pseudo, le montant et le texte du message restent 15 minutes au plus **en mémoire** (50 évènements au plus), le temps que l'overlay les lise.
 
-## Pour les développeurs
+## Pour qui développe
 
 Service demandés (tous facultatifs) : `home-assistant.bridge` (`enqueue`, `stop`, `start`, `status`), `youtube.api` (`request` avec `liveChatMessages.list`, version 1.2.0 du connecteur ; `status` (champ `chat: { read, write }`, connecteur 1.3.0) ; `chatPost` seulement pour répondre à `!stop` / `!start` quand `chat.write` est vrai) et `youtube.live` (`current`, Chaîne YouTube 1.4.0). Sujet consommé : `ha.result` (suivi de ce qui s'est passé chez vous). Sujet publié : `live.event` (`{ id, platform, kind, who, at, amount?, currency?, count?, text? }`, `amount` seulement avec `currency` ; file en mémoire de `events.mjs`, 50 évènements, 15 minutes). Outils pour les assistants : `youtube_live_status`, `youtube_live_journal`, `youtube_live_rules` (lecture) et `youtube_action_simulate` (écriture, jamais accordée d'office).

@@ -3,10 +3,10 @@
   "minCore": "0.2.6",
   "id": "guestbook",
   "name": { "en": "Guestbook", "fr": "Livre d'or" },
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": {
     "en": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework.",
-    "fr": "Un livre d'or modéré : les visiteurs signent, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
+    "fr": "Un livre d'or modéré : le public signe, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
   },
   "author": "Helldog136",
   "privacy": {
@@ -83,12 +83,12 @@
     },
     {
       "key": "rateLimit", "type": "number", "default": 5, "advanced": true,
-      "label": { "en": "Messages per hour and visitor", "fr": "Messages par heure et par visiteur" }
+      "label": { "en": "Messages per hour and visitor", "fr": "Messages par heure et par personne" }
     },
     {
       "key": "accessCode", "type": "secret", "advanced": true,
       "label": { "en": "Invitation code (optional)", "fr": "Code d'invitation (facultatif)" },
-      "help": { "en": "If set, visitors must type it to sign. Never shown again once saved.", "fr": "S'il est défini, les visiteurs doivent le saisir pour signer. Jamais réaffiché une fois enregistré." },
+      "help": { "en": "If set, visitors must type it to sign. Never shown again once saved.", "fr": "S'il est défini, le public doit le saisir pour signer. Jamais réaffiché une fois enregistré." },
       "optional": true
     }
   ],

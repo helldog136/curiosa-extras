@@ -9,7 +9,7 @@ const events = (w, args = {}) => def.exports["live.event"](w.ctx, args);
 const fresh = () => EV.resetEvents();
 
 test("manifeste : fournit live.event (rien de plus à consommer), deux réglages simples, version mineure", () => {
-  assert.equal(manifest.version, "1.1.0");
+  assert.equal(manifest.version, "1.1.1");
   assert.deepEqual(manifest.provides.map((p) => p.topic), ["live.event"]);
   assert.ok(manifest.provides[0].label.fr && manifest.provides[0].label.en);
   const set = Object.fromEntries(manifest.settings.map((s) => [s.key, s]));

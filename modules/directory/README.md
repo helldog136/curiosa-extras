@@ -1,29 +1,29 @@
 # Annuaire
 
-Une vitrine **publique** de vos membres, créateurs ou partenaires, et de votre équipe. Les visiteurs **cherchent** par nom, **filtrent** par catégorie, ouvrent la **fiche** d'une personne, impriment ou téléchargent la liste. Vous ne retapez rien : les personnes viennent de **Contacts**.
+Une vitrine **publique** de vos membres, artistes ou partenaires, et de votre équipe. Le public **cherche** par nom, **filtre** par catégorie, ouvre la **fiche** d'une personne, imprime ou télécharge la liste. Vous ne retapez rien : les personnes viennent de **Contacts**.
 
 ## À quoi ça sert
 
-Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur » ne suffit plus : il faut pouvoir **retrouver** quelqu'un. L'annuaire sert à chercher et à filtrer. (Pour simplement **remercier** des gens, le module « Mur des remerciements » est fait pour cela.)
+Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur » ne suffit plus : il faut pouvoir **retrouver** une personne. L'annuaire sert à chercher et à filtrer. (Pour simplement **remercier** des gens, le module « Mur des remerciements » est fait pour cela.)
 
 ## Pour commencer (3 minutes)
 
 1. Installez le module : Contacts s'installe avec lui si vous ne l'avez pas.
-2. Ouvrez-le. Si rien n'est encore réglé, choisissez un **modèle** (Association, Collectif de créateurs, ou Vide) : il prépare les mots, des catégories à remplir et une équipe.
+2. Ouvrez-le. Si rien n'est encore réglé, choisissez un **modèle** (Association, Collectif d'artistes, ou Vide) : il prépare les mots, des catégories à remplir et une équipe.
 3. Dans Contacts, rangez vos fiches dans ces catégories. L'annuaire se remplit tout seul, en ligne à l'adresse `/annuaire` (modifiable à la création).
 
-## Ce que voient vos visiteurs
+## Ce que voit votre public
 
 - Une **liste** de cartes : photo (ou initiales), nom, ville, catégories en pastilles, titre pour l'équipe.
 - Une **recherche** par nom (sans tenir compte des accents ni des majuscules), des **filtres** par catégorie (une ou plusieurs : l'une ou l'autre), un **tri** (A–Z, récents, au hasard stable toute la journée) et un **compteur**. 24 personnes par page (50 au plus), « Précédent / Suivant ».
 - Une **fiche** par personne : nom, titre, ville, catégories, présentation courte, liens vers ses comptes, et « autres personnes de la même catégorie ». L'adresse de la fiche reste la même si le nom change.
-- La section **Équipe**, avec le titre de chacun (« Présidente », « Trésorier »…), dans l'ordre que vous avez choisi.
+- La section **Équipe**, avec le titre de chaque personne (« Présidence », « Trésorerie »…), dans l'ordre que vous avez choisi.
 - Une **version imprimable** et un **fichier CSV** : seulement ce qui est déjà public.
-- Un bouton **« Proposer ma fiche »** : il mène à la page que vous choisissez (par exemple celle de votre formulaire de contact), sinon à un e-mail (réglable). Aucun compte pour les visiteurs.
+- Un bouton **« Proposer ma fiche »** : il mène à la page que vous choisissez (par exemple celle de votre formulaire de contact), sinon à un e-mail (réglable). Aucun compte pour le public.
 
-## Ce que fait Emma
+## Ce que fait la personne qui gère l'annuaire
 
-Dans l'onglet **Mon annuaire** : choisir les **catégories publiques** (cases à cocher avec recherche, libellé public par langue, ordre), composer l'**équipe** (titre par langue, ordre), voir **les personnes visibles**, écrire leur **présentation courte** et leur **ville**, et **masquer** quelqu'un d'un clic. Les mots (« Membres », « Créateurs », « Annuaire », « Équipe ») se changent dans les Réglages.
+Dans l'onglet **Mon annuaire** : choisir les **catégories publiques** (cases à cocher avec recherche, libellé public par langue, ordre), composer l'**équipe** (titre par langue, ordre), voir **les personnes visibles**, écrire leur **présentation courte** et leur **ville**, et **masquer** une personne d'un clic. Les mots (« Membres », « Artistes », « Annuaire », « Équipe ») se changent dans les Réglages.
 
 ## Une personne ne veut pas apparaître
 
@@ -39,7 +39,7 @@ Aucune personne n'est jamais placée sur une carte par défaut. Si vous choisiss
 - La liste se reconstruit au plus toutes les 2 minutes : un changement dans Contacts se voit en moins de deux minutes. Si Contacts ne répond plus, la page garde la dernière liste (24 heures au plus).
 - Contacts ne sait ni chercher dans une grande liste ni filtrer par plusieurs catégories : l'annuaire lit chaque catégorie publique par paquets de 500 et cherche/filtre/trie lui-même, en mémoire.
 - Plusieurs annuaires sont possibles (membres, partenaires…), chacun avec son chemin et ses catégories.
-- Pas de compte visiteur, pas de cookie, aucun texte de visiteur gardé.
+- Pas de compte pour le public, pas de cookie, aucun texte saisi par le public n'est gardé.
 
 ## Pour l'assistant IA
 
@@ -47,4 +47,4 @@ Cinq outils en lecture seule : l'état, les catégories publiques, la recherche,
 
 ## Vie privée
 
-Le module ne copie ni nom, ni photo, ni compte : il garde seulement, par numéro de fiche, une présentation courte, une ville, le titre dans l'équipe et « masquée ici ». Quand une fiche est exportée ou effacée depuis Contacts, tout cela est exporté ou effacé avec elle. Une photo hébergée ailleurs n'est chargée qu'après un clic du visiteur (sauf choix contraire). La déclaration complète est dans la page « Confidentialité » du site.
+Le module ne copie ni nom, ni photo, ni compte : il garde seulement, par numéro de fiche, une présentation courte, une ville, le titre dans l'équipe et « masquée ici ». Quand une fiche est exportée ou effacée depuis Contacts, tout cela est exporté ou effacé avec elle. Une photo hébergée ailleurs n'est chargée qu'après un clic de la personne qui visite (sauf choix contraire). La déclaration complète est dans la page « Confidentialité » du site.

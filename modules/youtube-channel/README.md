@@ -12,18 +12,18 @@ La clé YouTube n'est plus réglée ici. Elle est gardée par le **connecteur Yo
 - **Vous aviez déjà mis une clé ici ?** Rien à retaper : à la mise à jour, elle est remise au connecteur, puis effacée d'ici **seulement quand le connecteur confirme l'avoir**. Elle n'est jamais affichée ni écrite dans un journal.
 - **Pas encore de connecteur ?** Le panneau de ce module vous propose de l'installer (un bouton). Votre clé reste gardée, masquée, en attendant ; elle sera reprise dès l'installation. En attendant, la vidéo mise en avant et le flux continuent de marcher avec le flux public.
 
-## Statistiques : abonnés, vidéos, vues
+## Statistiques : followers, vidéos, vues
 
-Cochez **Suivre mes statistiques** (désactivé par défaut : il demande la clé YouTube du site) pour que le site tienne à jour le nombre de vos **abonnés**, de vos **vidéos** et de vos **vues**. Le module les met à disposition du site ; les statistiques de la communauté les collectent et gardent l'historique.
+Cochez **Suivre mes statistiques** (désactivé par défaut : il demande la clé YouTube du site) pour que le site tienne à jour le nombre de vos **followers**, de vos **vidéos** et de vos **vues**. Le module les met à disposition du site ; les statistiques de la communauté les collectent et gardent l'historique.
 
 - **Ce qui est lu** : une seule demande à YouTube par chaîne, gardée 10 minutes par le connecteur (sur les 10 000 unités par jour que donne YouTube, elle en coûte une). Rien d'autre n'est lu, rien n'est stocké ici.
-- **Les abonnés sont arrondis par YouTube** : il ne donne que 3 chiffres significatifs (1 234 567 devient 1 230 000, 8 421 devient 8 420). Les vidéos et les vues sont exactes. Pour de petites chaînes l'arrondi ne se voit pas.
+- **Les followers sont arrondis par YouTube** : il ne donne que 3 chiffres significatifs (1 234 567 devient 1 230 000, 8 421 devient 8 420). Les vidéos et les vues sont exactes. Pour de petites chaînes l'arrondi ne se voit pas.
 - **Jamais de chiffre périmé** : si YouTube ne répond pas, le chiffre est marqué « en erreur » plutôt que de répéter une ancienne valeur.
 - **Si ça ne marche pas** (le panneau du module le dit en mots simples) :
   - *« Pour suivre vos statistiques, il faut la clé YouTube du site »* : installez ce que propose le panneau, puis ajoutez votre clé sur sa page. Le reste du module (vidéo mise en avant, flux, bouton) fonctionne sans.
   - *« Ajoutez votre clé YouTube dans Réglages »* : le connecteur est là mais n'a pas encore de clé. Elle est gratuite ; la page du connecteur dit où la créer.
   - *« La clé YouTube est refusée »* : la clé est fausse, le service « YouTube Data v3 » n'est pas activé pour elle, ou elle est restreinte à d'autres adresses.
-  - *« YouTube cache votre nombre d'abonnés »* : la chaîne a masqué son compteur. Rendez-le public dans YouTube Studio ; les vidéos et les vues continuent d'être suivies. Jamais de chiffre inventé : le compteur reste « caché » tant que YouTube ne le donne pas.
+  - *« YouTube cache votre nombre de followers »* : la chaîne a masqué son compteur. Rendez-le public dans YouTube Studio ; les vidéos et les vues continuent d'être suivies. Jamais de chiffre inventé : le compteur reste « caché » tant que YouTube ne le donne pas.
   - *« YouTube a atteint sa limite de demandes »* : la limite du jour est atteinte, cela reprend tout seul.
 
 ## Vos vidéos et directs programmés (annoncer un événement)
@@ -36,7 +36,7 @@ Depuis la 1.3, le module sait aussi dire **ce que vous avez programmé sur YouTu
 - **Combien ça coûte** : 3 unités sur les 10 000 par jour de YouTube, **une fois toutes les 10 minutes** au plus par chaîne, et seulement quand un module demande la liste. Jamais de recherche (100 unités), jamais d'appel en arrière-plan.
 - **En cas de panne** : « YouTube ne répond pas pour le moment » côté liste ; rien n'est inventé.
 
-## Pour les développeurs
+## Pour qui développe
 
 - **Service offert `youtube.live`** (version 1, `each: true`, `readOnly: ["current"]`, depuis la 1.4.0) : `current({ fresh? })` → `{ ok: true, live: false, channelId, at }`, ou `{ ok: true, live: true, videoId, title, chatId (ou `null` : direct sans chat), startedAt, channelId, at, cost }`, ou `{ ok: false, error: "channel" | "unavailable" | "config" | "auth" | "quota" | "rate" | "timeout" | "network" }`. Sert aux modules qui lisent le chat du direct (Actions du live YouTube). Deux appels du service `youtube.api` à chaque vérification (les 5 derniers envois, 1 unité, puis leur détail avec `snippet,liveStreamingDetails`, 1 unité), demandés « à jour » (`fresh: true`, connecteur 1.2.0 ou plus : sinon la réponse du connecteur peut avoir 10 minutes de retard) ; réponse gardée 45 s ici. Seul un direct **public** est vu avec une clé (un direct privé ou non répertorié ne l'est pas). Rien ne tourne en arrière-plan : c'est l'appelant qui décide quand demander.
 - **Service offert `event.source`** (version 1, `each: true`, `readOnly: ["upcoming"]`, depuis la 1.3.0) : `upcoming({ from?, to?, limit?, locale? })` → `{ ok: true, source: { kind: "youtube", label: "YouTube" }, state: "ok" | "setup" | "down", message?, note?, events: [{ id: "youtube:<vidéo>", title, start (UTC), end?, timezone: "", type: "live" | "premiere", url, image }] }`. Le contrat commun est décrit dans le README de Story d'annonce et celui du dépôt. Trois appels du service `youtube.api` (`channels.list`, `playlistItems.list` 50, `videos.list` avec `snippet,contentDetails,liveStreamingDetails`) ; on garde les vidéos dont `snippet.liveBroadcastContent` vaut `upcoming` et dont `liveStreamingDetails.scheduledStartTime` est lisible, dans les 90 jours à venir (ou commencées depuis moins de 3 h) ; 50 événements au plus ; 10 minutes de cache par chaîne (`events.mjs`). Le besoin `youtube.api` reste **facultatif** : sans lui, `state: "setup"`. Un connecteur d'avant la 1.1.0 refuse `liveStreamingDetails` : réponse « à mettre à jour ».

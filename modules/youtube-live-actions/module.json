@@ -6,15 +6,15 @@
     "fr": "Actions du live YouTube",
     "en": "YouTube live actions"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "youtube",
   "description": {
-    "fr": "Quand quelqu'un soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",
+    "fr": "Quand une personne soutient votre direct YouTube (Super Chat, Super Sticker, nouvelle adhésion, adhésions offertes), une action se déclenche chez vous : une couleur de lumière, un message lu à voix haute. Vous écrivez les règles et vous les essayez sans rien demander à YouTube. Le chat n'est lu que pendant que la page « En direct » est ouverte.",
     "en": "When someone supports your YouTube live (Super Chat, Super Sticker, new membership, gifted memberships), an action starts at your place: a light colour, a message read aloud. You write the rules and try them without asking YouTube anything. The chat is only read while the “Live” page is open."
   },
   "privacy": {
-    "fr": "Le journal garde le pseudo YouTube, le montant, la devise et le résultat (50 lignes au plus, visibles des seuls administrateurs). Le texte d'un message n'est jamais écrit sur le disque : il est lu à voix haute s'il est accepté, puis oublié ; si le partage avec l'overlay d'alertes est actif, pseudo, montant et texte restent 15 minutes au plus en mémoire (50 au plus). Courtes empreintes illisibles de messages (600 au plus) contre les doublons. « Vider le journal » efface le journal.",
-    "en": "The log keeps the YouTube name, amount, currency and result (50 lines at most, visible to administrators only). A message's text is never written to disk: it is read aloud if accepted, then forgotten; if sharing with the alerts overlay is on, name, amount and text stay in memory for 15 minutes at most (50 at most). Short unreadable message fingerprints (600 at most) prevent replays. “Clear the log” erases the log."
+    "fr": "Le journal garde le pseudo YouTube, le montant, la devise et le résultat (50 lignes au plus, visibles de la seule équipe d'administration). Le texte d'un message n'est jamais écrit sur le disque : il est lu à voix haute s'il est accepté, puis oublié ; si le partage avec l'overlay d'alertes est actif, pseudo, montant et texte restent 15 minutes au plus en mémoire (50 au plus). Courtes empreintes illisibles de messages (600 au plus) contre les doublons. « Vider le journal » efface le journal.",
+    "en": "The log keeps the YouTube name, amount, currency and result (50 lines at most, visible to the administration team only). A message's text is never written to disk: it is read aloud if accepted, then forgotten; if sharing with the alerts overlay is on, name, amount and text stay in memory for 15 minutes at most (50 at most). Short unreadable message fingerprints (600 at most) prevent replays. “Clear the log” erases the log."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -184,11 +184,11 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Les modérateurs YouTube peuvent écrire !stop",
+        "fr": "L'équipe de modération YouTube peut écrire !stop",
         "en": "YouTube moderators may write !stop"
       },
       "help": {
-        "fr": "Pour tout couper depuis le chat. Seule la propriétaire de la chaîne peut écrire !start pour reprendre. Ça ne marche que pendant que la page est ouverte : le gros bouton « Tout couper » et l'interrupteur dans Home Assistant restent vos vraies protections.",
+        "fr": "Pour tout couper depuis le chat. Seule la personne propriétaire de la chaîne peut écrire !start pour reprendre. Ça ne marche que pendant que la page est ouverte : le gros bouton « Tout couper » et l'interrupteur dans Home Assistant restent vos vraies protections.",
         "en": "To cut everything from the chat. Only the channel owner can write !start to resume. It only works while the page is open: the big “Cut everything” button and the switch in Home Assistant remain your real protections."
       }
     },

@@ -4,9 +4,9 @@ Une page de vidéos pour votre site (masterclass, rétrospectives, tutoriels, pr
 
 ## À quoi ça sert
 
-- Vos visiteurs voient une **grille de vidéos** (miniature, titre, durée, catégorie), filtrent par **catégorie**, **cherchent** un mot, et ouvrent la page d'une vidéo.
-- Le **lecteur YouTube ne se charge qu'après un clic** sur « Lire ici ». Avant, le navigateur du visiteur ne contacte jamais YouTube : les miniatures sont des copies gardées par votre site. Le bouton « Regarder sur YouTube » est toujours là.
-- Des **séries** (listes de lecture) : vous choisissez l'ordre, le visiteur a un bouton « Suivant » qui enchaîne les vidéos.
+- Votre public voit une **grille de vidéos** (miniature, titre, durée, catégorie), filtrent par **catégorie**, **cherchent** un mot, et ouvrent la page d'une vidéo.
+- Le **lecteur YouTube ne se charge qu'après un clic** sur « Lire ici ». Avant, le navigateur de la personne qui visite ne contacte jamais YouTube : les miniatures sont des copies gardées par votre site. Le bouton « Regarder sur YouTube » est toujours là.
+- Des **séries** (listes de lecture) : vous choisissez l'ordre, la personne qui visite a un bouton « Suivant » qui enchaîne les vidéos.
 - Sous chaque vidéo : la description, la **transcription** (dans un bloc repliable), un lien vers l'**album photo** de l'événement (si vous avez un module de galeries), et des **liens de partage**.
 - Les moteurs de recherche reçoivent les informations d'une vidéo (titre, durée, date).
 
@@ -38,7 +38,7 @@ Nom de la page et des séries, texte au-dessus de la liste, miniatures (copie ga
 
 ## Vie privée
 
-Aucun cookie. Rien n'est gardé sur vos visiteurs. Le navigateur d'un visiteur ne contacte YouTube (via le lecteur « youtube-nocookie.com ») qu'**après son clic** sur « Lire ici ». Seul le serveur de votre site interroge YouTube, quand vous ajoutez une vidéo, pour lire son titre et sa miniature.
+Aucun cookie. Rien n'est gardé sur votre public. Le navigateur d'une personne ne contacte YouTube (via le lecteur « youtube-nocookie.com ») qu'**après son clic** sur « Lire ici ». Seul le serveur de votre site interroge YouTube, quand vous ajoutez une vidéo, pour lire son titre et sa miniature.
 
 ## Pour votre assistant IA
 
