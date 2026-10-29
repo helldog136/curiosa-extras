@@ -64,10 +64,11 @@ const dump = (w) => JSON.stringify(w.ctx.dumpStore());
 test("le manifeste est valide et déclare le contrat exact", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.0.2"); assert.equal(manifest.minCore, "0.2.6");
+  assert.equal(manifest.id, "home-assistant"); assert.equal(manifest.instances, "single"); assert.equal(manifest.version, "1.1.0"); assert.equal(manifest.minCore, "0.2.6");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version]), [["home-assistant.bridge", 1]]);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.live", true], ["youtube.live", true]]);
   assert.deepEqual(manifest.provides.map((p) => p.topic).sort(), ["ha.result", "ha.state"]);
+  assert.deepEqual(manifest.consumes.map((c) => c.topic), ["home.actions"], "les noms des actions viennent du Bot Twitch, en option : le connecteur n'est pas propriétaire des récompenses");
   assert.deepEqual(Object.keys(def.services["home-assistant.bridge"]).sort(), ["enqueue", "start", "status", "stop"]);
   assert.deepEqual(Object.keys(def.exports).sort(), ["ha.result", "ha.state"]);
   assert.deepEqual(Object.keys(def.routes).sort(), ["ack", "pair", "pull"]);
@@ -253,7 +254,8 @@ test("interrogation : forme de la réponse et des actions", async () => {
   const id = (await enq(w, { key: "tts:lire", text: "Bonjour", viewer: "Léa", ref: "x1" })).id;
   const r = await ha.pull();
   assert.equal(r.status, 200);
-  assert.deepEqual(Object.keys(r.body).sort(), ["actions", "cursor", "enabled", "live", "pollSeconds", "serverTime"]);
+  assert.deepEqual(Object.keys(r.body).sort(), ["actions", "catalog", "cursor", "enabled", "live", "pollSeconds", "serverTime"]);
+  assert.deepEqual(r.body.catalog, [], "sans Bot Twitch (ou sans noms), le champ additif est une liste vide");
   assert.equal(r.body.enabled, true); assert.equal(r.body.live, true); assert.equal(r.body.serverTime, new Date(Date.now()).toISOString());
   assert.equal(r.body.actions.length, 1);
   const a = r.body.actions[0];
@@ -874,7 +876,7 @@ test("page : état, bouton, assistant en 3 étapes avec le lien HACS, code copia
   assert.equal(blocks[0].type, "banner"); assert.match(blocks[0].text, /pas encore associé/);
   let text = JSON.stringify(blocks);
   assert.ok(text.includes("https://github.com/helldog136/homeassistant-curiosa"));
-  assert.match(text, /1\. Installez l'intégration/); assert.match(text, /2\. Copiez le code à 8 caractères/); assert.match(text, /3\. C'est tout/);
+  assert.match(text, /1\. Installer l'intégration/); assert.match(text, /2\. Associer/); assert.match(text, /3\. Créer une première récompense/);
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pair"));
   await def.adminActions.pair.run(w.ctx);
   blocks = await A.panel(w.ctx);
@@ -904,7 +906,7 @@ test("page : journal avec les motifs de refus, pastille Test, pseudo échappé",
   const blocks = await A.panel(w.ctx);
   const html = blocks.find((b) => b.type === "html" && b.html.includes("hj-row")).html;
   assert.match(html, /Refusée : mot refusé de la liste/);
-  assert.match(html, /Ignorée : aucune scène n&#39;est liée/);
+  assert.match(html, /Ignorée : Home Assistant n&#39;a pas encore de script pour cette action/);
   assert.match(html, />Faite</);
   assert.match(html, /hj-pill">Test</);
   assert.ok(!html.includes("<script>"));
@@ -979,7 +981,7 @@ test("test : issues expiré, ignoré (pas de liaison) et échec sont suivies ave
   await def.adminActions.test.run(w.ctx, { key: "lumieres:inconnue" });
   w.tick(1100);
   await ha.step();
-  assert.match(JSON.stringify(await A.panel(w.ctx)), /Résultat après 1,1 s : Ignorée : aucune scène/);
+  assert.match(JSON.stringify(await A.panel(w.ctx)), /Résultat après 1,1 s : Ignorée : Home Assistant n'a pas encore de script/);
   w.tick(4000);
   await def.adminActions.test.run(w.ctx, { key: "lumieres:rouge" });
   w.tick(61_000);
@@ -1072,7 +1074,7 @@ test("test : ne touche jamais à Twitch (aucun appel de service) et ne demande m
   assert.deepEqual(w.ctx.calls.services, []);
   assert.deepEqual(w.ctx.calls.net, []);
   const code = ["admin", "bridge", "tools", "http", "index"].map((f) => fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")).join("\n");
-  assert.ok(!/twitch\.api|redemption|refund|reward/i.test(code.replace(/\/\/.*$/gm, "")), "aucun appel à Twitch dans le module");
+  assert.ok(!/twitch\.api|redemption|refund|reward/i.test(code.replace(/\/\/.*$/gm, "").replace(/\?tab=rewards/g, "")), "aucun appel à Twitch dans le module (seul le lien vers l'onglet du Bot Twitch porte ce mot)");
   w.done();
 });
 

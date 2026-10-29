@@ -7,6 +7,7 @@ const R = await import(`./rewards.mjs${v}`);
 const J = await import(`./redeem.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
+const A = await import(`./actions.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 const view = (c) => ({
@@ -26,8 +27,15 @@ const changes = (a) => {
   return f;
 };
 
-const rewardView = (r) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
+const rewardView = (r, names) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, actionName: names.get(r.action) ?? null, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
 const fieldsOf = (a, cur = {}) => ({ title: a.name ?? cur.title, cost: a.costPoints ?? cur.cost, cooldown: a.delaySeconds ?? cur.cooldown ?? 0, prompt: a.helpText ?? cur.prompt ?? "", needsInput: a.viewerWritesMessage ?? cur.needsInput ?? false, action: a.action ?? cur.action, reply: a.chatReply ?? cur.reply ?? "" });
+/** Une action nommée donnée par son nom (`customActionName`) devient la clé de la récompense : reprise si le nom existe, sinon prévue (écrite après la réussite chez Twitch). */
+async function withName(ctx, s, a, fields) {
+  if (a.customActionName === undefined) return { fields };
+  const p = await A.plan(ctx, s, a.customActionName, { rewardKeys: (await R.list(ctx)).map((r) => r.action) });
+  if (!p.ok) throw expose(ctx.t(`rw_e_${p.code === "empty" ? "an_empty" : p.code === "long" ? "an_long" : "an_too_many"}`, { max: A.MAX_LABEL, limit: A.MAX_ACTIONS }));
+  return { fields: { ...fields, action: p.action.key }, plan: p };
+}
 const refuse = (ctx, r) => { const f = RA.failure(ctx, r); throw expose(f.error ?? Object.values(f.errors ?? {})[0] ?? ctx.t("rw_err_twitch")); };
 
 export default {
@@ -56,26 +64,32 @@ export default {
   async rewards_list(ctx) {
     const s = settingsOf(ctx);
     await R.sync(ctx, s).catch(() => {});
-    return { rewards: (await R.list(ctx)).map(rewardView), maximum: R.MAX_REWARDS, allowedActions: R.allowedKeys(s) };
+    const namedList = await A.named(ctx, s), names = A.names(ctx.t, namedList);
+    return { rewards: (await R.list(ctx)).map((r) => rewardView(r, names)), maximum: R.MAX_REWARDS, allowedActions: R.allowedKeys(s, namedList.map((a) => a.key)), actions: [...R.allowedKeys(s, namedList.map((a) => a.key))].map((key) => ({ key, name: names.get(key) ?? null })) };
   },
   async reward_create(ctx, args) {
-    const s = settingsOf(ctx);
-    const c = R.check(fieldsOf(args), { s, others: await R.list(ctx), prefix: s.prefix });
+    const s = settingsOf(ctx), namedKeys = (await A.named(ctx, s)).map((a) => a.key);
+    const w = await withName(ctx, s, args, fieldsOf(args));
+    const c = R.check(w.fields, { s, others: await R.list(ctx), prefix: s.prefix, named: [...namedKeys, ...(w.plan ? [w.plan.action.key] : [])] });
     if (!c.ok) throw expose(Object.values(RA.fieldErrors(ctx, c.errors)).join(" "));
     if (R.isHome(c.value.action) && !(await J.bridgeInstalled(ctx))) throw expose(ctx.t("rw_err_action_home"));
+    await A.commit(ctx, w.plan);
     const r = await R.create(ctx, s, c.value);
-    if (!r.ok) refuse(ctx, r);
-    return { created: true, name: c.value.title };
+    if (!r.ok) { await A.discard(ctx, w.plan).catch(() => {}); refuse(ctx, r); }
+    return { created: true, name: c.value.title, ...(w.plan ? { action: c.value.action, actionName: w.plan.action.label } : {}) };
   },
   async reward_update(ctx, args) {
     const s = settingsOf(ctx), all = await R.list(ctx);
     const cur = all.find((r) => r.title.toLowerCase() === String(args.name).toLowerCase());
     if (!cur) throw expose(`no reward named "${args.name}"`);
-    const c = R.check(fieldsOf({ ...args, name: args.newName ?? cur.title }, cur), { s, others: all.filter((r) => r.id !== cur.id), prefix: s.prefix });
+    const namedKeys = (await A.named(ctx, s)).map((a) => a.key);
+    const w = await withName(ctx, s, args, fieldsOf({ ...args, name: args.newName ?? cur.title }, cur));
+    const c = R.check(w.fields, { s, others: all.filter((r) => r.id !== cur.id), prefix: s.prefix, named: [...namedKeys, ...(w.plan ? [w.plan.action.key] : [])] });
     if (!c.ok) throw expose(Object.values(RA.fieldErrors(ctx, c.errors)).join(" "));
     if (R.isHome(c.value.action) && !(await J.bridgeInstalled(ctx))) throw expose(ctx.t("rw_err_action_home"));
+    await A.commit(ctx, w.plan);
     const r = await R.update(ctx, s, cur.id, c.value);
-    if (!r.ok) refuse(ctx, r);
+    if (!r.ok) { await A.discard(ctx, w.plan).catch(() => {}); refuse(ctx, r); }
     return { updated: true, name: c.value.title };
   },
   async reward_simulate(ctx, args) {

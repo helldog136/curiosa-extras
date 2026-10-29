@@ -3,13 +3,13 @@
   "minCore": "0.2.6",
   "id": "home-assistant",
   "name": {
-    "fr": "Home Assistant",
-    "en": "Home Assistant"
+    "fr": "Connecteur Home Assistant",
+    "en": "Home Assistant connector"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": {
-    "fr": "Laisse vos viewers piloter vos lumières et faire lire un message à voix haute chez vous, avec leurs points de chaîne. Home Assistant vient chercher les ordres : rien n'est ouvert chez vous. Avec un gros bouton « Tout couper », une modération du texte lu et un journal.",
-    "en": "Lets your viewers change your lights and have a message read aloud at your place, with their channel points. Home Assistant comes to fetch the orders: nothing is opened at your place. With a big “Cut everything” button, moderation of the text read aloud, and a log."
+    "fr": "Relie vos points de chaîne à votre maison : vos viewers changent la couleur de vos lumières, font lire un message à voix haute ou lancent les actions que vous nommez (aspirateur, volets…). Home Assistant vient chercher les ordres : rien n'est ouvert chez vous. Avec un gros bouton « Tout couper », une modération du texte lu et un journal.",
+    "en": "Links your channel points to your home: your viewers change your lights, have a message read aloud or start the actions you name (vacuum, shutters…). Home Assistant comes to fetch the orders: nothing is opened at your place. With a big “Cut everything” button, moderation of the text read aloud, and a log."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -53,6 +53,26 @@
         "fr": "Savoir si votre chaîne YouTube est en direct",
         "en": "Know whether your YouTube channel is live"
       }
+    }
+  ],
+  "consumes": [
+    {
+      "topic": "home.actions",
+      "label": {
+        "fr": "Les noms de vos actions (fournis par le Bot Twitch, s'il est installé)",
+        "en": "The names of your actions (from the Twitch bot, if installed)"
+      },
+      "schema": [
+        {
+          "key": "key",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "label",
+          "type": "string"
+        }
+      ]
     }
   ],
   "provides": [
@@ -120,8 +140,8 @@
     }
   ],
   "privacy": {
-    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible des seuls administrateurs (100 lignes au plus, 7 jours au plus). Le message lu à voix haute n'est gardé que s'il a été accepté ; un message refusé n'est pas gardé, seulement le motif. Pour tout effacer : « Vider le journal » sur la page du module.",
-    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to site administrators (100 lines at most, 7 days at most). The message read aloud is only kept if it was accepted; a refused message is not kept, only the reason. To erase everything: “Clear the log” on the module's page."
+    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible des seuls administrateurs (100 lignes au plus, 7 jours au plus). Le message lu à voix haute n'est gardé que s'il a été accepté ; un message refusé n'est pas gardé, seulement le motif. Pour tout effacer : « Vider le journal » sur la page du connecteur.",
+    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to site administrators (100 lines at most, 7 days at most). The message read aloud is only kept if it was accepted; a refused message is not kept, only the reason. To erase everything: “Clear the log” on the connector's page."
   },
   "settings": [
     {
@@ -260,7 +280,7 @@
     {
       "name": "ha_status",
       "readOnly": true,
-      "description": "Get the state of the link with Home Assistant: whether everything is cut, paired, last time Home Assistant was seen, whether the streamer is live and how many orders are waiting. No secret.",
+      "description": "Get the state of the link with Home Assistant: whether everything is cut, paired, last time Home Assistant was seen, whether the streamer is live and how many orders are waiting, and the actions still waiting to be linked in Home Assistant (no script yet). No secret.",
       "input": {
         "type": "object",
         "properties": {}

@@ -19,6 +19,8 @@ const es = await import(`./eventsub.mjs${v}`);
 const sources = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const channel = await import(`./channel.mjs${v}`);
+const actions = await import(`./actions.mjs${v}`);
+const rewards = await import(`./rewards.mjs${v}`);
 
 export default {
   routes: {
@@ -42,13 +44,17 @@ export default {
   async adminBadge(ctx) { const c = (await st.readState(ctx)).sub?.code; return c && !["listening", "pending"].includes(c) ? 1 : 0; },
   adminPanel: admin.panel,
   adminActions: admin.actions,
+  // Les NOMS des actions de la maison, pour le Connecteur Home Assistant (qui ne possède pas les récompenses) : [{ key, label }], 50 au plus, libellé ≤ 60 caractères, sans secret.
+  exports: { "home.actions": async (ctx) => actions.catalog(ctx, settingsOf(ctx), ctx.t, (await rewards.list(ctx)).map((r) => r.action)) },
   // La commande d'un partenaire se règle dans SA fiche (section ajoutée à l'éditeur d'entrée de Sponsors par le cœur, seulement si le bot est installé).
   entryPanels: { "chat-command": entry.default },
   mcp: tools,
 
   // Données 2 : la chaîne tapée à la main (un pseudo) est notée, avec l'instance de Ma Chaîne Twitch qui l'a, pour le réglage devenu un choix (voir channel.mjs).
+  // Données 3 : l'ancien réglage « Autres actions » et les actions déjà portées par des récompenses deviennent des actions nommées (le mot est le nom) ; rien ne change pour les récompenses.
   migrations: {
     2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
+    3: async (ctx) => { await actions.migrate(ctx, settingsOf(ctx), (await rewards.list(ctx)).map((r) => r.action)); },
   },
 
   hooks: {

@@ -24,22 +24,25 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 - Les commandes des réseaux, les vôtres et les commandes toutes prêtes se règlent **sur la page du bot** : un résumé les montre avec leur état et un bouton « Modifier » (ou « Configurer »). La page ne remonte plus en haut quand vous cliquez : le message s'affiche à côté du bouton.
 - Une fiche pas encore publiée peut déjà avoir sa commande réglée : elle attend la publication. Sans le bot, la fiche du partenaire ne montre aucune section en plus.
 
-## Les récompenses en points de chaîne (onglet « Récompenses », depuis la 1.3.0)
-Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action** :
+## Les récompenses en points de chaîne (onglet « Récompenses », depuis la 1.3.0 ; actions nommées depuis la 1.4.0)
+Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action**, choisie en répondant à une seule question : « Que se passe-t-il quand quelqu'un prend cette récompense ? »
 - **Répondre dans le chat** (marche sans rien d'autre) : « Merci {utilisateur} ! ».
-- **Une action de la maison**, si le module **Home Assistant** est installé : la couleur des lumières (`lumieres:rouge`, `lumieres:bleu`…) ou **lire le message du viewer à voix haute** (`tts:lire`). Sans ce module, l'onglet propose de l'installer ; il reste facultatif.
-- En **mode avancé**, le réglage « Autres actions à choisir » ajoute vos propres mots (`lumieres:orange`, `scene:cinema`) à la liste.
+- **Changer la couleur des lumières** (rouge, vert, bleu, jaune, orange, violet, rose, blanc) ou **Lire son message à voix haute** : des actions de la maison, qui demandent le **Connecteur Home Assistant**. Sans lui, l'onglet propose de l'installer ; il reste facultatif.
+- **Autre chose chez moi** : on **donne un nom** à l'action (par exemple « Lancer l'aspirateur »). Le nom est le seul mot à connaître : Curiosa fabrique elle-même l'identifiant technique, **qui ne change plus** même si vous renommez l'action (ce qui est relié dans Home Assistant ne casse donc pas). Un nom déjà utilisé reprend la même action ; la liste **« Tes actions »** permet de la choisir pour une autre récompense, de la renommer ou de la retirer quand aucune récompense ne s'en sert.
+- **Home Assistant apprend les noms** : le Bot Twitch publie le sujet `home.actions` (les noms de vos actions) que le Connecteur Home Assistant lit en option pour proposer « Lancer l'aspirateur → choisir un script » dans Home Assistant. Rien de votre maison n'est jamais envoyé à Curiosa.
+- Si Home Assistant répond qu'il **n'a pas encore de script pour une action**, la récompense (liste et journal) le dit en mots simples avec la marche à suivre (Home Assistant > Curiosa > Configurer), les points sont rendus et un bandeau nomme les actions à relier. Un lien **« Relier à ta maison »** mène à la page du Connecteur Home Assistant.
+- En **mode avancé**, le réglage « Montrer les identifiants techniques des actions » montre l'identifiant à côté du nom et permet d'en choisir un pour une nouvelle action. L'ancien réglage « Autres actions à choisir » (des mots comme `scene:cinema`) **marche toujours** : ses mots sont repris automatiquement dans « Tes actions », le mot servant de nom.
 
-Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n'est pas coupé), créer « Rouge » avec l'action « Lumières : rouge ».
+Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n'est pas coupé), créer « Rouge » avec « Changer la couleur des lumières » puis la couleur rouge.
 
 **Ce qui se passe quand un viewer prend une récompense** : l'échange est noté **une seule fois**, puis l'action est lancée. Si la maison accepte, **les points sont validés** quand elle a joué l'action ; si elle refuse (maison coupée, pas en direct, message refusé par la modération, trop de demandes…) ou n'a rien fait dans le délai (2 minutes par défaut), **les points sont rendus**. Un message dans le chat peut prévenir le viewer (réglage « Prévenir le chat quand des points sont rendus », désactivé par défaut).
 - **Rien ne tourne en arrière-plan** : les résultats de la maison et les délais dépassés sont pris en compte au prochain évènement sur votre chaîne ou quand vous ouvrez l'onglet.
 - **Hors direct, ou quand la maison est coupée**, les récompenses de la maison sont **mises en pause chez Twitch**, et remises en vente toutes seules ensuite (seulement celles que Curiosa a mises en pause : une pause que vous avez faite reste).
-- **`!stop`** dans le chat coupe la maison (vous et l'équipe de modération que vous nommez dans les réglages), **`!start`** la rebranche (vous uniquement). Sans le module Home Assistant, le bot le dit poliment.
+- **`!stop`** dans le chat coupe la maison (vous et l'équipe de modération que vous nommez dans les réglages), **`!start`** la rebranche (vous uniquement). Sans le Connecteur Home Assistant, le bot le dit poliment.
 - **Simuler** : le bouton « Simuler cette récompense » joue le même chemin avec un faux viewer « Test », **sans Twitch et sans points**. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée. Refusé si la maison est coupée. 1 test toutes les 3 secondes, 30 par heure.
 - **Journal** des 50 derniers échanges (pseudo, récompense, résultat) ; le message écrit par le viewer n'est **jamais gardé**.
 - **Limites** : 20 récompenses, 100 échanges en attente. Les points de chaîne n'existent que pour un compte **Affilié ou Partenaire** : sinon la page le dit en clair.
-- Le droit **« créer, modifier et supprimer les récompenses »** (`rewards.manage`) se donne dans les rôles. Outils pour l'assistant : `rewards_list` (lecture), `reward_create`, `reward_update`, `reward_simulate` (écritures, jamais accordées d'office).
+- Le droit **« créer, modifier et supprimer les récompenses »** (`rewards.manage`) se donne dans les rôles. Outils pour l'assistant : `rewards_list` (lecture), `reward_create`, `reward_update`, `reward_simulate` (écritures, jamais accordées d'office) ; `reward_create` et `reward_update` acceptent `customActionName` pour donner un nom à une action.
 
 ## Les protections
 - Le bot **répond seulement pendant vos directs** (vous pouvez le changer).
