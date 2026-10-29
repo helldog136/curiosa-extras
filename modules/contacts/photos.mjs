@@ -35,7 +35,7 @@ export const isStale = (acc, now = Date.now()) => !acc.profileAt || !(now - Date
 /** Les comptes d'une fiche dont le profil pourrait être rafraîchi (Twitch, YouTube, Bluesky). */
 export const refreshable = (data) => B.accountsOf(data).filter((a) => NETWORKS.includes(a.network)).slice(0, D.LIMITS.accountsPerContact);
 
-async function hasProvider(ctx, service) {
+export async function hasProvider(ctx, service) {
   try { const p = await D.within(ctx.api.services.providers(service), 2000, "providers"); return Array.isArray(p) && p.length > 0; } catch { return false; }
 }
 const answer = async (ctx, service, method, args) => {

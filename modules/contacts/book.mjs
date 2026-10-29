@@ -569,6 +569,15 @@ export async function saveCard(ctx, values, { withContact }) {
       if (text && !idx.orgByName.has(fold(text)) && full(ctx, idx, isNew ? 2 : 1)) return err("too_many", { field: "organisation" });
       data.orgId = await orgFor(ctx, idx, text);
     }
+    // Création seulement : comptes donnés d'emblée (ajout rapide / ajout manuel). Un compte déjà sur une autre fiche arrête tout AVANT l'écriture : jamais de seconde fiche.
+    if (isNew && Array.isArray(v.accounts)) {
+      for (const a of v.accounts.slice(0, LIMITS.accountsPerContact)) {
+        const n = normalizeAccount(a?.network, a?.handle);
+        if (n.error) return err(n.error);
+        const r = attach(idx, null, data, n);
+        if (r.taken) return err("account_taken", { id: r.taken });
+      }
+    }
     const saved = isNew ? await insert(ctx, idx, data) : await save(ctx, idx, rec, data);
     return { ok: true, id: saved.id };
   });

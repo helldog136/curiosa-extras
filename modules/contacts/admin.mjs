@@ -11,6 +11,7 @@ const Ph = await import(`./photos.mjs${v}`);
 const Imp = await import(`./import-admin.mjs${v}`);
 const Ded = await import(`./dedupe-admin.mjs${v}`);
 const Priv = await import(`./privacy-admin.mjs${v}`);
+const Q = await import(`./quick.mjs${v}`);
 
 const PAGE = 30;
 const COLORS = [["amber", "#e8a23b"], ["blue", "#4f9dde"], ["green", "#58b368"], ["rose", "#d1556b"], ["purple", "#9b6bd1"], ["teal", "#3bb3a8"], ["brown", "#c9853a"], ["grey", "#7a8794"]];
@@ -86,7 +87,7 @@ async function listPage(ctx, q) {
 }
 
 // ── Fiche ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-async function contactPage(ctx, id) {
+async function contactPage(ctx, id, { fresh = false } = {}) {
   const t = ctx.t;
   // Ouvrir une fiche est une interaction humaine : si un profil date de plus de 24 h, on le rafraîchit (borné à 6 s, jamais bloquant ; voir photos.mjs).
   await Ph.refreshOnOpen(ctx, id);
@@ -110,6 +111,7 @@ ${c.accounts.length ? `<span class="ct-nets">${[...new Map(c.accounts.map((a) =>
 ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoOrigin(ctx, c))}</span><span class="ct-sub">${U.esc(t("sourceLine", { date, source: sourceLabel(ctx, c.source) }))}</span></div></section>
 <div class="ct-actions"><a class="ct-btn" href="?contact=${encodeURIComponent(c.id)}&amp;edit=1">${U.esc(t("edit"))}</a></div>`;
   const blocks = [first(nav(ctx, org ? "orgs" : "contacts") + head)];
+  if (fresh) blocks.push({ type: "banner", tone: "info", text: t("freshBanner") });
   if (c.status === "to_review") {
     blocks.push({ type: "banner", tone: "warning", text: t("reviewBanner") });
     blocks.push({ type: "adminForm", action: "verify", submitLabel: t("verify"), fields: [{ name: "id", kind: "hidden", value: c.id }] });
@@ -181,6 +183,54 @@ ${catChips ? `<span>${catChips}</span>` : ""}<span class="ct-sub">${U.esc(photoO
 }
 
 // ── Création / modification d'une fiche ────────────────────────────────────────────────────────────────────────────────────────────────────
+const SLOTS = [1, 2]; // comptes donnés d'emblée dans l'ajout manuel (d'autres s'ajoutent ensuite sur la fiche)
+const tabsOfNew = (ctx, mode) => U.tabs([
+  { label: ctx.t("tabVia"), href: "?new=person", current: mode === "via" },
+  { label: ctx.t("tabManual"), href: "?new=person&mode=manual", current: mode === "manual" },
+], ctx.t("newTabsLabel"));
+
+/** Message sous le champ « pseudo ou lien » selon le résultat de `checkAccountInput` (toujours avec un exemple). */
+function inputError(ctx, network, chk) {
+  if (chk.status === "empty") return ctx.t("errEmptyHandle");
+  if (chk.status === "other_network") return ctx.t("viaWrongNetwork", { found: ctx.t(`net_${chk.detected}`), chosen: ctx.t(`net_${network}`) });
+  return ctx.t(`errHandle_${network}`);
+}
+
+/** Onglet 1, « Ajouter via » : une plateforme, un pseudo ou un lien, un nom facultatif. */
+async function viaPage(ctx) {
+  const t = ctx.t;
+  const idx = await B.getIndex(ctx);
+  const { list, fallback } = await Q.quickNetworks(ctx, idx);
+  const last = await Q.lastNetwork(ctx);
+  const chosen = last && list.includes(last) ? last : list[0];
+  return [
+    first(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a>${tabsOfNew(ctx, "via")}`),
+    ...(fallback ? [{ type: "banner", tone: "info", text: t("viaNoConnector") }] : []),
+    {
+      type: "adminForm", action: "addVia", title: t("newPersonTitle"), submitLabel: t("save"), cancelHref: "?",
+      fields: [
+        { name: "network", label: t("viaPlatform"), kind: "select", required: true, value: chosen, options: list.map((n) => ({ value: n, label: netName(ctx)(n) })) },
+        { name: "handle", label: t("viaHandle"), required: true, help: t("viaHandleHelp") },
+        { name: "name", label: t("viaName"), help: t("viaNameHelp") },
+      ],
+    },
+    html(`<p class="ct-help">${U.esc(t("viaOther"))} <a href="?new=person&amp;mode=manual">${U.esc(t("tabManual"))}</a></p>`),
+  ];
+}
+
+/** « Cette personne est déjà dans le carnet » : on propose d'ouvrir sa fiche au lieu d'en créer une seconde. */
+async function samePage(ctx, id) {
+  const t = ctx.t;
+  const rec = await B.readContact(ctx, id);
+  if (!rec) return viaPage(ctx);
+  return [
+    first(`${nav(ctx, "contacts")}<a class="ct-back" href="?">${U.esc(t("back"))}</a>`),
+    { type: "banner", tone: "warning", text: t("sameBanner", { name: rec.data.name }) },
+    html(`<p><a class="ct-btn" href="${U.esc(back(id))}">${U.esc(t("sameOpen"))}</a> <a class="ct-btn ct-ghost" href="?new=person">${U.esc(t("sameBack"))}</a></p>`),
+  ];
+}
+
+/** Onglet 2, « Ajout manuel » (et modification d'une fiche) : les détails, dans l'ordre où on les connaît. */
 async function editPage(ctx, id, kindWanted) {
   const t = ctx.t;
   const idx = await B.getIndex(ctx);
@@ -193,6 +243,7 @@ async function editPage(ctx, id, kindWanted) {
   const kind = c ? c.kind : kindWanted === "org" ? "org" : "person";
   const canMail = B.can(ctx, B.RIGHT_EMAIL_VIEW);
   const cats = B.liveCategories(idx).sort((a, b) => N.fold(a.name).localeCompare(N.fold(b.name)));
+  const fresh = !c && kind === "person";
   const fields = [
     { name: "id", kind: "hidden", value: c?.id ?? "" },
     { name: "kind", kind: "hidden", value: kind },
@@ -201,16 +252,19 @@ async function editPage(ctx, id, kindWanted) {
       { name: "role", label: t("role"), value: c?.role ?? "", help: t("helpRole") },
       { name: "organisation", label: t("organisation"), value: c?.orgName ?? "", help: t("helpOrganisation") },
     ] : []),
-    ...(canMail ? [{ name: "email", label: t("email"), kind: "email", value: c?.email ?? "" }, { name: "phone", label: t("phone"), value: c?.phone ?? "" }] : []),
+    ...(canMail ? [{ name: "email", label: t("email"), kind: "email", value: c?.email ?? "", help: t("helpEmail") }, { name: "phone", label: t("phone"), value: c?.phone ?? "" }] : []),
     { name: "relation", label: t("relation"), value: d?.relation ?? "", help: t("helpRelation") },
-    { name: "status", label: t("status"), kind: "select", options: B.STATUSES.map((s) => ({ value: s, label: t(`status_${s}`) })), value: c?.status ?? "active" },
+    ...(fresh ? SLOTS.flatMap((i) => [
+      { name: `acc${i}_network`, label: t("slotPlatform", { n: i }), kind: "select", value: "", options: [{ value: "", label: t("slotNone") }, ...N.NETWORKS.map((n) => ({ value: n, label: netName(ctx)(n) }))] },
+      { name: `acc${i}_handle`, label: t("slotHandle", { n: i }), help: i === 1 ? t("slotHelp") : undefined },
+    ]) : []),
     { name: "cats", kind: "hidden", value: "1" },
-    ...cats.map((k) => ({ name: `cat_${k.id}`, label: t("categoriesField", { name: k.name }), kind: "checkbox", value: c?.categoryIds.includes(k.id) ? "on" : "" })),
+    ...cats.map((k, i) => ({ name: `cat_${k.id}`, label: t("categoriesField", { name: k.name }), kind: "checkbox", value: c?.categoryIds.includes(k.id) ? "on" : "", ...(i === 0 ? { help: t("helpCategories") } : {}) })),
     ...(B.can(ctx, B.RIGHT_CREATE_CATEGORY) ? [{ name: "newCategory", label: t("newCategory"), help: t("helpNewCategory") }] : []),
   ];
   const back = c ? `?contact=${encodeURIComponent(c.id)}` : kind === "org" ? "?kind=org" : "?";
   return [
-    first(`${nav(ctx, kind === "org" ? "orgs" : "contacts")}<a class="ct-back" href="${U.esc(back)}">${U.esc(t(kind === "org" ? "backOrgs" : "back"))}</a>`),
+    first(`${nav(ctx, kind === "org" ? "orgs" : "contacts")}<a class="ct-back" href="${U.esc(back)}">${U.esc(t(kind === "org" ? "backOrgs" : "back"))}</a>${fresh ? tabsOfNew(ctx, "manual") : ""}`),
     { type: "adminForm", action: "save", title: c ? t("editTitle", { name: c.name }) : t(kind === "org" ? "newOrgTitle" : "newPersonTitle"), submitLabel: t("save"), cancelHref: back, fields },
   ];
 }
@@ -252,8 +306,11 @@ async function panel(ctx, q) {
   if (q.view === "erased") return Priv.reportPage(ctx);
   if (q.contact && q.erase) return Priv.erasePage(ctx, q.contact);
   if (q.view === "categories") return categoriesPage(ctx, q);
-  if (q.new) return editPage(ctx, null, q.new);
-  if (q.contact) return q.edit ? editPage(ctx, q.contact) : contactPage(ctx, q.contact);
+  if (q.new) {
+    if (q.new !== "org" && q.same) return samePage(ctx, q.same);
+    return q.new === "org" || q.mode === "manual" ? editPage(ctx, null, q.new) : viaPage(ctx);
+  }
+  if (q.contact) return q.edit ? editPage(ctx, q.contact) : contactPage(ctx, q.contact, { fresh: q.fresh === "1" });
   return listPage(ctx, q);
 }
 
@@ -282,6 +339,47 @@ async function addAccountFlow(ctx, id, network, handle) {
   return { error: t("notFound") };
 }
 
+/** Comptes saisis dans l'ajout manuel (2 emplacements). Rend { accounts, errors } ; une adresse d'un réseau connu choisit la plateforme toute seule. */
+function readSlots(ctx, v) {
+  const t = ctx.t, accounts = [], errors = {};
+  for (const i of SLOTS) {
+    const handle = N.clean(v[`acc${i}_handle`], 300);
+    if (!handle) continue;
+    let network = v[`acc${i}_network`];
+    if (!N.NETWORKS.includes(network)) {
+      const found = N.detectNetwork(handle);
+      if (found && found !== "web") network = found;
+      else { errors[`acc${i}_network`] = t("slotNeedNetwork"); continue; }
+    }
+    const chk = N.checkAccountInput(network, handle);
+    if (chk.status === "ok") accounts.push({ network, handle: chk.handle });
+    else errors[`acc${i}_handle`] = inputError(ctx, network, chk);
+  }
+  return { accounts, errors };
+}
+
+/** Après une création : la fiche s'ouvre (à compléter) ; un compte déjà présent ailleurs propose d'ouvrir l'autre fiche ; sinon un message simple. */
+function afterCreate(ctx, r, { fresh = false } = {}) {
+  const t = ctx.t;
+  if (r.ok) return { ok: t("saved"), redirect: fresh ? `${back(r.id)}&fresh=1` : back(r.id) };
+  if (r.error === "account_taken") return { redirect: `?new=person&same=${encodeURIComponent(r.id)}` };
+  const msg = { name_required: "nameRequired", invalid_email: "emailInvalid", email_taken: "emailTaken", too_many: "bookFull", not_found: "notFound" }[r.error] ?? "notFound";
+  return r.field ? { errors: { [r.field]: t(msg) } } : { error: t(msg) };
+}
+
+/** Le nom et la photo repris de la plateforme, SEULEMENT si son connecteur est installé (service existant, borné, jamais bloquant). */
+async function fillFromPlatform(ctx, id, network, fillName) {
+  try {
+    const svc = Ph.SERVICE_OF[network];
+    if (!svc || !(await Ph.hasProvider(ctx, svc))) return;
+    await Ph.refreshNow(ctx, id);
+    if (!fillName) return;
+    const r = await B.get(ctx, { id });
+    const shown = r.ok ? r.contact.accounts.find((a) => a.network === network)?.displayName : null;
+    if (shown) await B.update(ctx, { id, name: shown });
+  } catch { /* la fiche est créée : le reste est un bonus */ }
+}
+
 export default {
   // Pastille du menu d'admin : les fiches « à vérifier » (messages du formulaire). Jamais d'attente longue : 0 si l'index n'est pas prêt.
   async adminBadge(ctx) {
@@ -294,9 +392,25 @@ export default {
   },
 
   adminActions: {
+    // Ajout rapide : une plateforme, un pseudo ou un lien (vérifié POUR cette plateforme), un nom facultatif (le pseudo par défaut).
+    addVia: guard(async (ctx, v) => {
+      const t = ctx.t;
+      const network = v.network;
+      if (!N.NETWORKS.includes(network)) return { errors: { network: t("viaPickNetwork") } };
+      const chk = N.checkAccountInput(network, v.handle);
+      if (chk.status !== "ok") return { errors: { handle: inputError(ctx, network, chk) } };
+      const typed = N.clean(v.name, B.FIELDS.name);
+      const r = await B.saveCard(ctx, { kind: "person", name: typed || chk.handle.replace(/^@/, "").slice(0, B.FIELDS.name), accounts: [{ network, handle: chk.handle }] }, { withContact: false });
+      if (!r.ok) return afterCreate(ctx, r);
+      await Q.rememberNetwork(ctx, network);
+      await fillFromPlatform(ctx, r.id, network, !typed);
+      return afterCreate(ctx, r, { fresh: true });
+    }),
     save: guard(async (ctx, v) => {
       const t = ctx.t;
       const categoryIds = Object.keys(v).filter((k) => k.startsWith("cat_") && isOn(v[k])).map((k) => k.slice(4));
+      const slots = !v.id && v.kind !== "org" ? readSlots(ctx, v) : { accounts: [], errors: {} };
+      if (Object.keys(slots.errors).length) return { errors: slots.errors };
       const extra = N.clean(v.newCategory, 100);
       if (extra) {
         if (!B.can(ctx, B.RIGHT_CREATE_CATEGORY)) return { errors: { newCategory: t("catDenied") } };
@@ -304,11 +418,11 @@ export default {
         if (k.ok || k.error === "duplicate") categoryIds.push(k.id);
         else return { errors: { newCategory: t(k.error === "too_many" ? "catTooMany" : "catInvalid") } };
       }
-      const values = { id: v.id || undefined, kind: v.kind, name: v.name, role: v.role, organisation: v.organisation, relation: v.relation, status: v.status, email: v.email, phone: v.phone, ...(v.cats ? { categoryIds } : {}) };
+      const values = { id: v.id || undefined, kind: v.kind, name: v.name, role: v.role, organisation: v.organisation, relation: v.relation, status: v.status, email: v.email, phone: v.phone, ...(v.cats ? { categoryIds } : {}), ...(slots.accounts.length ? { accounts: slots.accounts } : {}) };
       const r = await B.saveCard(ctx, values, { withContact: B.can(ctx, B.RIGHT_EMAIL_VIEW) });
-      if (r.ok) return { ok: t("saved"), redirect: back(r.id) };
-      const msg = { name_required: "nameRequired", invalid_email: "emailInvalid", email_taken: "emailTaken", too_many: "bookFull", not_found: "notFound" }[r.error] ?? "notFound";
-      return r.field ? { errors: { [r.field]: t(msg) } } : { error: t(msg) };
+      if (!r.ok) return afterCreate(ctx, r);
+      if (slots.accounts[0]) await Q.rememberNetwork(ctx, slots.accounts[0].network);
+      return afterCreate(ctx, r);
     }),
     verify: guard(async (ctx, v) => {
       const r = await B.update(ctx, { id: v.id, status: "active" }, { allowStatus: true });
