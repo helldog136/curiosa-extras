@@ -33,7 +33,7 @@
       "version": 1,
       "label": {
         "en": "Find the cover picture of a video game (and let the owner correct a wrong one)",
-        "fr": "Trouver la jaquette d'un jeu vidéo (et laisser la propriétaire corriger une mauvaise)"
+        "fr": "Trouver la jaquette d'un jeu vidéo (et laisser la personne propriétaire corriger une mauvaise)"
       },
       "readOnly": [
         "status",

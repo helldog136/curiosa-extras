@@ -13,7 +13,7 @@ Il s'adapte à n'importe quelle identité : le dessin inclus prend tout seul les
 - Elle ne cache jamais le contenu : elle reste dans son coin, avec des marges, sous les fenêtres et le bandeau des cookies du site. Elle n'est pas imprimée.
 - « Mouvement réduit » : aucune animation. La bulle ne se ferme jamais pendant qu'on la survole ou qu'on la lit au clavier (Échap pour la fermer).
 
-## Ce que fait la propriétaire du site
+## Ce que fait la personne qui gère le site
 
 1. Installer le module : des phrases de départ (français et anglais, neutres) sont déjà là, la mascotte est en **brouillon** (personne ne la voit).
 2. Onglet **Ma mascotte** : regarder l'aperçu, choisir le dessin inclus (trois humeurs : contente, curieuse, endormie) ou **sa propre image** (rond ou carré, description de l'image obligatoire), donner un **nom**. Cliquer sur **Publier**.

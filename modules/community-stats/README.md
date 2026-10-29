@@ -2,7 +2,7 @@
 
 Le site tient à jour **les chiffres de vos réseaux** : followers, abonnements payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 followers cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre, et cet affichage n'existe pas encore dans cette version (voir « Ce qui viendra »).
 
-**Il faut Curiosa 0.2.2 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (spectateurs moyens, pic, temps de direct et regardé, followers gagnés).
+**Il faut Curiosa 0.2.2 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (audience moyenne, pic, temps de direct et regardé, followers gagnés).
 
 ## Pour commencer : rien à régler
 1. Installez et activez ce module.
@@ -51,10 +51,10 @@ Liste fermée, pour un module qui **mesure lui-même** une activité (aujourd'hu
 
 | `metric` | Sens | Unité (champ `unit` pour l'IA) |
 |---|---|---|
-| `avg_viewers` | spectateurs moyens par direct, pondérés par le temps | `viewers` |
+| `avg_viewers` | audience moyenne par direct, pondérés par le temps | `viewers` |
 | `peak_viewers` | le plus haut pic d'un direct | `viewers` |
 | `hours_streamed` | temps de direct | **minutes** entières (le nom est celui du contrat) |
-| `hours_watched` | spectateurs × temps (temps regardé par l'audience) | **minutes** entières |
+| `hours_watched` | audience × temps (temps regardé par l'audience) | **minutes** entières |
 | `followers_gained` | followers gagnés pendant les directs (net, jamais négatif dans ce chiffre) | `people` |
 
 Pourquoi des minutes : un entier, sans arrondi qui ferait disparaître un petit direct, et une durée sans ambiguïté pour une IA (qui lit `unit`). La page d'administration les écrit en « 12 h 30 » ; elle ne compare pas ces chiffres semaine après semaine (ce sont déjà des totaux glissants) mais les garde dans l'historique comme les autres. Ils ne se saisissent pas à la main.

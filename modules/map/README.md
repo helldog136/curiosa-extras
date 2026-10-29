@@ -13,7 +13,7 @@ Une page qui montre vos lieux utiles (studios, bonnes adresses, événements…)
 
 1. Installez : la page `/map` existe, avec deux types de départ (Lieu, Événement).
 2. Onglet **Mes lieux** : écrivez le nom, collez un **lien de carte** (Google Maps, OpenStreetMap, Plans…) : la position est lue toute seule. Sans lien, écrivez la latitude et la longitude. Cochez « Publié » pour montrer le lieu.
-3. Onglet **Types et import** : choisissez un jeu de départ (neutre, collectif, créateur seul, boutique), renommez les types, ajoutez des villes pour « Près de moi », importez un fichier CSV (500 lignes à la fois, avec compte rendu et reprise) ou téléchargez vos lieux.
+3. Onglet **Types et import** : choisissez un jeu de départ (neutre, collectif, création en solo, boutique), renommez les types, ajoutez des villes pour « Près de moi », importez un fichier CSV (500 lignes à la fois, avec compte rendu et reprise) ou téléchargez vos lieux.
 4. Les lieux publiés par d'autres parties du site (événements, annuaire…) apparaissent d'eux-mêmes avec une pastille « Via … » ; vous pouvez les masquer un par un, sans rien changer chez eux.
 
 ## Réglages

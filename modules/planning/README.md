@@ -25,7 +25,7 @@ Le même agenda, présenté de six manières (plus l'affichage d'origine, **choi
 |---|---|---|
 | **Liste simple** (défaut) | Le rendu d'origine : un titre par jour, puis les streams. | — |
 | **Liste classique** | Agenda sobre : un jour par rangée, heure à gauche, jaquette, titre et jeux. | Apple Calendrier, Dieter Rams |
-| **Liste en alternance** | L'en-tête de jour passe de gauche à droite d'un jour à l'autre, en cases arrondies ; jusqu'à 3 jaquettes ; semaine vide = un seul message ; en colonne sur mobile. | L'ancien site de l'auteur |
+| **Liste en alternance** | L'en-tête de jour passe de gauche à droite d'un jour à l'autre, en cases arrondies ; jusqu'à 3 jaquettes ; semaine vide = un seul message ; en colonne sur mobile. | L'ancien site de la personne qui a créé ce module |
 | **Semaine en grille** | 7 colonnes (premier jour de la semaine au choix), créneaux empilés ; liste verticale sur mobile. | Vue semaine d'un agenda |
 | **Timeline** | Rail vertical, points datés, vignettes, aéré ; les jours vides se résument en une ligne. | Linear, Stripe |
 | **Affiches** | Cartes verticales : jaquette pleine hauteur, dégradé, date en pastille, titre dessus ; sans jeu, logo du site sur mauve Twitch. | Apple TV, Netflix, Spotify |

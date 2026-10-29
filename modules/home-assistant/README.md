@@ -15,7 +15,7 @@ Pour vérifier sans attendre un viewer : bloc **« Tester le pont »** de la pag
 - **Rien n'est ouvert chez vous.** C'est Home Assistant qui vient chercher les ordres toutes les quelques secondes ; Curiosa n'appelle jamais chez vous, et Home Assistant n'envoie rien de votre maison (pas de liste d'appareils).
 - **Seulement en direct** (avec 5 minutes de marge après la fin). Un ordre qui n'est pas exécuté en 60 secondes (réglable) est abandonné et les points sont rendus.
 - **Le texte lu à voix haute est vérifié** : liens, mentions, balises et emojis en trop retirés ; refusé s'il contient un mot de la liste (français et anglais, à compléter ou corriger), un numéro de téléphone, ou s'il est trop long ; attente entre deux messages (par personne et pour tous). Un message refusé n'est pas lu, les points sont rendus et le motif est noté dans le journal.
-- **Un bouton pour tout couper**, ici, par la commande `!stop` du Bot Twitch (vous et les modérateurs que vous désignez) et par un interrupteur dans Home Assistant. Un modérateur peut couper ; seule une personne qui gère le module peut reprendre.
+- **Un bouton pour tout couper**, ici, par la commande `!stop` du Bot Twitch (vous et l'équipe de modération que vous désignez) et par un interrupteur dans Home Assistant. L'équipe de modération peut couper ; seule une personne qui gère le module peut reprendre.
 - **Un journal** des 50 dernières actions, avec la raison de chaque refus.
 
 ## Réglages

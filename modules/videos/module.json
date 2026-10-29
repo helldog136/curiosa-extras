@@ -117,7 +117,7 @@
         "en": "Name of the page (plural)"
       },
       "help": {
-        "fr": "Le mot que voient votre public. Exemples : Replays, Formations, Masterclass. Laissé vide, la page s'appelle « Vidéos ».",
+        "fr": "Le mot que voit votre public. Exemples : Replays, Formations, Masterclass. Laissé vide, la page s'appelle « Vidéos ».",
         "en": "The word your visitors see. Examples: Replays, Courses, Masterclasses. Left empty, the page is called “Videos”."
       }
     },

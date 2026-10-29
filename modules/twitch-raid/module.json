@@ -65,7 +65,7 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur votre public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et spectateurs des chaînes tirées (jamais ceux « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si la personne qui visite clique.",
+    "fr": "Ne collecte rien sur votre public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et audience des chaînes tirées (jamais ceux « Ne pas montrer »), sans cookie ; Twitch n'est contacté que si la personne qui visite clique.",
     "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the channels drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
   },
   "tabs": [
@@ -196,7 +196,7 @@
         "en": "Favour small channels"
       },
       "help": {
-        "fr": "Coché : moins une chaîne a de spectateurs, plus elle a de chances d'être tirée. Décoché (défaut) : tirage égal pour tous.",
+        "fr": "Coché : moins une chaîne a d'audience, plus elle a de chances d'être tirée. Décoché (défaut) : tirage égal pour tous.",
         "en": "Ticked: the fewer viewers a channel has, the more likely it is drawn. Unticked (default): everyone has the same chance."
       }
     },
@@ -236,7 +236,7 @@
       },
       "help": {
         "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle ne sera plus jamais tirée ni montrée dans la sélection. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.",
-        "en": "A person who asks not to appear: put her card in this Contacts category and she will never be drawn or shown in the picks again. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
+        "en": "A person who asks not to appear: put their card in this Contacts category and they will never be drawn or shown in the picks again. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
       }
     },
     {

@@ -3,7 +3,7 @@
 Affiche le bouton de votre Bluesky (icône et lien) dans l'en-tête du site. Il fournit le sujet `social.link` au cœur, qui rassemble les boutons de tous vos réseaux, et ses propres chiffres (sujet `social.stat`) : il ne consomme rien et ne stocke rien.
 
 - **Réglage** : Votre identifiant Bluesky (ex. nom.bsky.social) ou l'adresse de votre profil.
-- **Plusieurs comptes** : ajoutez une instance par compte (la vôtre, celle d'un ami…).
+- **Plusieurs comptes** : ajoutez une instance par compte (la vôtre, celle d'une personne amie…).
 - Seule une adresse https du bon site est acceptée ; rien n'est affiché tant que le profil n'est pas réglé.
 
 ## Statistiques : followers et publications

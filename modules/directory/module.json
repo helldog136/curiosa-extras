@@ -8,7 +8,7 @@
   },
   "version": "1.0.0",
   "description": {
-    "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
+    "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
     "en": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype."
   },
   "author": "Helldog136",
@@ -140,7 +140,7 @@
         "en": "Word for one person"
       },
       "help": {
-        "fr": "Au singulier, par exemple « membre » ou « créateur ». Sert aux compteurs (« 1 membre »).",
+        "fr": "Au singulier, par exemple « membre » ou « artiste ». Sert aux compteurs (« 1 membre »).",
         "en": "In the singular, for example “member” or “creator”. Used in counters (“1 member”)."
       }
     },
@@ -154,7 +154,7 @@
         "en": "Word for several people"
       },
       "help": {
-        "fr": "Au pluriel, par exemple « membres » ou « créateurs » (« 24 membres »).",
+        "fr": "Au pluriel, par exemple « membres » ou « artistes » (« 24 membres »).",
         "en": "In the plural, for example “members” or “creators” (“24 members”)."
       }
     },
@@ -312,7 +312,7 @@
       },
       "help": {
         "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît d'ici en moins de deux minutes. Laissé vide, une catégorie nommée « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe.",
-        "en": "A person who asks not to appear: put her card in this Contacts category and she disappears from here within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
+        "en": "A person who asks not to appear: put their card in this Contacts category and they disappear from here within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists."
       }
     },
     {

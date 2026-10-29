@@ -177,7 +177,7 @@
       },
       "help": {
         "en": "Patreon: your creator access key. Ko-fi: your verification key. Entered once, never shown again. Not needed for a file import.",
-        "fr": "Patreon : votre clé d'accès de créateur. Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
+        "fr": "Patreon : la clé d'accès de votre page (Creator's Access Token). Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
       }
     },
     {
@@ -494,7 +494,7 @@
     },
     {
       "name": "supporters_consent_link",
-      "description": "Create (or show again) the personal link a supporter opens to agree, or refuse, to appear on the public page. The owner sends it to the person herself. Returns the path of the link. Creating a new one makes the previous link stop working.",
+      "description": "Create (or show again) the personal link a supporter opens to agree, or refuse, to appear on the public page. The owner sends it to the person directly. Returns the path of the link. Creating a new one makes the previous link stop working.",
       "input": {
         "type": "object",
         "required": [

@@ -1213,7 +1213,7 @@
     {
       "id": "twitch-channel",
       "name": "Ma Chaîne Twitch",
-      "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnés payants. Mesure aussi vos directs (spectateurs moyens et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos.",
+      "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnés payants. Mesure aussi vos directs (audience moyenne et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
       "ref": "v1.22.1",

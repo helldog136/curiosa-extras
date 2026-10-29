@@ -10,7 +10,7 @@ Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat, **
 ## Pour commencer (rien d'obligatoire)
 1. Installez le module. Ouvrez l'onglet « Mes soutiens » : un assistant en étapes vous guide pour la plateforme choisie (réglage « D'où viennent vos soutiens ? »).
 2. Collez la clé secrète de la plateforme dans l'onglet Réglages (elle n'est jamais réaffichée), puis cliquez sur « Vérifier et actualiser ». Pas de plateforme connectable ? Importez un fichier CSV.
-3. Allumez la page publique quand vous êtes prête (elle est éteinte au départ, et reste vide tant que personne n'a donné son accord).
+3. Allumez la page publique quand vous voulez (elle est éteinte au départ, et reste vide tant que personne n'a donné son accord).
 4. Pour chaque personne, ouvrez sa ligne, copiez son **lien d'accord personnel** et envoyez-le-lui. Elle y choisit son pseudo et dit oui (ou non). Vous relisez le pseudo, vous cliquez sur « Approuver ».
 
 ## Réglages

@@ -11,13 +11,13 @@ On veut remercier sa communauté, mais personne n'a le temps de recopier des nom
 ## Pour commencer (2 minutes)
 
 1. Installez le module : Contacts s'installe avec lui si vous ne l'avez pas.
-2. Dans Contacts, rangez les fiches à remercier dans une catégorie (par exemple « Modérateurs »).
+2. Dans Contacts, rangez les fiches à remercier dans une catégorie (par exemple « Modération »).
 3. Ouvrez le module, onglet **Réglages**, et choisissez cette catégorie dans « Qui remercier ». Pas encore de catégorie ? Tapez son nom et cliquez sur « Créer ». S'il n'y a qu'une seule catégorie dans Contacts, elle est prise toute seule.
 4. Votre mur est en ligne, à l'adresse `/merci` (vous pouvez la changer à la création de l'instance).
 
 Pour remercier plusieurs groupes (« Modération », « Mécènes »…), cliquez sur « Ajouter un deuxième groupe » (jusqu'à six groupes), et donnez-leur un titre.
 
-## Ce que voient votre public
+## Ce que voit votre public
 
 - En haut, la **personne à l'honneur** du mois, en grand, avec votre petit mot.
 - Puis chaque **groupe** : son titre, le nombre de personnes, et une grille de cartes (photo ou initiales, nom, petit mot). Un bouton « Voir tout le monde » ouvre le groupe entier, 50 cartes par page.

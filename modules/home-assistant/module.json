@@ -181,8 +181,8 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Dire le pseudo avant le message (« Léa dit : … »)",
-        "en": "Say the username before the message (“Lea says: …”)"
+        "fr": "Dire le pseudo avant le message (« Sacha dit : … »)",
+        "en": "Say the username before the message (“Sacha says: …”)"
       },
       "help": {
         "fr": "Pour qu'on sache qui parle.",

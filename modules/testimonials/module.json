@@ -446,7 +446,7 @@
     {
       "id": "email.view",
       "label": {
-        "fr": "voir les adresses e-mail des auteurs",
+        "fr": "voir les adresses e-mail des personnes qui ont écrit un avis",
         "en": "see authors' e-mail addresses"
       },
       "help": {

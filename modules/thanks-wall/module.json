@@ -94,7 +94,7 @@
       },
       "help": {
         "en": "Everyone in this Contacts category appears on the wall. No category yet? Type its name (for example “Moderators”), click “Create”, then put your cards in it from Contacts.",
-        "fr": "Toutes les personnes de cette catégorie de Contacts apparaissent sur le mur. Pas encore de catégorie ? Tapez son nom (par exemple « Modérateurs »), cliquez sur « Créer », puis rangez vos fiches dedans depuis Contacts."
+        "fr": "Toutes les personnes de cette catégorie de Contacts apparaissent sur le mur. Pas encore de catégorie ? Tapez son nom (par exemple « Modération »), cliquez sur « Créer », puis rangez vos fiches dedans depuis Contacts."
       }
     },
     {
@@ -264,7 +264,7 @@
         "fr": "Catégorie « Ne pas montrer »"
       },
       "help": {
-        "en": "A person who asks not to appear: put her card in this Contacts category and she disappears from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.",
+        "en": "A person who asks not to appear: put their card in this Contacts category and they disappear from the wall within two minutes. Left empty, a category named “Do not show” (or “Ne pas montrer”) is used if it exists.",
         "fr": "Une personne qui demande à ne pas apparaître : rangez sa fiche dans cette catégorie de Contacts et elle disparaît du mur en moins de deux minutes. Laissé vide, une catégorie qui s'appelle « Ne pas montrer » (ou « Do not show ») est utilisée si elle existe."
       }
     },

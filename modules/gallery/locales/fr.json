@@ -70,7 +70,7 @@
   "studioIntro": "Choisissez vos photos : elles sont réduites sur votre appareil (environ {kb} Ko chacune) avant d'être envoyées, une par une, et les informations cachées dans les fichiers (position GPS, appareil, date) sont retirées. Le public ne voit qu'une version propre fabriquée par le site.",
   "studioNoScript": "Cette page demande JavaScript pour réduire les photos avant l'envoi. Activez-le dans votre navigateur.",
   "studioLoading": "Chargement…",
-  "studioLogin": "Vous n'êtes pas connecté·e à l'administration. Connectez-vous, puis revenez sur cette page.",
+  "studioLogin": "Aucune session n'est ouverte dans l'administration. Connectez-vous, puis revenez sur cette page.",
   "studioLoginLink": "Se connecter",
   "studioNoAlbum": "Cet album n'existe plus ou ne reçoit pas de photos envoyées.",
   "studioErrDenied": "Votre rôle ne permet pas d'ajouter des photos.",
@@ -271,6 +271,6 @@
   "errFileQuota": "La galerie a atteint sa place maximale sur le disque (4 Go ou 20 000 fichiers). Supprimez des photos dont vous n'avez plus besoin, puis réessayez.",
   "errFileUnknown": "Le site ne retrouve pas cet envoi. Appuyez sur « Réessayer » pour renvoyer la photo.",
   "errFileMissing": "Le fichier n'est plus sur le disque du site. Appuyez sur « Réessayer » pour renvoyer la photo.",
-  "errFileNoPerson": "Cette action doit être faite depuis l'administration, une fois connecté·e.",
+  "errFileNoPerson": "Cette action doit être faite depuis l'administration, une fois la session ouverte.",
   "errFileNoPermission": "La galerie n'a pas le droit de garder des fichiers. Acceptez sa permission « Garder et supprimer les fichiers » dans la page des modules."
 }

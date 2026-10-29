@@ -125,8 +125,8 @@
       "type": "text",
       "optional": true,
       "tab": "rewards",
-      "label": { "en": "Moderators who may type !stop", "fr": "Modérateurs qui peuvent taper !stop" },
-      "help": { "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.", "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. Les modérateurs ne peuvent pas redémarrer : vous seule le pouvez." }
+      "label": { "en": "Moderators who may type !stop", "fr": "Équipe de modération qui peut taper !stop" },
+      "help": { "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.", "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. L'équipe de modération ne peut pas redémarrer : vous êtes la seule personne à pouvoir le faire." }
     },
     {
       "key": "rewardWaitSeconds",

@@ -1,6 +1,6 @@
 # Annuaire
 
-Une vitrine **publique** de vos membres, créateurs ou partenaires, et de votre équipe. Le public **cherchent** par nom, **filtrent** par catégorie, ouvrent la **fiche** d'une personne, impriment ou téléchargent la liste. Vous ne retapez rien : les personnes viennent de **Contacts**.
+Une vitrine **publique** de vos membres, artistes ou partenaires, et de votre équipe. Le public **cherche** par nom, **filtre** par catégorie, ouvre la **fiche** d'une personne, imprime ou télécharge la liste. Vous ne retapez rien : les personnes viennent de **Contacts**.
 
 ## À quoi ça sert
 
@@ -9,10 +9,10 @@ Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur
 ## Pour commencer (3 minutes)
 
 1. Installez le module : Contacts s'installe avec lui si vous ne l'avez pas.
-2. Ouvrez-le. Si rien n'est encore réglé, choisissez un **modèle** (Association, Collectif de créateurs, ou Vide) : il prépare les mots, des catégories à remplir et une équipe.
+2. Ouvrez-le. Si rien n'est encore réglé, choisissez un **modèle** (Association, Collectif d'artistes, ou Vide) : il prépare les mots, des catégories à remplir et une équipe.
 3. Dans Contacts, rangez vos fiches dans ces catégories. L'annuaire se remplit tout seul, en ligne à l'adresse `/annuaire` (modifiable à la création).
 
-## Ce que voient votre public
+## Ce que voit votre public
 
 - Une **liste** de cartes : photo (ou initiales), nom, ville, catégories en pastilles, titre pour l'équipe.
 - Une **recherche** par nom (sans tenir compte des accents ni des majuscules), des **filtres** par catégorie (une ou plusieurs : l'une ou l'autre), un **tri** (A–Z, récents, au hasard stable toute la journée) et un **compteur**. 24 personnes par page (50 au plus), « Précédent / Suivant ».
@@ -21,9 +21,9 @@ Quand on a une grande liste de personnes (des dizaines, des milliers), un « mur
 - Une **version imprimable** et un **fichier CSV** : seulement ce qui est déjà public.
 - Un bouton **« Proposer ma fiche »** : il mène à la page que vous choisissez (par exemple celle de votre formulaire de contact), sinon à un e-mail (réglable). Aucun compte pour le public.
 
-## Ce que fait Emma
+## Ce que fait la personne qui gère l'annuaire
 
-Dans l'onglet **Mon annuaire** : choisir les **catégories publiques** (cases à cocher avec recherche, libellé public par langue, ordre), composer l'**équipe** (titre par langue, ordre), voir **les personnes visibles**, écrire leur **présentation courte** et leur **ville**, et **masquer** quelqu'un d'un clic. Les mots (« Membres », « Créateurs », « Annuaire », « Équipe ») se changent dans les Réglages.
+Dans l'onglet **Mon annuaire** : choisir les **catégories publiques** (cases à cocher avec recherche, libellé public par langue, ordre), composer l'**équipe** (titre par langue, ordre), voir **les personnes visibles**, écrire leur **présentation courte** et leur **ville**, et **masquer** quelqu'un d'un clic. Les mots (« Membres », « Artistes », « Annuaire », « Équipe ») se changent dans les Réglages.
 
 ## Une personne ne veut pas apparaître
 

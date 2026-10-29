@@ -1,6 +1,6 @@
 # Guestbook (Livre d'or) — module d'exemple pour Curiosa
 
-Un livre d'or **modéré** : le public signe, l'administrateur valide. C'est un vrai module qui fonctionne, et aussi
+Un livre d'or **modéré** : le public signe, vous validez. C'est un vrai module qui fonctionne, et aussi
 le module d'exemple **le plus complet** : il utilise chaque capacité du framework, avec des commentaires qui expliquent
 le pourquoi. Le tutoriel [docs/CREATE-A-MODULE.md](../../docs/CREATE-A-MODULE.md) s'appuie dessus, la référence est
 [docs/MODULES.md](../../docs/MODULES.md).
@@ -25,7 +25,7 @@ cliquez sur **Mettre en place** pour ajouter une instance, puis ouvrez-la pour r
 | Réglages de tous types (`text`, `textarea`, `boolean`, `number`, `select`, `color`, `image`, `secret`), `translatable`, `advanced`, `group: "appearance"`, couleur qui suit le thème (`theme:accent`) | `module.json` → `settings` |
 | Sections d'accueil avec taille recommandée (`small` « dernier message », `medium` « messages récents » + option `count`) | `sections` |
 | Page publique (`/guestbook`, pagination par chemin `/guestbook/page/2`) | `page` |
-| Formulaire public : validation, piège à robots, limiteur en mémoire, code d'invitation, conservation puis e-mail au propriétaire (au mieux) | `routes.sign` |
+| Formulaire public : validation, piège à robots, limiteur en mémoire, code d'invitation, conservation puis e-mail à la personne propriétaire (au mieux) | `routes.sign` |
 | Stockage privé de l'instance, modération (`pending` → `approved`) | `ctx.api.store` |
 | E-mail | `ctx.api.mail.send({ to: "owner", … })` |
 | Emplacement du site (lien dans le pied de page) | `slots["layout.footer"]` |

@@ -5,7 +5,7 @@ Laissez votre communauté vous écrire un avis, et montrez les meilleurs sur vot
 ## À quoi ça sert
 
 - Vous partagez **un lien « Laisser un avis »** (ou son QR code, à imprimer ou à mettre à l'écran). La page s'ouvre très bien sur un téléphone.
-- Chaque avis arrive **« à valider »**. Vous le lisez, vous le **publiez** ou vous le **refusez** d'un clic. Un avis n'est jamais publié tout seul, et jamais sans l'accord de son auteur.
+- Chaque avis arrive **« à valider »**. Vous le lisez, vous le **publiez** ou vous le **refusez** d'un clic. Un avis n'est jamais publié tout seul, et jamais sans l'accord de la personne qui l'a écrit.
 - Vous choisissez vos **favoris** : ils passent en premier.
 - Le public voit une page d'avis en **grille** ou en **défilement lent** (avec un bouton pause ; sans mouvement du tout pour les personnes qui préfèrent moins d'animations), avec la **note moyenne**, et un filtre par note.
 - Vous pouvez montrer **3 avis sur la page d'accueil** (Accueil → ajouter une section → « Avis à la une »), la note moyenne, ou une invitation à laisser un avis.
@@ -19,7 +19,7 @@ Si un champ est mal rempli, le message apparaît juste en dessous, avec un exemp
 ## Ce que vous faites
 
 1. Ouvrez l'extension : l'onglet **Avis** liste les avis (à valider, publiés, refusés), avec recherche, filtre par note et 50 avis par page.
-2. **Publier**, **Refuser**, **Modifier** (corriger une faute, ajouter une photo si la personne vous l'a envoyée, donner une place), **Favori**, **Supprimer** (par exemple à la demande de l'auteur).
+2. **Publier**, **Refuser**, **Modifier** (corriger une faute, ajouter une photo si la personne vous l'a envoyée, donner une place), **Favori**, **Supprimer** (par exemple à la demande de la personne qui l'a écrit).
 3. **Ajouter un avis reçu ailleurs** (message, e-mail) : vous cochez que la personne est d'accord ; il entre aussi « à valider ».
 4. L'onglet **Partager** donne le lien, le QR code à télécharger, et la marche à suivre pour l'accueil.
 5. **Télécharger les avis** : un fichier pour votre tableur, avec la preuve d'accord de chaque personne (les e-mails n'y sont qu'avec le droit « voir les adresses e-mail »).
@@ -35,7 +35,7 @@ La moyenne compte **tous** les avis publiés qui ont une note, à partir de 3 no
 ## Ce que le module ne fait pas
 
 - Pas de photo envoyée par le public (vous pouvez en ajouter une vous-même à un avis) : une photo est une donnée personnelle de plus à modérer, et le module ne peut pas la réduire.
-- Pas de réponse publique aux avis, pas de vérification que la personne est vraiment cliente.
+- Pas de réponse publique aux avis, pas de vérification que la personne a vraiment acheté chez vous.
 - Pas d'avis publié automatiquement : jamais.
 - Pas de cookie, pas d'adresse IP gardée (les limites contre le spam vivent en mémoire, sans adresse lisible).
 

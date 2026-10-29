@@ -11,7 +11,7 @@ Un petit jeu **une fois par jour**, pour donner au public une raison de revenir 
 - **Accessible** : tout se fait au clavier, un lecteur d'écran annonce le résultat, la bonne ou la mauvaise réponse n'est jamais montrée par la seule couleur, les animations sobres s'arrêtent si la personne qui visite a demandé moins de mouvement.
 - **Effaçable en un clic** : le bouton « Effacer mes données de ce jeu » retire la série et les scores du navigateur. Si le navigateur bloque son stockage, le jeu marche quand même (la série n'est simplement pas retenue).
 
-## Ce que fait la propriétaire du site (pas à pas)
+## Ce que fait la personne qui gère le site (pas à pas)
 1. Elle installe le module : la page existe et propose **« Par où commencer ? »** : le gabarit **Culture jeu vidéo** (30 questions prêtes, en français et en anglais, publiées) ou **Vide** (elle écrit les siennes).
 2. Onglet **Mes questions** : « Ajouter une question » (énoncé, 2 à 4 réponses, la bonne réponse, une explication, une image facultative avec sa description, une catégorie, une difficulté). Les erreurs s'affichent sous le champ, avec un exemple.
 3. **Brouillon ou publiée** : un brouillon n'est jamais joué. **Aperçu** : voir la question comme le public, avec la bonne réponse marquée.

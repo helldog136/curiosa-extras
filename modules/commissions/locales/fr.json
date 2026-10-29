@@ -100,7 +100,7 @@
   "slotsFree": " Places libres : {free} sur {slots}.",
   "reopenPassed": "La date de réouverture ({date}) est passée. Ouvrez vos commandes quand vous le souhaitez.",
   "colMode": "État",
-  "colModeSeen": "Ce que voient votre public",
+  "colModeSeen": "Ce que voit votre public",
   "mode_open": "Ouvertes",
   "mode_full": "Complet",
   "mode_closed": "Fermées",

@@ -4,7 +4,7 @@ Les modules de [Curiosa](https://github.com/helldog136/Curiosa). Le cœur de Cur
 
 | Dossier | Contenu |
 |---|---|
-| `modules/` | Les fonctionnalités de base (blog, réseaux sociaux, codes promo, pages, bandeau, formulaire de contact, statut live…) et les modules pour créateurs (sponsors, planning, contacts, partenariats, overlays de stream…). |
+| `modules/` | Les fonctionnalités de base (blog, réseaux sociaux, codes promo, pages, bandeau, formulaire de contact, statut live…) et les modules pour la création de contenu (sponsors, planning, contacts, partenariats, overlays de stream…). |
 | `examples/` | Deux petits modules à lire pour apprendre à en écrire un. |
 | `starter/` | **Le module de départ des auteurs externes** : un dépôt de module complet (module à la racine, tests, workflow GitHub Actions, README avec le texte d'installation) à copier dans son propre dépôt. Il n'est **pas** au Catalogue. Guide : `docs/PUBLIER-SON-MODULE.md` du dépôt du cœur. |
 | `catalogue/index.json` | L'index que le Catalogue de l'admin relit (généré par `scripts/build-index.mjs`). |
@@ -27,7 +27,7 @@ Le module *Statistiques de la communauté* relève, garde et sert (admin, assist
   asOf: "2026-10-14T10:00:00Z", url: "https://…", // url facultative
   error: undefined /* ou "auth" | "rate" | "network" | "hidden" | "config" */ }
 ```
-**Chiffres de période** (version 1.4.0 de *Chaîne Twitch*, 1.1.0 de *Statistiques de la communauté*) : `avg_viewers` (spectateurs moyens par direct, pondérés par le temps), `peak_viewers` (meilleur pic), `hours_streamed` (temps de direct) et `hours_watched` (spectateurs × temps) **en MINUTES entières malgré leur nom** (l'unité est dite dans le libellé et dans le champ `unit` côté assistant), `followers_gained` (followers gagnés pendant les directs, net, jamais négatif dans ce chiffre). Même forme que les autres : `id` `<module>:<clé>:<chiffre>`, entier >= 0, `asOf`, libellé humain (« Spectateurs moyens par direct (30 jours) »). `0` veut dire « aucun direct mesuré sur la période ». Liste fermée : un autre nom est rejeté. Un module qui publie des chiffres de période doit les mesurer lui-même (le collecteur n'invente rien) et dire à la personne, en mots simples, ce qui est mesuré et ses limites.
+**Chiffres de période** (version 1.4.0 de *Chaîne Twitch*, 1.1.0 de *Statistiques de la communauté*) : `avg_viewers` (audience moyenne par direct, pondérés par le temps), `peak_viewers` (meilleur pic), `hours_streamed` (temps de direct) et `hours_watched` (audience × temps) **en MINUTES entières malgré leur nom** (l'unité est dite dans le libellé et dans le champ `unit` côté assistant), `followers_gained` (followers gagnés pendant les directs, net, jamais négatif dans ce chiffre). Même forme que les autres : `id` `<module>:<clé>:<chiffre>`, entier >= 0, `asOf`, libellé humain (« Audience moyenne par direct (30 jours) »). `0` veut dire « aucun direct mesuré sur la période ». Liste fermée : un autre nom est rejeté. Un module qui publie des chiffres de période doit les mesurer lui-même (le collecteur n'invente rien) et dire à la personne, en mots simples, ce qui est mesuré et ses limites.
 
 Un élément invalide est écarté seul ; un élément avec `error` ne produit jamais de point d'historique. Le détail (limites de taille, stockage, volumes) est dans `modules/community-stats/README.md`.
 

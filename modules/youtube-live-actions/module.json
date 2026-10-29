@@ -184,11 +184,11 @@
       "type": "boolean",
       "default": true,
       "label": {
-        "fr": "Les modérateurs YouTube peuvent écrire !stop",
+        "fr": "L'équipe de modération YouTube peut écrire !stop",
         "en": "YouTube moderators may write !stop"
       },
       "help": {
-        "fr": "Pour tout couper depuis le chat. Seule la propriétaire de la chaîne peut écrire !start pour reprendre. Ça ne marche que pendant que la page est ouverte : le gros bouton « Tout couper » et l'interrupteur dans Home Assistant restent vos vraies protections.",
+        "fr": "Pour tout couper depuis le chat. Seule la personne propriétaire de la chaîne peut écrire !start pour reprendre. Ça ne marche que pendant que la page est ouverte : le gros bouton « Tout couper » et l'interrupteur dans Home Assistant restent vos vraies protections.",
         "en": "To cut everything from the chat. Only the channel owner can write !start to resume. It only works while the page is open: the big “Cut everything” button and the switch in Home Assistant remain your real protections."
       }
     },

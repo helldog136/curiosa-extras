@@ -34,7 +34,7 @@ Rien à faire : à la mise à jour (Curiosa 0.2.0), les identifiants Twitch que 
 Une Chaîne Twitch par chaîne : Statut live les interroge **toutes** (`callAll("twitch.live", "status")`) et ne parle toujours pas à Twitch.
 
 - **Une seule en direct** : exactement l'affichage d'avant (bannière d'une ligne, lecteur de cette chaîne).
-- **Plusieurs en direct** : la bannière a **une ligne par chaîne** (nom, titre, jeu, spectateurs, bouton « Regarder ») ; le lecteur montre la **première** chaîne en direct (ordre de création des instances) avec une **pastille par chaîne** pour passer de l'une à l'autre (boutons radio en HTML/CSS, sans script, accessibles au clavier).
+- **Plusieurs en direct** : la bannière a **une ligne par chaîne** (nom, titre, jeu, audience, bouton « Regarder ») ; le lecteur montre la **première** chaîne en direct (ordre de création des instances) avec une **pastille par chaîne** pour passer de l'une à l'autre (boutons radio en HTML/CSS, sans script, accessibles au clavier).
 - **Aucune en direct** : rien. Avec « Toujours », le lecteur de la première chaîne.
 - Réglage facultatif **Chaînes à annoncer** : identifiants séparés par des virgules ; vide = toutes.
 - **Vieux cœur** (sans `callAll`) : repli sur l'appel unique d'avant (première chaîne seulement). Le module exige pourtant Curiosa 0.1.14 à l'installation.

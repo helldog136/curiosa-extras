@@ -2,7 +2,7 @@
 
 Un **agenda d'événements et de formations** pour votre site : vos prochains rendez-vous, un calendrier du mois, une fiche détaillée pour chacun et, une fois qu'ils sont passés, une **rétrospective** avec les photos et la vidéo.
 
-Il convient à une association, à une créatrice ou un créateur seul, à une boutique : les mots, les types et les couleurs sont les vôtres. Rien n'est écrit « en dur » pour un public précis.
+Il convient à une association, à une personne qui crée seule, à une boutique : les mots, les types et les couleurs sont les vôtres. Rien n'est écrit « en dur » pour un public précis.
 
 ## Ce que voit une personne
 
@@ -13,9 +13,9 @@ Il convient à une association, à une créatrice ou un créateur seul, à une b
 - **La rétrospective** : les rendez-vous terminés y passent tout seuls, sans que vous fassiez rien, avec un lien vers l'album photo et la vidéo.
 - Les moteurs de recherche reçoivent aussi les informations de chaque rendez-vous (nom, date, lieu, situation).
 
-## Ce que fait la propriétaire (pas à pas)
+## Ce que vous faites (pas à pas)
 
-1. Ouvrez le module (onglet **Mes événements**). Au premier passage, choisissez un **modèle de départ** : *Association / collectif*, *Créateur seul* ou *Vide*. Il crée quelques types que vous pouvez renommer, recolorer ou supprimer.
+1. Ouvrez le module (onglet **Mes événements**). Au premier passage, choisissez un **modèle de départ** : *Association / collectif*, *Création en solo* ou *Vide*. Il crée quelques types que vous pouvez renommer, recolorer ou supprimer.
 2. Remplissez le petit formulaire : **titre, date, heure, lieu, texte**. Cliquez sur **Ajouter**. C'est tout : le rendez-vous est sur le site.
 3. Pour aller plus loin, cliquez sur **Plus d'options** : jour de fin, fuseau, coordonnées, programme, intervenants, image, lien d'inscription, places restantes, vidéo, album photo, répétition.
 4. **Dupliquer** copie un rendez-vous en brouillon. **Répéter** crée la suite (chaque semaine, toutes les deux semaines, chaque mois) : 100 rendez-vous au plus, 3 ans au plus.

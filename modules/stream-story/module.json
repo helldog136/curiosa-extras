@@ -362,7 +362,7 @@
           },
           "watermark": {
             "type": "boolean",
-            "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless she chose otherwise). Never add it unless the owner asked for it."
+            "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless they chose otherwise). Never add it unless the owner asked for it."
           }
         }
       }
