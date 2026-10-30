@@ -28,9 +28,9 @@ function make({ items = [], settings = {}, locale = "fr", messages } = {}) {
 const statOf = async (ctx, id) => (await loadStats(ctx)).find((s) => s.id === id);
 const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
-test("manifeste : valide, 1.1.3, minCore 0.2.2, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
+test("manifeste : valide, 1.2.0, minCore 0.5.0, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.1.3"); assert.equal(manifestJson.minCore, "0.2.2"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.2.0"); assert.equal(manifestJson.minCore, "0.5.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });
@@ -39,7 +39,7 @@ test("manifeste : valide, 1.1.3, minCore 0.2.2, instance unique, plateforme neut
   assert.deepEqual(manifestJson.settings.find((x) => x.key === "period").options.map((o) => o.value), ["1h", "6h", "12h", "1d", "1w"]);
   assert.deepEqual(manifestJson.settings.find((x) => x.key === "retention").options.map((o) => o.value), ["3m", "1y", "2y", "5y", "forever"]);
   assert.equal(manifestJson.settings.find((x) => x.key === "period").default, "1d"); assert.equal(manifestJson.settings.find((x) => x.key === "retention").default, "2y");
-  assert.deepEqual([...manifestJson.permissions].sort(), ["admin", "mcp", "storage", "topics"]);
+  assert.deepEqual([...manifestJson.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);   // « routes » : la page de l'élément d'overlay (voir community-stats-overlay.test.mjs)
   assert.ok(source.includes("ctx.api.store") && source.includes("ctx.api.topics.collect") && source.includes("adminPanel") && source.includes("mcp:"));
 });
 

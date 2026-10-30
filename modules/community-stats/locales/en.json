@@ -107,5 +107,13 @@
   "metric_followers_gained": "Followers gained while live (30 days)",
   "periodNote": "Worked out from your lives of the last 30 days, measured by your site.",
   "durHm": "{h} h {m}",
-  "durM": "{m} min"
+  "durM": "{m} min",
+  "ovTitle": "Counters",
+  "ovEmptyHint": "No figure is shown on your site. In the administration, choose “Show on my site” for the figure you want.",
+  "ovUp7": "▲ +{n} this week",
+  "ovDown7": "▼ −{n} this week",
+  "ovFlat7": "• Steady this week",
+  "ovUp30": "▲ +{n} this month",
+  "ovDown30": "▼ −{n} this month",
+  "ovFlat30": "• Steady this month"
 }

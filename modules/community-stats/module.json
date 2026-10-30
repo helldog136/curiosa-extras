@@ -5,8 +5,8 @@
     "fr": "Statistiques de la communauté",
     "en": "Community statistics"
   },
-  "version": "1.1.3",
-  "minCore": "0.2.2",
+  "version": "1.2.0",
+  "minCore": "0.5.0",
   "description": {
     "fr": "Garde les chiffres de vos réseaux (followers, abonnements payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
     "en": "Keeps the numbers of your networks (followers, paying followers, posts, views) and how they evolve, for you and for your AI. Nothing is shown on your site without your say-so."
@@ -80,7 +80,8 @@
     "admin",
     "storage",
     "topics",
-    "mcp"
+    "mcp",
+    "routes"
   ],
   "tabs": [
     {
@@ -301,6 +302,118 @@
           }
         }
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "counters",
+      "label": {
+        "en": "Counters",
+        "fr": "Compteurs"
+      },
+      "description": {
+        "en": "Your followers, paid subscriptions, posts or views, large, with how they changed. Only the figures you chose to show on your site appear.",
+        "fr": "Vos followers, abonnements payants, publications ou vues, en grand, avec leur évolution. Seuls les chiffres que vous avez choisi de montrer sur votre site apparaissent."
+      },
+      "fit": "fluid",
+      "ratios": {
+        "min": 0.3,
+        "max": 8
+      },
+      "minSize": {
+        "width": 200,
+        "height": 100
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "show",
+          "type": "choice",
+          "default": "all",
+          "label": {
+            "en": "Counters to show",
+            "fr": "Compteurs à afficher"
+          },
+          "help": {
+            "en": "Picks among the figures you already show on your site; never adds any.",
+            "fr": "Choisit parmi les chiffres que vous montrez déjà sur votre site ; n'en ajoute jamais."
+          },
+          "choices": [
+            {
+              "value": "all",
+              "label": {
+                "en": "All the ones you show",
+                "fr": "Tous ceux que vous montrez"
+              }
+            },
+            {
+              "value": "followers",
+              "label": {
+                "en": "Followers",
+                "fr": "Followers"
+              }
+            },
+            {
+              "value": "paying",
+              "label": {
+                "en": "Paid subscriptions",
+                "fr": "Abonnements payants"
+              }
+            },
+            {
+              "value": "content",
+              "label": {
+                "en": "Posts",
+                "fr": "Publications"
+              }
+            },
+            {
+              "value": "views",
+              "label": {
+                "en": "Views",
+                "fr": "Vues"
+              }
+            }
+          ]
+        },
+        {
+          "id": "change",
+          "type": "choice",
+          "default": "week",
+          "label": {
+            "en": "Change",
+            "fr": "Évolution"
+          },
+          "help": {
+            "en": "What the figure gained or lost. Nothing is written when the history is too short.",
+            "fr": "Ce que le chiffre a gagné ou perdu. Rien n'est écrit quand l'historique est trop court."
+          },
+          "choices": [
+            {
+              "value": "week",
+              "label": {
+                "en": "Over the week",
+                "fr": "Sur la semaine"
+              }
+            },
+            {
+              "value": "month",
+              "label": {
+                "en": "Over the month",
+                "fr": "Sur le mois"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "en": "None",
+                "fr": "Aucune"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

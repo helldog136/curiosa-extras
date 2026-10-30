@@ -26,6 +26,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Compte à rebours : `pickForElement` (repli sur la une pour un nom inconnu), route `state` avec `el=1` / `demo=1`. Overlay sponsors : route `items` avec `demo=1` (carte d'exemple).
 - Tests : `tests/overlay-elements-countdown-sponsors.test.mjs` (déclaration, parité FR/EN, page de l'élément, option événement, `assertMultiReaders`) ; `tests/overlay-elements-regression.test.mjs` (empreintes de l'overlay actuel, prises avant les éléments) ; `tests/countdown.test.mjs` ajusté (version, `minCore`).
 
+@@SPLIT@@
+*Vos modules proposent des éléments aux nouvelles pages d'overlay de Curiosa 0.5.0 (section « Overlays » : une seule adresse à coller dans OBS pour toute une page). Pour Curiosa 0.5.0 ou plus. Modules touchés dans cette partie : Planning 2.5.0 et Statistiques de la communauté 1.2.0.*
+
+### Nouveautés
+
+- **Planning : deux éléments pour vos pages d'overlay.** « Planning de la semaine » montre vos prochains streams jour par jour : une grille sur sept jours quand le cadre est large, une liste quand il est étroit (il demande de la place : 480 × 280 au minimum). « Prochain stream » montre le suivant en grand, avec ses jeux et sa jaquette, et si vous voulez les 5 streams d'après. Vous choisissez l'apparence parmi celles que le Planning sait déjà faire, le nombre de jours et les jaquettes. Le Planning n'avait pas d'overlay : ces éléments n'existent que dans les pages d'overlay.
+- **Statistiques de la communauté : un élément « Compteurs ».** Vos followers, abonnements payants, publications et vues, en grand, avec ce qu'ils ont gagné sur la semaine ou le mois. Vous choisissez quels types de chiffres afficher.
+- **Rien n'est montré sans votre accord.** Les compteurs ne montrent que les chiffres pour lesquels vous avez choisi « Montrer sur mon site », et jamais plus : les options ne font que choisir parmi eux. Un chiffre gardé pour vous n'apparaît nulle part ; retirez votre accord et il disparaît.
+- Ces éléments s'adaptent à la taille que vous leur donnez, ont un fond transparent, suivent le style commun de la page d'overlay (texte clair ou sombre, fond doux, angles) et ne prennent jamais le style de votre site.
+
+### Améliorations
+
+- Plusieurs pages d'overlay peuvent montrer le même élément sans alourdir votre site : une seule lecture de votre Google Agenda (ou de vos chiffres) sert tout le monde pendant quelques dizaines de secondes. Rien ne tourne en arrière-plan ; la page se met à jour doucement, de plus en plus lentement quand rien ne change.
+
+### Pour les développeurs
+
+- **Planning 2.5.0** : voir `docs/changelog-parts/overlay-elements-planning-stats.md`. `minCore` 0.5.0 (il était à 0.2.10), aucun nouveau droit, aucune donnée ni migration. Routes `element/week`, `element/next`.
+- **Statistiques de la communauté 1.2.0** : `minCore` 0.5.0 (il était à 0.2.2), nouveau droit `routes`, aucune donnée ni migration. Route `element/counters`.
+- Rien ne change pour l'existant : tests de non-régression comparés octet pour octet à la 1.25.0 (`tests/golden/`). Nouveaux tests : `tests/planning-overlay.test.mjs`, `tests/community-stats-overlay.test.mjs` (dont `assertMultiReaders`).
+- **Attention à la publication** : cette version demande Curiosa 0.5.0. Ne pas la publier avant le cœur 0.5.0.
+
 ## 1.25.0
 
 *La télécommande de Participation (Sondages, « A ou B ? », sourdine…) devient aussi un dock pour OBS, avec la même adresse secrète. Pour Curiosa 0.2.5 ou plus. Module touché : Participation 1.1.0.*
