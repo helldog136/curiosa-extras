@@ -35,6 +35,8 @@ const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical", "modules/tw
 const VISITOR_API = ["modules/game-suggestions", "examples/guestbook", "modules/twitch-raid"];   // twitch-raid 2.2 : route publique « members » limitée par visiteur, et script de page (cœur 0.2.6)
 // Modules qui lisent `ambiguous` de ctx.api.rawg.cover (lien « Ce n'est pas le bon jeu ? », cœur 0.2.10).
 const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules/stream-story"];
+// Modules qui proposent des éléments aux pages d'overlay (clé `overlayElements`, cœur 0.5.0).
+const OVERLAY_ELEMENTS = ["modules/polls", "modules/twitch-channel"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
@@ -44,7 +46,7 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
     // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
-    const expected = RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    const expected = OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
     assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }
