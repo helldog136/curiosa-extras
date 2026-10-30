@@ -85,7 +85,7 @@ function elementOverlay(ctx, query, element) {
         #vt-stage{position:fixed;inset:0}
         [data-ov-part="panel"]{position:absolute;inset:0;box-sizing:border-box;display:flex;gap:18px;align-items:center;padding:14px 22px;overflow:hidden;
           border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px);background:var(--ov-surface,transparent);color:var(--ov-fg,#fff);
-          text-shadow:0 1px 3px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+          text-shadow:${query.get("ov-text") === "dark" ? "none" : "0 1px 3px rgba(0,0,0,.35)"};opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
         [data-ov-part="panel"].on{opacity:1;transform:none}
         [data-ov-part="image"]{flex:none;width:92px;height:92px;object-fit:cover;border-radius:min(var(--ov-radius,12px),12px)}
         [data-ov-part="text"]{min-width:0;flex:1}

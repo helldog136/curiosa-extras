@@ -79,11 +79,11 @@ body{font:16px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ov
   background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px);text-shadow:0 1px 3px rgba(0,0,0,.35);
   opacity:0;transition:opacity .5s}
 [data-ov-part="panel"].on{opacity:1}
-body.soft [data-ov-part="panel"]{text-shadow:none}
+body.soft [data-ov-part="panel"],body.dark [data-ov-part="panel"]{text-shadow:none}
 [data-ov-part="quote"]{margin:0;overflow-wrap:anywhere;font-weight:500;line-height:1.3}
 [data-ov-part="quote"]::before{content:"\\201C"}
 [data-ov-part="quote"]::after{content:"\\201D"}
-[data-ov-part="footer"]{display:flex;align-items:center;gap:1.8vmin;min-width:0;font-size:max(12px,min(3.4vmin,22px))}
+[data-ov-part="footer"]{display:flex;align-items:center;gap:1.8vmin;min-width:0;font-size:max(15px,min(6.2vmin,26px))}
 [data-ov-part="avatar"]{flex:none;display:grid;place-items:center;width:2.4em;height:2.4em;border-radius:50%;background:var(--ov-accent,#9146ff);color:#fff;font-weight:700;text-shadow:none}
 [data-ov-part="author"]{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 [data-ov-part="stars"]{flex:none;color:var(--ov-star,#f5b301);letter-spacing:.12em;white-space:nowrap}
@@ -132,9 +132,9 @@ export async function elementResponse(request, ctx) {
   if (url.searchParams.get("data") === "1") return Response.json({ reviews }, { headers: HEADERS });
   const data = JSON.stringify({ reviews, seconds: p.seconds, starsLabel: ctx.t("starsLabel", { n: "{n}" }) }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
-  const soft = p.style?.surface === "soft";
+  const bodyClass = [p.style?.surface === "soft" ? "soft" : "", p.style?.text === "dark" ? "dark" : ""].filter(Boolean).join(" ");
   const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
-    `<body${soft ? ' class="soft"' : ""}><div id="stage"><figure id="p" data-ov-part="panel" role="status" aria-live="polite"><blockquote id="q" data-ov-part="quote"></blockquote>` +
+    `<body${bodyClass ? ` class="${bodyClass}"` : ""}><div id="stage"><figure id="p" data-ov-part="panel" role="status" aria-live="polite"><blockquote id="q" data-ov-part="quote"></blockquote>` +
     `<figcaption data-ov-part="footer"><span id="i" data-ov-part="avatar" aria-hidden="true"></span><span id="a" data-ov-part="author"></span><span id="s" data-ov-part="stars" role="img" hidden></span></figcaption></figure></div>` +
     `<script type="application/json" id="d">${data}</script><script>${SCRIPT}</script></body></html>`;
   return new Response(request.method === "HEAD" ? null : html, { headers: { ...HEADERS, "content-type": "text/html; charset=utf-8" } });
