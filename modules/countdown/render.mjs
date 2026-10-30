@@ -174,7 +174,7 @@ export function overlayParts(ctx, { initial, stateUrl, endMs, element = null }) 
   const look = ["dark", "light", "bare"].includes(String(ctx.setting("overlayLook"))) ? String(ctx.setting("overlayLook")) : "dark";
   const position = OVERLAY_POSITIONS[String(ctx.setting("overlayPosition"))] ?? OVERLAY_POSITIONS["top-center"];
   // Dans une page d'overlay, la place et la taille propres à l'overlay sont ignorées : l'élément remplit son cadre (police calculée d'après le cadre).
-  const size = element ? Math.max(8, Math.floor(Math.min(element.width / 17.5, element.height / 7.4))) : (OVERLAY_SIZES[String(ctx.setting("overlaySize"))] ?? OVERLAY_SIZES.m);
+  const size = element ? Math.max(8, Math.floor(Math.min(element.width / 17.5, element.height / 7.9))) : (OVERLAY_SIZES[String(ctx.setting("overlaySize"))] ?? OVERLAY_SIZES.m);
   const accent = safeColor(ctx.setting("overlayAccent")) ?? safeColor(ctx.theme.accent) ?? "#e8a23b";
   const L = labels(ctx);
   const secs = ctx.setting("showSeconds") !== false && (!element || element.seconds);

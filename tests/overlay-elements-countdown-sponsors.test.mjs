@@ -76,7 +76,7 @@ test("Compte à rebours : l'élément remplit son cadre, suit le style commun (-
   assert.match(out.css, /var\(--ov-radius/);
   assert.match(out.css, /\.vco\{position:fixed;inset:0;/, "remplit le cadre");
   assert.ok(!/bottom:2\.5vmin|font-size:32px|vco--light/.test(out.css + out.html), "la place, la taille et le style propres à l'overlay sont ignorés");
-  assert.match(out.css, /font-size:27px/, "police d'après le cadre 600×200");
+  assert.match(out.css, /font-size:25px/, "police d'après le cadre 600×200");
   assert.ok(!/--sk-|data-skin|var\(--v-|<link|@import|https?:\/\//.test(out.css + out.html), "aucun skin ni thème du site, aucun chargement tiers");
   assert.equal(initialOf(out).initial.event.title, "Sortie");
 });
@@ -84,7 +84,7 @@ test("Compte à rebours : l'élément remplit son cadre, suit le style commun (-
 test("Compte à rebours : le style commun (texte sombre, fond doux, angles droits) devient les jetons", async () => {
   const out = await cd.overlay(cdCtx(), { query: new URLSearchParams("ov-w=300&ov-h=100&ov-text=dark&ov-surface=soft&ov-corners=square") });
   assert.match(out.css, /--ov-fg:#111111;--ov-surface:rgba\(255,255,255,\.7\);--ov-radius:0px;--ov-border:rgba\(0,0,0,\.18\)/);
-  assert.match(out.css, /font-size:13px/, "police d'après le cadre 300×100");
+  assert.match(out.css, /font-size:12px/, "police d'après le cadre 300×100");
 });
 
 test("Compte à rebours : option « Événement » — à la une par défaut, un événement précis, repli sur la une si le nom est inconnu ou supprimé", async () => {
