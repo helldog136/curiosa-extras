@@ -107,5 +107,13 @@
   "metric_followers_gained": "Followers gagnés en direct (30 jours)",
   "periodNote": "Calculé sur vos directs des 30 derniers jours, mesurés par votre site.",
   "durHm": "{h} h {m}",
-  "durM": "{m} min"
+  "durM": "{m} min",
+  "ovTitle": "Compteurs",
+  "ovEmptyHint": "Aucun chiffre n'est montré sur votre site. Dans l'administration, choisissez « Montrer sur mon site » pour le chiffre voulu.",
+  "ovUp7": "▲ +{n} cette semaine",
+  "ovDown7": "▼ −{n} cette semaine",
+  "ovFlat7": "• Stable cette semaine",
+  "ovUp30": "▲ +{n} ce mois-ci",
+  "ovDown30": "▼ −{n} ce mois-ci",
+  "ovFlat30": "• Stable ce mois-ci"
 }

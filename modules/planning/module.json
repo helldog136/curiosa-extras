@@ -5,8 +5,8 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.4.1",
-  "minCore": "0.2.10",
+  "version": "2.5.0",
+  "minCore": "0.5.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
@@ -669,6 +669,173 @@
     {
       "key": "icsUrl",
       "secret": true
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "week",
+      "label": {
+        "en": "Week schedule",
+        "fr": "Planning de la semaine"
+      },
+      "description": {
+        "en": "Your next streams, day by day. It needs room: a week grid when the frame is wide, a list when it is narrow.",
+        "fr": "Vos prochains streams, jour par jour. Il demande de la place : une grille sur la semaine quand le cadre est large, une liste quand il est étroit."
+      },
+      "fit": "fluid",
+      "ratios": {
+        "min": 0.4,
+        "max": 6
+      },
+      "minSize": {
+        "width": 480,
+        "height": 280
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "look",
+          "type": "choice",
+          "default": "auto",
+          "label": {
+            "en": "Look",
+            "fr": "Apparence"
+          },
+          "help": {
+            "en": "“Fit to the space” picks the grid or the list from the size of the frame.",
+            "fr": "« Selon la place » choisit la grille ou la liste d'après la taille du cadre."
+          },
+          "choices": [
+            {
+              "value": "auto",
+              "label": {
+                "en": "Fit to the space",
+                "fr": "Selon la place"
+              }
+            },
+            {
+              "value": "week",
+              "label": {
+                "en": "Week grid",
+                "fr": "Semaine en grille"
+              }
+            },
+            {
+              "value": "classic",
+              "label": {
+                "en": "Classic list",
+                "fr": "Liste classique"
+              }
+            },
+            {
+              "value": "alternating",
+              "label": {
+                "en": "Alternating list",
+                "fr": "Liste en alternance"
+              }
+            },
+            {
+              "value": "timeline",
+              "label": {
+                "en": "Timeline",
+                "fr": "Timeline"
+              }
+            },
+            {
+              "value": "posters",
+              "label": {
+                "en": "Posters",
+                "fr": "Affiches"
+              }
+            }
+          ]
+        },
+        {
+          "id": "days",
+          "type": "number",
+          "min": 1,
+          "max": 14,
+          "integer": true,
+          "default": 7,
+          "label": {
+            "en": "Number of days",
+            "fr": "Nombre de jours"
+          },
+          "help": {
+            "en": "From 1 to 14 days starting today.",
+            "fr": "De 1 à 14 jours à partir d'aujourd'hui."
+          },
+          "example": "7"
+        },
+        {
+          "id": "covers",
+          "type": "boolean",
+          "default": true,
+          "label": {
+            "en": "Show game covers",
+            "fr": "Montrer les jaquettes"
+          },
+          "help": {
+            "en": "The pictures of the games, when available. In a grid that is too short, they are hidden.",
+            "fr": "Les images des jeux, quand elles sont disponibles. Dans une grille trop basse, elles sont masquées."
+          }
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "label": {
+        "en": "Next stream",
+        "fr": "Prochain stream"
+      },
+      "description": {
+        "en": "The next stream, large: title, day, time, game and cover. The ones after it can be listed below.",
+        "fr": "Le prochain stream en grand : titre, jour, heure, jeu et jaquette. Les suivants peuvent s'afficher en dessous."
+      },
+      "fit": "fluid",
+      "ratios": {
+        "min": 0.5,
+        "max": 6
+      },
+      "minSize": {
+        "width": 320,
+        "height": 160
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "more",
+          "type": "number",
+          "min": 0,
+          "max": 5,
+          "integer": true,
+          "default": 0,
+          "label": {
+            "en": "Following streams to show",
+            "fr": "Streams suivants à montrer"
+          },
+          "help": {
+            "en": "From 0 to 5. With 0, only the next stream is shown.",
+            "fr": "De 0 à 5. Avec 0, seul le prochain stream est montré."
+          },
+          "example": "2"
+        },
+        {
+          "id": "covers",
+          "type": "boolean",
+          "default": true,
+          "label": {
+            "en": "Show game covers",
+            "fr": "Montrer les jaquettes"
+          },
+          "help": {
+            "en": "The pictures of the games, when available. In a grid that is too short, they are hidden.",
+            "fr": "Les images des jeux, quand elles sont disponibles. Dans une grille trop basse, elles sont masquées."
+          }
+        }
+      ]
     }
   ]
 }

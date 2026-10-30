@@ -146,10 +146,10 @@ async function collectSlots(ctx, from, to) {
  */
 async function loadSlots(ctx, days, { cancelled = false } = {}) {
   const now = Date.now(), windowEnd = new Date(now + days * DAY);
-  const { items } = await collectSlots(ctx, new Date(now - DAY), windowEnd);
+  const { items, failed } = await collectSlots(ctx, new Date(now - DAY), windowEnd);
   const timeZone = displayZone(ctx.setting("timezone"), items);
   const slots = toSlots(items, timeZone).filter((e) => (cancelled || !e.cancelled) && e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
-  return { slots, timeZone };
+  return { slots, timeZone, failed };
 }
 
 const clampDays = (v, def = 7) => Math.min(60, Math.max(1, Math.trunc(Number(v)) || def));
@@ -443,9 +443,17 @@ async function carryOverCalendar(ctx) {
   await ctx.legacy.clear("icsUrl");   // seulement après le semis (créé, ou déjà semé)
 }
 
+/** Éléments des pages d'overlay (cœur 0.5.0) : voir overlay.mjs. Lecture partagée entre tous les lecteurs ; aucun secret (les streams sont déjà publics). */
+const overlay = await import(`./overlay.mjs${V}`);
+const overlayDeps = { loadSlots, coversForSlots, brandVisual, wantsCancelled };
+
 export default {
+  overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),
+
   // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
   routes: {
+    "element/:slug": (request, ctx) => overlay.elementResponse(request, ctx, overlayDeps),   // la page d'un élément d'overlay (week, next), fragment avec ?frag=1
+
     async image(request, ctx) {
       const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
       const week = await loadWeek(ctx, offset);
