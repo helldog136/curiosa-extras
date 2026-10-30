@@ -98,15 +98,27 @@ export function liveAlert(item, { withText = false, locale = "en" } = {}) {
   return { kind: item.kind, message: message.slice(0, LIMITS.message), ...(detail ? { detail } : {}), queued: true };
 }
 
-const seenOf = (globalThis.__curiosaAlertsSeen ??= new Map());   // clé d'overlay → { ids: Set, last }
-/** Lit le sujet et envoie à l'overlay ce qui est NOUVEAU (jamais deux fois la même alerte, rien de plus vieux que 2 minutes). Rend le nombre d'alertes envoyées. Ne lève jamais. */
+const seenOf = (globalThis.__curiosaAlertsSeen ??= new Map());   // clé d'overlay → { ids: Set, last, flight }
+/**
+ * Lit le sujet et envoie à l'overlay ce qui est NOUVEAU (jamais deux fois la même alerte, rien de plus vieux que 2 minutes). Rend le nombre d'alertes envoyées. Ne lève jamais.
+ * La limite (une lecture toutes les 2 secondes) est PAR OVERLAY, quel que soit le nombre de pages qui la lisent. Un lecteur qui arrive pendant qu'une lecture est en cours
+ * l'attend (il ne la refait pas) : il trouve alors, dans le flux, les mêmes alertes que les autres.
+ */
 export async function pullLive(ctx, now = Date.now()) {
   const key = ctx.instance.key;
-  const st = seenOf.get(key) ?? { ids: new Set(), last: 0 };
+  const st = seenOf.get(key) ?? { ids: new Set(), last: 0, flight: null };
   seenOf.delete(key); seenOf.set(key, st);
   while (seenOf.size > 50) seenOf.delete(seenOf.keys().next().value);
+  if (st.flight) { await st.flight; return { sent: 0, throttled: true }; }
   if (now - st.last < LIMITS.throttleMs) return { sent: 0, throttled: true };
   st.last = now;
+  const run = collectLive(ctx, st, now);
+  st.flight = run.catch(() => {});
+  try { return await run; } finally { st.flight = null; }
+}
+
+async function collectLive(ctx, st, now) {
+  const key = ctx.instance.key;
   let items = [];
   try { const r = await ctx.api.topics.collect("live.event", { limit: LIMITS.queue }); items = Array.isArray(r) ? r.slice(0, LIMITS.queue) : []; } catch { items = []; }
   const withText = ctx.setting("youtubeText") === true;
@@ -211,7 +223,7 @@ export default {
     let pull = false;
     try { pull = (await Promise.all(LIVE_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.length > 0); } catch { pull = false; }
     const duration = Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6));
-    const kinds = ov && OV_ONLY[q.get("opt-kinds")] !== undefined ? q.get("opt-kinds") : "all";
+    const kinds = ov && Object.hasOwn(OV_ONLY, q.get("opt-kinds") ?? "") ? q.get("opt-kinds") : "all";
     const cfg = {
       ...(ov ? {} : { eventsUrl: `/m/${ctx.instance.key}/events` }),
       duration,
