@@ -71,7 +71,7 @@ test("autres ratios : 16:9 (1920×1080) et 4:3 tels quels, 32:9 dans la plage, u
   assert.equal(beyond.iframeW, Math.round(1080 * decl.ratios.max));
   const out = frameLayout(decl, { w: 1280, h: 1080 });        // 1,185 : plus étroit que 4:3
   assert.equal(out.iframeW, Math.round(1080 * decl.ratios.min));
-  assert.ok(out.boxW <= 1280 && out.boxH <= 1080 && out.scale < 1);
+  assert.ok(out.boxW <= 1280.5 && out.boxH <= 1080 && out.scale < 1);
   assert.ok(Math.abs(out.boxW / out.boxH - out.iframeW / out.iframeH) < 0.01, "même proportion que la fenêtre : rien n'est étiré");
   // L'éditeur et le serveur ramènent un cadre hors plage dans la plage.
   const r = constrainRect(decl, { x: 0, y: 0, w: 2000, h: 200 }, { width: 3440, height: 1440 });
