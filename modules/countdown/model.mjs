@@ -204,6 +204,14 @@ export function pickForOverlay(views, now, endMs, slug) {
   return justStarted.find((v) => v.featured) ?? justStarted[0] ?? list.find((v) => v.featured) ?? list[0] ?? null;
 }
 
+/**
+ * Événement montré par un ÉLÉMENT de page d'overlay (option « Événement ») : celui qui est demandé s'il existe encore, sinon l'événement à la une.
+ * Un nom court inconnu (événement supprimé, faute de frappe) ne casse rien : repli sur la une. Un événement qui existe mais qui est fini ou masqué n'affiche rien, comme l'overlay.
+ */
+export function pickForElement(views, now, endMs, slug) {
+  return pickForOverlay(views, now, endMs, slug && views.some((v) => v.slug === slug) ? slug : "");
+}
+
 // ── Vérification de ce que la personne a tapé ───────────────────────────────────────────────────────────────────
 
 /**

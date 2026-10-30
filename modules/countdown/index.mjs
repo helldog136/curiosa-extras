@@ -167,10 +167,14 @@ export default {
     async state(request, ctx) {
       if (!readOnly(request)) return notAllowed();
       if (limited(request, ctx, "state", 120)) return tooMany();
-      const asked = new URL(request.url).searchParams.get("e") ?? "";
+      const q = new URL(request.url).searchParams;
+      const asked = q.get("e") ?? "";
       const now = Date.now();
       const endMs = overlayEndMs(ctx);
-      const pick = M.pickForOverlay(await M.readAll(ctx, now), now, endMs, M.isSlug(asked) ? asked : "");
+      if (q.get("demo") === "1") return Response.json({ now, event: R.demoEvent(ctx, now, endMs) }, { headers: NO_STORE }); // mode test d'une page d'overlay : jamais un événement réel
+      const slug = M.isSlug(asked) ? asked : "";
+      const views = await M.readAll(ctx, now);
+      const pick = q.get("el") === "1" ? M.pickForElement(views, now, endMs, slug) : M.pickForOverlay(views, now, endMs, slug); // « el » : élément de page d'overlay (repli sur la une)
       return Response.json({ now, event: R.overlayEvent(ctx, pick, endMs) }, { headers: NO_STORE });
     },
   },
@@ -179,11 +183,20 @@ export default {
   async overlay(ctx, { query }) {
     const now = Date.now();
     const endMs = overlayEndMs(ctx);
-    const asked = query?.get?.("e") ?? "";
+    const element = R.elementRequest(query); // dans une page d'overlay (paramètres ov-*) : l'élément remplit son cadre ; sinon, l'overlay habituel, inchangé
+    const asked = element ? element.event : (query?.get?.("e") ?? "");
     const slug = M.isSlug(asked) ? asked : "";
-    const pick = M.pickForOverlay(await M.readAll(ctx, now), now, endMs, slug);
-    const stateUrl = `/m/${ctx.instance.key}/state?lang=${encodeURIComponent(ctx.locale)}${slug ? `&e=${slug}` : ""}`;
-    return R.overlayParts(ctx, { initial: { now, event: R.overlayEvent(ctx, pick, endMs) }, stateUrl, endMs });
+    const views = element?.demo ? [] : await M.readAll(ctx, now);
+    const pick = element ? M.pickForElement(views, now, endMs, slug) : M.pickForOverlay(views, now, endMs, slug);
+    const stateUrl = `/m/${ctx.instance.key}/state?lang=${encodeURIComponent(ctx.locale)}${slug ? `&e=${slug}` : ""}${element ? (element.demo ? "&demo=1" : "&el=1") : ""}`;
+    const event = element?.demo ? R.demoEvent(ctx, now, endMs) : R.overlayEvent(ctx, pick, endMs);
+    return R.overlayParts(ctx, { initial: { now, event }, stateUrl, endMs, element });
+  },
+
+  // ÉLÉMENT DE PAGE D'OVERLAY (cœur 0.5.0) : on réutilise l'overlay ci-dessus, tel quel ; le cœur y ajoute la taille du cadre (ov-w, ov-h), le style commun (ov-text…) et les options (opt-event, opt-seconds).
+  // Aucun secret à ajouter : l'overlay de ce module n'en a pas (`/overlays/<clé>`). Rien n'est consommé à la lecture : plusieurs pages peuvent montrer le même compte à rebours.
+  overlayElements: {
+    countdown: (ctx, request) => ({ url: `/overlays/${ctx.instance.key}?lang=${encodeURIComponent(request?.lang ?? ctx.locale)}` }),
   },
 
   adminPanel: (ctx, o) => A.panel(ctx, o),

@@ -3,17 +3,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const src = path.join(here, "../modules/daily-game");
 const load = (dir, v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).href}?v=${v}`);
 
 test("mise à jour dans le même processus : le nouveau code des fichiers voisins est bien celui qui tourne", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "daily-game-update-"));
+  const dir = makeTempDir("daily-game-update-");
   try {
     fs.cpSync(src, dir, { recursive: true });
     const before = (await load(dir, "ancien")).default;

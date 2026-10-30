@@ -1,0 +1,72 @@
+{
+  "alerts": {
+    "pull=false,visual=neon,fr": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "dfcd7c0d179c22bc4cee9f5ddc47280bc0c9e045aac488b367e00c303343337c",
+      "script": "66121c22ab8c25d0b1b3168223be63f65ade75021b2f983f8b0a2ffdfca4cece"
+    },
+    "pull=false,visual=neon,en": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "dfcd7c0d179c22bc4cee9f5ddc47280bc0c9e045aac488b367e00c303343337c",
+      "script": "9b0e69bd538aefc67d2112b39ca7edc69c093be61e7817098bcde0b21c2c0a2d"
+    },
+    "pull=false,visual=plain,fr": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "dfcd7c0d179c22bc4cee9f5ddc47280bc0c9e045aac488b367e00c303343337c",
+      "script": "bfe7ed93930f92f9e07b7944d1c620fe4d5e581d81c9bf5f31f82d32491dd3de"
+    },
+    "pull=false,visual=plain,en": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "dfcd7c0d179c22bc4cee9f5ddc47280bc0c9e045aac488b367e00c303343337c",
+      "script": "2f1531d7b10ced5f8f7ebd92b6e70aaec0f6fa611b6a13c285d280c4a2bb6e2a"
+    },
+    "pull=true,visual=neon,fr": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "913b81413daa6645001dff0cfb0d214cce032b15f418ee773e09859ddd82b174",
+      "script": "67a63521b70a3391652eb3fa6152237cbef06149d198aa066b88a6f2cf6807f9"
+    },
+    "pull=true,visual=neon,en": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "913b81413daa6645001dff0cfb0d214cce032b15f418ee773e09859ddd82b174",
+      "script": "353b478595f7082f444b09ef5069fdd2f6ebd767c95cafc2c4114d13eb045f7c"
+    },
+    "pull=true,visual=plain,fr": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "913b81413daa6645001dff0cfb0d214cce032b15f418ee773e09859ddd82b174",
+      "script": "267f4000b8a4c945c635ecd2d33c0c3a9fdb6446ffc7c1169d2ad5ee2fd3db24"
+    },
+    "pull=true,visual=plain,en": {
+      "title": "Fake",
+      "html": "d398beb773b787b1115085c72e2bc9f89eb7d8c87ee1d0aedb7c1832b563fcf3",
+      "css": "913b81413daa6645001dff0cfb0d214cce032b15f418ee773e09859ddd82b174",
+      "script": "0bba766da55a7c4a8ebef0cac6fd9e14448d599b9dcd808618ddb1fdb1ea719a"
+    }
+  },
+  "maze": {
+    "defaut": {
+      "title": "Fake",
+      "html": "afe6c0653d218aaea0ce5b4cdc149c9c772760f48aa539af64d8e7f7f204bff1",
+      "css": "521bac856af963ed9f61feeaf9a596acd38a7a00de5f22644d82439d01a09293",
+      "script": "24e01cbcf2a13c9b30d932f5943f16b398de1cf2e4a7cc39cab56ba7de0d786d"
+    },
+    "reglages": {
+      "title": "Fake",
+      "html": "afe6c0653d218aaea0ce5b4cdc149c9c772760f48aa539af64d8e7f7f204bff1",
+      "css": "521bac856af963ed9f61feeaf9a596acd38a7a00de5f22644d82439d01a09293",
+      "script": "4c14aa81f7a7b30d864d3f6c55d0a154d8f89f1ad7ce1449fadfc27adb39c217"
+    },
+    "dev": {
+      "title": "Fake",
+      "html": "afe6c0653d218aaea0ce5b4cdc149c9c772760f48aa539af64d8e7f7f204bff1",
+      "css": "521bac856af963ed9f61feeaf9a596acd38a7a00de5f22644d82439d01a09293",
+      "script": "2f44d79e717baefe682988464665cb87a69a652bf14270c48973ef38c70cdc73"
+    }
+  }
+}

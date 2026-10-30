@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { vevent, calendar, feedTopics } from "./helpers/icalFeed.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-14T10:00:00Z") });
 after(() => mock.timers.reset());
@@ -127,7 +128,7 @@ test("Story d'annonce : la route cover renvoie title, ambiguous et found ; faux 
 test("FR/EN : mêmes clés pour les trois modules ; minCore 0.2.10 ; versions augmentées ; extrait de changelog présent", () => {
   for (const m of ["planning", "stream-story", "game-suggestions"]) {
     assert.deepEqual(Object.keys(readJson(m, "locales/fr.json")).sort(), Object.keys(readJson(m, "locales/en.json")).sort(), m);
-    assert.equal(readJson(m, "module.json").minCore, "0.2.10", m);
+    assert.equal(readJson(m, "module.json").minCore, m === "planning" ? "0.5.0" : "0.2.10", m);   // le Planning demande 0.5.0 depuis ses éléments d'overlay
   }
   assert.ok(fs.existsSync(new URL("../docs/changelog-parts/rawg-wrong-cover.md", import.meta.url)));
 });
@@ -135,7 +136,7 @@ test("FR/EN : mêmes clés pour les trois modules ; minCore 0.2.10 ; versions au
 /* ───────────── Mise à jour à chaud ───────────── */
 test("mise à jour à chaud : Planning et Story d'annonce copiés dans un autre dossier et chargés avec ?v= montrent le lien (aucun fichier voisin d'une ancienne version)", async () => {
   const os = await import("node:os"), path = await import("node:path"), { pathToFileURL } = await import("node:url");
-  const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), "rawg-link-update-"));
+  const dir = makeTempDir("rawg-link-update-");
   try {
     for (const m of ["planning", "stream-story"]) fs.cpSync(new URL(`../modules/${m}`, import.meta.url).pathname, path.join(dir, m), { recursive: true });
     const load = (m, v) => import(`${pathToFileURL(path.join(dir, m, "index.mjs")).href}?v=${v}`);

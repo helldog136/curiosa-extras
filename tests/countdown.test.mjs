@@ -37,8 +37,8 @@ test("manifeste : valide, widget avec page, droits, outils pour les assistants, 
   assert.ok(r.ok, r.ok ? "" : r.error);
   const m = r.manifest;
   assert.equal(m.id, "countdown");
-  assert.equal(m.version, "1.0.1");
-  assert.equal(m.minCore, "0.2.5");
+  assert.equal(m.version, "1.1.0");
+  assert.equal(m.minCore, "0.5.0");
   assert.equal(m.apiVersion, 2);
   assert.equal(m.type, "widget");
   assert.equal(m.page, true);

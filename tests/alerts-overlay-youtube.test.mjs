@@ -31,7 +31,7 @@ afterEach(() => {});
 
 test("manifeste : version mineure, consomme live.event (schéma), permission topics, réglage « texte des messages » éteint par défaut, parité fr/en", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.1.1");
+  assert.equal(manifest.version, "1.2.0");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["live.event"]);
   assert.ok(manifest.permissions.includes("topics"));
   assert.ok(!manifest.requires, "aucune dépendance forte");
