@@ -51,8 +51,8 @@ export function rank(list) {
       if (!key) continue;
       const at = new Date(g.at).getTime() || 0;
       const hit = groups.get(key);
-      if (!hit) groups.set(key, { title: g.title, times: 1, votes: status === "already_played" ? Number(g.votes) || 0 : 0, at });
-      else { hit.times++; if (status === "already_played") hit.votes += Number(g.votes) || 0; if (at > hit.at) { hit.at = at; hit.title = g.title; } }
+      if (!hit) groups.set(key, { title: g.title, times: 1, votes: status === "already_played" ? Number(g.votes) || 0 : 0, at, first: at });
+      else { hit.times++; if (status === "already_played") hit.votes += Number(g.votes) || 0; if (at > hit.at) hit.at = at; if (at < hit.first) { hit.first = at; hit.title = g.title; } }   // le nom est écrit comme la PREMIÈRE proposition
     }
     const primary = status === "already_played" ? (e) => e.votes : (e) => e.times;
     out[status] = [...groups.values()].sort((a, b) => primary(b) - primary(a) || b.times - a.times || b.at - a.at || a.title.localeCompare(b.title)).slice(0, MAX_ENTRIES).map(({ title, times, votes }) => ({ title, times, votes }));
@@ -114,11 +114,14 @@ export function renderContent(ctx, p, ranking) {
   const head = p.height >= 150 ? `<p data-ov-part="title" class="gs-head">${esc(t(`ovHeading_${p.status}`))}</p>` : "";
   const headPx = head ? 44 : 0;
   const { cols, rows } = layoutFor(entries.length, p.width, p.height - headPx);
+  // Hauteur d'une ligne : elle partage la place, sans jamais devenir une grande boîte à petit texte (au plus un quart de sa largeur) ; la liste reste en haut du cadre.
+  const colW = (p.width - 24 - (cols - 1) * 16) / cols;
+  const rowH = Math.max(28, Math.min(Math.floor((p.height - headPx - 24 - (rows - 1) * 8) / rows), Math.floor(colW / 4), 140));
   const items = entries.map((e, i) => {
     const score = scoreText(ctx, p.status, e);
-    return `<li data-ov-part="game" class="gs-row"><span data-ov-part="rank" class="gs-rank">${i + 1}</span><span data-ov-part="name" class="gs-name">${esc(e.title)}</span>${score ? `<span data-ov-part="score" class="gs-score">${esc(score)}</span>` : ""}</li>`;
+    return `<li data-ov-part="game" class="gs-row"><div class="gs-in"><span data-ov-part="rank" class="gs-rank">${i + 1}</span><span data-ov-part="name" class="gs-name">${esc(e.title)}</span>${score ? `<span data-ov-part="score" class="gs-score">${esc(score)}</span>` : ""}</div></li>`;
   }).join("");
-  return `${head}<ol data-ov-part="list" class="gs-list" style="--cols:${cols};--rows:${rows}">${items}</ol>`;
+  return `${head}<ol data-ov-part="list" class="gs-list" style="--cols:${cols};--rows:${rows};--rh:${rowH}px">${items}</ol>`;
 }
 
 const BASE = `
@@ -128,10 +131,11 @@ body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 #p{box-sizing:border-box;height:100%;overflow:hidden;padding:12px;background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,0)}
 #r{height:100%;display:flex;flex-direction:column;gap:8px}
 .gs-head{margin:0;flex:0 0 auto;font-size:clamp(14px,4.2vmin,30px);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gs-list{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-auto-flow:column;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));grid-template-rows:repeat(var(--rows,1),minmax(0,1fr));gap:8px 16px}
-.gs-row{container-type:size;box-sizing:border-box;min-width:0;min-height:0;overflow:hidden;display:flex;align-items:center;gap:.6em;padding:0 .7em;
- background:color-mix(in srgb,var(--ov-fg,#fff) 9%,transparent);border:1px solid color-mix(in srgb,var(--ov-fg,#fff) 22%,transparent);border-radius:var(--ov-radius,0);font-size:clamp(12px,min(46cqh,3.6cqw),64px)}
-.gs-rank{flex:0 0 auto;min-width:1.5em;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--ov-fg,#fff) 70%,transparent)}
+.gs-list{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-auto-flow:column;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));grid-template-rows:repeat(var(--rows,1),var(--rh,48px));align-content:start;gap:8px 16px}
+.gs-row{container-type:size;box-sizing:border-box;min-width:0;min-height:0;overflow:hidden;
+ background:color-mix(in srgb,var(--ov-fg,#fff) 9%,transparent);border:1px solid color-mix(in srgb,var(--ov-fg,#fff) 22%,transparent);border-radius:var(--ov-radius,0)}
+.gs-in{box-sizing:border-box;height:100%;display:flex;align-items:center;gap:.55em;padding:0 .6em;font-size:clamp(12px,min(40cqh,6cqw),64px)}
+.gs-rank{flex:0 0 auto;min-width:1.1em;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--ov-fg,#fff) 70%,transparent)}
 .gs-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
 .gs-score{flex:0 0 auto;font-size:.62em;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent)}
 @container (max-width:240px){.gs-score{display:none}}

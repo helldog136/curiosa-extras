@@ -141,8 +141,8 @@ body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 // Le défilement : seulement si la liste dépasse le cadre ET que l'option est active. On double la liste (la copie est cachée aux lecteurs d'écran) et on la fait glisser d'une longueur de liste, en boucle.
 const SCRIPT = `(function(){var R=document.getElementById('r'),u=location.pathname+location.search+(location.search?'&':'?')+'frag=1',v=R.getAttribute('data-v'),n=0,wait=120000;
 function fit(){var t=R.querySelector('.tw-track');if(!t)return;var d=t.querySelector('[data-dup]');if(d)d.remove();t.style.animation='none';var w=t.parentNode,h=t.getAttribute('data-dir')==='h',l=t.firstElementChild;
-var len=h?l.offsetWidth:l.offsetHeight,room=h?w.clientWidth:w.clientHeight;if(t.getAttribute('data-scroll')!=='1'||len<=room+1){t.style.animation='';return}
-var c=l.cloneNode(true);c.setAttribute('data-dup','1');c.setAttribute('aria-hidden','true');t.appendChild(c);t.style.setProperty('--len',len+'px');t.style.animation='tw-'+(h?'x':'y')+' '+Math.max(10,Math.round(len/45))+'s linear infinite'}
+var len=h?l.offsetWidth:l.offsetHeight,room=h?w.clientWidth:w.clientHeight;if(t.getAttribute('data-scroll')!=='1'||len<=room+1){t.style.animation='';w.style.webkitMaskImage=w.style.maskImage='';return}
+var c=l.cloneNode(true);c.setAttribute('data-dup','1');c.setAttribute('aria-hidden','true');t.appendChild(c);t.style.setProperty('--len',len+'px');t.style.animation='tw-'+(h?'x':'y')+' '+Math.max(10,Math.round(len/45))+'s linear infinite';w.style.webkitMaskImage=w.style.maskImage='linear-gradient(to '+(h?'right':'bottom')+',transparent,#000 8%,#000 92%,transparent)'}
 function poll(){if(n++>=200)return;fetch(u,{credentials:'omit',cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
 if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.setAttribute('data-v',v);wait=120000;fit()}else wait=Math.min(900000,Math.round(wait*1.5))}).catch(function(){wait=Math.min(900000,wait*2)}).then(function(){setTimeout(poll,wait)})}
 fit();setTimeout(poll,wait)})();`;

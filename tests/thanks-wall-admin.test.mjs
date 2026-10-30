@@ -378,8 +378,8 @@ test("outils : Contacts muet → une phrase claire, jamais d'écriture à l'aveu
 
 /* ───────────── Le manifeste ───────────── */
 
-test("manifeste : Contacts v2 obligatoire, vie privée offerte, groupes et catégorie cachée en « choix parmi » (jamais un nom à taper), cœur 0.2.5", () => {
-  assert.equal(manifest.minCore, "0.2.5");
+test("manifeste : Contacts v2 obligatoire, vie privée offerte, groupes et catégorie cachée en « choix parmi » (jamais un nom à taper), cœur 0.5.0 (éléments d'overlay depuis la 1.2.0)", () => {
+  assert.equal(manifest.minCore, "0.5.0");
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, undefined]]);
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]]);
   for (const key of ["category", "category2", "category3", "category4", "category5", "category6", "hide"]) {
@@ -407,9 +407,9 @@ test("manifeste : les outils qui écrivent ne sont jamais accordés d'office ; c
   for (const m of manifest.mcp) assert.ok(`thanks-wall__${m.name}`.length <= 64);
 });
 
-test("la page publique, la racine et les groupes n'écrivent rien (aucune route, aucun stockage modifié)", async () => {
+test("la page publique, la racine et les groupes n'écrivent rien (aucune route publique à part la page de l'élément d'overlay, aucun stockage modifié)", async () => {
   const { ctx } = setup(3);
-  assert.equal(def.routes, undefined);
+  assert.deepEqual(Object.keys(def.routes), ["element/:slug"]);
   const before = JSON.stringify(ctx.dumpStore());
   await def.page(ctx, { segments: [] }); await def.page(ctx, { segments: ["g", "1"] });
   assert.equal(JSON.stringify(ctx.dumpStore()), before);
