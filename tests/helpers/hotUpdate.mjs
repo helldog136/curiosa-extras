@@ -10,6 +10,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { makeTempDir } from "./tmp.mjs";
 
 // ── 1. Analyse du code ──────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -217,7 +218,7 @@ export function extractRelease(repo, tag, id, dest) {
   fs.mkdirSync(dest, { recursive: true });
   const archive = git(repo, ["archive", "--format=tar", tag, `modules/${id}`], { encoding: "buffer" });
   if (archive.status !== 0) throw new Error(`git archive ${tag} modules/${id} : ${String(archive.stderr).slice(0, 200)}`);
-  const tmp = fs.mkdtempSync(path.join(path.dirname(dest), "arch-"));
+  const tmp = makeTempDir("arch-", { in: path.dirname(dest) });
   try {
     const x = spawnSync("tar", ["-x", "-C", tmp], { input: archive.stdout });
     if (x.status !== 0) throw new Error(`tar : ${String(x.stderr).slice(0, 200)}`);

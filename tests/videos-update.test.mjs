@@ -3,10 +3,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const SRC = path.join(here, "../modules/videos");
@@ -25,7 +25,7 @@ test("aucun fichier du module n'importe un voisin sans la version du fichier pri
 });
 
 test("une mise à jour dans le même processus charge le nouveau code, y compris celui des fichiers voisins", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "videos-update-"));
+  const dir = makeTempDir("videos-update-");
   try {
     fs.cpSync(SRC, dir, { recursive: true });
     const before = (await load(dir, "ancien")).default;

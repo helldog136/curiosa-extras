@@ -3,10 +3,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const SRC = path.join(here, "../modules/events");
@@ -17,7 +17,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(SRC, "module.json"), "utf8
 const ctxOf = (key) => fakeCtx({ key, basePath: "agenda", moduleId: "events", name: "Agenda", locale: "fr", defaultLocale: "fr", locales: ["fr"], messages, permissions: manifest.permissions, settings: { timezone: "Europe/Paris" } });
 
 test("mise à jour dans le même processus : le nouveau code des fichiers voisins est celui qui sert (pas l'ancien resté en mémoire)", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "events-update-"));
+  const dir = makeTempDir("events-update-");
   try {
     copy(SRC, dir);
     const before = (await load(dir, "ancien")).default;

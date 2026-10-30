@@ -4,6 +4,12 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Pour les développeurs
+
+- **Les tests ne laissent plus de dossiers dans `/tmp`.** Une aide `makeTempDir()` (`tests/helpers/tmp.mjs`) enregistre et supprime chaque dossier temporaire, y compris à la sortie du processus ; `npm test` donne à chaque exécution son propre `TMPDIR`, supprimé à la fin, et signale ce qui y reste (`KEEP_TEST_TMP=1` pour déboguer). Aucun module n'est touché.
+
 ## 1.25.0
 
 *La télécommande de Participation (Sondages, « A ou B ? », sourdine…) devient aussi un dock pour OBS, avec la même adresse secrète. Pour Curiosa 0.2.5 ou plus. Module touché : Participation 1.1.0.*

@@ -2,10 +2,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const source = path.join(here, "../modules/mascot");
@@ -15,7 +15,7 @@ const messages = JSON.parse(fs.readFileSync(path.join(source, "locales/fr.json")
 const ctx = (key) => fakeCtx({ key, moduleId: "mascot", locale: "fr", defaultLocale: "fr", locales: ["fr"], messages, permissions: manifest.permissions, settings: {} });
 
 test("mise à jour à chaud : la nouvelle version utilise SES fichiers voisins (phrases de départ, style)", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mascot-update-"));
+  const dir = makeTempDir("mascot-update-");
   try {
     fs.cpSync(source, dir, { recursive: true });
     const before = (await load(dir, "a")).default;
