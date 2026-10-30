@@ -8,10 +8,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.26.0",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "🔔"
+      "icon": "🔔",
+      "requires": {
+        "core": "0.5.0"
+      }
     },
     {
       "id": "audience",
@@ -737,12 +740,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/maze-overlay",
       "ref": "v1.26.0",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🌀",
       "requires": {
-        "core": "0.2.2"
+        "core": "0.5.0"
       }
     },
     {

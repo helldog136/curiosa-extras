@@ -125,6 +125,7 @@ export class MazeEngine {
     moveUnitsPerSec;
     turnRadPerSec;
     fovRad;
+    followAspect = false;
     promoItems = [];
     promoTextures = [];
     promoCellKeys = [];
@@ -225,6 +226,8 @@ export class MazeEngine {
         this.moveUnitsPerSec = Math.max(0.1, opts.moveSpeed);
         this.turnRadPerSec = Math.max(10, opts.turnSpeedDegrees) * (Math.PI / 180);
         this.fovRad = Math.max(20, Math.min(150, opts.fovDegrees ?? 66)) * (Math.PI / 180);
+        // Élément de page d'overlay (« s'adapte au ratio ») : le champ de vision s'étend avec la largeur de la fenêtre (même échelle qu'en 16:9, scène plus large) au lieu d'étirer l'image.
+        this.followAspect = opts.followAspect === true;
         const ctx = this.canvas.getContext("2d");
         if (!ctx)
             throw new Error("Canvas 2D non supporté.");
@@ -260,6 +263,15 @@ export class MazeEngine {
         }
         this.imageData = this.ctx.createImageData(this.width, this.height);
         this.resize(this.canvas.clientWidth || 640, this.canvas.clientHeight || 360);
+    }
+    /**
+     * Longueur du plan de projection (demi-largeur de la vue pour une profondeur de 1). Par défaut : celle du champ de vision réglé (tan(fov/2)), quel que soit le ratio.
+     * Avec `followAspect` : proportionnelle au ratio de la fenêtre, 16:9 servant de référence. Les colonnes gardent ainsi la même largeur angulaire à tout ratio :
+     * en 21:9 ou en 32:9 on voit plus large sur les côtés, sans étirer ni écraser les murs (en 16:9, rien ne change).
+     */
+    planeLength() {
+        const base = Math.tan(this.fovRad / 2);
+        return this.followAspect ? base * (this.width / this.height) / (16 / 9) : base;
     }
     resize(cssWidth, cssHeight) {
         const aspect = cssWidth > 0 && cssHeight > 0 ? cssWidth / cssHeight : 16 / 9;
@@ -1095,7 +1107,7 @@ export class MazeEngine {
         const data = this.imageData.data;
         const dirX = Math.cos(this.camAngle);
         const dirY = Math.sin(this.camAngle);
-        const planeLen = Math.tan(this.fovRad / 2);
+        const planeLen = this.planeLength();
         const planeX = -dirY * planeLen;
         const planeY = dirX * planeLen;
         // Plafond plat en fond — les colonnes de murs dessinées ensuite
@@ -1234,9 +1246,11 @@ export class MazeEngine {
     drawHandsSprite() {
         if (!this.handsSprite || !this.handsSprite.complete || this.handsSprite.naturalWidth === 0)
             return;
-        const spriteW = this.width * 0.55;
+        // Élément « ratio » : les mains gardent la taille qu'elles ont en 16:9 (elles ne grandissent pas avec la largeur).
+        const refW = this.followAspect ? Math.min(this.width, this.height * (16 / 9)) : this.width;
+        const spriteW = refW * 0.55;
         const spriteH = spriteW * (this.handsSprite.naturalHeight / this.handsSprite.naturalWidth);
-        const x = (this.width - spriteW) / 2 + this.bobX * this.width;
+        const x = (this.width - spriteW) / 2 + this.bobX * refW;
         const y = this.height - spriteH + this.bobY * this.height;
         this.ctx.drawImage(this.handsSprite, x, y, spriteW, spriteH);
     }
@@ -1246,7 +1260,7 @@ export class MazeEngine {
             return;
         const dirX = Math.cos(this.camAngle);
         const dirY = Math.sin(this.camAngle);
-        const planeLen = Math.tan(this.fovRad / 2);
+        const planeLen = this.planeLength();
         const planeX = -dirY * planeLen;
         const planeY = dirX * planeLen;
         const rayDirX0 = dirX - planeX;
