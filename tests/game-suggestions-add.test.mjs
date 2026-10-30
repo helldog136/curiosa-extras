@@ -293,7 +293,7 @@ test("MCP : game_suggestions_add — un jeu, une liste, mêmes refus que le form
 });
 
 test("aucune nouvelle surface publique : mêmes routes, aucune action d'ajout dans routes ni dans la page publique", async () => {
-  assert.deepEqual(Object.keys(def.routes).sort(), ["suggest", "vote"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["element/:slug", "suggest", "vote"]);   // « element/:slug » : la page de l'élément d'overlay (1.6.0), rien d'autre de public
   const c = ctx();
   const page = JSON.stringify(await def.page(c, { segments: [] }));
   assert.ok(!page.includes("addGame") && !page.includes("adminForm"));
