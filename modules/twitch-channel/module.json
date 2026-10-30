@@ -114,8 +114,8 @@
       },
       "fit": "fluid",
       "minSize": {
-        "width": 120,
-        "height": 60
+        "width": 200,
+        "height": 80
       },
       "ratios": {
         "min": 0.3,
@@ -164,7 +164,7 @@
       },
       "fit": "fluid",
       "minSize": {
-        "width": 100,
+        "width": 120,
         "height": 40
       },
       "ratios": {

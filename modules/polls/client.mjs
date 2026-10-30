@@ -206,7 +206,7 @@ export const OVERLAY_JS = String.raw`(function () {
     side.appendChild(head);
     if (d.decision) side.appendChild(decisionNode(d.decision));
     side.appendChild(el("h1", "vo-q", d.question, "question"));
-    var ol = el("ol", "vo-list", undefined, "choices");
+    var ol = el("ol", "vo-list", undefined, "choices"); if (c.el && d.rows.length > 4) { ol.setAttribute("data-many", "1"); body.setAttribute("data-many", "1"); }
     for (var i = 0; i < d.rows.length; i++) {
       var r = d.rows[i];
       var li = el("li", "vo-row" + (r.lead ? " lead" : ""), undefined, "choice"); if (r.lead) li.setAttribute("data-lead", "1");
@@ -251,12 +251,12 @@ export const OVERLAY_JS = String.raw`(function () {
     if (!c.el) return;
     var p = box.firstElementChild, b = p && p.firstElementChild;
     if (!b) return;
-    var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    if (!(w > 0 && h > 0)) return;
-    var lo = 9, hi = 44;
+    var lo = 10, hi = 44;
     for (var i = 0; i < 7; i++) {
       var mid = (lo + hi) / 2;
       box.style.setProperty("--vo-fs", mid + "px");
+      // l'espace disponible est relu à CHAQUE essai : les marges de la carte sont en « em », elles changent avec la taille de la police
+      var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
       if (b.offsetHeight <= h + 1 && b.scrollWidth <= w + 1) lo = mid; else hi = mid;
     }
     box.style.setProperty("--vo-fs", lo + "px");

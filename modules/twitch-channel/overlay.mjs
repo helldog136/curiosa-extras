@@ -50,7 +50,7 @@ const CSS = `html,body{margin:0;height:100%;overflow:hidden;background:transpare
 [data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.5em .7em;overflow:hidden;font-size:var(--tw-fs,20px);line-height:1.15;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
 [data-ov-part="body"]{margin:auto;display:flex;flex-direction:column;align-items:center;gap:.6em;max-width:100%;text-align:center}
 [data-ov-part="stat"]{display:flex;flex-direction:column;align-items:center;min-width:0}
-[data-ov-part="value"]{font-size:2.2em;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+[data-ov-part="value"]{font-size:2.2em;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
 [data-ov-part="label"]{font-size:.8em;font-weight:600;opacity:.9;overflow-wrap:anywhere}
 [data-ov-part="badge"]{display:inline-flex;align-items:center;gap:.45em;padding:.3em .8em;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 [data-ov-part="badge"][data-state="live"]{background:#c62828;color:#fff}
@@ -70,13 +70,13 @@ const JS = String.raw`(function () {
   function fmt(n) { try { return new Intl.NumberFormat(c.lang).format(n); } catch (e) { return String(n); } }
   function fit() {
     if (!body) return;
-    var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    if (!(w > 0 && h > 0)) return;
-    var lo = 8, hi = 120;
+    var lo = 9, hi = 120;
     for (var i = 0; i < 8; i++) {
       var mid = (lo + hi) / 2;
       p.style.setProperty("--tw-fs", mid + "px");
-      if (body.offsetHeight <= h + 1 && body.scrollWidth <= w + 1) lo = mid; else hi = mid;
+      // l'espace disponible est relu à CHAQUE essai : les marges sont en « em », elles changent avec la taille de la police
+      var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      if (w > 0 && h > 0 && body.offsetHeight <= h + 1 && body.scrollWidth <= w + 1) lo = mid; else hi = mid;
     }
     p.style.setProperty("--tw-fs", lo + "px");
   }

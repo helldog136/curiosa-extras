@@ -43,7 +43,7 @@ test("manifeste : valide pour le cœur 0.5.0 ; un élément « poll », fluide, 
   assert.equal(manifestJson.version, "1.3.0"); assert.equal(manifestJson.minCore, "0.5.0");
   assert.equal(manifestJson.overlayElements.length, 1);
   assert.equal(decl.id, "poll"); assert.equal(decl.fit, "fluid"); assert.equal(decl.followsStyle, true); assert.equal(decl.demo, true);
-  assert.deepEqual(decl.minSize, { width: 240, height: 160 });
+  assert.deepEqual(decl.minSize, { width: 320, height: 200 });
   assert.ok(decl.ratios.min <= 400 / 600 && decl.ratios.max >= 1600 / 400, "les cadres 400×600, 900×300 et 1600×400 sont dans la plage");
   assert.deepEqual(decl.options.map((o) => [o.id, o.type]), [["poll", "text"]]);
   assert.ok(decl.options[0].example && decl.options[0].help.fr && decl.options[0].help.en);
