@@ -1,0 +1,821 @@
+{
+ "manifest": {
+  "apiVersion": 2,
+  "id": "community-stats",
+  "name": {
+   "fr": "Statistiques de la communauté",
+   "en": "Community statistics"
+  },
+  "description": {
+   "fr": "Garde les chiffres de vos réseaux (followers, abonnements payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
+   "en": "Keeps the numbers of your networks (followers, paying followers, posts, views) and how they evolve, for you and for your AI. Nothing is shown on your site without your say-so."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📊",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "consumes": [
+   {
+    "topic": "social.stat",
+    "label": {
+     "fr": "Les chiffres de vos réseaux (fournis par vos modules de réseaux)",
+     "en": "The numbers of your networks (provided by your network modules)"
+    },
+    "schema": [
+     {
+      "key": "id",
+      "type": "string",
+      "required": true
+     },
+     {
+      "key": "platform",
+      "type": "string",
+      "required": true
+     },
+     {
+      "key": "account",
+      "type": "string",
+      "required": true
+     },
+     {
+      "key": "accountKey",
+      "type": "string",
+      "required": true
+     },
+     {
+      "key": "metric",
+      "type": "string",
+      "required": true
+     },
+     {
+      "key": "label",
+      "type": "string",
+      "required": true
+     },
+     {
+      "key": "value",
+      "type": "number"
+     },
+     {
+      "key": "asOf",
+      "type": "datetime",
+      "required": true
+     },
+     {
+      "key": "url",
+      "type": "url"
+     },
+     {
+      "key": "error",
+      "type": "string"
+     }
+    ]
+   }
+  ],
+  "permissions": [
+   "admin",
+   "storage",
+   "topics",
+   "mcp"
+  ],
+  "tabs": [
+   {
+    "id": "use",
+    "label": {
+     "fr": "Chiffres",
+     "en": "Figures"
+    }
+   }
+  ],
+  "settings": [
+   {
+    "key": "period",
+    "type": "select",
+    "default": "1d",
+    "advanced": true,
+    "label": {
+     "fr": "À quelle fréquence noter vos chiffres ?",
+     "en": "How often should your numbers be noted?"
+    },
+    "help": {
+     "fr": "Une fois par jour convient très bien : vous n'avez rien à régler. Plus c'est fréquent, plus l'historique est détaillé (et plus il prend de place).",
+     "en": "Once a day is just fine: there is nothing to set. The more often, the more detailed the history (and the more room it takes)."
+    },
+    "options": [
+     {
+      "value": "1h",
+      "label": {
+       "fr": "Toutes les heures",
+       "en": "Every hour"
+      }
+     },
+     {
+      "value": "6h",
+      "label": {
+       "fr": "Toutes les 6 heures",
+       "en": "Every 6 hours"
+      }
+     },
+     {
+      "value": "12h",
+      "label": {
+       "fr": "Toutes les 12 heures",
+       "en": "Every 12 hours"
+      }
+     },
+     {
+      "value": "1d",
+      "label": {
+       "fr": "Une fois par jour (conseillé)",
+       "en": "Once a day (recommended)"
+      }
+     },
+     {
+      "value": "1w",
+      "label": {
+       "fr": "Une fois par semaine",
+       "en": "Once a week"
+      }
+     }
+    ]
+   },
+   {
+    "key": "retention",
+    "type": "select",
+    "default": "2y",
+    "advanced": true,
+    "label": {
+     "fr": "Combien de temps garder l'historique ?",
+     "en": "How long should the history be kept?"
+    },
+    "help": {
+     "fr": "Au-delà, les anciens chiffres sont effacés. Le dernier chiffre de chaque compte est toujours gardé.",
+     "en": "Older numbers are erased after that. The latest number of each account is always kept."
+    },
+    "options": [
+     {
+      "value": "3m",
+      "label": {
+       "fr": "3 mois",
+       "en": "3 months"
+      }
+     },
+     {
+      "value": "1y",
+      "label": {
+       "fr": "1 an",
+       "en": "1 year"
+      }
+     },
+     {
+      "value": "2y",
+      "label": {
+       "fr": "2 ans (conseillé)",
+       "en": "2 years (recommended)"
+      }
+     },
+     {
+      "value": "5y",
+      "label": {
+       "fr": "5 ans",
+       "en": "5 years"
+      }
+     },
+     {
+      "value": "forever",
+      "label": {
+       "fr": "Pour toujours",
+       "en": "Forever"
+      }
+     }
+    ]
+   }
+  ],
+  "mcp": [
+   {
+    "name": "community_stats_list",
+    "readOnly": true,
+    "default": false,
+    "description": "List the community statistics of the owner's social channels: one entry per account and kind of figure, with the current value, its origin (automatic reading or typed by hand), its freshness, and the change over the last 7 and 30 days (absolute and percent; null without enough history; percent is null when the starting value was 0). followers = free audience (subscribers, followers, members), paying = paying audience (paid subscribers, members, patrons), content = number of posts or videos, views = cumulative views. Twitch 30 days: avg_viewers, peak_viewers, hours_streamed/watched (minutes), followers_gained. Use it for questions like 'how many followers did I gain this month?'. status 'no_data': the network is not giving the figure right now (see problem; value is the last known one, dated by lastValueAt); 'not_shared_anymore': the network stopped sharing it. Do not add figures of different networks together unless asked, and say so then: audiences overlap. Empty result: read 'note'.",
+    "input": {
+     "type": "object",
+     "properties": {
+      "platform": {
+       "type": "string",
+       "maxLength": 31,
+       "description": "Only this network, e.g. twitch, youtube, instagram."
+      },
+      "metric": {
+       "type": "string",
+       "enum": [
+        "followers",
+        "paying",
+        "content",
+        "views",
+        "avg_viewers",
+        "peak_viewers",
+        "hours_streamed",
+        "hours_watched",
+        "followers_gained"
+       ],
+       "description": "Only this kind of figure."
+      }
+     }
+    }
+   },
+   {
+    "name": "community_stats_history",
+    "readOnly": true,
+    "default": false,
+    "description": "History of ONE statistic (take its id from community_stats_list): dated values over the last days, oldest first. Use it to draw a curve or compare two dates. Long histories are thinned evenly (thinned: true) to at most 'limit' points, first and last kept.",
+    "input": {
+     "type": "object",
+     "required": [
+      "id"
+     ],
+     "properties": {
+      "id": {
+       "type": "string",
+       "maxLength": 200
+      },
+      "days": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 1830,
+       "description": "How many days back (default 90)."
+      },
+      "limit": {
+       "type": "integer",
+       "minimum": 2,
+       "maximum": 500,
+       "description": "Most points returned (default 200)."
+      }
+     }
+    }
+   },
+   {
+    "name": "stats_set_manual",
+    "default": false,
+    "description": "Record a figure typed by hand for a network the site cannot read by itself (Instagram, TikTok, X, Facebook…). Creates the account the first time. Refused for an account that is read automatically. The entry is marked 'typed by hand' with its date and the name of this token in the history; a second entry in the same period replaces the first. Ask the owner for the figure: never guess it.",
+    "input": {
+     "type": "object",
+     "required": [
+      "platform",
+      "account",
+      "metric",
+      "value"
+     ],
+     "properties": {
+      "platform": {
+       "type": "string",
+       "maxLength": 31,
+       "description": "Network name, e.g. Instagram."
+      },
+      "account": {
+       "type": "string",
+       "maxLength": 120,
+       "description": "Account name, e.g. @emma."
+      },
+      "metric": {
+       "type": "string",
+       "enum": [
+        "followers",
+        "paying",
+        "content",
+        "views"
+       ]
+      },
+      "value": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 1000000000000
+      },
+      "date": {
+       "type": "string",
+       "maxLength": 40,
+       "description": "Day of the figure (YYYY-MM-DD) or ISO time. Default: now. Never in the future."
+      }
+     }
+    }
+   }
+  ]
+ },
+ "keys": [
+  "adminActions",
+  "adminBadge",
+  "adminPanel",
+  "mcp",
+  "tasks"
+ ],
+ "routes": [],
+ "publicBefore": [],
+ "publicAfter": [
+  {
+   "id": "manual:instagram:emma:followers",
+   "platform": "instagram",
+   "account": "@emma",
+   "metric": "followers",
+   "value": 7,
+   "asOf": "2026-10-14T10:00:00.000Z",
+   "manual": true
+  },
+  {
+   "id": "twitch-channel:emma:followers",
+   "platform": "twitch",
+   "account": "emma_live",
+   "metric": "followers",
+   "value": 1120,
+   "asOf": "2026-10-14T10:00:00.000Z",
+   "manual": false
+  },
+  {
+   "id": "youtube-channel:c:content",
+   "platform": "youtube",
+   "account": "Emma TV",
+   "metric": "content",
+   "value": 80,
+   "asOf": "2026-10-14T10:00:00.000Z",
+   "manual": false
+  }
+ ],
+ "saveMessage": {
+  "ok": "C'est enregistré.",
+  "redirect": "?"
+ },
+ "admin": [
+  {
+   "type": "heading",
+   "text": "Les chiffres de vos réseaux"
+  },
+  {
+   "type": "markdown",
+   "text": "Votre site note régulièrement vos followers, vos publications et vos vues, et garde leur historique. Votre IA peut les consulter pour vous répondre (« combien de followers ai-je gagnés ce mois-ci ? »). Rien n'apparaît sur votre site tant que vous ne l'avez pas choisi."
+  },
+  {
+   "type": "markdown",
+   "text": "Dernière mise à jour : maintenant. Mise à jour automatique : une fois par jour."
+  },
+  {
+   "type": "adminForm",
+   "action": "refresh",
+   "submitLabel": "Mettre à jour maintenant",
+   "fields": []
+  },
+  {
+   "type": "heading",
+   "text": "Vos chiffres"
+  },
+  {
+   "type": "table",
+   "columns": [
+    "Chiffre",
+    "Évolution"
+   ],
+   "rows": [
+    [
+     "Instagram · @emma\nFollowers : 7\nMontré sur mon site",
+     "Pas encore assez d'historique pour comparer.\nSaisi à la main : maintenant"
+    ],
+    [
+     "Twitch · emma_live\nFollowers : 1 120\nMontré sur mon site",
+     "+21 followers cette semaine (+1,9 %)\n+90 followers ce mois-ci (+8,7 %)\nMise à jour automatique : maintenant"
+    ],
+    [
+     "Twitch · emma_live\nAbonnements payants : 12\nGardé pour vous",
+     "Pas de changement cette semaine\nPas de changement ce mois-ci\nMise à jour automatique : maintenant"
+    ],
+    [
+     "Twitch · emma_live\nAudience moyenne (30 jours) : 42\nGardé pour vous",
+     "Calculé sur vos directs des 30 derniers jours, mesurés par votre site.\nMise à jour automatique : maintenant"
+    ],
+    [
+     "YouTube · Emma TV\nPublications : 80\nMontré sur mon site",
+     "Pas de changement cette semaine\nPas de changement ce mois-ci\nMise à jour automatique : maintenant"
+    ],
+    [
+     "YouTube · Emma TV\nVues : 54 000\nGardé pour vous",
+     "+700 vues cette semaine (+1,3 %)\n+3 000 vues ce mois-ci (+5,9 %)\nMise à jour automatique : maintenant"
+    ]
+   ]
+  },
+  {
+   "type": "heading",
+   "text": "Ce que vous montrez sur votre site"
+  },
+  {
+   "type": "markdown",
+   "text": "« Montrer sur mon site » autorise l'affichage d'un chiffre au public ; sans votre accord, il reste visible de vous uniquement. L'affichage sur le site arrive bientôt : vos choix sont déjà gardés."
+  },
+  {
+   "type": "adminForm",
+   "action": "saveVisibility",
+   "submitLabel": "Enregistrer mes choix",
+   "fields": [
+    {
+     "name": "show_r18",
+     "label": "Instagram · @emma — Followers",
+     "kind": "select",
+     "value": "yes",
+     "options": [
+      {
+       "value": "no",
+       "label": "Non, je le garde pour moi"
+      },
+      {
+       "value": "yes",
+       "label": "Oui, le montrer sur mon site"
+      }
+     ]
+    },
+    {
+     "name": "show_r2",
+     "label": "Twitch · emma_live — Followers",
+     "kind": "select",
+     "value": "yes",
+     "options": [
+      {
+       "value": "no",
+       "label": "Non, je le garde pour moi"
+      },
+      {
+       "value": "yes",
+       "label": "Oui, le montrer sur mon site"
+      }
+     ]
+    },
+    {
+     "name": "show_r4",
+     "label": "Twitch · emma_live — Abonnements payants",
+     "kind": "select",
+     "value": "no",
+     "options": [
+      {
+       "value": "no",
+       "label": "Non, je le garde pour moi"
+      },
+      {
+       "value": "yes",
+       "label": "Oui, le montrer sur mon site"
+      }
+     ]
+    },
+    {
+     "name": "show_r10",
+     "label": "Twitch · emma_live — Audience moyenne (30 jours)",
+     "kind": "select",
+     "value": "no",
+     "options": [
+      {
+       "value": "no",
+       "label": "Non, je le garde pour moi"
+      },
+      {
+       "value": "yes",
+       "label": "Oui, le montrer sur mon site"
+      }
+     ]
+    },
+    {
+     "name": "show_r6",
+     "label": "YouTube · Emma TV — Publications",
+     "kind": "select",
+     "value": "yes",
+     "options": [
+      {
+       "value": "no",
+       "label": "Non, je le garde pour moi"
+      },
+      {
+       "value": "yes",
+       "label": "Oui, le montrer sur mon site"
+      }
+     ]
+    },
+    {
+     "name": "show_r8",
+     "label": "YouTube · Emma TV — Vues",
+     "kind": "select",
+     "value": "no",
+     "options": [
+      {
+       "value": "no",
+       "label": "Non, je le garde pour moi"
+      },
+      {
+       "value": "yes",
+       "label": "Oui, le montrer sur mon site"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "heading",
+   "text": "Comptes saisis à la main"
+  },
+  {
+   "type": "markdown",
+   "text": "Certains réseaux (Instagram, TikTok, X, Facebook…) ne donnent pas leurs chiffres tout seuls. Notez ici votre nombre de followers de temps en temps : le site en garde l'historique et vous rappelle quand le chiffre devient ancien."
+  },
+  {
+   "type": "table",
+   "columns": [
+    "Compte",
+    "Dernier chiffre"
+   ],
+   "rows": [
+    [
+     "Instagram · @emma\nFollowers",
+     "7\n14 oct. 2026"
+    ]
+   ],
+   "rowIds": [
+    "r18"
+   ],
+   "rowActions": [
+    {
+     "label": "Mettre à jour",
+     "href": "?edit={id}"
+    },
+    {
+     "label": "Supprimer",
+     "action": "forget",
+     "confirm": "Supprimer ce compte et tout son historique ? Cette action est définitive.",
+     "danger": true
+    }
+   ]
+  },
+  {
+   "type": "adminForm",
+   "action": "saveManual",
+   "title": "Noter un chiffre",
+   "submitLabel": "Enregistrer le chiffre",
+   "fields": [
+    {
+     "name": "platform",
+     "label": "Réseau",
+     "kind": "select",
+     "options": [
+      {
+       "value": "Instagram",
+       "label": "Instagram"
+      },
+      {
+       "value": "TikTok",
+       "label": "TikTok"
+      },
+      {
+       "value": "X",
+       "label": "X"
+      },
+      {
+       "value": "Facebook",
+       "label": "Facebook"
+      },
+      {
+       "value": "Threads",
+       "label": "Threads"
+      },
+      {
+       "value": "Snapchat",
+       "label": "Snapchat"
+      },
+      {
+       "value": "Pinterest",
+       "label": "Pinterest"
+      },
+      {
+       "value": "LinkedIn",
+       "label": "LinkedIn"
+      },
+      {
+       "value": "Telegram",
+       "label": "Telegram"
+      },
+      {
+       "value": "__other",
+       "label": "Autre…"
+      }
+     ],
+     "value": "Instagram"
+    },
+    {
+     "name": "otherPlatform",
+     "label": "Autre réseau",
+     "help": "Seulement si votre réseau n'est pas dans la liste."
+    },
+    {
+     "name": "account",
+     "label": "Nom du compte",
+     "required": true,
+     "help": "Par exemple @emma."
+    },
+    {
+     "name": "metric",
+     "label": "Quel chiffre ?",
+     "kind": "select",
+     "options": [
+      {
+       "value": "followers",
+       "label": "Followers"
+      },
+      {
+       "value": "paying",
+       "label": "Abonnements payants"
+      },
+      {
+       "value": "content",
+       "label": "Publications"
+      },
+      {
+       "value": "views",
+       "label": "Vues"
+      }
+     ],
+     "value": "followers"
+    },
+    {
+     "name": "value",
+     "label": "Chiffre",
+     "kind": "number",
+     "required": true
+    },
+    {
+     "name": "date",
+     "label": "Date du chiffre",
+     "kind": "date",
+     "help": "Laissez vide pour aujourd'hui."
+    }
+   ]
+  },
+  {
+   "type": "markdown",
+   "text": "*La fréquence des mises à jour et la durée de conservation de l'historique se règlent dans les réglages de ce module, en mode avancé.*"
+  }
+ ],
+ "mcpList": {
+  "count": 6,
+  "metrics": {
+   "followers": "free audience",
+   "paying": "paying audience (paid subscribers, members, patrons)",
+   "content": "number of posts/videos",
+   "views": "cumulative views",
+   "avg_viewers": "average viewers per live over the last 30 days (time-weighted)",
+   "peak_viewers": "highest viewer count of a live in the last 30 days",
+   "hours_streamed": "time spent live over the last 30 days, in MINUTES",
+   "hours_watched": "viewers x time over the last 30 days (audience watch time), in MINUTES",
+   "followers_gained": "net followers gained during lives over the last 30 days"
+  },
+  "stats": [
+   {
+    "id": "manual:instagram:emma:followers",
+    "platform": "instagram",
+    "account": "@emma",
+    "metric": "followers",
+    "label": "Instagram @emma",
+    "value": 7,
+    "unit": "people",
+    "origin": "manual",
+    "status": "manual",
+    "lastValueAt": "2026-10-14T10:00:00.000Z",
+    "ageHours": 0,
+    "change7d": null,
+    "change30d": null,
+    "shownOnSite": true
+   },
+   {
+    "id": "twitch-channel:emma:followers",
+    "platform": "twitch",
+    "account": "emma_live",
+    "metric": "followers",
+    "label": "Followers Twitch",
+    "value": 1120,
+    "unit": "people",
+    "origin": "automatic",
+    "status": "ok",
+    "lastValueAt": "2026-10-14T10:00:00.000Z",
+    "ageHours": 0,
+    "change7d": {
+     "from": 1099,
+     "to": 1120,
+     "delta": 21,
+     "percent": 1.9
+    },
+    "change30d": {
+     "from": 1030,
+     "to": 1120,
+     "delta": 90,
+     "percent": 8.7
+    },
+    "shownOnSite": true
+   },
+   {
+    "id": "twitch-channel:emma:paying",
+    "platform": "twitch",
+    "account": "emma_live",
+    "metric": "paying",
+    "label": "Payants",
+    "value": 12,
+    "unit": "people",
+    "origin": "automatic",
+    "status": "ok",
+    "lastValueAt": "2026-10-14T10:00:00.000Z",
+    "ageHours": 0,
+    "change7d": {
+     "from": 12,
+     "to": 12,
+     "delta": 0,
+     "percent": 0
+    },
+    "change30d": {
+     "from": 12,
+     "to": 12,
+     "delta": 0,
+     "percent": 0
+    },
+    "shownOnSite": false
+   },
+   {
+    "id": "twitch-channel:emma:avg_viewers",
+    "platform": "twitch",
+    "account": "emma_live",
+    "metric": "avg_viewers",
+    "label": "Audience moyenne",
+    "value": 42,
+    "unit": "viewers",
+    "origin": "automatic",
+    "status": "ok",
+    "lastValueAt": "2026-10-14T10:00:00.000Z",
+    "ageHours": 0,
+    "change7d": {
+     "from": 42,
+     "to": 42,
+     "delta": 0,
+     "percent": 0
+    },
+    "change30d": {
+     "from": 42,
+     "to": 42,
+     "delta": 0,
+     "percent": 0
+    },
+    "shownOnSite": false
+   },
+   {
+    "id": "youtube-channel:c:content",
+    "platform": "youtube",
+    "account": "Emma TV",
+    "metric": "content",
+    "label": "Vidéos",
+    "value": 80,
+    "unit": "posts",
+    "origin": "automatic",
+    "status": "ok",
+    "lastValueAt": "2026-10-14T10:00:00.000Z",
+    "ageHours": 0,
+    "change7d": {
+     "from": 80,
+     "to": 80,
+     "delta": 0,
+     "percent": 0
+    },
+    "change30d": {
+     "from": 80,
+     "to": 80,
+     "delta": 0,
+     "percent": 0
+    },
+    "shownOnSite": true
+   },
+   {
+    "id": "youtube-channel:c:views",
+    "platform": "youtube",
+    "account": "Emma TV",
+    "metric": "views",
+    "label": "Vues",
+    "value": 54000,
+    "unit": "views",
+    "origin": "automatic",
+    "status": "ok",
+    "lastValueAt": "2026-10-14T10:00:00.000Z",
+    "ageHours": 0,
+    "change7d": {
+     "from": 53300,
+     "to": 54000,
+     "delta": 700,
+     "percent": 1.3
+    },
+    "change30d": {
+     "from": 51000,
+     "to": 54000,
+     "delta": 3000,
+     "percent": 5.9
+    },
+    "shownOnSite": false
+   }
+  ]
+ }
+}

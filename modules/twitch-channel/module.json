@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.5.0",
   "id": "twitch-channel",
   "name": {
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.1.1",
+  "version": "2.2.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -99,6 +99,100 @@
         "fr": "Ma chaîne",
         "en": "My channel"
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "stats",
+      "label": {
+        "fr": "Followers et abonnements",
+        "en": "Followers and subscriptions"
+      },
+      "description": {
+        "fr": "Le nombre de followers et d'abonnements payants de votre chaîne. Seuls les chiffres que vous avez autorisés dans les réglages de Ma Chaîne Twitch sont montrés.",
+        "en": "The number of followers and paying subscribers of your channel. Only the figures you allowed in the settings of My Twitch channel are shown."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 200,
+        "height": 80
+      },
+      "ratios": {
+        "min": 0.3,
+        "max": 10
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "followers",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer les followers",
+            "en": "Show followers"
+          },
+          "help": {
+            "fr": "Rien n'est montré si ce chiffre n'est pas coché dans les réglages de Ma Chaîne Twitch.",
+            "en": "Nothing is shown if this figure is not ticked in the settings of My Twitch channel."
+          },
+          "default": true
+        },
+        {
+          "id": "paying",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer les abonnements payants",
+            "en": "Show paying subscriptions"
+          },
+          "help": {
+            "fr": "Rien n'est montré si ce chiffre n'est pas coché dans les réglages de Ma Chaîne Twitch.",
+            "en": "Nothing is shown if this figure is not ticked in the settings of My Twitch channel."
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "id": "live",
+      "label": {
+        "fr": "Pastille « En direct »",
+        "en": "\"Live\" badge"
+      },
+      "description": {
+        "fr": "Une pastille « En direct » quand votre chaîne diffuse. Quand elle ne diffuse pas, rien ne s'affiche.",
+        "en": "A \"Live\" badge while your channel is streaming. When it is not streaming, nothing is shown."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 120,
+        "height": 40
+      },
+      "ratios": {
+        "min": 0.3,
+        "max": 10
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "game",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer le jeu",
+            "en": "Show the game"
+          },
+          "default": false
+        },
+        {
+          "id": "offline",
+          "type": "boolean",
+          "label": {
+            "fr": "Écrire « Hors ligne » quand vous ne diffusez pas",
+            "en": "Write \"Offline\" when you are not streaming"
+          },
+          "default": false
+        }
+      ]
     }
   ],
   "settings": [

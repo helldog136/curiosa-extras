@@ -5,8 +5,8 @@
     "fr": "Compte à rebours",
     "en": "Countdown"
   },
-  "version": "1.0.1",
-  "minCore": "0.2.5",
+  "version": "1.1.0",
+  "minCore": "0.5.0",
   "description": {
     "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS.",
     "en": "Announce a release, a launch, a birthday or a convention: visitors see the time left and the time where they live, and can add it to their calendar. A page, a home section and an OBS source."
@@ -948,5 +948,55 @@
     "home": {
       "section": "featured"
     }
-  }
+  },
+  "overlayElements": [
+    {
+      "id": "countdown",
+      "label": {
+        "fr": "Compte à rebours",
+        "en": "Countdown"
+      },
+      "description": {
+        "fr": "Le temps qui reste avant un événement : jours, heures, minutes et secondes, puis un message quand c'est l'heure.",
+        "en": "The time left before an event: days, hours, minutes and seconds, then a message when it is time."
+      },
+      "fit": "scale",
+      "size": {
+        "width": 600,
+        "height": 200
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "event",
+          "type": "text",
+          "maxLength": 60,
+          "label": {
+            "fr": "Événement",
+            "en": "Event"
+          },
+          "help": {
+            "fr": "Laissez vide pour montrer l'événement à la une. Pour un autre événement, écrivez son nom court : il termine l'adresse de la page de l'événement, et se lit dans « Modifier ». Un nom qui n'existe plus montre l'événement à la une.",
+            "en": "Leave empty to show the featured event. For another event, write its short name: it ends the address of the event page, and shows in “Edit”. A name that no longer exists shows the featured event."
+          },
+          "example": "sortie-du-jeu",
+          "default": ""
+        },
+        {
+          "id": "seconds",
+          "type": "boolean",
+          "label": {
+            "fr": "Afficher les secondes",
+            "en": "Show seconds"
+          },
+          "help": {
+            "fr": "Si les secondes sont masquées dans les réglages du module, elles restent masquées.",
+            "en": "If seconds are hidden in the module settings, they stay hidden."
+          },
+          "default": true
+        }
+      ]
+    }
+  ]
 }

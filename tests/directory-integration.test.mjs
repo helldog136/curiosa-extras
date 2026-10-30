@@ -3,12 +3,12 @@
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 import { runPrivacySubjectContract } from "./contract/privacySubject.contract.mjs";
 import { makeWorld, reset, restore, publish, people, page, htmlOf, P, C, D, View, def, manifest, Privacy, TW_PHOTO } from "./helpers/directory-world.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 beforeEach(() => reset());
 afterEach(() => restore());
@@ -281,7 +281,7 @@ const copy = (from, to) => { fs.rmSync(to, { recursive: true, force: true }); fs
 const load = (dir, v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).href}?v=${v}`);
 
 test("mise à jour dans un site qui tourne : le cœur importe index.mjs?v=…, tous les fichiers voisins prennent la même version (aucun ancien code gardé en mémoire)", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "directory-update-"));
+  const dir = makeTempDir("directory-update-");
   try {
     copy(path.join(here, "../modules/directory"), dir);
     assert.equal(typeof (await load(dir, "ancien")).default.page, "function");

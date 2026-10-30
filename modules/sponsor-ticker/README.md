@@ -20,3 +20,5 @@ L'overlay ne connaît aucun de ces modules. Les QR codes sont générés par le 
 garde 2 lignes ; la légende du QR affiche le nom de domaine sans « www. » (coupé au milieu seulement s'il dépasse 22 caractères) ; la carte
 grandit si le texte l'exige. Dans une source navigateur plus petite que la carte (800×200, 600×150, 340×100…), elle se met à
 l'échelle pour rester entièrement visible, avec une marge. À 1920×1080 avec des textes courts, rien ne change.
+
+**Dans une page d'overlay** (section « Overlays » de Curiosa 0.5.0 ou plus) : « Ajouter un élément » propose **Bandeau sponsors**. Le bandeau remplit son cadre à l'échelle (taille naturelle 720 × 180) et suit le style commun de la page (texte clair ou sombre, fond, angles) ; le style (néon, ciné, broadcast), l'accent, la fréquence et la durée restent ceux du module. Option : **Afficher le QR code** (jamais plus que le réglage du module). En mode test, le bandeau reste à l'écran, avec une carte d'exemple s'il n'y a aucun sponsor. Votre adresse OBS actuelle ne change pas.

@@ -4,11 +4,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fakeCanvasContext, fakeImage } from "./helpers/fakeCanvas.mjs";
 import { probeMp4, boxes } from "./helpers/mp4probe.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const mp4 = await import("../modules/stream-story/mp4.mjs");
 const enc = await import("../modules/stream-story/encode.mjs");
@@ -18,7 +18,7 @@ const S = await import("../modules/stream-story/scenes.mjs");
 const has = (cmd) => spawnSync(cmd, ["-version"]).status === 0;
 const FFMPEG = has("ffmpeg") && has("ffprobe");
 const needs = { skip: FFMPEG ? false : "ffmpeg et ffprobe ne sont pas installés sur cette machine : l'analyseur de structure (mp4probe) reste vérifié ailleurs" };
-const tmp = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), "story-"));
+const tmp = makeTempDir("story-");
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 const sh = (cmd, args) => { const r = spawnSync(cmd, args, { encoding: "utf8", maxBuffer: 1 << 28 }); if (r.status !== 0) throw new Error(`${cmd} : ${String(r.stderr).slice(0, 300)}`); return r.stdout; };
 

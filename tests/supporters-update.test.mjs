@@ -3,11 +3,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { formRequest, manifest } from "./helpers/supporters-world.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const SRC = path.join(here, "../modules/supporters");
@@ -25,7 +25,7 @@ test("aucun fichier de Soutiens n'importe un voisin sans la version du fichier p
 });
 
 test("mise à jour à chaud : v1 chargée, puis les fichiers sont remplacés et v2 importée dans le MÊME processus → tout le module suit le nouveau code (la page d'accord applique la nouvelle longueur de pseudo)", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "supporters-update-"));
+  const dir = makeTempDir("supporters-update-");
   try {
     copy(SRC, dir);
     const before = (await load(dir, "v1")).default;

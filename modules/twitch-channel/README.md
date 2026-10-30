@@ -45,6 +45,12 @@ Depuis la 2.1, le module sait dire **les rendez-vous que vous avez publiés dans
 - **Combien ça coûte** : un appel à Twitch par chaîne tous les quarts d'heure au plus, seulement quand un module demande la liste (aucune tâche en arrière-plan).
 - **Si ça ne marche pas** : phrase en mots simples (nom de chaîne à saisir, application Twitch à régler, Connecteur Twitch à mettre à jour) ; si Twitch ne répond pas, la liste dit « Twitch ne répond pas pour l'instant ».
 
+## Dans vos pages d'overlay (Curiosa 0.5.0)
+Ma Chaîne Twitch n'a pas d'overlay à elle ; depuis la 2.2, elle propose deux **éléments** aux pages d'overlay (section « Overlays » de l'administration, une seule adresse à coller dans OBS) :
+- **Followers et abonnements** : le nombre de followers et d'abonnements payants, en grand. **Rien n'est montré que vous n'avez pas autorisé** : il faut que « Suivre mes statistiques » soit activé, et chaque chiffre n'apparaît que si « Compter mes followers » ou « Compter mes abonnements payants » est coché dans les réglages de la chaîne. Deux options (montrer les followers, montrer les abonnements payants) permettent seulement d'en cacher un de plus. Un chiffre que Twitch ne donne pas (autorisation à refaire, Twitch qui ne répond pas) manque simplement : aucun message dans le direct, jamais un chiffre inventé.
+- **Pastille « En direct »** : une pastille quand votre chaîne diffuse, et rien quand elle ne diffuse pas. Options : montrer le jeu, écrire « Hors ligne » quand vous ne diffusez pas. Si Twitch ne répond pas, rien ne s'affiche (le module n'affirme pas que vous êtes hors ligne).
+Les deux éléments s'adaptent à la taille du cadre, suivent le style commun de la page (texte clair ou sombre, fond transparent ou doux, angles arrondis ou droits) et affichent des chiffres d'exemple en mode test. Plusieurs pages peuvent les afficher en même temps sans demander plus de choses à Twitch (un appel partagé par chiffre, les mêmes délais que d'habitude). Chaque chaîne (instance) a ses éléments.
+
 ## Pour qui développe
 
 Identifiant technique **conservé** : `twitch-channel` (sauvegardes, adresses de retour déjà enregistrées chez Twitch, catalogue). Nom affiché : « Ma Chaîne Twitch ». Version 2.0.0, `minCore` 0.2.0, données en version 2.
@@ -99,3 +105,7 @@ Une réponse vide dit pourquoi (« aucun direct mesuré depuis le … : le suivi
 
 #### Réglages avancés
 Fréquence de mesure en direct (1, 2 par défaut, 3 ou 5 minutes), conservation du détail des mesures (90 jours par défaut), conservation du résumé de chaque direct (5 ans par défaut).
+
+### Éléments de page d'overlay (2.2.0, `minCore` 0.5.0)
+- `overlayElements` : `stats` (« Followers et abonnements ») et `live` (« Pastille En direct »), `fit: "fluid"`, `ratios` 0,3 à 10, `minSize` 200 × 80 et 120 × 40, `followsStyle`, `demo`, options booléennes (`followers`, `paying` ; `game`, `offline`). Les fonctions répondent `/m/<clé>/element/<id>?k=<secret>&lang=<langue>` ; le secret est propre au module (collection `twitchElementKey`, créé à la première demande, un seul document), jamais montré dans l'administration. Routes `element/:slug` (page, politique de sécurité propre, jamais de skin du site) et `element-data/:slug` (JSON redemandé par la page ; 30 s pour la pastille, 2 min pour les chiffres, de plus en plus espacé quand rien ne change) : sans le bon code, 404.
+- Visibilité : `statsData` ne lit que `connect.wantedMetrics(ctx)` (suivi activé, case cochée) croisé avec l'option de l'élément ; un chiffre non autorisé n'est même pas demandé à Twitch, même en mode test. Mêmes caches que le reste du module (`helix.userStat` 5 min, `liveStatus` 30 s) : plusieurs lecteurs = un appel. `overlay.mjs` fabrique la page (HTML, style `--ov-*`, script) ; `tests/twitch-overlay-elements.test.mjs`.

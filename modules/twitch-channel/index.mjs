@@ -12,6 +12,7 @@ const live = await import(new URL(`./live.mjs${v}`, import.meta.url).href);
 const analytics = await import(new URL(`./analytics.mjs${v}`, import.meta.url).href);
 const hand = await import(new URL(`./handover.mjs${v}`, import.meta.url).href);
 const events = await import(new URL(`./events.mjs${v}`, import.meta.url).href);
+const ov = await import(new URL(`./overlay.mjs${v}`, import.meta.url).href);
 const { LOGIN, valid, liveStatus, recentClips } = helix;
 export const { currentStream } = helix;
 export { recentClips };
@@ -110,10 +111,63 @@ async function adoptLegacy(ctx, legacy) {
   await connect.call(ctx, "adopt", { clientId, clientSecret });
 }
 
+/* ───────────── Éléments des pages d'overlay : « stats » (followers, abonnements payants) et « live » (pastille en direct) ───────────── */
+
+/** Les chiffres de l'élément « stats » : SEULEMENT ce que la personne propriétaire a autorisé dans les réglages (suivi activé, puis followers et/ou abonnements payants cochés) ET que l'option de l'élément demande. */
+async function statsData(ctx, flags, demo) {
+  if (ctx.setting("trackStats") !== true) return { rows: [] };
+  const allowed = connect.wantedMetrics(ctx).filter((m) => (m === "followers" ? flags.followers : flags.paying));
+  if (!allowed.length) return { rows: [] };
+  const label = (m) => ctx.t(m === "followers" ? "ov_followers" : "ov_paying");
+  if (demo) return { rows: allowed.map((m) => ({ id: m, label: label(m), value: m === "followers" ? 1234 : 56 })) };
+  const creds = await credentials(ctx, { wait: false });
+  if (!LOGIN.test(creds.channel)) return { rows: [] };
+  const got = await Promise.all(allowed.map(async (m) => ({ m, r: await helix.userStat(creds, m) })));
+  // Un chiffre que Twitch n'a pas donné (autorisation à refaire, pas de réponse) manque : il n'est jamais inventé ni périmé, et aucun message n'apparaît dans le direct.
+  return { rows: got.filter(({ r }) => !r.error && Number.isInteger(r.value) && r.value >= 0).map(({ m, r }) => ({ id: m, label: label(m), value: r.value })) };
+}
+
+/** L'état de l'élément « live » : en direct, hors ligne, ou inconnu (Twitch ne répond pas : rien n'est affiché, jamais un « hors ligne » inventé). */
+async function liveData(ctx, flags, demo) {
+  if (demo) return { state: "live", ...(flags.game ? { game: ctx.t("ov_demoGame") } : {}) };
+  const creds = await credentials(ctx, { wait: false });
+  const r = LOGIN.test(creds.channel) ? await liveStatus(creds) : { error: "config" };
+  if (r.error) return { state: "unknown" };
+  if (r.stream) return { state: "live", ...(flags.game && r.stream.game ? { game: r.stream.game } : {}) };
+  return { state: flags.offline ? "offline" : "unknown" };
+}
+
+async function elementData(ctx, slug, params) {
+  const flags = ov.readFlags(params), demo = params.get("ov-demo") === "1";
+  return slug === "stats" ? statsData(ctx, flags, demo) : liveData(ctx, flags, demo);
+}
+
+/** L'adresse d'un élément pour le cœur (côté serveur) : la page de l'élément avec le code secret du module et la langue. */
+async function elementAddress(ctx, id, request) {
+  const lang = typeof request?.lang === "string" && /^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request.lang) ? `&lang=${request.lang}` : "";
+  return { url: `/m/${ctx.instance.key}/element/${id}?k=${encodeURIComponent(await ov.elementKey(ctx))}${lang}` };
+}
+
+/** La page (`asData` faux) ou ses chiffres (JSON). Sans le bon code secret, comme si la route n'existait pas. */
+async function elementRoute(request, ctx, asData) {
+  if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
+  const slug = ctx.params?.slug, params = new URL(request.url).searchParams;
+  if (!ov.ELEMENTS.includes(slug) || !ov.sameSecret(params.get("k"), await ov.findKey(ctx))) return new Response("Not found", { status: 404 });
+  const data = await elementData(ctx, slug, params);
+  if (asData) return Response.json(data, { headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" } });
+  const demo = params.get("ov-demo") === "1";
+  return new Response(ov.page(slug, params, { lang: ctx.locale, first: data, data: `/m/${ctx.instance.key}/element-data/${slug}`, labels: { live: ctx.t("ov_live"), offline: ctx.t("ov_offline") }, demo }), { headers: ov.PAGE_HEADERS });
+}
+
 export const resetCache = () => { helix.resetCache(); connect.resetConnect(); hand.resetHandover(); registered.clear(); legacyTried.clear(); };
 
 export default {
   mcp: analytics.tools(credentials),
+  /** Éléments des pages d'overlay (cœur 0.5.0) : pas d'overlay à soi, ces éléments n'existent que dans les pages d'overlay. */
+  overlayElements: {
+    stats: (ctx, request) => elementAddress(ctx, "stats", request),
+    live: (ctx, request) => elementAddress(ctx, "live", request),
+  },
   /** L'enregistreur de directs : repasse chaque minute, mais ne mesure qu'à son rythme (2 minutes en direct, 4 hors direct) ; rien du tout si « Suivre mes statistiques » est décoché. */
   tasks: {
     "record-lives": {
@@ -232,6 +286,8 @@ export default {
   // Retour de Twitch pour une installation d'avant la 2.0 : /m/<clé>/oauth/callback, relayé au Connecteur (voir connect.mjs).
   routes: {
     [connect.CALLBACK]: (request, ctx) => connect.callback(request, ctx, channelOf),
+    "element/:slug": (request, ctx) => elementRoute(request, ctx, false),
+    "element-data/:slug": (request, ctx) => elementRoute(request, ctx, true),
   },
 
   // Passage au Connecteur (voir handover.mjs) : jamais d'échec pour « pas encore prêt » ; rejouable.

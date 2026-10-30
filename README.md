@@ -62,6 +62,9 @@ CURIOSA_DIR=../Curiosa npm test
 ```
 Les tests passent par le chargeur du cœur : un module ne doit utiliser que l'API publique des modules.
 
+**Dossiers temporaires.** Utilisez l'aide `makeTempDir(prefix)` (`tests/helpers/tmp.mjs`) : ne créez jamais de dossier dans `/tmp` sans l'enregistrer. Elle le supprime à la fin du test (`{ t }`), avec `cleanupAll()`, et à la sortie du processus.
+`npm test` donne à chaque exécution son propre `TMPDIR` (supprimé à la fin) et liste en clair tout ce que les tests y laissent (échec avec un cœur qui a l'aide tmp, avertissement sinon) ; `KEEP_TEST_TMP=1` garde tout pour déboguer.
+
 **Mises à jour à chaud.** Le serveur d'un module n'importe jamais un fichier voisin avec `import … from "./x.mjs"` (il garderait l'ancienne version après une mise à jour sans redémarrage) : ``await import(`./x.mjs${v}`)``. Un test générique (`tests/hot-update-all.test.mjs`) le vérifie pour tous les modules et rejoue la mise à jour depuis la dernière version publiée ; il a besoin des étiquettes git (`git fetch --tags`). Voir [docs/HOT-UPDATE.md](docs/HOT-UPDATE.md).
 
 ## Soutenir le projet

@@ -45,12 +45,25 @@ export function onAccent(hex) {
   return (l + 0.05) / (0.0056 + 0.05) >= 1.05 / (l + 0.05) ? "#111111" : "#ffffff";
 }
 
+/** Ce que la page reçoit quand elle sert un ÉLÉMENT de page d'overlay : `ov-w`, `ov-h`, `ov-demo` et l'option `opt-qr` (réservés au cœur), revalidés ici. Sinon null : l'overlay habituel. */
+export function elementRequest(query) {
+  if (!query?.has?.("ov-w")) return null;
+  return { demo: query.get("ov-demo") === "1", qr: query.get("opt-qr") !== "0" };
+}
+
+/** Jetons --ov-* du style commun (valeurs de docs/OVERLAY-ELEMENTS.md), avec repli ; jamais le thème ni le skin du site. */
+function elementTokens(query) {
+  const light = query.get("ov-text") !== "dark";
+  const soft = query.get("ov-surface") === "soft";
+  return `--ov-fg:${light ? "#ffffff" : "#111111"};--ov-surface:${soft ? (light ? "rgba(0,0,0,.55)" : "rgba(255,255,255,.7)") : "transparent"};--ov-radius:${query.get("ov-corners") === "square" ? "0px" : "12px"};--ov-border:${soft ? (light ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)") : "transparent"}`;
+}
+
 const safeLink = (v) => (typeof v === "string" && /^(https?:\/\/|\/(?!\/))/i.test(v.trim()) ? v.trim() : null);
 
 export default {
   routes: {
     // JSON rafraîchi par la page de l'overlay : l'état courant, rien n'est mis en cache côté serveur.
-    async items(_request, ctx) {
+    async items(request, ctx) {
       const site = ctx.api.siteUrl;
       const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
       const raw = [
@@ -58,20 +71,29 @@ export default {
         // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
         ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
       ];
+      // Mode test d'une page d'overlay (?demo=1) : sans aucun sponsor, une carte d'exemple pour voir le bandeau.
+      if (!raw.length && new URL(request.url).searchParams.get("demo") === "1") raw.push({ id: "demo", name: ctx.t("demoName"), text: ctx.t("demoText"), url: "https://example.com/promo", code: "CODE10", logo: null, publishedAt: null });
       const items = await Promise.all(raw.map(async (i) => ({ ...i, qrSvg: i.url ? await ctx.api.qr(i.url) : null })));
       return Response.json({ items }, { headers: { "cache-control": "no-store" } });
     },
   },
 
+  // ÉLÉMENT DE PAGE D'OVERLAY (cœur 0.5.0) : on réutilise l'overlay ci-dessous, tel quel ; le cœur ajoute la taille du cadre, le style commun (ov-text…) et l'option opt-qr.
+  // Aucun secret à ajouter : l'overlay de ce module n'en a pas (`/overlays/<clé>`). Il ne retient rien d'un lecteur : plusieurs pages peuvent montrer le même bandeau.
+  overlayElements: {
+    sponsors: (ctx, request) => ({ url: `/overlays/${ctx.instance.key}?lang=${encodeURIComponent(request?.lang ?? ctx.locale)}` }),
+  },
+
   overlay(ctx, { query }) {
     const dev = ctx.setting("devMode") ? devOptions(query) : null;
+    const element = elementRequest(query); // dans une page d'overlay : le bandeau remplit son cadre, la place et la taille propres à l'overlay n'existent pas ; sinon, l'overlay habituel, inchangé
     const cfg = {
-      itemsUrl: `/m/${ctx.instance.key}/items?lang=${ctx.locale}`,
-      period: dev?.fast ? 4 : num(ctx.setting("periodSeconds"), 90, 5, 3600),
-      hold: dev?.fast ? 2.5 : num(ctx.setting("holdSeconds"), 10, 3, 120),
-      startDelay: dev?.fast ? 0.5 : 5,
+      itemsUrl: `/m/${ctx.instance.key}/items?lang=${ctx.locale}${element?.demo ? "&demo=1" : ""}`,
+      period: element?.demo ? 3602 : dev?.fast ? 4 : num(ctx.setting("periodSeconds"), 90, 5, 3600),
+      hold: element?.demo ? 3600 : dev?.fast ? 2.5 : num(ctx.setting("holdSeconds"), 10, 3, 120),
+      startDelay: element?.demo ? 0.4 : dev?.fast ? 0.5 : 5,
       visual: ["neon", "cine", "broadcast"].includes(ctx.setting("visual")) ? ctx.setting("visual") : "neon",
-      showQr: ctx.setting("showQr") !== false,
+      showQr: ctx.setting("showQr") !== false && (!element || element.qr),
       seed: dev?.seed ?? null,
       badge: ctx.t("badge"),
       isNew: ctx.t("new"),
@@ -82,9 +104,23 @@ export default {
     const t = ctx.theme;
     // `<` échappé : la config est insérée dans un <script>, aucun réglage ne doit pouvoir en sortir.
     const json = JSON.stringify(cfg).replace(/</g, "\\u003c");
+    // Élément : texte, fond et arrondis viennent des jetons du style commun, jamais du thème du site ; l'accent reste celui du module.
+    const vars = element
+      ? `--ticker-accent:${accent};--tk-bg:var(--ov-surface,transparent);--tk-fg:var(--ov-fg,#fff);--tk-muted:color-mix(in srgb,var(--ov-fg,#fff) 72%,transparent);--tk-on-accent:${/^#[0-9a-fA-F]{6}$/.test(accent) ? onAccent(accent) : "#111111"}`
+      : `--ticker-accent:${accent};--tk-bg:${t.surface};--tk-fg:${t.fg};--tk-muted:${t.muted};--tk-on-accent:${custom ? onAccent(custom) : t.accentFg}`;
+    const elementCss = element ? `
+        :root{${elementTokens(query)}}
+        [data-ov-part="logo"],[data-ov-part="qr"]{border-radius:min(var(--ov-radius,8px),8px)}
+        [data-ov-part="panel"]{border:1px solid var(--ov-border,transparent)}
+        [data-ov-part="title"],[data-ov-part="text"],[data-ov-part="code"],[data-ov-part="label"]{text-shadow:0 1px 3px rgba(0,0,0,.35)}` : "";
+    // Les morceaux de la carte reçoivent leur data-ov-part au fur et à mesure (la page reste celle de l'overlay, une seule source).
+    const elementScript = element ? `
+        (function(){var map={"ticker-card":"panel","ticker-name":"title","ticker-blurb":"text","ticker-code":"code","ticker-badge":"label","ticker-logo":"logo","ticker-qr":"qr","ticker-domain":"caption"},root=document.getElementById("tk-slider");
+        function tag(n){if(n.nodeType!==1)return;var c=n.classList;for(var k in map)if(c.contains(k))n.setAttribute("data-ov-part",map[k]);for(var i=0;i<n.children.length;i++)tag(n.children[i])}
+        new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(tag)})}).observe(root,{childList:true,subtree:true})})();` : "";
     return {
       title: ctx.instance.name,
-      html: `<div id="tk-stage" style="--ticker-accent:${accent};--tk-bg:${t.surface};--tk-fg:${t.fg};--tk-muted:${t.muted};--tk-on-accent:${custom ? onAccent(custom) : t.accentFg}"><div class="ticker-slider" id="tk-slider"></div></div>`,
+      html: `<div id="tk-stage"${element ? ' data-ov-region="element"' : ""} style="${vars}"><div class="ticker-slider" id="tk-slider"></div></div>`,
       css: `
         html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
         #tk-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2vh 2vw;box-sizing:border-box}
@@ -119,7 +155,7 @@ export default {
         .ticker-card--broadcast .ticker-shine{display:none}
         @keyframes tickerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
         @keyframes tickerShine{0%{transform:translateX(-160%)}55%,100%{transform:translateX(430%)}}
-        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}}`,
+        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}}${elementCss}`,
       script: `(function(){var c=${json},slider=document.getElementById("tk-slider"),items=[],last=null,hold;
         // Hasard : Math.random, ou un petit générateur à graine en mode développeur (?seed=N).
         var rnd=Math.random;if(c.seed!==null){var a=c.seed>>>0;rnd=function(){a=(a+0x6d2b79f5)>>>0;var t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
@@ -149,7 +185,7 @@ export default {
         window.addEventListener("resize",function(){if(cur)fit(cur)});
         function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);slider.classList.add("on");clearTimeout(hold);hold=setTimeout(function(){slider.classList.remove("on")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}
-        load().then(function(){setTimeout(cycle,c.startDelay*1000)})})();`,
+        load().then(function(){setTimeout(cycle,c.startDelay*1000)})})();${elementScript}`,
     };
   },
 };
