@@ -138,7 +138,15 @@ export default {
     },
   },
 
+  // Élément de page d'overlay (cœur 0.5.0) : le labyrinthe qui s'adapte au ratio de son cadre. L'adresse est celle de l'overlay du module (aucun secret à part : l'adresse de
+  // l'overlay est déjà la seule), avec la langue ; le cœur y ajoute `ov-*`. Les réglages du module (taille du labyrinthe, couleurs, affiches…) restent ceux de l'instance.
+  overlayElements: {
+    maze: (ctx, request) => ({ url: `/overlays/${ctx.instance.key}${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
+  },
+
+  // Overlay du module (`/overlays/<clé>`) ; avec `ov-fit=ratio` (ajouté par le cœur), la page de l'ÉLÉMENT : même rendu, même fichier, rien de dupliqué.
   overlay(ctx, { query }) {
+    const element = query.get("ov-fit") === "ratio";
     const lines = (v) => String(v ?? "").split("\n");
     const cfg = {
       itemsUrl: `/m/${ctx.instance.key}/items?lang=${ctx.locale}`,
@@ -158,6 +166,8 @@ export default {
       portal: clean([ctx.setting("portalTexture")]),
       hands: clean([ctx.setting("handsSprite")], 1)[0] ?? null,
       dev: ctx.setting("devMode") ? devOptions(query) : null,
+      // Élément : la fenêtre a le ratio du cadre (4:3 à 32:9) ; le champ de vision s'y adapte au lieu d'étirer l'image.
+      ...(element ? { followAspect: true } : {}),
     };
     // `<` échappé : la config est insérée dans un <script>, aucun réglage ne doit pouvoir en sortir.
     const json = JSON.stringify(cfg).replace(/</g, "\\u003c");
@@ -181,7 +191,8 @@ export default {
         .vm-qr{width:110px;height:110px;flex:none;background:#fff;border-radius:8px;padding:6px;box-sizing:border-box}
         .vm-qr svg{width:100%;height:100%;display:block}
         .vm-url{font-size:14px;color:${ctx.theme.muted};word-break:break-all}
-        .vm-bar{position:absolute;left:0;right:0;bottom:0;height:10px;background:${cfg.accent}}`,
+        .vm-bar{position:absolute;left:0;right:0;bottom:0;height:10px;background:${cfg.accent}}${element ? `
+        .vm-card{width:min(72%,1382px)}` : ""}`,
       script: `window.__MAZE__=${json};import("/m/${ctx.instance.key}/main.js");`,
     };
   },

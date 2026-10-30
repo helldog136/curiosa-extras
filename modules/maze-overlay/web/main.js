@@ -148,6 +148,7 @@ async function setup() {
     stopMaxSeconds: cfg.stopMax,
     lookHoldSeconds: cfg.hold,
     onFocusChange: showFocus,
+    followAspect: cfg.followAspect === true,
   });
   engine.setHandsSprite(hands);
   engine.resize(root.clientWidth, root.clientHeight);
