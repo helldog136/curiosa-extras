@@ -395,7 +395,7 @@ test("manifeste : Contacts v2 obligatoire, vie privée offerte, groupes et caté
   for (const g of manifest.optionalGroups) for (const k of g.fields) assert.ok(manifest.settings.some((s) => s.key === k), k);
   assert.deepEqual(manifest.tabs, [{ id: "use", label: { fr: "Mon mur", en: "My wall" } }]);
   assert.equal(manifest.basePath, "merci");
-  assert.deepEqual(manifest.permissions.sort(), ["admin", "mcp", "pages", "storage"], "ni routes, ni réseau, ni courriel");
+  assert.deepEqual(manifest.permissions.sort(), ["admin", "mcp", "pages", "routes", "storage"], "« routes » seulement pour la page de l'élément d'overlay (1.2.0) ; ni réseau, ni courriel");
 });
 
 test("manifeste : les outils qui écrivent ne sont jamais accordés d'office ; ceux qui effacent sont marqués ; les noms sont courts", () => {
