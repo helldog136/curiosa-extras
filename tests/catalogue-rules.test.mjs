@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { dataVersionProblems, manifestsAt, optionalNeedsProblems, previousTag, readManifests, serviceList } from "../scripts/rules.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 
@@ -37,7 +38,7 @@ test("catalogue/index.json de ce dépôt respecte la règle needs.optional", () 
 });
 
 test("build-index --check échoue quand un besoin facultatif manque dans l'index, et réussit une fois l'index régénéré", () => {
-  const tmp = fs.mkdtempSync(path.join(process.env.TMPDIR ?? "/tmp", "idx-"));
+  const tmp = makeTempDir("idx-");
   try {
     fs.cpSync(path.join(root, "scripts"), path.join(tmp, "scripts"), { recursive: true });
     fs.mkdirSync(path.join(tmp, "catalogue")); fs.mkdirSync(path.join(tmp, "examples"));

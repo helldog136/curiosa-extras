@@ -2,11 +2,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { def, D, ctxFor, addQuestion, manifest, messages, NOON, at } from "./helpers/dailyGameKit.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const clockAt = (ms) => { D.clock.now = () => ms; };
 test.afterEach(() => { D.clock.now = () => Date.now(); });
@@ -104,7 +104,7 @@ test("plusieurs instances : une invitation chacune, identifiants distincts ; san
 
 test("mise à jour à chaud : le nouveau fichier est rechargé, l'ancien n'est pas repris", async () => {
   const src = path.join(path.dirname(new URL(import.meta.url).pathname), "../modules/daily-game");
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "daily-game-hint-"));
+  const dir = makeTempDir("daily-game-hint-");
   try {
     fs.cpSync(src, dir, { recursive: true });
     const load = (v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).href}?v=${v}`);

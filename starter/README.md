@@ -46,4 +46,6 @@ npm run check       # le rapport de conformité, lisible
 git tag v1.0.0 && git push --tags
 ```
 
+Dossiers temporaires dans vos tests : utilisez `makeTempDir(prefix)` du kit du cœur (`testsupport/index.mjs`) ; ne créez jamais de dossier dans `/tmp` sans l'enregistrer (il est supprimé à la fin du test et à la sortie du processus ; `KEEP_TEST_TMP=1` pour le garder).
+
 Le guide complet : `docs/PUBLIER-SON-MODULE.md` du dépôt du cœur (Curiosa).

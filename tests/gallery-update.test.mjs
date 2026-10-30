@@ -3,10 +3,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const SRC = path.join(here, "../modules/gallery");
@@ -21,7 +21,7 @@ test("aucun fichier du module n'importe un voisin sans la version du fichier pri
 });
 
 test("mise à jour dans le même processus : chaque version a SES fichiers voisins (ni mélange, ni ancien code resté en mémoire)", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-update-"));
+  const dir = makeTempDir("gallery-update-");
   try {
     fs.cpSync(SRC, dir, { recursive: true });
     const before = (await load(dir, "index.mjs", "ancien")).default;
@@ -52,7 +52,7 @@ test("mise à jour dans le même processus : chaque version a SES fichiers voisi
 });
 
 test("mise à jour à chaud : le nouveau code garde et supprime les fichiers avec SON ops.mjs (la permission files, l'API files)", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-update-files-"));
+  const dir = makeTempDir("gallery-update-files-");
   try {
     fs.cpSync(SRC, dir, { recursive: true });
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));

@@ -86,6 +86,13 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Tests : `tests/polls-overlay-element.test.mjs` et `tests/twitch-overlay-elements.test.mjs` (nouveaux : manifeste, adresse, page, options, repli, droits de visibilité, `assertMultiReaders`, mise à jour douce avec Participation, non-régression) ; versions ajustées dans `polls.test.mjs`, `polls-delete.test.mjs`, `twitch-channel*.test.mjs`, `tabs-modules.test.mjs`.
 - Attention : la CI « cœur publié » reste rouge tant que le cœur 0.5.0 n'est pas publié (`minCore` 0.5.0).
 
+@@SPLIT@@
+## Prochaine version (non publiée)
+
+### Pour les développeurs
+
+- **Les tests ne laissent plus de dossiers dans `/tmp`.** Une aide `makeTempDir()` (`tests/helpers/tmp.mjs`) enregistre et supprime chaque dossier temporaire, y compris à la sortie du processus ; `npm test` donne à chaque exécution son propre `TMPDIR`, supprimé à la fin, et signale ce qui y reste (`KEEP_TEST_TMP=1` pour déboguer). Aucun module n'est touché.
+
 ## 1.25.0
 
 *La télécommande de Participation (Sondages, « A ou B ? », sourdine…) devient aussi un dock pour OBS, avec la même adresse secrète. Pour Curiosa 0.2.5 ou plus. Module touché : Participation 1.1.0.*
