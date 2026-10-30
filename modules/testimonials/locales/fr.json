@@ -165,5 +165,8 @@
   "qrAlt": "QR code vers le formulaire d'avis",
   "shareHome": "Pour montrer des avis sur votre page d'accueil : allez dans **Accueil**, ajoutez une section et choisissez « Avis à la une » (3 avis par défaut).",
   "shareNoPage": "Ce module n'a pas de page publique : donnez-lui une adresse dans l'onglet Général pour obtenir le lien à partager.",
-  "withdrawSelect": "Touchez le champ pour sélectionner l'adresse, puis copiez-la (ou ajoutez cette page à vos favoris)."
+  "withdrawSelect": "Touchez le champ pour sélectionner l'adresse, puis copiez-la (ou ajoutez cette page à vos favoris).",
+  "elementTitle": "Avis de la communauté",
+  "demoName": "Camille",
+  "demoReview": "Exemple d'avis : un accueil très chaleureux, on s'y sent bien."
 }

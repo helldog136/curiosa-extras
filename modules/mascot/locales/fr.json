@@ -108,5 +108,7 @@
   "tplConfirm": "Cela remplace toutes vos phrases actuelles. Continuer ?",
   "tplApplied": "Le gabarit est appliqué.",
   "settingsHelp": "Pour la voir vous-même sans attendre (et oublier ce que votre navigateur a retenu), ouvrez l'adresse ci-dessous.",
-  "copyReview": "Adresse pour la revoir"
+  "copyReview": "Adresse pour la revoir",
+  "elementTitle": "Mascotte",
+  "elementDemo": "Bonjour ! Voici un exemple de phrase de la mascotte."
 }

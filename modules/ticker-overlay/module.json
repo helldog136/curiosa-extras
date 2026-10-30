@@ -5,7 +5,8 @@
     "en": "Ticker overlay (OBS)",
     "fr": "Overlay défilant (OBS)"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "minCore": "0.5.0",
   "main": "index.mjs",
   "description": {
     "en": "A transparent browser source for OBS that rotates cards from your site (promo codes, articles, announcements…).",
@@ -126,6 +127,77 @@
             "en": "Top right",
             "fr": "Haut droite"
           }
+        }
+      ]
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "banner",
+      "label": {
+        "fr": "Bandeau défilant",
+        "en": "Scrolling banner"
+      },
+      "description": {
+        "fr": "Un bandeau d'annonces et de codes promo, à placer en bas du stream : une carte à la fois, qui change toutes les quelques secondes.",
+        "en": "A banner of announcements and promo codes for the bottom of the stream: one card at a time, changing every few seconds."
+      },
+      "fit": "scale",
+      "size": {
+        "width": 640,
+        "height": 140
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "show",
+          "type": "choice",
+          "label": {
+            "fr": "Quoi montrer",
+            "en": "What to show"
+          },
+          "help": {
+            "fr": "Utile pour avoir un bandeau de codes promo et un autre d'annonces.",
+            "en": "Handy to have one banner for promo codes and another for announcements."
+          },
+          "choices": [
+            {
+              "value": "all",
+              "label": {
+                "fr": "Tout",
+                "en": "Everything"
+              }
+            },
+            {
+              "value": "codes",
+              "label": {
+                "fr": "Codes promo seulement",
+                "en": "Promo codes only"
+              }
+            },
+            {
+              "value": "news",
+              "label": {
+                "fr": "Annonces et articles seulement",
+                "en": "Announcements and articles only"
+              }
+            }
+          ],
+          "default": "all"
+        },
+        {
+          "id": "image",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer les images",
+            "en": "Show the pictures"
+          },
+          "help": {
+            "fr": "Les images des cartes, quand elles en ont une.",
+            "en": "The picture of each card, when it has one."
+          },
+          "default": true
         }
       ]
     }

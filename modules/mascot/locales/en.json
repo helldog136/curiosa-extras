@@ -108,5 +108,7 @@
   "tplConfirm": "This replaces all your current sentences. Continue?",
   "tplApplied": "The template is applied.",
   "settingsHelp": "To see it yourself without waiting (and forget what your browser remembered), open the address below.",
-  "copyReview": "Address to see it again"
+  "copyReview": "Address to see it again",
+  "elementTitle": "Mascot",
+  "elementDemo": "Hello! This is an example sentence from the mascot."
 }

@@ -13,7 +13,7 @@ const HOSTILE = `"' onmouseover=PROBEATTR x='"></style></script><img src=x onerr
 test("manifeste : valide, réglages lus par le code, textes fr/en alignés, actions et sections déclarées et réalisées", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(manifestJson.id, "testimonials");
-  assert.equal(manifestJson.minCore, "0.2.5");
+  assert.equal(manifestJson.minCore, "0.5.0"); // éléments d'overlay (cœur 0.5.0)
   assert.equal(manifestJson.name.fr, "Témoignages"); assert.equal(manifestJson.name.en, "Testimonials");
   assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.basePath, "avis");
   for (const s of manifestJson.settings) assert.ok(new RegExp(`["'.]${s.key}\\b`).test(source), `réglage jamais lu : ${s.key}`);
