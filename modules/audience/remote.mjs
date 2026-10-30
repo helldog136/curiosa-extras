@@ -152,6 +152,7 @@ const DOCK_CSS = `.ar-dock{font-size:14px;line-height:1.4;padding-bottom:0;overf
 .ar-dock .ar-in{min-height:40px;border-radius:8px;border-width:1px;padding:6px 10px;font-size:.95rem}
 .ar-dock .ar-room summary{min-height:40px}
 .ar-dock .ar-person{min-height:44px;gap:8px}.ar-dock .ar-name{min-width:0}
+.ar-dock .ar-room>.ar-btn{margin-top:8px}
 .ar-dock .ar-mini{min-height:40px;min-width:76px;border-radius:8px;border-width:1px;padding:0 8px}
 .ar-dock .ar-toast{bottom:8px;margin:0 10px;padding:8px 10px;border-radius:8px}
 .ar-dock .ar-foot{font-size:.8rem;padding:0 10px 12px}
