@@ -95,7 +95,7 @@ const JS = String.raw`(function () {
   }
   function tick() {
     if (c.demo) return;
-    fetch(c.data + location.search, { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: (typeof AbortSignal !== "undefined" && AbortSignal.timeout) ? AbortSignal.timeout(15000) : undefined })
+    window.fetch.call(window, c.data + location.search, { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: (typeof AbortSignal !== "undefined" && AbortSignal.timeout) ? AbortSignal.timeout(15000) : undefined })
       .then(function (r) { if (!r.ok) throw new Error("http"); return r.json(); })
       .then(function (j) { errors = 0; var next = JSON.stringify(j); if (next !== rev) { rev = next; render(j); delay = c.base; } else delay = Math.min(c.max, Math.round(delay * 1.5)); })
       .catch(function () { errors++; delay = Math.min(300000, Math.max(delay, c.base) * 2); })
