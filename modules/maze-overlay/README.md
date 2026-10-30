@@ -56,3 +56,13 @@ Rien n'est enregistré avant *Enregistrer le tracé* (ni la barre flottante, ni 
 - **Annuler les modifications** revient au tracé enregistré.
 
 Ces fonctions reposent sur les propriétés `generateAction`, `autoLabel`, `autoNotice` et `autoActive` du bloc générique `gridEditor` : le module demande donc le cœur 0.1.10 (`minCore`). L'action `generate` renvoie un tracé sans l'enregistrer ; `saveMap` reçoit soit une grille, soit `auto: "true"`.
+
+## Élément pour les pages d'overlay (version 1.2.0, cœur 0.5.0)
+
+Le module propose l'élément **Labyrinthe 3D** (« s'adapte au ratio ») à la section **Overlays** de l'administration. Il reçoit une fenêtre de 1080 pixels de haut dont la largeur suit le ratio de son cadre, de **4:3 à 32:9** : en plein écran 3440×1440 (21:9), le labyrinthe remplit tout le cadre.
+
+- **Le champ de vision s'adapte au ratio sans déformer** : plus le cadre est large, plus on voit de décor sur les côtés, avec les mêmes proportions qu'en 16:9 (les murs ne sont pas étirés). En 16:9, l'image est celle de l'overlay actuel.
+- **Aucune option** : la taille du labyrinthe, les couleurs, les textures, les affiches et leur durée restent réglées dans le module. L'élément ne suit pas le style commun de la page (c'est une scène 3D) et le dit à l'éditeur.
+- La carte d'affiche garde une largeur raisonnable dans un cadre très large.
+- **Rien ne change pour l'overlay actuel** : même adresse (`/overlays/<clé>`), même page, mêmes réglages.
+
