@@ -34,11 +34,9 @@ const BLOCKS_IN_TABS = ["modules/planning", "modules/calendar-ical", "modules/tw
 // Ces modules comptent leurs visiteurs par ctx.api.visitor.fingerprint (cœur 0.2.6, qui couvre aussi les onglets).
 const VISITOR_API = ["modules/game-suggestions", "examples/guestbook", "modules/twitch-raid"];   // twitch-raid 2.2 : route publique « members » limitée par visiteur, et script de page (cœur 0.2.6)
 // Modules qui proposent des éléments aux pages d'overlay (clé overlayElements) : cœur 0.5.0.
-const OVERLAY_ELEMENTS = ["modules/planning", "modules/community-stats"];
+const OVERLAY_ELEMENTS = ["modules/planning", "modules/community-stats", "modules/polls", "modules/twitch-channel"];
 // Modules qui lisent `ambiguous` de ctx.api.rawg.cover (lien « Ce n'est pas le bon jeu ? », cœur 0.2.10).
 const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules/stream-story"];
-// Modules qui proposent des éléments aux pages d'overlay (clé `overlayElements`, cœur 0.5.0).
-const OVERLAY_ELEMENTS = ["modules/polls", "modules/twitch-channel"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
