@@ -388,8 +388,8 @@ test("textes : parité EXACTE fr/en (mêmes clés, mêmes {variables}), toutes l
   for (const k of keys.filter((x) => /^(delete|confirmDelete|err(Confirm|Delete)|okDeleted)/.test(x))) assert.ok(!/\bvous\s+êtes\b|\btu\b|\bton\b|\bta\b/i.test(pollsFr[k].replace(/ton vote/g, "")), `vouvoiement : ${k}`);
 });
 
-test("la version et la mise à jour à chaud : 1.2.0, minCore et apiVersion inchangés, aucune migration ; le module rechargé avec ?v= supprime comme avant", async () => {
-  assert.equal(manifest.version, "1.2.0"); assert.equal(manifest.minCore, "0.2.5"); assert.equal(manifest.apiVersion, 2);
+test("la version et la mise à jour à chaud : 1.3.0, minCore 0.5.0 (éléments d'overlay), et apiVersion inchangés, aucune migration ; le module rechargé avec ?v= supprime comme avant", async () => {
+  assert.equal(manifest.version, "1.3.0"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.apiVersion, 2);
   assert.ok((manifest.dataVersion ?? 1) === 1 && !manifest.migrations, "aucune migration : aucune donnée n'est ajoutée ni transformée");
   const hot = await import("../modules/polls/index.mjs?v=1.2.0-hot");
   assert.equal(typeof hot.deletePoll, "function");

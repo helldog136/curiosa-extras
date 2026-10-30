@@ -37,6 +37,8 @@ const VISITOR_API = ["modules/game-suggestions", "examples/guestbook", "modules/
 const OVERLAY_ELEMENTS = ["modules/planning", "modules/community-stats"];
 // Modules qui lisent `ambiguous` de ctx.api.rawg.cover (lien « Ce n'est pas le bon jeu ? », cœur 0.2.10).
 const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules/stream-story"];
+// Modules qui proposent des éléments aux pages d'overlay (clé `overlayElements`, cœur 0.5.0).
+const OVERLAY_ELEMENTS = ["modules/polls", "modules/twitch-channel"];
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
