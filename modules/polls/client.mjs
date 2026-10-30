@@ -178,52 +178,61 @@ export const OVERLAY_JS = String.raw`(function () {
   var c = window.__VO;
   var box = document.getElementById("vo-box");
   var timer = null, clockTimer = null, rev = "", delay = c.base, errors = 0, skew = 0, url = c.url, cur = null;
-  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+  function el(tag, cls, text, part) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; if (part) n.setAttribute("data-ov-part", part); return n; }
   function now() { return Date.now() + skew; }
   function clock(ms) { var s = Math.max(0, Math.round(ms / 1000)), m = Math.floor(s / 60); return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60); }
   function decisionNode(dec) {
-    var n = el("div", "vo-decision");
+    var n = el("div", "vo-decision", undefined, "decision");
     n.setAttribute("data-until", dec.showUntil || "");
-    n.appendChild(el("p", "vo-dtitle", dec.winner ? c.t.decided : c.t.nodecision));
-    if (dec.winner) n.appendChild(el("p", "vo-dwin", dec.winner));
-    if (dec.tie && dec.tie.length > 1) n.appendChild(el("p", "vo-dtie", c.t.tie.replace("{list}", dec.tie.join(", ")).replace("{winner}", dec.winner || "")));
+    n.appendChild(el("p", "vo-dtitle", dec.winner ? c.t.decided : c.t.nodecision, "decision-title"));
+    if (dec.winner) n.appendChild(el("p", "vo-dwin", dec.winner, "decision-winner"));
+    if (dec.tie && dec.tie.length > 1) n.appendChild(el("p", "vo-dtie", c.t.tie.replace("{list}", dec.tie.join(", ")).replace("{winner}", dec.winner || ""), "decision-tie"));
     return n;
   }
   function render(d) {
     cur = d;
-    if (d.kind === "decision") { var only = el("div", "vo-card"); only.appendChild(decisionNode(d.decision)); box.replaceChildren(only); schedClock(); return; }
-    var f = el("div", "vo-card" + (d.state === "closed" ? " closed" : ""));
-    var head = el("p", "vo-state", d.state === "closed" ? c.t.final : (d.quick ? c.t.quick : c.t.live));
+    // Dans une page d'overlay (c.el), tout est rangé dans un « corps » centré, et l'en-tête (état, question, pied) est regroupé : la mise en page change selon la taille du cadre (voir la feuille de style).
+    if (d.kind === "decision") {
+      var only = el("div", "vo-card", undefined, "panel");
+      if (c.el) { var ob = el("div", "vo-body", undefined, "body"); ob.appendChild(decisionNode(d.decision)); only.appendChild(ob); } else only.appendChild(decisionNode(d.decision));
+      box.replaceChildren(only); schedClock(); fit(); return;
+    }
+    var f = el("div", "vo-card" + (d.state === "closed" ? " closed" : ""), undefined, "panel");
+    var body = c.el ? el("div", "vo-body", undefined, "body") : f;
+    var side = c.el ? el("div", "vo-side", undefined, "summary") : f;
+    var head = el("p", "vo-state", d.state === "closed" ? c.t.final : (d.quick ? c.t.quick : c.t.live), "status");
     if (d.round) head.appendChild(document.createTextNode(" · " + c.t.round + " " + d.round.n));
-    if (d.endsAt && d.state === "open") { var clk = el("span", "vo-clock", clock(Date.parse(d.endsAt) - now())); clk.setAttribute("data-end", d.endsAt); head.appendChild(clk); }
-    f.appendChild(head);
-    if (d.decision) f.appendChild(decisionNode(d.decision));
-    f.appendChild(el("h1", "vo-q", d.question));
-    var ol = el("ol", "vo-list");
+    if (d.endsAt && d.state === "open") { var clk = el("span", "vo-clock", clock(Date.parse(d.endsAt) - now()), "clock"); clk.setAttribute("data-end", d.endsAt); head.appendChild(clk); }
+    side.appendChild(head);
+    if (d.decision) side.appendChild(decisionNode(d.decision));
+    side.appendChild(el("h1", "vo-q", d.question, "question"));
+    var ol = el("ol", "vo-list", undefined, "choices");
     for (var i = 0; i < d.rows.length; i++) {
       var r = d.rows[i];
-      var li = el("li", "vo-row" + (r.lead ? " lead" : ""));
-      var line = el("div", "vo-line");
-      line.appendChild(el("span", "vo-label", r.text));
-      var n = el("span", "vo-num");
+      var li = el("li", "vo-row" + (r.lead ? " lead" : ""), undefined, "choice"); if (r.lead) li.setAttribute("data-lead", "1");
+      var line = el("div", "vo-line", undefined, "choice-line");
+      line.appendChild(el("span", "vo-label", r.text, "choice-label"));
+      var n = el("span", "vo-num", undefined, "choice-count");
       n.appendChild(el("strong", "", r.pct + " %"));
       n.appendChild(document.createTextNode(" · " + r.count + " " + (r.count === 1 ? c.t.one : c.t.many)));
       line.appendChild(n);
       li.appendChild(line);
-      var track = el("div", "vo-track"); track.setAttribute("aria-hidden", "true");
-      var fill = el("div", "vo-fill"); fill.style.width = r.pct + "%";
+      var track = el("div", "vo-track", undefined, "bar"); track.setAttribute("aria-hidden", "true");
+      var fill = el("div", "vo-fill", undefined, "bar-fill"); fill.style.width = r.pct + "%";
       track.appendChild(fill); li.appendChild(track);
-      if (r.lead) li.appendChild(el("span", "vo-tag", c.t.lead));
+      if (r.lead) li.appendChild(el("span", "vo-tag", c.t.lead, "tag"));
       ol.appendChild(li);
     }
-    f.appendChild(ol);
+    if (!c.el) f.appendChild(ol);
     var foot = d.voters + " " + (d.voters === 1 ? c.t.person : c.t.people);
     if (d.endsAt && d.state === "open" && !d.round && !d.quick) {
       try { foot += " · " + c.t.ends + " " + new Date(d.endsAt).toLocaleString(c.lang, { weekday: "short", hour: "2-digit", minute: "2-digit", timeZoneName: "short" }); } catch (x) {}
     }
-    f.appendChild(el("p", "vo-foot", foot));
+    (c.el ? side : f).appendChild(el("p", "vo-foot", foot, "foot"));
+    if (c.el) { body.appendChild(side); body.appendChild(ol); f.appendChild(body); }
     box.replaceChildren(f);
     schedClock();
+    fit();
   }
   // Le compte à rebours et la décision à l'écran se mettent à jour chez nous, sans rien demander au site ; la boucle s'arrête quand il n'y a plus rien à compter.
   function schedClock() { clearTimeout(clockTimer); if (box.querySelector("[data-end],[data-until]") && !document.hidden) clockTimer = setTimeout(tickClock, 1000); }
@@ -237,6 +246,22 @@ export const OVERLAY_JS = String.raw`(function () {
     }
     schedClock();
   }
+  // Dans une page d'overlay (élément « fluide ») : la police s'ajuste à la taille réelle du cadre, de façon que rien ne déborde (recherche entre 9 et 44 px).
+  function fit() {
+    if (!c.el) return;
+    var p = box.firstElementChild, b = p && p.firstElementChild;
+    if (!b) return;
+    var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    if (!(w > 0 && h > 0)) return;
+    var lo = 9, hi = 44;
+    for (var i = 0; i < 7; i++) {
+      var mid = (lo + hi) / 2;
+      box.style.setProperty("--vo-fs", mid + "px");
+      if (b.offsetHeight <= h + 1 && b.scrollWidth <= w + 1) lo = mid; else hi = mid;
+    }
+    box.style.setProperty("--vo-fs", lo + "px");
+  }
+  if (c.el) addEventListener("resize", function () { fit(); });
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(tick, ms); }
   function tick() {
     if (document.hidden) { schedule(c.base * 4); return; }
@@ -262,6 +287,7 @@ export const OVERLAY_JS = String.raw`(function () {
       })
       .then(function () { schedule(delay); });
   }
+  if (c.demo) { render(c.demo); return; }   // mode test d'une page d'overlay : un sondage d'exemple, rien n'est demandé au site
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { schedule(300); schedClock(); } });
   tick();
 })();

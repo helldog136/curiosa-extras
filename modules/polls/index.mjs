@@ -660,6 +660,9 @@ function decisionPage(ctx, r) {
 async function onAirPoll(ctx, cfg, query, now = Date.now()) {
   const asked = query?.get?.("poll");
   if (asked) return findPoll(ctx, asked);   // une source épinglée sur un sondage qui n'existe plus (supprimé) n'affiche RIEN : jamais un autre sondage à sa place
+  // Élément de page d'overlay (option « Quel sondage ») : un sondage précis s'il existe encore, sinon on retombe sur le choix automatique ci-dessous, sans rien casser.
+  const want = clean(query?.get?.("want"), 100);
+  if (want) { const p = (await findPoll(ctx, want)) ?? (await findById(ctx, want)); if (p) return p; }
   if (cfg?.onAir && (!cfg.onAirUntil || Date.parse(cfg.onAirUntil) > now)) { const p = await findPoll(ctx, cfg.onAir); if (p) return p; }
   const series = await getSeries(ctx);
   if (series?.status === "running") { const p = await bySlug(ctx, series.current); if (p) return p; }
@@ -714,6 +717,48 @@ async function publishLive(ctx, now) {
     if (!(await B.publish(ctx, "screen", screen, { readKey: cfg.obsKey, refreshAt }))) return;
     await B.publish(ctx, "now", publicData(screen, p, now), { public: true, refreshAt });
   } catch (e) { console.error("[polls] live sync failed:", e?.message); }
+}
+
+/* ───────────── Élément « Sondage » des pages d'overlay ───────────── */
+
+/** Un sondage d'exemple pour le mode test d'une page d'overlay : rien n'est lu ni écrit, aucun vrai sondage n'est montré. */
+function demoScreen(ctx) {
+  const rows = [[ctx.t("ovDemoA"), 12], [ctx.t("ovDemoB"), 7], [ctx.t("ovDemoC"), 4]].map(([text, count], i) => ({ id: `d${i}`, text, count, pct: Math.round((count / 23) * 100), lead: i === 0 }));
+  return { rev: "demo", state: "open", question: ctx.t("ovDemoQuestion"), voters: 23, endsAt: null, rows };
+}
+
+/**
+ * La feuille de style de l'élément : elle remplit le cadre, suit le style commun par les jetons --ov-* (avec repli sur les couleurs propres du module quand le style n'est pas transmis)
+ * et décrit les morceaux par leurs attributs data-ov-part. Aucune classe en dur, aucun skin du site. Cadre large et bas : le titre à gauche, les choix à droite ; sinon tout empilé.
+ */
+function elementCss(query, { accent, fg, card }) {
+  const given = query.has("ov-text"), dark = query.get("ov-text") === "dark", soft = query.get("ov-surface") === "soft", square = query.get("ov-corners") === "square";
+  const tokens = given ? `:root{--ov-fg:${dark ? "#111111" : "#ffffff"};--ov-surface:${soft ? (dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.55)") : "transparent"};--ov-radius:${square ? "0px" : "12px"};--ov-border:${soft ? (dark ? "rgba(0,0,0,.2)" : "rgba(255,255,255,.25)") : "transparent"}}` : "";
+  const shadow = given && !dark && !soft ? "text-shadow:0 1px 4px rgba(0,0,0,.45);" : "";
+  return `${tokens}
+html,body{margin:0;background:transparent;overflow:hidden;font-family:system-ui,sans-serif}
+[data-ov-region="element"]{position:fixed;inset:0;overflow:hidden;font-size:var(--vo-fs,18px);line-height:1.25;color:var(--ov-fg,${fg});${shadow}--vo-accent:${accent}}
+[data-ov-part="panel"]{box-sizing:border-box;height:100%;display:flex;flex-direction:column;padding:.6em .8em;background:var(--ov-surface,${card});border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,.9em);overflow:hidden}
+[data-ov-part="body"]{margin:auto 0;display:flex;flex-direction:column;gap:.55em;min-width:0}
+[data-ov-part="summary"]{display:contents}
+[data-ov-part="status"]{order:0;margin:0;font-size:.8em;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--vo-accent)}
+[data-ov-part="clock"]{margin-left:.5em;font-variant-numeric:tabular-nums}
+[data-ov-part="decision"]{order:1;margin:0;padding:.4em .7em;border:.12em solid var(--vo-accent);border-radius:.6em}
+[data-ov-part="decision-title"]{margin:0;font-size:.8em;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--vo-accent)}
+[data-ov-part="decision-winner"]{margin:.1em 0 0;font-size:1.4em;font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+[data-ov-part="decision-tie"]{margin:.2em 0 0;font-size:.8em}
+[data-ov-part="question"]{order:2;margin:0;font-size:1.3em;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+[data-ov-part="choices"]{order:3;list-style:none;margin:0;padding:0;display:grid;gap:.5em;min-width:0}
+[data-ov-part="choice-line"]{display:flex;justify-content:space-between;gap:.6em;font-size:.95em}
+[data-ov-part="choice-label"]{font-weight:600;overflow-wrap:anywhere;min-width:0}
+[data-ov-part="choice-count"]{white-space:nowrap}
+[data-ov-part="bar"]{height:.7em;margin-top:.2em;border-radius:.4em;background:rgba(127,127,127,.35);border:.1em solid var(--ov-fg,${fg});overflow:hidden}
+[data-ov-part="bar-fill"]{height:100%;background:var(--vo-accent);transition:width .6s}
+[data-ov-part="choice"][data-lead] [data-ov-part="bar-fill"]{background-image:repeating-linear-gradient(135deg,transparent 0 .4em,rgba(0,0,0,.3) .4em .65em)}
+[data-ov-part="tag"]{display:inline-block;margin-top:.15em;font-size:.7em;font-weight:700;border:.1em solid var(--ov-fg,${fg});border-radius:999px;padding:0 .6em}
+[data-ov-part="foot"]{order:4;margin:0;font-size:.8em;opacity:.85}
+@media (min-aspect-ratio:9/5){[data-ov-part="body"]{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);column-gap:1.4em;align-items:center}[data-ov-part="summary"]{display:flex;flex-direction:column;gap:.55em;min-width:0}}
+@media (prefers-reduced-motion:reduce){[data-ov-part="bar-fill"]{transition:none}}`;
 }
 
 const json = (body, status = 200, headers = {}) => Response.json(body, { status, headers: { "cache-control": "no-store", ...headers } });
@@ -827,6 +872,18 @@ async function remotePanel(ctx, now) {
 }
 
 export default {
+  /**
+   * Éléments des pages d'overlay (cœur 0.5.0) : l'adresse de l'élément est celle de l'overlay actuel (même rendu, aucune copie), avec le code secret ajouté ICI, côté serveur.
+   * Le cœur y ajoute ov-* (taille, style commun) et opt-poll (« Quel sondage ») ; la page les lit. Chaque lecteur lit l'état tout seul, sans rien consommer : plusieurs pages peuvent l'afficher.
+   */
+  overlayElements: {
+    poll: async (ctx, request) => {
+      const cfg = await ensureCfg(ctx);
+      const lang = typeof request?.lang === "string" && /^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request.lang) ? `&lang=${request.lang}` : "";
+      return { url: `/overlays/${ctx.instance.key}?k=${encodeURIComponent(cfg.obsKey)}${lang}` };
+    },
+  },
+
   services: {
     "audience.remote": {
       describe: async (ctx) => ({ ok: true, panel: await remotePanel(ctx, Date.now()) }),
@@ -982,12 +1039,15 @@ export default {
 
   async overlay(ctx, { query }) {
     const cfg = await getCfg(ctx);
-    if (!cfg || !sameSecret(query.get("k"), cfg.obsKey)) return { title: ctx.instance.name, html: `<p style="margin:24px;padding:16px 20px;max-width:560px;border-radius:12px;background:#222;color:#fff;font:18px/1.4 system-ui,sans-serif">${esc(ctx.t("obsIncomplete"))}</p>` };   // sans le code secret : un simple message, aucun résultat
+    if (!cfg || !sameSecret(query.get("k"), cfg.obsKey)) return query.has("ov-fit") ? { title: ctx.instance.name, html: "" } : { title: ctx.instance.name, html: `<p style="margin:24px;padding:16px 20px;max-width:560px;border-radius:12px;background:#222;color:#fff;font:18px/1.4 system-ui,sans-serif">${esc(ctx.t("obsIncomplete"))}</p>` };   // sans le code secret : un simple message, aucun résultat
     const seconds = num(ctx.setting("obsRefreshSeconds"), 5, 3, 30);
-    const own = `/m/${ctx.instance.key}/live?k=${encodeURIComponent(query.get("k"))}${query.get("poll") ? `&poll=${encodeURIComponent(query.get("poll"))}` : ""}`;
+    // Élément d'une page d'overlay (le cœur ajoute ov-* et opt-*) : même rendu, mais il remplit le cadre reçu, suit le style commun et ignore la place choisie pour l'overlay du module.
+    const el = query.has("ov-fit"), demo = el && query.get("ov-demo") === "1";
+    const want = el && !demo ? clean(query.get("opt-poll"), 100) : "";
+    const own = `/m/${ctx.instance.key}/live?k=${encodeURIComponent(query.get("k"))}${query.get("poll") ? `&poll=${encodeURIComponent(query.get("poll"))}` : ""}${want ? `&want=${encodeURIComponent(want)}` : ""}`;
     // Avec Participation, l'écran lit le point de direct (léger, partagé, qui ralentit tout seul) ; sans lui, ou pour un sondage choisi dans l'adresse, la route du module.
     let direct = null;
-    if (!query.get("poll") && (await B.present(ctx))) {
+    if (!query.get("poll") && !want && !demo && (await B.present(ctx))) {
       const info = await B.audience(ctx, "info", {});
       if (info?.ok && typeof info.base === "string") { await advance(ctx); await syncLive(ctx); direct = `${info.base}/direct?room=${encodeURIComponent(B.roomOf(ctx))}&channel=screen&k=${encodeURIComponent(query.get("k"))}`; }
     }
@@ -998,8 +1058,10 @@ export default {
       base: seconds * 1000, max: 30000, lang: ctx.locale,
       t: { live: ctx.t("obsLive"), final: ctx.t("obsFinal"), one: ctx.t("voice_one", { n: "" }).trim(), many: ctx.t("voice_many", { n: "" }).trim(), lead: ctx.t("leading"), person: ctx.t("person_one"), people: ctx.t("person_many"), ends: ctx.t("obsEnds"),
         round: ctx.t("obsRound"), decided: ctx.t("obsDecided"), nodecision: ctx.t("obsNoDecision"), tie: ctx.t("obsTie"), quick: ctx.t("obsQuick") },
+      ...(el ? { el: true, ...(demo ? { demo: demoScreen(ctx) } : {}) } : {}),
     }).replace(/</g, "\\u003c");
     const accent = color(ctx.setting("obsAccent"), ctx.theme.accent), fg = color(ctx.setting("obsText"), ctx.theme.fg), card = color(ctx.setting("obsCard"), ctx.theme.surface);
+    if (el) return { title: ctx.instance.name, html: `<div id="vo-box" role="status" aria-live="polite" data-ov-region="element"></div>`, css: elementCss(query, { accent, fg, card }), script: `window.__VO=${cfgJs};${C.OVERLAY_JS}` };
     return {
       title: ctx.instance.name,
       html: `<div id="vo-box" role="status" aria-live="polite"></div>`,

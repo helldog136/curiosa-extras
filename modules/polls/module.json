@@ -5,8 +5,8 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.2.0",
-  "minCore": "0.2.5",
+  "version": "1.3.0",
+  "minCore": "0.5.0",
   "description": {
     "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS). New: rounds (\"every 10 minutes the chat decides\", with the winner shown on screen) and a quick \"A or B?\" poll from your phone.",
     "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS). Nouveau : des manches (« toutes les 10 minutes, le chat décide », avec le choix gagnant à l'écran) et un sondage rapide « A ou B ? » depuis votre téléphone."
@@ -72,6 +72,47 @@
         "en": "The current poll"
       },
       "size": "medium"
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "poll",
+      "label": {
+        "fr": "Sondage en direct",
+        "en": "Live poll"
+      },
+      "description": {
+        "fr": "La question et les résultats d'un sondage, en barres qui se mettent à jour toutes seules. Le contenu s'adapte à la taille du cadre.",
+        "en": "The question and results of a poll, as bars that update by themselves. The content adapts to the size of the frame."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 240,
+        "height": 160
+      },
+      "ratios": {
+        "min": 0.4,
+        "max": 5
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "poll",
+          "type": "text",
+          "maxLength": 100,
+          "label": {
+            "fr": "Quel sondage",
+            "en": "Which poll"
+          },
+          "help": {
+            "fr": "Laissez vide pour montrer le sondage de l'écran en direct : celui que vous avez choisi dans l'onglet « En direct », sinon la manche en cours, sinon le sondage ouvert le plus récent. Pour un sondage précis, écrivez le nom de son adresse. S'il n'existe plus, c'est le choix automatique qui s'affiche.",
+            "en": "Leave empty to show the poll of the live screen: the one you picked in the \"Live\" tab, otherwise the running round, otherwise the most recent open poll. For one particular poll, write the name of its address. If it no longer exists, the automatic choice is shown."
+          },
+          "example": "quel-jeu",
+          "default": ""
+        }
+      ]
     }
   ],
   "rights": [
