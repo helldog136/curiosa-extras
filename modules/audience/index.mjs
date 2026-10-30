@@ -4,7 +4,7 @@
 //   • l'IDENTITÉ ANONYME d'un participant : un code au hasard gardé par le navigateur (stockage local, jamais un cookie) ; le site n'en garde qu'une empreinte propre à chaque salle ;
 //   • le PSEUDO (unique par salle, mots interdits modifiables, sourdine) ;
 //   • les LIMITES : débit, une voix par participant et par salle (sans jamais garder d'adresse IP en clair) ;
-//   • la TÉLÉCOMMANDE de la streameuse (page secrète, grands boutons), alimentée par les modules branchés (service « audience.remote ») ;
+//   • la TÉLÉCOMMANDE (page secrète, grands boutons pour le téléphone, ou en DOCK étroit pour OBS avec `&dock=1` : même clé), alimentée par les modules branchés (service « audience.remote ») ;
 //   • le DIRECT : un point de lecture borné pour les overlays et les pages publiques (interrogation douce et ralentissante) ;
 //   • un JOURNAL d'audit minimal et la PURGE à la lecture.
 // Les votes, eux, restent chez Sondages : un propriétaire par donnée. Voir README.md et docs/ideas/audience.md.
@@ -246,6 +246,7 @@ const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate"
 const whoText = (ctx, w) => (WHO.includes(w) ? ctx.t(`who_${w}`) : w);
 const whatText = (ctx, w) => (WHAT.includes(w) ? ctx.t(`what_${w.replace(".", "_")}`) : w);
 const remoteUrl = (ctx, meta) => `${ctx.api.siteUrl}/m/${ctx.instance.key}/remote?k=${meta.remoteKey}`;
+const dockUrl = (ctx, meta) => `${remoteUrl(ctx, meta)}&dock=1`;   // la même adresse secrète, avec la présentation « dock » en plus
 
 /* ───────────── Le module ───────────── */
 
@@ -343,7 +344,8 @@ export default {
         if (K.over(ctx, `rk|${K.fp(K.connOf(request), now)}`, 40, HOUR, now).over) return new Response("Too many requests", { status: 429, headers: { "retry-after": "300" } });
         return new Response("Not found", { status: 404 });
       }
-      return new Response(R.remoteHtml(ctx, meta.remoteKey, C.REMOTE_JS), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-robots-tag": "noindex, nofollow", "x-content-type-options": "nosniff" } });
+      // Même adresse secrète pour le téléphone et pour le dock OBS : `&dock=1` choisit la présentation étroite, rien d'autre ne change.
+      return R.remoteResponse(ctx, meta.remoteKey, C.REMOTE_JS, { dock: R.wantsDock(request.url) });
     },
 
     async "remote-state"(request, ctx) {
@@ -385,12 +387,16 @@ export default {
     // ── Onglet « En direct » : la télécommande ──
     blocks.push({ type: "heading", text: ctx.t("liveTitle") }, { type: "markdown", text: ctx.t("liveIntro") });
     if (can(ctx, "remote.use")) {
-      const addr = remoteUrl(ctx, meta);
+      const addr = remoteUrl(ctx, meta), dock = dockUrl(ctx, meta);
       const qr = await ctx.api.qr(addr).catch(() => "");
       blocks.push(
         { type: "copy", label: ctx.t("remoteAddress"), text: addr },
         { type: "markdown", text: `[${ctx.t("remoteOpen")}](${addr})` },
         ...(qr ? [{ type: "html", html: `<img src="data:image/svg+xml;base64,${Buffer.from(String(qr)).toString("base64")}" width="200" height="200" alt="${esc(ctx.t("qrAlt"))}" style="background:#fff;padding:10px;border-radius:12px;max-width:100%;height:auto">` }] : []),
+        { type: "heading", text: ctx.t("dockTitle") },
+        { type: "markdown", text: ctx.t("dockSteps") },
+        { type: "copy", label: ctx.t("dockAddress"), text: dock },
+        { type: "markdown", text: `[${ctx.t("dockOpen")}](${dock})` },
         { type: "markdown", text: ctx.t("remoteSecret") },
         { type: "adminForm", action: "regenerate", title: ctx.t("regenTitle"), submitLabel: ctx.t("regenBtn"), fields: [{ name: "confirm", kind: "checkbox", label: ctx.t("regenConfirm"), help: ctx.t("regenHelp") }] },
       );

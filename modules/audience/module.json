@@ -5,11 +5,11 @@
     "fr": "Participation",
     "en": "Audience"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "minCore": "0.2.5",
   "description": {
-    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
-    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone and a gentle live update for the screen. Installs itself with the activities that need it."
+    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone ou en panneau (dock) dans OBS et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
+    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone or as a panel (dock) in OBS and a gentle live update for the screen. Installs itself with the activities that need it."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -75,12 +75,12 @@
     {
       "id": "remote.use",
       "label": {
-        "fr": "voir l'adresse secrète de la télécommande et la changer",
-        "en": "see the secret address of the remote control and change it"
+        "fr": "voir les adresses secrètes de la télécommande (téléphone et dock OBS) et les changer",
+        "en": "see the secret addresses of the remote control (phone and OBS dock) and change them"
       },
       "help": {
-        "fr": "Cette adresse donne accès aux boutons « En direct » (lancer, arrêter, vider la salle…) à toute personne qui la connaît.",
-        "en": "This address gives anyone who knows it access to the live buttons (start, stop, clear the room…)."
+        "fr": "Ces adresses donnent accès aux boutons « En direct » (lancer, arrêter, vider la salle…) à toute personne qui les connaît.",
+        "en": "These addresses give anyone who knows them access to the live buttons (start, stop, clear the room…)."
       },
       "sensitive": true,
       "default": {
