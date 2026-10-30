@@ -5,6 +5,7 @@
 //   press({ action, values, locale }) → { ok: true, message? } | { ok: false, error, message?, field? }
 //   tick({ room, channel })           → { ok: true, handled } : « rafraîchis ton direct, il est périmé » (facultatif)
 // Voir docs/ideas/audience.md pour les formes exactes.
+import { randomBytes } from "node:crypto";
 const V = new URL(import.meta.url).search;
 const L = await import(`./lib.mjs${V}`);
 const K = await import(`./core.mjs${V}`);
@@ -107,25 +108,16 @@ export function tickProviders(ctx, room, channel, now = Date.now()) {
 }
 
 /* ───────────── La page de la télécommande ───────────── */
+// Une seule page, deux présentations : le téléphone (grands boutons, claire ou sombre selon le thème du site) et le DOCK pour OBS (étroit, 300 px, sombre, boutons de 40 px, souris et clavier).
+// C'est la MÊME adresse secrète : `…/remote?k=<clé>` pour le téléphone, `…/remote?k=<clé>&dock=1` pour le dock. Même script, mêmes routes `remote-state` et `remote-press`, mêmes droits : seule la mise en page change.
 
 const color = (v, d) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : d);
+const fontOf = (v) => (typeof v === "string" && /^[\w\s,"'.-]{1,120}$/.test(v) ? v : "system-ui,sans-serif");
 
-export function remoteHtml(ctx, key, REMOTE_JS) {
-  const th = ctx.theme ?? {};
-  const t = (k) => ctx.t(k);
-  const cfg = {
-    k: key, state: `/m/${ctx.instance.key}/remote-state?k=${encodeURIComponent(key)}`, press: `/m/${ctx.instance.key}/remote-press`, lang: ctx.locale,
-    t: {
-      busy: t("remoteBusy"), done: t("remoteDone"), again: t("remoteAgain"), nopanels: t("remoteNoPanels"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
-      person: t("person_one"), people: t("person_many"), anon: t("anon"), mutedTag: t("mutedTag"), mute: t("remoteMute"), unmute: t("remoteUnmute"), clear: t("remoteClear"), clearConfirm: t("remoteClearConfirm"),
-      connected: t("remoteConnected"), offline: t("remoteOffline"), denied: t("remoteDenied"),
-      e_net: t("remoteErrNet"), e_gone: t("remoteErrGone"), e_failed: t("remoteErrFailed"), e_invalid: t("remoteErrInvalid"), e_limit: t("remoteErrLimit"),
-    },
-  };
-  const json = JSON.stringify(cfg).replace(/</g, "\\u003c");
-  const c = { bg: color(th.bg, "#121214"), fg: color(th.fg, "#f4f4f5"), surface: color(th.surface, "#1b1b1d"), line: color(th.line, "#2e2e30"), accent: color(th.accent, "#e8a23b"), accentFg: color(th.accentFg, "#111111"), muted: color(th.muted, "#a1a1a3"), danger: color(th.danger, "#ff6b6b"), dangerFg: color(th.dangerFg, "#111111"), success: color(th.success, "#4ade80") };
-  const css = `:root{--bg:${c.bg};--fg:${c.fg};--surface:${c.surface};--line:${c.line};--accent:${c.accent};--accent-fg:${c.accentFg};--muted:${c.muted};--danger:${c.danger};--danger-fg:${c.dangerFg};--ok:${c.success}}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.45 ${th.font || "system-ui,sans-serif"};padding-bottom:env(safe-area-inset-bottom)}
+/** Le dock est demandé par `&dock=1` (rien d'autre : un paramètre inconnu donne la télécommande du téléphone). */
+export const wantsDock = (url) => new URL(url).searchParams.get("dock") === "1";
+
+const BASE_CSS = `*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.45 var(--font);padding-bottom:env(safe-area-inset-bottom)}
 .ar-top{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
 .ar-top h1{margin:0;font-size:1.15rem}.ar-dot{font-size:.9rem;color:var(--muted)}.ar-dot::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);margin-right:8px}.ar-dot.ok::before{background:var(--ok)}.ar-dot.bad::before{background:var(--danger)}
 .ar-main{max-width:640px;margin:0 auto;padding:16px;display:grid;gap:16px}
@@ -144,10 +136,62 @@ export function remoteHtml(ctx, key, REMOTE_JS) {
 .ar-person{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:52px;border-bottom:1px solid var(--line)}.ar-name{overflow-wrap:anywhere}.ar-name.muted{color:var(--muted);text-decoration:line-through}
 .ar-mini{min-height:44px;min-width:96px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
 .ar-toast{position:sticky;bottom:12px;margin:0 16px;padding:14px 16px;border-radius:14px;background:var(--fg);color:var(--bg);font-weight:700;text-align:center}.ar-toast.bad{background:var(--danger);color:var(--danger-fg)}
-.ar-foot{text-align:center;color:var(--muted);font-size:.9rem;padding:0 16px 24px}`;
-  return `<!doctype html><html lang="${L.esc(ctx.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>${L.esc(ctx.t("remoteTitle"))}</title><style>${css}</style></head><body>` +
+.ar-foot{text-align:center;color:var(--muted);font-size:.9rem;padding:0 16px 24px}[hidden]{display:none!important}`;
+
+// Le dock : un panneau OBS de 300 px de large (la hauteur est libre : la page défile), toujours sombre, texte de 14 px, boutons de 40 px au moins, bien visible au clavier, survol à la souris.
+const DOCK_CSS = `.ar-dock{font-size:14px;line-height:1.4;padding-bottom:0;overflow-wrap:anywhere}
+.ar-dock .ar-top{padding:8px 10px;gap:8px}.ar-dock .ar-top h1{font-size:1rem}.ar-dock .ar-dot{font-size:.8rem;white-space:nowrap}.ar-dock .ar-dot::before{width:8px;height:8px;margin-right:6px}
+.ar-dock .ar-main{max-width:560px;padding:10px;gap:10px}
+.ar-dock .ar-card{padding:10px;border-radius:10px;gap:8px;min-width:0}
+.ar-dock .ar-h2{font-size:1rem}.ar-dock .ar-h3{font-size:.95rem}.ar-dock .ar-state{font-size:.95rem}.ar-dock .ar-clock{font-size:1.1rem;margin-left:4px}
+.ar-dock .ar-row{grid-template-columns:1fr;gap:6px}
+.ar-dock .ar-btn{min-height:40px;border-radius:8px;border-width:1px;font-size:.95rem;font-weight:600;padding:6px 10px;touch-action:auto}
+.ar-dock .ar-btn:hover:not(:disabled),.ar-dock .ar-mini:hover{filter:brightness(1.2)}
+.ar-dock .ar-btn.armed{outline-width:3px}
+.ar-dock .ar-form{gap:8px;padding-top:8px}.ar-dock .ar-field label{font-size:.9rem}
+.ar-dock .ar-in{min-height:40px;border-radius:8px;border-width:1px;padding:6px 10px;font-size:.95rem}
+.ar-dock .ar-room summary{min-height:40px}
+.ar-dock .ar-person{min-height:44px;gap:8px}.ar-dock .ar-name{min-width:0}
+.ar-dock .ar-mini{min-height:40px;min-width:76px;border-radius:8px;border-width:1px;padding:0 8px}
+.ar-dock .ar-toast{bottom:8px;margin:0 10px;padding:8px 10px;border-radius:8px}
+.ar-dock .ar-foot{font-size:.8rem;padding:0 10px 12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}`;
+
+/** Les textes dont le script a besoin : ceux du dock disent « cliquez » (souris et clavier), ceux du téléphone « touchez ». */
+export function remoteConfig(ctx, key, { dock = false } = {}) {
+  const t = (k) => ctx.t(k);
+  return {
+    k: key, dock, state: `/m/${ctx.instance.key}/remote-state?k=${encodeURIComponent(key)}`, press: `/m/${ctx.instance.key}/remote-press`, lang: ctx.locale,
+    t: {
+      busy: t("remoteBusy"), done: t("remoteDone"), again: t(dock ? "dockAgain" : "remoteAgain"), nopanels: t("remoteNoPanels"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
+      person: t("person_one"), people: t("person_many"), anon: t("anon"), mutedTag: t("mutedTag"), mute: t("remoteMute"), unmute: t("remoteUnmute"), clear: t("remoteClear"), clearConfirm: t("remoteClearConfirm"),
+      connected: t("remoteConnected"), offline: t("remoteOffline"), denied: t("remoteDenied"),
+      e_net: t("remoteErrNet"), e_gone: t("remoteErrGone"), e_failed: t("remoteErrFailed"), e_invalid: t("remoteErrInvalid"), e_limit: t("remoteErrLimit"),
+    },
+  };
+}
+
+export function remoteHtml(ctx, key, REMOTE_JS, { dock = false, nonce = "" } = {}) {
+  const th = ctx.theme ?? {};
+  const json = JSON.stringify(remoteConfig(ctx, key, { dock })).replace(/</g, "\\u003c");
+  const accent = color(th.accent, "#e8a23b"), accentFg = color(th.accentFg, "#111111"), danger = color(th.danger, "#ff6b6b"), dangerFg = color(th.dangerFg, "#111111"), ok = color(th.success, "#4ade80");
+  // le dock est toujours sombre (il vit dans le décor d'OBS) ; seules les couleurs d'accent suivent le thème du site
+  const c = dock
+    ? { bg: "#0e0e10", fg: "#efeff1", surface: "#18181b", line: "#3a3a40", muted: "#b4b4be", font: "system-ui,'Segoe UI',Roboto,sans-serif" }
+    : { bg: color(th.bg, "#121214"), fg: color(th.fg, "#f4f4f5"), surface: color(th.surface, "#1b1b1d"), line: color(th.line, "#2e2e30"), muted: color(th.muted, "#a1a1a3"), font: fontOf(th.font) };
+  const css = `:root{${dock ? "color-scheme:dark;" : ""}--bg:${c.bg};--fg:${c.fg};--surface:${c.surface};--line:${c.line};--accent:${accent};--accent-fg:${accentFg};--muted:${c.muted};--danger:${danger};--danger-fg:${dangerFg};--ok:${ok};--font:${c.font}}\n${BASE_CSS}${dock ? `\n${DOCK_CSS}` : ""}`;
+  const n = nonce ? ` nonce="${L.esc(nonce)}"` : "";
+  return `<!doctype html><html lang="${L.esc(ctx.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>${L.esc(ctx.t("remoteTitle"))}</title><link rel="icon" href="data:,"><style${n}>${css}</style></head><body${dock ? ' class="ar-dock"' : ""}>` +
     `<header class="ar-top"><h1>${L.esc(ctx.t("remoteTitle"))}</h1><span id="ar-live" class="ar-dot" role="status">${L.esc(ctx.t("remoteConnecting"))}</span></header>` +
     `<main class="ar-main" id="ar-root" aria-live="polite"><section class="ar-card"><p class="ar-muted">${L.esc(ctx.t("remoteLoading"))}</p></section></main>` +
     `<p id="ar-toast" class="ar-toast" role="status" hidden></p><p class="ar-foot">${L.esc(ctx.t("remoteFoot"))}</p>` +
-    `<noscript><p class="ar-foot">${L.esc(ctx.t("needScript"))}</p></noscript><script>window.__AR=${json};${REMOTE_JS}</script></body></html>`;
+    `<noscript><p class="ar-foot">${L.esc(ctx.t("needScript"))}</p></noscript><script${n}>window.__AR=${json};${REMOTE_JS}</script></body></html>`;
+}
+
+const SECURE = { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-robots-tag": "noindex, nofollow", "x-content-type-options": "nosniff" };
+
+/** La réponse complète. Une politique de sécurité n'autorise que le script et le style de la page elle-même, et ne laisse contacter que le site. */
+export function remoteResponse(ctx, key, REMOTE_JS, { dock = false } = {}) {
+  const nonce = randomBytes(16).toString("base64");
+  return new Response(remoteHtml(ctx, key, REMOTE_JS, { dock, nonce }), { headers: { ...SECURE, "content-security-policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'` } });
 }
