@@ -118,5 +118,6 @@
   "unit_s": "second|seconds",
   "upcomingTitle": "Upcoming events",
   "whereLabel": "Where:",
-  "whereToShow": "To show a countdown on your home page: open “Home page” in the menu, then add the “Featured countdown” piece. For your stream, paste in OBS the address shown in the “My events” tab. The look, place and size below only apply to OBS."
+  "whereToShow": "To show a countdown on your home page: open “Home page” in the menu, then add the “Featured countdown” piece. For your stream, paste in OBS the address shown in the “My events” tab. The look, place and size below only apply to OBS.",
+  "overlayDemo": "Example: the big launch"
 }

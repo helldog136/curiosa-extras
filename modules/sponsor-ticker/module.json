@@ -5,7 +5,8 @@
     "en": "Sponsor ticker overlay (OBS)",
     "fr": "Overlay sponsors (OBS)"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
+  "minCore": "0.5.0",
   "description": {
     "en": "A lower-third for OBS that periodically shows one of your sponsors with its promo code and a QR code.",
     "fr": "Un bandeau pour OBS qui affiche périodiquement l'un de vos sponsors avec son code promo et un QR code."
@@ -158,6 +159,41 @@
         "en": "Lets the URL control chance: ?dev=1 (appears after 0.5 s, repeats every 4 s), ?seed=42 (same order every time).",
         "fr": "Permet à l'URL de piloter le hasard : ?dev=1 (apparaît après 0,5 s, se répète toutes les 4 s), ?seed=42 (même ordre à chaque fois)."
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "sponsors",
+      "label": {
+        "fr": "Bandeau sponsors",
+        "en": "Sponsor banner"
+      },
+      "description": {
+        "fr": "Un sponsor à la fois, avec son code promo et un QR code, qui apparaît de temps en temps.",
+        "en": "One sponsor at a time, with its promo code and a QR code, shown from time to time."
+      },
+      "fit": "scale",
+      "size": {
+        "width": 720,
+        "height": 180
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "qr",
+          "type": "boolean",
+          "label": {
+            "fr": "Afficher le QR code",
+            "en": "Show the QR code"
+          },
+          "help": {
+            "fr": "Si le QR code est masqué dans les réglages du module, il reste masqué.",
+            "en": "If the QR code is hidden in the module settings, it stays hidden."
+          },
+          "default": true
+        }
+      ]
     }
   ]
 }

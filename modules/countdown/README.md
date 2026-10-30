@@ -23,6 +23,14 @@ Dans **Page d'accueil** (menu de gauche), ajoutez le morceau **Compte à rebours
 ### Dans OBS (stream)
 Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *source navigateur* (largeur 1920, hauteur 1080 conseillées). Le fond est transparent. Par défaut, l'événement à la une s'affiche ; pour un événement précis, ouvrez-le avec **Modifier** et copiez « l'adresse à coller dans OBS pour cet événement ». Le style (sombre, clair, sans fond), la place, la taille et la durée du message de fin se règlent dans l'onglet **Réglages**.
 
+### Dans une page d'overlay (section « Overlays », Curiosa 0.5.0 ou plus)
+Dans **Overlays**, « Ajouter un élément » propose **Compte à rebours** (avec le nom de l'instance). Vous pouvez en placer plusieurs, par exemple deux compteurs sur deux événements différents.
+- **Événement** : laissez vide pour l'événement à la une. Pour un autre, écrivez son *nom court* (la fin de l'adresse de sa page, visible dans **Modifier**). Un nom qui n'existe plus montre l'événement à la une, sans erreur.
+- **Afficher les secondes** : oui par défaut (jamais plus que le réglage du module).
+- Le style (clair ou sombre, fond, angles) est celui de la page d'overlay ; la place, la taille et le style d'OBS réglés ici sont **ignorés** dans une page d'overlay. Le message de fin et ses minutes restent ceux du module.
+- Mode test : un événement d'exemple, jamais un vrai.
+Votre adresse OBS actuelle ne change pas.
+
 ## Les heures et le changement d'heure
 
 - Vous écrivez l'heure **là où l'événement a lieu** (par exemple 21 h à Paris). Le module garde « le jour, l'heure et le nom du fuseau », jamais un décalage fixe : le passage à l'heure d'été ou d'hiver est donc toujours juste, même si l'événement a lieu dans plusieurs mois.
@@ -59,6 +67,6 @@ Dans l'onglet **Mes événements**, copiez l'adresse OBS et collez-la dans une *
 
 ## Pour qui développe
 
-- Une page publique (`/<chemin>`, `/<chemin>/<nom-court>`), deux morceaux d'accueil, un emplacement `layout.head` (script d’environ 12 Ko, chargé seulement s'il y a des événements), une source `overlay`, des routes en lecture seule (`ics`, `now`, `state`, `live.js`) et des outils pour les assistants (`events_list`, `event_create`, `event_update`, `event_set_featured`, `event_delete`).
+- Une page publique (`/<chemin>`, `/<chemin>/<nom-court>`), deux morceaux d'accueil, un emplacement `layout.head` (script d’environ 12 Ko, chargé seulement s'il y a des événements), une source `overlay`, un élément de page d'overlay (`overlayElements.countdown`, qui réutilise la source `overlay` avec les paramètres réservés `ov-*` et `opt-*` ; `minCore` 0.5.0), des routes en lecture seule (`ics`, `now`, `state`, `live.js`) et des outils pour les assistants (`events_list`, `event_create`, `event_update`, `event_set_featured`, `event_delete`).
 - `time.mjs` : tout le calcul du temps, sans dépendance. Les fonctions communes au serveur et au navigateur sont envoyées au navigateur telles quelles (`Function.prototype.toString`) : mêmes résultats partout, testés directement.
 - Les tests : `tests/countdown*.test.mjs` (changements d'heure belges et fuseaux lointains, fichier d'agenda validé par un lecteur strict, compteur sans dérive, pause onglet caché, mouvement réduit).
