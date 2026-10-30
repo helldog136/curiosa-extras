@@ -5,8 +5,8 @@
     "en": "3D maze overlay (OBS)",
     "fr": "Overlay labyrinthe 3D (OBS)"
   },
-  "version": "1.1.1",
-  "minCore": "0.2.2",
+  "version": "1.2.0",
+  "minCore": "0.5.0",
   "description": {
     "en": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",
     "fr": "Un labyrinthe 3D rétro pour OBS. Le personnage se promène dans les couloirs et s'arrête devant des affiches faites avec le contenu de votre site."
@@ -274,6 +274,30 @@
         "en": "Lets the overlay URL manipulate chance, for testing: ?seed=42 (same maze and walk every time), ?luck=always|never|0.3 (stop in front of posters), ?fast=1 (shortest delays), ?dev=1 (always stop + fastest). Leave off in production.",
         "fr": "Permet à l'URL de l'overlay de manipuler le hasard, pour tester : ?seed=42 (même labyrinthe et même trajet à chaque fois), ?luck=always|never|0.3 (s'arrêter devant les affiches), ?fast=1 (délais minimaux), ?dev=1 (arrêt systématique + délais minimaux). À laisser désactivé en production."
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "maze",
+      "label": {
+        "en": "3D maze",
+        "fr": "Labyrinthe 3D"
+      },
+      "description": {
+        "en": "The 3D maze, wide or narrow: it follows the ratio of its frame (4:3 to 32:9) and shows more on the sides when the frame is wider.",
+        "fr": "Le labyrinthe 3D, large ou étroit : il suit le ratio de son cadre (de 4:3 à 32:9) et montre plus de décor sur les côtés quand le cadre est plus large."
+      },
+      "fit": "ratio",
+      "referenceHeight": 1080,
+      "ratios": {
+        "min": 1.33,
+        "max": 3.56
+      },
+      "minSize": {
+        "width": 640,
+        "height": 360
+      },
+      "followsStyle": false
     }
   ]
 }

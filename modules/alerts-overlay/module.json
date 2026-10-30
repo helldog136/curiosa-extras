@@ -5,7 +5,8 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.1.1",
+  "version": "1.2.0",
+  "minCore": "0.5.0",
   "description": {
     "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Tools such as Streamer.bot, a webhook relay or a script can send it alerts. Super Chats, Super Stickers and memberships on your YouTube live can appear too.",
     "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Des outils comme Streamer.bot, un relais de webhook ou un script peuvent lui envoyer des alertes. Les Super Chats, Super Stickers et adhésions de votre direct YouTube peuvent aussi s'afficher."
@@ -141,6 +142,64 @@
         {
           "key": "text",
           "type": "string"
+        }
+      ]
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "alerts",
+      "label": {
+        "en": "Alerts",
+        "fr": "Alertes"
+      },
+      "description": {
+        "en": "The pop-up that shows each alert (follow, sub, raid, live donations) the moment it arrives.",
+        "fr": "La fenêtre qui affiche chaque alerte (follow, sub, raid, dons du direct) au moment où elle arrive."
+      },
+      "fit": "scale",
+      "size": {
+        "width": 640,
+        "height": 260
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "kinds",
+          "type": "choice",
+          "label": {
+            "en": "Alerts shown",
+            "fr": "Alertes affichées"
+          },
+          "help": {
+            "en": "Use two elements to show channel alerts and live donations in two places.",
+            "fr": "Utilisez deux éléments pour montrer les alertes de la chaîne et les dons du direct à deux endroits."
+          },
+          "choices": [
+            {
+              "value": "all",
+              "label": {
+                "en": "All alerts",
+                "fr": "Toutes les alertes"
+              }
+            },
+            {
+              "value": "channel",
+              "label": {
+                "en": "Channel alerts (follow, sub, raid)",
+                "fr": "Alertes de la chaîne (follow, sub, raid)"
+              }
+            },
+            {
+              "value": "live",
+              "label": {
+                "en": "Live donations and memberships",
+                "fr": "Dons et adhésions du direct"
+              }
+            }
+          ],
+          "default": "all"
         }
       ]
     }
