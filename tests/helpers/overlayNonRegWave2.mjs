@@ -15,7 +15,7 @@ const load = (root, mod, file = "index.mjs") => import(`${path.join(root, "modul
 const sha = (s) => createHash("sha256").update(String(s)).digest("hex");
 
 /** Le manifeste sans ce que les éléments d'overlay ajoutent (version, minCore, clé overlayElements). */
-const manifestRest = (m) => { const { version, minCore, overlayElements, ...rest } = m; return rest; };
+const manifestRest = (m, extraPermission) => { const { version, minCore, overlayElements, ...rest } = m; return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) }; };
 
 /** Suggestions de jeux : la page publique (tous les filtres), l'administration, les outils MCP, le vote et la suggestion, sur un jeu de données fixe. */
 export async function gamesSnapshot(root) {
@@ -65,7 +65,7 @@ export async function thanksSnapshot(root) {
   const { ctx } = makeWorld({ book, settings: { category: mods, groupTitle: "Modération", category2: sup, intro: "Merci à **vous**", preview: 2 }, locale: "fr" });
   await ctx.api.store.add("messages", { contactId: ids["Anne Lambert"], texts: { fr: "Toujours là, merci !", en: "Always there, thanks!" } });
   await ctx.api.store.add("honors", { month: "2026-10", contactId: ids["Dina Fox"], why: { fr: "Pour son aide <3" } });
-  const out = { manifest: manifestRest(readJson(root, "thanks-wall", "module.json")), top: Object.keys(mod).filter((k) => k !== "overlayElements").sort(), routes: mod.routes ? Object.keys(mod.routes).filter((k) => k !== "element/:slug").sort() : null, pages: {} };
+  const out = { manifest: manifestRest(readJson(root, "thanks-wall", "module.json"), "routes"), top: Object.keys(mod).filter((k) => k !== "overlayElements" && !(k === "routes" && Object.keys(mod.routes).every((r) => r === "element/:slug"))).sort(), routes: mod.routes && Object.keys(mod.routes).some((k) => k !== "element/:slug") ? Object.keys(mod.routes).filter((k) => k !== "element/:slug").sort() : null, pages: {} };
   void W;
   for (const seg of [[], ["g", "1"], ["g", "2"], ["g", "2", "page", "1"], ["g", "3"], ["g", "1", "page", "2"], ["autre"]]) { W.resetWall?.(); out.pages[seg.join("/") || "wall"] = json(await mod.page(ctx, { segments: seg })); }
   out.admin = json(await mod.adminPanel(ctx, { query: {} }));
