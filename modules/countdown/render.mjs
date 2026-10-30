@@ -144,21 +144,56 @@ export function overlayEvent(ctx, v, endMs) {
   return { slug: v.slug, title: v.title, start: v.startMs, hideAt: Math.min(v.hideMs, v.startMs + endMs), message: endMessage(ctx, v) };
 }
 
-export function overlayParts(ctx, { initial, stateUrl, endMs }) {
+/** Ce que la source reçoit quand elle sert un ÉLÉMENT de page d'overlay : paramètres réservés `ov-*` (taille, style commun) et `opt-*` (options), tous revalidés ici. Sinon null (overlay habituel). */
+export function elementRequest(query) {
+  if (!query?.has?.("ov-w")) return null;
+  const size = (k, d) => { const n = Number(query.get(k)); return Number.isFinite(n) ? Math.min(7680, Math.max(16, Math.round(n))) : d; };
+  const asked = query.get("opt-event") ?? "";
+  return {
+    width: size("ov-w", 600), height: size("ov-h", 200), text: query.get("ov-text") === "dark" ? "dark" : "light",
+    soft: query.get("ov-surface") === "soft", square: query.get("ov-corners") === "square",
+    demo: query.get("ov-demo") === "1",
+    event: M.isSlug(asked) ? asked : "", // vide ou inconnu : l'événement à la une
+    seconds: query.get("opt-seconds") !== "0",
+  };
+}
+
+/** Événement d'exemple du mode test : toujours « dans quelques jours », jamais d'événement réel. */
+export function demoEvent(ctx, now, endMs) {
+  const start = now + (3 * 24 + 4) * 3_600_000 + 12 * 60_000 + 56_000;
+  return { slug: "demo", title: ctx.t("overlayDemo"), start, hideAt: start + endMs, message: "" };
+}
+
+/** Jetons --ov-* du style commun (valeurs de docs/OVERLAY-ELEMENTS.md), avec repli ; jamais le thème ni le skin du site. */
+function elementTokens(e) {
+  const light = e.text !== "dark";
+  return `--ov-fg:${light ? "#ffffff" : "#111111"};--ov-surface:${e.soft ? (light ? "rgba(0,0,0,.55)" : "rgba(255,255,255,.7)") : "transparent"};--ov-radius:${e.square ? "0px" : "12px"};--ov-border:${e.soft ? (light ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)") : "transparent"}`;
+}
+
+export function overlayParts(ctx, { initial, stateUrl, endMs, element = null }) {
   const look = ["dark", "light", "bare"].includes(String(ctx.setting("overlayLook"))) ? String(ctx.setting("overlayLook")) : "dark";
   const position = OVERLAY_POSITIONS[String(ctx.setting("overlayPosition"))] ?? OVERLAY_POSITIONS["top-center"];
-  const size = OVERLAY_SIZES[String(ctx.setting("overlaySize"))] ?? OVERLAY_SIZES.m;
+  // Dans une page d'overlay, la place et la taille propres à l'overlay sont ignorées : l'élément remplit son cadre (police calculée d'après le cadre).
+  const size = element ? Math.max(8, Math.floor(Math.min(element.width / 17.5, element.height / 7.9))) : (OVERLAY_SIZES[String(ctx.setting("overlaySize"))] ?? OVERLAY_SIZES.m);
   const accent = safeColor(ctx.setting("overlayAccent")) ?? safeColor(ctx.theme.accent) ?? "#e8a23b";
   const L = labels(ctx);
-  const secs = ctx.setting("showSeconds") !== false;
-  const tile = (k) => `<div class="vco-t"${k === "s" ? ' data-o="t-s"' : ""}><span class="vco-n" data-o="${k}">0</span><span class="vco-l" data-o="l-${k}">${esc(L[k][1])}</span></div>`;
-  const html = `<div id="vco" class="vco vco--${look}" data-state="" hidden><div class="vco-box"><p class="vco-title" data-o="title"></p><div class="vco-tiles" data-o="tiles">${tile("d")}${tile("h")}${tile("m")}${tile("s")}</div><p class="vco-msg" data-o="msg" hidden></p></div></div>`;
-  const css = `
+  const secs = ctx.setting("showSeconds") !== false && (!element || element.seconds);
+  const part = (name) => (element ? ` data-ov-part="${name}"` : "");
+  const tile = (k) => `<div class="vco-t"${k === "s" ? ' data-o="t-s"' : ""}${part("tile")}><span class="vco-n" data-o="${k}"${part("number")}>0</span><span class="vco-l" data-o="l-${k}"${part("unit")}>${esc(L[k][1])}</span></div>`;
+  const html = `<div id="vco" class="vco vco--${element ? "element" : look}"${element ? ' data-ov-region="element"' : ""} data-state="" hidden><div class="vco-box"${part("panel")}><p class="vco-title" data-o="title"${part("title")}></p><div class="vco-tiles" data-o="tiles"${part("tiles")}>${tile("d")}${tile("h")}${tile("m")}${tile("s")}</div><p class="vco-msg" data-o="msg"${part("message")} hidden></p></div></div>`;
+  const legacyHead = `
 html,body{margin:0;background:transparent!important;overflow:hidden}
 .vco{position:fixed;${position};max-width:96vw;font-family:var(--v-font,system-ui,sans-serif);font-size:${size}px;--vco-fg:#fff;--vco-bg:rgba(10,10,12,.74);--vco-muted:rgba(255,255,255,.82);--vco-accent:${accent}}
 .vco--light{--vco-fg:#111;--vco-bg:rgba(255,255,255,.9);--vco-muted:rgba(0,0,0,.7)}
 .vco--bare{--vco-bg:transparent;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 14px rgba(0,0,0,.7)}
-.vco[hidden],.vco [hidden]{display:none!important}
+.vco[hidden],.vco [hidden]{display:none!important}`;
+  // Élément : couleurs, fond et arrondis viennent des jetons du style commun ; l'accent reste celui du module.
+  const elementHead = `
+:root{${elementTokens(element ?? {})}}
+html,body{margin:0;background:transparent!important;overflow:hidden}
+.vco{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,"Segoe UI",sans-serif;font-size:${size}px;--vco-fg:var(--ov-fg,#fff);--vco-bg:var(--ov-surface,transparent);--vco-muted:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);--vco-accent:${accent}}
+.vco[hidden],.vco [hidden]{display:none!important}`;
+  const rules = `
 .vco-box{box-sizing:border-box;padding:.7em 1.1em .8em;border-radius:.8em;border-bottom:.2em solid var(--vco-accent);background:var(--vco-bg);color:var(--vco-fg);text-align:center}
 .vco--bare .vco-box{border-bottom-color:transparent}
 .vco-title{margin:0 0 .3em;font-size:1.05em;font-weight:600;overflow-wrap:anywhere}
@@ -169,7 +204,11 @@ html,body{margin:0;background:transparent!important;overflow:hidden}
 .vco-msg{margin:.1em 0;font-size:1.9em;font-weight:700;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:no-preference){.vco-box{animation:vco-in .45s ease-out}}
 @keyframes vco-in{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.vco *{animation:none!important;transition:none!important}}`.trim();
+@media (prefers-reduced-motion:reduce){.vco *{animation:none!important;transition:none!important}}`;
+  const elementRules = `
+.vco-box{max-width:100%;max-height:100%;overflow:hidden;border-radius:var(--ov-radius,.8em);border:1px solid var(--ov-border,transparent);border-bottom:.2em solid var(--vco-accent);text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.vco-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}`;
+  const css = ((element ? elementHead : legacyHead) + rules + (element ? elementRules : "")).trim();
   const cfg = { stateUrl, lang: ctx.locale, L, secs, poll: 30_000, initial, endMs };
   const json = JSON.stringify(cfg).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
   const script = `(function(){"use strict";\n${T.clientSource()}\nbootOverlay(window,document,${json});\n})();`;
