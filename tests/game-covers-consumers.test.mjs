@@ -41,11 +41,11 @@ const ST = mk("stream-story", { siteUrl: "https://site.example.test", topics: { 
 const withOld = (ctx, svc = oldService()) => { ctx.api.rawg = svc; return ctx; };
 
 test("manifestes : besoin FACULTATIF du service game.cover, permission rawg conservée (repli), minCore inchangé, versions augmentées, FR/EN alignés", () => {
-  for (const [m, v] of [["game-suggestions", "1.5.1"], ["planning", "2.4.1"], ["stream-story", "2.5.1"]]) {
+  for (const [m, v, core] of [["game-suggestions", "1.5.1", "0.2.10"], ["planning", "2.5.0", "0.5.0"], ["stream-story", "2.5.1", "0.2.10"]]) {
     const man = readJson(m, "module.json");
     assert.ok(parseManifest(man).ok, m);
     assert.equal(man.version, v, m);
-    assert.equal(man.minCore, "0.2.10", `${m} : fonctionne aussi sur un cœur qui garde encore le service`);
+    assert.equal(man.minCore, core, `${m} : fonctionne aussi sur un cœur qui garde encore le service (le Planning demande 0.5.0 depuis ses éléments d'overlay)`);
     const need = man.requires.find((r) => r.service === "game.cover");
     assert.deepEqual([need.optional, need.min ?? 1], [true, 1], `${m} : jamais installé d'office, jamais bloquant`);
     assert.ok(man.permissions.includes("rawg"), `${m} : repli sur l'ancienne interface tant que la cale existe`);

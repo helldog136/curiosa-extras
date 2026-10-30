@@ -127,7 +127,7 @@ test("Story d'annonce : la route cover renvoie title, ambiguous et found ; faux 
 test("FR/EN : mêmes clés pour les trois modules ; minCore 0.2.10 ; versions augmentées ; extrait de changelog présent", () => {
   for (const m of ["planning", "stream-story", "game-suggestions"]) {
     assert.deepEqual(Object.keys(readJson(m, "locales/fr.json")).sort(), Object.keys(readJson(m, "locales/en.json")).sort(), m);
-    assert.equal(readJson(m, "module.json").minCore, "0.2.10", m);
+    assert.equal(readJson(m, "module.json").minCore, m === "planning" ? "0.5.0" : "0.2.10", m);   // le Planning demande 0.5.0 depuis ses éléments d'overlay
   }
   assert.ok(fs.existsSync(new URL("../docs/changelog-parts/rawg-wrong-cover.md", import.meta.url)));
 });

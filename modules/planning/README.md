@@ -7,7 +7,7 @@ Vos prochains streams, jour par jour, **affichés** dans l'apparence de votre ch
 
 Installez l'un des deux, ou les deux : leurs streams s'ajoutent (un stream écrit deux fois n'est montré qu'une fois). Le **bot Twitch** lit les mêmes agendas : il peut répondre à `!planning` même sans Planning.
 
-Il faut Curiosa 0.2.10 ou plus.
+Il faut Curiosa 0.5.0 ou plus (les éléments pour les pages d'overlay ; la page, l'accueil et le reste fonctionnent comme avant).
 
 - **Page publique** `/planning` : les *N* prochains jours (7 par défaut, réglage avancé).
 - **Section d'accueil** « Prochains streams » et « Prochain stream » (à placer depuis *Page d'accueil*).
@@ -16,6 +16,21 @@ Il faut Curiosa 0.2.10 ou plus.
 - **Assistants IA** : `planning_upcoming` (lecture seule, accordée par défaut).
 - **Jaquette peut-être fausse** (administration seulement, Curiosa 0.2.10 ou plus) : quand RAWG n'est pas sûr du jeu (`ambiguous`), l'administration liste le jeu avec un lien « Ce n'est pas le bon jeu ? » vers `/admin/settings/rawg-covers?titre=<titre encodé>`, l'écran du cœur où l'on choisit le bon jeu. Rien n'est ajouté côté public.
 - **Admin** : les prochains streams vus, les jaquettes, et l'aperçu de chaque apparence.
+
+## Éléments pour les pages d'overlay (version 2.5.0, Curiosa 0.5.0)
+
+Le Planning propose **deux éléments** aux pages d'overlay de la section **Overlays** de l'administration (une seule adresse à coller dans OBS par page d'overlay). Le Planning n'a pas d'overlay à lui : ces éléments n'existent que dans les pages d'overlay. Rien ne change pour la page publique, l'accueil, l'image de la semaine, vos réglages ou vos adresses.
+
+| Élément | Ce qu'il montre | Options |
+|---|---|---|
+| **Planning de la semaine** | Vos prochains streams jour par jour. Il demande de la place (taille minimale 480 × 280) : une grille sur sept jours quand le cadre est large, une liste quand il est étroit. | **Apparence** (selon la place, semaine en grille, liste classique, liste en alternance, timeline, affiches), **nombre de jours** (1 à 14, 7 par défaut), **jaquettes** (oui par défaut ; masquées d'office dans une grille trop basse) |
+| **Prochain stream** | Le prochain stream en grand (titre, jour, heure, jeu, jaquette, « Dans 2 h » ou « En cours »). Taille minimale 320 × 160. | **Streams suivants à montrer** (0 à 5, 0 par défaut), **jaquettes** |
+
+- **Il se réorganise selon la taille reçue** et remplit tout le cadre ; sans place, il réduit un peu le texte (jamais en dessous de 55 %) puis estompe le bas. Fond transparent par défaut ; il suit le **style commun** de la page d'overlay (texte clair ou sombre, fond doux, angles) par les jetons `--ov-*` et les attributs `data-ov-part`. Il ne charge **jamais** le style de votre site.
+- **Ce que vous réglez chez le Planning reste chez lui** : fuseau, format de l'heure, jaquettes, streams annulés, premier jour de la semaine… sont ceux de la page du planning. Ses réglages de place et de taille propres à une page ne comptent pas dans une page d'overlay.
+- **Aucun lien, aucun bouton** (rien ne se clique dans OBS) et aucun secret : vos streams sont déjà publics. Mode test : des streams d'exemple.
+- **Plusieurs pages d'overlay peuvent montrer le même élément** : une seule lecture de votre agenda (et des jaquettes) sert tout le monde pendant 45 secondes. Aucune tâche de fond : la page s'interroge elle-même, de plus en plus lentement quand rien ne change (au plus 300 fois).
+- Développeurs : routes `element/week` et `element/next` (`?frag=1` rend seulement le contenu et son empreinte), fichier `overlay.mjs`, test `tests/planning-overlay.test.mjs`.
 
 ## Apparences au choix (réglage « Apparence du planning »)
 

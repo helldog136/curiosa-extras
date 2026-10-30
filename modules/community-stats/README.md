@@ -1,8 +1,8 @@
 # Statistiques de la communauté
 
-Le site tient à jour **les chiffres de vos réseaux** : followers, abonnements payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 followers cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre, et cet affichage n'existe pas encore dans cette version (voir « Ce qui viendra »).
+Le site tient à jour **les chiffres de vos réseaux** : followers, abonnements payants, publications, vues. Il les note régulièrement, en garde l'historique, vous les montre dans l'administration avec leur évolution (« +120 followers cette semaine »), et votre IA peut les consulter. **Rien n'est affiché sur votre site** tant que vous n'avez pas choisi « Montrer sur mon site » pour un chiffre. Depuis la version 1.2.0, ces chiffres peuvent s'afficher dans vos **pages d'overlay** pour OBS (voir « Compteurs dans les pages d'overlay »).
 
-**Il faut Curiosa 0.2.2 ou plus.** Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (audience moyenne, pic, temps de direct et regardé, followers gagnés).
+**Il faut Curiosa 0.5.0 ou plus** (les pages d'overlay ; la collecte, l'administration et l'assistant IA fonctionnent comme avant). Depuis la version 1.1.0, il accepte aussi les chiffres de direct Twitch sur 30 jours (audience moyenne, pic, temps de direct et regardé, followers gagnés).
 
 ## Pour commencer : rien à régler
 1. Installez et activez ce module.
@@ -69,8 +69,18 @@ Dans le stockage privé de ce module (rien ne sort du serveur ; aucun secret) :
 
 Au plus **un point par statistique et par période** : un deuxième passage dans la même période ne crée rien (le bouton « Mettre à jour maintenant » remplace le point du jour). Volume : environ 20 octets par point. Par défaut (un par jour, 2 ans), 730 points ≈ 15 Ko par statistique, soit environ 300 Ko pour 20 statistiques. Pire cas réglable (toutes les heures, 5 ans) : 43 800 points ≈ 900 Ko par statistique. Au plus 300 statistiques suivies (les suivantes sont ignorées). La rétention est appliquée à chaque passage, sans jamais retirer le dernier chiffre connu d'un compte.
 
+## Compteurs dans les pages d'overlay (version 1.2.0, Curiosa 0.5.0)
+Le module propose un élément **« Compteurs »** aux pages d'overlay de la section **Overlays** de l'administration : vos followers, abonnements payants, publications et vues, en grand, avec leur évolution.
+
+- **Rien n'est montré sans votre accord.** L'élément ne montre que les chiffres pour lesquels vous avez choisi **« Montrer sur mon site »**, et jamais plus : ses options ne font que **choisir parmi eux**. Un chiffre gardé pour vous n'apparaît nulle part (ni dans la page, ni dans sa mise à jour, ni en mode test). Un chiffre que le réseau cache ou ne partage plus n'est jamais montré périmé. Retirez votre accord : le compteur disparaît.
+- **Options** : **Compteurs à afficher** (tous ceux que vous montrez, ou seulement les followers, les abonnements payants, les publications ou les vues) et **Évolution** (sur la semaine, sur le mois, ou aucune ; rien n'est écrit quand l'historique est trop court). Pour deux listes différentes, ajoutez l'élément deux fois.
+- **Taille** : il s'adapte à la taille choisie (minimum 200 × 100) : les tuiles se répartissent en colonnes et rangées selon le cadre, 12 compteurs au plus. Fond transparent par défaut ; il suit le style commun de la page d'overlay (jetons `--ov-*`, attributs `data-ov-part`) et ne charge jamais le style de votre site.
+- **Sans compteur autorisé**, le cadre reste vide en direct ; en mode test, une phrase vous dit quoi faire. Aucun chiffre n'est inventé.
+- **Charge** : plusieurs pages d'overlay peuvent montrer l'élément ; une seule lecture du stockage sert tout le monde pendant 30 secondes. Aucune tâche de fond de plus ; la page s'interroge elle-même, de plus en plus lentement.
+- Développeurs : route publique `element/counters` (adresse sans secret : elle ne rend que le montrable, via `publicStats`, la règle unique `isShowable` de `publicRead.mjs`), nouveau droit `routes`, fichier `overlay.mjs`, test `tests/community-stats-overlay.test.mjs`.
+
 ## Ce qui viendra (pas dans cette version)
-L'affichage : une page « Les chiffres de la commu », ou un compteur glissé dans le texte d'une page, y compris un calcul de plusieurs chiffres (par exemple followers YouTube + Twitch) réglé dans la page qu'on édite. Le drapeau « Montrer sur mon site » et une lecture interne qui ne rend que les chiffres montrables (`readPublic`) existent déjà, pour que cet affichage n'ait rien à changer ici.
+L'affichage sur le site : une page « Les chiffres de la commu », ou un compteur glissé dans le texte d'une page, y compris un calcul de plusieurs chiffres (par exemple followers YouTube + Twitch) réglé dans la page qu'on édite. Le drapeau « Montrer sur mon site » et une lecture interne qui ne rend que les chiffres montrables (`readPublic`) existent déjà, pour que cet affichage n'ait rien à changer ici.
 
 ## Permissions
-Administration, stockage, sujets (lecture des chiffres publiés), MCP. Aucune page publique, aucun envoi hors du serveur.
+Administration, stockage, sujets (lecture des chiffres publiés), MCP, routes (la page de l'élément d'overlay). Aucune page publique ; l'élément d'overlay ne rend que les chiffres que vous avez choisi de montrer. Aucun envoi hors du serveur.
