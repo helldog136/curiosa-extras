@@ -181,7 +181,7 @@ test("sans stream, ou calendrier en panne : un état vide ou un cadre vide, jama
   assert.equal((await get("next", query(600, 300))).status, 200);
   const broken = ctxWith("week", {}, { topics: { "planning.slot": () => { throw new Error("SECRET-CALENDAR-URL"); } } });
   const { html } = await page("week", query(1000, 600), broken);
-  assert.ok(!/SECRET|Error|erreur/i.test(html));
+  assert.ok(!/SECRET|Error|erreur/i.test(html.replace(/<script>[\s\S]*?<\/script>/g, "")));
   assert.equal((await get("inconnu", query(1, 1))).status, 404);
 });
 

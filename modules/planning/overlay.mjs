@@ -150,8 +150,9 @@ for(var i=0;i<4;i++){var h=R.getBoundingClientRect().height;if(h<=avail+1||h===0
 if(R.getBoundingClientRect().height>avail+1)R.classList.add('cut')}
 fit();window.addEventListener('resize',fit);
 var u=location.pathname+location.search+(location.search?'&':'?')+'frag=1',v=R.getAttribute('data-v'),n=0,wait=60000;
-function poll(){if(n++>=300)return;fetch(u,{credentials:'omit',cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.setAttribute('data-v',v);wait=60000;fit()}else wait=Math.min(600000,Math.round(wait*1.5))}).catch(function(){wait=Math.min(600000,wait*2)}).then(function(){setTimeout(poll,wait)})}
+function poll(){if(n++>=300)return;var x=new XMLHttpRequest();x.open('GET',u);x.responseType='json';x.timeout=15000;
+function done(j){if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.setAttribute('data-v',v);wait=60000;fit()}else wait=Math.min(600000,Math.round(wait*1.5));setTimeout(poll,wait)}
+x.onload=function(){done(x.status===200?x.response:null)};x.onerror=x.ontimeout=function(){wait=Math.min(600000,wait*2);setTimeout(poll,wait)};x.send()}
 setTimeout(poll,wait)})();`;
 
 const CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' https: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
