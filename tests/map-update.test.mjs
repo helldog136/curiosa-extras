@@ -3,11 +3,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fullStore } from "./helpers/mapKit.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const SRC = path.join(here, "../modules/map");
@@ -20,7 +20,7 @@ const ctx = (key = "upd") => {
 };
 
 test("mise à jour dans le même processus : l'ancien code tourne, puis le nouveau se recharge avec TOUS ses fichiers voisins", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "map-update-"));
+  const dir = makeTempDir("map-update-");
   try {
     copy(SRC, dir);
     const dataFile = path.join(dir, "data.mjs");

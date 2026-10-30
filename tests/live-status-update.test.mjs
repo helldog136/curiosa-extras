@@ -4,9 +4,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const copy = (from, to) => { fs.rmSync(to, { recursive: true, force: true }); fs.cpSync(from, to, { recursive: true }); };
@@ -14,7 +14,7 @@ const copy = (from, to) => { fs.rmSync(to, { recursive: true, force: true }); fs
 const load = (dir, v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).href}?v=${v}`);
 
 test("mise à jour 1.3.2 → version courante dans le même processus : le module se recharge, et YouTube répond", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "live-status-update-"));
+  const dir = makeTempDir("live-status-update-");
   try {
     // Avant la mise à jour : l'ancien code tourne (son adopt.mjs importe ./source.mjs, qui reste en mémoire).
     copy(path.join(here, "fixtures/live-status-1.3.2"), dir);

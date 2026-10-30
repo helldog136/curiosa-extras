@@ -4,9 +4,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const copy = (from, to) => { fs.rmSync(to, { recursive: true, force: true }); fs.cpSync(from, to, { recursive: true }); };
@@ -16,7 +16,7 @@ const load = (dir, v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).hr
 const BROWSER = new Set(["pure.mjs", "scenes.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]);
 
 test("mise à jour 2.1.0 → version courante dans le même processus : le module se recharge et expose les nouveautés", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "story-update-"));
+  const dir = makeTempDir("story-update-");
   try {
     copy(path.join(here, "fixtures/stream-story-2.1.0"), dir);
     const before = (await load(dir, "ancien")).default;
@@ -47,7 +47,7 @@ test("mise à jour 2.1.0 → version courante dans le même processus : le modul
 // Les deux départs réels : 2.3.0 (avant les jaquettes de jeux) et 2.4.0 (jaquettes via le service `game.cover`, tête de master avant la refonte). La fixture 2.4.0 est le dossier du module tel que publié en 2.4.0.
 for (const from of ["2.3.0", "2.4.0"]) {
   test(`mise à jour ${from} → 2.5.0 (éditeur en 3 étapes) dans le même processus : la page sert la nouvelle interface, les nouvelles fonctions de pure.mjs existent, les réglages, outils et le service game.cover sont conservés`, async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "story-update-"));
+    const dir = makeTempDir("story-update-");
     try {
       copy(path.join(here, `fixtures/stream-story-${from}`), dir);
       const before = (await load(dir, "v-old")).default;

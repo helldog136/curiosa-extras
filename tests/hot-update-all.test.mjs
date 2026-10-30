@@ -5,10 +5,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { publishedTags, previousRelease, extractRelease, serverGraph, staticImporters, replayUpdate } from "./helpers/hotUpdate.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const REPO = process.env.CURIOSA_EXTRAS_DIR ?? path.join(here, "..");
@@ -126,7 +126,7 @@ test("historique git des versions publiées disponible (nécessaire pour rejouer
 
 const multi = ids.filter((id) => info[id].graph.files.size > 1);
 const cache = new Map();
-const tmpRoot = fs.mkdtempSync(path.join(process.env.TMPDIR ?? os.tmpdir(), "hot-update-all-"));
+const tmpRoot = makeTempDir("hot-update-all-");
 test.after(() => fs.rmSync(tmpRoot, { recursive: true, force: true }));
 
 const coreKit = async (name) => import(pathToFileURL(path.join(CORE, "testsupport", name)).href);
@@ -143,7 +143,7 @@ for (const id of multi) {
     const current = path.join(MODULES, id);
     const version = info[id].manifest.version;
     const prev = history.tags.length ? previousRelease(REPO, id, version, history.tags, cache) : null;
-    const work = fs.mkdtempSync(path.join(tmpRoot, `${id}-`));
+    const work = makeTempDir(`${id}-`, { in: tmpRoot });
     const oldDir = path.join(work, "precedente");
     let label;
     let extracted = false;

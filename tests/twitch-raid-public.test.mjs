@@ -3,11 +3,11 @@
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { world, logins, login, T0, fr, en, manifest, DIR } from "./helpers/twitch-raid-world.mjs";
+import { makeTempDir } from "./helpers/tmp.mjs";
 
 const def = (await import("../modules/twitch-raid/index.mjs")).default;
 const M = await import("../modules/twitch-raid/moment.mjs");
@@ -324,7 +324,7 @@ test("mise à jour à chaud : tout fichier du module importe ses voisins AVEC la
     assert.ok(!/^\s*(import|export)\b[^\n]*\bfrom\s+["']\.\.?\//m.test(code), `${f} : import statique d'un voisin sans version`);
     for (const m of code.matchAll(/await import\(([^)]*)\)/g)) if (/["'`]\.\//.test(m[1])) assert.ok(/\$\{v\}/.test(m[1]), `${f} : ${m[1]} sans version`);
   }
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "raid-update-"));
+  const dir = makeTempDir("raid-update-");
   try {
     fs.cpSync(DIR, dir, { recursive: true });
     const load = (v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).href}?v=${v}`);
@@ -341,7 +341,7 @@ test("mise à jour 2.1.0 → 2.2.0 dans le même processus : l'ancien code tourn
   let ref = null;
   for (const r of ["origin/master", "master", "HEAD~20"]) { try { const v = JSON.parse(execFileSync("git", ["show", `${r}:modules/twitch-raid/module.json`], { encoding: "utf8", cwd: REPO, stdio: ["ignore", "pipe", "ignore"] })).version; if (v.startsWith("2.1")) { ref = r; break; } } catch { /* pas cette référence */ } }
   if (!ref) return t.skip("pas d'historique git avec la 2.1");
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "raid-update-old-"));
+  const dir = makeTempDir("raid-update-old-");
   try {
     for (const f of execFileSync("git", ["ls-tree", "-r", "--name-only", ref, "modules/twitch-raid/"], { encoding: "utf8", cwd: REPO }).split("\n").filter(Boolean)) {
       const to = path.join(dir, f.replace("modules/twitch-raid/", ""));
