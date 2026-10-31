@@ -53,6 +53,17 @@ Offerte avec `each: true` (chaque module répond pour lui-même) ; Participation
 
 Aucun droit n'est transmis : la télécommande a déjà vérifié l'adresse secrète. Un module qui offre `press` n'y fait donc aucune écriture sensible au-delà de ce que sa télécommande permet.
 
+## Service `audience.draw` v1 (offert par Participation 1.2.0, consommé par le Bot Twitch)
+
+Le tirage au sort vit dans Participation. Les personnes viennent du site (page `/participation/tirage`, par la route `draw-enter`, pas par ce service) ou du chat, par le module qui lit le chat (Bot Twitch). Le module du chat le déclare **en facultatif** : `requires: [{ "service": "audience.draw", "min": 1, "optional": true }]`. Double de test : `tests/helpers/fakeAudienceDraw.mjs`.
+
+| Méthode | Arguments | Réponse |
+|---|---|---|
+| `status` (lecture) | `{}` | `{ open: bool, keyword: string, level: "all"\|"sub"\|"mod", expiresAt?: ISO }` : le tirage ouvert, s'il y en a un. `keyword` : le mot du chat **toujours sous la forme `!mot`** (minuscules, un seul point d'exclamation, sans espace) ou `""` s'il n'y a pas d'inscription par le chat. `expiresAt` seulement pour un tirage avec une durée. Sans tirage ouvert : `{ open: false, keyword: "", level: "all" }`. Aucun secret, ne lève jamais. Le module du chat peut la garder 10 s en mémoire. |
+| `enter` | `{ pseudo, platform, login?, role? }` : `pseudo` texte (coupé à 25 caractères) ; `platform` `^[a-z][a-z0-9_-]{0,19}$` (`twitch`, `youtube`, `kick`…, jamais `site`) ; `login` (facultatif) l'identifiant de la personne, sinon le pseudo sert d'identifiant ; `role` (facultatif) `"all"\|"sub"\|"mod"` : le niveau le plus haut que le module connaît pour cette personne (la modération compte comme abonnée) | `{ ok: true }` ou `{ ok: false, reason }` avec `reason` parmi `closed` (pas de tirage ouvert, échéance passée, ou tirage sans mot-clé), `muted` (la personne est en sourdine dans la salle « draw »), `already` (une entrée par `platform` + `login`/pseudo, sans tenir compte des majuscules), `invalid` (arguments, pseudo vide ou interdit), `full` (5 000 au plus), `level` (le `role` donné n'atteint pas le niveau demandé ; sans `role`, le service fait confiance à l'appelant, qui a lu `status().level`). Ne lève jamais. |
+
+Ce que le module du chat fait : lire `status()` (cache 10 s), n'appeler `enter` que pour le mot-clé exact, et vérifier lui-même le niveau (ou transmettre `role`). Ce que Participation garde : le pseudo, l'origine et la date de l'inscription, rien d'autre (l'identifiant du chat est brouillé) ; la liste est effacée 24 h après la fermeture.
+
 ## Ce que le double ne fait pas
 Pas de ménage (aucune durée de conservation), pas de journal borné, pas de mots interdits réglables (il refuse `fuck`, `nazi`, `admin`), pas de salle « générale » ; la limite des nouvelles personnes est fixe (200 par heure et par connexion).
 Le temps est réglable : `audience.clock.now = () => …`. Pannes : `audience.faults.throw.add("claim")`, `audience.faults.hang.add("join")`.

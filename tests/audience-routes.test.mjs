@@ -220,13 +220,13 @@ test("télécommande : l'état montre les modules branchés (panneaux nettoyés)
   for (let i = 1; i <= 15; i++) await s.join({ room: "polls", token: tok(i), pseudo: i <= 14 ? `Perso ${String(i).padStart(2, "0")}` : undefined, conn: { forwarded: `10.3.${i}.1` } });
   const state = await (await route("remote-state", c, req(`${BASE}/remote-state?k=${key}`))).json();
   assert.equal(state.ok, true); assert.ok(Math.abs(state.now - Date.now()) < 5000);
-  assert.equal(state.panels.length, 1); assert.equal(state.panels[0].id, "id-polls"); assert.equal(state.panels[0].buttons.length, 1, "bouton à l'identifiant invalide écarté");
+  assert.equal(state.panels.length, 2); assert.deepEqual(state.panels.map((p) => p.id), ["id-polls", "audience"], "le panneau du tirage vient après ceux des modules branchés"); assert.equal(state.panels[0].buttons.length, 1, "bouton à l'identifiant invalide écarté");
   assert.equal(state.rooms[0].key, "polls"); assert.equal(state.rooms[0].count, 15); assert.equal(state.rooms[0].recent.length, 12, "12 pseudos au plus");
   assert.ok(state.rooms[0].recent.every((p) => p.pseudo), "ceux qui ont un pseudo d'abord");
   assert.ok(!JSON.stringify(state).includes(tok(1)), "aucun code dans l'état");
   // sans module branché : un panneau vide dit quoi faire (côté navigateur) et l'état reste valable
   const c2 = audienceCtx(); await K.ensureMeta(c2);
-  assert.deepEqual((await (await route("remote-state", c2, req(`${BASE}/remote-state?k=${(await meta(c2)).remoteKey}`))).json()).panels, []);
+  assert.deepEqual((await (await route("remote-state", c2, req(`${BASE}/remote-state?k=${(await meta(c2)).remoteKey}`))).json()).panels.map((p) => p.id), ["audience"], "sans module branché, il reste le panneau du tirage");
 });
 
 test("télécommande : un appui est transmis au bon module (valeurs bornées), sa réponse est nettoyée, tout est dans le journal ; module inconnu ou muet = erreur claire", async () => {
