@@ -69,14 +69,14 @@ async function load(ctx, m) {
   m.loaded = (async () => {
     const r = (await ctx.api.store.list("botTimers", { limit: 1 }))[0];
     const items = r?.data?.items && typeof r.data.items === "object" ? r.data.items : {};
-    for (const [id, x] of Object.entries(items)) if (Number.isFinite(x?.lastAt) && Number.isInteger(x?.lines)) m.items.set(id, { lastAt: x.lastAt, lines: Math.max(0, x.lines) });
+    for (const [id, x] of Object.entries(items)) if (Number.isFinite(x?.lastAt) && Number.isInteger(x?.lines)) m.items.set(id, { lastAt: x.lastAt, lines: Math.max(0, x.lines), ...(x.closed === true ? { closed: true } : {}) });
   })().catch(() => {});
   return m.loaded;
 }
 async function flush(ctx, m, ids, now) {
   m.flushedAt = now; m.dirty = false;
   const items = {};
-  for (const id of ids) { const x = m.items.get(id); if (x) items[id] = { lastAt: x.lastAt, lines: x.lines }; }
+  for (const id of ids) { const x = m.items.get(id); if (x) items[id] = { lastAt: x.lastAt, lines: x.lines, ...(x.closed ? { closed: true } : {}) }; }
   for (const id of [...m.items.keys()]) if (!ids.includes(id)) m.items.delete(id);   // un timer supprimé ne laisse rien derrière lui
   await st.serial(ctx, "timers", async () => {
     const r = (await ctx.api.store.list("botTimers", { limit: 1 }))[0];
@@ -124,7 +124,9 @@ export async function processTimers(ctx, chat, { now = Date.now(), commandSent =
     for (const x of timers) {
       let it = m.items.get(x.id);
       if (!it) { it = { lastAt: now, lines: 0 }; m.items.set(x.id, it); m.dirty = true; }
-      if (!open.get(x.id) || (x.when === "live" && (liveNow !== true || started))) { it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // hors direct, ou le direct vient de commencer : on repart de zéro
+      if (!open.get(x.id)) { it.lastAt = now; it.lines = 0; if (!it.closed) { it.closed = true; m.dirty = true; } continue; }   // hors période : on note qu'il est fermé
+      if (it.closed) { it.closed = false; it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // il vient de rouvrir : on repart de zéro, pas de rafale
+      if (x.when === "live" && (liveNow !== true || started)) { it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // hors direct, ou le direct vient de commencer : on repart de zéro
       it.lines = Math.min(it.lines + 1, 1_000_000); m.dirty = true;
     }
     const due = timers.filter((x) => { const it = m.items.get(x.id); return open.get(x.id) && it && now - it.lastAt >= x.minutes * 60_000 && it.lines >= x.lines && (m.fail.get(x.id) ?? 0) <= now; });

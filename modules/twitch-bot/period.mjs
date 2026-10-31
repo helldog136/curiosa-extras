@@ -90,7 +90,10 @@ export function nextOpening(period, now = Date.now(), timeZone = "UTC") {
   return null;
 }
 
-const dateText = (locale, x, withYear) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(x.y ?? 2024, x.m - 1, x.d)));
+const dateText = (locale, x, withYear) => {
+  const text = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(x.y ?? 2024, x.m - 1, x.d)));
+  return String(locale).startsWith("fr") && x.d === 1 ? text.replace(/^1 /, "1er ") : text;   // « 1er novembre »
+};
 /** « Active du 1er novembre au 30 novembre, chaque année » (+ « (heure UTC) » sans fuseau réglé). */
 export function describe(ctx, period, timeZone) {
   const t = ctx.t;
