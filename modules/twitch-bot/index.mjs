@@ -14,7 +14,7 @@ const entry = await import(`./entry.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
 const { ensureListening, ensureRedeemListening, diagnose, twitch } = await import(`./listen.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { tidy } = await import(`./commands.mjs${v}`);
+const { tidy, migrateConfig } = await import(`./commands.mjs${v}`);
 const es = await import(`./eventsub.mjs${v}`);
 const sources = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
@@ -54,6 +54,8 @@ export default {
   // Données 3 : l'ancien réglage « Autres actions » et les actions déjà portées par des récompenses deviennent des actions nommées (le mot est le nom) ; rien ne change pour les récompenses.
   migrations: {
     2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
+    // Données 4 : le document de configuration gagne la liste `timers` (vide). Additif : rien d'existant ne bouge ; rejouable sans effet.
+    4: async (ctx) => { await migrateConfig(ctx); },
     3: async (ctx) => { await actions.migrate(ctx, settingsOf(ctx), (await rewards.list(ctx)).map((r) => r.action)); },
   },
 

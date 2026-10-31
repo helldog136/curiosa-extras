@@ -3,11 +3,11 @@
   "minCore": "0.2.5",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "platform": "twitch",
   "description": {
-    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own. Includes an emergency switch and a short log of what it answered.",
-    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu."
+    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own, timers, commands managed from the chat and an import from Nightbot. Includes an emergency switch and a short log of what it answered.",
+    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres, des timers, la gestion des commandes depuis le chat et un import depuis Nightbot. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -19,9 +19,10 @@
   "requires": [
     { "service": "twitch.api", "min": 3 },
     { "service": "twitch.live" },
-    { "service": "home-assistant.bridge", "optional": true }
+    { "service": "home-assistant.bridge", "optional": true },
+    { "service": "audience.draw", "min": 1, "optional": true }
   ],
-  "dataVersion": 3,
+  "dataVersion": 4,
   "consumes": [
     {
       "topic": "ha.result",
@@ -101,11 +102,25 @@
       "help": { "en": "These rewards really exist on Twitch and can switch things on in your home.", "fr": "Ces récompenses existent vraiment sur Twitch et peuvent allumer des choses chez vous." },
       "sensitive": true,
       "default": { "admin": true, "editor": false }
+    },
+    {
+      "id": "timers.manage",
+      "label": { "en": "create, change, delete and send the chat timers", "fr": "créer, modifier, supprimer et envoyer les timers du chat" },
+      "help": { "en": "Timers write messages in your Twitch chat on their own.", "fr": "Les timers écrivent des messages dans votre chat Twitch sans que personne ne les tape." },
+      "sensitive": true,
+      "default": { "admin": true, "editor": false }
+    },
+    {
+      "id": "nightbot.import",
+      "label": { "en": "import commands and timers from Nightbot", "fr": "importer des commandes et des timers depuis Nightbot" },
+      "help": { "en": "Creates or replaces several chat commands and timers at once.", "fr": "Permet de créer ou de remplacer plusieurs commandes et timers du chat en une fois." },
+      "sensitive": true,
+      "default": { "admin": true, "editor": false }
     }
   ],
   "privacy": {
-    "en": "When someone types a command in your Twitch chat, the bot keeps their Twitch username, the command and whether it answered in a short log (the last 30 entries, visible only to the site's administration team) and nothing else. To empty it, use “Clear the log” on the bot's page. For channel point rewards it also keeps, for the last 50 exchanges, the username, the reward and the outcome, never the viewer's message.",
-    "fr": "Quand une personne tape une commande dans votre chat Twitch, le bot garde son pseudo Twitch, la commande et le fait d'avoir répondu ou non dans un court journal (les 30 dernières lignes, visibles de la seule équipe d'administration du site) et rien d'autre. Pour le vider, utilisez « Vider le journal » sur la page du bot. Pour les récompenses en points de chaîne, il garde aussi, pour les 50 derniers échanges, le pseudo, la récompense et le résultat, jamais le message du viewer."
+    "en": "When someone types a command, the bot keeps their Twitch username, the command and whether it answered in a short log (last 30 entries, seen only by the administration team); for channel point rewards, the last 50 exchanges (username, reward, outcome, never the viewer's message). Timers keep only what you write and their last send time. A pasted Nightbot list is a draft kept 24 hours at most. Chat words used by a command, and giveaway entries, are never kept.",
+    "fr": "Quand une personne tape une commande, le bot garde son pseudo Twitch, la commande et la réponse ou non dans un court journal (30 lignes, visible de l'équipe d'administration seule) ; pour les récompenses, les 50 derniers échanges (pseudo, récompense, résultat, jamais le message). Les timers gardent ce que vous écrivez et l'heure de leur dernier envoi. Une liste Nightbot collée est gardée 24 h au plus. Les mots tapés dans une commande et les participations à un tirage ne sont jamais gardés."
   },
   "tabs": [
     {
@@ -115,6 +130,7 @@
         "en": "Commands"
       }
     },
+    { "id": "timers", "label": { "fr": "Timers", "en": "Timers" }, "panel": true },
     { "id": "rewards", "label": { "fr": "Récompenses", "en": "Rewards" }, "panel": true }
   ],
   "settings": [
@@ -167,6 +183,13 @@
       "default": true,
       "label": { "en": "Answer only while I am live", "fr": "Répondre seulement quand je suis en direct" },
       "help": { "en": "Untick it to answer all the time, even when your stream is off.", "fr": "Décochez pour répondre tout le temps, même quand votre stream est éteint." }
+    },
+    {
+      "key": "chatManage",
+      "type": "boolean",
+      "default": false,
+      "label": { "en": "Let the moderation team manage commands from the chat", "fr": "Laisser l'équipe de modération gérer les commandes depuis le chat" },
+      "help": { "en": "With it, you and your moderators can type !addcom, !editcom, !delcom and !commands in the chat. Off by default.", "fr": "Avec cette case, vous et votre équipe de modération pouvez taper !addcom, !editcom, !delcom et !commands dans le chat. Désactivé par défaut." }
     },
     {
       "key": "timezone",
@@ -245,6 +268,14 @@
       "optional": true,
       "label": { "en": "Other bots to ignore (optional)", "fr": "Autres bots à ignorer (facultatif)" },
       "help": { "en": "Usernames separated by commas. The usual chat bots are already ignored.", "fr": "Pseudos séparés par des virgules. Les bots de chat courants sont déjà ignorés." }
+    },
+    {
+      "key": "fetchHosts",
+      "type": "textarea",
+      "advanced": true,
+      "optional": true,
+      "label": { "en": "Websites that {urlfetch} may read (optional)", "fr": "Sites que {urlfetch} peut lire (facultatif)" },
+      "help": { "en": "One website name per line, for example api.example.org. Empty means {urlfetch} is switched off. Only https, never a private address, no redirection followed, 3 seconds, 400 characters.", "fr": "Un nom de site par ligne, par exemple api.example.org. Vide, {urlfetch} est éteint. Seulement en https, jamais une adresse privée, aucune redirection suivie, 3 secondes, 400 caractères." }
     }
   ],
   "mcp": [
@@ -263,11 +294,11 @@
     {
       "name": "bot_command_create",
       "default": false,
-      "description": "Create a custom chat command. 'name' has no prefix (for 'merch' viewers type !merch). 'text' is the reply; it may contain these variables only: {followers} {jeu} {titre} {uptime} {prochain_stream} {utilisateur} (game, title, time since the live started, next stream, the name of the person typing). It cannot start with / or . or the prefix, and is cut at 500 characters. Names and aliases must not collide with another command. Refused with an explanation otherwise. The command is enabled unless 'enabled' is false.",
+      "description": "Create a custom chat command. 'name' has no prefix (for 'merch' viewers type !merch). 'text' is the reply; it may contain these variables only: {followers} {jeu} {titre} {uptime} {prochain_stream} {utilisateur} (game, title, time since the live started, next stream, the name of the person typing), {viewers} {chaine} {heure} {date} (viewers now, channel name, time and date, optionally with a time zone: {heure Europe/Paris}), {cible} (first word after the command, without @), {requete} (everything after the command), {1} {2} {1:} (words after the command), {compteur} (how many times the command was used), {aleatoire a | b | c} or {aleatoire 1-100}, {calcul 2+3*4} (arithmetic only) and {urlfetch https://…} (only for websites the owner allowed in advanced settings). It cannot start with / or . or the prefix, and is cut at 500 characters. Names and aliases must not collide with another command. Refused with an explanation otherwise. The command is enabled unless 'enabled' is false.",
       "input": {
         "type": "object",
         "required": ["name", "text"],
-        "properties": {
+        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, 
           "name": { "type": "string", "maxLength": 26, "description": "Command name without the prefix, letters/digits/-/_ only, 25 characters at most." },
           "text": { "type": "string", "maxLength": 450, "description": "The reply, with optional {variables}." },
           "aliases": { "type": "array", "items": { "type": "string" }, "description": "Other names for the same command (5 at most)." },
@@ -282,7 +313,7 @@
       "name": "bot_command_update",
       "default": false,
       "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages.",
-      "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 26, "description": "Current name or alias, without the prefix."}, "newName": {"type": "string", "maxLength": 26, "description": "New name, without the prefix."}, "text": {"type": "string", "maxLength": 450, "description": "New reply text."}, "aliases": {"type": "array", "items": {"type": "string"}, "description": "The complete list of aliases (replaces the old one)."}, "role": {"type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it: everyone, subscribers, mods or owner."}, "enabled": {"type": "boolean", "description": "True to switch the command on, false to switch it off."}, "delayAllSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers, for everyone together (0 to 3600)."}, "delayPerPersonSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers to the same person (0 to 3600)."}}}
+      "input": {"type": "object", "required": ["name"], "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, "clearPeriod": { "type": "boolean", "description": "true removes the validity period (always active again)." }, "name": {"type": "string", "maxLength": 26, "description": "Current name or alias, without the prefix."}, "newName": {"type": "string", "maxLength": 26, "description": "New name, without the prefix."}, "text": {"type": "string", "maxLength": 450, "description": "New reply text."}, "aliases": {"type": "array", "items": {"type": "string"}, "description": "The complete list of aliases (replaces the old one)."}, "role": {"type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it: everyone, subscribers, mods or owner."}, "enabled": {"type": "boolean", "description": "True to switch the command on, false to switch it off."}, "delayAllSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers, for everyone together (0 to 3600)."}, "delayPerPersonSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers to the same person (0 to 3600)."}}}
     },
     {
       "name": "rewards_list",
@@ -308,6 +339,69 @@
       "default": false,
       "description": "Change a REAL channel point reward created by this site on Twitch, found by its current 'name' (see rewards_list). Give only what changes: 'newName', 'costPoints', 'action', 'delaySeconds', 'helpText', 'viewerWritesMessage', 'chatReply'. Same limits and explanations as reward_create. It cannot delete a reward or pause it.",
       "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "newName": {"type": "string", "maxLength": 45, "description": "New title, 45 characters at most."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."}, "customActionName": {"type": "string", "maxLength": 60, "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses in seconds, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
+    }
+    ,{
+      "name": "timers_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the chat timers of the Twitch bot: name, message (with {variables}), every how many minutes, how many chat lines at least since its last message, whether it works only while live, and whether it is enabled. A timer is only checked when a chat message arrives (there is no background clock), so it needs an active chat.",
+      "input": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "timer_create",
+      "default": false,
+      "description": "Create a chat timer: a message the bot writes in the chat by itself. 'text' may use the same variables as a custom command except those about the person typing ({utilisateur}, {cible}, {requete}, {1}, {compteur}); it cannot start with / or . or the prefix and is cut at 450 characters. At most 20 timers. Refused with an explanation otherwise.",
+      "input": {
+        "type": "object",
+        "required": ["name", "text", "everyMinutes"],
+        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, 
+          "name": { "type": "string", "maxLength": 40, "description": "Name of the timer, unique." },
+          "text": { "type": "string", "maxLength": 450, "description": "The message, with optional {variables}." },
+          "everyMinutes": { "type": "integer", "minimum": 1, "maximum": 1440, "description": "Minutes between two messages (at least 1)." },
+          "minChatLines": { "type": "integer", "minimum": 0, "maximum": 200, "description": "Chat lines needed since its last message (default 5)." },
+          "when": { "type": "string", "enum": ["live", "always"], "description": "live = only while the stream is live (default), always." },
+          "enabled": { "type": "boolean", "description": "Default true." }
+        }
+      }
+    },
+    {
+      "name": "timer_update",
+      "default": false,
+      "description": "Change a chat timer, found by its current name. Only the fields you give change. Same rules as for creation. It can also enable or disable the timer. It cannot delete anything and cannot send a message.",
+      "input": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, "clearPeriod": { "type": "boolean", "description": "true removes the validity period (always active again)." }, 
+          "name": { "type": "string", "maxLength": 40, "description": "Current name of the timer." },
+          "newName": { "type": "string", "maxLength": 40, "description": "New name." },
+          "text": { "type": "string", "maxLength": 450, "description": "New message." },
+          "everyMinutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+          "minChatLines": { "type": "integer", "minimum": 0, "maximum": 200 },
+          "when": { "type": "string", "enum": ["live", "always"] },
+          "enabled": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "nightbot_import_preview",
+      "readOnly": true,
+      "default": false,
+      "description": "Read a list of Nightbot commands and timers pasted as text (table copied from the Nightbot dashboard, one '!name message' per line, or JSON) and say, for each line, whether it can be taken as is, adapted (old $(variables) translated, user level mapped: Nightbot 'regular' becomes subscribers) or is impossible, with the reason. Writes NOTHING. At most 200 lines.",
+      "input": { "type": "object", "required": ["text"], "properties": { "text": { "type": "string", "maxLength": 20000, "description": "The pasted Nightbot list." } } }
+    },
+    {
+      "name": "nightbot_import",
+      "default": false,
+      "description": "Import a pasted list of Nightbot commands and timers (same reading as nightbot_import_preview) and create the importable ones. A name that already exists is handled by 'onConflict': skip (default), replace (only custom commands and timers) or rename. Lines that are impossible are never imported. 'only' limits the import to the given command or timer names. At most 200 lines, 100 custom commands and 20 timers.",
+      "input": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": { "type": "string", "maxLength": 20000, "description": "The pasted Nightbot list." },
+          "onConflict": { "type": "string", "enum": ["skip", "replace", "rename"], "description": "What to do when the name already exists (default skip)." },
+          "only": { "type": "array", "items": { "type": "string" }, "description": "Only these names (without the prefix)." }
+        }
+      }
     }
   ]
 }

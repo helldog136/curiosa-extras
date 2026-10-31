@@ -5,11 +5,11 @@
     "fr": "Participation",
     "en": "Audience"
   },
-  "version": "1.1.0",
-  "minCore": "0.2.5",
+  "version": "1.2.0",
+  "minCore": "0.5.0",
   "description": {
-    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone ou en panneau (dock) dans OBS et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
-    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone or as a panel (dock) in OBS and a gentle live update for the screen. Installs itself with the activities that need it."
+    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone ou en panneau (dock) dans OBS, une mise à jour en direct douce pour l'écran et le tirage au sort (chat du stream et page d'inscription du site). S'installe toute seule avec les animations qui en ont besoin.",
+    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone or as a panel (dock) in OBS, a gentle live update for the screen and the prize draw (stream chat and a sign-up page on the site). Installs itself with the activities that need it."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -20,14 +20,15 @@
   "page": true,
   "basePath": "participation",
   "privacy": {
-    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, différente dans chaque salle, avec le pseudo choisi (facultatif) et la date de votre dernière visite. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert à freiner les abus. Effacement après 14 jours d'inactivité (réglable) ou sur demande : page « Participation », bouton « Effacer mes données ».",
-    "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different in each room, with the nickname you chose (optional) and your last visit date. Your IP address is never saved: scrambled with a daily salt never written to disk, it only slows down abuse. Erased after 14 days of inactivity (adjustable) or on request: \"Participation\" page, \"Erase my data\" button."
+    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, différente dans chaque salle, avec le pseudo choisi (facultatif) et la date de votre dernière visite. Votre adresse IP n'est jamais enregistrée. Effacement après 14 jours d'inactivité ou sur demande. Tirage au sort : seul le pseudo est gardé, la liste est effacée 24 h après la fermeture ; seul le pseudo des personnes tirées reste dans l'historique.",
+    "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different in each room, with the nickname you chose (optional) and your last visit date. Your IP address is never saved. Erased after 14 days of inactivity or on request (\"Erase my data\" button). Prize draw: only the nickname is kept, the list is erased 24 h after closing and only the nickname of the people drawn stays in the history."
   },
   "permissions": [
     "slots",
     "pages",
     "routes",
     "storage",
+    "overlay",
     "admin",
     "mcp"
   ],
@@ -45,6 +46,13 @@
       "callerRights": [
         "mute",
         "clearRoom"
+      ]
+    },
+    {
+      "service": "audience.draw",
+      "version": 1,
+      "readOnly": [
+        "status"
       ]
     }
   ],
@@ -67,6 +75,14 @@
       "label": {
         "fr": "Salles et pseudos",
         "en": "Rooms and nicknames"
+      },
+      "panel": true
+    },
+    {
+      "id": "draw",
+      "label": {
+        "fr": "Tirage au sort",
+        "en": "Prize draw"
       },
       "panel": true
     }
@@ -102,6 +118,61 @@
         "admin": true,
         "editor": false
       }
+    },
+    {
+      "id": "draw.manage",
+      "label": {
+        "fr": "gérer le tirage au sort : l'ouvrir, le fermer, tirer au sort, voir la liste des personnes inscrites et l'adresse de l'écran",
+        "en": "manage the prize draw: open it, close it, draw winners, see the list of people signed up and the address of the screen"
+      },
+      "help": {
+        "fr": "Permet aussi de retirer une personne du tirage, de le vider et de changer l'adresse secrète de l'écran du stream. Les boutons de la télécommande et du dock restent protégés par leur adresse secrète.",
+        "en": "Also lets the person remove someone from the draw, empty it and change the secret address of the stream screen. The buttons of the remote control and the dock stay protected by their secret address."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "draw",
+      "label": {
+        "fr": "Tirage au sort",
+        "en": "Prize draw"
+      },
+      "description": {
+        "fr": "Le tirage en cours (titre, mot à taper dans le chat, nombre de personnes inscrites), puis la ou les personnes tirées au sort. Le contenu s'adapte à la taille du cadre.",
+        "en": "The draw in progress (title, word to type in the chat, number of people signed up), then the person or people drawn. The content adapts to the size of the frame."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 280,
+        "height": 160
+      },
+      "ratios": {
+        "min": 0.5,
+        "max": 5
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "keep",
+          "type": "boolean",
+          "label": {
+            "fr": "Garder les personnes tirées au sort à l'écran",
+            "en": "Keep the people drawn on screen"
+          },
+          "help": {
+            "fr": "Désactivé : elles s'affichent 20 secondes, puis le cadre redevient celui du tirage. Activé : elles restent affichées jusqu'au prochain tirage.",
+            "en": "Off: they show for 20 seconds, then the frame goes back to the draw. On: they stay on screen until the next draw."
+          },
+          "default": false
+        }
+      ]
     }
   ],
   "settings": [
@@ -258,6 +329,85 @@
             "type": "string",
             "maxLength": 60,
             "description": "Room key (from audience_rooms)."
+          }
+        }
+      }
+    },
+    {
+      "name": "draw_status",
+      "readOnly": true,
+      "description": "Read the state of the prize draw: open, closed or drawn, its title, chat keyword, how many people signed up, when it closes, the people drawn and the last draws. Never lists everyone who signed up.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "draw_open",
+      "description": "Open a new prize draw (it must not already be open). People can sign up with the chat keyword and/or on the site page. The previous draw goes to the history.",
+      "input": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Title shown on screen and on the sign-up page."
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 30,
+            "description": "Word to type in the stream chat, with or without the exclamation mark (e.g. !gift). Leave empty for a site-only draw."
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "all",
+              "sub",
+              "mod"
+            ],
+            "description": "Who may sign up from the chat: all (everyone, default), sub (paying subscribers and up), mod (moderators)."
+          },
+          "site": {
+            "type": "boolean",
+            "description": "Allow signing up on the site page (default true)."
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120,
+            "description": "Closes by itself after this many minutes. Leave out to stay open until draw_close (48 hours at most)."
+          },
+          "winners": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "How many people to draw by default (1 to 10)."
+          }
+        }
+      }
+    },
+    {
+      "name": "draw_close",
+      "description": "Close the prize draw now: nobody can sign up any more. The list stays available to draw from until 24 hours after closing.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "draw_pick",
+      "description": "Draw one or more people at random from those signed up (equal chance, people already drawn are left out). The result shows on the stream screen for 20 seconds and cannot be undone: ask the person first.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "How many people to draw at once (default: the number set for this draw)."
           }
         }
       }

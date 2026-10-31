@@ -3,7 +3,7 @@
 //  - CLIENT_JS  : le code anonyme au hasard du navigateur (stockage local, jamais un cookie) et la page « Mon pseudo ».
 //  - REMOTE_JS  : la télécommande (grands boutons pour le téléphone, ou présentation « dock » étroite pour OBS : le même script, `window.__AR.dock` choisit les phrases).
 // Aucun n'a de boucle serrée : chaque interrogation est planifiée APRÈS la réponse de la précédente, et se met en pause quand la page est cachée.
-export const CLIENT_REV = 1;
+export const CLIENT_REV = 2;
 
 /** La bibliothèque du direct. `AudienceDirect.watch({ url, base, max, onData(data, meta), onEmpty(), onError() })` → { stop(), poke() }. */
 export const DIRECT_JS = String.raw`(function (g) {
@@ -64,7 +64,8 @@ export const CLIENT_JS = String.raw`(function () {
   }
   window.Audience = window.Audience || { token: token };
   var els = document.querySelectorAll("[data-aud]");
-  if (!els.length) return;
+  var draws = document.querySelectorAll("[data-aud-draw]");
+  if (!els.length && !draws.length) return;
   function signal() { try { return typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined; } catch (x) { return undefined; } }
   function post(el, path, body) {
     var url = el.getAttribute("data-api") + "/" + path + "?lang=" + encodeURIComponent(el.getAttribute("data-lang") || "");
@@ -118,6 +119,44 @@ export const CLIENT_JS = String.raw`(function () {
     });
   }
   for (var i = 0; i < els.length; i++) init(els[i]);
+  // La page d'inscription au tirage au sort : même code anonyme, mêmes limites. Le serveur dit si la personne participe déjà ; la page ne demande rien d'autre.
+  function initDraw(el) {
+    var form = el.querySelector("[data-aud-form]");
+    var input = el.querySelector("[data-aud-name]");
+    var err = el.querySelector("[data-aud-err]");
+    var ok = el.querySelector("[data-aud-ok]");
+    var state = el.querySelector("[data-aud-state]");
+    var count = el.querySelector("[data-aud-count]");
+    var title = el.querySelector("[data-aud-title]");
+    var btn = form ? form.querySelector("button[type=submit]") : null;
+    var t = token();
+    function msg(code) { return el.getAttribute("data-m-" + code) || el.getAttribute("data-m-net") || ""; }
+    function say(node, text) { if (node) { node.textContent = text || ""; node.hidden = !text; } if (input && node === err) { if (text) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid"); } }
+    function busy(on) { if (!btn) return; btn.disabled = on; if (on) { btn.setAttribute("aria-busy", "true"); btn.setAttribute("data-label", btn.textContent); btn.textContent = el.getAttribute("data-m-busy") || btn.textContent; } else { btn.removeAttribute("aria-busy"); if (btn.getAttribute("data-label")) btn.textContent = btn.getAttribute("data-label"); } }
+    function paint(j) {
+      var can = !!(j && j.open && j.site);
+      var text = !j || !j.open ? (j && j.title ? el.getAttribute("data-s-closed") : el.getAttribute("data-s-none")) : (!j.site ? (el.getAttribute("data-s-nosite") || "").replace("{keyword}", j.keyword || "") : (j.in ? el.getAttribute("data-s-in") : ""));
+      say(state, text);
+      if (title && j && j.open && j.title) title.textContent = j.title;
+      if (count) { var n = j && j.open ? j.count : 0; count.hidden = !(j && j.open); count.textContent = (n === 1 ? el.getAttribute("data-c-one") : el.getAttribute("data-c-many") || "").replace("{n}", String(n)); }
+      if (form) form.hidden = !can || !!(j && j.in);
+      if (input && j && j.pseudo && !input.value) input.value = j.pseudo;
+    }
+    post(el, "draw-me", { t: t }).then(function (j) { if (j && j.ok) paint(j); });
+    if (form) form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      if (btn && btn.disabled) return;
+      say(err, ""); say(ok, "");
+      var hp = form.querySelector("input[name=website]");
+      busy(true);
+      post(el, "draw-enter", { t: t, name: input ? input.value : "", website: hp ? hp.value : "" }).then(function (j) {
+        if (j && j.ok) { paint({ open: true, site: true, in: true, pseudo: j.pseudo, count: j.count, title: j.title }); say(state, el.getAttribute("data-s-in")); return; }
+        say(err, msg((j && j.error) || "net"));
+        if (input) input.focus();
+      }, function () { say(err, msg("net")); }).then(function () { busy(false); });
+    });
+  }
+  for (var d = 0; d < draws.length; d++) initDraw(draws[d]);
 })();
 `;
 

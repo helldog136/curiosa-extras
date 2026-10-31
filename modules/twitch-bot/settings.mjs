@@ -1,3 +1,5 @@
+const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+const { parseHosts } = await import(`./urlfetch.mjs${v}`);
 // Les réglages, lus avec prudence : la valeur d'un réglage n'est pas garantie (un nombre peut arriver en texte). Chacun est converti, borné, et retombe sur son défaut.
 const int = (v, min, max, def) => { const n = Math.trunc(Number(v)); return Number.isFinite(n) && n >= min && n <= max ? n : def; };
 
@@ -31,6 +33,8 @@ export function settingsOf(ctx) {
     rewardWaitSec: int(ctx.setting("rewardWaitSeconds"), 30, 600, 120),
     extraActions: String(ctx.setting("extraActions") ?? "").toLowerCase().split(/[\s,;]+/).filter(Boolean).slice(0, 20),   // ancien réglage : toujours lu (voir actions.mjs)
     showKeys: ctx.setting("showKeys") === true,   // mode avancé : montrer et pouvoir écrire la clé technique des actions
+    chatManage: ctx.setting("chatManage") === true,   // !addcom, !editcom, !delcom, !commands pour l'équipe de modération (éteint tant que la personne ne l'a pas voulu)
+    fetchHosts: parseHosts(ctx.setting("fetchHosts")).hosts,   // sites que {urlfetch} peut interroger (vide = éteint)
     bots: new Set([...KNOWN_BOTS, ...extra]),
     timeZone,
   };

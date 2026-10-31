@@ -6,7 +6,8 @@
 //   • les LIMITES : débit, une voix par participant et par salle (sans jamais garder d'adresse IP en clair) ;
 //   • la TÉLÉCOMMANDE (page secrète, grands boutons pour le téléphone, ou en DOCK étroit pour OBS avec `&dock=1` : même clé), alimentée par les modules branchés (service « audience.remote ») ;
 //   • le DIRECT : un point de lecture borné pour les overlays et les pages publiques (interrogation douce et ralentissante) ;
-//   • un JOURNAL d'audit minimal et la PURGE à la lecture.
+//   • un JOURNAL d'audit minimal et la PURGE à la lecture ;
+//   • le TIRAGE AU SORT (service « audience.draw » pour le chat, page d'inscription du site, télécommande, écran du stream) : voir draw.mjs.
 // Les votes, eux, restent chez Sondages : un propriétaire par donnée. Voir README.md et docs/ideas/audience.md.
 import { randomBytes } from "node:crypto";
 
@@ -15,6 +16,9 @@ const L = await import(`./lib.mjs${V}`);
 const K = await import(`./core.mjs${V}`);
 const C = await import(`./client.mjs${V}`);
 const R = await import(`./remote.mjs${V}`);
+const P = await import(`./drawlib.mjs${V}`);
+const D = await import(`./draw.mjs${V}`);
+const DV = await import(`./drawview.mjs${V}`);
 const { esc, clean, num, LIMITS } = L;
 const { HOUR } = K;
 
@@ -204,6 +208,13 @@ const services = {
 
     directClient: safe(async () => ({ ok: true, js: C.DIRECT_JS, rev: C.CLIENT_REV })),
   },
+
+  // Le tirage au sort vu des autres modules (le Bot Twitch). Contrat : status() → { open, keyword, level, expiresAt? } ; enter({ pseudo, platform, login?, role? }) → { ok: true } | { ok: false, reason }.
+  // Aucune des deux ne lève jamais ; status() ne montre aucun secret.
+  "audience.draw": {
+    status: async (ctx) => D.status(ctx),
+    enter: async (ctx, a) => D.enterChat(ctx, L.isObj(a) ? a : {}),
+  },
 };
 
 /* ───────────── Pages publiques ───────────── */
@@ -241,8 +252,8 @@ const stamp = (ctx, iso) => { try { return new Intl.DateTimeFormat(ctx.locale, {
 const personsText = (ctx, n) => ctx.t(n === 1 ? "persons_one" : "persons_many", { n });
 const needs = (right, fn) => async (ctx, values) => (can(ctx, right) ? fn(ctx, values) : { error: ctx.t("errRight") });
 
-const WHO = ["remote", "admin", "assistant"];
-const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick"];
+const WHO = ["remote", "admin", "assistant", "system"];
+const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick", "draw.new", "draw.close", "draw.reopen", "draw.pick", "draw.redraw", "draw.remove", "draw.clear", "draw.key"];
 const whoText = (ctx, w) => (WHO.includes(w) ? ctx.t(`who_${w}`) : w);
 const whatText = (ctx, w) => (WHAT.includes(w) ? ctx.t(`what_${w.replace(".", "_")}`) : w);
 const remoteUrl = (ctx, meta) => `${ctx.api.siteUrl}/m/${ctx.instance.key}/remote?k=${meta.remoteKey}`;
@@ -253,11 +264,26 @@ const dockUrl = (ctx, meta) => `${remoteUrl(ctx, meta)}&dock=1`;   // la même a
 export default {
   services,
 
+  // L'écran du stream : les personnes tirées au sort s'affichent 20 secondes (même mécanique « direct » que Sondages).
+  overlay: (ctx, a) => DV.overlayPage(ctx, a),
+
+  // Élément des pages d'overlay (cœur 0.5.0) : même page que l'overlay ci-dessus, avec le code secret ajouté ICI, côté serveur ; le cœur y ajoute ov-* et opt-keep.
+  overlayElements: {
+    draw: async (ctx, request) => {
+      const lang = typeof request?.lang === "string" && /^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request.lang) ? `&lang=${request.lang}` : "";
+      return { url: `/overlays/${ctx.instance.key}?k=${encodeURIComponent(await D.screenKey(ctx))}${lang}` };
+    },
+  },
+
   slots: {
     "layout.head": (ctx) => [{ type: "head", tags: [{ tag: "script", src: `/m/${ctx.instance.key}/client?v=${C.CLIENT_REV}`, defer: true }] }],
   },
 
   async page(ctx, { segments }) {
+    if (segments.length === 1 && segments[0] === "tirage") {
+      D.sweepSoon(ctx);
+      return { title: ctx.t("drawPageTitle"), description: ctx.t("drawPageDescription"), blocks: [{ type: "html", html: await DV.publicPage(ctx, CSS) }] };
+    }
     if (segments.length) return { notFound: true, blocks: [] };
     await K.ensureRoom(ctx, K.GENERAL, ctx.t("generalRoom")).catch(() => {});
     return { title: ctx.t("pageTitle"), description: ctx.t("pageDescription"), blocks: [{ type: "html", html: pseudoBox(ctx, K.GENERAL) }] };
@@ -286,6 +312,8 @@ export default {
       K.mem.reads = K.mem.reads.filter((t) => now - t < 60_000); K.mem.reads.push(now);
       const next = Math.min(30_000, cfg.directMin + Math.floor(K.mem.reads.length / 100) * 2000);
       const args = { room, channel, rev: url.searchParams.get("rev") ?? "", key: url.searchParams.get("k") ?? undefined };
+      // Le tirage au sort republie son état de lui-même à la lecture (échéance, nombre d'inscriptions) : aucune minuterie, au plus une fois toutes les 2 secondes.
+      if (room === P.DRAW.room && channel === P.DRAW.channel) { await D.syncLiveSoon(ctx, now); D.sweepSoon(ctx, now); }
       let r = await K.readLive(ctx, args, now);
       if (r.due) {
         await R.tickProviders(ctx, room, channel, now);
@@ -325,6 +353,32 @@ export default {
       return json({ ok: true, participant: { pseudo: r.participant.pseudo, muted: r.participant.muted } });
     },
 
+    // ── Le tirage au sort : la page d'inscription du site (même code anonyme, mêmes limites que le pseudo) ──
+    async "draw-me"(request, ctx) {
+      if (request.method !== "POST") return notAllowed("POST");
+      const got = await readJson(request, 500);
+      if (got.response) return got.response;
+      const now = Date.now();
+      if (K.over(ctx, `me|${K.fp(K.connOf(request), now)}`, 240, HOUR, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
+      if (!L.tokenOk(got.body.t)) return json({ ok: false, error: "invalid" }, 400);
+      return json({ ok: true, ...(await D.entryOf(ctx, got.body.t, now)) });
+    },
+
+    async "draw-enter"(request, ctx) {
+      if (request.method !== "POST") return notAllowed("POST");
+      const got = await readJson(request, 1000);
+      if (got.response) return got.response;
+      const b = got.body, now = Date.now();
+      if (String(b.website ?? "")) return json({ ok: true, pseudo: null });   // piège à robots : on fait semblant
+      const conn = K.connOf(request);
+      if (K.over(ctx, `de|${K.fp(conn, now)}`, 30, HOUR, now).over || K.over(ctx, `deg|${ctx.instance.key}`, 300, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "60" });
+      if (!L.tokenOk(b.t) || typeof b.name !== "string") return json({ ok: false, error: "invalid" }, 400);
+      const r = await D.enterSite(ctx, { token: b.t, name: b.name, conn }, services["audience.session"].join, now);
+      if (!r.ok) return json({ ok: false, error: r.error }, r.error === "limit" ? 429 : r.error === "full" || r.error === "busy" ? 503 : r.error === "muted" ? 403 : r.error === "already" || r.error === "pseudo_taken" ? 409 : 400);
+      const cur = await D.current(ctx, now);
+      return json({ ok: true, pseudo: r.pseudo, count: cur?.count ?? 0, title: cur?.title ?? "" });
+    },
+
     async forget(request, ctx) {
       if (request.method !== "POST") return notAllowed("POST");
       const got = await readJson(request, 500);
@@ -358,6 +412,7 @@ export default {
       }
       if (K.over(ctx, `rs|${ctx.instance.key}`, 120, 60_000, now).over) return json({ ok: false, error: "limit" }, 429, { "retry-after": "10" });
       K.sweep(ctx, now).catch(KEEP);
+      D.sweepSoon(ctx, now);
       return json(await R.remoteState(ctx, now));
     },
 
@@ -408,6 +463,9 @@ export default {
       : { type: "markdown", text: ctx.t("pluggedNone") });
     if (!panels.length) blocks.push({ type: "suggestInstall", service: "audience.remote", reason: ctx.t("suggestReason") });
     blocks.push({ type: "heading", text: ctx.t("limitsTitle") }, { type: "markdown", text: ctx.t("limitsText", { days: K.cfgOf(ctx).days }) });
+
+    // ── Onglet « Tirage au sort » ──
+    blocks.push(...(await DV.adminBlocks(ctx, { query, can: can(ctx, "draw.manage"), now })));
 
     // ── Onglet « Salles » : les salles, les pseudos, le journal ──
     const tab = "people";
@@ -490,6 +548,51 @@ export default {
       await K.journal(ctx, { who: "admin", what: "clearRoom", room: f.data.k, detail: `${r.removed}` });
       return { ok: ctx.t("okCleared", { n: r.removed }) };
     }),
+
+    // ── Tirage au sort (droit « draw.manage ») ──
+    drawNew: needs("draw.manage", async (ctx, values) => {
+      const v = P.validateForm(values);
+      if (Object.keys(v.errors).length) return { errors: DV.fieldErrors(ctx, v.errors) };
+      const r = await D.openNew(ctx, v.value, { who: "admin" });
+      return r.ok ? { ok: ctx.t("okDrawNew") } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawClose: needs("draw.manage", async (ctx) => {
+      const r = await D.close(ctx, { who: "admin" });
+      return r.ok ? { ok: ctx.t("drawOkClosed") } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawReopen: needs("draw.manage", async (ctx) => {
+      const r = await D.reopen(ctx, { who: "admin" });
+      return r.ok ? { ok: ctx.t("drawOkReopened") } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawPick: needs("draw.manage", async (ctx, values) => {
+      const raw = String(values.count ?? "").trim();
+      if (raw !== "" && (!/^\d{1,2}$/.test(raw) || Number(raw) < 1 || Number(raw) > P.DRAW.winnersMax)) return { errors: { count: ctx.t("drawErr_winners_invalid") } };
+      const r = await D.pick(ctx, { count: raw === "" ? undefined : Number(raw), who: "admin" });
+      return r.ok ? { ok: ctx.t("okDrawPicked", { names: r.winners.join(", ") }) } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawRedraw: needs("draw.manage", async (ctx, values) => {
+      const r = await D.redraw(ctx, { pid: String(values.id ?? ""), who: "admin" });
+      return r.ok ? { ok: ctx.t("okDrawRedrawn", { names: r.winners.join(", ") }) } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawClear: needs("draw.manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
+      const r = await D.clear(ctx, { who: "admin" });
+      return r.ok ? { ok: ctx.t("okDrawCleared", { n: r.removed }) } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawRemove: needs("draw.manage", async (ctx, values) => {
+      const r = await D.removeEntry(ctx, String(values.id ?? ""), { who: "admin" });
+      return r.ok ? { ok: ctx.t("okDrawRemoved") } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawRemoveMute: needs("draw.manage", async (ctx, values) => {
+      const r = await D.removeEntry(ctx, String(values.id ?? ""), { who: "admin", mute: true });
+      return r.ok ? { ok: ctx.t("okDrawRemovedMuted") } : { error: D.errorText(ctx, r.error) };
+    }),
+    drawKeyRegen: needs("draw.manage", async (ctx, values) => {
+      if (values.confirm !== "on") return { errors: { confirm: ctx.t("errConfirm") } };
+      await D.regenerateScreenKey(ctx);
+      await K.journal(ctx, { who: "admin", what: "draw.key" });
+      return { ok: ctx.t("okDrawKey") };
+    }),
   },
 
   adminDownloads: {
@@ -525,6 +628,33 @@ export default {
       if (r.error) throw Object.assign(new Error("nobody with this nickname in this room"), { expose: true });
       await K.journal(ctx, { who: "assistant", what: args?.muted === false ? "unmute" : "mute", room: room.k, detail: r.participant.pseudo || "-" });
       return { room: room.k, pseudo: r.participant.pseudo, muted: r.participant.muted };
+    },
+    // ── Tirage au sort (écritures jamais accordées d'office) ──
+    async draw_status(ctx) {
+      const now = Date.now(), d = await D.current(ctx, now), st = P.stateOf(d, now);
+      return {
+        state: st, title: d?.title ?? null, keyword: d?.keyword || null, level: d?.level ?? null, siteSignup: d ? d.site !== false : null, participants: d ? (d.purged ? d.total || 0 : d.count || 0) : 0,
+        closesAt: st === "open" && !d.untilClosed ? new Date(P.deadlineOf(d)).toISOString() : null, winners: d ? D.latestBatch(d).map((w) => w.pseudo) : [],
+        registrationPage: d?.site ? `${ctx.api.siteUrl}/participation/tirage` : null,
+        history: (await D.history(ctx, now)).slice(0, 5).map((h) => ({ title: h.title, at: h.at, winners: h.winners, participants: h.participants })),
+      };
+    },
+    async draw_open(ctx, args) {
+      const v = P.validateForm({ title: args?.title, keyword: args?.keyword, level: args?.level, site: args?.site, minutes: args?.minutes, winners: args?.winners });
+      if (Object.keys(v.errors).length) throw Object.assign(new Error(`invalid: ${Object.keys(v.errors).join(", ")} (title 1-${P.DRAW.title} chars; keyword one word; level all|sub|mod; site true|false; minutes 1-${P.DRAW.minutesMax} or empty; winners 1-${P.DRAW.winnersMax}; at least a keyword or site sign-up)`), { expose: true });
+      const r = await D.openNew(ctx, v.value, { who: "assistant" });
+      if (!r.ok) throw Object.assign(new Error("a draw is already open: close it first (draw_close)"), { expose: true });
+      return { opened: true, title: r.draw.title, keyword: r.draw.keyword || null, closesAt: r.draw.untilClosed ? null : r.draw.expiresAt };
+    },
+    async draw_close(ctx) {
+      const r = await D.close(ctx, { who: "assistant" });
+      if (!r.ok) throw Object.assign(new Error(r.error === "none" ? "there is no draw" : "the draw is not open"), { expose: true });
+      return { closed: true };
+    },
+    async draw_pick(ctx, args) {
+      const r = await D.pick(ctx, { count: args?.count, who: "assistant" });
+      if (!r.ok) throw Object.assign(new Error({ none: "there is no draw", empty: "nobody left to draw", gone: "the list of this draw has been erased" }[r.error] ?? "the draw could not be made"), { expose: true });
+      return { winners: r.winners, left: r.left };
     },
     async audience_clear_room(ctx, args) {
       const r = L.roomOk(args?.room) ? await K.clearRoom(ctx, args.room) : { ok: false };

@@ -51,6 +51,7 @@ Visible : **mots interdits dans les pseudos** (liste de départ sobre, FR + EN, 
 ## Intégrations
 - **Sondages 1.1** (`polls`) : voir `docs/ideas/polls.md`. Premier consommateur et premier fournisseur de boutons.
 - Prévu pour Quiz, Bingo, Tombola, Mur de questions, Présence, Prédictions (`docs/ideas/FAMILLE-STREAM.md`) : ils appellent `audience.session` et offrent `audience.remote`. Le contrat est exécutable : `tests/contract-ext/audience.md`, `audience.contract.mjs` (16 vérifications, rejouées contre le double et contre le vrai module, dont 100 participants en même temps), double `tests/helpers/fakeAudience.mjs`.
+- **Tirage au sort** (1.2.0) : service `audience.draw` v1 (`status`, `enter`), consommé par le Bot Twitch ; page `/participation/tirage`, panneau de télécommande (`draw-open`, `draw-close`, `draw-pick`), écran en direct (canal `screen` de la salle `draw`, secret `drawKey`) et élément d'overlay `draw`. Les personnes (identité, pseudo, sourdine) restent dans la salle `draw` ; le tirage possède ses réglages, ses inscriptions (`de-<id>-<n>`, effacées 24 h après la fermeture) et ses gagnants (historique de 20).
 - Contacts : volontairement non lié (voir « idées »). Pas de `privacy.subject` offert : Participation ne garde aucun identifiant de contact ; ses données sont effacées par la personne (bouton), par le ménage (14 jours) ou par Emma.
 
 ## Ce qui n'est pas fait, et pourquoi

@@ -6,9 +6,13 @@ const { settingsOf } = await import(`./settings.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
-const { allowedFor } = await import(`./variables.mjs${v}`);
+const { shownFor, used } = await import(`./variables.mjs${v}`);
+const { reopenLabel, describe, periodFromForm, periodFields, isoText } = await import(`./period.mjs${v}`);
+const { saveError } = await import(`./errors.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
+const IA = await import(`./importAdmin.mjs${v}`);
+const TA = await import(`./timersAdmin.mjs${v}`);
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (v, n) => { const s = String(v ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
@@ -27,25 +31,7 @@ const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connec
 
 /* ───────────── Messages d'erreur d'enregistrement ───────────── */
 
-/** Une erreur de `saveCommand` en phrase, avec quoi faire. */
-export function saveError(ctx, r) {
-  const t = ctx.t;
-  switch (r.code) {
-    case "name": return t("err_name", { value: r.value ?? "" });
-    case "alias": return t("err_alias", { value: r.value ?? "" });
-    case "aliases_many": return t("err_aliases_many");
-    case "collision": return t("err_collision", { word: r.word, with: r.with });
-    case "text_unknown": return t("err_text_unknown", { vars: (r.vars ?? []).map((v) => `{${v}}`).join(", "), allowed: (r.allowed ?? []).map((v) => `{${v}}`).join(" ") });
-    case "text_empty": return t("err_text_empty");
-    case "text_long": return t("err_text_long");
-    case "text_start": return t("err_text_start");
-    case "delay": return t("err_delay");
-    case "role": return t("err_role");
-    case "too_many": return t("err_too_many");
-    case "source_missing": return t("err_source_missing");
-    default: return t("err_unknown");
-  }
-}
+export { saveError };
 
 /* ───────────── Le décor commun ───────────── */
 
@@ -55,7 +41,7 @@ export async function context(ctx, { declare = true } = {}) {
   const d = await diagnose(ctx, s, { declare });
   const sources = await src.gather(ctx, d.channel ?? null);
   const cfg = (await loadConfig(ctx)).data;
-  const list = catalog(cfg, sources, ctx.t);
+  const list = catalog(cfg, sources, ctx.t, { timeZone: s.timeZone });
   return { s, d, sources, cfg, list, env: { src: sources, t: ctx.t, prefix: s.prefix } };
 }
 
@@ -121,9 +107,10 @@ function listenActions(ctx, code) {
 
 const kindLabel = (t, c) => (c.kind === "network" ? `${t("kind_network")} (${c.label})` : t(`kind_${c.kind}`));
 const roleLabel = (t, r) => t(`role_${r}`);
-export function stateLabel(t, c) {
+export function stateLabel(t, c, ctx = null) {
   if (c.state === "on") return t("state_on");
   if (c.state === "off") return t("state_off");
+  if (c.state === "outside") return ctx ? reopenLabel(ctx, c.reopen) : t("state_outside");
   return t(`why_${c.why}`);
 }
 export const words = (prefix, c) => [c.name, ...c.aliases].map((w) => `${prefix}${w}`).join("  ");
@@ -137,7 +124,7 @@ function summary(ctx, info) {
     { type: "markdown", text: t("summary_help", { prefix: s.prefix }) },
     // Trois colonnes seulement : sur un téléphone, un tableau plus large cache l'état et les boutons. Le type et « qui peut l'utiliser » (quand ce n'est pas tout le monde) suivent le nom.
     { type: "table", columns: [t("col_command"), t("col_answer"), t("col_state")],
-      rows: rows.map((c) => [`${words(s.prefix, c)} · ${kindLabel(t, c)}${c.role === "everyone" ? "" : ` · ${roleLabel(t, c.role)}`}`, cut(c.text, 90), stateLabel(t, c)]),
+      rows: rows.map((c) => [`${words(s.prefix, c)} · ${kindLabel(t, c)}${c.role === "everyone" ? "" : ` · ${roleLabel(t, c.role)}`}`, cut(c.text, 90), stateLabel(t, c, ctx)]),
       rowIds: rows.map((c) => c.key),
       rowActions: [{ label: t("act_edit"), href: "?edit={id}#edit" }, { label: t("act_toggle"), action: "toggle" }] },
   ];
@@ -155,7 +142,7 @@ function partnersSection(ctx, info) {
   const rows = sources.partners.items;
   // « Modifier » mène à la fiche du partenaire, sur la section de sa commande : c'est là que se règle la commande (une seule place, pas de doublon).
   if (rows.length) out.push({ type: "table", columns: [t("col_partner"), t("col_state")],   // deux colonnes : le bouton « Modifier » reste visible sur un téléphone
-    rows: rows.map((p) => { const c = list.find((x) => x.key === `partner:${p.id}`); return [p.title, c ? `${words(s.prefix, c)} · ${stateLabel(t, c)}` : t("state_not_set")]; }),
+    rows: rows.map((p) => { const c = list.find((x) => x.key === `partner:${p.id}`); return [p.title, c ? `${words(s.prefix, c)} · ${stateLabel(t, c, ctx)}` : t("state_not_set")]; }),
     rowIds: rows.map((p) => p.id), rowActions: [{ label: t("act_edit"), href: partnerHref(ctx) }] });
   // Une commande dont la fiche n'est plus publiée (ou a disparu) : en pause, puis retirée toute seule.
   if (paused.length) out.push({ type: "markdown", text: t("partners_paused", { list: paused.map((c) => `${s.prefix}${c.name} (${c.label})`).join(", ") }) });
@@ -169,7 +156,7 @@ function networksSection(ctx, info) {
   out.push({ type: "markdown", text: t("networks_help") });
   const rows = sources.networks.items;
   out.push({ type: "table", columns: [t("col_network"), t("col_state")],
-    rows: rows.map((n) => { const c = list.find((x) => x.key === `network:${n.key}`); return [n.label, c ? `${words(s.prefix, c)} · ${stateLabel(t, c)}` : t("state_not_set")]; }),
+    rows: rows.map((n) => { const c = list.find((x) => x.key === `network:${n.key}`); return [n.label, c ? `${words(s.prefix, c)} · ${stateLabel(t, c, ctx)}` : t("state_not_set")]; }),
     rowIds: rows.map((n) => `network:${n.key}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}#edit" }] });
   return out;
 }
@@ -181,7 +168,7 @@ export const delayFields = (t, c) => [
   { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: c?.cdGlobal ?? "", help: t("f_cd_help") },
   { name: "cdUser", label: t("f_cd_user"), kind: "number", value: c?.cdUser ?? "" },
 ];
-export const varsHelp = (t, kind) => t("f_text_help", { vars: allowedFor(kind).map((v) => `{${v}}`).join(" ") });
+export const varsHelp = (t, kind) => t("f_text_help", { vars: shownFor(kind).map((v) => `{${v}}`).join(" ") });
 
 function createForm(ctx, s) {
   const t = ctx.t;
@@ -193,6 +180,7 @@ function createForm(ctx, s) {
       { name: "role", label: t("f_role"), kind: "select", value: "everyone", options: roleOptions(t) },
       { name: "aliases", label: t("f_aliases"), help: t("f_aliases_help") },
       ...delayFields(t, null),
+      ...periodFields(ctx, null),
     ] },
   ];
 }
@@ -215,6 +203,8 @@ async function editBlocks(ctx, info, key, query) {
   if (kind === "network" && source) out.push({ type: "markdown", text: t("edit_network_info", { name: source.name, address: source.url }) + (source.adminPath ? ` ${t("edit_network_module", { href: source.adminPath })}` : "") });
   if (kind === "builtin" && view.state && view.state !== "on" && view.state !== "off") out.push({ type: "banner", tone: "warning", text: t(`why_${view.why}`) });
   if (kind === "group") out.push({ type: "markdown", text: t("edit_group_info") });
+  out.push({ type: "markdown", text: describe(ctx, view.period ?? null, s.timeZone) });
+  if (c?.state === "outside") out.push({ type: "banner", tone: "warning", text: reopenLabel(ctx, c.reopen) });
   // Aperçu : ce que répondrait la commande avec les données du moment (rien n'est envoyé).
   try {
     const sample = { ...view, vars: view.vars && Object.keys(view.vars).length ? view.vars : kind === "network" && source ? { reseau: source.name, lien: String(source.url).replace(/^https?:\/\//i, "") } : {} };
@@ -228,7 +218,12 @@ async function editBlocks(ctx, info, key, query) {
     { name: "text", label: t("f_text"), kind: "textarea", value: view.text, required: true, help: varsHelp(t, kind) },
     { name: "role", label: t("f_role"), kind: "select", value: view.role, options: roleOptions(t) },
     ...delayFields(t, view),
+    ...periodFields(ctx, view.period ?? null),
   ] });
+  if (kind === "custom" && used(view.text).includes("compteur")) {
+    const n = (await st.readCounters(ctx))[view.key] ?? 0;
+    out.push({ type: "markdown", text: t("edit_counter", { n }) }, { type: "adminForm", action: "counterReset", submitLabel: t("counter_reset_btn"), fields: [{ name: "key", kind: "hidden", value: view.key }] });
+  }
   if (kind === "builtin") out.push({ type: "adminForm", action: "resetText", submitLabel: t("reset_btn"), fields: [{ name: "key", kind: "hidden", value: key }] });
   if (kind === "custom") out.push({ type: "table", columns: [t("delete_title")], rows: [[`${s.prefix}${view.name}`]], rowIds: [view.id], rowActions: [{ label: t("delete_btn"), action: "remove", confirm: t("delete_confirm", { command: `${s.prefix}${view.name}` }), danger: true }] });
   return out;
@@ -243,7 +238,7 @@ async function logBlocks(ctx, s) {
   const when = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
   // Trois colonnes (l'heure et la personne ensemble, le résultat devant la réponse ou la raison) : tout reste lisible sur un téléphone.
   out.push({ type: "table", columns: [t("log_time_user"), t("col_command"), t("log_why")],
-    rows: entries.map((e) => [`${when(e.at)} · ${e.user}`, `${s.prefix}${e.command}`, `${t(`log_${e.result}`)} : ${e.result === "sent" ? cut(e.text ?? "", 70) : `${t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`}`]) });
+    rows: entries.map((e) => [`${when(e.at)} · ${e.user}`, e.command.startsWith("⏱") ? e.command : `${s.prefix}${e.command}`, `${t(`log_${e.result}`)} : ${e.result === "sent" ? cut(e.text ?? "", 70) : `${e.reason === "outside" ? (e.reopen ? t("per_outside", { date: isoText(ctx, e.reopen) }) : t("per_ended")) : t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`}`]) });
   out.push({ type: "adminForm", action: "clearLog", submitLabel: t("log_clear"), fields: [] });
   return out;
 }
@@ -274,6 +269,8 @@ export async function panel(ctx, { query }) {
   }
   const blocks = [];
   blocks.push(...emergency(ctx, state.muted === true, state.mutedAt, info.s.timeZone));
+  // L'écran d'import remplace la page des commandes (le reste de la page est toujours à un clic : « Retour »).
+  if (query?.import) return [...blocks, ...(await IA.blocks(ctx, info)), ...(await TA.blocks(ctx, info, {})), ...(await RA.blocks(ctx, info, {}))];
   blocks.push({ type: "heading", text: t("listen_title") });
   blocks.push(...(await listenBlocks(ctx, info, state)));
   blocks.push(...listenActions(ctx, info.d.code !== "ready" ? info.d.code : state.sub?.code ?? "unknown"));
@@ -281,17 +278,21 @@ export async function panel(ctx, { query }) {
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
   blocks.push(...summary(ctx, info));
+  blocks.push({ type: "links", items: [{ label: t("nb_link"), href: "?import=1#import" }] });
   if (!edit) blocks.push(...createForm(ctx, info.s));
   blocks.push(...partnersSection(ctx, info), ...networksSection(ctx, info));
   blocks.push(...(await logBlocks(ctx, info.s)));
+  blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
   blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
   return blocks;
 }
 
 /* ───────────── Actions ───────────── */
 
+/** Une erreur d'enregistrement : sous le champ quand on sait lequel (la période), sinon en haut. */
+const failed = (ctx, r) => (r.code === "period" ? { errors: { [r.field]: saveError(ctx, r) } } : { error: saveError(ctx, r) });
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };
-const fieldsFrom = (v) => ({ enabled: v.enabled === "on", name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
+const fieldsFrom = (v) => ({ enabled: v.enabled === "on", name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "", period: periodFromForm(v) });
 
 /**
  * Les actions NE redirigent PAS (sauf deux cas ci-dessous) : une redirection recharge la page et ramène tout en haut. Le cœur rafraîchit la page à la place, et le message
@@ -315,12 +316,12 @@ export const actions = {
     const { kind, id } = parseKey(v.key);
     const fields = fieldsFrom(v);
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, fields, info.env) : await saveCommand(ctx, { kind, id }, fields, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("saved") };
+    return r.ok === false ? failed(ctx, r) : { ok: ctx.t("saved") };
   },
   async create(ctx, v) {
     const info = await context(ctx, { declare: false });
     const r = await saveCommand(ctx, { kind: "custom" }, { ...fieldsFrom(v), enabled: true }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("created") };
+    return r.ok === false ? failed(ctx, r) : { ok: ctx.t("created") };
   },
   async toggle(ctx, v) {
     const info = await context(ctx, { declare: false });
@@ -343,6 +344,15 @@ export const actions = {
     return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${v.key}#edit` };
   },
   ...RA.actions,
+  ...TA.actions,
+  ...IA.actions,
+  async counterReset(ctx, v) {
+    const info = await context(ctx, { declare: false });
+    const c = info.list.find((x) => x.key === v.key && x.kind === "custom");
+    if (!c) return { error: ctx.t("err_unknown") };
+    await st.setCounter(ctx, c.key, 0);
+    return { ok: ctx.t("counter_reset_done") };
+  },
   async clearLog(ctx) { await st.clearLog(ctx); return { ok: ctx.t("log_cleared") }; },
   async disconnectBot(ctx) {
     const info = await context(ctx, { declare: false });
