@@ -46,3 +46,11 @@ Deux outils : lister les phrases (lecture seule) et en proposer une (toujours en
 ## Vie privée
 
 Le navigateur de la personne qui visite retient ses choix (fermée, pastille, coupée), le nombre de messages du jour et les dernières phrases dites. Rien ne part vers le site ni vers un tiers. Le module le déclare dans la politique de confidentialité du site.
+
+## Dans une page d'overlay
+
+Depuis la 1.1.0 (Curiosa 0.5.0 ou plus), « Ajouter un élément » propose **Mascotte** dans la section « Overlays ». C'est une **version réduite** : un cadre d'overlay n'est pas une page de site, donc l'élément ne reprend rien de ce qui tient à l'affichage d'une page (coin de la page, pages concernées, « une fois par visite », délai, messages par jour, fermer / réduire / couper, mémoire du navigateur). Il montre le dessin inclus (ou votre image, avec sa description) et le **nom** choisis dans le module, avec une bulle qui dit ses phrases à tour de rôle (option **Secondes par phrase**).
+
+**Pour un écran de stream, les phrases viennent uniquement de ce que vous avez écrit pour la mascotte** : vos phrases publiées (jamais un brouillon), dans la langue demandée, avec seulement `{nom_du_site}` et `{nom}`. Une phrase qui emploie une autre information (prochain événement, direct en cours, dernière nouveauté) n'est pas dite, et les nouveautés confiées par d'autres modules ne sont jamais montrées : ces informations viennent d'ailleurs. Une phrase réservée à certaines pages de votre site n'est pas dite non plus. Mascotte en brouillon : le cadre reste vide.
+
+Le dessin inclus prend ici des couleurs fixes (pas celles de votre thème : un cadre d'overlay ne charge jamais le style du site) ; le texte suit le style commun de la page. Toutes les pages d'overlay qui montrent l'élément disent la même phrase au même instant ; rien n'est consommé. En mode test, une phrase d'exemple s'affiche s'il n'y a rien à dire. Sur votre site, rien ne change.

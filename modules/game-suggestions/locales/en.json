@@ -104,5 +104,15 @@
   "pagerInfo": "Games {from} to {to} of {total}",
   "pagerPrev": "← Previous",
   "pagerNext": "Next →",
-  "imageLabel": "Image address"
+  "imageLabel": "Image address",
+  "ovTitle": "Top suggested games",
+  "ovHeading_proposed": "Suggested games",
+  "ovHeading_planned": "Planned games",
+  "ovHeading_accepted": "Accepted games",
+  "ovHeading_already_played": "Games to replay",
+  "ovHeading_finished": "Finished games",
+  "ovVotes": "{n} votes",
+  "ovVotes_one": "1 vote",
+  "ovTimes": "suggested {n} times",
+  "ovDemoGame": "Sample game {n}"
 }

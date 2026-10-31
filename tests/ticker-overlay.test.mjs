@@ -16,7 +16,8 @@ test("ticker-overlay : manifeste valide, type overlay, permissions overlay/route
   assert.deepEqual([...m.permissions].sort(), ["overlay", "routes", "topics"]);
   assert.deepEqual(Object.keys(def.routes), ["items"]);
   assert.equal(typeof def.overlay, "function");
-  assert.deepEqual(locales, {});
+  assert.deepEqual(Object.keys(locales).sort(), ["en", "fr"], "seulement les textes de l'exemple du mode test");
+  assert.deepEqual(Object.keys(locales.fr).sort(), Object.keys(locales.en).sort());
 });
 
 test("ticker-overlay : sujets consommés valides, schéma overlay.item avec titre obligatoire, tags sur core.entry", async () => {

@@ -11,6 +11,8 @@
 // Une suggestion restée sans jaquette (migrée, restaurée d'une sauvegarde, créée pendant une panne de RAWG) est rattrapée plus tard :
 // une tâche du cœur en traite quelques-unes à la fois, et un bouton de l'admin lance la même opération tout de suite. Tout ce qui
 // sert à ne pas marteler RAWG (date et résultat de chaque essai) est écrit dans les données de l'instance : rien ne vit en mémoire seulement.
+const v = new URL(import.meta.url).search; // la version du module se propage au fichier voisin (sinon l'ancien code resterait en cache après une mise à jour)
+const overlay = await import(`./overlay.mjs${v}`); // l'élément « Top des jeux proposés » des pages d'overlay (cœur 0.5.0) : seulement ce que la page publique montre
 const COLLECTION = "games";
 const STATE = "state";                // un seul document : dernière recherche de jaquettes, pause éventuelle
 const STATUSES = ["proposed", "planned", "accepted", "rejected", "already_played", "finished"];
@@ -192,6 +194,9 @@ const rows = async (ctx, limit = 1000) => (await ctx.api.store.list(COLLECTION, 
   cover: safeHttps(r.data.coverUrl), ambiguous: r.data.coverAmbiguous === true && !!safeHttps(r.data.coverUrl), by: String(r.data.submitterName ?? ""), note: String(r.data.note ?? ""), votes: Number(r.data.replayVotes) || 0,
 }));
 
+/** Les suggestions que montre la page publique (tout sauf « rejeté »). UNE seule définition, pour la page et pour l'élément d'overlay : l'élément ne montre jamais plus que la page. */
+const publicRows = async (ctx) => (await rows(ctx)).filter((g) => PUBLIC.includes(g.status));
+
 /** Lien stable du cœur vers l'écran de correction d'une jaquette (administration seulement). Le titre est encodé, et les signes qui casseraient un lien Markdown aussi. */
 export const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
 
@@ -348,13 +353,16 @@ function card(ctx, g) {
 }
 
 export default {
+  // L'élément « Top des jeux proposés » des pages d'overlay : une adresse publique sans secret (elle ne rend que ce que la page publique montre).
+  overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),
+
   // /suggestions → tous (sauf rejetés) · /suggestions/<statut> → un statut
   async page(ctx, { segments }) {
     let filter = null;
     if (segments.length === 1 && PUBLIC.includes(segments[0])) filter = segments[0];
     else if (segments.length > 0) return { notFound: true, blocks: [] };
 
-    const list = (await rows(ctx)).filter((g) => PUBLIC.includes(g.status) && (!filter || g.status === filter));
+    const list = (await publicRows(ctx)).filter((g) => !filter || g.status === filter);
     const base = baseHref(ctx) === "/" ? "" : baseHref(ctx);
     const blocks = [];
     if (ctx.setting("intro")) blocks.push({ type: "markdown", text: String(ctx.setting("intro")) });
@@ -368,6 +376,8 @@ export default {
   },
 
   routes: {
+    "element/:slug": (request, ctx) => overlay.elementResponse(request, ctx, publicRows),   // la page de l'élément (voir overlay.mjs)
+
     async suggest(request, ctx) {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
       if (limited(`s|${ctx.instance.key}|${whoOf(request, ctx, "suggest")}`, num(ctx.setting("rateLimit"), 5, 1, 100), HOUR)) return Response.json({ ok: false }, { status: 429 });
