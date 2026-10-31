@@ -95,5 +95,9 @@
   "tidyIntro": "Si une fiche a été fusionnée avec une autre dans Contacts, ou supprimée, ce bouton fait suivre vos messages et mises à l'honneur, ou retire ceux d'une fiche supprimée.",
   "tidyButton": "Vérifier mes messages",
   "tidyDone": "Terminé. Fiches fusionnées suivies : {followed}. Fiches supprimées nettoyées : {removed}.",
-  "tidyNothing": "Tout est en ordre : rien à changer."
+  "tidyNothing": "Tout est en ordre : rien à changer.",
+  "ovTitle": "Remerciements",
+  "ovHeading": "Merci !",
+  "ovDemoName": "Personne d'exemple {n}",
+  "ovDemoMessage": "Un grand merci !"
 }

@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.27.0
+
+*Deux modules de plus proposent des éléments aux pages d'overlay de Curiosa 0.5.0 (section « Overlays » : une seule adresse à coller dans OBS pour toute une page). Pour Curiosa 0.5.0 ou plus. Modules touchés : Suggestions de jeux 1.6.0, Mur des remerciements 1.2.0.*
+
+### Nouveautés
+
+- **Suggestions de jeux : l'élément « Top des jeux proposés ».** Pendant un segment « on joue à quoi après ? », les jeux les plus proposés ou les plus votés, avec leur rang. Options : nombre de jeux (1 à 10, 3 par défaut) et quels jeux (proposés, planifiés, acceptés, déjà joués, finis). Les propositions de même nom sont regroupées ; « déjà joués » classe par votes « rejoue-le ».
+- **Mur des remerciements : l'élément « Remerciements ».** Les dernières personnes à remercier, qui défilent (vers le haut dans un cadre haut, vers la gauche dans un bandeau). Options : groupe, nombre de personnes (1 à 30, 10 par défaut), faire défiler, montrer le petit mot.
+- **Rien de plus que ce que montre déjà votre site.** Le Top ne montre que le nom du jeu, ses propositions et ses votes : jamais un pseudo, une note, une jaquette ni un jeu rejeté. Les Remerciements viennent de la même lecture que votre mur : une personne de la catégorie « Ne pas montrer » n'apparaît jamais, les fiches à relire non plus, et il n'y a aucune photo.
+- Les deux éléments s'adaptent à la taille que vous leur donnez, suivent le style commun de la page d'overlay (texte clair ou sombre, fond, angles), ne prennent jamais le style de votre site et ont un contenu d'exemple en mode test.
+
+### Améliorations
+
+- **Rien ne change pour votre site** : page des suggestions, vote, formulaire, mur public, administration, assistant IA, réglages et adresses sont identiques (vérifié octet pour octet).
+- Plusieurs pages d'overlay peuvent montrer le même élément en même temps sans alourdir votre site : une seule lecture sert tout le monde pendant quelques dizaines de secondes, et rien n'est consommé à la lecture. Rien ne tourne en fond.
+- Le module **Soutiens** n'a rien à ajouter : il range déjà, si vous le voulez, les personnes qui ont donné leur accord dans la catégorie de Contacts de votre choix, et le mur (donc l'élément « Remerciements ») lit cette catégorie.
+- Aucune migration, aucun nouveau réglage.
+
+### Pour les développeurs
+
+- Suggestions de jeux 1.6.0 et Mur des remerciements 1.2.0 passent à `minCore` 0.5.0 (clé `overlayElements`, `apiVersion` 2 inchangé) ; le mur demande en plus le droit `routes`. Détail dans `docs/changelog-parts/overlay-elements-wave2-games-thanks.md`.
+- Tests : `overlay-elements-games`, `overlay-elements-thanks` (avec `assertMultiReaders`), `overlay-elements-wave2-regression`, `tests/golden/` (1.5.1 et 1.0.2, produits avec le dépôt 1.26.0).
+- **Attention à la publication** : cette version demande Curiosa 0.5.0 (publié).
+- **Assemblage** : `package.json` 1.27.0, `catalogue/index.json` régénéré (refs `v1.27.0`).
+
 ## 1.26.0
 
 *Vos modules proposent des éléments aux nouvelles pages d'overlay de Curiosa 0.5.0 (section « Overlays » : une seule adresse à coller dans OBS pour toute une page). Pour Curiosa 0.5.0 ou plus. Modules touchés : Compte à rebours 1.1.0, Overlay sponsors 1.1.0, Planning 2.5.0, Statistiques de la communauté 1.2.0, Labyrinthe 3D 1.2.0, Overlay alertes 1.2.0, Sondages 1.3.0 et Ma Chaîne Twitch 2.2.0.*

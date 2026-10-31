@@ -1,0 +1,1231 @@
+{
+ "manifest": {
+  "apiVersion": 2,
+  "id": "game-suggestions",
+  "name": {
+   "en": "Game suggestions",
+   "fr": "Suggestions de jeux"
+  },
+  "description": {
+   "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played. You can also add games to the list yourself, one at a time or a whole list. Covers are found automatically.",
+   "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
+  },
+  "author": "Helldog136",
+  "privacy": {
+   "en": "If you suggest a game, the game's name, your first name or nickname (if you give one) and your note are saved and shown publicly on the suggestions page. If you vote to replay a game, a small cookie on your browser remembers your votes for the month. Game covers are loaded by your browser from RAWG (or from the image address chosen by the site), which sees your address. To have a suggestion removed, write to the site's contact.",
+   "fr": "Si vous proposez un jeu, le nom du jeu, votre prénom ou pseudo (si vous en donnez un) et votre note sont enregistrés et affichés publiquement sur la page des suggestions. Si vous votez pour rejouer un jeu, un petit cookie sur votre navigateur retient vos votes du mois. Les jaquettes sont chargées par votre navigateur depuis RAWG (ou depuis l'adresse d'image choisie par le site), qui voit votre adresse. Pour faire retirer une suggestion, écrivez au contact du site."
+  },
+  "license": "MIT",
+  "icon": "🎮",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "suggestions",
+  "permissions": [
+   "pages",
+   "routes",
+   "storage",
+   "admin",
+   "mcp",
+   "rawg"
+  ],
+  "requires": [
+   {
+    "service": "game.cover",
+    "optional": true
+   }
+  ],
+  "tabs": [
+   {
+    "id": "use",
+    "label": {
+     "fr": "Suggestions",
+     "en": "Suggestions"
+    }
+   }
+  ],
+  "settings": [
+   {
+    "key": "title",
+    "type": "text",
+    "label": {
+     "en": "Page title",
+     "fr": "Titre de la page"
+    }
+   },
+   {
+    "key": "intro",
+    "type": "textarea",
+    "label": {
+     "en": "Introduction (Markdown)",
+     "fr": "Introduction (Markdown)"
+    }
+   },
+   {
+    "key": "rateLimit",
+    "type": "number",
+    "default": 5,
+    "advanced": true,
+    "label": {
+     "en": "Suggestions per hour and visitor",
+     "fr": "Suggestions par heure et par personne"
+    }
+   },
+   {
+    "key": "maxVotesPerMonth",
+    "type": "number",
+    "default": 3,
+    "advanced": true,
+    "label": {
+     "en": "\"Play it again\" votes per visitor and month",
+     "fr": "Votes « rejoue-le » par personne et par mois"
+    }
+   }
+  ],
+  "mcp": [
+   {
+    "name": "game_suggestions_list",
+    "readOnly": true,
+    "description": "List game suggestions, newest first. Optional filter by status.",
+    "input": {
+     "type": "object",
+     "properties": {
+      "status": {
+       "type": "string",
+       "enum": [
+        "proposed",
+        "planned",
+        "accepted",
+        "rejected",
+        "already_played",
+        "finished"
+       ],
+       "description": "Only this status."
+      },
+      "limit": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 100,
+       "description": "How many at most (default 30)."
+      }
+     }
+    }
+   },
+   {
+    "name": "game_suggestions_add",
+    "description": "Add one or several games to the list (50 at most at a time), as the site's administration would. Default status: already_played. A title already in the list is refused and nothing is added. The cover is looked up automatically.",
+    "input": {
+     "type": "object",
+     "properties": {
+      "title": {
+       "type": "string",
+       "maxLength": 100,
+       "description": "Name of the game (use this or titles)."
+      },
+      "titles": {
+       "type": "array",
+       "maxItems": 50,
+       "items": {
+        "type": "string",
+        "maxLength": 100
+       },
+       "description": "Several names at once, one game each."
+      },
+      "status": {
+       "type": "string",
+       "enum": [
+        "proposed",
+        "planned",
+        "accepted",
+        "rejected",
+        "already_played",
+        "finished"
+       ],
+       "description": "Default already_played."
+      },
+      "note": {
+       "type": "string",
+       "maxLength": 280,
+       "description": "Optional note (single title only)."
+      },
+      "imageUrl": {
+       "type": "string",
+       "maxLength": 500,
+       "description": "Optional https:// address of an image, if no cover is found (single title only)."
+      }
+     }
+    }
+   },
+   {
+    "name": "game_suggestions_set_status",
+    "description": "Change the status of a game suggestion.",
+    "input": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string",
+       "description": "Suggestion id."
+      },
+      "status": {
+       "type": "string",
+       "enum": [
+        "proposed",
+        "planned",
+        "accepted",
+        "rejected",
+        "already_played",
+        "finished"
+       ]
+      }
+     },
+     "required": [
+      "id",
+      "status"
+     ]
+    }
+   }
+  ],
+  "dataVersion": 2,
+  "legacySettings": [
+   {
+    "key": "rawgApiKey",
+    "secret": true
+   }
+  ]
+ },
+ "top": [
+  "adminActions",
+  "adminPanel",
+  "backup",
+  "hooks",
+  "mcp",
+  "migrations",
+  "page",
+  "routes",
+  "tasks"
+ ],
+ "routes": [
+  "suggest",
+  "vote"
+ ],
+ "tasks": [
+  "covers"
+ ],
+ "pages": {
+  "all": {
+   "title": "Mes jeux",
+   "blocks": [
+    {
+     "type": "markdown",
+     "text": "Bienvenue **ici**"
+    },
+    {
+     "type": "links",
+     "items": [
+      {
+       "label": "Tous",
+       "href": "/suggestions"
+      },
+      {
+       "label": "Proposé",
+       "href": "/suggestions/proposed"
+      },
+      {
+       "label": "Planifié",
+       "href": "/suggestions/planned"
+      },
+      {
+       "label": "Accepté",
+       "href": "/suggestions/accepted"
+      },
+      {
+       "label": "Déjà joué",
+       "href": "/suggestions/already_played"
+      },
+      {
+       "label": "Fini",
+       "href": "/suggestions/finished"
+      }
+     ]
+    },
+    {
+     "type": "heading",
+     "text": "Suggérer un jeu"
+    },
+    {
+     "type": "form",
+     "action": "gs/suggest",
+     "submitLabel": "Proposer",
+     "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+     "fields": [
+      {
+       "name": "title",
+       "label": "Jeu",
+       "required": true
+      },
+      {
+       "name": "name",
+       "label": "Votre pseudo (facultatif)"
+      },
+      {
+       "name": "note",
+       "label": "Pourquoi ce jeu ? (facultatif)",
+       "kind": "textarea"
+      }
+     ]
+    },
+    {
+     "type": "html",
+     "html": "<div style=\"display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))\"><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Tunic</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Fini</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Dave the Diver</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Déjà joué</p><form method=\"post\" action=\"/m/gs/vote\" style=\"margin:8px 0 0\"><input type=\"hidden\" name=\"id\" value=\"r7\"><button style=\"cursor:pointer;border:1px solid var(--v-line);border-radius:8px;padding:4px 10px;background:transparent;color:var(--v-fg)\">🔁 Rejoue-le (3)</button></form></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><img src=\"https://media.rawg.io/hades.jpg\" alt=\"\" loading=\"lazy\" style=\"width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;margin-bottom:8px\"><h3 style=\"margin:0;font-size:1.05em\">Hades</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Déjà joué</p><form method=\"post\" action=\"/m/gs/vote\" style=\"margin:8px 0 0\"><input type=\"hidden\" name=\"id\" value=\"r6\"><button style=\"cursor:pointer;border:1px solid var(--v-line);border-radius:8px;padding:4px 10px;background:transparent;color:var(--v-fg)\">🔁 Rejoue-le (7)</button></form></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Outer Wilds</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Accepté</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Stardew Valley</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Planifié</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Celeste</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Proposé · par Chloé</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Hollow Knight</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Proposé · par Bob</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><img src=\"https://media.rawg.io/hk.jpg\" alt=\"\" loading=\"lazy\" style=\"width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;margin-bottom:8px\"><h3 style=\"margin:0;font-size:1.05em\">Hollow Knight</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Proposé · par Alice</p><p style=\"margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere\">Un classique</p></article></div>"
+    }
+   ]
+  },
+  "proposed": {
+   "title": "Mes jeux",
+   "blocks": [
+    {
+     "type": "markdown",
+     "text": "Bienvenue **ici**"
+    },
+    {
+     "type": "links",
+     "items": [
+      {
+       "label": "Tous",
+       "href": "/suggestions"
+      },
+      {
+       "label": "Proposé",
+       "href": "/suggestions/proposed"
+      },
+      {
+       "label": "Planifié",
+       "href": "/suggestions/planned"
+      },
+      {
+       "label": "Accepté",
+       "href": "/suggestions/accepted"
+      },
+      {
+       "label": "Déjà joué",
+       "href": "/suggestions/already_played"
+      },
+      {
+       "label": "Fini",
+       "href": "/suggestions/finished"
+      }
+     ]
+    },
+    {
+     "type": "heading",
+     "text": "Suggérer un jeu"
+    },
+    {
+     "type": "form",
+     "action": "gs/suggest",
+     "submitLabel": "Proposer",
+     "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+     "fields": [
+      {
+       "name": "title",
+       "label": "Jeu",
+       "required": true
+      },
+      {
+       "name": "name",
+       "label": "Votre pseudo (facultatif)"
+      },
+      {
+       "name": "note",
+       "label": "Pourquoi ce jeu ? (facultatif)",
+       "kind": "textarea"
+      }
+     ]
+    },
+    {
+     "type": "html",
+     "html": "<div style=\"display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))\"><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Celeste</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Proposé · par Chloé</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Hollow Knight</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Proposé · par Bob</p></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><img src=\"https://media.rawg.io/hk.jpg\" alt=\"\" loading=\"lazy\" style=\"width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;margin-bottom:8px\"><h3 style=\"margin:0;font-size:1.05em\">Hollow Knight</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Proposé · par Alice</p><p style=\"margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere\">Un classique</p></article></div>"
+    }
+   ]
+  },
+  "planned": {
+   "title": "Mes jeux",
+   "blocks": [
+    {
+     "type": "markdown",
+     "text": "Bienvenue **ici**"
+    },
+    {
+     "type": "links",
+     "items": [
+      {
+       "label": "Tous",
+       "href": "/suggestions"
+      },
+      {
+       "label": "Proposé",
+       "href": "/suggestions/proposed"
+      },
+      {
+       "label": "Planifié",
+       "href": "/suggestions/planned"
+      },
+      {
+       "label": "Accepté",
+       "href": "/suggestions/accepted"
+      },
+      {
+       "label": "Déjà joué",
+       "href": "/suggestions/already_played"
+      },
+      {
+       "label": "Fini",
+       "href": "/suggestions/finished"
+      }
+     ]
+    },
+    {
+     "type": "heading",
+     "text": "Suggérer un jeu"
+    },
+    {
+     "type": "form",
+     "action": "gs/suggest",
+     "submitLabel": "Proposer",
+     "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+     "fields": [
+      {
+       "name": "title",
+       "label": "Jeu",
+       "required": true
+      },
+      {
+       "name": "name",
+       "label": "Votre pseudo (facultatif)"
+      },
+      {
+       "name": "note",
+       "label": "Pourquoi ce jeu ? (facultatif)",
+       "kind": "textarea"
+      }
+     ]
+    },
+    {
+     "type": "html",
+     "html": "<div style=\"display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))\"><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Stardew Valley</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Planifié</p></article></div>"
+    }
+   ]
+  },
+  "accepted": {
+   "title": "Mes jeux",
+   "blocks": [
+    {
+     "type": "markdown",
+     "text": "Bienvenue **ici**"
+    },
+    {
+     "type": "links",
+     "items": [
+      {
+       "label": "Tous",
+       "href": "/suggestions"
+      },
+      {
+       "label": "Proposé",
+       "href": "/suggestions/proposed"
+      },
+      {
+       "label": "Planifié",
+       "href": "/suggestions/planned"
+      },
+      {
+       "label": "Accepté",
+       "href": "/suggestions/accepted"
+      },
+      {
+       "label": "Déjà joué",
+       "href": "/suggestions/already_played"
+      },
+      {
+       "label": "Fini",
+       "href": "/suggestions/finished"
+      }
+     ]
+    },
+    {
+     "type": "heading",
+     "text": "Suggérer un jeu"
+    },
+    {
+     "type": "form",
+     "action": "gs/suggest",
+     "submitLabel": "Proposer",
+     "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+     "fields": [
+      {
+       "name": "title",
+       "label": "Jeu",
+       "required": true
+      },
+      {
+       "name": "name",
+       "label": "Votre pseudo (facultatif)"
+      },
+      {
+       "name": "note",
+       "label": "Pourquoi ce jeu ? (facultatif)",
+       "kind": "textarea"
+      }
+     ]
+    },
+    {
+     "type": "html",
+     "html": "<div style=\"display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))\"><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Outer Wilds</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Accepté</p></article></div>"
+    }
+   ]
+  },
+  "already_played": {
+   "title": "Mes jeux",
+   "blocks": [
+    {
+     "type": "markdown",
+     "text": "Bienvenue **ici**"
+    },
+    {
+     "type": "links",
+     "items": [
+      {
+       "label": "Tous",
+       "href": "/suggestions"
+      },
+      {
+       "label": "Proposé",
+       "href": "/suggestions/proposed"
+      },
+      {
+       "label": "Planifié",
+       "href": "/suggestions/planned"
+      },
+      {
+       "label": "Accepté",
+       "href": "/suggestions/accepted"
+      },
+      {
+       "label": "Déjà joué",
+       "href": "/suggestions/already_played"
+      },
+      {
+       "label": "Fini",
+       "href": "/suggestions/finished"
+      }
+     ]
+    },
+    {
+     "type": "heading",
+     "text": "Suggérer un jeu"
+    },
+    {
+     "type": "form",
+     "action": "gs/suggest",
+     "submitLabel": "Proposer",
+     "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+     "fields": [
+      {
+       "name": "title",
+       "label": "Jeu",
+       "required": true
+      },
+      {
+       "name": "name",
+       "label": "Votre pseudo (facultatif)"
+      },
+      {
+       "name": "note",
+       "label": "Pourquoi ce jeu ? (facultatif)",
+       "kind": "textarea"
+      }
+     ]
+    },
+    {
+     "type": "html",
+     "html": "<div style=\"display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))\"><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Dave the Diver</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Déjà joué</p><form method=\"post\" action=\"/m/gs/vote\" style=\"margin:8px 0 0\"><input type=\"hidden\" name=\"id\" value=\"r7\"><button style=\"cursor:pointer;border:1px solid var(--v-line);border-radius:8px;padding:4px 10px;background:transparent;color:var(--v-fg)\">🔁 Rejoue-le (3)</button></form></article><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><img src=\"https://media.rawg.io/hades.jpg\" alt=\"\" loading=\"lazy\" style=\"width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;margin-bottom:8px\"><h3 style=\"margin:0;font-size:1.05em\">Hades</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Déjà joué</p><form method=\"post\" action=\"/m/gs/vote\" style=\"margin:8px 0 0\"><input type=\"hidden\" name=\"id\" value=\"r6\"><button style=\"cursor:pointer;border:1px solid var(--v-line);border-radius:8px;padding:4px 10px;background:transparent;color:var(--v-fg)\">🔁 Rejoue-le (7)</button></form></article></div>"
+    }
+   ]
+  },
+  "finished": {
+   "title": "Mes jeux",
+   "blocks": [
+    {
+     "type": "markdown",
+     "text": "Bienvenue **ici**"
+    },
+    {
+     "type": "links",
+     "items": [
+      {
+       "label": "Tous",
+       "href": "/suggestions"
+      },
+      {
+       "label": "Proposé",
+       "href": "/suggestions/proposed"
+      },
+      {
+       "label": "Planifié",
+       "href": "/suggestions/planned"
+      },
+      {
+       "label": "Accepté",
+       "href": "/suggestions/accepted"
+      },
+      {
+       "label": "Déjà joué",
+       "href": "/suggestions/already_played"
+      },
+      {
+       "label": "Fini",
+       "href": "/suggestions/finished"
+      }
+     ]
+    },
+    {
+     "type": "heading",
+     "text": "Suggérer un jeu"
+    },
+    {
+     "type": "form",
+     "action": "gs/suggest",
+     "submitLabel": "Proposer",
+     "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+     "fields": [
+      {
+       "name": "title",
+       "label": "Jeu",
+       "required": true
+      },
+      {
+       "name": "name",
+       "label": "Votre pseudo (facultatif)"
+      },
+      {
+       "name": "note",
+       "label": "Pourquoi ce jeu ? (facultatif)",
+       "kind": "textarea"
+      }
+     ]
+    },
+    {
+     "type": "html",
+     "html": "<div style=\"display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))\"><article style=\"padding:12px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface)\"><h3 style=\"margin:0;font-size:1.05em\">Tunic</h3><p style=\"margin:4px 0 0;font-size:.85em;color:var(--v-muted)\">Fini</p></article></div>"
+    }
+   ]
+  },
+  "rejected": {
+   "notFound": true,
+   "blocks": []
+  },
+  "nope": {
+   "notFound": true,
+   "blocks": []
+  },
+  "proposed/x": {
+   "notFound": true,
+   "blocks": []
+  }
+ },
+ "pageEmpty": {
+  "title": "Suggestions de jeux",
+  "blocks": [
+   {
+    "type": "links",
+    "items": [
+     {
+      "label": "Tous",
+      "href": "/suggestions"
+     },
+     {
+      "label": "Proposé",
+      "href": "/suggestions/proposed"
+     },
+     {
+      "label": "Planifié",
+      "href": "/suggestions/planned"
+     },
+     {
+      "label": "Accepté",
+      "href": "/suggestions/accepted"
+     },
+     {
+      "label": "Déjà joué",
+      "href": "/suggestions/already_played"
+     },
+     {
+      "label": "Fini",
+      "href": "/suggestions/finished"
+     }
+    ]
+   },
+   {
+    "type": "heading",
+    "text": "Suggérer un jeu"
+   },
+   {
+    "type": "form",
+    "action": "gs/suggest",
+    "submitLabel": "Proposer",
+    "successText": "Merci ! Votre suggestion est dans la liste avec le statut « proposé ».",
+    "fields": [
+     {
+      "name": "title",
+      "label": "Jeu",
+      "required": true
+     },
+     {
+      "name": "name",
+      "label": "Votre pseudo (facultatif)"
+     },
+     {
+      "name": "note",
+      "label": "Pourquoi ce jeu ? (facultatif)",
+      "kind": "textarea"
+     }
+    ]
+   },
+   {
+    "type": "markdown",
+    "text": "Aucun jeu dans cette catégorie."
+   }
+  ]
+ },
+ "admin": [
+  {
+   "type": "adminForm",
+   "action": "addGame",
+   "title": "Ajouter un jeu",
+   "submitLabel": "Ajouter le jeu",
+   "fields": [
+    {
+     "name": "title",
+     "label": "Nom du jeu",
+     "required": true,
+     "help": "Par exemple : Celeste"
+    },
+    {
+     "name": "status",
+     "label": "Statut",
+     "kind": "select",
+     "value": "already_played",
+     "help": "« Déjà joué » le met dans votre liste des jeux joués. « Rejeté » le garde caché du public.",
+     "options": [
+      {
+       "value": "already_played",
+       "label": "Déjà joué"
+      },
+      {
+       "value": "finished",
+       "label": "Fini"
+      },
+      {
+       "value": "planned",
+       "label": "Planifié"
+      },
+      {
+       "value": "accepted",
+       "label": "Accepté"
+      },
+      {
+       "value": "proposed",
+       "label": "Proposé"
+      },
+      {
+       "value": "rejected",
+       "label": "Rejeté"
+      }
+     ]
+    },
+    {
+     "name": "note",
+     "label": "Une note (facultatif)",
+     "kind": "textarea",
+     "help": "Quelques mots, affichés sous le jeu."
+    }
+   ]
+  },
+  {
+   "type": "html",
+   "html": "<nav style=\"display:flex;flex-wrap:wrap;gap:8px\"><a href=\"?tab=use&amp;ajout=plusieurs\" style=\"display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid currentColor;border-radius:10px;text-decoration:none;color:inherit\">Ajouter plusieurs jeux d&#39;un coup</a><a href=\"?tab=use&amp;ajout=image\" style=\"display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid currentColor;border-radius:10px;text-decoration:none;color:inherit\">Choisir l&#39;image moi-même</a></nav>"
+  },
+  {
+   "type": "heading",
+   "text": "Suggestions (9, 3 à traiter)"
+  },
+  {
+   "type": "table",
+   "columns": [
+    "Date",
+    "Jeu",
+    "Jaquette",
+    "Par",
+    "Statut",
+    "Votes"
+   ],
+   "rows": [
+    [
+     "2026-10-30",
+     "Jeu secret <b>",
+     "—",
+     "Troll",
+     "Rejeté",
+     "99"
+    ],
+    [
+     "2026-10-30",
+     "Tunic",
+     "—",
+     "",
+     "Fini",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Dave the Diver",
+     "—",
+     "",
+     "Déjà joué",
+     "3"
+    ],
+    [
+     "2026-10-30",
+     "Hades",
+     "✓",
+     "Administration",
+     "Déjà joué",
+     "7"
+    ],
+    [
+     "2026-10-30",
+     "Outer Wilds",
+     "—",
+     "",
+     "Accepté",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Stardew Valley",
+     "—",
+     "Administration",
+     "Planifié",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Celeste",
+     "—",
+     "Chloé",
+     "Proposé",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Hollow Knight",
+     "—",
+     "Bob",
+     "Proposé",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Hollow Knight",
+     "✓",
+     "Alice",
+     "Proposé",
+     "0"
+    ]
+   ],
+   "rowIds": [
+    "r9",
+    "r8",
+    "r7",
+    "r6",
+    "r5",
+    "r4",
+    "r3",
+    "r2",
+    "r1"
+   ],
+   "rowActions": [
+    {
+     "label": "→ Proposé",
+     "action": "status_proposed"
+    },
+    {
+     "label": "→ Planifié",
+     "action": "status_planned"
+    },
+    {
+     "label": "→ Accepté",
+     "action": "status_accepted"
+    },
+    {
+     "label": "→ Rejeté",
+     "action": "status_rejected"
+    },
+    {
+     "label": "→ Déjà joué",
+     "action": "status_already_played"
+    },
+    {
+     "label": "→ Fini",
+     "action": "status_finished"
+    },
+    {
+     "label": "Jaquette…",
+     "href": "?tab=use&jaquette={id}"
+    },
+    {
+     "label": "Supprimer",
+     "action": "remove",
+     "confirm": "Supprimer cette suggestion ?",
+     "danger": true
+    }
+   ]
+  },
+  {
+   "type": "heading",
+   "text": "Jaquettes"
+  },
+  {
+   "type": "markdown",
+   "text": "7 suggestion(s) sans jaquette. Le module les cherche tout seul, quelques-unes à la fois ; le bouton lance la recherche tout de suite."
+  },
+  {
+   "type": "adminForm",
+   "action": "findCovers",
+   "submitLabel": "Rechercher les jaquettes manquantes",
+   "fields": []
+  }
+ ],
+ "adminPage2": [
+  {
+   "type": "adminForm",
+   "action": "addGames",
+   "title": "Ajouter plusieurs jeux",
+   "submitLabel": "Ajouter ces jeux",
+   "fields": [
+    {
+     "name": "titles",
+     "label": "Vos jeux, un par ligne",
+     "kind": "textarea",
+     "required": true,
+     "help": "Collez votre liste : un jeu par ligne, 50 au plus à la fois. Les lignes vides sont ignorées."
+    },
+    {
+     "name": "status",
+     "label": "Statut",
+     "kind": "select",
+     "value": "already_played",
+     "help": "« Déjà joué » le met dans votre liste des jeux joués. « Rejeté » le garde caché du public.",
+     "options": [
+      {
+       "value": "already_played",
+       "label": "Déjà joué"
+      },
+      {
+       "value": "finished",
+       "label": "Fini"
+      },
+      {
+       "value": "planned",
+       "label": "Planifié"
+      },
+      {
+       "value": "accepted",
+       "label": "Accepté"
+      },
+      {
+       "value": "proposed",
+       "label": "Proposé"
+      },
+      {
+       "value": "rejected",
+       "label": "Rejeté"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "html",
+   "html": "<nav style=\"display:flex;flex-wrap:wrap;gap:8px\"><a href=\"?tab=use\" style=\"display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid currentColor;border-radius:10px;text-decoration:none;color:inherit\">← Ajouter un seul jeu</a></nav>"
+  },
+  {
+   "type": "heading",
+   "text": "Suggestions (9, 3 à traiter)"
+  },
+  {
+   "type": "table",
+   "columns": [
+    "Date",
+    "Jeu",
+    "Jaquette",
+    "Par",
+    "Statut",
+    "Votes"
+   ],
+   "rows": [
+    [
+     "2026-10-30",
+     "Jeu secret <b>",
+     "—",
+     "Troll",
+     "Rejeté",
+     "99"
+    ],
+    [
+     "2026-10-30",
+     "Tunic",
+     "—",
+     "",
+     "Fini",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Dave the Diver",
+     "—",
+     "",
+     "Déjà joué",
+     "3"
+    ],
+    [
+     "2026-10-30",
+     "Hades",
+     "✓",
+     "Administration",
+     "Déjà joué",
+     "7"
+    ],
+    [
+     "2026-10-30",
+     "Outer Wilds",
+     "—",
+     "",
+     "Accepté",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Stardew Valley",
+     "—",
+     "Administration",
+     "Planifié",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Celeste",
+     "—",
+     "Chloé",
+     "Proposé",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Hollow Knight",
+     "—",
+     "Bob",
+     "Proposé",
+     "0"
+    ],
+    [
+     "2026-10-30",
+     "Hollow Knight",
+     "✓",
+     "Alice",
+     "Proposé",
+     "0"
+    ]
+   ],
+   "rowIds": [
+    "r9",
+    "r8",
+    "r7",
+    "r6",
+    "r5",
+    "r4",
+    "r3",
+    "r2",
+    "r1"
+   ],
+   "rowActions": [
+    {
+     "label": "→ Proposé",
+     "action": "status_proposed"
+    },
+    {
+     "label": "→ Planifié",
+     "action": "status_planned"
+    },
+    {
+     "label": "→ Accepté",
+     "action": "status_accepted"
+    },
+    {
+     "label": "→ Rejeté",
+     "action": "status_rejected"
+    },
+    {
+     "label": "→ Déjà joué",
+     "action": "status_already_played"
+    },
+    {
+     "label": "→ Fini",
+     "action": "status_finished"
+    },
+    {
+     "label": "Jaquette…",
+     "href": "?tab=use&jaquette={id}"
+    },
+    {
+     "label": "Supprimer",
+     "action": "remove",
+     "confirm": "Supprimer cette suggestion ?",
+     "danger": true
+    }
+   ]
+  },
+  {
+   "type": "heading",
+   "text": "Jaquettes"
+  },
+  {
+   "type": "markdown",
+   "text": "7 suggestion(s) sans jaquette. Le module les cherche tout seul, quelques-unes à la fois ; le bouton lance la recherche tout de suite."
+  },
+  {
+   "type": "adminForm",
+   "action": "findCovers",
+   "submitLabel": "Rechercher les jaquettes manquantes",
+   "fields": []
+  }
+ ],
+ "mcpList": [
+  {
+   "title": "Jeu secret <b>",
+   "status": "rejected",
+   "origin": "visitor",
+   "submitter": "Troll",
+   "note": null,
+   "replayVotes": 99
+  },
+  {
+   "title": "Tunic",
+   "status": "finished",
+   "origin": "visitor",
+   "submitter": null,
+   "note": null,
+   "replayVotes": 0
+  },
+  {
+   "title": "Dave the Diver",
+   "status": "already_played",
+   "origin": "visitor",
+   "submitter": null,
+   "note": null,
+   "replayVotes": 3
+  },
+  {
+   "title": "Hades",
+   "status": "already_played",
+   "origin": "admin",
+   "submitter": null,
+   "note": null,
+   "replayVotes": 7
+  },
+  {
+   "title": "Outer Wilds",
+   "status": "accepted",
+   "origin": "visitor",
+   "submitter": null,
+   "note": null,
+   "replayVotes": 0
+  },
+  {
+   "title": "Stardew Valley",
+   "status": "planned",
+   "origin": "admin",
+   "submitter": null,
+   "note": null,
+   "replayVotes": 0
+  },
+  {
+   "title": "Celeste",
+   "status": "proposed",
+   "origin": "visitor",
+   "submitter": "Chloé",
+   "note": null,
+   "replayVotes": 0
+  },
+  {
+   "title": "Hollow Knight",
+   "status": "proposed",
+   "origin": "visitor",
+   "submitter": "Bob",
+   "note": null,
+   "replayVotes": 0
+  },
+  {
+   "title": "Hollow Knight",
+   "status": "proposed",
+   "origin": "visitor",
+   "submitter": "Alice",
+   "note": "Un classique",
+   "replayVotes": 0
+  }
+ ],
+ "mcpListPlanned": [
+  {
+   "title": "Stardew Valley",
+   "status": "planned",
+   "origin": "admin",
+   "submitter": null,
+   "note": null,
+   "replayVotes": 0
+  }
+ ],
+ "voteOk": {
+  "status": 303,
+  "location": "/suggestions",
+  "cookie": "vh_gs_votes=%5BT%5D; Path=/; Max-Age=2592000; SameSite=Lax; HttpOnly",
+  "votes": 8
+ },
+ "voteRefused": {
+  "status": 404,
+  "location": null,
+  "cookie": null,
+  "votes": 0
+ },
+ "suggest": {
+  "status": 200,
+  "body": {
+   "ok": true
+  },
+  "added": [
+   {
+    "title": "Neon White",
+    "status": "proposed",
+    "coverUrl": "https://media.example.test/cover.jpg",
+    "coverCheckedAt": "2026-10-30T12:00:00.000Z",
+    "coverResult": "found",
+    "coverKey": "core",
+    "coverTries": 1,
+    "submitterName": "Dana",
+    "note": "Rapide",
+    "replayVotes": 0,
+    "lastVotedAt": null
+   }
+  ]
+ }
+}

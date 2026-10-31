@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.5",
+  "minCore": "0.5.0",
   "id": "thanks-wall",
   "name": {
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.0.2",
+  "version": "1.2.0",
   "description": {
     "en": "A “Thank you!” page for your community: the people of one or more Contacts categories (moderators, supporters, beta testers…) as a grid of cards with their photos, a person in the spotlight each month and a short message for anyone you like. Names and photos stay in Contacts, so there is nothing to retype.",
     "fr": "Une page « Merci ! » pour votre communauté : les personnes d'une ou plusieurs catégories de Contacts (modération, soutiens, bêta-test…) en grille de cartes avec leurs photos, une personne à l'honneur chaque mois et un mot court pour qui vous voulez. Les noms et les photos restent dans Contacts : rien à retaper."
@@ -23,7 +23,8 @@
     "pages",
     "storage",
     "admin",
-    "mcp"
+    "mcp",
+    "routes"
   ],
   "requires": [
     {
@@ -64,6 +65,139 @@
         "admin": true,
         "editor": false
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "thanks",
+      "label": {
+        "fr": "Remerciements",
+        "en": "Thank-yous"
+      },
+      "description": {
+        "fr": "Les dernières personnes à remercier, qui défilent. Seul ce que montre déjà votre mur apparaît : jamais une personne que vous avez cachée, jamais de photo.",
+        "en": "The latest people to thank, scrolling. Only what your wall already shows appears: never a person you hid, never a photo."
+      },
+      "fit": "fluid",
+      "ratios": {
+        "min": 0.3,
+        "max": 10
+      },
+      "minSize": {
+        "width": 200,
+        "height": 80
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "group",
+          "type": "choice",
+          "label": {
+            "fr": "Groupe",
+            "en": "Group"
+          },
+          "help": {
+            "fr": "Un des groupes de votre mur, ou tous à tour de rôle. Le numéro suit l'ordre des groupes dans les réglages.",
+            "en": "One of the groups of your wall, or all of them in turn. The number follows the order of the groups in the settings."
+          },
+          "choices": [
+            {
+              "value": "all",
+              "label": {
+                "fr": "Tous les groupes",
+                "en": "All groups"
+              }
+            },
+            {
+              "value": "1",
+              "label": {
+                "fr": "Groupe 1",
+                "en": "Group 1"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "fr": "Groupe 2",
+                "en": "Group 2"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "fr": "Groupe 3",
+                "en": "Group 3"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "fr": "Groupe 4",
+                "en": "Group 4"
+              }
+            },
+            {
+              "value": "5",
+              "label": {
+                "fr": "Groupe 5",
+                "en": "Group 5"
+              }
+            },
+            {
+              "value": "6",
+              "label": {
+                "fr": "Groupe 6",
+                "en": "Group 6"
+              }
+            }
+          ],
+          "default": "all"
+        },
+        {
+          "id": "count",
+          "type": "number",
+          "label": {
+            "fr": "Nombre de personnes",
+            "en": "Number of people"
+          },
+          "help": {
+            "fr": "De 1 à 30. Les plus récentes d'abord.",
+            "en": "From 1 to 30. The most recent first."
+          },
+          "min": 1,
+          "max": 30,
+          "integer": true,
+          "example": "10",
+          "default": 10
+        },
+        {
+          "id": "scroll",
+          "type": "boolean",
+          "label": {
+            "fr": "Faire défiler",
+            "en": "Scroll"
+          },
+          "help": {
+            "fr": "La liste défile quand elle ne tient pas dans le cadre.",
+            "en": "The list scrolls when it does not fit in the frame."
+          },
+          "default": true
+        },
+        {
+          "id": "messages",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer le petit mot",
+            "en": "Show the short message"
+          },
+          "help": {
+            "fr": "Le petit mot que vous avez écrit pour la personne, comme sur le mur.",
+            "en": "The short message you wrote for the person, as on the wall."
+          },
+          "default": true
+        }
+      ]
     }
   ],
   "tabs": [

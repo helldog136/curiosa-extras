@@ -5,8 +5,8 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.5.1",
-  "minCore": "0.2.10",
+  "version": "1.6.0",
+  "minCore": "0.5.0",
   "description": {
     "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played. You can also add games to the list yourself, one at a time or a whole list. Covers are found automatically.",
     "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
@@ -82,6 +82,99 @@
         "en": "\"Play it again\" votes per visitor and month",
         "fr": "Votes « rejoue-le » par personne et par mois"
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "top",
+      "label": {
+        "fr": "Top des jeux proposés",
+        "en": "Top suggested games"
+      },
+      "description": {
+        "fr": "Les jeux les plus proposés (ou les plus votés « rejoue-le »), en grand. Seul ce que montre déjà la page des suggestions apparaît : jamais un pseudo ni une note.",
+        "en": "The most suggested games (or the most voted for replay), large. Only what your suggestions page already shows appears: never a nickname or a note."
+      },
+      "fit": "fluid",
+      "ratios": {
+        "min": 0.4,
+        "max": 8
+      },
+      "minSize": {
+        "width": 240,
+        "height": 100
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "count",
+          "type": "number",
+          "label": {
+            "fr": "Nombre de jeux",
+            "en": "Number of games"
+          },
+          "help": {
+            "fr": "De 1 à 10. Les jeux les mieux placés d'abord.",
+            "en": "From 1 to 10. The best placed games first."
+          },
+          "min": 1,
+          "max": 10,
+          "integer": true,
+          "example": "3",
+          "default": 3
+        },
+        {
+          "id": "status",
+          "type": "choice",
+          "label": {
+            "fr": "Quels jeux",
+            "en": "Which games"
+          },
+          "help": {
+            "fr": "Les mêmes statuts que sur la page des suggestions. « Déjà joués » classe par votes « rejoue-le ».",
+            "en": "The same statuses as on the suggestions page. “Already played” ranks by replay votes."
+          },
+          "choices": [
+            {
+              "value": "proposed",
+              "label": {
+                "fr": "Proposés",
+                "en": "Suggested"
+              }
+            },
+            {
+              "value": "planned",
+              "label": {
+                "fr": "Planifiés",
+                "en": "Planned"
+              }
+            },
+            {
+              "value": "accepted",
+              "label": {
+                "fr": "Acceptés",
+                "en": "Accepted"
+              }
+            },
+            {
+              "value": "already_played",
+              "label": {
+                "fr": "Déjà joués (votes « rejoue-le »)",
+                "en": "Already played (replay votes)"
+              }
+            },
+            {
+              "value": "finished",
+              "label": {
+                "fr": "Finis",
+                "en": "Finished"
+              }
+            }
+          ],
+          "default": "proposed"
+        }
+      ]
     }
   ],
   "mcp": [

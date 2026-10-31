@@ -10,3 +10,14 @@ Page publique `/suggestions` : la communauté propose un jeu, vous le faites ava
 - **Anti-spam** : piège à robots, limite par heure, au plus un lien dans la note, plafond de 2000 suggestions.
 - **Admin** : tableau (50 lignes par page) avec changement de statut en un clic. **MCP** : un assistant peut lister, ajouter (`game_suggestions_add`, 50 jeux au plus à la fois, mêmes refus que le formulaire) et changer les statuts.
 - **Sauvegarde lisible** : `games.csv` (colonne `origin` : `visitor` ou `admin`).
+
+## Dans vos pages d'overlay (version 1.6.0, Curiosa 0.5.0)
+
+Si vous composez vos propres **pages d'overlay** (section « Overlays » de l'administration, une seule adresse à coller dans OBS), le module propose l'élément **« Top des jeux proposés »** : pendant un segment « on joue à quoi après ? », les jeux les plus proposés ou les plus votés, en grand, avec leur rang.
+
+- **Rien de plus que votre page publique.** L'élément ne montre que ce que la page des suggestions montre déjà : le **nom du jeu**, combien de fois il a été proposé (des propositions de même nom sont regroupées) et, pour les jeux déjà joués, ses votes « rejoue-le ». **Jamais un pseudo, une note, une jaquette** (aucune image n'est chargée) ni un jeu « rejeté ».
+- **Deux options** : **Nombre de jeux** (de 1 à 10, 3 par défaut) et **Quels jeux** (proposés, planifiés, acceptés, déjà joués ou finis : les mêmes statuts que sur la page). « Proposés », « planifiés », « acceptés » et « finis » classent par nombre de propositions ; « déjà joués » classe par votes « rejoue-le ». Pour deux listes, ajoutez l'élément deux fois.
+- **Taille** : il s'adapte à la taille choisie (minimum 240 × 100) : une colonne de lignes dans un cadre haut ou carré, deux colonnes ou plus dans un bandeau. Fond transparent par défaut ; il suit le style commun de la page d'overlay (texte clair ou sombre, fond, angles) et ne charge jamais le style de votre site.
+- **Sans jeu à montrer**, le cadre reste vide en direct ; en mode test, des jeux d'exemple apparaissent.
+- **Charge** : plusieurs pages d'overlay peuvent montrer l'élément ; une seule lecture de la liste sert tout le monde pendant 30 secondes. Rien n'est consommé ni écrit, aucune tâche de fond de plus.
+- Développeurs : route publique `element/:slug` (adresse sans secret), fichier `overlay.mjs`, lecture `publicRows` (la même définition du « public » que la page), test `tests/overlay-elements-games.test.mjs`.
