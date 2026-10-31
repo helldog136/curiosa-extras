@@ -691,12 +691,12 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mascot",
       "ref": "v1.27.0",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🐾",
       "requires": {
-        "core": "0.2.5"
+        "core": "0.5.0"
       },
       "needs": [
         {
@@ -1107,7 +1107,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/testimonials",
       "ref": "v1.27.0",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
@@ -1115,7 +1115,7 @@
         "overlay.item"
       ],
       "requires": {
-        "core": "0.2.5"
+        "core": "0.5.0"
       }
     },
     {
@@ -1168,10 +1168,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/ticker-overlay",
       "ref": "v1.27.0",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "📺"
+      "icon": "📺",
+      "requires": {
+        "core": "0.5.0"
+      }
     },
     {
       "id": "tiktok",

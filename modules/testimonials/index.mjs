@@ -10,6 +10,7 @@ const L = await import(`./lib.mjs${v}`);
 const D = await import(`./data.mjs${v}`);
 const V = await import(`./view.mjs${v}`);
 const A = await import(`./admin.mjs${v}`);
+const O = await import(`./overlay.mjs${v}`);
 
 const notFound = (text) => Object.assign(new Error(text), { expose: true });
 const here = (ctx, ...segments) => V.href(ctx, ...segments);
@@ -141,6 +142,11 @@ const view = (r) => ({ id: r.id, name: r.name, text: r.text, rating: r.rating, s
 const expose = (ctx, key) => notFound(ctx.t(key));
 
 export default {
+  // ÉLÉMENT DE PAGE D'OVERLAY (cœur 0.5.0) : « Avis de la communauté », voir overlay.mjs. Seulement les avis publics ; lecture partagée entre tous les lecteurs ; aucun secret.
+  overlayElements: {
+    reviews: (ctx, request) => O.elementAddress(ctx, "reviews", request),
+  },
+
   // PAGES : /avis (liste), /avis/tous, /avis/etoiles/5, /avis/laisser (le lien à partager), /avis/corriger/…, /avis/merci/…, /avis/retrait/…
   async page(ctx, { segments }) {
     const route = parseRoute(Array.isArray(segments) ? segments : []);
@@ -160,6 +166,9 @@ export default {
   },
 
   routes: {
+    // La page d'un élément d'overlay (`reviews`) ; avec ?data=1, seulement la liste des avis pour la mise à jour douce.
+    "element/:slug": (request, ctx) => O.elementResponse(request, ctx),
+
     // Envoyer un avis (POST). Réponse : toujours une redirection vers une page du site — jamais une page blanche pour la personne.
     async send(request, ctx) {
       if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
