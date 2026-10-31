@@ -142,12 +142,13 @@ test("update : seuls les champs donnés changent ; e-mail pris par un autre → 
   assert.equal((await c.api.store.get(a)).data.name, "Ada");
 });
 
-test("note : ajoutée avec date et auteur (60 caractères), vide ou fiche inconnue refusées", async () => {
+test("note : ajoutée avec date et auteur (60 caractères), vide ou fiche inconnue refusées", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.UTC(2026, 9, 31, 0, 0, 1) });   // horloge figée juste après minuit UTC : la date attendue ne dépend pas de l'heure du test
   const c = ctx();
   const { id } = await svc.create(c, { name: "Ada" });
   assert.deepEqual(await svc.note(c, { id, text: "  Rappelé  ", author: "a".repeat(100) }), { ok: true, id });
   const n = (await c.api.store.list("notes"))[0].data;
-  assert.deepEqual([n.contactId, n.text, n.author.length, n.date], [id, "Rappelé", 60, new Date().toISOString().slice(0, 10)]);
+  assert.deepEqual([n.contactId, n.text, n.author.length, n.date], [id, "Rappelé", 60, "2026-10-31"]);
   assert.deepEqual(await svc.note(c, { id, text: "   " }), { ok: false, error: "text_required" });
   assert.deepEqual(await svc.note(c, { id: "nope", text: "x" }), { ok: false, error: "not_found" });
   assert.equal((await svc.note(c, { id, text: "ok" })).ok, true);

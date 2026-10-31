@@ -37,6 +37,18 @@ Le module ne garde rien sur les personnes : c'est Contacts qui possède la fiche
 
 Dans Contacts, créez une catégorie **« Ne pas montrer »**, puis rangez dedans la fiche de la personne : elle disparaît du mur en moins de deux minutes, même si elle est aussi dans une catégorie remerciée, même si elle est à l'honneur. (Vous pouvez aussi choisir une autre catégorie dans les réglages : « Catégorie Ne pas montrer ».) Pour la remontrer, sortez la fiche de cette catégorie. Les fiches qui viennent du formulaire de contact et que vous n'avez pas encore relues n'apparaissent jamais.
 
+## Dans vos pages d'overlay (version 1.2.0, Curiosa 0.5.0)
+
+Si vous composez vos propres **pages d'overlay** (section « Overlays » de l'administration, une seule adresse à coller dans OBS), le module propose l'élément **« Remerciements »** : les **dernières personnes à remercier**, qui défilent.
+
+- **Rien de plus que votre mur public.** Les personnes viennent de la même lecture que la page `/merci` : mêmes catégories de Contacts, même catégorie « Ne pas montrer » (une personne cachée n'apparaît jamais, ici non plus), mêmes fiches à relire écartées, même choix de nom (« comme sur la fiche », prénom seulement ou pseudo) et mêmes petits mots. **Pas de photo** (rien n'est chargé chez un tiers) : un rond avec les initiales.
+- **Quatre options** : **Groupe** (tous à tour de rôle, ou l'un des groupes de votre mur), **Nombre de personnes** (de 1 à 30, 10 par défaut), **Faire défiler** (oui par défaut : la liste défile quand elle ne tient pas dans le cadre) et **Montrer le petit mot**. Les plus récentes d'abord.
+- **Taille** : il s'adapte à la taille choisie (minimum 200 × 80) : une colonne qui défile vers le haut dans un cadre haut ou carré, une rangée qui défile vers la gauche dans un bandeau. Fond transparent par défaut ; il suit le style commun de la page d'overlay et ne charge jamais le style de votre site.
+- **Si Contacts ne répond plus**, l'élément garde le dernier mur connu (24 heures), comme la page publique ; sans rien de connu, le cadre reste vide en direct. En mode test, des personnes d'exemple apparaissent.
+- **Charge** : plusieurs pages d'overlay peuvent montrer l'élément ; une seule lecture de Contacts sert tout le monde. Rien n'est consommé ni écrit, aucune tâche de fond.
+- **Vos soutiens** : le module **Soutiens** n'a rien à faire ici. Il range, si vous le voulez, les personnes qui ont donné leur accord dans la catégorie de Contacts de votre choix ; mettez cette catégorie dans un groupe du mur, et ces personnes apparaissent aussi dans l'élément.
+- Développeurs : route publique `element/:slug` (nouveau droit `routes`, adresse sans secret), fichier `overlay.mjs` (réutilise `getWall`, `displayOf` et `readData`), test `tests/overlay-elements-thanks.test.mjs`.
+
 ## Les noms et les photos
 
 - **Noms** : « comme sur la fiche » (par défaut), « prénom seulement » ou « pseudo en ligne ». Le mur est public : choisissez ce qui vous convient.

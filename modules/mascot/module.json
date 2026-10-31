@@ -5,8 +5,8 @@
     "fr": "Mascotte",
     "en": "Mascot"
   },
-  "version": "1.0.1",
-  "minCore": "0.2.5",
+  "version": "1.1.0",
+  "minCore": "0.5.0",
   "description": {
     "fr": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
     "en": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy."
@@ -378,6 +378,45 @@
           }
         }
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "mascot",
+      "label": {
+        "fr": "Mascotte",
+        "en": "Mascot"
+      },
+      "description": {
+        "fr": "Un petit personnage qui dit bonjour, donne une astuce ou annonce une nouveauté, avec les phrases que vous avez écrites pour votre site.",
+        "en": "A little character that says hello, shares a tip or announces something new, with the sentences you wrote for your site."
+      },
+      "fit": "scale",
+      "size": {
+        "width": 440,
+        "height": 320
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "seconds",
+          "type": "number",
+          "min": 4,
+          "max": 60,
+          "integer": true,
+          "default": 10,
+          "label": {
+            "fr": "Secondes par phrase",
+            "en": "Seconds per sentence"
+          },
+          "help": {
+            "fr": "Le temps pendant lequel chaque phrase reste affichée, de 4 à 60 secondes.",
+            "en": "How long each sentence stays on screen, from 4 to 60 seconds."
+          },
+          "example": "10"
+        }
+      ]
     }
   ]
 }

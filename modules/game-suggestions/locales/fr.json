@@ -104,5 +104,15 @@
   "pagerInfo": "Jeux {from} à {to} sur {total}",
   "pagerPrev": "← Précédents",
   "pagerNext": "Suivants →",
-  "imageLabel": "Adresse de l'image"
+  "imageLabel": "Adresse de l'image",
+  "ovTitle": "Top des jeux proposés",
+  "ovHeading_proposed": "Jeux proposés",
+  "ovHeading_planned": "Jeux planifiés",
+  "ovHeading_accepted": "Jeux acceptés",
+  "ovHeading_already_played": "Jeux à rejouer",
+  "ovHeading_finished": "Jeux finis",
+  "ovVotes": "{n} votes",
+  "ovVotes_one": "1 vote",
+  "ovTimes": "proposé {n} fois",
+  "ovDemoGame": "Jeu d'exemple {n}"
 }

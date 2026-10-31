@@ -9,7 +9,7 @@ const K = await import(new URL(`./client.mjs${v}`, import.meta.url).href);
 const Y = await import(new URL(`./style.mjs${v}`, import.meta.url).href);
 
 /** Doit rester égale à `version` de module.json (un test le vérifie) : elle fait partie de l'adresse de la feuille de style. */
-export const VERSION = "1.0.1";
+export const VERSION = "1.1.0";
 export const CSS = Y.CSS;
 export const cssHash = M.hash(`${VERSION}|${Y.CSS}`);
 

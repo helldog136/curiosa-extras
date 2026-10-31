@@ -307,14 +307,15 @@ test("MCP partner_update : ne peut pas vider le nom d'une fiche", async () => {
   assert.equal((await ctx.api.store.get(id)).data.brand, "A");
 });
 
-test("MCP partner_log : entrée signée, date par défaut, lien filtré ; fiche inconnue → erreur", async () => {
+test("MCP partner_log : entrée signée, date par défaut, lien filtré ; fiche inconnue → erreur", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.UTC(2026, 9, 31, 0, 0, 1) });   // horloge figée juste après minuit UTC : « aujourd'hui » ne dépend pas de l'heure du test
   const ctx = ctxFor();
   const id = await ctx.api.store.add("partners", { brand: "A" });
   const { id: eid } = await def.mcp.partner_log(ctx, { id, text: "  Relancé  ", link: "ftp://x", date: "2026-04-01" }, actor);
   const e = (await ctx.api.store.get(eid)).data;
   assert.deepEqual({ ...e }, { partnerId: id, date: "2026-04-01", author: "agent:claude", text: "Relancé", link: "" });
   const e2 = (await ctx.api.store.get((await def.mcp.partner_log(ctx, { id, text: "x", date: "demain" }, actor)).id)).data;
-  assert.equal(e2.date, new Date().toISOString().slice(0, 10), "date invalide → aujourd'hui");
+  assert.equal(e2.date, "2026-10-31", "date invalide → aujourd'hui");
   await assert.rejects(() => def.mcp.partner_log(ctx, { id: "nope", text: "x" }, actor), (e) => e.expose);
 });
 

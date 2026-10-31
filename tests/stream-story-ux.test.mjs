@@ -17,7 +17,10 @@ const page = await import("../modules/stream-story/page.mjs");
 
 const SITE = "https://site.example.test", H = 3_600_000;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const iso = (h) => new Date(Date.now() + h * H).toISOString();
+// L'instant de référence est lu UNE seule fois : « maintenant + h » donne toujours la même chaîne pour le même h. Avec Date.now() à chaque appel, deux événements prévus « au même moment » pouvaient
+// différer d'une milliseconde (la seconde lecture tombait sur la milliseconde suivante) et ne plus être reconnus comme simultanés.
+const T0 = Date.now();
+const iso = (h) => new Date(T0 + h * H).toISOString();
 const YT = { kind: "youtube", label: "YouTube" }, TW = { kind: "twitch", label: "Twitch" };
 
 class Text { constructor(t) { this.nodeType = 3; this.textContent = String(t); } }
@@ -129,11 +132,10 @@ test("tout est déjà commencé : le premier est choisi, étiqueté « Déjà co
   const one = current = await boot(a);
   assert.match(one.els.get("event-chosen").textContent, /Stream 0/); assert.match(one.els.get("event-chosen").textContent, /Déjà commencé/); assert.doesNotMatch(one.els.get("event-chosen").textContent, /Prochain événement/);
   one.server.restore();
-  const at = iso(10);
-  const b = mk({ calendar: [slot(1, 10)], yt: ytOk([{ id: "youtube:v2", title: "Direct en même temps", start: slot(1, 10).start, type: "live" }]) });
+  const same = slot(1, 10);   // un seul créneau : l'événement YouTube commence exactement au même instant que celui de l'agenda
+  const b = mk({ calendar: [same], yt: ytOk([{ id: "youtube:v2", title: "Direct en même temps", start: same.start, type: "live" }]) });
   const two = current = await boot(b);
   assert.equal(two.els.get("event-same").hidden, false); assert.match(two.els.get("event-same").textContent, /Au même moment : Direct en même temps/);
-  void at;
 });
 
 test("changer d'événement ne perd rien : style, phrase, mention et co-streamers restent, l'aperçu suit ; la liste se referme", async () => {

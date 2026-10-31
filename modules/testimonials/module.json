@@ -5,8 +5,8 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.0.1",
-  "minCore": "0.2.5",
+  "version": "1.1.0",
+  "minCore": "0.5.0",
   "description": {
     "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
     "en": "Collect reviews: a shareable “Leave a review” link, every review waits for your approval before it appears, with optional stars, a grid or slow scrolling, favourites and three reviews on the home page."
@@ -570,6 +570,66 @@
           }
         }
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "reviews",
+      "label": {
+        "fr": "Avis de la communauté",
+        "en": "Community reviews"
+      },
+      "description": {
+        "fr": "Un avis déjà publié sur votre site, affiché à tour de rôle avec le prénom ou pseudo et les étoiles.",
+        "en": "A review already published on your site, shown in turn with the first name or nickname and the stars."
+      },
+      "fit": "fluid",
+      "ratios": {
+        "min": 0.8,
+        "max": 6
+      },
+      "minSize": {
+        "width": 320,
+        "height": 140
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "seconds",
+          "type": "number",
+          "min": 4,
+          "max": 120,
+          "integer": true,
+          "default": 12,
+          "label": {
+            "fr": "Secondes par avis",
+            "en": "Seconds per review"
+          },
+          "help": {
+            "fr": "Le temps pendant lequel chaque avis reste affiché, de 4 à 120 secondes.",
+            "en": "How long each review stays on screen, from 4 to 120 seconds."
+          },
+          "example": "12"
+        },
+        {
+          "id": "count",
+          "type": "number",
+          "min": 1,
+          "max": 20,
+          "integer": true,
+          "default": 10,
+          "label": {
+            "fr": "Nombre d'avis",
+            "en": "Number of reviews"
+          },
+          "help": {
+            "fr": "Combien d'avis tournent, dans l'ordre choisi dans le module (les favoris d'abord, par défaut). De 1 à 20.",
+            "en": "How many reviews take turns, in the order chosen in the module (favourites first, by default). From 1 to 20."
+          },
+          "example": "10"
+        }
+      ]
     }
   ]
 }

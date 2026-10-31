@@ -165,5 +165,8 @@
   "qrAlt": "QR code to the review form",
   "shareHome": "To show reviews on your home page: go to **Home**, add a section and choose “Featured reviews” (3 reviews by default).",
   "shareNoPage": "This module has no public page: give it an address in the General tab to get the link to share.",
-  "withdrawSelect": "Tap the field to select the address, then copy it (or bookmark this page)."
+  "withdrawSelect": "Tap the field to select the address, then copy it (or bookmark this page).",
+  "elementTitle": "Community reviews",
+  "demoName": "Camille",
+  "demoReview": "Example review: a very warm welcome, you feel at home."
 }
