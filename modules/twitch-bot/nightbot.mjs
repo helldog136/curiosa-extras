@@ -203,7 +203,7 @@ export function evaluateRow(row, { prefix = "!", conflictOf = () => null } = {})
   if (st.swaps.length) notes.push({ c: "vars", d: st.swaps.slice(0, 6).join(" ; ") });
   if (st.braces) notes.push({ c: "braces" });
   if (st.urlfetch) notes.push({ c: "urlfetch" });
-  for (const b of [...new Set(st.bad)].slice(0, 4)) reasons.push({ c: "var_bad", d: b });
+  for (const b of [...new Set(st.bad)].slice(0, 4)) reasons.push({ c: /^\$\((eval|querystring)\b/.test(b) ? "var_unsafe" : "var_bad", d: b });
   if (!reasons.length) {
     const ck = checkTemplate(text, row.kind === "timer" ? "timer" : "custom", prefix);
     if (!ck.ok) reasons.push({ c: `text_${ck.code}`, d: ck.vars ? ck.vars.map((x) => `{${x}}`).join(" ") : ck.name });

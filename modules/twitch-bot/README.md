@@ -20,7 +20,7 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 
 ## Dates de validité (commandes et timers)
 Une commande ou un timer peut n'être active que sur une **période** : par exemple `!movember` du 1er au 30 novembre, ou `!subtember` en septembre, **chaque année** toute seule. Dans le formulaire : deux sélecteurs jour / mois pour le début et la fin (la fin est incluse), une case **Chaque année**, et des années à indiquer seulement si la période ne revient pas. Une période peut passer d'une année à l'autre (du 15 décembre au 15 janvier). Les erreurs s'affichent sous le champ (« Le 31 février n'existe pas »), et la phrase « Active du 1er novembre au 30 novembre, chaque année » s'affiche en aperçu.
-- La période est regardée **au moment** où quelqu'un tape la commande (ou qu'un timer est évalué) : aucun minuteur. Elle suit votre fuseau horaire ; sans fuseau réglé, c'est l'UTC et l'écran le dit.
+- La période est regardée **au moment** où une personne tape la commande (ou qu'un timer est évalué) : aucun minuteur. Elle suit votre fuseau horaire ; sans fuseau réglé, c'est l'UTC et l'écran le dit.
 - Hors période, la commande **ne répond pas**, mais reste visible et modifiable : l'état est « Hors période : se réactive le 1er novembre », et le journal le dit aussi. Ce n'est pas « désactivée » : la case « Activée » décochée l'emporte toujours.
 - Les commandes d'avant n'ont pas de période : elles restent toujours actives.
 
@@ -44,7 +44,7 @@ Sur la page des commandes, **« Importer mes commandes et timers depuis Nightbot
 ## Si vous venez de Nightbot
 | Chez Nightbot | Ici | |
 |---|---|---|
-| Niveaux tout le monde, abonné, modération, propriétaire | Tout le monde, personnes abonnées, équipe de modération, seulement vous | repris |
+| Niveaux tout le monde, abonnement, modération, propriétaire | Tout le monde, personnes abonnées, équipe de modération, seulement vous | repris |
 | Niveau « habitué » (regular) | — | **non repris** : le bot ne tient aucune liste de personnes ; l'import le remplace par « personnes abonnées » et le dit |
 | Attente d'une commande | Attente pour tout le monde (+ une attente par personne, en plus) | repris |
 | `$(user)`, `$(touser)`, `$(count)` | `{utilisateur}`, `{cible}`, `{compteur}` | traduits à l'import |

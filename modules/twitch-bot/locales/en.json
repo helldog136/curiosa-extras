@@ -485,7 +485,7 @@
   "nb_r_name_bad": "The name “{d}” does not work: letters, digits, - and _ only, 25 characters at most.",
   "nb_r_name_reserved": "The name “{d}” is reserved.",
   "nb_r_timer_name_long": "The timer name is longer than 40 characters.",
-  "nb_r_var_bad": "The piece {d} has no equivalent (for safety, the bot runs no program and does not use what people type to build an address).",
+  "nb_r_var_bad": "The piece {d} has no equivalent here.",
   "nb_r_text_empty": "The message is empty.",
   "nb_r_text_long": "The message is longer than 450 characters.",
   "nb_r_text_unknown": "Unknown pieces: {d}.",
@@ -562,5 +562,6 @@
   "per_f_year_help": "Untick “Every year” and give the years, for example 2026.",
   "state_outside": "Outside its period",
   "nb_f_period": "Period of {name} (optional)",
-  "nb_f_period_help": "Nightbot has no dates: write them if you wish. For example 01/11 - 30/11 (every year) or 01/11/2026 - 30/11/2026 (one time)."
+  "nb_f_period_help": "Nightbot has no dates: write them if you wish. For example 01/11 - 30/11 (every year) or 01/11/2026 - 30/11/2026 (one time).",
+  "nb_r_var_unsafe": "The piece {d} is not taken over, for safety: the bot runs no program and does not use what people type to build an address."
 }

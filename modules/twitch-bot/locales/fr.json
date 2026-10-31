@@ -485,7 +485,7 @@
   "nb_r_name_bad": "Le nom « {d} » ne convient pas : lettres, chiffres, - et _ seulement, 25 caractères au plus.",
   "nb_r_name_reserved": "Le nom « {d} » est réservé.",
   "nb_r_timer_name_long": "Le nom du timer dépasse 40 caractères.",
-  "nb_r_var_bad": "Le morceau {d} n'a pas d'équivalent (par sécurité, le bot n'exécute pas de programme et n'utilise pas ce qu'on tape pour construire une adresse).",
+  "nb_r_var_bad": "Le morceau {d} n'a pas d'équivalent ici.",
   "nb_r_text_empty": "Le message est vide.",
   "nb_r_text_long": "Le message dépasse 450 caractères.",
   "nb_r_text_unknown": "Morceaux inconnus : {d}.",
@@ -562,5 +562,6 @@
   "per_f_year_help": "Décochez « Chaque année » et indiquez les années, par exemple 2026.",
   "state_outside": "Hors période",
   "nb_f_period": "Période de {name} (facultatif)",
-  "nb_f_period_help": "Nightbot n'a pas de dates : écrivez-les si vous voulez. Par exemple 01/11 - 30/11 (chaque année) ou 01/11/2026 - 30/11/2026 (une fois)."
+  "nb_f_period_help": "Nightbot n'a pas de dates : écrivez-les si vous voulez. Par exemple 01/11 - 30/11 (chaque année) ou 01/11/2026 - 30/11/2026 (une fois).",
+  "nb_r_var_unsafe": "Le morceau {d} n'est pas repris, par sécurité : le bot n'exécute pas de programme et n'utilise pas ce qu'on tape pour construire une adresse."
 }

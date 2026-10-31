@@ -84,7 +84,7 @@ test("traduction : chaque ancienne écriture $(…) devient un morceau d'ici ; l
   for (const [from, what] of Object.entries(impossible)) {
     const r = ev(cmd("!x", from));
     assert.equal(r.status, "impossible", from);
-    assert.ok(r.reasons.some((x) => x.c === "var_bad" && x.d.includes(what)), `${from} → ${JSON.stringify(r.reasons)}`);
+    assert.ok(r.reasons.some((x) => ["var_bad", "var_unsafe"].includes(x.c) && x.d.includes(what)), `${from} → ${JSON.stringify(r.reasons)}`);
   }
   assert.equal(ev(cmd("!x", "pas fermé $(user")).status, "impossible");
 });
