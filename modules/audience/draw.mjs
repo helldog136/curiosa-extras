@@ -114,7 +114,7 @@ export async function openNew(ctx, value, { who = "admin", now = Date.now() } = 
       await archive(ctx, rec, now);
     }
     const data = {
-      k: newId(), title: value.title, keyword: value.keyword || "", level: value.level || "all", site: value.site !== false, minutes: value.minutes ?? null, winners: P.winnersCount(value.winners),
+      k: newId(), title: value.title, keyword: P.normKeyword(value.keyword).value || "", level: value.level || "all", site: value.site !== false, minutes: value.minutes ?? null, winners: P.winnersCount(value.winners),
       status: "open", gen: 0, openedAt: iso(now), expiresAt: iso(now + (value.minutes ? value.minutes * 60_000 : DRAW.openMaxMs)), untilClosed: !value.minutes, closedAt: null,
       count: 0, total: 0, picked: [], pickedAt: null, purged: false,
     };
@@ -199,6 +199,7 @@ export async function enterChat(ctx, args, now = Date.now()) {
   try {
     const platform = typeof args.platform === "string" ? args.platform.trim().toLowerCase() : "";
     if (!P.platformOk(platform) || platform === P.SOURCES.site) return no("invalid");
+    if (typeof args.pseudo !== "string") return no("invalid");
     const pseudo = P.chatPseudo(args.pseudo), ident = P.chatIdent(args.login, args.pseudo);
     if (!pseudo || !ident) return no("invalid");
     const cur = await current(ctx, now);
@@ -228,6 +229,7 @@ export async function enterSite(ctx, { token, name, conn }, join, now = Date.now
     if (typeof name !== "string" || !L.clean(name, 200)) return err("pseudo_short");
     const room = await ensureDrawRoom(ctx);
     if (!room) return err("busy");
+    if (L.tokenOk(token) && (await K.byKey(ctx, ecol(cur), K.idOf(room, token)))) return err("already");   // déjà inscrite : on ne touche pas à son pseudo
     const r = await join(ctx, { room: DRAW.room, token, conn, pseudo: name });
     if (!r.ok) return err(r.error === "room_full" ? "full" : r.error, r.retryAfter ? { retryAfter: r.retryAfter } : {});
     if (r.participant.muted) return err("muted");
@@ -269,13 +271,14 @@ async function eligiblePool(ctx, d) {
 
 /** Tire `k` personnes dans le tirage `rec` (DANS le verrou). Une personne mise en sourdine depuis son inscription est écartée sans compter. */
 async function pickIn(ctx, rec, d, k, rnd, now) {
+  const keep = { status: d.status, closedAt: d.closedAt };   // un tirage qui ne tire personne ne ferme rien
   if (d.status === "open") { d.status = "closed"; d.closedAt = iso(Math.min(now, P.deadlineOf(d))); }
   const pool = await eligiblePool(ctx, d);
-  if (!pool.length) { await ctx.api.store.update(rec.id, d, { key: "cur" }); return err("empty"); }
+  if (!pool.length) { Object.assign(d, keep); return err("empty"); }
   const room = await K.getRoom(ctx, DRAW.room);
   const { picked: won, rejected } = await P.drawFrom(pool, k, rnd, async (c) => { if (!room) return true; const p = await K.participantById(ctx, room, c.k); return !(p && p.data.muted); });
   for (const c of rejected) { await ctx.api.store.remove(c.id); d.count = Math.max(0, (d.count || 0) - 1); }
-  if (!won.length) { await ctx.api.store.update(rec.id, d, { key: "cur" }); return err("empty"); }
+  if (!won.length) { Object.assign(d, keep); await ctx.api.store.update(rec.id, d, { key: "cur" }); return err("empty"); }
   const at = iso(now);
   for (const c of won) await ctx.api.store.update(c.id, { k: c.k, pseudo: c.pseudo, src: c.src, at: c.at, won: true }, { key: c.k });
   d.picked = [...(d.picked ?? []), ...won.map((c) => ({ k: c.k, pseudo: c.pseudo, src: c.src, at }))].slice(-200);
