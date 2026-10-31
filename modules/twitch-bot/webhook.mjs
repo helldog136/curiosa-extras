@@ -5,6 +5,8 @@ const es = await import(`./eventsub.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { readState, updateState, seenBefore } = await import(`./state.mjs${v}`);
 const { processChat } = await import(`./engine.mjs${v}`);
+const { processTimers } = await import(`./timers.mjs${v}`);
+const { feedDraw } = await import(`./draw.mjs${v}`);
 const { processRedemption, reconcile } = await import(`./redeem.mjs${v}`);
 const { ensureListening } = await import(`./listen.mjs${v}`);
 
@@ -58,7 +60,10 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
     const done = (async () => {
       await reconcile(ctx, { now }).catch(() => {});   // à chaque évènement : les résultats de la maison et les échanges trop longs sont vus (au plus toutes les 5 secondes)
       if ((lastNote.get(ctx.instance.key) ?? 0) < now - 60_000) { lastNote.set(ctx.instance.key, now); await updateState(ctx, (d) => { d.lastMessageAt = now; }); }
-      await processChat(ctx, body.chat, { now });
+      const r = await processChat(ctx, body.chat, { now });
+      // Les timers et l'alimentation d'un tirage regardent chaque message (jamais de minuteur de fond) ; une erreur de l'un ne gêne jamais l'autre.
+      await processTimers(ctx, body.chat, { now, commandSent: r?.handled === true && r.result === "sent" }).catch(() => {});
+      await feedDraw(ctx, body.chat, { now }).catch(() => {});
     })().catch((e) => { console.error(`[twitch-bot] ${ctx.instance.key}: traitement d'un message en échec (${e?.message ?? e})`); });
     return { response: reply(204), done };
   } catch (e) {

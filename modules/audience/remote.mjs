@@ -9,6 +9,7 @@ import { randomBytes } from "node:crypto";
 const V = new URL(import.meta.url).search;
 const L = await import(`./lib.mjs${V}`);
 const K = await import(`./core.mjs${V}`);
+const D = await import(`./draw.mjs${V}`);
 const { LIMITS } = L;
 
 export const SERVICE = "audience.remote";
@@ -49,9 +50,14 @@ export async function roomsView(ctx, now = Date.now()) {
   return out;
 }
 
+/** Le panneau « Tirage au sort » de Participation elle-même : il se montre après ceux des modules branchés, avec la même forme (téléphone et dock). */
+async function ownPanel(ctx, now) {
+  try { const p = L.sanitizePanel(await D.remotePanel(ctx, now)); return p ? { id: "audience", ...p } : null; } catch { return null; }
+}
+
 export async function remoteState(ctx, now = Date.now()) {
-  const [panels, rooms] = await Promise.all([collectPanels(ctx), roomsView(ctx, now)]);
-  return { ok: true, now, panels, rooms };
+  const [panels, rooms, mine] = await Promise.all([collectPanels(ctx), roomsView(ctx, now), ownPanel(ctx, now)]);
+  return { ok: true, now, panels: mine ? [...panels, mine] : panels, rooms };
 }
 
 /** Une réponse de refus de la télécommande : { ok: false, error: code }. */
@@ -76,6 +82,7 @@ export async function pressPanel(ctx, { panel, action, values }) {
 
 /** Les gestes de la télécommande elle-même : sourdine et salle à vider. */
 async function pressOwn(ctx, action, values) {
+  if (action.startsWith("draw-")) return D.pressDraw(ctx, action, { who: "remote" });
   if (action === "mute") {
     const room = await K.getRoom(ctx, values.room);
     if (!room) return no("gone");

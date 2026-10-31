@@ -117,7 +117,7 @@ test("dock : mêmes boutons, même formulaire « A ou B ? » et mêmes valeurs q
     const root = page.root;
     assert.equal(page.live.textContent, fr.remoteConnected);
     const heads = root.all("h2").map((h) => h.textContent);
-    assert.deepEqual(heads, ["Sondages", fr.remoteRooms]);
+    assert.deepEqual(heads, ["Sondages", fr.drawRemoteTitle, fr.remoteRooms], "Participation ajoute son panneau « Tirage au sort » après ceux des modules branchés");
     const btns = root.all("button").map((b) => b.textContent);
     labels[extra] = { heads, btns, fields: root.all("label").map((l) => l.textContent), tones: root.all("button").map((b) => b.className.replace(/ar-(btn|mini) ?/, "")) };
     assert.deepEqual(btns.slice(0, 3), ["Lancer", "Suivant", "Arrêter"]);
@@ -230,7 +230,7 @@ test("administration : l'adresse du dock est montrée à côté de celle du tél
     const c = audienceCtx({ locale, messages: msgs }); const { remoteKey: key } = await meta(c);
     const blocks = await def.adminPanel(c, { query: {} });
     const copies = blocks.filter((b) => b.type === "copy");
-    assert.deepEqual(copies.map((b) => b.label), [msgs.remoteAddress, msgs.dockAddress]);
+    assert.deepEqual(copies.map((b) => b.label), [msgs.remoteAddress, msgs.dockAddress, msgs.drawScreenAddress]);
     const [phone, dock] = copies.map((b) => b.text);
     assert.equal(phone, `${c.api.siteUrl}/m/${c.instance.key}/remote?k=${key}`);
     assert.equal(dock, `${phone}&dock=1`, "une seule clé secrète : le dock n'a pas de second secret");
@@ -258,8 +258,8 @@ test("dock : textes en français et en anglais à parité exacte, mêmes variabl
   assert.deepEqual(dockKeys, ["dockTitle", "dockSteps", "dockAddress", "dockOpen", "dockAgain"]);
   for (const k of dockKeys) { assert.ok(fr[k] && en[k], k); assert.ok(!/<[a-z!/]/i.test(fr[k] + en[k]), `${k} : du texte, pas du HTML`); }
   assert.equal(fr.dockSteps.split("\n").filter((l) => /^\d\. /.test(l)).length, 3); assert.equal(en.dockSteps.split("\n").filter((l) => /^\d\. /.test(l)).length, 3);
-  assert.equal(manifest.version, "1.1.0"); assert.equal(manifest.minCore, "0.2.5"); assert.equal(manifest.apiVersion, 2);
-  assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["moderate", "remote.use"], "aucun nouveau droit : le dock est derrière le même secret");
+  assert.equal(manifest.version, "1.2.0"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.apiVersion, 2);
+  assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["draw.manage", "moderate", "remote.use"], "le dock reste derrière le même secret ; seul le tirage a son droit");
   assert.equal(manifest.dataVersion, undefined, "aucune donnée nouvelle, aucune migration");
 });
 

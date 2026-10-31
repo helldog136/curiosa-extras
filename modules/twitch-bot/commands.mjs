@@ -5,6 +5,7 @@
 // leur titre, leur adresse et leur nom appartiennent aux modules qui les fournissent et sont lus au moment de répondre.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { checkTemplate, used, allowedFor } = await import(`./variables.mjs${v}`);
+const { parsePeriod, readPeriod, isOpen, nextOpening } = await import(`./period.mjs${v}`);
 
 export const ROLES = ["everyone", "subscribers", "mods", "owner"];
 export const ROLE_LEVEL = { everyone: 0, subscribers: 1, mods: 2, owner: 3 };
@@ -13,7 +14,7 @@ export const MAX_ALIASES = 5;
 export const MAX_CUSTOM = 100;
 export const MAX_DELAY = 3600;
 /** Mots réservés aux commandes d'arrêt de la maison (kill.mjs) : aucune autre commande ne peut les prendre. */
-export const RESERVED = ["stop", "start"];
+export const RESERVED = ["stop", "start", "addcom", "editcom", "delcom", "commands"];
 export const GROUP_ID = "reseaux";
 
 /** Les commandes toutes prêtes. `needs` : ce dont elles ont besoin pour répondre. Le texte par défaut vient des textes traduits (`cmd_<id>_text`). */
@@ -69,12 +70,13 @@ export function parseDelay(v) {
 
 /* ───────────── Le document de configuration ───────────── */
 
-export const emptyConfig = () => ({ v: 1, custom: [], builtin: {}, partners: {}, networks: {}, group: {} });
+export const emptyConfig = () => ({ v: 1, custom: [], builtin: {}, partners: {}, networks: {}, group: {}, timers: [] });
 const rec = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 /** Relit le document avec prudence : une forme inattendue ne casse rien. */
 export function readConfig(data) {
   const d = rec(data), c = emptyConfig();
   c.custom = Array.isArray(d.custom) ? d.custom.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];
+  c.timers = Array.isArray(d.timers) ? d.timers.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];
   for (const k of ["builtin", "partners", "networks", "group"]) c[k] = rec(d[k]);
   return c;
 }
@@ -83,6 +85,9 @@ export async function loadConfig(ctx) {
   return { id: row?.id ?? null, data: readConfig(row?.data) };
 }
 const chain = new Map();
+const bumps = new Map();
+/** Un numéro qui change à chaque écriture de la configuration : de quoi savoir qu'une copie gardée en mémoire est périmée. */
+export const configVersion = (ctx) => bumps.get(ctx.instance.key) ?? 0;
 /** Lit, modifie, écrit — l'une après l'autre pour une même instance (deux modifications simultanées ne s'écrasent pas). `fn(data)` peut modifier `data` et rend le résultat. */
 export function mutate(ctx, fn) {
   const k = ctx.instance.key;
@@ -91,10 +96,18 @@ export function mutate(ctx, fn) {
     const result = await fn(cfg.data);
     if (result?.ok === false) return result;
     if (cfg.id) await ctx.api.store.update(cfg.id, cfg.data); else await ctx.api.store.add("botConfig", cfg.data);
+    bumps.set(k, (bumps.get(k) ?? 0) + 1);
     return result;
   });
   chain.set(k, run);
   return run;
+}
+
+/** Migration des données 3 → 4 : ajoute la liste de timers (vide) au document de configuration s'il existe ; ne touche à rien d'autre. */
+export async function migrateConfig(ctx) {
+  const row = (await ctx.api.store.list("botConfig", { limit: 1 }))[0];
+  if (!row || (row.data && Array.isArray(row.data.timers))) return;
+  await ctx.api.store.update(row.id, { ...rec(row.data), timers: [] });
 }
 
 /* ───────────── Les commandes telles qu'elles sont (réglage + ce que fournissent les autres modules) ───────────── */
@@ -103,7 +116,7 @@ export const stripScheme = (u) => String(u ?? "").replace(/^https?:\/\//i, "").r
 
 const roleOf = (v) => (ROLES.includes(v) ? v : "everyone");
 const small = (v) => (Number.isInteger(v) && v >= 0 && v <= MAX_DELAY ? v : null);
-const base = (o, extra) => ({ aliases: Array.isArray(o.aliases) ? o.aliases : [], role: roleOf(o.role), cdGlobal: small(o.cdGlobal), cdUser: small(o.cdUser), ...extra });
+const base = (o, extra) => ({ period: readPeriod(o.period), aliases: Array.isArray(o.aliases) ? o.aliases : [], role: roleOf(o.role), cdGlobal: small(o.cdGlobal), cdUser: small(o.cdUser), ...extra });
 
 /**
  * La liste de TOUTES les commandes, avec leur état.
@@ -111,7 +124,7 @@ const base = (o, extra) => ({ aliases: Array.isArray(o.aliases) ? o.aliases : []
  * Chaque commande : { key, kind, id, label, name, aliases, text, role, cdGlobal, cdUser, enabled, state: "on" | "off" | "hidden" | "missing", why, vars: {…} }
  *   state "hidden" : il manque quelque chose pour répondre (`why` le dit) ; "missing" : la fiche ou le lien d'origine a disparu (la commande est en pause) ; "off" : désactivée.
  */
-export function catalog(cfg, src, t) {
+export function catalog(cfg, src, t, { now = Date.now(), timeZone = "UTC" } = {}) {
   const out = [];
   for (const c of cfg.custom) out.push({ key: `custom:${c.id}`, kind: "custom", id: c.id, label: c.name, name: c.name, ...base(c, {}), text: String(c.text ?? ""), enabled: c.enabled !== false, vars: {} });
   for (const b of BUILTINS) {
@@ -140,7 +153,8 @@ export function catalog(cfg, src, t) {
     if (c.kind === "partner" || c.kind === "network") {
       if (c.missing) { c.state = "missing"; c.why = c.kind === "partner" ? "partner_missing" : "network_missing"; continue; }
     }
-    if (!c.enabled) { c.state = "off"; continue; }
+    if (!c.enabled) { c.state = "off"; continue; }   // l'interrupteur « activée » à faux l'emporte toujours sur la période
+    if (c.period && !isOpen(c.period, now, timeZone)) { c.state = "outside"; c.why = "outside_period"; c.reopen = nextOpening(c.period, now, timeZone); continue; }
     if (c.kind === "builtin") {
       if (c.needs === "planning" && !src.planning?.installed) { c.state = "hidden"; c.why = "planning_absent"; }
       else if (c.needs === "followers" && !src.followers?.available) { c.state = "hidden"; c.why = "followers_absent"; }
@@ -216,7 +230,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     let item = current;
     if (!item && (kind === "partner" || kind === "network")) return errorOf("unknown");
     const key = `${kind}:${id}`;
-    const draft = { enabled: item?.enabled ?? true, name: item?.name ?? "", aliases: item?.aliases ?? [], text: item?.text ?? "", role: item?.role ?? "everyone", cdGlobal: item?.cdGlobal ?? null, cdUser: item?.cdUser ?? null };
+    const draft = { enabled: item?.enabled ?? true, name: item?.name ?? "", aliases: item?.aliases ?? [], text: item?.text ?? "", role: item?.role ?? "everyone", cdGlobal: item?.cdGlobal ?? null, cdUser: item?.cdUser ?? null, period: item?.period ?? null };
     if (f.enabled !== undefined) draft.enabled = f.enabled === true;
     if (f.name !== undefined) {
       const n = norm(f.name, prefix);
@@ -228,14 +242,15 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     draft.aliases = draft.aliases.filter((a) => a !== draft.name);
     if (f.role !== undefined) { if (!ROLES.includes(f.role)) return errorOf("role"); draft.role = f.role; }
     for (const [field, k] of [["cdGlobal", "cdGlobal"], ["cdUser", "cdUser"]]) if (f[field] !== undefined) { const d = parseDelay(f[field]); if (d.error) return errorOf("delay"); draft[k] = d.value; }
+    if (f.period !== undefined) { const p = parsePeriod(f.period); if (!p.ok) return errorOf("period", { field: p.field, reason: p.reason, month: p.month, day: p.day, year: p.year }); draft.period = p.value; }
     if (f.text !== undefined || creating) {
       const text = f.text !== undefined ? f.text : "";
       const ok = checkTemplate(text, kind === "builtin" ? "builtin" : kind, prefix);
-      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed });
+      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed, name: ok.name });
       draft.text = ok.text;
     } else if (kind !== "builtin" && kind !== "group") {
       const ok = checkTemplate(draft.text, kind, prefix);
-      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed });
+      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed, name: ok.name });
     }
     // Collisions : seulement avec les AUTRES commandes enregistrées.
     const reserved = [draft.name, ...draft.aliases].find((w) => RESERVED.includes(w));
@@ -243,13 +258,13 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     const clash = collisions(list.filter((c) => !(creating && c.key === key)), key, [draft.name, ...draft.aliases]);
     if (clash.length) return errorOf("collision", { word: clash[0].word, with: clash[0].with.name, withLabel: clash[0].with.label, withKind: clash[0].with.kind });
 
-    const rec0 = { enabled: draft.enabled, name: draft.name, aliases: draft.aliases, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser };
+    const rec0 = { enabled: draft.enabled, name: draft.name, aliases: draft.aliases, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}) };
     if (kind === "custom") {
       const entry = { id, ...rec0, text: draft.text };
       if (creating) cfg.custom.push(entry); else cfg.custom = cfg.custom.map((c) => (c.id === id ? entry : c));
     } else if (kind === "builtin") {
       const def = BUILTINS.find((b) => b.id === id);
-      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser };
+      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}) };
       if (draft.name !== def.name) o.name = draft.name;
       if (JSON.stringify(draft.aliases) !== JSON.stringify(def.aliases)) o.aliases = draft.aliases;
       if (f.text !== undefined && draft.text !== current.defaultText) o.text = draft.text;
@@ -258,7 +273,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     } else if (kind === "partner") cfg.partners[id] = { ...rec0, text: draft.text, title: current.label };
     else if (kind === "network") cfg.networks[id] = { ...rec0, text: draft.text, title: current.label };
     else if (kind === "group") {
-      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, name: draft.name, aliases: draft.aliases };
+      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, name: draft.name, aliases: draft.aliases, ...(draft.period ? { period: draft.period } : {}) };
       if (f.text !== undefined && draft.text !== current.defaultText) o.text = draft.text;
       cfg.group = o;
     } else return errorOf("unknown");
