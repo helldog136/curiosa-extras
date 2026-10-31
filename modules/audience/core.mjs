@@ -149,6 +149,8 @@ export async function clearRoom(ctx, key, now = Date.now()) {
 const view = (rec) => ({ id: rec.data.k, pseudo: rec.data.pseudo ?? null, muted: rec.data.muted === true });
 export const idOf = (room, token) => L.participantId(room.salt, token);
 export const findParticipant = async (ctx, room, token) => byKey(ctx, pcol(room), idOf(room, token));
+/** La fiche d'une personne de la salle d'après son identifiant (pas son code). Sert au tirage au sort. */
+export const participantById = async (ctx, room, pid) => { const r = await byKey(ctx, pcol(room), pid); return r && !r.data.n ? r : null; };
 
 /**
  * Enregistre (ou retrouve) la personne dans la salle. Renvoie { participant, isNew } ou { error }.

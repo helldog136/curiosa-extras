@@ -19,19 +19,20 @@
     {
       "id": "audience",
       "name": "Participation",
-      "description": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone ou en panneau (dock) dans OBS et une mise à jour en direct douce pour l'écran. S'installe toute seule avec les animations qui en ont besoin.",
+      "description": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone ou en panneau (dock) dans OBS, une mise à jour en direct douce pour l'écran et le tirage au sort (chat du stream et page d'inscription du site). S'installe toute seule avec les animations qui en ont besoin.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/audience",
       "ref": "v1.28.0",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🙌",
       "requires": {
-        "core": "0.2.5"
+        "core": "0.5.0"
       },
       "offers": [
-        "audience.session"
+        "audience.session",
+        "audience.draw"
       ],
       "needs": [
         {
