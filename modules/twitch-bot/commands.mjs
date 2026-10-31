@@ -13,7 +13,7 @@ export const MAX_ALIASES = 5;
 export const MAX_CUSTOM = 100;
 export const MAX_DELAY = 3600;
 /** Mots réservés aux commandes d'arrêt de la maison (kill.mjs) : aucune autre commande ne peut les prendre. */
-export const RESERVED = ["stop", "start"];
+export const RESERVED = ["stop", "start", "addcom", "editcom", "delcom", "commands"];
 export const GROUP_ID = "reseaux";
 
 /** Les commandes toutes prêtes. `needs` : ce dont elles ont besoin pour répondre. Le texte par défaut vient des textes traduits (`cmd_<id>_text`). */
@@ -69,12 +69,13 @@ export function parseDelay(v) {
 
 /* ───────────── Le document de configuration ───────────── */
 
-export const emptyConfig = () => ({ v: 1, custom: [], builtin: {}, partners: {}, networks: {}, group: {} });
+export const emptyConfig = () => ({ v: 1, custom: [], builtin: {}, partners: {}, networks: {}, group: {}, timers: [] });
 const rec = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 /** Relit le document avec prudence : une forme inattendue ne casse rien. */
 export function readConfig(data) {
   const d = rec(data), c = emptyConfig();
   c.custom = Array.isArray(d.custom) ? d.custom.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];
+  c.timers = Array.isArray(d.timers) ? d.timers.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];
   for (const k of ["builtin", "partners", "networks", "group"]) c[k] = rec(d[k]);
   return c;
 }
@@ -83,6 +84,9 @@ export async function loadConfig(ctx) {
   return { id: row?.id ?? null, data: readConfig(row?.data) };
 }
 const chain = new Map();
+const bumps = new Map();
+/** Un numéro qui change à chaque écriture de la configuration : de quoi savoir qu'une copie gardée en mémoire est périmée. */
+export const configVersion = (ctx) => bumps.get(ctx.instance.key) ?? 0;
 /** Lit, modifie, écrit — l'une après l'autre pour une même instance (deux modifications simultanées ne s'écrasent pas). `fn(data)` peut modifier `data` et rend le résultat. */
 export function mutate(ctx, fn) {
   const k = ctx.instance.key;
@@ -91,10 +95,18 @@ export function mutate(ctx, fn) {
     const result = await fn(cfg.data);
     if (result?.ok === false) return result;
     if (cfg.id) await ctx.api.store.update(cfg.id, cfg.data); else await ctx.api.store.add("botConfig", cfg.data);
+    bumps.set(k, (bumps.get(k) ?? 0) + 1);
     return result;
   });
   chain.set(k, run);
   return run;
+}
+
+/** Migration des données 3 → 4 : ajoute la liste de timers (vide) au document de configuration s'il existe ; ne touche à rien d'autre. */
+export async function migrateConfig(ctx) {
+  const row = (await ctx.api.store.list("botConfig", { limit: 1 }))[0];
+  if (!row || (row.data && Array.isArray(row.data.timers))) return;
+  await ctx.api.store.update(row.id, { ...rec(row.data), timers: [] });
 }
 
 /* ───────────── Les commandes telles qu'elles sont (réglage + ce que fournissent les autres modules) ───────────── */
@@ -231,11 +243,11 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     if (f.text !== undefined || creating) {
       const text = f.text !== undefined ? f.text : "";
       const ok = checkTemplate(text, kind === "builtin" ? "builtin" : kind, prefix);
-      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed });
+      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed, name: ok.name });
       draft.text = ok.text;
     } else if (kind !== "builtin" && kind !== "group") {
       const ok = checkTemplate(draft.text, kind, prefix);
-      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed });
+      if (!ok.ok) return errorOf(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed, name: ok.name });
     }
     // Collisions : seulement avec les AUTRES commandes enregistrées.
     const reserved = [draft.name, ...draft.aliases].find((w) => RESERVED.includes(w));

@@ -56,6 +56,35 @@ export async function readLog(ctx) {
 }
 export const clearLog = (ctx) => serial(ctx, "log", async () => { const r = await row(ctx, "botLog"); if (r) await ctx.api.store.remove(r.id); });
 
+/* ───────────── Compteurs des commandes ({compteur}) ───────────── */
+
+export const COUNTERS_MAX = 300;
+const MAX_COUNT = 1_000_000_000;
+export async function readCounters(ctx) {
+  const c = rec((await row(ctx, "botCounters"))?.data?.counts), out = {};
+  for (const [k, n] of Object.entries(c)) if (Number.isInteger(n) && n >= 0 && n <= MAX_COUNT) out[k] = n;
+  return out;
+}
+/** Fixe le compteur d'une commande (0 à un milliard) ; au plus 300 compteurs gardés (les plus anciens partent d'abord). */
+export function setCounter(ctx, key, value) {
+  return serial(ctx, "counters", async () => {
+    const r = await row(ctx, "botCounters");
+    const counts = { ...rec(r?.data?.counts) };
+    delete counts[key];
+    counts[key] = Math.min(MAX_COUNT, Math.max(0, Math.trunc(Number(value) || 0)));
+    for (const k of Object.keys(counts).slice(0, Math.max(0, Object.keys(counts).length - COUNTERS_MAX))) delete counts[k];
+    if (r) await ctx.api.store.update(r.id, { counts }); else await ctx.api.store.add("botCounters", { counts });
+  });
+}
+export function dropCounter(ctx, key) {
+  return serial(ctx, "counters", async () => {
+    const r = await row(ctx, "botCounters");
+    if (!r || !(key in rec(r.data?.counts))) return;
+    const counts = { ...rec(r.data.counts) }; delete counts[key];
+    await ctx.api.store.update(r.id, { counts });
+  });
+}
+
 /* ───────────── En mémoire : délais, débit, messages vus ───────────── */
 
 const mem = new Map();

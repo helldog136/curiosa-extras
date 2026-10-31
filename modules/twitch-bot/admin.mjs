@@ -6,9 +6,12 @@ const { settingsOf } = await import(`./settings.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
-const { allowedFor } = await import(`./variables.mjs${v}`);
+const { shownFor, used } = await import(`./variables.mjs${v}`);
+const { saveError } = await import(`./errors.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
+const IA = await import(`./importAdmin.mjs${v}`);
+const TA = await import(`./timersAdmin.mjs${v}`);
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (v, n) => { const s = String(v ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
@@ -27,25 +30,7 @@ const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connec
 
 /* ───────────── Messages d'erreur d'enregistrement ───────────── */
 
-/** Une erreur de `saveCommand` en phrase, avec quoi faire. */
-export function saveError(ctx, r) {
-  const t = ctx.t;
-  switch (r.code) {
-    case "name": return t("err_name", { value: r.value ?? "" });
-    case "alias": return t("err_alias", { value: r.value ?? "" });
-    case "aliases_many": return t("err_aliases_many");
-    case "collision": return t("err_collision", { word: r.word, with: r.with });
-    case "text_unknown": return t("err_text_unknown", { vars: (r.vars ?? []).map((v) => `{${v}}`).join(", "), allowed: (r.allowed ?? []).map((v) => `{${v}}`).join(" ") });
-    case "text_empty": return t("err_text_empty");
-    case "text_long": return t("err_text_long");
-    case "text_start": return t("err_text_start");
-    case "delay": return t("err_delay");
-    case "role": return t("err_role");
-    case "too_many": return t("err_too_many");
-    case "source_missing": return t("err_source_missing");
-    default: return t("err_unknown");
-  }
-}
+export { saveError };
 
 /* ───────────── Le décor commun ───────────── */
 
@@ -181,7 +166,7 @@ export const delayFields = (t, c) => [
   { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: c?.cdGlobal ?? "", help: t("f_cd_help") },
   { name: "cdUser", label: t("f_cd_user"), kind: "number", value: c?.cdUser ?? "" },
 ];
-export const varsHelp = (t, kind) => t("f_text_help", { vars: allowedFor(kind).map((v) => `{${v}}`).join(" ") });
+export const varsHelp = (t, kind) => t("f_text_help", { vars: shownFor(kind).map((v) => `{${v}}`).join(" ") });
 
 function createForm(ctx, s) {
   const t = ctx.t;
@@ -229,6 +214,10 @@ async function editBlocks(ctx, info, key, query) {
     { name: "role", label: t("f_role"), kind: "select", value: view.role, options: roleOptions(t) },
     ...delayFields(t, view),
   ] });
+  if (kind === "custom" && used(view.text).includes("compteur")) {
+    const n = (await st.readCounters(ctx))[view.key] ?? 0;
+    out.push({ type: "markdown", text: t("edit_counter", { n }) }, { type: "adminForm", action: "counterReset", submitLabel: t("counter_reset_btn"), fields: [{ name: "key", kind: "hidden", value: view.key }] });
+  }
   if (kind === "builtin") out.push({ type: "adminForm", action: "resetText", submitLabel: t("reset_btn"), fields: [{ name: "key", kind: "hidden", value: key }] });
   if (kind === "custom") out.push({ type: "table", columns: [t("delete_title")], rows: [[`${s.prefix}${view.name}`]], rowIds: [view.id], rowActions: [{ label: t("delete_btn"), action: "remove", confirm: t("delete_confirm", { command: `${s.prefix}${view.name}` }), danger: true }] });
   return out;
@@ -243,7 +232,7 @@ async function logBlocks(ctx, s) {
   const when = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
   // Trois colonnes (l'heure et la personne ensemble, le résultat devant la réponse ou la raison) : tout reste lisible sur un téléphone.
   out.push({ type: "table", columns: [t("log_time_user"), t("col_command"), t("log_why")],
-    rows: entries.map((e) => [`${when(e.at)} · ${e.user}`, `${s.prefix}${e.command}`, `${t(`log_${e.result}`)} : ${e.result === "sent" ? cut(e.text ?? "", 70) : `${t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`}`]) });
+    rows: entries.map((e) => [`${when(e.at)} · ${e.user}`, e.command.startsWith("⏱") ? e.command : `${s.prefix}${e.command}`, `${t(`log_${e.result}`)} : ${e.result === "sent" ? cut(e.text ?? "", 70) : `${t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`}`]) });
   out.push({ type: "adminForm", action: "clearLog", submitLabel: t("log_clear"), fields: [] });
   return out;
 }
@@ -274,6 +263,8 @@ export async function panel(ctx, { query }) {
   }
   const blocks = [];
   blocks.push(...emergency(ctx, state.muted === true, state.mutedAt, info.s.timeZone));
+  // L'écran d'import remplace la page des commandes (le reste de la page est toujours à un clic : « Retour »).
+  if (query?.import) return [...blocks, ...(await IA.blocks(ctx, info)), ...(await TA.blocks(ctx, info, {})), ...(await RA.blocks(ctx, info, {}))];
   blocks.push({ type: "heading", text: t("listen_title") });
   blocks.push(...(await listenBlocks(ctx, info, state)));
   blocks.push(...listenActions(ctx, info.d.code !== "ready" ? info.d.code : state.sub?.code ?? "unknown"));
@@ -281,9 +272,11 @@ export async function panel(ctx, { query }) {
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
   blocks.push(...summary(ctx, info));
+  blocks.push({ type: "links", items: [{ label: t("nb_link"), href: "?import=1#import" }] });
   if (!edit) blocks.push(...createForm(ctx, info.s));
   blocks.push(...partnersSection(ctx, info), ...networksSection(ctx, info));
   blocks.push(...(await logBlocks(ctx, info.s)));
+  blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
   blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
   return blocks;
 }
@@ -343,6 +336,15 @@ export const actions = {
     return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${v.key}#edit` };
   },
   ...RA.actions,
+  ...TA.actions,
+  ...IA.actions,
+  async counterReset(ctx, v) {
+    const info = await context(ctx, { declare: false });
+    const c = info.list.find((x) => x.key === v.key && x.kind === "custom");
+    if (!c) return { error: ctx.t("err_unknown") };
+    await st.setCounter(ctx, c.key, 0);
+    return { ok: ctx.t("counter_reset_done") };
+  },
   async clearLog(ctx) { await st.clearLog(ctx); return { ok: ctx.t("log_cleared") }; },
   async disconnectBot(ctx) {
     const info = await context(ctx, { declare: false });

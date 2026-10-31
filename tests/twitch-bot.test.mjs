@@ -1055,11 +1055,11 @@ test("page : créer une commande — le formulaire est là, une erreur dit quoi 
   const form = formsOf(b, "create")[0];
   assert.deepEqual(form.fields.map((f) => f.name), ["name", "text", "role", "aliases", "cdGlobal", "cdUser"]);
   assert.equal(form.fields.find((f) => f.name === "role").options.length, 4);
-  assert.match(form.fields[1].help, /\{followers\} \{jeu\} \{titre\} \{uptime\} \{prochain_stream\} \{utilisateur\}/);
+  assert.match(form.fields[1].help, /\{utilisateur\} \{cible\} \{requete\} \{1\} \{2\} \{1:\} \{compteur\} \{jeu\} \{titre\} \{uptime\} \{followers\} \{viewers\} \{prochain_stream\}/);
   const v = { name: "merch", aliases: "", text: "Boutique", role: "everyone", cdGlobal: "", cdUser: "" };
   assert.deepEqual(await A.actions.create(ctx, v), { ok: fr.created });
   assert.match((await A.actions.create(ctx, v)).error, /« merch » est déjà pris par la commande « merch »\. Choisissez un autre nom/);
-  assert.match((await A.actions.create(ctx, { ...v, name: "autre", text: "Salut {pseudo}" })).error, /ne connaît pas : \{pseudo\}.*\{followers\} \{jeu\}/);
+  assert.match((await A.actions.create(ctx, { ...v, name: "autre", text: "Salut {pseudo}" })).error, /ne connaît pas : \{pseudo\}.*\{jeu\}.*\{followers\}/);
   assert.match((await A.actions.create(ctx, { ...v, name: "x y" })).error, /n'est pas valable/);
   assert.match((await A.actions.create(ctx, { ...v, name: "z", text: "/me" })).error, /ne peut pas commencer par \//);
   const t = table(await A.panel(ctx, { query: { edit: "custom:" + (await C.loadConfig(ctx)).data.custom[0].id } }), fr.delete_title);
@@ -1108,7 +1108,7 @@ test("journal : les 30 dernières lignes ; réponse envoyée ou raison du refus 
 /* ───────────── Assistants (MCP) ───────────── */
 
 test("MCP : lister / créer / modifier ; JAMAIS activés par défaut ; lecture seule bien marquée ; aucun outil destructif ; noms courts", () => {
-  assert.deepEqual(manifest.mcp.map((a) => a.name), ["bot_commands_list", "bot_command_create", "bot_command_update", "rewards_list", "reward_create", "reward_simulate", "reward_update"]);
+  assert.deepEqual(manifest.mcp.map((a) => a.name), ["bot_commands_list", "bot_command_create", "bot_command_update", "rewards_list", "reward_create", "reward_simulate", "reward_update", "timers_list", "timer_create", "timer_update", "nightbot_import_preview", "nightbot_import"]);
   for (const a of manifest.mcp) {
     assert.strictEqual(a.default, false, a.name); assert.ok(!a.destructive, a.name); assert.equal(typeof tools[a.name], "function", a.name);
     assert.ok(a.description.length > 150, "description écrite pour une IA");
@@ -1151,10 +1151,10 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.4.0", "0.2.5", "twitch", "multiple", 3]);
-  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.5.0", "0.2.5", "twitch", "multiple", 4]);
+  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
-  assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function");
+  assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
   assert.deepEqual(manifest.consumes.map((x) => x.topic).sort(), ["ha.result", "ha.state", "planning.slot", "social.link", "social.stat"]);
   assert.deepEqual(manifest.provides.map((x) => x.topic), ["home.actions"]);
   assert.ok(!manifest.requires.some((x) => /sponsor|planning|social/.test(x.service)), "Sponsors, Planning et les réseaux ne sont jamais requis");
@@ -1166,8 +1166,8 @@ test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi
     if (s.advanced) assert.ok(s.default !== undefined || s.optional, `${s.key} : un réglage avancé a un défaut (ou est facultatif)`);
     assert.ok(s.label.fr && s.label.en && s.help.fr && s.help.en, s.key);
   }
-  assert.deepEqual(manifest.settings.filter((s) => !s.advanced).map((s) => s.key), ["rewardsNotice", "stopMods", "onlyWhenLive", "timezone"], "mode simple : deux réglages pour les commandes, deux pour les récompenses (onglet Récompenses)");
-  for (const k of ["replyAs", "prefix", "cooldownGlobal", "cooldownUser", "maxPer30s", "toleranceMinutes", "channel", "ignoredBots", "rewardWaitSeconds", "extraActions", "showKeys"]) assert.equal(manifest.settings.find((s) => s.key === k).advanced, true, k);
+  assert.deepEqual(manifest.settings.filter((s) => !s.advanced).map((s) => s.key), ["rewardsNotice", "stopMods", "onlyWhenLive", "chatManage", "timezone"], "mode simple : trois réglages pour les commandes (dont la gestion depuis le chat, éteinte par défaut), deux pour les récompenses (onglet Récompenses)");
+  for (const k of ["replyAs", "prefix", "cooldownGlobal", "cooldownUser", "maxPer30s", "toleranceMinutes", "channel", "ignoredBots", "rewardWaitSeconds", "extraActions", "showKeys", "fetchHosts"]) assert.equal(manifest.settings.find((s) => s.key === k).advanced, true, k);
   const declared = new Set(manifest.settings.map((s) => s.key));
   for (const m of source.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)) assert.ok(declared.has(m[1]), m[1]);
   assert.equal(manifest.settings.find((s) => s.key === "onlyWhenLive").default, true, "ne répond que quand le live tourne, par défaut");

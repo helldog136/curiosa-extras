@@ -4,7 +4,11 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const { levelOf } = await import(`./eventsub.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { catalog, loadConfig, norm, ROLE_LEVEL } = await import(`./commands.mjs${v}`);
-const { render, used, pseudo, clean } = await import(`./variables.mjs${v}`);
+const { renderRich, used, pseudo, clean, plain, parseRandom } = await import(`./variables.mjs${v}`);
+const { calc } = await import(`./calc.mjs${v}`);
+const { fetchText } = await import(`./urlfetch.mjs${v}`);
+const { handleManage, MANAGE_WORDS } = await import(`./manage.mjs${v}`);
+const { randomInt } = await import("node:crypto");
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
@@ -57,11 +61,50 @@ export async function valuesFor(ctx, s, cmd, who, { channel, sources, list, now 
   return v;
 }
 
+/** L'heure ou la date dans un fuseau (celui du morceau, sinon celui des réglages). */
+function clock(kind, arg, ctx, s, now) {
+  const timeZone = arg && ((() => { try { new Intl.DateTimeFormat("en", { timeZone: arg }); return true; } catch { return false; } })()) ? arg : s.timeZone;
+  const f = kind === "heure" ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone } : { weekday: "long", day: "numeric", month: "long", timeZone };
+  return new Intl.DateTimeFormat(ctx.locale, f).format(now);
+}
+
+/**
+ * Le texte d'une commande ou d'un timer, prêt à envoyer. `args` : les mots tapés après la commande (déjà nettoyés) ; `counter` : la valeur de {compteur} ;
+ * `person` : faux pour un timer (aucune personne ne l'a demandé).
+ */
+export async function compose(ctx, s, cmd, who, { channel, sources, list, now = Date.now(), args = [], counter = 0 }) {
+  const t = ctx.t, base = await valuesFor(ctx, s, cmd, who, { channel, sources, list, now });
+  let live;
+  const liveOnce = async () => (live === undefined ? (live = channel ? await src.liveState(ctx, channel) : null) : live);
+  const rest = (from) => args.slice(from).join(" ");
+  const resolve = async (name, arg) => {
+    if (Object.hasOwn(base, name)) return base[name];
+    switch (name) {
+      case "chaine": return (await liveOnce())?.displayName ?? channel ?? t("fb_chaine");
+      case "viewers": { const l = await liveOnce(); return l?.live && Number.isInteger(l.viewers) ? l.viewers.toLocaleString(ctx.locale) : t("fb_viewers"); }
+      case "heure": case "date": return clock(name, arg, ctx, s, now);
+      case "aleatoire": { const p = parseRandom(arg); return !p ? "" : p.range ? String(randomInt(p.range[0], p.range[1] + 1)) : p.list[randomInt(p.list.length)]; }
+      case "calcul": { const r = calc(arg); return r.ok ? r.text : t("fb_calcul"); }
+      case "urlfetch": { const r = await fetchText(ctx, arg, s.fetchHosts, { now }); return r.ok ? r.text : t("fb_urlfetch"); }
+      case "compteur": return String(counter);
+      case "cible": return args[0] ? pseudo(args[0].replace(/^@+/, "")) : base.utilisateur;
+      case "requete": case "query": return rest(0).slice(0, 200);
+      default: {
+        const m = /^([1-9])(:?)$/.exec(name);
+        if (!m) return undefined;
+        return m[2] ? rest(Number(m[1]) - 1).slice(0, 200) : (args[Number(m[1]) - 1] ?? "");
+      }
+    }
+  };
+  return renderRich(cmd.text, resolve, s.prefix);
+}
+/** Ce texte reprend-il des mots tapés dans le chat ? (alors rien du message n'est gardé dans le journal) */
+export const usesChatWords = (text) => used(text).some((n) => ["cible", "requete", "query"].includes(n) || /^[1-9]:?$/.test(n));
+
 /** Ce que répondrait la commande, pour l'aperçu de l'administration (rien n'est envoyé). */
-export async function preview(ctx, cmd, { channel, sources, list }) {
+export async function preview(ctx, cmd, { channel, sources, list, counter = 0 }) {
   const s = settingsOf(ctx);
-  const values = await valuesFor(ctx, s, cmd, ctx.t("preview_user"), { channel, sources, list });
-  return render(cmd.text, values, s.prefix);
+  return compose(ctx, s, cmd, ctx.t("preview_user"), { channel, sources, list, args: [ctx.t("preview_arg1"), ctx.t("preview_arg2")], counter });
 }
 
 /* ───────────── Un message du chat ───────────── */
@@ -90,7 +133,11 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   const sources = await src.gather(ctx, channel);
   const list = catalog(cfg, sources, ctx.t);
   const cmd = list.find((c) => c.name === word || c.aliases.includes(word));
-  if (!cmd) return { handled: false, why: "unknown_command" };
+  if (!cmd) {
+    // Les commandes de gestion (!addcom…) : seulement si la personne les a permises, et jamais si une commande portant ce nom existe déjà.
+    if (s.chatManage && MANAGE_WORDS.includes(word)) return handleManage(ctx, s, chat, word, text, { now, d, channel, sources });
+    return { handled: false, why: "unknown_command" };
+  }
 
   const log = async (result, reason, extra = {}) => { await st.addLog(ctx, { user: chat.login, command: cmd.name, result, reason, ...extra }); return { handled: true, result, reason, ...extra }; };
   if (d.code !== "ready") return log("refused", "not_ready");
@@ -110,8 +157,11 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   if (!st.takeSendSlot(ctx, { max: s.maxPerWindow, windowMs: 30_000, now })) return log("refused", "rate");
   st.checkCooldown(ctx, delays);
 
-  const values = await valuesFor(ctx, s, cmd, chat.name || chat.login, { channel, sources, list, now });
-  const message = render(cmd.text, values, s.prefix);
+  // Les mots tapés après la commande (nettoyés : jamais d'accolades, jamais de « !commande » ou « /ban » en début de mot) servent aux morceaux {1} {cible} {requete}…
+  const args = text.slice(s.prefix.length).split(/\s+/).slice(1, 21).map((w) => plain(w, 100, s.prefix)).filter(Boolean);
+  const counts = cmd.kind === "custom" && used(cmd.text).includes("compteur");
+  const next = counts ? ((await st.readCounters(ctx))[cmd.key] ?? 0) + 1 : 0;
+  const message = await compose(ctx, s, cmd, chat.name || chat.login, { channel, sources, list, now, args, counter: next });
   if (!message) { st.releaseCooldown(ctx, delays); st.giveBackSendSlot(ctx); return log("refused", "empty"); }
   const sent = await sendChat(ctx, d, message);
   if (!sent.sent) {
@@ -119,5 +169,7 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
     return log("error", `send_${sent.code}`, { detail: sent.detail ?? null });
   }
   st.rememberSent(ctx, sent.messageId);
-  return log("sent", "ok", { text: message.slice(0, 160) });
+  if (counts) await st.setCounter(ctx, cmd.key, next).catch(() => {});
+  // Ce que les gens tapent n'est jamais gardé : si la réponse reprend leurs mots, le journal n'en garde pas le texte.
+  return log("sent", "ok", usesChatWords(cmd.text) ? {} : { text: message.slice(0, 160) });
 }
