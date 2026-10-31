@@ -14,6 +14,7 @@ const L = await import(new URL(`./lines.mjs${v}`, import.meta.url).href);
 const A = await import(new URL(`./assets.mjs${v}`, import.meta.url).href);
 const Admin = await import(new URL(`./admin.mjs${v}`, import.meta.url).href);
 const { mcp } = await import(new URL(`./mcp.mjs${v}`, import.meta.url).href);
+const O = await import(new URL(`./overlay.mjs${v}`, import.meta.url).href);
 
 const HEADERS = { "x-content-type-options": "nosniff" };
 const FOREVER = "public, max-age=31536000, immutable";
@@ -21,6 +22,11 @@ const readOnly = (request) => request.method === "GET" || request.method === "HE
 const notAllowed = () => new Response("Method not allowed", { status: 405, headers: { allow: "GET, HEAD" } });
 
 export default {
+  // ÉLÉMENT DE PAGE D'OVERLAY (cœur 0.5.0) : « Mascotte », une version réduite pour un cadre d'overlay (voir overlay.mjs : seulement les phrases écrites par la personne, rien du coin de page, du navigateur ni des autres modules).
+  overlayElements: {
+    mascot: (ctx, request) => O.elementAddress(ctx, "mascot", request),
+  },
+
   slots: {
     // Le script n'est annoncé que si la mascotte est publiée ET a de quoi parler : sinon les pages ne chargent rien du tout.
     async "layout.head"(ctx) {
@@ -35,6 +41,9 @@ export default {
   },
 
   routes: {
+    // La page de l'élément d'overlay (`mascot`) ; avec ?data=1, seulement les phrases pour la mise à jour douce.
+    "element/:slug": (request, ctx) => O.elementResponse(request, ctx),
+
     // Le script des visiteurs (code + réglages de ce site). Gardé « pour toujours » quand l'empreinte de l'adresse est la bonne.
     "mascot.js": async (request, ctx) => {
       if (!readOnly(request)) return notAllowed();
