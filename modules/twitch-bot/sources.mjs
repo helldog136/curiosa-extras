@@ -23,13 +23,13 @@ async function cached(ctx, name, load, ttl = TTL) {
 
 /* ───────────── Twitch : le direct et les followers ───────────── */
 
-/** L'état du direct de la chaîne : { known, live, title, game, startedAt } ou null (Chaîne Twitch absente ou muette). Une chaîne = une instance de Chaîne Twitch qui répond pour elle-même. */
+/** L'état du direct de la chaîne : { known, live, title, game, startedAt, viewers, displayName } ou null (Chaîne Twitch absente ou muette). Une chaîne = une instance de Chaîne Twitch qui répond pour elle-même. */
 export const liveState = (ctx, channel) => cached(ctx, `live|${channel}`, async () => {
   const all = await ctx.api.services.callAll("twitch.live", "status", {});
   const mine = all.find((r) => r.ok && r.value?.channel === channel);
   if (!mine) return null;
   const v = mine.value;
-  return { known: v.known === true, live: v.live === true, title: v.title ?? null, game: v.game ?? null, startedAt: v.startedAt ?? null };
+  return { known: v.known === true, live: v.live === true, title: v.title ?? null, game: v.game ?? null, startedAt: v.startedAt ?? null, viewers: Number.isInteger(v.viewers) ? v.viewers : null, displayName: typeof v.displayName === "string" ? v.displayName : null };
 });
 
 /** Le nombre de followers publié par Chaîne Twitch (chiffre `followers` de la chaîne), ou null s'il n'est pas disponible (suivi des statistiques éteint, chaîne non connectée…). */
