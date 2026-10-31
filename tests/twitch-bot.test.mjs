@@ -1053,7 +1053,7 @@ test("page : créer une commande — le formulaire est là, une erreur dit quoi 
   const { ctx } = world();
   const b = await A.panel(ctx, { query: {} });
   const form = formsOf(b, "create")[0];
-  assert.deepEqual(form.fields.map((f) => f.name), ["name", "text", "role", "aliases", "cdGlobal", "cdUser"]);
+  assert.deepEqual(form.fields.map((f) => f.name), ["name", "text", "role", "aliases", "cdGlobal", "cdUser", "fromDay", "fromMonth", "toDay", "toMonth", "yearly", "fromYear", "toYear"]);
   assert.equal(form.fields.find((f) => f.name === "role").options.length, 4);
   assert.match(form.fields[1].help, /\{utilisateur\} \{cible\} \{requete\} \{1\} \{2\} \{1:\} \{compteur\} \{jeu\} \{titre\} \{uptime\} \{followers\} \{viewers\} \{prochain_stream\}/);
   const v = { name: "merch", aliases: "", text: "Boutique", role: "everyone", cdGlobal: "", cdUser: "" };

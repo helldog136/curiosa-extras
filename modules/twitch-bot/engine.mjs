@@ -6,6 +6,7 @@ const { settingsOf } = await import(`./settings.mjs${v}`);
 const { catalog, loadConfig, norm, ROLE_LEVEL } = await import(`./commands.mjs${v}`);
 const { renderRich, used, pseudo, clean, plain, parseRandom } = await import(`./variables.mjs${v}`);
 const { calc } = await import(`./calc.mjs${v}`);
+const { reopenIso } = await import(`./period.mjs${v}`);
 const { fetchText } = await import(`./urlfetch.mjs${v}`);
 const { handleManage, MANAGE_WORDS } = await import(`./manage.mjs${v}`);
 const { randomInt } = await import("node:crypto");
@@ -109,7 +110,7 @@ export async function preview(ctx, cmd, { channel, sources, list, counter = 0 })
 
 /* ───────────── Un message du chat ───────────── */
 
-const REASONS = { muted: "muted", off: "off", hidden: "hidden", missing: "missing" };
+const REASONS = { muted: "muted", off: "off", hidden: "hidden", missing: "missing", outside: "outside" };
 
 /**
  * Traite un message du chat. Rend { handled: false, why } quand le message n'est pas pour nous (silencieux), sinon { handled: true, result: "sent" | "refused" | "error", reason, text? }.
@@ -131,7 +132,7 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   const d = await diagnose(ctx, s, { declare: false });
   const channel = d.channel ?? null;
   const sources = await src.gather(ctx, channel);
-  const list = catalog(cfg, sources, ctx.t);
+  const list = catalog(cfg, sources, ctx.t, { now, timeZone: s.timeZone });
   const cmd = list.find((c) => c.name === word || c.aliases.includes(word));
   if (!cmd) {
     // Les commandes de gestion (!addcom…) : seulement si la personne les a permises, et jamais si une commande portant ce nom existe déjà.
@@ -144,6 +145,7 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   if (chat.broadcasterId !== d.broadcasterId) return { handled: false, why: "other_channel" };
   if (s.replyAs === "bot" && chat.chatterId === d.senderId) return { handled: false, why: "own" };   // le compte bot ne se répond jamais à lui-même
   if (await st.isMuted(ctx)) return log("refused", "muted");
+  if (cmd.state === "outside") return log("refused", "outside", { reopen: reopenIso(cmd.period, now, s.timeZone) });   // hors période : se réactive tout seul, la commande reste visible
   if (cmd.state !== "on") return log("refused", REASONS[cmd.state] ?? "hidden", cmd.why ? { detail: cmd.why } : {});
   if (s.onlyWhenLive) {
     const live = await src.liveState(ctx, channel);

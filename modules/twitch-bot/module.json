@@ -113,7 +113,7 @@
     {
       "id": "nightbot.import",
       "label": { "en": "import commands and timers from Nightbot", "fr": "importer des commandes et des timers depuis Nightbot" },
-      "help": { "en": "Creates or replaces several chat commands and timers at once.", "fr": "Crée ou remplace plusieurs commandes et timers du chat en une fois." },
+      "help": { "en": "Creates or replaces several chat commands and timers at once.", "fr": "Permet de créer ou de remplacer plusieurs commandes et timers du chat en une fois." },
       "sensitive": true,
       "default": { "admin": true, "editor": false }
     }
@@ -298,7 +298,7 @@
       "input": {
         "type": "object",
         "required": ["name", "text"],
-        "properties": {
+        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, 
           "name": { "type": "string", "maxLength": 26, "description": "Command name without the prefix, letters/digits/-/_ only, 25 characters at most." },
           "text": { "type": "string", "maxLength": 450, "description": "The reply, with optional {variables}." },
           "aliases": { "type": "array", "items": { "type": "string" }, "description": "Other names for the same command (5 at most)." },
@@ -313,7 +313,7 @@
       "name": "bot_command_update",
       "default": false,
       "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages.",
-      "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 26, "description": "Current name or alias, without the prefix."}, "newName": {"type": "string", "maxLength": 26, "description": "New name, without the prefix."}, "text": {"type": "string", "maxLength": 450, "description": "New reply text."}, "aliases": {"type": "array", "items": {"type": "string"}, "description": "The complete list of aliases (replaces the old one)."}, "role": {"type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it: everyone, subscribers, mods or owner."}, "enabled": {"type": "boolean", "description": "True to switch the command on, false to switch it off."}, "delayAllSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers, for everyone together (0 to 3600)."}, "delayPerPersonSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers to the same person (0 to 3600)."}}}
+      "input": {"type": "object", "required": ["name"], "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, "clearPeriod": { "type": "boolean", "description": "true removes the validity period (always active again)." }, "name": {"type": "string", "maxLength": 26, "description": "Current name or alias, without the prefix."}, "newName": {"type": "string", "maxLength": 26, "description": "New name, without the prefix."}, "text": {"type": "string", "maxLength": 450, "description": "New reply text."}, "aliases": {"type": "array", "items": {"type": "string"}, "description": "The complete list of aliases (replaces the old one)."}, "role": {"type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it: everyone, subscribers, mods or owner."}, "enabled": {"type": "boolean", "description": "True to switch the command on, false to switch it off."}, "delayAllSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers, for everyone together (0 to 3600)."}, "delayPerPersonSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers to the same person (0 to 3600)."}}}
     },
     {
       "name": "rewards_list",
@@ -354,7 +354,7 @@
       "input": {
         "type": "object",
         "required": ["name", "text", "everyMinutes"],
-        "properties": {
+        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, 
           "name": { "type": "string", "maxLength": 40, "description": "Name of the timer, unique." },
           "text": { "type": "string", "maxLength": 450, "description": "The message, with optional {variables}." },
           "everyMinutes": { "type": "integer", "minimum": 1, "maximum": 1440, "description": "Minutes between two messages (at least 1)." },
@@ -371,7 +371,7 @@
       "input": {
         "type": "object",
         "required": ["name"],
-        "properties": {
+        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, "clearPeriod": { "type": "boolean", "description": "true removes the validity period (always active again)." }, 
           "name": { "type": "string", "maxLength": 40, "description": "Current name of the timer." },
           "newName": { "type": "string", "maxLength": 40, "description": "New name." },
           "text": { "type": "string", "maxLength": 450, "description": "New message." },

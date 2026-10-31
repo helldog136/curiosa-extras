@@ -7,6 +7,7 @@ const { compose } = await import(`./engine.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { shownFor, used } = await import(`./variables.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
+const { periodFields, periodFromForm, readPeriod, isOpen, nextOpening, reopenLabel, describe } = await import(`./period.mjs${v}`);
 
 const cut = (x, n) => { const s = String(x ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 const tab = (blocks) => blocks.map((b) => ({ ...b, tab: "timers" }));
@@ -24,11 +25,12 @@ function form(ctx, doc) {
     { name: "lines", label: t("tm_f_lines"), kind: "number", value: v0.lines, help: t("tm_f_lines_help", { max: T.LIMITS.lines }) },
     { name: "when", label: t("tm_f_when"), kind: "select", value: v0.when, options: T.WHEN.map((w) => ({ value: w, label: t(`tm_when_${w}`) })) },
     { name: "enabled", label: t("tm_f_enabled"), kind: "checkbox", value: v0.enabled ? "on" : "" },
+    ...periodFields(ctx, readPeriod(v0.period)),
   ] };
 }
-const fieldsFrom = (x) => ({ name: x.name, text: x.text, minutes: x.minutes, lines: x.lines, when: x.when || "live", enabled: x.enabled === "on" });
+const fieldsFrom = (x) => ({ name: x.name, text: x.text, minutes: x.minutes, lines: x.lines, when: x.when || "live", enabled: x.enabled === "on", period: periodFromForm(x) });
 const fail = (ctx, r) => {
-  const field = { timer_name: "name", timer_dup: "name", timer_minutes: "minutes", timer_lines: "lines" }[r.code] ?? (String(r.code).startsWith("text_") ? "text" : null);
+  const field = r.code === "period" ? r.field : { timer_name: "name", timer_dup: "name", timer_minutes: "minutes", timer_lines: "lines" }[r.code] ?? (String(r.code).startsWith("text_") ? "text" : null);
   return field ? { errors: { [field]: saveError(ctx, r) } } : { error: saveError(ctx, r) };
 };
 
@@ -41,6 +43,8 @@ export async function blocks(ctx, info, query = {}) {
   else {
     const stateText = async (x) => {
       if (x.enabled === false) return t("tm_state_off");
+      const per = readPeriod(x.period);
+      if (per && !isOpen(per, Date.now(), s.timeZone)) return reopenLabel(ctx, nextOpening(per, Date.now(), s.timeZone));
       const it = await T.stateOf(ctx, x.id);
       if (!it) return t("tm_state_new");
       const left = Math.max(0, Math.ceil((x.minutes * 60_000 - (Date.now() - it.lastAt)) / 60_000)), more = Math.max(0, x.lines - it.lines);
@@ -55,7 +59,7 @@ export async function blocks(ctx, info, query = {}) {
   const editing = typeof query.timerEdit === "string" ? rows.find((x) => x.id === query.timerEdit) : null;
   out.push(EDIT);
   if (editing) {
-    out.push({ type: "heading", text: t("tm_edit_title", { name: editing.name }) });
+    out.push({ type: "heading", text: t("tm_edit_title", { name: editing.name }) }, { type: "markdown", text: describe(ctx, readPeriod(editing.period), s.timeZone) });
     try { out.push({ type: "markdown", text: t("tm_preview", { text: (await compose(ctx, settingsOf(ctx), { text: editing.text, kind: "timer", vars: {} }, "", { channel: info.d.channel ?? null, sources: info.sources, list: info.list })).replace(/([\\`*_[\]<>])/g, "\\$1") }) }); } catch { /* l'aperçu est un plus */ }
     out.push(form(ctx, editing));
     out.push({ type: "table", columns: [t("tm_delete_title")], rows: [[editing.name]], rowIds: [editing.id], rowActions: [{ label: t("delete_btn"), action: "timerRemove", confirm: t("tm_delete_confirm", { name: editing.name }), danger: true }] });

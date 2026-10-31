@@ -1,3 +1,5 @@
+const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins
+const { periodError } = await import(`./period.mjs${v}`);
 // Les erreurs d'enregistrement d'une commande ou d'un timer, en phrases (avec un exemple). Partagé par l'administration, la gestion depuis le chat et les outils des assistants.
 /** Le morceau fautif d'un texte (`name`) en phrase : chaque morceau à argument a son exemple. */
 const ARG_KEYS = { heure: "err_arg_heure", date: "err_arg_date", aleatoire: "err_arg_aleatoire", calcul: "err_arg_calcul", urlfetch: "err_arg_urlfetch" };
@@ -20,6 +22,7 @@ export function saveError(ctx, r) {
     case "role": return t("err_role");
     case "too_many": return t("err_too_many");
     case "source_missing": return t("err_source_missing");
+    case "period": return periodError(ctx, r);
     case "timer_name": return t("err_timer_name");
     case "timer_dup": return t("err_timer_dup");
     case "timer_minutes": return t("err_timer_minutes");

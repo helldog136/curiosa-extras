@@ -12,11 +12,22 @@ const J = await import(`./redeem.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
 const A = await import(`./actions.mjs${v}`);
+const PER = await import(`./period.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
+const pad = (n) => String(n).padStart(2, "0");
+const periodView = (p) => (p ? { activeFrom: p.yearly ? `${pad(p.from.m)}-${pad(p.from.d)}` : `${p.from.y}-${pad(p.from.m)}-${pad(p.from.d)}`, activeUntil: p.yearly ? `${pad(p.to.m)}-${pad(p.to.d)}` : `${p.to.y}-${pad(p.to.m)}-${pad(p.to.d)}`, yearly: p.yearly } : {});
+/** activeFrom / activeUntil / yearly / clearPeriod des outils → le champ `period` (rien si aucun n'est donné). Lève une erreur claire si la forme est fausse. */
+function periodOf(ctx, a) {
+  if (a.clearPeriod === true) return { period: null };
+  if (a.activeFrom === undefined && a.activeUntil === undefined) return {};
+  const p = PER.parsePeriodIso(a.activeFrom, a.activeUntil, a.yearly);
+  if (!p.ok) throw expose(saveError(ctx, { code: "period", field: p.field, reason: p.reason, month: p.month, day: p.day }));
+  return { period: p.value };
+}
 const view = (c) => ({
   kind: c.kind, name: c.name, aliases: c.aliases, text: c.text, enabled: c.enabled, role: c.role,
-  state: c.state, ...(c.why ? { reason: c.why } : {}), delayAllSeconds: c.cdGlobal, delayPerPersonSeconds: c.cdUser,
+  state: c.state, ...(c.why ? { reason: c.why } : {}), ...periodView(c.period), ...(c.reopen ? { reopensOn: `${c.reopen.y}-${String(c.reopen.m).padStart(2, "0")}-${String(c.reopen.d).padStart(2, "0")}` } : {}), delayAllSeconds: c.cdGlobal, delayPerPersonSeconds: c.cdUser,
   ...(c.kind === "partner" || c.kind === "network" ? { source: c.label } : {}),
 });
 const changes = (a) => {
@@ -42,7 +53,7 @@ async function withName(ctx, s, a, fields) {
 }
 const refuse = (ctx, r) => { const f = RA.failure(ctx, r); throw expose(f.error ?? Object.values(f.errors ?? {})[0] ?? ctx.t("rw_err_twitch")); };
 
-const timerView = (x) => ({ name: x.name, text: x.text, everyMinutes: x.minutes, minChatLines: x.lines, when: x.when === "always" ? "always" : "live only", enabled: x.enabled !== false });
+const timerView = (x) => ({ ...periodView(PER.readPeriod(x.period)), name: x.name, text: x.text, everyMinutes: x.minutes, minChatLines: x.lines, when: x.when === "always" ? "always" : "live only", enabled: x.enabled !== false });
 const timerChanges = (a) => {
   const f = {};
   if (a.newName !== undefined) f.name = a.newName;
@@ -59,7 +70,7 @@ export default {
   },
   async timer_create(ctx, args) {
     const info = await context(ctx, { declare: false });
-    const r = await T.saveTimer(ctx, {}, { name: args.name, text: args.text, minutes: args.everyMinutes, lines: args.minChatLines, when: args.when === "always" ? "always" : "live", enabled: args.enabled !== false }, { prefix: info.s.prefix });
+    const r = await T.saveTimer(ctx, {}, { name: args.name, text: args.text, minutes: args.everyMinutes, lines: args.minChatLines, when: args.when === "always" ? "always" : "live", enabled: args.enabled !== false, ...periodOf(ctx, args) }, { prefix: info.s.prefix });
     if (r.ok === false) throw expose(saveError(ctx, r));
     return { created: true, name: args.name };
   },
@@ -67,7 +78,7 @@ export default {
     const info = await context(ctx, { declare: false });
     const cur = info.cfg.timers.find((x) => x.name.toLowerCase() === String(args.name).toLowerCase());
     if (!cur) throw expose(`no timer named "${args.name}"`);
-    const f = timerChanges(args);
+    const f = { ...timerChanges(args), ...periodOf(ctx, args) };
     if (!Object.keys(f).length) throw expose("nothing to change");
     const r = await T.saveTimer(ctx, { id: cur.id }, f, { prefix: info.s.prefix });
     if (r.ok === false) throw expose(saveError(ctx, r));
@@ -99,7 +110,7 @@ export default {
   },
   async bot_command_create(ctx, args) {
     const info = await context(ctx, { declare: false });
-    const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}) }, info.env);
+    const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}), ...periodOf(ctx, args) }, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
     return { created: true, name: String(args.name).replace(info.s.prefix, "").toLowerCase() };
   },
@@ -108,7 +119,7 @@ export default {
     const word = String(args.name).toLowerCase().replace(info.s.prefix, "");
     const c = info.list.find((x) => x.name === word || x.aliases.includes(word));
     if (!c) throw expose(`no command named "${word}"`);
-    const f = changes(args);
+    const f = { ...changes(args), ...periodOf(ctx, args) };
     if (!Object.keys(f).length) throw expose("nothing to change");
     const r = c.kind === "partner" || c.kind === "network" ? await saveSourced(ctx, c.kind, c.id, f, info.env) : await saveCommand(ctx, { kind: c.kind, id: c.id }, f, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));

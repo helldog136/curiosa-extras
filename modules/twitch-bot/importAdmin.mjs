@@ -6,6 +6,7 @@ const { catalog, loadConfig, saveCommand, freeName, MAX_CUSTOM } = await import(
 const { saveTimer } = await import(`./timers.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
+const { parsePeriodText, periodError } = await import(`./period.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 
 export const DRAFT_TTL_MS = 24 * 3_600_000;
@@ -61,7 +62,7 @@ export async function analyse(ctx, text, { sources }) {
  * Écrit les lignes choisies. `picks` : { [i]: "skip" | "replace" | "rename" | "add" } (« add » : pas de conflit). Les conflits sont revus au moment d'écrire (la configuration a pu changer).
  * Rend { created, replaced, renamed, skipped, failed: [{ name, why }] }.
  */
-export async function applyRows(ctx, rows, picks, { sources, t }) {
+export async function applyRows(ctx, rows, picks, { sources, t }, periods = {}) {
   const s = settingsOf(ctx);
   const env = { src: sources, t, prefix: s.prefix };
   const out = { created: 0, replaced: 0, renamed: 0, skipped: 0, failed: [] };
@@ -82,11 +83,11 @@ export async function applyRows(ctx, rows, picks, { sources, t }) {
       } else { out.skipped++; continue; }
     }
     if (r.kind === "timer") {
-      const res = await saveTimer(ctx, replaceId ? { id: replaceId } : {}, { name, text: r.text, minutes: r.minutes, lines: r.lines, when: "live", enabled: r.enabled }, { prefix: s.prefix });
+      const res = await saveTimer(ctx, replaceId ? { id: replaceId } : {}, { name, text: r.text, minutes: r.minutes, lines: r.lines, when: "live", enabled: r.enabled, ...(periods[r.i] ? { period: periods[r.i] } : {}) }, { prefix: s.prefix });
       if (res.ok === false) { if (res.code === "timer_many") { fail(r, saveError(ctx, res)); break; } fail(r, saveError(ctx, res)); continue; }
     } else {
       if (!replaceId && cfg.custom.length >= MAX_CUSTOM) { fail(r, saveError(ctx, { code: "too_many" })); break; }
-      const fields = { name, text: r.text, role: r.role, enabled: true, ...(r.cdGlobal !== null ? { cdGlobal: r.cdGlobal } : {}) };
+      const fields = { name, text: r.text, role: r.role, enabled: true, ...(r.cdGlobal !== null ? { cdGlobal: r.cdGlobal } : {}), ...(periods[r.i] ? { period: periods[r.i] } : {}) };
       const res = await saveCommand(ctx, replaceId ? { kind: "custom", id: replaceId } : { kind: "custom" }, fields, env);
       if (res.ok === false) { fail(r, saveError(ctx, res)); continue; }
       if (r.count !== null) await st.setCounter(ctx, res.key, r.count).catch(() => {});
@@ -130,6 +131,7 @@ export async function blocks(ctx, info) {
     for (const r of good) {
       const note = r.status === "same" ? t("nb_same") : r.notes.map((n) => noteText(t, n)).join(" ");
       fields.push({ name: `pick_${r.i}`, label: `${label(s, r)} · ${t(`nb_status_${r.status}`)}`, kind: "checkbox", value: r.conflict ? "" : "on", help: `${cut(r.text, 140)}${note ? ` — ${note}` : ""}` });
+      fields.push({ name: `period_${r.i}`, label: t("nb_f_period", { name: label(s, r) }), help: t("nb_f_period_help") });
       if (r.conflict) fields.push({ name: `policy_${r.i}`, label: t("nb_conflict", { name: label(s, r) }), kind: "select", value: "skip", options: [{ value: "skip", label: t("nb_p_skip") }, { value: "replace", label: t("nb_p_replace") }, { value: "rename", label: t("nb_p_rename") }], help: t("nb_conflict_help") });
     }
     out.push({ type: "adminForm", action: "importApply", submitLabel: t("nb_apply_btn"), cancelHref: "?import=1", fields });
@@ -154,8 +156,15 @@ export const actions = {
     const picks = {};
     for (const r of draft.rows) if (x[`pick_${r.i}`] === "on") picks[r.i] = ["replace", "rename", "skip"].includes(x[`policy_${r.i}`]) ? x[`policy_${r.i}`] : "add";
     if (!Object.keys(picks).length) return { error: ctx.t("nb_e_none") };
+    // Les dates de validité ne se devinent pas : un champ facultatif par ligne (« 01/11 - 30/11 » : chaque année ; avec les années : une seule fois).
+    const periods = {}, errors = {};
+    for (const i of Object.keys(picks)) {
+      const p = parsePeriodText(x[`period_${i}`]);
+      if (!p.ok) errors[`period_${i}`] = periodError(ctx, p); else if (p.value) periods[i] = p.value;
+    }
+    if (Object.keys(errors).length) return { errors };
     const sources = await (await import(`./sources.mjs${v}`)).gather(ctx, null);
-    const res = await applyRows(ctx, draft.rows, picks, { sources, t: ctx.t });
+    const res = await applyRows(ctx, draft.rows, picks, { sources, t: ctx.t }, periods);
     await clearDraft(ctx);
     return { ok: summaryOf(ctx, res), redirect: "?" };
   }),

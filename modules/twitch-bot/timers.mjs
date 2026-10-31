@@ -8,6 +8,7 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { loadConfig, mutate, configVersion, catalog } = await import(`./commands.mjs${v}`);
 const { checkTemplate } = await import(`./variables.mjs${v}`);
+const { parsePeriod, readPeriod, isOpen } = await import(`./period.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
@@ -31,9 +32,11 @@ export function checkTimer(f, { prefix = "!", others = [], current = null } = {}
   if (!Number.isInteger(lines) || lines < 0 || lines > LIMITS.lines) return err("timer_lines");
   const when = f.when ?? current?.when ?? "live";
   if (!WHEN.includes(when)) return err("timer_when");
+  let period = readPeriod(current?.period);
+  if (f.period !== undefined) { const p = parsePeriod(f.period); if (!p.ok) return err("period", { field: p.field, reason: p.reason, month: p.month, day: p.day, year: p.year }); period = p.value; }
   const ok = checkTemplate(f.text ?? current?.text, "timer", prefix);
   if (!ok.ok) return err(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed, name: ok.name });
-  return { ok: true, value: { name, text: ok.text, minutes, lines, when, enabled: f.enabled === undefined ? current?.enabled !== false : f.enabled === true } };
+  return { ok: true, value: { name, text: ok.text, minutes, lines, when, enabled: f.enabled === undefined ? current?.enabled !== false : f.enabled === true, ...(period ? { period } : {}) } };
 }
 
 /** Crée (sans `ref.id`) ou modifie un timer. Rend { ok: true, id } ou { ok: false, code }. */
@@ -117,13 +120,14 @@ export async function processTimers(ctx, chat, { now = Date.now(), commandSent =
     }
     const started = needsLive && liveNow === true && m.wasLive === false;
     if (needsLive && liveNow !== null) m.wasLive = liveNow;
+    const open = new Map(timers.map((x) => [x.id, isOpen(readPeriod(x.period), now, s.timeZone)]));   // hors période : le timer ne compte rien et n'écrit rien (aucune rafale à la réouverture)
     for (const x of timers) {
       let it = m.items.get(x.id);
       if (!it) { it = { lastAt: now, lines: 0 }; m.items.set(x.id, it); m.dirty = true; }
-      if (x.when === "live" && (liveNow !== true || started)) { it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // hors direct, ou le direct vient de commencer : on repart de zéro
+      if (!open.get(x.id) || (x.when === "live" && (liveNow !== true || started))) { it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // hors direct, ou le direct vient de commencer : on repart de zéro
       it.lines = Math.min(it.lines + 1, 1_000_000); m.dirty = true;
     }
-    const due = timers.filter((x) => { const it = m.items.get(x.id); return it && now - it.lastAt >= x.minutes * 60_000 && it.lines >= x.lines && (m.fail.get(x.id) ?? 0) <= now; });
+    const due = timers.filter((x) => { const it = m.items.get(x.id); return open.get(x.id) && it && now - it.lastAt >= x.minutes * 60_000 && it.lines >= x.lines && (m.fail.get(x.id) ?? 0) <= now; });
     let result = { sent: false, why: due.length ? "wait" : "none" };
     if (due.length && !commandSent) {
       d = d ?? (await readyNow(ctx, s, m, now));
