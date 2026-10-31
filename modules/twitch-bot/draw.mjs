@@ -1,5 +1,5 @@
 // L'alimentation d'un tirage au sort de Participation (service facultatif `audience.draw`). Le bot ne tient aucun tirage : il lit son état (`status()`) et transmet
-// le pseudo d'une personne qui a tapé EXACTEMENT le mot-clé du tirage (`enter({ pseudo, platform, login })`). Participation possède les pseudos, le tirage et le résultat.
+// le pseudo d'une personne qui a tapé EXACTEMENT le mot-clé du tirage (`enter({ pseudo, platform: "twitch", login, role })`, `role` : all, sub ou mod selon les badges). Participation possède les pseudos, le tirage et le résultat.
 // Règles : réponse de `status()` gardée 10 s, appel borné à 1,5 s, jamais bloquant, jamais d'erreur visible ; le bot ne répond JAMAIS dans le chat pour une participation ;
 // une participation n'est envoyée qu'une fois par personne et par tirage (mémoire de 5 000 pseudos au plus, effacée quand le tirage se ferme) ; rien n'est envoyé pendant
 // l'arrêt d'urgence, ni hors direct si le réglage « seulement en direct » est actif ; rien de ce que les gens écrivent n'est gardé.
@@ -13,7 +13,9 @@ const { diagnose } = await import(`./listen.mjs${v}`);
 
 export const SERVICE = "audience.draw";
 export const DRAW_LIMITS = { statusTtlMs: 10_000, callMs: 1500, maxEntered: 5000 };
-const NEED = { everyone: 0, subscriber: 1, moderator: 2 };
+const NEED = { all: 0, sub: 1, mod: 2 };
+/** Le niveau le plus haut que le bot connaît pour cette personne (la modération et la chaîne comptent comme abonnées) : « all », « sub » ou « mod ». */
+const roleOf = (chat) => { const n = levelOf(chat); return n >= 2 ? "mod" : n === 1 ? "sub" : "all"; };
 
 const mem = new Map();
 const of = (ctx) => { const k = ctx.instance.key; if (!mem.has(k)) mem.set(k, { status: null, until: 0, drawId: null, entered: new Set() }); return mem.get(k); };
@@ -28,8 +30,9 @@ async function status(ctx, m, now) {
   try {
     const r = await bounded(Promise.resolve(ctx.api.services.call(SERVICE, "status", {})), DRAW_LIMITS.callMs, null);
     const x = r?.ok ? r.value : null;
+    // `keyword` : « !mot » (minuscules) ou « » (tirage sans chat : le bot n'envoie rien).
     if (x && typeof x === "object" && x.open === true && typeof x.keyword === "string" && x.keyword.trim()) {
-      value = { open: true, keyword: x.keyword.trim().toLowerCase().slice(0, 60), level: Object.hasOwn(NEED, x.level) ? x.level : "everyone", expiresAt: typeof x.expiresAt === "string" ? x.expiresAt.slice(0, 40) : "" };
+      value = { open: true, keyword: x.keyword.trim().toLowerCase().slice(0, 60), level: Object.hasOwn(NEED, x.level) ? x.level : "all", expiresAt: typeof x.expiresAt === "string" ? x.expiresAt.slice(0, 40) : "" };
     }
   } catch { value = null; }
   m.status = value;
@@ -45,11 +48,11 @@ export async function feedDraw(ctx, chat, { now = Date.now() } = {}) {
     if (!open) { if (m.drawId !== null) { m.drawId = null; m.entered.clear(); } return { entered: false, why: "closed" }; }
     const id = `${open.keyword}|${open.expiresAt}`;
     if (m.drawId !== id) { m.drawId = id; m.entered.clear(); }   // un autre tirage a pris la place : on repart de zéro
-    const word = String(chat.text ?? "").trim().toLowerCase();
-    const bare = s.prefix && word.startsWith(s.prefix) ? word.slice(s.prefix.length).trim() : word;
-    const key = s.prefix && open.keyword.startsWith(s.prefix) ? open.keyword.slice(s.prefix.length).trim() : open.keyword;
-    if (!bare || bare !== key) return { entered: false, why: "no_match" };
-    if (levelOf(chat) < NEED[open.level]) return { entered: false, why: "level" };
+    // Le message tel que tapé (espaces rognés, sans tenir compte des majuscules) doit être EXACTEMENT le mot-clé du tirage, qui commence déjà par « ! » :
+    // le préfixe des commandes du bot n'entre pas en jeu (il peut être différent).
+    if (String(chat.text ?? "").trim().toLowerCase() !== open.keyword) return { entered: false, why: "no_match" };
+    const role = roleOf(chat);
+    if (NEED[role] < NEED[open.level]) return { entered: false, why: "level" };
     if (m.entered.has(chat.chatterId)) return { entered: false, why: "already" };
     if (m.entered.size >= DRAW_LIMITS.maxEntered) return { entered: false, why: "full" };
     const d = await diagnose(ctx, s, { declare: false });
@@ -57,7 +60,7 @@ export async function feedDraw(ctx, chat, { now = Date.now() } = {}) {
     if (await st.isMuted(ctx)) return { entered: false, why: "muted" };
     if (s.onlyWhenLive) { const live = await src.liveState(ctx, d.channel); if (!live?.known || !live.live) return { entered: false, why: "offline" }; }
     m.entered.add(chat.chatterId);
-    await bounded(Promise.resolve(ctx.api.services.call(SERVICE, "enter", { pseudo: pseudo(chat.name || chat.login), platform: "twitch", login: chat.login })), DRAW_LIMITS.callMs, null).catch(() => null);   // la réponse est ignorée
+    await bounded(Promise.resolve(ctx.api.services.call(SERVICE, "enter", { pseudo: pseudo(chat.name || chat.login), platform: "twitch", login: chat.login, role })), DRAW_LIMITS.callMs, null).catch(() => null);   // la réponse est ignorée
     return { entered: true };
   } catch { return { entered: false, why: "error" }; }
 }

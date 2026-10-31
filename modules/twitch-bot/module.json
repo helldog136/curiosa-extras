@@ -20,7 +20,7 @@
     { "service": "twitch.api", "min": 3 },
     { "service": "twitch.live" },
     { "service": "home-assistant.bridge", "optional": true },
-    { "service": "audience.draw", "optional": true }
+    { "service": "audience.draw", "min": 1, "optional": true }
   ],
   "dataVersion": 4,
   "consumes": [
