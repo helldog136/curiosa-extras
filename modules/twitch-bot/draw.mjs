@@ -19,7 +19,7 @@ const mem = new Map();
 const of = (ctx) => { const k = ctx.instance.key; if (!mem.has(k)) mem.set(k, { status: null, until: 0, drawId: null, entered: new Set() }); return mem.get(k); };
 export const resetDrawMemory = () => mem.clear();
 
-const bounded = (p, ms, fallback) => { let timer; const late = new Promise((resolve) => { timer = setTimeout(() => resolve(fallback), ms); timer.unref?.(); }); return Promise.race([p, late]).finally(() => clearTimeout(timer)); };
+const bounded = (p, ms, fallback) => { let timer; const late = new Promise((resolve) => { timer = setTimeout(() => resolve(fallback), ms); }); return Promise.race([p, late]).finally(() => clearTimeout(timer)); };
 
 async function status(ctx, m, now) {
   if (m.until > now) return m.status;

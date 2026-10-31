@@ -38,8 +38,8 @@ export function world(o = {}) {
   const ctx = fakeCtx({
     key: "bot", moduleId: "twitch-bot", locale: "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.locale === "en" ? en : fr, settings, siteUrl: o.siteUrl ?? "https://site.example.org", topics, instances,
     can: o.can,
+    services: o.draw ? { "audience.draw": o.draw } : {},
     serviceInstances: {
-      ...(o.draw ? { "audience.draw": [{ instance: "aud", name: "aud", methods: o.draw }] } : {}),
       "twitch.api": [{ instance: "emma", name: "emma", methods: {
         account: (a) => {
           if (a?.channel && a.channel !== "emma") return { ok: false, error: "other_channel" };
