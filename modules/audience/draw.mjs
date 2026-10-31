@@ -88,7 +88,7 @@ export async function status(ctx, now = Date.now()) {
     sweepSoon(ctx, now);
     const d = await current(ctx, now);
     if (!d || P.stateOf(d, now) !== "open") return none;
-    return { open: true, keyword: d.keyword || "", level: P.LEVELS.includes(d.level) ? d.level : "all", ...(d.untilClosed ? {} : { expiresAt: iso(P.deadlineOf(d)) }) };
+    return { open: true, keyword: d.keyword || "", level: P.LEVELS.includes(d.level) ? d.level : "all", ...(d.untilClosed ? {} : { expiresAt: iso(P.deadlineOf(d)) }), id: `${d.k}-${d.gen || 0}` };
   } catch { return none; }
 }
 

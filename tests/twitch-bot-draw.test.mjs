@@ -52,6 +52,17 @@ test("une seule fois par personne et par tirage ; un autre tirage (autre mot-cl�
   assert.equal(f.entries.length, 2);
 });
 
+test("l'identifiant du tirage (id, facultatif) : un nouveau tirage avec le même mot-clé et sans échéance repart de zéro, sans attendre d'avoir vu « fermé »", async () => {
+  const { ctx, f } = mk({}, { open: true, keyword: "!tirage", level: "all", id: "A-0" });
+  assert.equal((await say(ctx, "!tirage", { chatterId: "1", login: "ada" })).entered, true);
+  assert.equal((await say(ctx, "!tirage", { chatterId: "1", login: "ada" }, NOW + 11_000)).why, "already", "même tirage");
+  f.d.state.id = "B-0";
+  assert.equal((await say(ctx, "!tirage", { chatterId: "1", login: "ada" }, NOW + 22_000)).entered, true, "autre tirage");
+  f.d.state.id = "B-1";
+  assert.equal((await say(ctx, "!tirage", { chatterId: "1", login: "ada" }, NOW + 33_000)).entered, true, "liste vidée");
+  assert.equal(f.entries.length, 3);
+});
+
 test("la mémoire est effacée quand le tirage se ferme ; fermé, rien n'est envoyé ; la lecture de l'état est gardée 10 s", async () => {
   const { ctx, f } = mk();
   await say(ctx, "!tirage", { chatterId: "1", login: "ada" });

@@ -45,12 +45,14 @@ test("status() : sans tirage ou tirage fermé → { open: false, keyword: '', le
   const c = audienceCtx(); const s = svc(c);
   assert.deepEqual(await s.status(), { open: false, keyword: "", level: "all" });
   await open(c, { keyword: "Cadeau", level: "sub" });
-  assert.deepEqual(await s.status(), { open: true, keyword: "!cadeau", level: "sub" }, "mot-clé normalisé ; pas de date quand le tirage dure jusqu'à la fermeture");
+  const st1 = await s.status();
+  assert.match(st1.id, /^\S+-0$/, "un identifiant opaque du tirage (il change à chaque nouveau tirage et quand la liste est vidée)");
+  assert.deepEqual(st1, { open: true, keyword: "!cadeau", level: "sub", id: st1.id }, "mot-clé normalisé ; pas de date quand le tirage dure jusqu'à la fermeture");
   await D.close(c, { now: T0 + 1000 });
   assert.deepEqual(await s.status(), { open: false, keyword: "", level: "all" });
   await open(c, { minutes: 15 }, T0 + 2000);
   const st = await D.status(c, T0 + 3000);
-  assert.deepEqual(Object.keys(st).sort(), ["expiresAt", "keyword", "level", "open"]);
+  assert.deepEqual(Object.keys(st).sort(), ["expiresAt", "id", "keyword", "level", "open"]);
   assert.equal(st.expiresAt, new Date(T0 + 2000 + 15 * 60_000).toISOString());
   assert.ok(!/secret|token|pid|count|"key"/i.test(flat(st)), "aucun secret ni compteur");
   // jamais d'exception : même avec un stockage en panne

@@ -28,11 +28,16 @@ async function status(ctx, m, now) {
   m.until = now + DRAW_LIMITS.statusTtlMs;   // même un échec est gardé 10 s : un service muet ne ralentit jamais le chat
   let value = null;
   try {
+    // Participation n'est pas installée (besoin facultatif) : aucun appel de service, seulement la question « qui l'offre ? » (locale, sans effet), gardée 10 s comme le reste.
+    if (typeof ctx.api.services.providers === "function") {
+      const who = await bounded(Promise.resolve(ctx.api.services.providers(SERVICE)), DRAW_LIMITS.callMs, null);
+      if (Array.isArray(who) && who.length === 0) { m.status = null; return null; }
+    }
     const r = await bounded(Promise.resolve(ctx.api.services.call(SERVICE, "status", {})), DRAW_LIMITS.callMs, null);
     const x = r?.ok ? r.value : null;
     // `keyword` : « !mot » (minuscules) ou « » (tirage sans chat : le bot n'envoie rien).
     if (x && typeof x === "object" && x.open === true && typeof x.keyword === "string" && x.keyword.trim()) {
-      value = { open: true, keyword: x.keyword.trim().toLowerCase().slice(0, 60), level: Object.hasOwn(NEED, x.level) ? x.level : "all", expiresAt: typeof x.expiresAt === "string" ? x.expiresAt.slice(0, 40) : "" };
+      value = { open: true, keyword: x.keyword.trim().toLowerCase().slice(0, 60), level: Object.hasOwn(NEED, x.level) ? x.level : "all", expiresAt: typeof x.expiresAt === "string" ? x.expiresAt.slice(0, 40) : "", id: typeof x.id === "string" ? x.id.slice(0, 60) : "" };
     }
   } catch { value = null; }
   m.status = value;
@@ -46,7 +51,7 @@ export async function feedDraw(ctx, chat, { now = Date.now() } = {}) {
     if (chat.foreign || st.isOwnMessage(ctx, chat.messageId) || s.bots.has(chat.login)) return { entered: false, why: "ignored" };
     const open = await status(ctx, m, now);
     if (!open) { if (m.drawId !== null) { m.drawId = null; m.entered.clear(); } return { entered: false, why: "closed" }; }
-    const id = `${open.keyword}|${open.expiresAt}`;
+    const id = `${open.id}|${open.keyword}|${open.expiresAt}`;   // `id` (Participation 1.2.0) : change à chaque nouveau tirage et quand la liste est vidée, même avec le même mot-clé et sans échéance
     if (m.drawId !== id) { m.drawId = id; m.entered.clear(); }   // un autre tirage a pris la place : on repart de zéro
     // Le message tel que tapé (espaces rognés, sans tenir compte des majuscules) doit être EXACTEMENT le mot-clé du tirage, qui commence déjà par « ! » :
     // le préfixe des commandes du bot n'entre pas en jeu (il peut être différent).
