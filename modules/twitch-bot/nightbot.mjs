@@ -77,6 +77,7 @@ export function mapLevel(raw) {
 /* ───────────── Lire la liste collée ───────────── */
 
 const LEVEL_CELL = /^(everyone|all|regulars?|subscribers?|sub|moderators?|mods?|owner|editor|broadcaster|twitch [a-z ]+|tout le monde|tous|abonn[ée]s?|propri[ée]taire)$/i;
+const HEADER_WORD = /^(message|messages|response|reponse|réponse|user ?level|userlevel|niveau|cooldown|delai|délai|count|uses|interval|intervalle|chat lines|lines|lignes|status|statut|name|nom|alias|actions?)$/;
 const HEADER = /\b(command|commande|name|nom)\b.*\b(message|response|reponse|réponse)\b/i;
 const num = (c) => { const m = /^(\d+)\s*(?:s|sec|secs|seconds?|secondes?|m|min|mins|minutes?)?$/i.exec(String(c ?? "").trim()); return m ? Number(m[1]) : null; };
 const minutesOf = (c) => {
@@ -152,7 +153,7 @@ export function parseNightbot(input) {
     if (/^(default commands?|commandes? par d[ée]faut)$/.test(low)) { flush(); section = "default"; continue; }
     if (/^(timers?|minuteurs?)$/.test(low)) { flush(); section = "timers"; continue; }
     if (/^(custom commands?|commands?|commandes?( personnalis[ée]es?)?)$/.test(low)) { flush(); section = "commands"; continue; }
-    if (HEADER.test(text) && !text.startsWith("!")) continue;
+    if (!text.startsWith("!") && (HEADER.test(text) || (!pending && HEADER_WORD.test(low)))) continue;   // en-tête du tableau (en une ligne, ou un mot par ligne)
     if (section === "default" && text.startsWith("!") === false) continue;
     const t = /^(?:timer|minuteur)\s+([^|]+?)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(.+)$/i.exec(text);
     if (t) { flush(); rows.push({ kind: "timer", name: t[1], message: t[4], minutes: Number(t[2]), lines: Number(t[3]), enabled: true }); continue; }

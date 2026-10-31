@@ -70,7 +70,7 @@ export function safeText(body) {
   return String(body ?? "").normalize("NFKC").replace(/[{}]/g, "").replace(/[\r\n\t\u2028\u2029]+/g, " ").replace(/\p{C}+/gu, "").replace(/\s+/g, " ").trim().slice(0, FETCH_LIMITS.maxChars);
 }
 
-const within = (p, ms) => { let timer; const late = new Promise((resolve) => { timer = setTimeout(() => resolve({ ok: false, code: "timeout" }), ms); timer.unref?.(); }); return Promise.race([p, late]).finally(() => clearTimeout(timer)); };
+const within = (p, ms) => { let timer; const late = new Promise((resolve) => { timer = setTimeout(() => resolve({ ok: false, code: "timeout" }), ms); }); return Promise.race([p, late]).finally(() => clearTimeout(timer)); };
 
 /**
  * Va chercher un texte. `hosts` : la liste blanche. `resolve` (tests) : remplace la résolution du nom. Rend { ok: true, text } ou { ok: false, code } ; ne lève jamais.

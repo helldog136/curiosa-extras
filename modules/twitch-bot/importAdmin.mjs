@@ -146,7 +146,7 @@ export const actions = {
     if (!text.trim()) return { errors: { paste: ctx.t("nb_e_empty") } };
     const sources = (await (await import(`./sources.mjs${v}`)).gather(ctx, null));
     const a = await analyse(ctx, text, { sources });
-    if (!a.rows.length) return { errors: { paste: ctx.t("nb_e_nothing") } };
+    if (!a.rows.some((r) => r.kind !== "unknown")) return { errors: { paste: ctx.t("nb_e_nothing") } };
     await writeDraft(ctx, { at: Date.now(), truncated: a.truncated, rows: a.rows });
     return { ok: ctx.t("nb_analysed", { n: a.rows.length }), redirect: "?import=1#import" };
   }),

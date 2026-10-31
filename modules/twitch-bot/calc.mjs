@@ -16,9 +16,9 @@ function tokenize(src) {
     const c = src[i];
     if (c === " ") { i++; continue; }
     if (/[0-9.]/.test(c)) {
-      const m = /^(?:\d+(?:[.,]\d+)?|[.,]\d+)/.exec(src.slice(i));
+      const m = /^(?:\d+(?:\.\d+)?|\.\d+)/.exec(src.slice(i));
       if (!m) fail("syntax");
-      out.push({ t: "num", v: Number(m[0].replace(",", ".")) });
+      out.push({ t: "num", v: Number(m[0]) });
       i += m[0].length;
     } else if (/[a-z]/i.test(c)) {
       const m = /^[a-z]+/i.exec(src.slice(i))[0].toLowerCase();
