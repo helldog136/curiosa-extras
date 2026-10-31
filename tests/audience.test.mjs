@@ -6,7 +6,7 @@ import { parseManifest } from "@/core/modules/manifest";
 import { audienceCtx, bind, def, manifest, fr, en, L, K, C, R, tok } from "./helpers/audienceHarness.mjs";
 
 const DIR = new URL("../modules/audience", import.meta.url).pathname;
-const sources = Object.fromEntries(["index", "core", "lib", "remote", "client"].map((f) => [f, fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")]));
+const sources = Object.fromEntries(["index", "core", "lib", "remote", "client", "draw", "drawlib", "drawview"].map((f) => [f, fs.readFileSync(`${DIR}/${f}.mjs`, "utf8")]));
 const DAY = 86_400_000;
 
 /* ───────────── Manifeste, textes, code ───────────── */
@@ -20,19 +20,19 @@ test("manifeste valide ; textes présents et alignés fr/en ; réglages lus ; ac
   const declared = new Set(manifest.settings.map((s) => s.key));
   for (const m of all.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)) assert.ok(declared.has(m[1]), m[1]);
   for (const a of manifest.mcp) { assert.equal(typeof def.mcp[a.name], "function", a.name); assert.ok(a.name.length <= 31); }
-  assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["moderate", "remote.use"]);
-  assert.equal(manifest.minCore, "0.2.5"); assert.equal(manifest.version, "1.1.0"); assert.equal(manifest.instances, "single");
+  assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["draw.manage", "moderate", "remote.use"]);
+  assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.version, "1.2.0"); assert.equal(manifest.instances, "single");
   assert.equal(manifest.offers[0].service, "audience.session");
   assert.deepEqual(manifest.requires, [{ service: "audience.remote", optional: true }], "il ne dépend de rien : les modules branchés sont facultatifs");
   const byName = Object.fromEntries(manifest.mcp.map((a) => [a.name, a]));
   assert.ok(byName.audience_rooms.readOnly && byName.audience_journal.readOnly);
   assert.ok(!byName.audience_mute.readOnly && !byName.audience_mute.default, "une écriture n'est jamais accordée d'office");
   assert.ok(byName.audience_clear_room.destructive && byName.audience_clear_room.default === false);
-  assert.equal(manifest.tabs.filter((t) => !["use", "settings", "sources", "general"].includes(t.id)).length, 1, "un seul onglet ajouté");
+  assert.equal(manifest.tabs.filter((t) => !["use", "settings", "sources", "general"].includes(t.id)).length, 2, "deux onglets ajoutés : salles et pseudos, tirage au sort");
 });
 
 test("ni appel réseau direct, ni tâche de fond, ni boucle serrée ; les scripts du navigateur se compilent et restent doux", () => {
-  for (const f of ["index", "core", "lib", "remote"]) {
+  for (const f of ["index", "core", "lib", "remote", "draw", "drawlib"]) {
     assert.ok(!/\bfetch\s*\(/.test(sources[f]), `${f} : pas de fetch côté serveur`);
     assert.ok(!/setInterval/.test(sources[f]), `${f} : aucun minuteur répété`);
   }
