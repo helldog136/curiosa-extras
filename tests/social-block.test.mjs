@@ -11,7 +11,8 @@ const root = new URL("../", import.meta.url).pathname;
 const json = (f) => JSON.parse(fs.readFileSync(`${root}${f}`, "utf8"));
 const core = path.resolve(process.env.CURIOSA_DIR ?? process.cwd());
 const hasCore = fs.existsSync(path.join(core, "src/core/socialRecognize.ts"));
-const R = hasCore ? await import("@/core/socialRecognize") : null;
+// 0.7.0 : la lecture est dans socialRecognize.ts, la validation du bloc dans socialSpec.ts.
+const R = hasCore ? { ...(await import("@/core/socialRecognize")), ...(fs.existsSync(path.join(core, "src/core/socialSpec.ts")) ? await import("@/core/socialSpec") : {}) } : null;
 
 test("bloc social : chaque réseau le porte dans son module.json, identique à la table, et le catalogue le recopie", () => {
   const index = json("catalogue/index.json");
