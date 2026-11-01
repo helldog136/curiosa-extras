@@ -361,5 +361,19 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page de commandes : les places disponibles et le formulaire pour faire une demande.",
+        "en": "Your commissions page: the open slots and the form to make a request."
+      },
+      "alt": {
+        "fr": "Page de commandes indiquant que la file est ouverte, le nombre de places et un formulaire de demande.",
+        "en": "Commissions page showing the queue is open, the number of slots and a request form."
+      }
+    }
   ]
 }

@@ -669,5 +669,19 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre quiz du jour : une question, quelques réponses, et l'envie de revenir demain.",
+        "en": "Your daily quiz: one question, a few answers, and a reason to come back tomorrow."
+      },
+      "alt": {
+        "fr": "Page d'un quiz avec une question sur les couleurs et quatre réponses à choisir.",
+        "en": "Quiz page with a question about colours and four answers to pick from."
+      }
+    }
   ]
 }

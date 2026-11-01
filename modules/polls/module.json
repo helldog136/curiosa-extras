@@ -5,7 +5,7 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
   "minCore": "0.5.0",
   "description": {
     "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS). New: rounds (\"every 10 minutes the chat decides\", with the winner shown on screen) and a quick \"A or B?\" poll from your phone.",

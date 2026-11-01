@@ -4,6 +4,22 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.33.0
+
+*Les fiches des extensions montrent maintenant à quoi ressemble ce qu'elles ajoutent à votre site. Pour Curiosa 0.6.0 ou plus ; les visuels apparaissent dans la fiche avec la prochaine version du cœur, les versions plus anciennes continuent d'afficher la fiche comme avant.*
+
+### Nouveautés
+
+- **Des visuels dans la fiche de chaque extension les plus parlantes.** Avant d'installer, vous voyez par exemple une page de commandes type, la semaine du planning, un sondage et ses résultats, un agenda d'événements, un album photo, la page « Merci », la FAQ ou votre page de liens avec le bouton « Mes réseaux ». Chaque image a une légende et un texte alternatif, en français et en anglais. Extensions touchées, chacune en version corrective (« ajoute des visuels dans sa fiche ») : Bot Twitch 1.7.1, Planning 2.5.1, Sondages 1.3.1, Événements 1.0.2, Galeries photos 1.1.2, Questions fréquentes 1.0.3, Mur des remerciements 1.2.1, Liens 1.0.2, Autres plateformes 1.1.2.
+- **Aucune donnée réelle dans ces images.** Chaque capture est fabriquée avec un faux site (« Atelier Démo »), des pseudos génériques, des adresses en `example.org` et des illustrations dessinées : ni pseudo, ni nom, ni adresse, ni photo d'une vraie personne.
+
+### Pour les développeurs
+
+- **Clé `previews` du `module.json`** (6 visuels au plus : `file`, `type` public / admin / overlay, `caption`, `alt`, français et anglais obligatoires ; image WebP ou PNG de 150 Ko au plus, 240 à 2400 px). Aucun `minCore` : un cœur plus ancien ignore la clé.
+- **`scripts/build-index.mjs`** recopie `previews` (la déclaration, jamais les images) dans l'entrée du catalogue et **refuse** un visuel invalide (nombre, nom, type réel lu dans les octets, poids, dimensions, textes manquants). `--check` échoue si une image référencée manque. Les règles sont dans `scripts/rules.mjs` (`previewProblems`, `sniffImage`, `previewIndex`), les mêmes bornes que le cœur.
+- **`scripts/shoot-previews.mjs`** régénère toutes les captures de façon reproductible (horloge figée, Chromium, WebP) depuis des scènes `tests/visual/previews/<module>.mjs` : vrai code du module, vrais composants du cœur pour l'administration, données inventées, et un garde-fou qui refuse toute adresse hors `example.*` ou tout nom interdit. `--check` vérifie les images déclarées sans rien générer. Mode d'emploi et règles de confidentialité : README, section « Les visuels des fiches ».
+- Tests : `tests/previews.test.mjs` (validation, index, `--check`, légendes au vouvoiement, scène pour chaque module illustré, données inventées).
+
 ## 1.30.0
 
 *L'onglet « Récompenses » du Bot Twitch est refait, et le haut de la page « Commandes » tient en une ligne. Bot Twitch 1.7.0 : pour Curiosa 0.6.0 ou plus.*

@@ -5,7 +5,7 @@
     "fr": "Questions fréquentes",
     "en": "FAQ"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minCore": "0.2.6",
   "description": {
     "fr": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a été utile » et une boîte pour les questions du public.",

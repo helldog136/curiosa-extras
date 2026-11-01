@@ -582,5 +582,19 @@
       }
     }
   ],
-  "dataVersion": 1
+  "dataVersion": 1,
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre vitrine : membres, artistes ou partenaires, avec recherche et filtre par catégorie.",
+        "en": "Your showcase: members, artists or partners, with search and a filter by category."
+      },
+      "alt": {
+        "fr": "Page d'annuaire avec un champ de recherche, des boutons de catégories et des cartes de membres avec photo et nom.",
+        "en": "Directory page with a search field, category buttons and member cards with photo and name."
+      }
+    }
+  ]
 }

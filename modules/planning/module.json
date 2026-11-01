@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.5.0",
+  "version": "2.5.1",
   "minCore": "0.5.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",

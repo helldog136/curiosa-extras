@@ -631,5 +631,19 @@
         }
       ]
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page d'avis : seuls ceux que vous avez validés s'affichent, avec leur note.",
+        "en": "Your reviews page: only the ones you approved are shown, with their rating."
+      },
+      "alt": {
+        "fr": "Page d'avis avec une grille de témoignages, chacun avec le nom de la personne, une note en étoiles et un texte.",
+        "en": "Reviews page with a grid of testimonials, each with the person's name, a star rating and a text."
+      }
+    }
   ]
 }

@@ -73,3 +73,7 @@ Six outils : l'état du mur, la liste des personnes d'un groupe, écrire ou reti
 ## Vie privée
 
 Le module ne copie ni nom, ni photo, ni pseudo : il garde seulement vos messages et vos mises à l'honneur, rattachés au numéro de la fiche. Quand une fiche est exportée ou effacée depuis Contacts, ces éléments sont exportés ou effacés avec elle.
+
+## Visuels de la fiche
+
+Depuis la version 1.2.1, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).
