@@ -15,7 +15,7 @@ const load = (root, mod, file = "index.mjs") => import(`${path.join(root, "modul
 const sha = (s) => createHash("sha256").update(String(s)).digest("hex");
 
 /** Le manifeste sans ce que les éléments d'overlay ajoutent (version, minCore, clé overlayElements). */
-const manifestRest = (m, extraPermission) => { const { version, minCore, overlayElements, ...rest } = m; return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) }; };
+const manifestRest = (m, extraPermission) => { const { version, minCore, overlayElements, previews, ...rest } = m; return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) }; };
 
 /** Suggestions de jeux : la page publique (tous les filtres), l'administration, les outils MCP, le vote et la suggestion, sur un jeu de données fixe. */
 export async function gamesSnapshot(root) {

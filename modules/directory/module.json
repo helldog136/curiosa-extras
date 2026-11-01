@@ -6,7 +6,7 @@
     "fr": "Annuaire",
     "en": "Directory"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": {
     "fr": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
     "en": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype."
@@ -582,5 +582,19 @@
       }
     }
   ],
-  "dataVersion": 1
+  "dataVersion": 1,
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre vitrine : membres, artistes ou partenaires, avec recherche et filtre par catégorie.",
+        "en": "Your showcase: members, artists or partners, with search and a filter by category."
+      },
+      "alt": {
+        "fr": "Page d'annuaire avec un champ de recherche, des boutons de catégories et des cartes de membres avec photo et nom.",
+        "en": "Directory page with a search field, category buttons and member cards with photo and name."
+      }
+    }
+  ]
 }

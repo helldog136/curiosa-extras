@@ -59,3 +59,7 @@ Aucun cookie, aucun nom ni e-mail demandé. Une vidéo YouTube ne se charge qu'a
 - Service offert `event.source` (méthode `upcoming`) et sujet publié `map.place`. Services facultatifs consommés : `gallery.albums` et `videos.library`.
 - Toutes les heures sont gardées comme « jour + heure du mur + nom de fuseau » : l'instant exact se calcule à la lecture (changements d'heure justes, y compris dans une répétition).
 - Détails : `docs/ideas/events.md` du dépôt.
+
+## Visuels de la fiche
+
+Depuis la version 1.0.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

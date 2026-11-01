@@ -105,3 +105,69 @@ export function manifestsAt(root, tag) {
   }
   return out;
 }
+
+/**
+ * VISUELS D'UNE FICHE (`previews` de module.json, cœur 0.6.x) : les MÊMES bornes que le cœur (src/core/modules/previews.ts) pour que ce dépôt refuse ce que le cœur écarterait.
+ * Les images restent dans le dépôt du module (`previews/`) : l'index du catalogue n'en recopie que la déclaration (file, type, caption, alt), jamais les octets.
+ */
+export const PREVIEW_LIMITS = { max: 6, bytes: 150 * 1024, minSide: 240, maxSide: 2400, maxPixels: 4_000_000, caption: 140, alt: 250 };
+export const PREVIEW_TYPES = ["public", "admin", "overlay"];
+const PREVIEW_FILE_RE = /^previews\/[a-z0-9][a-z0-9._-]{0,63}\.(webp|png)$/;
+const LOCALE_RE = /^[a-z]{2}(-[A-Za-z]{2,4})?$/;
+
+/** Type RÉEL et dimensions d'après les octets (jamais l'extension) : PNG ou WebP (lossy, lossless, étendu) ; null pour tout le reste. */
+export function sniffImage(b) {
+  if (b.length > 33 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) && b.subarray(12, 16).toString("latin1") === "IHDR") return { type: "png", width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+  if (b.length > 30 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WEBP") {
+    const kind = b.subarray(12, 16).toString("latin1");
+    if (kind === "VP8 " && b.readUInt8(23) === 0x9d && b.readUInt8(24) === 0x01 && b.readUInt8(25) === 0x2a) return { type: "webp", width: b.readUInt16LE(26) & 0x3fff, height: b.readUInt16LE(28) & 0x3fff };
+    if (kind === "VP8L" && b.readUInt8(20) === 0x2f) { const v = b.readUInt32LE(21); return { type: "webp", width: (v & 0x3fff) + 1, height: ((v >> 14) & 0x3fff) + 1 }; }
+    if (kind === "VP8X") return { type: "webp", width: b.readUIntLE(24, 3) + 1, height: b.readUIntLE(27, 3) + 1 };
+  }
+  return null;
+}
+
+/**
+ * Problèmes d'une déclaration `previews` (liste vide = valide). `dir` : le dossier du module ; s'il est donné, chaque fichier doit y exister, peser 150 Ko au plus,
+ * être un vrai PNG/WebP du type de son extension et avoir des dimensions admises. Sans `dir`, seule la déclaration est vérifiée.
+ */
+export function previewProblems(previews, dir) {
+  if (previews === undefined) return [];
+  if (!Array.isArray(previews)) return ["previews doit être une liste."];
+  const problems = [];
+  if (previews.length > PREVIEW_LIMITS.max) problems.push(`previews : ${previews.length} visuels, ${PREVIEW_LIMITS.max} au plus.`);
+  const seen = new Set();
+  for (const [i, p] of previews.entries()) {
+    const at = `previews[${i}]`;
+    if (!p || typeof p !== "object") { problems.push(`${at} : doit être un objet { file, type, caption, alt }.`); continue; }
+    if (typeof p.file !== "string" || !PREVIEW_FILE_RE.test(p.file)) { problems.push(`${at}.file : « ${p.file} » doit être previews/<nom>.webp ou .png (minuscules, chiffres, ., _, -).`); continue; }
+    if (seen.has(p.file)) problems.push(`${at} : « ${p.file} » est déclaré deux fois.`);
+    seen.add(p.file);
+    if (!PREVIEW_TYPES.includes(p.type)) problems.push(`${at}.type : « ${p.type} » doit être public, admin ou overlay.`);
+    for (const [key, max] of [["caption", PREVIEW_LIMITS.caption], ["alt", PREVIEW_LIMITS.alt]]) {
+      const v = p[key];
+      if (!v || typeof v !== "object" || Array.isArray(v)) { problems.push(`${at}.${key} : doit donner le texte en français ET en anglais.`); continue; }
+      for (const lang of ["fr", "en"]) if (typeof v[lang] !== "string" || !v[lang].trim()) problems.push(`${at}.${key}.${lang} : texte obligatoire${key === "alt" ? " (texte alternatif pour les lecteurs d'écran)" : ""}.`);
+      for (const [lang, text] of Object.entries(v)) {
+        if (!LOCALE_RE.test(lang)) problems.push(`${at}.${key} : langue « ${lang} » invalide.`);
+        else if (typeof text === "string" && text.trim().length > max) problems.push(`${at}.${key}.${lang} : ${text.trim().length} caractères, ${max} au plus.`);
+      }
+    }
+    if (!dir) continue;
+    const file = path.join(dir, p.file);
+    let st;
+    try { st = fs.lstatSync(file); } catch { problems.push(`${at}.file : « ${p.file} » n'existe pas dans le module.`); continue; }
+    if (!st.isFile()) { problems.push(`${at}.file : « ${p.file} » n'est pas un fichier.`); continue; }
+    if (st.size > PREVIEW_LIMITS.bytes) { problems.push(`${p.file} : ${Math.round(st.size / 1024)} Ko, ${PREVIEW_LIMITS.bytes / 1024} Ko au plus.`); continue; }
+    const info = sniffImage(fs.readFileSync(file));
+    if (!info) { problems.push(`${p.file} : ce n'est ni un PNG ni un WebP lisible.`); continue; }
+    if (!p.file.endsWith(`.${info.type}`)) problems.push(`${p.file} : l'extension annonce un autre type que le contenu (${info.type}).`);
+    const { width: w, height: h } = info;
+    if (w < PREVIEW_LIMITS.minSide || h < PREVIEW_LIMITS.minSide || w > PREVIEW_LIMITS.maxSide || h > PREVIEW_LIMITS.maxSide) problems.push(`${p.file} : ${w}×${h} px, entre ${PREVIEW_LIMITS.minSide} et ${PREVIEW_LIMITS.maxSide} px attendus.`);
+    else if (w * h > PREVIEW_LIMITS.maxPixels) problems.push(`${p.file} : ${w}×${h} px, ${PREVIEW_LIMITS.maxPixels} pixels au plus.`);
+  }
+  return problems;
+}
+
+/** Ce que l'index du catalogue recopie de `previews` : la déclaration seulement (file, type, caption, alt), dans l'ordre d'affichage, jamais les images. */
+export const previewIndex = (previews) => (Array.isArray(previews) ? previews.map((p) => ({ file: p.file, type: p.type, caption: p.caption, alt: p.alt })) : []);
