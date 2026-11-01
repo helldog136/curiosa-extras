@@ -4,6 +4,15 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Pour les développeurs
+
+- **Le cliquet d'ergonomie.** `tests/ergonomics.test.mjs` mesure, pour chaque module, les règles automatiques de `docs/ERGONOMIE-ADMIN.md` (réglages par onglet, mots interdits, libellés, aides et exemples, ton, parité FR/EN). Les écarts déjà présents sont listés dans `tests/ergonomics-baseline.json` : un nouvel écart fait échouer le test, un écart corrigé doit être retiré de la base, qui ne peut que rétrécir.
+- **Deux commandes.** `node scripts/ergonomics-baseline.mjs --write` écrit ou fait rétrécir la base (il refuse d'ajouter un écart) ; `--report` imprime le tableau « module, nombre d'écarts par règle ».
+- **`tests/helpers/ergonomics.mjs`** : copie de l'aide du kit du cœur (comme `tmp.mjs`), avec `assertAdminPageErgonomics(blocks)` pour les pages produites par du code. Aucune version du cœur n'est exigée ; un test vérifie que la copie reste identique à celle du cœur.
+- Aucun module ne change : ni version, ni comportement.
+
 ## 1.28.0
 
 *Deux modules évoluent. Le Bot Twitch rejoint Nightbot sur les commandes, les timers et l'import, ajoute des dates de validité qui reviennent toutes seules, et peut inscrire les personnes du chat à un tirage au sort. Participation ajoute ce tirage au sort, depuis le chat du stream ou depuis une page de votre site. Bot Twitch 1.5.0 : pour Curiosa 0.2.5 ou plus ; Participation 1.2.0 : pour Curiosa 0.5.0 ou plus. Modules touchés : Bot Twitch 1.5.0 et Participation 1.2.0.*
