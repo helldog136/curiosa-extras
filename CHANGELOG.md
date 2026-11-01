@@ -6,12 +6,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
+*L'onglet « Récompenses » du Bot Twitch est refait, et le haut de la page « Commandes » tient en une ligne. Bot Twitch 1.7.0 : pour Curiosa 0.6.0 ou plus.*
+
+### Nouveautés
+
+- **Un seul tableau de récompenses**, avec recherche en direct, filtres en pastilles, ce qui se passe (pastille colorée **et** écrite), le coût et un interrupteur « en vente / en pause » dans la ligne. Un seul bouton « Modifier » par ligne ; « Tester » et « Supprimer la récompense » sont dans le menu « ⋯ ».
+- **Un formulaire de trois champs** : Titre, Coût, Ce qui se passe. Tout le reste (réponse du bot, couleur, délai de recharge, texte d'aide, message du viewer) est sous « Plus d'options ». Une réponse sensée est prévue si vous n'écrivez rien.
+- **Une phrase et trois étapes** à la place de l'introduction de cinq lignes : activer, autoriser Twitch, relier la maison (facultatif), avec l'état de chaque étape. Une fois tout en place, une ligne dit l'état du Connecteur Home Assistant, avec le lien pour l'ouvrir et pour créer une récompense.
+- **« Vos actions »** : recherche, un bouton « Renommer » et « Retirer » dans le menu ; la colonne « Maison » ne parle que de ce qui sort de l'ordinaire.
+- **Le journal des échanges** a sa recherche et un filtre par résultat.
+- **Le haut de la page « Commandes » tient en une ligne** : « Le bot écoute votre chat », le dernier message, « répond pendant vos directs », un petit bouton « Vérifier » (ou « Réparer l'écoute » s'il y a un problème) et le bouton « Arrêt d'urgence », toujours visible. Plus de carte à un seul bouton.
+- **L'onglet « Sources »** s'appelle « Informations utilisées » dans cette page.
+
+### Pour les développeurs
+
+- Bot Twitch 1.7.0, `minCore` 0.6.0 : tableau enrichi, champs `duration`, `switch`, `folded`, `example` du cœur. L'action `rewardToggle` devient `rewardEnable` (l'interrupteur dit l'état voulu : `enabled` vaut `1` ou `0`). Le champ `cooldownMin` reste accepté ; le formulaire envoie `cooldown` en secondes. Le choix de la couleur est replié (vide : rouge).
+- `adminkit.client.js` reste pour les parties que le cœur ne couvre pas encore : période des commandes et des timers (la migration vers le contrôle natif est un lot suivant), aperçu et morceaux à insérer, et les boutons d'action en ligne (sans carte) en attendant une brique du cœur.
 ### Pour les développeurs
 
 - **Le cliquet d'ergonomie.** `tests/ergonomics.test.mjs` mesure, pour chaque module, les règles automatiques de `docs/ERGONOMIE-ADMIN.md` (réglages par onglet, mots interdits, libellés, aides et exemples, ton, parité FR/EN). Les écarts déjà présents sont listés dans `tests/ergonomics-baseline.json` : un nouvel écart fait échouer le test, un écart corrigé doit être retiré de la base, qui ne peut que rétrécir.
 - **Deux commandes.** `node scripts/ergonomics-baseline.mjs --write` écrit ou fait rétrécir la base (il refuse d'ajouter un écart) ; `--report` imprime le tableau « module, nombre d'écarts par règle ».
 - **`tests/helpers/ergonomics.mjs`** : copie de l'aide du kit du cœur (comme `tmp.mjs`), avec `assertAdminPageErgonomics(blocks)` pour les pages produites par du code. Aucune version du cœur n'est exigée ; un test vérifie que la copie reste identique à celle du cœur.
-- Aucun module ne change : ni version, ni comportement.
 
 ## 1.31.0
 

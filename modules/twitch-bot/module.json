@@ -1,13 +1,13 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.5",
+  "minCore": "0.6.0",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.6.0",
+  "version": "1.7.0",
   "platform": "twitch",
   "description": {
-    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…). It has ready-made commands and your own, timers, and commands managed from the chat. It also has an emergency switch and a short log of what it answered.",
-    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…). Il y a des commandes toutes prêtes et les vôtres, des timers et la gestion des commandes depuis le chat. Un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu complètent le tout."
+    "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
+    "fr": "Votre site répond aux commandes de votre chat Twitch, et gère timers, récompenses en points de chaîne et arrêt d'urgence."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -124,7 +124,8 @@
       }
     },
     { "id": "timers", "label": { "fr": "Timers", "en": "Timers" }, "panel": true },
-    { "id": "rewards", "label": { "fr": "Récompenses", "en": "Rewards" }, "panel": true }
+    { "id": "rewards", "label": { "fr": "Récompenses", "en": "Rewards" }, "panel": true },
+    { "id": "sources", "label": { "fr": "Informations utilisées", "en": "Information used" } }
   ],
   "settings": [
     {
@@ -138,6 +139,7 @@
     {
       "key": "stopMods",
       "type": "text",
+      "example": "marie_mod, paul_mod",
       "optional": true,
       "tab": "rewards",
       "label": { "en": "Moderators who may type !stop", "fr": "Équipe de modération qui peut taper !stop" },
@@ -147,6 +149,9 @@
       "key": "rewardWaitSeconds",
       "type": "number",
       "default": 120,
+      "min": 30,
+      "max": 600,
+      "unit": { "en": "seconds", "fr": "secondes" },
       "advanced": true,
       "tab": "rewards",
       "label": { "en": "How long to wait for the home before giving points back (seconds)", "fr": "Attente de la maison avant de rendre les points (secondes)" },
