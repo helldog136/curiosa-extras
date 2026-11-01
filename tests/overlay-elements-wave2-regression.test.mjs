@@ -21,12 +21,12 @@ test("Suggestions de jeux : page publique (tous les statuts), administration, MC
   const rest = (m) => { const { description, settings, ...r } = m; return { ...r, settings: settings.map((x) => x.key) }; };
   assert.deepEqual(rest(now.manifest), rest(before.manifest), "le manifeste n'a changé que par version, minCore, overlayElements, description et textes des réglages");
   assert.deepEqual(now.top, before.top); assert.deepEqual(now.routes, before.routes, "aucune route ajoutée à part celle de l'élément"); assert.deepEqual(now.tasks, before.tasks);
-  const thanks = (v) => JSON.parse(JSON.stringify(v).replace("Merci ! Votre suggestion", "Merci. Votre suggestion"));
+  const thanks = (v) => JSON.parse(JSON.stringify(v).replaceAll("Merci ! Votre suggestion", "Merci. Votre suggestion"));
   for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], thanks(before.pages[k]), `page « ${k} »`);
   assert.deepEqual(now.pageEmpty, thanks(before.pageEmpty));
   for (const k of ["mcpList", "mcpListPlanned", "voteOk", "voteRefused", "suggest"]) assert.deepEqual(now[k], before[k], k);
   assert.deepEqual(now.admin.map((b) => b.type).filter((t) => t === "table").length, 1, "l'administration affiche toujours un tableau");
-  assert.equal(fingerprint(now.pages), fingerprint(thanks(before.pages)), "empreinte des pages publiques");
+  assert.equal(fingerprint(thanks(now.pages)), fingerprint(thanks(before.pages)), "empreinte des pages publiques");
   assert.ok(Object.keys(before.pages).length >= 9 && JSON.stringify(before.pages.all).includes("Hollow Knight"), "les empreintes couvrent de vraies pages");
 });
 

@@ -259,7 +259,7 @@ test("liste : un tableau avec recherche en direct, pastilles d'état avec leur n
   assert.ok(list.rows.every((r) => r[4].badge), "état : pastille colorée ET écrite");
   assert.match(list.rows.find((r) => r[0].text === "Question numéro 77 ?")[0].title, /Réponse77/, "les réponses sont cherchables (info-bulle)");
   assert.equal(list.rows.filter((r) => r[1] === "Pair").length, 60);
-  assert.ok(!list.rows.some((r) => r[2]), "langues complètes : rien n'est répété sur chaque ligne");
+  assert.ok(list.rows.every((r) => r[2] === "Manque : EN"), "seule la langue qui manque est dite, et seulement quand elle manque");
   assert.ok(!blocks.some((b) => b.type === "adminForm" && b.action === "search"), "plus de formulaire « Chercher » avec bouton");
   assert.equal(def.adminActions.search, undefined);
   assert.match((await panel(ctx)).find((b) => b.type === "heading" && b.text.startsWith("Mes questions")).text, /\(120 sur 2000\)/);
