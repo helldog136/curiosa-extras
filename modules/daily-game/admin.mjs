@@ -91,6 +91,22 @@ export async function adminPanel(ctx, { query } = {}) {
   const empty = items.length === 0;
   blocks.push({ type: "markdown", text: ctx.t("adminIntro") });
 
+  // Le formulaire demandé par l'adresse (?new=1 · ?edit=<question>) vient tout de suite après la phrase d'introduction : on ne défile pas pour l'atteindre
+  if (editor) {
+    const wanted = typeof qy.edit === "string" ? items.find((i) => i.id === qy.edit) : null;
+    if (wanted || qy.new) {
+      blocks.push(questionForm(ctx, wanted ?? null, items, type, locales));
+      if (wanted) {
+        const more = [{ label: ctx.t("actPreview"), href: `${here(ctx)}?preview={id}` }];
+        if (publisher) more.push(wanted.status === "published" ? { label: ctx.t("actUnpublish"), action: "unpublish", confirm: ctx.t("confirmUnpublish") } : { label: ctx.t("actPublish"), action: "publish" });
+        if (publisher && D.playable(ctx, wanted)) more.push({ label: ctx.t("actUseToday"), action: "useToday", confirm: ctx.t("confirmUseToday"), inMenu: true });
+        if (wanted.date) more.push({ label: ctx.t("actClearDate"), action: "clearDate", inMenu: true });
+        more.push({ label: ctx.t("actDelete"), action: "removeQuestion", confirm: ctx.t("confirmDelete"), danger: true });
+        blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[titleOf(ctx, wanted)]], rowIds: [wanted.id], rowActions: more, pageSize: 0 });
+      }
+    }
+  }
+
   // Premier pas : un gabarit en un clic
   if (empty && !snap.plan.tpl && editor && publisher) {
     blocks.push({ type: "heading", text: ctx.t("startTitle") });
@@ -133,22 +149,6 @@ export async function adminPanel(ctx, { query } = {}) {
         }),
       });
       blocks.push({ type: "markdown", text: ctx.t("nextHelp") });
-    }
-  }
-
-  // Le formulaire demandé par l'adresse : ?new=1 · ?edit=<question>
-  if (editor) {
-    const wanted = typeof qy.edit === "string" ? items.find((i) => i.id === qy.edit) : null;
-    if (wanted || qy.new) {
-      blocks.push(questionForm(ctx, wanted ?? null, items, type, locales));
-      if (wanted) {
-        const more = [{ label: ctx.t("actPreview"), href: `${here(ctx)}?preview={id}` }];
-        if (publisher) more.push(wanted.status === "published" ? { label: ctx.t("actUnpublish"), action: "unpublish", confirm: ctx.t("confirmUnpublish") } : { label: ctx.t("actPublish"), action: "publish" });
-        if (publisher && D.playable(ctx, wanted)) more.push({ label: ctx.t("actUseToday"), action: "useToday", confirm: ctx.t("confirmUseToday"), inMenu: true });
-        if (wanted.date) more.push({ label: ctx.t("actClearDate"), action: "clearDate", inMenu: true });
-        more.push({ label: ctx.t("actDelete"), action: "removeQuestion", confirm: ctx.t("confirmDelete"), danger: true });
-        blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[titleOf(ctx, wanted)]], rowIds: [wanted.id], rowActions: more, pageSize: 0 });
-      }
     }
   }
 
@@ -209,8 +209,8 @@ export async function adminPanel(ctx, { query } = {}) {
       type: "adminForm", action: "importCsv", submitLabel: ctx.t("importSubmit"), tab,
       fields: [
         { name: "file", kind: "file", accept: ".csv,.txt", maxBytes: LIMITS.csvBytes, required: true, label: ctx.t("fFile"), help: ctx.t("hFile") },
-        ...(locales.length > 1 ? [{ name: "lang", kind: "select", label: ctx.t("fImportLang"), value: ctx.defaultLocale, folded: true, options: locales.map((l) => ({ value: l, label: languageName(l, ctx.locale) })), help: ctx.t("hImportLang") }] : []),
-        { name: "state", kind: "segmented", label: ctx.t("fImportState"), value: "draft", folded: true, options: [{ value: "draft", label: ctx.t("optImportDraft") }, { value: "published", label: ctx.t("optImportPublished") }], help: ctx.t("hImportState") },
+        ...(locales.length > 1 ? [{ name: "lang", kind: "select", label: ctx.t("fImportLang"), value: "", folded: true, options: locales.map((l) => ({ value: l, label: languageName(l, ctx.locale) })), help: ctx.t("hImportLang") }] : []),
+        { name: "state", kind: "segmented", label: ctx.t("fImportState"), value: "", folded: true, options: [{ value: "draft", label: ctx.t("optImportDraft") }, { value: "published", label: ctx.t("optImportPublished") }], help: ctx.t("hImportState") },
       ],
     });
     blocks.push({ type: "heading", text: ctx.t("exportTitle"), tab });
@@ -237,7 +237,7 @@ function questionForm(ctx, item, items, type, locales) {
   });
   fields.push({ name: "date", kind: "date", label: ctx.t("fDate"), value: item?.date ?? "", folded: true, help: ctx.t("hDate") });
   fields.push({
-    name: "state", kind: "segmented", label: ctx.t("fState"), value: item ? item.status : "published", folded: true,
+    name: "state", kind: "segmented", label: ctx.t("fState"), value: item?.status === "draft" ? "draft" : "", folded: true,
     options: [{ value: "published", label: ctx.t("statePublished") }, { value: "draft", label: ctx.t("stateDraft") }], help: ctx.t("hState"),
   });
   return { type: "adminForm", action: "saveQuestion", title: ctx.t(item ? "editTitle" : "newTitle"), submitLabel: ctx.t(item ? "save" : "saveNew"), cancelHref: here(ctx), fields };
@@ -279,8 +279,10 @@ export async function adminBadge(ctx) {
 async function saveQuestion(ctx, values) {
   const type = D.typeOf(ctx);
   const locales = D.localesOf(ctx);
-  const state = values.state === "published" ? "published" : "draft";
-  const made = type.fromForm(ctx, values, { locales, state });
+  // « Publication » est replié et vide par défaut : sans choix, une question neuve est publiée (si la personne peut publier), une question existante garde son état.
+  const given = values.state === "published" ? "published" : values.state === "draft" ? "draft" : null;
+  const early = given ?? (can(ctx, "publish") ? "published" : "draft");
+  const made = type.fromForm(ctx, values, { locales, state: early });
   const errors = { ...(made.errors ?? {}) };
   const rawDate = clean(values.date, 20);
   let date = "";
@@ -296,6 +298,7 @@ async function saveQuestion(ctx, values) {
     const existing = id ? all.find((i) => i.id === id) : null;
     if (id && !existing) return { error: ctx.t("errNotFound") };
     const was = existing?.status ?? "draft";
+    const state = given ?? existing?.status ?? early;
     if (state !== was && !can(ctx, "publish")) return { errors: { state: ctx.t("errNoPublishRight") } };
     const today = D.today(ctx);
     if (date) {

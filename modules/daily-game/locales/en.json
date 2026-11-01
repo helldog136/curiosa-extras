@@ -291,5 +291,6 @@
   "state_published": "Published",
   "state_draft": "Draft",
   "state_planned": "Scheduled",
-  "packsNone": "No pack is offered for this type of game."
+  "packsNone": "No pack is offered for this type of game.",
+  "colState": "State"
 }

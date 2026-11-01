@@ -291,5 +291,6 @@
   "state_published": "Publiée",
   "state_draft": "Brouillon",
   "state_planned": "Planifiée",
-  "packsNone": "Aucun pack n'est proposé pour ce type de jeu."
+  "packsNone": "Aucun pack n'est proposé pour ce type de jeu.",
+  "colState": "État"
 }
