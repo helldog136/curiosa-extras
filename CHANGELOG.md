@@ -32,7 +32,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **Une seule table pour les 20 réseaux** : `scripts/social-networks.mjs` (hôtes, modèle d'adresse, formes reconnues, exemple, icône). `node scripts/gen-social.mjs` écrit le bloc `profile()` de chaque `index.mjs` (le fichier entier pour les 15 réseaux sans statistiques), le réglage `profile`, la description et la ligne « Réglage » du README ; `--check` vérifie qu'aucun fichier n'a été modifié à la main.
 - **`tests/social-generated.test.mjs`** : anti-copie (une seule `profile()` par module, identique à celle de la table), textes communs, 40 collages réels. `profile()` renvoie maintenant `{ url, handle, tag }` ; `handle` garde son sens pour les statistiques.
 - `minCore` passe à 0.6.0 pour ces modules (`example` et `rare` sont des clés du cœur 0.6.0). Aucune donnée ne change : les adresses déjà saisies marchent toujours.
-- Le kit d'ergonomie est recopié depuis le cœur 0.6.0 (`tests/helpers/ergonomics.mjs`) ; la base des écarts passe de 1185 à 1108 (les 21 modules à 0).
+- Le kit d'ergonomie est recopié depuis le cœur 0.6.0 (`tests/helpers/ergonomics.mjs`) ; la base des écarts passe de 1185 à 1115 (les 21 modules à 0 écart, -70).
 - Versions : 20 réseaux +0.1.0 (1.1.0 ; 1.2.0 pour Bluesky, Discord, GitHub, Mastodon, Reddit), Annonces Discord 1.2.0.
 
 ## 1.29.0

@@ -7,7 +7,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { world, NOW, S, SRC, chat } from "./helpers/botWorld.mjs";
-import { extractRelease, publishedTags, previousRelease } from "./helpers/hotUpdate.mjs";
+import { extractRelease, publishedTags, versionsAt } from "./helpers/hotUpdate.mjs";
 import { makeTempDir } from "./helpers/tmp.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
@@ -15,11 +15,10 @@ const REPO = process.env.CURIOSA_EXTRAS_DIR ?? path.join(here, "..");
 const def = (await import("../modules/twitch-bot/index.mjs")).default;
 const E = await import("../modules/twitch-bot/engine.mjs");
 
-// La version 1.4.0 du Bot Twitch : l'étiquette la plus récente où le module n'est pas encore en 1.5.0.
+// La version 1.4.0 du Bot Twitch : l'étiquette la plus récente où le module est exactement en 1.4.0 (les étiquettes plus récentes portent 1.5.0, 1.6.0… et s'ajoutent à chaque version du dépôt).
 function oldRelease() {
   const { tags } = publishedTags(REPO);
-  const prev = tags.length ? previousRelease(REPO, "twitch-bot", "1.5.0", tags) : null;
-  return prev?.differs && prev.version === "1.4.0" ? prev.tag : null;
+  return tags.find((tag) => versionsAt(REPO, tag).get("twitch-bot") === "1.4.0") ?? null;
 }
 const TAG = oldRelease();
 const skip = TAG ? false : (process.env.HOT_UPDATE_REQUIRE_HISTORY === "1" ? false : "historique git des étiquettes absent");
