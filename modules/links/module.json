@@ -41,5 +41,19 @@
       "section": "latest",
       "count": 20
     }
-  }
+  },
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page de liens avec leurs icônes, et le bouton « Mes réseaux » en haut du site.",
+        "en": "Your links page with their icons, and the “My networks” button at the top of the site."
+      },
+      "alt": {
+        "fr": "Page de liens : huit boutons arrondis avec icône (chaîne, vidéos, Discord, boutique…) et un bouton « Mes réseaux » dans l'en-tête.",
+        "en": "Links page: eight rounded buttons with icons (channel, videos, Discord, shop…) and a “My networks” button in the header."
+      }
+    }
+  ]
 }

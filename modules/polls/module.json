@@ -705,5 +705,31 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/sondage.webp",
+      "type": "public",
+      "caption": {
+        "fr": "La page d'un sondage : les choix, les résultats en barres et le lien à partager.",
+        "en": "A poll page: the choices, live results as bars and the link to share."
+      },
+      "alt": {
+        "fr": "Page d'un sondage avec quatre choix et leurs résultats en barres colorées.",
+        "en": "A poll page with four choices and their results as coloured bars."
+      }
+    },
+    {
+      "file": "previews/vote.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Un sondage à choix multiples : chaque personne vote une fois, sans compte.",
+        "en": "A multiple-choice poll: each person votes once, with no account."
+      },
+      "alt": {
+        "fr": "Page d'un sondage avec quatre propositions à cocher et un bouton pour voter.",
+        "en": "A poll page with four options to tick and a button to vote."
+      }
+    }
   ]
 }

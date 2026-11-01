@@ -961,5 +961,43 @@
       }
     }
   ],
-  "dataVersion": 1
+  "dataVersion": 1,
+  "previews": [
+    {
+      "file": "previews/liste.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Vos prochains événements, avec leur type, leur date et leur lieu.",
+        "en": "Your upcoming events, with their type, date and place."
+      },
+      "alt": {
+        "fr": "Page d'agenda listant les prochains événements avec des pastilles de type colorées, la date et le lieu.",
+        "en": "Agenda page listing upcoming events with coloured type badges, date and place."
+      }
+    },
+    {
+      "file": "previews/calendrier.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Le calendrier du mois, pour voir d'un coup d'œil ce qui est prévu.",
+        "en": "The month calendar, to see at a glance what is planned."
+      },
+      "alt": {
+        "fr": "Calendrier d'un mois avec les événements placés sur leur jour.",
+        "en": "Calendar of a month with events placed on their day."
+      }
+    },
+    {
+      "file": "previews/fiche.webp",
+      "type": "public",
+      "caption": {
+        "fr": "La fiche d'un événement : programme, intervenants, places restantes et inscription.",
+        "en": "An event page: programme, speakers, seats left and sign-up."
+      },
+      "alt": {
+        "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux intervenants et un bouton d'inscription.",
+        "en": "Detailed page of a workshop with time, place, the afternoon programme, two speakers and a sign-up button."
+      }
+    }
+  ]
 }

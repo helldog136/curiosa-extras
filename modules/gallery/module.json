@@ -610,5 +610,31 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/albums.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Vos albums photo : une couverture, une date et le nombre de photos.",
+        "en": "Your photo albums: a cover, a date and the number of photos."
+      },
+      "alt": {
+        "fr": "Page listant trois albums photo avec leur couverture, leur date et le nombre de photos.",
+        "en": "Page listing three photo albums with their cover, date and number of photos."
+      }
+    },
+    {
+      "file": "previews/album.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Un album en grille, avec visionneuse plein écran au clic.",
+        "en": "An album as a grid, with a full-screen viewer on click."
+      },
+      "alt": {
+        "fr": "Page d'un album avec une grille de neuf photos.",
+        "en": "Album page with a grid of nine photos."
+      }
+    }
   ]
 }

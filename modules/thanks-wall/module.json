@@ -774,5 +774,19 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page « Merci ! » : une personne à l'honneur et une carte pour chaque membre.",
+        "en": "Your “Thank you!” page: a person in the spotlight and a card for each member."
+      },
+      "alt": {
+        "fr": "Page de remerciements avec une personne à l'honneur en haut, puis des cartes avec photo et nom, rangées par groupes.",
+        "en": "Thank-you page with a person in the spotlight at the top, then cards with photo and name, arranged in groups."
+      }
+    }
   ]
 }

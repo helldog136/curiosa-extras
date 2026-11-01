@@ -369,5 +369,31 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page de questions, rangées par thèmes qui s'ouvrent et se referment.",
+        "en": "Your questions page, grouped by category, each answer opening and closing."
+      },
+      "alt": {
+        "fr": "Page de questions fréquentes : trois thèmes, une réponse ouverte, une barre de recherche et des boutons d'avis.",
+        "en": "FAQ page: three categories, one answer open, a search bar and feedback buttons."
+      }
+    },
+    {
+      "file": "previews/admin.webp",
+      "type": "admin",
+      "caption": {
+        "fr": "Votre administration : questions publiées, brouillons et thèmes.",
+        "en": "Your admin screen: published questions, drafts and categories."
+      },
+      "alt": {
+        "fr": "Écran d'administration de la FAQ avec la liste des questions et leurs thèmes.",
+        "en": "FAQ admin screen with the list of questions and their categories."
+      }
+    }
   ]
 }

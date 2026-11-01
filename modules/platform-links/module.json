@@ -263,5 +263,31 @@
         }
       }
     }
+  ],
+  "previews": [
+    {
+      "file": "previews/entete.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Vos plateformes en icônes, à côté de vos autres réseaux, en haut du site.",
+        "en": "Your platforms as icons next to your other networks, at the top of the site."
+      },
+      "alt": {
+        "fr": "En-tête d'un site avec une rangée d'icônes de réseaux, dont deux plateformes ajoutées par le module.",
+        "en": "Site header with a row of network icons, two of them added by the module."
+      }
+    },
+    {
+      "file": "previews/avertissement.webp",
+      "type": "public",
+      "caption": {
+        "fr": "La page d'avertissement facultative (18 ans et plus) avant l'ouverture d'un lien.",
+        "en": "The optional notice page (18+) shown before a link opens."
+      },
+      "alt": {
+        "fr": "Page d'avertissement avec un message pour adultes, un bouton pour continuer et un bouton de retour au site.",
+        "en": "Notice page with an adults-only message, a continue button and a back-to-site button."
+      }
+    }
   ]
 }
