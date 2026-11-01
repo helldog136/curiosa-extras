@@ -3,6 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { world, say, sent, logOf, chat, NOW, S, SRC, C } from "./helpers/botWorld.mjs";
+import { htmlOf, rowsOf, byName, configOf, formOfBlocks } from "./helpers/ui.mjs";
 
 const P = await import("../modules/twitch-bot/period.mjs");
 const A = await import("../modules/twitch-bot/admin.mjs");
@@ -115,11 +116,9 @@ test("hors période : la commande ne répond pas, le journal dit quand elle revi
   assert.equal((await say(ctx, "!movember", { chatterId: "3" }, Date.parse("2027-11-30T10:00:00Z"))).result, "sent", "l'année suivante, sans rien faire");
   assert.equal((await say(ctx, "!movember", { chatterId: "4" }, Date.parse("2027-12-01T10:00:00Z"))).reason, "outside");
   const page = await A.panel(ctx, { query: {} });
-  const table = page.find((b) => b.type === "table" && b.columns[0] === "Commande");
-  const row = table.rows.find((r) => r[0].includes("!movember"));
-  assert.match(row[1], /./);
-  const logTable = page.find((b) => b.type === "table" && b.columns[0].startsWith("Heure"));
-  assert.match(JSON.stringify(logTable.rows), /Hors période : se réactive le 1er novembre 2028.*Hors période : se réactive le 1er novembre 2026/s);
+  const row = byName(rowsOf(htmlOf(page, "commands")), "!movember");
+  assert.ok(row, "la commande est dans la liste, dans ou hors période");
+  assert.match(htmlOf(page, "log"), /Hors période : se réactive le 1er novembre 2028.*Hors période : se réactive le 1er novembre 2026/s);
 });
 
 test("l'administration dit « Hors période : se réactive le … », distinct de « désactivée » ; l'interrupteur « activée » à faux l'emporte toujours ; la commande reste modifiable", async () => {
@@ -136,41 +135,48 @@ test("l'administration dit « Hors période : se réactive le … », distinct d
   const info = await A.context(ctx, { declare: false });
   const edit = await A.panel(ctx, { query: { edit: r.key } });
   const text = JSON.stringify(edit);
-  assert.match(text, /Active du 1(er)? novembre au 30 novembre, chaque année/);
   assert.ok(edit.some((b) => b.type === "adminForm" && b.action === "save"), "modifiable hors période");
+  const cfg = configOf(edit), per = cfg.layout.find((x) => x.more).more.items.find((x) => x.period).period;
+  assert.equal(per.text.phraseYearly, "Active du {from} au {to}, chaque année");
+  assert.equal(formOfBlocks(edit, "save").fields.find((f) => f.name === "period").value, "01/11 - 30/11");
   void info;
 });
 
-test("l'aperçu de la période dit le fuseau : UTC quand aucun n'est réglé", async () => {
+test("le contrôle de période dit le fuseau : UTC quand aucun n'est réglé", async () => {
   const utc = world({ settings: { timezone: "UTC" } });
   const r = await make(utc.ctx, "m", { period: per([1, 11], [30, 11]) });
-  assert.match(JSON.stringify(await A.panel(utc.ctx, { query: { edit: r.key } })), /heure UTC/);
+  const phr = (b) => configOf(b).layout.find((x) => x.more).more.items.find((x) => x.period).period.text.utc;
+  assert.match(phr(await A.panel(utc.ctx, { query: { edit: r.key } })), /heure UTC/);
   const paris = world();
   const r2 = await make(paris.ctx, "m", { period: per([1, 11], [30, 11]) });
-  assert.ok(!/heure UTC/.test(JSON.stringify(await A.panel(paris.ctx, { query: { edit: r2.key } }))));
+  assert.equal(phr(await A.panel(paris.ctx, { query: { edit: r2.key } })), "");
   assert.match(P.describe(paris.ctx, P.parsePeriod({ yearly: false, from: { d: 1, m: 11, y: 2026 }, to: { d: 30, m: 11, y: 2026 } }).value, "Europe/Paris"), /une seule fois/);
   assert.match(P.describe(paris.ctx, null, "UTC"), /Toujours active/);
 });
 
-test("formulaire : deux sélecteurs jour/mois, une case « chaque année », erreurs sous le champ avec exemple ; enregistré, relu, effaçable", async () => {
+test("formulaire : UN champ de période (texte), erreurs sous le champ avec exemple ; enregistré, relu, effaçable", async () => {
   const { ctx } = world();
-  const form = (await A.panel(ctx, { query: {} })).find((b) => b.type === "adminForm" && b.action === "create");
+  const form = formOfBlocks(await A.panel(ctx, { query: { new: "1" } }), "create");
   const names = form.fields.map((f) => f.name);
-  for (const k of ["fromDay", "fromMonth", "toDay", "toMonth", "yearly", "fromYear", "toYear"]) assert.ok(names.includes(k), k);
-  assert.equal(form.fields.find((f) => f.name === "fromMonth").options.length, 13);
-  assert.equal(form.fields.find((f) => f.name === "yearly").kind, "checkbox");
+  assert.ok(names.includes("period"));
+  for (const k of ["fromDay", "fromMonth", "toDay", "toMonth", "yearly", "fromYear", "toYear"]) assert.ok(!names.includes(k), `plus de champ ${k}`);
   const base = { name: "movember", text: "Moustaches", role: "everyone", aliases: "", cdGlobal: "", cdUser: "" };
-  const bad = await A.actions.create(ctx, { ...base, ...NOV, fromDay: "31", fromMonth: "2" });
-  assert.match(bad.errors.fromDay, /Le 31 février n'existe pas\. Choisissez un autre jour, par exemple le 1er février/);
-  assert.match((await A.actions.create(ctx, { ...base, fromDay: "1" })).errors.fromMonth, /Choisissez le jour ET le mois/);
-  assert.match((await A.actions.create(ctx, { ...base, ...NOV, yearly: "" })).errors.fromYear, /Indiquez l'année, par exemple 2026/);
+  const bad = await A.actions.create(ctx, { ...base, period: "31/02 - 01/03" });
+  assert.equal(bad.errors.period, "Le 31 février n'existe pas. Exemple : 28 février.");
+  assert.match((await A.actions.create(ctx, { ...base, period: "…" })).errors.period, /Choisissez le jour et le mois du début et de la fin\. Exemple : du 1er novembre au 30 novembre/);
+  assert.match((await A.actions.create(ctx, { ...base, period: "01/11/2026 - 30/11" })).errors.period, /date complète, avec l'année\. Exemple : 1er novembre 2026/);
+  assert.match((await A.actions.create(ctx, { ...base, period: "30/11/2026 - 01/11/2026" })).errors.period, /La fin doit venir après le début/);
   assert.equal((await C.loadConfig(ctx)).data.custom.length, 0);
-  assert.deepEqual(await A.actions.create(ctx, { ...base, ...NOV }), { ok: ctx.t("created") });
+  assert.deepEqual(await A.actions.create(ctx, { ...base, period: "01/11 - 30/11" }), { ok: ctx.t("created") });
   const c = (await C.loadConfig(ctx)).data.custom[0];
   assert.deepEqual(c.period, { yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } });
-  const edit = (await A.panel(ctx, { query: { edit: `custom:${c.id}` } })).find((b) => b.type === "adminForm" && b.action === "save");
-  assert.deepEqual(["fromDay", "fromMonth", "toDay", "toMonth", "yearly"].map((k) => edit.fields.find((f) => f.name === k).value), ["1", "11", "30", "11", "on"]);
-  await A.actions.save(ctx, { key: `custom:${c.id}`, name: "movember", text: "Moustaches", enabled: "on", role: "everyone", aliases: "", cdGlobal: "", cdUser: "", yearly: "on" });
+  const edit = formOfBlocks(await A.panel(ctx, { query: { edit: `custom:${c.id}` } }), "save");
+  assert.equal(edit.fields.find((f) => f.name === "period").value, "01/11 - 30/11");
+  assert.equal(edit.fields.find((f) => f.name === "enabled"), undefined, "l'état se change par l'interrupteur de la liste, pas ici");
+  await A.actions.save(ctx, { key: `custom:${c.id}`, name: "movember", text: "Moustaches", role: "everyone", aliases: "", cdGlobal: "", cdUser: "", period: "01/11/2026 - 30/11/2026" });
+  assert.equal((await C.loadConfig(ctx)).data.custom[0].period.yearly, false, "avec les années : une seule fois");
+  assert.equal((await C.loadConfig(ctx)).data.custom[0].enabled, true, "enregistrer ne touche pas à l'état");
+  await A.actions.save(ctx, { key: `custom:${c.id}`, name: "movember", text: "Moustaches", role: "everyone", aliases: "", cdGlobal: "", cdUser: "", period: "" });
   assert.equal((await C.loadConfig(ctx)).data.custom[0].period, undefined, "tout vider = toujours active");
 });
 
@@ -209,15 +215,16 @@ test("timers : hors période ils ne comptent ni n'écrivent (pas de rafale à la
   assert.equal((await line(sep + 61_000)).sent, true);
   assert.deepEqual(sent(tw), ["Septembre en or"]);
   const page = await A.panel(ctx, { query: { tab: "timers" } });
-  const table = page.find((b) => b.tab === "timers" && b.type === "table");
-  assert.match(table.rows[0][1], /Hors période : se réactive le 1(er)? septembre \d{4}\./);
+  const row = rowsOf(htmlOf(page, "timers"))[0];
+  assert.equal(row.attrs.state, "outside");
+  assert.match(row.cells.sw, /Revient le 1(er)? septembre/);
   const off = await T.saveTimer(ctx, { id: (await C.loadConfig(ctx)).data.timers[0].id }, { enabled: false });
   assert.equal(off.ok, true);
-  assert.equal((await A.panel(ctx, { query: { tab: "timers" } })).find((b) => b.tab === "timers" && b.type === "table").rows[0][1], ctx.t("tm_state_off"), "désactivé l'emporte");
+  assert.equal(rowsOf(htmlOf(await A.panel(ctx, { query: { tab: "timers" } }), "timers"))[0].attrs.state, "off", "désactivé l'emporte");
   const err = await T.saveTimer(ctx, {}, { name: "X", text: "x", minutes: 5, period: yearly([31, 2], [1, 3]) });
   assert.deepEqual([err.ok, err.code, err.field], [false, "period", "fromDay"]);
-  const form = await (await import("../modules/twitch-bot/timersAdmin.mjs")).actions.timerCreate.run(ctx, { name: "Z", text: "z", minutes: "5", lines: "0", when: "always", fromDay: "31", fromMonth: "4", toDay: "1", toMonth: "5", yearly: "on" });
-  assert.match(form.errors.fromDay, /Le 31 avril n'existe pas/);
+  const form = await (await import("../modules/twitch-bot/timersAdmin.mjs")).actions.timerCreate.run(ctx, { name: "Z", text: "z", minutes: "5", lines: "0", when: "always", period: "31/04 - 01/05" });
+  assert.equal(form.errors.period, "Le 31 avril n'existe pas. Exemple : 30 avril.");
 });
 
 /* ───────────── Outils des assistants ───────────── */
@@ -261,7 +268,7 @@ test("migration des données 4 : une configuration d'avant (sans timers ni péri
   assert.equal((await none.ctx.api.store.list("botConfig", { limit: 1 })).length, 0, "pas de configuration : rien n'est créé");
   assert.equal((await say(ctx, "!old", { badges: ["moderator"] }, OCT)).result, "sent", "la commande d'avant répond comme avant, sans période");
   const manifest = JSON.parse((await import("node:fs")).readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
-  assert.equal(manifest.dataVersion, 4);
+  assert.equal(manifest.dataVersion, 5);
   const rows = C.readConfig({ ...before });
   assert.deepEqual(rows.timers, [], "relire une ancienne configuration sans timers ne casse rien");
 });

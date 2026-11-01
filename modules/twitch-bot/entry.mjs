@@ -55,7 +55,7 @@ export default {
       ...(advanced ? [
         { name: "aliases", label: t("f_aliases"), value: view.aliases.join(", "), help: t("f_aliases_help") },
         { name: "role", label: t("f_role"), kind: "select", value: view.role, options: A.roleOptions(t) },
-        ...A.delayFields(t, view),
+        ...A.delayFields(t, view, info.s),
       ] : []),
     ] });
     if (canOpenBot) out.push({ type: "links", items: [{ label: t("entry_open_bot"), href: `/admin/instances/${ctx.instance.id}` }] });

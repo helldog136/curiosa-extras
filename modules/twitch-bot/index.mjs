@@ -21,11 +21,14 @@ const st = await import(`./state.mjs${v}`);
 const channel = await import(`./channel.mjs${v}`);
 const actions = await import(`./actions.mjs${v}`);
 const rewards = await import(`./rewards.mjs${v}`);
+const kit = await import(`./adminkit.mjs${v}`);
 
 export default {
   routes: {
     // L'adresse que Twitch appelle : /m/<clé>/webhook. Publique par nature ; seule une requête signée avec notre secret est acceptée.
     webhook: async (request, ctx) => (await webhook.handle(request, ctx)).response,
+    // Le petit script de la page d'administration (recherche en direct, interrupteurs, formulaires rangés) : du code du module, jamais de donnée ; sans lui la page reste complète.
+    kit: () => kit.serveKit(),
   },
 
   tasks: {
@@ -56,6 +59,8 @@ export default {
     2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
     // Données 4 : le document de configuration gagne la liste `timers` (vide). Additif : rien d'existant ne bouge ; rejouable sans effet.
     4: async (ctx) => { await migrateConfig(ctx); },
+    // Données 5 : l'ancien brouillon d'import (`botImport`) n'a plus de raison d'être (l'import a été retiré) : s'il en reste un, il est effacé. Aucune commande ni aucun timer n'est touché ; rejouable sans effet.
+    5: async (ctx) => { for (const r of await ctx.api.store.list("botImport", { limit: 10 }).catch(() => [])) await ctx.api.store.remove(r.id).catch(() => {}); },
     3: async (ctx) => { await actions.migrate(ctx, settingsOf(ctx), (await rewards.list(ctx)).map((r) => r.action)); },
   },
 
