@@ -1196,7 +1196,7 @@
     {
       "id": "twitch-bot",
       "name": "Bot Twitch",
-      "description": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres, des timers et la gestion des commandes depuis le chat. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu.",
+      "description": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…). Il y a des commandes toutes prêtes et les vôtres, des timers et la gestion des commandes depuis le chat. Un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu complètent le tout.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.29.0",

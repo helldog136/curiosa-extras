@@ -6,8 +6,8 @@
   "version": "1.6.0",
   "platform": "twitch",
   "description": {
-    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own, timers and commands managed from the chat. Includes an emergency switch and a short log of what it answered.",
-    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres, des timers et la gestion des commandes depuis le chat. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu."
+    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…). It has ready-made commands and your own, timers, and commands managed from the chat. It also has an emergency switch and a short log of what it answered.",
+    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…). Il y a des commandes toutes prêtes et les vôtres, des timers et la gestion des commandes depuis le chat. Un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu complètent le tout."
   },
   "author": "Helldog136",
   "license": "MIT",
