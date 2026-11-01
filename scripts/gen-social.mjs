@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Écrit (ou vérifie, avec --check) tout ce que la table scripts/social-networks.mjs décide pour les 20 modules de réseau social :
 //   • modules/<id>/index.mjs   le bloc « adresse du profil » (le fichier entier pour les réseaux sans statistiques) ;
-//   • modules/<id>/module.json le réglage `profile` (libellé, aide courte, exemple), la description et `minCore` ;
+//   • modules/<id>/module.json le réglage `profile` (libellé, aide courte, exemple), la description, `minCore` et le bloc `social` (de quoi reconnaître l'adresse avant l'installation) ;
 //   • modules/<id>/README.md   la ligne « Réglage ».
 // Sans option : écrit. --check : n'écrit rien, liste les fichiers qui ne correspondent plus à la table (code retour 1).
 import fs from "node:fs";
 import path from "node:path";
-import { BEGIN, END, MIN_CORE, NETWORKS, description, hasStats, profileSetting, readmeSetting, renderBlock, renderWhole } from "./social-networks.mjs";
+import { BEGIN, END, MIN_CORE, NETWORKS, description, hasStats, profileSetting, readmeSetting, renderBlock, renderWhole, socialBlock } from "./social-networks.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 
@@ -31,6 +31,7 @@ export function expected(n) {
   manifest.settings[at] = profileSetting(n);
   manifest.description = description(n);
   manifest.minCore = MIN_CORE;
+  manifest.social = socialBlock(n);
   const readme = read("README.md").replace(/^- \*\*Réglage\*\* :.*$/m, readmeSetting(n));
   return { "index.mjs": index, "module.json": JSON.stringify(manifest, null, 2) + "\n", "README.md": readme };
 }

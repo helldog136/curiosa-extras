@@ -5,7 +5,7 @@
     "en": "Pinterest",
     "fr": "Pinterest"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "pinterest",
   "description": {
     "en": "Shows your Pinterest button in the site header.",
@@ -46,5 +46,23 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Pinterest",
+    "icon": "pinterest",
+    "hosts": [
+      "pinterest.com"
+    ],
+    "template": "https://www.pinterest.com/{h}/",
+    "example": {
+      "en": "https://www.pinterest.com/myname",
+      "fr": "https://www.pinterest.com/monpseudo"
+    },
+    "shapes": [
+      {
+        "re": "^/@?(?!(?:pin|ideas|search|today|business|login)(?:/|$))([A-Za-z0-9._-]{1,60})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

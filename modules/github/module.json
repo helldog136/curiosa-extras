@@ -6,7 +6,7 @@
     "en": "GitHub",
     "fr": "GitHub"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "github",
   "description": {
     "en": "Shows your GitHub button in the site header and shares your follower count.",
@@ -77,5 +77,23 @@
         "fr": "Compte vos followers pour les statistiques du site. Ce chiffre est public : rien à régler."
       }
     }
-  ]
+  ],
+  "social": {
+    "name": "GitHub",
+    "icon": "github",
+    "hosts": [
+      "github.com"
+    ],
+    "template": "https://github.com/{h}",
+    "example": {
+      "en": "https://github.com/myname",
+      "fr": "https://github.com/monpseudo"
+    },
+    "shapes": [
+      {
+        "re": "^/@?(?!(?:orgs|settings|marketplace|sponsors|topics|features|login|about|pricing|explore|notifications)(?:/|$))([A-Za-z0-9-]{1,39})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

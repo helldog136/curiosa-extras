@@ -5,7 +5,7 @@
     "en": "Bandcamp",
     "fr": "Bandcamp"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "bandcamp",
   "description": {
     "en": "Shows your Bandcamp button in the site header.",
@@ -46,5 +46,26 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Bandcamp",
+    "icon": "bandcamp",
+    "hosts": [
+      "bandcamp.com"
+    ],
+    "template": "https://{h}.bandcamp.com",
+    "example": {
+      "en": "https://myname.bandcamp.com",
+      "fr": "https://monnom.bandcamp.com"
+    },
+    "handle": "^@?[A-Za-z0-9-]{1,60}$",
+    "shapes": [
+      {
+        "host": "^([a-z0-9-]+)\\.bandcamp\\.com$",
+        "fromHost": true,
+        "re": "^/?$",
+        "handle": true
+      }
+    ]
+  }
 }

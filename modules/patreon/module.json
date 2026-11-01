@@ -5,7 +5,7 @@
     "en": "Patreon",
     "fr": "Patreon"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "patreon",
   "description": {
     "en": "Shows your Patreon button in the site header.",
@@ -46,5 +46,23 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Patreon",
+    "icon": "patreon",
+    "hosts": [
+      "patreon.com"
+    ],
+    "template": "https://www.patreon.com/{h}",
+    "example": {
+      "en": "https://www.patreon.com/myname",
+      "fr": "https://www.patreon.com/monpseudo"
+    },
+    "shapes": [
+      {
+        "re": "^/@?(?!(?:c|user|join|posts|home|login|explore|settings)(?:/|$))([A-Za-z0-9._-]{1,60})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

@@ -5,7 +5,7 @@
     "en": "Snapchat",
     "fr": "Snapchat"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "snapchat",
   "description": {
     "en": "Shows your Snapchat button in the site header.",
@@ -46,5 +46,27 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Snapchat",
+    "icon": "snapchat",
+    "hosts": [
+      "snapchat.com"
+    ],
+    "template": "https://www.snapchat.com/add/{h}",
+    "example": {
+      "en": "https://www.snapchat.com/add/myname",
+      "fr": "https://www.snapchat.com/add/monpseudo"
+    },
+    "shapes": [
+      {
+        "re": "^/add/([A-Za-z0-9._-]{1,60})/?$",
+        "handle": true
+      },
+      {
+        "re": "^/@([A-Za-z0-9._-]{1,60})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

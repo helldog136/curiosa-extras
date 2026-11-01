@@ -5,7 +5,7 @@
     "en": "Steam",
     "fr": "Steam"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "steam",
   "description": {
     "en": "Shows your Steam button in the site header.",
@@ -46,5 +46,30 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Steam",
+    "icon": "steam",
+    "hosts": [
+      "steamcommunity.com",
+      "steampowered.com"
+    ],
+    "template": "https://steamcommunity.com/id/{h}",
+    "example": {
+      "en": "https://steamcommunity.com/id/myname",
+      "fr": "https://steamcommunity.com/id/monpseudo"
+    },
+    "forms": [
+      [
+        "^(7656119\\d{10})$",
+        "https://steamcommunity.com/profiles/{1}"
+      ]
+    ],
+    "shapes": [
+      {
+        "re": "^/id/([A-Za-z0-9._-]{2,32})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

@@ -6,7 +6,7 @@
     "en": "Bluesky",
     "fr": "Bluesky"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "bluesky",
   "description": {
     "en": "Shows your Bluesky button in the site header and shares your follower and post counts.",
@@ -77,5 +77,23 @@
         "fr": "Compte vos followers et vos publications pour les statistiques du site. Ces chiffres sont publics : rien à régler."
       }
     }
-  ]
+  ],
+  "social": {
+    "name": "Bluesky",
+    "icon": "bluesky",
+    "hosts": [
+      "bsky.app"
+    ],
+    "template": "https://bsky.app/profile/{h}",
+    "example": {
+      "en": "https://bsky.app/profile/name.bsky.social",
+      "fr": "https://bsky.app/profile/nom.bsky.social"
+    },
+    "shapes": [
+      {
+        "re": "^/profile/([A-Za-z0-9._:-]{1,100})/?$",
+        "handle": true
+      }
+    ]
+  }
 }
