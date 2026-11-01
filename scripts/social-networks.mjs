@@ -206,7 +206,7 @@ export function profileSetting(n) {
 }
 
 /**
- * Le bloc `social` de module.json (cœur 0.7.0) : tout ce qu'il faut pour reconnaître l'adresse d'un profil SANS installer le module (le catalogue le recopie).
+ * Le bloc `social` de module.json (cœur 0.6.2) : tout ce qu'il faut pour reconnaître l'adresse d'un profil SANS installer le module (le catalogue le recopie).
  * Mêmes données que le bloc généré de `index.mjs` ; `src/core/socialRecognize.ts` du cœur en fait la même lecture (un test le prouve quand le cœur la contient).
  */
 export function socialBlock(n) {

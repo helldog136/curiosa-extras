@@ -1,5 +1,5 @@
-// Le bloc `social` de module.json (cœur 0.7.0) : de quoi reconnaître l'adresse d'un profil SANS installer le module. Écrit par scripts/gen-social.mjs depuis la table,
-// recopié par le catalogue (catalogue/index.json), et lu par le cœur (src/core/socialRecognize.ts). Quand le cœur testé ne l'a pas encore (cœur publié < 0.7.0), la partie
+// Le bloc `social` de module.json (cœur 0.6.2) : de quoi reconnaître l'adresse d'un profil SANS installer le module. Écrit par scripts/gen-social.mjs depuis la table,
+// recopié par le catalogue (catalogue/index.json), et lu par le cœur (src/core/socialRecognize.ts). Quand le cœur testé ne l'a pas encore (cœur publié < 0.6.2), la partie
 // « le cœur lit comme le module » est passée.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -11,7 +11,7 @@ const root = new URL("../", import.meta.url).pathname;
 const json = (f) => JSON.parse(fs.readFileSync(`${root}${f}`, "utf8"));
 const core = path.resolve(process.env.CURIOSA_DIR ?? process.cwd());
 const hasCore = fs.existsSync(path.join(core, "src/core/socialRecognize.ts"));
-// 0.7.0 : la lecture est dans socialRecognize.ts, la validation du bloc dans socialSpec.ts.
+// 0.6.2 : la lecture est dans socialRecognize.ts, la validation du bloc dans socialSpec.ts.
 const R = hasCore ? { ...(await import("@/core/socialRecognize")), ...(fs.existsSync(path.join(core, "src/core/socialSpec.ts")) ? await import("@/core/socialSpec") : {}) } : null;
 
 test("bloc social : chaque réseau le porte dans son module.json, identique à la table, et le catalogue le recopie", () => {
@@ -36,7 +36,7 @@ const SAMPLES = ["monpseudo", "@monpseudo", "instagram.com/monpseudo", "https://
   "76561198000000000", "steamcommunity.com/id/moi", "github.com/moi/depot", "https://gist.github.com/x", "open.spotify.com/artist/1a2B?si=abc", "https://www.facebook.com/groups/123",
   "https://x.com/intent/follow", "http://www.instagram.com/x", "https://user:pw@x.com/a", "javascript:alert(1)", "mon pseudo", "a".repeat(80), "", "   ", "../x", "https://evil.example/@nom"];
 
-test("bloc social : le cœur lit le bloc comme le module lit sa propre adresse (même bouton, même adresse) pour des saisies de toute sorte", { skip: hasCore ? false : "cœur sans socialRecognize (avant 0.7.0)" }, async () => {
+test("bloc social : le cœur lit le bloc comme le module lit sa propre adresse (même bouton, même adresse) pour des saisies de toute sorte", { skip: hasCore ? false : "cœur sans socialRecognize (avant 0.6.2)" }, async () => {
   for (const n of NETWORKS) {
     const m = json(`modules/${n.id}/module.json`);
     const spec = R.parseSocialSpec(m.social);
@@ -50,7 +50,7 @@ test("bloc social : le cœur lit le bloc comme le module lit sa propre adresse (
   }
 });
 
-test("bloc social : un texte collé avec plusieurs adresses est reconnu réseau par réseau, avant toute installation", { skip: hasCore ? false : "cœur sans socialRecognize (avant 0.7.0)" }, () => {
+test("bloc social : un texte collé avec plusieurs adresses est reconnu réseau par réseau, avant toute installation", { skip: hasCore ? false : "cœur sans socialRecognize (avant 0.6.2)" }, () => {
   const index = json("catalogue/index.json");
   const sources = R.socialSourcesOf(index.modules.map((e) => ({ id: e.id, social: R.parseSocialSpec(e.social) })));
   assert.equal(sources.length, 20);
