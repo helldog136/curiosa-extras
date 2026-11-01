@@ -5,7 +5,7 @@
     "en": "X (Twitter)",
     "fr": "X (Twitter)"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "x",
   "description": {
     "en": "Shows your X button in the site header.",
@@ -46,5 +46,29 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "X",
+    "icon": "x",
+    "hosts": [
+      "x.com"
+    ],
+    "template": "https://x.com/{h}",
+    "example": {
+      "en": "https://x.com/myname",
+      "fr": "https://x.com/monpseudo"
+    },
+    "aliases": [
+      [
+        "twitter.com",
+        "x.com"
+      ]
+    ],
+    "shapes": [
+      {
+        "re": "^/@?(?!(?:home|explore|i|search|intent|share|hashtag|messages|notifications|settings|compose)(?:/|$))([A-Za-z0-9_]{1,15})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

@@ -5,7 +5,7 @@
     "en": "Threads",
     "fr": "Threads"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "platform": "threads",
   "description": {
     "en": "Shows your Threads button in the site header.",
@@ -46,5 +46,24 @@
       }
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Threads",
+    "icon": "threads",
+    "hosts": [
+      "threads.net",
+      "threads.com"
+    ],
+    "template": "https://www.threads.net/@{h}",
+    "example": {
+      "en": "https://www.threads.net/@myname",
+      "fr": "https://www.threads.net/@monpseudo"
+    },
+    "shapes": [
+      {
+        "re": "^/@([A-Za-z0-9._]{1,30})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

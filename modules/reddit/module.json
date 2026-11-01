@@ -6,7 +6,7 @@
     "en": "Reddit",
     "fr": "Reddit"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "reddit",
   "description": {
     "en": "Shows your Reddit button in the site header and shares your follower count.",
@@ -77,5 +77,39 @@
         "fr": "Compte les followers de votre communauté ou de votre profil pour les statistiques du site. Ce chiffre est public : rien à régler."
       }
     }
-  ]
+  ],
+  "social": {
+    "name": "Reddit",
+    "icon": "reddit",
+    "hosts": [
+      "reddit.com"
+    ],
+    "template": "https://www.reddit.com/user/{h}",
+    "example": {
+      "en": "https://www.reddit.com/user/myname",
+      "fr": "https://www.reddit.com/user/monpseudo"
+    },
+    "tag": "u/",
+    "forms": [
+      [
+        "^/?r/([A-Za-z0-9_]{2,21})/?$",
+        "https://www.reddit.com/r/{1}"
+      ],
+      [
+        "^/?(?:u|user)/([A-Za-z0-9_-]{2,21})/?$",
+        "https://www.reddit.com/user/{1}"
+      ]
+    ],
+    "shapes": [
+      {
+        "re": "^/(?:u|user)/([A-Za-z0-9_-]{2,21})/?$",
+        "handle": true
+      },
+      {
+        "re": "^/r/([A-Za-z0-9_]{2,21})/?$",
+        "prefix": "r/",
+        "template": "https://www.reddit.com/r/{h}"
+      }
+    ]
+  }
 }

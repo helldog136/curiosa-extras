@@ -5,7 +5,7 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "discord",
   "description": {
     "en": "Announces your new content on a Discord channel, with no bot or account to link. Also tells it when you go live.",

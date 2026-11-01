@@ -22,7 +22,7 @@ const modules = [];
 for (const group of ["modules", "examples"]) {
   for (const id of fs.readdirSync(path.join(root, group)).sort()) {
     const m = JSON.parse(fs.readFileSync(path.join(root, group, id, "module.json"), "utf8"));
-    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}) });
+    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}) });
   }
 }
 const out = JSON.stringify({ version: 1, modules }, null, 2) + "\n";

@@ -5,7 +5,7 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "platform": "discord",
   "description": {
     "en": "Shows your Discord button in the site header and shares your member count.",
@@ -95,5 +95,31 @@
       "rare": true
     }
   ],
-  "minCore": "0.6.0"
+  "minCore": "0.6.0",
+  "social": {
+    "name": "Discord",
+    "icon": "discord",
+    "hosts": [
+      "discord.gg",
+      "discord.com",
+      "discordapp.com"
+    ],
+    "template": "https://discord.gg/{h}",
+    "example": {
+      "en": "https://discord.gg/abcDEF",
+      "fr": "https://discord.gg/abcDEF"
+    },
+    "shapes": [
+      {
+        "host": "^discord\\.gg$",
+        "re": "^/([A-Za-z0-9-]{2,32})/?$",
+        "handle": true
+      },
+      {
+        "host": "^discord(?:app)?\\.com$",
+        "re": "^/invite/([A-Za-z0-9-]{2,32})/?$",
+        "handle": true
+      }
+    ]
+  }
 }
