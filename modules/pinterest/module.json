@@ -5,11 +5,11 @@
     "en": "Pinterest",
     "fr": "Pinterest"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "pinterest",
   "description": {
-    "en": "Shows your Pinterest button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Pinterest dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Pinterest button in the site header.",
+    "fr": "Affiche le bouton de votre Pinterest dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Pinterest profile",
-        "fr": "Profil Pinterest"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Pinterest username or your profile address.",
-        "fr": "Votre identifiant Pinterest ou l'adresse de votre profil."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://www.pinterest.com/myname",
+        "fr": "https://www.pinterest.com/monpseudo"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

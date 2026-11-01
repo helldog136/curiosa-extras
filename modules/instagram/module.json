@@ -5,11 +5,11 @@
     "en": "Instagram",
     "fr": "Instagram"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "instagram",
   "description": {
-    "en": "Shows your Instagram button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Instagram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Instagram button in the site header.",
+    "fr": "Affiche le bouton de votre Instagram dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Instagram profile",
-        "fr": "Profil Instagram"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Instagram username (e.g. myname) or your profile address.",
-        "fr": "Votre identifiant Instagram (ex. monpseudo) ou l'adresse de votre profil."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://www.instagram.com/myname",
+        "fr": "https://www.instagram.com/monpseudo"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

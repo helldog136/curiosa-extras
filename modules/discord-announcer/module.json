@@ -5,11 +5,11 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "platform": "discord",
   "description": {
-    "en": "Announces your new content on a Discord channel through a webhook: no bot, no account to link. Also tells your Discord when you go live on Twitch or on YouTube.",
-    "fr": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier. Prévient aussi votre Discord quand vous passez en direct sur Twitch ou sur YouTube."
+    "en": "Announces your new content on a Discord channel, with no bot or account to link. Also tells it when you go live.",
+    "fr": "Annonce vos nouveautés sur un salon Discord, sans bot ni compte à lier. Prévient aussi quand vous passez en direct."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -116,12 +116,16 @@
       "key": "webhookUrl",
       "type": "secret",
       "label": {
-        "en": "Discord webhook URL",
-        "fr": "URL du webhook Discord"
+        "en": "Discord channel sending address",
+        "fr": "Adresse d'envoi du salon Discord"
       },
       "help": {
-        "en": "Discord → channel settings → Integrations → Webhooks. It lets the site post in your channel, so it is kept secret and never shown again.",
-        "fr": "Discord → paramètres du salon → Intégrations → Webhooks. Elle permet au site d'écrire dans votre salon : elle reste secrète et n'est jamais réaffichée."
+        "en": "In Discord: channel settings, Integrations, then create a sending address. It stays secret and is never shown again.",
+        "fr": "Dans Discord : réglages du salon, Intégrations, puis création d'une adresse d'envoi. Elle reste secrète et n'est jamais réaffichée."
+      },
+      "example": {
+        "en": "https://discord.com/…/your-code",
+        "fr": "https://discord.com/…/votre-code"
       }
     },
     {
@@ -129,14 +133,19 @@
       "type": "text",
       "default": "",
       "label": {
-        "en": "Mention (optional)",
-        "fr": "Mention (facultatif)"
+        "en": "Mention",
+        "fr": "Mention"
       },
       "help": {
-        "en": "For example @everyone or <@&role-id>. Pings only go out when this is filled in.",
-        "fr": "Par exemple @everyone ou <@&id-du-rôle>. Un ping ne part que si ce champ est rempli."
+        "en": "Leave empty to notify nobody.",
+        "fr": "Laissez vide pour ne prévenir personne."
       },
-      "optional": true
+      "optional": true,
+      "example": {
+        "en": "@everyone",
+        "fr": "@everyone"
+      },
+      "rare": true
     },
     {
       "key": "prefix",
@@ -145,7 +154,16 @@
       "label": {
         "en": "Icon before each announcement",
         "fr": "Icône avant chaque annonce"
-      }
+      },
+      "help": {
+        "en": "One symbol. Leave empty for none.",
+        "fr": "Un seul symbole. Laissez vide pour n'en mettre aucun."
+      },
+      "example": {
+        "en": "📰",
+        "fr": "📰"
+      },
+      "rare": true
     },
     {
       "key": "youtubeLive",
@@ -156,8 +174,8 @@
         "fr": "Annoncer aussi mes directs YouTube"
       },
       "help": {
-        "en": "Off until you tick it. Needs the YouTube channel module. One message per live, never two for the same live.",
-        "fr": "Désactivé tant que vous ne cochez pas. Demande le module Chaîne YouTube. Un seul message par direct, jamais deux pour le même."
+        "en": "Needs the YouTube channel module. One message per live.",
+        "fr": "Demande le module Chaîne YouTube. Un message par direct."
       }
     },
     {
@@ -166,7 +184,7 @@
       "default": "both",
       "label": {
         "en": "Live on Twitch and YouTube at once",
-        "fr": "En direct sur Twitch et YouTube en même temps"
+        "fr": "Direct sur Twitch et YouTube en même temps"
       },
       "help": {
         "en": "Either way, only one message is sent.",
@@ -187,7 +205,8 @@
             "fr": "Un message, pour la première plateforme vue"
           }
         }
-      ]
+      ],
+      "rare": true
     },
     {
       "key": "liveText",
@@ -195,13 +214,18 @@
       "default": "",
       "optional": true,
       "label": {
-        "en": "Live announcement text (optional)",
-        "fr": "Texte de l'annonce de live (facultatif)"
+        "en": "Live announcement text",
+        "fr": "Texte de l'annonce de direct"
       },
       "help": {
-        "en": "Leave empty for the standard sentence. You can use {platform} (Twitch, YouTube, or both), {title}, {game} and {url} (the link or links). Without {url}, the links are added at the end. For example: Come and watch {title} on {platform}!",
-        "fr": "Laissez vide pour la phrase habituelle. Vous pouvez utiliser {platform} (Twitch, YouTube ou les deux), {title}, {game} et {url} (le ou les liens). Sans {url}, les liens sont ajoutés à la fin. Par exemple : Venez voir {title} sur {platform} !"
-      }
+        "en": "Leave empty for the usual sentence. To insert: {platform} (Twitch, YouTube or both), {title}, {game} and {url}. Without {url}, the links are added at the end.",
+        "fr": "Laissez vide pour la phrase habituelle. À insérer : {platform} (Twitch, YouTube ou les deux), {title}, {game} et {url}. Sans {url}, les liens sont ajoutés à la fin."
+      },
+      "example": {
+        "en": "Come and watch {title} on {platform}",
+        "fr": "Venez voir {title} sur {platform}"
+      },
+      "advanced": true
     },
     {
       "key": "freshHours",
@@ -209,12 +233,18 @@
       "default": 24,
       "advanced": true,
       "label": {
-        "en": "Only announce what is newer than (hours)",
-        "fr": "N'annoncer que ce qui date de moins de (heures)"
+        "en": "Only announce recent content",
+        "fr": "N'annoncer que le contenu récent"
       },
       "help": {
-        "en": "Older items are marked as seen without being announced, so connecting the webhook never floods the channel with your history.",
-        "fr": "Les éléments plus anciens sont notés comme vus sans être annoncés : brancher le webhook n'inonde jamais le salon avec votre historique."
+        "en": "Older content is marked as seen, not announced.",
+        "fr": "Le contenu plus ancien est noté comme vu, sans être annoncé."
+      },
+      "min": 1,
+      "max": 720,
+      "unit": {
+        "en": "hours",
+        "fr": "heures"
       }
     },
     {
@@ -223,12 +253,18 @@
       "default": 2,
       "advanced": true,
       "label": {
-        "en": "Hours between two live announcements",
-        "fr": "Heures entre deux annonces de live"
+        "en": "Time between two live announcements",
+        "fr": "Délai entre deux annonces de direct"
       },
       "help": {
-        "en": "A connection drop often restarts the stream: two lives closer than this count as the same one.",
-        "fr": "Une coupure de connexion relance souvent le stream : deux lives plus proches que cela comptent pour le même."
+        "en": "Two lives closer than this count as the same one.",
+        "fr": "Deux directs plus proches que cela comptent pour le même."
+      },
+      "min": 1,
+      "max": 48,
+      "unit": {
+        "en": "hours",
+        "fr": "heures"
       }
     },
     {
@@ -237,16 +273,22 @@
       "default": 10,
       "advanced": true,
       "label": {
-        "en": "Minutes between two YouTube checks",
-        "fr": "Minutes entre deux vérifications YouTube"
+        "en": "Time between two YouTube checks",
+        "fr": "Délai entre deux vérifications YouTube"
       },
       "help": {
-        "en": "Each check uses 2 units of YouTube's daily limit (10,000): every 10 minutes is under 3 % of it. From 5 to 60.",
-        "fr": "Chaque vérification utilise 2 unités de la limite du jour de YouTube (10 000) : toutes les 10 minutes, c'est moins de 3 %. De 5 à 60."
+        "en": "Every 10 minutes is under 3 % of the daily limit.",
+        "fr": "Toutes les 10 minutes, c'est moins de 3 % de la limite du jour."
+      },
+      "min": 5,
+      "max": 60,
+      "unit": {
+        "en": "minutes",
+        "fr": "minutes"
       }
     }
   ],
-  "minCore": "0.2.2",
+  "minCore": "0.6.0",
   "requires": [
     {
       "service": "youtube.live",

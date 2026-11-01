@@ -5,11 +5,11 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.1.5",
+  "version": "1.2.0",
   "platform": "discord",
   "description": {
-    "en": "Shows your Discord button in the site header and shares your member count. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Discord button in the site header and shares your member count.",
+    "fr": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -51,12 +51,16 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Discord profile",
-        "fr": "Profil Discord"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Discord invite code (e.g. abcDEF) or its full address.",
-        "fr": "Le code de votre invitation Discord (ex. abcDEF) ou son adresse complète."
+        "en": "Paste your invitation link.",
+        "fr": "Collez votre lien d'invitation."
+      },
+      "example": {
+        "en": "https://discord.gg/abcDEF",
+        "fr": "https://discord.gg/abcDEF"
       }
     },
     {
@@ -76,15 +80,20 @@
       "key": "invite",
       "type": "text",
       "label": {
-        "en": "Invitation link (optional)",
-        "fr": "Lien d'invitation (facultatif)"
+        "en": "Invitation link",
+        "fr": "Lien d'invitation"
       },
       "help": {
-        "en": "Only if the Discord profile is not already an invitation: paste a Discord invitation link that never expires, so the members can be counted.",
-        "fr": "Seulement si le profil Discord n'est pas déjà une invitation : collez un lien d'invitation Discord sans date de fin, pour compter vos membres."
+        "en": "Only if the address above is not an invitation.",
+        "fr": "Seulement si l'adresse ci-dessus n'est pas une invitation."
       },
-      "optional": true
+      "optional": true,
+      "example": {
+        "en": "https://discord.gg/abcDEF",
+        "fr": "https://discord.gg/abcDEF"
+      },
+      "rare": true
     }
   ],
-  "minCore": "0.2.2"
+  "minCore": "0.6.0"
 }

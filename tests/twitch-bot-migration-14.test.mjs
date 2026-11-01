@@ -15,8 +15,8 @@ const REPO = process.env.CURIOSA_EXTRAS_DIR ?? path.join(here, "..");
 const def = (await import("../modules/twitch-bot/index.mjs")).default;
 const E = await import("../modules/twitch-bot/engine.mjs");
 
-// La version 1.4.0 du Bot Twitch : l'étiquette la plus récente où le module est EN 1.4.0 (et non « la plus récente qui n'est pas 1.5.0 » : une étiquette
-// publiée plus tard, avec le Bot Twitch en 1.6.0, ferait sinon échouer ce test dès que l'étiquette existe).
+// La version 1.4.0 du Bot Twitch : la première étiquette où le module est encore en 1.4.0 (la plus récente d'entre elles). On la cherche par sa version et non « avant la version courante » :
+// chaque nouvelle version du module rendrait sinon l'étiquette précédente introuvable.
 function oldRelease() {
   const { tags } = publishedTags(REPO);
   return tags.find((tag) => versionsAt(REPO, tag).get("twitch-bot") === "1.4.0") ?? null;

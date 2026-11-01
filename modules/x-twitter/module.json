@@ -5,11 +5,11 @@
     "en": "X (Twitter)",
     "fr": "X (Twitter)"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "x",
   "description": {
-    "en": "Shows your X (Twitter) button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre X (Twitter) dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your X button in the site header.",
+    "fr": "Affiche le bouton de votre X dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "X (Twitter) profile",
-        "fr": "Profil X (Twitter)"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your X username (without @) or your profile address.",
-        "fr": "Votre identifiant X (sans @) ou l'adresse de votre profil."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://x.com/myname",
+        "fr": "https://x.com/monpseudo"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

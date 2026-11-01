@@ -1,16 +1,16 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.6.0",
   "id": "github",
   "name": {
     "en": "GitHub",
     "fr": "GitHub"
   },
-  "version": "1.1.3",
+  "version": "1.2.0",
   "platform": "github",
   "description": {
-    "en": "Shows your GitHub button in the site header and shares your follower count. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre GitHub dans l'en-tête du site et partage le nombre de vos followers. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your GitHub button in the site header and shares your follower count.",
+    "fr": "Affiche le bouton de votre GitHub dans l'en-tête et partage vos followers."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -52,12 +52,16 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "GitHub profile",
-        "fr": "Profil GitHub"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your GitHub username or your profile address.",
-        "fr": "Votre identifiant GitHub ou l'adresse de votre profil."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://github.com/myname",
+        "fr": "https://github.com/monpseudo"
       }
     },
     {

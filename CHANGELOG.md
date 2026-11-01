@@ -4,14 +4,51 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.30.0
 
+*L'onglet « Récompenses » du Bot Twitch est refait, et le haut de la page « Commandes » tient en une ligne. Bot Twitch 1.7.0 : pour Curiosa 0.6.0 ou plus.*
+
+### Nouveautés
+
+- **Un seul tableau de récompenses**, avec recherche en direct, filtres en pastilles, ce qui se passe (pastille colorée **et** écrite), le coût et un interrupteur « en vente / en pause » dans la ligne. Un seul bouton « Modifier » par ligne ; « Tester » et « Supprimer la récompense » sont dans le menu « ⋯ ».
+- **Un formulaire de trois champs** : Titre, Coût, Ce qui se passe. Tout le reste (réponse du bot, couleur, délai de recharge, texte d'aide, message du viewer) est sous « Plus d'options ». Une réponse sensée est prévue si vous n'écrivez rien.
+- **Une phrase et trois étapes** à la place de l'introduction de cinq lignes : activer, autoriser Twitch, relier la maison (facultatif), avec l'état de chaque étape. Une fois tout en place, une ligne dit l'état du Connecteur Home Assistant, avec le lien pour l'ouvrir et pour créer une récompense.
+- **« Vos actions »** : recherche, un bouton « Renommer » et « Retirer » dans le menu ; la colonne « Maison » ne parle que de ce qui sort de l'ordinaire.
+- **Le journal des échanges** a sa recherche et un filtre par résultat.
+- **Le haut de la page « Commandes » tient en une ligne** : « Le bot écoute votre chat », le dernier message, « répond pendant vos directs », un petit bouton « Vérifier » (ou « Réparer l'écoute » s'il y a un problème) et le bouton « Arrêt d'urgence », toujours visible. Plus de carte à un seul bouton.
+- **L'onglet « Sources »** s'appelle « Informations utilisées » dans cette page.
+
+### Pour les développeurs
+
+- Bot Twitch 1.7.0, `minCore` 0.6.0 : tableau enrichi, champs `duration`, `switch`, `folded`, `example` du cœur. L'action `rewardToggle` devient `rewardEnable` (l'interrupteur dit l'état voulu : `enabled` vaut `1` ou `0`). Le champ `cooldownMin` reste accepté ; le formulaire envoie `cooldown` en secondes. Le choix de la couleur est replié (vide : rouge).
+- `adminkit.client.js` reste pour les parties que le cœur ne couvre pas encore : période des commandes et des timers (la migration vers le contrôle natif est un lot suivant), aperçu et morceaux à insérer, et les boutons d'action en ligne (sans carte) en attendant une brique du cœur.
 ### Pour les développeurs
 
 - **Le cliquet d'ergonomie.** `tests/ergonomics.test.mjs` mesure, pour chaque module, les règles automatiques de `docs/ERGONOMIE-ADMIN.md` (réglages par onglet, mots interdits, libellés, aides et exemples, ton, parité FR/EN). Les écarts déjà présents sont listés dans `tests/ergonomics-baseline.json` : un nouvel écart fait échouer le test, un écart corrigé doit être retiré de la base, qui ne peut que rétrécir.
 - **Deux commandes.** `node scripts/ergonomics-baseline.mjs --write` écrit ou fait rétrécir la base (il refuse d'ajouter un écart) ; `--report` imprime le tableau « module, nombre d'écarts par règle ».
 - **`tests/helpers/ergonomics.mjs`** : copie de l'aide du kit du cœur (comme `tmp.mjs`), avec `assertAdminPageErgonomics(blocks)` pour les pages produites par du code. Aucune version du cœur n'est exigée ; un test vérifie que la copie reste identique à celle du cœur.
-- Aucun module ne change : ni version, ni comportement.
+
+## 1.31.0
+
+*Les 20 modules de réseau social demandent « L'adresse de votre profil » et reconnaissent ce que l'on colle vraiment : le nom seul, l'adresse sans https ou sans www, `@nom@serveur`, les adresses courtes. Le module Annonces Discord est allégé. Pour Curiosa 0.6.0 ou plus. Modules touchés : les 20 réseaux, Annonces Discord 1.2.0.*
+
+### Nouveautés
+
+- **Une seule question, la même partout : « Adresse de votre profil ».** Sous le champ : « Collez le lien de votre page. » et un exemple concret (« Par exemple : https://www.instagram.com/monpseudo »). Le mot « identifiant » et le « (sans @) » disparaissent des 20 modules.
+- **Ce que l'on colle vraiment est reconnu.** Le nom seul (avec ou sans @), `instagram.com/monpseudo` sans https, avec ou sans `www.`, les adresses courtes (`fb.me`, `t.me`, `discord.gg`), `@nom@mastodon.social`, `u/pseudo` et `r/communaute` pour Reddit, `monnom.bandcamp.com`, un numéro de profil Steam. Les paramètres de suivi (`igsh`, `utm_…`, `fbclid`, `s`, `t`…) sont retirés. L'ancienne adresse `twitter.com` devient `x.com`.
+- **Un seul bouton par compte, quelle que soit la saisie.** Que vous tapiez `monpseudo` ou que vous colliez l'adresse, le bouton s'appelle « Instagram · monpseudo » et mène à la même adresse : le doublon est écarté. Le bouton de X s'appelle « X » (plus « X (Twitter) »).
+- **Mastodon** vérifie que l'adresse est celle d'un profil (`/@nom`) : un lien quelconque n'est plus accepté. **Bandcamp** accepte le simple nom. **Facebook** reconnaît `fb.me`.
+- **Discord** : le lien d'invitation séparé est replié sous « Plus d'options » ; le profil accepte déjà une invitation.
+- **Annonces Discord est allégé.** Deux champs visibles (l'adresse d'envoi et « Annoncer aussi mes directs YouTube ») ; la mention, l'icône et le choix « en même temps » sont repliés sous « Plus d'options », le texte de l'annonce passe en mode avancé. Le mot « webhook » disparaît des textes (« adresse d'envoi du salon »), les délais disent leur unité et leurs bornes, les erreurs disent quoi faire.
+- Avec le cœur 0.6.0, les messages d'erreur du compte (Bluesky, GitHub…) renvoient à « l'adresse de votre profil ».
+
+### Pour les développeurs
+
+- **Une seule table pour les 20 réseaux** : `scripts/social-networks.mjs` (hôtes, modèle d'adresse, formes reconnues, exemple, icône). `node scripts/gen-social.mjs` écrit le bloc `profile()` de chaque `index.mjs` (le fichier entier pour les 15 réseaux sans statistiques), le réglage `profile`, la description et la ligne « Réglage » du README ; `--check` vérifie qu'aucun fichier n'a été modifié à la main.
+- **`tests/social-generated.test.mjs`** : anti-copie (une seule `profile()` par module, identique à celle de la table), textes communs, 40 collages réels. `profile()` renvoie maintenant `{ url, handle, tag }` ; `handle` garde son sens pour les statistiques.
+- `minCore` passe à 0.6.0 pour ces modules (`example` et `rare` sont des clés du cœur 0.6.0). Aucune donnée ne change : les adresses déjà saisies marchent toujours.
+- Le kit d'ergonomie est recopié depuis le cœur 0.6.0 (`tests/helpers/ergonomics.mjs`) ; la base des écarts passe de 1185 à 1115 (les 21 modules à 0 écart, -70).
+- Versions : 20 réseaux +0.1.0 (1.1.0 ; 1.2.0 pour Bluesky, Discord, GitHub, Mastodon, Reddit), Annonces Discord 1.2.0.
 
 ## 1.32.0
 
