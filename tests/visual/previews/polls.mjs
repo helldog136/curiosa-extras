@@ -27,9 +27,7 @@ export default async function scenes({ siteFrame, esc, messages, art }) {
   const votes = [14, 9, 6, 4];
   let i = 0;
   for (const [idx, n] of votes.entries()) for (let k = 0; k < n; k++) await mod.castVote(ctx, { slug: p1.slug, token: tok(i++), ids: [String((await ctx.api.store.get(p1.id)).data.choices[idx].id)] });
-  const p2 = await make("Quelles animations voulez-vous au prochain anniversaire de la chaîne ?", ["Un tournoi entre spectateurs", "Un tirage au sort de cadeaux", "Un direct de 12 heures", "Des défis proposés par le chat"], 2, day(5), { resultsMode: "after" });
   const one = await def.page(ctx, { segments: [p1.slug] });
-  const two = await def.page(ctx, { segments: [p2.slug] });
   const shareBox = (url) => `<div class="flex flex-wrap items-center gap-2 rounded-card border border-line bg-surface p-3 text-sm"><span class="text-muted">Lien à partager</span><code class="rounded bg-bg px-2 py-1">${esc(url)}</code></div>`;
   const body = (page, extra = "") => page.blocks.map((b) => b.type === "html" ? `<div>${b.html}</div>` : b.type === "copy" ? shareBox(b.text) : b.type === "links" ? `<p><a class="text-accent underline" href="#">${esc(b.items[0].label)}</a></p>` : b.type === "markdown" ? `<p>${esc(b.text)}</p>` : "").join("") + extra;
   // L'élément « sondage » d'une page d'overlay (OBS) : mode test du module (aucun vrai sondage), posé sur un faux fond de stream dessiné.
@@ -42,6 +40,5 @@ export default async function scenes({ siteFrame, esc, messages, art }) {
   return {
     "sondage.webp": { html: siteFrame({ title: one.title, nav, current: "Sondages", body: body(one) }), h: 760 },
     "overlay.webp": { html: stage, h: 720, steps: [{ wait: 600 }] },
-    "vote.webp": { html: siteFrame({ title: two.title, nav, current: "Sondages", body: body(two) }), h: 760 },
   };
 }

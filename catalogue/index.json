@@ -1130,18 +1130,6 @@
           }
         },
         {
-          "file": "previews/vote.webp",
-          "type": "public",
-          "caption": {
-            "fr": "Un sondage à choix multiples : chaque personne vote une fois, sans compte.",
-            "en": "A multiple-choice poll: each person votes once, with no account."
-          },
-          "alt": {
-            "fr": "Page d'un sondage avec quatre propositions à cocher et un bouton pour voter.",
-            "en": "A poll page with four options to tick and a button to vote."
-          }
-        },
-        {
           "file": "previews/overlay.webp",
           "type": "overlay",
           "caption": {
