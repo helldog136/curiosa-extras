@@ -10,7 +10,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Nouveautés
 
-- **Des visuels dans la fiche des extensions les plus parlantes.** Avant d'installer, vous voyez par exemple le tableau des commandes et les récompenses du Bot Twitch, la page de commandes d'un créateur sur commande, la semaine du planning, un sondage et ses résultats, un agenda d'événements, un album photo, la page « Merci », la FAQ, les avis, le quiz du jour, l'annuaire, ou votre page de liens avec le bouton « Mes réseaux ». Chaque image a une légende et un texte alternatif, en français et en anglais. Extensions touchées, chacune en version corrective (« ajoute des visuels dans sa fiche ») : Bot Twitch 1.7.1, Planning des streams 2.5.1, Sondages 1.3.1, Événements 1.0.2, Galeries photos 1.1.2, Questions fréquentes 1.0.3, Mur des remerciements 1.2.1, Liste de liens 1.0.2, Autres plateformes 1.1.2, Commandes 1.0.2, Témoignages 1.1.1, Jeu du jour 1.0.2, Annuaire 1.0.2.
+- **Des visuels dans la fiche des extensions les plus parlantes.** Avant d'installer, vous voyez par exemple le tableau des commandes et les récompenses du Bot Twitch, la page de commandes d'un créateur sur commande, la semaine du planning, un sondage et ses résultats, un agenda d'événements, un album photo, la page « Merci », la FAQ, les avis, le quiz du jour, l'annuaire, ou votre page de liens avec le bouton « Mes réseaux ». Chaque image a une légende et un texte alternatif, en français et en anglais. Extensions touchées, chacune en version corrective (« ajoute des visuels dans sa fiche ») : Bot Twitch 1.7.1, Planning des streams 2.5.1, Sondages 1.3.1, Événements 1.0.2, Galeries photos 1.1.2, Questions fréquentes 1.0.3, Mur des remerciements 1.2.1, Liste de liens 1.0.2, Autres plateformes 1.1.2, Commandes 1.0.2, Témoignages 1.1.1, Jeu du jour 1.1.1, Annuaire 1.0.2.
 - **Aucune donnée réelle dans ces images.** Chaque capture est fabriquée avec un faux site (« Atelier Démo »), des pseudos génériques, des adresses en `example.org` et des illustrations dessinées : ni pseudo, ni nom, ni adresse, ni photo d'une vraie personne.
 
 ### Pour les développeurs
@@ -19,6 +19,33 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **`scripts/build-index.mjs`** recopie `previews` (la déclaration, jamais les images) dans l'entrée du catalogue et **refuse** un visuel invalide (nombre, nom, type réel lu dans les octets, poids, dimensions, textes manquants). `--check` échoue si une image référencée manque. Les règles sont dans `scripts/rules.mjs` (`previewProblems`, `sniffImage`, `previewIndex`), les mêmes bornes que le cœur.
 - **`scripts/shoot-previews.mjs`** régénère toutes les captures de façon reproductible (horloge figée, Chromium, WebP) depuis des scènes `tests/visual/previews/<module>.mjs` : vrai code du module, vrais composants du cœur pour l'administration, données inventées, et un garde-fou qui refuse toute adresse hors `example.*` ou tout nom interdit. `--check` vérifie les images déclarées sans rien générer. Mode d'emploi et règles de confidentialité : README, section « Les visuels des fiches ».
 - Tests : `tests/previews.test.mjs` (validation, index, `--check`, légendes au vouvoiement, scène pour chaque module illustré, données inventées).
+
+## 1.32.0
+
+*Les administrations de Suggestions de jeux et du Jeu du jour sont refaites : un tableau avec recherche en direct et pastilles de statut pour les suggestions, une question écrite en trois champs pour le Jeu du jour. Suggestions de jeux 1.7.0 et Jeu du jour 1.1.0 : pour Curiosa 0.6.0 ou plus.*
+*Les pages d'administration de Suggestions de jeux et du Jeu du jour suivent les règles d'ergonomie du dépôt (`docs/ERGONOMIE-ADMIN.md`). Pour Curiosa 0.6.0 ou plus. Modules touchés : Suggestions de jeux 1.7.0, Jeu du jour 1.1.0.*
+
+### Suggestions de jeux
+
+- **Un seul tableau, qui tient sur un téléphone.** Plus de huit boutons par ligne (« → Proposé », « → Planifié »…), plus de tableau qui sort de l'écran. Chaque ligne montre le jeu, son statut et son origine en pastille colorée **et** écrite, la date, les votes et, seulement quand elle manque, la jaquette. Sous 640 px, chaque ligne devient une carte.
+- **Une recherche qui filtre pendant que vous tapez** : le nom du jeu, le pseudo, la note, le statut. Au-dessus, des pastilles de statut avec leur nombre (« Proposé 12 », « Planifié 3 »…). Le tableau garde toutes vos suggestions et se lit 50 par 50.
+- **Le statut se change par le menu « ⋯ »** de la ligne. Un seul bouton reste visible : « Changer la jaquette ». « Supprimer » est dans le menu, en rouge, et demande confirmation.
+- **Ajouter un jeu tient en deux champs** : le nom et le statut. La note et l'image sont sous « Plus d'options ».
+- **Des mots de tous les jours** : plus de « clé » dans les messages sur les jaquettes (« Les jaquettes ne sont pas encore reliées : ouvrez le module « Jaquettes de jeux » »), plus de point d'exclamation.
+
+### Jeu du jour
+
+- **Écrire une question tient en trois champs** : la question, les réponses (une par ligne, de 2 à 4) et le numéro de la bonne. Avant, le formulaire montrait 19 champs, avec le français et l'anglais côte à côte. L'explication, l'image, les autres langues, la catégorie, la difficulté, la date précise et l'état sont repliés sous « Plus d'options », qui s'ouvre tout seul quand l'un d'eux est rempli.
+- **Une liste qui se cherche en direct**, avec des pastilles d'état (Publiée, Brouillon, Planifiée) et leur nombre, 50 par page. Le bouton « Chercher » disparaît.
+- **Les packs et les gabarits** sont des tableaux de trois colonnes (nom, description, avancement). L'étiquette « Pas activé » n'est plus répétée sur chaque ligne.
+- **Moins de réglages à l'écran** : sept réglages simples au lieu de treize. Les trois réglages rares (état dans le bloc d'accueil, mascotte et son message) sont sous « Plus d'options ». L'ordre et le chronomètre se choisissent par des boutons côte à côte.
+- **Des aides courtes, avec un exemple** sous chaque champ libre. Plus de « CSV » dans les libellés : « Importer depuis un tableur ». Plus de tutoiement ni de point d'exclamation dans les textes du jeu.
+
+### Pour les développeurs
+
+- Les deux modules demandent maintenant Curiosa 0.6.0 (`minCore`) : tableau enrichi, champs `segmented` et `folded`, réglages `rare`, `display: "segmented"` et `example`.
+- `tests/helpers/ergonomics.mjs` est recopié depuis `testsupport/ergonomics.mjs` du cœur 0.6.0 (il connaît les réglages `rare` et `example`). La base d'écarts d'ergonomie passe de 1185 à 1114 écarts.
+- `answers_<langue>` remplace `a1_<langue>` à `a4_<langue>` dans le formulaire du Jeu du jour ; les anciens noms sont encore lus par l'action `saveQuestion`.
 
 ## 1.31.0
 

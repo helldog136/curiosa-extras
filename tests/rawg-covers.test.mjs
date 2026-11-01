@@ -135,9 +135,9 @@ test("clé absente : message clair, aucune demande, rien de modifié", async () 
   assert.equal(svc.calls.length, 0);
   assert.equal((await game(c, id)).coverCheckedAt, undefined, "pas marqué « essayé » : il le sera dès qu'une clé existe");
   const res = await gs.adminActions.findCovers(c);
-  assert.match(res.error, /Aucune clé RAWG/);
+  assert.match(res.error, /pas encore reliées/);
   assert.ok(!res.ok);
-  assert.match(JSON.stringify(await gs.adminPanel(c)), /aucune clé RAWG/);
+  assert.match(JSON.stringify(await gs.adminPanel(c)), /pas encore reliées/);
 });
 
 test("panne réseau ou 5xx (« injoignable ») : on s'arrête sans rien marquer ni lever d'erreur", async () => {
@@ -195,7 +195,7 @@ test("admin : colonne jaquette, compteur des manquantes, bouton ; rien d'affich�
   assert.ok(form);
   assert.equal(form.submitLabel, "Rechercher les jaquettes manquantes");
   const table = blocks.find((b) => b.type === "table");
-  assert.deepEqual(table.rows.map((r) => r[2]).sort(), ["—", "✓"]);
+  assert.deepEqual(table.rows.map((r) => r[5].text ?? r[5]).sort(), ["", "Manquante"], "colonne Jaquette : seule une jaquette manquante est dite (pastille)");
   assert.equal(table.rows.length, table.rowIds.length);
   const full = gsCtx(); await addGame(full, "Avec", { coverUrl: IMG });
   assert.ok(!(await gs.adminPanel(full)).some((b) => b.type === "adminForm" && b.action === "findCovers"));
@@ -208,7 +208,7 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
   const blocks = await gs.adminPanel(c);
   assert.equal(blocks[0].type, "banner");
   assert.equal(blocks[0].tone, "warning");
-  assert.match(blocks[0].text, /Aucune clé RAWG/);
+  assert.match(blocks[0].text, /pas encore reliées/);
   assert.equal(blocks[1].type, "suggestInstall");
   assert.equal(blocks[1].service, "game.cover");
   svc.state.configured = true;
@@ -220,8 +220,8 @@ test("admin : clé RAWG absente → bandeau en tête, même sans suggestion sans
 test("game-suggestions : manifeste valide, version et données montées, permission rawg, clé RAWG du module seulement en legacySettings (secret, jamais affichée), textes fr/en alignés", () => {
   const m = readJson("game-suggestions/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "1.6.0");
-  assert.equal(m.minCore, "0.5.0");   // 0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? ») ; le service game.cover est un besoin facultatif, l'ancienne interface sert de repli
+  assert.equal(m.version, "1.7.0");
+  assert.equal(m.minCore, "0.6.0");   // 0.2.10 : lit `ambiguous` (lien « Ce n'est pas le bon jeu ? ») ; le service game.cover est un besoin facultatif, l'ancienne interface sert de repli
   assert.equal(m.dataVersion, 2);
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"), "plus de champ visible");
   assert.deepEqual(m.legacySettings, [{ key: "rawgApiKey", secret: true }]);
@@ -297,7 +297,7 @@ test("service de jaquettes : clé absente → message clair qui renvoie vers « 
   assert.equal((await run(c)).status, "no_key");
   assert.equal(svc.calls.length, 0);
   const res = await gs.adminActions.findCovers(c);
-  assert.match(res.error, /Aucune clé RAWG/); assert.match(res.error, /Jaquettes de jeux/);
+  assert.match(res.error, /pas encore reliées/); assert.match(res.error, /Jaquettes de jeux/);
   assert.match(JSON.stringify(await gs.adminPanel(c)), /suggestInstall/);
   svc.state.configured = true;                                   // l'administrateur saisit la clé dans Réglages
   const r = await run(c, { now: NOW + 60_000 });
@@ -316,9 +316,9 @@ test("service du cœur : clé refusée → signalée à part, pause 24 h, repris
   assert.equal((await run(c, { now: NOW + 3_600_000 })).status, "denied");
   assert.equal(svc.calls.length, 1, "pause : aucune nouvelle demande");
   const msg = await gs.adminActions.findCovers(c);
-  assert.match(msg.error, /refuse la clé/); assert.ok(!/sans résultat/.test(msg.error));
+  assert.match(msg.error, /accès aux jaquettes est refusé/); assert.ok(!/sans résultat/.test(msg.error));
   assert.equal(svc.calls.length, 2, "le bouton passe outre la pause");
-  assert.match(JSON.stringify(await gs.adminPanel(c)), /refuse la clé/);
+  assert.match(JSON.stringify(await gs.adminPanel(c)), /accès aux jaquettes est refusé/);
   svc.cover = async () => ({ status: "found", url: IMG });       // clé corrigée
   assert.equal((await run(c, { now: Date.now() + 25 * 3_600_000 })).found, 2);   // le clic a eu lieu « maintenant » (horloge réelle)
 });

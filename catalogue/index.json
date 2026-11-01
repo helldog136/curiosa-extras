@@ -298,11 +298,11 @@
     {
       "id": "daily-game",
       "name": "Jeu du jour",
-      "description": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
+      "description": "Un petit jeu une fois par jour pour donner envie de revenir. Une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/daily-game",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎲",
@@ -310,7 +310,7 @@
         "mascot.hint"
       ],
       "requires": {
-        "core": "0.2.6"
+        "core": "0.6.0"
       },
       "needs": [
         {
@@ -625,16 +625,16 @@
     {
       "id": "game-suggestions",
       "name": "Suggestions de jeux",
-      "description": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement.",
+      "description": "Laissez votre public suggérer à quoi jouer. Une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion et des votes « rejoue-le ». Vous pouvez ajouter des jeux vous-même, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
       "ref": "v1.33.0",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
       "requires": {
-        "core": "0.5.0"
+        "core": "0.6.0"
       },
       "needs": [
         {
@@ -1139,6 +1139,18 @@
           "alt": {
             "fr": "Page d'un sondage avec quatre propositions à cocher et un bouton pour voter.",
             "en": "A poll page with four options to tick and a button to vote."
+          }
+        },
+        {
+          "file": "previews/overlay.webp",
+          "type": "overlay",
+          "caption": {
+            "fr": "Pour votre stream : le sondage en cours s'affiche à l'écran, avec les résultats qui bougent en direct.",
+            "en": "For your stream: the current poll appears on screen, with results moving live."
+          },
+          "alt": {
+            "fr": "Fond de stream coloré avec, au centre, un sondage qui montre une question, trois choix et leurs barres de résultats.",
+            "en": "Colourful stream background with, in the centre, a poll showing a question, three choices and their result bars."
           }
         }
       ]

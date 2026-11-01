@@ -5,11 +5,11 @@
     "fr": "Jeu du jour",
     "en": "Daily game"
   },
-  "version": "1.0.2",
-  "minCore": "0.2.6",
+  "version": "1.1.1",
+  "minCore": "0.6.0",
   "description": {
-    "fr": "Un petit jeu une fois par jour pour donner envie de revenir : une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
-    "en": "A small game once a day to make people want to come back: one question, a few answers, an explanation, then “come back tomorrow”. The streak of days is kept in each visitor's browser, with no account. Weekly ranking as an option."
+    "fr": "Un petit jeu une fois par jour pour donner envie de revenir. Une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
+    "en": "A small game once a day to make people want to come back. One question, a few answers, an explanation, then “come back tomorrow”. The streak of days is kept in each visitor's browser, with no account. Weekly ranking as an option."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -123,8 +123,8 @@
         "en": "Order of the questions"
       },
       "help": {
-        "fr": "« Dans l'ordre » : une par jour, dans l'ordre que vous choisissez. « Au hasard » : une par jour, sans jamais répéter tant que toutes ne sont pas passées. Dans les deux cas, tout le monde a la même question le même jour.",
-        "en": "“In order”: one a day, in the order you choose. “Random”: one a day, never repeating until all of them have come up. Either way, everyone gets the same question on the same day."
+        "fr": "Une question par jour, la même pour tout le monde.",
+        "en": "One question a day, the same for everyone."
       },
       "options": [
         {
@@ -137,11 +137,12 @@
         {
           "value": "random",
           "label": {
-            "fr": "Au hasard, sans répétition",
-            "en": "Random, without repeats"
+            "fr": "Au hasard",
+            "en": "Random"
           }
         }
-      ]
+      ],
+      "display": "segmented"
     },
     {
       "key": "timezone",
@@ -152,8 +153,8 @@
         "en": "Your time zone"
       },
       "help": {
-        "fr": "Le jour change à minuit dans ce fuseau, pour tout le monde. Une nouvelle question arrive à ce moment-là.",
-        "en": "The day changes at midnight in this time zone, for everyone. A new question arrives at that moment."
+        "fr": "Le jour change à minuit dans ce fuseau.",
+        "en": "The day changes at midnight in this time zone."
       },
       "options": [
         {
@@ -328,32 +329,33 @@
         "en": "Timer"
       },
       "help": {
-        "fr": "Un bonus de points pour qui répond vite, jamais une limite : chaque personne peut le décocher. Choisissez s'il est coché au départ, décoché, ou absent.",
-        "en": "A bonus of points for answering fast, never a limit: each visitor can untick it. Choose whether it starts ticked, unticked, or absent."
+        "fr": "Un bonus pour qui répond vite, jamais une limite.",
+        "en": "A bonus for answering fast, never a limit."
       },
       "options": [
         {
           "value": "on",
           "label": {
-            "fr": "Proposé, coché au départ",
-            "en": "Offered, ticked at the start"
+            "fr": "Coché au départ",
+            "en": "Ticked at start"
           }
         },
         {
           "value": "off",
           "label": {
-            "fr": "Proposé, décoché au départ",
-            "en": "Offered, unticked at the start"
+            "fr": "Décoché au départ",
+            "en": "Unticked at start"
           }
         },
         {
           "value": "none",
           "label": {
-            "fr": "Pas de chronomètre",
-            "en": "No timer"
+            "fr": "Aucun",
+            "en": "None"
           }
         }
-      ]
+      ],
+      "display": "segmented"
     },
     {
       "key": "shareButton",
@@ -364,23 +366,23 @@
         "en": "Offer to copy the result"
       },
       "help": {
-        "fr": "Après la réponse, un texte à partager comme « Quiz du jour — 3 jours de suite ! », sans dévoiler la réponse.",
-        "en": "After answering, a text to share like “Daily quiz — 3 days in a row!”, without revealing the answer."
+        "fr": "Un texte à partager après la réponse, sans la dévoiler.",
+        "en": "A text to share after answering, without revealing it."
       }
     },
     {
       "key": "leaderboard",
       "type": "boolean",
       "default": false,
-      "optional": true,
       "label": {
-        "fr": "Classement de la semaine (facultatif)",
-        "en": "Weekly ranking (optional)"
+        "fr": "Classement de la semaine",
+        "en": "Weekly ranking"
       },
       "help": {
-        "fr": "Les personnes qui le veulent choisissent un pseudo et apparaissent au classement de la semaine. Demande l'outil de participation du site ; sinon rien n'est affiché. Désactivé au départ.",
-        "en": "Visitors who want to choose a nickname and appear on the week's ranking. Needs the site's participation tool; otherwise nothing is shown. Off at the start."
-      }
+        "fr": "Les pseudos passent par l'outil de participation.",
+        "en": "Nicknames go through the participation tool."
+      },
+      "optional": true
     },
     {
       "key": "homeState",
@@ -391,9 +393,10 @@
         "en": "Show the game state in the home block"
       },
       "help": {
-        "fr": "Si vous placez le bloc « Le jeu du jour » sur l'accueil, il dit « à jouer », « déjà joué » ou la série en cours. Décoché, le bloc reste une simple invitation.",
-        "en": "If you place the “The daily game” block on the home page, it says “to play”, “already played” or the current streak. Unticked, the block stays a simple invitation."
-      }
+        "fr": "Dit « à jouer », « déjà joué » ou la série en cours.",
+        "en": "Says “to play”, “already played” or the current streak."
+      },
+      "rare": true
     },
     {
       "key": "title",
@@ -405,8 +408,12 @@
         "en": "Name of the game"
       },
       "help": {
-        "fr": "Vide : « Quiz du jour » (ou « Daily quiz »). Exemple : Le défi du jour.",
-        "en": "Empty: “Daily quiz” (or “Quiz du jour”). Example: Today's challenge."
+        "fr": "Vide : « Quiz du jour ».",
+        "en": "Empty: “Daily quiz”."
+      },
+      "example": {
+        "fr": "Le défi du jour",
+        "en": "Today's challenge"
       }
     },
     {
@@ -419,8 +426,12 @@
         "en": "Introduction text"
       },
       "help": {
-        "fr": "Affiché au-dessus de la question. Laissez vide pour ne rien afficher. Exemple : Une question par jour, 15 secondes de jeu !",
-        "en": "Shown above the question. Leave empty to show nothing. Example: One question a day, 15 seconds of play!"
+        "fr": "Affiché au-dessus de la question. Vide : rien.",
+        "en": "Shown above the question. Empty: nothing."
+      },
+      "example": {
+        "fr": "Une question par jour, 15 secondes de jeu.",
+        "en": "One question a day, 15 seconds of play."
       }
     },
     {
@@ -433,8 +444,12 @@
         "en": "Text of the invitation button"
       },
       "help": {
-        "fr": "Sur le bloc d'accueil. Vide : « Jouer ». Exemple : Relever le défi.",
-        "en": "On the home block. Empty: “Play”. Example: Take the challenge."
+        "fr": "Sur le bloc d'accueil. Vide : « Jouer ».",
+        "en": "On the home block. Empty: “Play”."
+      },
+      "example": {
+        "fr": "Relever le défi",
+        "en": "Take the challenge"
       }
     },
     {
@@ -447,8 +462,12 @@
         "en": "Streak sentence"
       },
       "help": {
-        "fr": "Doit contenir {n}, remplacé par le nombre de jours. Vide : « {n} jours de suite ! ». Exemple : {n} jours d'affilée !",
-        "en": "Must contain {n}, replaced by the number of days. Empty: “{n} days in a row!”. Example: {n} days on the run!"
+        "fr": "Le nombre de jours remplace le repère de l'exemple.",
+        "en": "The number of days replaces the marker in the example."
+      },
+      "example": {
+        "fr": "{n} jours d'affilée",
+        "en": "{n} days on the run"
       }
     },
     {
@@ -460,9 +479,10 @@
         "en": "Let the mascot invite people to play"
       },
       "help": {
-        "fr": "Si le module « Mascotte » est installé, elle peut dire « Le jeu du jour t'attend », une fois par jour, tant qu'il y a une question. Sans lui, ce réglage ne change rien. Le message ne contient jamais la réponse.",
-        "en": "If the “Mascot” module is installed, it can say “Today's game is waiting for you”, once a day, as long as there is a question. Without it, this setting changes nothing. The message never contains the answer."
-      }
+        "fr": "Seulement si le module « Mascotte » est installé.",
+        "en": "Only if the “Mascot” module is installed."
+      },
+      "rare": true
     },
     {
       "key": "hintText",
@@ -474,8 +494,13 @@
         "en": "Mascot message"
       },
       "help": {
-        "fr": "140 caractères au plus. Vide : « Le jeu du jour t'attend ! ».",
-        "en": "140 characters at most. Empty: “Today's game is waiting for you!”."
+        "fr": "140 caractères au plus. Vide : le message d'origine.",
+        "en": "140 characters at most. Empty: the original message."
+      },
+      "rare": true,
+      "example": {
+        "fr": "Une nouvelle question vous attend",
+        "en": "A new question is waiting for you"
       }
     },
     {
@@ -488,8 +513,12 @@
         "en": "“Come back tomorrow” message"
       },
       "help": {
-        "fr": "Affiché après la réponse. Vide : « Revenez demain pour une nouvelle question. ».",
-        "en": "Shown after the answer. Empty: “Come back tomorrow for a new question.”."
+        "fr": "Affiché après la réponse. Vide : le message d'origine.",
+        "en": "Shown after the answer. Empty: the original message."
+      },
+      "example": {
+        "fr": "À demain pour une nouvelle question",
+        "en": "See you tomorrow for a new question"
       }
     },
     {
@@ -502,8 +531,14 @@
         "en": "Seconds of the speed bonus"
       },
       "help": {
-        "fr": "De 5 à 60. Le bonus diminue pendant ce temps ; ensuite on peut répondre sans limite.",
-        "en": "From 5 to 60. The bonus goes down during this time; after that you can answer with no limit."
+        "fr": "Le bonus diminue pendant ce temps.",
+        "en": "The bonus goes down during this time."
+      },
+      "min": 5,
+      "max": 60,
+      "unit": {
+        "fr": "secondes",
+        "en": "seconds"
       }
     },
     {
@@ -516,8 +551,14 @@
         "en": "Answers allowed per visitor per hour"
       },
       "help": {
-        "fr": "De 5 à 500. Protège le jeu contre les envois en masse.",
-        "en": "From 5 to 500. Protects the game against mass sending."
+        "fr": "Protège le jeu contre les envois en masse.",
+        "en": "Protects the game against mass sending."
+      },
+      "min": 5,
+      "max": 500,
+      "unit": {
+        "fr": "réponses",
+        "en": "answers"
       }
     },
     {
@@ -530,15 +571,15 @@
         "en": "Type of game"
       },
       "help": {
-        "fr": "Le quiz est le seul type pour l'instant ; d'autres jeux du jour pourront s'ajouter.",
-        "en": "The quiz is the only type for now; other daily games may be added."
+        "fr": "Le quiz est le seul type pour l'instant.",
+        "en": "The quiz is the only type for now."
       },
       "options": [
         {
           "value": "quiz",
           "label": {
-            "fr": "Quiz (une question, 2 à 4 réponses)",
-            "en": "Quiz (one question, 2 to 4 answers)"
+            "fr": "Quiz",
+            "en": "Quiz"
           }
         }
       ]

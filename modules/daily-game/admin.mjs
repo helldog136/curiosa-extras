@@ -19,21 +19,13 @@ const titleOf = (ctx, item) => {
   return t ? clean(t, 110) : ctx.t("untitled");
 };
 const levelLabel = (ctx, lvl) => (lvl ? ctx.t(`lvl_${lvl}`) : "");
-const langsLabel = (ctx, item) => {
-  const type = D.typeOf(ctx);
-  const all = D.localesOf(ctx);
-  const have = type.langs(item.d);
-  const miss = all.filter((l) => !have.includes(l));
-  const up = (list) => list.map((l) => l.toUpperCase()).join(" · ");
+/** Ce qui reste à écrire : rien (chaîne vide) quand la question est complète dans toutes les langues du site, pour ne pas répéter la même étiquette sur chaque ligne. */
+const langsTodo = (ctx, item) => {
+  const have = D.typeOf(ctx).langs(item.d);
   if (!have.length) return ctx.t("langsNone");
-  return miss.length ? ctx.t("langsMissing", { present: up(have), missing: up(miss) }) : up(have);
+  const miss = D.localesOf(ctx).filter((l) => !have.includes(l));
+  return miss.length ? ctx.t("langsTodo", { missing: miss.map((l) => l.toUpperCase()).join(" · ") }) : "";
 };
-const stateLabel = (ctx, item) => {
-  if (item.status !== "published") return ctx.t("stateDraft");
-  return item.date ? ctx.t("statePlanned", { date: shortDay(item.date, ctx.locale) }) : ctx.t("statePublished");
-};
-const infoLine = (ctx, item) => [item.cat, levelLabel(ctx, item.lvl), langsLabel(ctx, item), stateLabel(ctx, item), item.by === "assistant" ? ctx.t("byAssistant") : item.by === "pack" ? ctx.t("byPack") : ""].filter(Boolean).join(" · ");
-
 /** Un contexte qui parle une autre langue (aperçu d'une question dans la langue d'un visiteur). */
 const asLocale = (ctx, lang) => { const c = Object.create(ctx); c.locale = lang; return c; };
 
@@ -97,14 +89,31 @@ export async function adminPanel(ctx, { query } = {}) {
   }
 
   const empty = items.length === 0;
+  blocks.push({ type: "markdown", text: ctx.t("adminIntro") });
+
+  // Le formulaire demandé par l'adresse (?new=1 · ?edit=<question>) vient tout de suite après la phrase d'introduction : on ne défile pas pour l'atteindre
+  if (editor) {
+    const wanted = typeof qy.edit === "string" ? items.find((i) => i.id === qy.edit) : null;
+    if (wanted || qy.new) {
+      blocks.push(questionForm(ctx, wanted ?? null, items, type, locales));
+      if (wanted) {
+        const more = [{ label: ctx.t("actPreview"), href: `${here(ctx)}?preview={id}` }];
+        if (publisher) more.push(wanted.status === "published" ? { label: ctx.t("actUnpublish"), action: "unpublish", confirm: ctx.t("confirmUnpublish") } : { label: ctx.t("actPublish"), action: "publish" });
+        if (publisher && D.playable(ctx, wanted)) more.push({ label: ctx.t("actUseToday"), action: "useToday", confirm: ctx.t("confirmUseToday"), inMenu: true });
+        if (wanted.date) more.push({ label: ctx.t("actClearDate"), action: "clearDate", inMenu: true });
+        more.push({ label: ctx.t("actDelete"), action: "removeQuestion", confirm: ctx.t("confirmDelete"), danger: true });
+        blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[titleOf(ctx, wanted)]], rowIds: [wanted.id], rowActions: more, pageSize: 0 });
+      }
+    }
+  }
 
   // Premier pas : un gabarit en un clic
   if (empty && !snap.plan.tpl && editor && publisher) {
     blocks.push({ type: "heading", text: ctx.t("startTitle") });
     blocks.push({ type: "markdown", text: ctx.t("startHelp") });
     blocks.push({
-      type: "table", columns: [ctx.t("colTemplate")], rowIds: PK.TEMPLATES.map((t) => t.id),
-      rows: PK.TEMPLATES.map((t) => [`${PK.pickText(t.name, ctx.locale)}\n${PK.pickText(t.about, ctx.locale)}`]),
+      type: "table", columns: [ctx.t("colTemplate"), ctx.t("colAbout")], rowIds: PK.TEMPLATES.map((t) => t.id), pageSize: 0,
+      rows: PK.TEMPLATES.map((t) => [PK.pickText(t.name, ctx.locale), PK.pickText(t.about, ctx.locale)]),
       rowActions: [{ label: ctx.t("actChoose"), action: "applyTemplate" }],
     });
   }
@@ -143,22 +152,6 @@ export async function adminPanel(ctx, { query } = {}) {
     }
   }
 
-  // Le formulaire demandé par l'adresse : ?new=1 · ?edit=<question>
-  if (editor) {
-    const wanted = typeof qy.edit === "string" ? items.find((i) => i.id === qy.edit) : null;
-    if (wanted || qy.new) {
-      blocks.push(questionForm(ctx, wanted ?? null, items, type, locales));
-      if (wanted) {
-        const more = [{ label: ctx.t("actPreview"), href: `${here(ctx)}?preview={id}` }];
-        if (publisher) more.push(wanted.status === "published" ? { label: ctx.t("actUnpublish"), action: "unpublish", confirm: ctx.t("confirmUnpublish") } : { label: ctx.t("actPublish"), action: "publish" });
-        if (publisher && D.playable(ctx, wanted)) more.push({ label: ctx.t("actUseToday"), action: "useToday", confirm: ctx.t("confirmUseToday") });
-        if (wanted.date) more.push({ label: ctx.t("actClearDate"), action: "clearDate" });
-        more.push({ label: ctx.t("actDelete"), action: "removeQuestion", confirm: ctx.t("confirmDelete"), danger: true });
-        blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[titleOf(ctx, wanted)]], rowIds: [wanted.id], rowActions: more });
-      }
-    }
-  }
-
   // La liste
   if (!empty) listBlocks(ctx, items, qy, { editor, publisher }, blocks);
 
@@ -188,7 +181,7 @@ export async function adminPanel(ctx, { query } = {}) {
           rows: top.map((r) => [`${r.rank}. ${r.name || ctx.t("boardAnon")}\n${ctx.t("boardPts", { n: r.pts })} · ${ctx.t("boardWins", { wins: r.wins, games: r.games })}`]),
           rowActions: moderator ? [{ label: ctx.t("actRemoveRow"), action: "removeBoardRow", confirm: ctx.t("confirmRemoveRow"), danger: true }] : [],
         });
-        if (moderator) blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[ctx.t("boardClearLabel")]], rowIds: [week], rowActions: [{ label: ctx.t("actClearBoard"), action: "clearBoard", confirm: ctx.t("confirmClearBoard"), danger: true }] });
+        if (moderator) blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[ctx.t("boardClearLabel")]], rowIds: [week], rowActions: [{ label: ctx.t("actClearBoard"), action: "clearBoard", confirm: ctx.t("confirmClearBoard"), danger: true }], pageSize: 0 });
       }
     } else {
       blocks.push({ type: "markdown", text: ctx.t("boardMissing") });
@@ -202,10 +195,10 @@ export async function adminPanel(ctx, { query } = {}) {
   blocks.push({ type: "markdown", text: ctx.t("packsHelp"), tab });
   const packRows = PK.PACKS.filter((p) => p.type === type.id);
   blocks.push({
-    type: "table", columns: [ctx.t("colPack")], tab, rowIds: packRows.map((p) => p.id),
+    type: "table", columns: [ctx.t("colPack"), ctx.t("colAbout"), ctx.t("colProgress")], tab, rowIds: packRows.map((p) => p.id), searchable: true, truncate: [1], pageSize: 0, empty: ctx.t("packsNone"),
     rows: packRows.map((p) => {
       const have = items.filter((i) => i.pack.startsWith(`${p.id}:`)).length;
-      return [`${PK.pickText(p.name, ctx.locale)}\n${PK.pickText(p.about, ctx.locale)}\n${have ? ctx.t("packOn", { have, total: p.questions.length }) : ctx.t("packOff")}`];
+      return [PK.pickText(p.name, ctx.locale), PK.pickText(p.about, ctx.locale), have ? { text: ctx.t("packOn", { have, total: p.questions.length }), badge: "ok" } : ""];
     }),
     rowActions: editor && publisher ? [{ label: ctx.t("actActivate"), action: "activatePack" }, { label: ctx.t("actDeactivate"), action: "removePack", confirm: ctx.t("confirmDeactivate"), danger: true }] : [],
   });
@@ -216,8 +209,8 @@ export async function adminPanel(ctx, { query } = {}) {
       type: "adminForm", action: "importCsv", submitLabel: ctx.t("importSubmit"), tab,
       fields: [
         { name: "file", kind: "file", accept: ".csv,.txt", maxBytes: LIMITS.csvBytes, required: true, label: ctx.t("fFile"), help: ctx.t("hFile") },
-        { name: "lang", kind: "select", label: ctx.t("fImportLang"), value: ctx.defaultLocale, options: locales.map((l) => ({ value: l, label: languageName(l, ctx.locale) })), help: ctx.t("hImportLang") },
-        { name: "state", kind: "select", label: ctx.t("fImportState"), value: "draft", options: [{ value: "draft", label: ctx.t("optImportDraft") }, { value: "published", label: ctx.t("optImportPublished") }], help: ctx.t("hImportState") },
+        ...(locales.length > 1 ? [{ name: "lang", kind: "select", label: ctx.t("fImportLang"), value: "", folded: true, options: locales.map((l) => ({ value: l, label: languageName(l, ctx.locale) })), help: ctx.t("hImportLang") }] : []),
+        { name: "state", kind: "segmented", label: ctx.t("fImportState"), value: "", folded: true, options: [{ value: "draft", label: ctx.t("optImportDraft") }, { value: "published", label: ctx.t("optImportPublished") }], help: ctx.t("hImportState") },
       ],
     });
     blocks.push({ type: "heading", text: ctx.t("exportTitle"), tab });
@@ -228,7 +221,7 @@ export async function adminPanel(ctx, { query } = {}) {
   if (publisher && !empty) {
     blocks.push({ type: "heading", text: ctx.t("restartTitle"), tab });
     blocks.push({ type: "markdown", text: ctx.t("restartHelp"), tab });
-    blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[ctx.t("restartLabel")]], rowIds: ["x"], rowActions: [{ label: ctx.t("actRestart"), action: "restartPlan", confirm: ctx.t("confirmRestart"), danger: true }], tab });
+    blocks.push({ type: "table", columns: [ctx.t("colOther")], rows: [[ctx.t("restartLabel")]], rowIds: ["x"], rowActions: [{ label: ctx.t("actRestart"), action: "restartPlan", confirm: ctx.t("confirmRestart"), danger: true }], pageSize: 0, tab });
   }
   return blocks;
 }
@@ -236,56 +229,42 @@ export async function adminPanel(ctx, { query } = {}) {
 function questionForm(ctx, item, items, type, locales) {
   const fields = [{ name: "id", kind: "hidden", label: "id", value: item?.id ?? "" }, ...type.fields(ctx, item, locales)];
   const cats = [...new Set(items.map((i) => i.cat).filter(Boolean))].sort().slice(0, 10);
-  fields.push({ name: "cat", label: ctx.t("fCat"), value: item?.cat ?? "", help: cats.length ? ctx.t("hCatKnown", { list: cats.join(", "), max: LIMITS.cat }) : ctx.t("hCat", { max: LIMITS.cat }) });
+  // Tout ce qui est rare est replié sous « Plus d'options » (le cœur le résume et l'ouvre d'office quand une valeur y est).
+  fields.push({ name: "cat", label: ctx.t("fCat"), value: item?.cat ?? "", folded: true, help: ctx.t("hCat"), example: cats[0] ?? ctx.t("exCat") });
   fields.push({
-    name: "lvl", kind: "select", label: ctx.t("fLevel"), value: item?.lvl ?? "",
+    name: "lvl", kind: "select", label: ctx.t("fLevel"), value: item?.lvl ?? "", folded: true,
     options: [{ value: "", label: ctx.t("lvl_none") }, ...LEVELS.map((l) => ({ value: l, label: ctx.t(`lvl_${l}`) }))],
   });
-  fields.push({ name: "date", kind: "date", label: ctx.t("fDate"), value: item?.date ?? "", help: ctx.t("hDate", { max: LIMITS.planned }) });
+  fields.push({ name: "date", kind: "date", label: ctx.t("fDate"), value: item?.date ?? "", folded: true, help: ctx.t("hDate") });
   fields.push({
-    name: "state", kind: "select", label: ctx.t("fState"), value: item ? item.status : "published",
+    name: "state", kind: "segmented", label: ctx.t("fState"), value: item?.status === "draft" ? "draft" : "", folded: true,
     options: [{ value: "published", label: ctx.t("statePublished") }, { value: "draft", label: ctx.t("stateDraft") }], help: ctx.t("hState"),
   });
-  return { type: "adminForm", action: "saveQuestion", title: ctx.t(item ? "editTitle" : "newTitle"), submitLabel: ctx.t("save"), cancelHref: here(ctx), fields };
+  return { type: "adminForm", action: "saveQuestion", title: ctx.t(item ? "editTitle" : "newTitle"), submitLabel: ctx.t(item ? "save" : "saveNew"), cancelHref: here(ctx), fields };
 }
 
-/** La liste filtrée, 50 par page. */
+/** La liste : un tableau avec recherche en direct (questions, réponses, catégorie), pastilles d'état avec leur nombre, 50 lignes par page. */
 function listBlocks(ctx, items, qy, rights, blocks) {
-  const state = ["published", "draft", "planned"].includes(qy.state) ? qy.state : "all";
-  const cat = typeof qy.cat === "string" ? clean(qy.cat, LIMITS.cat) : "";
-  const search = typeof qy.q === "string" ? clean(qy.q, 80) : "";
-  const page = Math.max(1, L.num(qy.page, 1, 1, 100));
   const type = D.typeOf(ctx);
-  const base = (extra = {}) => {
-    const p = { ...(state !== "all" ? { state } : {}), ...(cat ? { cat } : {}), ...(search ? { q: search } : {}), ...extra };
-    const s = Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
-    return `${here(ctx)}${s ? `?${s}` : ""}`;
-  };
-  const counts = { all: items.length, published: items.filter((i) => i.status === "published" && !i.date).length, draft: items.filter((i) => i.status === "draft").length, planned: items.filter((i) => i.date).length };
   blocks.push({ type: "heading", text: ctx.t("listTitle", { count: items.length, max: LIMITS.questions }) });
-  const chips = ["all", "published", "draft", "planned"].filter((s) => s === "all" || counts[s] > 0).map((s) => ({ label: `${ctx.t(`filter_${s}`)} (${counts[s]})${s === state ? " ✓" : ""}`, href: `${here(ctx)}${s === "all" ? "" : `?state=${s}`}` }));
-  blocks.push({ type: "links", items: chips });
-  const cats = [...new Set(items.map((i) => i.cat).filter(Boolean))].sort().slice(0, 12);
-  if (cats.length) blocks.push({ type: "links", items: cats.map((c) => ({ label: `${c}${c === cat ? " ✓" : ""}`, href: `${here(ctx)}?cat=${encodeURIComponent(c)}${state !== "all" ? `&state=${state}` : ""}` })) });
-  if (items.length > 12) blocks.push({ type: "adminForm", action: "search", submitLabel: ctx.t("searchGo"), fields: [{ name: "q", label: ctx.t("searchLabel"), value: search, help: ctx.t("searchHelp") }] });
-
-  let list = items;
-  if (state === "published") list = list.filter((i) => i.status === "published" && !i.date);
-  else if (state === "draft") list = list.filter((i) => i.status === "draft");
-  else if (state === "planned") list = list.filter((i) => i.date);
-  if (cat) list = list.filter((i) => i.cat === cat);
-  if (search) { const needle = fold(search); list = list.filter((i) => fold(`${type.text(i.d)} ${i.cat}`).includes(needle)); }
-  list = [...list].sort((a, b) => b.createdAt - a.createdAt || b.pos - a.pos);
-  const slice = list.slice((page - 1) * LIMITS.page, page * LIMITS.page);
-  if (!list.length) { blocks.push({ type: "markdown", text: ctx.t("listNone") }); return; }
+  const list = [...items].sort((a, b) => b.createdAt - a.createdAt || b.pos - a.pos);
   const actions = [];
   if (rights.editor) actions.push({ label: ctx.t("actEdit"), href: "?edit={id}" });
   actions.push({ label: ctx.t("actPreview"), href: "?preview={id}" });
-  blocks.push({ type: "table", columns: [ctx.t("colQuestion")], rows: slice.map((i) => [`${titleOf(ctx, i)}\n${infoLine(ctx, i)}`]), rowIds: slice.map((i) => i.id), rowActions: actions });
-  const nav = [];
-  if (page > 1) nav.push({ label: ctx.t("pagePrev"), href: base({ page: page - 1 }) });
-  if (page * LIMITS.page < list.length) nav.push({ label: ctx.t("pageNext"), href: base({ page: page + 1 }) });
-  if (nav.length) blocks.push({ type: "links", items: nav });
+  const tone = { draft: "warn", planned: "info", published: "ok" };
+  const stateOf = (i) => (i.status !== "published" ? "draft" : i.date ? "planned" : "published");
+  blocks.push({
+    type: "table", columns: [ctx.t("colQuestion"), ctx.t("colCategory"), ctx.t("colLanguages"), ctx.t("colDay"), ctx.t("colState")], rowIds: list.map((i) => i.id),
+    searchable: true, searchPlaceholder: ctx.t("searchLabel"), filters: [{ column: 4, allLabel: ctx.t("filter_all") }], truncate: [0], pageSize: LIMITS.page, empty: ctx.t("listNone"),
+    rows: list.map((i) => [
+      { text: titleOf(ctx, i), title: type.text(i.d) },
+      [i.cat, levelLabel(ctx, i.lvl)].filter(Boolean).join(" · "),
+      langsTodo(ctx, i),
+      i.date ? shortDay(i.date, ctx.locale) : "",
+      { text: ctx.t(`state_${stateOf(i)}`), badge: tone[stateOf(i)] },
+    ]),
+    rowActions: actions,
+  });
 }
 
 /** Menu de l'admin : une pastille quand il ne reste presque plus de questions. */
@@ -300,8 +279,10 @@ export async function adminBadge(ctx) {
 async function saveQuestion(ctx, values) {
   const type = D.typeOf(ctx);
   const locales = D.localesOf(ctx);
-  const state = values.state === "published" ? "published" : "draft";
-  const made = type.fromForm(ctx, values, { locales, state });
+  // « Publication » est replié et vide par défaut : sans choix, une question neuve est publiée (si la personne peut publier), une question existante garde son état.
+  const given = values.state === "published" ? "published" : values.state === "draft" ? "draft" : null;
+  const early = given ?? (can(ctx, "publish") ? "published" : "draft");
+  const made = type.fromForm(ctx, values, { locales, state: early });
   const errors = { ...(made.errors ?? {}) };
   const rawDate = clean(values.date, 20);
   let date = "";
@@ -317,6 +298,7 @@ async function saveQuestion(ctx, values) {
     const existing = id ? all.find((i) => i.id === id) : null;
     if (id && !existing) return { error: ctx.t("errNotFound") };
     const was = existing?.status ?? "draft";
+    const state = given ?? existing?.status ?? early;
     if (state !== was && !can(ctx, "publish")) return { errors: { state: ctx.t("errNoPublishRight") } };
     const today = D.today(ctx);
     if (date) {
@@ -391,11 +373,6 @@ async function move(ctx, values, how) {
     D.invalidate(ctx);
     return { ok: ctx.t("okMoved") };
   });
-}
-
-async function search(ctx, values) {
-  const term = clean(values.q, 80);
-  return { redirect: term ? `?q=${encodeURIComponent(term)}` : "?" };
 }
 
 // Packs et gabarits (les fonctions `activate` supposent d'être appelées DANS le verrou)
@@ -522,7 +499,6 @@ export const adminActions = {
   moveUp: { right: "edit", run: (ctx, v) => move(ctx, v, "up") },
   moveDown: { right: "edit", run: (ctx, v) => move(ctx, v, "down") },
   moveTop: { right: "edit", run: (ctx, v) => move(ctx, v, "top") },
-  search: { right: "edit", run: search },
   applyTemplate: { right: "publish", run: applyTemplate },
   activatePack: { right: "publish", run: activatePack },
   removePack: { right: "publish", run: removePack },
