@@ -50,11 +50,6 @@
       "R9 locale:en:remoteSecret #b0ad21",
       "R9 locale:fr:remoteSecret #d8fcde"
     ],
-    "bluesky": [
-      "R13 description[fr] #b78a2c",
-      "R9 locale:fr:err_config_account #ed0747",
-      "R9 setting:profile.help[fr] #7d72fe"
-    ],
     "calendar-ical": [
       "R13 description[en] #18f5b1",
       "R13 description[fr] #5540ea",
@@ -245,33 +240,6 @@
       "R9 locale:fr:adminHideHow #2c2c86",
       "R9 locale:fr:errCityDown #706fb8"
     ],
-    "discord": [
-      "R11 setting:invite.help[en] #86e32b",
-      "R11 setting:invite.help[fr] #b46a2e",
-      "R13 locale:fr:err_hidden #a3c890",
-      "R13 setting:invite.help[en] #86e32b",
-      "R13 setting:invite.help[fr] #b46a2e"
-    ],
-    "discord-announcer": [
-      "R13 setting:freshHours.help[fr] #7767de",
-      "R13 setting:liveText.help[en] #5769bd",
-      "R13 setting:liveText.help[fr] #01bdc6",
-      "R13 setting:youtubeCheckMinutes.help[fr] #70f63e",
-      "R9 description[en] #9bf4c7",
-      "R9 description[fr] #75dc5d",
-      "R9 locale:en:configured #4bad65",
-      "R9 locale:en:errNoWebhook #503ed8",
-      "R9 locale:en:notConfigured #5646fc",
-      "R9 locale:fr:configured #74b1a3",
-      "R9 locale:fr:errNoWebhook #ebcedf",
-      "R9 locale:fr:notConfigured #ac8d25",
-      "R9 setting:liveText.help[en] #5769bd",
-      "R9 setting:liveText.help[fr] #01bdc6",
-      "R9 setting:webhookUrl.help[en] #a100ae",
-      "R9 setting:webhookUrl.help[fr] #ebf6d8",
-      "R9 setting:webhookUrl.label[en] #c164b9",
-      "R9 setting:webhookUrl.label[fr] #d46d95"
-    ],
     "events": [
       "R10 setting:mapLink.label[fr] #843839",
       "R10 setting:timezone.option:America/Argentina/Buenos_Aires[en] #e3254f",
@@ -284,10 +252,6 @@
       "R13 locale:fr:emptyUpcoming #4030d4",
       "R13 locale:fr:fToSeriesHelp #cb1f12",
       "R5 tab:settings (8)"
-    ],
-    "facebook": [
-      "R11 setting:profile.help[en] #5f3b6a",
-      "R11 setting:profile.help[fr] #3ad750"
     ],
     "faq": [
       "R10 locale:en:mailAdmin #799a56",
@@ -492,12 +456,6 @@
       "R9 locale:fr:coversNoKeyHint #aef315",
       "R9 locale:fr:rawgBanner #f81ba2"
     ],
-    "github": [
-      "R11 setting:profile.help[en] #109bcf",
-      "R11 setting:profile.help[fr] #b41a47",
-      "R9 locale:fr:err_config_account #cc484d",
-      "R9 setting:profile.help[fr] #b41a47"
-    ],
     "guestbook": [
       "R10 locale:en:mailAdmin #e1cfb0",
       "R10 locale:en:mailBody #a1a435",
@@ -545,18 +503,6 @@
       "R9 locale:fr:test_custom_help #75b00e",
       "R9 locale:fr:test_unknown_key #5e6f02",
       "R9 locale:fr:wiz_title #0439d7"
-    ],
-    "instagram": [
-      "R9 setting:profile.help[fr] #afeed7"
-    ],
-    "kick": [
-      "R11 setting:profile.help[en] #2c6b64",
-      "R11 setting:profile.help[fr] #5945a2"
-    ],
-    "kofi": [
-      "R11 setting:profile.help[en] #e0ec39",
-      "R11 setting:profile.help[fr] #c45209",
-      "R9 setting:profile.help[fr] #c45209"
     ],
     "legal-pages": [
       "R10 locale:en:adm.preview.gaps #5f1032",
@@ -716,9 +662,6 @@
       "R13 overlayElement:mascot.description[fr] #82ff6e",
       "R13 setting:show.help[fr] #c9df68"
     ],
-    "mastodon": [
-      "R13 description[fr] #e27e43"
-    ],
     "maze-overlay": [
       "R10 setting:extraWall.label[en] #8f3c40",
       "R10 setting:extraWall.label[fr] #22755a",
@@ -734,15 +677,6 @@
     "partnerships": [
       "R10 locale:en:openInContacts #4b186e",
       "R10 locale:fr:openInContacts #5292cf"
-    ],
-    "patreon": [
-      "R11 setting:profile.help[en] #201fc7",
-      "R11 setting:profile.help[fr] #97b12e"
-    ],
-    "pinterest": [
-      "R11 setting:profile.help[en] #d908bf",
-      "R11 setting:profile.help[fr] #c9cdf4",
-      "R9 setting:profile.help[fr] #c9cdf4"
     ],
     "planning": [
       "R10 locale:en:alsoToday #41b66c",
@@ -823,21 +757,6 @@
       "R13 locale:fr:obsSecret #97f26e",
       "R13 setting:timezone.help[fr] #05052c"
     ],
-    "reddit": [
-      "R11 setting:profile.help[en] #5b449f",
-      "R11 setting:profile.help[fr] #140067",
-      "R9 setting:profile.help[fr] #140067"
-    ],
-    "snapchat": [
-      "R11 setting:profile.help[en] #79cc7e",
-      "R11 setting:profile.help[fr] #cc61de",
-      "R9 setting:profile.help[fr] #cc61de"
-    ],
-    "soundcloud": [
-      "R11 setting:profile.help[en] #e2e2ca",
-      "R11 setting:profile.help[fr] #f811b1",
-      "R9 setting:profile.help[fr] #f811b1"
-    ],
     "sponsor-ticker": [
       "R13 setting:devMode.help[en] #aad9be",
       "R13 setting:devMode.help[fr] #7c1f6f"
@@ -845,15 +764,6 @@
     "sponsors": [
       "R11 setting:disclosure.help[en] #cc57d7",
       "R11 setting:disclosure.help[fr] #36c768"
-    ],
-    "spotify": [
-      "R11 setting:profile.help[en] #2c215c",
-      "R11 setting:profile.help[fr] #fbfb05"
-    ],
-    "steam": [
-      "R11 setting:profile.help[en] #39026e",
-      "R11 setting:profile.help[fr] #236300",
-      "R9 setting:profile.help[fr] #236300"
     ],
     "stream-story": [
       "R10 locale:en:ui_event_chosen #8a67c8",
@@ -922,11 +832,6 @@
       "R9 setting:provider.help[en] #a03389",
       "R9 setting:provider.help[fr] #d12dd1"
     ],
-    "telegram": [
-      "R11 setting:profile.help[en] #7c8ba3",
-      "R11 setting:profile.help[fr] #70deb6",
-      "R9 setting:profile.help[fr] #70deb6"
-    ],
     "testimonials": [
       "R10 locale:en:errSummary #7140de",
       "R10 locale:en:mailAdmin #72cddc",
@@ -982,19 +887,9 @@
       "R13 setting:title.help[en] #9c2d99",
       "R13 setting:title.help[fr] #fa92d2"
     ],
-    "threads": [
-      "R11 setting:profile.help[en] #55639e",
-      "R11 setting:profile.help[fr] #d4bcdc",
-      "R9 setting:profile.help[fr] #d4bcdc"
-    ],
     "ticker-overlay": [
       "R13 overlayElement:banner.description[en] #1aa062",
       "R13 overlayElement:banner.description[fr] #fa7821"
-    ],
-    "tiktok": [
-      "R11 setting:profile.help[en] #018f4d",
-      "R11 setting:profile.help[fr] #d59193",
-      "R9 setting:profile.help[fr] #d59193"
     ],
     "twitch-bot": [
       "R10 right:rewards.manage.label[fr] #d4b7ec",
@@ -1152,11 +1047,6 @@
       "R9 locale:en:err_id #9a3383",
       "R9 locale:fr:bulkErr_id #a58a32",
       "R9 locale:fr:err_id #b12031"
-    ],
-    "x-twitter": [
-      "R11 setting:profile.help[en] #97b6b3",
-      "R11 setting:profile.help[fr] #800845",
-      "R9 setting:profile.help[fr] #800845"
     ],
     "youtube-channel": [
       "R11 setting:channelId.help[en] #c60510",

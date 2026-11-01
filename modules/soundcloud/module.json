@@ -5,11 +5,11 @@
     "en": "SoundCloud",
     "fr": "SoundCloud"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "soundcloud",
   "description": {
-    "en": "Shows your SoundCloud button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre SoundCloud dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your SoundCloud button in the site header.",
+    "fr": "Affiche le bouton de votre SoundCloud dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "SoundCloud profile",
-        "fr": "Profil SoundCloud"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your SoundCloud username or your profile address.",
-        "fr": "Votre identifiant SoundCloud ou l'adresse de votre profil."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://soundcloud.com/myname",
+        "fr": "https://soundcloud.com/monpseudo"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

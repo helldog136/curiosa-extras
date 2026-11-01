@@ -1,16 +1,16 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.6.0",
   "id": "bluesky",
   "name": {
     "en": "Bluesky",
     "fr": "Bluesky"
   },
-  "version": "1.1.3",
+  "version": "1.2.0",
   "platform": "bluesky",
   "description": {
-    "en": "Shows your Bluesky button in the site header and shares your follower and post counts. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Bluesky dans l'en-tête du site et partage le nombre de vos followers et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Bluesky button in the site header and shares your follower and post counts.",
+    "fr": "Affiche le bouton de votre Bluesky dans l'en-tête et partage vos followers et vos publications."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -52,12 +52,16 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Bluesky profile",
-        "fr": "Profil Bluesky"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Bluesky handle (e.g. name.bsky.social) or your profile address.",
-        "fr": "Votre identifiant Bluesky (ex. nom.bsky.social) ou l'adresse de votre profil."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://bsky.app/profile/name.bsky.social",
+        "fr": "https://bsky.app/profile/nom.bsky.social"
       }
     },
     {

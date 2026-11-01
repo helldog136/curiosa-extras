@@ -1,16 +1,16 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.6.0",
   "id": "reddit",
   "name": {
     "en": "Reddit",
     "fr": "Reddit"
   },
-  "version": "1.1.3",
+  "version": "1.2.0",
   "platform": "reddit",
   "description": {
-    "en": "Shows your Reddit button in the site header and shares your follower count. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Reddit dans l'en-tête du site et partage le nombre de vos followers. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Reddit button in the site header and shares your follower count.",
+    "fr": "Affiche le bouton de votre Reddit dans l'en-tête et partage vos followers."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -52,12 +52,16 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Reddit profile",
-        "fr": "Profil Reddit"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Reddit username or the address of your profile or community.",
-        "fr": "Votre identifiant Reddit ou l'adresse de votre profil ou de votre communauté."
+        "en": "Paste the link to your profile or community.",
+        "fr": "Collez le lien de votre profil ou de votre communauté."
+      },
+      "example": {
+        "en": "https://www.reddit.com/user/myname",
+        "fr": "https://www.reddit.com/user/monpseudo"
       }
     },
     {
