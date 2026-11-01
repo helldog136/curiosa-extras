@@ -56,6 +56,8 @@ export default {
     2: async (ctx) => { await channel.rememberTypedChannel(ctx); },
     // Données 4 : le document de configuration gagne la liste `timers` (vide). Additif : rien d'existant ne bouge ; rejouable sans effet.
     4: async (ctx) => { await migrateConfig(ctx); },
+    // Données 5 : l'ancien brouillon d'import (`botImport`) n'a plus de raison d'être (l'import a été retiré) : s'il en reste un, il est effacé. Aucune commande ni aucun timer n'est touché ; rejouable sans effet.
+    5: async (ctx) => { for (const r of await ctx.api.store.list("botImport", { limit: 10 }).catch(() => [])) await ctx.api.store.remove(r.id).catch(() => {}); },
     3: async (ctx) => { await actions.migrate(ctx, settingsOf(ctx), (await rewards.list(ctx)).map((r) => r.action)); },
   },
 

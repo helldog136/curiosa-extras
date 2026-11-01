@@ -11,7 +11,6 @@ const { reopenLabel, describe, periodFromForm, periodFields, isoText } = await i
 const { saveError } = await import(`./errors.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
-const IA = await import(`./importAdmin.mjs${v}`);
 const TA = await import(`./timersAdmin.mjs${v}`);
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -269,8 +268,6 @@ export async function panel(ctx, { query }) {
   }
   const blocks = [];
   blocks.push(...emergency(ctx, state.muted === true, state.mutedAt, info.s.timeZone));
-  // L'écran d'import remplace la page des commandes (le reste de la page est toujours à un clic : « Retour »).
-  if (query?.import) return [...blocks, ...(await IA.blocks(ctx, info)), ...(await TA.blocks(ctx, info, {})), ...(await RA.blocks(ctx, info, {}))];
   blocks.push({ type: "heading", text: t("listen_title") });
   blocks.push(...(await listenBlocks(ctx, info, state)));
   blocks.push(...listenActions(ctx, info.d.code !== "ready" ? info.d.code : state.sub?.code ?? "unknown"));
@@ -278,7 +275,6 @@ export async function panel(ctx, { query }) {
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
   blocks.push(...summary(ctx, info));
-  blocks.push({ type: "links", items: [{ label: t("nb_link"), href: "?import=1#import" }] });
   if (!edit) blocks.push(...createForm(ctx, info.s));
   blocks.push(...partnersSection(ctx, info), ...networksSection(ctx, info));
   blocks.push(...(await logBlocks(ctx, info.s)));
@@ -345,7 +341,6 @@ export const actions = {
   },
   ...RA.actions,
   ...TA.actions,
-  ...IA.actions,
   async counterReset(ctx, v) {
     const info = await context(ctx, { declare: false });
     const c = info.list.find((x) => x.key === v.key && x.kind === "custom");

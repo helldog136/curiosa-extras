@@ -3,11 +3,11 @@
   "minCore": "0.2.5",
   "id": "twitch-bot",
   "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.5.0",
+  "version": "1.6.0",
   "platform": "twitch",
   "description": {
-    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own, timers, commands managed from the chat and an import from Nightbot. Includes an emergency switch and a short log of what it answered.",
-    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres, des timers, la gestion des commandes depuis le chat et un import depuis Nightbot. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu."
+    "en": "Lets your site answer the commands typed in your Twitch chat (!game, !title, !schedule…), with ready-made commands and your own, timers and commands managed from the chat. Includes an emergency switch and a short log of what it answered.",
+    "fr": "Fait répondre votre site aux commandes tapées dans votre chat Twitch (!jeu, !titre, !planning…), avec des commandes toutes prêtes et les vôtres, des timers et la gestion des commandes depuis le chat. Avec un bouton d'arrêt d'urgence et un court journal de ce qui a été répondu."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -22,7 +22,7 @@
     { "service": "home-assistant.bridge", "optional": true },
     { "service": "audience.draw", "min": 1, "optional": true }
   ],
-  "dataVersion": 4,
+  "dataVersion": 5,
   "consumes": [
     {
       "topic": "ha.result",
@@ -109,18 +109,11 @@
       "help": { "en": "Timers write messages in your Twitch chat on their own.", "fr": "Les timers écrivent des messages dans votre chat Twitch sans que personne ne les tape." },
       "sensitive": true,
       "default": { "admin": true, "editor": false }
-    },
-    {
-      "id": "nightbot.import",
-      "label": { "en": "import commands and timers from Nightbot", "fr": "importer des commandes et des timers depuis Nightbot" },
-      "help": { "en": "Creates or replaces several chat commands and timers at once.", "fr": "Permet de créer ou de remplacer plusieurs commandes et timers du chat en une fois." },
-      "sensitive": true,
-      "default": { "admin": true, "editor": false }
     }
   ],
   "privacy": {
-    "en": "When someone types a command, the bot keeps their Twitch username, the command and whether it answered in a short log (last 30 entries, seen only by the administration team); for channel point rewards, the last 50 exchanges (username, reward, outcome, never the viewer's message). Timers keep only what you write and their last send time. A pasted Nightbot list is a draft kept 24 hours at most. Chat words used by a command, and giveaway entries, are never kept.",
-    "fr": "Quand une personne tape une commande, le bot garde son pseudo Twitch, la commande et la réponse ou non dans un court journal (30 lignes, visible de l'équipe d'administration seule) ; pour les récompenses, les 50 derniers échanges (pseudo, récompense, résultat, jamais le message). Les timers gardent ce que vous écrivez et l'heure de leur dernier envoi. Une liste Nightbot collée est gardée 24 h au plus. Les mots tapés dans une commande et les participations à un tirage ne sont jamais gardés."
+    "en": "When someone types a command, the bot keeps their Twitch username, the command and whether it answered in a short log (last 30 entries, seen only by the administration team); for channel point rewards, the last 50 exchanges (username, reward, outcome, never the viewer's message). Timers keep only what you write and their last send time. Chat words used by a command, and giveaway entries, are never kept.",
+    "fr": "Quand une personne tape une commande, le bot garde son pseudo Twitch, la commande et la réponse ou non dans un court journal (30 lignes, visible de l'équipe d'administration seule) ; pour les récompenses, les 50 derniers échanges (pseudo, récompense, résultat, jamais le message). Les timers gardent ce que vous écrivez et l'heure de leur dernier envoi. Les mots tapés dans une commande et les participations à un tirage ne sont jamais gardés."
   },
   "tabs": [
     {
@@ -379,27 +372,6 @@
           "minChatLines": { "type": "integer", "minimum": 0, "maximum": 200 },
           "when": { "type": "string", "enum": ["live", "always"] },
           "enabled": { "type": "boolean" }
-        }
-      }
-    },
-    {
-      "name": "nightbot_import_preview",
-      "readOnly": true,
-      "default": false,
-      "description": "Read a list of Nightbot commands and timers pasted as text (table copied from the Nightbot dashboard, one '!name message' per line, or JSON) and say, for each line, whether it can be taken as is, adapted (old $(variables) translated, user level mapped: Nightbot 'regular' becomes subscribers) or is impossible, with the reason. Writes NOTHING. At most 200 lines.",
-      "input": { "type": "object", "required": ["text"], "properties": { "text": { "type": "string", "maxLength": 20000, "description": "The pasted Nightbot list." } } }
-    },
-    {
-      "name": "nightbot_import",
-      "default": false,
-      "description": "Import a pasted list of Nightbot commands and timers (same reading as nightbot_import_preview) and create the importable ones. A name that already exists is handled by 'onConflict': skip (default), replace (only custom commands and timers) or rename. Lines that are impossible are never imported. 'only' limits the import to the given command or timer names. At most 200 lines, 100 custom commands and 20 timers.",
-      "input": {
-        "type": "object",
-        "required": ["text"],
-        "properties": {
-          "text": { "type": "string", "maxLength": 20000, "description": "The pasted Nightbot list." },
-          "onConflict": { "type": "string", "enum": ["skip", "replace", "rename"], "description": "What to do when the name already exists (default skip)." },
-          "only": { "type": "array", "items": { "type": "string" }, "description": "Only these names (without the prefix)." }
         }
       }
     }

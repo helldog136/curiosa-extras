@@ -261,7 +261,7 @@ test("migration des données 4 : une configuration d'avant (sans timers ni péri
   assert.equal((await none.ctx.api.store.list("botConfig", { limit: 1 })).length, 0, "pas de configuration : rien n'est créé");
   assert.equal((await say(ctx, "!old", { badges: ["moderator"] }, OCT)).result, "sent", "la commande d'avant répond comme avant, sans période");
   const manifest = JSON.parse((await import("node:fs")).readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
-  assert.equal(manifest.dataVersion, 4);
+  assert.equal(manifest.dataVersion, 5);
   const rows = C.readConfig({ ...before });
   assert.deepEqual(rows.timers, [], "relire une ancienne configuration sans timers ne casse rien");
 });
