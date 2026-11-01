@@ -54,7 +54,7 @@ const MIN = 60_000;
 
 test("manifeste : version mineure, Chaîne YouTube FACULTATIVE, réglages simples (annonce YouTube oui, « les deux » = un message, texte vide), vérification avancée 10 min, parité fr/en, clés existantes", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.2.0");
+  assert.equal(manifest.version, "1.2.1");
   assert.deepEqual(manifest.requires.map((x) => [x.service, x.optional]), [["youtube.live", true]]);
   const set = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));
   assert.equal(set.youtubeLive.default, false); assert.equal(set.liveBoth.default, "both"); assert.equal(set.liveText.default, ""); assert.equal(set.liveText.optional, true);
