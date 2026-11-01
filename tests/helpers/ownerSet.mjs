@@ -5,8 +5,8 @@ import { world, entry, link, C, SRC } from "./botWorld.mjs";
 
 const ACTIVE = [
   ["so", "Allez voir {cible} sur sa chaîne", { role: "mods" }], ["discord", "Rejoignez-nous sur Discord : discord.example.org/emma"], ["tip", "Un petit don aide à garder la chaîne en vie."],
-  ["lurk", "{utilisateur} se met en mode discret, à tout à l'heure."], ["merci", "Merci {cible} pour ton soutien."], ["regles", "Soyez bienveillants et respectueux, les règles sont dans le panneau sous le stream."],
-  ["setup", "Mon matériel : liste complète sur la page Matériel du site."], ["clip", "Un moment à retenir ? Proposez votre clip dans le Discord."], ["boutique", "La boutique est ouverte : boutique.example.org"],
+  ["lurk", "{utilisateur} se met en mode lurk, à tout à l'heure."], ["merci", "Merci {cible} pour ton soutien."], ["regles", "Soyez bienveillants et respectueux, les règles sont dans le panneau sous le stream."],
+  ["setup", "Mon matériel : liste complète sur la page Matériel du site."], ["clip", "Un moment à retenir ? Proposez votre clip dans le chat."], ["boutique", "La boutique est ouverte : boutique.example.org"],
   ["heure", "Il est {heure Europe/Paris} chez moi."], ["musique", "La playlist du stream est sur Spotify, cherchez Emma Radio."], ["bonjour", "Bonjour {utilisateur}, bienvenue dans le chat."], ["dé", "Le dé donne {aleatoire 1-6}."], ["faq", "Les questions fréquentes sont sur la page FAQ du site."],
 ];
 const OFF = [

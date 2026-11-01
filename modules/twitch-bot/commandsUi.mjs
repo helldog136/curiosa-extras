@@ -106,7 +106,7 @@ export async function commandForm(ctx, info, { mode, view, key, unsaved = false,
     { f: "name" },
     { f: "text", preview: cfg },
     { seg: "role" },
-    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: false, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), F.periodLayout(ctx, view.period ?? null)] } },
+    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: false, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), F.periodLayout(ctx, view.period ?? null, s.timeZone)] } },
   ];
   const id = mode === "new" ? "cmd-new" : "cmd-edit";
   const conf = K.formConfig(id, { layout });

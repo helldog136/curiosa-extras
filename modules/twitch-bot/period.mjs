@@ -142,14 +142,14 @@ export function periodField(ctx, period) {
 }
 
 /** La configuration du contrôle de période pour le script de la page (textes déjà traduits : le script ne connaît aucune langue). Même contrôle pour les commandes et les timers. */
-export function periodControl(ctx, period) {
+export function periodControl(ctx, period, timeZone = "UTC") {
   const t = ctx.t;
   const month = (m) => new Intl.DateTimeFormat(ctx.locale, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, m - 1, 1)));
   return {
     field: "period", locale: ctx.locale, year: dayIn(new Date(), "UTC").y,
     months: Array.from({ length: 12 }, (_, i) => month(i + 1)), dim: DAYS_IN_MONTH,
     text: { title: t("per_title"), always: t("per_mode_always"), range: t("per_mode_range"), from: t("per_from"), to: t("per_to"), yearly: t("per_yearly"), day: t("per_day"), month: t("per_month"), dateFrom: t("per_date_from"), dateTo: t("per_date_to"),
-      phraseYearly: t("per_phrase_yearly", { from: "{from}", to: "{to}" }), phraseOnce: t("per_phrase_once", { from: "{from}", to: "{to}" }), always_phrase: t("per_always"),
+      phraseYearly: t("per_phrase_yearly", { from: "{from}", to: "{to}" }), phraseOnce: t("per_phrase_once", { from: "{from}", to: "{to}" }), always_phrase: t("per_always"), utc: timeZone === "UTC" ? t("per_utc") : "",
       eNodate: t("per_e_nodate", { day: "{day}", month: "{month}", example: "{example}" }), eYear: t("per_e_year"), eOrder: t("per_e_order"), eText: t("per_e_text") },
     shortcuts: SHORTCUTS.map((x) => ({ label: t(`per_sc_${x.id}`), from: x.from, to: x.to })),
   };

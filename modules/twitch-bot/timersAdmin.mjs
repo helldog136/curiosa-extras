@@ -25,7 +25,7 @@ async function form(ctx, info, doc) {
     { f: "name" }, { f: "text", preview: await F.textExtras(ctx, "timer", {}, env) },
     { sentence: { title: t("tm_rhythm"), hint: t("tm_rhythm_hint", { minutes: T.LIMITS.minutes, lines: T.LIMITS.lines }), tokens: [t("tm_r1"), { f: "minutes", min: 1, max: T.LIMITS.minutes }, t("tm_r2"), { f: "lines", min: 0, max: T.LIMITS.lines }, t("tm_r3")] } },
     { seg: "when" },
-    { more: { title: t("more_title"), hint: t("more_hint_timer"), open: false, items: [F.periodLayout(ctx, readPeriod(v0.period))] } },
+    { more: { title: t("more_title"), hint: t("more_hint_timer"), open: false, items: [F.periodLayout(ctx, readPeriod(v0.period), info.s.timeZone)] } },
   ];
   const id = doc ? "timer-edit" : "timer-new";
   const conf = K.formConfig(id, { layout });
@@ -67,7 +67,7 @@ async function listBlock(ctx, info, rows, writable) {
   const t = ctx.t, s = info.s;
   const states = await Promise.all(rows.map((x) => stateOf(ctx, s, x)));
   const html = rows.map((x, i) => {
-    const st = states[i], rhythm = t("tm_every", { min: x.minutes, lines: x.lines }) + (x.when === "always" ? ` · ${t("tm_when_always")}` : "");
+    const st = states[i], rhythm = t("tm_cell", { min: x.minutes, lines: x.lines }) + (x.when === "always" ? ` · ${t("tm_when_always")}` : "");
     const action = writable ? `<a class="ck-btn small" href="?tab=timers&timerEdit=${encodeURIComponent(x.id)}#edit">${esc(t("act_edit"))}</a><button type="button" class="ck-btn small ck-js" data-ck-act="timerSend" data-ck-id="${esc(x.id)}" data-ck-confirm="${esc(t("tm_send_confirm"))}" data-ck-yes="${esc(t("tm_send_btn"))}" data-ck-no="${esc(t("cancel_btn"))}" data-ck-fail="${esc(t("err_toggle"))}">${esc(t("tm_send_btn"))}</button>` : "";
     return `<tr ${K.rowAttrs({ state: st.state }, `${x.name} ${x.text} ${rhythm} ${st.word} ${st.full}`)}>
 <td class="c-name"><span class="ck-ell" title="${esc(x.name)}"><span class="ck-name">${esc(x.name)}</span></span></td>
@@ -81,7 +81,7 @@ async function listBlock(ctx, info, rows, writable) {
   const head = `<div class="ck-head"><h2 class="ck-title">${esc(t("tm_title"))}</h2>${writable && rows.length < T.MAX_TIMERS ? `<a class="ck-btn primary" href="?tab=timers&timerNew=1#edit">${esc(t("tm_new_open"))}</a>` : ""}</div><p class="ck-intro">${esc(t("tm_intro"))}</p>`;
   return { type: "html", html: K.listShell({
     ctx, id: "timers", head,
-    columns: [{ label: t("tm_col_timer"), width: "20%" }, { label: t("col_answer") }, { label: t("tm_col_rhythm"), width: "17%" }, { label: t("col_active"), width: "21%" }, { label: t("col_action"), width: "20%", sr: true }],
+    columns: [{ label: t("tm_col_timer"), width: "19%" }, { label: t("col_message") }, { label: t("tm_col_rhythm"), width: "15%" }, { label: t("col_active"), width: "20%" }, { label: t("col_action"), width: "25%", sr: true }],
     rows: html,
     pills: [{ key: "state", label: t("filter_state"), items: [{ val: "all", label: t("filter_any"), count: rows.length }, ...items] }],
     text: { search: t("search_label"), placeholder: t("search_timers"), empty: t("search_none"), clear: t("search_clear"), count: t("search_count") },

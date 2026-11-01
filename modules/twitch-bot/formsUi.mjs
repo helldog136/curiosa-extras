@@ -10,7 +10,7 @@ const { periodControl } = await import(`./period.mjs${v}`);
 export const roleOptions = (t) => ROLES.map((r) => ({ value: r, label: t(`role_${r}`) }));
 
 /** Les morceaux proposés en un clic sous le texte (les plus utiles ; les autres s'écrivent à la main). */
-const CHIP_VARS = ["utilisateur", "jeu", "titre", "uptime", "followers", "viewers", "prochain_stream", "partenaire", "adresse", "reseau", "lien"];
+const CHIP_VARS = ["{utilisateur}", "{jeu}", "{titre}", "{uptime}", "{followers}", "{viewers}", "{prochain_stream}", "{partenaire}", "{adresse}", "{reseau}", "{lien}"].map((x) => x.slice(1, -1));
 export function chipsFor(ctx, kind) {
   const ok = new Set(allowedFor(kind));
   return CHIP_VARS.filter((n) => ok.has(n)).map((n) => ({ v: n, label: ctx.t(`chip_${n}`) }));
@@ -37,4 +37,4 @@ export function waitSentence(ctx, s) {
 }
 
 /** Le contrôle de période : le même pour les commandes et pour les timers. */
-export const periodLayout = (ctx, period) => ({ period: periodControl(ctx, period) });
+export const periodLayout = (ctx, period, timeZone) => ({ period: periodControl(ctx, period, timeZone) });

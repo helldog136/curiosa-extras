@@ -541,7 +541,7 @@
   "chip_titre": "Titre",
   "chip_uptime": "Durée du direct",
   "chip_followers": "Followers",
-  "chip_viewers": "Spectateurs",
+  "chip_viewers": "Public",
   "chip_prochain_stream": "Prochain stream",
   "chip_partenaire": "Partenaire",
   "chip_adresse": "Adresse",
@@ -572,5 +572,7 @@
   "tm_r3": "lignes de chat",
   "tm_rhythm_hint": "Entre 1 et {minutes} minutes ; entre 0 et {lines} lignes.",
   "tm_note_wait": "Dans {min} min, {lines} lignes",
-  "tm_note_due": "Part au prochain message"
+  "tm_note_due": "Part au prochain message",
+  "tm_cell": "{min} min · {lines} lignes",
+  "col_message": "Message"
 }

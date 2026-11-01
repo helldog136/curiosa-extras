@@ -572,5 +572,7 @@
   "tm_r3": "chat lines",
   "tm_rhythm_hint": "Between 1 and {minutes} minutes; between 0 and {lines} lines.",
   "tm_note_wait": "In {min} min, {lines} lines",
-  "tm_note_due": "Goes at the next message"
+  "tm_note_due": "Goes at the next message",
+  "tm_cell": "{min} min · {lines} lines",
+  "col_message": "Message"
 }

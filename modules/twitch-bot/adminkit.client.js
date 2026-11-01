@@ -421,7 +421,7 @@
           : problem.key === "year" ? T.eYear : problem.key === "order" ? T.eOrder : T.eText;
         err.textContent = "⚠ " + msg;
       } else if (st.range) {
-        phrase.textContent = fill(st.yearly ? T.phraseYearly : T.phraseOnce, { from: dateWords(st.from, cfg, !st.yearly), to: dateWords(st.to, cfg, !st.yearly) });
+        phrase.textContent = fill(st.yearly ? T.phraseYearly : T.phraseOnce, { from: dateWords(st.from, cfg, !st.yearly), to: dateWords(st.to, cfg, !st.yearly) }) + (T.utc ? " " + T.utc : "");
       }
       if (write) { input.value = value(); fire(input, "input"); }
     }
