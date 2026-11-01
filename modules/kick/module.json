@@ -5,11 +5,11 @@
     "en": "Kick",
     "fr": "Kick"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "kick",
   "description": {
-    "en": "Shows your Kick button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Kick dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Kick button in the site header.",
+    "fr": "Affiche le bouton de votre Kick dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Kick profile",
-        "fr": "Profil Kick"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Kick channel name or its address.",
-        "fr": "Le nom de votre chaîne Kick ou son adresse."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://kick.com/myname",
+        "fr": "https://kick.com/monpseudo"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

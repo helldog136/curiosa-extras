@@ -1,16 +1,16 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.2",
+  "minCore": "0.6.0",
   "id": "mastodon",
   "name": {
     "en": "Mastodon",
     "fr": "Mastodon"
   },
-  "version": "1.1.3",
+  "version": "1.2.0",
   "platform": "mastodon",
   "description": {
-    "en": "Shows your Mastodon button in the site header and shares your follower and post counts. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Mastodon dans l'en-tête du site et partage le nombre de vos followers et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Mastodon button in the site header and shares your follower and post counts.",
+    "fr": "Affiche le bouton de votre Mastodon dans l'en-tête et partage vos followers et vos publications."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -52,12 +52,16 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Mastodon profile",
-        "fr": "Profil Mastodon"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "The full address of your profile (e.g. https://mastodon.social/@name).",
-        "fr": "L'adresse complète de votre profil (ex. https://mastodon.social/@nom)."
+        "en": "Paste your profile link, or @name@server.",
+        "fr": "Collez le lien de votre profil, ou @nom@serveur."
+      },
+      "example": {
+        "en": "https://mastodon.social/@name",
+        "fr": "https://mastodon.social/@nom"
       }
     },
     {

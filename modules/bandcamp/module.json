@@ -5,11 +5,11 @@
     "en": "Bandcamp",
     "fr": "Bandcamp"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "bandcamp",
   "description": {
-    "en": "Shows your Bandcamp button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Bandcamp dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Bandcamp button in the site header.",
+    "fr": "Affiche le bouton de votre Bandcamp dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Bandcamp profile",
-        "fr": "Profil Bandcamp"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "The address of your Bandcamp page (e.g. https://myname.bandcamp.com).",
-        "fr": "L'adresse de votre page Bandcamp (ex. https://monnom.bandcamp.com)."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://myname.bandcamp.com",
+        "fr": "https://monnom.bandcamp.com"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

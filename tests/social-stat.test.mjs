@@ -75,7 +75,7 @@ test("manifestes : valides, fournissent social.stat (libellé fr + en), version 
     assert.ok(a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] > b[2])), `${id} : ${before[id]} → ${manifest.version} (version montée)`);
     // youtube-channel 1.2.0 : la clé passe au Connecteur YouTube (service youtube.api, réglage hérité) → cœur 0.2.0.
     // Depuis les onglets (cœur 0.2.2, clé « tabs » pour renommer « Utiliser » en « Statistiques ») : 0.2.2 pour tous.
-    assert.equal(manifest.minCore, "0.2.2", `${id} : seule exigence de cœur permise : 0.2.2 (onglets)`);
+    assert.equal(manifest.minCore, id === "youtube-channel" ? "0.2.2" : "0.6.0", `${id} : seule exigence de cœur permise : 0.2.2 (onglets) ; 0.6.0 pour les réseaux au gabarit commun (exemple sous le champ, options rares repliées)`);
     const switches = manifest.settings.filter((s) => s.type === "boolean" && /statistiques/i.test(s.label.fr));
     assert.equal(switches.length, 1, id);
     assert.equal(switches[0].key, "trackStats");

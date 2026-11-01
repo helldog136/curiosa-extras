@@ -44,18 +44,21 @@
     {
       "id": "bandcamp",
       "name": "Bandcamp",
-      "description": "Affiche le bouton de votre Bandcamp dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Bandcamp dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bandcamp",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "bandcamp",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎶",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "blog",
@@ -72,11 +75,11 @@
     {
       "id": "bluesky",
       "name": "Bluesky",
-      "description": "Affiche le bouton de votre Bluesky dans l'en-tête du site et partage le nombre de vos followers et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Bluesky dans l'en-tête et partage vos followers et vos publications.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bluesky",
       "ref": "v1.33.0",
-      "version": "1.1.3",
+      "version": "1.2.0",
       "platform": "bluesky",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -86,7 +89,7 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       }
     },
     {
@@ -174,6 +177,20 @@
           "service": "contact.book",
           "min": 2,
           "optional": true
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page de commandes : les places disponibles et le formulaire pour faire une demande.",
+            "en": "Your commissions page: the open slots and the form to make a request."
+          },
+          "alt": {
+            "fr": "Page de commandes indiquant que la file est ouverte, le nombre de places et un formulaire de demande.",
+            "en": "Commissions page showing the queue is open, the number of slots and a request form."
+          }
         }
       ]
     },
@@ -300,6 +317,20 @@
           "service": "audience.session",
           "optional": true
         }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre quiz du jour : une question, quelques réponses, et l'envie de revenir demain.",
+            "en": "Your daily quiz: one question, a few answers, and a reason to come back tomorrow."
+          },
+          "alt": {
+            "fr": "Page d'un quiz avec une question sur les couleurs et quatre réponses à choisir.",
+            "en": "Quiz page with a question about colours and four answers to pick from."
+          }
+        }
       ]
     },
     {
@@ -330,16 +361,30 @@
           "service": "contact.book",
           "min": 2
         }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre vitrine : membres, artistes ou partenaires, avec recherche et filtre par catégorie.",
+            "en": "Your showcase: members, artists or partners, with search and a filter by category."
+          },
+          "alt": {
+            "fr": "Page d'annuaire avec un champ de recherche, des boutons de catégories et des cartes de membres avec photo et nom.",
+            "en": "Directory page with a search field, category buttons and member cards with photo and name."
+          }
+        }
       ]
     },
     {
       "id": "discord",
       "name": "Discord",
-      "description": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
       "ref": "v1.33.0",
-      "version": "1.1.5",
+      "version": "1.2.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -349,23 +394,23 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       }
     },
     {
       "id": "discord-announcer",
       "name": "Annonces Discord",
-      "description": "Annonce vos nouveautés sur un salon Discord via un webhook : pas de bot, pas de compte à lier. Prévient aussi votre Discord quand vous passez en direct sur Twitch ou sur YouTube.",
+      "description": "Annonce vos nouveautés sur un salon Discord, sans bot ni compte à lier. Prévient aussi quand vous passez en direct.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
       "ref": "v1.33.0",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "platform": "discord",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📣",
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       },
       "needs": [
         {
@@ -449,18 +494,21 @@
     {
       "id": "facebook",
       "name": "Facebook",
-      "description": "Affiche le bouton de votre Facebook dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Facebook dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/facebook",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "facebook",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "👥",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "faq",
@@ -598,11 +646,11 @@
     {
       "id": "github",
       "name": "GitHub",
-      "description": "Affiche le bouton de votre GitHub dans l'en-tête du site et partage le nombre de vos followers. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre GitHub dans l'en-tête et partage vos followers.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/github",
       "ref": "v1.33.0",
-      "version": "1.1.3",
+      "version": "1.2.0",
       "platform": "github",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -612,7 +660,7 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       }
     },
     {
@@ -662,50 +710,59 @@
     {
       "id": "instagram",
       "name": "Instagram",
-      "description": "Affiche le bouton de votre Instagram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Instagram dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/instagram",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📸",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "kick",
       "name": "Kick",
-      "description": "Affiche le bouton de votre Kick dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Kick dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/kick",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "kick",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🟢",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "kofi",
       "name": "Ko-fi",
-      "description": "Affiche le bouton de votre Ko-fi dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Ko-fi dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/kofi",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "ko-fi",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "☕",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "legal-pages",
@@ -821,11 +878,11 @@
     {
       "id": "mastodon",
       "name": "Mastodon",
-      "description": "Affiche le bouton de votre Mastodon dans l'en-tête du site et partage le nombre de vos followers et de vos publications. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Mastodon dans l'en-tête et partage vos followers et vos publications.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mastodon",
       "ref": "v1.33.0",
-      "version": "1.1.3",
+      "version": "1.2.0",
       "platform": "mastodon",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -835,7 +892,7 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       }
     },
     {
@@ -895,34 +952,40 @@
     {
       "id": "patreon",
       "name": "Patreon",
-      "description": "Affiche le bouton de votre Patreon dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Patreon dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/patreon",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "patreon",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🧡",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "pinterest",
       "name": "Pinterest",
-      "description": "Affiche le bouton de votre Pinterest dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Pinterest dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/pinterest",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "pinterest",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📌",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "planning",
@@ -1095,11 +1158,11 @@
     {
       "id": "reddit",
       "name": "Reddit",
-      "description": "Affiche le bouton de votre Reddit dans l'en-tête du site et partage le nombre de vos followers. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Reddit dans l'en-tête et partage vos followers.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/reddit",
       "ref": "v1.33.0",
-      "version": "1.1.3",
+      "version": "1.2.0",
       "platform": "reddit",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1109,40 +1172,46 @@
         "social.stat"
       ],
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       }
     },
     {
       "id": "snapchat",
       "name": "Snapchat",
-      "description": "Affiche le bouton de votre Snapchat dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Snapchat dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/snapchat",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "snapchat",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "👻",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "soundcloud",
       "name": "SoundCloud",
-      "description": "Affiche le bouton de votre SoundCloud dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre SoundCloud dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/soundcloud",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "soundcloud",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "☁️",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "sponsor-ticker",
@@ -1177,34 +1246,40 @@
     {
       "id": "spotify",
       "name": "Spotify",
-      "description": "Affiche le bouton de votre Spotify dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Spotify dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/spotify",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "spotify",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎧",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "steam",
       "name": "Steam",
-      "description": "Affiche le bouton de votre Steam dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Steam dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/steam",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "steam",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "stream-story",
@@ -1282,18 +1357,21 @@
     {
       "id": "telegram",
       "name": "Telegram",
-      "description": "Affiche le bouton de votre Telegram dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Telegram dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/telegram",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "telegram",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "✈️",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "testimonials",
@@ -1311,7 +1389,21 @@
       ],
       "requires": {
         "core": "0.5.0"
-      }
+      },
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page d'avis : seuls ceux que vous avez validés s'affichent, avec leur note.",
+            "en": "Your reviews page: only the ones you approved are shown, with their rating."
+          },
+          "alt": {
+            "fr": "Page d'avis avec une grille de témoignages, chacun avec le nom de la personne, une note en étoiles et un texte.",
+            "en": "Reviews page with a grid of testimonials, each with the person's name, a star rating and a text."
+          }
+        }
+      ]
     },
     {
       "id": "thanks-wall",
@@ -1357,18 +1449,21 @@
     {
       "id": "threads",
       "name": "Threads",
-      "description": "Affiche le bouton de votre Threads dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre Threads dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/threads",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "threads",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🧵",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "ticker-overlay",
@@ -1388,18 +1483,21 @@
     {
       "id": "tiktok",
       "name": "TikTok",
-      "description": "Affiche le bouton de votre TikTok dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre TikTok dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/tiktok",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "tiktok",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎵",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "twitch-bot",
@@ -1585,18 +1683,21 @@
     {
       "id": "x-twitter",
       "name": "X (Twitter)",
-      "description": "Affiche le bouton de votre X (Twitter) dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs.",
+      "description": "Affiche le bouton de votre X dans l'en-tête du site.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/x-twitter",
       "ref": "v1.33.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "platform": "x",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🐦",
       "provides": [
         "social.link"
-      ]
+      ],
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "youtube-channel",

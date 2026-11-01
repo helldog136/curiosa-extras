@@ -7,5 +7,5 @@
   "err_hidden": "Bluesky does not give this number for this account.",
   "err_rate": "Bluesky is limiting requests for now: nothing to do, it will resume by itself.",
   "err_network": "Bluesky is not answering right now: nothing to do, we try again automatically.",
-  "err_config_account": "Bluesky cannot find this account: check your handle in Settings."
+  "err_config_account": "Bluesky cannot find this account: check your profile address in Settings."
 }
