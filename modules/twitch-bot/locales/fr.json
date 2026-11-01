@@ -167,7 +167,7 @@
   "edit_network_module": "Réglages du réseau →",
   "entry_bot_not_ready_editor": "Le bot n'écoute pas encore votre chat : cette commande ne répondra pas tant que ce n'est pas réglé. Demandez à la personne qui administre le site d'ouvrir la page du bot.",
   "rw_title": "Récompenses en points de chaîne",
-  "rw_intro": "Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose : une réponse du bot dans le chat, ou, avec le Connecteur Home Assistant, la couleur de vos lumières ou un message lu à voix haute chez vous.\n\n**En 3 étapes :** 1. Activez les récompenses ici et autorisez Twitch (une fois). 2. Créez une première récompense, par exemple « Rouge ». 3. Pour les lumières et la voix, installez le Connecteur Home Assistant (proposé plus bas) et associez-le.\n\nTwitch ne propose les points de chaîne qu'aux comptes Affiliés ou Partenaires.",
+  "rw_intro": "Votre public dépense leurs points de chaîne pour déclencher quelque chose : une réponse du bot dans le chat, ou, avec le Connecteur Home Assistant, la couleur de vos lumières ou un message lu à voix haute chez vous.\n\n**En 3 étapes :** 1. Activez les récompenses ici et autorisez Twitch (une fois). 2. Créez une première récompense, par exemple « Rouge ». 3. Pour les lumières et la voix, installez le Connecteur Home Assistant (proposé plus bas) et associez-le.\n\nTwitch ne propose les points de chaîne qu'aux comptes Affiliés ou Partenaires.",
   "rw_enable_btn": "Activer les récompenses",
   "rw_enabled": "C'est activé. Si Twitch demande une autorisation, un bouton « Autoriser » apparaît juste en dessous.",
   "rw_connect_btn": "Autoriser les récompenses chez Twitch",

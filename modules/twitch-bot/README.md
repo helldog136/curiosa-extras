@@ -24,6 +24,12 @@ Une commande ou un timer peut n'être active que sur une **période** : par exem
 - Hors période, la commande **ne répond pas**, mais reste visible et modifiable : l'état est « Hors période : se réactive le 1er novembre », et le journal le dit aussi. Ce n'est pas « désactivée » : la case « Activée » décochée l'emporte toujours.
 - Les commandes d'avant n'ont pas de période : elles restent toujours actives.
 
+## La page du bot
+- **Commandes** : un seul tableau (les vôtres, les toutes prêtes, celles des partenaires et des réseaux) avec un champ **Rechercher** qui filtre pendant que vous tapez, des filtres en pastilles, l'**origine** de chaque commande en couleur et en toutes lettres, et un **interrupteur** pour activer ou désactiver. « Modifier » change le nom et la réponse ; pour un partenaire, le bouton mène à sa fiche. **Nouvelle commande** ouvre un formulaire de trois champs ; autres noms, attentes et période d'activité sont sous « Plus d'options ».
+- **Période d'activité** : « Toujours active » ou « Seulement pendant une période » (« Du 1er novembre au 30 novembre », case « Chaque année », raccourcis d'un clic). Les années n'apparaissent que pour une période qui ne revient pas.
+- **Timers**, **Récompenses** : même modèle (tableau, recherche, interrupteur).
+- **Sans JavaScript**, la page reste complète : la liste entière et tous les champs sont là, seules la recherche en direct, les interrupteurs et le rangement du formulaire disparaissent. Le petit script qui les ajoute est dans `adminkit.client.js` (documenté en tête de fichier ; `adminkit.mjs` écrit le HTML et le sert par la route `kit`) : un autre module peut le reprendre tel quel.
+
 ## Timers
 Un timer écrit un message dans votre chat à intervalle régulier (un rappel du Discord, une astuce…). Onglet **Timers** : un nom, le message (mêmes morceaux que les commandes, sauf ceux qui dépendent d'une personne), l'intervalle en minutes (1 à 1440), le nombre minimum de lignes de chat depuis son dernier message, « en direct seulement » ou « toujours », activé ou non, et une période facultative. 20 timers au plus, avec un aperçu du message et un bouton **Envoyer maintenant**.
 - **Un timer a besoin que le chat soit actif, comme chez Nightbot.** Le bot n'a aucun minuteur : il regarde ses timers quand un message arrive dans le chat. Un chat silencieux n'en déclenche aucun. Il n'existe pas d'évènement « le direct commence » côté bot : le premier message du chat après le début du direct repart de zéro.
