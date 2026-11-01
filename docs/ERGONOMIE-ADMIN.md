@@ -7,7 +7,7 @@ Le point de départ est toujours Emma : une personne qui crée du contenu, qui n
 Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[revue]** = vérifié par la personne qui relit, sur les captures.
 
 ## 0. Pourquoi ces règles existent (cas réels, à ne jamais refaire)
-- Une liste de trente commandes dont chaque ligne répétait « La vôtre » ou « Toute prête » : une étiquette identique sur toutes les lignes ne dit rien.
+- Une liste de trente commandes dont chaque ligne répétait « La vôtre » ou « Toute prête » : une étiquette identique sur toutes les lignes ne dit rien. Cette même liste n'avait **aucune recherche**, deux gros boutons (« Modifier », « Activer / désactiver ») sur chaque ligne et des lignes de hauteurs inégales : impraticable dès qu'on dépasse dix lignes.
 - Une période « du 1er novembre au 30 novembre » demandée par **sept champs** (jour, mois, jour, mois, « chaque année », année, année) et deux délais vides sur le même écran.
 - Un formulaire « Nouvelle personne » à dix champs alors que la tâche utile tient en deux (un nom et un pseudo).
 - Des « clés d'action » à taper à la main pour relier une récompense à une maison connectée.
@@ -35,9 +35,9 @@ Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[r
 
 ## 4. Les listes et les lignes
 **R14 [revue] Ce qui est identique pour toutes les lignes est un titre, pas une étiquette.** Une ligne n'affiche que **ce qui la distingue** : son nom, son état, et un rôle ou une limite **seulement s'ils sortent de l'ordinaire**. Jamais d'étiquette pour la valeur par défaut (« Tout le monde », « Activée », « La vôtre », « Toute prête »).
-**R15 [revue] Des groupes clairs** (titres avec leur nombre) pour les listes mixtes, repliables au-delà de 15 lignes ; **recherche ou filtre** dès 15 éléments ; pagination à 50 au plus.
+**R15 [auto/revue] Toute liste qui peut grandir a une recherche dynamique, dès le départ.** Une liste d'éléments que la personne ajoute elle-même (commandes, contacts, sondages, liens, entrées, récompenses, timers, partenaires…) et qui peut raisonnablement dépasser une dizaine de lignes a, **au-dessus de la liste, un champ « Rechercher »** qui filtre **en direct pendant la frappe** (sans bouton, sans rechargement de la page, insensible à la casse et aux accents, cherche dans tout ce qui est affiché : nom, texte, état). Il est présent **même quand la liste est courte aujourd'hui**, parce qu'elle ne le restera pas. Quand la liste est paginée côté serveur, la recherche interroge le serveur (avec un petit délai) et non la seule page affichée. « Aucun résultat » dit quoi faire (« Effacer la recherche »). En plus : des groupes avec titres et nombres (repliables) pour les listes mixtes ; pagination à 50 au plus ; filtre par état (actif / désactivé) quand l'état compte.
 **R16 [revue] Lignes régulières :** même hauteur, même disposition, bouton « Modifier » toujours au même endroit, au plus deux actions visibles par ligne, les autres dans un menu. Un texte long est coupé avec « … » et complet dans une info-bulle.
-**R17 [revue] Les interrupteurs fréquents sont dans la liste** (activer/désactiver sans ouvrir la fiche).
+**R17 [revue] Un interrupteur montre l'état, il n'est pas un verbe.** Activer/désactiver se fait par un **interrupteur** qui affiche l'état courant, directement dans la liste. Jamais un bouton « Activer / désactiver » (la personne ne sait pas dans quel état on est) et jamais deux gros boutons côte à côte sur chaque ligne.
 **R18 [revue] Un état vide dit quoi faire** : une phrase, un bouton, éventuellement un exemple à ajouter en un clic. Jamais une page blanche.
 
 ## 5. Les contrôles
@@ -75,7 +75,7 @@ La relecture refuse la PR si un écran dépasse les budgets R4/R5 sans repli, si
 - [ ] Aides ≤ 60 caractères, exemples sur les champs libres (R11).
 - [ ] Une notion = un contrôle ; aucune période/durée/adresse en plusieurs champs (R6, R21).
 - [ ] Options rares repliées ; rien d'obligatoire (R7, R8).
-- [ ] Lignes : aucune étiquette identique répétée ; groupes ; filtre au-delà de 15 (R14, R15, R16).
+- [ ] Listes qui peuvent grandir : recherche dynamique en direct dès le départ ; aucune étiquette identique répétée ; groupes ; interrupteur d'état dans la ligne (R14, R15, R16, R17).
 - [ ] Erreurs sous le champ avec exemple ; retour d'action visible (R22, R23).
 - [ ] Liens vers les autres modules avec leur état (R25).
 - [ ] FR/EN à parité, ton neutre, vouvoiement (R13, R29).
