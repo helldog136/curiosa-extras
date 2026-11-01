@@ -730,6 +730,18 @@
         "fr": "Page d'un sondage avec quatre propositions à cocher et un bouton pour voter.",
         "en": "A poll page with four options to tick and a button to vote."
       }
+    },
+    {
+      "file": "previews/overlay.webp",
+      "type": "overlay",
+      "caption": {
+        "fr": "Pour votre stream : le sondage en cours s'affiche à l'écran, avec les résultats qui bougent en direct.",
+        "en": "For your stream: the current poll appears on screen, with results moving live."
+      },
+      "alt": {
+        "fr": "Fond de stream coloré avec, au centre, un sondage qui montre une question, trois choix et leurs barres de résultats.",
+        "en": "Colourful stream background with, in the centre, a poll showing a question, three choices and their result bars."
+      }
     }
   ]
 }
