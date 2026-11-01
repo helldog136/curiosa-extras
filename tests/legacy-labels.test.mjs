@@ -105,7 +105,9 @@ test("dépôt de modules : chaque clé de `settings` est lue par le code du modu
     const dir = path.join(root, "modules", id);
     const manifest = readJson(path.join(dir, "module.json"));
     const code = walkFiles(dir).filter((f) => /\.(m?js|cjs|tsx?)$/.test(f) && !/(^|[\\/])tests?[\\/]/.test(path.relative(dir, f)) && !/\.test\./.test(f)).map((f) => fs.readFileSync(f, "utf8")).join("\n");
-    for (const s of manifest.settings ?? []) if (!new RegExp(`["'\`.]${s.key}\\b`).test(code)) unread.push(`${id} : ${s.key}`);
+    // `shortLink` (cœur après 0.6.3) : ces réglages sont lus par le cœur, qui crée l'adresse courte pour le module ; le code du module n'a rien à en faire.
+    const readByCore = new Set([manifest.shortLink?.enabled, manifest.shortLink?.name, manifest.shortLink?.target?.setting].filter(Boolean));
+    for (const s of manifest.settings ?? []) if (!readByCore.has(s.key) && !new RegExp(`["'\`.]${s.key}\\b`).test(code)) unread.push(`${id} : ${s.key}`);
   }
   assert.deepEqual(unread, [], `Réglages déclarés mais jamais lus (à retirer, ou à passer en legacySettings) :\n${unread.join("\n")}`);
 });
