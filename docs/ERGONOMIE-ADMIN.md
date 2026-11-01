@@ -13,6 +13,7 @@ Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[r
 - Des « clés d'action » à taper à la main pour relier une récompense à une maison connectée.
 - Un aperçu de page d'overlay trop petit pour glisser quoi que ce soit, et des listes de choix tronquées (« Semi-tra… »).
 - Une aide longue de cinq lignes sous chaque champ.
+- Trois listes de commandes collées l'une sous l'autre (partenaires, réseaux, vôtres) alors qu'elles ont les mêmes colonnes.
 
 ## 1. La tâche d'abord
 **R1 [revue] Une page, une tâche.** Chaque page commence par une phrase (une ligne) qui dit à quoi elle sert, et l'action principale est visible sans défiler. Si une page sert à trois choses, ce sont trois pages ou trois onglets.
@@ -38,6 +39,7 @@ Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[r
 **R15 [auto/revue] Toute liste qui peut grandir a une recherche dynamique, dès le départ.** Une liste d'éléments que la personne ajoute elle-même (commandes, contacts, sondages, liens, entrées, récompenses, timers, partenaires…) et qui peut raisonnablement dépasser une dizaine de lignes a, **au-dessus de la liste, un champ « Rechercher »** qui filtre **en direct pendant la frappe** (sans bouton, sans rechargement de la page, insensible à la casse et aux accents, cherche dans tout ce qui est affiché : nom, texte, état). Il est présent **même quand la liste est courte aujourd'hui**, parce qu'elle ne le restera pas. Quand la liste est paginée côté serveur, la recherche interroge le serveur (avec un petit délai) et non la seule page affichée. « Aucun résultat » dit quoi faire (« Effacer la recherche »). En plus : des groupes avec titres et nombres (repliables) pour les listes mixtes ; pagination à 50 au plus ; filtre par état (actif / désactivé) quand l'état compte.
 **R16 [revue] Lignes régulières :** même hauteur, même disposition, bouton « Modifier » toujours au même endroit, au plus deux actions visibles par ligne, les autres dans un menu. Un texte long est coupé avec « … » et complet dans une info-bulle.
 **R17 [revue] Un interrupteur montre l'état, il n'est pas un verbe.** Activer/désactiver se fait par un **interrupteur** qui affiche l'état courant, directement dans la liste. Jamais un bouton « Activer / désactiver » (la personne ne sait pas dans quel état on est) et jamais deux gros boutons côte à côte sur chaque ligne.
+**R30 [revue] Même schéma = un seul tableau.** Quand plusieurs listes ont les mêmes colonnes (par exemple les commandes « à vous », « toutes prêtes », « de partenaires » et « de réseaux »), on n'en fait pas trois listes l'une sous l'autre : **un seul tableau**, où ce qui les distingue (l'origine, le type, la source) devient **une colonne** avec une pastille **colorée ET écrite** (la couleur seule ne suffit jamais : R28), et des filtres rapides au-dessus (« Toutes · Les vôtres · Partenaires · Réseaux »). La recherche couvre tout le tableau (R15). Un élément **produit automatiquement par une autre page** reste une ligne comme les autres, mais son bouton ne dit pas « Modifier » : il **renvoie vers la page qui le produit**, en le disant (« Ouvrir la fiche du partenaire → », « Réglages du réseau → »), pour que la personne sache où se règle la chose. Les sources qui ne produisent encore rien (un partenaire sans commande) ne sont pas des lignes : un seul bouton « Ajouter… » avec recherche ouvre le choix.
 **R18 [revue] Un état vide dit quoi faire** : une phrase, un bouton, éventuellement un exemple à ajouter en un clic. Jamais une page blanche.
 
 ## 5. Les contrôles
@@ -75,6 +77,7 @@ La relecture refuse la PR si un écran dépasse les budgets R4/R5 sans repli, si
 - [ ] Aides ≤ 60 caractères, exemples sur les champs libres (R11).
 - [ ] Une notion = un contrôle ; aucune période/durée/adresse en plusieurs champs (R6, R21).
 - [ ] Options rares repliées ; rien d'obligatoire (R7, R8).
+- [ ] Listes de même schéma fusionnées en un tableau avec colonne d'origine colorée et écrite ; éléments produits ailleurs : bouton vers la page source (R30).
 - [ ] Listes qui peuvent grandir : recherche dynamique en direct dès le départ ; aucune étiquette identique répétée ; groupes ; interrupteur d'état dans la ligne (R14, R15, R16, R17).
 - [ ] Erreurs sous le champ avec exemple ; retour d'action visible (R22, R23).
 - [ ] Liens vers les autres modules avec leur état (R25).
