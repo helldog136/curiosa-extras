@@ -24,6 +24,12 @@ Une commande ou un timer peut n'être active que sur une **période** : par exem
 - Hors période, la commande **ne répond pas**, mais reste visible et modifiable : l'état est « Hors période : se réactive le 1er novembre », et le journal le dit aussi. Ce n'est pas « désactivée » : la case « Activée » décochée l'emporte toujours.
 - Les commandes d'avant n'ont pas de période : elles restent toujours actives.
 
+## La page du bot
+- **Commandes** : un seul tableau (les vôtres, les toutes prêtes, celles des partenaires et des réseaux) avec un champ **Rechercher** qui filtre pendant que vous tapez, des filtres en pastilles, l'**origine** de chaque commande en couleur et en toutes lettres, et un **interrupteur** pour activer ou désactiver. « Modifier » change le nom et la réponse ; pour un partenaire, le bouton mène à sa fiche. **Nouvelle commande** ouvre un formulaire de trois champs ; autres noms, attentes et période d'activité sont sous « Plus d'options ».
+- **Période d'activité** : « Toujours active » ou « Seulement pendant une période » (« Du 1er novembre au 30 novembre », case « Chaque année », raccourcis d'un clic). Les années n'apparaissent que pour une période qui ne revient pas.
+- **Timers**, **Récompenses** : même modèle (tableau, recherche, interrupteur).
+- **Sans JavaScript**, la page reste complète : la liste entière et tous les champs sont là, seules la recherche en direct, les interrupteurs et le rangement du formulaire disparaissent. Le petit script qui les ajoute est dans `adminkit.client.js` (documenté en tête de fichier ; `adminkit.mjs` écrit le HTML et le sert par la route `kit`) : un autre module peut le reprendre tel quel.
+
 ## Timers
 Un timer écrit un message dans votre chat à intervalle régulier (un rappel du Discord, une astuce…). Onglet **Timers** : un nom, le message (mêmes morceaux que les commandes, sauf ceux qui dépendent d'une personne), l'intervalle en minutes (1 à 1440), le nombre minimum de lignes de chat depuis son dernier message, « en direct seulement » ou « toujours », activé ou non, et une période facultative. 20 timers au plus, avec un aperçu du message et un bouton **Envoyer maintenant**.
 - **Un timer a besoin que le chat soit actif, comme chez Nightbot.** Le bot n'a aucun minuteur : il regarde ses timers quand un message arrive dans le chat. Un chat silencieux n'en déclenche aucun. Il n'existe pas d'évènement « le direct commence » côté bot : le premier message du chat après le début du direct repart de zéro.
@@ -37,29 +43,27 @@ Réglage **« Laisser l'équipe de modération gérer les commandes depuis le ch
 - `!editcom nom nouveau texte` (ou seulement des options) : change une commande à vous. `!delcom nom` la supprime. `!commands` donne la liste.
 - Le bot répond clairement dans le chat. Ce sont **exactement les mêmes vérifications** que dans l'administration (morceaux connus, pas de `/` ni de point au début, 450 caractères, 100 commandes). **Jamais d'écrasement** : `!addcom` sur un nom pris est refusé, et les commandes toutes prêtes ne se changent que dans l'administration. Une personne sans le droit n'obtient aucune réponse. Chaque action est notée dans le journal. Une commande qui porte déjà l'un de ces noms garde la priorité.
 
-## Importer depuis Nightbot
-Sur la page des commandes, **« Importer mes commandes et timers depuis Nightbot »** : collez la liste copiée depuis Nightbot (commandes et timers), le site la lit et montre, ligne par ligne, ce qui est **repris tel quel**, **adapté** (anciennes écritures `$(user)`… traduites, niveau remplacé) ou **impossible** (avec la raison). Vous cochez ce que vous voulez, vous pouvez écrire une période pour chaque ligne, et **rien n'est écrit avant que vous validiez**. Quand un nom existe déjà : ignorer, remplacer (vos commandes et vos timers seulement) ou ajouter sous un autre nom. 200 lignes au plus. La liste lue est gardée comme brouillon 24 heures au plus.
-- Le format exact du copier-coller de Nightbot n'est pas garanti : le site comprend un tableau à tabulations ou à colonnes, une commande par ligne (`!nom message`) ou du JSON. Si rien ne passe, écrivez une commande par ligne et, pour un timer, `timer nom | minutes | lignes | message`.
-
 ## Si vous venez de Nightbot
-| Chez Nightbot | Ici | |
-|---|---|---|
-| Niveaux tout le monde, abonnement, modération, propriétaire | Tout le monde, personnes abonnées, équipe de modération, seulement vous | repris |
-| Niveau « habitué » (regular) | — | **non repris** : le bot ne tient aucune liste de personnes ; l'import le remplace par « personnes abonnées » et le dit |
-| Attente d'une commande | Attente pour tout le monde (+ une attente par personne, en plus) | repris |
-| `$(user)`, `$(touser)`, `$(count)` | `{utilisateur}`, `{cible}`, `{compteur}` | traduits à l'import |
-| `$(query)`, `$(1)` `$(2)` `$(1:)` | `{requete}` (ou `{query}`), `{1}` `{2}` `{1:}` | traduits à l'import ; texte nettoyé |
-| `$(querystring)` | — | non repris (il sert à fabriquer des adresses) |
-| `$(channel)`, `$(time fuseau)` | `{chaine}`, `{heure fuseau}` / `{date}` | traduits |
-| `$(twitch … game / title / uptime)` | `{jeu}`, `{titre}`, `{uptime}`, et `{viewers}` | traduits |
-| Date de suivi d'une personne (followage) | — | **non repris** : Ma Chaîne Twitch ne fournit que le nombre de followers (`{followers}`) |
-| `$(urlfetch adresse)` | `{urlfetch adresse}` en version sûre | adapté (voir ci-dessous) |
-| `$(eval …)` (JavaScript) | `{calcul …}` : nombres, `+ - * / % ^`, parenthèses, `abs round floor ceil min max sqrt` | **JavaScript non repris** : exécuter un texte écrit par une personne serait une faille |
-| Timers (intervalle, lignes de chat) | Onglet Timers | adapté : lignes comptées depuis le dernier envoi |
-| `!commands add / edit / delete`, `!addcom` | `!addcom` `!editcom` `!delcom` `!commands` | adapté (modération, réglage à cocher) |
-| Dates de validité | **Chaque année toute seule** ou une seule fois | **amélioré** : Nightbot n'a pas cette fonction |
-| Tirage au sort | Module Participation | hors de ce module : avec Participation, un tirage au sort peut être alimenté par le chat |
-| Compte à rebours, météo, chansons, filtres de chat | — | non repris (hors périmètre) |
+Il n'y a pas d'import automatique : copier-coller depuis Nightbot est trop aléatoire pour qu'un site le lise sans se tromper. **Demandez à votre assistant IA de recréer vos commandes** : collez-lui votre liste, il utilise les outils `bot_command_create`, `timer_create` et leurs périodes (`activeFrom`, `activeUntil`, `yearly`, `clearPeriod`). Voici la correspondance des morceaux de texte et des fonctions.
+
+| Chez Nightbot | Ici |
+|---|---|
+| Niveaux tout le monde, abonnement, modération, propriétaire | Tout le monde, personnes abonnées, équipe de modération, seulement vous |
+| Niveau « habitué » (regular) | Pas d'équivalent : le bot ne tient aucune liste de personnes ; choisissez « personnes abonnées » |
+| Attente d'une commande | Attente pour tout le monde (+ une attente par personne, en plus) |
+| `$(user)`, `$(touser)`, `$(count)` | `{utilisateur}`, `{cible}`, `{compteur}` |
+| `$(query)`, `$(1)` `$(2)` `$(1:)` | `{requete}` (ou `{query}`), `{1}` `{2}` `{1:}` |
+| `$(querystring)` | Pas d'équivalent (il sert à fabriquer des adresses) |
+| `$(channel)`, `$(time fuseau)` | `{chaine}`, `{heure fuseau}` / `{date}` |
+| `$(twitch … game / title / uptime)` | `{jeu}`, `{titre}`, `{uptime}`, et `{viewers}` |
+| Date de suivi d'une personne (followage) | Pas d'équivalent : Ma Chaîne Twitch ne fournit que le nombre de followers (`{followers}`) |
+| `$(urlfetch adresse)` | `{urlfetch adresse}` en version sûre |
+| `$(eval …)` (JavaScript) | `{calcul …}` : nombres, `+ - * / % ^`, parenthèses, `abs round floor ceil min max sqrt` (le JavaScript n'est pas repris : l'exécuter serait une faille) |
+| Timers (intervalle, lignes de chat) | Onglet Timers (les lignes sont comptées depuis le dernier envoi) |
+| `!commands add / edit / delete`, `!addcom` | `!addcom` `!editcom` `!delcom` `!commands` |
+| Dates de validité | **Chaque année toute seule** ou une seule fois |
+| Tirage au sort | Module Participation |
+| Compte à rebours, météo, chansons, filtres de chat | Hors de ce module |
 
 **`{urlfetch}`, version sûre.** Éteint tant que vous n'avez pas écrit, en mode avancé, la liste des sites autorisés (réglage « Sites que {urlfetch} peut lire »). Ensuite : `https` seulement, le site doit être exactement dans la liste, jamais une adresse numérique, un nom interne ni un site qui pointe vers une adresse privée ou locale, **aucune redirection suivie**, 3 secondes, 400 caractères, texte seulement (une page web est refusée), réponse gardée 30 secondes, 10 demandes par minute. Limite connue : un site que vous avez autorisé et qui changerait d'adresse très vite pour viser une adresse privée pourrait passer entre notre vérification et la demande ; n'autorisez que des sites de confiance. Le texte qui suit la commande peut changer la fin de l'adresse (pas le site).
 
@@ -115,8 +119,6 @@ Des outils, **aucune écriture accordée d'office** (administration → accès d
 | `bot_command_create` | Crée une commande à vous. Refusée avec une explication si le nom est pris ou si le texte contient un morceau inconnu. |
 | `bot_command_update` | Modifie une commande existante (texte, noms, rôle, attentes, activée ou non, période). Ne supprime rien et n'envoie aucun message. |
 | `timers_list`, `timer_create`, `timer_update` | Voit, crée et modifie les timers (même période : `activeFrom` / `activeUntil` / `yearly`, `clearPeriod` pour l'enlever). |
-| `nightbot_import_preview` | Lit une liste Nightbot collée et dit ce qui serait repris, adapté ou impossible. N'écrit rien. |
-| `nightbot_import` | Importe les lignes possibles (conflits : ignorer, remplacer ou renommer). |
 
 Les périodes se donnent sous la forme `11-01` (chaque année) ou `2026-11-01` (une seule fois).
 

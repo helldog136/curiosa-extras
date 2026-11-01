@@ -6,6 +6,7 @@ import fs from "node:fs";
 import { createHmac } from "node:crypto";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { parseManifest } from "@/core/modules/manifest";
+import { htmlOf, rowsOf, byName, configOf } from "./helpers/ui.mjs";
 
 /** Horloge simulée pour les tests qui annoncent un prochain stream à date fixe : le résultat ne dépend plus du jour où le test tourne. */
 const atClock = async (ms, fn) => { mock.timers.enable({ apis: ["Date"], now: ms }); try { return await fn(); } finally { mock.timers.reset(); } };
@@ -848,67 +849,6 @@ test("page : le compte bot séparé n'apparaît qu'en mode avancé (réglage) ; 
   assert.match((await A.actions.disconnectBot(ok.ctx)).ok, /déconnecté/);
 });
 
-test("page : le résumé liste les commandes (à vous, toutes prêtes, réseaux, groupée) avec leur état, et un lien de modification par ligne ; celles des partenaires ont leur rubrique", async () => {
-  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla")], links: [link("tt", "tiktok", "TikTok · emma", "https://www.tiktok.com/@emma")] });
-  const e = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
-  await C.saveCommand(ctx, { kind: "custom" }, { name: "merch", text: "Boutique : example.org/shop", role: "mods" }, e);
-  await C.saveSourced(ctx, "partner", "p1", { enabled: true }, e);
-  await C.saveSourced(ctx, "network", "tt", { enabled: true }, e);
-  await C.saveCommand(ctx, { kind: "builtin", id: "uptime" }, { enabled: false }, e);
-  SRC.resetSources();
-  const b = await A.panel(ctx, { query: {} });
-  const t = table(b, fr.col_command);
-  const rows = Object.fromEntries(t.rows.map((r) => [r[0].split(/ {2}| · /)[0], r]));
-  assert.deepEqual(Object.keys(rows), ["!merch", "!planning", "!jeu", "!titre", "!followers", "!uptime", "!tiktok", "!reseaux"], "pas de ligne partenaire ici : leur résumé est dans la rubrique des partenaires");
-  assert.deepEqual(t.columns, [fr.col_command, fr.col_answer, fr.col_state], "trois colonnes : lisible sur un téléphone");
-  assert.deepEqual([rows["!merch"][0], rows["!merch"][2]], [`!merch · ${fr.kind_custom} · ${fr.role_mods}`, fr.state_on]);
-  assert.equal(rows["!jeu"][0], `!jeu  !game · ${fr.kind_builtin}`, "tout le monde : le rôle n'est pas répété");
-  assert.equal(rows["!uptime"][2], fr.state_off);
-  assert.equal(rows["!tiktok"][0], `!tiktok  !tik-tok · ${fr.kind_network} (TikTok · emma)`);
-  assert.equal(rows["!reseaux"][2], fr.state_on);
-  assert.deepEqual(t.rowIds, ["custom:" + t.rowIds[0].slice(7), "builtin:planning", "builtin:jeu", "builtin:titre", "builtin:followers", "builtin:uptime", "network:tt", "group:reseaux"]);
-  assert.deepEqual(t.rowActions.map((a) => a.label), [fr.act_edit, fr.act_toggle]);
-  assert.equal(t.rowActions[0].href, "?edit={id}#edit", "chaque commande s'ouvre sur sa configuration, la page descend jusqu'au formulaire au lieu de rester en haut");
-  assert.ok(b.some((x) => x.type === "html" && x.html.includes('id="edit"')) === false, "l'ancre n'existe que quand un formulaire est ouvert");
-  const pt = table(b, fr.col_partner);
-  assert.deepEqual(pt.rows, [[ "Tesla", `!tesla · ${fr.state_on}` ]], "le résumé du partenaire : son nom et l'état de sa commande");
-  const noPlanning = await A.panel(world().ctx, { query: {} });
-  assert.match(table(noPlanning, fr.col_command).rows.find((r) => r[0].startsWith("!planning"))[2], /Masquée : aucun agenda de streams n'est installé/);
-});
-
-test("page : partenaires — explication si Sponsors est absent ; sinon la liste des fiches publiées avec « Modifier » vers la FICHE (plus de formulaire ici)", async () => {
-  const absent = await A.panel(world().ctx, { query: {} });
-  assert.match(textOf(absent), /apparaît quand vous installez le module \*\*Sponsors\*\*/);
-  assert.ok(!absent.some((b) => b.type === "table" && b.columns[0] === fr.col_partner));
-  const none = await A.panel(world({ sponsors: [] }).ctx, { query: {} });
-  assert.match(textOf(none), /aucune fiche n'est publiée/);
-  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla"), entry("p2", "nordvpn", "NordVPN")] });
-  const b = await A.panel(ctx, { query: {} });
-  const t = table(b, fr.col_partner);
-  assert.deepEqual(t.rows, [["Tesla", fr.state_not_set], ["NordVPN", fr.state_not_set]]);
-  assert.deepEqual(t.rowIds, ["p1", "p2"], "l'identifiant de la fiche : le lien y mène");
-  assert.deepEqual(t.rowActions, [{ label: fr.act_edit, href: "/admin/entries/{id}#panel-bot-chat-command" }], "un seul bouton : la fiche, ouverte sur la section de la commande (l'ancre est celle que le cœur donne à la section)");
-  assert.match(textOf(b), /Commande de chat pour ce partenaire/);
-  assert.equal(formsOf(b, "save").length, 0, "plus aucun formulaire de partenaire sur la page du bot");
-  // Un ancien lien « ?edit=partner:… » ne casse rien : il renvoie vers la fiche.
-  const old = await A.panel(ctx, { query: { edit: "partner:p1" } });
-  assert.match(textOf(old), /\[Ouvrir la fiche\]\(\/admin\/entries\/p1#panel-bot-chat-command\)/);
-  assert.equal(formsOf(old, "save").length, 0);
-});
-
-test("page : une commande de partenaire dont la fiche n'est plus publiée est dite « en pause » dans la rubrique, avec ce qui va se passer", async () => {
-  const { ctx } = world({ sponsors: [entry("p1", "tesla", "Tesla"), entry("p2", "nordvpn", "NordVPN")] });
-  const e = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
-  await C.saveSourced(ctx, "partner", "p1", { enabled: true }, e);
-  await C.saveSourced(ctx, "partner", "p2", { enabled: true, name: "nord" }, e);
-  const gone = world({ sponsors: [entry("p2", "nordvpn", "NordVPN")] });
-  await gone.ctx.api.store.add("botConfig", (await C.loadConfig(ctx)).data);
-  SRC.resetSources();
-  const b = await A.panel(gone.ctx, { query: {} });
-  assert.deepEqual(table(b, fr.col_partner).rows, [["NordVPN", `!nord · ${fr.state_on}`]]);
-  assert.match(textOf(b), /En pause \(la fiche n'est plus publiée ou a disparu\) : !tesla \(Tesla\)\. Ces commandes sont retirées toutes seules au bout de deux semaines/);
-});
-
 /* ───────────── La section dans la fiche du partenaire ───────────── */
 
 const target = (o = {}) => ({ id: "p1", title: "Tesla", slug: "tesla", path: "/sponsors/tesla", instance: "sponsors", published: true, ...o });
@@ -933,7 +873,7 @@ test("fiche du partenaire : case « Activer la commande dans le chat », NOM (= 
   const f = fieldsOf(b);
   assert.deepEqual(Object.keys(f), ["enabled", "name", "text"], "version simple : trois champs, pas de jargon");
   assert.deepEqual([f.enabled.kind, f.enabled.label, f.enabled.value, f.name.value, f.text.value], ["checkbox", fr.f_enabled_chat, "", "tesla", "Découvrez mon parrainage {partenaire} : {adresse}"]);
-  assert.equal(f.name.label, "Nom de la commande (sans le !)");
+  assert.equal(f.name.label, "Nom");
   assert.ok(f.text.help.includes("{partenaire}") && f.text.help.includes("{adresse}"));
   assert.equal(formOf(b).action, "save");
   assert.match(textOf(b), /Aperçu de la réponse.*Découvrez mon parrainage Tesla : site\.example\.org\/sponsors\/tesla/);
@@ -964,7 +904,9 @@ test("fiche du partenaire : enregistrer active la commande, qui répond avec les
   assert.equal(fieldsOf(await panelDef.render(ctx, target(), { advanced: false })).enabled.value, "");
   // la page du bot montre l'état et mène à la fiche
   SRC.resetSources();
-  assert.deepEqual(table(await A.panel(ctx, { query: {} }), fr.col_partner).rows, [["Tesla", `!parrain · ${fr.state_off}`]]);
+  const prow = byName(rowsOf(htmlOf(await A.panel(ctx, { query: {} }), "commands")), "!parrain");
+  assert.deepEqual([prow.attrs.origin, prow.attrs.state], ["partner", "off"]);
+  assert.match(prow.html, /href="\/admin\/entries\/p1#panel-bot-chat-command"[^>]*>Ouvrir la fiche du partenaire →/);
 });
 
 test("fiche du partenaire : les erreurs disent quoi faire et ne laissent rien d'enregistré (nom pris, nom invalide, variable inconnue)", async () => {
@@ -1013,28 +955,6 @@ test("fiche du partenaire : si le bot n'écoute pas encore, la section le dit et
   assert.match(textOf(e), /Preview of the answer/);
 });
 
-test("page : réseaux — explication sans module de réseau ; sinon liste avec « Configurer » ; modifier un réseau propose nom, autres noms et texte", async () => {
-  assert.match(textOf(await A.panel(world().ctx, { query: {} })), /Aucun réseau n'est branché/);
-  const { ctx } = world({ links: [link("y", "youtube-channel", "YouTube", "https://www.youtube.com/@emma"), link("y2", "youtube-channel", "YouTube", "https://www.youtube.com/@emma2")] });
-  const b = await A.panel(ctx, { query: {} });
-  assert.deepEqual(table(b, fr.col_network).rows.map((r) => r[0]), ["YouTube", "YouTube"], "deux comptes d'un même réseau : leur libellé complet les distingue quand le module le donne");
-  const e1 = Object.fromEntries(formsOf(await A.panel(ctx, { query: { edit: "network:y" } }), "save")[0].fields.map((x) => [x.name, x]));
-  assert.deepEqual([e1.name.value, e1.aliases.value, e1.text.value], ["youtube", "yt", "Retrouvez-moi sur {reseau} : {lien}"]);
-  assert.equal(Object.fromEntries(formsOf(await A.panel(ctx, { query: { edit: "network:y2" } }), "save")[0].fields.map((x) => [x.name, x])).name.value, "youtube", "avant activation, les deux proposent le même nom : le 2e est vérifié à l'enregistrement");
-  await A.actions.save(ctx, { key: "network:y", enabled: "on", name: "youtube", aliases: "yt", text: "YouTube : {lien}", role: "everyone" });
-  const e2 = Object.fromEntries(formsOf(await A.panel(ctx, { query: { edit: "network:y2" } }), "save")[0].fields.map((x) => [x.name, x]));
-  assert.deepEqual([e2.name.value, e2.aliases.value], ["youtube2", ""], "une fois le 1er activé, le 2e propose youtube2 sans alias en double");
-  const clash = await A.actions.save(ctx, { key: "network:y2", enabled: "on", name: "youtube", aliases: "", text: "Ma 2e chaîne : {lien}", role: "everyone" });
-  assert.match(clash.error, /« youtube » est déjà pris par la commande « youtube »/);
-});
-
-test("page : modifier un réseau mène aussi à la page de réglages du module du réseau (adresse donnée par le cœur) ; sans elle, pas de lien", async () => {
-  const { ctx } = world({ links: [link("y", "youtube-channel", "YouTube", "https://www.youtube.com/@emma")], instances: [{ id: "i9", key: "y", module: "youtube-channel", basePath: null, name: "YouTube", adminPath: "/admin/instances/i9" }] });
-  assert.match(textOf(await A.panel(ctx, { query: { edit: "network:y" } })), /\[Modifier l'adresse dans le module de ce réseau\]\(\/admin\/instances\/i9\)/);
-  const bare = world({ links: [link("y", "youtube-channel", "YouTube", "https://www.youtube.com/@emma")] });
-  assert.ok(!textOf(await A.panel(bare.ctx, { query: { edit: "network:y" } })).includes("Modifier l'adresse dans le module"));
-});
-
 test("page : aucune action ne redirige (la page resterait en haut après chaque clic) sauf supprimer et rétablir le texte, qui reviennent à la page de la commande", async () => {
   const { ctx } = world();
   const results = {
@@ -1051,11 +971,13 @@ test("page : aucune action ne redirige (la page resterait en haut après chaque 
 
 test("page : créer une commande — le formulaire est là, une erreur dit quoi faire (nom pris, variable inconnue), succès confirmé", async () => {
   const { ctx } = world();
-  const b = await A.panel(ctx, { query: {} });
+  assert.equal(formsOf(await A.panel(ctx, { query: {} }), "create").length, 0, "le formulaire s'ouvre avec « Nouvelle commande » : la liste d'abord");
+  const b = await A.panel(ctx, { query: { new: "1" } });
   const form = formsOf(b, "create")[0];
-  assert.deepEqual(form.fields.map((f) => f.name), ["name", "text", "role", "aliases", "cdGlobal", "cdUser", "fromDay", "fromMonth", "toDay", "toMonth", "yearly", "fromYear", "toYear"]);
+  assert.deepEqual(form.fields.map((f) => f.name), ["ck", "name", "text", "role", "aliases", "cdGlobal", "cdUser", "period"]);
   assert.equal(form.fields.find((f) => f.name === "role").options.length, 4);
-  assert.match(form.fields[1].help, /\{utilisateur\} \{cible\} \{requete\} \{1\} \{2\} \{1:\} \{compteur\} \{jeu\} \{titre\} \{uptime\} \{followers\} \{viewers\} \{prochain_stream\}/);
+  assert.deepEqual(configOf(b).layout.slice(0, 3).map((x) => x.f ?? x.seg), ["name", "text", "role"], "trois champs visibles");
+  assert.ok(configOf(b).layout[1].preview.chips.map((c) => c.v).join(" ").startsWith("utilisateur jeu titre uptime followers viewers prochain_stream"));
   const v = { name: "merch", aliases: "", text: "Boutique", role: "everyone", cdGlobal: "", cdUser: "" };
   assert.deepEqual(await A.actions.create(ctx, v), { ok: fr.created });
   assert.match((await A.actions.create(ctx, v)).error, /« merch » est déjà pris par la commande « merch »\. Choisissez un autre nom/);
@@ -1063,6 +985,7 @@ test("page : créer une commande — le formulaire est là, une erreur dit quoi 
   assert.match((await A.actions.create(ctx, { ...v, name: "x y" })).error, /n'est pas valable/);
   assert.match((await A.actions.create(ctx, { ...v, name: "z", text: "/me" })).error, /ne peut pas commencer par \//);
   const t = table(await A.panel(ctx, { query: { edit: "custom:" + (await C.loadConfig(ctx)).data.custom[0].id } }), fr.delete_title);
+  assert.equal(formsOf(await A.panel(ctx, { query: { edit: "custom:" + (await C.loadConfig(ctx)).data.custom[0].id } }), "save")[0].submitLabel, fr.save_btn);
   assert.equal(t.rowActions[0].confirm.includes("!merch"), true);
   assert.equal(t.rowActions[0].danger, true);
 });
@@ -1097,18 +1020,21 @@ test("journal : les 30 dernières lignes ; réponse envoyée ou raison du refus 
   await C.saveCommand(ctx, { kind: "builtin", id: "titre" }, { role: "mods" }, env(ctx));
   await say(ctx, "!titre", { login: "curieux" }, NOW + 100_000);
   const b = await A.panel(ctx, { query: {} });
-  const t = table(b, fr.log_time_user);
-  assert.match(t.rows[0][0], / · curieux$/);
-  assert.deepEqual(t.rows[0].slice(1), ["!titre", `${fr.log_refused} : ${fr.reason_role}`]);
-  assert.deepEqual([t.rows[1][1], t.rows[1][2].startsWith(`${fr.log_sent} : `)], ["!jeu", true]);
-  assert.ok(textOf(b).includes(fr.log_help));
+  const rows = rowsOf(htmlOf(b, "log"));
+  assert.equal(rows.length, 30);
+  assert.match(rows[0].cells.name, / · curieux$/);
+  assert.deepEqual([rows[0].cells.ans, rows[0].cells.extra], ["!titre", `${fr.log_refused} : ${fr.reason_role}`]);
+  assert.deepEqual([rows[1].cells.ans, rows[1].cells.extra.startsWith(`${fr.log_sent} : `)], ["!jeu", true]);
+  assert.equal(rows[0].attrs.result, "refused");
+  assert.ok(htmlOf(b, "log").includes(fr.log_help));
+  assert.ok(htmlOf(b, "log").includes(fr.log_clear_confirm.replace("{n}", "30")), "la confirmation dit ce qui sera perdu");
   assert.equal(JSON.stringify(await ctx.api.store.list("botLog")).includes("Viewer"), false, "le nom d'affichage n'est pas gardé");
 });
 
 /* ───────────── Assistants (MCP) ───────────── */
 
 test("MCP : lister / créer / modifier ; JAMAIS activés par défaut ; lecture seule bien marquée ; aucun outil destructif ; noms courts", () => {
-  assert.deepEqual(manifest.mcp.map((a) => a.name), ["bot_commands_list", "bot_command_create", "bot_command_update", "rewards_list", "reward_create", "reward_simulate", "reward_update", "timers_list", "timer_create", "timer_update", "nightbot_import_preview", "nightbot_import"]);
+  assert.deepEqual(manifest.mcp.map((a) => a.name), ["bot_commands_list", "bot_command_create", "bot_command_update", "rewards_list", "reward_create", "reward_simulate", "reward_update", "timers_list", "timer_create", "timer_update"]);
   for (const a of manifest.mcp) {
     assert.strictEqual(a.default, false, a.name); assert.ok(!a.destructive, a.name); assert.equal(typeof tools[a.name], "function", a.name);
     assert.ok(a.description.length > 150, "description écrite pour une IA");
@@ -1151,7 +1077,7 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.5.0", "0.2.5", "twitch", "multiple", 4]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.6.0", "0.2.5", "twitch", "multiple", 5]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
@@ -1185,7 +1111,7 @@ test("textes : fr et en ont exactement les mêmes clés et les mêmes {variables
     const re = new RegExp(`^${k.replace(/\$\{[^}]+\}/g, "[a-zA-Z_]+")}$`);
     assert.ok(Object.keys(fr).some((x) => re.test(x)), `aucune clé ne correspond à « ${k} »`);
   }
-  const dynamic = { kind: ["custom", "builtin", "partner", "network", "group"], role: ["everyone", "subscribers", "mods", "owner"], why: ["planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], log: ["sent", "refused", "error"],
+  const dynamic = { origin: ["custom", "builtin", "partner", "network"], filter: ["all", "any", "custom", "builtin", "partner", "network", "on", "off", "outside", "hidden", "origin", "state"], note: ["outside", "ended", "planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], chip: ["utilisateur", "jeu", "titre", "uptime", "followers", "viewers", "prochain_stream", "partenaire", "adresse", "reseau", "lien"], per_sc: ["november", "september", "summer", "christmas"], role: ["everyone", "subscribers", "mods", "owner"], why: ["planning_absent", "followers_absent", "group_empty", "partner_missing", "network_missing"], log: ["sent", "refused", "error"],
     res: ["denied", "refused", "network", "rate", "expired", "wrongAccount", "scope"], listen_failure: ["revoked", "unreachable", "other"], cmd: ["planning_text", "jeu_text", "titre_text", "followers_text", "uptime_text"],
     reason: ["muted", "off", "hidden", "missing", "live_unknown", "offline", "role", "cooldown", "rate", "empty", "not_ready", "send_denied", "send_dropped", "send_refused", "send_rate", "send_twitch"],
     listen: ["pending", "unknown", "no_channel", "channel_unknown", "creds_missing", "need_connect", "need_reconnect", "need_more", "bot_need_connect", "bot_reconnect", "bot_more", "site_private", "revoked", "twitch_busy", "twitch_down", "refused"] };

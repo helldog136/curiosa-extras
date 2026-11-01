@@ -280,7 +280,7 @@ test("migration : les mots de l'ancien réglage et les clés déjà portées par
   assert.ok((await create(w, { title: "Turquoise", action: "lumieres:turquoise" })).ok);
   assert.deepEqual(await ACT.list(w.bot), []);
   const before = JSON.stringify((await rewards(w)).map((x) => [x.id, x.title, x.action, x.tid, x.cost]));
-  assert.equal(botManifest.dataVersion, 4);
+  assert.equal(botManifest.dataVersion, 5);
   await botDef.migrations[3](w.bot);
   assert.deepEqual((await ACT.list(w.bot)).map((a) => [a.key, a.label]), [["scene:cinema", "scene:cinema"], ["lumieres:turquoise", "lumieres:turquoise"]], "le mot est le nom ; une action de base ou un mot mal écrit n'en devient pas une");
   assert.equal(JSON.stringify((await rewards(w)).map((x) => [x.id, x.title, x.action, x.tid, x.cost])), before, "aucune récompense ne change");

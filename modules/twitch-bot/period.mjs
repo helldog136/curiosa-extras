@@ -37,8 +37,14 @@ export function readPeriod(raw) {
   return p.ok ? p.value : null;
 }
 
-/** Les formulaires : { fromDay, fromMonth, toDay, toMonth, fromYear, toYear, yearly: "on" | "" } → l'entrée de parsePeriod. */
-export const periodFromForm = (v) => ({ yearly: v.yearly === "on" || v.yearly === true, from: { d: v.fromDay, m: v.fromMonth, y: v.fromYear }, to: { d: v.toDay, m: v.toMonth, y: v.toYear } });
+/** La période telle que la porte le formulaire : UN champ texte « 01/11 - 30/11 » (chaque année) ou « 01/11/2026 - 30/11/2026 » (une seule fois), vide = toujours active.
+ *  Le contrôle de la page (voir adminkit.client.js) l'écrit lui-même ; sans JavaScript, c'est ce champ que la personne voit. */
+export const periodToText = (p) => {
+  if (!p) return "";
+  const two = (n) => String(n).padStart(2, "0");
+  const one = (x) => `${two(x.d)}/${two(x.m)}${p.yearly ? "" : `/${x.y}`}`;
+  return `${one(p.from)} - ${one(p.to)}`;
+};
 
 /** « jj/mm » ou « jj/mm/aaaa » (aussi « jj-mm ») → { d, m, y? } ou null. */
 const dayText = (x) => { const m = /^\s*(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*[/.-]\s*(\d{4}))?\s*$/.exec(String(x)); return m ? { d: Number(m[1]), m: Number(m[2]), ...(m[3] ? { y: Number(m[3]) } : {}) } : null; };
@@ -113,7 +119,7 @@ export const isoText = (ctx, iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exe
 export function periodError(ctx, e) {
   const t = ctx.t;
   switch (e.reason) {
-    case "nodate": return t("per_e_nodate", { day: e.day, month: new Intl.DateTimeFormat(ctx.locale, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, e.month - 1, 1))) });
+    case "nodate": { const month = new Intl.DateTimeFormat(ctx.locale, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, e.month - 1, 1))); return t("per_e_nodate", { day: e.day, month, example: `${e.month === 2 ? 28 : DAYS_IN_MONTH[e.month - 1]} ${month}` }); }
     case "year": return t("per_e_year");
     case "order": return t("per_e_order");
     case "text": return t("per_e_text");
@@ -122,19 +128,29 @@ export function periodError(ctx, e) {
   }
 }
 
-/** Les champs d'un formulaire pour la période : deux sélecteurs jour / mois (début et fin), la case « chaque année », et les années (seulement pour une période qui ne revient pas). */
-export function periodFields(ctx, period) {
+/** Les raccourcis d'un clic au-dessus du contrôle de période (chaque année). `id` : fin des clés de texte `per_sc_<id>`. */
+export const SHORTCUTS = [
+  { id: "november", from: [11, 1], to: [11, 30] },
+  { id: "september", from: [9, 1], to: [9, 30] },
+  { id: "summer", from: [6, 21], to: [9, 21] },
+  { id: "christmas", from: [12, 24], to: [12, 26] },
+];
+
+/** Le champ d'un formulaire pour la période : UN seul champ texte (R6). Le contrôle de la page le remplace par « Du [jour][mois] au [jour][mois] » ; ce champ garde la valeur. */
+export function periodField(ctx, period) {
+  return { name: "period", label: ctx.t("per_title"), value: periodToText(period), help: ctx.t("per_f_help") };
+}
+
+/** La configuration du contrôle de période pour le script de la page (textes déjà traduits : le script ne connaît aucune langue). Même contrôle pour les commandes et les timers. */
+export function periodControl(ctx, period, timeZone = "UTC") {
   const t = ctx.t;
-  const days = [{ value: "", label: "—" }, ...Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))];
-  const months = [{ value: "", label: "—" }, ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: new Intl.DateTimeFormat(ctx.locale, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, i, 1))) }))];
-  const f = period?.from, e = period?.to;
-  return [
-    { name: "fromDay", label: t("per_f_from_day"), kind: "select", value: f ? String(f.d) : "", options: days, help: t("per_f_help") },
-    { name: "fromMonth", label: t("per_f_from_month"), kind: "select", value: f ? String(f.m) : "", options: months },
-    { name: "toDay", label: t("per_f_to_day"), kind: "select", value: e ? String(e.d) : "", options: days },
-    { name: "toMonth", label: t("per_f_to_month"), kind: "select", value: e ? String(e.m) : "", options: months },
-    { name: "yearly", label: t("per_f_yearly"), kind: "checkbox", value: !period || period.yearly ? "on" : "", help: t("per_f_yearly_help") },
-    { name: "fromYear", label: t("per_f_from_year"), kind: "number", value: period?.from.y ?? "", help: t("per_f_year_help") },
-    { name: "toYear", label: t("per_f_to_year"), kind: "number", value: period?.to.y ?? "" },
-  ];
+  const month = (m) => new Intl.DateTimeFormat(ctx.locale, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, m - 1, 1)));
+  return {
+    field: "period", locale: ctx.locale, year: dayIn(new Date(), "UTC").y,
+    months: Array.from({ length: 12 }, (_, i) => month(i + 1)), dim: DAYS_IN_MONTH,
+    text: { title: t("per_title"), always: t("per_mode_always"), range: t("per_mode_range"), from: t("per_from"), to: t("per_to"), yearly: t("per_yearly"), day: t("per_day"), month: t("per_month"), dateFrom: t("per_date_from"), dateTo: t("per_date_to"),
+      phraseYearly: t("per_phrase_yearly", { from: "{from}", to: "{to}" }), phraseOnce: t("per_phrase_once", { from: "{from}", to: "{to}" }), always_phrase: t("per_always"), utc: timeZone === "UTC" ? t("per_utc") : "",
+      eNodate: t("per_e_nodate", { day: "{day}", month: "{month}", example: "{example}" }), eYear: t("per_e_year"), eOrder: t("per_e_order"), eText: t("per_e_text") },
+    shortcuts: SHORTCUTS.map((x) => ({ label: t(`per_sc_${x.id}`), from: x.from, to: x.to })),
+  };
 }

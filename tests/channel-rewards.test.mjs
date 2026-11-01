@@ -86,13 +86,13 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.5.0");
+  assert.equal(manifest.version, "1.6.0");
   assert.equal(manifest.minCore, "0.2.5");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
   assert.deepEqual(manifest.tabs.map((x) => x.id), ["use", "timers", "rewards"]);
   assert.ok(manifest.tabs.length - 1 <= 4);
-  assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage", "timers.manage", "nightbot.import"]);
+  assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage", "timers.manage"]);
   assert.deepEqual(manifest.consumes.filter((c) => c.topic.startsWith("ha.")).map((c) => c.topic).sort(), ["ha.result", "ha.state"]);
   const mcp = Object.fromEntries(manifest.mcp.map((m) => [m.name, m]));
   for (const n of ["rewards_list", "reward_create", "reward_update", "reward_simulate"]) { assert.ok(mcp[n], n); assert.ok(n.length <= 64); assert.ok(typeof tools[n] === "function"); }
