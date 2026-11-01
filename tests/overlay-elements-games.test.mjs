@@ -54,9 +54,9 @@ beforeEach(() => { mock.timers.setTime(NOW); overlay.resetOverlayCache(); });
 
 /* ───────────────────────────── Manifeste ───────────────────────────── */
 
-test("manifeste : valide, 1.6.0, minCore 0.5.0, un élément « Top des jeux proposés » fluide, style suivi, demo, deux options minimales ; rien d'autre ne change", () => {
+test("manifeste : valide, 1.7.0, minCore 0.6.0, un élément « Top des jeux proposés » fluide, style suivi, demo, deux options minimales ; rien d'autre ne change", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.6.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.7.0"); assert.equal(manifest.minCore, "0.6.0");
   assert.equal(manifest.overlayElements.length, 1);
   const [e] = manifest.overlayElements;
   assert.equal(e.id, "top"); assert.equal(e.fit, "fluid"); assert.equal(e.followsStyle, true); assert.equal(e.demo, true);

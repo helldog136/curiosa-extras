@@ -86,11 +86,11 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.6.0");
-  assert.equal(manifest.minCore, "0.2.5");
+  assert.equal(manifest.version, "1.7.0");
+  assert.equal(manifest.minCore, "0.6.0");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
-  assert.deepEqual(manifest.tabs.map((x) => x.id), ["use", "timers", "rewards"]);
+  assert.deepEqual(manifest.tabs.map((x) => x.id), ["use", "timers", "rewards", "sources"]);
   assert.ok(manifest.tabs.length - 1 <= 4);
   assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage", "timers.manage"]);
   assert.deepEqual(manifest.consumes.filter((c) => c.topic.startsWith("ha.")).map((c) => c.topic).sort(), ["ha.result", "ha.state"]);
@@ -99,7 +99,7 @@ test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, d
   assert.equal(mcp.rewards_list.readOnly, true);
   for (const n of ["reward_create", "reward_update", "reward_simulate"]) { assert.ok(!mcp[n].readOnly); assert.equal(mcp[n].default, false); }
   assert.ok(mcp.reward_create.input.properties.name.maxLength <= 64);
-  for (const k of ["rewardCreate", "rewardSave", "rewardToggle", "rewardRemove", "rewardsEnable", "rewardSimulate", "rewardLogClear"]) assert.equal(A.actions[k].right, "rewards.manage", k);
+  for (const k of ["rewardCreate", "rewardSave", "rewardEnable", "rewardRemove", "rewardsEnable", "rewardSimulate", "rewardLogClear"]) assert.equal(A.actions[k].right, "rewards.manage", k);
 });
 
 test("textes : parité exacte FR/EN (clés et {variables}) ; toute clé écrite dans le code existe ; aucun jargon pour Emma", () => {
@@ -266,10 +266,12 @@ test("modifier, mettre en pause, reprendre, supprimer : de vraies demandes ; une
   assert.ok(r.ok);
   assert.equal(w.tw.rewards.get(rw.tid).title, "Rouge vif"); assert.equal(w.tw.rewards.get(rw.tid).cost, 900);
   assert.equal(w.tw.rewards.get(rw.tid).is_global_cooldown_enabled, false);
-  r = await A.actions.rewardToggle.run(w.ctx, { id: rw.id });
+  r = await A.actions.rewardEnable.run(w.ctx, { id: rw.id, enabled: "0" });
   assert.ok(r.ok); assert.equal(w.tw.rewards.get(rw.tid).is_paused, true);
+  r = await A.actions.rewardEnable.run(w.ctx, { id: rw.id, enabled: "0" });   // l'interrupteur DIT l'état voulu : un double clic ne défait rien
+  assert.equal(w.tw.rewards.get(rw.tid).is_paused, true);
   assert.equal(R.statusOf((await R.list(w.ctx))[0]), "paused");
-  r = await A.actions.rewardToggle.run(w.ctx, { id: rw.id });
+  r = await A.actions.rewardEnable.run(w.ctx, { id: rw.id, enabled: "1" });
   assert.equal(w.tw.rewards.get(rw.tid).is_paused, false);
   // pause faite chez Twitch : reconnue à la lecture
   w.tw.rewards.get(rw.tid).is_paused = true;
@@ -528,7 +530,7 @@ test("hors direct ou coupe-circuit : les récompenses de la maison sont MISES EN
   await noise(w);
   assert.equal(pauses().length, 0, "maison prête : rien à faire");
   // le propriétaire met « Bleu » en pause à la main
-  await A.actions.rewardToggle.run(w.ctx, { id: blue.id });
+  await A.actions.rewardEnable.run(w.ctx, { id: blue.id, enabled: "0" });
   const n0 = pauses().length;
   w.ha.state.live = false;
   tick(); await noise(w);
@@ -735,7 +737,10 @@ test("l'onglet : avant activation une explication et un bouton ; ensuite liste, 
   const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
   const w = world();
   let blocks = await RA.blocks(w.ctx, await A.context(w.ctx, { declare: false }));
-  assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "rewardsEnable"));
+  assert.ok(blocks.some((b) => b.type === "html" && b.html.includes('data-ck-act="rewardsEnable"')), "un bouton d'activation en ligne, sans carte à un seul bouton");
+  assert.ok(!blocks.some((b) => b.type === "adminForm" && b.fields.length === 0), "aucune carte qui ne contient qu'un bouton");
+  const steps = blocks.find((b) => b.type === "table" && b.columns[0] === "Étape");
+  assert.equal(steps.rows.length, 3, "trois étapes au plus, avec l'état de chacune");
   assert.ok(blocks.every((b) => b.tab === "rewards"));
   await enable(w.ctx);
   const rw = await mk(w);
@@ -758,20 +763,25 @@ test("l'onglet : avant activation une explication et un bouton ; ensuite liste, 
   assert.ok(page.some((y) => !y.tab) && page.some((y) => y.tab === "rewards"));
 });
 
-test("la page de modification d'une récompense charge ses valeurs ; la simulation a son bouton sur la page de chaque récompense", async () => {
+test("la page de modification d'une récompense charge ses valeurs ; le test est sur la page de chaque récompense ; pause et suppression sont dans la liste", async () => {
   const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
   const w = await setup();
   const rw = await mk(w, { cooldownMin: "2.5" });
-  const b = await RA.blocks(w.ctx, await A.context(w.ctx, { declare: false }), { rewardEdit: rw.id, rewardTest: rw.id });
+  const b = await RA.blocks(w.ctx, await A.context(w.ctx, { declare: false }), { rewardEdit: rw.id });
   const form = b.find((x) => x.type === "adminForm" && x.action === "rewardSave");
   assert.equal(form.fields.find((f) => f.name === "title").value, "Rouge");
-  assert.equal(form.fields.find((f) => f.name === "cooldownMin").value, 2.5);
+  assert.equal(form.fields.find((f) => f.name === "cooldown").value, "150", "le délai de recharge est une durée en secondes");
   const t = b.find((x) => x.type === "adminForm" && x.action === "rewardSimulate");
   assert.equal(t.fields.find((f) => f.name === "id").value, rw.id);
-  const table = b.find((x) => x.type === "table" && x.rowIds);
-  assert.equal(table.rowActions.length, 1, "un seul bouton par ligne : rien ne déborde sur un téléphone");
-  assert.equal(table.columns.length, 2);
-  const mine = b.filter((x) => x.type === "adminForm" && x.fields.some((f) => f.name === "id" && f.kind === "hidden" && f.value === rw.id)).map((x) => x.action).sort();
-  assert.deepEqual(mine, ["rewardSave", "rewardSimulate", "rewardToggle"], "pause, simulation et suppression sur la page de la récompense");
-  assert.ok(b.some((x) => x.type === "table" && x.rowActions?.[0]?.action === "rewardRemove"));
+  const table = b.find((x) => x.type === "table" && x.rowIds && x.columns[0] === "Récompense");
+  assert.deepEqual(table.columns, ["Récompense", "Ce qui se passe", "Coût", "État"], "UN tableau : titre, ce qui se passe, coût, état");
+  assert.equal(table.searchable, true, "recherche en direct dès le départ");
+  assert.ok(table.filters.length >= 1);
+  const row = table.rows[0];
+  assert.equal(row[1].text, "Lumières : rouge"); assert.ok(row[1].badge, "pastille colorée ET écrite");
+  assert.equal(row[3].switch.action, "rewardEnable"); assert.equal(row[3].switch.on, true);
+  const { visible, menu } = { visible: table.rowActions.filter((a) => !a.inMenu && !a.danger), menu: table.rowActions.filter((a) => a.inMenu || a.danger) };
+  assert.equal(visible.length, 1); assert.ok(visible.length <= 2); assert.deepEqual(menu.map((a) => a.action ?? "href"), ["href", "rewardRemove"]);
+  assert.ok(!b.some((x) => x.type === "adminForm" && x.action === "rewardToggle"));
 });
+

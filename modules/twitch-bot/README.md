@@ -7,7 +7,7 @@ Votre site **répond aux commandes tapées dans votre chat Twitch** : une person
 ## Pour commencer
 1. **Installez le bot.** Le Connecteur Twitch et Ma Chaîne Twitch s'installent avec lui. Si ce n'est pas déjà fait, suivez le guide du Connecteur Twitch (en haut de sa page) pour renseigner l'application Twitch de votre site, et indiquez votre chaîne dans Ma Chaîne Twitch : c'est la même application pour tout ce qui touche à Twitch, vous ne la saisissez qu'une fois.
 2. **Autorisez le bot chez Twitch.** Sur la page du bot, cliquez sur « Autoriser le bot chez Twitch », puis sur « Autoriser » chez Twitch. Une seule fois : Twitch doit savoir que vous êtes d'accord pour que le bot lise et écrive dans votre chat.
-3. **Vérifiez.** En haut de la page, « Le bot écoute votre chat : oui » doit s'afficher. Sinon, la page dit pourquoi et ce qu'il faut faire (site pas encore joignable depuis Internet, autorisation à renouveler…).
+3. **Vérifiez.** En haut de la page, la pastille « Le bot écoute votre chat » doit s'afficher. Sinon, la page dit pourquoi et ce qu'il faut faire (site pas encore joignable depuis Internet, autorisation à renouveler…).
 4. **Essayez** : tapez `!jeu` dans votre chat pendant un direct.
 
 Par défaut, c'est **votre propre compte** qui répond dans le chat.
@@ -77,7 +77,7 @@ Avec **Participation**, un tirage au sort peut être alimenté par le chat : le 
 - Une fiche pas encore publiée peut déjà avoir sa commande réglée : elle attend la publication. Sans le bot, la fiche du partenaire ne montre aucune section en plus.
 
 ## Les récompenses en points de chaîne (onglet « Récompenses », depuis la 1.3.0 ; actions nommées depuis la 1.4.0)
-Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action**, choisie en répondant à une seule question : « Que se passe-t-il quand une personne prend cette récompense ? »
+Vos viewers dépensent leurs points de chaîne pour déclencher quelque chose. **Curiosa crée la récompense chez Twitch** (titre, coût, délai de recharge, texte d'aide, « le viewer écrit un message ») et lui associe **une action**, choisie en répondant à une seule question : « Ce qui se passe » quand une personne prend la récompense. Le formulaire n'a que trois champs visibles (Titre, Coût, Ce qui se passe) ; le reste est sous « Plus d'options »
 - **Répondre dans le chat** (marche sans rien d'autre) : « Merci {utilisateur} ! ».
 - **Changer la couleur des lumières** (rouge, vert, bleu, jaune, orange, violet, rose, blanc) ou **Lire son message à voix haute** : des actions de la maison, qui demandent le **Connecteur Home Assistant**. Sans lui, l'onglet propose de l'installer ; il reste facultatif.
 - **Autre chose chez moi** : on **donne un nom** à l'action (par exemple « Lancer l'aspirateur »). Le nom est le seul mot à connaître : Curiosa fabrique elle-même l'identifiant technique, **qui ne change plus** même si vous renommez l'action (ce qui est relié dans Home Assistant ne casse donc pas). Un nom déjà utilisé reprend la même action ; la liste **« Vos actions »** permet de la choisir pour une autre récompense, de la renommer ou de la retirer quand aucune récompense ne s'en sert.
@@ -91,7 +91,7 @@ Pour commencer : activer les récompenses, autoriser Twitch (une fois, le chat n
 - **Rien ne tourne en arrière-plan** : les résultats de la maison et les délais dépassés sont pris en compte au prochain évènement sur votre chaîne ou quand vous ouvrez l'onglet.
 - **Hors direct, ou quand la maison est coupée**, les récompenses de la maison sont **mises en pause chez Twitch**, et remises en vente toutes seules ensuite (seulement celles que Curiosa a mises en pause : une pause que vous avez faite reste).
 - **`!stop`** dans le chat coupe la maison (vous et l'équipe de modération que vous nommez dans les réglages), **`!start`** la rebranche (vous uniquement). Sans le Connecteur Home Assistant, le bot le dit poliment.
-- **Simuler** : le bouton « Simuler cette récompense » joue le même chemin avec un faux viewer « Test », **sans Twitch et sans points**. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée. Refusé si la maison est coupée. 1 test toutes les 3 secondes, 30 par heure.
+- **Simuler** : le menu « ⋯ » de la récompense (« Simuler cette récompense ») joue le même chemin avec un faux viewer « Test », **sans Twitch et sans points**. Une action de la maison est vraiment envoyée chez vous ; une réponse dans le chat est seulement montrée. Refusé si la maison est coupée. 1 test toutes les 3 secondes, 30 par heure.
 - **Journal** des 50 derniers échanges (pseudo, récompense, résultat) ; le message écrit par le viewer n'est **jamais gardé**.
 - **Limites** : 20 récompenses, 100 échanges en attente. Les points de chaîne n'existent que pour un compte **Affilié ou Partenaire** : sinon la page le dit en clair.
 - Le droit **« créer, modifier et supprimer les récompenses »** (`rewards.manage`) se donne dans les rôles. Outils pour l'assistant : `rewards_list` (lecture), `reward_create`, `reward_update`, `reward_simulate` (écritures, jamais accordées d'office) ; `reward_create` et `reward_update` acceptent `customActionName` pour donner un nom à une action.

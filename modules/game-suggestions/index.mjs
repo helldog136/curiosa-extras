@@ -27,6 +27,7 @@ const ADD_ORDER = ["already_played", "finished", "planned", "accepted", "propose
 const HOUR = 3_600_000;
 const MONTH = 30 * 24 * HOUR;
 const COOKIE = "vh_gs_votes";
+const STATUS_TONE = { proposed: "warn", planned: "info", accepted: "ok", rejected: "danger", already_played: "accent", finished: "neutral" };   // une pastille colorée ET écrite (le texte dit toujours le statut)
 
 const escMd = (s) => String(s).replace(/([\\`*_[\]<>])/g, "\\$1");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -300,12 +301,12 @@ const firstError = (r) => r.error ?? Object.values(r.errors ?? {})[0];
 const adminLink = (href, label, current = false) => `<a href="${esc(href)}"${current ? ' aria-current="page"' : ""} style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid currentColor;border-radius:10px;text-decoration:none;color:inherit">${esc(label)}</a>`;
 const linkRow = (html) => ({ type: "html", html: `<nav style="display:flex;flex-wrap:wrap;gap:8px">${html}</nav>` });
 
-/** « Ajouter un jeu » : un champ obligatoire, le reste facultatif ; deux variantes derrière un lien (plusieurs jeux d'un coup, image choisie à la main). */
+/** « Ajouter un jeu » : le nom et le statut ; la note et l'image, rares, sont repliées sous « Plus d'options ». Une variante derrière un lien : plusieurs jeux d'un coup. */
 function addBlocks(ctx, mode) {
   const statusField = { name: "status", label: ctx.t("addStatusLabel"), kind: "select", value: "already_played", help: ctx.t("addStatusHelp"), options: ADD_ORDER.map((s) => ({ value: s, label: ctx.t(`status_${s}`) })) };
   if (mode === "plusieurs") {
     return [
-      { type: "adminForm", action: "addGames", title: ctx.t("manyTitle"), submitLabel: ctx.t("manySubmit"), fields: [{ name: "titles", label: ctx.t("manyLabel"), kind: "textarea", required: true, help: ctx.t("manyHelp", { max: MAX_BATCH }) }, statusField] },
+      { type: "adminForm", action: "addGames", title: ctx.t("manyTitle"), submitLabel: ctx.t("manySubmit"), fields: [{ name: "titles", label: ctx.t("manyLabel"), kind: "textarea", required: true, help: ctx.t("manyHelp", { max: MAX_BATCH }), example: ctx.t("manyExample") }, statusField] },
       linkRow(adminLink("?tab=use", ctx.t("linkOne"))),
     ];
   }
@@ -313,13 +314,13 @@ function addBlocks(ctx, mode) {
     {
       type: "adminForm", action: "addGame", title: ctx.t("addTitle"), submitLabel: ctx.t("addSubmit"),
       fields: [
-        { name: "title", label: ctx.t("addGameLabel"), required: true, help: ctx.t("addGameHelp") },
+        { name: "title", label: ctx.t("addGameLabel"), required: true, example: ctx.t("addGameExample") },
         statusField,
-        { name: "note", label: ctx.t("addNoteLabel"), kind: "textarea", help: ctx.t("addNoteHelp") },
-        ...(mode === "image" ? [{ name: "image", label: ctx.t("addImageLabel"), kind: "text", help: ctx.t("addImageHelp") }] : []),
+        { name: "note", label: ctx.t("addNoteLabel"), kind: "textarea", folded: true, help: ctx.t("addNoteHelp"), example: ctx.t("addNoteExample") },
+        { name: "image", label: ctx.t("addImageLabel"), kind: "url", folded: true, help: ctx.t("addImageHelp"), example: ctx.t("addImageExample") },
       ],
     },
-    linkRow(adminLink("?tab=use&ajout=plusieurs", ctx.t("linkMany")) + (mode === "image" ? adminLink("?tab=use", ctx.t("linkNoImage")) : adminLink("?tab=use&ajout=image", ctx.t("linkImage")))),
+    linkRow(adminLink("?tab=use&ajout=plusieurs", ctx.t("linkMany"))),
   ];
 }
 
@@ -328,16 +329,9 @@ function coverScreen(ctx, g) {
   return [
     { type: "heading", text: ctx.t("coverScreenTitle", { title: g.title }) },
     { type: "markdown", text: `${ctx.t(g.cover ? "coverStateHas" : "coverStateNone")}\n\n[${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})` },
-    { type: "adminForm", action: "setImage", title: ctx.t("imageTitle"), submitLabel: ctx.t("imageSubmit"), fields: [{ name: "id", kind: "hidden", value: g.id }, { name: "image", label: ctx.t("imageLabel"), kind: "text", required: true, help: ctx.t("addImageHelp") }] },
+    { type: "adminForm", action: "setImage", title: ctx.t("imageTitle"), submitLabel: ctx.t("imageSubmit"), fields: [{ name: "id", kind: "hidden", value: g.id }, { name: "image", label: ctx.t("imageLabel"), kind: "url", required: true, help: ctx.t("addImageHelp"), example: ctx.t("addImageExample") }] },
     linkRow(adminLink("?tab=use", ctx.t("backToList"))),
   ];
-}
-
-function pager(ctx, page, pages, total, mode) {
-  const to = (p) => `?tab=use&page=${p}${mode ? `&ajout=${mode}` : ""}`;
-  const from = (page - 1) * PAGE_SIZE + 1;
-  return `<nav aria-label="${esc(ctx.t("pagerLabel"))}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span>${esc(ctx.t("pagerInfo", { from, to: Math.min(total, page * PAGE_SIZE), total }))}</span>` +
-    (page > 1 ? adminLink(to(page - 1), ctx.t("pagerPrev")) : "") + (page < pages ? adminLink(to(page + 1), ctx.t("pagerNext")) : "") + `</nav>`;
 }
 
 const baseHref = (ctx) => { const b = ctx.instance.basePath; return b === null || b === undefined ? "/" : b ? `/${b}` : "/"; };
@@ -448,22 +442,32 @@ export default {
       if (state?.lastStatus === "denied") coverBlocks.push({ type: "markdown", text: `⚠️ ${ctx.t("coversDeniedHint")}` });
       coverBlocks.push({ type: "adminForm", action: "findCovers", submitLabel: ctx.t("coversButton"), fields: [] });
     }
-    const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-    const page = Math.min(pages, num(q.page, 1, 1, 100_000));
-    const slice = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    const mode = q.ajout === "plusieurs" || q.ajout === "image" ? q.ajout : "";
+    const mode = q.ajout === "plusieurs" ? "plusieurs" : "";
+    const toTreat = list.filter((g) => g.status === "proposed" && g.origin !== "admin").length;
     return [
       ...keyBanner,
       ...(row ? coverScreen(ctx, row) : []),
+      { type: "markdown", text: ctx.t("adminIntro") },
       ...addBlocks(ctx, mode),
-      { type: "heading", text: ctx.t("adminTitle", { count: list.length, proposed: list.filter((g) => g.status === "proposed" && g.origin !== "admin").length }) },
+      { type: "heading", text: ctx.t("adminTitle", { count: list.length, proposed: toTreat }) },
       {
-        type: "table", columns: [ctx.t("colDate"), ctx.t("colGame"), ctx.t("colCover"), ctx.t("colBy"), ctx.t("colStatus"), ctx.t("colVotes")],
-        rows: slice.map((g) => [new Date(g.at).toISOString().slice(0, 10), g.title, g.cover ? "✓" : "—", g.origin === "admin" ? ctx.t("byAdmin") : g.by, ctx.t(`status_${g.status}`), String(g.votes)]),
-        rowIds: slice.map((g) => g.id),
-        rowActions: [...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}` })), { label: ctx.t("rowCover"), href: "?tab=use&jaquette={id}" }, { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true }],
+        type: "table", columns: [ctx.t("colGame"), ctx.t("colStatus"), ctx.t("colOrigin"), ctx.t("colDate"), ctx.t("colVotes"), ctx.t("colCover")],
+        searchable: true, searchPlaceholder: ctx.t("searchPlaceholder"), filters: [{ column: 1, allLabel: ctx.t("filterAll") }], truncate: [0], pageSize: PAGE_SIZE, empty: ctx.t("tableEmpty"),
+        rows: list.map((g) => [
+          { text: g.title, title: [g.title, g.by ? ctx.t("by", { name: g.by }) : "", g.note].filter(Boolean).join(" · ") },
+          { text: ctx.t(`status_${g.status}`), badge: STATUS_TONE[g.status] },
+          g.origin === "admin" ? { text: ctx.t("originAdmin"), badge: "accent" } : { text: ctx.t("originPublic"), badge: "info", title: g.by || undefined },
+          new Date(g.at).toISOString().slice(0, 10),
+          String(g.votes),
+          !g.cover ? { text: ctx.t("coverMissing"), badge: "warn" } : g.ambiguous ? { text: ctx.t("coverDoubtful"), badge: "neutral" } : "",
+        ]),
+        rowIds: list.map((g) => g.id),
+        rowActions: [
+          { label: ctx.t("rowCover"), href: "?tab=use&jaquette={id}" },
+          ...STATUSES.map((s) => ({ label: ctx.t("setTo", { status: ctx.t(`status_${s}`) }), action: `status_${s}`, inMenu: true })),
+          { label: ctx.t("actDelete"), action: "remove", confirm: ctx.t("confirmDelete"), danger: true },
+        ],
       },
-      ...(pages > 1 ? [{ type: "html", html: pager(ctx, page, pages, list.length, mode) }] : []),
       ...coverBlocks,
       // Administration seulement : pour chaque jaquette douteuse, le lien vers l'écran du cœur qui permet de choisir le bon jeu.
       ...(shown.some((g) => g.ambiguous) ? [{ type: "markdown", text: [ctx.t("coversAmbiguous"), ...shown.filter((g) => g.ambiguous).slice(0, 50).map((g) => `- ${escMd(g.title)} : [${ctx.t("coverWrong")}](${wrongCoverHref(g.title)})`)].join("\n") }] : []),

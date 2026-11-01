@@ -11,4 +11,4 @@
 
 - **Bloc `social` de `module.json`**, écrit par `node scripts/gen-social.mjs` depuis la même table que le bloc `profile()` : `name`, `icon`, `hosts`, `template`, `example`, et au besoin `handle`, `tag`, `aliases`, `forms`, `shapes`, `fediverse`. `scripts/build-index.mjs` le recopie dans `catalogue/index.json` (60 Ko au total). Un cœur plus ancien ignore la clé.
 - **`tests/social-block.test.mjs`** : le bloc est identique à la table et au catalogue ; quand le cœur testé contient `src/core/socialRecognize.ts` (0.6.2), il vérifie que `recognizeOne` du cœur donne **le même résultat que le `profile()` du module** sur 37 saisies, pour les 20 réseaux, et lit un texte à plusieurs adresses ; sinon ces deux tests sont passés.
-- Versions : dépôt 1.32.0 (le lot 1 est la 1.31.0) ; les 20 réseaux et Annonces Discord +0.0.1.
+- Versions : dépôt 1.34.0 (le lot 1 est la 1.31.0) ; les 20 réseaux et Annonces Discord +0.0.1.
