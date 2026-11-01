@@ -2,7 +2,7 @@
 
 Ces règles s'appliquent à **toute** page d'administration et à **tout** formulaire : réglages de module, pages d'administration propres à un module, écrans du cœur, éditeurs, assistants. Elles valent pour les agents (IA) comme pour les personnes qui écrivent un module. **Une PR qui touche une page de configuration doit dire, dans son corps, comment chaque règle est respectée** (section « Ergonomie », voir la liste de contrôle en fin de document).
 
-Le point de départ est toujours Emma : une personne qui crée du contenu, qui n'est pas technique, qui n'a pas le temps de comprendre un outil, et qui jugera la page en dix secondes. Si elle doit réfléchir à ce qu'un champ veut dire, **c'est la page qui est fausse**, pas elle.
+Le point de départ est toujours une personne qui crée du contenu, qui n'est pas technique, qui n'a pas le temps de comprendre un outil, et qui jugera la page en dix secondes. Si elle doit réfléchir à ce qu'un champ veut dire, **c'est la page qui est fausse**, pas elle.
 
 Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[revue]** = vérifié par la personne qui relit, sur les captures.
 
@@ -57,7 +57,7 @@ Légende : **[auto]** = vérifié par le kit de test (`admin.ergonomics`) ; **[r
 **R26 [revue] La première fois :** un exemple prérempli ou un bouton « Ajouter un exemple ». Un assistant (étapes numérotées) seulement s'il y a au moins trois prérequis externes.
 
 ## 8. Support et accessibilité
-**R27 [revue] PC d'abord pour les éditeurs lourds** (placement, import, tableaux) ; pour le reste, utilisable au téléphone : cibles ≥ 44 px, pas de défilement horizontal, pas de tableau qui déborde.
+**R27 [revue] PC d'abord pour les outils lourds** (placement, import, tableaux) ; pour le reste, utilisable au téléphone : cibles ≥ 44 px, pas de défilement horizontal, pas de tableau qui déborde.
 **R28 [auto/revue] Clavier et lecteur d'écran :** chaque champ a un libellé relié, chaque icône un texte, l'ordre de tabulation suit l'ordre visuel, le focus est visible. Un glisser-déposer a toujours une alternative au clavier.
 **R29 [auto] FR et EN à parité exacte** (mêmes clés, mêmes `{variables}`), textes neutres.
 
