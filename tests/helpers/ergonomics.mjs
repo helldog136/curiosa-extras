@@ -180,6 +180,8 @@ function settingTexts(where, f, add) {
   const advanced = f.advanced === true;
   add(`${where}.label`, "label", f.label, { advanced, setting: f });
   add(`${where}.help`, "help", f.help, { advanced, setting: f });
+  add(`${where}.example`, "text", f.example, { advanced });
+  add(`${where}.unit`, "text", f.unit, { advanced });
   for (const o of f.options ?? []) add(`${where}.option:${o.value}`, "option", o.label, { advanced });
 }
 
@@ -198,6 +200,8 @@ function flattenLocale(obj, prefix = "", out = {}) {
 
 const FREE_TYPES = new Set(["text", "textarea", "url", "number"]);
 const hasVisibleDefault = (f) => f.default !== undefined && f.default !== "" && !/^(?:site|theme):/.test(String(f.default));
+/** (cœur 0.6.0) Le réglage déclare `example` : le cœur écrit « Par exemple : … » sous le champ, c'est un exemple concret. */
+const hasExampleKey = (f) => localized(f?.example).some((x) => x.text.trim() !== "");
 
 /**
  * Les écarts d'un module d'après son manifeste et ses locales.
@@ -216,11 +220,11 @@ export function analyzeModule(m) {
     gaps.push({ rule, key, where, text: excerpt(text, 90), message });
   };
 
-  /* R5 — réglages simples par onglet (les champs d'un groupe facultatif, repliés, et les réglages avancés ne comptent pas). */
+  /* R5 — réglages simples par onglet (les champs d'un groupe facultatif, repliés, les réglages avancés et les réglages rares, rangés sous « Plus d'options », ne comptent pas). */
   const folded = new Set((man.optionalGroups ?? []).flatMap((g) => g.fields ?? []));
   const perTab = new Map();
   for (const f of man.settings ?? []) {
-    if (f.advanced === true || folded.has(f.key)) continue;
+    if (f.advanced === true || f.rare === true || folded.has(f.key)) continue;
     const tab = `${f.tab ?? "settings"}${f.group === "appearance" ? "/apparence" : ""}`;
     perTab.set(tab, [...(perTab.get(tab) ?? []), f.key]);
   }
@@ -245,13 +249,13 @@ export function analyzeModule(m) {
       const f = t.setting;
       const label = (byWhere.get(t.where.replace(/\.help$/, ".label")) ?? []).find((l) => l.lang === t.lang)?.text;
       if (label && len(fold(label)) >= 8 && fold(t.text).replace(/[^a-z0-9]+/g, " ").trim().startsWith(fold(label).replace(/[^a-z0-9]+/g, " ").trim()) && len(t.text) <= len(label) + 12) push("R11", `${t.where}[${t.lang}]`, t.text, `l'aide répète le libellé : « ${excerpt(t.text, 60)} »`);
-      if (f && !f.advanced && FREE_TYPES.has(f.type) && !hasVisibleDefault(f) && !hasExample(t.text, f.type)) push("R11", `${t.where}[${t.lang}]`, t.text, `champ libre sans exemple (« Par exemple : … ») (${lang.toUpperCase()}) : « ${excerpt(t.text, 60)} »`);
+      if (f && !f.advanced && FREE_TYPES.has(f.type) && !hasVisibleDefault(f) && !hasExampleKey(f) && !hasExample(t.text, f.type)) push("R11", `${t.where}[${t.lang}]`, t.text, `champ libre sans exemple (« Par exemple : … ») (${lang.toUpperCase()}) : « ${excerpt(t.text, 60)} »`);
     }
   }
   /* R11 — champ libre sans aucune aide : aucun exemple (sauf valeur par défaut visible). */
   for (const [scope, fields] of [["setting", man.settings ?? []], ...(man.sections ?? []).map((s) => [`section:${s.id}`, s.options ?? []])]) {
     for (const f of fields) {
-      if (f.advanced === true || !FREE_TYPES.has(f.type) || hasVisibleDefault(f)) continue;
+      if (f.advanced === true || !FREE_TYPES.has(f.type) || hasVisibleDefault(f) || hasExampleKey(f)) continue;
       const where = scope === "setting" ? `setting:${f.key}` : `${scope}.${f.key}`;
       const helps = LANGS.filter((l) => localized(f.help).some((x) => (x.lang === l || x.lang === "*") && x.text.trim()));
       if (!helps.length) push("R11", `${where}.help`, f.key, `champ libre « ${f.key} » sans aide ni exemple (ni valeur par défaut visible)`, { identity: "count" });
@@ -357,6 +361,9 @@ export function ratchetMessages({ fresh, stale }) {
 
 /* ═══════════════════════════ Pages produites par du code ═══════════════════════════ */
 
+/** Le texte d'une cellule de tableau : un texte, ou (cœur 0.6.0) un objet { text, badge, switch… }. */
+// Une cellule à interrupteur est l'état lui-même (R17) : jamais une « étiquette répétée » (R14).
+const cellText = (c) => (c && typeof c === "object" ? (c.switch ? "" : c.text ?? "") : c);
 const stripTags = (s) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 const SEARCH_FIELD_NAME = /^(?:q|s|search|recherche|rechercher|filter|filtre|query|find)$/i;
 const SEARCH_LABEL = /\b(?:rechercher?|search|filtrer|filter)\b/i;
@@ -404,14 +411,14 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
         for (const p of labelProblems(f.label ?? "")) add("R10", `champ « ${f.name} » : ${p}`);
         const bad = forbiddenWords(`${f.label ?? ""} ${f.help ?? ""}`);
         if (bad.length) add("R9", `champ « ${f.name} » : mot interdit « ${bad.join("», « ")} »`);
-        if (FREE_TYPES.has(f.kind ?? "text") && f.help !== undefined && !hasExample(f.help, f.kind)) add("R11", `champ « ${f.name} » : aide sans exemple`);
+        if (FREE_TYPES.has(f.kind ?? "text") && f.help !== undefined && !f.example && !hasExample(f.help, f.kind)) add("R11", `champ « ${f.name} » : aide sans exemple`);
       }
     } else if (b.type === "table") {
       const rows = b.rows ?? [], cols = b.columns ?? [];
       if (rows.length > SEARCH_FROM_ROWS && !hasSearch(list)) add("R15", `la liste « ${cols.join(" · ") || "tableau"} » a ${rows.length} lignes (plus de ${SEARCH_FROM_ROWS}) et aucun champ « Rechercher » au-dessus`);
       if (rows.length > UNIFORM_COLUMN_FROM_ROWS) {
         for (let c = 0; c < Math.max(cols.length, ...rows.map((r) => r.length)); c++) {
-          const cells = rows.map((r) => stripTags(r[c]));
+          const cells = rows.map((r) => stripTags(cellText(r[c])));
           if (cells[0] && !/^[-–—·]+$/.test(cells[0]) && cells.every((x) => x === cells[0])) add("R14", `la colonne « ${cols[c] ?? c + 1} » affiche « ${excerpt(cells[0], 30)} » sur toutes les ${rows.length} lignes : c'est un titre, pas une étiquette`);
         }
       }

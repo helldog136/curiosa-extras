@@ -32,8 +32,8 @@ test("liste : UN tableau de 35 commandes, colonnes Commande / Réponse / Origine
   const html = htmlOf(page, "commands");
   assert.deepEqual([...html.matchAll(/<th scope="col"[^>]*>(?:<span class="ck-sr">)?([^<]+)/g)].map((m) => m[1]), [fr.col_command, fr.col_answer, fr.col_origin, fr.col_active, fr.col_action]);
   assert.equal((html.match(/<table/g) ?? []).length, 1);
-  assert.equal(page.filter((b) => b.type === "table").length, 0, "plus de tableau du cœur pour les commandes, les partenaires ni les réseaux");
-  assert.equal(page.filter((b) => b.type === "heading" && !b.tab).length, 1, "un titre de page (« Le bot écoute-t-il… ») ; les autres titres sont dans leur bloc");
+  assert.equal(page.filter((b) => b.type === "table" && !b.tab).length, 0, "plus de tableau du cœur pour les commandes, les partenaires ni les réseaux");
+  assert.equal(page.filter((b) => b.type === "heading" && !b.tab).length, 0, "plus de titre de page : la ligne d'état du haut le dit ; les autres titres sont dans leur bloc");
   for (const old of [fr.kind_custom, "Pas encore activée", "Toute prête", "Activer / désactiver", "Configurer"]) assert.ok(!JSON.stringify(page).includes(old), `plus de « ${old} »`);
   const counts = Object.fromEntries(pills(html).filter((p) => p.key === "origin").map((p) => [p.val, p.count]));
   assert.deepEqual(counts, { all: 35, custom: 26, builtin: 6, partner: 3 });
@@ -434,5 +434,5 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.6.0");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.7.0");
 });
