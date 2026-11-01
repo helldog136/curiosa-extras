@@ -5,11 +5,11 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.6.0",
-  "minCore": "0.5.0",
+  "version": "1.7.0",
+  "minCore": "0.6.0",
   "description": {
-    "en": "Let your audience suggest what to play: a public list with statuses (proposed, planned, played…), a suggestion form, \"play it again\" votes on games you already played. You can also add games to the list yourself, one at a time or a whole list. Covers are found automatically.",
-    "fr": "Laissez votre communauté suggérer à quoi jouer : une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion, des votes « rejoue-le » sur les jeux déjà joués. Vous pouvez aussi ajouter vous-même des jeux à la liste, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
+    "en": "Let your audience suggest what to play. A public list with statuses (proposed, planned, played…), a suggestion form and \"play it again\" votes. You can add games yourself, one by one or a whole list. Covers are found automatically.",
+    "fr": "Laissez votre public suggérer à quoi jouer. Une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion et des votes « rejoue-le ». Vous pouvez ajouter des jeux vous-même, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
   },
   "author": "Helldog136",
   "privacy": {
@@ -53,14 +53,30 @@
       "label": {
         "en": "Page title",
         "fr": "Titre de la page"
+      },
+      "example": {
+        "fr": "Quel jeu ensuite ?",
+        "en": "What should we play next?"
+      },
+      "help": {
+        "fr": "Vide : « Suggestions de jeux ».",
+        "en": "Empty: \"Game suggestions\"."
       }
     },
     {
       "key": "intro",
       "type": "textarea",
       "label": {
-        "en": "Introduction (Markdown)",
-        "fr": "Introduction (Markdown)"
+        "fr": "Texte d'introduction",
+        "en": "Introduction"
+      },
+      "help": {
+        "fr": "Affiché en haut de la page. Vide : rien.",
+        "en": "Shown at the top of the page. Empty: nothing."
+      },
+      "example": {
+        "fr": "Proposez le prochain jeu du stream.",
+        "en": "Suggest the next game of the stream."
       }
     },
     {
@@ -71,6 +87,12 @@
       "label": {
         "en": "Suggestions per hour and visitor",
         "fr": "Suggestions par heure et par personne"
+      },
+      "min": 1,
+      "max": 100,
+      "unit": {
+        "fr": "suggestions",
+        "en": "suggestions"
       }
     },
     {
@@ -81,6 +103,12 @@
       "label": {
         "en": "\"Play it again\" votes per visitor and month",
         "fr": "Votes « rejoue-le » par personne et par mois"
+      },
+      "min": 1,
+      "max": 50,
+      "unit": {
+        "fr": "votes",
+        "en": "votes"
       }
     }
   ],

@@ -30,7 +30,7 @@ test("une question aujourd'hui : un message { id, text, url }, au bon format pou
   const [h] = rows;
   assert.match(h.id, ID_RE);
   assert.equal(h.id, `daily-game:${ctx.instance.key}:2026-10-24`);
-  assert.equal(h.text, "Le jeu du jour t'attend !");
+  assert.equal(h.text, "Le jeu du jour vous attend.");
   assert.equal(h.url, "/jeu-du-jour");
   assert.ok(h.text.length <= 140);
   assert.deepEqual(Object.keys(h).sort(), ["id", "text", "url"]);
@@ -82,7 +82,7 @@ test("texte : anglais par défaut en anglais, réglage libre sur une ligne et bo
   const en = ctxFor({}, { locale: "en" });
   await addQuestion(en, { q: "Q ?", a: ["a", "b"] });
   const [h] = await hint(en);
-  assert.equal(h.text, "Today's game is waiting for you!");
+  assert.equal(h.text, "Today's game is waiting for you.");
   assert.equal(h.url, "/en/jeu-du-jour");
   const own = ctxFor({ hintText: `  <b>Hop</b>\n${"x".repeat(300)} ` });
   await addQuestion(own, { q: "Q ?", a: ["a", "b"] });
@@ -115,7 +115,7 @@ test("mise à jour à chaud : le nouveau fichier est rechargé, l'ancien n'est p
     const mk = () => { const c = fakeCtx({ key: "maj", basePath: "jeu", moduleId: "daily-game", locale: "fr", defaultLocale: "fr", locales: ["fr"], messages: messages("fr"), permissions: manifest.permissions, settings: { timezone: "UTC" } }); c.can = () => true; return c; };
     const c = mk(); D.clock.now = () => NOON;
     await addQuestion(c, { q: "Q ?", a: ["a", "b"] });
-    assert.equal((await before.exports["mascot.hint"](c, {}))[0].text, "Le jeu du jour t'attend !");
+    assert.equal((await before.exports["mascot.hint"](c, {}))[0].text, "Le jeu du jour vous attend.");
     assert.equal((await after.exports["mascot.hint"](c, {}))[0].text, "TEXTE-NEUF");
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

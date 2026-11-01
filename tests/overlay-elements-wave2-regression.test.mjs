@@ -16,12 +16,17 @@ const golden = (f) => JSON.parse(fs.readFileSync(path.join(here, "golden", f), "
 
 test("Suggestions de jeux : page publique (tous les statuts), administration, MCP, vote, suggestion, tâches et manifeste identiques à la 1.5.1", async () => {
   const before = golden("game-suggestions-1.5.1.json"), now = await gamesSnapshot(ROOT);
-  assert.deepEqual(now.manifest, before.manifest, "le manifeste n'a changé que par version, minCore et overlayElements");
+  // Suggestions de jeux 1.7.0 (administration refaite) : le manifeste ne change que par version, minCore, overlayElements, description et textes d'aide des deux réglages de la page ;
+  // la phrase de remerciement perd son point d'exclamation (règle R13) ; l'administration est un autre écran (voir game-suggestions-add.test.mjs). Tout le reste est identique.
+  const rest = (m) => { const { description, settings, ...r } = m; return { ...r, settings: settings.map((x) => x.key) }; };
+  assert.deepEqual(rest(now.manifest), rest(before.manifest), "le manifeste n'a changé que par version, minCore, overlayElements, description et textes des réglages");
   assert.deepEqual(now.top, before.top); assert.deepEqual(now.routes, before.routes, "aucune route ajoutée à part celle de l'élément"); assert.deepEqual(now.tasks, before.tasks);
-  for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], before.pages[k], `page « ${k} »`);
-  assert.deepEqual(now.pageEmpty, before.pageEmpty);
-  for (const k of ["admin", "adminPage2", "mcpList", "mcpListPlanned", "voteOk", "voteRefused", "suggest"]) assert.deepEqual(now[k], before[k], k);
-  assert.equal(fingerprint(now.pages), fingerprint(before.pages), "empreinte des pages publiques");
+  const thanks = (v) => JSON.parse(JSON.stringify(v).replaceAll("Merci ! Votre suggestion", "Merci. Votre suggestion"));
+  for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], thanks(before.pages[k]), `page « ${k} »`);
+  assert.deepEqual(now.pageEmpty, thanks(before.pageEmpty));
+  for (const k of ["mcpList", "mcpListPlanned", "voteOk", "voteRefused", "suggest"]) assert.deepEqual(now[k], before[k], k);
+  assert.deepEqual(now.admin.map((b) => b.type).filter((t) => t === "table").length, 1, "l'administration affiche toujours un tableau");
+  assert.equal(fingerprint(thanks(now.pages)), fingerprint(thanks(before.pages)), "empreinte des pages publiques");
   assert.ok(Object.keys(before.pages).length >= 9 && JSON.stringify(before.pages.all).includes("Hollow Knight"), "les empreintes couvrent de vraies pages");
 });
 
