@@ -5,11 +5,11 @@
     "en": "Ko-fi",
     "fr": "Ko-fi"
   },
-  "version": "1.0.2",
+  "version": "1.1.0",
   "platform": "ko-fi",
   "description": {
-    "en": "Shows your Ko-fi button in the site header. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Ko-fi dans l'en-tête du site. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Ko-fi button in the site header.",
+    "fr": "Affiche le bouton de votre Ko-fi dans l'en-tête du site."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -33,13 +33,18 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Ko-fi profile",
-        "fr": "Profil Ko-fi"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Ko-fi username or your page address.",
-        "fr": "Votre identifiant Ko-fi ou l'adresse de votre page."
+        "en": "Paste the link to your page.",
+        "fr": "Collez le lien de votre page."
+      },
+      "example": {
+        "en": "https://ko-fi.com/myname",
+        "fr": "https://ko-fi.com/monpseudo"
       }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }

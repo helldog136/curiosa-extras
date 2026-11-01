@@ -89,7 +89,7 @@ test("sans webhook valide : rien n'est envoyé ; le bouton de test refuse", asyn
   const ctx = ctxWith({ "core.entry": [entry("N", "/n", ago(1))] }, { webhookUrl: "https://evil.example/x" });
   assert.deepEqual(await mod.announce(ctx, NOW), { sent: 0, skipped: 0 });
   assert.equal(calls.length, 0);
-  assert.deepEqual(await def.adminActions.test(ctx), { error: "No valid webhook configured." });
+  assert.deepEqual(await def.adminActions.test(ctx), { error: "No valid sending address is set." });
 });
 
 test("panneau d'admin : état, bouton de test, journal ; le test envoie un message sans ping", async () => {
