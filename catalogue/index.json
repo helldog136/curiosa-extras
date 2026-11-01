@@ -419,7 +419,7 @@
     {
       "id": "discord",
       "name": "Discord",
-      "description": "Affiche le bouton de votre Discord dans l'en-tête, partage le nombre de vos membres et peut créer l'adresse courte /discord.",
+      "description": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
       "ref": "v1.35.0",
