@@ -159,7 +159,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/commissions",
       "ref": "v1.33.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎨",
@@ -302,7 +302,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/daily-game",
       "ref": "v1.33.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎲",
@@ -340,7 +340,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/directory",
       "ref": "v1.33.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗂️",
@@ -481,11 +481,11 @@
           "file": "previews/fiche.webp",
           "type": "public",
           "caption": {
-            "fr": "La fiche d'un événement : programme, intervenants, places restantes et inscription.",
+            "fr": "La fiche d'un événement : programme, personnes invitées, places restantes et inscription.",
             "en": "An event page: programme, speakers, seats left and sign-up."
           },
           "alt": {
-            "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux intervenants et un bouton d'inscription.",
+            "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux personnes invitées et un bouton d'inscription.",
             "en": "Detailed page of a workshop with time, place, the afternoon programme, two speakers and a sign-up button."
           }
         }
@@ -1380,7 +1380,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/testimonials",
       "ref": "v1.33.0",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",

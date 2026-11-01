@@ -991,11 +991,11 @@
       "file": "previews/fiche.webp",
       "type": "public",
       "caption": {
-        "fr": "La fiche d'un événement : programme, intervenants, places restantes et inscription.",
+        "fr": "La fiche d'un événement : programme, personnes invitées, places restantes et inscription.",
         "en": "An event page: programme, speakers, seats left and sign-up."
       },
       "alt": {
-        "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux intervenants et un bouton d'inscription.",
+        "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux personnes invitées et un bouton d'inscription.",
         "en": "Detailed page of a workshop with time, place, the afternoon programme, two speakers and a sign-up button."
       }
     }

@@ -57,3 +57,7 @@ Pas de compte, pas de classement par défaut, pas de jeu d'image ni de mot du jo
 - **Données** : `dg_questions`, `dg_plan` (un document), `dg_board` (un document par semaine).
 - **Outils pour l'assistant** : `daily_questions_list` (lecture) et `daily_question_add` (écrit un **brouillon** seulement ; jamais accordé d'office).
 - Droits : `edit`, `publish`, `moderate`. `minCore` 0.2.6 (script de page, empreinte de la personne qui visite).
+
+## Visuels de la fiche
+
+Depuis la version 1.0.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).
