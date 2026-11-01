@@ -153,13 +153,17 @@ export function catalog(cfg, src, t, { now = Date.now(), timeZone = "UTC" } = {}
     if (c.kind === "partner" || c.kind === "network") {
       if (c.missing) { c.state = "missing"; c.why = c.kind === "partner" ? "partner_missing" : "network_missing"; continue; }
     }
+    // Ce que serait la commande SI elle était activée (l'interrupteur de la liste affiche cet état dès qu'on l'allume, sans relire la page).
+    let onState = "on", onWhy = null, onReopen = null;
+    if (c.period && !isOpen(c.period, now, timeZone)) { onState = "outside"; onWhy = "outside_period"; onReopen = nextOpening(c.period, now, timeZone); }
+    else if (c.kind === "builtin") {
+      if (c.needs === "planning" && !src.planning?.installed) { onState = "hidden"; onWhy = "planning_absent"; }
+      else if (c.needs === "followers" && !src.followers?.available) { onState = "hidden"; onWhy = "followers_absent"; }
+    } else if (c.kind === "group" && !activeNetworks.length) { onState = "hidden"; onWhy = "group_empty"; }
+    c.onState = onState; c.onWhy = onWhy; c.onReopen = onReopen;
     if (!c.enabled) { c.state = "off"; continue; }   // l'interrupteur « activée » à faux l'emporte toujours sur la période
-    if (c.period && !isOpen(c.period, now, timeZone)) { c.state = "outside"; c.why = "outside_period"; c.reopen = nextOpening(c.period, now, timeZone); continue; }
-    if (c.kind === "builtin") {
-      if (c.needs === "planning" && !src.planning?.installed) { c.state = "hidden"; c.why = "planning_absent"; }
-      else if (c.needs === "followers" && !src.followers?.available) { c.state = "hidden"; c.why = "followers_absent"; }
-    }
-    if (c.kind === "group" && !activeNetworks.length) { c.state = "hidden"; c.why = "group_empty"; }
+    c.state = onState; c.why = onWhy;
+    if (onReopen !== null || onState === "outside") c.reopen = onReopen;
   }
   return out;
 }

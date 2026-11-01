@@ -1,15 +1,18 @@
 // La page d'administration du bot : arrêt d'urgence, « le bot écoute ? », résumé de toutes les commandes, édition, partenaires, réseaux, journal.
 // Pensée pour une personne qui n'est pas technicienne : des phrases, pas de jargon, et chaque problème dit quoi faire.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { ROLES, catalog, loadConfig, proposeNetwork, saveCommand, saveSourced, removeCustom } = await import(`./commands.mjs${v}`);
+const { catalog, loadConfig, proposeNetwork, saveCommand, saveSourced, removeCustom } = await import(`./commands.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
 const { shownFor, used } = await import(`./variables.mjs${v}`);
-const { reopenLabel, describe, periodFromForm, periodFields, isoText } = await import(`./period.mjs${v}`);
+const { reopenLabel, parsePeriodText, periodError } = await import(`./period.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
+const K = await import(`./adminkit.mjs${v}`);
+const CU = await import(`./commandsUi.mjs${v}`);
+const FU = await import(`./formsUi.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
 const TA = await import(`./timersAdmin.mjs${v}`);
 
@@ -102,10 +105,8 @@ function listenActions(ctx, code) {
   return out;
 }
 
-/* ───────────── Résumé des commandes ───────────── */
+/* ───────────── L'état d'une commande, en mots ───────────── */
 
-const kindLabel = (t, c) => (c.kind === "network" ? `${t("kind_network")} (${c.label})` : t(`kind_${c.kind}`));
-const roleLabel = (t, r) => t(`role_${r}`);
 export function stateLabel(t, c, ctx = null) {
   if (c.state === "on") return t("state_on");
   if (c.state === "off") return t("state_off");
@@ -113,76 +114,15 @@ export function stateLabel(t, c, ctx = null) {
   return t(`why_${c.why}`);
 }
 export const words = (prefix, c) => [c.name, ...c.aliases].map((w) => `${prefix}${w}`).join("  ");
-
-function summary(ctx, info) {
-  const t = ctx.t, { s, list } = info;
-  // Les commandes des partenaires ont leur propre rubrique plus bas (leur réglage est dans la fiche du partenaire, pas ici).
-  const rows = list.filter((c) => c.kind !== "partner");
-  return [
-    { type: "heading", text: t("summary_title") },
-    { type: "markdown", text: t("summary_help", { prefix: s.prefix }) },
-    // Trois colonnes seulement : sur un téléphone, un tableau plus large cache l'état et les boutons. Le type et « qui peut l'utiliser » (quand ce n'est pas tout le monde) suivent le nom.
-    { type: "table", columns: [t("col_command"), t("col_answer"), t("col_state")],
-      rows: rows.map((c) => [`${words(s.prefix, c)} · ${kindLabel(t, c)}${c.role === "everyone" ? "" : ` · ${roleLabel(t, c.role)}`}`, cut(c.text, 90), stateLabel(t, c, ctx)]),
-      rowIds: rows.map((c) => c.key),
-      rowActions: [{ label: t("act_edit"), href: "?edit={id}#edit" }, { label: t("act_toggle"), action: "toggle" }] },
-  ];
-}
-
-/* ───────────── Partenaires et réseaux ───────────── */
-
-function partnersSection(ctx, info) {
-  const t = ctx.t, { sources, list, s } = info;
-  const out = [{ type: "heading", text: t("partners_title") }];
-  if (!sources.partners.installed) return [...out, { type: "markdown", text: t("partners_absent") }];
-  const paused = list.filter((c) => c.kind === "partner" && c.missing);
-  if (!sources.partners.items.length && !paused.length) return [...out, { type: "markdown", text: t("partners_none") }];
-  out.push({ type: "markdown", text: t("partners_help") });
-  const rows = sources.partners.items;
-  // « Modifier » mène à la fiche du partenaire, sur la section de sa commande : c'est là que se règle la commande (une seule place, pas de doublon).
-  if (rows.length) out.push({ type: "table", columns: [t("col_partner"), t("col_state")],   // deux colonnes : le bouton « Modifier » reste visible sur un téléphone
-    rows: rows.map((p) => { const c = list.find((x) => x.key === `partner:${p.id}`); return [p.title, c ? `${words(s.prefix, c)} · ${stateLabel(t, c, ctx)}` : t("state_not_set")]; }),
-    rowIds: rows.map((p) => p.id), rowActions: [{ label: t("act_edit"), href: partnerHref(ctx) }] });
-  // Une commande dont la fiche n'est plus publiée (ou a disparu) : en pause, puis retirée toute seule.
-  if (paused.length) out.push({ type: "markdown", text: t("partners_paused", { list: paused.map((c) => `${s.prefix}${c.name} (${c.label})`).join(", ") }) });
-  return out;
-}
-
-function networksSection(ctx, info) {
-  const t = ctx.t, { sources, list, s } = info;
-  const out = [{ type: "heading", text: t("networks_title") }];
-  if (!sources.networks.items.length) return [...out, { type: "markdown", text: t("networks_none") }];
-  out.push({ type: "markdown", text: t("networks_help") });
-  const rows = sources.networks.items;
-  out.push({ type: "table", columns: [t("col_network"), t("col_state")],
-    rows: rows.map((n) => { const c = list.find((x) => x.key === `network:${n.key}`); return [n.label, c ? `${words(s.prefix, c)} · ${stateLabel(t, c, ctx)}` : t("state_not_set")]; }),
-    rowIds: rows.map((n) => `network:${n.key}`), rowActions: [{ label: t("act_configure"), href: "?edit={id}#edit" }] });
-  return out;
-}
-
-/* ───────────── Formulaires ───────────── */
-
-export const roleOptions = (t) => ROLES.map((r) => ({ value: r, label: roleLabel(t, r) }));
-export const delayFields = (t, c) => [
-  { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: c?.cdGlobal ?? "", help: t("f_cd_help") },
-  { name: "cdUser", label: t("f_cd_user"), kind: "number", value: c?.cdUser ?? "" },
+export const roleOptions = FU.roleOptions;
+/** Les attentes d'une commande (aussi utilisées par la fiche du partenaire). */
+export const delayFields = (t, c, s = { cdGlobal: 20, cdUser: 60 }) => [
+  { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: c?.cdGlobal ?? "", help: t("f_cd_help", { n: s.cdGlobal }) },
+  { name: "cdUser", label: t("f_cd_user"), kind: "number", value: c?.cdUser ?? "", help: t("f_cd_help", { n: s.cdUser }) },
 ];
-export const varsHelp = (t, kind) => t("f_text_help", { vars: shownFor(kind).map((v) => `{${v}}`).join(" ") });
+export const varsHelp = (t, kind) => t("f_text_help_vars", { vars: shownFor(kind).map((v) => `{${v}}`).join(" ") });
 
-function createForm(ctx, s) {
-  const t = ctx.t;
-  return [
-    { type: "heading", text: t("new_title") },
-    { type: "adminForm", action: "create", submitLabel: t("new_btn"), fields: [
-      { name: "name", label: t("f_name", { prefix: s.prefix }), required: true, help: t("f_name_help", { prefix: s.prefix }) },
-      { name: "text", label: t("f_text"), kind: "textarea", required: true, help: varsHelp(t, "custom") },
-      { name: "role", label: t("f_role"), kind: "select", value: "everyone", options: roleOptions(t) },
-      { name: "aliases", label: t("f_aliases"), help: t("f_aliases_help") },
-      ...delayFields(t, null),
-      ...periodFields(ctx, null),
-    ] },
-  ];
-}
+/* ───────────── Création et modification d'une commande ───────────── */
 
 async function editBlocks(ctx, info, key, query) {
   const t = ctx.t, { s, sources, list } = info;
@@ -190,35 +130,20 @@ async function editBlocks(ctx, info, key, query) {
   const id = rest.join(":");
   // Un ancien lien vers la configuration d'un partenaire : elle se fait maintenant dans la fiche du partenaire.
   if (kind === "partner") return [{ type: "markdown", text: t("edit_partner_moved", { href: partnerHref(ctx).replace("{id}", encodeURIComponent(id)) }) }];
-  let c = list.find((x) => x.key === key);
+  const c = list.find((x) => x.key === key);
   const out = [EDIT_ANCHOR];
   let proposal = null, item = null;
   if (!c && kind === "network") { item = sources.networks.items.find((n) => n.key === id); if (item) proposal = proposeNetwork(item, list, t); }
   if (!c && !proposal) return [{ type: "banner", tone: "warning", text: t("edit_unknown") }];
-  const view = c ?? { kind, id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: {}, label: item?.name ?? id };
+  const view = c ?? { kind, id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: { reseau: item.name, lien: String(item.url).replace(/^https?:\/\//i, "") }, label: item?.name ?? id };
   if (c?.missing) return [{ type: "banner", tone: "warning", text: t("network_gone") }];
   const source = c?.source ?? item;
   out.push({ type: "heading", text: t("edit_title", { command: `${s.prefix}${view.name}` }) });
-  if (kind === "network" && source) out.push({ type: "markdown", text: t("edit_network_info", { name: source.name, address: source.url }) + (source.adminPath ? ` ${t("edit_network_module", { href: source.adminPath })}` : "") });
+  if (kind === "network" && source) out.push({ type: "markdown", text: t("edit_network_info", { name: source.name, address: source.url }) + (source.adminPath ? ` [${t("edit_network_module")}](${source.adminPath})` : "") });
   if (kind === "builtin" && view.state && view.state !== "on" && view.state !== "off") out.push({ type: "banner", tone: "warning", text: t(`why_${view.why}`) });
   if (kind === "group") out.push({ type: "markdown", text: t("edit_group_info") });
-  out.push({ type: "markdown", text: describe(ctx, view.period ?? null, s.timeZone) });
   if (c?.state === "outside") out.push({ type: "banner", tone: "warning", text: reopenLabel(ctx, c.reopen) });
-  // Aperçu : ce que répondrait la commande avec les données du moment (rien n'est envoyé).
-  try {
-    const sample = { ...view, vars: view.vars && Object.keys(view.vars).length ? view.vars : kind === "network" && source ? { reseau: source.name, lien: String(source.url).replace(/^https?:\/\//i, "") } : {} };
-    out.push({ type: "markdown", text: t("edit_preview", { text: (await preview(ctx, sample, { channel: info.d.channel ?? null, sources, list })).replace(/([\\`*_[\]<>])/g, "\\$1") }) });
-  } catch { /* l'aperçu est un plus */ }
-  out.push({ type: "adminForm", action: "save", submitLabel: t("save_btn"), cancelHref: "?", fields: [
-    { name: "key", kind: "hidden", value: key },
-    { name: "enabled", label: t(kind === "network" ? "f_enabled_chat" : "f_enabled"), kind: "checkbox", value: view.enabled ? "on" : "" },
-    { name: "name", label: t("f_name", { prefix: s.prefix }), value: view.name, required: true, help: t("f_name_help", { prefix: s.prefix }) },
-    { name: "aliases", label: t("f_aliases"), value: view.aliases.join(", "), help: t("f_aliases_help") },
-    { name: "text", label: t("f_text"), kind: "textarea", value: view.text, required: true, help: varsHelp(t, kind) },
-    { name: "role", label: t("f_role"), kind: "select", value: view.role, options: roleOptions(t) },
-    ...delayFields(t, view),
-    ...periodFields(ctx, view.period ?? null),
-  ] });
+  out.push(...(await CU.commandForm(ctx, info, { mode: "edit", view, key, kind, unsaved: !c })));
   if (kind === "custom" && used(view.text).includes("compteur")) {
     const n = (await st.readCounters(ctx))[view.key] ?? 0;
     out.push({ type: "markdown", text: t("edit_counter", { n }) }, { type: "adminForm", action: "counterReset", submitLabel: t("counter_reset_btn"), fields: [{ name: "key", kind: "hidden", value: view.key }] });
@@ -228,18 +153,9 @@ async function editBlocks(ctx, info, key, query) {
   return out;
 }
 
-/* ───────────── Journal ───────────── */
-
-async function logBlocks(ctx, s) {
-  const t = ctx.t, entries = await st.readLog(ctx);
-  const out = [{ type: "heading", text: t("log_title") }, { type: "markdown", text: t("log_help") }];
-  if (!entries.length) return [...out, { type: "markdown", text: t("log_empty") }];
-  const when = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
-  // Trois colonnes (l'heure et la personne ensemble, le résultat devant la réponse ou la raison) : tout reste lisible sur un téléphone.
-  out.push({ type: "table", columns: [t("log_time_user"), t("col_command"), t("log_why")],
-    rows: entries.map((e) => [`${when(e.at)} · ${e.user}`, e.command.startsWith("⏱") ? e.command : `${s.prefix}${e.command}`, `${t(`log_${e.result}`)} : ${e.result === "sent" ? cut(e.text ?? "", 70) : `${e.reason === "outside" ? (e.reopen ? t("per_outside", { date: isoText(ctx, e.reopen) }) : t("per_ended")) : t(`reason_${e.reason}`, { seconds: e.seconds ?? "" })}${e.detail && e.result === "error" ? ` (${cut(e.detail, 40)})` : ""}`}`]) });
-  out.push({ type: "adminForm", action: "clearLog", submitLabel: t("log_clear"), fields: [] });
-  return out;
+async function newBlocks(ctx, info) {
+  const t = ctx.t;
+  return [EDIT_ANCHOR, { type: "heading", text: t("new_title") }, ...(await CU.commandForm(ctx, info, { mode: "new", kind: "custom", view: { name: "", text: "", role: "everyone", aliases: [], vars: {} } }))];
 }
 
 /* ───────────── Compte qui répond (mode avancé) ───────────── */
@@ -272,12 +188,15 @@ export async function panel(ctx, { query }) {
   blocks.push(...(await listenBlocks(ctx, info, state)));
   blocks.push(...listenActions(ctx, info.d.code !== "ready" ? info.d.code : state.sub?.code ?? "unknown"));
   blocks.push(...botAccountBlocks(ctx, info));
+  blocks.push(K.bootstrap(ctx));
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
-  blocks.push(...summary(ctx, info));
-  if (!edit) blocks.push(...createForm(ctx, info.s));
-  blocks.push(...partnersSection(ctx, info), ...networksSection(ctx, info));
-  blocks.push(...(await logBlocks(ctx, info.s)));
+  else if (query?.new) blocks.push(...(await newBlocks(ctx, info)));
+  const href = partnerHref(ctx);
+  blocks.push(CU.commandsList(ctx, info, { partnerHref: href }));
+  const add = CU.addChooser(ctx, info, { partnerHref: href });
+  if (add) blocks.push(add);
+  blocks.push(CU.logBlock(ctx, info.s, await st.readLog(ctx)));
   blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
   blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
   return blocks;
@@ -286,9 +205,15 @@ export async function panel(ctx, { query }) {
 /* ───────────── Actions ───────────── */
 
 /** Une erreur d'enregistrement : sous le champ quand on sait lequel (la période), sinon en haut. */
-const failed = (ctx, r) => (r.code === "period" ? { errors: { [r.field]: saveError(ctx, r) } } : { error: saveError(ctx, r) });
+const failed = (ctx, r) => (r.code === "period" ? { errors: { period: saveError(ctx, r) } } : { error: saveError(ctx, r) });
+/** Le champ « période » du formulaire (un texte : 01/11 - 30/11) → { period } ou { bad } (la phrase d'erreur va sous le champ). Absent : rien ne change. */
+function periodOf(ctx, v) {
+  if (v.period === undefined) return {};
+  const p = parsePeriodText(v.period);
+  return p.ok ? { period: p.value } : { bad: { errors: { period: periodError(ctx, p) } } };
+}
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };
-const fieldsFrom = (v) => ({ enabled: v.enabled === "on", name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "", period: periodFromForm(v) });
+const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled === "on" } : {}), name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
 
 /**
  * Les actions NE redirigent PAS (sauf deux cas ci-dessous) : une redirection recharge la page et ramène tout en haut. Le cœur rafraîchit la page à la place, et le message
@@ -310,13 +235,17 @@ export const actions = {
   async save(ctx, v) {
     const info = await context(ctx, { declare: false });
     const { kind, id } = parseKey(v.key);
-    const fields = fieldsFrom(v);
+    const per = periodOf(ctx, v);
+    if (per.bad) return per.bad;
+    const fields = { ...fieldsFrom(v), ...(per.period !== undefined ? { period: per.period } : {}) };
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, fields, info.env) : await saveCommand(ctx, { kind, id }, fields, info.env);
     return r.ok === false ? failed(ctx, r) : { ok: ctx.t("saved") };
   },
   async create(ctx, v) {
     const info = await context(ctx, { declare: false });
-    const r = await saveCommand(ctx, { kind: "custom" }, { ...fieldsFrom(v), enabled: true }, info.env);
+    const per = periodOf(ctx, v);
+    if (per.bad) return per.bad;
+    const r = await saveCommand(ctx, { kind: "custom" }, { ...fieldsFrom(v), enabled: true, ...(per.period !== undefined ? { period: per.period } : {}) }, info.env);
     return r.ok === false ? failed(ctx, r) : { ok: ctx.t("created") };
   },
   async toggle(ctx, v) {
