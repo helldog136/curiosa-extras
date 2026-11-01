@@ -5,11 +5,11 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.2.1",
+  "version": "1.3.0",
   "platform": "discord",
   "description": {
-    "en": "Shows your Discord button in the site header and shares your member count.",
-    "fr": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres."
+    "en": "Shows your Discord button in the site header, shares your member count and can create the short address /discord.",
+    "fr": "Affiche le bouton de votre Discord dans l'en-tête, partage le nombre de vos membres et peut créer l'adresse courte /discord."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -77,6 +77,19 @@
       }
     },
     {
+      "key": "createShortLink",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Create a short address for your Discord",
+        "fr": "Créer une adresse courte pour votre Discord"
+      },
+      "help": {
+        "en": "It stays the same if your invitation changes.",
+        "fr": "Elle reste la même si votre invitation change."
+      }
+    },
+    {
       "key": "invite",
       "type": "text",
       "label": {
@@ -93,9 +106,33 @@
         "fr": "https://discord.gg/abcDEF"
       },
       "rare": true
+    },
+    {
+      "key": "shortLinkName",
+      "type": "text",
+      "label": {
+        "en": "Name of the short address",
+        "fr": "Nom de l'adresse courte"
+      },
+      "help": {
+        "en": "Letters, digits and dashes. Empty: discord.",
+        "fr": "Lettres, chiffres et tirets. Vide : discord."
+      },
+      "optional": true,
+      "example": {
+        "en": "discord-fr",
+        "fr": "discord-fr"
+      },
+      "rare": true
     }
   ],
   "minCore": "0.6.0",
+  "shortLink": {
+    "enabled": "createShortLink",
+    "name": "shortLinkName",
+    "default": "discord",
+    "target": "social.link"
+  },
   "social": {
     "name": "Discord",
     "icon": "discord",
