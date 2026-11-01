@@ -86,13 +86,15 @@ try {
     for (const [file, s] of Object.entries(shots)) {
       if (!have.has(file)) continue;
       try {
-        kit.assertInvented(`${id}/${file}`, s.html, s.allow);
+        kit.assertInvented(`${id}/${file}`, s.html, s.allow, s.forbid);
         const ctx = await browser.newContext({ viewport: sizeOf(s), colorScheme: s.scheme ?? "light", deviceScaleFactor: 1, locale: s.lang ?? "fr-FR", timezoneId: "Europe/Paris" });
         const page = await ctx.newPage();
         const errors = [];
         page.on("pageerror", (e) => errors.push(e.message));
         await page.route("**/*", (route) => (route.request().url().startsWith("data:") || route.request().url().startsWith("about:") ? route.continue() : route.abort()));   // aucune requête réseau
         await page.setContent(s.html, { waitUntil: "load" });
+        // Scripts que la vraie page charge elle-même (le petit script de confort d'un module : recherche en direct, pastilles) : exécutés tels quels avant la capture.
+        for (const code of s.scripts ?? []) await page.addScriptTag({ content: code });
         for (const st of s.steps ?? []) { if (st.click) await page.click(st.click); if (st.fill) await page.fill(st.fill[0], st.fill[1]); if (st.eval) await page.evaluate(st.eval); if (st.wait) await page.waitForTimeout(st.wait); }
         await page.waitForTimeout(150);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);

@@ -86,9 +86,9 @@ export function adminFrame({ title, icon = "", lead = "", tabs = [], tab = "", b
 
 /** Garde-fou de confidentialité : une capture ne montre que des données inventées (adresses en .example/.test, aucun nom de la propriétaire ni de sa communauté). */
 const FORBIDDEN = [/helldog/i, /rosalia/i, /curiosa-?extras/i, /\bnid[- ]d['’]amour\b/i];
-export function assertInvented(file, html, allow = []) {
+export function assertInvented(file, html, allow = [], forbid = []) {
   const text = html.replace(/<style[\s\S]*?<\/style>/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<svg[\s\S]*?<\/svg>/g, "");
-  for (const re of FORBIDDEN) if (re.test(text)) throw new Error(`un nom réel apparaît (${re}). Les captures ne montrent que des données inventées.`);
+  for (const re of [...FORBIDDEN, ...forbid]) if (re.test(text)) throw new Error(`un nom réel apparaît (${re}). Les captures ne montrent que des données inventées.`);
   for (const m of text.matchAll(/[\w.+-]+@([\w-]+(?:\.[\w-]+)+)/g)) if (!/(^|\.)(example|test|invalid)(\.\w+)?$|example\.(org|com|net)$/i.test(m[1])) throw new Error(`adresse électronique « ${m[0]} » hors .example/.test.`);
   for (const m of text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)) if (!/(^|\.)(example\.(org|com|net)|[a-z0-9-]+\.example|[a-z0-9-]+\.test|localhost)$/i.test(m[1]) && !allow.some((d) => m[1] === d || m[1].endsWith(`.${d}`))) throw new Error(`adresse « ${m[0]} » hors example.org/.test.`);
 }
