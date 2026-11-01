@@ -59,3 +59,7 @@ Sur l'accueil, vous pouvez aussi placer le morceau **« Les questions les plus u
 ## Pour qui développe
 
 Voir `docs/ideas/faq.md` du dépôt : choix du type de module, données, routes, limites et outils pour l'assistant.
+
+## Visuels de la fiche
+
+Depuis la version 1.0.3, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

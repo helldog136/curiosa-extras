@@ -5,7 +5,7 @@
     "fr": "Jeu du jour",
     "en": "Daily game"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minCore": "0.6.0",
   "description": {
     "fr": "Un petit jeu une fois par jour pour donner envie de revenir. Une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
@@ -708,6 +708,20 @@
             "description": "Optional difficulty."
           }
         }
+      }
+    }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre quiz du jour : une question, quelques réponses, et l'envie de revenir demain.",
+        "en": "Your daily quiz: one question, a few answers, and a reason to come back tomorrow."
+      },
+      "alt": {
+        "fr": "Page d'un quiz avec une question sur les couleurs et quatre réponses à choisir.",
+        "en": "Quiz page with a question about colours and four answers to pick from."
       }
     }
   ]

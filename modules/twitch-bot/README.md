@@ -131,3 +131,7 @@ Réservés au mode avancé : le **signe des commandes** (`!` par défaut), un **
 - Les heures de `!planning` suivent le fuseau horaire que vous indiquez dans les réglages ; sans fuseau, elles sont données en UTC et le disent.
 - **Vie privée** : le journal garde le pseudo, la commande et le résultat des 30 dernières commandes, visibles de la seule équipe d'administration. Les mots tapés dans une commande (`{1}`, `{requete}`…) servent à la réponse et ne sont jamais gardés (le journal ne garde pas le texte d'une réponse qui les reprend). Rien d'autre n'est conservé de ce que les gens écrivent.
 - Ce module ne lit les messages que pour y trouver des commandes ; les autres messages sont ignorés dès leur arrivée.
+
+## Visuels de la fiche
+
+Depuis la version 1.7.1, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

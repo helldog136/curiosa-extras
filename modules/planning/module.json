@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.5.0",
+  "version": "2.5.1",
   "minCore": "0.5.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
@@ -836,6 +836,44 @@
           }
         }
       ]
+    }
+  ],
+  "previews": [
+    {
+      "file": "previews/semaine.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Vos directs de la semaine en grille, avec l'heure et la jaquette de chaque jeu.",
+        "en": "Your streams of the week in a grid, with the time and cover of each game."
+      },
+      "alt": {
+        "fr": "Page de planning en grille de sept jours avec les directs de la semaine, leur heure et la jaquette du jeu.",
+        "en": "Planning page as a seven-day grid with the week's streams, their time and the game's cover."
+      }
+    },
+    {
+      "file": "previews/affiches.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Ou en grandes affiches, une par direct.",
+        "en": "Or as large posters, one per stream."
+      },
+      "alt": {
+        "fr": "Page de planning présentant chaque direct sous forme d'affiche avec la jaquette du jeu.",
+        "en": "Planning page showing each stream as a poster with the game's cover."
+      }
+    },
+    {
+      "file": "previews/chronologie.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Ou en chronologie, du prochain direct au plus lointain.",
+        "en": "Or as a timeline, from the next stream to the furthest."
+      },
+      "alt": {
+        "fr": "Page de planning en chronologie verticale avec les prochains directs dans l'ordre.",
+        "en": "Planning page as a vertical timeline with the next streams in order."
+      }
     }
   ]
 }

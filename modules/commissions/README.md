@@ -43,3 +43,7 @@ Vous faites de l'illustration, des modèles pour VTubers, des bijoux ou autre ch
 ## Pour qui développe
 
 Module en code, une instance. Services : offre `privacy.subject` (export, effacement et redirection des commandes reliées à une fiche Contacts) ; utilise `contact.book` (version 2) **facultativement**. Les droits sont `manage`, `email.view` et `export`. Les outils pour l'assistant IA ne montrent jamais d'adresse e-mail ni de note privée. Détails : `docs/ideas/commissions.md` dans le dépôt des modules.
+
+## Visuels de la fiche
+
+Depuis la version 1.0.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

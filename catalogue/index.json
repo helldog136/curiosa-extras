@@ -198,7 +198,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/commissions",
       "ref": "v1.34.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎨",
@@ -216,6 +216,20 @@
           "service": "contact.book",
           "min": 2,
           "optional": true
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page de commandes : les places disponibles et le formulaire pour faire une demande.",
+            "en": "Your commissions page: the open slots and the form to make a request."
+          },
+          "alt": {
+            "fr": "Page de commandes indiquant que la file est ouverte, le nombre de places et un formulaire de demande.",
+            "en": "Commissions page showing the queue is open, the number of slots and a request form."
+          }
         }
       ]
     },
@@ -327,7 +341,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/daily-game",
       "ref": "v1.34.0",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎲",
@@ -342,6 +356,20 @@
           "service": "audience.session",
           "optional": true
         }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre quiz du jour : une question, quelques réponses, et l'envie de revenir demain.",
+            "en": "Your daily quiz: one question, a few answers, and a reason to come back tomorrow."
+          },
+          "alt": {
+            "fr": "Page d'un quiz avec une question sur les couleurs et quatre réponses à choisir.",
+            "en": "Quiz page with a question about colours and four answers to pick from."
+          }
+        }
       ]
     },
     {
@@ -351,7 +379,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/directory",
       "ref": "v1.34.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗂️",
@@ -371,6 +399,20 @@
         {
           "service": "contact.book",
           "min": 2
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre vitrine : membres, artistes ou partenaires, avec recherche et filtre par catégorie.",
+            "en": "Your showcase: members, artists or partners, with search and a filter by category."
+          },
+          "alt": {
+            "fr": "Page d'annuaire avec un champ de recherche, des boutons de catégories et des cartes de membres avec photo et nom.",
+            "en": "Directory page with a search field, category buttons and member cards with photo and name."
+          }
         }
       ]
     },
@@ -449,7 +491,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/events",
       "ref": "v1.34.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -473,6 +515,44 @@
         {
           "service": "videos.library",
           "optional": true
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/liste.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Vos prochains événements, avec leur type, leur date et leur lieu.",
+            "en": "Your upcoming events, with their type, date and place."
+          },
+          "alt": {
+            "fr": "Page d'agenda listant les prochains événements avec des pastilles de type colorées, la date et le lieu.",
+            "en": "Agenda page listing upcoming events with coloured type badges, date and place."
+          }
+        },
+        {
+          "file": "previews/calendrier.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Le calendrier du mois, pour voir d'un coup d'œil ce qui est prévu.",
+            "en": "The month calendar, to see at a glance what is planned."
+          },
+          "alt": {
+            "fr": "Calendrier d'un mois avec les événements placés sur leur jour.",
+            "en": "Calendar of a month with events placed on their day."
+          }
+        },
+        {
+          "file": "previews/fiche.webp",
+          "type": "public",
+          "caption": {
+            "fr": "La fiche d'un événement : programme, personnes invitées, places restantes et inscription.",
+            "en": "An event page: programme, speakers, seats left and sign-up."
+          },
+          "alt": {
+            "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux personnes invitées et un bouton d'inscription.",
+            "en": "Detailed page of a workshop with time, place, the afternoon programme, two speakers and a sign-up button."
+          }
         }
       ]
     },
@@ -530,13 +610,39 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/faq",
       "ref": "v1.34.0",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "❓",
       "requires": {
         "core": "0.2.6"
-      }
+      },
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page de questions, rangées par thèmes qui s'ouvrent et se referment.",
+            "en": "Your questions page, grouped by category, each answer opening and closing."
+          },
+          "alt": {
+            "fr": "Page de questions fréquentes : trois thèmes, une réponse ouverte, une barre de recherche et des boutons d'avis.",
+            "en": "FAQ page: three categories, one answer open, a search bar and feedback buttons."
+          }
+        },
+        {
+          "file": "previews/admin.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Votre administration : questions publiées, brouillons et thèmes.",
+            "en": "Your admin screen: published questions, drafts and categories."
+          },
+          "alt": {
+            "fr": "Écran d'administration de la FAQ avec la liste des questions et leurs thèmes.",
+            "en": "FAQ admin screen with the list of questions and their categories."
+          }
+        }
+      ]
     },
     {
       "id": "gallery",
@@ -545,7 +651,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/gallery",
       "ref": "v1.34.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🖼️",
@@ -562,6 +668,32 @@
         {
           "service": "contact.store",
           "optional": true
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/albums.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Vos albums photo : une couverture, une date et le nombre de photos.",
+            "en": "Your photo albums: a cover, a date and the number of photos."
+          },
+          "alt": {
+            "fr": "Page listant trois albums photo avec leur couverture, leur date et le nombre de photos.",
+            "en": "Page listing three photo albums with their cover, date and number of photos."
+          }
+        },
+        {
+          "file": "previews/album.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Un album en grille, avec visionneuse plein écran au clic.",
+            "en": "An album as a grid, with a full-screen viewer on click."
+          },
+          "alt": {
+            "fr": "Page d'un album avec une grille de neuf photos.",
+            "en": "Album page with a grid of nine photos."
+          }
         }
       ]
     },
@@ -819,10 +951,24 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/links",
       "ref": "v1.34.0",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "🔗"
+      "icon": "🔗",
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page de liens avec leurs icônes, et le bouton « Mes réseaux » en haut du site.",
+            "en": "Your links page with their icons, and the “My networks” button at the top of the site."
+          },
+          "alt": {
+            "fr": "Page de liens : huit boutons arrondis avec icône (chaîne, vidéos, Discord, boutique…) et un bouton « Mes réseaux » dans l'en-tête.",
+            "en": "Links page: eight rounded buttons with icons (channel, videos, Discord, shop…) and a “My networks” button in the header."
+          }
+        }
+      ]
     },
     {
       "id": "live-status",
@@ -1073,7 +1219,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.34.0",
-      "version": "2.5.0",
+      "version": "2.5.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -1085,6 +1231,44 @@
           "service": "game.cover",
           "optional": true
         }
+      ],
+      "previews": [
+        {
+          "file": "previews/semaine.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Vos directs de la semaine en grille, avec l'heure et la jaquette de chaque jeu.",
+            "en": "Your streams of the week in a grid, with the time and cover of each game."
+          },
+          "alt": {
+            "fr": "Page de planning en grille de sept jours avec les directs de la semaine, leur heure et la jaquette du jeu.",
+            "en": "Planning page as a seven-day grid with the week's streams, their time and the game's cover."
+          }
+        },
+        {
+          "file": "previews/affiches.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Ou en grandes affiches, une par direct.",
+            "en": "Or as large posters, one per stream."
+          },
+          "alt": {
+            "fr": "Page de planning présentant chaque direct sous forme d'affiche avec la jaquette du jeu.",
+            "en": "Planning page showing each stream as a poster with the game's cover."
+          }
+        },
+        {
+          "file": "previews/chronologie.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Ou en chronologie, du prochain direct au plus lointain.",
+            "en": "Or as a timeline, from the next stream to the furthest."
+          },
+          "alt": {
+            "fr": "Page de planning en chronologie verticale avec les prochains directs dans l'ordre.",
+            "en": "Planning page as a vertical timeline with the next streams in order."
+          }
+        }
       ]
     },
     {
@@ -1094,7 +1278,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/platform-links",
       "ref": "v1.34.0",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔗",
@@ -1103,7 +1287,33 @@
       ],
       "requires": {
         "core": "0.2.13"
-      }
+      },
+      "previews": [
+        {
+          "file": "previews/entete.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Vos plateformes en icônes, à côté de vos autres réseaux, en haut du site.",
+            "en": "Your platforms as icons next to your other networks, at the top of the site."
+          },
+          "alt": {
+            "fr": "En-tête d'un site avec une rangée d'icônes de réseaux, dont deux plateformes ajoutées par le module.",
+            "en": "Site header with a row of network icons, two of them added by the module."
+          }
+        },
+        {
+          "file": "previews/avertissement.webp",
+          "type": "public",
+          "caption": {
+            "fr": "La page d'avertissement facultative (18 ans et plus) avant l'ouverture d'un lien.",
+            "en": "The optional notice page (18+) shown before a link opens."
+          },
+          "alt": {
+            "fr": "Page d'avertissement avec un message pour adultes, un bouton pour continuer et un bouton de retour au site.",
+            "en": "Notice page with an adults-only message, a continue button and a back-to-site button."
+          }
+        }
+      ]
     },
     {
       "id": "polls",
@@ -1112,7 +1322,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/polls",
       "ref": "v1.34.0",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
@@ -1129,6 +1339,32 @@
         {
           "service": "audience.session",
           "optional": true
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/sondage.webp",
+          "type": "public",
+          "caption": {
+            "fr": "La page d'un sondage : les choix, les résultats en barres et le lien à partager.",
+            "en": "A poll page: the choices, live results as bars and the link to share."
+          },
+          "alt": {
+            "fr": "Page d'un sondage avec quatre choix et leurs résultats en barres colorées.",
+            "en": "A poll page with four choices and their results as coloured bars."
+          }
+        },
+        {
+          "file": "previews/overlay.webp",
+          "type": "overlay",
+          "caption": {
+            "fr": "Pour votre stream : le sondage en cours s'affiche à l'écran, avec les résultats qui bougent en direct.",
+            "en": "For your stream: the current poll appears on screen, with results moving live."
+          },
+          "alt": {
+            "fr": "Fond de stream coloré avec, au centre, un sondage qui montre une question, trois choix et leurs barres de résultats.",
+            "en": "Colourful stream background with, in the centre, a poll showing a question, three choices and their result bars."
+          }
         }
       ]
     },
@@ -1499,7 +1735,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/testimonials",
       "ref": "v1.34.0",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
@@ -1508,7 +1744,21 @@
       ],
       "requires": {
         "core": "0.5.0"
-      }
+      },
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page d'avis : seuls ceux que vous avez validés s'affichent, avec leur note.",
+            "en": "Your reviews page: only the ones you approved are shown, with their rating."
+          },
+          "alt": {
+            "fr": "Page d'avis avec une grille de témoignages, chacun avec le nom de la personne, une note en étoiles et un texte.",
+            "en": "Reviews page with a grid of testimonials, each with the person's name, a star rating and a text."
+          }
+        }
+      ]
     },
     {
       "id": "thanks-wall",
@@ -1517,7 +1767,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/thanks-wall",
       "ref": "v1.34.0",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💛",
@@ -1534,6 +1784,20 @@
         {
           "service": "contact.book",
           "min": 2
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page de remerciements : une personne à l'honneur et une carte pour chaque membre.",
+            "en": "Your thank-you page: a person in the spotlight and a card for each member."
+          },
+          "alt": {
+            "fr": "Page de remerciements avec une personne à l'honneur en haut, puis des cartes avec photo et nom, rangées par groupes.",
+            "en": "Thank-you page with a person in the spotlight at the top, then cards with photo and name, arranged in groups."
+          }
         }
       ]
     },
@@ -1634,7 +1898,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.34.0",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1658,6 +1922,32 @@
         {
           "service": "audience.draw",
           "optional": true
+        }
+      ],
+      "previews": [
+        {
+          "file": "previews/commandes.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Toutes vos commandes dans un seul tableau : recherche en direct, interrupteurs et origine de chaque commande.",
+            "en": "All your commands in a single table: live search, switches and the origin of each command."
+          },
+          "alt": {
+            "fr": "Écran d'administration du bot avec un tableau de commandes du chat : recherche, filtres, interrupteurs d'état et pastilles d'origine.",
+            "en": "Bot admin screen with a table of chat commands: search, filters, on/off switches and origin badges."
+          }
+        },
+        {
+          "file": "previews/recompenses.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Vos récompenses en points de chaîne, reliées à des actions : lumières, message dans le chat, appareil de la maison.",
+            "en": "Your channel point rewards, linked to actions: lights, a chat message, a home appliance."
+          },
+          "alt": {
+            "fr": "Onglet Récompenses du bot avec la liste des récompenses, leur coût, leur action et les dernières utilisations.",
+            "en": "Bot Rewards tab with the list of rewards, their cost, their action and the latest uses."
+          }
         }
       ]
     },

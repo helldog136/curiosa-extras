@@ -40,7 +40,7 @@ const cfgOfScript = (o) => JSON.parse(/window\.__VO=(\{.*?\});\(function/s.exec(
 
 test("manifeste : valide pour le cœur 0.5.0 ; un élément « poll », fluide, plage de ratios et taille minimale, suit le style, contenu d'exemple, une seule option « Quel sondage »", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.3.0"); assert.equal(manifestJson.minCore, "0.5.0");
+  assert.equal(manifestJson.version, "1.3.1"); assert.equal(manifestJson.minCore, "0.5.0");
   assert.equal(manifestJson.overlayElements.length, 1);
   assert.equal(decl.id, "poll"); assert.equal(decl.fit, "fluid"); assert.equal(decl.followsStyle, true); assert.equal(decl.demo, true);
   assert.deepEqual(decl.minSize, { width: 320, height: 200 });

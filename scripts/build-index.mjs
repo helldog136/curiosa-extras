@@ -6,7 +6,7 @@
 // REF force une autre référence (étiquette ou commit) ; REPO : adresse de ce dépôt.
 import fs from "node:fs";
 import path from "node:path";
-import { optionalNeedsProblems, serviceList } from "./rules.mjs";
+import { optionalNeedsProblems, previewIndex, previewProblems, serviceList } from "./rules.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const repo = process.env.REPO ?? "https://github.com/helldog136/curiosa-extras";
@@ -19,12 +19,17 @@ const pick = (v) => (typeof v === "string" ? v : v?.fr ?? v?.en ?? Object.values
 // Fonction partagée avec release-check.mjs et les tests : scripts/rules.mjs (elle recopie aussi `requires[].optional`, seulement la valeur true).
 const services = serviceList;
 const modules = [];
+const previewErrors = [];
 for (const group of ["modules", "examples"]) {
   for (const id of fs.readdirSync(path.join(root, group)).sort()) {
     const m = JSON.parse(fs.readFileSync(path.join(root, group, id, "module.json"), "utf8"));
-    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}) });
+    // Visuels de la fiche (`previews`) : la déclaration est recopiée dans l'entrée (le cœur peut ainsi les annoncer sans télécharger le module) ; les images restent dans le dépôt.
+    // Un visuel invalide ou absent fait échouer l'index (écriture comme --check) : mieux vaut le savoir ici que voir le cœur l'écarter en silence.
+    for (const p of previewProblems(m.previews, path.join(root, group, id))) previewErrors.push(`${m.id} : ${p}`);
+    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}), ...(m.previews?.length ? { previews: previewIndex(m.previews) } : {}) });
   }
 }
+if (previewErrors.length) { console.error("Visuels de fiche (previews) :\n- " + previewErrors.join("\n- ")); process.exit(1); }
 const out = JSON.stringify({ version: 1, modules }, null, 2) + "\n";
 const file = path.join(root, "catalogue/index.json");
 if (process.argv.includes("--check")) {

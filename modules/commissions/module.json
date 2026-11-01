@@ -5,7 +5,7 @@
     "en": "Commissions",
     "fr": "Commandes"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minCore": "0.2.5",
   "description": {
     "en": "A clear commission queue for anyone who creates on request: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment.",
@@ -359,6 +359,20 @@
             "description": "Short public message shown under the state (300 characters at most). Empty text removes it."
           }
         }
+      }
+    }
+  ],
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page de commandes : les places disponibles et le formulaire pour faire une demande.",
+        "en": "Your commissions page: the open slots and the form to make a request."
+      },
+      "alt": {
+        "fr": "Page de commandes indiquant que la file est ouverte, le nombre de places et un formulaire de demande.",
+        "en": "Commissions page showing the queue is open, the number of slots and a request form."
       }
     }
   ]

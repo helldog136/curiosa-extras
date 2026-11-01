@@ -2,8 +2,11 @@
   "apiVersion": 2,
   "minCore": "0.6.0",
   "id": "twitch-bot",
-  "name": { "en": "Twitch bot", "fr": "Bot Twitch" },
-  "version": "1.7.0",
+  "name": {
+    "en": "Twitch bot",
+    "fr": "Bot Twitch"
+  },
+  "version": "1.7.1",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -17,98 +20,230 @@
   "instances": "multiple",
   "page": false,
   "requires": [
-    { "service": "twitch.api", "min": 3 },
-    { "service": "twitch.live" },
-    { "service": "home-assistant.bridge", "optional": true },
-    { "service": "audience.draw", "min": 1, "optional": true }
+    {
+      "service": "twitch.api",
+      "min": 3
+    },
+    {
+      "service": "twitch.live"
+    },
+    {
+      "service": "home-assistant.bridge",
+      "optional": true
+    },
+    {
+      "service": "audience.draw",
+      "min": 1,
+      "optional": true
+    }
   ],
   "dataVersion": 5,
   "consumes": [
     {
       "topic": "ha.result",
-      "label": { "en": "What your home did with the rewards (from the Home Assistant connector, if installed)", "fr": "Ce que votre maison a fait des récompenses (fourni par le Connecteur Home Assistant, s'il est installé)" },
+      "label": {
+        "en": "What your home did with the rewards (from the Home Assistant connector, if installed)",
+        "fr": "Ce que votre maison a fait des récompenses (fourni par le Connecteur Home Assistant, s'il est installé)"
+      },
       "schema": [
-        { "key": "ref", "type": "string", "required": true },
-        { "key": "id", "type": "string" },
-        { "key": "status", "type": "string" },
-        { "key": "code", "type": "string" }
+        {
+          "key": "ref",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "id",
+          "type": "string"
+        },
+        {
+          "key": "status",
+          "type": "string"
+        },
+        {
+          "key": "code",
+          "type": "string"
+        }
       ]
     },
     {
       "topic": "ha.state",
-      "label": { "en": "Whether your home is switched on and you are live (from the Home Assistant connector, if installed)", "fr": "Si votre maison est branchée et si vous êtes en direct (fourni par le Connecteur Home Assistant, s'il est installé)" },
+      "label": {
+        "en": "Whether your home is switched on and you are live (from the Home Assistant connector, if installed)",
+        "fr": "Si votre maison est branchée et si vous êtes en direct (fourni par le Connecteur Home Assistant, s'il est installé)"
+      },
       "schema": [
-        { "key": "enabled", "type": "boolean" },
-        { "key": "live", "type": "boolean" },
-        { "key": "paired", "type": "boolean" },
-        { "key": "lastSeenAt", "type": "string" }
+        {
+          "key": "enabled",
+          "type": "boolean"
+        },
+        {
+          "key": "live",
+          "type": "boolean"
+        },
+        {
+          "key": "paired",
+          "type": "boolean"
+        },
+        {
+          "key": "lastSeenAt",
+          "type": "string"
+        }
       ]
     },
     {
       "topic": "social.stat",
-      "label": { "en": "Your Twitch follower count (from My Twitch channel)", "fr": "Votre nombre de followers Twitch (fourni par Ma Chaîne Twitch)" },
+      "label": {
+        "en": "Your Twitch follower count (from My Twitch channel)",
+        "fr": "Votre nombre de followers Twitch (fourni par Ma Chaîne Twitch)"
+      },
       "schema": [
-        { "key": "id", "type": "string", "required": true },
-        { "key": "platform", "type": "string", "required": true },
-        { "key": "account", "type": "string", "required": true },
-        { "key": "metric", "type": "string", "required": true },
-        { "key": "value", "type": "number" },
-        { "key": "error", "type": "string" }
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "platform",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "account",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "metric",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "value",
+          "type": "number"
+        },
+        {
+          "key": "error",
+          "type": "string"
+        }
       ]
     },
     {
       "topic": "planning.slot",
-      "label": { "en": "Your next streams (from your calendars, if installed)", "fr": "Vos prochains streams (fournis par vos agendas, s'ils sont installés)" },
+      "label": {
+        "en": "Your next streams (from your calendars, if installed)",
+        "fr": "Vos prochains streams (fournis par vos agendas, s'ils sont installés)"
+      },
       "schema": [
-        { "key": "title", "type": "string" },
-        { "key": "start", "type": "datetime", "required": true },
-        { "key": "end", "type": "datetime" },
-        { "key": "allDay", "type": "boolean" },
-        { "key": "status", "type": "string" }
+        {
+          "key": "title",
+          "type": "string"
+        },
+        {
+          "key": "start",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "end",
+          "type": "datetime"
+        },
+        {
+          "key": "allDay",
+          "type": "boolean"
+        },
+        {
+          "key": "status",
+          "type": "string"
+        }
       ]
     },
     {
       "topic": "social.link",
-      "label": { "en": "Your social network links (from the network modules, if installed)", "fr": "Les liens de vos réseaux (fournis par les modules de réseaux, s'ils sont installés)" },
+      "label": {
+        "en": "Your social network links (from the network modules, if installed)",
+        "fr": "Les liens de vos réseaux (fournis par les modules de réseaux, s'ils sont installés)"
+      },
       "schema": [
-        { "key": "label", "type": "string" },
-        { "key": "url", "type": "url", "required": true },
-        { "key": "icon", "type": "string" }
+        {
+          "key": "label",
+          "type": "string"
+        },
+        {
+          "key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "icon",
+          "type": "string"
+        }
       ]
     }
   ],
   "provides": [
     {
       "topic": "home.actions",
-      "label": { "en": "The names of the actions your rewards can start at home (for the Home Assistant connector)", "fr": "Les noms des actions que vos récompenses peuvent lancer chez vous (pour le Connecteur Home Assistant)" }
+      "label": {
+        "en": "The names of the actions your rewards can start at home (for the Home Assistant connector)",
+        "fr": "Les noms des actions que vos récompenses peuvent lancer chez vous (pour le Connecteur Home Assistant)"
+      }
     }
   ],
   "entryPanels": [
     {
       "id": "chat-command",
-      "for": { "topic": "sponsor.card" },
-      "title": { "en": "Chat command for this partner", "fr": "Commande de chat pour ce partenaire" },
+      "for": {
+        "topic": "sponsor.card"
+      },
+      "title": {
+        "en": "Chat command for this partner",
+        "fr": "Commande de chat pour ce partenaire"
+      },
       "help": {
         "en": "Let your Twitch chat get this partner's link with a command. This part saves on its own with its own button, apart from the page's Save button.",
         "fr": "Permettez à votre chat Twitch d'obtenir le lien de ce partenaire avec une commande. Cette partie s'enregistre toute seule avec son propre bouton, à part du bouton Enregistrer de la page."
       }
     }
   ],
-  "permissions": ["routes", "storage", "admin", "topics", "mcp"],
+  "permissions": [
+    "routes",
+    "storage",
+    "admin",
+    "topics",
+    "mcp"
+  ],
   "rights": [
     {
       "id": "rewards.manage",
-      "label": { "en": "create, change and delete the channel point rewards", "fr": "créer, modifier et supprimer les récompenses en points de chaîne" },
-      "help": { "en": "These rewards really exist on Twitch and can switch things on in your home.", "fr": "Ces récompenses existent vraiment sur Twitch et peuvent allumer des choses chez vous." },
+      "label": {
+        "en": "create, change and delete the channel point rewards",
+        "fr": "créer, modifier et supprimer les récompenses en points de chaîne"
+      },
+      "help": {
+        "en": "These rewards really exist on Twitch and can switch things on in your home.",
+        "fr": "Ces récompenses existent vraiment sur Twitch et peuvent allumer des choses chez vous."
+      },
       "sensitive": true,
-      "default": { "admin": true, "editor": false }
+      "default": {
+        "admin": true,
+        "editor": false
+      }
     },
     {
       "id": "timers.manage",
-      "label": { "en": "create, change, delete and send the chat timers", "fr": "créer, modifier, supprimer et envoyer les timers du chat" },
-      "help": { "en": "Timers write messages in your Twitch chat on their own.", "fr": "Les timers écrivent des messages dans votre chat Twitch sans que personne ne les tape." },
+      "label": {
+        "en": "create, change, delete and send the chat timers",
+        "fr": "créer, modifier, supprimer et envoyer les timers du chat"
+      },
+      "help": {
+        "en": "Timers write messages in your Twitch chat on their own.",
+        "fr": "Les timers écrivent des messages dans votre chat Twitch sans que personne ne les tape."
+      },
       "sensitive": true,
-      "default": { "admin": true, "editor": false }
+      "default": {
+        "admin": true,
+        "editor": false
+      }
     }
   ],
   "privacy": {
@@ -123,9 +258,29 @@
         "en": "Commands"
       }
     },
-    { "id": "timers", "label": { "fr": "Timers", "en": "Timers" }, "panel": true },
-    { "id": "rewards", "label": { "fr": "Récompenses", "en": "Rewards" }, "panel": true },
-    { "id": "sources", "label": { "fr": "Informations utilisées", "en": "Information used" } }
+    {
+      "id": "timers",
+      "label": {
+        "fr": "Timers",
+        "en": "Timers"
+      },
+      "panel": true
+    },
+    {
+      "id": "rewards",
+      "label": {
+        "fr": "Récompenses",
+        "en": "Rewards"
+      },
+      "panel": true
+    },
+    {
+      "id": "sources",
+      "label": {
+        "fr": "Informations utilisées",
+        "en": "Information used"
+      }
+    }
   ],
   "settings": [
     {
@@ -133,8 +288,14 @@
       "type": "boolean",
       "default": false,
       "tab": "rewards",
-      "label": { "en": "Tell the chat when points are given back", "fr": "Prévenir le chat quand des points sont rendus" },
-      "help": { "en": "When a reward could not be played (home switched off, not live…), the bot writes a short message in the chat. Off by default.", "fr": "Quand une récompense n'a pas pu être jouée (maison coupée, pas en direct…), le bot écrit un court message dans le chat. Désactivé par défaut." }
+      "label": {
+        "en": "Tell the chat when points are given back",
+        "fr": "Prévenir le chat quand des points sont rendus"
+      },
+      "help": {
+        "en": "When a reward could not be played (home switched off, not live…), the bot writes a short message in the chat. Off by default.",
+        "fr": "Quand une récompense n'a pas pu être jouée (maison coupée, pas en direct…), le bot écrit un court message dans le chat. Désactivé par défaut."
+      }
     },
     {
       "key": "stopMods",
@@ -142,8 +303,14 @@
       "example": "marie_mod, paul_mod",
       "optional": true,
       "tab": "rewards",
-      "label": { "en": "Moderators who may type !stop", "fr": "Équipe de modération qui peut taper !stop" },
-      "help": { "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.", "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. L'équipe de modération ne peut pas redémarrer : vous êtes la seule personne à pouvoir le faire." }
+      "label": {
+        "en": "Moderators who may type !stop",
+        "fr": "Équipe de modération qui peut taper !stop"
+      },
+      "help": {
+        "en": "Their Twitch names, separated by commas, for example marie_mod, paul_mod. You can always type !stop and !start yourself. Moderators cannot restart: only you can.",
+        "fr": "Leurs pseudos Twitch, séparés par des virgules, par exemple marie_mod, paul_mod. Vous pouvez toujours taper !stop et !start vous-même. L'équipe de modération ne peut pas redémarrer : vous êtes la seule personne à pouvoir le faire."
+      }
     },
     {
       "key": "rewardWaitSeconds",
@@ -151,11 +318,20 @@
       "default": 120,
       "min": 30,
       "max": 600,
-      "unit": { "en": "seconds", "fr": "secondes" },
+      "unit": {
+        "en": "seconds",
+        "fr": "secondes"
+      },
       "advanced": true,
       "tab": "rewards",
-      "label": { "en": "How long to wait for the home before giving points back (seconds)", "fr": "Attente de la maison avant de rendre les points (secondes)" },
-      "help": { "en": "Between 30 and 600. If the home has not answered after this delay, the points are given back the next time something happens on your channel or when you open this page.", "fr": "Entre 30 et 600. Si la maison n'a pas répondu après ce délai, les points sont rendus la prochaine fois qu'il se passe quelque chose sur votre chaîne ou que vous ouvrez cette page." }
+      "label": {
+        "en": "How long to wait for the home before giving points back (seconds)",
+        "fr": "Attente de la maison avant de rendre les points (secondes)"
+      },
+      "help": {
+        "en": "Between 30 and 600. If the home has not answered after this delay, the points are given back the next time something happens on your channel or when you open this page.",
+        "fr": "Entre 30 et 600. Si la maison n'a pas répondu après ce délai, les points sont rendus la prochaine fois qu'il se passe quelque chose sur votre chaîne ou que vous ouvrez cette page."
+      }
     },
     {
       "key": "extraActions",
@@ -163,8 +339,14 @@
       "optional": true,
       "advanced": true,
       "tab": "rewards",
-      "label": { "en": "Other actions you can pick (advanced)", "fr": "Autres actions à choisir (avancé)" },
-      "help": { "en": "Words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.", "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Vos actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom." }
+      "label": {
+        "en": "Other actions you can pick (advanced)",
+        "fr": "Autres actions à choisir (avancé)"
+      },
+      "help": {
+        "en": "Words separated by commas that your home understands, for example scene:cinema. Lowercase letters, digits, “:” “_” “-”, 40 characters at most. Each word is listed in “Your actions” (the word is its name). For a new action, rather pick “Something else at my place” in a reward and give it a name.",
+        "fr": "Des mots séparés par des virgules que votre maison comprend, par exemple scene:cinema. Lettres minuscules, chiffres, « : » « _ » « - », 40 caractères au plus. Chaque mot est repris dans « Vos actions » (le mot est son nom). Pour une nouvelle action, il est plus simple de choisir « Autre chose chez moi » dans une récompense et de lui donner un nom."
+      }
     },
     {
       "key": "showKeys",
@@ -172,108 +354,201 @@
       "default": false,
       "advanced": true,
       "tab": "rewards",
-      "label": { "en": "Show the technical identifiers of the actions", "fr": "Montrer les identifiants techniques des actions" },
-      "help": { "en": "To link your home by hand: the identifier of each action (for example perso:start-the-vacuum) is shown next to its name, and can be written for a new action or changed. Unticked, it is never shown.", "fr": "Pour relier la maison à la main : l'identifiant de chaque action (par exemple perso:lancer-l-aspirateur) est montré à côté de son nom, et peut être écrit pour une nouvelle action ou modifié. Décoché, il n'est jamais montré." }
+      "label": {
+        "en": "Show the technical identifiers of the actions",
+        "fr": "Montrer les identifiants techniques des actions"
+      },
+      "help": {
+        "en": "To link your home by hand: the identifier of each action (for example perso:start-the-vacuum) is shown next to its name, and can be written for a new action or changed. Unticked, it is never shown.",
+        "fr": "Pour relier la maison à la main : l'identifiant de chaque action (par exemple perso:lancer-l-aspirateur) est montré à côté de son nom, et peut être écrit pour une nouvelle action ou modifié. Décoché, il n'est jamais montré."
+      }
     },
     {
       "key": "onlyWhenLive",
       "type": "boolean",
       "default": true,
-      "label": { "en": "Answer only while I am live", "fr": "Répondre seulement quand je suis en direct" },
-      "help": { "en": "Untick it to answer all the time, even when your stream is off.", "fr": "Décochez pour répondre tout le temps, même quand votre stream est éteint." }
+      "label": {
+        "en": "Answer only while I am live",
+        "fr": "Répondre seulement quand je suis en direct"
+      },
+      "help": {
+        "en": "Untick it to answer all the time, even when your stream is off.",
+        "fr": "Décochez pour répondre tout le temps, même quand votre stream est éteint."
+      }
     },
     {
       "key": "chatManage",
       "type": "boolean",
       "default": false,
-      "label": { "en": "Let the moderation team manage commands from the chat", "fr": "Laisser l'équipe de modération gérer les commandes depuis le chat" },
-      "help": { "en": "With it, you and your moderators can type !addcom, !editcom, !delcom and !commands in the chat. Off by default.", "fr": "Avec cette case, vous et votre équipe de modération pouvez taper !addcom, !editcom, !delcom et !commands dans le chat. Désactivé par défaut." }
+      "label": {
+        "en": "Let the moderation team manage commands from the chat",
+        "fr": "Laisser l'équipe de modération gérer les commandes depuis le chat"
+      },
+      "help": {
+        "en": "With it, you and your moderators can type !addcom, !editcom, !delcom and !commands in the chat. Off by default.",
+        "fr": "Avec cette case, vous et votre équipe de modération pouvez taper !addcom, !editcom, !delcom et !commands dans le chat. Désactivé par défaut."
+      }
     },
     {
       "key": "timezone",
       "type": "text",
       "default": "UTC",
-      "label": { "en": "Your time zone (for the time of your next stream)", "fr": "Votre fuseau horaire (pour l'heure de votre prochain stream)" },
-      "help": { "en": "For example Europe/Paris or America/Montreal. Without it, times are given in UTC and say so.", "fr": "Par exemple Europe/Paris ou America/Montreal. Sans cela, les heures sont données en UTC et le disent." }
+      "label": {
+        "en": "Your time zone (for the time of your next stream)",
+        "fr": "Votre fuseau horaire (pour l'heure de votre prochain stream)"
+      },
+      "help": {
+        "en": "For example Europe/Paris or America/Montreal. Without it, times are given in UTC and say so.",
+        "fr": "Par exemple Europe/Paris ou America/Montreal. Sans cela, les heures sont données en UTC et le disent."
+      }
     },
     {
       "key": "replyAs",
       "type": "select",
       "default": "own",
       "advanced": true,
-      "label": { "en": "Account that answers in the chat", "fr": "Compte qui répond dans le chat" },
-      "help": { "en": "By default your own account answers. Choose “A separate bot account” to have another Twitch account answer: you will connect it in the “Commands” tab.", "fr": "Par défaut, c'est votre propre compte qui répond. Choisissez « Un compte bot séparé » pour qu'un autre compte Twitch réponde : vous le connecterez dans l'onglet « Commandes »." },
+      "label": {
+        "en": "Account that answers in the chat",
+        "fr": "Compte qui répond dans le chat"
+      },
+      "help": {
+        "en": "By default your own account answers. Choose “A separate bot account” to have another Twitch account answer: you will connect it in the “Commands” tab.",
+        "fr": "Par défaut, c'est votre propre compte qui répond. Choisissez « Un compte bot séparé » pour qu'un autre compte Twitch réponde : vous le connecterez dans l'onglet « Commandes »."
+      },
       "options": [
-        { "value": "own", "label": { "en": "My own account", "fr": "Mon propre compte" } },
-        { "value": "bot", "label": { "en": "A separate bot account", "fr": "Un compte bot séparé" } }
+        {
+          "value": "own",
+          "label": {
+            "en": "My own account",
+            "fr": "Mon propre compte"
+          }
+        },
+        {
+          "value": "bot",
+          "label": {
+            "en": "A separate bot account",
+            "fr": "Un compte bot séparé"
+          }
+        }
       ]
     },
     {
       "key": "channel",
       "type": "choice",
-      "source": { "kind": "providers", "service": "twitch.live" },
+      "source": {
+        "kind": "providers",
+        "service": "twitch.live"
+      },
       "fromText": true,
       "refersTo": "channel",
       "advanced": true,
       "optional": true,
-      "label": { "en": "Twitch channel to serve", "fr": "Chaîne Twitch à servir" },
-      "help": { "en": "Only asked when your site has several Twitch channels: the bot answers in the chat of this one. Leave empty to use the first one.", "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch : le bot répond dans le chat de celle-ci. Laissez vide pour utiliser la première." }
+      "label": {
+        "en": "Twitch channel to serve",
+        "fr": "Chaîne Twitch à servir"
+      },
+      "help": {
+        "en": "Only asked when your site has several Twitch channels: the bot answers in the chat of this one. Leave empty to use the first one.",
+        "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch : le bot répond dans le chat de celle-ci. Laissez vide pour utiliser la première."
+      }
     },
     {
       "key": "prefix",
       "type": "text",
       "default": "!",
       "advanced": true,
-      "label": { "en": "Start of a command", "fr": "Début d'une commande" },
-      "help": { "en": "The sign before the command name. “!” by default. 1 to 3 characters, no letter, no digit, never “/” or “.”.", "fr": "Le signe qui précède le nom de la commande. « ! » par défaut. 1 à 3 caractères, ni lettre ni chiffre, jamais « / » ni « . »." }
+      "label": {
+        "en": "Start of a command",
+        "fr": "Début d'une commande"
+      },
+      "help": {
+        "en": "The sign before the command name. “!” by default. 1 to 3 characters, no letter, no digit, never “/” or “.”.",
+        "fr": "Le signe qui précède le nom de la commande. « ! » par défaut. 1 à 3 caractères, ni lettre ni chiffre, jamais « / » ni « . »."
+      }
     },
     {
       "key": "cooldownGlobal",
       "type": "number",
       "default": 20,
       "advanced": true,
-      "label": { "en": "Default wait between two answers of a command (seconds)", "fr": "Attente par défaut entre deux réponses d'une commande (secondes)" },
-      "help": { "en": "Everyone together: a command answers at most once per this delay. Each command can have its own.", "fr": "Tout le monde ensemble : une commande répond au plus une fois par ce délai. Chaque commande peut avoir le sien." }
+      "label": {
+        "en": "Default wait between two answers of a command (seconds)",
+        "fr": "Attente par défaut entre deux réponses d'une commande (secondes)"
+      },
+      "help": {
+        "en": "Everyone together: a command answers at most once per this delay. Each command can have its own.",
+        "fr": "Tout le monde ensemble : une commande répond au plus une fois par ce délai. Chaque commande peut avoir le sien."
+      }
     },
     {
       "key": "cooldownUser",
       "type": "number",
       "default": 60,
       "advanced": true,
-      "label": { "en": "Default wait for each person (seconds)", "fr": "Attente par défaut pour chaque personne (secondes)" },
-      "help": { "en": "The same person must wait this long before the same command answers them again.", "fr": "Une même personne doit attendre ce délai avant que la même commande lui réponde de nouveau." }
+      "label": {
+        "en": "Default wait for each person (seconds)",
+        "fr": "Attente par défaut pour chaque personne (secondes)"
+      },
+      "help": {
+        "en": "The same person must wait this long before the same command answers them again.",
+        "fr": "Une même personne doit attendre ce délai avant que la même commande lui réponde de nouveau."
+      }
     },
     {
       "key": "maxPer30s",
       "type": "number",
       "default": 12,
       "advanced": true,
-      "label": { "en": "Answers allowed per 30 seconds, all commands together", "fr": "Réponses permises par tranche de 30 secondes, toutes commandes confondues" },
-      "help": { "en": "From 1 to 18. Twitch limits what a chat account may send: stay well under it.", "fr": "De 1 à 18. Twitch limite ce qu'un compte peut envoyer dans le chat : restez bien en dessous." }
+      "label": {
+        "en": "Answers allowed per 30 seconds, all commands together",
+        "fr": "Réponses permises par tranche de 30 secondes, toutes commandes confondues"
+      },
+      "help": {
+        "en": "From 1 to 18. Twitch limits what a chat account may send: stay well under it.",
+        "fr": "De 1 à 18. Twitch limite ce qu'un compte peut envoyer dans le chat : restez bien en dessous."
+      }
     },
     {
       "key": "toleranceMinutes",
       "type": "number",
       "default": 10,
       "advanced": true,
-      "label": { "en": "Age beyond which a message from Twitch is refused (minutes)", "fr": "Âge au-delà duquel un message de Twitch est refusé (minutes)" },
-      "help": { "en": "From 1 to 10. Protects against messages replayed later. Lower it only if your server's clock is very accurate.", "fr": "De 1 à 10. Protège contre les messages rejoués plus tard. Ne baissez que si l'horloge de votre serveur est très juste." }
+      "label": {
+        "en": "Age beyond which a message from Twitch is refused (minutes)",
+        "fr": "Âge au-delà duquel un message de Twitch est refusé (minutes)"
+      },
+      "help": {
+        "en": "From 1 to 10. Protects against messages replayed later. Lower it only if your server's clock is very accurate.",
+        "fr": "De 1 à 10. Protège contre les messages rejoués plus tard. Ne baissez que si l'horloge de votre serveur est très juste."
+      }
     },
     {
       "key": "ignoredBots",
       "type": "textarea",
       "advanced": true,
       "optional": true,
-      "label": { "en": "Other bots to ignore (optional)", "fr": "Autres bots à ignorer (facultatif)" },
-      "help": { "en": "Usernames separated by commas. The usual chat bots are already ignored.", "fr": "Pseudos séparés par des virgules. Les bots de chat courants sont déjà ignorés." }
+      "label": {
+        "en": "Other bots to ignore (optional)",
+        "fr": "Autres bots à ignorer (facultatif)"
+      },
+      "help": {
+        "en": "Usernames separated by commas. The usual chat bots are already ignored.",
+        "fr": "Pseudos séparés par des virgules. Les bots de chat courants sont déjà ignorés."
+      }
     },
     {
       "key": "fetchHosts",
       "type": "textarea",
       "advanced": true,
       "optional": true,
-      "label": { "en": "Websites that {urlfetch} may read (optional)", "fr": "Sites que {urlfetch} peut lire (facultatif)" },
-      "help": { "en": "One website name per line, for example api.example.org. Empty means {urlfetch} is switched off. Only https, never a private address, no redirection followed, 3 seconds, 400 characters.", "fr": "Un nom de site par ligne, par exemple api.example.org. Vide, {urlfetch} est éteint. Seulement en https, jamais une adresse privée, aucune redirection suivie, 3 secondes, 400 caractères." }
+      "label": {
+        "en": "Websites that {urlfetch} may read (optional)",
+        "fr": "Sites que {urlfetch} peut lire (facultatif)"
+      },
+      "help": {
+        "en": "One website name per line, for example api.example.org. Empty means {urlfetch} is switched off. Only https, never a private address, no redirection followed, 3 seconds, 400 characters.",
+        "fr": "Un nom de site par ligne, par exemple api.example.org. Vide, {urlfetch} est éteint. Seulement en https, jamais une adresse privée, aucune redirection suivie, 3 secondes, 400 caractères."
+      }
     }
   ],
   "mcp": [
@@ -285,7 +560,17 @@
       "input": {
         "type": "object",
         "properties": {
-          "kind": { "type": "string", "enum": ["custom", "builtin", "partner", "network", "group"], "description": "Only this kind of command." }
+          "kind": {
+            "type": "string",
+            "enum": [
+              "custom",
+              "builtin",
+              "partner",
+              "network",
+              "group"
+            ],
+            "description": "Only this kind of command."
+          }
         }
       }
     },
@@ -295,15 +580,68 @@
       "description": "Create a custom chat command. 'name' has no prefix (for 'merch' viewers type !merch). 'text' is the reply; it may contain these variables only: {followers} {jeu} {titre} {uptime} {prochain_stream} {utilisateur} (game, title, time since the live started, next stream, the name of the person typing), {viewers} {chaine} {heure} {date} (viewers now, channel name, time and date, optionally with a time zone: {heure Europe/Paris}), {cible} (first word after the command, without @), {requete} (everything after the command), {1} {2} {1:} (words after the command), {compteur} (how many times the command was used), {aleatoire a | b | c} or {aleatoire 1-100}, {calcul 2+3*4} (arithmetic only) and {urlfetch https://…} (only for websites the owner allowed in advanced settings). It cannot start with / or . or the prefix, and is cut at 500 characters. Names and aliases must not collide with another command. Refused with an explanation otherwise. The command is enabled unless 'enabled' is false.",
       "input": {
         "type": "object",
-        "required": ["name", "text"],
-        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, 
-          "name": { "type": "string", "maxLength": 26, "description": "Command name without the prefix, letters/digits/-/_ only, 25 characters at most." },
-          "text": { "type": "string", "maxLength": 450, "description": "The reply, with optional {variables}." },
-          "aliases": { "type": "array", "items": { "type": "string" }, "description": "Other names for the same command (5 at most)." },
-          "role": { "type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it (default everyone)." },
-          "enabled": { "type": "boolean", "description": "Default true." },
-          "delayAllSeconds": { "type": "integer", "minimum": 0, "maximum": 3600, "description": "Minimum seconds between two answers of this command, everyone together." },
-          "delayPerPersonSeconds": { "type": "integer", "minimum": 0, "maximum": 3600, "description": "Minimum seconds before the same person gets this command answered again." }
+        "required": [
+          "name",
+          "text"
+        ],
+        "properties": {
+          "activeFrom": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins."
+          },
+          "activeUntil": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')."
+          },
+          "yearly": {
+            "type": "boolean",
+            "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 26,
+            "description": "Command name without the prefix, letters/digits/-/_ only, 25 characters at most."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 450,
+            "description": "The reply, with optional {variables}."
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other names for the same command (5 at most)."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "subscribers",
+              "mods",
+              "owner"
+            ],
+            "description": "Who may use it (default everyone)."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Default true."
+          },
+          "delayAllSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600,
+            "description": "Minimum seconds between two answers of this command, everyone together."
+          },
+          "delayPerPersonSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600,
+            "description": "Minimum seconds before the same person gets this command answered again."
+          }
         }
       }
     },
@@ -311,39 +649,238 @@
       "name": "bot_command_update",
       "default": false,
       "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages.",
-      "input": {"type": "object", "required": ["name"], "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, "clearPeriod": { "type": "boolean", "description": "true removes the validity period (always active again)." }, "name": {"type": "string", "maxLength": 26, "description": "Current name or alias, without the prefix."}, "newName": {"type": "string", "maxLength": 26, "description": "New name, without the prefix."}, "text": {"type": "string", "maxLength": 450, "description": "New reply text."}, "aliases": {"type": "array", "items": {"type": "string"}, "description": "The complete list of aliases (replaces the old one)."}, "role": {"type": "string", "enum": ["everyone", "subscribers", "mods", "owner"], "description": "Who may use it: everyone, subscribers, mods or owner."}, "enabled": {"type": "boolean", "description": "True to switch the command on, false to switch it off."}, "delayAllSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers, for everyone together (0 to 3600)."}, "delayPerPersonSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "description": "Seconds to wait between two answers to the same person (0 to 3600)."}}}
+      "input": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "activeFrom": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the command does not answer; the on/off switch always wins."
+          },
+          "activeUntil": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')."
+          },
+          "yearly": {
+            "type": "boolean",
+            "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)."
+          },
+          "clearPeriod": {
+            "type": "boolean",
+            "description": "true removes the validity period (always active again)."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 26,
+            "description": "Current name or alias, without the prefix."
+          },
+          "newName": {
+            "type": "string",
+            "maxLength": 26,
+            "description": "New name, without the prefix."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 450,
+            "description": "New reply text."
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The complete list of aliases (replaces the old one)."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "subscribers",
+              "mods",
+              "owner"
+            ],
+            "description": "Who may use it: everyone, subscribers, mods or owner."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "True to switch the command on, false to switch it off."
+          },
+          "delayAllSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600,
+            "description": "Seconds to wait between two answers, for everyone together (0 to 3600)."
+          },
+          "delayPerPersonSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600,
+            "description": "Seconds to wait between two answers to the same person (0 to 3600)."
+          }
+        }
+      }
     },
     {
       "name": "rewards_list",
       "readOnly": true,
       "default": false,
       "description": "List the channel point rewards created by this site on Twitch: name, cost in points, delay in seconds, help text, whether the viewer writes a message, the action it triggers (its identifier, like lumieres:rouge or chat:repondre to answer in the chat, and its readable name), and its state (active, paused, refused, gone). Also gives the maximum number of rewards and the actions that may be used, with their names. Use it before creating or changing anything.",
-      "input": { "type": "object", "properties": {} }
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
     },
     {
       "name": "reward_create",
       "default": false,
       "description": "Create a REAL channel point reward on Twitch (needs a Twitch Affiliate or Partner channel). 'name' is the title viewers see (45 characters at most, unique). 'costPoints' is a whole number from 1. 'action' must be one of the actions given by rewards_list; or give 'customActionName' (for example 'Start the vacuum') to use or create a named action of your own; home actions need the Home Assistant connector. 'chatReply' is required for chat:repondre and may contain {utilisateur} and {recompense}. Refused with an explanation otherwise.",
-      "input": {"type": "object", "required": ["name", "costPoints", "action"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."}, "customActionName": {"type": "string", "maxLength": 60, "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
+      "input": {
+        "type": "object",
+        "required": [
+          "name",
+          "costPoints",
+          "action"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 45,
+            "description": "Title of the reward as viewers see it (reward_update: its current title)."
+          },
+          "costPoints": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000000,
+            "description": "Cost in channel points, a whole number from 1."
+          },
+          "action": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."
+          },
+          "customActionName": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."
+          },
+          "delaySeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400,
+            "description": "Delay between two uses, 0 for none."
+          },
+          "helpText": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "One sentence shown under the title, 200 characters at most."
+          },
+          "viewerWritesMessage": {
+            "type": "boolean",
+            "description": "True if the viewer must write a message (always on for tts:lire)."
+          },
+          "chatReply": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."
+          }
+        }
+      }
     },
     {
       "name": "reward_simulate",
       "default": false,
       "description": "Simulate one reward WITHOUT Twitch and without points: runs the same path as a real exchange with a fake viewer named Test. A home action is really sent to the home (lights change, voice speaks) and the result is awaited for a few seconds; a chat answer is only previewed, never sent. Refused when the home emergency switch is on. For the voice reward 'text' is required (300 characters at most). Limits: one test every 3 seconds, 30 per hour.",
-      "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "text": {"type": "string", "maxLength": 300, "description": "The viewer's message to read aloud (only for the voice reward), 300 characters at most."}}}
+      "input": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 45,
+            "description": "Title of the reward as viewers see it (reward_update: its current title)."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "The viewer's message to read aloud (only for the voice reward), 300 characters at most."
+          }
+        }
+      }
     },
     {
       "name": "reward_update",
       "default": false,
       "description": "Change a REAL channel point reward created by this site on Twitch, found by its current 'name' (see rewards_list). Give only what changes: 'newName', 'costPoints', 'action', 'delaySeconds', 'helpText', 'viewerWritesMessage', 'chatReply'. Same limits and explanations as reward_create. It cannot delete a reward or pause it.",
-      "input": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "maxLength": 45, "description": "Title of the reward as viewers see it (reward_update: its current title)."}, "newName": {"type": "string", "maxLength": 45, "description": "New title, 45 characters at most."}, "costPoints": {"type": "integer", "minimum": 1, "maximum": 1000000000, "description": "Cost in channel points, a whole number from 1."}, "action": {"type": "string", "maxLength": 40, "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."}, "customActionName": {"type": "string", "maxLength": 60, "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."}, "delaySeconds": {"type": "integer", "minimum": 0, "maximum": 86400, "description": "Delay between two uses in seconds, 0 for none."}, "helpText": {"type": "string", "maxLength": 200, "description": "One sentence shown under the title, 200 characters at most."}, "viewerWritesMessage": {"type": "boolean", "description": "True if the viewer must write a message (always on for tts:lire)."}, "chatReply": {"type": "string", "maxLength": 300, "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."}}}
-    }
-    ,{
+      "input": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 45,
+            "description": "Title of the reward as viewers see it (reward_update: its current title)."
+          },
+          "newName": {
+            "type": "string",
+            "maxLength": 45,
+            "description": "New title, 45 characters at most."
+          },
+          "costPoints": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000000,
+            "description": "Cost in channel points, a whole number from 1."
+          },
+          "action": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "What happens when taken: an identifier from rewards_list allowedActions, for example lumieres:rouge."
+          },
+          "customActionName": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Instead of 'action': the name of an action of your own, for example Start the vacuum. An existing name uses the same action; a new name creates it."
+          },
+          "delaySeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400,
+            "description": "Delay between two uses in seconds, 0 for none."
+          },
+          "helpText": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "One sentence shown under the title, 200 characters at most."
+          },
+          "viewerWritesMessage": {
+            "type": "boolean",
+            "description": "True if the viewer must write a message (always on for tts:lire)."
+          },
+          "chatReply": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Answer written in the chat (only for chat:repondre); may use {utilisateur} and {recompense}."
+          }
+        }
+      }
+    },
+    {
       "name": "timers_list",
       "readOnly": true,
       "default": false,
       "description": "List the chat timers of the Twitch bot: name, message (with {variables}), every how many minutes, how many chat lines at least since its last message, whether it works only while live, and whether it is enabled. A timer is only checked when a chat message arrives (there is no background clock), so it needs an active chat.",
-      "input": { "type": "object", "properties": {} }
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
     },
     {
       "name": "timer_create",
@@ -351,14 +888,60 @@
       "description": "Create a chat timer: a message the bot writes in the chat by itself. 'text' may use the same variables as a custom command except those about the person typing ({utilisateur}, {cible}, {requete}, {1}, {compteur}); it cannot start with / or . or the prefix and is cut at 450 characters. At most 20 timers. Refused with an explanation otherwise.",
       "input": {
         "type": "object",
-        "required": ["name", "text", "everyMinutes"],
-        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, 
-          "name": { "type": "string", "maxLength": 40, "description": "Name of the timer, unique." },
-          "text": { "type": "string", "maxLength": 450, "description": "The message, with optional {variables}." },
-          "everyMinutes": { "type": "integer", "minimum": 1, "maximum": 1440, "description": "Minutes between two messages (at least 1)." },
-          "minChatLines": { "type": "integer", "minimum": 0, "maximum": 200, "description": "Chat lines needed since its last message (default 5)." },
-          "when": { "type": "string", "enum": ["live", "always"], "description": "live = only while the stream is live (default), always." },
-          "enabled": { "type": "boolean", "description": "Default true." }
+        "required": [
+          "name",
+          "text",
+          "everyMinutes"
+        ],
+        "properties": {
+          "activeFrom": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins."
+          },
+          "activeUntil": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')."
+          },
+          "yearly": {
+            "type": "boolean",
+            "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Name of the timer, unique."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 450,
+            "description": "The message, with optional {variables}."
+          },
+          "everyMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Minutes between two messages (at least 1)."
+          },
+          "minChatLines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200,
+            "description": "Chat lines needed since its last message (default 5)."
+          },
+          "when": {
+            "type": "string",
+            "enum": [
+              "live",
+              "always"
+            ],
+            "description": "live = only while the stream is live (default), always."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Default true."
+          }
         }
       }
     },
@@ -368,16 +951,90 @@
       "description": "Change a chat timer, found by its current name. Only the fields you give change. Same rules as for creation. It can also enable or disable the timer. It cannot delete anything and cannot send a message.",
       "input": {
         "type": "object",
-        "required": ["name"],
-        "properties": { "activeFrom": { "type": "string", "maxLength": 10, "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins." }, "activeUntil": { "type": "string", "maxLength": 10, "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')." }, "yearly": { "type": "boolean", "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)." }, "clearPeriod": { "type": "boolean", "description": "true removes the validity period (always active again)." }, 
-          "name": { "type": "string", "maxLength": 40, "description": "Current name of the timer." },
-          "newName": { "type": "string", "maxLength": 40, "description": "New name." },
-          "text": { "type": "string", "maxLength": 450, "description": "New message." },
-          "everyMinutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
-          "minChatLines": { "type": "integer", "minimum": 0, "maximum": 200 },
-          "when": { "type": "string", "enum": ["live", "always"] },
-          "enabled": { "type": "boolean" }
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "activeFrom": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "Optional start of a validity period: 'MM-DD' (comes back every year, for example '11-01' for 1 November) or 'YYYY-MM-DD' (one single period). Give activeUntil too. Outside the period the timer does not answer; the on/off switch always wins."
+          },
+          "activeUntil": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "End of the validity period, included, same form as activeFrom ('11-30'). A period across new year is fine ('12-15' to '01-15')."
+          },
+          "yearly": {
+            "type": "boolean",
+            "description": "true = comes back every year (default with 'MM-DD'), false = one single period (needs 'YYYY-MM-DD' dates)."
+          },
+          "clearPeriod": {
+            "type": "boolean",
+            "description": "true removes the validity period (always active again)."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Current name of the timer."
+          },
+          "newName": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "New name."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 450,
+            "description": "New message."
+          },
+          "everyMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "minChatLines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "when": {
+            "type": "string",
+            "enum": [
+              "live",
+              "always"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
         }
+      }
+    }
+  ],
+  "previews": [
+    {
+      "file": "previews/commandes.webp",
+      "type": "admin",
+      "caption": {
+        "fr": "Toutes vos commandes dans un seul tableau : recherche en direct, interrupteurs et origine de chaque commande.",
+        "en": "All your commands in a single table: live search, switches and the origin of each command."
+      },
+      "alt": {
+        "fr": "Écran d'administration du bot avec un tableau de commandes du chat : recherche, filtres, interrupteurs d'état et pastilles d'origine.",
+        "en": "Bot admin screen with a table of chat commands: search, filters, on/off switches and origin badges."
+      }
+    },
+    {
+      "file": "previews/recompenses.webp",
+      "type": "admin",
+      "caption": {
+        "fr": "Vos récompenses en points de chaîne, reliées à des actions : lumières, message dans le chat, appareil de la maison.",
+        "en": "Your channel point rewards, linked to actions: lights, a chat message, a home appliance."
+      },
+      "alt": {
+        "fr": "Onglet Récompenses du bot avec la liste des récompenses, leur coût, leur action et les dernières utilisations.",
+        "en": "Bot Rewards tab with the list of rewards, their cost, their action and the latest uses."
       }
     }
   ]
