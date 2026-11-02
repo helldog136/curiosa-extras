@@ -98,10 +98,10 @@ test("vocabulaire réglable ; par défaut des mots neutres en deux langues", asy
   const plain = ctxFor();
   await addMany(plain, 2);
   assert.equal(textsOf(await pageHtml(plain)).comeBack, "Revenez demain pour une nouvelle question.");
-  assert.equal(textsOf(await pageHtml(plain)).streakMany, "{n} jours de suite !");
+  assert.equal(textsOf(await pageHtml(plain)).streakMany, "{n} jours de suite");
   const en = ctxFor({}, { locale: "en" });
   await addMany(en, 2);
-  assert.equal(textsOf(await pageHtml(en)).streakMany, "{n} days in a row!");
+  assert.equal(textsOf(await pageHtml(en)).streakMany, "{n} days in a row");
   assert.equal((await def.page(en, { segments: [] })).title, "Daily quiz");
   const own = ctxFor({ title: "Le défi du jour", intro: "Une question par jour.\n\nBonne chance !", streakText: "{n} jours d'affilée", comeBack: "À demain !", playLabel: "Relever le défi" });
   await addMany(own, 2);
@@ -112,7 +112,7 @@ test("vocabulaire réglable ; par défaut des mots neutres en deux langues", asy
   assert.match(JSON.stringify(await V.renderCard(own, NOON)), /Relever le défi/);
   const noN = ctxFor({ streakText: "sans variable" });
   await addMany(noN, 1);
-  assert.equal(textsOf(await pageHtml(noN)).streakMany, "{n} jours de suite !");
+  assert.equal(textsOf(await pageHtml(noN)).streakMany, "{n} jours de suite");
 });
 
 test("chronomètre : proposé et coché, décoché, ou absent ; partage décochable", async () => {

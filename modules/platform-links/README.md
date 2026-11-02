@@ -46,3 +46,7 @@ Seules les personnes autorisées (droit « modifier les liens des autres platefo
 Sujet fourni : `social.link`. Données : collection `links` (une ligne par lien). Page d'avertissement : route `go?l=<clé du lien>` de l'instance (`/m/<instance>/go?l=…`), car la page d'un module ne peut pas, dans ce cœur, se déclarer « non indexée » ; elle répond avec `X-Robots-Tag: noindex, nofollow`. La destination vient toujours de la configuration.
 
 Depuis la 1.1.0 (cœur 0.2.13 ou plus), chaque bouton de `social.link` déclare `rel`, `referrerPolicy` et `target` (valeurs de la liste fermée du cœur) : `DIRECT_LINK` pour une icône directe, `NOTICE_LINK` pour une icône vers `/go`. Le bouton de la page `/go` partage `OUTBOUND_REL` / `OUTBOUND_REFERRER`. Sur un cœur plus ancien, ces champs sont ignorés sans danger.
+
+## Visuels de la fiche
+
+Depuis la version 1.1.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

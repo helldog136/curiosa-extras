@@ -47,24 +47,7 @@ export async function context(ctx, { declare = true } = {}) {
   return { s, d, sources, cfg, list, env: { src: sources, t: ctx.t, prefix: s.prefix } };
 }
 
-/* ───────────── Arrêt d'urgence ───────────── */
-
-function emergency(ctx, muted, since, timeZone) {
-  const t = ctx.t;
-  if (muted) {
-    const when = since ? ` ${t("mute_since", { date: new Date(since).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone }) })}` : "";
-    return [
-      { type: "banner", tone: "warning", text: t("mute_on", { when }) },
-      { type: "adminForm", action: "unmute", submitLabel: t("mute_off_btn"), fields: [] },
-    ];
-  }
-  return [
-    { type: "adminForm", action: "mute", title: t("mute_title"), submitLabel: t("mute_btn"), fields: [] },
-    { type: "markdown", text: t("mute_help") },
-  ];
-}
-
-/* ───────────── « Le bot écoute ? » ───────────── */
+/* ───────────── Le haut de page : UNE ligne d'état et l'arrêt d'urgence ───────────── */
 
 async function connectBlocks(ctx, d, slot) {
   if (!d.channel) return [];
@@ -74,34 +57,40 @@ async function connectBlocks(ctx, d, slot) {
 }
 
 const PROBLEM_TONE = "warning";
+/** Le code qui dit où en est l'écoute. */
+const listenCode = (d, state) => (d.code !== "ready" ? d.code : (state.sub ?? {}).code ?? "unknown");
+/**
+ * La ligne d'état : « Le bot écoute votre chat · dernier message … · répond pendant vos directs » + « Vérifier » (ou « Réparer l'écoute » s'il y a un problème) + l'arrêt d'urgence,
+ * un petit bouton distinct, toujours visible sans défiler. Coupé, la ligne le dit et le bouton devient « Réactiver les réponses ». Aucune carte à un seul bouton (R3, R14, R24).
+ */
+function topBar(ctx, info, state) {
+  const t = ctx.t, { s, d } = info, code = listenCode(d, state), ok = code === "listening", muted = state.muted === true;
+  const fmt = (at) => new Date(at).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone: s.timeZone });
+  const fail = t("err_toggle");
+  const repair = !ok && ["revoked", "refused", "pending", "twitch_down", "twitch_busy"].includes(code);
+  const check = repair ? K.actionButton({ label: t("relisten_btn"), act: "relisten", cls: "small", fail }) : K.actionButton({ label: t("check_short"), act: "check", cls: "small", fail });
+  const stop = muted ? K.actionButton({ label: t("mute_off_btn"), act: "unmute", cls: "small primary", fail }) : K.actionButton({ label: t("mute_short"), act: "mute", cls: "small ck-danger", fail, title: t("mute_tip") });
+  const texts = muted ? [state.mutedAt ? t("mute_since", { date: fmt(state.mutedAt) }) : ""] : ok ? [state.lastMessageAt ? t("top_last", { when: fmt(state.lastMessageAt) }) : t("top_nomsg")] : [];
+  return K.statusBar(ctx, { kind: muted ? "danger" : ok ? "ok" : "warn", pill: muted ? t("top_muted") : ok ? t("top_listening") : t("top_problem"), texts: texts.filter(Boolean), grey: ok && !muted ? t(s.onlyWhenLive ? "top_live_only" : "top_always") : "", buttons: `${check}${stop}` });
+}
+
+/** Ce qui reste sous la ligne quand il y a un problème : la phrase qui dit pourquoi et quoi faire, le bouton d'autorisation. */
 async function listenBlocks(ctx, ctxInfo, state) {
   const t = ctx.t, { s, d } = ctxInfo;
   const sub = state.sub ?? {};
-  const code = d.code !== "ready" ? d.code : sub.code ?? "unknown";
+  const code = listenCode(d, state);
   const out = [];
   const res = d.main?.result;
   const botRes = d.bot?.result;
   if (res && res.code) out.push({ type: "banner", tone: "warning", text: t(`res_${res.code}`, { login: res.login ?? "" }) });
   if (botRes && botRes.code && s.replyAs === "bot") out.push({ type: "banner", tone: "warning", text: t(`res_${botRes.code}`, { login: botRes.login ?? "" }) });
-  if (code === "listening") {
-    const last = state.lastMessageAt ? new Date(state.lastMessageAt).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone: s.timeZone }) : null;
-    out.push({ type: "banner", tone: "success", text: t("listen_yes") });
-    out.push({ type: "markdown", text: [last ? t("listen_last", { when: last }) : t("listen_nomsg"), s.onlyWhenLive ? t("listen_live_only") : t("listen_always")].join(" ") });
-    return out;
-  }
+  if (code === "listening") return out;
   const failure = sub.failure ? ` ${t(`listen_failure_${sub.failure}`)}` : "";
-  out.push({ type: "banner", tone: PROBLEM_TONE, text: `${t("listen_no")} ${t(`listen_${code}`, { detail: sub.detail ?? "" })}${failure}` });
+  out.push({ type: "banner", tone: PROBLEM_TONE, text: `${t(`listen_${code}`, { detail: sub.detail ?? "" })}${failure}` });
   if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push({ type: "markdown", text: t("connect_steps") }, ...(await connectBlocks(ctx, d, "main")));
   else if (["bot_need_connect", "bot_reconnect", "bot_more"].includes(code)) out.push({ type: "markdown", text: t("connect_bot_steps") }, ...(await connectBlocks(ctx, d, "bot")));
   else if (code === "creds_missing" && d.main?.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) });
   else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
-  return out;
-}
-
-function listenActions(ctx, code) {
-  const t = ctx.t;
-  const out = [{ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] }];
-  if (["revoked", "refused", "pending", "twitch_down", "twitch_busy"].includes(code)) out.push({ type: "adminForm", action: "relisten", submitLabel: t("relisten_btn"), fields: [] });
   return out;
 }
 
@@ -146,9 +135,9 @@ async function editBlocks(ctx, info, key, query) {
   out.push(...(await CU.commandForm(ctx, info, { mode: "edit", view, key, kind, unsaved: !c })));
   if (kind === "custom" && used(view.text).includes("compteur")) {
     const n = (await st.readCounters(ctx))[view.key] ?? 0;
-    out.push({ type: "markdown", text: t("edit_counter", { n }) }, { type: "adminForm", action: "counterReset", submitLabel: t("counter_reset_btn"), fields: [{ name: "key", kind: "hidden", value: view.key }] });
+    out.push({ type: "markdown", text: t("edit_counter", { n }) }, K.inlineActions(ctx, K.actionButton({ label: t("counter_reset_btn"), act: "counterReset", id: view.key, cls: "small", fail: t("err_toggle") })));
   }
-  if (kind === "builtin") out.push({ type: "adminForm", action: "resetText", submitLabel: t("reset_btn"), fields: [{ name: "key", kind: "hidden", value: key }] });
+  if (kind === "builtin") out.push(K.inlineActions(ctx, K.actionButton({ label: t("reset_btn"), act: "resetText", id: key, cls: "small", fail: t("err_toggle") })));
   if (kind === "custom") out.push({ type: "table", columns: [t("delete_title")], rows: [[`${s.prefix}${view.name}`]], rowIds: [view.id], rowActions: [{ label: t("delete_btn"), action: "remove", confirm: t("delete_confirm", { command: `${s.prefix}${view.name}` }), danger: true }] });
   return out;
 }
@@ -164,7 +153,7 @@ function botAccountBlocks(ctx, info) {
   const t = ctx.t, { s, d } = info;
   if (s.replyAs !== "bot") return [];
   const out = [{ type: "heading", text: t("bot_title") }];
-  if (d.bot?.status === "ok" || d.bot?.status === "more") out.push({ type: "banner", tone: "success", text: t("bot_connected", { login: d.bot.login ?? "" }) }, { type: "adminForm", action: "disconnectBot", submitLabel: t("bot_disconnect"), fields: [] });
+  if (d.bot?.status === "ok" || d.bot?.status === "more") out.push({ type: "banner", tone: "success", text: t("bot_connected", { login: d.bot.login ?? "" }) }, K.inlineActions(ctx, K.actionButton({ label: t("bot_disconnect"), act: "disconnectBot", cls: "small", fail: t("err_toggle") })));
   else out.push({ type: "markdown", text: t("bot_help") });
   return out;
 }
@@ -182,13 +171,7 @@ export async function panel(ctx, { query }) {
     await ensureListening(ctx, info.s, { settle: true }).catch(() => {});
     state = await st.readState(ctx);
   }
-  const blocks = [];
-  blocks.push(...emergency(ctx, state.muted === true, state.mutedAt, info.s.timeZone));
-  blocks.push({ type: "heading", text: t("listen_title") });
-  blocks.push(...(await listenBlocks(ctx, info, state)));
-  blocks.push(...listenActions(ctx, info.d.code !== "ready" ? info.d.code : state.sub?.code ?? "unknown"));
-  blocks.push(...botAccountBlocks(ctx, info));
-  blocks.push(K.bootstrap(ctx));
+  const blocks = [K.bootstrap(ctx), topBar(ctx, info, state), ...(await listenBlocks(ctx, info, state)), ...botAccountBlocks(ctx, info)];
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
   else if (query?.new) blocks.push(...(await newBlocks(ctx, info)));
@@ -262,17 +245,18 @@ export const actions = {
   },
   async resetText(ctx, v) {
     const info = await context(ctx, { declare: false });
-    const { kind, id } = parseKey(v.key);
-    const c = info.list.find((x) => x.key === v.key);
+    const full = v.key ?? v.id;
+    const { kind, id } = parseKey(full);
+    const c = info.list.find((x) => x.key === full);
     if (!c || (kind !== "builtin" && kind !== "group")) return { error: ctx.t("err_unknown") };
     const r = await saveCommand(ctx, { kind, id }, { text: c.defaultText }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${v.key}#edit` };
+    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${full}#edit` };
   },
   ...RA.actions,
   ...TA.actions,
   async counterReset(ctx, v) {
     const info = await context(ctx, { declare: false });
-    const c = info.list.find((x) => x.key === v.key && x.kind === "custom");
+    const c = info.list.find((x) => x.key === (v.key ?? v.id) && x.kind === "custom");
     if (!c) return { error: ctx.t("err_unknown") };
     await st.setCounter(ctx, c.key, 0);
     return { ok: ctx.t("counter_reset_done") };

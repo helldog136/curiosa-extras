@@ -21,7 +21,7 @@ const { cell, plainText, slugify } = await import(`./text.mjs${v}`);
 const { pageHref, renderPage, renderTop } = await import(`./view.mjs${v}`);
 
 /** Doit rester égale à `version` de module.json (le script est mis en cache par son numéro). */
-export const VERSION = "1.0.2";
+export const VERSION = "1.0.3";
 
 // Deux brouillons d'exemple, créés avec l'instance : invisibles pour les visiteurs, ils montrent à Emma comment ça marche.
 const SEED = {

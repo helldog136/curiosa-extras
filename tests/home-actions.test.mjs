@@ -98,11 +98,14 @@ test("formulaire : la question simple, quatre choix lisibles, huit couleurs, un 
   assert.ok((await create(w, { title: "Aspi", what: "custom", actionName: "Lancer l'aspirateur" })).ok);
   const f = fieldsOf(await panel(w), "rewardCreate");
   const what = f.find((x) => x.name === "what");
-  assert.equal(what.label, "Que se passe-t-il quand une personne prend cette récompense ?");
+  assert.equal(what.label, "Ce qui se passe");
+  const shown = f.filter((x) => x.kind !== "hidden" && !x.folded).map((x) => x.name);
+  assert.deepEqual(shown, ["title", "cost", "what"], "chemin court : trois champs visibles, le reste sous « Plus d'options » (R2, R4)");
+  assert.ok(f.filter((x) => x.folded).every((x) => ["reply", "color", "actionName", "cooldown", "prompt", "needsInput"].includes(x.name)));
   assert.deepEqual(what.options.map((o) => o.label), ["Répondre dans le chat", "Changer la couleur des lumières", "Lire son message à voix haute", "Autre chose chez moi", "Vos actions : Lancer l'aspirateur"]);
   assert.deepEqual(what.options.map((o) => o.value), ["chat", "lights", "voice", "custom", "named:perso:lancer-l-aspirateur"]);
   assert.deepEqual(f.find((x) => x.name === "color").options.map((o) => o.label), ["Rouge", "Vert", "Bleu", "Jaune", "Orange", "Violet", "Rose", "Blanc"]);
-  assert.equal(f.find((x) => x.name === "actionName").label, "Donnez un nom à cette action");
+  assert.equal(f.find((x) => x.name === "actionName").label, "Nom de la nouvelle action");
   assert.ok(!f.some((x) => x.name === "action" || x.name === "actionKey"), "ni liste de clés brutes, ni champ de clé hors mode avancé");
   assert.ok(!/perso:|lumieres:|tts:lire|chat:repondre|clé d'action|webhook|token|jeton/i.test(visible(await panel(w))), "jamais de clé ni de jargon à l'écran");
   done();
@@ -131,15 +134,18 @@ test("formulaire : chaque choix crée la bonne action ; la voix impose le messag
 test("formulaire : les erreurs sont sous le bon champ, en mots simples, avec un exemple", async () => {
   const w = world(); await enable(w);
   let r = await create(w, { title: "A", what: "custom", actionName: "" });
-  assert.match(r.errors.actionName, /Donnez un nom à cette action\. Exemple : Lancer l'aspirateur/);
+  assert.match(r.errors.actionName, /Donnez un nom à cette action, dans « Plus d'options »\. Exemple : Lancer l'aspirateur/);
   r = await create(w, { title: "A", what: "custom", actionName: "x".repeat(61) });
   assert.match(r.errors.actionName, /60 caractères au plus\. Exemple/);
   r = await create(w, { title: "A", what: "lights", color: "turquoise" });
   assert.match(r.errors.color, /Choisissez une couleur dans la liste\. Exemple : Rouge/);
   r = await create(w, { title: "A", what: "n'importe quoi" });
   assert.match(r.errors.what, /Exemple/);
-  r = await create(w, { title: "A", what: "chat", reply: "" });
+  r = await create(w, { title: "A", what: "chat", reply: "x".repeat(500) });
   assert.ok(r.errors.reply);
+  assert.ok((await create(w, { title: "B", what: "chat", reply: "" })).ok, "réponse vide : une réponse sensée est prévue (rien d'obligatoire à écrire)");
+  assert.equal((await rewards(w)).find((x) => x.title === "B").reply, "Merci {utilisateur}.");
+  await RA.actions.rewardRemove.run(w.bot, { id: (await rewards(w)).find((x) => x.title === "B").id });
   r = await create(w, { title: "A", what: "named:perso:inconnue" });
   assert.ok(r.errors.what);
   assert.equal((await rewards(w)).length, 0);
@@ -228,7 +234,7 @@ test("« Vos actions » : la liste avec l'état de la maison, renommer, retirer 
   assert.ok(i > 0);
   const table = blocks[i + 2];
   assert.equal(table.type, "table");
-  assert.deepEqual(table.rows[0], ["Lancer l'aspirateur", "Aspi", "Pas encore essayée"]);
+  assert.deepEqual(table.rows[0], ["Lancer l'aspirateur", "Aspi", ""], "« pas encore essayée » est le cas normal : rien n'est écrit (R14)");
   assert.deepEqual(table.rowActions.map((a) => a.label), ["Renommer", "Retirer"]);
   assert.match(table.rowActions[0].href, /actionEdit=\{id\}/);
   blocks = await panel(w, { actionEdit: "perso:lancer-l-aspirateur" });
@@ -437,16 +443,17 @@ test("pas encore de script : la récompense le dit (liste et journal), les point
   // la liste des récompenses et le journal le disent en mots simples, avec le NOM de l'action
   let blocks = await panel(w);
   const list = blocks.find((b) => b.type === "table" && b.columns[0] === "Récompense");
-  assert.match(list.rows[0][0], /Aspi · 100 points · Lancer l'aspirateur/);
-  assert.ok(list.rows[0][1].includes(UNMAPPED), list.rows[0][1]);
+  assert.equal(list.rows[0][0].text, "Aspi"); assert.equal(list.rows[0][1].text, "Lancer l'aspirateur"); assert.equal(list.rows[0][2], "100 points");
+  assert.match(list.rows[0][3].switch.onText, /à relier dans Home Assistant/);
   const log = blocks.find((b) => b.type === "table" && b.columns[2] === "Résultat");
   assert.match(log.rows[0][1], /Aspi · Lancer l'aspirateur/);
-  assert.ok(log.rows[0][2].includes(UNMAPPED), log.rows[0][2]);
+  assert.equal(log.rows[0][2].text, "Points rendus");
+  assert.ok(log.rows[0][3].text.includes(UNMAPPED), log.rows[0][3].text);
   assert.ok(blocks.some((b) => b.type === "banner" && /Lancer l'aspirateur/.test(b.text) && /Curiosa > Configurer/.test(b.text)), "un bandeau nomme les actions à relier");
   assert.ok(!/perso:/.test(visible(blocks)));
   assert.equal(ACT.linkOf(await S.readState(w.bot), "perso:lancer-l-aspirateur"), "unmapped");
   const acts = blocks.find((b) => b.type === "table" && b.columns[0] === "Action");
-  assert.equal(acts.rows[0][2], "À relier dans Home Assistant");
+  assert.deepEqual(acts.rows[0][2], { text: "À relier dans Home Assistant", badge: "warn" });
   // le connecteur affiche « Actions en attente de liaison », avec le nom
   const ha = await hapanel(w);
   const i = ha.findIndex((b) => b.type === "heading" && b.text === "Actions en attente de liaison");
@@ -467,7 +474,7 @@ test("pas encore de script : la récompense le dit (liste et journal), les point
   assert.equal(ACT.linkOf(await S.readState(w.bot), "perso:lancer-l-aspirateur"), "ok");
   assert.ok(!(await panel(w)).some((b) => b.type === "banner" && /Curiosa > Configurer/.test(b.text)));
   assert.ok(!(await hapanel(w)).some((b) => b.type === "heading" && b.text === "Actions en attente de liaison"), "plus rien à relier");
-  assert.equal((await panel(w)).find((b) => b.type === "table" && b.columns[0] === "Action").rows[0][2], "Reliée à Home Assistant");
+  assert.equal((await panel(w)).find((b) => b.type === "table" && b.columns[0] === "Action").rows[0][2].text, "Reliée à Home Assistant");
   done();
 });
 
@@ -484,7 +491,7 @@ test("pas encore de script : aussi pour une action de base, une simulation et le
   assert.deepEqual([r.ok, r.status, r.reason], [true, "failed", "unmapped"]);
   assert.match(RA.simResult(w.bot, r).error, /Home Assistant does not have a script for this action yet\. Open Home Assistant > Curiosa > Configure to link it/);
   const blocks = await panel(w);
-  assert.match(blocks.find((b) => b.type === "table" && b.columns[0] === "Reward").rows[0][0], /Lights: red/);
+  assert.match(blocks.find((b) => b.type === "table" && b.columns[0] === "Reward").rows[0][1].text, /Lights: red/);
   assert.ok(blocks.some((b) => b.type === "banner" && /Lights: red/.test(b.text)));
   done();
 });
@@ -522,7 +529,8 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
   let i = blocks.findIndex((b) => b.type === "links" && b.items[0].label === "Relier à votre maison");
   assert.ok(i > 0, "le lien « Relier à votre maison »");
   assert.equal(blocks[i].items[0].href, "/admin/instances/h1");
-  assert.match(blocks[i - 1].text, /Tout couper/, "il dit ce qu'on y trouve : l'association, le coupe-circuit");
+  assert.equal(blocks[i].items[1].href, "#new", "R25 : l'état de la maison et, à côté, le lien pour créer une récompense");
+  assert.equal(blocks[i - 1].type, "banner", "l'état de la maison est dit juste au-dessus des liens");
   assert.ok(blocks.every((b) => b.tab === "rewards"));
   // Connecteur -> Bot Twitch : « Étape suivante », une fois associé
   await pairUp(w, {});
@@ -646,7 +654,7 @@ test("textes : parité EXACTE FR/EN (mêmes clés, mêmes {variables}), rien de 
     assert.ok(!/\bkey\b|webhook|token|payload|endpoint|entity/i.test(haEn[k]), `${k}: ${haEn[k]}`);
   }
   // les textes exacts demandés
-  assert.equal(botFr.rw_f_what, "Que se passe-t-il quand une personne prend cette récompense ?");
+  assert.equal(botFr.rw_f_what, "Ce qui se passe");
   assert.equal(botFr.rw_reason_unmapped, UNMAPPED);
   assert.equal(botFr.rw_house_link, "Relier à votre maison");
   assert.equal(haFr.next_btn, "Créer ou modifier vos récompenses");

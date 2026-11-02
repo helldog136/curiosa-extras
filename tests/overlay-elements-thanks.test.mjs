@@ -53,7 +53,7 @@ const addMessage = (ctx, contactId, texts) => ctx.api.store.add("messages", { co
 
 test("manifeste : valide, 1.2.0, minCore 0.5.0, un élément « Remerciements » fluide, style suivi, demo, quatre options minimales, droit « routes » seul ajouté", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.2.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.2.1"); assert.equal(manifest.minCore, "0.5.0");
   assert.equal(manifest.overlayElements.length, 1);
   const [e] = manifest.overlayElements;
   assert.equal(e.id, "thanks"); assert.equal(e.fit, "fluid"); assert.equal(e.followsStyle, true); assert.equal(e.demo, true);

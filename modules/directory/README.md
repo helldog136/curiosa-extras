@@ -48,3 +48,7 @@ Cinq outils en lecture seule : l'état, les catégories publiques, la recherche,
 ## Vie privée
 
 Le module ne copie ni nom, ni photo, ni compte : il garde seulement, par numéro de fiche, une présentation courte, une ville, le titre dans l'équipe et « masquée ici ». Quand une fiche est exportée ou effacée depuis Contacts, tout cela est exporté ou effacé avec elle. Une photo hébergée ailleurs n'est chargée qu'après un clic de la personne qui visite (sauf choix contraire). La déclaration complète est dans la page « Confidentialité » du site.
+
+## Visuels de la fiche
+
+Depuis la version 1.0.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

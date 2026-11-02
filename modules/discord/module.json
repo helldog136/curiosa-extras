@@ -5,11 +5,11 @@
     "en": "Discord",
     "fr": "Discord"
   },
-  "version": "1.1.5",
+  "version": "1.3.0",
   "platform": "discord",
   "description": {
-    "en": "Shows your Discord button in the site header and shares your member count. Add one per account if you have several.",
-    "fr": "Affiche le bouton de votre Discord dans l'en-tête du site et partage le nombre de vos membres. Ajoutez-en un par compte si vous en avez plusieurs."
+    "en": "Shows your Discord button in the site header and shares your member count.",
+    "fr": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -51,12 +51,16 @@
       "key": "profile",
       "type": "text",
       "label": {
-        "en": "Discord profile",
-        "fr": "Profil Discord"
+        "en": "Your profile address",
+        "fr": "Adresse de votre profil"
       },
       "help": {
-        "en": "Your Discord invite code (e.g. abcDEF) or its full address.",
-        "fr": "Le code de votre invitation Discord (ex. abcDEF) ou son adresse complète."
+        "en": "Paste your invitation link.",
+        "fr": "Collez votre lien d'invitation."
+      },
+      "example": {
+        "en": "https://discord.gg/abcDEF",
+        "fr": "https://discord.gg/abcDEF"
       }
     },
     {
@@ -73,18 +77,86 @@
       }
     },
     {
+      "key": "createShortLink",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Create a short address for your Discord",
+        "fr": "Créer une adresse courte pour votre Discord"
+      },
+      "help": {
+        "en": "It stays the same if your invitation changes.",
+        "fr": "Elle reste la même si votre invitation change."
+      }
+    },
+    {
       "key": "invite",
       "type": "text",
       "label": {
-        "en": "Invitation link (optional)",
-        "fr": "Lien d'invitation (facultatif)"
+        "en": "Invitation link",
+        "fr": "Lien d'invitation"
       },
       "help": {
-        "en": "Only if the Discord profile is not already an invitation: paste a Discord invitation link that never expires, so the members can be counted.",
-        "fr": "Seulement si le profil Discord n'est pas déjà une invitation : collez un lien d'invitation Discord sans date de fin, pour compter vos membres."
+        "en": "Only if the address above is not an invitation.",
+        "fr": "Seulement si l'adresse ci-dessus n'est pas une invitation."
       },
-      "optional": true
+      "optional": true,
+      "example": {
+        "en": "https://discord.gg/abcDEF",
+        "fr": "https://discord.gg/abcDEF"
+      },
+      "rare": true
+    },
+    {
+      "key": "shortLinkName",
+      "type": "text",
+      "label": {
+        "en": "Name of the short address",
+        "fr": "Nom de l'adresse courte"
+      },
+      "help": {
+        "en": "Letters, digits and dashes. Empty: discord.",
+        "fr": "Lettres, chiffres et tirets. Vide : discord."
+      },
+      "optional": true,
+      "example": {
+        "en": "discord-fr",
+        "fr": "discord-fr"
+      },
+      "rare": true
     }
   ],
-  "minCore": "0.2.2"
+  "minCore": "0.6.0",
+  "shortLink": {
+    "enabled": "createShortLink",
+    "name": "shortLinkName",
+    "default": "discord",
+    "target": "social.link"
+  },
+  "social": {
+    "name": "Discord",
+    "icon": "discord",
+    "hosts": [
+      "discord.gg",
+      "discord.com",
+      "discordapp.com"
+    ],
+    "template": "https://discord.gg/{h}",
+    "example": {
+      "en": "https://discord.gg/abcDEF",
+      "fr": "https://discord.gg/abcDEF"
+    },
+    "shapes": [
+      {
+        "host": "^discord\\.gg$",
+        "re": "^/([A-Za-z0-9-]{2,32})/?$",
+        "handle": true
+      },
+      {
+        "host": "^discord(?:app)?\\.com$",
+        "re": "^/invite/([A-Za-z0-9-]{2,32})/?$",
+        "handle": true
+      }
+    ]
+  }
 }

@@ -69,6 +69,30 @@ Les tests passent par le chargeur du cœur : un module ne doit utiliser que l'AP
 
 **Ergonomie des pages d'administration.** Les règles automatiques de [docs/ERGONOMIE-ADMIN.md](docs/ERGONOMIE-ADMIN.md) (marquées **[auto]**) sont mesurées sur le manifeste et les textes de chaque module par `tests/ergonomics.test.mjs`, avec une **base d'écarts connus** (`tests/ergonomics-baseline.json`) : un écart de la base est un avertissement, un **nouvel** écart (nouveau réglage, nouveau texte) fait échouer le test, et un écart corrigé doit être retiré de la base, qui **ne peut que rétrécir**. `node scripts/ergonomics-baseline.mjs --write` met la base à jour (il refuse d'ajouter un écart), `--report` imprime le tableau « module → nombre d'écarts par règle ». Un **nouveau** module n'a droit à aucun écart. Pour une page produite par du code (`adminPanel`), appelez dans vos tests `assertAdminPageErgonomics(blocks)` (copie locale : `tests/helpers/ergonomics.mjs`) : champs visibles, recherche d'une liste de plus de 10 lignes, étiquette répétée, « Activer / désactiver », erreurs avec exemple. Le reste (une page une tâche, chemin court, un seul bouton principal, etc.) se juge en revue, sur des captures.
 
+## Les visuels des fiches : la clé `previews`
+La fiche d'une extension (dans le Catalogue, avant et après l'installation) montre jusqu'à **6 captures** de ce que le module ajoute : une page de commandes, un écran d'administration, un élément d'overlay. Elles se déclarent dans le `module.json` du module (clé `previews`, **sans `minCore`** : un cœur plus ancien ignore la clé et montre la fiche comme avant) ; les images vivent dans `modules/<id>/previews/`. Détail du format côté cœur : CREATE-A-MODULE.md du cœur, section « 18 bis. Montrer le module : `previews` ».
+
+```json
+"previews": [
+  { "file": "previews/commandes.webp", "type": "admin",
+    "caption": { "fr": "Toutes vos commandes dans un seul tableau.", "en": "All your commands in a single table." },
+    "alt":     { "fr": "Tableau de commandes avec recherche et interrupteurs.", "en": "Table of commands with search and switches." } }
+]
+```
+- `type` : `public` (une page du site), `admin` (un écran d'administration) ou `overlay` (un élément pour OBS).
+- `caption` (140 caractères au plus, vouvoiement, une phrase) et `alt` (250 au plus, décrit l'image pour les lecteurs d'écran, ne répète pas la légende) : **français et anglais obligatoires**.
+- Image : **WebP** (ou PNG) de **150 Ko au plus**, 240 à 2400 px de côté, environ **1280 px de large**. Le type est lu dans les octets : une image renommée est refusée.
+- `node scripts/build-index.mjs` **recopie la déclaration** (jamais les images) dans l'entrée du catalogue et **refuse** un visuel invalide ou absent ; `--check` échoue si une image référencée manque. `node scripts/shoot-previews.mjs --check` vérifie les images sans rien générer.
+
+**Produire ou refaire les captures (reproductible).** Chaque module qui a des visuels a une « scène » dans `tests/visual/previews/<id>.mjs` : elle fabrique la page avec le **vrai code du module** (rendu public du module, blocs d'administration rendus par les vrais composants du cœur) et des **données inventées**. Le script prend les captures avec Chromium à 1280 px et les enregistre en WebP :
+```
+CURIOSA_DIR=../Curiosa node scripts/shoot-previews.mjs              # toutes les captures
+CURIOSA_DIR=../Curiosa node scripts/shoot-previews.mjs faq planning # seulement ces modules
+```
+Il faut le dossier du cœur (avec `npm ci`), Playwright et Chromium (`PLAYWRIGHT_MODULE` et `CHROMIUM_PATH` si le vôtre n'est pas trouvé). L'horloge est figée (un lundi d'octobre 2026) : le résultat ne dépend pas du jour où vous tournez la commande. Pour un nouveau module : écrivez sa scène, déclarez `previews` dans son `module.json` (le script vérifie que chaque scène a sa déclaration et inversement), lancez la commande, **regardez chaque image**, puis `node scripts/build-index.mjs`.
+
+**Règles de confidentialité (obligatoires).** Une capture ne montre **jamais** une donnée réelle : ni pseudo, ni nom, ni adresse électronique, ni adresse de site, ni jeton, ni photo d'une vraie personne, ni nom de votre communauté ou de vos partenaires. Utilisez des pseudos génériques, des adresses en `example.org` / `.test`, des illustrations dessinées (`art()` dans `tests/visual/previews/kit.mjs`) et un faux site (« Atelier Démo »). Le script **refuse** de produire une capture dont le texte contient une adresse hors `example.*`, `.test` ou une adresse électronique réelle, et chaque scène peut y ajouter ses propres interdits (`forbid`). Une capture d'écran de votre vrai site n'a pas sa place ici.
+
 ## Soutenir le projet
 
 Ces modules sont gratuits. Si vous les aimez, un pourboire est possible sur [helldog136.be/tip-me](https://helldog136.be/tip-me) ; c'est entièrement volontaire, rien n'en dépend.
