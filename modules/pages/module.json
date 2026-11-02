@@ -5,7 +5,7 @@
     "en": "Pages",
     "fr": "Pages"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "instances": "single",
@@ -31,6 +31,123 @@
       "body"
     ],
     "basePath": "",
-    "showInNav": false
+    "showInNav": false,
+    "templates": [
+      {
+        "id": "about-us",
+        "name": {
+          "fr": "Qui sommes-nous",
+          "en": "Who we are"
+        },
+        "description": {
+          "fr": "Présenter votre association ou votre collectif.",
+          "en": "Introduce your association or collective."
+        },
+        "title": {
+          "fr": "Qui sommes-nous",
+          "en": "Who we are"
+        },
+        "summary": {
+          "fr": "Qui nous sommes, ce que nous faisons et comment nous rejoindre.",
+          "en": "Who we are, what we do and how to join us."
+        },
+        "body": {
+          "fr": "*Texte d'exemple : modifiez-le avant de publier.*\n\n## Qui nous sommes\n\nNous sommes un petit groupe de personnes réunies autour d'une même envie. Dites ici, en deux ou trois phrases, ce qui vous rassemble.\n\n## Ce que nous faisons\n\n- Une activité régulière, par exemple une rencontre par mois\n- Un projet en cours\n- Une façon simple de participer\n\n## Nous rejoindre\n\nExpliquez comment une personne intéressée peut vous écrire ou venir à votre prochaine rencontre.",
+          "en": "*Example text: edit it before you publish.*\n\n## Who we are\n\nWe are a small group of people brought together by a shared interest. Say here, in two or three sentences, what unites you.\n\n## What we do\n\n- A regular activity, for instance one meeting a month\n- A project under way\n- A simple way to take part\n\n## Join us\n\nExplain how someone interested can write to you or come to your next meeting."
+        }
+      },
+      {
+        "id": "practical-info",
+        "name": {
+          "fr": "Infos pratiques",
+          "en": "Practical information"
+        },
+        "description": {
+          "fr": "Horaires, adresse et contact, en texte libre.",
+          "en": "Opening hours, address and contact, in plain text."
+        },
+        "title": {
+          "fr": "Infos pratiques",
+          "en": "Practical information"
+        },
+        "summary": {
+          "fr": "Où nous trouver, quand et comment nous joindre.",
+          "en": "Where to find us, when and how to reach us."
+        },
+        "body": {
+          "fr": "*Texte d'exemple : modifiez-le avant de publier.*\n\n## Horaires\n\n- Du lundi au vendredi : de 9 h à 17 h\n- Le samedi : sur rendez-vous\n- Le dimanche : fermé\n\n## Adresse\n\n12 rue de l'Exemple, 1000 Ville d'exemple\n\nAjoutez ici un repère simple, comme l'arrêt de bus le plus proche.\n\n## Contact\n\n- Par e-mail : contact@example.com\n- Par téléphone : 00 00 00 00 00",
+          "en": "*Example text: edit it before you publish.*\n\n## Opening hours\n\n- Monday to Friday: 9 am to 5 pm\n- Saturday: by appointment\n- Sunday: closed\n\n## Address\n\n12 Example Street, Example Town\n\nAdd a simple landmark here, such as the nearest bus stop.\n\n## Contact\n\n- By email: contact@example.com\n- By phone: 00 00 00 00 00"
+        }
+      },
+      {
+        "id": "timeline",
+        "name": {
+          "fr": "Chronologie",
+          "en": "Timeline"
+        },
+        "description": {
+          "fr": "Raconter votre histoire en étapes datées.",
+          "en": "Tell your story in dated steps."
+        },
+        "title": {
+          "fr": "Notre histoire",
+          "en": "Our story"
+        },
+        "summary": {
+          "fr": "Les grandes étapes, de la première à la plus récente.",
+          "en": "The main steps, from the oldest to the most recent."
+        },
+        "body": {
+          "fr": "*Texte d'exemple : modifiez-le avant de publier.*\n\nRacontez votre parcours étape par étape, de la première à la plus récente.\n\n- **2019** : le début de l'aventure, une première idée et quelques personnes motivées.\n- **2021** : une première étape importante.\n- **2023** : un projet qui grandit.\n- **Aujourd'hui** : ce que vous faites en ce moment.",
+          "en": "*Example text: edit it before you publish.*\n\nTell your journey step by step, from the oldest to the most recent.\n\n- **2019**: the start of the adventure, a first idea and a few motivated people.\n- **2021**: a first important step.\n- **2023**: a project that grows.\n- **Today**: what you are doing right now."
+        }
+      },
+      {
+        "id": "about-me",
+        "name": {
+          "fr": "À propos de moi",
+          "en": "About me"
+        },
+        "description": {
+          "fr": "Vous présenter en quelques phrases.",
+          "en": "Introduce yourself in a few sentences."
+        },
+        "title": {
+          "fr": "À propos de moi",
+          "en": "About me"
+        },
+        "summary": {
+          "fr": "Qui je suis et ce que je fais.",
+          "en": "Who I am and what I do."
+        },
+        "body": {
+          "fr": "*Texte d'exemple : modifiez-le avant de publier.*\n\n## Bonjour\n\nMerci de votre visite. Je partage ici ce que je fais et ce qui me passionne.\n\n## Mon parcours\n\nRésumez en quelques lignes comment tout a commencé et où vous en êtes aujourd'hui.\n\n## Ce qui m'inspire\n\nParlez de vos sources d'inspiration, de vos habitudes de travail ou de vos projets.\n\n## Me contacter\n\nIndiquez la meilleure façon de vous écrire.",
+          "en": "*Example text: edit it before you publish.*\n\n## Hello\n\nThank you for visiting. I share here what I do and what I care about.\n\n## My journey\n\nSum up in a few lines how it all started and where you stand today.\n\n## What inspires me\n\nTalk about your sources of inspiration, your working habits or your projects.\n\n## Get in touch\n\nSay what is the best way to write to you."
+        }
+      },
+      {
+        "id": "showcase",
+        "name": {
+          "fr": "Ce que je propose",
+          "en": "What I offer"
+        },
+        "description": {
+          "fr": "Une vitrine en texte, avec des liens vers l'extérieur.",
+          "en": "A text showcase, with links to other sites."
+        },
+        "title": {
+          "fr": "Ce que je propose",
+          "en": "What I offer"
+        },
+        "summary": {
+          "fr": "Un aperçu de mes créations et de mes activités.",
+          "en": "A look at my work and my activities."
+        },
+        "body": {
+          "fr": "*Texte d'exemple : modifiez-le avant de publier.*\n\nPrésentez ici ce que vous proposez, en quelques lignes pour chaque élément.\n\n## Premier élément\n\nUne phrase pour dire de quoi il s'agit et à qui il s'adresse.\n\n[En savoir plus](https://example.com)\n\n## Deuxième élément\n\nUne phrase pour le décrire, avec un lien vers l'endroit où le découvrir.\n\n[Le découvrir](https://example.com)\n\n## Une question ?\n\nÉcrivez-moi : [contact@example.com](mailto:contact@example.com)",
+          "en": "*Example text: edit it before you publish.*\n\nPresent here what you offer, in a few lines for each item.\n\n## First item\n\nOne sentence to say what it is and who it is for.\n\n[Learn more](https://example.com)\n\n## Second item\n\nOne sentence to describe it, with a link to where people can find it.\n\n[See it](https://example.com)\n\n## A question?\n\nWrite to me: [contact@example.com](mailto:contact@example.com)"
+        }
+      }
+    ]
   }
 }

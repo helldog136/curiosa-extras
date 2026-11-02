@@ -4,6 +4,18 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Nouveautés
+
+- **Pages 1.1.0 : « Partir d'un modèle ».** Cinq modèles de pages à modifier : « Qui sommes-nous », « Infos pratiques », « Chronologie », « À propos de moi » et « Ce que je propose ». Chacun crée un brouillon prérempli, jamais une page publiée.
+- **Une question pour démarrer : « Vous êtes… ? »** Streamer, association, activité indépendante ou artiste : l'assistant d'installation coche d'avance les extensions qui vont avec et propose les pages d'exemple correspondantes. Vous pouvez passer la question et tout changer ensuite.
+- **Aucun texte juridique.** Les modèles ne contiennent ni mentions légales ni politique de confidentialité : ces textes restent à écrire par vous.
+
+### Pour les développeurs
+
+- `catalogue/profiles.json` (nouveau, facultatif) : profils de départ lus par le cœur après 0.6.2. `catalogue/suggested.json` ne change pas. Pages : clé `content.templates` dans `module.json`, ignorée par un cœur plus ancien (aucun `minCore`).
+
 ## 1.36.0 — 2026-11-02
 
 *Nouveau module : la Boîte à idées. Votre public vous propose des idées sur une page, vous relisez avant que quoi que ce soit apparaisse. Boîte à idées 1.0.0, pour Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
