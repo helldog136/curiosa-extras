@@ -18,10 +18,11 @@ test("départ : « Par où commencer ? » propose les gabarits ; seuls ceux qui 
   clockAt(NOON);
   const ctx = ctxFor();
   const blocks = await panel(ctx);
-  assert.equal(blocks[0].text, "Par où commencer ?");
+  assert.ok(blocks.some((b) => b.type === "heading" && b.text === "Par où commencer ?"));
+  assert.equal(blocks[0].type, "markdown", "une phrase dit à quoi sert la page");
   const t = tables(blocks)[0];
   assert.deepEqual(t.rowIds, ["games", "empty"]);
-  assert.match(t.rows[0][0], /Culture jeu vidéo\n30 questions prêtes/);
+  assert.equal(t.rows[0][0], "Culture jeu vidéo"); assert.match(t.rows[0][1], /30 questions prêtes/);
   assert.equal(t.rowActions[0].action, "applyTemplate");
   assert.ok(!textOf(await panel(ctxFor({}, { rights: [] }))).includes("Par où commencer"));
 });
@@ -58,7 +59,7 @@ test("packs : activer, réactiver sans doublon, compléter, retirer", async () =
   assert.equal((await act(ctx, "activatePack", { id: "streaming" })).ok, "1 questions ajoutées et publiées.");
   await act(ctx, "activatePack", { id: "games" });
   assert.equal(qs(ctx).length, 60);
-  assert.match(tables(await panel(ctx)).find((t) => t.rowIds?.join() === "games,streaming").rows[0][0], /Activé : 30 questions sur 30/);
+  assert.match(tables(await panel(ctx)).find((t) => t.rowIds?.join() === "games,streaming").rows[0][2].text, /30 sur 30 questions/);
   assert.equal((await act(ctx, "removePack", { id: "games" })).ok, "30 questions retirées.");
   assert.ok(qs(ctx).every((q) => q.pack.startsWith("streaming:")));
 });
@@ -75,7 +76,10 @@ test("formulaire : les champs dans l'ordre d'une personne qui écrit", async () 
   clockAt(NOON);
   const ctx = ctxFor();
   const f = form(await panel(ctx, { new: "1" }), "saveQuestion");
-  assert.deepEqual(f.fields.map((x) => x.name), ["id", "q_fr", "a1_fr", "a2_fr", "a3_fr", "a4_fr", "correct", "e_fr", "q_en", "a1_en", "a2_en", "a3_en", "a4_en", "e_en", "image", "alt_fr", "alt_en", "cat", "lvl", "date", "state"]);
+  assert.deepEqual(f.fields.map((x) => x.name), ["id", "q_fr", "answers_fr", "correct", "e_fr", "q_en", "answers_en", "e_en", "image", "alt_fr", "alt_en", "cat", "lvl", "date", "state"]);
+  assert.deepEqual(f.fields.filter((x) => x.kind !== "hidden" && !x.folded).map((x) => x.name), ["q_fr", "answers_fr", "correct"], "chemin court : la question, les réponses, la bonne ; tout le reste est replié");
+  assert.equal(f.fields.find((x) => x.name === "correct").kind, "segmented");
+  assert.equal(f.submitLabel, "Ajouter la question");
   assert.equal(f.fields.find((x) => x.name === "date").kind, "date");
   assert.equal(f.fields.find((x) => x.name === "image").kind, "image");
   assert.equal(f.cancelHref, `/admin/instances/${ctx.instance.id}`);
@@ -134,7 +138,7 @@ test("droits : sans le droit de publier, tout reste en brouillon ; chaque action
   assert.match((await act(ctx, "saveQuestion", good())).errors.state, /pas le droit de publier/);
   assert.equal((await act(ctx, "saveQuestion", good({ state: "draft" }))).ok, "Enregistré.");
   for (const n of ["publish", "unpublish", "useToday", "applyTemplate", "activatePack", "removePack", "restartPlan"]) assert.equal(def.adminActions[n].right, "publish", n);
-  for (const n of ["saveQuestion", "removeQuestion", "importCsv", "moveUp", "moveDown", "moveTop", "clearDate", "search"]) assert.equal(def.adminActions[n].right, "edit", n);
+  for (const n of ["saveQuestion", "removeQuestion", "importCsv", "moveUp", "moveDown", "moveTop", "clearDate"]) assert.equal(def.adminActions[n].right, "edit", n);
   for (const n of ["removeBoardRow", "clearBoard"]) assert.equal(def.adminActions[n].right, "moderate", n);
   assert.deepEqual(manifest.rights.map((r) => r.id), ["edit", "publish", "moderate"]);
 });
@@ -241,19 +245,23 @@ test("« Utiliser aujourd'hui » change la question du jour ; « recommencer le 
   assert.deepEqual(rows(ctx, "dg_plan")[0].hist, {});
 });
 
-test("liste : 50 par page, filtres par état et catégorie, recherche dans les textes", async () => {
+test("liste : un tableau avec recherche en direct, pastilles d'état avec leur nombre, 50 par page", async () => {
   clockAt(NOON);
   const ctx = ctxFor();
   for (let i = 1; i <= 120; i++) await addQuestion(ctx, { q: `Question numéro ${i} ?`, a: [`Réponse${i}`, "Autre"], cat: i % 2 ? "Impair" : "Pair", status: i % 10 === 0 ? "draft" : "published", pos: i });
-  const rowsOf = (blocks) => tables(blocks).find((t) => t.columns[0] === "Question" && t.rows.length > 0 && t.rowActions?.some((x) => x.href === "?edit={id}")).rows;
-  assert.equal(rowsOf(await panel(ctx)).length, 50);
-  assert.equal(rowsOf(await panel(ctx, { page: "3" })).length, 20);
-  assert.equal(rowsOf(await panel(ctx, { state: "draft" })).length, 12);
-  assert.equal(rowsOf(await panel(ctx, { cat: "Pair", page: "2" })).length, 10);
-  assert.equal(rowsOf(await panel(ctx, { q: "numero 77" })).length, 1);
-  assert.equal(rowsOf(await panel(ctx, { q: "Réponse88" })).length, 1);
-  assert.match(textOf(await panel(ctx, { q: "zzzz" })), /Aucune question ne correspond/);
-  assert.equal((await act(ctx, "search", { q: "numéro 5" })).redirect, "?q=num%C3%A9ro%205");
+  const blocks = await panel(ctx);
+  const list = tables(blocks).find((t) => t.columns[0] === "Question" && t.rows.length > 0 && t.rowActions?.some((x) => x.href === "?edit={id}"));
+  assert.equal(list.rows.length, 120, "toutes les questions sont envoyées : la recherche du cœur couvre tout");
+  assert.equal(list.rowIds.length, 120);
+  assert.deepEqual([list.searchable, list.pageSize, list.truncate], [true, 50, [0]]);
+  assert.equal(list.columns[list.filters[0].column], "État", "pastilles d'état (le cœur y met leur nombre)");
+  assert.deepEqual([...new Set(list.rows.map((r) => r[4].text))].sort(), ["Brouillon", "Publiée"]);
+  assert.ok(list.rows.every((r) => r[4].badge), "état : pastille colorée ET écrite");
+  assert.match(list.rows.find((r) => r[0].text === "Question numéro 77 ?")[0].title, /Réponse77/, "les réponses sont cherchables (info-bulle)");
+  assert.equal(list.rows.filter((r) => r[1] === "Pair").length, 60);
+  assert.ok(list.rows.every((r) => r[2] === "Manque : EN"), "seule la langue qui manque est dite, et seulement quand elle manque");
+  assert.ok(!blocks.some((b) => b.type === "adminForm" && b.action === "search"), "plus de formulaire « Chercher » avec bouton");
+  assert.equal(def.adminActions.search, undefined);
   assert.match((await panel(ctx)).find((b) => b.type === "heading" && b.text.startsWith("Mes questions")).text, /\(120 sur 2000\)/);
 });
 
@@ -324,7 +332,7 @@ test("import CSV : tout ou rien — chaque erreur dit la ligne", async () => {
     "Doublon de réponse ?,Oui,oui,,1,,,",
   );
   const msg = (await act(ctx, "importCsv", { file, lang: "fr", state: "published" })).errors.file;
-  for (const re of [/Ligne 3 : La bonne réponse \(colonne correct\) doit être un numéro de 1 à 2/, /Ligne 4 : Il faut au moins deux réponses non vides/, /Ligne 5 : Il manque la question/, /Ligne 6 : Difficulté inconnue « monstrueux »/, /Ligne 7 : Date illisible « pas-une-date »/, /Ligne 8 : La date 2020-01-01 est passée/, /Ligne 9 : État inconnu « peut-être »/, /Ligne 10 : Deux réponses sont identiques/, /Rien n'a été importé/]) assert.match(msg, re);
+  for (const re of [/Ligne 3 : La bonne réponse \(colonne correct\) est un numéro de 1 à 2/, /Ligne 4 : Il faut au moins deux réponses non vides/, /Ligne 5 : Il manque la question/, /Ligne 6 : Difficulté inconnue « monstrueux »/, /Ligne 7 : Date illisible « pas-une-date »/, /Ligne 8 : La date 2020-01-01 est passée/, /Ligne 9 : État inconnu « peut-être »/, /Ligne 10 : Deux réponses sont identiques/, /Rien n'a été importé/]) assert.match(msg, re);
   assert.equal(qs(ctx).length, 0);
 });
 

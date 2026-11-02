@@ -8,6 +8,7 @@ const R = await import(`./rewards.mjs${v}`);
 const J = await import(`./redeem.mjs${v}`);
 const A = await import(`./actions.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
+const K = await import(`./adminkit.mjs${v}`);
 const { accounts, declareScopes, ensureRedeemListening, isPublicSite } = await import(`./listen.mjs${v}`);
 
 const SERVICE = "twitch.api";
@@ -54,11 +55,8 @@ const actionName = (ctx, names, key, { snap, advanced = false } = {}) => {
 };
 /** Ce que la maison dit d'une action : 'unmapped' (pas encore de script relié), 'ok', ou null. */
 const linkOf = (state, key) => (R.isHome(key) ? A.linkOf(state, key) : null);
-const statusText = (t, r, unmapped) => {
-  const s = R.statusOf(r);
-  const base = s === "paused" ? (r.pause === "auto" ? t("rw_state_paused_auto") : t("rw_state_paused")) : s === "refused" ? t("rw_state_refused", { why: t(`rw_refused_${r.refused?.code === "duplicate" ? "duplicate" : "other"}`) }) : t(`rw_state_${s}`);
-  return unmapped && s !== "gone" ? `${base} · ${t("rw_reason_unmapped")}` : base;
-};
+/** La couleur de la pastille « ce qui se passe » : toujours accompagnée du mot écrit. */
+const toneOf = (key) => (key === A.BOT_ACTION ? "info" : key.startsWith("lumieres:") ? "accent" : key === A.VOICE_ACTION ? "ok" : "warn");
 
 /** « Que se passe-t-il ? » pour une action déjà choisie : la valeur du choix (et la couleur, pour les lumières). */
 export function whatOf(action) {
@@ -81,6 +79,10 @@ function whatOptions(ctx, namedList, homeInstalled, current) {
   return out;
 }
 
+/**
+ * Le formulaire d'une récompense. Visibles : Titre, Coût, Ce qui se passe (3). Sous « Plus d'options » : la réponse du bot, la couleur, le nom d'une nouvelle action,
+ * le délai de recharge, le texte d'aide, le message du viewer. Tous les contrôles sont ceux du cœur 0.6.0.
+ */
 function rewardForm(ctx, info, namedList, homeInstalled, doc) {
   const t = ctx.t, s = info.s;
   const v = doc ?? { title: "", cost: "", cooldown: 0, prompt: "", needsInput: false, action: homeInstalled ? A.lightKey("rouge") : A.BOT_ACTION, reply: "" };
@@ -89,16 +91,16 @@ function rewardForm(ctx, info, namedList, homeInstalled, doc) {
     type: "adminForm", action: doc ? "rewardSave" : "rewardCreate", submitLabel: t(doc ? "rw_save_btn" : "rw_new_btn"), ...(doc ? { cancelHref: "?tab=rewards" } : {}),
     fields: [
       ...(doc ? [{ name: "id", kind: "hidden", value: doc.id }] : []),
-      { name: "title", label: t("rw_f_title"), value: v.title, required: true, help: t("rw_f_title_help", { max: es.LIMITS.title }) },
-      { name: "cost", label: t("rw_f_cost"), kind: "number", value: v.cost, required: true, help: t("rw_f_cost_help") },
-      { name: "cooldownMin", label: t("rw_f_cooldown"), kind: "number", value: v.cooldown ? Math.round(v.cooldown / 6) / 10 : "", help: t("rw_f_cooldown_help") },
-      { name: "prompt", label: t("rw_f_prompt"), value: v.prompt, help: t("rw_f_prompt_help", { max: es.LIMITS.prompt }) },
-      { name: "needsInput", label: t("rw_f_input"), kind: "checkbox", value: v.needsInput ? "on" : "", help: t("rw_f_input_help") },
+      { name: "title", label: t("rw_f_title"), value: v.title, required: true, help: t("rw_f_title_help"), example: t("rw_ex_title") },
+      { name: "cost", label: t("rw_f_cost"), kind: "number", value: v.cost, required: true, min: 1, max: es.LIMITS.maxCost, step: 1, unit: t("rw_unit_points"), example: "500" },
       { name: "what", label: t("rw_f_what"), kind: "select", value: w.what, options: whatOptions(ctx, namedList, homeInstalled, w.what), help: t("rw_f_what_help") },
-      { name: "color", label: t("rw_f_color"), kind: "select", value: w.color ?? "rouge", options: A.COLORS.map((c) => ({ value: c, label: t(`rw_color_${c}`) })), help: t("rw_f_color_help") },
-      { name: "reply", label: t("rw_f_reply"), kind: "textarea", value: v.reply ?? "", help: t("rw_f_reply_help") },
-      { name: "actionName", label: t("rw_f_an"), value: "", help: t("rw_f_an_help", { max: A.MAX_LABEL }) },
-      ...(s.showKeys ? [{ name: "actionKey", label: t("rw_f_key"), value: "", help: t("rw_f_key_help") }] : []),
+      { name: "reply", label: t("rw_f_reply"), kind: "textarea", value: v.reply ?? "", placeholder: t("rw_reply_default"), help: t("rw_f_reply_help"), example: t("rw_ex_reply"), folded: true },
+      { name: "color", label: t("rw_f_color"), kind: "select", value: w.color && w.color !== "rouge" ? w.color : "", options: A.COLORS.map((c) => ({ value: c === "rouge" ? "" : c, label: t(`rw_color_${c}`) })), help: t("rw_f_color_help"), folded: true },
+      { name: "actionName", label: t("rw_f_an"), value: "", help: t("rw_f_an_help", { max: A.MAX_LABEL }), example: t("rw_ex_action"), folded: true },
+      { name: "cooldown", label: t("rw_f_cooldown"), kind: "duration", value: v.cooldown ? String(v.cooldown) : "", min: 0, max: es.LIMITS.maxCooldown, help: t("rw_f_cooldown_help"), folded: true },
+      { name: "prompt", label: t("rw_f_prompt"), value: v.prompt, help: t("rw_f_prompt_help", { max: es.LIMITS.prompt }), example: t("rw_ex_prompt"), folded: true },
+      { name: "needsInput", label: t("rw_f_input"), kind: "switch", value: v.needsInput ? "on" : "", help: t("rw_f_input_help"), folded: true },
+      ...(s.showKeys ? [{ name: "actionKey", label: t("rw_f_key"), value: "", help: t("rw_f_key_help"), example: "aspirateur:lancer", folded: true }] : []),
     ],
   };
 }
@@ -109,16 +111,32 @@ async function connectButton(ctx, channel) {
   return url ? [{ type: "html", html: `<p><a data-twitch-connect href="${esc(url)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(ctx.t("rw_connect_btn"))}</a></p>` }] : [];
 }
 
+/** L'état de la maison en une ligne (R25) : ce que dit le Connecteur Home Assistant. */
+const houseLine = (t, house) => {
+  const s = house.status ?? {};
+  return !s.paired ? t("rw_house_unpaired") : s.enabled === false ? t("rw_house_off") : s.live === false ? t("rw_house_notlive") : t("rw_house_ok");
+};
+const houseReady = (house) => !!house.installed && house.status?.paired === true && house.status?.enabled !== false && house.status?.live !== false;
+
+/** Une fois tout en place : l'état de la maison et les deux liens utiles (le Connecteur, la création d'une récompense). */
 function houseBlocks(ctx, house) {
   const t = ctx.t;
-  if (!house.installed) return [{ type: "heading", text: t("rw_house_title") }, { type: "markdown", text: t("rw_house_absent") }, { type: "suggestInstall", service: J.SERVICE, reason: t("rw_suggest_reason") }];
-  const s = house.status ?? {};
-  const line = !s.paired ? t("rw_house_unpaired") : s.enabled === false ? t("rw_house_off") : s.live === false ? t("rw_house_notlive") : t("rw_house_ok");
+  if (!house.installed) return [{ type: "markdown", text: t("rw_house_absent") }, { type: "suggestInstall", service: J.SERVICE, reason: t("rw_suggest_reason") }];
   return [
-    { type: "heading", text: t("rw_house_title") },
-    { type: "banner", tone: s.paired && s.enabled !== false && s.live !== false ? "success" : "warning", text: line },
-    ...(house.adminPath ? [{ type: "markdown", text: t("rw_house_link_help") }, { type: "links", items: [{ label: t("rw_house_link"), href: house.adminPath }] }] : []),
+    { type: "banner", tone: houseReady(house) ? "success" : "warning", text: houseLine(t, house) },
+    ...(house.adminPath ? [{ type: "links", items: [{ label: t("rw_house_link"), href: house.adminPath }, { label: t("rw_new_link"), href: "#new" }] }] : []),
   ];
+}
+
+/** Les trois étapes avec l'état de chacune (R8, R25) : activer, autoriser chez Twitch, relier la maison (facultatif). */
+function stepsBlock(ctx, { on, acc, house }) {
+  const t = ctx.t, done = { text: t("rw_step_done"), badge: "ok" }, todo = { text: t("rw_step_todo"), badge: "warn" }, wait = { text: t("rw_step_wait"), badge: "neutral" };
+  const home = !house.installed ? { text: t("rw_step_absent"), badge: "neutral" } : houseReady(house) ? { text: t("rw_step_paired"), badge: "ok" } : { text: t("rw_step_unpaired"), badge: "warn" };
+  return { type: "table", columns: [t("rw_col_step"), t("rw_col_state"), t("rw_col_next")], rows: [
+    [t("rw_step_1"), on ? done : todo, on ? "" : t("rw_step_1_next")],
+    [t("rw_step_2"), !on ? wait : acc?.ok ? done : todo, !on ? "" : acc?.ok ? "" : t("rw_step_2_next")],
+    [t("rw_step_3"), home, house.installed && house.adminPath ? { text: t("rw_house_link"), href: house.adminPath } : ""],
+  ] };
 }
 
 /** Les actions que Home Assistant a dit ne pas connaître, en une phrase avec leurs noms (5 au plus) : à relier dans Home Assistant. */
@@ -129,37 +147,38 @@ function unmappedBlocks(ctx, state, names, used) {
   return [{ type: "banner", tone: "warning", text: ctx.t("rw_unmapped_banner", { list: `${shown.join(", ")}${more > 0 ? ` (+${more})` : ""}` }) }];
 }
 
+/** Le journal des 50 derniers échanges (son propre vidage reste là en attendant l'Historique commun). */
 function journalBlocks(ctx, s, entries, names, advanced) {
   const t = ctx.t, time = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
-  const out = [{ type: "heading", text: t("rw_log_title") }, { type: "markdown", text: t("rw_log_help", { n: J.KEEP_RESOLVED }) }];
-  if (!entries.length) return [...out, { type: "markdown", text: t("rw_log_empty") }];
-  const label = (e) => {
-    const base = t(`rw_log_${e.status}`);
-    return e.reason && !["ok"].includes(e.reason) ? `${base} : ${t(`rw_reason_${e.reason}`)}` : base;
-  };
-  out.push({ type: "table", columns: [t("rw_log_who"), t("rw_log_reward"), t("rw_log_result")], rows: entries.map((e) => [`${time(e.at)} · ${e.test ? `${t("rw_log_test_pill")} ` : ""}${e.user}`, `${cut(e.title, 40)} · ${actionName(ctx, names, e.action, { snap: e.an, advanced })}`, label(e)]) });
-  if (can(ctx)) out.push({ type: "adminForm", action: "rewardLogClear", submitLabel: t("rw_log_clear"), fields: [] });
+  const out = [{ type: "heading", text: t("rw_log_title") }, { type: "markdown", text: t(entries.length ? "rw_log_help" : "rw_log_empty", { n: J.KEEP_RESOLVED }) }];
+  if (!entries.length) return out;
+  const tone = { done: "ok", refunded: "warn", failed: "danger" };
+  // Le détail ne répète pas le résultat (R14) : il n'est écrit que s'il y a une raison.
+  const label = (e) => { if (!e.reason || e.reason === "ok") return ""; const w = t(`rw_reason_${e.reason}`); return w.charAt(0).toUpperCase() + w.slice(1); };
+  out.push({ type: "table", columns: [t("rw_log_who"), t("rw_log_reward"), t("rw_log_result"), t("rw_log_why")], searchable: true, searchPlaceholder: t("rw_search_log"), filters: [{ column: 2, allLabel: t("rw_filter_all") }], truncate: [1, 3],
+    rows: entries.map((e) => [`${time(e.at)} · ${e.test ? `${t("rw_log_test_pill")} ` : ""}${e.user}`, `${cut(e.title, 40)} · ${actionName(ctx, names, e.action, { snap: e.an, advanced })}`, { text: t(`rw_log_${e.status}`), badge: tone[e.status] ?? "info" }, { text: label(e), title: label(e) }]) });
+  if (can(ctx)) out.push(K.inlineActions(ctx, K.actionButton({ label: t("rw_log_clear"), act: "rewardLogClear", cls: "small", confirm: t("log_clear_confirm", { n: entries.length }), yes: t("rw_log_clear"), no: t("cancel_btn"), fail: t("err_toggle") })));
   return out;
 }
 
 /** Tous les blocs de l'onglet (déjà marqués pour l'onglet). `info` : le décor de admin.mjs ({ s, d }). */
 export async function blocks(ctx, info, query = {}) {
   const t = ctx.t, s = info.s, state = await st.readState(ctx);
-  const out = [{ type: "heading", text: t("rw_title") }];
+  const out = [K.bootstrap(ctx), { type: "heading", text: t("rw_title") }, { type: "markdown", text: t("rw_intro") }];
   const namedList = await A.named(ctx, s).catch(() => []), names = A.names(t, namedList), advanced = adv(info);
   if (state.rewardsOn !== true) {
-    out.push({ type: "markdown", text: t("rw_intro") });
-    if (can(ctx)) out.push({ type: "adminForm", action: "rewardsEnable", submitLabel: t("rw_enable_btn"), fields: [] });
+    out.push(stepsBlock(ctx, { on: false, acc: null, house: await houseInfo(ctx) }));
+    if (can(ctx)) out.push(K.inlineActions(ctx, K.actionButton({ label: t("rw_enable_btn"), act: "rewardsEnable", cls: "primary", fail: t("err_toggle") })));
     return tab(out);
   }
   const acc = await R.access(ctx, s);
   if (!acc.ok) {
+    out.push(stepsBlock(ctx, { on: true, acc, house: await houseInfo(ctx) }));
     out.push({ type: "banner", tone: "warning", text: t(`rw_access_${acc.code}`) });
     if (["need_connect", "need_reconnect", "need_scope"].includes(acc.code)) {
-      out.push({ type: "markdown", text: t("rw_connect_steps" ) });
+      out.push({ type: "markdown", text: t("rw_connect_steps") });
       if (info.d.channel) out.push(...(await connectButton(ctx, info.d.channel)));
     } else if (acc.code === "creds_missing" && acc.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: acc.adminPath }) });
-    out.push(...houseBlocks(ctx, await houseInfo(ctx)));
     out.push(...journalBlocks(ctx, s, await J.journal(ctx), names, advanced));
     return tab(out);
   }
@@ -183,35 +202,38 @@ export async function blocks(ctx, info, query = {}) {
   out.push(...houseBlocks(ctx, house));
   out.push(...unmappedBlocks(ctx, fresh, names, new Set(rows.map((r) => r.action))));
 
+  const writable = can(ctx);
   out.push({ type: "heading", text: t("rw_list_title") });
   if (!rows.length) out.push({ type: "markdown", text: t("rw_list_empty") });
   else {
-    // Deux colonnes et UN bouton seulement : sur un téléphone, rien ne déborde. La pause, la simulation et la suppression sont dans la page de modification.
-    out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_state")],
-      rows: rows.map((r) => [`${r.title} · ${t("rw_points", { n: r.cost })} · ${actionName(ctx, names, r.action, { advanced })}`, statusText(t, r, linkOf(fresh, r.action) === "unmapped")]), rowIds: rows.map((r) => r.id),
-      rowActions: can(ctx) ? [{ label: t("act_edit"), href: "?tab=rewards&rewardEdit={id}#edit" }] : [] });
+    // UN tableau : titre, ce qui se passe (pastille colorée ET écrite), coût, état avec son interrupteur. Une seule action visible (« Modifier ) ; le test et la suppression sont dans « ⋯ ».
+    const unmapped = (r) => linkOf(fresh, r.action) === "unmapped";
+    out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_what"), t("rw_col_cost"), t("rw_col_state")], rowIds: rows.map((r) => r.id),
+      searchable: true, searchPlaceholder: t("rw_search"), filters: [{ column: 1, allLabel: t("rw_filter_all") }, { column: 3, allLabel: t("rw_filter_any") }], truncate: [0], empty: t("rw_list_empty"),
+      rows: rows.map((r) => {
+        const status = R.statusOf(r), what = actionName(ctx, names, r.action, { advanced });
+        const stateCell = status === "gone" ? { text: t("rw_state_gone"), badge: "danger" }
+          : status === "refused" ? { text: t("rw_state_refused", { why: t(`rw_refused_${r.refused?.code === "duplicate" ? "duplicate" : "other"}`) }), badge: "warn" }
+          : { text: t(status === "paused" ? "rw_filter_paused" : "rw_filter_active"),
+            ...(writable ? { switch: { on: status === "active", action: "rewardEnable", label: t("rw_sw_label", { title: r.title }),
+              onText: unmapped(r) ? `${t("rw_state_active")} · ${t("rw_note_unmapped")}` : t("rw_state_active"), offText: r.pause === "auto" ? t("rw_state_paused_auto") : t("rw_state_paused") } } : {}) };
+        return [{ text: r.title, title: r.title }, { text: what, badge: toneOf(r.action) }, t("rw_points", { n: r.cost }), stateCell];
+      }),
+      rowActions: writable ? [{ label: t("act_edit"), href: "?tab=rewards&rewardEdit={id}#edit" }, { label: t("rw_sim_row_btn"), href: "?tab=rewards&rewardEdit={id}#test", inMenu: true }, { label: t("rw_delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] : [] });
   }
-  if (can(ctx)) {
-    const editing = typeof query.rewardEdit === "string" ? rows.find((r) => r.id === query.rewardEdit) : null;
+  if (writable) {
+    const editId = typeof query.rewardEdit === "string" ? query.rewardEdit : typeof query.rewardTest === "string" ? query.rewardTest : null;
+    const editing = editId ? rows.find((r) => r.id === editId) : null;
     out.push({ type: "html", html: '<div id="edit" style="scroll-margin-top:5rem"></div>' });
     if (editing) {
       out.push({ type: "heading", text: t("rw_edit_title", { title: editing.title }) }, rewardForm(ctx, info, namedList, house.installed, editing));
-      if (!editing.gone) out.push({ type: "adminForm", action: "rewardToggle", submitLabel: t(editing.pause ? "rw_resume_btn" : "rw_pause_btn"), fields: [{ name: "id", kind: "hidden", value: editing.id }] }, { type: "markdown", text: t("rw_pause_help") });
-      out.push({ type: "adminForm", action: "rewardSimulate", submitLabel: t("rw_sim_row_btn"), title: t("rw_sim_title"), fields: [{ name: "id", kind: "hidden", value: editing.id }, ...(editing.needsInput ? [{ name: "text", label: t("rw_sim_f_text"), help: t("rw_sim_f_text_help") }] : [])] });
-      out.push({ type: "table", columns: [t("rw_delete_title")], rows: [[editing.title]], rowIds: [editing.id], rowActions: [{ label: t("delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] });
+      out.push({ type: "html", html: '<div id="test" style="scroll-margin-top:5rem"></div>' }, { type: "markdown", text: t("rw_sim_help") });
+      out.push({ type: "adminForm", action: "rewardSimulate", submitLabel: t("rw_sim_row_btn"), title: t("rw_sim_title"), fields: [{ name: "id", kind: "hidden", value: editing.id }, ...(editing.needsInput ? [{ name: "text", label: t("rw_sim_f_text"), help: t("rw_sim_f_text_help"), example: t("rw_ex_sim") }] : [])] });
     }
-    else if (rows.length < R.MAX_REWARDS) out.push({ type: "heading", text: t("rw_new_title") }, { type: "markdown", text: t("rw_new_help") }, rewardForm(ctx, info, namedList, house.installed, null));
+    else if (rows.length < R.MAX_REWARDS) out.push({ type: "html", html: '<div id="new" style="scroll-margin-top:5rem"></div>' }, { type: "heading", text: t("rw_new_title") }, { type: "markdown", text: t("rw_new_help") }, rewardForm(ctx, info, namedList, house.installed, null));
     else out.push({ type: "markdown", text: t("rw_err_too_many", { max: R.MAX_REWARDS }) });
   }
   out.push(...actionsBlocks(ctx, info, namedList, rows, fresh, query, advanced));
-  if (can(ctx) && rows.length) {
-    const pre = typeof query.rewardTest === "string" ? rows.find((r) => r.id === query.rewardTest) : null;
-    out.push({ type: "html", html: '<div id="test" style="scroll-margin-top:5rem"></div>' }, { type: "heading", text: t("rw_sim_title") }, { type: "markdown", text: t("rw_sim_help") });
-    out.push({ type: "adminForm", action: "rewardSimulate", submitLabel: t("rw_sim_btn"), fields: [
-      { name: "id", label: t("rw_sim_f_reward"), kind: "select", value: pre?.id ?? rows[0].id, options: rows.map((r) => ({ value: r.id, label: r.title })) },
-      { name: "text", label: t("rw_sim_f_text"), help: t("rw_sim_f_text_help") },
-    ] });
-  }
   out.push(...journalBlocks(ctx, s, await J.journal(ctx), names, advanced));
   return tab(out);
 }
@@ -221,15 +243,16 @@ function actionsBlocks(ctx, info, namedList, rows, state, query, advanced) {
   const t = ctx.t;
   if (!namedList.length) return [];
   const used = (key) => rows.filter((r) => r.action === key);
-  const house = (key) => { const l = A.linkOf(state, key); return t(l === "ok" ? "rw_link_ok" : l === "unmapped" ? "rw_link_unmapped" : "rw_link_none"); };
+  // La colonne « Maison » ne dit que ce qui sort de l'ordinaire (R14) : reliée, ou à relier ; « pas encore essayée » est le cas normal et reste vide.
+  const house = (key) => { const l = A.linkOf(state, key); return l === "ok" ? { text: t("rw_link_ok"), badge: "ok" } : l === "unmapped" ? { text: t("rw_link_unmapped"), badge: "warn" } : ""; };
   const out = [{ type: "html", html: '<div id="action" style="scroll-margin-top:5rem"></div>' }, { type: "heading", text: t("rw_acts_title") }, { type: "markdown", text: t("rw_acts_help") }];
-  out.push({ type: "table", columns: [t("rw_acts_col_name"), t("rw_acts_col_used"), t("rw_acts_col_house")],
+  out.push({ type: "table", columns: [t("rw_acts_col_name"), t("rw_acts_col_used"), t("rw_acts_col_house")], searchable: true, searchPlaceholder: t("rw_search_acts"), truncate: [0, 1],
     rows: namedList.map((a) => [advanced ? `${a.label} (${a.key})` : a.label, used(a.key).length ? cut(used(a.key).map((r) => r.title).join(", "), 60) : t("rw_acts_unused"), house(a.key)]), rowIds: namedList.map((a) => a.key),
     rowActions: can(ctx) ? [{ label: t("act_rename"), href: "?tab=rewards&actionEdit={id}#action" }, { label: t("act_remove"), action: "actionRemove", confirm: t("rw_acts_remove_confirm"), danger: true }] : [] });
   const cur = can(ctx) && typeof query.actionEdit === "string" ? namedList.find((a) => a.key === query.actionEdit) : null;
   if (cur) out.push({ type: "heading", text: t("rw_acts_edit_title", { name: cur.label }) }, { type: "adminForm", action: "actionSave", submitLabel: t("rw_save_btn"), cancelHref: "?tab=rewards", fields: [
     { name: "ref", kind: "hidden", value: cur.key },
-    { name: "name", label: t("rw_f_an"), value: cur.label, required: true, help: t("rw_acts_name_help") },
+    { name: "name", label: t("rw_f_an_rename"), value: cur.label, required: true, help: t("rw_acts_name_help"), example: t("rw_ex_action") },
     ...(info.s.showKeys ? [{ name: "actionKey", label: t("rw_f_key"), value: cur.key, help: t("rw_acts_key_help") }] : []),
   ] });
   return out;
@@ -245,7 +268,8 @@ export async function houseInfo(ctx) {
 
 /* ───────────── Les actions ───────────── */
 
-const form = (x) => ({ title: x.title, cost: x.cost, cooldownMin: x.cooldownMin, prompt: x.prompt, reply: x.reply, needsInput: x.needsInput === "on" });
+/** Le délai de recharge arrive en secondes (champ « durée » du cœur) ; `cooldownMin` (minutes) reste accepté pour les anciens appels. */
+const form = (x) => ({ title: x.title, cost: x.cost, cooldownMin: x.cooldownMin, ...(x.cooldown !== undefined && String(x.cooldown).trim() !== "" ? { cooldown: x.cooldown } : {}), prompt: x.prompt, reply: x.reply, needsInput: x.needsInput === "on" || x.needsInput === true });
 const NAME_ERRORS = { empty: "an_empty", long: "an_long", too_many: "an_too_many" };
 /**
  * Lit le formulaire : « Que se passe-t-il ? » (+ couleur, ou nom de l'action) devient la clé de l'action. Une action « Autre chose chez moi » dont le nom existe déjà reprend la même action ;
@@ -255,12 +279,14 @@ const NAME_ERRORS = { empty: "an_empty", long: "an_long", too_many: "an_too_many
 async function validate(ctx, s, x, exceptId) {
   const rewards = await R.list(ctx), others = rewards.filter((r) => r.id !== exceptId), namedList = await A.named(ctx, s);
   const raw = form(x), errors = {};
+  const chat = String(x.what ?? "").trim() === "chat";
+  if (chat && !String(raw.reply ?? "").trim()) raw.reply = ctx.t("rw_reply_default");   // une réponse sensée par défaut : rien d'obligatoire à écrire (R8)
   let plan = null;
   const what = String(x.what ?? "").trim();
   if (!what) raw.action = String(x.action ?? "").trim();
   else if (what === "chat") raw.action = A.BOT_ACTION;
   else if (what === "voice") raw.action = A.VOICE_ACTION;
-  else if (what === "lights") { const c = String(x.color ?? "").trim(); if (A.COLORS.includes(c)) raw.action = A.lightKey(c); else errors.color = "color"; }
+  else if (what === "lights") { const c = String(x.color ?? "").trim() || "rouge"; if (A.COLORS.includes(c)) raw.action = A.lightKey(c); else errors.color = "color"; }
   else if (what === "custom") {
     const p = await A.plan(ctx, s, x.actionName, { wantedKey: s.showKeys ? x.actionKey : "", rewardKeys: rewards.map((r) => r.action) });
     if (!p.ok) errors[p.code === "key" || p.code === "key_taken" ? "actionKey" : "actionName"] = NAME_ERRORS[p.code] ?? p.code;
@@ -339,11 +365,13 @@ export const actions = {
     if (r.ok) return { ok: ctx.t("rw_action_removed"), redirect: "?tab=rewards" };
     return { error: ctx.t(r.code === "used" ? "rw_action_used" : r.code === "legacy" ? "rw_action_legacy" : "err_unknown") };
   }),
-  rewardToggle: run(async (ctx, x) => {
+  /** L'interrupteur de la liste DIT l'état voulu (« 1 » en vente, « 0 » en pause) : un double clic ne défait rien. */
+  rewardEnable: run(async (ctx, x) => {
     const s = settingsOf(ctx), doc = (await R.list(ctx)).find((r) => r.id === x.id);
     if (!doc) return { error: ctx.t("err_unknown") };
-    const r = await R.setPaused(ctx, s, x.id, !doc.pause);
-    return r.ok ? { ok: ctx.t(doc.pause ? "rw_resumed" : "rw_paused", { title: doc.title }) } : failure(ctx, r);
+    const want = String(x.enabled) === "1";
+    const r = await R.setPaused(ctx, s, x.id, !want);
+    return r.ok ? { ok: ctx.t(want ? "rw_resumed" : "rw_paused", { title: doc.title }) } : failure(ctx, r);
   }),
   rewardRemove: run(async (ctx, x) => {
     const r = await R.remove(ctx, settingsOf(ctx), x.id);

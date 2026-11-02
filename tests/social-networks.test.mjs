@@ -27,21 +27,21 @@ test("réseaux : une vingtaine de modules, chacun valide, à instances multiples
 test("réseaux : un identifiant devient l'adresse du profil, avec l'icône du réseau ; une adresse https du bon site est gardée telle quelle", async () => {
   const insta = await load("instagram");
   assert.deepEqual(await link(insta.mod, "@mon.pseudo"), [{ label: "Instagram · mon.pseudo", url: "https://www.instagram.com/mon.pseudo/", icon: "instagram" }]);
-  assert.deepEqual(await link(insta.mod, "https://www.instagram.com/autre/"), [{ label: "Instagram", url: "https://www.instagram.com/autre/", icon: "instagram" }]);
+  assert.deepEqual(await link(insta.mod, "https://www.instagram.com/autre/"), [{ label: "Instagram · autre", url: "https://www.instagram.com/autre/", icon: "instagram" }], "même bouton, que l'on tape le nom ou qu'on colle l'adresse");
   const x = await load("x-twitter");
   assert.equal((await link(x.mod, "helldog"))[0].url, "https://x.com/helldog");
-  assert.equal((await link(x.mod, "https://twitter.com/helldog"))[0].url, "https://twitter.com/helldog");
+  assert.equal((await link(x.mod, "https://twitter.com/helldog"))[0].url, "https://x.com/helldog", "l'ancienne adresse de X devient la nouvelle");
   const mastodon = await load("mastodon");
   assert.equal((await link(mastodon.mod, "https://mastodon.social/@nom"))[0].url, "https://mastodon.social/@nom", "n'importe quel serveur Mastodon");
-  assert.deepEqual(await link(mastodon.mod, "nom"), [], "Mastodon exige l'adresse complète");
+  assert.equal((await link(mastodon.mod, "@nom@mastodon.social"))[0].url, "https://mastodon.social/@nom", "la forme @nom@serveur est reconnue");
+  assert.deepEqual(await link(mastodon.mod, "nom"), [], "Mastodon exige le serveur : adresse ou @nom@serveur");
 });
 
 test("réseaux : rien tant que ce n'est pas réglé ; adresse d'un autre site, http, identifiants dans l'adresse, javascript: et identifiants invalides refusés — pour TOUS les réseaux", async () => {
   for (const id of ids.filter((i) => !i.endsWith("-channel"))) {
     const m = await load(id);
-    // Mastodon (comme tout service fédéré) accepte n'importe quel serveur https ; tous les autres exigent leur propre site.
-    const anyHost = id === "mastodon";
-    for (const bad of [undefined, "", "   ", "http://evil.example/x", ...(anyHost ? [] : ["https://evil.example/x"]), "javascript:alert(1)", "https://user:pw@evil.example", "pas valide!", "../x", "a".repeat(80)]) {
+    // Mastodon (comme tout service fédéré) accepte n'importe quel serveur https, mais seulement une adresse de profil (/@nom) ; tous les autres exigent leur propre site.
+    for (const bad of [undefined, "", "   ", "http://evil.example/x", "https://evil.example/x", "evil.example/x", "javascript:alert(1)", "https://user:pw@evil.example", "pas valide!", "../x", "a".repeat(80)]) {
       assert.deepEqual(await link(m.mod, bad), [], `${id} : ${JSON.stringify(bad)}`);
     }
   }
@@ -49,7 +49,7 @@ test("réseaux : rien tant que ce n'est pas réglé ; adresse d'un autre site, h
   const gh = await load("github");
   assert.deepEqual(await link(gh.mod, "https://github.com.evil.example/x"), []);
   assert.deepEqual(await link(gh.mod, "https://notgithub.com/x"), []);
-  assert.equal((await link(gh.mod, "https://gist.github.com/x"))[0].url, "https://gist.github.com/x", "sous-domaine légitime");
+  assert.equal((await link(gh.mod, "https://gist.github.com/x"))[0].url, "https://gist.github.com/x", "sous-domaine légitime : l'adresse est gardée telle quelle");
 });
 
 test("réseaux : chaque réseau a une icône reconnue par le cœur (simple-icons) et un README", async () => {

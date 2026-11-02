@@ -13,7 +13,7 @@ const sha = (v) => createHash("sha256").update(typeof v === "string" ? v : JSON.
 const read = (m, p) => JSON.parse(fs.readFileSync(new URL(`../modules/${m}/${p}`, import.meta.url), "utf8"));
 const json = (v) => JSON.parse(JSON.stringify(v));
 /** Le manifeste sans ce que les éléments d'overlay ajoutent. */
-const manifestRest = (m) => { const { version, minCore, overlayElements, ...rest } = m; return rest; };
+const manifestRest = (m) => { const { version, minCore, overlayElements, previews, ...rest } = m; return rest; };
 
 async function withClock(fn) {
   const real = Date.now; Date.now = () => NOW;

@@ -6,5 +6,5 @@
   "err_hidden": "GitHub does not give this number for this account.",
   "err_rate": "GitHub is limiting anonymous requests for now: nothing to do, it will resume by itself within the hour.",
   "err_network": "GitHub is not answering right now: nothing to do, we try again automatically.",
-  "err_config_account": "GitHub cannot find this account: check your username in Settings."
+  "err_config_account": "GitHub cannot find this account: check your profile address in Settings."
 }

@@ -13,12 +13,12 @@ Un petit jeu **une fois par jour**, pour donner au public une raison de revenir 
 
 ## Ce que fait la personne qui gère le site (pas à pas)
 1. Elle installe le module : la page existe et propose **« Par où commencer ? »** : le gabarit **Culture jeu vidéo** (30 questions prêtes, en français et en anglais, publiées) ou **Vide** (elle écrit les siennes).
-2. Onglet **Mes questions** : « Ajouter une question » (énoncé, 2 à 4 réponses, la bonne réponse, une explication, une image facultative avec sa description, une catégorie, une difficulté). Les erreurs s'affichent sous le champ, avec un exemple.
+2. Onglet **Mes questions** : « Ajouter une question » : trois champs, la question, les réponses (une par ligne, de 2 à 4) et le numéro de la bonne. L'explication, l'image et sa description, les autres langues, la catégorie, la difficulté, la date précise et l'état sont repliés sous « Plus d'options ». La liste a une recherche en direct et des pastilles d'état. Les erreurs s'affichent sous le champ, avec un exemple.
 3. **Brouillon ou publiée** : un brouillon n'est jamais joué. **Aperçu** : voir la question comme le public, avec la bonne réponse marquée.
 4. **Planifier** : mettre une date précise sur une question (une fête, un événement) ; elle passe ce jour-là, avant la rotation. 365 jours planifiés au plus.
 5. **Ordre** (réglage) : « dans l'ordre » (une par jour, dans l'ordre qu'elle choisit avec ↑ ↓) ou « au hasard sans répétition » (toutes passent avant qu'une revienne). Dans les deux cas, tout le monde a la même question, sans minuteur.
 6. Le tableau de bord dit **« Il reste N jours de questions »** et montre les 7 prochains jours. Une pastille avertit quand il en reste moins de 3.
-7. Onglet **Packs et fichiers** : activer ou retirer un pack en un clic, **importer** un fichier CSV (un tableur), **exporter** toutes les questions, télécharger un fichier d'exemple.
+7. Onglet **Packs et fichiers** : activer ou retirer un pack en un clic, **importer** un tableur enregistré en .csv, **exporter** toutes les questions, télécharger un fichier d'exemple.
 8. Elle peut changer les mots du jeu (nom, phrase de série, message « revenez demain »…) dans les réglages.
 
 ## Les packs de départ
@@ -57,3 +57,7 @@ Pas de compte, pas de classement par défaut, pas de jeu d'image ni de mot du jo
 - **Données** : `dg_questions`, `dg_plan` (un document), `dg_board` (un document par semaine).
 - **Outils pour l'assistant** : `daily_questions_list` (lecture) et `daily_question_add` (écrit un **brouillon** seulement ; jamais accordé d'office).
 - Droits : `edit`, `publish`, `moderate`. `minCore` 0.2.6 (script de page, empreinte de la personne qui visite).
+
+## Visuels de la fiche
+
+Depuis la version 1.0.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).

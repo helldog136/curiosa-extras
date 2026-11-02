@@ -26,21 +26,20 @@ test("un seul champ obligatoire : le nom ; « déjà joué » par défaut ; marq
   assert.deepEqual(c.calls.rawg, ["Hollow Knight"]);
 });
 
-test("le formulaire d'ajout : champs, valeur par défaut, aide et libellés simples ; l'image n'apparaît que derrière le lien", async () => {
+test("le formulaire d'ajout : champs, valeur par défaut, aide et libellés simples ; note et image repliées, plusieurs jeux derrière le lien", async () => {
   const c = ctx();
   const blocks = await def.adminPanel(c, { query: {} });
   const form = blocks.find((b) => b.type === "adminForm" && b.action === "addGame");
-  assert.deepEqual(form.fields.map((f) => f.name), ["title", "status", "note"]);
+  assert.deepEqual(form.fields.map((f) => f.name), ["title", "status", "note", "image"]);
+  assert.deepEqual(form.fields.filter((f) => f.folded).map((f) => f.name), ["note", "image"], "la note et l'image, rares, sont repliées sous « Plus d'options » : deux champs visibles");
   assert.equal(form.fields.filter((f) => f.required).length, 1);
   const status = form.fields.find((f) => f.name === "status");
   assert.equal(status.value, "already_played"); assert.equal(status.options[0].value, "already_played");
   assert.deepEqual(status.options.map((o) => o.value).sort(), ["accepted", "already_played", "finished", "planned", "proposed", "rejected"]);
   assert.equal(form.submitLabel, "Ajouter le jeu");
-  const img = (await def.adminPanel(c, { query: { ajout: "image" } })).find((b) => b.action === "addGame");
-  assert.deepEqual(img.fields.map((f) => f.name), ["title", "status", "note", "image"]);
   const many = (await def.adminPanel(c, { query: { ajout: "plusieurs" } })).find((b) => b.action === "addGames");
   assert.equal(many.fields.find((f) => f.name === "titles").kind, "textarea");
-  assert.equal((await def.adminPanel(c, { query: { ajout: "<script>" } })).find((b) => b.action === "addGame").fields.length, 3, "un mode inconnu retombe sur le formulaire simple");
+  assert.equal((await def.adminPanel(c, { query: { ajout: "<script>" } })).find((b) => b.action === "addGame").fields.length, 4, "un mode inconnu retombe sur le formulaire simple");
   for (const f of [...form.fields, ...many.fields]) assert.ok(def.adminActions[form.action] && def.adminActions[many.action] && f.label);
 });
 
@@ -71,7 +70,7 @@ test("doublon : comparaison sans accents, majuscules ni ponctuation, lignes reje
   await c.api.store.add("games", { title: "Pokémon : Rouge", status: "rejected", replayVotes: 0 });
   const dup = await def.adminActions.addGame(c, { title: "pokemon rouge!" });
   assert.match(dup.errors.title, /« Pokémon : Rouge » est déjà dans la liste \(Rejeté\)/);
-  assert.match(dup.errors.title, /boutons de sa ligne/);
+  assert.match(dup.errors.title, /menu ⋯ de sa ligne/);
   assert.equal(dup.ok, undefined);
   assert.equal(await c.api.store.count("games"), 1);
   assert.equal(mod.titleKey("Pokémon : Rouge"), mod.titleKey("POKEMON-rouge"));
@@ -148,7 +147,7 @@ test("jaquette : service du module d'abord, puis ancienne interface du cœur, pu
   const row = (await all(noKey))[0].data;
   assert.equal(row.coverUrl, null); assert.equal(row.coverKey, undefined, "pas d'essai compté : le rattrapage s'en charge");
   const none = ctx({}, { rawgCover: { status: "none", url: null } });
-  assert.match((await def.adminActions.addGame(none, { title: "Inconnu" })).ok, /Aucune jaquette trouvée.*Jaquette/);
+  assert.match((await def.adminActions.addGame(none, { title: "Inconnu" })).ok, /Aucune jaquette trouvée.*Changer la jaquette/);
   const bad = ctx({}, { rawgCover: { status: "found", url: "javascript:alert(1)" } });
   await def.adminActions.addGame(bad, { title: "X" });
   assert.equal((await all(bad))[0].data.coverUrl, null, "https seulement");
@@ -228,7 +227,7 @@ test("la ligne ajoutée compte comme les autres : page publique sans pseudo, vot
   const listed = await def.mcp.game_suggestions_list(c, {});
   assert.deepEqual(listed.map((g) => g.origin), ["admin", "admin", "admin"]);
   const table = (await def.adminPanel(c, { query: {} })).find((b) => b.type === "table");
-  assert.ok(table.rows.every((r) => r[3] === "Administration"));
+  assert.ok(table.rows.every((r) => r[2].text === "Vous" && r[2].badge === "accent"), "origine : pastille colorée et écrite");
   assert.equal(JSON.stringify(await def.adminPanel(c, { query: {} })).includes("à traiter"), true);
   assert.match((await def.adminPanel(c, { query: {} })).find((b) => b.type === "heading" && /\(3,/.test(b.text)).text, /0 à traiter/, "les jeux ajoutés par l'administration ne gonflent pas « à traiter »");
 });
@@ -248,22 +247,31 @@ test("une ligne d'avant 1.5.0 (sans origin) reste lisible, et le panneau s'ouvre
   const c = ctx();
   await c.api.store.add("games", { title: "Ancien", status: "already_played", submitterName: "Bob", replayVotes: 2 });
   const blocks = await def.adminPanel(c);
-  assert.equal(blocks.find((b) => b.type === "table").rows[0][3], "Bob");
+  const first = blocks.find((b) => b.type === "table").rows[0];
+  assert.equal(first[2].text, "Public"); assert.match(first[0].title, /par Bob/, "le pseudo est dans l'info-bulle (et donc cherchable)");
 });
 
-test("pagination du tableau d'admin : 50 par page, liens en mode conservé, page hors limites ramenée dans les bornes", async () => {
+test("tableau d'admin : toutes les lignes sont envoyées, le cœur pagine par 50 et la recherche couvre tout ; plus de pagination à la main", async () => {
   const c = ctx({}, { rawgCover: { status: "none", url: null } });
   await c.api.store.addMany("games", Array.from({ length: 120 }, (_, i) => ({ data: { title: `Jeu ${i}`, status: "proposed", replayVotes: 0 } })));
-  const p1 = await def.adminPanel(c, { query: {} });
-  assert.equal(p1.find((b) => b.type === "table").rows.length, 50);
-  const nav = p1.find((b) => b.type === "html" && /Jeux/.test(b.html)).html;
-  assert.match(nav, /Jeux 1 à 50 sur 120/); assert.match(nav, /href="\?tab=use&amp;page=2"/); assert.ok(!/Précédents/.test(nav));
-  const p3 = await def.adminPanel(c, { query: { page: "3", ajout: "plusieurs" } });
-  assert.equal(p3.find((b) => b.type === "table").rows.length, 20);
-  const nav3 = p3.find((b) => b.type === "html" && /Jeux/.test(b.html)).html;
-  assert.match(nav3, /Jeux 101 à 120 sur 120/); assert.match(nav3, /href="\?tab=use&amp;page=2&amp;ajout=plusieurs"/); assert.ok(!/Suivants/.test(nav3));
-  assert.equal((await def.adminPanel(c, { query: { page: "99" } })).find((b) => b.type === "table").rows.length, 20);
-  assert.equal((await def.adminPanel(c, { query: { page: "abc" } })).find((b) => b.type === "table").rows.length, 50);
+  const blocks = await def.adminPanel(c, { query: { page: "3" } });
+  const table = blocks.find((b) => b.type === "table");
+  assert.equal(table.rows.length, 120); assert.equal(table.rowIds.length, 120);
+  assert.equal(table.pageSize, 50); assert.equal(table.searchable, true);
+  assert.deepEqual(table.filters.map((f) => f.column), [1]);
+  assert.ok(!blocks.some((b) => b.type === "html" && /Jeux \d+ à/.test(b.html)), "plus de pagination faite à la main");
+});
+
+test("statut : une pastille colorée ET écrite par ligne, six changements dans le menu ⋯ (jamais huit boutons), suppression en danger", async () => {
+  const c = ctx({}, { rawgCover: { status: "none", url: null } });
+  await def.adminActions.addGame(c, { title: "Celeste", status: "planned" });
+  const table = (await def.adminPanel(c, { query: {} })).find((b) => b.type === "table");
+  assert.deepEqual(table.rows[0][1], { text: "Planifié", badge: "info" });
+  const visible = table.rowActions.filter((a) => !a.inMenu && !a.danger);
+  assert.deepEqual(visible.map((a) => a.label), ["Changer la jaquette"], "un seul bouton visible");
+  assert.equal(table.rowActions.filter((a) => a.inMenu && /^status_/.test(a.action)).length, 6);
+  assert.ok(table.rowActions.find((a) => a.action === "remove").danger);
+  assert.ok(table.rowActions.every((a) => !/^→/.test(a.label)), "plus de « → Proposé »");
 });
 
 test("liens de l'administration : cibles d'au moins 44 px, aucun lien ne sort du module", async () => {

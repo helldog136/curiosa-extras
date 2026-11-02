@@ -23,8 +23,8 @@ export const serveKit = () => new Response(CLIENT, { headers: { "content-type": 
 
 // Couleurs des pastilles d'origine : texte sur fond teinté, contraste AA (4,5 :1) vérifié par les tests, en clair comme en sombre. La couleur ne porte jamais seule l'information : le mot est écrit.
 export const PALETTE = {
-  light: { custom: ["#ece9ff", "#3a2cb5"], builtin: ["#e6ebf1", "#2f4256"], partner: ["#dcf2e8", "#0f5a3b"], network: ["#fbe9d0", "#7d4300"] },
-  dark: { custom: ["#2f2b57", "#d4ceff"], builtin: ["#2a323c", "#cbd6e2"], partner: ["#17382b", "#aee8cc"], network: ["#46320f", "#f7d6a0"] },
+  light: { custom: ["#ece9ff", "#3a2cb5"], builtin: ["#e6ebf1", "#2f4256"], partner: ["#dcf2e8", "#0f5a3b"], network: ["#fbe9d0", "#7d4300"], danger: ["#fde4e4", "#8a1c1c"] },
+  dark: { custom: ["#2f2b57", "#d4ceff"], builtin: ["#2a323c", "#cbd6e2"], partner: ["#17382b", "#aee8cc"], network: ["#46320f", "#f7d6a0"], danger: ["#4a1d1d", "#fecaca"] },
 };
 const vars = (p) => Object.entries(p).map(([k, [bg, fg]]) => `--ck-${k}-bg:${bg};--ck-${k}-fg:${fg}`).join(";");
 
@@ -61,6 +61,13 @@ export const CSS = `
 .ck-origin{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
 .ck-origin.custom{background:var(--ck-custom-bg);color:var(--ck-custom-fg)}.ck-origin.builtin{background:var(--ck-builtin-bg);color:var(--ck-builtin-fg)}
 .ck-origin.partner{background:var(--ck-partner-bg);color:var(--ck-partner-fg)}.ck-origin.network{background:var(--ck-network-bg);color:var(--ck-network-fg)}
+.ck-origin.ok{background:var(--ck-partner-bg);color:var(--ck-partner-fg)}.ck-origin.warn{background:var(--ck-network-bg);color:var(--ck-network-fg)}.ck-origin.danger{background:var(--ck-danger-bg);color:var(--ck-danger-fg)}
+.ck-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:4px 0}
+.ck-top .ck-status{margin:2px 0 0}
+.ck-top .ck-status:empty,.ck-inline .ck-status:empty{display:none}
+.ck-bar-t{font-size:14px}.ck-bar-g{font-size:13px;color:var(--v-muted)}.ck-bar-sp{flex:1 1 auto}
+.ck-bar .ck-btn,.ck-inline .ck-btn{min-height:44px}
+.ck-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0}.ck-inline .ck-status{margin:0}
 .ck-sw{position:relative;display:inline-flex;align-items:center;min-width:52px;min-height:44px;padding:0 6px;border:0;background:none;cursor:pointer}
 .ck-sw::before{content:"";width:40px;height:22px;border-radius:999px;background:var(--v-muted);transition:background .15s}
 .ck-sw::after{content:"";position:absolute;left:9px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:#fff;transition:transform .15s}
@@ -176,3 +183,14 @@ export const rowAttrs = (attrs, hay) => `data-ck-row ${Object.entries(attrs).map
 export function formConfig(id, config) {
   return { block: { type: "html", html: `<div data-ck-config="${esc(id)}" data-ck-json="${esc(JSON.stringify(config))}" hidden></div>` }, field: { name: "ck", kind: "hidden", value: id } };
 }
+
+/* ───────────── Boutons d'action en ligne (en attendant une brique du cœur) ───────────── */
+
+/** Un bouton qui appelle une action du module sans carte autour : le script (adminkit.client.js) l'exécute, montre le résultat à côté et recharge la page. `confirm` : la phrase qui dit ce qui sera perdu. */
+export function actionButton({ label, act, id = "", cls = "", confirm = "", yes = "", no = "", fail = "", title = "", reload = true }) {
+  return `<button type="button" class="ck-btn ${esc(cls)}" data-ck-act="${esc(act)}" data-ck-id="${esc(id)}" data-ck-fail="${esc(fail)}"${reload ? " data-ck-reload" : ""}${title ? ` title="${esc(title)}" aria-description="${esc(title)}"` : ""}${confirm ? ` data-ck-confirm="${esc(confirm)}" data-ck-yes="${esc(yes)}" data-ck-no="${esc(no)}"` : ""}>${esc(label)}</button>`;
+}
+/** Une ligne d'actions : les boutons, puis la zone où le résultat s'écrit. */
+export const inlineActions = (ctx, html) => ({ type: "html", html: `<div class="ck ck-inline" data-ck-instance="${esc(ctx.instance.id)}">${html}<p class="ck-status" data-ck-status role="status"></p></div>` });
+/** La barre d'état du haut de page : une pastille colorée ET écrite, des textes courts, puis les boutons. */
+export const statusBar = (ctx, { kind, pill, texts = [], grey = "", buttons = "" }) => ({ type: "html", html: `<div class="ck ck-top" data-ck-instance="${esc(ctx.instance.id)}"><div class="ck-bar"><span class="ck-origin ${esc(kind)}">${esc(pill)}</span>${texts.map((x) => `<span class="ck-bar-t">${esc(x)}</span>`).join("")}${grey ? `<span class="ck-bar-g">${esc(grey)}</span>` : ""}<span class="ck-bar-sp"></span>${buttons}</div><p class="ck-status" data-ck-status role="status"></p></div>` });

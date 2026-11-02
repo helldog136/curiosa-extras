@@ -13,7 +13,7 @@ const readJson = (root, mod, f) => JSON.parse(fs.readFileSync(path.join(root, "m
 const load = (root, mod, file = "index.mjs") => import(`${path.join(root, "modules", mod, file)}?nr=${Math.random().toString(36).slice(2)}`);
 
 /** Le manifeste sans ce que les éléments d'overlay ajoutent (version, minCore, clé overlayElements, droit « routes » des statistiques). */
-const manifestRest = (m, extraPermission) => { const { version, minCore, overlayElements, ...rest } = m; return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) }; };
+const manifestRest = (m, extraPermission) => { const { version, minCore, overlayElements, previews, ...rest } = m; return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) }; };
 
 export async function planningSnapshot(root) {
   const mod = (await load(root, "planning")).default;

@@ -85,24 +85,27 @@ const quiz = {
 
   text(d) { return Object.values(d.tr).flatMap((v) => [v.q, ...v.a, v.e]).join(" "); },
 
+  /**
+   * Le formulaire « Nouvelle question » : trois champs visibles (la question, les réponses une par ligne, laquelle est la bonne). Tout le reste est replié sous
+   * « Plus d'options » : l'explication, l'image, les autres langues, la catégorie, la difficulté, la date et l'état. La première langue est celle du site.
+   */
   fields(ctx, item, locales) {
     const d = item?.d ?? quiz.blank();
+    const many = locales.length > 1;
     const f = [];
     locales.forEach((l, i) => {
       const lang = languageName(l, ctx.locale);
       const t = d.tr[l] ?? { q: "", a: [], e: "", alt: "" };
-      f.push({ name: `q_${l}`, label: ctx.t("fQuestion", { lang }), value: t.q, help: i === 0 ? ctx.t("hQuestion", { max: LIMITS.text }) : undefined });
-      for (let n = 1; n <= LIMITS.choices; n++) f.push({ name: `a${n}_${l}`, label: ctx.t("fAnswer", { n, lang }), value: t.a[n - 1] ?? "", help: i === 0 && n === 1 ? ctx.t("hAnswers", { max: LIMITS.choice }) : undefined });
+      const fold = i > 0 ? { folded: true } : {};
+      f.push({ name: `q_${l}`, label: i === 0 ? ctx.t("fQuestion") : ctx.t("fQuestionIn", { lang }), value: t.q, example: ctx.t("exQuestion"), help: ctx.t("hQuestion", { max: LIMITS.text }), ...fold });
+      f.push({ name: `answers_${l}`, kind: "textarea", label: i === 0 ? ctx.t("fAnswers") : ctx.t("fAnswersIn", { lang }), value: t.a.join("\n"), help: ctx.t("hAnswers"), example: ctx.t("exAnswer"), ...fold });
       if (i === 0) {
-        f.push({
-          name: "correct", kind: "select", label: ctx.t("fCorrect"), value: String(d.correct + 1),
-          options: [1, 2, 3, 4].map((n) => ({ value: String(n), label: ctx.t("optCorrect", { n }) })), help: ctx.t("hCorrect"),
-        });
+        f.push({ name: "correct", kind: "segmented", label: ctx.t("fCorrect"), value: String(d.correct + 1), options: [1, 2, 3, 4].map((n) => ({ value: String(n), label: String(n) })), help: ctx.t("hCorrect") });
       }
-      f.push({ name: `e_${l}`, kind: "textarea", label: ctx.t("fExplain", { lang }), value: t.e, help: i === 0 ? ctx.t("hExplain", { max: LIMITS.text }) : undefined });
+      f.push({ name: `e_${l}`, kind: "textarea", label: many ? ctx.t("fExplainIn", { lang }) : ctx.t("fExplain"), value: t.e, help: ctx.t("hExplain"), example: ctx.t("exExplain"), folded: true });
     });
-    f.push({ name: "image", kind: "image", label: ctx.t("fImage"), value: d.img, help: ctx.t("hImage") });
-    locales.forEach((l) => f.push({ name: `alt_${l}`, label: ctx.t("fAlt", { lang: languageName(l, ctx.locale) }), value: d.tr[l]?.alt ?? "" }));
+    f.push({ name: "image", kind: "image", label: ctx.t("fImage"), value: d.img, help: ctx.t("hImage"), folded: true });
+    locales.forEach((l) => f.push({ name: `alt_${l}`, label: many ? ctx.t("fAltIn", { lang: languageName(l, ctx.locale) }) : ctx.t("fAlt"), value: d.tr[l]?.alt ?? "", help: ctx.t("hAlt"), example: ctx.t("exAlt"), folded: true }));
     return f;
   },
 
@@ -114,30 +117,35 @@ const quiz = {
     for (const l of locales) {
       const lang = languageName(l, ctx.locale);
       const qq = clean(values[`q_${l}`], LIMITS.text);
-      const raw = [1, 2, 3, 4].map((n) => clean(values[`a${n}_${l}`], LIMITS.choice));
+      // Les réponses viennent d'un seul champ (une par ligne) ; les anciens champs a1_fr… sont encore lus (appels existants, tests).
+      const asLines = values[`answers_${l}`] !== undefined;
+      const ak = (n) => (asLines ? `answers_${l}` : `a${n}_${l}`);
+      const lines = asLines ? String(values[`answers_${l}`] ?? "").split(/\r?\n/).map((x) => clean(x, LIMITS.choice)).filter(Boolean) : [];
+      const raw = asLines ? [0, 1, 2, 3].map((i) => lines[i] ?? "") : [1, 2, 3, 4].map((n) => clean(values[`a${n}_${l}`], LIMITS.choice));
       const e = clean(values[`e_${l}`], LIMITS.text, true);
       const alt = clean(values[`alt_${l}`], LIMITS.alt);
-      if (!qq && !raw.some(Boolean) && !e) continue;
+      if (!qq && !raw.some(Boolean) && !e && !lines.length) continue;
+      if (lines.length > LIMITS.choices) errors[ak(1)] = ctx.t("errTooMany", { max: LIMITS.choices, lang });
       let last = -1;
       raw.forEach((a, i) => { if (a) last = i; });
       let gap = false;
-      for (let i = 0; i < last; i++) if (!raw[i]) { errors[`a${i + 1}_${l}`] = ctx.t("errGap", { n: i + 1, lang }); gap = true; break; }
+      for (let i = 0; i < last; i++) if (!raw[i]) { errors[ak(i + 1)] = ctx.t("errGap", { n: i + 1, lang }); gap = true; break; }
       const answers = raw.slice(0, last + 1);
       if (!gap) {
         const seen = new Map();
         answers.forEach((a, i) => {
           const k = a.toLowerCase();
-          if (seen.has(k) && !errors[`a${i + 1}_${l}`]) errors[`a${i + 1}_${l}`] = ctx.t("errSame", { n: seen.get(k) + 1, lang });
+          if (seen.has(k) && !errors[ak(i + 1)]) errors[ak(i + 1)] = ctx.t("errSame", { n: seen.get(k) + 1, lang });
           else seen.set(k, i);
         });
       }
       if (published) {
         if (!qq) errors[`q_${l}`] = ctx.t("errQuestion", { lang });
-        if (answers.length < 2 && !errors[`a${Math.max(1, answers.length + 1)}_${l}`]) errors[`a${Math.max(1, answers.length + 1)}_${l}`] = ctx.t("errTwoAnswers", { lang });
+        if (answers.length < 2 && !errors[ak(Math.max(1, answers.length + 1))]) errors[ak(Math.max(1, answers.length + 1))] = ctx.t("errTwoAnswers", { lang });
       }
       if (published && qq && answers.length >= 2 && !gap) {
         if (first === null) first = { l, count: answers.length };
-        else if (first.count !== answers.length && !errors[`a1_${l}`]) errors[`a1_${l}`] = ctx.t("errCount", { lang, n: answers.length, other: languageName(first.l, ctx.locale), m: first.count });
+        else if (first.count !== answers.length && !errors[ak(1)]) errors[ak(1)] = ctx.t("errCount", { lang, n: answers.length, other: languageName(first.l, ctx.locale), m: first.count });
       }
       tr[l] = { q: qq, a: answers, e, alt };
     }

@@ -4,14 +4,126 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.35.0
 
+*Le module Discord peut maintenant demander au cœur de créer l'adresse courte « votresite.be/discord », qui mène à votre invitation et reste la même si elle change. Éteint par défaut. Discord 1.3.0, pour Curiosa 0.6.0 ou plus ; l'adresse courte apparaît avec la prochaine version du cœur (sur un cœur plus ancien, rien ne change).*
+
+### Nouveautés
+
+- **Une adresse courte pour votre Discord.** Allumez « Créer une adresse courte pour votre Discord » dans les réglages : l'adresse `/discord` mène à votre invitation. Elle apparaît dans « Raccourcis de liens » avec la pastille « Extension Discord », et ses clics sont comptés comme ceux de vos autres liens courts.
+- **Vos liens ne sont jamais touchés.** Si le nom est déjà pris par l'un de vos liens, rien n'est créé : le message sous le champ vous propose un autre nom. Le nom se change sous « Plus d'options ».
+- **Elle suit votre invitation.** Si vous changez d'invitation, l'adresse courte suit sans perdre ses chiffres. Si vous coupez l'option ou retirez le compte, elle disparaît.
+- **Le bouton de l'en-tête ne change pas tout seul.** Il passe par l'adresse courte, et ses clics sont comptés, seulement si « Compter les clics sur mes liens » est activé.
+
+### Pour les développeurs
+
+- **Clé `shortLink` de `module.json`** (cœur après 0.6.3) : `{ "enabled": "createShortLink", "name": "shortLinkName", "default": "discord", "target": "social.link" }`. Aucun code dans `index.mjs` : le cœur crée, met à jour et retire le lien (colonne `Redirect.managedBy`). Pas de nouvelle permission ni de `minCore` plus haut : un cœur plus ancien ignore la clé.
+- **`tests/discord-shortlink.test.mjs`** : le manifeste (éteint par défaut, nom replié, textes) tourne avec tout cœur ; les scénarios (création, nom pris, changement d'adresse, option coupée, bouton de l'en-tête) tournent quand le cœur testé contient `src/core/managedRedirects.ts`.
+- Versions : dépôt 1.35.0 ; Discord 1.3.0.
+
+## 1.34.0
+
+*Chaque module de réseau social décrit maintenant comment reconnaître l'adresse de son profil, et le Catalogue le recopie : Curiosa 0.6.2 reconnaît l'adresse collée avant d'installer le réseau. Pour Curiosa 0.6.0 ou plus (rien ne change pour un cœur plus ancien). Modules touchés : les 20 réseaux et Annonces Discord (version corrective).*
+
+### Nouveautés
+
+- **Le Catalogue sait reconnaître votre adresse avant l'installation.** Les 20 réseaux déclarent leurs sites, la forme de leurs adresses et un exemple. Avec Curiosa 0.6.2, le nom seul, l'adresse sans https ou le lien de partage mènent au bon réseau sans que vous ayez rien installé.
+- **Rien ne change pour vous aujourd'hui** sur un cœur 0.6.x : les modules se comportent comme dans la 1.31.0.
+
+### Pour les développeurs
+
+- **Bloc `social` de `module.json`**, écrit par `node scripts/gen-social.mjs` depuis la même table que le bloc `profile()` : `name`, `icon`, `hosts`, `template`, `example`, et au besoin `handle`, `tag`, `aliases`, `forms`, `shapes`, `fediverse`. `scripts/build-index.mjs` le recopie dans `catalogue/index.json` (60 Ko au total). Un cœur plus ancien ignore la clé.
+- **`tests/social-block.test.mjs`** : le bloc est identique à la table et au catalogue ; quand le cœur testé contient `src/core/socialRecognize.ts` (0.6.2), il vérifie que `recognizeOne` du cœur donne **le même résultat que le `profile()` du module** sur 37 saisies, pour les 20 réseaux, et lit un texte à plusieurs adresses ; sinon ces deux tests sont passés.
+- Versions : dépôt 1.34.0 (le lot 1 est la 1.31.0) ; les 20 réseaux et Annonces Discord +0.0.1.
+
+## 1.33.0
+
+*Les fiches des extensions montrent maintenant à quoi ressemble ce qu'elles ajoutent à votre site. Pour Curiosa 0.6.0 ou plus ; les visuels apparaissent dans la fiche avec la prochaine version du cœur, les versions plus anciennes continuent d'afficher la fiche comme avant.*
+
+### Nouveautés
+
+- **Des visuels dans la fiche des extensions les plus parlantes.** Avant d'installer, vous voyez par exemple le tableau des commandes et les récompenses du Bot Twitch, la page de commandes d'un créateur sur commande, la semaine du planning, un sondage et ses résultats, un agenda d'événements, un album photo, la page « Merci », la FAQ, les avis, le quiz du jour, l'annuaire, ou votre page de liens avec le bouton « Mes réseaux ». Chaque image a une légende et un texte alternatif, en français et en anglais. Extensions touchées, chacune en version corrective (« ajoute des visuels dans sa fiche ») : Bot Twitch 1.7.1, Planning des streams 2.5.1, Sondages 1.3.1, Événements 1.0.2, Galeries photos 1.1.2, Questions fréquentes 1.0.3, Mur des remerciements 1.2.1, Liste de liens 1.0.2, Autres plateformes 1.1.2, Commandes 1.0.2, Témoignages 1.1.1, Jeu du jour 1.1.1, Annuaire 1.0.2.
+- **Aucune donnée réelle dans ces images.** Chaque capture est fabriquée avec un faux site (« Atelier Démo »), des pseudos génériques, des adresses en `example.org` et des illustrations dessinées : ni pseudo, ni nom, ni adresse, ni photo d'une vraie personne.
+
+### Pour les développeurs
+
+- **Clé `previews` du `module.json`** (6 visuels au plus : `file`, `type` public / admin / overlay, `caption`, `alt`, français et anglais obligatoires ; image WebP ou PNG de 150 Ko au plus, 240 à 2400 px). Aucun `minCore` : un cœur plus ancien ignore la clé.
+- **`scripts/build-index.mjs`** recopie `previews` (la déclaration, jamais les images) dans l'entrée du catalogue et **refuse** un visuel invalide (nombre, nom, type réel lu dans les octets, poids, dimensions, textes manquants). `--check` échoue si une image référencée manque. Les règles sont dans `scripts/rules.mjs` (`previewProblems`, `sniffImage`, `previewIndex`), les mêmes bornes que le cœur.
+- **`scripts/shoot-previews.mjs`** régénère toutes les captures de façon reproductible (horloge figée, Chromium, WebP) depuis des scènes `tests/visual/previews/<module>.mjs` : vrai code du module, vrais composants du cœur pour l'administration, données inventées, et un garde-fou qui refuse toute adresse hors `example.*` ou tout nom interdit. `--check` vérifie les images déclarées sans rien générer. Mode d'emploi et règles de confidentialité : README, section « Les visuels des fiches ».
+- Tests : `tests/previews.test.mjs` (validation, index, `--check`, légendes au vouvoiement, scène pour chaque module illustré, données inventées).
+
+## 1.32.0
+
+*Les administrations de Suggestions de jeux et du Jeu du jour sont refaites : un tableau avec recherche en direct et pastilles de statut pour les suggestions, une question écrite en trois champs pour le Jeu du jour. Suggestions de jeux 1.7.0 et Jeu du jour 1.1.0 : pour Curiosa 0.6.0 ou plus.*
+*Les pages d'administration de Suggestions de jeux et du Jeu du jour suivent les règles d'ergonomie du dépôt (`docs/ERGONOMIE-ADMIN.md`). Pour Curiosa 0.6.0 ou plus. Modules touchés : Suggestions de jeux 1.7.0, Jeu du jour 1.1.0.*
+
+### Suggestions de jeux
+
+- **Un seul tableau, qui tient sur un téléphone.** Plus de huit boutons par ligne (« → Proposé », « → Planifié »…), plus de tableau qui sort de l'écran. Chaque ligne montre le jeu, son statut et son origine en pastille colorée **et** écrite, la date, les votes et, seulement quand elle manque, la jaquette. Sous 640 px, chaque ligne devient une carte.
+- **Une recherche qui filtre pendant que vous tapez** : le nom du jeu, le pseudo, la note, le statut. Au-dessus, des pastilles de statut avec leur nombre (« Proposé 12 », « Planifié 3 »…). Le tableau garde toutes vos suggestions et se lit 50 par 50.
+- **Le statut se change par le menu « ⋯ »** de la ligne. Un seul bouton reste visible : « Changer la jaquette ». « Supprimer » est dans le menu, en rouge, et demande confirmation.
+- **Ajouter un jeu tient en deux champs** : le nom et le statut. La note et l'image sont sous « Plus d'options ».
+- **Des mots de tous les jours** : plus de « clé » dans les messages sur les jaquettes (« Les jaquettes ne sont pas encore reliées : ouvrez le module « Jaquettes de jeux » »), plus de point d'exclamation.
+
+### Jeu du jour
+
+- **Écrire une question tient en trois champs** : la question, les réponses (une par ligne, de 2 à 4) et le numéro de la bonne. Avant, le formulaire montrait 19 champs, avec le français et l'anglais côte à côte. L'explication, l'image, les autres langues, la catégorie, la difficulté, la date précise et l'état sont repliés sous « Plus d'options », qui s'ouvre tout seul quand l'un d'eux est rempli.
+- **Une liste qui se cherche en direct**, avec des pastilles d'état (Publiée, Brouillon, Planifiée) et leur nombre, 50 par page. Le bouton « Chercher » disparaît.
+- **Les packs et les gabarits** sont des tableaux de trois colonnes (nom, description, avancement). L'étiquette « Pas activé » n'est plus répétée sur chaque ligne.
+- **Moins de réglages à l'écran** : sept réglages simples au lieu de treize. Les trois réglages rares (état dans le bloc d'accueil, mascotte et son message) sont sous « Plus d'options ». L'ordre et le chronomètre se choisissent par des boutons côte à côte.
+- **Des aides courtes, avec un exemple** sous chaque champ libre. Plus de « CSV » dans les libellés : « Importer depuis un tableur ». Plus de tutoiement ni de point d'exclamation dans les textes du jeu.
+
+### Pour les développeurs
+
+- Les deux modules demandent maintenant Curiosa 0.6.0 (`minCore`) : tableau enrichi, champs `segmented` et `folded`, réglages `rare`, `display: "segmented"` et `example`.
+- `tests/helpers/ergonomics.mjs` est recopié depuis `testsupport/ergonomics.mjs` du cœur 0.6.0 (il connaît les réglages `rare` et `example`). La base d'écarts d'ergonomie passe de 1185 à 1114 écarts.
+- `answers_<langue>` remplace `a1_<langue>` à `a4_<langue>` dans le formulaire du Jeu du jour ; les anciens noms sont encore lus par l'action `saveQuestion`.
+
+## 1.31.0
+
+*Les 20 modules de réseau social demandent « L'adresse de votre profil » et reconnaissent ce que l'on colle vraiment : le nom seul, l'adresse sans https ou sans www, `@nom@serveur`, les adresses courtes. Le module Annonces Discord est allégé. Pour Curiosa 0.6.0 ou plus. Modules touchés : les 20 réseaux, Annonces Discord 1.2.0.*
+
+### Nouveautés
+
+- **Une seule question, la même partout : « Adresse de votre profil ».** Sous le champ : « Collez le lien de votre page. » et un exemple concret (« Par exemple : https://www.instagram.com/monpseudo »). Le mot « identifiant » et le « (sans @) » disparaissent des 20 modules.
+- **Ce que l'on colle vraiment est reconnu.** Le nom seul (avec ou sans @), `instagram.com/monpseudo` sans https, avec ou sans `www.`, les adresses courtes (`fb.me`, `t.me`, `discord.gg`), `@nom@mastodon.social`, `u/pseudo` et `r/communaute` pour Reddit, `monnom.bandcamp.com`, un numéro de profil Steam. Les paramètres de suivi (`igsh`, `utm_…`, `fbclid`, `s`, `t`…) sont retirés. L'ancienne adresse `twitter.com` devient `x.com`.
+- **Un seul bouton par compte, quelle que soit la saisie.** Que vous tapiez `monpseudo` ou que vous colliez l'adresse, le bouton s'appelle « Instagram · monpseudo » et mène à la même adresse : le doublon est écarté. Le bouton de X s'appelle « X » (plus « X (Twitter) »).
+- **Mastodon** vérifie que l'adresse est celle d'un profil (`/@nom`) : un lien quelconque n'est plus accepté. **Bandcamp** accepte le simple nom. **Facebook** reconnaît `fb.me`.
+- **Discord** : le lien d'invitation séparé est replié sous « Plus d'options » ; le profil accepte déjà une invitation.
+- **Annonces Discord est allégé.** Deux champs visibles (l'adresse d'envoi et « Annoncer aussi mes directs YouTube ») ; la mention, l'icône et le choix « en même temps » sont repliés sous « Plus d'options », le texte de l'annonce passe en mode avancé. Le mot « webhook » disparaît des textes (« adresse d'envoi du salon »), les délais disent leur unité et leurs bornes, les erreurs disent quoi faire.
+- Avec le cœur 0.6.0, les messages d'erreur du compte (Bluesky, GitHub…) renvoient à « l'adresse de votre profil ».
+
+### Pour les développeurs
+
+- **Une seule table pour les 20 réseaux** : `scripts/social-networks.mjs` (hôtes, modèle d'adresse, formes reconnues, exemple, icône). `node scripts/gen-social.mjs` écrit le bloc `profile()` de chaque `index.mjs` (le fichier entier pour les 15 réseaux sans statistiques), le réglage `profile`, la description et la ligne « Réglage » du README ; `--check` vérifie qu'aucun fichier n'a été modifié à la main.
+- **`tests/social-generated.test.mjs`** : anti-copie (une seule `profile()` par module, identique à celle de la table), textes communs, 40 collages réels. `profile()` renvoie maintenant `{ url, handle, tag }` ; `handle` garde son sens pour les statistiques.
+- `minCore` passe à 0.6.0 pour ces modules (`example` et `rare` sont des clés du cœur 0.6.0). Aucune donnée ne change : les adresses déjà saisies marchent toujours.
+- Le kit d'ergonomie est recopié depuis le cœur 0.6.0 (`tests/helpers/ergonomics.mjs`) ; la base des écarts passe de 1185 à 1115 (les 21 modules à 0 écart, -70).
+- Versions : 20 réseaux +0.1.0 (1.1.0 ; 1.2.0 pour Bluesky, Discord, GitHub, Mastodon, Reddit), Annonces Discord 1.2.0.
+
+## 1.30.0
+
+*L'onglet « Récompenses » du Bot Twitch est refait, et le haut de la page « Commandes » tient en une ligne. Bot Twitch 1.7.0 : pour Curiosa 0.6.0 ou plus.*
+
+### Nouveautés
+
+- **Un seul tableau de récompenses**, avec recherche en direct, filtres en pastilles, ce qui se passe (pastille colorée **et** écrite), le coût et un interrupteur « en vente / en pause » dans la ligne. Un seul bouton « Modifier » par ligne ; « Tester » et « Supprimer la récompense » sont dans le menu « ⋯ ».
+- **Un formulaire de trois champs** : Titre, Coût, Ce qui se passe. Tout le reste (réponse du bot, couleur, délai de recharge, texte d'aide, message du viewer) est sous « Plus d'options ». Une réponse sensée est prévue si vous n'écrivez rien.
+- **Une phrase et trois étapes** à la place de l'introduction de cinq lignes : activer, autoriser Twitch, relier la maison (facultatif), avec l'état de chaque étape. Une fois tout en place, une ligne dit l'état du Connecteur Home Assistant, avec le lien pour l'ouvrir et pour créer une récompense.
+- **« Vos actions »** : recherche, un bouton « Renommer » et « Retirer » dans le menu ; la colonne « Maison » ne parle que de ce qui sort de l'ordinaire.
+- **Le journal des échanges** a sa recherche et un filtre par résultat.
+- **Le haut de la page « Commandes » tient en une ligne** : « Le bot écoute votre chat », le dernier message, « répond pendant vos directs », un petit bouton « Vérifier » (ou « Réparer l'écoute » s'il y a un problème) et le bouton « Arrêt d'urgence », toujours visible. Plus de carte à un seul bouton.
+- **L'onglet « Sources »** s'appelle « Informations utilisées » dans cette page.
+
+### Pour les développeurs
+
+- Bot Twitch 1.7.0, `minCore` 0.6.0 : tableau enrichi, champs `duration`, `switch`, `folded`, `example` du cœur. L'action `rewardToggle` devient `rewardEnable` (l'interrupteur dit l'état voulu : `enabled` vaut `1` ou `0`). Le champ `cooldownMin` reste accepté ; le formulaire envoie `cooldown` en secondes. Le choix de la couleur est replié (vide : rouge).
+- `adminkit.client.js` reste pour les parties que le cœur ne couvre pas encore : période des commandes et des timers (la migration vers le contrôle natif est un lot suivant), aperçu et morceaux à insérer, et les boutons d'action en ligne (sans carte) en attendant une brique du cœur.
 ### Pour les développeurs
 
 - **Le cliquet d'ergonomie.** `tests/ergonomics.test.mjs` mesure, pour chaque module, les règles automatiques de `docs/ERGONOMIE-ADMIN.md` (réglages par onglet, mots interdits, libellés, aides et exemples, ton, parité FR/EN). Les écarts déjà présents sont listés dans `tests/ergonomics-baseline.json` : un nouvel écart fait échouer le test, un écart corrigé doit être retiré de la base, qui ne peut que rétrécir.
 - **Deux commandes.** `node scripts/ergonomics-baseline.mjs --write` écrit ou fait rétrécir la base (il refuse d'ajouter un écart) ; `--report` imprime le tableau « module, nombre d'écarts par règle ».
 - **`tests/helpers/ergonomics.mjs`** : copie de l'aide du kit du cœur (comme `tmp.mjs`), avec `assertAdminPageErgonomics(blocks)` pour les pages produites par du code. Aucune version du cœur n'est exigée ; un test vérifie que la copie reste identique à celle du cœur.
-- Aucun module ne change : ni version, ni comportement.
 
 ## 1.29.0
 

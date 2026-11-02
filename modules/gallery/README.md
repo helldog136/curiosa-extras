@@ -56,3 +56,7 @@ Il peut lister les albums et leurs photos, **créer un album en brouillon**, **a
 ## Pour qui développe
 
 Le module offre le service `gallery.albums` (lecture seule, version 1) : `list({ limit, cursor, q })` et `get(id)`, pour lier un album à un événement par exemple. Détails dans `docs/ideas/gallery.md` du dépôt.
+
+## Visuels de la fiche
+
+Depuis la version 1.1.2, la fiche du module montre des captures de ce qu'il ajoute à votre site (données inventées, aucune donnée réelle).
