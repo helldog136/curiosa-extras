@@ -837,8 +837,8 @@
           "file": "previews/page.webp",
           "type": "public",
           "caption": {
-            "fr": "Votre page d'idées, telle que la voit votre public : un champ, un bouton et les idées retenues avec leur statut.",
-            "en": "Your ideas page, as your audience sees it: one field, one button and the ideas you keep with their status."
+            "fr": "Votre page d'idées, telle que la voit votre public : un champ, un bouton, la liste des idées.",
+            "en": "Your ideas page, as your audience sees it: one field, one button, the list of ideas."
           },
           "alt": {
             "fr": "Page avec un champ « Votre idée », une recherche, et une liste d'idées avec leur statut et leur nombre de soutiens.",
