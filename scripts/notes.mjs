@@ -2,6 +2,6 @@
 import fs from "node:fs";
 const version = String(process.argv[2] ?? "").replace(/^v/, "");
 const md = fs.readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
-const m = new RegExp(`^## ${version.replace(/\./g, "\\.")}\\s*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(md);
+const m = new RegExp(`^## ${version.replace(/\./g, "\\.")}(?: — [0-9]{4}-[0-9]{2}-[0-9]{2})?[ \\t]*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(md);
 if (!m?.[1].trim()) { console.error(`CHANGELOG.md : aucune section « ## ${version} ».`); process.exit(1); }
 console.log(m[1].trim());

@@ -4,6 +4,19 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.36.0 — 2026-11-02
+
+*Nouveau module : la Boîte à idées. Votre public vous propose des idées sur une page, vous relisez avant que quoi que ce soit apparaisse. Boîte à idées 1.0.0, pour Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
+
+### Nouveautés
+
+- **Boîte à idées (nouveau module, 1.0.0).** Votre public propose des idées sur une page, voit celles que vous retenez avec leur statut et soutient celles qu'il aime. Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon, dans un seul tableau avec recherche en direct. Aucune adresse e-mail ni nom réel demandés. Pour Curiosa 0.6.0 ou plus. Détail : `docs/changelog-parts/boite-a-idees.md`.
+- **Rien d'autre ne change pour vous.** Les autres modules gardent leur version ; seul le Catalogue pointe maintenant la version 1.36.0 du dépôt.
+
+### Pour les développeurs
+
+- Versions : dépôt 1.36.0 ; Boîte à idées 1.0.0. `scripts/notes.mjs`, `scripts/release-check.mjs` et `tests/repo-rules.test.mjs` acceptent le titre daté « ## X.Y.Z — AAAA-MM-JJ ».
+
 ## 1.35.0
 
 *Le module Discord peut maintenant demander au cœur de créer l'adresse courte « votresite.be/discord », qui mène à votre invitation et reste la même si elle change. Éteint par défaut. Discord 1.3.0, pour Curiosa 0.6.0 ou plus ; l'adresse courte apparaît avec la prochaine version du cœur (sur un cœur plus ancien, rien ne change).*

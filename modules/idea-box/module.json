@@ -1,0 +1,431 @@
+{
+  "apiVersion": 2,
+  "id": "idea-box",
+  "name": {
+    "fr": "Boîte à idées",
+    "en": "Idea box"
+  },
+  "version": "1.0.0",
+  "minCore": "0.6.0",
+  "description": {
+    "fr": "Laissez votre public vous proposer des idées. Un champ, un bouton, puis une liste des idées retenues avec leur statut et un bouton « Je soutiens ». Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon.",
+    "en": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep with their status and a support button. Each idea is reviewed before it shows: you publish it, refuse it or merge it with a duplicate."
+  },
+  "author": "Helldog136",
+  "privacy": {
+    "fr": "Si vous proposez une idée, son texte et votre pseudo (si vous en donnez un) sont enregistrés ; ils sont affichés sur la page seulement après relecture. Aucun nom réel ni adresse e-mail n'est demandé. Si vous soutenez une idée, un petit cookie de votre navigateur retient les numéros des idées soutenues pendant un an, uniquement pour ne pas compter deux fois votre soutien. Pour faire retirer une idée ou un pseudo, écrivez au contact du site.",
+    "en": "If you suggest an idea, its text and your nickname (if you give one) are saved; they appear on the page only after review. No real name or e-mail address is asked for. If you support an idea, a small cookie in your browser remembers the numbers of the ideas you supported for one year, only so your support is not counted twice. To have an idea or a nickname removed, write to the site's contact."
+  },
+  "license": "MIT",
+  "icon": "💡",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "idees",
+  "permissions": [
+    "pages",
+    "routes",
+    "storage",
+    "admin",
+    "mcp"
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Idées",
+        "en": "Ideas"
+      }
+    }
+  ],
+  "settings": [
+    {
+      "key": "title",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "example": {
+        "fr": "Boîte à idées",
+        "en": "Idea box"
+      },
+      "label": {
+        "fr": "Titre de la page",
+        "en": "Page title"
+      }
+    },
+    {
+      "key": "intro",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "example": {
+        "fr": "Dites-nous ce que vous aimeriez voir ici.",
+        "en": "Tell us what you would like to see here."
+      },
+      "label": {
+        "fr": "Texte d'introduction",
+        "en": "Introduction"
+      }
+    },
+    {
+      "key": "autoPublish",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "fr": "Publier sans relecture",
+        "en": "Publish without review"
+      },
+      "help": {
+        "fr": "Sinon, vous relisez chaque idée avant sa publication.",
+        "en": "Otherwise you review each idea before it shows."
+      }
+    },
+    {
+      "key": "votes",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "fr": "Permettre de soutenir les idées",
+        "en": "Let people support ideas"
+      },
+      "help": {
+        "fr": "Un soutien par personne et par idée.",
+        "en": "One support per person and per idea."
+      }
+    },
+    {
+      "key": "showDismissed",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "fr": "Montrer les idées écartées",
+        "en": "Show set-aside ideas"
+      },
+      "help": {
+        "fr": "Sinon, une idée écartée disparaît de la page.",
+        "en": "Otherwise a set-aside idea leaves the page."
+      }
+    },
+    {
+      "key": "hourlyLimit",
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "unit": {
+        "fr": "idées",
+        "en": "ideas"
+      },
+      "rare": true,
+      "label": {
+        "fr": "Idées par heure et par personne",
+        "en": "Ideas per hour and per person"
+      }
+    },
+    {
+      "key": "maxPending",
+      "type": "number",
+      "default": 200,
+      "min": 10,
+      "max": 500,
+      "step": 10,
+      "unit": {
+        "fr": "idées",
+        "en": "ideas"
+      },
+      "rare": true,
+      "label": {
+        "fr": "Idées en attente au plus",
+        "en": "Most ideas waiting for review"
+      }
+    },
+    {
+      "key": "textMax",
+      "type": "number",
+      "default": 500,
+      "min": 50,
+      "max": 1000,
+      "step": 50,
+      "unit": {
+        "fr": "caractères",
+        "en": "characters"
+      },
+      "rare": true,
+      "label": {
+        "fr": "Longueur d'une idée",
+        "en": "Length of an idea"
+      }
+    },
+    {
+      "key": "keepRefusedDays",
+      "type": "number",
+      "default": 30,
+      "min": 1,
+      "max": 365,
+      "step": 1,
+      "unit": {
+        "fr": "jours",
+        "en": "days"
+      },
+      "rare": true,
+      "label": {
+        "fr": "Garder les idées refusées",
+        "en": "Keep refused ideas"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "ideas.moderate",
+      "label": {
+        "fr": "relire, publier, refuser, modifier et fusionner les idées",
+        "en": "review, publish, refuse, edit and merge ideas"
+      },
+      "help": {
+        "fr": "Sans ce droit, la personne voit les idées mais ne peut rien décider.",
+        "en": "Without it, the person sees the ideas but cannot decide anything."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "ideas.delete",
+      "label": {
+        "fr": "supprimer des idées",
+        "en": "delete ideas"
+      },
+      "help": {
+        "fr": "La suppression est définitive.",
+        "en": "Deleting is permanent."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ],
+  "dashboard": {
+    "tasks": [
+      {
+        "id": "review",
+        "label": {
+          "fr": "{n} idées à relire",
+          "en": "{n} ideas to review"
+        },
+        "href": "?tab=use&show=review",
+        "right": "ideas.moderate"
+      }
+    ],
+    "cards": [
+      {
+        "id": "top",
+        "type": "list",
+        "title": {
+          "fr": "Idées les plus soutenues",
+          "en": "Most supported ideas"
+        },
+        "href": "?tab=use",
+        "empty": {
+          "fr": "Aucune idée publiée pour le moment.",
+          "en": "No published idea yet."
+        }
+      }
+    ]
+  },
+  "logEvents": [
+    {
+      "key": "idea.received",
+      "label": {
+        "fr": "Idée reçue",
+        "en": "Idea received"
+      }
+    },
+    {
+      "key": "idea.published",
+      "label": {
+        "fr": "Idée publiée",
+        "en": "Idea published"
+      }
+    },
+    {
+      "key": "idea.hidden",
+      "label": {
+        "fr": "Idée retirée de la page",
+        "en": "Idea taken off the page"
+      }
+    },
+    {
+      "key": "idea.refused",
+      "label": {
+        "fr": "Idée refusée",
+        "en": "Idea refused"
+      }
+    },
+    {
+      "key": "idea.status",
+      "label": {
+        "fr": "Statut d'une idée changé : {status}",
+        "en": "Idea status changed: {status}"
+      },
+      "fields": [
+        {
+          "key": "status"
+        }
+      ]
+    },
+    {
+      "key": "idea.merged",
+      "label": {
+        "fr": "Deux idées fusionnées",
+        "en": "Two ideas merged"
+      }
+    },
+    {
+      "key": "idea.deleted",
+      "label": {
+        "fr": "Idée supprimée",
+        "en": "Idea deleted"
+      },
+      "level": "warn"
+    }
+  ],
+  "mcp": [
+    {
+      "name": "idea_box_list",
+      "readOnly": true,
+      "description": "List the ideas, newest first. Optional filter: a moderation state (pending, published, hidden, refused), a status of published ideas (proposed, studied, planned, done, dismissed) or all.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "enum": [
+              "all",
+              "pending",
+              "published",
+              "hidden",
+              "refused",
+              "proposed",
+              "studied",
+              "planned",
+              "done",
+              "dismissed"
+            ],
+            "description": "Only these ideas (default all)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many at most (default 30)."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_box_set_status",
+      "description": "Change the status of an idea (proposed, studied, planned, done, dismissed) and optionally give the short public reply shown under it (280 characters at most).",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Idea id."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "studied",
+              "planned",
+              "done",
+              "dismissed"
+            ],
+            "description": "One of: proposed, studied, planned, done, dismissed."
+          },
+          "reply": {
+            "type": "string",
+            "maxLength": 280,
+            "description": "Short public reply. An empty text removes it."
+          }
+        }
+      }
+    },
+    {
+      "name": "idea_box_moderate",
+      "description": "Publish an idea waiting for review, take a published idea off the page (hide), or refuse it. Nothing is deleted: a refused idea is erased by the module after the delay set in its settings.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "decision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Idea id."
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "publish",
+              "hide",
+              "refuse"
+            ],
+            "description": "publish shows the idea, hide takes it off the page, refuse rejects it."
+          }
+        }
+      }
+    }
+  ],
+  "dataVersion": 1,
+  "previews": [
+    {
+      "file": "previews/page.webp",
+      "type": "public",
+      "caption": {
+        "fr": "Votre page d'idées, telle que la voit votre public : un champ, un bouton, la liste des idées.",
+        "en": "Your ideas page, as your audience sees it: one field, one button, the list of ideas."
+      },
+      "alt": {
+        "fr": "Page avec un champ « Votre idée », une recherche, et une liste d'idées avec leur statut et leur nombre de soutiens.",
+        "en": "Page with a \"Your idea\" field, a search box, and a list of ideas with their status and number of supports."
+      }
+    },
+    {
+      "file": "previews/moderation.webp",
+      "type": "admin",
+      "caption": {
+        "fr": "Un seul tableau pour relire : les idées à relire d'abord, une recherche, un interrupteur pour publier.",
+        "en": "One table to review ideas: those to review first, a search box, a switch to publish."
+      },
+      "alt": {
+        "fr": "Tableau d'administration des idées avec pastilles d'état, nombre de soutiens et interrupteur de publication.",
+        "en": "Admin table of ideas with state badges, number of supports and a publish switch."
+      }
+    },
+    {
+      "file": "previews/reponse.webp",
+      "type": "admin",
+      "caption": {
+        "fr": "Changer le statut d'une idée et lui laisser une réponse courte que votre public lit.",
+        "en": "Change an idea's status and leave a short reply your audience reads."
+      },
+      "alt": {
+        "fr": "Formulaire de modification d'une idée avec l'interrupteur Publiée, le statut et la réponse courte.",
+        "en": "Edit form of an idea with the Published switch, the status and the short reply."
+      }
+    }
+  ]
+}
