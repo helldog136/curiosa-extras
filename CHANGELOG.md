@@ -4,6 +4,17 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Nouveautés
+
+- **Bannière d'annonce 1.1.0 : une annonce qui commence et finit toute seule.** Sous « Plus d'options », « Limiter dans le temps » vous laisse choisir un début et une fin en un seul champ, avec la phrase « Du 1er décembre au 24 décembre » pour vérifier ; « Chaque année » est possible. Hors de ces dates, le bandeau, la note d'accueil et l'annonce proposée aux overlays disparaissent d'eux-mêmes, sans rien à défaire. Sans dates, rien ne change : vos réglages sont conservés. Pour Curiosa 0.6.0 ou plus.
+- **Exemples sous les champs de la Bannière d'annonce** (texte, adresse, note d'accueil).
+
+### Pour les développeurs
+
+- `examples/announcement-banner` : réglage `period` (`rare`, facultatif, sans valeur par défaut), `minCore` 0.6.0. La décision est prise à l'affichage, d'après l'heure courante dans le fuseau (`ctx.timezone` s'il existe, sinon celui de la machine), sans minuteur. Tests dans `tests/announcement-banner.test.mjs` (fuseaux, changements d'heure, début dans le futur, valeurs illisibles).
+
 ## 1.36.0 — 2026-11-02
 
 *Nouveau module : la Boîte à idées. Votre public vous propose des idées sur une page, vous relisez avant que quoi que ce soit apparaisse. Boîte à idées 1.0.0, pour Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
