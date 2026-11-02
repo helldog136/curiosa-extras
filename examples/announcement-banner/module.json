@@ -1,15 +1,15 @@
 {
   "apiVersion": 2,
-  "minCore": "0.1.22",
+  "minCore": "0.6.0",
   "id": "announcement-banner",
   "name": {
     "en": "Announcement banner",
     "fr": "Bannière d'annonce"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": {
-    "en": "Shows a banner at the top of every page, a note section for the home page, and offers its announcements to other modules, such as overlays. Example module.",
-    "fr": "Affiche une bannière en haut de chaque page, une section « note » pour l'accueil, et propose ses annonces aux autres modules, comme les overlays. Module d'exemple."
+    "en": "A banner at the top of every page that can have dates, and a note for the home page. Example module.",
+    "fr": "Un bandeau en haut de chaque page, qui peut avoir des dates, et une note pour l'accueil. Module d'exemple."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -41,6 +41,10 @@
       "help": {
         "en": "One text per language. Empty = nothing shown in that language.",
         "fr": "Un texte par langue. Vide = rien dans cette langue."
+      },
+      "example": {
+        "en": "Free delivery until Sunday",
+        "fr": "Livraison offerte jusqu'à dimanche"
       }
     },
     {
@@ -50,7 +54,8 @@
         "en": "Link (optional)",
         "fr": "Lien (facultatif)"
       },
-      "optional": true
+      "optional": true,
+      "example": "https://example.org/news"
     },
     {
       "key": "tone",
@@ -91,6 +96,28 @@
       "label": {
         "en": "Home page note (Markdown)",
         "fr": "Note sur l'accueil (Markdown)"
+      },
+      "example": {
+        "en": "Welcome, here is what is new",
+        "fr": "Bienvenue, voici les nouveautés"
+      }
+    },
+    {
+      "key": "period",
+      "type": "period",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Limit in time",
+        "fr": "Limiter dans le temps"
+      },
+      "help": {
+        "en": "Outside these dates, nothing is shown.",
+        "fr": "Hors de ces dates, rien n'est affiché."
+      },
+      "example": {
+        "en": "From 1 December to 24 December, every year",
+        "fr": "Du 1er décembre au 24 décembre, chaque année"
       }
     }
   ],

@@ -48,7 +48,8 @@ test("langues : chaque clé ctx.t(\"…\") utilisée statiquement par le code ex
 });
 
 import { safeHref } from "@/core/url";
-const def = (await import("../examples/announcement-banner/index.mjs")).default;
+const mod = await import("../examples/announcement-banner/index.mjs");
+const def = mod.default;
 const withSettings = (settings, key = "banner") => fakeCtx({ key, settings });
 
 test("manifeste : slot, section et sujet déclarés = implémentés ; permissions correspondantes", () => {
@@ -62,7 +63,7 @@ test("manifeste : slot, section et sujet déclarés = implémentés ; permission
 
 test("manifeste : réglages (types, défauts, traductibles) cohérents avec l'usage du code", () => {
   const byKey = Object.fromEntries(manifestJson.settings.map((s) => [s.key, s]));
-  assert.deepEqual(Object.keys(byKey).sort(), ["enabled", "homeText", "link", "text", "tone"]);
+  assert.deepEqual(Object.keys(byKey).sort(), ["enabled", "homeText", "link", "period", "text", "tone"]);
   assert.equal(byKey.enabled.default, true);
   assert.equal(byKey.text.translatable, true);
   assert.equal(byKey.homeText.translatable, true);
@@ -157,4 +158,162 @@ test("instances : chaque instance lit ses propres réglages (deux bannières ind
 test("textes du module : fichiers en/fr valides (clé d'exemple « hello »)", () => {
   assert.equal(readJson("locales/en.json").hello, "Hello");
   assert.equal(readJson("locales/fr.json").hello, "Bonjour");
+});
+
+/* ───────────── Bandeau daté : réglage « period » (Limiter dans le temps) ───────────── */
+
+const at = (iso) => new Date(iso);
+/** Ce que voit le visiteur à cet instant (heure mockée, comme le serveur) : la bannière, la note d'accueil et l'élément d'overlay. */
+function shown(t, iso, settings, tz) {
+  if (!t.mock.timers.__on) { t.mock.timers.enable({ apis: ["Date"], now: at(iso).getTime() }); t.mock.timers.__on = true; } else t.mock.timers.setTime(at(iso).getTime());
+  const ctx = Object.assign(withSettings({ enabled: true, text: "Soldes", homeText: "Note", ...settings }), tz ? { timezone: tz } : {});
+  return { banner: def.slots["layout.banner"](ctx) !== null, note: def.sections.note(ctx) !== null, overlay: def.exports["overlay.item"](ctx).length === 1 };
+}
+const ALL = { banner: true, note: true, overlay: true }, NONE = { banner: false, note: false, overlay: false };
+const PARIS = "Europe/Paris";
+
+test("dates : le manifeste déclare UN seul réglage « period », rare, facultatif, sans valeur par défaut, avec exemple et textes courts en fr et en", () => {
+  const f = manifestJson.settings.find((x) => x.key === "period");
+  assert.equal(f.type, "period");
+  assert.equal(f.rare, true);
+  assert.equal(f.optional, true);
+  assert.ok(!("default" in f), "sans dates, le bandeau marche comme avant");
+  assert.ok(!f.translatable && !f.advanced);
+  assert.equal(manifestJson.minCore, "0.6.0", "le type period demande le cœur 0.6.0");
+  assert.ok(!manifestJson.settings.some((x) => ["datetime", "period"].includes(x.type) && x.key !== "period"), "pas de second champ de date");
+  for (const lang of ["fr", "en"]) {
+    for (const k of ["label", "help", "example"]) assert.ok(f[k][lang] && f[k][lang].length <= 60, `${k}.${lang}`);
+    assert.ok(!f.label[lang].includes(":"));
+  }
+  assert.equal(f.label.fr, "Limiter dans le temps");
+});
+
+test("dates : au plus 7 réglages simples (les réglages rares ne comptent pas)", () => {
+  const simple = manifestJson.settings.filter((s) => !s.rare && !s.advanced);
+  assert.ok(simple.length <= 7, String(simple.length));
+  assert.deepEqual(simple.map((s) => s.key), ["enabled", "text", "link", "tone", "homeText"], "les cinq réglages d'avant, dans le même ordre");
+});
+
+test("dates : les champs libres ont un exemple, sans point d'exclamation ni site réel", () => {
+  for (const key of ["text", "link", "homeText"]) {
+    const f = manifestJson.settings.find((x) => x.key === key);
+    assert.ok(f.example, key);
+    for (const v of typeof f.example === "string" ? [f.example] : Object.values(f.example)) assert.ok(v.trim() && !v.includes("!"), `${key} : ${v}`);
+  }
+});
+
+test("dates : sans période (absente, vide, espaces) le bandeau, la note et l'overlay marchent exactement comme avant", (t) => {
+  for (const period of [undefined, "", "   ", null]) assert.deepEqual(shown(t, "2026-11-02T10:00:00Z", { period }), ALL);
+  const [b] = def.slots["layout.banner"](withSettings({ enabled: true, text: "Hi", link: "https://x.test", tone: "success" }));
+  assert.deepEqual(b, { type: "banner", text: "Hi", href: "https://x.test", tone: "success" });
+});
+
+test("dates : une période unique inclut le premier et le dernier jour entiers (de 00:00 à 23:59, heure du site)", (t) => {
+  const period = "2026-12-01/2026-12-24";
+  assert.deepEqual(shown(t, "2026-11-30T22:59:59Z", { period }, PARIS), NONE, "la veille à 23:59:59");
+  assert.deepEqual(shown(t, "2026-11-30T23:00:00Z", { period }, PARIS), ALL, "le 1er à 00:00");
+  assert.deepEqual(shown(t, "2026-12-24T22:59:59Z", { period }, PARIS), ALL, "le 24 à 23:59:59");
+  assert.deepEqual(shown(t, "2026-12-24T23:00:00Z", { period }, PARIS), NONE, "le 25 à 00:00");
+});
+
+test("dates : bandeau programmé dans le futur → rien aujourd'hui, visible le jour venu, sans minuteur", (t) => {
+  const period = "2027-01-10/2027-01-20";
+  assert.deepEqual(shown(t, "2026-11-02T10:00:00Z", { period }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2027-01-10T08:00:00Z", { period }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2027-01-21T08:00:00Z", { period }, PARIS), NONE, "terminé");
+});
+
+test("dates : période « chaque année » (12-20/01-05) enjambe le 31 décembre", (t) => {
+  const period = "12-20/01-05";
+  for (const [iso, ok] of [["2026-12-19T12:00:00Z", false], ["2026-12-20T12:00:00Z", true], ["2026-12-31T12:00:00Z", true], ["2027-01-05T12:00:00Z", true], ["2027-01-06T12:00:00Z", false], ["2027-07-01T12:00:00Z", false]]) {
+    assert.deepEqual(shown(t, iso, { period }, PARIS), ok ? ALL : NONE, iso);
+  }
+});
+
+test("dates : « chaque année » avec le 29 février couvre tout février, bissextile ou non", (t) => {
+  const period = "02-01/02-29";
+  assert.deepEqual(shown(t, "2027-02-28T12:00:00Z", { period }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2027-03-01T12:00:00Z", { period }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2028-02-29T12:00:00Z", { period }, PARIS), ALL);
+});
+
+test("dates : changement de fuseau — le même instant tombe dans un autre jour selon le fuseau du site", (t) => {
+  const period = "2026-12-24/2026-12-24";
+  const instant = "2026-12-24T23:30:00Z"; // 00:30 le 25 à Paris, 18:30 le 24 à New York, 08:30 le 25 à Tokyo
+  assert.deepEqual(shown(t, instant, { period }, "Europe/Paris"), NONE);
+  assert.deepEqual(shown(t, instant, { period }, "America/New_York"), ALL);
+  assert.deepEqual(shown(t, instant, { period }, "Asia/Tokyo"), NONE);
+  assert.deepEqual(shown(t, instant, { period }, "UTC"), ALL);
+});
+
+test("dates : passage à l'heure d'été (28 mars 2027, Paris) — le jour compte 23 heures, ni trou ni doublon", (t) => {
+  const period = "2027-03-28/2027-03-28";
+  assert.deepEqual(shown(t, "2027-03-27T22:59:59Z", { period }, PARIS), NONE, "27 mars 23:59:59 (UTC+1)");
+  assert.deepEqual(shown(t, "2027-03-27T23:00:00Z", { period }, PARIS), ALL, "28 mars 00:00 (UTC+1)");
+  assert.deepEqual(shown(t, "2027-03-28T01:00:00Z", { period }, PARIS), ALL, "03:00 (UTC+2) juste après le saut");
+  assert.deepEqual(shown(t, "2027-03-28T21:59:59Z", { period }, PARIS), ALL, "28 mars 23:59:59 (UTC+2)");
+  assert.deepEqual(shown(t, "2027-03-28T22:00:00Z", { period }, PARIS), NONE, "29 mars 00:00 (UTC+2)");
+});
+
+test("dates : retour à l'heure d'hiver (25 octobre 2026, Paris) — le jour compte 25 heures et l'heure doublée reste dans le jour", (t) => {
+  const period = "2026-10-25/2026-10-25";
+  assert.deepEqual(shown(t, "2026-10-24T21:59:59Z", { period }, PARIS), NONE, "24 octobre 23:59:59 (UTC+2)");
+  assert.deepEqual(shown(t, "2026-10-24T22:00:00Z", { period }, PARIS), ALL, "25 octobre 00:00 (UTC+2)");
+  assert.deepEqual(shown(t, "2026-10-25T00:30:00Z", { period }, PARIS), ALL, "02:30 la première fois");
+  assert.deepEqual(shown(t, "2026-10-25T01:30:00Z", { period }, PARIS), ALL, "02:30 la seconde fois");
+  assert.deepEqual(shown(t, "2026-10-25T22:59:59Z", { period }, PARIS), ALL, "25 octobre 23:59:59 (UTC+1)");
+  assert.deepEqual(shown(t, "2026-10-25T23:00:00Z", { period }, PARIS), NONE, "26 octobre 00:00 (UTC+1)");
+});
+
+test("dates : un fuseau inconnu ou absent ne casse rien (repli sur celui de la machine)", (t) => {
+  for (const tz of [undefined, "", "Mars/Olympus", 42]) {
+    assert.doesNotThrow(() => shown(t, "2026-12-10T12:00:00Z", { period: "2026-12-01/2026-12-24" }, tz));
+    assert.deepEqual(shown(t, "2026-12-10T12:00:00Z", { period: "2026-12-01/2026-12-24" }, tz), ALL, "milieu de période : vrai dans tous les fuseaux");
+  }
+  assert.ok(typeof mod.zoneOf({ timezone: "Mars/Olympus" }) === "string");
+  assert.equal(mod.zoneOf({ timezone: "Europe/Brussels" }), "Europe/Brussels");
+});
+
+test("dates : une valeur illisible ou à l'envers n'éteint jamais l'annonce", (t) => {
+  for (const period of ["n'importe quoi", "2026-12-24/2026-12-01", "2026-12-01/", "/2026-12-24", "2026-13-40/2026-14-01"]) {
+    assert.deepEqual(shown(t, "2026-12-10T12:00:00Z", { period }, PARIS), ALL, period);
+  }
+});
+
+test("dates : l'activation reste prioritaire — désactivée ou sans texte, une période en cours n'affiche rien", (t) => {
+  assert.equal(shown(t, "2026-12-10T12:00:00Z", { period: "2026-12-01/2026-12-24", enabled: false }, PARIS).banner, false);
+  assert.equal(shown(t, "2026-12-10T12:00:00Z", { period: "2026-12-01/2026-12-24", text: "" }, PARIS).banner, false);
+  assert.equal(shown(t, "2026-12-10T12:00:00Z", { period: "2026-12-01/2026-12-24", text: "" }, PARIS).overlay, false);
+});
+
+test("dates : deux instances ont chacune leur période", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: at("2026-12-10T12:00:00Z").getTime() });
+  const a = withSettings({ enabled: true, text: "A", period: "2026-12-01/2026-12-24" }, "a");
+  const b = withSettings({ enabled: true, text: "B", period: "2027-01-01/2027-01-31" }, "b");
+  assert.equal(def.slots["layout.banner"](a)[0].text, "A");
+  assert.equal(def.slots["layout.banner"](b), null);
+});
+
+test("dates : aucun minuteur ni tâche de fond — la décision se prend à l'affichage", () => {
+  assert.ok(!/setTimeout|setInterval|setImmediate|cron/i.test(source));
+  assert.ok(!def.tasks && !def.hooks && !manifestJson.tasks);
+});
+
+test("dates : le cœur refuse une fin avant le début, sous le champ, avec un exemple (en et fr)", async () => {
+  const { checkFieldInput } = await import("@/core/modules/settingValues");
+  const field = manifestJson.settings.find((x) => x.key === "period");
+  assert.deepEqual(checkFieldInput(field, "2026-12-24/2026-12-01"), { ok: false, reason: "period" });
+  assert.deepEqual(checkFieldInput(field, "2026-12-01/"), { ok: false, reason: "period" }, "un début seul ou une fin seule ne s'enregistre pas : le contrôle demande les deux");
+  assert.deepEqual(checkFieldInput(field, "2026-12-01/2026-12-24"), { ok: true, value: "2026-12-01/2026-12-24" });
+  assert.deepEqual(checkFieldInput(field, "12-20/01-05"), { ok: true, value: "12-20/01-05" });
+  const core = process.env.CURIOSA_DIR;
+  for (const [lang, example] of [["fr", /par exemple/], ["en", /for example/]]) {
+    const msg = JSON.parse(fs.readFileSync(`${core}/src/locales/${lang}.json`, "utf8"))["instances.error.period"];
+    assert.match(msg, example);
+  }
+});
+
+test("dates : le réglage a ses trois textes en fr et en (l'aperçu en une phrase vient du contrôle du cœur)", () => {
+  const f = manifestJson.settings.find((x) => x.key === "period");
+  for (const k of ["label", "help", "example"]) assert.deepEqual(Object.keys(f[k]).sort(), ["en", "fr"]);
 });
