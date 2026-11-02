@@ -819,6 +819,59 @@
       ]
     },
     {
+      "id": "idea-box",
+      "name": "Boîte à idées",
+      "description": "Laissez votre public vous proposer des idées. Un champ, un bouton, puis une liste des idées retenues avec leur statut et un bouton « Je soutiens ». Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon.",
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/idea-box",
+      "ref": "v1.35.0",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "💡",
+      "requires": {
+        "core": "0.6.0"
+      },
+      "previews": [
+        {
+          "file": "previews/page.webp",
+          "type": "public",
+          "caption": {
+            "fr": "Votre page d'idées, telle que la voit votre public : un champ, un bouton, la liste des idées.",
+            "en": "Your ideas page, as your audience sees it: one field, one button, the list of ideas."
+          },
+          "alt": {
+            "fr": "Page avec un champ « Votre idée », une recherche, et une liste d'idées avec leur statut et leur nombre de soutiens.",
+            "en": "Page with a \"Your idea\" field, a search box, and a list of ideas with their status and number of supports."
+          }
+        },
+        {
+          "file": "previews/moderation.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Un seul tableau pour relire : les idées à relire d'abord, une recherche, un interrupteur pour publier.",
+            "en": "One table to review ideas: those to review first, a search box, a switch to publish."
+          },
+          "alt": {
+            "fr": "Tableau d'administration des idées avec pastilles d'état, nombre de soutiens et interrupteur de publication.",
+            "en": "Admin table of ideas with state badges, number of supports and a publish switch."
+          }
+        },
+        {
+          "file": "previews/reponse.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Changer le statut d'une idée et lui laisser une réponse courte que votre public lit.",
+            "en": "Change an idea's status and leave a short reply your audience reads."
+          },
+          "alt": {
+            "fr": "Formulaire de modification d'une idée avec l'interrupteur Publiée, le statut et la réponse courte.",
+            "en": "Edit form of an idea with the Published switch, the status and the short reply."
+          }
+        }
+      ]
+    },
+    {
       "id": "instagram",
       "name": "Instagram",
       "description": "Affiche le bouton de votre Instagram dans l'en-tête du site.",
