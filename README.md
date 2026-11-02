@@ -8,6 +8,8 @@ Les modules de [Curiosa](https://github.com/helldog136/Curiosa). Le cœur de Cur
 | `examples/` | Deux petits modules à lire pour apprendre à en écrire un. |
 | `starter/` | **Le module de départ pour publier son propre module** : un dépôt de module complet (module à la racine, tests, workflow GitHub Actions, README avec le texte d'installation) à copier dans son propre dépôt. Il n'est **pas** au Catalogue. Guide : `docs/PUBLIER-SON-MODULE.md` du dépôt du cœur. |
 | `catalogue/index.json` | L'index que le Catalogue de l'admin relit (généré par `scripts/build-index.mjs`). |
+| `catalogue/suggested.json` | Les modules que l'assistant d'installation propose (une liste d'identifiants). |
+| `catalogue/profiles.json` | Les **profils de départ** de l'assistant (« Vous êtes… ? ») : streamer, association, activité indépendante, artiste. Un profil ne fait que **pré-cocher** des extensions parmi les suggérées et **proposer** des pages d'exemple (les modèles du module `pages`, en brouillon). Facultatif : sans ce fichier, la question n'est pas posée. Un cœur plus ancien l'ignore. Contrat : `docs/MODULES.md` du cœur, « Profils de départ ». |
 | `tests/` | Les tests des modules. |
 
 Chaque module est un dossier autonome (`module.json`, `index.mjs`, `locales/`, `README.md`). Il s'installe depuis le Catalogue, ou à la main avec une adresse de la forme `https://github.com/helldog136/curiosa-extras#:modules/<id>`.

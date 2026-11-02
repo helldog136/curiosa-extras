@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "id": "streamer",
+      "icon": "🎬",
+      "name": {
+        "fr": "Streamer ou vidéaste",
+        "en": "Streamer or video maker"
+      },
+      "description": {
+        "fr": "Vos liens, votre actualité et une page pour vous présenter.",
+        "en": "Your links, your news and a page to introduce yourself."
+      },
+      "modules": [
+        "links",
+        "blog",
+        "pages"
+      ],
+      "samples": [
+        "pages:about-me"
+      ]
+    },
+    {
+      "id": "association",
+      "icon": "🤝",
+      "name": {
+        "fr": "Association ou collectif",
+        "en": "Association or collective"
+      },
+      "description": {
+        "fr": "Qui vous êtes, vos infos pratiques et votre histoire.",
+        "en": "Who you are, your practical details and your story."
+      },
+      "modules": [
+        "pages",
+        "blog"
+      ],
+      "samples": [
+        "pages:about-us",
+        "pages:practical-info",
+        "pages:timeline"
+      ]
+    },
+    {
+      "id": "independant",
+      "icon": "🛠️",
+      "name": {
+        "fr": "En activité indépendante",
+        "en": "Self-employed"
+      },
+      "description": {
+        "fr": "Ce que vous proposez, vos horaires et comment vous joindre.",
+        "en": "What you offer, your hours and how to reach you."
+      },
+      "modules": [
+        "pages",
+        "links"
+      ],
+      "samples": [
+        "pages:showcase",
+        "pages:practical-info",
+        "pages:about-me"
+      ]
+    },
+    {
+      "id": "artiste",
+      "icon": "🎨",
+      "name": {
+        "fr": "Artiste ou personne qui écrit",
+        "en": "Artist or writer"
+      },
+      "description": {
+        "fr": "Une page pour vous présenter et montrer vos créations.",
+        "en": "A page to introduce yourself and show your work."
+      },
+      "modules": [
+        "pages",
+        "blog",
+        "links"
+      ],
+      "samples": [
+        "pages:about-me",
+        "pages:showcase"
+      ]
+    }
+  ]
+}
