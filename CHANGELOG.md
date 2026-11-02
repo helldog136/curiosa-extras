@@ -6,12 +6,16 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
+### Nouveautés
+
+- **Boîte à idées (nouveau module, 1.0.0).** Votre public propose des idées sur une page, voit celles que vous retenez avec leur statut et soutient celles qu'il aime. Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon, dans un seul tableau avec recherche en direct. Aucune adresse e-mail ni nom réel demandés. Pour Curiosa 0.6.0 ou plus. Détail : `docs/changelog-parts/boite-a-idees.md`.
+
 ### Pour les développeurs
 
 - **Le cliquet d'ergonomie.** `tests/ergonomics.test.mjs` mesure, pour chaque module, les règles automatiques de `docs/ERGONOMIE-ADMIN.md` (réglages par onglet, mots interdits, libellés, aides et exemples, ton, parité FR/EN). Les écarts déjà présents sont listés dans `tests/ergonomics-baseline.json` : un nouvel écart fait échouer le test, un écart corrigé doit être retiré de la base, qui ne peut que rétrécir.
 - **Deux commandes.** `node scripts/ergonomics-baseline.mjs --write` écrit ou fait rétrécir la base (il refuse d'ajouter un écart) ; `--report` imprime le tableau « module, nombre d'écarts par règle ».
 - **`tests/helpers/ergonomics.mjs`** : copie de l'aide du kit du cœur (comme `tmp.mjs`), avec `assertAdminPageErgonomics(blocks)` pour les pages produites par du code. Aucune version du cœur n'est exigée ; un test vérifie que la copie reste identique à celle du cœur.
-- Aucun module ne change : ni version, ni comportement.
+- Aucun module existant ne change : ni version, ni comportement.
 
 ## 1.29.0
 
