@@ -1991,30 +1991,6 @@
           }
         },
         {
-          "file": "previews/timers.webp",
-          "type": "admin",
-          "caption": {
-            "fr": "Vos timers : des messages envoyés dans le chat à intervalle régulier, avec une recherche et un interrupteur par ligne.",
-            "en": "Your timers: messages sent to the chat at regular intervals, with a search and a switch on each row."
-          },
-          "alt": {
-            "fr": "Onglet Timers du bot avec un tableau de messages automatiques : nom, texte, rythme, interrupteur d'état et bouton Modifier.",
-            "en": "Bot Timers tab with a table of automatic messages: name, text, rhythm, on/off switch and Edit button."
-          }
-        },
-        {
-          "file": "previews/timer-nouveau.webp",
-          "type": "admin",
-          "caption": {
-            "fr": "Créer un timer en quelques secondes : un nom, un message, un rythme. La période est repliée sous « Plus d'options ».",
-            "en": "Create a timer in seconds: a name, a message, a rhythm. The period is folded under “More options”."
-          },
-          "alt": {
-            "fr": "Formulaire de nouveau timer avec les champs nom, message, rythme en une phrase, choix en direct ou toujours, et options repliées.",
-            "en": "New timer form with name, message, a one-sentence rhythm, live or always choice, and folded options."
-          }
-        },
-        {
           "file": "previews/recompenses.webp",
           "type": "admin",
           "caption": {

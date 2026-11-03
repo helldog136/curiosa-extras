@@ -11,8 +11,6 @@ export default async function scenes({ adminFrame, messages, settingsBlock }) {
   const es = await import("../../../modules/twitch-bot/eventsub.mjs");
   const S = await import("../../../modules/twitch-bot/state.mjs");
   const R = await import("../../../modules/twitch-bot/rewards.mjs");
-  const T = await import("../../../modules/twitch-bot/timers.mjs");
-  const TA = await import("../../../modules/twitch-bot/timersAdmin.mjs");
   const J = await import("../../../modules/twitch-bot/redeem.mjs");
   const A = await import("../../../modules/twitch-bot/admin.mjs");
   const RA = await import("../../../modules/twitch-bot/rewardsAdmin.mjs");
@@ -52,25 +50,6 @@ export default async function scenes({ adminFrame, messages, settingsBlock }) {
   await A.actions.check(w.ctx);
   const commands = await A.panel(w.ctx, { query: {} });
 
-  /* ───── Timers ───── */
-  T.resetTimersMemory();
-  const TIMERS = [
-    ["Suivre la chaîne", "Pensez à suivre la chaîne", 20, 5, {}],
-    ["Boire de l'eau", "Un verre d'eau ?", 45, 10, {}],
-    ["Règles du chat", "Règles : voir le panneau", 60, 15, {}],
-    ["Discord", "Rejoignez le Discord", 30, 8, {}],
-    ["Boutique", "La boutique est ouverte", 90, 20, { enabled: false }],
-    ["Fêtes de fin d'année", "Bonnes fêtes à toutes et tous", 40, 10, { period: { yearly: true, from: { m: 12, d: 1 }, to: { m: 12, d: 31 } } }],
-  ];
-  for (const [name, text, minutes, lines, extra] of TIMERS) {
-    const r = await T.saveTimer(w.ctx, {}, { name, text, minutes, lines, when: "live", enabled: true, ...extra });
-    assert.equal(r.ok, true, JSON.stringify(r));
-  }
-  const tInfo = await A.context(w.ctx, { declare: false });
-  const timersList = await TA.blocks(w.ctx, tInfo, {});
-  const timersForm = await TA.blocks(w.ctx, tInfo, { timerNew: "1" });
-  const kit = fs.readFileSync(new URL("../../../modules/twitch-bot/adminkit.client.js", import.meta.url), "utf8");
-
   /* ───── Récompenses ───── */
   const RNOW = BOT_NOW;
   const rworld = (o = {}) => {
@@ -108,8 +87,6 @@ export default async function scenes({ adminFrame, messages, settingsBlock }) {
 
   return {
     "commandes.webp": { html: neutral(frame(commands, "use")), h: 900, scripts: [fs.readFileSync(new URL("../../../modules/twitch-bot/adminkit.client.js", import.meta.url), "utf8")], forbid: [/\bemma\b/i] },
-    "timers.webp": { html: neutral(frame(timersList, "timers")), h: 800, scripts: [kit], forbid: [/\bemma\b/i] },
-    "timer-nouveau.webp": { html: neutral(frame(timersForm, "timers")), h: 930, scripts: [kit], forbid: [/\bemma\b/i] },
     "reglages.webp": { html: neutral(frame([settingsBlock("twitch-bot", { stored: { timezone: "Europe/Paris" } })], "settings")), h: 380, forbid: [/\bemma\b/i] },
     "recompenses.webp": { html: neutral(frame(rewards, "rewards")), h: 1000, forbid: [/\bemma\b/i] },
   };

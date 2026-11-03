@@ -6,15 +6,15 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
-*En bref : la fiche du Bot Twitch montre maintenant ses onglets Timers et Réglages, en plus des Commandes et des Récompenses, pour voir à quoi ressemble le bot avant de l'installer.*
+*En bref : la fiche du Bot Twitch montre maintenant son onglet Réglages, en plus des Commandes et des Récompenses, pour voir à quoi ressemble le bot avant de l'installer.*
 
 ### Nouveautés
 
-- **Bot Twitch 1.7.2 : trois visuels de plus sur sa fiche.** La liste des timers (recherche, interrupteur par ligne), le formulaire « Nouveau timer » (un nom, un message, un rythme ; la période reste repliée) et l'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
+- **Bot Twitch 1.7.2 : un visuel de plus sur sa fiche.** L'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
 
 ### Pour les développeurs
 
-- `modules/twitch-bot` 1.7.2 : trois `previews` ajoutées (`timers.webp`, `timer-nouveau.webp`, `reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
+- `modules/twitch-bot` 1.7.2 : une `preview` ajoutée (`reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
 - `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
 
 ## 1.38.0 — 2026-11-03
