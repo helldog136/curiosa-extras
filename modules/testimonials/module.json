@@ -5,7 +5,7 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.1.1",
+  "version": "1.2.0",
   "minCore": "0.5.0",
   "description": {
     "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
@@ -18,6 +18,19 @@
   },
   "license": "MIT",
   "icon": "💬",
+  "dashboard": {
+    "tasks": [
+      {
+        "id": "pending",
+        "label": {
+          "en": "Reviews to approve ({n})",
+          "fr": "Avis à valider ({n})"
+        },
+        "href": "?tab=use&status=pending",
+        "right": "reviews.moderate"
+      }
+    ]
+  },
   "main": "index.mjs",
   "type": "widget",
   "instances": "single",
