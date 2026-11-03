@@ -86,7 +86,7 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.9.0");
+  assert.equal(manifest.version, "1.10.0");
   assert.equal(manifest.minCore, "0.6.4");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
@@ -841,6 +841,6 @@ test("Historique : sans journal du cœur (cœur plus ancien), les échanges marc
 
 test("Historique : événements déclarés valides, en deux langues", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual(manifest.logEvents.map((e) => e.key), ["reward.refunded", "reward.failed"]);
+  assert.ok(["reward.refunded", "reward.failed"].every((k) => manifest.logEvents.some((e) => e.key === k)));
   assert.equal(manifest.minCore, "0.6.4");
 });

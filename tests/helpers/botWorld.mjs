@@ -36,7 +36,7 @@ export function world(o = {}) {
     "social.link": o.links ?? [],
   };
   const ctx = fakeCtx({
-    key: "bot", moduleId: "twitch-bot", locale: "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.locale === "en" ? en : fr, settings, siteUrl: o.siteUrl ?? "https://site.example.org", topics, instances,
+    key: "bot", moduleId: "twitch-bot", locale: "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.locale === "en" ? en : fr, logEvents: readJson("module.json").logEvents ?? [], settings, siteUrl: o.siteUrl ?? "https://site.example.org", topics, instances,
     can: o.can,
     services: o.draw ? { "audience.draw": o.draw } : {},
     serviceInstances: {

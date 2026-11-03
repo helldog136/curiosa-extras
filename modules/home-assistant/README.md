@@ -16,7 +16,8 @@ Pour vérifier sans attendre un viewer : bloc **« Tester le pont »** de la pag
 - **Seulement en direct** (avec 5 minutes de marge après la fin). Un ordre qui n'est pas exécuté en 60 secondes (réglable) est abandonné et les points sont rendus.
 - **Le texte lu à voix haute est vérifié** : liens, mentions, balises et emojis en trop retirés ; refusé s'il contient un mot de la liste (français et anglais, à compléter ou corriger), un numéro de téléphone, ou s'il est trop long ; attente entre deux messages (par personne et pour tous). Un message refusé n'est pas lu, les points sont rendus et le motif est noté dans le journal.
 - **Un bouton pour tout couper**, ici, par la commande `!stop` du Bot Twitch (vous et l'équipe de modération que vous désignez) et par un interrupteur dans Home Assistant. L'équipe de modération peut couper ; seule une personne qui gère le module peut reprendre.
-- **Un journal** des 50 dernières actions, avec la raison de chaque refus.
+- **Un journal** des 50 dernières actions, avec la raison de chaque refus. Les incidents (action échouée, non reliée ou non exécutée à temps, Home Assistant qui ne répond plus) et les changements d'état (association, « Tout couper » demandé depuis le Bot Twitch) sont aussi dans l'**Historique** de l'extension (journal du cœur, 90 jours, jamais de pseudo ni de message).
+- **Changer de nom de domaine** : l'assistant « Adresse du site » du cœur vous rappelle de refaire l'association dans Home Assistant avec la nouvelle adresse.
 
 ## Réglages
 Délai avant d'abandonner un ordre, longueur maximale du message, attentes, pseudo avant le message, refus des numéros, liste de mots. En mode avancé : l'intervalle conseillé à Home Assistant.

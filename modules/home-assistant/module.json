@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.6",
+  "minCore": "0.6.0",
   "id": "home-assistant",
   "name": {
     "fr": "Connecteur Home Assistant",
     "en": "Home Assistant connector"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": {
     "fr": "Relie vos points de chaîne à votre maison : vos viewers changent la couleur de vos lumières, font lire un message à voix haute ou lancent les actions que vous nommez (aspirateur, volets…). Home Assistant vient chercher les ordres : rien n'est ouvert chez vous. Avec un gros bouton « Tout couper », une modération du texte lu et un journal.",
     "en": "Links your channel points to your home: your viewers change your lights, have a message read aloud or start the actions you name (vacuum, shutters…). Home Assistant comes to fetch the orders: nothing is opened at your place. With a big “Cut everything” button, moderation of the text read aloud, and a log."
@@ -140,12 +140,13 @@
     }
   ],
   "privacy": {
-    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible de la seule équipe d'administration (100 lignes au plus, 7 jours au plus). Le message lu à voix haute n'est gardé que s'il a été accepté ; un message refusé n'est pas gardé, seulement le motif. Pour tout effacer : « Vider le journal » sur la page du connecteur.",
-    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to the site's administration team (100 lines at most, 7 days at most). The message read aloud is only kept if it was accepted; a refused message is not kept, only the reason. To erase everything: “Clear the log” on the connector's page."
+    "fr": "Quand un viewer échange des points de chaîne pour une action chez vous, le module garde son pseudo Twitch, l'action demandée et le résultat dans un journal visible de la seule équipe d'administration (100 lignes, 7 jours). Un message refusé n'est pas gardé, seulement le motif. « Vider le journal » efface tout. Les incidents et changements d'état vont aussi à l'Historique de l'extension, sans pseudo (90 jours).",
+    "en": "When a viewer spends channel points on an action at your place, the module keeps their Twitch username, the requested action and the result in a log visible only to the administration team (100 lines, 7 days). A refused message is not kept, only the reason. “Clear the log” erases everything. Incidents and state changes also go to the extension's History, without usernames (90 days)."
   },
   "settings": [
     {
       "key": "expirySeconds",
+      "rare": true,
       "type": "number",
       "default": 60,
       "label": {
@@ -159,6 +160,7 @@
     },
     {
       "key": "maxChars",
+      "rare": true,
       "type": "number",
       "default": 140,
       "label": {
@@ -172,6 +174,7 @@
     },
     {
       "key": "viewerDelaySeconds",
+      "rare": true,
       "type": "number",
       "default": 60,
       "label": {
@@ -185,6 +188,7 @@
     },
     {
       "key": "globalDelaySeconds",
+      "rare": true,
       "type": "number",
       "default": 10,
       "label": {
@@ -231,12 +235,13 @@
         "en": "Refuse the words of the provided list (French and English)"
       },
       "help": {
-        "fr": "Insultes, propos haineux ou violents. Vous voyez la liste plus bas, et vous pouvez la compléter ou la corriger ci-dessous.",
-        "en": "Insults, hateful or violent words. You can see the list below, and complete or correct it underneath."
+        "fr": "Insultes, propos haineux ou violents. Pour la compléter, passez en mode avancé.",
+        "en": "Insults, hateful or violent words. To complete it, switch to advanced mode."
       }
     },
     {
       "key": "extraWords",
+      "advanced": true,
       "type": "textarea",
       "optional": true,
       "label": {
@@ -250,6 +255,7 @@
     },
     {
       "key": "allowedWords",
+      "advanced": true,
       "type": "textarea",
       "optional": true,
       "label": {
@@ -330,6 +336,112 @@
             "maxLength": 300
           }
         }
+      }
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "device.paired",
+      "label": {
+        "fr": "Home Assistant associé",
+        "en": "Home Assistant paired"
+      },
+      "fields": [
+        {
+          "key": "replaced",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "key": "pairing.locked",
+      "label": {
+        "fr": "Code d'association annulé après plusieurs essais ratés",
+        "en": "Pairing code cancelled after several wrong tries"
+      },
+      "level": "warn"
+    },
+    {
+      "key": "circuit.cut",
+      "label": {
+        "fr": "« Tout couper » demandé depuis une autre extension",
+        "en": "“Cut everything” asked from another extension"
+      },
+      "level": "warn"
+    },
+    {
+      "key": "circuit.resumed",
+      "label": {
+        "fr": "Reprise demandée depuis une autre extension",
+        "en": "Resume asked from another extension"
+      }
+    },
+    {
+      "key": "action.failed",
+      "label": {
+        "fr": "L'action {action} a échoué chez vous",
+        "en": "The action {action} failed at your place"
+      },
+      "level": "error",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "action"
+        }
+      ]
+    },
+    {
+      "key": "action.unlinked",
+      "label": {
+        "fr": "L'action {action} n'est reliée à aucun script",
+        "en": "The action {action} is not linked to any script"
+      },
+      "level": "warn",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "action"
+        }
+      ]
+    },
+    {
+      "key": "action.expired",
+      "label": {
+        "fr": "L'action {action} n'a pas été exécutée à temps",
+        "en": "The action {action} was not carried out in time"
+      },
+      "level": "warn",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "action"
+        }
+      ]
+    },
+    {
+      "key": "link.offline",
+      "label": {
+        "fr": "Action {action} non envoyée : Home Assistant ne répond plus",
+        "en": "Action {action} not sent: Home Assistant is not answering"
+      },
+      "level": "warn",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "action"
+        }
+      ]
+    }
+  ],
+  "siteAddressUses": [
+    {
+      "label": {
+        "fr": "Home Assistant",
+        "en": "Home Assistant"
+      },
+      "where": {
+        "fr": "Dans Home Assistant : Appareils et services, Curiosa, retirer puis ajouter à nouveau avec la nouvelle adresse et un nouveau code",
+        "en": "In Home Assistant: Devices and services, Curiosa, remove it then add it again with the new address and a new code"
       }
     }
   ]

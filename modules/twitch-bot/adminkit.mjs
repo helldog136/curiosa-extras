@@ -23,8 +23,8 @@ export const serveKit = () => new Response(CLIENT, { headers: { "content-type": 
 
 // Couleurs des pastilles d'origine : texte sur fond teinté, contraste AA (4,5 :1) vérifié par les tests, en clair comme en sombre. La couleur ne porte jamais seule l'information : le mot est écrit.
 export const PALETTE = {
-  light: { custom: ["#ece9ff", "#3a2cb5"], builtin: ["#e6ebf1", "#2f4256"], partner: ["#dcf2e8", "#0f5a3b"], network: ["#fbe9d0", "#7d4300"], danger: ["#fde4e4", "#8a1c1c"] },
-  dark: { custom: ["#2f2b57", "#d4ceff"], builtin: ["#2a323c", "#cbd6e2"], partner: ["#17382b", "#aee8cc"], network: ["#46320f", "#f7d6a0"], danger: ["#4a1d1d", "#fecaca"] },
+  light: { custom: ["#ece9ff", "#3a2cb5"], builtin: ["#e6ebf1", "#2f4256"], partner: ["#dcf2e8", "#0f5a3b"], network: ["#fbe9d0", "#7d4300"], timer: ["#dff0fb", "#0b4a75"], danger: ["#fde4e4", "#8a1c1c"] },
+  dark: { custom: ["#2f2b57", "#d4ceff"], builtin: ["#2a323c", "#cbd6e2"], partner: ["#17382b", "#aee8cc"], network: ["#46320f", "#f7d6a0"], timer: ["#12344d", "#bfe3fa"], danger: ["#4a1d1d", "#fecaca"] },
 };
 const vars = (p) => Object.entries(p).map(([k, [bg, fg]]) => `--ck-${k}-bg:${bg};--ck-${k}-fg:${fg}`).join(";");
 
@@ -60,7 +60,7 @@ export const CSS = `
 .ck-chipr{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;border:1px solid var(--v-line);font-size:12px;font-weight:500;color:var(--v-muted);vertical-align:1px}
 .ck-origin{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
 .ck-origin.custom{background:var(--ck-custom-bg);color:var(--ck-custom-fg)}.ck-origin.builtin{background:var(--ck-builtin-bg);color:var(--ck-builtin-fg)}
-.ck-origin.partner{background:var(--ck-partner-bg);color:var(--ck-partner-fg)}.ck-origin.network{background:var(--ck-network-bg);color:var(--ck-network-fg)}
+.ck-origin.partner{background:var(--ck-partner-bg);color:var(--ck-partner-fg)}.ck-origin.network{background:var(--ck-network-bg);color:var(--ck-network-fg)}.ck-origin.timer{background:var(--ck-timer-bg);color:var(--ck-timer-fg)}
 .ck-origin.ok{background:var(--ck-partner-bg);color:var(--ck-partner-fg)}.ck-origin.warn{background:var(--ck-network-bg);color:var(--ck-network-fg)}.ck-origin.danger{background:var(--ck-danger-bg);color:var(--ck-danger-fg)}
 .ck-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:4px 0}
 .ck-top .ck-status{margin:2px 0 0}

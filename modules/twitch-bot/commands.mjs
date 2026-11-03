@@ -13,6 +13,10 @@ export const NAME_RE = /^[\p{L}\p{N}_-]{1,25}$/u;
 export const MAX_ALIASES = 5;
 export const MAX_CUSTOM = 100;
 export const MAX_DELAY = 3600;
+/** La répétition automatique d'une commande (l'ancien « timer ») : au plus 20 commandes, de 1 minute à 24 h, de 0 à 200 lignes de chat. */
+export const MAX_REPEATS = 20;
+export const REPEAT_LIMITS = { minutes: 1440, lines: 200 };
+export const REPEAT_WHEN = ["live", "always"];
 /** Mots réservés aux commandes d'arrêt de la maison (kill.mjs) : aucune autre commande ne peut les prendre. */
 export const RESERVED = ["stop", "start", "addcom", "editcom", "delcom", "commands"];
 export const GROUP_ID = "reseaux";
@@ -115,8 +119,26 @@ export async function migrateConfig(ctx) {
 export const stripScheme = (u) => String(u ?? "").replace(/^https?:\/\//i, "").replace(/\/+$/, "");
 
 const roleOf = (v) => (ROLES.includes(v) ? v : "everyone");
+/** Relit une répétition enregistrée : { minutes, lines, when, enabled } ou null (une forme inattendue ne casse rien). */
+export function readRepeat(r) {
+  if (!r || typeof r !== "object" || Array.isArray(r)) return null;
+  const minutes = Number(r.minutes), lines = r.lines === undefined ? 5 : Number(r.lines);
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > REPEAT_LIMITS.minutes || !Number.isInteger(lines) || lines < 0 || lines > REPEAT_LIMITS.lines) return null;
+  return { minutes, lines, when: r.when === "always" ? "always" : "live", enabled: r.enabled !== false };
+}
+/** Vérifie les champs d'une répétition (`f` : { minutes?, lines?, when?, enabled? }) par-dessus l'actuelle. Rend { ok: true, value } ou { ok: false, code }. */
+export function checkRepeat(f, current = null) {
+  const err = (code) => ({ ok: false, code });
+  const minutes = Number(f.minutes ?? current?.minutes ?? 15);
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > REPEAT_LIMITS.minutes) return err("timer_minutes");
+  const lines = f.lines === undefined || f.lines === "" ? (current?.lines ?? 5) : Number(f.lines);
+  if (!Number.isInteger(lines) || lines < 0 || lines > REPEAT_LIMITS.lines) return err("timer_lines");
+  const when = f.when ?? current?.when ?? "live";
+  if (!REPEAT_WHEN.includes(when)) return err("timer_when");
+  return { ok: true, value: { minutes, lines, when, enabled: f.enabled === undefined ? current?.enabled !== false : f.enabled === true } };
+}
 const small = (v) => (Number.isInteger(v) && v >= 0 && v <= MAX_DELAY ? v : null);
-const base = (o, extra) => ({ period: readPeriod(o.period), aliases: Array.isArray(o.aliases) ? o.aliases : [], role: roleOf(o.role), cdGlobal: small(o.cdGlobal), cdUser: small(o.cdUser), ...extra });
+const base = (o, extra) => ({ period: readPeriod(o.period), repeat: readRepeat(o.repeat), aliases: Array.isArray(o.aliases) ? o.aliases : [], role: roleOf(o.role), cdGlobal: small(o.cdGlobal), cdUser: small(o.cdUser), ...extra });
 
 /**
  * La liste de TOUTES les commandes, avec leur état.
@@ -126,7 +148,7 @@ const base = (o, extra) => ({ period: readPeriod(o.period), aliases: Array.isArr
  */
 export function catalog(cfg, src, t, { now = Date.now(), timeZone = "UTC" } = {}) {
   const out = [];
-  for (const c of cfg.custom) out.push({ key: `custom:${c.id}`, kind: "custom", id: c.id, label: c.name, name: c.name, ...base(c, {}), text: String(c.text ?? ""), enabled: c.enabled !== false, vars: {} });
+  for (const c of cfg.custom) out.push({ key: `custom:${c.id}`, kind: "custom", id: c.id, label: c.title || c.name, title: typeof c.title === "string" ? c.title : "", timerOnly: c.timerOnly === true, name: c.name, ...base(c, {}), text: String(c.text ?? ""), enabled: c.enabled !== false, vars: {} });
   for (const b of BUILTINS) {
     const o = rec(cfg.builtin[b.id]);
     out.push({ key: `builtin:${b.id}`, kind: "builtin", id: b.id, label: b.id, needs: b.needs, name: o.name ?? b.name, ...base(o, { aliases: Array.isArray(o.aliases) ? o.aliases : b.aliases }),
@@ -223,7 +245,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     let id = ref.id;
     let current = null;
     if (creating) {
-      if (cfg.custom.length >= MAX_CUSTOM) return errorOf("too_many");
+      if (cfg.custom.filter((c) => c.timerOnly !== true).length >= MAX_CUSTOM) return errorOf("too_many");
       id = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     } else {
       current = list.find((c) => c.kind === kind && c.id === id);
@@ -234,7 +256,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     let item = current;
     if (!item && (kind === "partner" || kind === "network")) return errorOf("unknown");
     const key = `${kind}:${id}`;
-    const draft = { enabled: item?.enabled ?? true, name: item?.name ?? "", aliases: item?.aliases ?? [], text: item?.text ?? "", role: item?.role ?? "everyone", cdGlobal: item?.cdGlobal ?? null, cdUser: item?.cdUser ?? null, period: item?.period ?? null };
+    const draft = { enabled: item?.enabled ?? true, name: item?.name ?? "", aliases: item?.aliases ?? [], text: item?.text ?? "", role: item?.role ?? "everyone", cdGlobal: item?.cdGlobal ?? null, cdUser: item?.cdUser ?? null, period: item?.period ?? null, repeat: item?.repeat ?? null };
     if (f.enabled !== undefined) draft.enabled = f.enabled === true;
     if (f.name !== undefined) {
       const n = norm(f.name, prefix);
@@ -247,6 +269,14 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     if (f.role !== undefined) { if (!ROLES.includes(f.role)) return errorOf("role"); draft.role = f.role; }
     for (const [field, k] of [["cdGlobal", "cdGlobal"], ["cdUser", "cdUser"]]) if (f[field] !== undefined) { const d = parseDelay(f[field]); if (d.error) return errorOf("delay"); draft[k] = d.value; }
     if (f.period !== undefined) { const p = parsePeriod(f.period); if (!p.ok) return errorOf("period", { field: p.field, reason: p.reason, month: p.month, day: p.day, year: p.year }); draft.period = p.value; }
+    if (f.repeat !== undefined) {
+      if (kind === "partner" && f.repeat) return errorOf("repeat_kind");
+      if (f.repeat === null) draft.repeat = null;
+      else { const r = checkRepeat(f.repeat, draft.repeat); if (!r.ok) return errorOf(r.code); draft.repeat = r.value; }
+      if (draft.repeat && !current?.repeat && list.filter((c) => c.repeat).length >= MAX_REPEATS) return errorOf("timer_many");
+    }
+    const timerOnly = kind === "custom" ? (f.timerOnly !== undefined ? f.timerOnly === true : current?.timerOnly === true) : false;
+    if (timerOnly && !draft.repeat) return errorOf("timer_only");   // sans répétition, rien ne lancerait jamais cette commande
     if (f.text !== undefined || creating) {
       const text = f.text !== undefined ? f.text : "";
       const ok = checkTemplate(text, kind === "builtin" ? "builtin" : kind, prefix);
@@ -262,13 +292,13 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     const clash = collisions(list.filter((c) => !(creating && c.key === key)), key, [draft.name, ...draft.aliases]);
     if (clash.length) return errorOf("collision", { word: clash[0].word, with: clash[0].with.name, withLabel: clash[0].with.label, withKind: clash[0].with.kind });
 
-    const rec0 = { enabled: draft.enabled, name: draft.name, aliases: draft.aliases, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}) };
+    const rec0 = { enabled: draft.enabled, name: draft.name, aliases: draft.aliases, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}) };
     if (kind === "custom") {
-      const entry = { id, ...rec0, text: draft.text };
+      const entry = { id, ...rec0, text: draft.text, ...(timerOnly ? { timerOnly: true } : {}), ...(current?.title ? { title: current.title } : {}) };
       if (creating) cfg.custom.push(entry); else cfg.custom = cfg.custom.map((c) => (c.id === id ? entry : c));
     } else if (kind === "builtin") {
       const def = BUILTINS.find((b) => b.id === id);
-      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}) };
+      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}) };
       if (draft.name !== def.name) o.name = draft.name;
       if (JSON.stringify(draft.aliases) !== JSON.stringify(def.aliases)) o.aliases = draft.aliases;
       if (f.text !== undefined && draft.text !== current.defaultText) o.text = draft.text;
@@ -277,7 +307,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     } else if (kind === "partner") cfg.partners[id] = { ...rec0, text: draft.text, title: current.label };
     else if (kind === "network") cfg.networks[id] = { ...rec0, text: draft.text, title: current.label };
     else if (kind === "group") {
-      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, name: draft.name, aliases: draft.aliases, ...(draft.period ? { period: draft.period } : {}) };
+      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, name: draft.name, aliases: draft.aliases, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}) };
       if (f.text !== undefined && draft.text !== current.defaultText) o.text = draft.text;
       cfg.group = o;
     } else return errorOf("unknown");

@@ -22,6 +22,7 @@ const channel = await import(`./channel.mjs${v}`);
 const actions = await import(`./actions.mjs${v}`);
 const rewards = await import(`./rewards.mjs${v}`);
 const kit = await import(`./adminkit.mjs${v}`);
+const { migrateTimers } = await import(`./timersMigrate.mjs${v}`);
 
 export default {
   routes: {
@@ -61,6 +62,8 @@ export default {
     4: async (ctx) => { await migrateConfig(ctx); },
     // Données 5 : l'ancien brouillon d'import (`botImport`) n'a plus de raison d'être (l'import a été retiré) : s'il en reste un, il est effacé. Aucune commande ni aucun timer n'est touché ; rejouable sans effet.
     5: async (ctx) => { for (const r of await ctx.api.store.list("botImport", { limit: 10 }).catch(() => [])) await ctx.api.store.remove(r.id).catch(() => {}); },
+    // Données 6 : les anciens timers (titre + message) deviennent des commandes qui se répètent (voir timersMigrate.mjs). Additif : l'ancienne liste reste, inerte et marquée ; rejouable sans effet.
+    6: async (ctx) => { await migrateTimers(ctx); },
     3: async (ctx) => { await actions.migrate(ctx, settingsOf(ctx), (await rewards.list(ctx)).map((r) => r.action)); },
   },
 
