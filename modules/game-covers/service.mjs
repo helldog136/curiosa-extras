@@ -1,14 +1,16 @@
 // Le service `game.cover` (version 1) : ce que le module met à la disposition des autres pour illustrer un jeu. Sans clé, tout répond « no-key » et rien ne casse.
-//   status()                          { ready, configured, source, state?, at? } — sans aucun appel réseau ; jamais la clé ;
-//   cover({ title })                  { status: "found" | "none" | "no-key" | "refused" | "unreachable", url, name?, id?, ambiguous? } ;
-//                                     (mémoire, puis jaquette gardée, puis RAWG ; RAWG injoignable : la jaquette gardée sert même périmée, « unreachable » seulement s'il n'y en a pas) ;
-//   candidates({ title, search? })    { status, candidates: [{ id, name, year, platforms, url }] } — 6 au plus ;
-//   fix({ title, rawgId | none | forget })   écriture réservée à une personne qui a le droit « fix » (appel avec { asCaller: true } depuis une action d'administration) ;
+//   status()                          { ready, configured, source, state?, at?, keyHeld, sources: [{ source, on, why? }] } — sans aucun appel réseau ; jamais la clé ;
+//                                     `ready` et `configured` : au moins UNE source est disponible (RAWG avec clé, Twitch par le Connecteur, Steam) ; `source`, `state`, `keyHeld` : la clé RAWG, comme avant ;
+//   cover({ title })                  { status: "found" | "none" | "no-key" | "refused" | "unreachable", url, name?, id?, ambiguous?, source? } ; `url` : la copie gardée sur le site (https absolue), jamais l'adresse de la source ;
+//                                     (correction, puis jaquette gardée, puis chaîne RAWG → Twitch → Steam ; tout injoignable : la jaquette gardée sert même périmée, « unreachable » seulement s'il n'y en a pas) ;
+//   candidates({ title, search? })    { status, candidates: [{ id, name, year, platforms, url, source }], sources } — 6 au plus par source ;
+//   fix({ title, rawgId | gameId + source | none | forget })   écriture réservée à une personne qui a le droit « fix » (appel avec { asCaller: true } depuis une action d'administration) ;
 //   adopt({ key?, fixes?, todo? })    reprise des données d'un ancien réglage du site : ne remplace jamais, ne rend jamais une valeur.
 const q = new URL(import.meta.url).search;
 const match = await import(new URL("./match.mjs" + q, import.meta.url).href);
 const fx = await import(new URL("./fixes.mjs" + q, import.meta.url).href);
 const rawg = await import(new URL("./rawg.mjs" + q, import.meta.url).href);
+const chain = await import(new URL("./chain.mjs" + q, import.meta.url).href);
 const ops = await import(new URL("./ops.mjs" + q, import.meta.url).href);
 const { COL } = fx;
 
@@ -16,19 +18,21 @@ const { COL } = fx;
 const titleOf = (args) => (typeof args === "string" ? args : args?.title);
 
 export const methods = {
-  /** { ready, configured, source: "setting" | "adopted" | null, state: "ok" | "refused" | "unreachable" | null, at? } */
+  /** { ready, configured, source: "setting" | "adopted" | null, state: "ok" | "refused" | "unreachable" | null, at?, keyHeld, sources } */
   async status(ctx) {
-    const { key, source, valid } = await rawg.keyOf(ctx);
+    const { key, source } = await rawg.keyOf(ctx);
     const state = key ? await rawg.readState(ctx) : null;
-    return { ready: valid, configured: !!key, source, state: state?.state ?? null, ...(state ? { at: state.at } : {}) };
+    const sources = (await chain.availableSources(ctx)).map((s) => ({ source: s.source, on: s.on, ...(s.why ? { why: s.why } : {}) }));
+    const any = sources.some((s) => s.on);
+    return { ready: any, configured: any, source, state: state?.state ?? null, ...(state ? { at: state.at } : {}), keyHeld: !!key, sources };
   },
 
   async cover(ctx, args) {
-    return rawg.cover(ctx, titleOf(args));
+    return chain.cover(ctx, titleOf(args));
   },
 
   async candidates(ctx, args) {
-    return rawg.candidates(ctx, titleOf(args), typeof args === "object" ? args?.search : undefined);
+    return chain.candidates(ctx, titleOf(args), typeof args === "object" ? args?.search : undefined);
   },
 
   /** { title, rawgId } | { title, none: true } | { title, forget: true } → { ok: true, choice } | { ok: false, error }. */
@@ -41,8 +45,9 @@ export const methods = {
       if (!title) return { ok: false, error: "title" };
       return { ok: true, forgotten: await ops.forget(ctx, who, match.titleKey(title), title) };
     }
-    const out = a.none === true ? await ops.chooseNone(ctx, who, a.title) : await ops.chooseGame(ctx, who, a.title, Number(a.rawgId ?? a.id), typeof a.search === "string" ? a.search : undefined);
-    // chooseGame cherche d'abord les propositions de RAWG pour ce titre : l'appel est rejeté si le jeu n'en fait pas partie.
+    const out = a.none === true ? await ops.chooseNone(ctx, who, a.title)
+      : await ops.chooseGame(ctx, who, a.title, Number(a.rawgId ?? a.gameId ?? a.id), typeof a.search === "string" ? a.search : undefined, typeof a.source === "string" ? a.source : "rawg");
+    // chooseGame cherche d'abord les propositions des sources pour ce titre : l'appel est rejeté si le jeu n'en fait pas partie.
     return out.ok ? { ok: true, choice: out.fix.kind, title: out.fix.title } : { ok: false, error: out.error };
   },
 

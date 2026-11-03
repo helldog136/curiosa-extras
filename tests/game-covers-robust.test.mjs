@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { imageReply, IMAGE_HOSTS } from "./helpers/cover-fakes.mjs";
 
 const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
 const { fakeFetch, assertAdminPageErgonomics } = kit;
@@ -16,13 +17,17 @@ const read = (f) => JSON.parse(fs.readFileSync(`${DIR}locales/${f}.json`, "utf8"
 const fr = read("fr"), en = read("en");
 const mod = (await import("../modules/game-covers/index.mjs")).default;
 const rawg = await import("../modules/game-covers/rawg.mjs");
+const { titleKey } = await import("../modules/game-covers/match.mjs");
 const fixes = await import("../modules/game-covers/fixes.mjs");
 const ops = await import("../modules/game-covers/ops.mjs");
+const copies = await import("../modules/game-covers/copies.mjs");
+const sources = await import("../modules/game-covers/sources.mjs");
 const svc = mod.services["game.cover"];
 
 const KEY = "FAKE-RAWG-KEY-0123456789";
 const T0 = Date.parse("2026-11-03T10:00:00Z");
 const MIN = 60_000, HOUR = 3_600_000;
+const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}`;
 const img = (id) => `https://media.rawg.io/media/games/${String(id).padStart(3, "0")}/jeu-${id}.jpg`;
 const g = (id, name, released, plats = ["PC"]) => ({ id, name, released, platforms: plats.map((p) => ({ platform: { name: p } })), background_image: img(id) });
 const DB = {
@@ -33,6 +38,8 @@ const DB = {
   nothing: [],
 };
 const realFetch = globalThis.fetch;
+/** Les images viennent d'un faux hôte d'images à part : elles ne comptent pas dans les appels aux API (f.calls). */
+const withImages = (api) => (input, init) => (IMAGE_HOSTS.has(new URL(typeof input === "string" ? input : input.url).hostname) ? Promise.resolve(imageReply()) : api(input, init));
 let f;
 let mode = "up";   // "up" | "500" | "down" (réseau coupé) | "empty" (RAWG répond, sans rien)
 const serve = () => {
@@ -44,10 +51,10 @@ const serve = () => {
     if (mode === "empty") return { json: { results: [] } };
     return { json: { results: DB[(u.searchParams.get("search") ?? "").toLowerCase()] ?? [] } };
   } });
-  globalThis.fetch = f;
+  globalThis.fetch = withImages(f);
 };
 const makeCtx = (extra = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY }, permissions: ["storage", "admin", "mcp"], logEvents: manifest.logEvents, ...extra });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY, useSteam: false, refreshDays: 1 }, permissions: ["storage", "routes", "admin", "mcp"], logEvents: manifest.logEvents, ...extra });
   c.can = () => true;
   return c;
 };
@@ -57,16 +64,16 @@ const autos = async (c) => (await c.api.store.list("autoCovers", { limit: 5000 }
 const logged = (c) => c.calls.log.map((l) => l.action);
 const tabOf = (blocks, tab) => blocks.filter((b) => (b.tab ?? "use") === tab);
 
-beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCache(); rawg.resetBreaker(); ops.resetRate(); mode = "up"; serve(); });
+beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCache(); rawg.resetBreaker(); ops.resetRate(); copies.resetCopies(); sources.resetSources(); mode = "up"; serve(); });
 afterEach(() => { mock.timers.reset(); globalThis.fetch = realFetch; });
 
-test("manifeste 1.2.0 : version mineure, aucune permission ni dashboard de plus, deux lignes de journal pour la panne, FR et EN alignés", () => {
-  assert.equal(manifest.version, "1.2.1");
-  assert.deepEqual(manifest.permissions, ["storage", "admin", "mcp"]);
+test("manifeste 1.3.0 : version mineure, une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
+  assert.equal(manifest.version, "1.3.0");
+  assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
   assert.equal(manifest.dashboard, undefined, "rien qu'on ne puisse pas agir dessus : pas de carte ni de tâche");
   assert.deepEqual(manifest.logEvents.map((e) => e.key).slice(-2), ["cover.outage", "cover.back"]);
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
-  for (const k of ["all_fine", "last_ok", "outage", "outage_since", "outage_never", "outage_saved"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["all_fine", "last_found", "outage", "outage_saved", "sources_line"]) assert.ok(fr[k] && en[k], k);
   const vars = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
   for (const k of Object.keys(fr)) assert.equal(vars(fr[k]), vars(en[k]), `mêmes {variables} : ${k}`);
 });
@@ -101,7 +108,7 @@ test("RAWG injoignable : la jaquette gardée sert même après 24 h, sans être 
   for (const m of ["500", "down"]) {
     mode = m; rawg.resetBreaker();
     const r = await svc.cover(c, "Hades");
-    assert.deepEqual(r, { status: "found", url: img(21), name: "Hades", id: 21, ambiguous: false }, `périmée mais utilisable (${m})`);
+    assert.deepEqual(r, { status: "found", url: cu("Hades"), name: "Hades", id: 21, ambiguous: false, source: "rawg" }, `périmée mais utilisable (${m})`);
     assert.equal((await autos(c)).length, 1, "pas supprimée");
   }
   assert.equal((await autos(c))[0].at, before.at, "la date de la trouvaille ne bouge pas pendant la panne");
@@ -129,7 +136,7 @@ test("un échec de réseau n'est JAMAIS gardé comme « aucun résultat » : ni 
   mode = "up"; rawg.resetBreaker();
   assert.equal((await svc.cover(c, "Celeste")).id, 31, "pas figée comme absente");
   // Les statuts « pause » du client réseau (trop de demandes, quota) ne sont pas non plus des absences.
-  f = fakeFetch({ "*": () => ({ status: 429, headers: { "retry-after": "30" }, json: {} }) }); globalThis.fetch = f; rawg.clearCache(); rawg.resetBreaker();
+  f = fakeFetch({ "*": () => ({ status: 429, headers: { "retry-after": "30" }, json: {} }) }); globalThis.fetch = withImages(f); rawg.clearCache(); rawg.resetBreaker();
   assert.equal((await svc.cover(c, "Tunic")).status, "unreachable");
   assert.equal(rawg.cacheSize(), 0);
   assert.equal(rawg.breakerInfo().fails, 0, "une pause « trop de demandes » n'est pas une panne : le disjoncteur ne compte pas");
@@ -241,14 +248,16 @@ test("les corrections de la personne passent avant tout ; une correction retire 
   assert.equal((await autos(c)).length, 1);
   assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.equal((await autos(c)).length, 0, "oubliée : le site cherchera de nouveau");
-  assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus enregistrée/);
+  assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus gardée/);
   // Une correction enregistrée entre-temps n'est pas écrasée par une trouvaille tardive.
   await ops.chooseNone(c, "t", "Celeste");
   assert.equal(await fixes.saveAuto(c, { title: "Celeste", url: img(31), ttlMs: HOUR }), false);
-  // Clé refusée : on le dit (la jaquette gardée ne cache pas un problème de clé).
+  // Clé refusée : la jaquette gardée sert encore ; sans rien de gardé, on le dit (et l'administration le montre).
   await svc.cover(c, "Tunic"); await settle();
-  tick(40 * HOUR); rawg.clearCache(); f = fakeFetch({ "*": () => ({ status: 403, json: {} }) }); globalThis.fetch = f;
-  assert.equal((await svc.cover(c, "Tunic")).status, "refused");
+  tick(40 * HOUR); rawg.clearCache(); f = fakeFetch({ "*": () => ({ status: 403, json: {} }) }); globalThis.fetch = withImages(f);
+  assert.equal((await svc.cover(c, "Tunic")).status, "found", "une jaquette gardée sert encore : une source refusée est une source de moins, pas un blocage");
+  assert.equal((await svc.cover(c, "Jeu jamais vu")).status, "refused", "sans rien de gardé et sans autre source, on le dit");
+  assert.match((await mod.adminPanel(c, { query: {} })).find((b) => b.type === "markdown" && /^RAWG :/.test(b.text)).text, /^RAWG : code refusé/);
 });
 
 test("données bornées : 1 000 jaquettes automatiques au plus, les plus anciennes sortent à l'écriture par tranche, la plus récente reste ; aucun minuteur", async () => {
@@ -284,7 +293,7 @@ test("lignes illisibles ou piégées dans le stockage : écartées (mauvais hôt
   assert.deepEqual(rows.map((r) => r.title), ["Bon"]);
 });
 
-test("onglet « Jaquettes enregistrées » : les jaquettes automatiques gardées y sont (Voir, Changer, Oublier), recherche en direct sur tout, 50 par page, poids de la page borné", async () => {
+test("onglet « Jaquettes gardées » : les jaquettes automatiques gardées y sont (Voir, Changer, Oublier), recherche en direct sur tout, 50 par page, poids de la page borné", async () => {
   const c = makeCtx();
   await svc.cover(c, "Hades"); await svc.cover(c, "Playrooms"); await settle();
   await ops.chooseNone(c, "t", "Sans image");
@@ -292,12 +301,12 @@ test("onglet « Jaquettes enregistrées » : les jaquettes automatiques gardées
   const t = saved.find((b) => b.type === "table");
   const byTitle = Object.fromEntries(t.rows.map((r) => [r[0], r]));
   assert.deepEqual(Object.keys(byTitle).sort(), ["Hades", "Playrooms", "Sans image"]);
-  assert.deepEqual([byTitle.Hades[2].text, byTitle.Hades[2].badge, byTitle.Hades[1]], ["Automatique", "info", "Hades"]);
+  assert.deepEqual([byTitle.Hades[3].text, byTitle.Hades[3].badge, byTitle.Hades[1].text, byTitle.Hades[2].text], ["Automatique", "info", "Hades", "RAWG"]);
   assert.equal(t.searchable, true); assert.equal(t.pageSize, 50);
   assert.deepEqual(t.rowActions.map((a) => a.label), ["Voir", "Changer", "Oublier cette jaquette"]);
   // Voir / Changer / Oublier sur une jaquette automatique qui n'est PAS dans « à vérifier ».
   const view = await mod.adminPanel(c, { query: { tab: "saved", voir: "Hades" } });
-  assert.ok(view.find((b) => b.type === "html").html.includes(img(21)));
+  assert.ok(view.find((b) => b.type === "html").html.includes("/m/game-covers/cover/"), "la copie du site");
   assert.ok(view.find((b) => b.type === "html").html.includes("Automatique"));
   const change = await mod.adminPanel(c, { query: { tab: "saved", titre: "Hades" } });
   assert.ok(change.some((b) => b.type === "adminForm" && b.action === "confirm"), "« Ce choix est bon » pour une jaquette automatique");
@@ -345,18 +354,19 @@ test("l'état en mots simples : « Tout fonctionne » avec la date, puis la phra
   await svc.cover(c, "Hades"); await settle();
   const ok = await mod.adminPanel(c, { query: {} });
   assert.ok(ok.some((b) => b.type === "banner" && b.tone === "success" && b.text === "Tout fonctionne."));
-  assert.ok(ok.some((b) => b.type === "markdown" && /^Dernière réponse de la base de jaquettes : /.test(b.text)));
+  assert.ok(ok.some((b) => b.type === "markdown" && /^Dernière jaquette trouvée : RAWG, le /.test(b.text)))
+  assert.ok(ok.some((b) => b.type === "markdown" && b.text === "RAWG : actif ✓ — Twitch : non connecté (facultatif) — Steam : coupé"), "l'état de chaque source, en mots simples");;
   assert.ok(!ok.some((b) => b.type === "banner" && b.tone === "warning"));
   tick(3 * HOUR); mode = "down"; rawg.clearCache();
   for (const t of ["A", "B", "C"]) await svc.cover(c, `Titre ${t}`);
   const down = await mod.adminPanel(c, { query: {} });
   const warn = down.find((b) => b.type === "banner" && b.tone === "warning");
-  assert.equal(warn.text, "La base de jaquettes ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées.");
-  assert.ok(down.some((b) => b.type === "markdown" && /^Dernière réponse reçue : .*réessaie tout de suite/.test(b.text)));
+  assert.equal(warn.text, "Aucune source ne répond pour le moment. Les jaquettes déjà gardées restent affichées.");
+  assert.ok(down.some((b) => b.type === "markdown" && /^RAWG : ne répond pas/.test(b.text)), "la source en panne est nommée");
   assert.ok(down.some((b) => b.type === "adminForm" && b.action === "testKey"), "le bouton pour réessayer est là");
   assert.ok(tabOf(down, "saved").some((b) => b.type === "banner" && b.tone === "warning"), "l'autre onglet le dit aussi");
   assert.ok(!JSON.stringify(down).includes(KEY));
-  for (const text of [warn.text, fr.all_fine, fr.outage_since, fr.outage_never, fr.outage_saved, en.outage, en.all_fine]) {
+  for (const text of [warn.text, fr.all_fine, fr.outage_saved, en.outage, en.all_fine, fr.none_available, en.none_available]) {
     assert.ok(!/\b(api|cache|service|jeton|token|identifiant|webhook|instance|disjoncteur|timeout)\b/i.test(text), text);
     assert.ok(text.split(/[.!?]/).every((s) => s.trim().split(/\s+/).length <= 20), "phrases de 20 mots au plus");
     assert.ok(!text.includes("!"));
@@ -369,7 +379,8 @@ test("l'état en mots simples : « Tout fonctionne » avec la date, puis la phra
   assert.ok(!back.some((b) => b.type === "banner" && b.tone === "warning"));
   // Jamais d'état avant la première réponse : la phrase d'avant.
   const fresh = makeCtx();
-  assert.ok((await mod.adminPanel(fresh, { query: {} })).some((b) => b.type === "markdown" && b.text === fr.never_checked));
+  const first = await mod.adminPanel(fresh, { query: {} });
+  assert.ok(first.some((b) => b.type === "banner" && b.text === "Tout fonctionne.") && !first.some((b) => b.type === "markdown" && /^Dernière jaquette trouvée/.test(b.text)));
 });
 
 test("ergonomie des écrans modifiés : onglets, état « injoignable », voir, changer (kit du cœur)", async () => {
@@ -384,10 +395,11 @@ test("ergonomie des écrans modifiés : onglets, état « injoignable », voir, 
   }
 });
 
-test("rien de plus : aucun nouvel hôte, aucune image téléchargée, aucun cookie, aucune donnée de visiteur", () => {
+test("rien de plus : aucun hôte hors des trois sources, les images ne sont téléchargées que par copies.mjs, aucun cookie, aucune donnée de visiteur", () => {
   const code = fs.readdirSync(DIR).filter((x) => x.endsWith(".mjs")).map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n");
   const hosts = new Set([...code.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase()));
-  assert.deepEqual([...hosts].filter((h) => !/(^|\.)rawg\.io$/.test(h)), []);
-  assert.ok(!/\bfetch\(/.test(code) && !/arrayBuffer|\.blob\(|createWriteStream|writeFile/.test(code), "aucune image n'est téléchargée ni écrite");
+  assert.deepEqual([...hosts].filter((h) => !/(^|\.)rawg\.io$/.test(h)), ["store.steampowered.com"]);
+  const others = fs.readdirSync(DIR).filter((x) => x.endsWith(".mjs") && x !== "copies.mjs").map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n");
+  assert.ok(!/\bfetch\(/.test(others) && !/arrayBuffer|\.blob\(|createWriteStream|writeFile/.test(code), "seul copies.mjs télécharge une image, et elle n'est jamais écrite sur le disque");
   assert.ok(!/cookie|fingerprint|x-forwarded|\bip\b/i.test(code.replace(/\/\/.*$/gm, "")), "rien sur les personnes qui visitent");
 });
