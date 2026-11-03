@@ -8,8 +8,8 @@
   },
   "version": "1.2.0",
   "description": {
-    "en": "Finds the cover picture of a video game for everything about games on your site, and keeps the covers it found so they stay displayed even when RAWG is down. Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
-    "fr": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site, et garde celles qu'il a trouvées : elles restent affichées même quand RAWG est en panne. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
+    "en": "Finds the cover picture of a video game for everything about games on your site. Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
+    "fr": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
   },
   "privacy": {
     "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the game title to RAWG (a video-game database) with your RAWG key. Found covers are kept privately on your site (1,000 at most): the title as your pages write it, the game name and the picture address, never a picture file. The browser loads each picture from RAWG, which therefore sees the person's address under its own privacy policy.",

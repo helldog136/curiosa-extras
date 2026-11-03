@@ -99,9 +99,9 @@
   "forget_keep": "Garder la jaquette",
   "forget_gone": "Cette jaquette n'est plus enregistrée. Revenez à la liste.",
   "all_fine": "Tout fonctionne.",
-  "last_ok": "Dernière réponse de RAWG : {date}.",
-  "outage": "RAWG, la base de jaquettes, ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées.",
-  "outage_since": "Dernière réponse de RAWG : {date}. Le bouton ci-dessous réessaie tout de suite.",
-  "outage_never": "RAWG n'a pas encore répondu. Le bouton ci-dessous réessaie tout de suite.",
+  "last_ok": "Dernière réponse de la base de jaquettes : {date}.",
+  "outage": "La base de jaquettes ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées.",
+  "outage_since": "Dernière réponse reçue : {date}. Le bouton ci-dessous réessaie tout de suite.",
+  "outage_never": "Aucune réponse reçue pour le moment. Le bouton ci-dessous réessaie tout de suite.",
   "outage_saved": "Les jaquettes de ce tableau restent affichées sur le site pendant ce temps."
 }

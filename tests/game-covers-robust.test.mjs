@@ -345,14 +345,14 @@ test("l'état en mots simples : « Tout fonctionne » avec la date, puis la phra
   await svc.cover(c, "Hades"); await settle();
   const ok = await mod.adminPanel(c, { query: {} });
   assert.ok(ok.some((b) => b.type === "banner" && b.tone === "success" && b.text === "Tout fonctionne."));
-  assert.ok(ok.some((b) => b.type === "markdown" && /^Dernière réponse de RAWG : /.test(b.text)));
+  assert.ok(ok.some((b) => b.type === "markdown" && /^Dernière réponse de la base de jaquettes : /.test(b.text)));
   assert.ok(!ok.some((b) => b.type === "banner" && b.tone === "warning"));
   tick(3 * HOUR); mode = "down"; rawg.clearCache();
   for (const t of ["A", "B", "C"]) await svc.cover(c, `Titre ${t}`);
   const down = await mod.adminPanel(c, { query: {} });
   const warn = down.find((b) => b.type === "banner" && b.tone === "warning");
-  assert.equal(warn.text, "RAWG, la base de jaquettes, ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées.");
-  assert.ok(down.some((b) => b.type === "markdown" && /^Dernière réponse de RAWG : .*réessaie tout de suite/.test(b.text)));
+  assert.equal(warn.text, "La base de jaquettes ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées.");
+  assert.ok(down.some((b) => b.type === "markdown" && /^Dernière réponse reçue : .*réessaie tout de suite/.test(b.text)));
   assert.ok(down.some((b) => b.type === "adminForm" && b.action === "testKey"), "le bouton pour réessayer est là");
   assert.ok(tabOf(down, "saved").some((b) => b.type === "banner" && b.tone === "warning"), "l'autre onglet le dit aussi");
   assert.ok(!JSON.stringify(down).includes(KEY));

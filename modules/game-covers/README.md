@@ -14,7 +14,7 @@ Ce module **trouve la jaquette d'un jeu vidéo** (et la garde, pour qu'elle rest
 - Si RAWG ne répond pas, la jaquette gardée s'affiche **même si elle a plus de 24 heures**, et elle n'est pas supprimée. Quand RAWG revient, elle est rafraîchie dès qu'une page la demande.
 - Une panne n'est **jamais** retenue comme « pas de jaquette » : la jaquette apparaîtra dès que RAWG reviendra.
 - Après trois échecs d'affilée, le site arrête d'insister : pause de 1, 2, 5 puis 15 minutes au plus, avec un seul essai de reprise à la fois. Vos pages n'attendent jamais longtemps (3 secondes au plus).
-- En haut de **« Jaquettes à vérifier »**, une phrase dit où on en est : « Tout fonctionne » (avec la date de la dernière réponse) ou « RAWG ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées. » « Tester la clé » réessaie tout de suite. Le Journal du site note une fois l'arrêt et une fois le retour.
+- En haut de **« Jaquettes à vérifier »**, une phrase dit où on en est : « Tout fonctionne » (avec la date de la dernière réponse) ou « La base de jaquettes ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées. » « Tester la clé » réessaie tout de suite. Le Journal du site note une fois l'arrêt et une fois le retour.
 - Vos corrections passent toujours avant tout.
 
 ## « Quel est le bon jeu ? »

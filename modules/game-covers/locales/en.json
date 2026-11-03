@@ -99,9 +99,9 @@
   "forget_keep": "Keep the cover",
   "forget_gone": "This cover is no longer saved. Go back to the list.",
   "all_fine": "Everything works.",
-  "last_ok": "Last answer from RAWG: {date}.",
-  "outage": "RAWG, the cover database, is not answering right now. The covers already found stay displayed.",
-  "outage_since": "Last answer from RAWG: {date}. The button below tries again right away.",
-  "outage_never": "RAWG has not answered yet. The button below tries again right away.",
+  "last_ok": "Last answer from the cover database: {date}.",
+  "outage": "The cover database is not answering right now. The covers already found stay displayed.",
+  "outage_since": "Last answer received: {date}. The button below tries again right away.",
+  "outage_never": "No answer received yet. The button below tries again right away.",
   "outage_saved": "The covers in this table stay displayed on the site in the meantime."
 }
