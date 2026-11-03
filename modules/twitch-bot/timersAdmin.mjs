@@ -6,7 +6,7 @@ const { loadConfig } = await import(`./commands.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { used } = await import(`./variables.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { readPeriod, isOpen, nextOpening, parsePeriodText, periodError, periodField } = await import(`./period.mjs${v}`);
+const { readPeriod, isOpen, nextOpening, parsePeriodValue, periodError, periodField } = await import(`./period.mjs${v}`);
 const K = await import(`./adminkit.mjs${v}`);
 const F = await import(`./formsUi.mjs${v}`);
 const CU = await import(`./commandsUi.mjs${v}`);
@@ -25,7 +25,7 @@ async function form(ctx, info, doc) {
     { f: "name" }, { f: "text", preview: await F.textExtras(ctx, "timer", {}, env) },
     { sentence: { title: t("tm_rhythm"), hint: t("tm_rhythm_hint", { minutes: T.LIMITS.minutes, lines: T.LIMITS.lines }), tokens: [t("tm_r1"), { f: "minutes", min: 1, max: T.LIMITS.minutes }, t("tm_r2"), { f: "lines", min: 0, max: T.LIMITS.lines }, t("tm_r3")] } },
     { seg: "when" },
-    { more: { title: t("more_title"), hint: t("more_hint_timer"), open: false, items: [F.periodLayout(ctx, readPeriod(v0.period), info.s.timeZone)] } },
+    { more: { title: t("more_title"), hint: t("more_hint_timer"), open: false, items: [{ f: "period", label: t("per_title") }] } },
   ];
   const id = doc ? "timer-edit" : "timer-new";
   const conf = K.formConfig(id, { layout });
@@ -37,13 +37,13 @@ async function form(ctx, info, doc) {
     { name: "minutes", label: t("tm_f_minutes"), kind: "number", value: v0.minutes, required: true, help: t("tm_f_minutes_help", { max: T.LIMITS.minutes }) },
     { name: "lines", label: t("tm_f_lines"), kind: "number", value: v0.lines, help: t("tm_f_lines_help", { max: T.LIMITS.lines }) },
     { name: "when", label: t("tm_f_when"), kind: "select", value: v0.when, options: T.WHEN.map((w) => ({ value: w, label: t(`tm_when_${w}`) })) },
-    periodField(ctx, readPeriod(v0.period)),
+    periodField(ctx, readPeriod(v0.period), info.s.timeZone),
   ] }];
 }
 const fieldsFrom = (x) => ({ name: x.name, text: x.text, minutes: x.minutes, lines: x.lines, when: x.when || "live" });
 const periodOf = (ctx, x) => {
   if (x.period === undefined) return {};
-  const p = parsePeriodText(x.period);
+  const p = parsePeriodValue(x.period);
   return p.ok ? { period: p.value } : { bad: { errors: { period: periodError(ctx, p) } } };
 };
 const fail = (ctx, r) => {
