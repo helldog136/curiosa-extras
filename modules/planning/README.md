@@ -105,7 +105,7 @@ Devant le nom d'un partenaire (page, morceaux d'accueil), un petit rond avec **s
 - **Photo envoyée à la main dans Contacts** (sur votre site, `/uploads/…`) : montrée telle quelle, sans copie. Une photo choisie à la main sur un autre serveur n'est pas copiée : initiales.
 - **Pas montrée** dans les éléments d'overlay (le nom seul, pour OBS), l'aperçu de l'administration et l'image PNG de la semaine : cette image est gardée longtemps par Twitch et les réseaux, elle figerait la photo d'une personne ensuite masquée.
 - **Réglage avancé « Afficher la photo des partenaires »** (oui par défaut, onglet Apparence) : coupé, plus aucun rond, plus aucune copie, celles qui existent sont effacées.
-- Nouvelle permission : **`storage`** (la copie vit dans la collection `partnerPhotos`, une ligne par pseudo). Développeurs : `photos.mjs` (règles, copie, route), `avatar.mjs` (le rond, pur), route `photo/:id`, test `tests/planning-photos.test.mjs`.
+- Nouvelle permission : **`storage`** (la copie vit dans la collection `partnerPhotos`, une ligne par pseudo). Développeurs : `photos.mjs` (règles, copie, route), `avatar.mjs` (le rond, pur), route `photo/:slug`, test `tests/planning-photos.test.mjs`.
 
 ## Ajouter les jeux joués à votre liste (version 2.7.0)
 

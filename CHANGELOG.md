@@ -26,6 +26,18 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - `twitch-connector` 1.3.0 : `GET search/categories` (`query`, `first`) ajouté à la liste fermée, gardé 10 minutes.
 - Tests : `tests/game-covers-sources.test.mjs` (nouveau, avec une vraie réponse de Steam dans `tests/fixtures`), `tests/helpers/cover-fakes.mjs` ; tests existants mis à jour.
 
+## 1.41.1 — 2026-11-03
+
+*En bref : la photo de profil des personnes avec qui vous streamez s'affiche enfin dans le Planning. Rien à régler, et aucune nouvelle permission à accepter.*
+
+### Corrections
+
+- **Planning 2.7.2 : la photo des partenaires s'affiche vraiment.** Le site téléchargeait bien la photo et la gardait, mais l'adresse qui la sert n'était pas reconnue par Curiosa : l'image ne se chargeait pas et seul le rond avec l'initiale restait. C'est corrigé ; la photo apparaît dès la mise à jour, sans réglage à changer ni permission à accepter en plus.
+
+### Pour les développeurs
+
+- `planning` 2.7.2 : la route de la photo est déclarée `photo/:slug` et lit `ctx.params.slug` (le cœur ne connaît qu'un segment libre, nommé `slug`) ; elle s'appelait `photo/:id`, donc toujours « introuvable ». `tests/planning-photos.test.mjs` retrouve désormais la route comme le fait le cœur (`matchModuleRoute`). Version du dépôt non changée.
+
 ## 1.41.0 — 2026-11-03
 
 *En bref : le Planning peut montrer la photo des personnes avec qui vous streamez, sans que vos visiteurs contactent Twitch. Il peut aussi ajouter tout seul à votre liste « Déjà joué » les jeux que vous avez commencés à jouer (coupé par défaut). Dans la liste en alternance, le contenu de chaque case remplit mieux la largeur.*

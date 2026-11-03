@@ -505,10 +505,12 @@ async function photoResponse(request, ctx) {
   if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" } });
   try {
     if (!Photos.photosOn(ctx)) return NO_PHOTO();
-    const copy = await Photos.copyOf(ctx, ctx.params?.id);
+    // Le cœur ne donne qu'un segment libre, TOUJOURS sous le nom `slug` (route « …/:slug », voir docs/MODULES.md) : aucun autre nom n'existe.
+    const id = ctx.params?.slug;
+    const copy = await Photos.copyOf(ctx, id);
     if (!copy) return NO_PHOTO();
     const state = await stateOf(ctx, copy.login);
-    if (state === "hidden" || state === "unknown") await Photos.forget(ctx, ctx.params.id);
+    if (state === "hidden" || state === "unknown") await Photos.forget(ctx, id);
     if (state !== "shown") return NO_PHOTO();
     return new Response(request.method === "HEAD" ? null : copy.bytes, { headers: { "Content-Type": copy.type, "Content-Length": String(copy.bytes.length), "Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'" } });
   } catch { return NO_PHOTO(); }
@@ -523,7 +525,7 @@ export default {
 
     // La photo d'un partenaire, servie par le site lui-même (copie gardée par photos.mjs). Le repère (16 caractères) ne désigne qu'une copie déjà faite ; la photo n'est rendue que si la fiche
     // est TOUJOURS affichable à cet instant (sinon 404 identique, et la copie est effacée). Ni cookie, ni paramètre, ni adresse donnée par la personne qui visite.
-    "photo/:id": (request, ctx) => photoResponse(request, ctx),
+    "photo/:slug": (request, ctx) => photoResponse(request, ctx),
 
     async image(request, ctx) {
       const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
