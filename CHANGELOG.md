@@ -6,17 +6,40 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
-*En bref : Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… », en plus de « Du… au… ». Ce module demande Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
+*En bref : dans Bot Twitch 1.8.0, la période d'une commande ou d'un timer utilise enfin le champ « période » de Curiosa : « Tout le mois de », périodes toutes prêtes (saisons, fêtes) et une seule ligne de dates, à la place des puces fixes et des quatre listes. Les périodes déjà réglées gardent exactement leur sens. Ce module demande maintenant Curiosa 0.6.4 ou plus. Par ailleurs, le tableau de bord de l'administration dit maintenant ce qui vous attend dans cinq extensions : les avis à valider, les suggestions de jeux à traiter et les événements à relire, plus deux boutons « Écrire un article » et « Ajouter une page ». Rien à régler : c'est affiché tout seul avec Curiosa 0.6.1 ou plus, et ignoré par les versions plus anciennes. Par ailleurs, la Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… » (Curiosa 0.6.4 ou plus).*
+
+La fiche du Bot Twitch montre aussi son onglet Réglages.
 
 ### Nouveautés
 
+- **Bot Twitch 1.8.0 : une période comme partout ailleurs.** Sous « Plus d'options », « Limiter dans le temps » est le champ de période de Curiosa : choisissez « Tout le mois de » novembre, ou une « période toute prête » (les quatre saisons, Noël, Halloween, Pâques, l'Aïd, Hanoukka…), ou deux dates, et la phrase en dessous dit ce qui a été compris. Plus de puces « Tout novembre », « Tout septembre », « Cet été » écrites en dur, plus de quatre listes jour et mois.
+- **Une période nouvelle part de « une seule fois ».** Une annonce ponctuelle ne revient donc pas toute seule l'année suivante ; cochez « Chaque année » quand c'est voulu.
+- **Rien ne change pour ce qui est déjà réglé.** Vos commandes et vos timers avec une période (chaque année, à cheval sur le changement d'année, avec le 29 février, ou une seule fois avec ses années) s'ouvrent et se ferment aux mêmes dates, et l'écran les montre comme vous les aviez réglées. Aucune donnée n'est modifiée.
+- **Le fuseau ne change pas.** Les jours sont toujours comptés dans le fuseau réglé dans le bot (UTC s'il est vide) ; l'aide sous le champ le rappelle.
+- **Témoignages 1.2.0 : « Avis à valider (n) ».** Quand des avis attendent votre décision, une ligne apparaît sous « À faire » sur le tableau de bord, avec un lien direct vers la liste des avis en attente. Elle disparaît quand il n'y en a plus. Seules les personnes qui ont le droit de valider les avis la voient.
+- **Suggestions de jeux 1.8.0 : « Suggestions de jeux à traiter (n) ».** Elle compte les jeux proposés par vos visiteurs que vous n'avez pas encore classés (retenu, refusé, déjà joué…). Les jeux que vous ajoutez vous-même n'y comptent pas.
+- **Événements 1.1.0 : « Événements à relire (n) ».** Elle compte les brouillons préparés par l'assistant IA qui attendent votre relecture, et mène à l'onglet des brouillons. Vos propres brouillons n'y sont pas.
+- **Blog 1.1.0 : « Écrire un article ».** Un bouton sous « Créer » sur le tableau de bord, qui ouvre directement un article vide.
+- **Pages 1.2.0 : « Ajouter une page ».** Même chose pour une nouvelle page.
+- **Plus de ligne en double.** Témoignages et Événements affichaient déjà un petit chiffre dans le menu de gauche ; le tableau de bord le répétait sous la forme « n à traiter dans … ». Ce chiffre du menu est retiré au profit de la nouvelle ligne, plus claire. Avec un Curiosa plus ancien que 0.6.1, ces deux extensions n'affichent donc plus de chiffre dans le menu.
+- **Sobre, et jamais lent.** Une ligne n'apparaît que s'il y a quelque chose à faire. Elle lit seulement ce que l'extension garde déjà sur votre site : aucune demande à un autre site, aucun nom ni texte de vos visiteurs.
 - **Bannière d'annonce 1.2.0 : « jusqu'au 24 décembre » ou « à partir du 1er décembre » en une seule date.** Sous « Plus d'options », « Limiter dans le temps » n'oblige plus à choisir un début et une fin : la phrase sous le champ dit ce qui est compris (« À partir du 1er décembre 2026 », « Jusqu'au 24 décembre 2026 »). Le dernier jour compte jusqu'à minuit, et « à partir du » commence dès 00:00. Avec deux dates, ou « chaque année », rien ne change : vos réglages sont conservés tels quels.
 - **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
 - **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
+- **Bot Twitch 1.7.2 : un visuel de plus sur sa fiche.** L'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
 
 ### Pour les développeurs
 
+- `modules/twitch-bot` 1.8.0 : `minCore` 0.6.4 (champ `period` d'`adminForm` avec « Tout le mois de », périodes toutes prêtes revues et départ « une seule fois » d'une période nouvelle). `openEnded` n'est pas demandé (le moteur ne connaît pas les périodes ouvertes) et `ctx.timezone` n'est pas lu : lui donner la priorité sur le réglage `timezone` du module changerait le jour d'ouverture des sites dont le fuseau du site diffère de ce réglage.
+- Stockage inchangé (`{ yearly, from: { m, d, y? }, to: { m, d, y? } }`) ; `periodToValue` et `parsePeriodValue` (period.mjs) traduisent vers et depuis `MM-JJ/MM-JJ` et `AAAA-MM-JJ/AAAA-MM-JJ`, et lisent encore l'ancienne écriture « 01/11 - 30/11 » (page ouverte avant la mise à jour, import). Les outils de l'assistant (`activeFrom`, `activeUntil`, `yearly`) ne changent pas.
+- Retiré : le contrôle de période maison (`periodControl`, `SHORTCUTS`, `describe`, leurs textes `per_sc_*`, `per_mode_*`…, leur code dans `adminkit.client.js` et leur style).
+- Clé `dashboard` de `module.json` (cœur 0.6.1+, aucun `minCore`) : `tasks` pour `testimonials` (`pending`, droit `reviews.moderate`), `game-suggestions` (`proposed`) et `events` (`review`, droit `events.edit`) ; `quickActions` pour `blog` et `pages` (`/admin/entries/new?c={key}`, aucun code, droit par défaut `open` : sans lui, la rédaction garde le bouton « Ajouter dans … » du cœur). Le code est `dashboard.tasks.<id>(ctx)` : un nombre, une lecture du stockage bornée (1 000 avis, 2 000 suggestions, la liste d'événements déjà gardée en mémoire), aucun appel réseau.
+- Libellés de tâche écrits « Sujet à faire ({n}) » : le cœur remplace `{n}` sans accorder le pluriel, ce tour se lit aussi bien pour 1 que pour 12 (« 1 événements » serait faux).
+- `adminBadge` retiré de `testimonials` et `events` (même calcul que la tâche, le cœur affichait les deux). Les tests de ces modules lisent la tâche.
+- Versions : Blog 1.1.0, Pages 1.2.0, Témoignages 1.2.0, Suggestions de jeux 1.8.0, Événements 1.1.0. Tests : `tests/dashboard-contenu.test.mjs` (validité `dashboardIssues`, mots, comptes, délais, absence de réseau) ; le kit de conformité exige `dashboard.valid`.
 - `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
+- `modules/twitch-bot` 1.7.2 : une `preview` ajoutée (`reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
+- `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
 
 ## 1.38.0 — 2026-11-03
 
