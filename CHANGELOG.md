@@ -41,6 +41,8 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 - **Un écran de correction qui plantait est réparé.** « Corriger » sur un titre à vérifier affichait une erreur depuis la 1.1.0 ; il montre de nouveau « Ce choix est bon » et « Chercher un autre nom ».
 - **Pour l'assistant.** `rawg_covers_list` liste aussi les jaquettes trouvées toutes seules (origine « auto »). Rien d'autre ne change : aucun droit de plus.
 - **Bot Twitch 1.7.2 : un visuel de plus sur sa fiche.** L'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
+- **Participation 1.3.0 et Sondages 1.4.0 : l'Historique en dit plus.** Participation y note ce que le site ne voit pas tout seul : un tirage ouvert, fermé (même tout seul à l'échéance), rouvert, tiré ou vidé depuis la télécommande, une sourdine, une salle vidée, un bouton de la télécommande qui échoue. Sondages y note les manches lancées ou arrêtées et les sondages rapides depuis la télécommande, et la décision de chaque manche (numéro, vainqueur, nombre de votes). Jamais de pseudo ni de vote ; les gestes de la page d'administration et de l'assistant n'apparaissent pas deux fois. L'ancien journal de Participation, et son lien « Voir l'Historique de l'extension », restent là.
+
 
 ### Pour les développeurs
 
@@ -62,6 +64,7 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 - Le tableau d'administration n'a pas de recherche côté serveur (cœur 0.6.4) : les 2 100 lignes au plus (1 000 corrections, 100 titres à vérifier, 1 000 jaquettes trouvées) sont dans la page, 50 par page, d'où la borne de 1 000.
 - `modules/twitch-bot` 1.7.2 : une `preview` ajoutée (`reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
 - `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
+- `modules/audience` 1.3.0 et `modules/polls` 1.4.0 : `logEvents` (Participation : `draw.opened`, `draw.closed`, `draw.reopened`, `draw.picked`, `draw.redrawn`, `draw.cleared`, `room.cleared`, `person.muted`, `person.unmuted`, `remote.failed` ; Sondages : `round.started`, `round.stopped`, `poll.quick`, `round.decided`, `frequent`). `minCore` inchangé (0.5.0) : écriture par `ctx.api.log?.write`, ignorée par un cœur plus ancien. Participation écrit sans attendre (le geste ne dépend pas du journal) via `K.journal`, qui reste l'unique point d'écriture de l'ancien journal ; les manches des autres extensions (`round.start`, `round.stop`, `round.decision` envoyés par le service `journal`) ne sont pas recopiés : chaque extension les note sous son nom. Rien n'est supprimé, aucune migration.
 
 ## 1.38.0 — 2026-11-03
 

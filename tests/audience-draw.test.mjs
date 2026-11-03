@@ -34,7 +34,7 @@ test("manifeste : service « audience.draw » version 1 offert (status en lectur
   const right = manifest.rights.find((x) => x.id === "draw.manage");
   assert.ok(right && right.sensitive === true && right.default.admin === true && right.default.editor === false);
   assert.ok(manifest.tabs.some((t) => t.id === "draw" && t.panel === true));
-  assert.equal(manifest.version, "1.2.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.3.0"); assert.equal(manifest.minCore, "0.5.0");
   const byName = Object.fromEntries(manifest.mcp.map((a) => [a.name, a]));
   assert.ok(byName.draw_status.readOnly === true);
   for (const n of ["draw_open", "draw_close", "draw_pick"]) { assert.ok(!byName[n].readOnly && !byName[n].default, `${n} : une écriture n'est jamais accordée d'office`); assert.equal(typeof def.mcp[n], "function"); }
