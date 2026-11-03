@@ -59,6 +59,7 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 
 ### Pour les développeurs
 
+- Le test « chaque clé de `settings` est lue par le code du module » accepte aussi `pageSetting` (lu par le cœur, comme `shortLink`) et ne cite plus la mauvaise version du cœur. Il reste écrit ici, sans dépendre d'une fonction du cœur publié.
 - Textes seulement (module.json et locales/*.json), aucune clé de réglage ni valeur par défaut modifiée ; versions patch montées (Overlay alertes, Participation, Blog, Agenda en ligne, Formulaire de contact, Contacts, Jaquettes de jeux, Statut du live, Planning, Sondages, Stream story, Mur des remerciements, Ma Chaîne Twitch, Connecteur Twitch, Raid Twitch, Chaîne YouTube, Connecteur YouTube, Actions de live YouTube). Annuaire, Galeries, Home Assistant, Soutiens et Vidéothèque : le numéro est monté par la PR « onglets de réglages ».
 - Non traités : `legal-pages` (textes juridiques, « service » y est le mot courant du droit : ils ne se réécrivent pas sans relecture juridique), `twitch-bot` (modifié par une autre PR). La base d'ergonomie rétrécit (R9, R13).
 - `modules/twitch-bot` 1.8.0 : `minCore` 0.6.4 (champ `period` d'`adminForm` avec « Tout le mois de », périodes toutes prêtes revues et départ « une seule fois » d'une période nouvelle). `openEnded` n'est pas demandé (le moteur ne connaît pas les périodes ouvertes) et `ctx.timezone` n'est pas lu : lui donner la priorité sur le réglage `timezone` du module changerait le jour d'ouverture des sites dont le fuseau du site diffère de ce réglage.
