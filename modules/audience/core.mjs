@@ -327,12 +327,35 @@ export async function dropLive(ctx, room, channel) {
 
 /* ───────────── Journal d'audit minimal ───────────── */
 
-export async function journal(ctx, { who, what, room, detail }, now = Date.now()) {
+/**
+ * Ce qui va AUSSI au journal du cœur (Historique) : les gestes qui ne passent pas par une action d'administration ni par un outil de l'assistant (le cœur note déjà
+ * ceux-là lui-même, sous « module… » et « mcp… »). Jamais de pseudo ni de message : seulement le titre du tirage (écrit par la personne qui gère), un nombre ou la salle.
+ * Les lignes très répétitives restent ici : inscriptions, sourdines de salle une à une ne sont notées que si elles viennent de la télécommande.
+ */
+const CENTRAL = {
+  mute: { action: "person.muted" },
+  unmute: { action: "person.unmuted" },
+  clearRoom: { action: "room.cleared", fields: ({ detail }) => ({ removed: Number(detail) }) },
+  "draw.new": { action: "draw.opened", fields: ({ detail }) => ({ title: detail }) },
+  "draw.close": { action: "draw.closed", fields: ({ detail }) => ({ title: detail }) },
+  "draw.reopen": { action: "draw.reopened", fields: ({ detail }) => ({ title: detail }) },
+  "draw.pick": { action: "draw.picked", fields: ({ count }) => ({ count }) },
+  "draw.redraw": { action: "draw.redrawn" },
+  "draw.clear": { action: "draw.cleared", fields: ({ detail }) => ({ removed: Number(detail) }) },
+};
+/** Le cœur note déjà ces auteurs (page d'administration : « module… » ; assistant : « mcp… »). */
+const CORE_NOTED = new Set(["admin", "assistant"]);
+
+export async function journal(ctx, { who, what, room, detail, count, central }, now = Date.now()) {
   await ctx.api.store.add(AUDIT, { at: new Date(now).toISOString(), who: L.clean(who, 40) || "?", what: L.clean(what, 60), room: room ? L.clean(room, LIMITS.roomKey) : null, detail: L.clean(detail, LIMITS.detail) });
   const extra = (await ctx.api.store.count(AUDIT)) - LIMITS.audit;
   if (extra > 0) {   // jamais plus de 500 lignes : les plus anciennes s'effacent
     const old = await ctx.api.store.page(AUDIT, { limit: Math.min(extra, 50), order: "asc" });
     for (const r of old.items) await ctx.api.store.remove(r.id);
+  }
+  const map = CENTRAL[what];
+  if (map && (central ?? !CORE_NOTED.has(who))) {
+    void ctx.api.log?.write({ action: map.action, ...(room ? { target: room } : {}), data: map.fields ? map.fields({ detail, count }) : undefined });   // ne lève jamais ; sans attendre : le geste ne dépend pas du journal
   }
 }
 

@@ -77,6 +77,7 @@
   "anon": "Sans pseudo",
   "mutedTag": "en sourdine",
   "journalTitle": "Le journal",
+  "journalHistory": "Voir l'Historique de l'extension (tirages, manches, salles vidées)",
   "journalIntro": "Qui a décidé quoi, et quand (appuis sur la télécommande, sourdines, salles vidées, choix gagnants des manches). Les lignes de plus de 30 jours sont effacées.",
   "journalEmpty": "Rien dans le journal pour le moment.",
   "downloadJournal": "Télécharger le journal (tableur)",
