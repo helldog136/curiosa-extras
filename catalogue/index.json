@@ -700,11 +700,11 @@
     {
       "id": "game-covers",
       "name": "Jaquettes de jeux",
-      "description": "Trouve la jaquette de vos jeux vidéo. Votre code d'accès Rawg gratuit se saisit une fois ; une jaquette fausse se corrige en quelques clics.",
+      "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
       "ref": "v1.41.1",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
@@ -713,6 +713,13 @@
       },
       "offers": [
         "game.cover"
+      ],
+      "needs": [
+        {
+          "service": "twitch.api",
+          "min": 3,
+          "optional": true
+        }
       ]
     },
     {
@@ -2073,7 +2080,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-connector",
       "ref": "v1.41.1",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",

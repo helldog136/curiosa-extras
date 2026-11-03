@@ -83,6 +83,8 @@ test("liste fermée : tout ce que la version 2 permettait passe encore ; ce que 
   ok({ as: "app", method: "GET", path: "users", query: { id: ["777"] } });
   ok({ as: "app", method: "GET", path: "games", query: { id: ["1", "509658"] } });
   ok({ as: "app", method: "GET", path: "channels", query: { broadcaster_id: ["777"] } });
+  // version 3, ajout 1.3.0 : la recherche d'une catégorie (jaquettes de jeux)
+  ok({ as: "app", method: "GET", path: "search/categories", query: { query: ["Hollow Knight"], first: ["8"] } });
   ok({ as: "app", method: "GET", path: "videos", query: { user_id: ["777"], first: ["100"], after: ["abc=="] } });
   ok({ as: "app", method: "GET", path: "clips", query: { broadcaster_id: ["777"], started_at: ["2026-08-01T00:00:00.000Z"], first: ["20"] } });
   ok({ as: "user", method: "GET", path: "channels/followers", query: { broadcaster_id: ["777"], first: ["1"] } });
@@ -94,6 +96,11 @@ test("liste fermée : tout ce que la version 2 permettait passe encore ; ce que 
   no({ as: "app", method: "GET", path: "streams", query: { user_login: Array.from({ length: 101 }, (_, i) => `user_${i}x`) } }, "invalid");
   no({ as: "app", method: "GET", path: "users", query: { login: ["pas valide!"] } }, "invalid");
   no({ as: "app", method: "GET", path: "users", query: {} }, "invalid");
+  no({ as: "app", method: "GET", path: "search/categories", query: {} }, "invalid");
+  no({ as: "app", method: "GET", path: "search/categories", query: { query: ["a", "b"] } }, "invalid");
+  no({ as: "app", method: "GET", path: "search/categories", query: { query: ["x".repeat(101)] } }, "invalid");
+  no({ as: "app", method: "GET", path: "search/categories", query: { query: ["ok"], after: ["x"] } }, "invalid");
+  no({ as: "user", method: "GET", path: "search/categories", query: { query: ["ok"] } }, "forbidden");
   no({ as: "app", method: "GET", path: "users", query: { login: ["alice"] }, body: { x: 1 } }, "invalid");
   no({ as: "app", method: "POST", path: "eventsub/subscriptions", body: { big: "x".repeat(10_001) } }, "invalid");
   no({ as: "app", method: "GET", path: "channels/followers", query: { broadcaster_id: ["1"] } }, "forbidden");

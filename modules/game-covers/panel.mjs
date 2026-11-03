@@ -1,6 +1,7 @@
 // L'administration du module, en deux onglets :
-//   « Jaquettes à vérifier » (onglet `use`)   l'état de RAWG en une phrase (jamais la clé), puis les titres dont le jeu trouvé est douteux ;
-//   « Jaquettes enregistrées » (onglet `saved`) UN tableau de tout ce que le site retient (corrigées, trouvées toutes seules, sans jaquette), une recherche de jeu, « Voir », « Changer », « Oublier ».
+//   « Jaquettes à vérifier » (onglet `use`)   l'état des sources en une phrase (« RAWG : pas de code — Steam : actif ✓ — Twitch : connecté ✓ », jamais une clé), puis les titres dont le jeu trouvé est douteux ;
+//   « Jaquettes gardées » (onglet `saved`)    UN tableau de tout ce que le site retient (corrigées, trouvées toutes seules, sans jaquette), avec la source et une vignette de la copie gardée sur le site,
+//                                             « Chercher une jaquette » (toutes les sources), « Voir », « Changer », « Oublier ».
 // Écrans : `?titre=<titre demandé>` « Quel est le bon jeu ? » (adresse stable : les modules qui affichent « Ce n'est pas le bon jeu ? » y renvoient), `&q=<autre recherche>`,
 // `?voir=<titre>` (la jaquette retenue) et `?oublier=<titre>` (confirmation). `&tab=saved` garde la personne dans l'onglet d'où elle vient.
 // Mobile d'abord : des blocs simples (titres, tableaux, formulaires) que le cœur met en page ; les jaquettes sont des images fixes, sans défilement.
@@ -9,6 +10,10 @@ const { titleKey } = await import(new URL("./match.mjs" + q, import.meta.url).hr
 const fx = await import(new URL("./fixes.mjs" + q, import.meta.url).href);
 const rawg = await import(new URL("./rawg.mjs" + q, import.meta.url).href);
 const ops = await import(new URL("./ops.mjs" + q, import.meta.url).href);
+const hosts = await import(new URL("./hosts.mjs" + q, import.meta.url).href);
+const chain = await import(new URL("./chain.mjs" + q, import.meta.url).href);
+const srcs = await import(new URL("./sources.mjs" + q, import.meta.url).href);
+const copies = await import(new URL("./copies.mjs" + q, import.meta.url).href);
 const { COL } = fx;
 
 const SAVED_TAB = "saved";
@@ -27,7 +32,7 @@ const coverImg = (url, cls = "h-24 w-[4.5rem]") => url
   : `<div aria-hidden="true" class="${cls} shrink-0 rounded-lg border border-dashed border-line bg-bg"></div>`;
 
 /** Le texte du choix gardé : « Aucune jaquette », « Image choisie à la main » ou le nom du jeu. */
-const choiceText = (ctx, f) => (f.kind === "none" ? ctx.t("kept_none") : f.kind === "image" ? ctx.t("kept_image") : f.name || ctx.t("kept_game"));
+const choiceText = (ctx, f) => (f.kind === "none" ? ctx.t("kept_none") : f.kind === "image" && !f.name ? ctx.t("kept_image") : f.name || ctx.t("kept_game"));
 
 /** Les blocs d'un onglet : le cœur range chaque bloc dans l'onglet qui porte son nom (`use` quand rien n'est dit). */
 const tagged = (blocks, tab) => blocks.map((b) => ({ ...b, tab }));
@@ -50,45 +55,59 @@ export async function render(ctx, { query } = {}) {
 }
 
 // ── La liste : clé, jaquettes à vérifier, choix gardés ─────────────────────────────────────────────────────────────────────
-/** L'état de RAWG en mots simples : tout fonctionne, ou ne répond pas (les jaquettes déjà trouvées restent affichées), avec la date de la dernière réponse correcte. */
-async function statusBlocks(ctx, { short = false } = {}) {
-  const state = await rawg.readState(ctx);
-  if (state?.state === "unreachable") {
-    return [{ type: "banner", tone: "warning", text: ctx.t("outage") },
-      { type: "markdown", text: short ? ctx.t("outage_saved") : ctx.t(state.okAt ? "outage_since" : "outage_never", { date: state.okAt ? when(ctx, state.okAt) : "" }) }];
+const SRC_NAME = { rawg: "RAWG", twitch: "Twitch", steam: "Steam" };
+const SRC_TONE = { rawg: "accent", twitch: "info", steam: "neutral" };
+const srcName = (src) => SRC_NAME[src] ?? SRC_NAME.rawg;
+
+/** Où en est chaque source, en mots simples : [{ source, on, down, text }] (RAWG sans code ou Twitch non connecté ne sont PAS des erreurs : une source de moins). */
+async function sourceStates(ctx) {
+  const rawgState = await rawg.readState(ctx);
+  const out = [];
+  for (let a of await chain.availableSources(ctx)) {
+    const name = SRC_NAME[a.source];
+    if (a.source === "rawg" && a.on && rawgState?.state === "refused") a = { ...a, on: false, why: "refused" };   // le dernier essai a été refusé : une source de moins, dite en mots simples
+    const down = a.on && (srcs.breakerOf(a.source)?.open === true || (a.source === "rawg" && rawgState?.state === "unreachable"));
+    let word;
+    if (!a.on) word = a.source === "rawg" ? (a.why === "refused" ? ctx.t("src_refused") : ctx.t("src_nokey")) : a.source === "twitch" ? ctx.t("src_twitch_off") : ctx.t("src_off");
+    else word = down ? ctx.t("src_down") : a.source === "twitch" ? ctx.t("src_connected") : ctx.t("src_active");
+    out.push({ source: a.source, on: a.on, down, text: `${name} : ${word}` });
   }
-  if (short) return [];
-  if (state?.state === "ok") return [{ type: "banner", tone: "success", text: ctx.t("all_fine") }, { type: "markdown", text: ctx.t("last_ok", { date: when(ctx, state.okAt ?? state.at) }) }];
-  if (state?.state === "refused") return [{ type: "banner", tone: "warning", text: ctx.t("err_refused") }];
-  return [{ type: "banner", tone: "success", text: ctx.t("key_ok") }, { type: "markdown", text: ctx.t("never_checked") }];
+  return out;
+}
+
+/** L'état des sources en une phrase : toutes les sources disponibles répondent, ou aucune ne répond (les jaquettes déjà gardées restent affichées). `short` : seulement un souci. */
+async function statusBlocks(ctx, { short = false } = {}) {
+  const states = await sourceStates(ctx);
+  const on = states.filter((s) => s.on);
+  const line = { type: "markdown", text: ctx.t("sources_line", { list: states.map((s) => s.text).join(" — ") }) };
+  if (!on.length) return [{ type: "banner", tone: "warning", text: ctx.t("none_available") }, line];
+  if (on.every((s) => s.down)) return [{ type: "banner", tone: "warning", text: ctx.t("outage") }, { type: "markdown", text: ctx.t("outage_saved") }, ...(short ? [] : [line])];
+  if (short) return [line];
+  const last = await fx.latestAuto(ctx);
+  return [{ type: "banner", tone: "success", text: ctx.t("all_fine") }, line, ...(last ? [{ type: "markdown", text: ctx.t("last_found", { source: srcName(last.src), date: when(ctx, last.at) }) }] : [])];
 }
 
 async function keyBlocks(ctx) {
   const { key, source } = await rawg.keyOf(ctx);
-  const blocks = [{ type: "heading", text: ctx.t("key_title") }];
-  if (!key) {
-    blocks.push({ type: "banner", tone: "warning", text: ctx.t("key_none") }, { type: "markdown", text: ctx.t("guide") });
-    return blocks;
-  }
-  blocks.push(...(await statusBlocks(ctx)));
-  if (source === "adopted") blocks.push({ type: "markdown", text: ctx.t("key_adopted") }, { type: "adminForm", action: "forgetKey", submitLabel: ctx.t("forget_key"), fields: [] });
-  blocks.push({ type: "adminForm", action: "testKey", submitLabel: ctx.t("test_key"), fields: [] });
-  blocks.push({ type: "netHealth", items: [{ host: "api.rawg.io", label: ctx.t("health_label") }] });
+  const blocks = [{ type: "heading", text: ctx.t("sources_title") }, ...(await statusBlocks(ctx))];
+  if (!key) blocks.push({ type: "markdown", text: ctx.t("guide") });
+  if (key && source === "adopted") blocks.push({ type: "markdown", text: ctx.t("key_adopted") }, { type: "adminForm", action: "forgetKey", submitLabel: ctx.t("forget_key"), fields: [] });
+  if (key) blocks.push({ type: "adminForm", action: "testKey", submitLabel: ctx.t("test_key"), fields: [] });
+  blocks.push({ type: "netHealth", items: [{ host: "api.rawg.io", label: ctx.t("health_label") }, { host: "store.steampowered.com", label: ctx.t("health_label_steam") }] });
   return blocks;
 }
 
 async function listScreen(ctx) {
   const out = [...(await keyBlocks(ctx))];
-  const { key } = await rawg.keyOf(ctx);
 
   const todo = await fx.readToCheck(ctx);
-  out.push({ type: "heading", text: ctx.t("todo_title") }, { type: "markdown", text: ctx.t(key ? "todo_intro" : "todo_intro_nokey") });
+  out.push({ type: "heading", text: ctx.t("todo_title") }, { type: "markdown", text: ctx.t("todo_intro") });
   if (!todo.length) out.push({ type: "markdown", text: ctx.t("todo_empty") });
   else {
     const shown = todo.slice(0, 25);
     out.push({
-      type: "table", columns: [ctx.t("col_asked"), ctx.t("col_found"), ctx.t("col_seen")], searchable: true, searchPlaceholder: ctx.t("search_list"), truncate: [0, 1],
-      rows: shown.map((d) => [d.title, d.name, day(ctx, d.at)]), rowIds: shown.map((d) => d.title),
+      type: "table", columns: [ctx.t("col_asked"), ctx.t("col_found"), ctx.t("col_source"), ctx.t("col_seen")], searchable: true, searchPlaceholder: ctx.t("search_list"), truncate: [0, 1],
+      rows: shown.map((d) => [d.title, d.name, { text: srcName(d.src), badge: SRC_TONE[d.src ?? "rawg"] }, day(ctx, d.at)]), rowIds: shown.map((d) => d.title),
       rowActions: [{ label: ctx.t("act_fix"), href: "?titre={id}" }, { label: ctx.t("act_good"), action: "confirm" }],
     });
     if (todo.length > shown.length) out.push({ type: "markdown", text: ctx.t("todo_more", { count: todo.length - shown.length }) });
@@ -96,29 +115,34 @@ async function listScreen(ctx) {
   return out;
 }
 
-// ── Jaquettes enregistrées : UN tableau (corrigées, automatiques, sans jaquette) ─────────────────────────────────────────────
+// ── Jaquettes gardées : UN tableau (corrigées, automatiques, sans jaquette) ─────────────────────────────────────────────
 /** Une date lisible ; « — » quand le module ne la connaît pas (correction reprise d'un ancien réglage). */
 const dayOrDash = (ctx, iso) => (Date.parse(iso) > 0 ? day(ctx, iso) : "—");
 const ORIGIN_TONE = { corrected: "accent", auto: "info", none: "neutral" };
 const originText = (ctx, e) => ctx.t(`origin_${e.origin}`);
 /** Le nom de ce qui est retenu, en mots simples. */
-const coverText = (ctx, e) => (e.origin === "none" ? "—" : e.kind === "image" ? ctx.t("kept_image") : e.name || ctx.t("kept_game"));
+const coverText = (ctx, e) => (e.origin === "none" ? "—" : e.kind === "image" && !e.name ? ctx.t("kept_image") : e.name || ctx.t("kept_game"));
 
 async function savedScreen(ctx) {
   const entries = await fx.savedEntries(ctx);
-  const { key } = await rawg.keyOf(ctx);
-  const out = [{ type: "markdown", text: ctx.t("saved_intro") }];
-  if (!key) out.push({ type: "banner", tone: "warning", text: ctx.t("err_no_key") });
-  else out.push(...(await statusBlocks(ctx, { short: true })));
+  const kept = await copies.allMeta(ctx);
+  const out = [{ type: "markdown", text: ctx.t("saved_intro") }, ...(await statusBlocks(ctx, { short: true }))];
   out.push({
     type: "adminForm", action: "find", submitLabel: ctx.t("find_button"),
     fields: [{ name: "q", label: ctx.t("find_label"), required: true, example: ctx.t("find_example"), help: ctx.t("find_help") }],
   });
+  // La vignette est la COPIE gardée sur le site (une page du site, jamais une adresse d'une source) ; sans copie, le texte seul.
+  const thumb = (e) => {
+    const id = copies.idOf(e.key);
+    const m = kept.get(id);
+    const text = coverText(ctx, e);
+    return m && m.img === e.img && m.src === (e.src ?? "rawg") ? { text, image: { src: `/m/${ctx.instance.key}/cover/${id}`, alt: e.title } } : text;
+  };
   out.push({
-    type: "table", columns: [ctx.t("col_game"), ctx.t("col_cover"), ctx.t("col_origin"), ctx.t("col_when")],
-    searchable: true, searchPlaceholder: ctx.t("search_list"), filters: [{ column: 2, allLabel: ctx.t("filter_all") }], truncate: [0, 1], pageSize: 50,
+    type: "table", columns: [ctx.t("col_game"), ctx.t("col_cover"), ctx.t("col_source"), ctx.t("col_origin"), ctx.t("col_when")],
+    searchable: true, searchPlaceholder: ctx.t("search_list"), filters: [{ column: 2, allLabel: ctx.t("filter_all") }, { column: 3, allLabel: ctx.t("filter_all") }], truncate: [0, 1], pageSize: 50,
     empty: ctx.t("saved_empty"),
-    rows: entries.map((e) => [e.title, coverText(ctx, e), { text: originText(ctx, e), badge: ORIGIN_TONE[e.origin] }, dayOrDash(ctx, e.at)]),
+    rows: entries.map((e) => [e.title, thumb(e), e.origin === "none" ? "—" : { text: srcName(e.src), badge: SRC_TONE[e.src ?? "rawg"] }, { text: originText(ctx, e), badge: ORIGIN_TONE[e.origin] }, dayOrDash(ctx, e.at)]),
     rowIds: entries.map((e) => e.title),
     rowActions: [
       { label: ctx.t("act_view"), href: `?tab=${SAVED_TAB}&voir={id}` },
@@ -136,6 +160,14 @@ async function savedScreen(ctx) {
   return out;
 }
 
+/** L'image à montrer à la personne qui administre : la copie gardée sur le site si elle existe, sinon l'adresse de la source (jamais montrée au public). */
+async function shownUrl(ctx, e) {
+  if (!e.img) return null;
+  const src = e.src ?? "rawg";
+  const m = (await copies.allMeta(ctx)).get(copies.idOf(e.key ?? titleKey(e.title)));
+  return m && m.img === e.img && m.src === src ? `/m/${ctx.instance.key}/cover/${m.id}` : fx.imgUrl(src, e.img);
+}
+
 /** « Voir » et « Oublier » : une jaquette retenue, en grand ; pour l'oubli, la phrase qui dit ce qui sera perdu. */
 async function entryScreen(ctx, rawTitle, mode) {
   const title = ops.checkTitle(rawTitle);
@@ -143,9 +175,9 @@ async function entryScreen(ctx, rawTitle, mode) {
   const entry = key ? await fx.entryFor(ctx, title) : null;
   const back = { type: "markdown", text: `[${ctx.t("back_saved")}](?tab=${SAVED_TAB})` };
   if (!entry) return [back, { type: "banner", tone: "warning", text: ctx.t(title ? "forget_gone" : "err_title") }];
-  const card = { type: "html", html: `<section class="rounded-2xl border border-line bg-surface p-5" data-testid="entry"><div class="flex items-center gap-4">${coverImg(entry.img ? fx.rawgImageUrl(entry.img) : null)}` +
+  const card = { type: "html", html: `<section class="rounded-2xl border border-line bg-surface p-5" data-testid="entry"><div class="flex items-center gap-4">${coverImg(await shownUrl(ctx, entry))}` +
     `<div class="min-w-0 space-y-1"><p class="text-xl font-semibold break-words" data-testid="asked">${esc(entry.title)}</p><p class="text-sm break-words">${esc(coverText(ctx, entry))}</p>` +
-    `<p><span class="inline-flex items-center rounded-full border border-line px-2.5 py-0.5 text-xs font-medium">${esc(originText(ctx, entry))}</span></p>` +
+    `<p><span class="inline-flex items-center rounded-full border border-line px-2.5 py-0.5 text-xs font-medium">${esc(originText(ctx, entry))}</span>${entry.img ? ` <span class="inline-flex items-center rounded-full border border-line px-2.5 py-0.5 text-xs font-medium" data-testid="source">${esc(srcName(entry.src))}</span>` : ""}</p>` +
     `<p class="text-sm text-muted">${esc(ctx.t(entry.origin === "auto" ? "view_seen" : "view_saved", { date: dayOrDash(ctx, entry.at) }))}</p></div></div></section>` };
   if (mode === "view") {
     return [back, { type: "heading", text: ctx.t("view_title") }, card, { type: "links", items: [
@@ -166,13 +198,13 @@ async function fixScreen(ctx, title, search, tab) {
   const saved = await fx.fixFor(ctx, title);
   const doubtful = (await fx.readToCheck(ctx)).find((d) => d.key === key);
   const auto = saved || doubtful ? null : await fx.autoFor(ctx, title);
-  const { key: apiKey } = await rawg.keyOf(ctx);
+  const anySource = (await chain.availableSources(ctx)).some((a) => a.on);
   const tooLong = search.trim().length > 100;
-  const list = apiKey && !tooLong ? await ops.candidatesFor(ctx, "admin", title, search.trim() || undefined) : null;
+  const list = anySource && !tooLong ? await ops.candidatesFor(ctx, "admin", title, search.trim() || undefined) : null;
   const current = saved
-    ? { url: saved.img ? fx.rawgImageUrl(saved.img) : null, label: choiceText(ctx, saved), id: saved.rawgId, isSaved: true }
-    : doubtful ? { url: fx.rawgImageUrl(doubtful.img), label: doubtful.name, id: doubtful.rawgId, isSaved: false }
-      : auto ? { url: fx.rawgImageUrl(auto.img), label: auto.name ?? ctx.t("kept_game"), id: auto.rawgId, isSaved: false } : null;
+    ? { url: saved.img ? fx.imgUrl(saved.src ?? "rawg", saved.img) : null, label: choiceText(ctx, saved), id: saved.srcId ?? saved.rawgId, source: saved.src ?? "rawg", isSaved: true }
+    : doubtful ? { url: fx.imgUrl(doubtful.src ?? "rawg", doubtful.img), label: doubtful.name, id: doubtful.srcId ?? doubtful.rawgId, source: doubtful.src ?? "rawg", isSaved: false }
+      : auto ? { url: fx.imgUrl(auto.src ?? "rawg", auto.img), label: auto.name ?? ctx.t("kept_game"), id: auto.srcId ?? auto.rawgId, source: auto.src ?? "rawg", isSaved: false } : null;
 
   const out = [
     { type: "markdown", text: `[${ctx.t(tab === SAVED_TAB ? "back_saved" : "back")}](${href(tab)})` },
@@ -181,7 +213,7 @@ async function fixScreen(ctx, title, search, tab) {
     { type: "html", html: `<section class="rounded-2xl border border-line bg-surface p-5 space-y-3"><p class="text-sm text-muted break-words">${esc(ctx.t("asked"))}</p><p class="text-xl font-semibold break-words" data-testid="asked">${esc(title)}</p>` +
       (current ? `<div class="flex items-center gap-3" data-testid="current">${coverImg(current.url, "h-16 w-12")}<p class="min-w-0 break-words text-sm"><span class="text-muted">${esc(ctx.t(current.isSaved ? "current_saved" : "current_auto"))}</span><br>${esc(current.label)}</p></div>` : "") + `</section>` },
   ];
-  if (!apiKey) out.push({ type: "banner", tone: "warning", text: ctx.t("err_no_key") });
+  if (!anySource) out.push({ type: "banner", tone: "warning", text: ctx.t("none_available") });
   if (!saved && (doubtful || auto)) out.push({ type: "adminForm", action: "confirm", submitLabel: ctx.t("act_good"), fields: [{ name: "id", kind: "hidden", value: title }, tabField] });
   out.push({
     type: "adminForm", action: "search", submitLabel: ctx.t("search_button"), title: ctx.t("search_label"),
@@ -195,16 +227,16 @@ async function fixScreen(ctx, title, search, tab) {
     out.push({
       type: "html",
       html: `<ul class="grid gap-3 sm:grid-cols-2" data-testid="candidates">${list.candidates.map((c, i) =>
-        `<li class="flex gap-4 rounded-2xl border border-line bg-surface p-4" data-testid="candidate">${coverImg(c.url)}<div class="min-w-0 space-y-1"><p class="font-semibold break-words">${i + 1}. ${esc(c.name)}</p>` +
+        `<li class="flex gap-4 rounded-2xl border border-line bg-surface p-4" data-testid="candidate">${coverImg(c.url)}<div class="min-w-0 space-y-1"><p class="font-semibold break-words">${i + 1}. ${esc(c.name)}</p><p><span class="inline-flex items-center rounded-full border border-line px-2.5 py-0.5 text-xs font-medium" data-testid="candidate-source">${esc(srcName(c.source))}</span></p>` +
         `<p class="text-sm text-muted">${esc(c.year ? ctx.t("year", { year: c.year }) : ctx.t("year_unknown"))}</p>` +
         `<p class="text-sm text-muted break-words">${esc(c.platforms.length ? ctx.t("platforms", { list: c.platforms.join(", ") }) : ctx.t("platforms_unknown"))}</p>` +
-        (current?.id === c.id ? `<p><span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700">${esc(ctx.t("is_current"))}</span></p>` : "") +
+        (current?.id === c.id && current.source === c.source ? `<p><span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700">${esc(ctx.t("is_current"))}</span></p>` : "") +
         `</div></li>`).join("")}</ul>`,
     });
     // Les boutons : l'identifiant de la ligne porte le jeu, le titre et la recherche (le bouton de ligne n'envoie que cet identifiant).
     out.push({
-      type: "table", columns: ["#", ctx.t("col_game")], rows: list.candidates.map((c, i) => [String(i + 1), `${c.name}${c.year ? ` (${c.year})` : ""}`]),
-      rowIds: list.candidates.map((c) => `${c.id}|${enc(title)}|${enc(search.trim().slice(0, 100))}|${tab}`),
+      type: "table", columns: ["#", ctx.t("col_game"), ctx.t("col_source")], rows: list.candidates.map((c, i) => [String(i + 1), `${c.name}${c.year ? ` (${c.year})` : ""}`, { text: srcName(c.source), badge: SRC_TONE[c.source] }]),
+      rowIds: list.candidates.map((c) => `${c.source}.${c.id}|${enc(title)}|${enc(search.trim().slice(0, 100))}|${tab}`),
       rowActions: [{ label: ctx.t("choose"), action: "choose" }],
     });
   }
@@ -240,7 +272,7 @@ export const actions = {
     if (text.length > 100) return { errors: { q: ctx.t("err_search") } };
     const title = ops.checkTitle(text);
     if (!title) return { errors: { q: ctx.t("err_find") } };
-    if (!(await rawg.keyOf(ctx)).key) return { errors: { q: ctx.t("err_no_key") } };
+    if (!(await chain.availableSources(ctx)).some((a) => a.on)) return { errors: { q: ctx.t("none_available") } };
     return { redirect: `?tab=${SAVED_TAB}&titre=${enc(title)}` };
   },
   /** Un titre à chercher sous un autre nom : on revient sur l'écran de correction avec `&q=`. */
@@ -251,10 +283,11 @@ export const actions = {
     if (text.length > 100) return { errors: { q: ctx.t("err_search") } };
     return { redirect: `${href(tabOf(values?.tab), `titre=${enc(title)}${text ? `&q=${enc(text)}` : ""}`)}` };
   },
-  /** « Utiliser cette jaquette » : l'identifiant de ligne = `<numéro RAWG>|<titre>|<recherche>|<onglet>`. */
+  /** « Utiliser cette jaquette » : l'identifiant de ligne = `<source>.<numéro>|<titre>|<recherche>|<onglet>` (un numéro seul, comme avant 1.3.0, est un numéro RAWG). */
   async choose(ctx, values) {
-    const [id, title, search, tab] = String(values?.id ?? "").slice(0, 900).split("|");
-    const out = await ops.chooseGame(ctx, who, decodeURIComponentSafe(title), Number(id), decodeURIComponentSafe(search) || undefined);
+    const [ref, title, search, tab] = String(values?.id ?? "").slice(0, 900).split("|");
+    const [src, id] = ref.includes(".") ? ref.split(".") : ["rawg", ref];
+    const out = await ops.chooseGame(ctx, who, decodeURIComponentSafe(title), Number(id), decodeURIComponentSafe(search) || undefined, src);
     return out.ok ? back("game", tab) : fail(ctx, out.error);
   },
   async chooseNone(ctx, values) {
