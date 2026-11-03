@@ -6,8 +6,13 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
+*En bref : Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… », en plus de « Du… au… ». Ce module demande Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
+
 ### Nouveautés
 
+- **Bannière d'annonce 1.2.0 : « jusqu'au 24 décembre » ou « à partir du 1er décembre » en une seule date.** Sous « Plus d'options », « Limiter dans le temps » n'oblige plus à choisir un début et une fin : la phrase sous le champ dit ce qui est compris (« À partir du 1er décembre 2026 », « Jusqu'au 24 décembre 2026 »). Le dernier jour compte jusqu'à minuit, et « à partir du » commence dès 00:00. Avec deux dates, ou « chaque année », rien ne change : vos réglages sont conservés tels quels.
+- **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
+- **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
 - **Jaquettes de jeux 1.2.0 : vos jaquettes restent affichées quand RAWG est en panne.** Chaque jaquette que le site trouve toute seule est maintenant gardée (1 000 au plus, les plus anciennes sortent d'elles-mêmes). Après un redémarrage du site, ou quand RAWG ne répond plus, elles s'affichent comme avant, même si elles datent de plus de 24 heures. Dès que RAWG revient, elles se rafraîchissent toutes seules quand une page les demande.
 - **Une panne n'est jamais retenue comme « pas de jaquette ».** Si RAWG ne répond pas, le site n'en conclut rien : la jaquette apparaîtra dès que RAWG reviendra. Après trois échecs d'affilée, le site arrête d'insister (pause de 1, 2, 5 puis 15 minutes au plus) : vos pages ne ralentissent plus.
 - **L'état de RAWG se lit d'un coup d'œil.** En haut de « Jaquettes à vérifier » : « Tout fonctionne » avec la date de la dernière réponse, ou « RAWG ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées. » Le bouton « Tester la clé » réessaie tout de suite. Le Journal du site note une fois le moment où RAWG s'arrête et celui où il revient.
@@ -17,6 +22,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Pour les développeurs
 
+- `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
 - `modules/game-covers` 1.2.0 : collection privée `autoCovers` (clé = titre normalisé ; titre, nom, numéro, chemin `/media/…`, `ambiguous`, `at`, `until`) ; lecture mémoire, puis stockage, puis RAWG ; `until` = 24 h, une réponse vide de RAWG sur un titre déjà gardé le repousse d'une heure. Disjoncteur en mémoire (3 échecs de réseau, délai ou 5xx d'affilée ; pauses 1, 2, 5, 15 min ; un seul essai de reprise) ; les réponses « trop de demandes », quota ou bizarres ne comptent pas. Délai de 3 s pour une page du site (5 s à l'écran d'administration). Le document `keyState` garde `okAt`. Journal : `cover.outage` et `cover.back`. Pas de `dashboard` : la personne n'a rien à faire pendant une panne. Aucune permission, aucun hôte, aucune image téléchargée, aucun minuteur.
 - Le tableau d'administration n'a pas de recherche côté serveur (cœur 0.6.4) : les 2 100 lignes au plus (1 000 corrections, 100 titres à vérifier, 1 000 jaquettes trouvées) sont dans la page, 50 par page, d'où la borne de 1 000.
 
