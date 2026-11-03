@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Nouveautés
+
+- **Réglages plus courts en version simplifiée.** Neuf extensions montraient trop de réglages d'un coup. Les réglages rares (mots personnalisés, textes de boutons, limites chiffrées, look pour OBS) sont maintenant rangés sous « Plus d'options », qui s'ouvre tout seul quand l'un d'eux a une valeur ; les réglages techniques passent en mode avancé. Aucune valeur n'est perdue ni modifiée : ce que vous aviez réglé continue de s'appliquer, seul l'endroit où on le trouve change.
+  - Annuaire 1.1.0 (15 réglages visibles, 7 maintenant), Plan 1.1.0 (12 → 5), Galeries 1.2.0 (10 → 5), Soutiens 1.1.0 (10 → 5), Compte à rebours 1.2.0, Connecteur Home Assistant 1.2.0 (9 → 3), Vidéothèque 1.1.0 (8 → 3), Événements 1.1.0 (8 → 3), Témoignages 1.2.0 (8 → 5).
+  - Connecteur Home Assistant : la liste des mots refusés se complète désormais en mode avancé, et le texte le dit.
+  - Ces neuf extensions demandent Curiosa 0.6.0 ou plus.
+
+### Pour les développeurs
+
+- `rare: true` / `advanced: true` ajoutés à des réglages existants, aucune clé renommée, aucun `default` modifié, `minCore` 0.6.0 pour `rare`. Test : `tests/mode-simple-onglets.test.mjs`. La base d'ergonomie rétrécit (R5 ×8, R13 ×4).
+- Le réglage `timezone` (Événements, Compte à rebours) n'est pas touché ici.
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

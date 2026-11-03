@@ -126,7 +126,7 @@ const GOLDEN = {
     }
   },
   "testimonials": {
-    "manifest": "9592b5b21c60ba7c",
+    "manifest": "842fda2e583facb4",
     "keys": [
       "adminActions",
       "adminBadge",

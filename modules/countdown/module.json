@@ -5,8 +5,8 @@
     "fr": "Compte à rebours",
     "en": "Countdown"
   },
-  "version": "1.1.0",
-  "minCore": "0.5.0",
+  "version": "1.2.0",
+  "minCore": "0.6.0",
   "description": {
     "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS.",
     "en": "Announce a release, a launch, a birthday or a convention: visitors see the time left and the time where they live, and can add it to their calendar. A page, a home section and an OBS source."
@@ -385,6 +385,7 @@
     },
     {
       "key": "keep",
+      "rare": true,
       "type": "select",
       "default": "1d",
       "options": [
@@ -490,6 +491,7 @@
     },
     {
       "key": "overlayLook",
+      "rare": true,
       "type": "select",
       "group": "appearance",
       "default": "dark",
@@ -523,6 +525,7 @@
     },
     {
       "key": "overlayPosition",
+      "rare": true,
       "type": "select",
       "group": "appearance",
       "default": "top-center",
@@ -584,6 +587,7 @@
     },
     {
       "key": "overlaySize",
+      "rare": true,
       "type": "select",
       "group": "appearance",
       "default": "m",
@@ -617,6 +621,7 @@
     },
     {
       "key": "overlayAccent",
+      "rare": true,
       "type": "color",
       "group": "appearance",
       "default": "theme:accent",
@@ -627,6 +632,7 @@
     },
     {
       "key": "overlayEndMinutes",
+      "rare": true,
       "type": "number",
       "group": "appearance",
       "default": 5,

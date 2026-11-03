@@ -5,8 +5,8 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.1.1",
-  "minCore": "0.5.0",
+  "version": "1.2.0",
+  "minCore": "0.6.0",
   "description": {
     "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
     "en": "Collect reviews: a shareable “Leave a review” link, every review waits for your approval before it appears, with optional stars, a grid or slow scrolling, favourites and three reviews on the home page."
@@ -110,6 +110,7 @@
     },
     {
       "key": "order",
+      "rare": true,
       "type": "select",
       "default": "favorites",
       "label": {
@@ -189,6 +190,7 @@
     },
     {
       "key": "showAverage",
+      "rare": true,
       "type": "boolean",
       "default": true,
       "label": {
@@ -202,6 +204,7 @@
     },
     {
       "key": "askEmail",
+      "rare": true,
       "type": "boolean",
       "default": false,
       "label": {
