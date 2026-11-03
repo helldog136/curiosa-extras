@@ -66,7 +66,7 @@
   "errHandle_youtube": "Ce n'est pas une chaîne YouTube. Collez l'adresse de la chaîne (par exemple youtube.com/@nom), pas celle d'une vidéo.",
   "errHandle_tiktok": "Ce n'est pas un compte TikTok. Collez l'adresse du profil (par exemple tiktok.com/@nom) ou tapez @nom.",
   "errHandle_instagram": "Ce n'est pas un compte Instagram. Collez l'adresse du profil (par exemple instagram.com/nom) ou tapez le nom.",
-  "errHandle_discord": "Tapez le nom d'utilisateur Discord (par exemple nom.pseudo) ou collez une invitation discord.gg/….",
+  "errHandle_discord": "Tapez le nom du compte Discord (par exemple nom.pseudo) ou collez une invitation discord.gg/….",
   "errHandle_x": "Ce n'est pas un compte X. Collez l'adresse du profil (par exemple x.com/nom) ou tapez @nom (15 caractères au plus).",
   "errHandle_bluesky": "Ce n'est pas un compte Bluesky. Tapez le nom (par exemple nom.bsky.social) ou collez l'adresse bsky.app/profile/….",
   "errHandle_mastodon": "Écrivez le compte Mastodon en entier, avec son serveur : @nom@serveur.social, ou collez l'adresse du profil.",

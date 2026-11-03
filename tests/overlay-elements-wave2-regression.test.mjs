@@ -33,7 +33,9 @@ test("Suggestions de jeux : page publique (tous les statuts), administration, MC
 test("Mur des remerciements : page publique (mur, groupes, pages, mise à l'honneur, petits mots), administration, état MCP et mur sans Contacts identiques à la 1.0.2", async () => {
   reset();
   const before = golden("thanks-wall-1.0.2.json"), now = await thanksSnapshot(ROOT);
-  assert.deepEqual(now.manifest, before.manifest, "le manifeste n'a changé que par version, minCore, overlayElements et le droit « routes »");
+  // La description du catalogue a été raccourcie et simplifiée (mode simple, R9) : elle ne fait plus partie de ce qui doit rester identique.
+  const noDescription = (m) => { const { description, ...rest } = m; return rest; };
+  assert.deepEqual(noDescription(now.manifest), noDescription(before.manifest), "le manifeste n'a changé que par version, minCore, overlayElements, description et le droit « routes »");
   assert.deepEqual(now.top, before.top); assert.deepEqual(now.routes, before.routes, "aucune page publique ajoutée : seule la route de l'élément est nouvelle");
   for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], before.pages[k], `page « ${k} »`);
   for (const k of ["admin", "mcpStatus", "mcpPeople", "noBook"]) assert.deepEqual(now[k], before[k], k);
