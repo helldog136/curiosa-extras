@@ -1,11 +1,10 @@
 // Les morceaux de formulaire partagés par les commandes ET les timers : le choix « qui peut l'utiliser », l'aperçu et les morceaux à insérer sous le texte, la phrase
-// « Attendre [ ] s… » et le contrôle de période. Chaque formulaire reste un formulaire du cœur (champs nommés, erreurs sous le champ) ; le script de la page (adminkit.client.js)
+// « Attendre [ ] s… ». Chaque formulaire reste un formulaire du cœur (champs nommés, erreurs sous le champ) ; le script de la page (adminkit.client.js)
 // les range d'après la configuration ci-dessous. Sans JavaScript, tous les champs sont là, dans l'ordre.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { ROLES } = await import(`./commands.mjs${v}`);
 const { allowedFor } = await import(`./variables.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
-const { periodControl } = await import(`./period.mjs${v}`);
 
 export const roleOptions = (t) => ROLES.map((r) => ({ value: r, label: t(`role_${r}`) }));
 
@@ -35,6 +34,3 @@ export function waitSentence(ctx, s) {
   const t = ctx.t;
   return { sentence: { title: t("wait_title"), hint: t("wait_hint", { all: s.cdGlobal, user: s.cdUser }), tokens: [t("wait_1"), { f: "cdGlobal", ph: String(s.cdGlobal), min: 0, max: 3600 }, t("wait_2"), { f: "cdUser", ph: String(s.cdUser), min: 0, max: 3600 }, t("wait_3")] } };
 }
-
-/** Le contrôle de période : le même pour les commandes et pour les timers. */
-export const periodLayout = (ctx, period, timeZone) => ({ period: periodControl(ctx, period, timeZone) });

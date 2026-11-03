@@ -4,6 +4,23 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : dans Bot Twitch 1.8.0, la période d'une commande ou d'un timer utilise enfin le champ « période » de Curiosa : « Tout le mois de », périodes toutes prêtes (saisons, fêtes) et une seule ligne de dates, à la place des puces fixes et des quatre listes. Les périodes déjà réglées gardent exactement leur sens. Ce module demande maintenant Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
+
+### Nouveautés
+
+- **Bot Twitch 1.8.0 : une période comme partout ailleurs.** Sous « Plus d'options », « Limiter dans le temps » est le champ de période de Curiosa : choisissez « Tout le mois de » novembre, ou une « période toute prête » (les quatre saisons, Noël, Halloween, Pâques, l'Aïd, Hanoukka…), ou deux dates, et la phrase en dessous dit ce qui a été compris. Plus de puces « Tout novembre », « Tout septembre », « Cet été » écrites en dur, plus de quatre listes jour et mois.
+- **Une période nouvelle part de « une seule fois ».** Une annonce ponctuelle ne revient donc pas toute seule l'année suivante ; cochez « Chaque année » quand c'est voulu.
+- **Rien ne change pour ce qui est déjà réglé.** Vos commandes et vos timers avec une période (chaque année, à cheval sur le changement d'année, avec le 29 février, ou une seule fois avec ses années) s'ouvrent et se ferment aux mêmes dates, et l'écran les montre comme vous les aviez réglées. Aucune donnée n'est modifiée.
+- **Le fuseau ne change pas.** Les jours sont toujours comptés dans le fuseau réglé dans le bot (UTC s'il est vide) ; l'aide sous le champ le rappelle.
+
+### Pour les développeurs
+
+- `modules/twitch-bot` 1.8.0 : `minCore` 0.6.4 (champ `period` d'`adminForm` avec « Tout le mois de », périodes toutes prêtes revues et départ « une seule fois » d'une période nouvelle). `openEnded` n'est pas demandé (le moteur ne connaît pas les périodes ouvertes) et `ctx.timezone` n'est pas lu : lui donner la priorité sur le réglage `timezone` du module changerait le jour d'ouverture des sites dont le fuseau du site diffère de ce réglage.
+- Stockage inchangé (`{ yearly, from: { m, d, y? }, to: { m, d, y? } }`) ; `periodToValue` et `parsePeriodValue` (period.mjs) traduisent vers et depuis `MM-JJ/MM-JJ` et `AAAA-MM-JJ/AAAA-MM-JJ`, et lisent encore l'ancienne écriture « 01/11 - 30/11 » (page ouverte avant la mise à jour, import). Les outils de l'assistant (`activeFrom`, `activeUntil`, `yearly`) ne changent pas.
+- Retiré : le contrôle de période maison (`periodControl`, `SHORTCUTS`, `describe`, leurs textes `per_sc_*`, `per_mode_*`…, leur code dans `adminkit.client.js` et leur style).
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

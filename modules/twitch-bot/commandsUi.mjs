@@ -106,7 +106,7 @@ export async function commandForm(ctx, info, { mode, view, key, unsaved = false,
     { f: "name" },
     { f: "text", preview: cfg },
     { seg: "role" },
-    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: false, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), F.periodLayout(ctx, view.period ?? null, s.timeZone)] } },
+    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: false, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), { f: "period", label: t("per_title") }] } },
   ];
   const id = mode === "new" ? "cmd-new" : "cmd-edit";
   const conf = K.formConfig(id, { layout });
@@ -120,7 +120,7 @@ export async function commandForm(ctx, info, { mode, view, key, unsaved = false,
     { name: "aliases", label: t("f_aliases"), value: (view.aliases ?? []).join(", "), help: t("f_aliases_help") },
     { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: view.cdGlobal ?? "", help: t("f_cd_help", { n: s.cdGlobal }) },
     { name: "cdUser", label: t("f_cd_user"), kind: "number", value: view.cdUser ?? "", help: t("f_cd_help", { n: s.cdUser }) },
-    periodField(ctx, view.period ?? null),
+    periodField(ctx, view.period ?? null, s.timeZone),
   ] };
   return [conf.block, form];
 }

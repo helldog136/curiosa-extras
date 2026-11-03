@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.6.4",
   "id": "twitch-bot",
   "name": {
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.7.1",
+  "version": "1.8.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
