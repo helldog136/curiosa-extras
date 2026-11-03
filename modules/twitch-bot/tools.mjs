@@ -1,6 +1,6 @@
 // Outils pour les assistants (MCP) : lister, créer et modifier des commandes et des timers. Jamais activés d'office (voir module.json). Pas de suppression, pas de secret, pas d'envoi de message.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { saveCommand, saveSourced } = await import(`./commands.mjs${v}`);
+const { saveCommand, saveSourced, takenWords, freeName, slugName, RESERVED, mutate } = await import(`./commands.mjs${v}`);
 const { context } = await import(`./admin.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const T = await import(`./timers.mjs${v}`);
@@ -23,7 +23,9 @@ function periodOf(ctx, a) {
   if (!p.ok) throw expose(saveError(ctx, { code: "period", field: p.field, reason: p.reason, month: p.month, day: p.day }));
   return { period: p.value };
 }
+const repeatView = (c) => (c.repeat ? { repeatEveryMinutes: c.repeat.minutes, repeatMinChatLines: c.repeat.lines, repeatWhen: c.repeat.when === "always" ? "always" : "live only", repeatEnabled: c.repeat.enabled } : {});
 const view = (c) => ({
+  ...(c.timerOnly ? { timerOnly: true, title: c.title } : {}), ...repeatView(c),
   kind: c.kind, name: c.name, aliases: c.aliases, text: c.text, enabled: c.enabled, role: c.role,
   state: c.state, ...(c.why ? { reason: c.why } : {}), ...periodView(c.period), ...(c.reopen ? { reopensOn: `${c.reopen.y}-${String(c.reopen.m).padStart(2, "0")}-${String(c.reopen.d).padStart(2, "0")}` } : {}), delayAllSeconds: c.cdGlobal, delayPerPersonSeconds: c.cdUser,
   ...(c.kind === "partner" || c.kind === "network" ? { source: c.label } : {}),
@@ -37,8 +39,21 @@ const changes = (a) => {
   if (a.enabled !== undefined) f.enabled = a.enabled;
   if (a.delayAllSeconds !== undefined) f.cdGlobal = a.delayAllSeconds;
   if (a.delayPerPersonSeconds !== undefined) f.cdUser = a.delayPerPersonSeconds;
+  Object.assign(f, repeatChanges(a));
   return f;
 };
+/** repeatEveryMinutes / repeatMinChatLines / repeatWhen / repeatEnabled / clearRepeat / timerOnly des outils → les champs `repeat` et `timerOnly` d'une commande. */
+function repeatChanges(a) {
+  const f = {}, r = {};
+  if (a.repeatEveryMinutes !== undefined) r.minutes = a.repeatEveryMinutes;
+  if (a.repeatMinChatLines !== undefined) r.lines = a.repeatMinChatLines;
+  if (a.repeatWhen !== undefined) r.when = a.repeatWhen === "always" ? "always" : "live";
+  if (a.repeatEnabled !== undefined) r.enabled = a.repeatEnabled === true;
+  if (Object.keys(r).length) f.repeat = r;
+  if (a.clearRepeat === true) f.repeat = null;
+  if (a.timerOnly !== undefined) f.timerOnly = a.timerOnly === true;
+  return f;
+}
 
 const rewardView = (r, names) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, actionName: names.get(r.action) ?? null, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
 const fieldsOf = (a, cur = {}) => ({ title: a.name ?? cur.title, cost: a.costPoints ?? cur.cost, cooldown: a.delaySeconds ?? cur.cooldown ?? 0, prompt: a.helpText ?? cur.prompt ?? "", needsInput: a.viewerWritesMessage ?? cur.needsInput ?? false, action: a.action ?? cur.action, reply: a.chatReply ?? cur.reply ?? "" });
@@ -51,35 +66,49 @@ async function withName(ctx, s, a, fields) {
 }
 const refuse = (ctx, r) => { const f = RA.failure(ctx, r); throw expose(f.error ?? Object.values(f.errors ?? {})[0] ?? ctx.t("rw_err_twitch")); };
 
-const timerView = (x) => ({ ...periodView(PER.readPeriod(x.period)), name: x.name, text: x.text, everyMinutes: x.minutes, minChatLines: x.lines, when: x.when === "always" ? "always" : "live only", enabled: x.enabled !== false });
-const timerChanges = (a) => {
-  const f = {};
-  if (a.newName !== undefined) f.name = a.newName;
-  for (const [k, to] of [["text", "text"], ["everyMinutes", "minutes"], ["minChatLines", "lines"], ["enabled", "enabled"]]) if (a[k] !== undefined) f[to] = a[k];
-  if (a.when !== undefined) f.when = a.when === "always" ? "always" : "live";
-  return f;
-};
+/** L'ancienne forme d'un timer pour les outils `timers_list`, `timer_create`, `timer_update` (leurs noms ne changent pas) : une commande qui se répète. */
+const timerView = (c) => ({ ...periodView(c.period), name: c.title || c.name, command: c.name, text: c.text, everyMinutes: c.repeat.minutes, minChatLines: c.repeat.lines, when: c.repeat.when === "always" ? "always" : "live only", enabled: c.repeat.enabled !== false, ...(c.timerOnly ? { timerOnly: true } : {}) });
+const timerOf = (list, name) => list.find((c) => c.repeat && [c.title, c.name].some((x) => x && x.toLowerCase() === String(name).toLowerCase()));
 
 export default {
   async timers_list(ctx) {
-    const cfg = (await context(ctx, { declare: false })).cfg;
-    return { maximum: T.MAX_TIMERS, note: "A timer is only checked when a chat message arrives (no background clock): it needs an active chat.", timers: cfg.timers.map(timerView) };
+    const info = await context(ctx, { declare: false });
+    return { maximum: T.MAX_TIMERS, note: "A timer is the automatic repeat of a command. It is only checked when a chat message arrives (no background clock): it needs an active chat.", timers: info.list.filter((c) => c.repeat).map(timerView) };
   },
   async timer_create(ctx, args) {
     const info = await context(ctx, { declare: false });
-    const r = await T.saveTimer(ctx, {}, { name: args.name, text: args.text, minutes: args.everyMinutes, lines: args.minChatLines, when: args.when === "always" ? "always" : "live", enabled: args.enabled !== false, ...periodOf(ctx, args) }, { prefix: info.s.prefix });
+    if (timerOf(info.list, args.name)) throw expose(saveError(ctx, { code: "timer_dup" }));
+    const title = String(args.name ?? "").normalize("NFKC").replace(/\s+/g, " ").trim().slice(0, 40);
+    if (!title) throw expose(saveError(ctx, { code: "timer_name" }));
+    const taken = new Set([...takenWords(info.list).keys(), ...RESERVED]);
+    const name = freeName(slugName(title, "timer"), taken);
+    const repeat = { minutes: args.everyMinutes, lines: args.minChatLines, when: args.when === "always" ? "always" : "live", enabled: args.enabled !== false };
+    const r = await saveCommand(ctx, { kind: "custom" }, { name, text: args.text, role: "everyone", enabled: true, timerOnly: true, repeat, ...periodOf(ctx, args) }, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
-    return { created: true, name: args.name };
+    await mutate(ctx, (cfg) => { const c = cfg.custom.find((x) => `custom:${x.id}` === r.key); if (c) c.title = title; return { ok: true }; });
+    return { created: true, name: title };
   },
   async timer_update(ctx, args) {
     const info = await context(ctx, { declare: false });
-    const cur = info.cfg.timers.find((x) => x.name.toLowerCase() === String(args.name).toLowerCase());
+    const cur = timerOf(info.list, args.name);
     if (!cur) throw expose(`no timer named "${args.name}"`);
-    const f = { ...timerChanges(args), ...periodOf(ctx, args) };
-    if (!Object.keys(f).length) throw expose("nothing to change");
-    const r = await T.saveTimer(ctx, { id: cur.id }, f, { prefix: info.s.prefix });
-    if (r.ok === false) throw expose(saveError(ctx, r));
-    return { updated: true, name: f.name ?? cur.name };
+    const f = { ...periodOf(ctx, args) };
+    if (args.text !== undefined) f.text = args.text;
+    const rp = {};
+    for (const [k, to] of [["everyMinutes", "minutes"], ["minChatLines", "lines"], ["enabled", "enabled"]]) if (args[k] !== undefined) rp[to] = args[k];
+    if (args.when !== undefined) rp.when = args.when === "always" ? "always" : "live";
+    if (Object.keys(rp).length) f.repeat = rp;
+    if (args.newName !== undefined) {
+      if (cur.timerOnly) { const t2 = String(args.newName).replace(/\s+/g, " ").trim().slice(0, 40); if (!t2) throw expose(saveError(ctx, { code: "timer_name" })); const other = timerOf(info.list, t2); if (other && other.key !== cur.key) throw expose(saveError(ctx, { code: "timer_dup" })); await mutate(ctx, (cfg) => { const c = cfg.custom.find((x) => `custom:${x.id}` === cur.key); if (c) c.title = t2; return { ok: true }; }); f.title = t2; }
+      else f.name = args.newName;
+    }
+    const { title, ...fields } = f;
+    if (!Object.keys(fields).length && title === undefined) throw expose("nothing to change");
+    if (Object.keys(fields).length) {
+      const r = cur.kind === "partner" || cur.kind === "network" ? await saveSourced(ctx, cur.kind, cur.id, fields, info.env) : await saveCommand(ctx, { kind: cur.kind, id: cur.id }, fields, info.env);
+      if (r.ok === false) throw expose(saveError(ctx, r));
+    }
+    return { updated: true, name: title ?? cur.title ?? f.name ?? cur.name };
   },
   async bot_commands_list(ctx, args) {
     const info = await context(ctx, { declare: false });
@@ -88,7 +117,7 @@ export default {
   },
   async bot_command_create(ctx, args) {
     const info = await context(ctx, { declare: false });
-    const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}), ...periodOf(ctx, args) }, info.env);
+    const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}), ...repeatChanges(args), ...periodOf(ctx, args) }, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
     return { created: true, name: String(args.name).replace(info.s.prefix, "").toLowerCase() };
   },

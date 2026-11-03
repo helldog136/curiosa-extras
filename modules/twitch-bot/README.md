@@ -31,11 +31,14 @@ Une commande ou un timer peut n'être active que sur une **période** : par exem
 - **Sans JavaScript**, la page reste complète : la liste entière et tous les champs sont là, seules la recherche en direct, les interrupteurs et le rangement du formulaire disparaissent. Le petit script qui les ajoute est dans `adminkit.client.js` (documenté en tête de fichier ; `adminkit.mjs` écrit le HTML et le sert par la route `kit`) : un autre module peut le reprendre tel quel.
 
 ## Timers
-Un timer écrit un message dans votre chat à intervalle régulier (un rappel du Discord, une astuce…). Onglet **Timers** : un nom, le message (mêmes morceaux que les commandes, sauf ceux qui dépendent d'une personne), l'intervalle en minutes (1 à 1440), le nombre minimum de lignes de chat depuis son dernier message, « en direct seulement » ou « toujours », activé ou non, et une période facultative. 20 timers au plus, avec un aperçu du message et un bouton **Envoyer maintenant**.
-- **Un timer a besoin que le chat soit actif, comme chez Nightbot.** Le bot n'a aucun minuteur : il regarde ses timers quand un message arrive dans le chat. Un chat silencieux n'en déclenche aucun. Il n'existe pas d'évènement « le direct commence » côté bot : le premier message du chat après le début du direct repart de zéro.
-- À chaque message, **un seul** timer écrit ; si plusieurs sont dus, les autres passent aux messages suivants, dans l'ordre de la liste. Une commande qui vient de répondre laisse aussi sa place.
-- Jamais pendant l'arrêt d'urgence (et sans rafale quand il est levé), jamais si le bot n'est pas prêt, jamais au-delà de la limite de réponses.
-- Les lignes sont comptées depuis le dernier envoi (Nightbot les compte sur 5 minutes). Les messages du bot lui-même, des autres bots et des chats partagés ne comptent pas. Seuls le nom, le message, les réglages, l'heure du dernier envoi et un nombre de lignes sont gardés, jamais un message du chat.
+Un timer est **une commande que le bot répète tout seul** dans votre chat (un rappel du Discord, une astuce…). Il n'a plus de titre ni de message à lui : il se règle sur la page de la commande, sous **Plus d'options → Répéter automatiquement** (un interrupteur, « Toutes les … » en une durée de 1 minute à 24 heures, un minimum de messages dans le chat depuis la dernière fois, « en direct seulement » ou « toujours »). À chaque échéance, le bot écrit la réponse de la commande comme si on l'avait tapée (`{utilisateur}` devient « tout le monde »).
+- **Onglet Timers** : un seul tableau des commandes qui se répètent (recherche en direct, filtres avec leur nombre, interrupteur d'état par ligne, « Modifier » qui ouvre la commande sur son bloc, « Envoyer maintenant »). 20 au plus. **Ajouter un timer** : choisir une commande qui existe, ou en créer une (nom + ce que le bot écrit ; « Seulement pour le timer, pas dans le chat » pour une commande que personne ne peut taper, signalée « Timer seulement » dans la liste des commandes).
+- **La commande reste maîtresse** : désactivée, hors de sa période d'activité, ou incomplète (Planning absent…), elle n'est pas répétée. Les attentes entre deux utilisations sont pour les personnes : elles ne retardent pas la répétition.
+- **Un timer a besoin que le chat soit actif, comme chez Nightbot.** Le bot n'a aucun minuteur : il regarde ses répétitions quand un message arrive dans le chat. Un chat silencieux n'en déclenche aucune. Le premier message du chat après le début du direct repart de zéro.
+- À chaque message, **une seule** commande se répète ; si plusieurs sont dues, les autres passent aux messages suivants. Une commande qui vient de répondre laisse aussi sa place. Jamais pendant l'arrêt d'urgence (et sans rafale quand il est levé), jamais si le bot n'est pas prêt, jamais au-delà de la limite de réponses.
+- Les lignes sont comptées depuis le dernier envoi. Les messages du bot lui-même, des autres bots et des chats partagés ne comptent pas. Seuls le texte et les réglages de la commande, l'heure du dernier envoi et un nombre de lignes sont gardés, jamais un message du chat.
+- **Retirer le timer** d'une commande ordinaire la laisse telle quelle. Pour une commande « seulement pour le timer », la page propose deux choix confirmés, aucun par défaut : **Supprimer la commande**, ou **La garder comme commande du chat** (la confirmation dit qui pourra la taper, et avec quel mot). Rien ne la rend jamais utilisable dans le chat sans ce choix.
+- **Vos anciens timers (versions avant 1.9.0)** sont repris tout seuls à la mise à jour : chacun devient une commande « Timer seulement » (son titre est gardé, son nom est un mot libre dérivé du titre, son message est identique, avec le même rythme, les mêmes conditions, la même période et le même état) ; un timer qui disait déjà exactement la réponse d'une commande à vous se rattache à elle. L'ancienne liste n'est jamais effacée : elle reste dans les données, inerte et marquée. Rejouable sans effet ; le journal du site note seulement combien de timers ont été repris.
 
 ## Gérer les commandes depuis le chat
 Réglage **« Laisser l'équipe de modération gérer les commandes depuis le chat »** (éteint par défaut). Ensuite, vous et votre équipe de modération (le badge Twitch suffit) pouvez taper :
@@ -59,7 +62,7 @@ Il n'y a pas d'import automatique : copier-coller depuis Nightbot est trop aléa
 | Date de suivi d'une personne (followage) | Pas d'équivalent : Ma Chaîne Twitch ne fournit que le nombre de followers (`{followers}`) |
 | `$(urlfetch adresse)` | `{urlfetch adresse}` en version sûre |
 | `$(eval …)` (JavaScript) | `{calcul …}` : nombres, `+ - * / % ^`, parenthèses, `abs round floor ceil min max sqrt` (le JavaScript n'est pas repris : l'exécuter serait une faille) |
-| Timers (intervalle, lignes de chat) | Onglet Timers (les lignes sont comptées depuis le dernier envoi) |
+| Timers (intervalle, lignes de chat) | Onglet Timers et « Répéter automatiquement » sur la page d'une commande (les lignes sont comptées depuis le dernier envoi) |
 | `!commands add / edit / delete`, `!addcom` | `!addcom` `!editcom` `!delcom` `!commands` |
 | Dates de validité | **Chaque année toute seule** ou une seule fois |
 | Tirage au sort | Module Participation |
@@ -118,7 +121,7 @@ Des outils, **aucune écriture accordée d'office** (administration → accès d
 | `bot_commands_list` | Liste toutes les commandes avec leur texte, leur état et si l'arrêt d'urgence est activé. Lecture seule. |
 | `bot_command_create` | Crée une commande à vous. Refusée avec une explication si le nom est pris ou si le texte contient un morceau inconnu. |
 | `bot_command_update` | Modifie une commande existante (texte, noms, rôle, attentes, activée ou non, période). Ne supprime rien et n'envoie aucun message. |
-| `timers_list`, `timer_create`, `timer_update` | Voit, crée et modifie les timers (même période : `activeFrom` / `activeUntil` / `yearly`, `clearPeriod` pour l'enlever). |
+| `timers_list`, `timer_create`, `timer_update` | Voit, crée (une commande « Timer seulement ») et modifie les timers, c'est-à-dire les commandes qui se répètent (même période : `activeFrom` / `activeUntil` / `yearly`, `clearPeriod` pour l'enlever). Pour répéter une commande qui existe : `bot_command_update` avec `repeatEveryMinutes`, `repeatMinChatLines`, `repeatWhen`, `repeatEnabled` (`clearRepeat` pour retirer, `timerOnly` pour une commande que personne ne tape). |
 
 Les périodes se donnent sous la forme `11-01` (chaque année) ou `2026-11-01` (une seule fois).
 

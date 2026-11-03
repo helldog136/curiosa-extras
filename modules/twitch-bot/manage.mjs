@@ -75,7 +75,7 @@ export async function handleManage(ctx, s, chat, word, text, { now = Date.now(),
   if (p.error === "option") return answer("mg_e_option", { value: p.value }, "invalid");
   if (!p.name) return answer(`mg_usage_${word}`, {}, "invalid");
   if (!NAME_RE.test(p.name)) return answer("mg_e_name", { value: p.name.slice(0, 25) }, "invalid");
-  const existing = list.find((c) => c.name === p.name || c.aliases.includes(p.name));
+  const existing = list.find((c) => !c.timerOnly && (c.name === p.name || c.aliases.includes(p.name)));   // une commande réservée au timer ne se gère pas depuis le chat
 
   if (word === "addcom") {
     if (!p.rest) return answer("mg_usage_addcom", {}, "invalid");

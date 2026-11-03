@@ -133,7 +133,7 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   const channel = d.channel ?? null;
   const sources = await src.gather(ctx, channel);
   const list = catalog(cfg, sources, ctx.t, { now, timeZone: s.timeZone });
-  const cmd = list.find((c) => c.name === word || c.aliases.includes(word));
+  const cmd = list.find((c) => !c.timerOnly && (c.name === word || c.aliases.includes(word)));   // une commande « réservée au timer » ne répond jamais dans le chat
   if (!cmd) {
     // Les commandes de gestion (!addcom…) : seulement si la personne les a permises, et jamais si une commande portant ce nom existe déjà.
     if (s.chatManage && MANAGE_WORDS.includes(word)) return handleManage(ctx, s, chat, word, text, { now, d, channel, sources });

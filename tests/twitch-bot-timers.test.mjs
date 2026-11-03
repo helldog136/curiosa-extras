@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHmac } from "node:crypto";
-import { htmlOf, rowsOf, configOf } from "./helpers/ui.mjs";
+import { htmlOf, rowsOf, configOf, formOfBlocks, plain } from "./helpers/ui.mjs";
 import { world, chat, NOW, S, SRC, C, es } from "./helpers/botWorld.mjs";
 
 const T = await import("../modules/twitch-bot/timers.mjs");
@@ -16,7 +16,14 @@ const tools = (await import("../modules/twitch-bot/tools.mjs")).default;
 const MIN = 60_000;
 
 const fresh = (o = {}) => { T.resetTimersMemory(); return world(o); };
-const add = async (ctx, name, o = {}) => { const r = await T.saveTimer(ctx, {}, { name, text: `Message ${name}`, minutes: 10, lines: 3, when: "live", enabled: true, ...o }); assert.equal(r.ok, true, JSON.stringify(r)); return r.id; };
+// Un « timer » est le réglage « Répéter automatiquement » d'une commande : on crée la commande (sa réponse est « Message <nom> ») avec sa répétition. Rend la clé de la commande.
+const add = async (ctx, name, o = {}) => {
+  const { text = `Message ${name}`, minutes = 10, lines = 3, when = "live", enabled = true, ...rest } = o;
+  const info = await A.context(ctx, { declare: false });
+  const r = await C.saveCommand(ctx, { kind: "custom" }, { name: name.toLowerCase().replace(/\s+/g, ""), text, role: "everyone", enabled: true, repeat: { minutes, lines, when, enabled }, ...rest }, info.env);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  return r.key;
+};
 let n = 0;
 const line = (ctx, now, over = {}) => T.processTimers(ctx, chat("bonjour", { messageId: `L${++n}`, chatterId: `c${n % 7}`, login: `viewer${n % 7}`, ...over }), { now });
 const lines = async (ctx, count, now) => { let last; for (let i = 0; i < count; i++) last = await line(ctx, now); return last; };
@@ -164,13 +171,14 @@ test("un envoi refusé par Twitch ne perd pas le timer : il reste dû et réessa
   assert.equal(tw.calls.length, calls, "pas de nouvel essai tout de suite");
   tw.chatReply = null;
   assert.equal((await line(ctx, NOW + MIN + 31_000)).sent, true);
-  assert.equal((await S.readLog(ctx)).find((e) => e.result === "error").command, "⏱ A");
+  assert.equal((await S.readLog(ctx)).find((e) => e.result === "error").command, "⏱ !a");
 });
 
 test("état borné : 20 timers au plus, état écrit au plus toutes les 10 s, timers supprimés oubliés, rien d'écrit pour ce que les gens disent", async () => {
   const { ctx, tw } = fresh();
   for (let i = 0; i < 20; i++) await add(ctx, `T${i}`, { minutes: 1440, lines: 200, when: "always" });
-  const r = await T.saveTimer(ctx, {}, { name: "T21", text: "x", minutes: 5, lines: 0, when: "always" });
+  const info = await A.context(ctx, { declare: false });
+  const r = await C.saveCommand(ctx, { kind: "custom" }, { name: "t21", text: "x", repeat: { minutes: 5, lines: 0, when: "always" } }, info.env);
   assert.deepEqual([r.ok, r.code], [false, "timer_many"]);
   const writes = () => ctx.calls.writes.filter((w) => w.collection === "botTimers").length;
   await line(ctx, NOW);
@@ -184,8 +192,10 @@ test("état borné : 20 timers au plus, état écrit au plus toutes les 10 s, ti
   assert.ok(Object.keys(items).length <= 20);
   assert.ok(Object.values(items).every((x) => Object.keys(x).sort().join() === "lastAt,lines" && Number.isInteger(x.lines)));
   assert.ok(!JSON.stringify(await ctx.dumpStore()).includes("mot secret"), "aucun message du chat n'est gardé");
-  const id = (await C.loadConfig(ctx)).data.timers[0].id;
-  await T.removeTimer(ctx, id);
+  const first = (await C.loadConfig(ctx)).data.custom[0];
+  const id = `custom:${first.id}`;
+  assert.ok(id in (await ctx.api.store.list("botTimers", { limit: 5 }))[0].data.items);
+  await T.setRepeat(ctx, { kind: "custom", id: first.id }, null, info.env);
   await line(ctx, NOW + 30_000);
   await line(ctx, NOW + 60_000);
   assert.ok(!(id in (await ctx.api.store.list("botTimers", { limit: 5 }))[0].data.items), "le timer supprimé n'a plus d'état");
@@ -212,7 +222,7 @@ test("« Envoyer maintenant » : sans attendre l'intervalle, hors direct si beso
   const id = await add(ctx, "Pub", { minutes: 1440, lines: 200, when: "live" });
   const ok = await TA.actions.timerSend.run(ctx, { id });
   assert.deepEqual([ok.ok, texts(tw)], [ctx.t("tm_sent"), ["Message Pub"]]);
-  assert.match((await S.readLog(ctx))[0].command, /^⏱ Pub/);
+  assert.match((await S.readLog(ctx))[0].command, /^⏱ !pub/);
   await S.setMuted(ctx, true);
   assert.equal((await TA.actions.timerSend.run(ctx, { id })).error, ctx.t("tm_send_muted"));
   await S.setMuted(ctx, false);
@@ -228,70 +238,136 @@ test("« Envoyer maintenant » : sans attendre l'intervalle, hors direct si beso
 
 /* ───────────── Saisie, droits, administration, outils ───────────── */
 
-test("saisie : nom, doublon, intervalle (1 à 1440), lignes (0 à 200), quand, texte (morceaux, début, longueur) ; les erreurs sont sous le champ avec un exemple", async () => {
+test("« Ajouter un timer » : créer une nouvelle commande (nom + réponse), erreurs sous le champ avec un exemple ; la commande se répète déjà", async () => {
   const { ctx } = fresh();
-  const base = { name: "Rappel", text: "Suivez-moi", minutes: "15", lines: "5", when: "live", enabled: "on" };
-  assert.equal((await TA.actions.timerCreate.run(ctx, base)).ok, ctx.t("tm_created"));
-  const err = async (over) => (await TA.actions.timerCreate.run(ctx, { ...base, name: "Autre", ...over })).errors ?? {};
-  assert.match((await err({ name: "rappel" })).name, /Un timer porte déjà ce nom.*Rappel du Discord 2/);
-  assert.match((await err({ name: "" })).name, /Donnez un nom/);
-  assert.match((await err({ name: "x".repeat(41) })).name, /40 caractères/);
-  for (const m of ["0", "1441", "1.5", "abc", ""]) assert.match((await err({ minutes: m })).minutes, /entre 1 et 1440.*15/, m);
-  for (const l of ["-1", "201", "x"]) assert.match((await err({ lines: l })).lines, /entre 0 et 200.*5/, l);
-  assert.match((await err({ text: "Salut {utilisateur}" })).text, /ne connaît pas : \{utilisateur\}/);
-  assert.match((await err({ text: "/ban x" })).text, /ne peut pas commencer/);
-  assert.match((await err({ text: "{calcul 2+}" })).text, /Par exemple \{calcul 2\+3\*4\}/);
-  assert.match((await err({ text: "" })).text, /./);
-  assert.equal((await TA.actions.timerCreate.run(ctx, { ...base, name: "Quand", when: "jamais" })).error, ctx.t("err_timer_when"));
-  assert.equal((await C.loadConfig(ctx)).data.timers.length, 1);
-  for (const k of ["timerCreate", "timerSave", "timerToggle", "timerRemove", "timerSend"]) assert.equal(TA.actions[k].right, "timers.manage", k);
+  const ok = await TA.actions.timerNew.run(ctx, { name: "Discord", text: "Rejoignez le Discord.", repeatEvery: "900" });
+  assert.equal(ok.ok, ctx.t("tm_created"));
+  assert.match(ok.redirect, /^\?tab=use&edit=custom%3A.+&repeat=1#edit$/);
+  const c = (await C.loadConfig(ctx)).data.custom[0];
+  assert.deepEqual([c.name, c.timerOnly, c.repeat], ["discord", undefined, { minutes: 15, lines: 5, when: "live", enabled: true }]);
+  const err = async (over) => (await TA.actions.timerNew.run(ctx, { name: "Autre", text: "Salut", ...over }));
+  assert.match((await err({ name: "discord" })).errors.name, /discord/, "nom déjà pris : sous le champ");
+  assert.match((await err({ name: "!!" })).errors.name, /./, "nom invalide : sous le champ");
+  assert.match((await err({ text: "" })).errors.text, /./);
+  assert.match((await err({ repeatEvery: "90" })).errors.repeatEvery, /entre 1 et 1440.*15/, "pas un nombre entier de minutes");
+  assert.match((await err({ repeatEvery: "100000" })).errors.repeatEvery, /entre 1 et 1440/);
+  const only = await TA.actions.timerNew.run(ctx, { name: "Pub", text: "Pensez à boire.", timerOnly: "on", repeatEvery: "1800" });
+  assert.equal(only.ok, ctx.t("tm_created"));
+  const pub = (await C.loadConfig(ctx)).data.custom.find((x) => x.name === "pub");
+  assert.deepEqual([pub.timerOnly, pub.repeat.minutes], [true, 30]);
+  assert.equal((await C.loadConfig(ctx)).data.custom.length, 2, "les erreurs n'ont rien créé");
+  for (const k of ["timerNew", "timerToggle", "timerRemove", "timerSend"]) assert.equal(TA.actions[k].right, "timers.manage", k);
   for (const k of Object.keys(TA.actions)) assert.equal(A.actions[k], TA.actions[k]);
 });
 
-test("administration : l'onglet Timers dit que le chat doit être actif, montre l'état, l'aperçu, « Envoyer maintenant » ; sans le droit, rien à modifier", async () => {
+test("réglage sur la page d'une commande : durée en secondes (minutes entières, 1 à 1440), lignes 0 à 200, interrupteur = pause ; « Seulement pour le timer » exige une répétition", async () => {
   const { ctx } = fresh();
-  const id = await add(ctx, "Rappel", { text: "Allez sur {chaine} : {calcul 2+3}" });
-  const page = await A.panel(ctx, { query: { tab: "timers", timerEdit: id } });
+  const key = await add(ctx, "Rappel", { minutes: 20, lines: 4, when: "always" });
+  const base = { key, name: "rappel", text: "Message Rappel", role: "everyone", aliases: "", repeatOn: "on", repeatEvery: "1200", repeatLines: "4", repeatWhen: "always" };
+  const cmd = async () => (await C.loadConfig(ctx)).data.custom[0];
+  assert.equal((await A.actions.save(ctx, { ...base, repeatEvery: "3600", repeatLines: "0", repeatWhen: "live" })).ok, ctx.t("saved"));
+  assert.deepEqual((await cmd()).repeat, { minutes: 60, lines: 0, when: "live", enabled: true });
+  assert.match((await A.actions.save(ctx, { ...base, repeatEvery: "30" })).errors.repeatEvery, /entre 1 et 1440.*15/);
+  assert.match((await A.actions.save(ctx, { ...base, repeatEvery: "90000" })).errors.repeatEvery, /entre 1 et 1440/);
+  assert.match((await A.actions.save(ctx, { ...base, repeatLines: "201" })).errors.repeatLines, /entre 0 et 200.*5/);
+  assert.equal((await cmd()).repeat.minutes, 60, "la saisie refusée ne change rien");
+  // interrupteur éteint (absent du formulaire) : pause, les réglages restent
+  const { repeatOn, ...off } = base;
+  assert.equal((await A.actions.save(ctx, { ...off, repeatEvery: "3600", repeatLines: "0" })).ok, ctx.t("saved"));
+  assert.deepEqual((await cmd()).repeat, { minutes: 60, lines: 0, when: "always", enabled: false });
+  // réservée au timer : refusée sans aucune répétition
+  const info = await A.context(ctx, { declare: false });
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "ordinaire", text: "Texte" }, info.env);
+  const ord = (await C.loadConfig(ctx)).data.custom.find((x) => x.name === "ordinaire");
+  assert.match((await A.actions.save(ctx, { key: `custom:${ord.id}`, name: "ordinaire", text: "Texte", role: "everyone", repeatEvery: "900", timerOnly: "on" })).errors.timerOnly, /Allumez/);
+  assert.equal((await A.actions.save(ctx, { ...base, repeatEvery: "3600", timerOnly: "on" })).ok, ctx.t("saved"));
+  assert.equal((await cmd()).timerOnly, true);
+  // sans le droit : la répétition n'est pas modifiable depuis le formulaire (le reste l'est)
+  const ro = fresh({ can: false });
+  const k2 = await add(ro.ctx, "Ro", { minutes: 10 });
+  await A.actions.save(ro.ctx, { key: k2, name: "ro", text: "Message Ro", role: "everyone", repeatOn: "on", repeatEvery: "6000" });
+  assert.equal((await C.loadConfig(ro.ctx)).data.custom[0].repeat.minutes, 10);
+});
+
+test("administration : l'onglet Timers est UN tableau des commandes qui se répètent (recherche, pastilles, interrupteur, 2 actions), l'état dit quand ça part ; sans le droit, rien à modifier", async () => {
+  const { ctx } = fresh();
+  const key = await add(ctx, "Rappel", { text: "Allez sur {chaine} : {calcul 2+3}", minutes: 10, lines: 3 });
+  await add(ctx, "Pause", { enabled: false, minutes: 90, lines: 5 });
+  const page = await A.panel(ctx, { query: { tab: "timers" } });
   const tab = page.filter((b) => b.tab === "timers");
-  assert.ok(tab.length > 5 && tab.every((b) => b.tab === "timers"));
-  const text = JSON.stringify(tab);
-  assert.match(text, /dès qu(?:'|&#39;)un message arrive après le délai/);
-  const html = htmlOf(tab, "timers"), row = rowsOf(html)[0];
-  assert.match(html, /data-ck-act=\\?"timerSend\\?"[^>]*data-ck-confirm/);
-  assert.equal(row.cells.name, "Rappel");
-  assert.equal(row.cells.org, "10 min · 3 lignes");
+  assert.ok(tab.length >= 2 && tab.every((b) => b.tab === "timers"));
+  assert.match(JSON.stringify(tab), /Les commandes que le bot répète tout seul/);
+  const html = htmlOf(tab, "timers"), rows = rowsOf(html), row = rows.find((r) => r.cells.name === "!rappel");
+  assert.equal(rows.length, 2);
+  assert.match(html, /data-ck-q/, "recherche dès le départ");
+  assert.match(row.html, /data-ck-act="timerSend"[^>]*data-ck-confirm/);
+  assert.equal((row.html.match(/class="ck-btn small/g) ?? []).length, 2, "au plus deux actions visibles");
+  assert.ok(row.html.includes(`href="?tab=use&amp;edit=${encodeURIComponent(key)}&amp;repeat=1#edit"`), "Modifier ouvre la commande sur son bloc");
+  assert.equal(row.cells.org, "toutes les 10 min Au moins 3 messages");
   assert.match(row.html, /title="Prêt : il compte à partir du prochain message du chat"/);
-  assert.ok(tab.some((b) => b.type === "adminForm" && b.action === "timerSave"));
-  const cfg = configOf(tab);
-  assert.deepEqual(cfg.layout.map((x) => x.f ?? x.seg ?? Object.keys(x)[0]), ["name", "text", "sentence", "when", "more"], "champs visibles : nom, message, rythme (minutes et lignes), direct ou toujours ; la période est repliée");
-  assert.ok(cfg.layout[1].preview.chips.length > 3 && cfg.layout[1].preview.samples.jeu, "aperçu en direct et morceaux à insérer");
+  assert.match(rows.find((r) => r.cells.name === "!pause").html, /aria-checked="false"[^>]*data-ck-act="timerToggle"/);
+  assert.equal(rows.find((r) => r.cells.name === "!pause").cells.org, "toutes les 90 min", "5 messages en direct = l'ordinaire : rien de plus (R14)");
+  assert.ok(!/ck-origin timer/.test(html), "aucune pastille quand rien ne sort de l'ordinaire");
+  assert.match(html, /data-ck-val="off"[^>]*>En pause <b>1<\/b>/);
   const ro = fresh({ can: false });
   await add(ro.ctx, "Rappel");
-  const roTab = (await A.panel(ro.ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers");
-  assert.ok(!roTab.some((b) => b.type === "adminForm") && !roTab.some((b) => b.rowActions?.length));
+  const roTab = (await A.panel(ro.ctx, { query: { tab: "timers", timerAdd: "1" } })).filter((b) => b.tab === "timers");
+  assert.ok(!roTab.some((b) => b.type === "adminForm") && !/Ajouter un timer/.test(JSON.stringify(roTab)));
+  assert.match(rowsOf(htmlOf(roTab, "timers"))[0].html, /disabled/);
   const manifest = JSON.parse(fs.readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
   assert.ok(manifest.rights.some((r) => r.id === "timers.manage" && r.sensitive && r.default.editor === false));
   assert.ok(manifest.tabs.some((t) => t.id === "timers" && t.panel));
 });
 
-test("outils : lister, créer, modifier un timer ; jamais accordés d'office (écritures) ; mêmes règles que l'administration", async () => {
+test("état vide et « Ajouter un timer » : une phrase + un bouton ; deux voies (choisir une commande avec recherche, ou en créer une : 2 champs visibles) ; les commandes qui se répètent déjà ne sont pas proposées", async () => {
+  const { ctx } = fresh();
+  const empty = plain((await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers").map((b) => b.html ?? "").join(""));
+  assert.match(empty, /Aucun timer pour l'instant\. Ajoutez-en un/);
+  assert.match(empty, /Ajouter un timer/);
+  const info = await A.context(ctx, { declare: false });
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "deja", text: "Déjà", repeat: { minutes: 5 } }, info.env);
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "libre", text: "Libre" }, info.env);
+  const tab = (await A.panel(ctx, { query: { tab: "timers", timerAdd: "1" } })).filter((b) => b.tab === "timers");
+  const pick = rowsOf(htmlOf(tab, "timer-pick"));
+  const names = pick.map((r) => r.cells.name);
+  assert.ok(names.includes("!libre") && names.includes("!jeu") && !names.includes("!deja"), names.join());
+  assert.match(pick.find((r) => r.cells.name === "!libre").html, /href="\?tab=use&amp;edit=custom%3A[^"]+&amp;repeat=1#edit"[^>]*>Ajouter ce timer</);
+  const html = htmlOf(tab, "timer-pick");
+  assert.match(html, /data-ck-q/);
+  const form = formOfBlocks(tab, "timerNew");
+  assert.equal(form.submitLabel, "Créer la commande et son timer");
+  assert.deepEqual(form.fields.filter((f) => !f.folded).map((f) => f.name), ["name", "text"], "chemin court : deux champs visibles");
+  assert.deepEqual(form.fields.filter((f) => f.folded).map((f) => f.name), ["timerOnly", "repeatEvery"]);
+  assert.ok(form.fields.every((f) => !f.example || !/:$/.test(f.label)));
+});
+
+test("outils : lister, créer, modifier un timer (= une commande qui se répète) ; les noms d'outils ne changent pas ; jamais accordés d'office", async () => {
   const { ctx } = fresh();
   assert.deepEqual((await tools.timers_list(ctx, {})).timers, []);
   assert.deepEqual(await tools.timer_create(ctx, { name: "Rappel", text: "Suivez {chaine}", everyMinutes: 20, minChatLines: 4, when: "always" }), { created: true, name: "Rappel" });
   const l = await tools.timers_list(ctx, {});
-  assert.deepEqual(l.timers[0], { name: "Rappel", text: "Suivez {chaine}", everyMinutes: 20, minChatLines: 4, when: "always", enabled: true });
+  assert.deepEqual(l.timers[0], { name: "Rappel", command: "rappel", text: "Suivez {chaine}", everyMinutes: 20, minChatLines: 4, when: "always", enabled: true, timerOnly: true });
   assert.equal(l.maximum, 20);
   assert.deepEqual(await tools.timer_update(ctx, { name: "rappel", enabled: false, everyMinutes: 30 }), { updated: true, name: "Rappel" });
   assert.deepEqual([(await tools.timers_list(ctx, {})).timers[0].enabled, (await tools.timers_list(ctx, {})).timers[0].everyMinutes], [false, 30]);
   await assert.rejects(tools.timer_create(ctx, { name: "Rappel", text: "x", everyMinutes: 5 }), (e) => e.expose && /déjà ce nom/.test(e.message));
-  await assert.rejects(tools.timer_create(ctx, { name: "Z", text: "Salut {utilisateur}", everyMinutes: 5 }), (e) => e.expose);
   await assert.rejects(tools.timer_create(ctx, { name: "Z", text: "x", everyMinutes: 0 }), (e) => e.expose);
   await assert.rejects(tools.timer_update(ctx, { name: "inconnu", enabled: true }), (e) => e.expose);
   await assert.rejects(tools.timer_update(ctx, { name: "Rappel" }), (e) => e.expose);
+  // les outils de commandes lisent et écrivent la répétition
+  await tools.bot_command_create(ctx, { name: "merch", text: "La boutique", repeatEveryMinutes: 45, repeatMinChatLines: 2, repeatWhen: "always" });
+  const merch = (await tools.bot_commands_list(ctx, {})).commands.find((c) => c.name === "merch");
+  assert.deepEqual([merch.repeatEveryMinutes, merch.repeatMinChatLines, merch.repeatWhen, merch.repeatEnabled], [45, 2, "always", true]);
+  await tools.bot_command_update(ctx, { name: "jeu", repeatEveryMinutes: 10 });
+  assert.equal((await tools.timers_list(ctx, {})).timers.length, 3);
+  await tools.bot_command_update(ctx, { name: "merch", clearRepeat: true });
+  assert.equal((await tools.bot_commands_list(ctx, {})).commands.find((c) => c.name === "merch").repeatEveryMinutes, undefined);
+  await assert.rejects(tools.bot_command_update(ctx, { name: "merch", timerOnly: true }), (e) => e.expose);
   const manifest = JSON.parse(fs.readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
   const m = Object.fromEntries(manifest.mcp.map((x) => [x.name, x]));
   assert.equal(m.timers_list.readOnly, true);
   for (const k of ["timer_create", "timer_update"]) assert.deepEqual([m[k].default, m[k].readOnly, !!m[k].destructive], [false, undefined, false], k);
+  for (const k of ["bot_command_create", "bot_command_update"]) for (const p of ["repeatEveryMinutes", "repeatMinChatLines", "repeatWhen", "repeatEnabled", "timerOnly"]) assert.ok(m[k].input.properties[p], `${k}.${p}`);
 });
 
 /* ───────────── Par la porte d'entrée : chaque message de Twitch évalue les timers ───────────── */
