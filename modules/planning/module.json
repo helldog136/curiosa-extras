@@ -5,15 +5,15 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.5.2",
+  "version": "2.6.0",
   "minCore": "0.5.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
   },
   "privacy": {
-    "en": "This module collects nothing itself. When game covers are shown, your browser loads those pictures from RAWG (a video-game database), so RAWG sees your address, under its own privacy policy. Without a cover, nothing is loaded from elsewhere.",
-    "fr": "Ce module ne collecte rien lui-même. Quand des jaquettes de jeux sont affichées, votre navigateur charge ces images depuis RAWG (une base de données de jeux vidéo) : RAWG voit alors votre adresse, selon sa propre politique de confidentialité. Sans jaquette, rien n'est chargé ailleurs."
+    "en": "This module collects nothing itself. When game covers are shown, your browser loads those pictures from RAWG (a video-game database), so RAWG sees your address, under its own privacy policy. Without a cover, nothing is loaded from elsewhere. Partner names come from Contacts (name and Twitch link only); a card marked “Do not show” is never shown.",
+    "fr": "Ce module ne collecte rien lui-même. Quand des jaquettes de jeux sont affichées, votre navigateur charge ces images depuis RAWG (une base de données de jeux vidéo) : RAWG voit alors votre adresse, selon sa propre politique de confidentialité. Sans jaquette, rien n'est chargé ailleurs. Le nom des partenaires vient de Contacts (nom et lien Twitch seulement) ; une fiche « Ne pas montrer » n'est jamais montrée."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -177,6 +177,10 @@
           "type": "string[]"
         },
         {
+          "key": "partners",
+          "type": "string[]"
+        },
+        {
           "key": "status",
           "type": "string"
         },
@@ -222,6 +226,15 @@
     {
       "service": "game.cover",
       "optional": true
+    },
+    {
+      "service": "contact.book",
+      "min": 2,
+      "optional": true,
+      "label": {
+        "en": "The address book (Contacts module), optional: the names of the people you stream with are shown when they are in it",
+        "fr": "Le carnet d'adresses (module Contacts), facultatif : le nom des personnes avec qui vous streamez s'affiche quand elles y sont"
+      }
     }
   ],
   "tabs": [
@@ -262,6 +275,29 @@
       "label": {
         "en": "Days shown on the page",
         "fr": "Jours affichés sur la page"
+      }
+    },
+    {
+      "key": "hide",
+      "type": "choice",
+      "refersTo": "category",
+      "allowCreate": true,
+      "optional": true,
+      "advanced": true,
+      "source": {
+        "kind": "service",
+        "service": "contact.book",
+        "list": "categories",
+        "get": "categoriesResolve",
+        "create": "createCategory"
+      },
+      "label": {
+        "en": "Category “Do not show”",
+        "fr": "Catégorie « Ne pas montrer »"
+      },
+      "help": {
+        "en": "Left empty: the category named “Do not show” is used.",
+        "fr": "Laissé vide : la catégorie « Ne pas montrer » est utilisée."
       }
     },
     {
@@ -641,7 +677,7 @@
       "name": "planning_upcoming",
       "readOnly": true,
       "default": true,
-      "description": "List the upcoming streams of the schedule (title, start, end, games).",
+      "description": "List the upcoming streams of the schedule (title, start, end, games, and the people shown with them: partners with name and channel link, partnersNotShown = names written but not shown).",
       "input": {
         "type": "object",
         "properties": {

@@ -138,7 +138,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-ical",
       "ref": "v1.39.0",
-      "version": "1.0.3",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🗓️",
@@ -156,7 +156,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-manual",
       "ref": "v1.39.0",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "✍️",
@@ -164,7 +164,7 @@
         "planning.slot"
       ],
       "requires": {
-        "core": "0.2.2"
+        "core": "0.6.0"
       }
     },
     {
@@ -1272,7 +1272,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.39.0",
-      "version": "2.5.2",
+      "version": "2.6.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -1282,6 +1282,11 @@
       "needs": [
         {
           "service": "game.cover",
+          "optional": true
+        },
+        {
+          "service": "contact.book",
+          "min": 2,
           "optional": true
         }
       ],

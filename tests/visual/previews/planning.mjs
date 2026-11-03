@@ -14,9 +14,9 @@ export default async function scenes({ siteFrame, messages, art, NOW }) {
       : ["Exploring and relaxing", "Subscribers' special night", "Finishing the story", "Racing with friends", "Trying the new game", "Quiet Sunday", "Creative workshop", "Rematch race"];
     const slots = [
       { uid: "a", title: T[0], games: [g[0]], start: at(0, 20, 30), end: at(0, 23) },
-      { uid: "b", title: T[6], games: [g[2]], start: at(1, 21), end: at(1, 23) },
+      { uid: "b", title: T[6], games: [g[2]], people: [{ name: "Camille", url: "" }], start: at(1, 21), end: at(1, 23) },
       { uid: "c", title: T[1], games: [g[1]], start: at(2, 20, 30), end: at(2, 23, 30) },
-      { uid: "d", title: T[2], games: [g[0]], start: at(3, 21), end: at(3, 23, 30) },
+      { uid: "d", title: T[2], games: [g[0]], people: [{ name: "Camille", url: "" }, { name: "Noé", url: "" }], start: at(3, 21), end: at(3, 23, 30) },
       { uid: "e", title: T[3], games: [g[3]], start: at(4, 20, 30), end: at(4, 22, 30) },
       { uid: "f", title: T[4], games: [g[2]], start: at(5, 15), end: at(5, 18) },
       { uid: "g", title: T[7], games: [g[3]], start: at(5, 21), end: at(5, 23, 30) },

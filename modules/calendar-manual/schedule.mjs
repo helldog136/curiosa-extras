@@ -33,6 +33,32 @@ const dayNumber = (w) => Math.round(Date.UTC(w.y, w.m - 1, w.d) / DAY);
 export function parseGames(v) {
   return String(v ?? "").split(/,|\s+\+\s+|\n/).map((n) => n.trim().slice(0, 80)).filter((n) => n.length >= 2).slice(0, MAX_GAMES);
 }
+const NOT_TWITCH = new Set(["videos", "directory", "downloads", "settings", "subscriptions", "friends", "wallet", "inventory", "drops", "prime", "turbo", "jobs", "store", "team", "popout", "embed", "moderator", "dashboard", "broadcast", "login", "signup", "search"]);
+export const MAX_PARTNERS = 5;
+const LOGIN_RE = /^[a-z0-9_]{4,25}$/;
+
+/** « @Pseudo », « twitch.tv/pseudo », « https://www.twitch.tv/Pseudo/ » ou « pseudo » -> « pseudo » (minuscules, 4 à 25 lettres, chiffres ou _), sinon null. Même règle que Contacts. */
+export function normalizeLogin(raw) {
+  let s = String(raw ?? "").normalize("NFC").replace(/[​-‍﻿]/g, "").trim().replace(/^[<"'«“‘\s]+|[>"'»”’\s]+$/g, "").trim();
+  if (!s || s.length > 300) return null;
+  const m = /^(?:https?:\/\/)?(?:www\.|m\.)?twitch\.tv\/([^?#\s/]*)/i.exec(s);
+  s = (m ? m[1] : s.replace(/^@/, "")).toLowerCase();
+  return LOGIN_RE.test(s) && !NOT_TWITCH.has(s) ? s : null;
+}
+
+/** Sépare une liste écrite à la main : virgule, point-virgule, retour à la ligne, « + », « & », « et » / « and ». */
+export const splitList = (text) => String(text ?? "").slice(0, 1000).split(/[,;\n\r]+|\s+(?:\+|&|et|and)\s+/i).map((x) => x.trim()).filter(Boolean);
+
+/** « etoile_nord, @lune_douce » -> { list } (5 au plus, sans doublon) ou { error: "errPartners" | "errPartnersMax", pseudo? } : une saisie illisible est refusée, jamais devinée. */
+export function parsePartners(v) {
+  const out = [];
+  for (const part of splitList(v)) {
+    const login = normalizeLogin(part);
+    if (!login) return { error: "errPartners", pseudo: part.slice(0, 40) };
+    if (!out.includes(login)) out.push(login);
+  }
+  return out.length > MAX_PARTNERS ? { error: "errPartnersMax" } : { list: out };
+}
 /** « 2026-11-05, 2026-11-12 » -> dates valides (sans doublon). Une date illisible : null (la saisie est refusée). */
 export function parseSkips(v) {
   const parts = String(v ?? "").split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
@@ -52,8 +78,10 @@ export function cleanStream(v) {
   if (!title) return { error: "errTitle" };
   const day = parseDate(v.startDate);
   if (!day) return { error: "errDate" };
+  const partners = parsePartners(v.partners);
+  if (partners.error) return partners;
   const allDay = v.allDay === "yes" || v.allDay === true || v.allDay === "true";
-  const out = { title, startDate: dateOf(day), allDay, startTime: "", endTime: "", games: parseGames(v.games), cancelled: v.cancelled === "yes" || v.cancelled === true, repeat: "none", repeatUntil: "", skip: [] };
+  const out = { title, startDate: dateOf(day), allDay, startTime: "", endTime: "", games: parseGames(v.games), partners: partners.list, cancelled: v.cancelled === "yes" || v.cancelled === true, repeat: "none", repeatUntil: "", skip: [] };
   if (!allDay) {
     const t = parseTime(v.startTime);
     if (!t) return { error: "errStartTime" };
@@ -107,6 +135,7 @@ export function slotsOf(id, s, { from, to, timeZone = "UTC", untitled = "" }) {
   const hiDay = Math.floor(to.getTime() / DAY) + 2, loDay = Math.floor(from.getTime() / DAY) - 3;   // les jours trop éloignés ne sont pas convertis en heure UTC
   const loMs = from.getTime(), hiMs = to.getTime();
   const games = Array.isArray(s.games) ? s.games.filter((g) => typeof g === "string").slice(0, MAX_GAMES) : [];
+  const partners = Array.isArray(s.partners) ? [...new Set(s.partners.map(normalizeLogin).filter(Boolean))].slice(0, MAX_PARTNERS) : [];
   const out = [];
   for (const occ of occurrenceDays(s, hiDay)) {
     if (dayNumber(occ) < loDay) continue;
@@ -128,7 +157,7 @@ export function slotsOf(id, s, { from, to, timeZone = "UTC", untitled = "" }) {
       id: s.repeat === "weekly" ? `${id}@${dateOf(occ)}` : id,
       title: s.title || untitled, start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString(), allDay: !!s.allDay,
       status: s.cancelled ? "cancelled" : "confirmed", timezone: timeZone, games,
-      ...(games.length ? { text: games.join(", ") } : {}), ...(s.allDay ? { day: dateOf(occ) } : {}),
+      ...(games.length ? { text: games.join(", ") } : {}), ...(partners.length ? { partners } : {}), ...(s.allDay ? { day: dateOf(occ) } : {}),
     });
   }
   return out;

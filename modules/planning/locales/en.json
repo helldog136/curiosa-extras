@@ -72,5 +72,16 @@
   "seedNickname": "Online calendar",
   "adminNoSlots": "No upcoming stream for now. The schedule shows the streams of your calendars: install and set up “Online calendar” (Google Calendar…) or “Hand-written streams” in [Extensions](/admin/extensions). Already done? Then nothing is planned.",
   "coversNoKeyNoModule": "No Rawg access code: games are shown without a cover. A free module, “Game covers”, takes care of it.",
-  "coversSuggestReason": "finds the cover pictures of your games"
+  "coversSuggestReason": "finds the cover pictures of your games",
+  "withLabel": "With",
+  "adminWith": "Who you stream with",
+  "adminWithShown": "shown as “{name}”",
+  "adminWithHidden": "in your contacts, but not shown (card to check or “Do not show”)",
+  "adminWithUnknown": "not in your contacts, so not shown.",
+  "adminWithAdd": "Add",
+  "adminWithWait": "Contacts did not answer, not shown for now",
+  "adminWithAddHelp": "In Contacts, choose “Add via” Twitch and paste the name: it then appears on the schedule.",
+  "adminWithNoBook": "Names appear on the schedule once Contacts is installed. Until then, these names are not shown.",
+  "adminWithSuggest": "shows the name of the people you stream with",
+  "adminWithBusy": "Contacts is not answering right now: names will come back as soon as it does."
 }

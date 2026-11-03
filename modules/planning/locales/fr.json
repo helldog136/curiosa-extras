@@ -72,5 +72,16 @@
   "seedNickname": "Agenda en ligne",
   "adminNoSlots": "Aucun stream à venir pour l'instant. Le planning montre les streams de vos agendas : installez et réglez « Agenda en ligne » (Google Agenda…) ou « Streams saisis à la main » dans [Extensions](/admin/extensions). C'est déjà fait ? Alors il n'y a simplement rien de prévu.",
   "coversNoKeyNoModule": "Aucun code d'accès Rawg : les jeux s'affichent sans jaquette. Une extension gratuite, « Jaquettes de jeux », s'en occupe.",
-  "coversSuggestReason": "trouve les jaquettes de vos jeux"
+  "coversSuggestReason": "trouve les jaquettes de vos jeux",
+  "withLabel": "Avec",
+  "adminWith": "Avec qui vous streamez",
+  "adminWithShown": "affiché sous le nom « {name} »",
+  "adminWithHidden": "dans vos contacts, mais non affiché (fiche à relire ou « Ne pas montrer »)",
+  "adminWithUnknown": "pas dans vos contacts, donc non affiché.",
+  "adminWithAdd": "Ajouter",
+  "adminWithWait": "Contacts n'a pas répondu, non affiché pour l'instant",
+  "adminWithAddHelp": "Dans Contacts, choisissez « Ajouter via » Twitch et collez le pseudo : le nom apparaît ensuite sur le planning.",
+  "adminWithNoBook": "Les noms apparaissent sur le planning quand Contacts est installé. En attendant, ces pseudos ne sont pas affichés.",
+  "adminWithSuggest": "affiche le nom des personnes avec qui vous streamez",
+  "adminWithBusy": "Contacts ne répond pas pour l'instant : les noms reviendront dès qu'il répondra."
 }

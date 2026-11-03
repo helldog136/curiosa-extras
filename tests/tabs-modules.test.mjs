@@ -42,7 +42,9 @@ const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules
 // Réseaux au gabarit « adresse de votre profil » et Annonces Discord : exemple sous le champ et options rares repliées (cœur 0.6.0).
 const CORE_060 = ["bluesky", "discord", "github", "mastodon", "reddit", "discord-announcer",
   // Réglages rares repliés sous « Plus d'options » (mode simple, R5) :
-  "directory", "map", "gallery", "supporters", "countdown", "home-assistant", "videos", "events", "testimonials"].map((d) => `modules/${d}`);
+  "directory", "map", "gallery", "supporters", "countdown", "home-assistant", "videos", "events", "testimonials",
+  // Un champ rare replié (« Avec ces pseudos Twitch ») et son exemple : briques du cœur 0.6.0 :
+  "calendar-manual"].map((d) => `modules/${d}`);
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 

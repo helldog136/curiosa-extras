@@ -15,7 +15,7 @@ Il faut Curiosa 0.5.0 ou plus (les éléments pour les pages d'overlay ; la page
 - **Fuseau horaire** : par défaut, celui de vos agendas (réglage avancé « Fuseau horaire d'affichage » pour en imposer un autre).
 - **Assistants IA** : `planning_upcoming` (lecture seule, accordée par défaut).
 - **Jaquette peut-être fausse** (administration seulement, Curiosa 0.2.10 ou plus) : quand RAWG n'est pas sûr du jeu (`ambiguous`), l'administration liste le jeu avec un lien « Ce n'est pas le bon jeu ? » vers `/admin/settings/rawg-covers?titre=<titre encodé>`, l'écran du cœur où l'on choisit le bon jeu. Rien n'est ajouté côté public.
-- **Admin** : les prochains streams vus, les jaquettes, et l'aperçu de chaque apparence.
+- **Admin** : les prochains streams vus, « Avec qui vous streamez », les jaquettes, et l'aperçu de chaque apparence.
 
 ## Éléments pour les pages d'overlay (version 2.5.0, Curiosa 0.5.0)
 
@@ -79,6 +79,21 @@ Plus aucun champ d'adresse dans les réglages : la valeur reprise n'est jamais a
 
 Pour chaque jeu d'un stream, le module demande sa jaquette à RAWG **par le service du cœur** et l'affiche sur la page publique, dans les morceaux d'accueil « prochain stream » et « prochains streams », dans l'admin et sur l'image à partager. La clé RAWG (gratuite, [rawg.io/apidocs](https://rawg.io/apidocs)) se saisit **une seule fois, dans Admin → Réglages**, pour tous les modules : le planning n'a pas de réglage de clé, et ne la voit jamais. Il faut une version de Curiosa qui offre ce service (permission `rawg`) ; sinon, ou sans clé, ou si RAWG refuse la clé ou ne répond pas, seul le nom du jeu s'affiche, et l'admin du module dit clairement lequel de ces cas c'est. Le cache et la cadence des demandes sont ceux du cœur.
 
+## Avec qui vous streamez (version 2.6.0)
+
+Quand un stream est en compagnie d'autres personnes, écrivez leurs **pseudos Twitch** dans le stream, comme vous précisez le jeu :
+
+- **Streams saisis à la main** : le champ « Avec ces pseudos Twitch », sous « Plus d'options » (par exemple `etoile_nord, lune_douce`).
+- **Agenda en ligne** : une ligne `Avec : etoile_nord, lune_douce` dans la description de l'événement Google (voir le README d'« Agenda en ligne »).
+
+Le planning montre alors « Avec Camille » **si ce pseudo est le compte Twitch d'une fiche de votre module Contacts** : c'est le **nom de la fiche** qui s'affiche, avec un lien vers la chaîne Twitch, sur la page, dans les morceaux d'accueil, dans les éléments d'overlay (le nom seul, rien à cliquer) et sur l'image de la semaine (en texte).
+
+- **Vie privée.** Seuls le nom de la fiche et le lien Twitch sortent de Contacts : jamais l'e-mail, le téléphone, les notes ni la photo (aucune image tierce n'est chargée). Un pseudo absent de Contacts n'est **pas affiché** (il reste dans le stream). Une fiche encore « à vérifier », une fiche de la catégorie « Ne pas montrer » (ou celle choisie dans le réglage avancé du même nom, comme au Mur des remerciements) ne sont jamais montrées. Si Contacts ne peut pas dire qui est caché, rien de nouveau n'est montré. Aucune demande n'est faite à Twitch.
+- **Sans Contacts**, le planning marche comme avant : aucun nom n'est montré, et l'administration le dit (« Les noms apparaissent sur le planning quand Contacts est installé »).
+- **Dans l'administration**, « Avec qui vous streamez » dit pour chaque pseudo ce qui sera fait : affiché sous tel nom, dans vos contacts mais non affiché, ou « pas dans vos contacts » avec un lien **Ajouter** vers Contacts (choisissez « Ajouter via » Twitch et collez le pseudo).
+- **Le même stream dans deux endroits** (saisi à la main et dans Google Agenda) n'en fait qu'un : ses partenaires sont réunis, sans doublon, 5 au plus.
+- **Bornes** : 5 personnes par stream ; pseudo en minuscules (4 à 25 lettres, chiffres ou `_`), `@pseudo` et `twitch.tv/pseudo` acceptés. Les réponses de Contacts restent 2 minutes en mémoire (30 minutes au plus si Contacts ne répond plus), jamais sur disque.
+
 ## Image à partager (PNG)
 
 `https://votre-site/m/<clé>/image` : la semaine en cours (lundi → dimanche) en image PNG de 900 px de large aux couleurs du site, prête pour un panneau Twitch (« image + lien depuis une URL ») ou un réseau social. Une ligne par jour, deux streams au plus par jour, avec la jaquette des jeux (trois au plus par stream) à côté de l'heure et du titre. `?week=1` pour la semaine suivante (jusqu'à 8). Générée par le service du cœur `ctx.api.png` (aucune dépendance native dans le module), mise en cache 5 minutes ; pour la télécharger : ouvrez l'adresse dans le navigateur et enregistrez l'image.
@@ -87,9 +102,9 @@ Différence avec l'ancien site : pas de page d'admin dédiée avec bouton « Enr
 
 ## Pour qui développe
 
-Le Planning est un **lecteur** : il *consomme* le sujet `planning.slot` (voir le contrat dans le README de « Agenda en ligne »), validé par le cœur, et ne connaît aucun module qui le fournit. Chaque créneau arrive avec son état (`status`), ses jeux (`games`) et le fuseau de son agenda (`timezone`) ; une journée entière porte sa date (`day`). Le Planning écarte les doublons (même titre, mêmes heures) et affiche dans son fuseau d'affichage (réglage, sinon fuseau le plus courant des agendas, sinon UTC). Il ne lit plus de description : les jeux viennent de l'agenda.
+Le Planning est un **lecteur** : il *consomme* le sujet `planning.slot` (voir le contrat dans le README de « Agenda en ligne »), validé par le cœur, et ne connaît aucun module qui le fournit. Chaque créneau arrive avec son état (`status`), ses `partners` (pseudos Twitch, 5 au plus, facultatif : le Planning les nettoie de nouveau et ne fait confiance à aucun fournisseur), ses jeux (`games`) et le fuseau de son agenda (`timezone`) ; une journée entière porte sa date (`day`). Le Planning écarte les doublons (même titre, mêmes heures) et affiche dans son fuseau d'affichage (réglage, sinon fuseau le plus courant des agendas, sinon UTC). Il ne lit plus de description : les jeux viennent de l'agenda.
 
-**Architecture** (`modules/planning/`) : `index.mjs` (jaquettes, pages, morceaux d'accueil, module), `slots.mjs` (mise au format des créneaux reçus, fonctions pures), `dates.mjs`, `relative.mjs`, puis `appearances/` : `options.mjs` (réglages et défauts), `model.mjs` (regroupement par jour/semaine, en cours, annulé, fuseau), `kit.mjs` (outils et style de base), `layouts/*.mjs` (une apparence = `render(model, options, ctx) → { html, css }`, pure), `registry.mjs`, `preview.mjs`, `entry.mjs` (seul point d'appel d'`index.mjs`). Les fichiers voisins sont chargés avec le même `?v=` que `index.mjs` pour qu'une mise à jour à chaud ne mélange pas d'anciens fichiers.
+**Architecture** (`modules/planning/`) : `index.mjs` (jaquettes, pages, morceaux d'accueil, module), `slots.mjs` (mise au format des créneaux reçus, fonctions pures), `partners.mjs` (pseudos, recherche dans le service `contact.book` — besoin facultatif —, règles de visibilité), `dates.mjs`, `relative.mjs`, puis `appearances/` : `options.mjs` (réglages et défauts), `model.mjs` (regroupement par jour/semaine, en cours, annulé, fuseau), `kit.mjs` (outils et style de base), `layouts/*.mjs` (une apparence = `render(model, options, ctx) → { html, css }`, pure), `registry.mjs`, `preview.mjs`, `entry.mjs` (seul point d'appel d'`index.mjs`). Les fichiers voisins sont chargés avec le même `?v=` que `index.mjs` pour qu'une mise à jour à chaud ne mélange pas d'anciens fichiers.
 
 Migration 1 → 2 (`dataVersion` 2, **temporaire, à retirer en 0.3.0**) : `seeds` désigne `calendar-ical` ; `migrations[2]` demande au cœur (`ctx.seedInstance`, une seule fois par adresse grâce à `seedKey`) une instance d'« Agenda en ligne » avec `{ url, timezone }` (fuseau choisi, sinon `UTC`, comme le lisait l'ancien Planning), puis efface `icsUrl` par `ctx.legacy.clear` (`icsUrl` est dans `legacySettings` : jamais affiché, lu par `ctx.legacy.get`). `dataVersion` 3 : `migrations[3]` rejoue la même reprise (idempotente) pour un site déjà en version 2 qui aurait gardé une adresse. Le lien avec la cible est un sujet (`consumes` / `provides`) et non une dépendance (`requires`) : cela demande Curiosa 0.2.0 (`ctx.legacy`).
 

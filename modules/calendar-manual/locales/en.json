@@ -48,5 +48,11 @@
   "errEndTime": "The end time is not valid (example: 23:30).",
   "errUntil": "The end date of the repeat is not valid or comes before the first stream.",
   "errSkip": "The dates to skip are not valid: write them like 2026-12-24, separated by a comma.",
-  "errMax": "You reached the limit of {n} streams: delete the oldest ones."
+  "errMax": "You reached the limit of {n} streams: delete the oldest ones.",
+  "fPartners": "With these Twitch names (optional)",
+  "hPartners": "Their name shows if they are in your contacts.",
+  "exPartners": "etoile_nord, lune_douce",
+  "errPartners": "“{pseudo}” is not a Twitch name. Write 4 to 25 letters, digits or _, for example etoile_nord.",
+  "errPartnersMax": "Five names at most per stream, separated by a comma, for example etoile_nord, lune_douce.",
+  "colWith": "With"
 }
