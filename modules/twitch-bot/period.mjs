@@ -1,7 +1,8 @@
 // Les dates de validité d'une commande ou d'un timer : une période facultative, soit RÉCURRENTE chaque année (« du 1er novembre au 30 novembre », y compris à cheval
 // sur le changement d'année : du 15 décembre au 15 janvier), soit UNIQUE avec ses années. Évaluée uniquement à la lecture (quand quelqu'un tape la commande, quand un timer
 // est regardé, quand la page s'affiche) : aucun minuteur. Les jours de début et de fin sont inclus. L'heure est celle du fuseau réglé (UTC sans fuseau, et l'écran le dit).
-// Forme gardée : { yearly: boolean, from: { m, d, y? }, to: { m, d, y? } } ; l'absence de période veut dire « toujours active ».
+// Forme gardée : { yearly: boolean, from: { m, d, y? }, to: { m, d, y? } } ; l'absence de période veut dire « toujours active ». Cette forme NE CHANGE PAS : le champ « période » du cœur
+// (un seul champ, « Tout le mois de », « Une période toute prête ») parle un autre langage (« 11-01/11-30 », « 2026-11-01/2026-11-30 »), traduit ici dans les deux sens (periodToValue, parsePeriodValue).
 export const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   // février : 29 permis pour une période qui revient chaque année
 const isLeap = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 const dim = (m, y) => (m === 2 && y !== undefined && !isLeap(y) ? 28 : DAYS_IN_MONTH[m - 1]);
@@ -37,14 +38,26 @@ export function readPeriod(raw) {
   return p.ok ? p.value : null;
 }
 
-/** La période telle que la porte le formulaire : UN champ texte « 01/11 - 30/11 » (chaque année) ou « 01/11/2026 - 30/11/2026 » (une seule fois), vide = toujours active.
- *  Le contrôle de la page (voir adminkit.client.js) l'écrit lui-même ; sans JavaScript, c'est ce champ que la personne voit. */
-export const periodToText = (p) => {
+/** La période telle que la porte le champ « période » du cœur : « 11-01/11-30 » (chaque année) ou « 2026-11-01/2026-11-30 » (une seule fois) ; vide = toujours active.
+ *  Sans les années pour « chaque année » : celles qui auraient été gardées sont ignorées, comme elles l'ont toujours été. */
+export const periodToValue = (p) => {
   if (!p) return "";
   const two = (n) => String(n).padStart(2, "0");
-  const one = (x) => `${two(x.d)}/${two(x.m)}${p.yearly ? "" : `/${x.y}`}`;
-  return `${one(p.from)} - ${one(p.to)}`;
+  const one = (x) => `${p.yearly ? "" : `${String(x.y).padStart(4, "0")}-`}${two(x.m)}-${two(x.d)}`;
+  return `${one(p.from)}/${one(p.to)}`;
 };
+
+/** Ce que renvoie le champ « période » du cœur → { ok, value } comme parsePeriod. Lit aussi, par tolérance, l'ancienne écriture « 01/11 - 30/11 » (une page ouverte avant la mise à jour,
+ *  un import, un outil) : une valeur déjà enregistrée ou envoyée dans l'ancienne forme garde exactement son sens. Vide : aucune période (toujours active). */
+export function parsePeriodValue(text) {
+  const raw = String(text ?? "").trim();
+  if (!raw) return { ok: true, value: null };
+  const y = /^(\d{2})-(\d{2})\/(\d{2})-(\d{2})$/.exec(raw);
+  if (y) return parsePeriod({ yearly: true, from: { m: Number(y[1]), d: Number(y[2]) }, to: { m: Number(y[3]), d: Number(y[4]) } });
+  const o = /^(\d{4})-(\d{2})-(\d{2})\/(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (o) return parsePeriod({ yearly: false, from: { y: Number(o[1]), m: Number(o[2]), d: Number(o[3]) }, to: { y: Number(o[4]), m: Number(o[5]), d: Number(o[6]) } });
+  return parsePeriodText(raw);
+}
 
 /** « jj/mm » ou « jj/mm/aaaa » (aussi « jj-mm ») → { d, m, y? } ou null. */
 const dayText = (x) => { const m = /^\s*(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*[/.-]\s*(\d{4}))?\s*$/.exec(String(x)); return m ? { d: Number(m[1]), m: Number(m[2]), ...(m[3] ? { y: Number(m[3]) } : {}) } : null; };
@@ -100,14 +113,6 @@ const dateText = (locale, x, withYear) => {
   const text = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(x.y ?? 2024, x.m - 1, x.d)));
   return String(locale).startsWith("fr") && x.d === 1 ? text.replace(/^1 /, "1er ") : text;   // « 1er novembre »
 };
-/** « Active du 1er novembre au 30 novembre, chaque année » (+ « (heure UTC) » sans fuseau réglé). */
-export function describe(ctx, period, timeZone) {
-  const t = ctx.t;
-  if (!period) return t("per_always");
-  const once = !period.yearly;
-  const body = t(once ? "per_phrase_once" : "per_phrase_yearly", { from: dateText(ctx.locale, period.from, once), to: dateText(ctx.locale, period.to, once) });
-  return timeZone === "UTC" ? `${body} ${t("per_utc")}` : body;
-}
 /** « Hors période : se réactive le 1er novembre » (ou « la période est terminée »). `now` : pour les tests. */
 export function outsideText(ctx, period, now, timeZone) { return reopenLabel(ctx, nextOpening(period, now, timeZone)); }
 /** La même phrase à partir d'une date de réouverture déjà calculée ({ y, m, d } ou null). */
@@ -128,29 +133,8 @@ export function periodError(ctx, e) {
   }
 }
 
-/** Les raccourcis d'un clic au-dessus du contrôle de période (chaque année). `id` : fin des clés de texte `per_sc_<id>`. */
-export const SHORTCUTS = [
-  { id: "november", from: [11, 1], to: [11, 30] },
-  { id: "september", from: [9, 1], to: [9, 30] },
-  { id: "summer", from: [6, 21], to: [9, 21] },
-  { id: "christmas", from: [12, 24], to: [12, 26] },
-];
-
-/** Le champ d'un formulaire pour la période : UN seul champ texte (R6). Le contrôle de la page le remplace par « Du [jour][mois] au [jour][mois] » ; ce champ garde la valeur. */
-export function periodField(ctx, period) {
-  return { name: "period", label: ctx.t("per_title"), value: periodToText(period), help: ctx.t("per_f_help") };
-}
-
-/** La configuration du contrôle de période pour le script de la page (textes déjà traduits : le script ne connaît aucune langue). Même contrôle pour les commandes et les timers. */
-export function periodControl(ctx, period, timeZone = "UTC") {
-  const t = ctx.t;
-  const month = (m) => new Intl.DateTimeFormat(ctx.locale, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2024, m - 1, 1)));
-  return {
-    field: "period", locale: ctx.locale, year: dayIn(new Date(), "UTC").y,
-    months: Array.from({ length: 12 }, (_, i) => month(i + 1)), dim: DAYS_IN_MONTH,
-    text: { title: t("per_title"), always: t("per_mode_always"), range: t("per_mode_range"), from: t("per_from"), to: t("per_to"), yearly: t("per_yearly"), day: t("per_day"), month: t("per_month"), dateFrom: t("per_date_from"), dateTo: t("per_date_to"),
-      phraseYearly: t("per_phrase_yearly", { from: "{from}", to: "{to}" }), phraseOnce: t("per_phrase_once", { from: "{from}", to: "{to}" }), always_phrase: t("per_always"), utc: timeZone === "UTC" ? t("per_utc") : "",
-      eNodate: t("per_e_nodate", { day: "{day}", month: "{month}", example: "{example}" }), eYear: t("per_e_year"), eOrder: t("per_e_order"), eText: t("per_e_text") },
-    shortcuts: SHORTCUTS.map((x) => ({ label: t(`per_sc_${x.id}`), from: x.from, to: x.to })),
-  };
+/** Le champ « période » d'un formulaire : le champ du cœur (`kind: "period"`), UN seul champ (R6) avec « Tout le mois de », « Une période toute prête » et la phrase d'aperçu.
+ *  Vide : toujours active. Les jours suivent le fuseau réglé du module (UTC sans fuseau) : l'aide le dit. */
+export function periodField(ctx, period, timeZone = "UTC") {
+  return { name: "period", label: ctx.t("per_title"), kind: "period", value: periodToValue(period), help: ctx.t(timeZone === "UTC" ? "per_f_help_utc" : "per_f_help", { zone: timeZone }) };
 }
