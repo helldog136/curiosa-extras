@@ -4,6 +4,19 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : la fiche du Bot Twitch montre maintenant ses onglets Timers et Réglages, en plus des Commandes et des Récompenses, pour voir à quoi ressemble le bot avant de l'installer.*
+
+### Nouveautés
+
+- **Bot Twitch 1.7.2 : trois visuels de plus sur sa fiche.** La liste des timers (recherche, interrupteur par ligne), le formulaire « Nouveau timer » (un nom, un message, un rythme ; la période reste repliée) et l'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
+
+### Pour les développeurs
+
+- `modules/twitch-bot` 1.7.2 : trois `previews` ajoutées (`timers.webp`, `timer-nouveau.webp`, `reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
+- `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
