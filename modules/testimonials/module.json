@@ -23,8 +23,8 @@
       {
         "id": "pending",
         "label": {
-          "en": "{n} reviews to approve",
-          "fr": "{n} avis à valider"
+          "en": "Reviews to approve ({n})",
+          "fr": "Avis à valider ({n})"
         },
         "href": "?tab=use&status=pending",
         "right": "reviews.moderate"

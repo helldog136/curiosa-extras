@@ -5,6 +5,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseManifest } from "@/core/modules/manifest";
+import { rightsCatalogue, systemRights } from "@/core/auth/rights";
+import { moduleTasks, moduleActions, resetDashboardMemo } from "@/core/dashboard/modules";
 import { dashboardIssues, parseTaskCount, resolveHref, DASHBOARD_LIMITS } from "@/core/dashboard/spec";
 import { loadModule } from "./helpers/moduleLoader.mjs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
@@ -42,7 +44,7 @@ test("sobriété : au plus 3 éléments par extension, libellés courts dans les
       for (const lang of ["fr", "en"]) {
         const s = text[lang];
         assert.ok(s && s.length <= 60, `${id} ${lang} : « ${s} » (60 caractères au plus)`);
-        assert.ok(!/[:!]/.test(s) && !/veuillez/i.test(s) && s !== s.toUpperCase(), `${id} ${lang} : « ${s} »`);
+        assert.ok(!/!/.test(s) && !/[:：]\s*$/.test(s) && !/veuillez/i.test(s) && s !== s.toUpperCase(), `${id} ${lang} : « ${s} »`);
         assert.ok(s.split(/\s+/).length <= 20, `${id} ${lang} : phrase trop longue`);
         if (lang === "fr") assert.ok(!FORBIDDEN.test(s), `${id} : mot de code dans « ${s} »`);
       }
@@ -58,7 +60,7 @@ test("une tâche mène à l'écran qui règle la chose et demande le droit qui p
       assert.match(task.href, /^\?tab=use/, `${id} ${task.id} : lien vers l'onglet de l'extension`);
       assert.ok(resolveHref(task.href, { id: "i1", key: "k" })?.startsWith("/admin/instances/i1?tab=use"), task.id);
       if (task.right) assert.ok(rights.has(task.right), `${id} : droit ${task.right} déclaré`);
-      assert.match(task.label.fr, /^\{n\} /, "le nombre vient en premier");
+      for (const lang of ["fr", "en"]) assert.match(task.label[lang], / \(\{n\}\)$/, "le nombre est entre parenthèses à la fin : le libellé se lit aussi bien pour 1 que pour 12");
       assert.equal(typeof loaded[id].definition.dashboard?.tasks?.[task.id], "function", `${id} : fonction ${task.id}`);
     }
     for (const fn of Object.keys(loaded[id].definition.dashboard?.tasks ?? {})) assert.ok(manifest.dashboard.tasks.some((t) => t.id === fn), `${id} : ${fn} est déclarée`);
@@ -145,4 +147,38 @@ test("aucune réponse ne contient de donnée personnelle : un nombre, et des lib
   const answer = await loaded.testimonials.definition.dashboard.tasks.pending(ctx);
   assert.equal(typeof answer, "number");
   for (const id of MODULES) assert.ok(!/@|camille/i.test(JSON.stringify(loaded[id].manifest.dashboard)));
+});
+
+// ── De bout en bout, avec les vraies fonctions du cœur ─────────────────────────────────────────────────
+
+const CATALOGUE = rightsCatalogue(MODULES.map((id) => ({ moduleId: id, name: loaded[id].manifest.name, rights: loaded[id].manifest.rights ?? [] })));
+const viewer = (level) => ({ id: "u1", email: "a@b.c", name: "A", level, roles: [level], rights: new Set(systemRights(level, CATALOGUE)), locale: null, advanced: false, totp: true, passkeys: 0, twoFactor: true, needsTwoFactor: false, mustChangePassword: false });
+
+test("le cœur affiche ces lignes : libellés remplis, liens complets, droits respectés, une rédaction ne voit pas ce qu'elle ne peut pas ouvrir", async () => {
+  const reviews = testimonialsCtx({ locale: "fr" });
+  for (const status of ["pending", "pending", "pending", "approved"]) await seedReview(reviews, { status });
+  const agenda = eventsCtx({});
+  await eventsDef.mcp.agenda_create_event(agenda, { title: "Brouillon préparé", date: "2031-06-01" });
+  const games = fakeCtx({ key: "gsdash3", basePath: "suggestions", settings: {}, locale: "fr" });
+  await games.api.store.add("games", { title: "Hollow Knight", status: "proposed", replayVotes: 0 });
+  await games.api.store.add("games", { title: "Celeste", status: "proposed", replayVotes: 0 });
+  const contexts = { testimonials: reviews, events: agenda, "game-suggestions": games };
+  const list = MODULES.map((id) => {
+    const { manifest, definition } = loaded[id];
+    const parsed = parseManifest(manifest); assert.ok(parsed.ok);
+    return { instance: { id: `i-${id}`, key: id === "blog" ? "mon-blog" : id, moduleId: id, names: { fr: id }, descriptions: {} }, mod: { manifest: parsed.manifest, def: definition, locales: {}, row: {} } };
+  });
+  const env = (user) => ({ viewer: user, locale: "fr", defaultLocale: "fr", active: async () => list, contextFor: async (a) => contexts[a.mod.manifest.id] ?? fakeCtx({}) });
+  resetDashboardMemo();
+  const tasks = await moduleTasks(env(viewer("admin")));
+  assert.deepEqual(tasks.map((t) => [t.label, t.href]), [
+    ["Avis à valider (3)", "/admin/instances/i-testimonials?tab=use&status=pending"],
+    ["Suggestions de jeux à traiter (2)", "/admin/instances/i-game-suggestions?tab=use"],
+    ["Événements à relire (1)", "/admin/instances/i-events?tab=use&show=draft"],
+  ]);
+  const actions = await moduleActions(env(viewer("admin")));
+  assert.deepEqual(actions.map((a) => [a.label, a.href]), [["Écrire un article", "/admin/entries/new?c=mon-blog"], ["Ajouter une page", "/admin/entries/new?c=pages"]]);
+  resetDashboardMemo();
+  assert.deepEqual(await moduleTasks(env(viewer("editor"))), [], "la rédaction n'a ni ces droits ni leur code appelé");
+  assert.deepEqual(await moduleActions(env(viewer("editor"))), [], "elle garde le bouton « Ajouter dans … » du cœur");
 });

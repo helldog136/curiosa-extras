@@ -10,9 +10,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Nouveautés
 
-- **Témoignages 1.2.0 : « n avis à valider ».** Quand des avis attendent votre décision, une ligne apparaît sous « À faire » sur le tableau de bord, avec un lien direct vers la liste des avis en attente. Elle disparaît quand il n'y en a plus. Seules les personnes qui ont le droit de valider les avis la voient.
-- **Suggestions de jeux 1.8.0 : « n suggestions de jeux à traiter ».** Elle compte les jeux proposés par vos visiteurs que vous n'avez pas encore classés (retenu, refusé, déjà joué…). Les jeux que vous ajoutez vous-même n'y comptent pas.
-- **Événements 1.1.0 : « n événements à relire ».** Elle compte les brouillons préparés par l'assistant IA qui attendent votre relecture, et mène à l'onglet des brouillons. Vos propres brouillons n'y sont pas.
+- **Témoignages 1.2.0 : « Avis à valider (n) ».** Quand des avis attendent votre décision, une ligne apparaît sous « À faire » sur le tableau de bord, avec un lien direct vers la liste des avis en attente. Elle disparaît quand il n'y en a plus. Seules les personnes qui ont le droit de valider les avis la voient.
+- **Suggestions de jeux 1.8.0 : « Suggestions de jeux à traiter (n) ».** Elle compte les jeux proposés par vos visiteurs que vous n'avez pas encore classés (retenu, refusé, déjà joué…). Les jeux que vous ajoutez vous-même n'y comptent pas.
+- **Événements 1.1.0 : « Événements à relire (n) ».** Elle compte les brouillons préparés par l'assistant IA qui attendent votre relecture, et mène à l'onglet des brouillons. Vos propres brouillons n'y sont pas.
 - **Blog 1.1.0 : « Écrire un article ».** Un bouton sous « Créer » sur le tableau de bord, qui ouvre directement un article vide.
 - **Pages 1.2.0 : « Ajouter une page ».** Même chose pour une nouvelle page.
 - **Plus de ligne en double.** Témoignages et Événements affichaient déjà un petit chiffre dans le menu de gauche ; le tableau de bord le répétait sous la forme « n à traiter dans … ». Ce chiffre du menu est retiré au profit de la nouvelle ligne, plus claire. Avec un Curiosa plus ancien que 0.6.1, ces deux extensions n'affichent donc plus de chiffre dans le menu.
@@ -21,6 +21,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 ### Pour les développeurs
 
 - Clé `dashboard` de `module.json` (cœur 0.6.1+, aucun `minCore`) : `tasks` pour `testimonials` (`pending`, droit `reviews.moderate`), `game-suggestions` (`proposed`) et `events` (`review`, droit `events.edit`) ; `quickActions` pour `blog` et `pages` (`/admin/entries/new?c={key}`, aucun code, droit par défaut `open` : sans lui, la rédaction garde le bouton « Ajouter dans … » du cœur). Le code est `dashboard.tasks.<id>(ctx)` : un nombre, une lecture du stockage bornée (1 000 avis, 2 000 suggestions, la liste d'événements déjà gardée en mémoire), aucun appel réseau.
+- Libellés de tâche écrits « Sujet à faire ({n}) » : le cœur remplace `{n}` sans accorder le pluriel, ce tour se lit aussi bien pour 1 que pour 12 (« 1 événements » serait faux).
 - `adminBadge` retiré de `testimonials` et `events` (même calcul que la tâche, le cœur affichait les deux). Les tests de ces modules lisent la tâche.
 - Versions : Blog 1.1.0, Pages 1.2.0, Témoignages 1.2.0, Suggestions de jeux 1.8.0, Événements 1.1.0. Tests : `tests/dashboard-contenu.test.mjs` (validité `dashboardIssues`, mots, comptes, délais, absence de réseau) ; le kit de conformité exige `dashboard.valid`.
 

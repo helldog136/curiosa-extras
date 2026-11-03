@@ -19,8 +19,8 @@
       {
         "id": "review",
         "label": {
-          "en": "{n} events to review",
-          "fr": "{n} événements à relire"
+          "en": "Events to review ({n})",
+          "fr": "Événements à relire ({n})"
         },
         "href": "?tab=use&show=draft",
         "right": "events.edit"

@@ -23,8 +23,8 @@
       {
         "id": "proposed",
         "label": {
-          "en": "{n} game suggestions to handle",
-          "fr": "{n} suggestions de jeux à traiter"
+          "en": "Game suggestions to handle ({n})",
+          "fr": "Suggestions de jeux à traiter ({n})"
         },
         "href": "?tab=use"
       }
