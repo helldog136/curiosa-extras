@@ -265,7 +265,7 @@ test("non-régression : outils MCP et service inchangés (contact_create, contac
   const q = await def.adminActions.addVia(ctx, { network: "youtube", handle: "@Chan_One" });
   const found = await svc.find(ctx, { q: "chan_one" });
   assert.equal(found.contacts[0].id, idOf(q.redirect));
-  assert.equal(manifest.version, "2.3.0");
+  assert.equal(manifest.version, "2.4.1");
   assert.equal(manifest.apiVersion, 2);
   assert.deepEqual(manifest.rights.map((x) => x.id), ["email.view", "export", "categories.create"]);
   assert.deepEqual(Object.keys(def.mcp).sort(), manifest.mcp.map((t) => t.name).sort());

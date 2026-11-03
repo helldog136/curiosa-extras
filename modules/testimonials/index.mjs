@@ -265,7 +265,7 @@ export default {
     },
   },
 
-  adminBadge: (ctx) => A.pendingCount(ctx),
+  dashboard: A.dashboard,
   adminPanel: (ctx, args) => A.panel(ctx, args),
   adminActions: A.actions,
   adminDownloads: A.downloads,

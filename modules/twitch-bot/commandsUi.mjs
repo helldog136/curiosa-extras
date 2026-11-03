@@ -8,8 +8,8 @@ const { roleOptions } = F;
 const { reopenLabel, periodField, isoText } = await import(`./period.mjs${v}`);
 
 const { esc, norm } = K;
-const ORIGINS = ["custom", "builtin", "partner", "network"];
-const originOf = (c) => (c.kind === "group" ? "builtin" : c.kind);
+const ORIGINS = ["custom", "builtin", "partner", "network", "timer"];
+const originOf = (c) => (c.timerOnly ? "timer" : c.kind === "group" ? "builtin" : c.kind);
 
 /** « 1er novembre » (jour et mois seulement) pour la note d'une ligne. */
 function shortDate(ctx, n) {
@@ -35,8 +35,9 @@ function commandRow(ctx, info, c, partnerHref) {
   const onState = c.kind === "partner" || c.kind === "network" ? (c.missing ? c.state : c.onState ?? "on") : c.onState ?? "on";
   const cur = stateTexts(ctx, c.state, c.why, c.reopen);
   const would = c.missing ? cur : stateTexts(ctx, onState, c.onWhy, c.onReopen);
-  const [first, ...others] = words(p, c);
-  const role = c.role === "everyone" ? "" : t(`role_${c.role}`);
+  const [first0, ...others0] = words(p, c);
+  const first = c.timerOnly ? (c.title || first0) : first0, others = c.timerOnly ? [] : others0;   // une commande réservée au timer n'a pas de mot à taper : on montre son titre
+  const role = c.role === "everyone" || c.timerOnly ? "" : t(`role_${c.role}`);
   const hay = [...words(p, c), c.name, ...c.aliases, c.text, t(`origin_${origin}`), cur.word, role].join(" ");
   const href = c.kind === "partner" ? partnerHref.replace("{id}", encodeURIComponent(c.id)) : `?edit=${encodeURIComponent(c.key)}#edit`;
   const action = c.missing ? "" : `<a class="ck-btn small" href="${esc(href)}">${esc(c.kind === "partner" ? t("act_open_partner") : t("act_edit"))}</a>`;
@@ -98,19 +99,20 @@ export function addChooser(ctx, info, { partnerHref }) {
  * `view` : la commande (ou la proposition) ; `mode` : "new" ou "edit" ; `unsaved` : une proposition pas encore enregistrée (la sauvegarde l'active).
  * Champs visibles : Nom, Ce que le bot répond, Qui peut l'utiliser (3). Sous « Plus d'options » : autres noms, attentes, période.
  */
-export async function commandForm(ctx, info, { mode, view, key, unsaved = false, kind }) {
+export async function commandForm(ctx, info, { mode, view, key, unsaved = false, kind, repeatIntent = false }) {
   const t = ctx.t, s = info.s;
   const env = { channel: info.d.channel ?? null, sources: info.sources, list: info.list };
   const cfg = F.textExtras ? await F.textExtras(ctx, kind, view.vars, env) : null;
+  const timerOnly = view.timerOnly === true;
   const layout = [
     { f: "name" },
     { f: "text", preview: cfg },
-    { seg: "role" },
-    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: false, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), F.periodLayout(ctx, view.period ?? null, s.timeZone)] } },
+    ...(timerOnly ? [] : [{ seg: "role" }]),   // une commande réservée au timer n'a personne à qui la permettre
+    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: repeatIntent, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), { f: "period", label: t("per_title") }, ...F.repeatLayout(ctx, kind)] } },
   ];
   const id = mode === "new" ? "cmd-new" : "cmd-edit";
   const conf = K.formConfig(id, { layout });
-  const form = { type: "adminForm", action: mode === "new" ? "create" : "save", submitLabel: t(mode === "new" ? "new_btn" : "save_btn"), cancelHref: "?", fields: [
+  const form = { type: "adminForm", action: mode === "new" ? "create" : "save", submitLabel: t(mode === "new" ? "new_btn" : repeatIntent && !view.repeat ? "rep_add_btn" : "save_btn"), cancelHref: "?", fields: [
     conf.field,
     ...(mode === "edit" ? [{ name: "key", kind: "hidden", value: key }] : []),
     ...(unsaved ? [{ name: "enabled", kind: "hidden", value: "on" }] : []),
@@ -120,7 +122,8 @@ export async function commandForm(ctx, info, { mode, view, key, unsaved = false,
     { name: "aliases", label: t("f_aliases"), value: (view.aliases ?? []).join(", "), help: t("f_aliases_help") },
     { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: view.cdGlobal ?? "", help: t("f_cd_help", { n: s.cdGlobal }) },
     { name: "cdUser", label: t("f_cd_user"), kind: "number", value: view.cdUser ?? "", help: t("f_cd_help", { n: s.cdUser }) },
-    periodField(ctx, view.period ?? null),
+    periodField(ctx, view.period ?? null, s.timeZone),
+    ...F.repeatFields(ctx, view, kind, repeatIntent),
   ] };
   return [conf.block, form];
 }

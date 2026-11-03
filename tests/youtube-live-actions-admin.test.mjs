@@ -34,7 +34,7 @@ test("état de la page selon la situation : chaque cas a sa phrase et dit quoi f
   const cases = [
     [{ settings: { readChat: false } }, /coupée dans les Réglages/],
     [{ noBridge: true }, /Il manque le Connecteur Home Assistant/],
-    [{ noConnector: true }, /clé YouTube du site/],
+    [{ noConnector: true }, /code d'accès YouTube du site/],
     [{ noChannel: true }, /Chaîne YouTube/],
     [{ choice: { status: "ambiguous" } }, /plusieurs chaînes/],
     [{}, /Pas de direct YouTube/],

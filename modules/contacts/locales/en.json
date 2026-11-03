@@ -199,7 +199,7 @@
   "photoRefresh": "Refresh the photo",
   "photoRefreshed": "Photo and followers updated.",
   "photoUnchanged": "Nothing changed: everything is already up to date.",
-  "photoMissing": "For {services}, install the module that talks to that service (see the suggestion above).",
+  "photoMissing": "For {services}, install the module that talks to that site (see the suggestion above).",
   "photoFail": "Could not reach {services} right now. The card keeps its latest data; try again in a few minutes.",
   "photoNothing": "This card has no Twitch, YouTube or Bluesky account to refresh.",
   "privacyTitle": "Personal data",

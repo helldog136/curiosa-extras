@@ -5,8 +5,8 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.0.2",
-  "minCore": "0.2.6",
+  "version": "1.2.1",
+  "minCore": "0.6.0",
   "description": {
     "fr": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
     "en": "An agenda of events and trainings: upcoming dates with a filter by type and search, a monthly calendar, a detailed page (time where the visitor lives, programme, speakers, sign-up, video, add to one's calendar) and a look back at past events."
@@ -14,6 +14,19 @@
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "icon": "📅",
+  "dashboard": {
+    "tasks": [
+      {
+        "id": "review",
+        "label": {
+          "en": "Events to review ({n})",
+          "fr": "Événements à relire ({n})"
+        },
+        "href": "?tab=use&show=draft",
+        "right": "events.edit"
+      }
+    ]
+  },
   "main": "index.mjs",
   "type": "widget",
   "instances": "multiple",
@@ -69,6 +82,7 @@
   "settings": [
     {
       "key": "timezone",
+      "advanced": true,
       "type": "select",
       "default": "Europe/Paris",
       "options": [
@@ -413,6 +427,7 @@
     },
     {
       "key": "wordOne",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -427,6 +442,7 @@
     },
     {
       "key": "wordMany",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -441,6 +457,7 @@
     },
     {
       "key": "pastTitle",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -468,6 +485,7 @@
     },
     {
       "key": "subscribe",
+      "rare": true,
       "type": "boolean",
       "default": true,
       "label": {
@@ -481,6 +499,7 @@
     },
     {
       "key": "mapLink",
+      "rare": true,
       "type": "boolean",
       "default": true,
       "label": {

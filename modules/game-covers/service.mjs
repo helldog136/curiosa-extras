@@ -1,6 +1,7 @@
 // Le service `game.cover` (version 1) : ce que le module met à la disposition des autres pour illustrer un jeu. Sans clé, tout répond « no-key » et rien ne casse.
 //   status()                          { ready, configured, source, state?, at? } — sans aucun appel réseau ; jamais la clé ;
 //   cover({ title })                  { status: "found" | "none" | "no-key" | "refused" | "unreachable", url, name?, id?, ambiguous? } ;
+//                                     (mémoire, puis jaquette gardée, puis RAWG ; RAWG injoignable : la jaquette gardée sert même périmée, « unreachable » seulement s'il n'y en a pas) ;
 //   candidates({ title, search? })    { status, candidates: [{ id, name, year, platforms, url }] } — 6 au plus ;
 //   fix({ title, rawgId | none | forget })   écriture réservée à une personne qui a le droit « fix » (appel avec { asCaller: true } depuis une action d'administration) ;
 //   adopt({ key?, fixes?, todo? })    reprise des données d'un ancien réglage du site : ne remplace jamais, ne rend jamais une valeur.

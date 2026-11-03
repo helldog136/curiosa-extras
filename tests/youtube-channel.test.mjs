@@ -168,7 +168,7 @@ test("sans fournisseur de youtube.api : le panneau propose d'installer un module
   const c = makeConnector();
   assert.ok(!(await def.adminPanel(frCtx({}, { services: c.services }))).some((b) => b.type === "suggestInstall"));
   const stats = await def.adminPanel(frCtx({ trackStats: true }));
-  assert.match(stats.find((b) => b.type === "table").rows[0][1], /il faut la clé YouTube du site/);
+  assert.match(stats.find((b) => b.type === "table").rows[0][1], /il faut le code d'accès YouTube du site/);
 });
 
 // ── Reprise de la clé vers le fournisseur de youtube.api ───────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ test("clé gardée sans fournisseur : le panneau le dit et propose l'installatio
   const before = fakeCtx({ key: "yt", locale: "fr", messages: readJson("locales/fr.json"), legacy, settings: { channelId: CH } });
   const panel = await def.adminPanel(before);
   assert.ok(panel.some((b) => b.type === "suggestInstall"));
-  assert.match(panel.find((b) => b.type === "banner").text, /gardée en sécurité/);
+  assert.match(panel.find((b) => b.type === "banner").text, /gardé en sécurité/);
   assert.deepEqual(before.calls.legacyCleared, []);
   const c = makeConnector({ apiKey: null });
   const after = fakeCtx({ key: "yt", locale: "fr", messages: readJson("locales/fr.json"), legacy, settings: { channelId: CH }, services: c.services });

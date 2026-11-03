@@ -5,7 +5,7 @@
     "en": "Blog",
     "fr": "Blog"
   },
-  "version": "1.0.0",
+  "version": "1.1.1",
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "instances": "multiple",
@@ -18,9 +18,21 @@
     "sections"
   ],
   "icon": "📰",
+  "dashboard": {
+    "quickActions": [
+      {
+        "id": "write",
+        "label": {
+          "en": "Write an article",
+          "fr": "Écrire un article"
+        },
+        "href": "/admin/entries/new?c={key}"
+      }
+    ]
+  },
   "description": {
-    "en": "Articles with cover, summary and Markdown content. Add as many blogs as you like.",
-    "fr": "Des articles avec image, résumé et contenu Markdown. Ajoutez autant de blogs que vous voulez."
+    "en": "Articles with an image, a summary and simply formatted content. Add as many blogs as you want.",
+    "fr": "Des articles avec image, résumé et contenu mis en forme simplement. Ajoutez autant de blogs que vous voulez."
   },
   "content": {
     "display": "cards",

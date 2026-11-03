@@ -112,7 +112,8 @@ async function ensureCfg(ctx) {
 }
 const saveCfg = async (ctx, cfg) => { const { id, ...data } = cfg; await ctx.api.store.update(id, data); };
 
-const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return L.isValidTimeZone(z) ? z : DEFAULT_TZ; };
+// Fuseau : le réglage du module (avancé, « Europe/Paris » tant que personne n'en choisit un autre), sinon le fuseau du site (cœur 0.6.4), sinon Paris.
+export const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return L.isValidTimeZone(z) ? z : L.isValidTimeZone(ctx.timezone) ? ctx.timezone : DEFAULT_TZ; };
 const baseOf = (ctx) => { const b = ctx.instance.basePath; return b === null || b === undefined ? null : b ? `/${b}` : ""; };
 /** Lien interne écrit dans du HTML : la langue choisie (préfixe /en) est gardée. */
 const loc = (ctx, href) => (ctx.locale && ctx.defaultLocale && ctx.locale !== ctx.defaultLocale ? `/${ctx.locale}${href === "/" ? "" : href}` || "/" : href);
@@ -354,6 +355,7 @@ async function decideRound(ctx, series, cur, now, { rand, via = "timer" } = {}) 
     }
   });
   await dropRoundPoll(ctx, cur);
+  await ctx.api.log?.write({ action: "round.decided", data: { n: rec.n, winner: rec.winner ?? undefined, voters: rec.voters } });   // journal du cœur (Historique) ; ne lève jamais
   await note(ctx, "round.decision", `${ctx.t("journalRound", { n: rec.n })} : ${rec.winner ?? ctx.t("noWinner")}${tie ? ` (${ctx.t("journalTie", { list: tie.join(", ") })})` : ""}`);
   return rec;
 }
@@ -892,10 +894,11 @@ export default {
       press: async (ctx, a) => {
         const now = Date.now(), values = a?.values && typeof a.values === "object" ? a.values : {};
         switch (a?.action) {
-          case "start": return remoteReply(ctx, await startSeries(ctx, now), "remoteStarted");
-          case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");
-          case "stop": { const r = await stopSeries(ctx, now); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
-          case "quick": return remoteReply(ctx, await quickPoll(ctx, values, now), "remoteQuickOk");
+          // La page d'administration et l'assistant sont déjà notés par le cœur ; la télécommande, non : on l'écrit ici, seulement si le geste a réussi.
+          case "start": { const r = await startSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.started" }); return remoteReply(ctx, r, "remoteStarted"); }
+          case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");   // la décision de la manche est notée par decideRound
+          case "stop": { const r = await stopSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.stopped" }); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
+          case "quick": { const r = await quickPoll(ctx, values, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return remoteReply(ctx, r, "remoteQuickOk"); }
           default: return { ok: false, error: "invalid", message: ctx.t("remoteErrFailed") };
         }
       },

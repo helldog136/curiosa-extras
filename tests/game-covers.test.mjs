@@ -164,6 +164,8 @@ test("« C'est ce jeu » : la correction passe avant le cache et avant RAWG ; «
   // Oublier : le choix automatique revient.
   assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.equal((await svc.cover(c, { title: "Hades" })).id, 21);
+  await settle();   // la jaquette trouvée est maintenant gardée (jaquette automatique) : « Oublier » la retire aussi
+  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.ok((await mod.adminActions.forget(c, { id: "Hades" })).error, "plus rien à oublier");
 });
 
@@ -252,7 +254,7 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
 test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; clé reprise (avec « Oublier »)", async () => {
   const none = makeCtx({ settings: {} });
   const blocks = await mod.adminPanel(none, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "banner" && /Aucune clé/.test(b.text)));
+  assert.ok(blocks.some((b) => b.type === "banner" && /Aucun code/.test(b.text)));
   assert.ok(blocks.some((b) => b.type === "markdown" && /rawg\.io\/apidocs/.test(b.text)));
   const c = makeCtx();
   const withKey = await mod.adminPanel(c, { query: {} });
@@ -264,7 +266,7 @@ test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; cl
   const shown = await mod.adminPanel(adopted, { query: {} });
   assert.ok(!JSON.stringify(shown).includes(KEY));
   assert.ok(shown.some((b) => b.type === "adminForm" && b.action === "forgetKey"));
-  assert.match((await mod.adminActions.forgetKey(adopted)).ok, /oubliée/);
+  assert.match((await mod.adminActions.forgetKey(adopted)).ok, /oublié/);
   assert.equal((await svc.status(adopted)).configured, false);
 });
 
@@ -277,7 +279,7 @@ test("« Tester la clé » : ok, refusée, injoignable, absente, mal formée ; l
   assert.equal((await svc.status(c)).state, "refused");
   serve(() => ({ status: 500, json: {} }));
   assert.match((await mod.adminActions.testKey(makeCtx())).error, /injoignable/);
-  assert.match((await mod.adminActions.testKey(makeCtx({ settings: {} }))).error, /Aucune clé/);
+  assert.match((await mod.adminActions.testKey(makeCtx({ settings: {} }))).error, /Aucun code/);
   assert.match((await mod.adminActions.testKey(makeCtx({ settings: { rawgKey: "x y" } }))).error, /format/);
 });
 
@@ -425,10 +427,12 @@ test("« Oublier cette jaquette » : la correction part et le choix automatique 
   assert.equal((await mod.adminActions.forget(c, { id: "Playrooms" })).redirect, "?tab=saved&saved=forgot");
   assert.equal(tableOf(await mod.adminPanel(c, { query: {} }), "saved")[0].rows.length, 0);
   assert.equal((await svc.cover(c, { title: "Hades" })).id, 21, "le site cherche de nouveau automatiquement");
+  await settle();   // retrouvée, la jaquette est gardée de nouveau : on peut l'oublier une fois de plus, pas deux
+  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus enregistrée/);
   assert.match((await mod.adminActions.forget(c, { id: "" })).error, /plus enregistrée/);
-  assert.deepEqual(logged(c), ["cover.game", "cover.forgotten", "cover.forgotten"]);
-  assert.deepEqual(c.calls.log.map((l) => l.target), ["Hades", "Hades", "Playrooms"]);
+  assert.deepEqual(logged(c), ["cover.game", "cover.forgotten", "cover.forgotten", "cover.forgotten"]);
+  assert.deepEqual(c.calls.log.map((l) => l.target), ["Hades", "Hades", "Playrooms", "Hades"]);
   assert.ok(c.calls.log.every((l) => Object.keys(l.data).length === 0 && !JSON.stringify(l).includes(KEY)), "ni donnée personnelle ni clé");
 });
 

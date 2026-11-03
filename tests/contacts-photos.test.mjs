@@ -95,7 +95,7 @@ test("JAMAIS hors interaction : lister, chercher, importer, exporter, fusionner,
     await def.adminPanel(ctx, { query: { view: "dupes" } });
     await def.adminPanel(ctx, { query: { view: "categories" } });
     await def.adminPanel(ctx, { query: { view: "import" } });
-    await def.adminBadge(ctx);
+    await def.dashboard.tasks.review(ctx);
     await I.stage(ctx, "name,accounts\nA,bluesky:aaa.example.test | twitch:aaa_live | youtube:@aaa\n", { locale: "en" });
     await I.step(ctx, "preview");
     await I.step(ctx, "run");
@@ -129,7 +129,7 @@ test("sans connecteur : la fiche propose d'installer PAR SERVICE (Twitch, YouTub
     assert.ok(!/twitch-connector|youtube-connector|twitch-channel|youtube-channel/.test(JSON.stringify(page)), "un service, jamais un nom de module");
     assert.match(plain(page), /Photo Bluesky \(4.200 followers\)/, "Bluesky ne demande aucun connecteur");
     const r = await def.adminActions.refreshPhoto(ctx, { id });
-    assert.match(r.ok, /Photo et followers mis à jour\. Pour Twitch, YouTube, installez le module qui parle à ce service \(voir la proposition plus haut\)\./);
+    assert.match(r.ok, /Photo et followers mis à jour\. Pour Twitch, YouTube, installez l'extension qui parle à ce site \(voir la proposition plus haut\)\./);
   });
 });
 

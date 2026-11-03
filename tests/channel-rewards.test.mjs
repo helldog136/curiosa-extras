@@ -39,7 +39,7 @@ function world(o = {}) {
   const wants = [];
   const ctx = fakeCtx({
     key: "bot", moduleId: "twitch-bot", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.locale === "en" ? en : fr, siteUrl: "https://site.example.org",
-    settings: { onlyWhenLive: true, timezone: "Europe/Paris", ...o.settings },
+    settings: { onlyWhenLive: true, timezone: "Europe/Paris", ...o.settings }, logEvents: manifest.logEvents,
     topics: { "social.stat": [], "planning.slot": [], "social.link": [], ...(ha ? ha.topics : { "ha.result": [], "ha.state": [] }) },
     services: ha ? { "home-assistant.bridge": ha.methods } : {},
     serviceInstances: {
@@ -86,8 +86,8 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.7.1");
-  assert.equal(manifest.minCore, "0.6.0");
+  assert.equal(manifest.version, "1.10.0");
+  assert.equal(manifest.minCore, "0.6.4");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
   assert.deepEqual(manifest.tabs.map((x) => x.id), ["use", "timers", "rewards", "sources"]);
@@ -785,3 +785,62 @@ test("la page de modification d'une récompense charge ses valeurs ; le test est
   assert.ok(!b.some((x) => x.type === "adminForm" && x.action === "rewardToggle"));
 });
 
+
+/* ───────────── Journal du cœur (Historique) ───────────── */
+
+const central = (w) => w.ctx.dumpLog();
+
+test("Historique : un remboursement qui demande votre attention est noté (récompense et raison en clair), jamais le pseudo", async () => {
+  const w = await setup();
+  const rw = await mk(w);
+  Object.assign(w.ha.state, { enabled: true, live: true, paired: true, offline: true, busy: false });
+  tick(); const { id } = await redeem(w, rw);
+  assert.equal((await byRid(w, id)).reason, "offline");
+  const l = central(w);
+  assert.equal(l.length, 1);
+  assert.equal(l[0].action, "reward.refunded"); assert.equal(l[0].level, "warn");
+  assert.deepEqual(l[0].data, { title: "Rouge", reason: fr.rw_reason_offline });
+  assert.ok(!JSON.stringify(l).includes("Viewer") && !JSON.stringify(l).includes("viewer"));
+});
+
+test("Historique : réussite, maison coupée, hors direct, trop de demandes, message refusé : rien (ils restent dans le journal des échanges)", async () => {
+  const w = await setup();
+  const rw = await mk(w);
+  const ok = await redeem(w, rw); w.ha.resolve(ok.id, "done"); tick(); await J.reconcile(w.ctx, { now: clock, force: true });
+  assert.equal((await byRid(w, ok.id)).reason, "ok");
+  for (const st of [{ enabled: false }, { live: false }, { busy: true }]) {
+    Object.assign(w.ha.state, { enabled: true, live: true, paired: true, offline: false, busy: false }, st);
+    tick(); await redeem(w, rw);
+  }
+  const tts = await mk(w, { title: "Parle", action: "tts:lire", cost: "9" });
+  Object.assign(w.ha.state, { enabled: true, live: true, paired: true, offline: false, busy: false });
+  await redeem(w, tts, { user_input: "un gros-mot ici" });
+  assert.deepEqual(central(w), []);
+});
+
+test("Historique : un échange que Twitch n'a pas confirmé après 5 essais est noté en erreur, une seule fois", async () => {
+  const w = await setup();
+  const rw = await mk(w);
+  const { id } = await redeem(w, rw);
+  w.ha.resolve(id, "done");
+  w.tw.state.rateLimited = true;
+  for (let i = 0; i < 9; i++) { tick(); await J.reconcile(w.ctx, { now: clock, force: true }); }
+  const l = central(w);
+  assert.equal(l.length, 1);
+  assert.equal(l[0].action, "reward.failed"); assert.equal(l[0].level, "error"); assert.deepEqual(l[0].data, { title: "Rouge" });
+});
+
+test("Historique : sans journal du cœur (cœur plus ancien), les échanges marchent comme avant", async () => {
+  const w = await setup();
+  const rw = await mk(w);
+  delete w.ctx.api.log;
+  Object.assign(w.ha.state, { enabled: true, live: true, paired: true, offline: true });
+  tick(); const { id } = await redeem(w, rw);
+  assert.equal(w.tw.settled.get(id), "CANCELED");
+});
+
+test("Historique : événements déclarés valides, en deux langues", () => {
+  const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
+  assert.ok(["reward.refunded", "reward.failed"].every((k) => manifest.logEvents.some((e) => e.key === k)));
+  assert.equal(manifest.minCore, "0.6.4");
+});

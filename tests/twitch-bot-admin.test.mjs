@@ -154,8 +154,8 @@ test("recherche présente même avec peu de commandes (R15) ; sans JavaScript la
 
 const REPEATED = /utilisateur|jeton|webhook|identifiant|payload|JSON|\bAPI\b|\bcache\b|OAuth|slug/i;
 function lint(form, cfg, where) {
-  const visible = new Set(cfg.layout.filter((x) => !x.more).flatMap((x) => (x.f ? [x.f] : x.seg ? [x.seg] : x.sentence ? x.sentence.tokens.filter((t) => t.f).map((t) => t.f) : x.period ? [x.period.field] : [])));
-  const folded = new Set(cfg.layout.filter((x) => x.more).flatMap((x) => x.more.items.flatMap((i) => (i.f ? [i.f] : i.sentence ? i.sentence.tokens.filter((t) => t.f).map((t) => t.f) : i.period ? [i.period.field] : []))));
+  const visible = new Set(cfg.layout.filter((x) => !x.more).flatMap((x) => (x.f ? [x.f] : x.seg ? [x.seg] : x.sentence ? x.sentence.tokens.filter((t) => t.f).map((t) => t.f) : [])));
+  const folded = new Set(cfg.layout.filter((x) => x.more).flatMap((x) => x.more.items.flatMap((i) => (i.nested ? i.nested.items.flatMap((n) => (n.seg ? [n.seg] : n.sentence ? n.sentence.tokens.filter((t) => t.f).map((t) => t.f) : [])) : i.f ? [i.f] : i.seg ? [i.seg] : i.sentence ? i.sentence.tokens.filter((t) => t.f).map((t) => t.f) : []))));
   for (const f of form.fields.filter((x) => x.kind !== "hidden")) {
     assert.ok(f.label.length <= 60 && !/:\s*$/.test(f.label), `${where} : libellé « ${f.label} »`);
     assert.ok(!REPEATED.test(f.label) && !REPEATED.test(f.help ?? ""), `${where} : mot technique dans « ${f.label} »`);
@@ -170,12 +170,12 @@ test("formulaire d'une commande : 3 champs visibles (Nom, Ce que le bot répond,
   const form = formOfBlocks(b, "create"), cfg = configOf(b);
   const { visible, folded } = lint(form, cfg, "nouvelle commande");
   assert.deepEqual([...visible], ["name", "text", "role"]);
-  assert.deepEqual([...folded].sort(), ["aliases", "cdGlobal", "cdUser", "period"]);
+  assert.deepEqual([...folded].sort(), ["aliases", "cdGlobal", "cdUser", "period", "repeatEvery", "repeatLines", "repeatOn", "repeatWhen", "timerOnly"]);
   assert.deepEqual(form.fields.filter((f) => f.kind !== "hidden").slice(0, 3).map((f) => f.label), ["Nom", "Ce que le bot répond", "Qui peut l'utiliser"]);
   assert.deepEqual(form.fields.find((f) => f.name === "role").options.map((o) => o.label), ["Tout le monde", "Personnes abonnées", "Modération", "Vous seulement"]);
   const more = cfg.layout.find((x) => x.more).more;
   assert.deepEqual([more.title, more.open], ["Plus d'options", false]);
-  assert.deepEqual(more.items.map((i) => i.f ?? Object.keys(i)[0]), ["aliases", "sentence", "period"]);
+  assert.deepEqual(more.items.map((i) => i.f ?? Object.keys(i)[0]), ["aliases", "sentence", "period", "repeatOn", "repeatEvery", "nested", "timerOnly"], "le bloc « Répéter automatiquement » est rangé sous Plus d'options, jamais avec les champs du chemin court");
   assert.equal(form.submitLabel, "Créer la commande");
   assert.equal(b.some((x) => x.type === "adminForm" && x.action === "create") && (await A.panel(owner.ctx, { query: {} })).some((x) => x.action === "create"), false, "sans « Nouvelle commande », pas de formulaire en bas de page");
   const key = `custom:${(await C.loadConfig(owner.ctx)).data.custom.find((c) => c.name === "alive").id}`;
@@ -206,117 +206,118 @@ test("l'aperçu de la réponse : valeurs du moment pour les morceaux simples, mo
 
 /* ───────────── Le contrôle de période ───────────── */
 
-test("période : texte ↔ période pour tous les cas (toujours, chaque année, à cheval sur l'année, une fois avec années)", () => {
-  const rt = (text) => client.periodToText(client.parsePeriodText(text));
-  assert.equal(client.parsePeriodText(""), null, "toujours active");
-  assert.equal(P.periodToText(null), "");
-  assert.equal(rt("01/11 - 30/11"), "01/11 - 30/11");
-  assert.deepEqual(client.parsePeriodText("1/11 - 30/11"), { yearly: true, from: { d: 1, m: 11 }, to: { d: 30, m: 11 } });
-  const wrap = client.parsePeriodText("15/12 - 15/01");
-  assert.equal(wrap.yearly, true);
-  assert.equal(client.periodProblem(wrap, P.DAYS_IN_MONTH), null, "à cheval sur l'année : valide chaque année");
-  assert.equal(P.isOpen(P.parsePeriodText("15/12 - 15/01").value, Date.parse("2026-01-10T10:00:00Z")), true);
-  assert.equal(P.isOpen(P.parsePeriodText("15/12 - 15/01").value, Date.parse("2026-02-10T10:00:00Z")), false);
-  const once = client.parsePeriodText("01/11/2026 - 30/11/2026");
-  assert.deepEqual([once.yearly, once.from.y, once.to.y], [false, 2026, 2026]);
-  assert.equal(rt("01/11/2026 - 30/11/2026"), "01/11/2026 - 30/11/2026");
-  assert.equal(client.parsePeriodText("n'importe quoi"), "bad");
-  for (const t of ["", "01/11 - 30/11", "15/12 - 15/01", "01/11/2026 - 30/11/2026", "29/02 - 01/03"]) {
-    const p = P.parsePeriodText(t);
-    assert.equal(p.ok, true, t);
-    assert.equal(P.periodToText(p.value), t ? client.periodToText(client.parsePeriodText(t)) : "", `${t} : le serveur et la page écrivent la même chose`);
+test("période : le champ NATIF du cœur (un seul champ), rangé sous « Plus d'options » pour les commandes ET les timers ; aucun contrôle maison", async () => {
+  // un timer n'a plus de formulaire : il se règle sur la page d'une commande, où le même champ de période sert
+  const pw = world();   // un monde à part : le monde partagé garde ses 35 commandes
+  await C.saveCommand(pw.ctx, { kind: "custom" }, { name: "periodique", text: "Texte", repeat: { minutes: 10 } }, { src: await SRC.gather(pw.ctx, "emma"), t: pw.ctx.t, prefix: "!" });
+  const pid = (await C.loadConfig(pw.ctx)).data.custom.find((c) => c.name === "periodique").id;
+  const cmdBlocks = await A.panel(owner.ctx, { query: { new: "1" } }), timBlocks = await A.panel(pw.ctx, { query: { tab: "use", edit: `custom:${pid}`, repeat: "1" } });
+  for (const [blocks, action] of [[cmdBlocks, "create"], [timBlocks, "save"]]) {
+    const field = formOfBlocks(blocks, action).fields.find((f) => f.name === "period");
+    assert.deepEqual([field.kind, field.label, field.value], ["period", "Limiter dans le temps", ""], "champ `period` du cœur, vide : toujours active");
+    assert.ok(field.help.length <= 60 && !/:\s*$/.test(field.label), field.help);
+    assert.equal(field.openEnded, undefined, "deux dates, comme avant : le moteur du module ne connaît pas les périodes ouvertes");
+    const item = configOf(blocks).layout.find((x) => x.more).more.items.find((x) => x.f === "period");
+    assert.deepEqual(item, { f: "period", label: "Limiter dans le temps" }, "rangé dans le panneau replié, avec son libellé");
+    assert.equal(JSON.stringify(configOf(blocks)).includes("shortcuts"), false, "plus de puces fixes");
   }
+  const src = fs.readFileSync(`${DIR}/timersAdmin.mjs`, "utf8") + fs.readFileSync(`${DIR}/commandsUi.mjs`, "utf8") + fs.readFileSync(`${DIR}/formsUi.mjs`, "utf8");
+  assert.ok(!/periodLayout|periodControl|SHORTCUTS/.test(src + fs.readFileSync(`${DIR}/period.mjs`, "utf8")), "le code du contrôle maison a disparu");
+  const script = fs.readFileSync(`${DIR}/adminkit.client.js`, "utf8");
+  assert.ok(!/periodControl|parsePeriodText|periodToText|dateWords|ck-period|dFrom|yc\.addEventListener/.test(script), "le script de la page ne contient plus de contrôle de période");
+  assert.ok(!/ck-sel|ck-date|ck-phrase|ck-range|ck-check|ck-err\b/.test(KIT.CSS), "ni son style");
+  for (const k of Object.keys(fr)) assert.ok(!/^per_(sc|mode|from|to|yearly|day|month|date|phrase|always|utc)/.test(k), `${k} : texte du contrôle maison à retirer`);
+  for (const text of [JSON.stringify(fr), JSON.stringify(en)]) assert.ok(!/Tout novembre|Tout septembre|Cet été|All of November|This summer|Chaque année|Every year/.test(text), "plus de puces fixes dans les textes");
 });
 
-test("période : les erreurs sont dites avec un exemple, la même chose côté page et côté serveur", () => {
-  const dim = P.DAYS_IN_MONTH;
-  assert.deepEqual(client.periodProblem(client.parsePeriodText("31/02 - 01/03"), dim), { key: "nodate", day: 31, month: 2 });
-  assert.equal(client.periodProblem({ yearly: true, from: { d: 0, m: 0 }, to: { d: 1, m: 1 } }, dim).key, "incomplete");
-  assert.equal(client.periodProblem({ yearly: false, from: { d: 1, m: 11 }, to: { d: 2, m: 11, y: 2026 } }, dim).key, "year");
-  assert.equal(client.periodProblem(client.parsePeriodText("30/11/2026 - 01/11/2026"), dim).key, "order");
+test("période : l'aide du champ dit le fuseau (UTC quand aucun n'est réglé), courte, en français et en anglais", async () => {
+  const help = async (w) => formOfBlocks(await A.panel(w.ctx, { query: { new: "1" } }), "create").fields.find((f) => f.name === "period").help;
+  assert.equal(await help(world({ settings: { timezone: "UTC" } })), "Vide : toujours active. Dates en heure UTC (voir Réglages).");
+  assert.equal(await help(world()), "Vide : toujours active. Fuseau Europe/Paris.");
+  assert.equal(await help(world({ locale: "en", settings: { timezone: "UTC" } })), "Empty: always active. Dates in UTC time (see Settings).");
+  assert.equal(await help(world({ locale: "en" })), "Empty: always active. Time zone Europe/Paris.");
+});
+
+test("période : les erreurs du serveur sont dites avec un exemple (sous le champ)", () => {
   const ctx = world().ctx;
-  assert.equal(P.periodError(ctx, P.parsePeriodText("31/02 - 01/03")), "Le 31 février n'existe pas. Exemple : 28 février.");
-  assert.equal(P.periodError(ctx, P.parsePeriodText("31/04 - 01/05")), "Le 31 avril n'existe pas. Exemple : 30 avril.");
-  assert.match(P.periodError(ctx, P.parsePeriodText("30/11/2026 - 01/11/2026")), /Exemple : du 1er novembre 2026 au 30 novembre 2026/);
-  assert.match(P.periodError(ctx, P.parsePeriodText("xx")), /Exemple : du 1er novembre au 30 novembre/);
-  const cfg = P.periodControl(ctx, null);
-  assert.equal(client.fill(cfg.text.eNodate, { day: 31, month: "février", example: "28 février" }), "Le 31 février n'existe pas. Exemple : 28 février.", "la même phrase côté page");
+  assert.equal(P.periodError(ctx, P.parsePeriodValue("02-31/03-01")), "Le 31 février n'existe pas. Exemple : 28 février.");
+  assert.equal(P.periodError(ctx, P.parsePeriodValue("04-31/05-01")), "Le 31 avril n'existe pas. Exemple : 30 avril.");
+  assert.match(P.periodError(ctx, P.parsePeriodValue("2026-11-30/2026-11-01")), /Exemple : du 1er novembre 2026 au 30 novembre 2026/);
+  assert.match(P.periodError(ctx, P.parsePeriodValue("xx")), /Exemple : du 1er novembre au 30 novembre/);
+  assert.match(P.periodError(ctx, P.parsePeriodValue("1999-11-01/2026-11-30")), /date complète, avec l'année\. Exemple : 1er novembre 2026/);
 });
 
-test("période : un seul contrôle, des textes et quatre raccourcis (Tout novembre, Tout septembre, Cet été, Noël) ; la phrase d'aperçu ; les années seulement hors « Chaque année »", () => {
-  const ctx = world().ctx;
-  const c = P.periodControl(ctx, P.readPeriod({ yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } }), "Europe/Paris");
-  assert.equal(c.field, "period");
-  assert.deepEqual(c.shortcuts.map((s) => s.label), ["Tout novembre", "Tout septembre", "Cet été", "Noël"]);
-  assert.deepEqual(c.shortcuts[0], { label: "Tout novembre", from: [11, 1], to: [11, 30] });
-  assert.deepEqual([c.text.always, c.text.range, c.text.yearly, c.text.from, c.text.to], ["Toujours active", "Seulement pendant une période", "Chaque année", "Du", "au"]);
-  const words = (x, withYear) => client.dateWords(x, c, withYear);
-  assert.equal(client.fill(c.text.phraseYearly, { from: words({ d: 1, m: 11 }), to: words({ d: 30, m: 11 }) }), "Active du 1er novembre au 30 novembre, chaque année");
-  assert.equal(client.fill(c.text.phraseOnce, { from: words({ d: 1, m: 11, y: 2026 }, true), to: words({ d: 30, m: 11, y: 2026 }, true) }), "Active du 1er novembre 2026 au 30 novembre 2026, une seule fois");
-  assert.equal(c.text.utc, "", "fuseau réglé : pas de remarque");
-  assert.match(P.periodControl(ctx, null, "UTC").text.utc, /heure UTC/);
-  const en_ = P.periodControl(world({ locale: "en" }).ctx, null);
-  assert.deepEqual(en_.shortcuts.map((s) => s.label), ["All of November", "All of September", "This summer", "Christmas"]);
-  const src = fs.readFileSync(`${DIR}/adminkit.client.js`, "utf8");
-  assert.match(src, /yc\.addEventListener\("change"/, "case « Chaque année »");
-  assert.match(src, /dFrom\.type = "date"/, "sans « Chaque année » : deux sélecteurs de date complets");
+test("le contrôle de période sert à toute commande, y compris celles qui se répètent (il n'existe plus de formulaire de timer)", async () => {
+  const src = fs.readFileSync(`${DIR}/timersAdmin.mjs`, "utf8");
+  assert.ok(!/periodLayout|periodField|timerSave|timerCreate/.test(src), "un timer se règle sur la page de la commande");
 });
 
-test("le même contrôle de période sert aux commandes et aux timers", async () => {
-  const cmd = configOf(await A.panel(owner.ctx, { query: { new: "1" } })).layout.find((x) => x.more).more.items.find((x) => x.period).period;
-  const tim = configOf(await A.panel(owner.ctx, { query: { tab: "timers", timerNew: "1" } })).layout.find((x) => x.more).more.items.find((x) => x.period).period;
-  assert.deepEqual(cmd, tim);
-  const src = fs.readFileSync(`${DIR}/timersAdmin.mjs`, "utf8") + fs.readFileSync(`${DIR}/commandsUi.mjs`, "utf8");
-  assert.equal((src.match(/F\.periodLayout/g) ?? []).length, 2, "un seul composant, appelé des deux côtés");
-});
+/* ───────────── Timers (le bloc « Répéter automatiquement » d'une commande) ───────────── */
 
-/* ───────────── Timers ───────────── */
-
-test("timers : tableau avec recherche, interrupteur, lignes régulières ; formulaire de 5 champs visibles au plus, période repliée", async () => {
+test("page d'une commande : « Répéter automatiquement » est sous Plus d'options (ouvert par le lien de l'onglet Timers), l'interrupteur et UNE durée ; l'ancien timer n'a plus de formulaire", async () => {
   const { ctx } = world();
-  await T.saveTimer(ctx, {}, { name: "Rappel du Discord", text: "Rejoignez le Discord.", minutes: 20, lines: 5, when: "live", enabled: true });
-  await T.saveTimer(ctx, {}, { name: "Hydratation", text: "Pensez à boire.", minutes: 30, lines: 3, when: "always", enabled: false });
-  const b = await A.panel(ctx, { query: { tab: "timers" } });
-  const html = htmlOf(b, "timers"), r = rowsOf(html);
-  assert.equal(r.length, 2);
-  assert.match(html, /data-ck-q/);
-  assert.match(r[0].html, /role="switch" aria-checked="true"[^>]*data-ck-act="timerToggle"/);
-  assert.match(r[1].html, /aria-checked="false"/);
-  assert.deepEqual(r.map((x) => x.attrs.state), ["on", "off"]);
-  assert.equal((r[0].html.match(/class="ck-btn small/g) ?? []).length, 2, "au plus deux actions visibles : Modifier et Envoyer maintenant");
-  assert.match(r[1].cells.org, /30 min · 3 lignes · Toujours/);
-  assert.ok(!/En direct seulement/.test(r[0].html), "la valeur ordinaire n'est pas répétée");
-  const nb = await A.panel(ctx, { query: { tab: "timers", timerNew: "1" } });
-  const cfg = configOf(nb), form = formOfBlocks(nb, "timerCreate");
-  const { visible } = lint(form, cfg, "timer");
-  assert.deepEqual([...visible], ["name", "text", "minutes", "lines", "when"]);
-  assert.ok(visible.size <= 5);
-  assert.deepEqual(cfg.layout.find((x) => x.more).more.items.map((i) => Object.keys(i)[0]), ["period"]);
-  assert.deepEqual(form.fields.find((f) => f.name === "when").options.map((o) => o.label), ["En direct seulement", "Toujours"]);
-  assert.equal(form.submitLabel, "Ajouter le timer");
-  const sentence = cfg.layout.find((x) => x.sentence).sentence;
-  assert.deepEqual(sentence.tokens.map((t) => (typeof t === "string" ? t : t.f)), ["Toutes les", "minutes", "minutes, après au moins", "lines", "lignes de chat"]);
-  const ro = world({ can: false });
-  await T.saveTimer(ro.ctx, {}, { name: "R", text: "x", minutes: 5, lines: 0, when: "live", enabled: true });
-  const rr = rowsOf(htmlOf(await A.panel(ro.ctx, { query: { tab: "timers" } }), "timers"))[0];
-  assert.match(rr.html, /disabled/);
-  assert.ok(!rr.html.includes("Modifier"), "sans le droit : lecture seule");
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "discord", text: "Rejoignez le Discord.", repeat: { minutes: 20, lines: 4, when: "always" } }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
+  const key = `custom:${(await C.loadConfig(ctx)).data.custom[0].id}`;
+  const closed = await A.panel(ctx, { query: { edit: key } });
+  const open = await A.panel(ctx, { query: { tab: "use", edit: key, repeat: "1" } });
+  assert.equal(configOf(closed).layout.find((x) => x.more).more.open, false);
+  assert.equal(configOf(open).layout.find((x) => x.more).more.open, true, "le lien « Modifier » de l'onglet Timers ouvre le bloc");
+  const form = formOfBlocks(open, "save"), cfg = configOf(open);
+  const { visible } = lint(form, cfg, "répétition");
+  assert.deepEqual([...visible], ["name", "text", "role"], "le chemin court ne change pas");
+  const f = Object.fromEntries(form.fields.map((x) => [x.name, x]));
+  assert.deepEqual([f.repeatOn.kind, f.repeatOn.value, f.repeatEvery.kind, f.repeatEvery.value, f.repeatEvery.min, f.repeatEvery.max], ["switch", "on", "duration", 1200, 60, 86400]);
+  assert.match(f.repeatEvery.example, /minutes/);
+  assert.deepEqual([f.repeatLines.value, f.repeatWhen.value], [4, "always"]);
+  assert.ok(open.some((b) => b.type === "table" && b.rowActions?.[0]?.action === "timerRemove"), "retirer le timer : séparé, avec confirmation");
+  const rm = open.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "timerRemove").rowActions[0];
+  assert.match(rm.confirm, /La commande reste/);
+  const more = configOf(open).layout.find((x) => x.more).more.items;
+  assert.equal(more.find((i) => i.f === "repeatEvery").showWhen, "repeatOn", "éteint : seul l'interrupteur se voit");
+  assert.equal(more.find((i) => i.nested).showWhen, "repeatOn");
+  assert.equal(more.find((i) => i.nested).nested.title, "Conditions", "minimum de messages et direct/toujours : repliés");
+  assert.equal(formOfBlocks(open, "save").submitLabel, "Enregistrer la commande");
+  const fresh_ = world();
+  await C.saveCommand(fresh_.ctx, { kind: "custom" }, { name: "libre", text: "Libre" }, { src: await SRC.gather(fresh_.ctx, "emma"), t: fresh_.ctx.t, prefix: "!" });
+  const k2 = `custom:${(await C.loadConfig(fresh_.ctx)).data.custom[0].id}`;
+  const intent = await A.panel(fresh_.ctx, { query: { tab: "use", edit: k2, repeat: "1" } });
+  assert.equal(formOfBlocks(intent, "save").submitLabel, "Ajouter ce timer", "un seul bouton principal, verbe précis");
+  assert.equal(formOfBlocks(intent, "save").fields.find((x) => x.name === "repeatOn").value, "on", "venu d'« Ajouter un timer » : l'interrupteur est déjà allumé");
+  assert.ok(!intent.some((b) => b.type === "table" && b.rowActions?.[0]?.action === "timerRemove"), "rien à retirer tant qu'il n'y a pas de timer");
 });
 
-test("timers : état vide qui dit quoi faire ; créer et activer par l'interrupteur", async () => {
+test("liste des commandes : une commande réservée au timer porte la pastille écrite « Timer seulement » (et seulement elle, R14), montre son titre et reste modifiable", async () => {
   const { ctx } = world();
-  const empty = plain((await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers").map((b) => b.html ?? "").join(""));
-  assert.match(empty, /Vous n'avez pas encore de timer\./);
-  assert.match(empty, /Nouveau timer/);
-  const x = { name: "Rappel", text: "Suivez la chaîne.", minutes: "10", lines: "2", when: "live", period: "" };
-  assert.deepEqual(await TA.actions.timerCreate.run(ctx, x), { ok: fr.tm_created });
-  const id = (await C.loadConfig(ctx)).data.timers[0].id;
-  assert.equal((await C.loadConfig(ctx)).data.timers[0].enabled, true);
-  assert.match((await TA.actions.timerToggle.run(ctx, { id })).ok, /désactivé/);
-  assert.equal((await C.loadConfig(ctx)).data.timers[0].enabled, false);
-  assert.equal((await TA.actions.timerSave.run(ctx, { ...x, id, text: "Nouveau texte.", period: "01/11 - 30/11" })).redirect, "?tab=timers");
-  const t0 = (await C.loadConfig(ctx)).data.timers[0];
-  assert.deepEqual([t0.enabled, t0.text, t0.period.yearly], [false, "Nouveau texte.", true], "enregistrer ne touche pas à l'état");
+  const env = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "merch", text: "Boutique" }, env);
+  await C.mutate(ctx, (cfg) => { cfg.custom.push({ id: "tx1", name: "rappel", title: "Rappel du Discord", aliases: [], text: "Le Discord !", role: "everyone", enabled: true, cdGlobal: null, cdUser: null, timerOnly: true, repeat: { minutes: 15, lines: 5, when: "live", enabled: true } }); return { ok: true }; });
+  const b = await A.panel(ctx, { query: {} });
+  const html = htmlOf(b, "commands"), rows = rowsOf(html);
+  const timer = rows.find((r) => r.cells.name.startsWith("Rappel du Discord"));
+  assert.ok(timer && timer.attrs.origin === "timer");
+  assert.match(timer.cells.org, /^Timer seulement$/);
+  assert.equal((html.match(/ck-origin timer/g) ?? []).length, 1);
+  assert.match(timer.html, /href="\?edit=custom%3Atx1#edit"/);
+  assert.ok(pills(html).some((p) => p.key === "origin" && p.val === "timer" && p.label === "Timer seulement" && p.count === 1));
+  const e = await A.panel(ctx, { query: { edit: "custom:tx1" } });
+  assert.ok(!configOf(e).layout.some((x) => x.seg === "role"), "personne à qui la permettre : pas de choix du rôle");
+  // dans le chat, personne ne peut la taper
+  const out = await say(ctx, "!rappel", { login: "curieux" }, NOW);
+  assert.equal(out.handled, false);
+  // retirer le timer d'une commande « seulement pour le timer » : DEUX choix confirmés, aucun silencieux
+  const acts = e.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "timerKeep")).rowActions;
+  assert.deepEqual(acts.map((a) => a.action), ["remove", "timerKeep"]);
+  assert.match(acts[0].confirm, /n'existe que pour ce timer/);
+  assert.match(acts[1].confirm, /devient une commande du chat.*Tout le monde pourra la taper avec !rappel/);
+  assert.ok(!e.some((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "timerRemove")));
+  assert.equal(e.filter((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "remove")).length, 1, "un seul bloc de suppression");
+  assert.equal((await TA.actions.timerRemove.run(ctx, { id: "custom:tx1" })).error, ctx.t("rep_choose"), "jamais de passage silencieux dans le chat");
+  assert.equal((await C.loadConfig(ctx)).data.custom.find((c) => c.id === "tx1").timerOnly, true);
+  assert.equal((await say(ctx, "!rappel", { login: "curieux" }, NOW + 1000)).handled, false);
+  assert.match((await TA.actions.timerKeep.run(ctx, { id: "custom:tx1" })).ok, /utilisable dans le chat/);
+  const kept = (await C.loadConfig(ctx)).data.custom.find((c) => c.id === "tx1");
+  assert.deepEqual([kept.timerOnly, kept.repeat], [undefined, undefined]);
+  assert.equal((await say(ctx, "!rappel", { login: "curieux" }, NOW + 60_000)).result, "sent");
 });
 
 /* ───────────── Journal ───────────── */
@@ -373,7 +374,7 @@ test("page : plus de lien d'import ; un ancien « ?import=1 » ne casse rien", a
 
 test("migration des données 5 : un ancien brouillon d'import est effacé sans erreur, aucune commande ni aucun timer n'est touché ; sans brouillon, rien ne se passe ; rejouable", async () => {
   const { ctx } = world();
-  await T.saveTimer(ctx, {}, { name: "Rappel", text: "Texte.", minutes: 5, lines: 0, when: "live", enabled: true });
+  await C.mutate(ctx, (cfg) => { cfg.timers.push({ id: "told", name: "Rappel", text: "Texte.", minutes: 5, lines: 0, when: "live", enabled: true }); return { ok: true }; });
   await C.saveCommand(ctx, { kind: "custom" }, { name: "merch", text: "Boutique", enabled: true }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
   await ctx.api.store.add("botImport", { rows: [{ i: 0, kind: "command", name: "x", text: "y" }], at: Date.now() });
   const before = structuredClone((await C.loadConfig(ctx)).data);
@@ -383,7 +384,7 @@ test("migration des données 5 : un ancien brouillon d'import est effacé sans e
   assert.deepEqual((await C.loadConfig(ctx)).data, before, "aucune commande perdue");
   await def.migrations[5](ctx);
   assert.deepEqual((await C.loadConfig(ctx)).data, before);
-  assert.equal(manifest.dataVersion, 5);
+  assert.equal(manifest.dataVersion, 6);
   const none = world();
   await def.migrations[5](none.ctx);
 });
@@ -414,7 +415,7 @@ test("FR et EN : mêmes textes d'interface, mêmes {variables} ; vouvoiement ; a
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
   for (const k of Object.keys(fr)) assert.equal(vars(fr[k]), vars(en[k]), k);
-  const ui = Object.entries(fr).filter(([k]) => /^(origin|filter|search|col|note|add_|f_|wait|more_|chip|per_f|per_title|per_mode|per_sc|log_help|tm_f|tm_note|tm_intro|sw_|summary_help|new_open|save_btn|act_open)/.test(k));
+  const ui = Object.entries(fr).filter(([k]) => /^(origin|filter|search|col|note|add_|f_|wait|more_|chip|per_f|per_title|log_help|tm_f|tm_note|tm_intro|sw_|summary_help|new_open|save_btn|act_open)/.test(k));
   for (const [k, v] of ui) {
     assert.ok(!/!/.test(v), `${k} : point d'exclamation`);
     assert.ok(!/(?<![\p{L}])(tu|ton|ta|tes|toi|veuillez)(?![\p{L}])/iu.test(v), `${k} : vouvoiement`);
@@ -434,5 +435,5 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.7.1");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.10.0");
 });

@@ -10,8 +10,8 @@ test("manifeste : valide, et le code fait ce que module.json annonce", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
   assert.equal(r.manifest.id, "events");
-  assert.equal(manifest.version, "1.0.2");
-  assert.equal(manifest.minCore, "0.2.6");
+  assert.equal(manifest.version, "1.2.1");
+  assert.equal(manifest.minCore, "0.6.0");
   assert.equal(index.VERSION, manifest.version, "VERSION doit suivre la version du manifeste");
   assert.equal(manifest.instances, "multiple", "deux agendas possibles : un public, un de formations");
   assert.deepEqual(manifest.sections.map((s) => s.id), Object.keys(def.sections));

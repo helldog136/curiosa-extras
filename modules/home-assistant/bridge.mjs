@@ -123,7 +123,7 @@ export function redeemCode(ctx, { code, name }, { now = Date.now() } = {}) {
     const given = normalizeCode(code);
     if (!(given.length === CODE_LENGTH && safeEqualHex(sha256hex(given), sha256hex(core.pending.code)))) {
       core.pending.tries = (core.pending.tries || 0) + 1;
-      if (core.pending.tries >= CODE_TRIES) { core.pending = null; await S.addLog(db, { kind: "system", event: "pair_locked" }); }
+      if (core.pending.tries >= CODE_TRIES) { core.pending = null; await S.addLog(db, { kind: "system", event: "pair_locked" }); S.noteEvent(db, "pairing.locked", null, "warn"); }
       return { ok: false, problem: "invalid_code" };
     }
     const token = randomBytes(32).toString("base64url");
@@ -135,6 +135,7 @@ export function redeemCode(ctx, { code, name }, { now = Date.now() } = {}) {
     core.lastSeenAt = 0;
     mem(ctx).seen = 0;
     await S.addLog(db, { kind: "system", event: replaced ? "repaired" : "paired", detail: core.paired.name });
+    S.noteEvent(db, "device.paired", { replaced });   // l'association se fait depuis Home Assistant, pas depuis la page : le cœur ne la voit pas tout seul
     return { ok: true, token, instance: ctx.instance.key };
   }, { now });
 }
@@ -168,6 +169,8 @@ async function cancelQueue(db, code) {
   return gone.length;
 }
 
+/** Le bouton de la page et les outils de l'assistant sont déjà notés par le cœur (« module… », « mcp… ») : on n'écrit que les appels venus d'un autre module (Bot Twitch…). */
+const whoLogged = (who) => who !== "admin" && !who.startsWith("mcp:");
 const byOf = (by) => label(typeof by === "string" ? by : "", 40);
 
 /** « Tout couper » : plus rien n'est envoyé, ce qui attendait est refusé. `by` : qui le demande (« owner », « mod:pseudo », « admin »…). */
@@ -181,6 +184,7 @@ export function stop(ctx, args, now = Date.now()) {
     if (was) { core.stoppedAt = now; core.stoppedBy = who; }
     const cancelled = await cancelQueue(db, "off");
     if (was || cancelled) await S.addLog(db, { kind: "system", event: "stop", by: who });
+    if (was && whoLogged(who)) S.noteEvent(db, "circuit.cut", null, "warn")   // jamais le pseudo de qui a coupé;
     return { ok: true, enabled: false };
   }, { now });
 }
@@ -192,7 +196,10 @@ export function start(ctx, args, now = Date.now()) {
   if (/^mod:/i.test(who)) return Promise.resolve({ ok: false, reason: "forbidden" });
   return S.transact(ctx, async (db) => {
     const core = await db.core();
-    if (!core.enabled) await S.addLog(db, { kind: "system", event: "start", by: who });
+    if (!core.enabled) {
+      await S.addLog(db, { kind: "system", event: "start", by: who });
+      if (whoLogged(who)) S.noteEvent(db, "circuit.resumed");
+    }
     core.enabled = true;
     core.stoppedAt = null;
     core.stoppedBy = null;
@@ -246,6 +253,7 @@ export async function enqueue(ctx, args, { test = false, counted = false, now = 
     const core = await db.core();
     const refuse = async (reason, extra = {}) => {
       await S.addLog(db, { id: null, kind: "action", key: label(key), viewer: label(a.viewer, 25), status: "refused", code: reason, ...(test ? { test: true } : {}), ...(extra.detail ? { detail: extra.detail } : {}), ...(extra.why ? { why: extra.why.code } : {}) });
+      if (reason === "offline" && !test) S.noteEvent(db, "link.offline", { action: label(key) }, "warn");   // un viewer a dépensé des points et Home Assistant ne répond plus
       return { ok: false, reason, ...(extra.why ? { why: extra.why } : {}) };
     };
     if (!KEY_RE.test(key)) return refuse("unknown_key");
@@ -357,6 +365,10 @@ export function ack(ctx, { id, status, code }, now = Date.now()) {
     const [a] = queue.items.splice(i, 1);
     await S.addResult(db, { id: a.id, ref: a.ref ?? null, status, code });
     await S.updateLog(db, a.id, { status, code, doneAt: now });
+    if (!a.test) {
+      if (status === "ignored" && code === "unmapped") S.noteEvent(db, "action.unlinked", { action: a.key }, "warn");
+      else if (status === "failed" || (status === "ignored" && code === "error")) S.noteEvent(db, "action.failed", { action: a.key }, "error");
+    }
     if (status === "ignored" && code === "unmapped") S.noteUnmapped(await db.core(), a.key, now);   // pas de script relié : l'action attend d'être reliée (page du Connecteur)
     else if (status === "done") S.dropUnmapped(await db.core(), a.key);
     return { ok: true, result: "recorded" };

@@ -381,10 +381,15 @@ async function fillFromPlatform(ctx, id, network, fillName) {
 }
 
 export default {
-  // Pastille du menu d'admin : les fiches « à vérifier » (messages du formulaire). Jamais d'attente longue : 0 si l'index n'est pas prêt.
-  async adminBadge(ctx) {
-    // Drapeau 2 de l'index = statut « to_review ».
-    try { const idx = await B.getIndex(ctx, { waitMs: 2000 }); let n = 0; for (const e of idx.list) if (e.k & 2) n++; return n; } catch { return 0; }
+  // Tableau de bord du cœur : « n contacts à vérifier » (les messages du formulaire de contact arrivent ici avec ce statut). Lecture de l'index déjà gardé en mémoire :
+  // jamais d'attente longue (1 seconde au plus, le cœur coupe à 1,5), 0 si l'index n'est pas prêt (rien n'est montré, il le sera au prochain affichage), aucun réseau.
+  dashboard: {
+    tasks: {
+      async review(ctx) {
+        // Drapeau 2 de l'index = statut « to_review ».
+        try { const idx = await B.getIndex(ctx, { waitMs: 1000 }); let n = 0; for (const e of idx.list) if (e.k & 2) n++; return n; } catch { return 0; }
+      },
+    },
   },
 
   async adminPanel(ctx, { query } = {}) {
