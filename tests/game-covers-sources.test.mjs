@@ -1,4 +1,4 @@
-// Jaquettes de jeux 1.3.0 : la chaîne de sources (RAWG → Twitch → Steam), la copie locale des images, la route publique, le rafraîchissement paresseux.
+// Jaquettes de jeux 1.3.0 : la chaîne de sources (RAWG → Steam → Twitch), la copie locale des images, la route publique, le rafraîchissement paresseux.
 // Aucun réseau réel : les réponses ont la FORME RÉELLE de chaque source. Steam : une vraie réponse de la recherche du magasin (tests/fixtures/steam-storesearch-hades.json, relevée le 3 novembre 2026).
 // Twitch : la forme documentée de « Search Categories » (id, name, box_art_url à 52x72) ; RAWG : celle de la liste de jeux. Les images sont un vrai petit JPEG.
 import test, { afterEach, beforeEach } from "node:test";
@@ -125,23 +125,27 @@ test("RAWG répond et le titre est sûr : on ne va pas plus loin (ni Twitch, ni 
   assert.ok(!JSON.stringify(r).includes("rawg.io"), "jamais l'adresse de la source");
 });
 
-test("RAWG en panne : Twitch (par le Connecteur) répond ; la copie vient de Twitch, le message dit quelle source", async () => {
+test("RAWG en panne : Steam répond d'abord ; si Steam est coupé ou en panne, Twitch (dernier secours) ; le message dit quelle source", async () => {
   mode.rawg = "500";
-  const c = makeCtx();
+  const first = await svc.cover(makeCtx(), { title: "Hades" });
+  assert.equal(first.source, "steam", "Steam passe avant Twitch (30 jours contre 24 heures)");
+  imageCalls.length = 0; serve(); mode.rawg = "500"; sources.resetSources(); rawg.resetBreaker(); rawg.clearCache();
+  const c = makeCtx({ settings: { useSteam: false } });
   const r = await svc.cover(c, { title: "Hades" });
   assert.equal(r.status, "found"); assert.equal(r.source, "twitch"); assert.equal(r.url, cu("Hades")); assert.equal(r.name, "Hades");
   assert.deepEqual(imageCalls, ["https://static-cdn.jtvnw.net/ttv-boxart/509658-285x380.jpg"]);
-  assert.equal(sourceCalls("store.steampowered.com"), 0, "Twitch a répondu : Steam n'est pas interrogé");
+  assert.equal(sourceCalls("store.steampowered.com"), 0, "Steam coupé : pas interrogé");
   const auto = (await fixes.readAutoAll(c))[0];
   assert.equal(auto.src, "twitch"); assert.equal(auto.srcId, 509658); assert.equal(auto.img, "/ttv-boxart/509658-285x380.jpg");
   const blocks = await mod.adminPanel(c, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "markdown" && b.text === "RAWG : actif ✓ — Twitch : connecté ✓ — Steam : actif ✓"), "toutes les sources disponibles, en mots simples");
+  assert.ok(blocks.some((b) => b.type === "markdown" && b.text === "RAWG : actif ✓ — Steam : coupé — Twitch : connecté ✓"), "toutes les sources disponibles, en mots simples");
   assert.ok(blocks.some((b) => b.type === "markdown" && /^Dernière jaquette trouvée : Twitch, le /.test(b.text)), "la source qui a répondu");
 });
 
-test("sans code RAWG (jamais un blocage ni un message d'erreur) : Twitch d'abord, puis Steam si Twitch n'est pas réglé", async () => {
+test("sans code RAWG (jamais un blocage ni un message d'erreur) : Steam d'abord, puis Twitch ; Twitch non réglé = une source de moins", async () => {
   const c = makeCtx({ settings: { rawgKey: "" } });
-  assert.equal((await svc.cover(c, "Hades")).source, "twitch");
+  assert.equal((await svc.cover(c, "Hades")).source, "steam");
+  assert.equal((await svc.cover(makeCtx({ settings: { rawgKey: "", useSteam: false } }), "Hades")).source, "twitch", "Steam coupé : Twitch en dernier secours");
   twitchMode = "off";
   const r = await svc.cover(makeCtx({ settings: { rawgKey: "" } }), "Jeu Rare");
   assert.equal(r.source, "steam", "Twitch non réglé : une source de moins");
@@ -149,7 +153,7 @@ test("sans code RAWG (jamais un blocage ni un message d'erreur) : Twitch d'abord
   assert.equal(sourceCalls("api.rawg.io"), 0, "aucune requête vers RAWG sans code");
   const blocks = await mod.adminPanel(makeCtx({ settings: { rawgKey: "" } }), { query: {} });
   assert.ok(!blocks.some((b) => b.type === "banner" && b.tone === "warning"), "pas de message d'erreur");
-  assert.ok(blocks.some((b) => b.type === "markdown" && b.text === "RAWG : pas de code (facultatif) — Twitch : non connecté (facultatif) — Steam : actif ✓"));
+  assert.ok(blocks.some((b) => b.type === "markdown" && b.text === "RAWG : pas de code (facultatif) — Steam : actif ✓ — Twitch : non connecté (facultatif)"));
   const st = await svc.status(makeCtx({ settings: { rawgKey: "" } }));
   assert.deepEqual([st.ready, st.configured, st.keyHeld], [true, true, false], "les modules voient une source utilisable, donc pas de « clé manquante »");
 });
@@ -252,16 +256,16 @@ test("candidats de TOUTES les sources, 6 au plus par source, avec leur source ; 
   const c = makeCtx();
   const list = await svc.candidates(c, { title: "Hades" });
   assert.equal(list.status, "found");
-  assert.deepEqual([...new Set(list.candidates.map((x) => x.source))], ["rawg", "twitch", "steam"]);
-  for (const s of ["rawg", "twitch", "steam"]) assert.ok(list.candidates.filter((x) => x.source === s).length <= 6);
-  assert.deepEqual(list.sources.map((x) => [x.source, x.state]), [["rawg", "ok"], ["twitch", "ok"], ["steam", "ok"]]);
+  assert.deepEqual([...new Set(list.candidates.map((x) => x.source))], ["rawg", "steam", "twitch"]);
+  for (const s of ["rawg", "steam", "twitch"]) assert.ok(list.candidates.filter((x) => x.source === s).length <= 6);
+  assert.deepEqual(list.sources.map((x) => [x.source, x.state]), [["rawg", "ok"], ["steam", "ok"], ["twitch", "ok"]]);
   assert.equal((await ops.chooseGame(c, "t", "Hades", 31337, undefined, "twitch")).error, "candidate");
   assert.equal((await ops.chooseGame(c, "t", "Hades", 509658, undefined, "twitch")).ok, true);
   assert.equal((await ops.chooseGame(c, "t", "Hades", 509658, undefined, "inconnue")).error, "candidate");
   const screen = await mod.adminPanel(c, { query: { titre: "Hades" } });
   const t = screen.find((b) => b.type === "table");
   assert.ok(t.rowIds.some((id) => id.startsWith("twitch.509658|")) && t.rowIds.some((id) => id.startsWith("steam.1145360|")) && t.rowIds.some((id) => id.startsWith("rawg.21|")));
-  assert.deepEqual(t.rows.map((r) => r[2].text).filter((v, i, a) => a.indexOf(v) === i), ["RAWG", "Twitch", "Steam"], "la source est écrite ET colorée");
+  assert.deepEqual(t.rows.map((r) => r[2].text).filter((v, i, a) => a.indexOf(v) === i), ["RAWG", "Steam", "Twitch"], "la source est écrite ET colorée");
   assert.ok(t.rows.every((r) => r[2].badge));
 });
 
@@ -436,20 +440,33 @@ test("les jaquettes choisies à la main ne sont jamais écrasées par un rafraî
 
 test("Twitch : une copie ne dépasse pas 24 heures (conditions des développeurs de Twitch) ; plus vieille, elle n'est plus servie, puis refaite ; les autres sources gardent l'âge réglé", async () => {
   mode.rawg = "500";
-  const c = makeCtx();
+  const c = makeCtx({ settings: { useSteam: false } });
   const r = await svc.cover(c, "Hades");
   assert.equal(r.source, "twitch");
   assert.equal(copies.keepMs(c, "twitch"), 24 * 3_600_000); assert.equal(copies.keepMs(c, "rawg"), 30 * 86_400_000); assert.equal(copies.keepMs(c, "steam"), 30 * 86_400_000);
   const id = copies.idOf(titleKey("Hades"));
   const route = (p) => mod.routes["cover/:id"](new Request("https://example.test/x"), Object.assign(c, { params: { id: p } }));
   assert.equal((await route(id)).status, 200);
+  // Copie Twitch de 25 h demandée par la route : l'adresse mémorisée par un autre module ne devient JAMAIS un 404 tant que la source répond (refaite à la demande, puis 200).
   await ageCopy(c, "Hades", 25 * 3_600_000);
-  assert.equal((await route(id)).status, 404, "plus de 24 h : plus servie");
-  assert.equal((await metaDocs(c)).length, 0, "et effacée");
-  // Demandée de nouveau (Twitch répond) : refaite.
-  const again = await svc.cover(c, "Hades");
-  assert.equal(again.url, cu("Hades"));
+  const before = imageCalls.length;
+  const res = await route(id);
+  assert.equal(res.status, 200, "refaite à la demande");
+  assert.deepEqual(new Uint8Array(await res.arrayBuffer()), JPEG);
+  assert.equal(imageCalls.length, before + 1, "une nouvelle copie a été récupérée");
+  assert.ok(Date.now() - (await metaDocs(c))[0].at < 60_000, "et sa date est renouvelée");
   assert.equal((await route(id)).status, 200);
+  // Twitch en panne au moment où la copie dépasse 24 h : la règle des 24 h prime (copie effacée), la réponse est un 404 propre (image absente, jamais une erreur) ; un repère inconnu : 404 aussi.
+  await ageCopy(c, "Hades", 25 * 3_600_000);
+  mode.images = "down"; copies.resetCopies();
+  const gone = await route(id);
+  assert.equal(gone.status, 404); assert.equal(gone.headers.get("set-cookie"), null);
+  assert.equal((await metaDocs(c)).length, 0); assert.equal((await bytesDocs(c)).length, 0);
+  mode.images = "up"; copies.resetCopies();
+  // Dès que la jaquette est redemandée (Twitch répond), la même adresse redevient valable.
+  assert.equal((await svc.cover(c, "Hades")).url, cu("Hades"));
+  assert.equal((await route(id)).status, 200);
+  assert.equal((await route("0123456789abcdef")).status, 404, "repère inconnu");
   // L'enregistrement automatique expire aussi au bout de 24 h pour Twitch (sinon il serait servi sans copie).
   const auto = (await fixes.readAutoAll(c))[0];
   assert.ok(Date.parse(auto.until) - Date.parse(auto.at) <= 24 * 3_600_000);
@@ -466,7 +483,7 @@ test("« Jaquettes gardées » : source en pastille écrite ET colorée, vignett
   assert.equal(t.columns[2], "Source");
   const by = Object.fromEntries(t.rows.map((r) => [r[0], r]));
   assert.deepEqual(by.Hades[2], { text: "RAWG", badge: "accent" });
-  assert.deepEqual(by["Jeu Rare"][2], { text: "Twitch", badge: "info" });
+  assert.deepEqual(by["Jeu Rare"][2], { text: "Steam", badge: "neutral" });
   assert.equal(by["Sans image"][2], "—");
   assert.match(by.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}$/);
   assert.equal(t.searchable, true);
@@ -495,4 +512,22 @@ test("réglages : tous avancés ou le code facultatif ; 7 réglages simples au p
   assert.equal(manifest.imageHosts, undefined, "aucun hôte d'image déclaré : les vignettes viennent du site");
   for (const s of manifest.settings) for (const l of ["fr", "en"]) { assert.ok(s.label[l].length <= 60 && !/:$/.test(s.label[l]), s.key); if (s.help) assert.ok(s.help[l].length <= 60, `${s.key} : aide ≤ 60 caractères`); }
   for (const l of ["fr", "en"]) assert.ok(manifest.privacy[l].length <= 500);
+});
+
+test("route : une copie Rawg ou Steam due pour le renouvellement est servie tout de suite (200) pendant que la nouvelle est récupérée ; source en panne : l'ancienne reste servie, rien n'est perdu", async () => {
+  const c = makeCtx({ settings: { useTwitch: false } });
+  await svc.cover(c, "Hades");
+  const id = copies.idOf(titleKey("Hades"));
+  const route = () => mod.routes["cover/:id"](new Request("https://example.test/x"), Object.assign(c, { params: { id } }));
+  const old = (await bytesDocs(c))[0].data.b64;
+  await ageCopy(c, "Hades", 45 * 86_400_000);
+  mode.images = "down";
+  for (let i = 0; i < 3; i++) { const r = await route(); assert.equal(r.status, 200, "ancienne copie servie"); await copies.settled(); }
+  assert.equal((await bytesDocs(c))[0].data.b64, old, "aucune perte");
+  mode.images = "up"; copies.resetCopies();
+  const before = imageCalls.length;
+  assert.equal((await route()).status, 200);
+  await copies.settled();
+  assert.ok(imageCalls.length > before, "renouvelée paresseusement par la route elle-même");
+  assert.ok(Date.now() - (await metaDocs(c))[0].at < 60_000);
 });

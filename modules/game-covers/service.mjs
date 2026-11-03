@@ -2,7 +2,7 @@
 //   status()                          { ready, configured, source, state?, at?, keyHeld, sources: [{ source, on, why? }] } — sans aucun appel réseau ; jamais la clé ;
 //                                     `ready` et `configured` : au moins UNE source est disponible (RAWG avec clé, Twitch par le Connecteur, Steam) ; `source`, `state`, `keyHeld` : la clé RAWG, comme avant ;
 //   cover({ title })                  { status: "found" | "none" | "no-key" | "refused" | "unreachable", url, name?, id?, ambiguous?, source? } ; `url` : la copie gardée sur le site (https absolue), jamais l'adresse de la source ;
-//                                     (correction, puis jaquette gardée, puis chaîne RAWG → Twitch → Steam ; tout injoignable : la jaquette gardée sert même périmée, « unreachable » seulement s'il n'y en a pas) ;
+//                                     (correction, puis jaquette gardée, puis chaîne RAWG → Steam → Twitch ; tout injoignable : la jaquette gardée sert même périmée, « unreachable » seulement s'il n'y en a pas) ;
 //   candidates({ title, search? })    { status, candidates: [{ id, name, year, platforms, url, source }], sources } — 6 au plus par source ;
 //   fix({ title, rawgId | gameId + source | none | forget })   écriture réservée à une personne qui a le droit « fix » (appel avec { asCaller: true } depuis une action d'administration) ;
 //   adopt({ key?, fixes?, todo? })    reprise des données d'un ancien réglage du site : ne remplace jamais, ne rend jamais une valeur.

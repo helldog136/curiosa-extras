@@ -2,23 +2,27 @@
 
 Ce module **trouve la jaquette d'un jeu vidéo** pour les autres modules de votre site (*Planning*, *Story d'annonce*, *Suggestions de jeux*…), **la copie sur votre site** et la garde, pour qu'elle reste affichée même quand une source est en panne. Il retient aussi vos choix quand une jaquette n'est pas la bonne.
 
-**Rien n'est obligatoire.** Sans rien régler, le module fonctionne : il cherche chez Steam. Un code Rawg gratuit et le Connecteur Twitch élargissent les résultats, mais ne sont jamais un blocage : une source qui manque est simplement une source de moins, sans message d'erreur.
+**Rien n'est obligatoire.** Sans rien régler, le module fonctionne : il cherche chez Steam. Un code Rawg gratuit (en premier) et le Connecteur Twitch (en dernier secours) élargissent les résultats, mais ne sont jamais un blocage : une source qui manque est simplement une source de moins, sans message d'erreur.
 
 ## Les sources, dans l'ordre
 Pour un titre, le module interroge les sources **dans cet ordre**, et s'arrête à la première réponse **sûre** (un titre quasi identique, sans rival aussi bon : c'est la vérification habituelle, `match.mjs`). Si aucune réponse n'est sûre, il garde la meilleure réponse incertaine de la première source qui en a une, et note le titre dans « Jaquettes à vérifier ».
 
 | # | Source | Ce qu'il faut | Image | Pourquoi à cette place |
 |---|---|---|---|---|
-| 1 | **Rawg** | un code gratuit (facultatif) | image du jeu, 600 × 400 | La plus large (toutes plateformes) et celle que vos jaquettes déjà trouvées utilisent : rien ne change pour elles. |
-| 2 | **Twitch** (jaquettes de boîte) | le Connecteur Twitch, déjà réglé : **aucune clé de plus** | jaquette de boîte verticale, 285 × 380 | Ce sont les jaquettes que Twitch montre pour la catégorie du jeu, et les noms suivent ceux des catégories que vous utilisez en direct. |
-| 3 | **Steam** (magasin) | rien : recherche publique, sans clé ni compte | jaquette verticale, 600 × 900 (sinon l'image d'en-tête) | Toujours disponible, mais seulement les jeux vendus sur PC. |
+| 1 | **Rawg** | un code gratuit (facultatif) | image du jeu, 600 × 400 (paysage) | La plus large (toutes plateformes) et celle que vos jaquettes déjà trouvées utilisent : rien ne change pour elles. Copie gardée 30 jours. |
+| 2 | **Steam** (magasin) | rien : recherche publique, sans clé ni compte | jaquette **verticale** 600 × 900 (sinon l'image d'en-tête, paysage) | Toujours disponible, copie gardée 30 jours ; mais seulement les jeux vendus sur PC. |
+| 3 | **Twitch** (jaquettes de boîte), **dernier secours** | le Connecteur Twitch, déjà réglé : **aucune clé de plus** | jaquette de boîte verticale, 285 × 380 | Une copie venue de Twitch ne peut être gardée que **24 heures** (leurs conditions), alors que les autres vivent 30 jours : mieux vaut qu'une jaquette durable passe avant. Twitch reste utile pour les jeux absents des deux premières. |
+
+**Cadrage.** Les modules qui affichent une jaquette la placent dans une case de taille fixe (par exemple 120 × 160) : ce module ne recadre rien et ne mélange pas les formats. Steam donne une image verticale, comme Twitch (l'image d'en-tête paysage n'est qu'un repli, comme les images de Rawg, déjà paysage) ; c'est donc le même cadrage qu'avant pour les images de Rawg, et un cadrage vertical naturel pour les deux autres.
+
+**Compromis assumé.** Mettre Twitch en dernier fait gagner de la durée (30 jours au lieu de 24 heures, donc moins de téléchargements et des adresses stables), au prix de jaquettes de boîte Twitch moins souvent choisies : Steam passe avant pour les jeux PC. Si vous préférez Twitch avant Steam, c'est l'ordre de `SOURCES` dans `hosts.mjs`.
 
 Chaque source a **son propre disjoncteur** : après trois échecs d'affilée, elle fait une pause de 1, 2, 5 puis 15 minutes au plus (un seul essai de reprise à la fois) pendant que les autres continuent. Chaque source a 3 secondes au plus pour une page du site (5 secondes à l'administration), et une page n'attend jamais plus de 5 secondes en tout. « Indisponible » n'est dit que si **aucune** source disponible n'a répondu ; une panne n'est jamais retenue comme « pas de jaquette ».
 
 **Sources étudiées et non retenues.** *IGDB* : elle utilise les mêmes identifiants d'application Twitch, mais le Connecteur ne les expose pas (par construction, il ne rend jamais un secret), et les jaquettes de boîte de Twitch **viennent d'IGDB** : elle n'apporterait que des images identiques, au prix d'un accès de plus. *OpenCritic* : une clé est exigée (vérifié : la réponse le dit). *SteamGridDB*, *Giant Bomb* : un compte et une clé sont demandés à ma connaissance (non vérifié ici : leurs adresses ont répondu par une redirection). *Wikipédia* : les jaquettes y sont en général des images à usage restreint ; je n'ai pas lu ses conditions pour cet usage, et le but est de ne prendre aucun risque légal.
 
 ## Ce que disent les conditions d'utilisation (lues le 3 novembre 2026)
-- **Twitch** — *Twitch Developer Services Agreement* (version du 4 décembre 2024), lu en entier : les données et contenus de Twitch ne peuvent être gardés que **24 heures** (sauf autorisation écrite), il est interdit de les redistribuer, et il faut les mettre à jour. **Le module s'y plie** : une copie venue de Twitch n'est jamais gardée ni montrée plus de 24 heures, quel que soit le réglage de renouvellement ; elle est refaite à la demande suivante. Conséquence honnête : une jaquette Twitch dure moins qu'une jaquette Rawg ou Steam, et si Twitch tombe, c'est la source suivante qui prend le relais.
+- **Twitch** — *Twitch Developer Services Agreement* (version du 4 décembre 2024), lu en entier : les données et contenus de Twitch ne peuvent être gardés que **24 heures** (sauf autorisation écrite), il est interdit de les redistribuer, et il faut les mettre à jour. **Le module s'y plie** : une copie venue de Twitch n'est jamais gardée ni montrée plus de 24 heures, quel que soit le réglage de renouvellement ; elle est refaite à la demande suivante. C'est la raison pour laquelle Twitch est en dernier secours. **L'adresse de la copie ne devient jamais un 404 pour un jeu connu** (Suggestions de jeux la mémorise) : si une copie Twitch a plus de 24 heures, la route la refait à la demande (6 secondes au plus) puis la sert ; si Twitch ne répond pas à ce moment-là, la copie est effacée (la règle des 24 heures prime) et la réponse est un 404 propre, c'est-à-dire une image absente et jamais une erreur. Un repère inconnu donne aussi un 404. Pour Rawg et Steam, la route sert toujours l'ancienne copie et lance le renouvellement en même temps.
 - **IGDB** — page « Account creation » de la documentation, lue : gratuit pour un usage non commercial avec les identifiants d'une application Twitch ; stocker et servir les données est permis. Non utilisé ici (voir plus haut).
 - **Steam** — *Steam Web API Terms of Use* (juillet 2010), lues : elles visent l'API Web à clé. La recherche du magasin utilisée ici est publique, sans clé, et **n'est pas décrite** par ces conditions : je n'ai pas pu confirmer qu'elle est autorisée pour cet usage. Option la plus prudente retenue : appel du serveur à Steam (jamais du navigateur), 8 résultats par recherche, mémoire de 24 heures (« rien trouvé » : 1 heure), copie locale limitée (300 images au plus, 30 jours), jamais de revente, aucun logo ni marque de Steam. Si Valve refusait un jour cet usage, il suffit de couper « Utiliser le magasin Steam » dans les réglages avancés.
 - **Rawg** — les conditions de l'API (rawg.io/apidocs) **n'ont pas pu être lues** : le site répondait par une erreur 522 pendant mes essais (c'est la panne dont il est question). Option la plus prudente retenue : usage du serveur à Rawg, copie locale limitée, jamais de revente. Une attribution à Rawg (lien visible vers rawg.io) est habituellement exigée : elle est citée ici et dans la fiche du module, mais ce module ne peut pas l'ajouter aux pages des modules qui affichent les jaquettes.
@@ -29,7 +33,7 @@ Pour élargir les résultats avec Rawg :
 2. Ouvrez l'onglet **Réglages** de ce module et collez-le dans « Code d'accès gratuit Rawg ».
 3. Revenez sur l'onglet principal et cliquez sur **« Tester le code »**.
 
-Pour ajouter les jaquettes de boîte de Twitch : installez et réglez le **Connecteur Twitch** (Jaquettes de jeux n'y demande rien d'autre).
+Pour ajouter les jaquettes de boîte de Twitch (en dernier secours) : installez et réglez le **Connecteur Twitch** (Jaquettes de jeux n'y demande rien d'autre).
 
 **Vous aviez déjà un code Rawg sur votre site ?** Rien à faire : il est repris tout seul. Les adresses « Ce n'est pas le bon jeu ? » déjà publiées continuent de marcher.
 
@@ -43,7 +47,7 @@ Le **site** (jamais le navigateur de la personne qui visite) télécharge l'imag
 
 ## Quand une source ne répond pas
 - Chaque jaquette trouvée toute seule est **gardée** (1 000 choix au plus, les plus anciens sortent d'eux-mêmes) et sert **même périmée** quand toutes les sources sont en panne.
-- En haut de **« Jaquettes à vérifier »**, une phrase dit où on en est : « RAWG : pas de code (facultatif) — Twitch : connecté ✓ — Steam : actif ✓ », puis la dernière source qui a répondu. Si plus rien ne répond : « Aucune source ne répond pour le moment. Les jaquettes déjà gardées restent affichées. » Le Journal du site note une fois l'arrêt de Rawg et une fois son retour.
+- En haut de **« Jaquettes à vérifier »**, une phrase dit où on en est : « RAWG : pas de code (facultatif) — Steam : actif ✓ — Twitch : connecté ✓ », puis la dernière source qui a répondu. Si plus rien ne répond : « Aucune source ne répond pour le moment. Les jaquettes déjà gardées restent affichées. » Le Journal du site note une fois l'arrêt de Rawg et une fois son retour.
 - Vos corrections passent toujours avant tout.
 
 ## « Quel est le bon jeu ? »

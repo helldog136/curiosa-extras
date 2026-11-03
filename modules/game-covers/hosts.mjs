@@ -5,7 +5,7 @@
 // Une image n'est JAMAIS une adresse libre : on garde le CHEMIN, l'hôte est écrit ici. Même règle pour le téléchargement (copies.mjs) et pour l'affichage.
 
 /** Les sources dans l'ordre de priorité. */
-export const SOURCES = ["rawg", "twitch", "steam"];
+export const SOURCES = ["rawg", "steam", "twitch"];
 export const isSource = (s) => SOURCES.includes(s);
 
 const RULES = {

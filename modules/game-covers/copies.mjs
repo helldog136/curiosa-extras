@@ -196,28 +196,45 @@ export async function ensure(ctx, key, src, img, { waitMs = 3_000, now = Date.no
   } catch { return null; }
 }
 
-/** La copie gardée pour ce repère : { type, bytes, meta } ou null. */
+/** La copie gardée pour ce repère : { type, bytes, meta, expired } ou null. `expired` : une copie Twitch de plus de 24 h (elle ne doit plus être montrée telle quelle). */
 export async function copyOf(ctx, id, now = Date.now()) {
   if (!ID_RE.test(String(id))) return null;
   const have = await readMeta(ctx, id);
   if (!have) return null;
-  if (!usable(ctx, have.meta, now)) { await drop(ctx, id); return null; }
   let doc;
   try { doc = await store(ctx).getByKey(COL.bytes, id); } catch { return null; }
   if (!doc || typeof doc.data?.b64 !== "string") return null;
   const type = ["image/jpeg", "image/png", "image/webp"].includes(have.meta.type) ? have.meta.type : null;
   const bytes = Buffer.from(doc.data.b64, "base64");
   if (!type || !bytes.length || bytes.length > LIMITS.bytes || sniff(bytes) !== type) return null;
-  return { type, bytes, meta: have.meta };
+  return { type, bytes, meta: have.meta, expired: !usable(ctx, have.meta, now) };
 }
 
-/** La réponse de la route publique `/m/<clé>/cover/<repère>` : l'image, ou un 404 identique (jamais d'erreur visible). Aucun témoin, aucun paramètre. */
+/**
+ * La réponse de la route publique `/m/<clé>/cover/<repère>` : l'image, ou un 404 identique (jamais d'erreur visible). Aucun témoin, aucun paramètre.
+ * L'adresse rendue aux autres modules ne doit JAMAIS devenir un 404 pour un jeu connu (Suggestions de jeux la mémorise) :
+ *   - copie due pour le renouvellement : l'ancienne est servie tout de suite, le renouvellement part en même temps (paresseux) ;
+ *   - copie Twitch de plus de 24 h (conditions de Twitch) : elle n'est pas servie telle quelle, la route la REFAIT à la demande (6 s au plus) et sert la nouvelle ;
+ *     si Twitch ne répond pas, l'ancienne est effacée (la règle des 24 h prime) et la réponse est un 404 propre : une image absente, jamais une erreur. Un repère inconnu : 404.
+ */
 const NOT_FOUND = () => new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
 export async function response(request, ctx) {
   if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" } });
   try {
-    const copy = await copyOf(ctx, ctx.params?.id);
+    const id = ctx.params?.id;
+    let copy = await copyOf(ctx, id);
     if (!copy) return NOT_FOUND();
+    const now = Date.now();
+    if (copy.expired) {
+      const m = copy.meta;
+      const run = kick(ctx, id, m.key, m.src, m.img, now);
+      let timer;
+      const ok = run ? await Promise.race([run, new Promise((r) => { timer = setTimeout(() => r(false), timing.fetchMs); timer.unref?.(); })]).finally(() => clearTimeout(timer)) : false;
+      copy = ok ? await copyOf(ctx, id) : null;
+      if (!copy || copy.expired) { await drop(ctx, id); return NOT_FOUND(); }
+    } else if (now - copy.meta.at >= keepMs(ctx, copy.meta.src)) {
+      void kick(ctx, id, copy.meta.key, copy.meta.src, copy.meta.img, now);   // l'ancienne sert, la nouvelle est récupérée
+    }
     return new Response(request.method === "HEAD" ? null : copy.bytes, { headers: { "Content-Type": copy.type, "Content-Length": String(copy.bytes.length), "Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'" } });
   } catch { return NOT_FOUND(); }
 }

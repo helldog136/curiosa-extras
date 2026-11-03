@@ -1,5 +1,5 @@
 // L'administration du module, en deux onglets :
-//   « Jaquettes à vérifier » (onglet `use`)   l'état des sources en une phrase (« RAWG : pas de code — Twitch : connecté ✓ — Steam : actif ✓ », jamais une clé), puis les titres dont le jeu trouvé est douteux ;
+//   « Jaquettes à vérifier » (onglet `use`)   l'état des sources en une phrase (« RAWG : pas de code — Steam : actif ✓ — Twitch : connecté ✓ », jamais une clé), puis les titres dont le jeu trouvé est douteux ;
 //   « Jaquettes gardées » (onglet `saved`)    UN tableau de tout ce que le site retient (corrigées, trouvées toutes seules, sans jaquette), avec la source et une vignette de la copie gardée sur le site,
 //                                             « Chercher une jaquette » (toutes les sources), « Voir », « Changer », « Oublier ».
 // Écrans : `?titre=<titre demandé>` « Quel est le bon jeu ? » (adresse stable : les modules qui affichent « Ce n'est pas le bon jeu ? » y renvoient), `&q=<autre recherche>`,

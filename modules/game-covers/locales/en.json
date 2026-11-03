@@ -1,5 +1,5 @@
 {
-  "guide": "Covers are looked up at Rawg, then at Twitch, then at Steam. A Rawg code is optional, but it widens the results.\n\n1. Create a free account on [rawg.io/apidocs](https://rawg.io/apidocs) and copy your access code.\n2. Open the “Settings” tab of this page and paste it in “Free Rawg access code”.\n3. Come back here and click “Test the code”.",
+  "guide": "Covers are looked up at Rawg, then at Steam, then at Twitch. A Rawg code is optional, but it widens the results.\n\n1. Create a free account on [rawg.io/apidocs](https://rawg.io/apidocs) and copy your access code.\n2. Open the “Settings” tab of this page and paste it in “Free Rawg access code”.\n3. Come back here and click “Test the code”.",
   "key_adopted": "Your site's access code was picked up automatically: there is nothing for you to redo. To replace it, paste another one in the “Settings” tab.",
   "forget_key": "Forget the picked-up code",
   "forgot_key": "Done: the picked-up code is forgotten.",

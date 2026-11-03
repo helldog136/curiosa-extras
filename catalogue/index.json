@@ -700,7 +700,7 @@
     {
       "id": "game-covers",
       "name": "Jaquettes de jeux",
-      "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Twitch, puis Steam. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics.",
+      "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
       "ref": "v1.41.1",

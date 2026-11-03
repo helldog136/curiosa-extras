@@ -1,5 +1,5 @@
-// Jaquettes de jeux — module de Curiosa. LE seul module qui va chercher des jaquettes au nom du site. Il cherche la jaquette d'un titre dans une chaîne de sources (RAWG, puis les jaquettes de boîte de Twitch
-// par le Connecteur Twitch, puis le magasin Steam : aucune clé obligatoire), garde les corrections « Quel est le bon jeu ? » de la propriétaire, COPIE l'image choisie sur le site (vie privée : le public ne contacte
+// Jaquettes de jeux — module de Curiosa. LE seul module qui va chercher des jaquettes au nom du site. Il cherche la jaquette d'un titre dans une chaîne de sources (RAWG, puis Steam, puis en dernier secours les jaquettes de boîte de Twitch
+// par le Connecteur Twitch : aucune clé obligatoire), garde les corrections « Quel est le bon jeu ? » de la propriétaire, COPIE l'image choisie sur le site (vie privée : le public ne contacte
 // jamais ces services) et rend le service `game.cover` (version 1) aux autres modules (Planning, Story d'annonce, Suggestions de jeux…), qui demandent « la jaquette de ce titre » sans jamais voir de clé.
 //   match.mjs   ressemblance des titres (fonctions pures) ;   hosts.mjs  sources, hôtes et chemins d'images permis (fonctions pures) ;   breaker.mjs  disjoncteur d'une source ;
 //   fixes.mjs   corrections, journal « à vérifier », petits documents ;   rawg.mjs  clé, requête RAWG, cache ;   sources.mjs  RAWG / Twitch / Steam derrière la même interface ;

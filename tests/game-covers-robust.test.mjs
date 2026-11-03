@@ -355,7 +355,7 @@ test("l'état en mots simples : « Tout fonctionne » avec la date, puis la phra
   const ok = await mod.adminPanel(c, { query: {} });
   assert.ok(ok.some((b) => b.type === "banner" && b.tone === "success" && b.text === "Tout fonctionne."));
   assert.ok(ok.some((b) => b.type === "markdown" && /^Dernière jaquette trouvée : RAWG, le /.test(b.text)))
-  assert.ok(ok.some((b) => b.type === "markdown" && b.text === "RAWG : actif ✓ — Twitch : non connecté (facultatif) — Steam : coupé"), "l'état de chaque source, en mots simples");;
+  assert.ok(ok.some((b) => b.type === "markdown" && b.text === "RAWG : actif ✓ — Steam : coupé — Twitch : non connecté (facultatif)"), "l'état de chaque source, en mots simples");;
   assert.ok(!ok.some((b) => b.type === "banner" && b.tone === "warning"));
   tick(3 * HOUR); mode = "down"; rawg.clearCache();
   for (const t of ["A", "B", "C"]) await svc.cover(c, `Titre ${t}`);

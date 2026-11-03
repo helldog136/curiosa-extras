@@ -79,7 +79,7 @@ test("sans clé : no-key, aucune requête ; clé mal formée : refused, aucune r
   const none = makeCtx({ settings: { useSteam: false } });
   assert.deepEqual(await svc.cover(none, { title: "Hades" }), { status: "no-key", url: null });
   assert.deepEqual(await svc.candidates(none, { title: "Hades" }), { status: "no-key", candidates: [], sources: [] });
-  assert.deepEqual(await svc.status(none), { ready: false, configured: false, source: null, state: null, keyHeld: false, sources: [{ source: "rawg", on: false, why: "no-key" }, { source: "twitch", on: false, why: "off" }, { source: "steam", on: false, why: "off" }] });
+  assert.deepEqual(await svc.status(none), { ready: false, configured: false, source: null, state: null, keyHeld: false, sources: [{ source: "rawg", on: false, why: "no-key" }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
   const bad = makeCtx({ settings: { rawgKey: "pas bon !", useSteam: false } });
   assert.equal((await svc.cover(bad, { title: "Hades" })).status, "refused");
   assert.equal(f.calls.length, 0);
@@ -99,7 +99,7 @@ test("jaquette trouvée : le titre ressemblant gagne, la clé part vers RAWG (ht
   assert.ok(!JSON.stringify(c.calls.netLog).includes(KEY), "le journal du réseau ne contient pas la clé");
   assert.ok(!JSON.stringify(c.dumpStore()).includes(KEY), "la clé du réglage n'est pas copiée dans le stockage");
   assert.ok(!JSON.stringify(await svc.status(c)).includes(KEY));
-  assert.deepEqual((await svc.status(c)), { ready: true, configured: true, source: "setting", state: "ok", at: (await svc.status(c)).at, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "twitch", on: false, why: "off" }, { source: "steam", on: false, why: "off" }] });
+  assert.deepEqual((await svc.status(c)), { ready: true, configured: true, source: "setting", state: "ok", at: (await svc.status(c)).at, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
 });
 
 test("la cover accepte aussi un simple texte, et un titre vide ou démesuré ne casse rien", async () => {
@@ -240,7 +240,7 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
   assert.ok(!JSON.stringify(r).includes(KEY));
   // Sans réglage saisi ici, la clé reprise sert.
   assert.equal((await svc.cover(c, "Hades")).id, 22);
-  assert.deepEqual(await svc.status(c), { ready: true, configured: true, source: "adopted", state: null, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "twitch", on: false, why: "off" }, { source: "steam", on: false, why: "off" }] });
+  assert.deepEqual(await svc.status(c), { ready: true, configured: true, source: "adopted", state: null, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
   // Rejoué : rien de plus.
   const again = await svc.adopt(c, input);
   assert.deepEqual([again.keyAdopted, again.fixes, again.todo, again.ready], [false, 0, 0, true]);

@@ -1,5 +1,5 @@
 // LA CHAÎNE DE SOURCES — « peu importe la source, utilise-les dans l'ordre le plus logique ». Une jaquette est cherchée chez RAWG, puis (si RAWG n'a pas de réponse sûre, est en panne ou n'a pas de clé)
-// dans les jaquettes de boîte de Twitch (par le Connecteur, sans clé de plus), puis dans le magasin Steam (sans clé). La première réponse SÛRE (titre quasi identique, sans rival de même force : match.mjs)
+// dans le magasin Steam (sans clé), puis EN DERNIER SECOURS dans les jaquettes de boîte de Twitch (par le Connecteur, sans clé de plus) : une copie Twitch ne peut vivre que 24 h (leurs conditions), les autres 30 jours. La première réponse SÛRE (titre quasi identique, sans rival de même force : match.mjs)
 // gagne ; sinon on garde la meilleure réponse incertaine de la première source qui en a une, et le titre entre dans « Jaquettes à vérifier ». Chaque source a son disjoncteur : une source en panne
 // ne bloque pas les autres. Une source « absente » (pas de clé, pas de Connecteur) n'est ni une erreur ni un message : c'est une source de moins. « Indisponible » seulement si AUCUNE source disponible n'a répondu.
 // Ordre des choses pour un titre : correction de la personne → jaquette gardée encore bonne → chaîne de sources → jaquette gardée même périmée. Puis l'image est copiée sur le site (copies.mjs) :
