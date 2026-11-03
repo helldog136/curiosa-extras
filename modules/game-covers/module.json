@@ -6,14 +6,14 @@
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": {
     "en": "Finds the cover picture of a video game for everything about games on your site. Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
     "fr": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
   },
   "privacy": {
-    "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the title of the game to RAWG (a video-game database), together with your RAWG key. When a cover is shown, on the site or in this administration, the browser loads the picture from RAWG, which therefore sees the person's address under its own privacy policy.",
-    "fr": "Ce module ne collecte rien sur votre public. Pour trouver une jaquette, le serveur de votre site envoie à RAWG (une base de données de jeux vidéo) le titre du jeu, avec votre clé RAWG. Quand une jaquette est affichée, sur le site comme dans cette administration, le navigateur charge l'image depuis RAWG, qui voit donc l'adresse de la personne selon sa propre politique de confidentialité."
+    "en": "This module collects nothing about your visitors. The covers come from RAWG (rawg.io), a video-game database: your site's server sends it the game title with your RAWG key. Found covers are kept privately on your site (1,000 at most): the title, the game name and the picture address, never a picture file. The browser loads each picture from RAWG, which therefore sees the person's address under its own privacy policy.",
+    "fr": "Ce module ne collecte rien sur votre public. Les jaquettes viennent de RAWG (rawg.io), une base de jeux vidéo : le serveur de votre site lui envoie le titre du jeu, avec votre clé RAWG. Les jaquettes trouvées sont gardées en privé sur votre site (1 000 au plus) : le titre, le nom du jeu et l'adresse de l'image, jamais un fichier. Le navigateur charge chaque image depuis RAWG, qui voit donc l'adresse de la personne selon sa propre politique de confidentialité."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -128,6 +128,21 @@
           "type": "number"
         }
       ]
+    },
+    {
+      "key": "cover.outage",
+      "label": {
+        "fr": "RAWG ne répond plus : les jaquettes déjà trouvées restent affichées",
+        "en": "RAWG stopped answering: the covers already found stay displayed"
+      },
+      "level": "warn"
+    },
+    {
+      "key": "cover.back",
+      "label": {
+        "fr": "RAWG répond de nouveau",
+        "en": "RAWG is answering again"
+      }
     }
   ],
   "settings": [
@@ -169,7 +184,7 @@
     {
       "name": "rawg_covers_list",
       "readOnly": true,
-      "description": "Lists the covers the module keeps, newest first: the ones the owner corrected (origin \"corrected\"), the games left without a cover (\"none\") and the automatic choices noted for checking (\"auto\"). Each has: title, origin, game (name, may be empty), coverUrl (an https://media.rawg.io/media/... picture, or null) and at. Optional filters: \"search\" (words of the title) and \"origin\"; 50 per call by default (100 at most), with \"total\" for the whole list. Nothing is changed and no key is ever shown. To change or forget one, ask the owner, or use rawg_cover_set with their consent.",
+      "description": "Lists the covers the module keeps, newest first: the ones the owner corrected (origin \"corrected\"), the games left without a cover (\"none\") and the covers the site found by itself (\"auto\", at most 1000 kept, doubtful or not). Each has: title, origin, game (name, may be empty), coverUrl (an https://media.rawg.io/media/... picture, or null) and at. Optional filters: \"search\" (words of the title) and \"origin\"; 50 per call by default (100 at most), with \"total\" for the whole list. Nothing is changed and no key is ever shown. To change or forget one, ask the owner, or use rawg_cover_set with their consent.",
       "input": {
         "type": "object",
         "properties": {
