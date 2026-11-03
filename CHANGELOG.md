@@ -6,7 +6,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
-*En bref : dans Bot Twitch 1.8.0, la période d'une commande ou d'un timer utilise enfin le champ « période » de Curiosa : « Tout le mois de », périodes toutes prêtes (saisons, fêtes) et une seule ligne de dates, à la place des puces fixes et des quatre listes. Les périodes déjà réglées gardent exactement leur sens. Ce module demande maintenant Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
+*En bref : dans Bot Twitch 1.8.0, la période d'une commande ou d'un timer utilise enfin le champ « période » de Curiosa : « Tout le mois de », périodes toutes prêtes (saisons, fêtes) et une seule ligne de dates, à la place des puces fixes et des quatre listes. Les périodes déjà réglées gardent exactement leur sens. Ce module demande maintenant Curiosa 0.6.4 ou plus ; les autres modules ne changent pas. Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… », en plus de « Du… au… ». Ce module demande Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
 
 ### Nouveautés
 
@@ -14,12 +14,16 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **Une période nouvelle part de « une seule fois ».** Une annonce ponctuelle ne revient donc pas toute seule l'année suivante ; cochez « Chaque année » quand c'est voulu.
 - **Rien ne change pour ce qui est déjà réglé.** Vos commandes et vos timers avec une période (chaque année, à cheval sur le changement d'année, avec le 29 février, ou une seule fois avec ses années) s'ouvrent et se ferment aux mêmes dates, et l'écran les montre comme vous les aviez réglées. Aucune donnée n'est modifiée.
 - **Le fuseau ne change pas.** Les jours sont toujours comptés dans le fuseau réglé dans le bot (UTC s'il est vide) ; l'aide sous le champ le rappelle.
+- **Bannière d'annonce 1.2.0 : « jusqu'au 24 décembre » ou « à partir du 1er décembre » en une seule date.** Sous « Plus d'options », « Limiter dans le temps » n'oblige plus à choisir un début et une fin : la phrase sous le champ dit ce qui est compris (« À partir du 1er décembre 2026 », « Jusqu'au 24 décembre 2026 »). Le dernier jour compte jusqu'à minuit, et « à partir du » commence dès 00:00. Avec deux dates, ou « chaque année », rien ne change : vos réglages sont conservés tels quels.
+- **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
+- **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
 
 ### Pour les développeurs
 
 - `modules/twitch-bot` 1.8.0 : `minCore` 0.6.4 (champ `period` d'`adminForm` avec « Tout le mois de », périodes toutes prêtes revues et départ « une seule fois » d'une période nouvelle). `openEnded` n'est pas demandé (le moteur ne connaît pas les périodes ouvertes) et `ctx.timezone` n'est pas lu : lui donner la priorité sur le réglage `timezone` du module changerait le jour d'ouverture des sites dont le fuseau du site diffère de ce réglage.
 - Stockage inchangé (`{ yearly, from: { m, d, y? }, to: { m, d, y? } }`) ; `periodToValue` et `parsePeriodValue` (period.mjs) traduisent vers et depuis `MM-JJ/MM-JJ` et `AAAA-MM-JJ/AAAA-MM-JJ`, et lisent encore l'ancienne écriture « 01/11 - 30/11 » (page ouverte avant la mise à jour, import). Les outils de l'assistant (`activeFrom`, `activeUntil`, `yearly`) ne changent pas.
 - Retiré : le contrôle de période maison (`periodControl`, `SHORTCUTS`, `describe`, leurs textes `per_sc_*`, `per_mode_*`…, leur code dans `adminkit.client.js` et leur style).
+- `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
 
 ## 1.38.0 — 2026-11-03
 

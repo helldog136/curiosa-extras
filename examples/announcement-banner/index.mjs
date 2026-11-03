@@ -6,25 +6,33 @@
 // réglages de l'instance courante, et `ctx.instance.key` l'identifie. Avec deux
 // instances, le site affiche deux bannières, chacune avec ses textes.
 //
-// Dates (réglage `period`, facultatif) : la décision se prend À L'AFFICHAGE, à partir de l'heure courante dans le fuseau du site.
+// Dates (réglage `period`, facultatif, période ouverte permise) : la décision se prend À L'AFFICHAGE, à partir de l'heure courante dans le fuseau du site.
 // Aucune tâche de fond, aucun minuteur : une annonce hors période n'est tout simplement pas rendue.
+//
+// Valeurs lues (celles que le cœur enregistre ; les trois premières existent depuis la 1.1.0 et gardent EXACTEMENT leur sens) :
+//   "2026-12-01/2026-12-24"   une seule fois, du 1er au 24 décembre 2026
+//   "12-01/12-24"             chaque année (peut enjamber le 31 décembre : "12-20/01-05")
+//   "2026-12-01/"             à partir du 1er décembre 2026, sans fin   (cœur 0.6.4, `openEnded`)
+//   "/2026-12-24"             jusqu'au 24 décembre 2026, sans début     (cœur 0.6.4, `openEnded`)
 
 const ONCE = /^(\d{4})-(\d{2})-(\d{2})\/(\d{4})-(\d{2})-(\d{2})$/; // "2026-12-01/2026-12-24" : une seule fois
 const YEARLY = /^(\d{2})-(\d{2})\/(\d{2})-(\d{2})$/; // "12-01/12-24" : chaque année (peut enjamber le 31 décembre)
+const SINCE = /^(\d{4})-(\d{2})-(\d{2})\/$/; // "2026-12-01/" : à partir de ce jour, sans fin
+const UNTIL = /^\/(\d{4})-(\d{2})-(\d{2})$/; // "/2026-12-24" : jusqu'à ce jour, sans début
 
 const validZone = (tz) => {
   if (typeof tz !== "string" || !tz) return false;
   try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; }
 };
 
-/** Fuseau de la machine, « UTC » à défaut : c'est aussi le repli du cœur quand le fuseau du site n'est pas réglé. */
+/** Fuseau de la machine, « UTC » à défaut : le dernier repli du cœur quand le fuseau du site n'est pas réglé. */
 function systemZone() {
   try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; return validZone(tz) ? tz : "UTC"; } catch { return "UTC"; }
 }
 
 /**
- * Fuseau dans lequel « aujourd'hui » change. Le cœur 0.6.x n'expose pas encore le fuseau du site aux modules : on lit `ctx.timezone` s'il existe
- * (un cœur plus récent), sinon le fuseau de la machine.
+ * Fuseau dans lequel « aujourd'hui » change : celui du site, `ctx.timezone` (cœur 0.6.4, toujours un nom valide). Repli, pour un contexte qui ne le donne pas
+ * ou le donne inconnu (un test, un cœur plus ancien) : le fuseau de la machine, comme le cœur lui-même quand le fuseau du site n'est pas réglé.
  */
 export function zoneOf(ctx) {
   return validZone(ctx?.timezone) ? ctx.timezone : systemZone();
@@ -42,26 +50,34 @@ const realDay = (m, d, y) => m >= 1 && m <= 12 && d >= 1 && d <= (y === undefine
 
 /**
  * L'annonce est-elle à montrer à cet instant ? `period` est la valeur du réglage : vide (jamais réglé) = toujours ; sinon le jour courant du site doit tomber
- * dans la période, début et fin INCLUS (la fin dure jusqu'à minuit). Une valeur illisible ne cache jamais l'annonce (comme avant que les dates existent).
+ * dans la période, début et fin INCLUS (la fin dure jusqu'à minuit). Un début seul ne limite pas la fin, une fin seule ne limite pas le début.
+ * Une valeur illisible ne cache jamais l'annonce (comme avant que les dates existent).
  */
 export function isActive(period, now = new Date(), tz = systemZone()) {
   const raw = String(period ?? "").trim();
   if (!raw) return true;
   const today = wallDay(now, tz);
+  const k = today.y * 10000 + today.m * 100 + today.d;
   const once = ONCE.exec(raw);
   if (once) {
     const [fy, fm, fd, ty, tm, td] = once.slice(1).map(Number);
     const a = fy * 10000 + fm * 100 + fd, b = ty * 10000 + tm * 100 + td;
     if (!realDay(fm, fd, fy) || !realDay(tm, td, ty) || a > b) return true; // fin avant début : le cœur le refuse à l'enregistrement ; si cela arrive quand même, on ne cache rien
-    const k = today.y * 10000 + today.m * 100 + today.d;
     return k >= a && k <= b;
+  }
+  const open = SINCE.exec(raw) ?? UNTIL.exec(raw);
+  if (open) {
+    const [y, m, d] = open.slice(1).map(Number);
+    if (!realDay(m, d, y)) return true;
+    const day = y * 10000 + m * 100 + d;
+    return raw.endsWith("/") ? k >= day : k <= day; // « à partir du » : le jour même compte ; « jusqu'au » : jusqu'à minuit
   }
   const yearly = YEARLY.exec(raw);
   if (yearly) {
     const [fm, fd, tm, td] = yearly.slice(1).map(Number);
     if (!realDay(fm, fd) || !realDay(tm, td)) return true;
-    const a = fm * 100 + fd, b = tm * 100 + td, k = today.m * 100 + today.d;
-    return a <= b ? k >= a && k <= b : k >= a || k <= b; // début après fin : la période enjambe le 31 décembre
+    const a = fm * 100 + fd, b = tm * 100 + td, md = today.m * 100 + today.d;
+    return a <= b ? md >= a && md <= b : md >= a || md <= b; // début après fin : la période enjambe le 31 décembre
   }
   return true;
 }

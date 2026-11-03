@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.6.4",
   "id": "announcement-banner",
   "name": {
     "en": "Announcement banner",
     "fr": "Bannière d'annonce"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": {
     "en": "A banner at the top of every page that can have dates, and a note for the home page. Example module.",
     "fr": "Un bandeau en haut de chaque page, qui peut avoir des dates, et une note pour l'accueil. Module d'exemple."
@@ -107,17 +107,18 @@
       "type": "period",
       "rare": true,
       "optional": true,
+      "openEnded": true,
       "label": {
         "en": "Limit in time",
         "fr": "Limiter dans le temps"
       },
       "help": {
-        "en": "Outside these dates, nothing is shown.",
-        "fr": "Hors de ces dates, rien n'est affiché."
+        "en": "Outside this period, nothing is shown.",
+        "fr": "Hors de cette période, rien n'est affiché."
       },
       "example": {
-        "en": "From 1 December to 24 December, every year",
-        "fr": "Du 1er décembre au 24 décembre, chaque année"
+        "en": "Until 24 December 2026",
+        "fr": "Jusqu'au 24 décembre 2026"
       }
     }
   ],
