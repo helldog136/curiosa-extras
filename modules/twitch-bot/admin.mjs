@@ -7,7 +7,7 @@ const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
 const { shownFor, used } = await import(`./variables.mjs${v}`);
-const { reopenLabel, parsePeriodText, periodError } = await import(`./period.mjs${v}`);
+const { reopenLabel, parsePeriodValue, periodError } = await import(`./period.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
 const K = await import(`./adminkit.mjs${v}`);
@@ -189,10 +189,10 @@ export async function panel(ctx, { query }) {
 
 /** Une erreur d'enregistrement : sous le champ quand on sait lequel (la période), sinon en haut. */
 const failed = (ctx, r) => (r.code === "period" ? { errors: { period: saveError(ctx, r) } } : { error: saveError(ctx, r) });
-/** Le champ « période » du formulaire (un texte : 01/11 - 30/11) → { period } ou { bad } (la phrase d'erreur va sous le champ). Absent : rien ne change. */
+/** Le champ « période » du formulaire (celui du cœur : 11-01/11-30 ou 2026-11-01/2026-11-30 ; l'ancienne écriture 01/11 - 30/11 est encore lue) → { period } ou { bad } (la phrase d'erreur va sous le champ). Absent : rien ne change. */
 function periodOf(ctx, v) {
   if (v.period === undefined) return {};
-  const p = parsePeriodText(v.period);
+  const p = parsePeriodValue(v.period);
   return p.ok ? { period: p.value } : { bad: { errors: { period: periodError(ctx, p) } } };
 }
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };

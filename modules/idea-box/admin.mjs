@@ -1,5 +1,5 @@
 // Boîte à idées — l'administration : un seul tableau (recherche, pastilles, interrupteur « Publiée »), l'écran d'une idée, la fusion de doublons,
-// le tableau de bord et la pastille du menu. Les gestes eux-mêmes sont dans ops.mjs (partagés avec l'assistant IA).
+// le tableau de bord (la tâche « n idées à relire » remplace l'ancienne pastille du menu). Les gestes eux-mêmes sont dans ops.mjs (partagés avec l'assistant IA).
 const v = new URL(import.meta.url).search;   // chaque fichier voisin est importé avec la version du module (voir index.mjs)
 const { PAGE_SIZE, STATUSES, excerpt, isStatus, loadAll, settings } = await import(`./lib.mjs${v}`);
 const { mergeIdeas, pendingCount, purgeRefused, removeIdea, saveIdea, setState, setVisible } = await import(`./ops.mjs${v}`);
@@ -156,5 +156,3 @@ export const dashboard = {
     },
   },
 };
-
-export const adminBadge = pendingCount;

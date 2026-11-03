@@ -238,14 +238,14 @@ test("journal : seulement des événements déclarés, sans aucun texte ni pseud
 
 /* ───────────── Tableau de bord et pastille ───────────── */
 
-test("tableau de bord : « n idées à relire » avec un lien direct, les plus soutenues en carte, rien de personnel", async () => {
+test("tableau de bord : « Idées à relire (n) » avec un lien direct, les plus soutenues en carte, rien de personnel", async () => {
   const ctx = await busy();
   assert.equal(await def.dashboard.tasks.review(ctx), 8);
-  assert.equal(await def.adminBadge(ctx), 8);
+  assert.equal(def.adminBadge, undefined, "la tâche remplace la pastille du menu : sinon la même ligne apparaîtrait deux fois");
   assert.equal(await def.dashboard.tasks.review(ctxFor()), 0);
   const task = manifestJson.dashboard.tasks[0];
   assert.equal(task.href, "?tab=use&show=review"); assert.equal(task.right, "ideas.moderate");
-  assert.equal(task.label.fr, "{n} idées à relire"); assert.equal(task.label.en, "{n} ideas to review");
+  assert.equal(task.label.fr, "Idées à relire ({n})"); assert.equal(task.label.en, "Ideas to review ({n})");
   const card = await def.dashboard.cards.top(ctx);
   assert.equal(card.rows.length, 4, "seulement les idées publiées");
   assert.deepEqual(card.rows[0], { title: "Idée publiée très soutenue", detail: "12 soutiens", href: `?tab=use&edit=${encodeURIComponent((await all(ctx)).find((i) => i.votes === 12).id)}` });
