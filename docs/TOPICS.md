@@ -39,7 +39,7 @@ Le cœur possède le schéma de ces trois sujets (voir `docs/MODULES.md` du cœu
 | `guestbook.message` | `guestbook` (exemple) | tout module qui affiche un livre d'or | `id`, `name`, `text`, `publishedAt` : message validé | cœur 0.1.x |
 | `sponsor.card` | `sponsors` | `sponsor-ticker` | nom, code, logo, lien : carte de sponsor | cœur 0.1.x |
 | `partnership.partner` | `partnerships` | `sponsors` | nom, logo : fiche de partenaire | cœur 0.1.x |
-| `planning.slot` | `calendar-manual`, `calendar-ical`, tout module « agenda de streams » | `planning`, `stream-story`, `twitch-bot` | `id`, `title`, `start`, `end?`, `allDay?`, `day?`, `games?`, `status?`, `timezone?` ; reçoit une période `from` / `to` | cœur 0.1.27 |
+| `planning.slot` | `calendar-manual`, `calendar-ical`, tout module « agenda de streams » | `planning`, `stream-story`, `twitch-bot` | `id`, `title`, `start`, `end?`, `allDay?`, `day?`, `games?`, `partners?` (pseudos Twitch en minuscules, 5 au plus), `status?`, `timezone?` ; reçoit une période `from` / `to` | cœur 0.1.27 |
 | `calendar.event` | tout module « calendrier » (réservé) | lecteurs d'agenda qui ne parlent pas de streams | `id`, `title`, `start`, `end?`, `allDay?`, `description?`, `location?`, `url?`, `status?`, `category?`, `color?`, `sourceLabel?` ; reçoit une période `from` / `to`. Les streams passent par `planning.slot` | cœur 0.1.17 |
 | `social.stat` | `bluesky`, `discord`, `github`, `mastodon`, `reddit`, `twitch-channel`, `youtube-channel` | `community-stats`, `twitch-bot` | `id`, `metric` (`followers`, `paying`, `content`, `views`), `value`, `asOf`, `error?` | cœur 0.1.17 |
 | `maze.poster` | `twitch-channel`, `youtube-channel`, `*` | `maze-overlay` | affiche pour le labyrinthe | cœur 0.1.x |

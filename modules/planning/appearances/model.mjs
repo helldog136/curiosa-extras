@@ -6,6 +6,7 @@ const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`
 const { relativeLabel } = await import(`../relative.mjs${V}`);
 const { gamesOf } = await import(`../slots.mjs${V}`);
 
+const safeTwitch = (u) => (/^https:\/\/www\.twitch\.tv\/[a-z0-9_]{4,25}$/.test(String(u ?? "")) ? String(u) : null);
 const pad = (n) => String(n).padStart(2, "0");
 export const wallKey = (w) => `${w.y}-${pad(w.m)}-${pad(w.d)}`;
 const validLocale = (l) => { try { return Intl.DateTimeFormat.supportedLocalesOf([String(l)]).length ? String(l) : "en"; } catch { return "en"; } };
@@ -44,6 +45,8 @@ export function buildModel(input) {
     const end = s.end instanceof Date && !Number.isNaN(s.end.getTime()) ? s.end : new Date(s.start.getTime() + 3_600_000);
     const w = wallDateNow(tz, s.start);
     const games = s.allDay ? [] : gamesOf(s);
+    // « Avec … » : seulement les personnes que partners.mjs a jugées montrables (nom de fiche, chaîne Twitch). Dans un overlay, rien ne se clique : le nom seul.
+    const people = s.allDay ? [] : (Array.isArray(s.people) ? s.people : []).filter((p) => p && typeof p.name === "string" && p.name).slice(0, 5).map((p) => ({ name: p.name, href: surface === "overlay" || surface === "preview" ? null : safeTwitch(p.url) }));
     const cancelled = !!s.cancelled;
     const live = !cancelled && !s.allDay && s.start.getTime() <= nowMs && end.getTime() >= nowMs;
     const rel = cancelled || !opts.relative ? null : (() => { const r = relativeLabel({ ...s, end }, now, tz, t); return live ? null : r; })();
@@ -52,7 +55,7 @@ export function buildModel(input) {
       iso: s.allDay ? wallKey(w) : s.start.toISOString(), isoEnd: s.allDay ? wallKey(wallDateNow(tz, new Date(end.getTime() - 1))) : end.toISOString(),
       timeText: s.allDay ? t("allDay") : fm.time(s.start), endText: s.allDay ? "" : fm.time(end),
       startMs: s.start.getTime(), endMs: end.getTime(), dayKey: wallKey(w),
-      games, covers: games.map((name) => ({ name, url: covers.get(name) })).filter((c) => typeof c.url === "string" && (/^https:\/\//.test(c.url) || (allowData && /^data:image\/svg\+xml/.test(c.url)))),
+      games, people, covers: games.map((name) => ({ name, url: covers.get(name) })).filter((c) => typeof c.url === "string" && (/^https:\/\//.test(c.url) || (allowData && /^data:image\/svg\+xml/.test(c.url)))),
     };
   }).sort((a, b) => a.startMs - b.startMs);
 

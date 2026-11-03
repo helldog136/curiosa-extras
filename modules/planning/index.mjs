@@ -17,6 +17,8 @@ const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`
 export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
 const { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone } = await import(`./slots.mjs${V}`);
 export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone };
+const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS } = await import(`./partners.mjs${V}`);
+export { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS };
 
 /* ───────────────────────────── Grille de jours ───────────────────────────── */
 
@@ -100,6 +102,7 @@ async function keySetupBlocks(ctx) {
     : [{ type: "markdown", text: ctx.t("coversNoKeyNoModule") }, { type: "suggestInstall", service: "game.cover", reason: ctx.t("coversSuggestReason") }];
 }
 
+export const SERVICE = "contact.book";
 const MAX_LOOKUPS = 30;
 
 /** Le lien stable du cœur vers l'écran de correction d'une jaquette (administration seulement). Le titre est encodé, et les signes qui casseraient un lien Markdown aussi. */
@@ -149,7 +152,8 @@ async function loadSlots(ctx, days, { cancelled = false } = {}) {
   const { items, failed } = await collectSlots(ctx, new Date(now - DAY), windowEnd);
   const timeZone = displayZone(ctx.setting("timezone"), items);
   const slots = toSlots(items, timeZone).filter((e) => (cancelled || !e.cancelled) && e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
-  return { slots, timeZone, failed };
+  const partners = await attachPartners(ctx, slots);   // les noms des partenaires (Contacts) ; sans aucun pseudo, aucun appel
+  return { slots, timeZone, failed, partners };
 }
 
 const clampDays = (v, def = 7) => Math.min(60, Math.max(1, Math.trunc(Number(v)) || def));
@@ -160,10 +164,14 @@ const fmtTime = (d, locale, tz) => new Intl.DateTimeFormat(locale, { hour: "2-di
 const fmtDay = (wall, locale, tz) => new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: tz }).format(zonedTimeToUtc(wall.y, wall.m, wall.d, 12, 0, 0, tz));
 const escMd = (s) => String(s).replace(/([\\`*_[\]<>])/g, "\\$1");
 
+/** « Avec Marie, Paul » : le nom de la fiche de Contacts, lié à sa chaîne. Seules les personnes à montrer sont dans `people` (voir partners.mjs). */
+const peopleMd = (slot, ctx) => (slot.people?.length ? ` · ${escMd(ctx.t("withLabel"))} ${slot.people.map((p) => `[${escMd(p.name)}](${p.url})`).join(", ")}` : "");
+const peopleHtml = (slot, ctx, cls) => (slot.people?.length ? `<${cls.tag} class="${cls.name}">${esc(ctx.t("withLabel"))} ${slot.people.map((p) => `<a style="color:inherit" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>`).join(", ")}</${cls.tag}>` : "");
+
 function slotLine(slot, ctx, tz) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
   const games = gamesOf(slot);
-  return `**${when}** — ${escMd(slot.title)}${games.length ? ` · _${games.map(escMd).join(", ")}_` : ""}`;
+  return `**${when}** — ${escMd(slot.title)}${games.length ? ` · _${games.map(escMd).join(", ")}_` : ""}${peopleMd(slot, ctx)}`;
 }
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -175,7 +183,7 @@ function slotHtml(slot, ctx, tz, covers, prefix = "", vis = null) {
   const games = gamesOf(slot);
   const imgs = covers.length ? `<span style="display:flex;gap:4px;flex-shrink:0">${covers.map(coverImg).join("")}</span>` : vis ? placeholderHtml(vis, true) : "";
   return `<div style="display:flex;gap:12px;align-items:center;margin:8px 0">${imgs}<div style="min-width:0;overflow-wrap:anywhere">${prefix ? `<span style="color:var(--v-muted)">${esc(prefix)} · </span>` : ""}<strong>${esc(when)}</strong> — ${esc(slot.title)}` +
-    `${games.length ? `<div style="color:var(--v-muted);font-style:italic;font-size:.9em">${games.map(esc).join(", ")}</div>` : ""}</div></div>`;
+    `${games.length ? `<div style="color:var(--v-muted);font-style:italic;font-size:.9em">${games.map(esc).join(", ")}</div>` : ""}${slot.people?.length ? `<div style="color:var(--v-muted);font-size:.9em">${peopleHtml(slot, ctx, { tag: "span", name: "cpl-with" })}</div>` : ""}</div></div>`;
 }
 const anyCover = (slots, covers) => slots.some((s) => coversOf(s, covers).length > 0);
 
@@ -291,7 +299,7 @@ function nextCardHtml(slot, others, ctx, tz, covers, now, vis, channelHref) {
   return wrapCards(`<article class="cpl-card">${imgs}<div class="cpl-body">${badgeHtml(relativeLabel(slot, now, tz, t))}` +
     `<h3 class="cpl-title">${esc(slot.title)}</h3>` +
     `<p class="cpl-when"><time class="cpl-hour" datetime="${esc(isoOf(slot, tz))}">${esc(hour)}</time><span class="cpl-day">${esc(day)}</span></p>` +
-    `${games.length ? `<p class="cpl-games">${esc(t("gamesLabel"))} ${games.map(esc).join(", ")}</p>` : ""}${also}` +
+    `${games.length ? `<p class="cpl-games">${esc(t("gamesLabel"))} ${games.map(esc).join(", ")}</p>` : ""}${peopleHtml(slot, ctx, { tag: "p", name: "cpl-games cpl-with" })}${also}` +
     `${channel ? `<a class="cpl-btn" href="${esc(channel)}" target="_blank" rel="noopener noreferrer">${esc(t("watch"))}</a>` : ""}` +
     `</div></article>`);
 }
@@ -309,7 +317,7 @@ function upcomingListHtml(slots, ctx, tz, covers, now, vis) {
     const rel = relativeLabel(s, now, tz, t);
     return `<li class="cpl-row"><time class="cpl-tile" datetime="${esc(isoOf(s, tz))}"><span class="cpl-tw">${esc(wd)}</span><span class="cpl-td">${esc(dn)}</span></time>` +
       `${gc ? `<img class="cpl-thumb" src="${esc(gc.url)}" alt="${esc(t("coverAlt", { game: gc.name }))}" loading="lazy" width="40" height="54">` : placeholderHtml(vis, true)}` +
-      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}</span></div>` +
+      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}${s.people?.length ? ` · ${esc(t("withLabel"))} ${s.people.map((p) => esc(p.name)).join(", ")}` : ""}</span></div>` +
       `${rel ? `<span class="cpl-badge">${esc(rel)}</span>` : ""}</li>`;
   }).join("");
   return wrapCards(`<div class="cpl-list"><ul>${rows}</ul>${href ? `<div class="cpl-foot"><a class="cpl-link" href="${esc(href)}">${esc(t("fullPlanning"))}</a></div>` : ""}</div>`);
@@ -329,6 +337,7 @@ async function loadWeek(ctx, weekOffset) {
   const timeZone = displayZone(ctx.setting("timezone"), items);
   const range = getWeekRange(weekOffset, timeZone);
   const slots = toSlots(items, timeZone).filter((e) => !e.cancelled && e.end >= range.start && e.start <= range.end);
+  await attachPartners(ctx, slots);
   return { timeZone, range, days: buildDays(range.startWall, 7, slots, timeZone) };
 }
 
@@ -356,12 +365,14 @@ export function weekImage(ctx, week, site, covers = new Map()) {
     const coverW = Math.round(coverH * (40 / 54));
     const textW = BOX_WIDTH - PAD_X * 2 - (list.length ? list.length * coverW + (list.length - 1) * COVER_GAP + COVER_ROW_GAP : 0);
     const games = list.length || s.allDay ? "" : gamesOf(s).join(", ");
+    const withLine = !s.allDay && s.people?.length ? `${ctx.t("withLabel")} ${s.people.map((p) => p.name).join(", ")}`.slice(0, 60) : "";   // texte seul : aucune photo, aucun lien
     return box({ alignItems: "center", gap: COVER_ROW_GAP },
       ...(list.length ? [box({ gap: COVER_GAP, flexShrink: 0 }, ...list.map((src) => ({ type: "img", props: { src, width: coverW, height: coverH, style: { borderRadius: 6, objectFit: "cover" } } })))] : []),
       box({ flexDirection: "column", justifyContent: "center", gap: 2, width: textW, ...(list.length ? { height: coverH } : {}) },
         box({ fontSize: 24, color: c.accent, fontWeight: 700 }, s.allDay ? ctx.t("allDay") : fmtTime(s.start, ctx.locale, tz)),
-        box({ fontSize: 32, color: c.fg, lineHeight: 1.25, height: 32 * 1.25 * 2, overflow: "hidden" }, String(s.title).slice(0, 90)),
-        ...(games ? [box({ fontSize: 22, color: c.muted }, games.slice(0, 60))] : [])));
+        box({ fontSize: 32, color: c.fg, lineHeight: 1.25, height: 32 * 1.25 * (withLine ? 1 : 2), overflow: "hidden" }, String(s.title).slice(0, withLine ? 45 : 90)),
+        ...(games ? [box({ fontSize: 22, color: c.muted }, games.slice(0, 60))] : []),
+        ...(withLine ? [box({ fontSize: 22, color: c.muted, height: 22 * 1.3, overflow: "hidden" }, withLine)] : [])));
   };
   const rows = week.days.map((d, i) => {
     const content = ROW - PAD_Y * 2;
@@ -384,17 +395,41 @@ export function weekImage(ctx, week, site, covers = new Map()) {
   return { width: WIDTH, height, tree };
 }
 
+/** « Avec qui vous streamez » : ce que le planning fera de chaque pseudo écrit dans vos streams. Rien n'est affiché tant qu'aucun pseudo n'est écrit. */
+async function partnersAdminBlocks(ctx, info) {
+  if (info.book === "none") return [];
+  const t = ctx.t, blocks = [{ type: "heading", text: t("adminWith") }];
+  if (info.book === "absent") {
+    blocks.push({ type: "markdown", text: t("adminWithNoBook") }, { type: "suggestInstall", service: SERVICE, min: 2, reason: t("adminWithSuggest") });
+    return blocks;
+  }
+  if (info.book === "busy") blocks.push({ type: "markdown", text: t("adminWithBusy") });
+  let contacts = "";
+  try { contacts = (await ctx.api?.instances?.list?.({ module: "contacts" }))?.[0]?.adminPath ?? ""; } catch { contacts = ""; }
+  const lines = [...info.states].slice(0, 30).map(([login, state]) => {
+    const who = `**${escMd(login)}**`;
+    if (state === "shown") return `- ${who} : ${t("adminWithShown", { name: escMd(info.names.get(login) ?? "") })}`;
+    if (state === "hidden") return `- ${who} : ${t("adminWithHidden")}`;
+    if (state === "unknown") return `- ${who} : ${t("adminWithUnknown")}${contacts ? ` [${t("adminWithAdd")}](${contacts}?new=person)` : ""}`;
+    return `- ${who} : ${t("adminWithWait")}`;
+  });
+  blocks.push({ type: "markdown", text: lines.join("\n") });
+  if ([...info.states.values()].includes("unknown")) blocks.push({ type: "markdown", text: t("adminWithAddHelp") });
+  return blocks;
+}
+
 /** L'état des streams et les prochains créneaux (haut du panneau d'admin). Quand il n'y a rien à montrer, dit POURQUOI et quoi faire. */
 async function adminStatusBlocks(ctx) {
     const t = ctx.t;
     const days = clampDays(ctx.setting("days"));
     const blocks = [{ type: "heading", text: t("adminStatus") }];
-    const { slots, timeZone } = await loadSlots(ctx, Math.max(days, 14), { cancelled: false });
+    const { slots, timeZone, partners } = await loadSlots(ctx, Math.max(days, 14), { cancelled: false });
     const tz = timeZone ?? "UTC";
     if (!slots.length) return [...blocks, { type: "markdown", text: t("adminNoSlots") }];
     blocks.push({ type: "markdown", text: t("adminOk", { n: slots.filter((s) => s.start.getTime() <= Date.now() + days * 86_400_000).length, days }) });
     blocks.push({ type: "heading", text: t("adminNext") });
     blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, gamesOf(s).join(", ")]) });
+    blocks.push(...(await partnersAdminBlocks(ctx, partners)));
     // Jaquettes : un message clair plutôt qu'un manque silencieux (clé absente, refusée, RAWG injoignable, jeux inconnus de RAWG).
     const next = slots.slice(0, 20);
     const { covers, states, ambiguous } = await coversForSlots(ctx, next);
@@ -557,7 +592,8 @@ export default {
     async planning_upcoming(ctx, args) {
       const days = clampDays(args.days);
       const { slots } = await loadSlots(ctx, days);
-      return slots.map((s) => ({ title: s.title, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: gamesOf(s) }));
+      // `partners` (ajout, seulement pour un stream qui a des pseudos) : seulement les personnes que le planning montre (nom + chaîne) ; `partnersNotShown` : combien de pseudos écrits ne le sont pas (inconnus de Contacts, fiche à relire ou cachée). Jamais d'autre donnée de la fiche.
+      return slots.map((s) => ({ title: s.title, start: s.start.toISOString(), end: s.end.toISOString(), allDay: s.allDay, games: gamesOf(s), ...(s.partners?.length ? { partners: (s.people ?? []).map((p) => ({ name: p.name, url: p.url })), partnersNotShown: s.partners.length - (s.people ?? []).length } : {}) }));
     },
   },
 };

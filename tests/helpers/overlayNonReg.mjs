@@ -13,7 +13,23 @@ const readJson = (root, mod, f) => JSON.parse(fs.readFileSync(path.join(root, "m
 const load = (root, mod, file = "index.mjs") => import(`${path.join(root, "modules", mod, file)}?nr=${Math.random().toString(36).slice(2)}`);
 
 /** Le manifeste sans ce que les éléments d'overlay ajoutent (version, minCore, clé overlayElements, droit « routes » des statistiques). */
-const manifestRest = (m, extraPermission) => { const { version, minCore, overlayElements, previews, ...rest } = m; return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) }; };
+const manifestRest = (m, extraPermission) => {
+  const { version, minCore, overlayElements, previews, ...rest } = m;
+  if (rest.id === "planning") {   // 2.6.0 : les partenaires (« Avec… ») sont un ajout ; tout le reste du manifeste est celui de la 1.25.0
+    rest.consumes = rest.consumes.map((c) => (c.topic === "planning.slot" ? { ...c, schema: c.schema.filter((f) => f.key !== "partners") } : c));
+    rest.settings = rest.settings.filter((x) => x.key !== "hide");
+    rest.requires = rest.requires.filter((r) => r.service !== "contact.book");
+    delete rest.privacy;   // deux phrases de plus sur les partenaires (la référence 1.25.0 est comparée sans cette clé, voir planningGolden)
+    rest.mcp = rest.mcp.map(({ description, ...x }) => x);
+  }
+  return { ...rest, permissions: (rest.permissions ?? []).filter((p) => p !== extraPermission) };
+};
+
+/** La référence 1.25.0 telle qu'on la compare : sans les textes que la 2.6.0 a complétés (vie privée, description de l'outil). */
+export function planningGolden(golden) {
+  const { privacy, ...manifest } = golden.manifest;
+  return { ...golden, manifest: { ...manifest, mcp: manifest.mcp.map(({ description, ...x }) => x) } };
+}
 
 export async function planningSnapshot(root) {
   const mod = (await load(root, "planning")).default;

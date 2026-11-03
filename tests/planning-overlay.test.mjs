@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { vevent, calendar, feedTopics } from "./helpers/icalFeed.mjs";
-import { planningSnapshot } from "./helpers/overlayNonReg.mjs";
+import { planningSnapshot, planningGolden } from "./helpers/overlayNonReg.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
 mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-10-14T10:00:00Z") });
@@ -44,7 +44,7 @@ beforeEach(() => { mock.timers.setTime(Date.parse("2026-10-14T10:00:00Z")); over
 
 test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec taille minimale, plage de ratios, style suivi, options minimales", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.5.2"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "2.6.0"); assert.equal(manifest.minCore, "0.5.0");
   assert.deepEqual(manifest.overlayElements.map((e) => e.id), ["week", "next"]);
   for (const e of manifest.overlayElements) {
     assert.equal(e.fit, "fluid", e.id); assert.equal(e.followsStyle, true, e.id); assert.equal(e.demo, true, e.id);
@@ -265,7 +265,7 @@ test("une lecture en échec est retentée vite mais pas à chaque lecteur ; le c
 /* ───────────────────────────── Non-régression ───────────────────────────── */
 
 test("rien ne change pour l'existant : page, accueil, image, admin, MCP, réglages et routes identiques à ceux de la 1.25.0 (octet pour octet)", async () => {
-  const golden = JSON.parse(fs.readFileSync(path.join(here, "golden/planning-1.25.0.json"), "utf8"));
+  const golden = planningGolden(JSON.parse(fs.readFileSync(path.join(here, "golden/planning-1.25.0.json"), "utf8")));
   const now = await planningSnapshot(ROOT);
   assert.deepEqual(now.manifest, golden.manifest, "le manifeste n'a changé que par version, minCore et overlayElements");
   assert.deepEqual(now.keys, golden.keys);

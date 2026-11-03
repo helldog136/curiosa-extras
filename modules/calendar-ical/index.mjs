@@ -6,8 +6,9 @@ const V = new URL(import.meta.url).search;   // même « version » pour les fic
 const { parseCalendar, expand, parseIcs, toSlot, isValidTimeZone } = await import(`./ical.mjs${V}`);
 const { readIcs, clearCache, forget, isPublicHttpsUrl, timing } = await import(`./fetch.mjs${V}`);
 const { extractGameNames } = await import(`./games.mjs${V}`);
+const { extractPartners } = await import(`./partners.mjs${V}`);
 const { tutorialHtml, skillMarkdown } = await import(`./tutorial.mjs${V}`);
-export { parseCalendar, expand, parseIcs, toSlot, isValidTimeZone, extractGameNames, tutorialHtml, skillMarkdown };
+export { parseCalendar, expand, parseIcs, toSlot, isValidTimeZone, extractGameNames, extractPartners, tutorialHtml, skillMarkdown };
 export { readIcs, clearCache, forget, isPublicHttpsUrl, timing };
 
 const DAY = 86_400_000;
@@ -63,7 +64,7 @@ export default {
       const r = await loadEvents(ctx, { from: lo, to: hi });
       if (!r.ok) return [];
       const untitled = ctx.t("untitled");
-      return r.events.slice(0, Math.min(MAX_ITEMS, Math.max(1, Math.trunc(Number(limit)) || 50))).map((e) => toSlot(e, { timeZone: r.zone, untitled, gamesOf: extractGameNames }));
+      return r.events.slice(0, Math.min(MAX_ITEMS, Math.max(1, Math.trunc(Number(limit)) || 50))).map((e) => toSlot(e, { timeZone: r.zone, untitled, gamesOf: extractGameNames, partnersOf: extractPartners }));
     },
   },
 
@@ -105,7 +106,7 @@ export default {
       if (upcoming.length) {
         const fmt = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: r.zone });
         const day = new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: r.zone });
-        blocks.push({ type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames")], rows: upcoming.slice(0, 10).map((e) => [e.allDay ? `${day.format(e.start)} · ${t("allDay")}` : fmt.format(e.start), e.title || t("untitled"), extractGameNames(e.description).join(", ")]) });
+        blocks.push({ type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith")], rows: upcoming.slice(0, 10).map((e) => [e.allDay ? `${day.format(e.start)} · ${t("allDay")}` : fmt.format(e.start), e.title || t("untitled"), extractGameNames(e.description).join(", "), extractPartners(e.description).join(", ")]) });
       }
     }
     blocks.push({ type: "adminForm", action: "test", submitLabel: t("testBtn"), fields: [] });

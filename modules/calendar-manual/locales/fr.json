@@ -48,5 +48,11 @@
   "errEndTime": "L'heure de fin n'est pas valide (exemple : 23:30).",
   "errUntil": "La date de fin de répétition n'est pas valide ou vient avant le premier stream.",
   "errSkip": "Les dates à sauter ne sont pas valides : écrivez-les sous la forme 2026-12-24, séparées par une virgule.",
-  "errMax": "Vous avez atteint la limite de {n} streams : supprimez les plus anciens."
+  "errMax": "Vous avez atteint la limite de {n} streams : supprimez les plus anciens.",
+  "fPartners": "Avec ces pseudos Twitch (facultatif)",
+  "hPartners": "Leur nom s'affiche s'ils sont dans vos contacts.",
+  "exPartners": "etoile_nord, lune_douce",
+  "errPartners": "« {pseudo} » n'est pas un pseudo Twitch. Écrivez 4 à 25 lettres, chiffres ou _, par exemple etoile_nord.",
+  "errPartnersMax": "Cinq pseudos au plus par stream, séparés par une virgule, par exemple etoile_nord, lune_douce.",
+  "colWith": "Avec"
 }

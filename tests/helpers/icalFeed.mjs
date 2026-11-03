@@ -1,6 +1,6 @@
 // Aide de test (propre à ce dépôt, sans réseau) : fabrique des agendas iCal et les sert comme le ferait le module « Agenda en ligne » (créneaux du sujet
 // `planning.slot`), pour tester un LECTEUR (le Planning, le bot) avec de vrais créneaux de fournisseur — le lecteur ne sait pas d'où ils viennent.
-import { parseCalendar, expand, toSlot, extractGameNames } from "../../modules/calendar-ical/index.mjs";
+import { parseCalendar, expand, toSlot, extractGameNames, extractPartners } from "../../modules/calendar-ical/index.mjs";
 
 export const icsDate = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 export const hoursFromNow = (n) => new Date(Date.now() + n * 3_600_000);
@@ -11,7 +11,7 @@ export const calendar = (...events) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${even
 export function slotsFromIcs(text, { from, to, limit = 200, timeZone = "UTC" } = {}) {
   if (!String(text ?? "").includes("BEGIN:VCALENDAR")) return [];
   const lo = from ? new Date(from) : new Date(), hi = to ? new Date(to) : new Date(lo.getTime() + 60 * 86_400_000);
-  return expand(parseCalendar(text), { timeZone, from: lo, to: hi, keepCancelled: true }).slice(0, limit).map((e) => toSlot(e, { timeZone, untitled: "(Sans titre)", gamesOf: extractGameNames }));
+  return expand(parseCalendar(text), { timeZone, from: lo, to: hi, keepCancelled: true }).slice(0, limit).map((e) => toSlot(e, { timeZone, untitled: "(Sans titre)", gamesOf: extractGameNames, partnersOf: extractPartners }));
 }
 
 /** Option `topics` de fakeCtx : le sujet `planning.slot` servi par un ou plusieurs agendas. `sources()` : texte iCal, ou liste de { text | items, timeZone? } (relue à chaque appel : modifiable). */

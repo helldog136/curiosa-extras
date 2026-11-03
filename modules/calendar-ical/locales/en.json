@@ -18,7 +18,7 @@
   "tutoGameDoes": "Shows the game name and its cover art. Several games: “Game: Celeste, Hades” or “Game: Celeste + Hades” (3 at most). No “Game:” line = no game: the site logo is shown instead of cover art.",
   "tutoDescWhat": "The rest of the description",
   "tutoDescWhere": "The event description",
-  "tutoDescDoes": "Ignored: only the “Game:” line is read. You can keep notes for yourself there.",
+  "tutoDescDoes": "Ignored: only the “Game:” and “With:” lines are read. You can keep notes for yourself there.",
   "tutoPlaceWhat": "Location",
   "tutoPlaceWhere": "The “Add location” field",
   "tutoPlaceDoes": "Not read: no need to fill it in.",
@@ -45,7 +45,7 @@
   "tutoExTitle": "Discovery night",
   "tutoExWhen": "Saturday 10 October, 9:00 pm → 11:30 pm",
   "tutoExPlace": "(empty: not read)",
-  "tutoExDesc": "Game: Celeste",
+  "tutoExDesc": "Game: Celeste\nWith: etoile_nord",
   "tutoExNoGameTitle": "Same for an event without a game (charity, chat…): simply write no “Game:” line.",
   "tutoExNoGameDesc": "Charity night, come along!",
   "tutoErrTitle": "Common mistakes",
@@ -76,5 +76,10 @@
   "err_http": "Your calendar refused to be read (code {status}). Check the address: if you reset it in Google, paste the new one.",
   "err_format": "This address does not return a calendar. Copy “Secret address in iCal format” from your calendar's settings.",
   "err_size": "Your calendar is too big to be read. Use a calendar dedicated to your streams.",
-  "err_config": "No address saved."
+  "err_config": "No address saved.",
+  "tutoPartnersWhat": "Who with",
+  "tutoPartnersWhere": "In the description: a line starting with “With:” followed by Twitch names",
+  "tutoPartnersDoes": "Example: “With: etoile_nord, lune_douce” (5 at most). The schedule shows the name of the Contacts card that has this Twitch name. A name that is not in your contacts is not shown. The rest of the description is never read.",
+  "colWith": "With",
+  "skillPartners": "## Who with (optional)\n\n- Write a line `With: etoile_nord, lune_douce` in the **description**.\n- Separate the Twitch names with a comma, 5 at most.\n- `@name` and `twitch.tv/name` are accepted.\n- Only write this line if the human gives the names: never guess one.\n- Without a `With:` line, nobody else is shown.\n- The site shows the name of the Contacts card that has this Twitch name.\n- A name that is not in Contacts is not shown.\n- The rest of the description is never read."
 }
