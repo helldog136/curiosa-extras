@@ -2,7 +2,7 @@
 export const GOLDEN = {
   "dockStatus": 200,
   "dockCsp": "default-src 'none'; script-src 'nonce-N'; style-src 'nonce-N'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
-  "dockPage": "0cbe2e9bec4c2f3893293a30f400b7fe",
+  "dockPage": "601d24c446ba202368e65d851e4fd7be",
   "denied": [
     403,
     "10f296bd8fef13238e01098b04774a44"
@@ -65,5 +65,5 @@ export const GOLDEN = {
       "startedAt": 1792841400000
     }
   },
-  "dockPageEn": "c9b385663134b3d67a54b1dae0b5394f"
+  "dockPageEn": "ed9532eb7a60975bb9b96b0a4a6814f4"
 };

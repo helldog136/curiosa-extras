@@ -5,11 +5,11 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "minCore": "0.5.0",
   "description": {
-    "en": "A pop-up for OBS that shows an alert (new follower, sub, raid…) the moment something pushes it. Tools such as Streamer.bot, a webhook relay or a script can send it alerts. Super Chats, Super Stickers and memberships on your YouTube live can appear too.",
-    "fr": "Une fenêtre pour OBS qui affiche une alerte (nouveau follow, sub, raid…) dès que quelque chose la pousse. Des outils comme Streamer.bot, un relais de webhook ou un script peuvent lui envoyer des alertes. Les Super Chats, Super Stickers et adhésions de votre direct YouTube peuvent aussi s'afficher."
+    "en": "A pop-up for OBS that shows your alerts (new follower, sub, raid…), sent by your stream tools or by YouTube.",
+    "fr": "Une fenêtre pour OBS qui affiche vos alertes (follow, sub, raid…), envoyées par vos outils de stream ou YouTube."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -29,8 +29,8 @@
       "type": "secret",
       "advanced": true,
       "label": {
-        "en": "Push token",
-        "fr": "Jeton d'envoi"
+        "en": "Sending code",
+        "fr": "Code d'envoi"
       },
       "help": {
         "en": "Whatever sends alerts must present it: Authorization: Bearer <token>. Without a token, nothing can push (except the test button).",

@@ -24,7 +24,7 @@ const get = (url) => new Request(`https://example.test${url}`);
 
 const MODULES = [
   { name: "Overlay défilant", dir: "ticker-overlay", def: tk, id: "banner", fit: "scale", version: "1.1.0" },
-  { name: "Témoignages", dir: "testimonials", def: T.def, id: "reviews", fit: "fluid", version: "1.2.0" },
+  { name: "Témoignages", dir: "testimonials", def: T.def, id: "reviews", fit: "fluid", version: "1.3.0", minCore: "0.6.0" },
   { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.1.0" },
 ];
 /** Ce que le cœur ajoute à l'adresse de l'élément : taille du cadre, style commun, options. */
@@ -32,13 +32,13 @@ const frame = (extra = "", w = 640, h = 140, fit = "scale") => new URLSearchPara
 const ASK = { fit: "scale", width: 640, height: 140, style: null, options: {}, lang: "en" };
 
 // ── Déclaration ─────────────────────────────────────────────────────────────────────────────────────────────────────
-for (const { name, dir, def, id, fit, version } of MODULES) {
+for (const { name, dir, def, id, fit, version, minCore } of MODULES) {
   const manifest = read(dir, "module.json");
 
-  test(`${name} : manifeste valide, minCore 0.5.0, version ${version}, un élément « ${id} » (${fit})`, () => {
+  test(`${name} : manifeste valide, minCore ${minCore ?? "0.5.0"}, version ${version}, un élément « ${id} » (${fit})`, () => {
     const r = parseManifest(manifest);
     assert.ok(r.ok, r.ok ? "" : r.error);
-    assert.equal(r.manifest.minCore, "0.5.0");
+    assert.equal(r.manifest.minCore, minCore ?? "0.5.0");
     assert.equal(r.manifest.version, version);
     assert.deepEqual(r.manifest.overlayElements.map((e) => e.id), [id]);
     const e = r.manifest.overlayElements[0];

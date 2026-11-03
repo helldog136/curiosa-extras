@@ -1,61 +1,43 @@
-// Les timers : des messages que le bot écrit de lui-même dans le chat, à intervalle régulier, comme chez Nightbot.
-// AUCUN minuteur de fond : un timer n'est regardé qu'à l'arrivée d'un message du chat (Twitch appelle le site à chaque message). Un chat silencieux n'envoie donc rien,
-// et c'est voulu. À chaque message : on compte la ligne, on cherche le premier timer dû (intervalle écoulé ET assez de lignes depuis son dernier envoi), et on en envoie UN SEUL
-// (les autres attendent le message suivant, dans l'ordre de la liste). Jamais pendant l'arrêt d'urgence, jamais si le bot n'est pas prêt, jamais au-delà de la limite de réponses.
-// Où vit quoi : les réglages d'un timer (nom, texte, intervalle…) sont dans le document `botConfig` avec les commandes ; l'état (dernier envoi, lignes comptées) dans le document `botTimers`,
-// borné à 20 timers. Les lignes sont comptées en mémoire et écrites au plus toutes les 10 secondes (un chat animé n'écrit pas à chaque message).
+// Les timers : une COMMANDE qui se répète toute seule. Dans l'administration, un timer est un réglage d'une commande (« Répéter automatiquement » : toutes les N minutes, après au moins N lignes
+// de chat, en direct seulement ou toujours). À chaque échéance, le bot exécute la commande comme si on l'avait tapée : sa réponse, sa période d'activité, son état (désactivée, en pause…).
+// AUCUN minuteur de fond : une répétition n'est regardée qu'à l'arrivée d'un message du chat (Twitch appelle le site à chaque message). Un chat silencieux n'envoie donc rien,
+// et c'est voulu. À chaque message : on compte la ligne, on cherche la première répétition due (intervalle écoulé ET assez de lignes depuis son dernier envoi), et on en envoie UNE SEULE
+// (les autres attendent le message suivant). Jamais pendant l'arrêt d'urgence, jamais si le bot n'est pas prêt, jamais au-delà de la limite de réponses.
+// Où vit quoi : le réglage (`repeat`) est dans le document `botConfig`, sur la commande ; l'état (dernier envoi, lignes comptées) dans le document `botTimers`, par commande, borné à 20.
+// Les lignes sont comptées en mémoire et écrites au plus toutes les 10 secondes. L'ancienne liste `timers` du document est inerte depuis la migration (voir timersMigrate.mjs) : jamais lue ici.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { loadConfig, mutate, configVersion, catalog } = await import(`./commands.mjs${v}`);
-const { checkTemplate } = await import(`./variables.mjs${v}`);
-const { parsePeriod, readPeriod, isOpen } = await import(`./period.mjs${v}`);
+const C = await import(`./commands.mjs${v}`);
+const { loadConfig, mutate, configVersion, catalog, saveCommand, BUILTINS, readRepeat, MAX_REPEATS, REPEAT_LIMITS, REPEAT_WHEN } = C;
+const { used } = await import(`./variables.mjs${v}`);
+const { readPeriod, isOpen } = await import(`./period.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
 const { compose } = await import(`./engine.mjs${v}`);
+const { migrateTimers, needsMigration } = await import(`./timersMigrate.mjs${v}`);
 
-export const MAX_TIMERS = 20;
-export const LIMITS = { name: 40, minutes: 1440, lines: 200 };
-export const WHEN = ["live", "always"];
+export const MAX_TIMERS = MAX_REPEATS;
+export const LIMITS = { minutes: REPEAT_LIMITS.minutes, lines: REPEAT_LIMITS.lines };
+export const WHEN = REPEAT_WHEN;
 const FLUSH_MS = 10_000, READY_MS = 60_000, FAIL_MS = 30_000, CACHE_MS = 10_000;
-const err = (code, extra = {}) => ({ ok: false, code, ...extra });
-const cleanName = (x) => String(x ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim();
+const rec = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
 
-/** Vérifie les champs d'un timer. `others` : les autres timers (pour le nom unique). Rend { ok: true, value } ou { ok: false, code }. */
-export function checkTimer(f, { prefix = "!", others = [], current = null } = {}) {
-  const name = cleanName(f.name ?? current?.name);
-  if (!name || name.length > LIMITS.name) return err("timer_name");
-  if (others.some((o) => o.name.toLowerCase() === name.toLowerCase())) return err("timer_dup");
-  const minutes = Number(f.minutes ?? current?.minutes);
-  if (!Number.isInteger(minutes) || minutes < 1 || minutes > LIMITS.minutes) return err("timer_minutes");
-  const lines = f.lines === undefined || f.lines === "" ? (current?.lines ?? 5) : Number(f.lines);
-  if (!Number.isInteger(lines) || lines < 0 || lines > LIMITS.lines) return err("timer_lines");
-  const when = f.when ?? current?.when ?? "live";
-  if (!WHEN.includes(when)) return err("timer_when");
-  let period = readPeriod(current?.period);
-  if (f.period !== undefined) { const p = parsePeriod(f.period); if (!p.ok) return err("period", { field: p.field, reason: p.reason, month: p.month, day: p.day, year: p.year }); period = p.value; }
-  const ok = checkTemplate(f.text ?? current?.text, "timer", prefix);
-  if (!ok.ok) return err(`text_${ok.code}`, { vars: ok.vars, allowed: ok.allowed, name: ok.name });
-  return { ok: true, value: { name, text: ok.text, minutes, lines, when, enabled: f.enabled === undefined ? current?.enabled !== false : f.enabled === true, ...(period ? { period } : {}) } };
+/** Les commandes qui ont une répétition ACTIVE, d'après la configuration seule (sans interroger les autres modules) : [{ key, repeat, period }]. Une commande désactivée n'y est pas. */
+export function repeatEntries(cfg) {
+  const out = [], push = (key, o, on) => { const repeat = readRepeat(o.repeat); if (repeat && repeat.enabled && on) out.push({ key, repeat, period: o.period }); };
+  for (const c of cfg.custom) push(`custom:${c.id}`, c, c.enabled !== false);
+  for (const b of BUILTINS) { const o = rec(cfg.builtin[b.id]); push(`builtin:${b.id}`, o, o.enabled !== false); }
+  for (const [id, o] of Object.entries(cfg.partners)) push(`partner:${id}`, rec(o), rec(o).enabled === true);
+  for (const [id, o] of Object.entries(cfg.networks)) push(`network:${id}`, rec(o), rec(o).enabled === true);
+  push(`group:${C.GROUP_ID}`, rec(cfg.group), rec(cfg.group).enabled !== false);
+  return out.slice(0, MAX_TIMERS);
 }
 
-/** Crée (sans `ref.id`) ou modifie un timer. Rend { ok: true, id } ou { ok: false, code }. */
-export function saveTimer(ctx, ref, fields, { prefix = "!" } = {}) {
-  return mutate(ctx, (cfg) => {
-    const creating = !ref?.id;
-    const current = creating ? null : cfg.timers.find((x) => x.id === ref.id);
-    if (!creating && !current) return err("unknown");
-    if (creating && cfg.timers.length >= MAX_TIMERS) return err("timer_many");
-    const c = checkTimer(fields, { prefix, others: cfg.timers.filter((x) => x.id !== current?.id), current });
-    if (!c.ok) return c;
-    const id = current?.id ?? `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-    const entry = { id, ...c.value };
-    if (creating) cfg.timers.push(entry); else cfg.timers = cfg.timers.map((x) => (x.id === id ? entry : x));
-    return { ok: true, id };
-  });
-}
-export function removeTimer(ctx, id) {
-  return mutate(ctx, (cfg) => { const n = cfg.timers.length; cfg.timers = cfg.timers.filter((x) => x.id !== id); return n === cfg.timers.length ? err("unknown") : { ok: true }; });
+/** Règle la répétition d'une commande (`repeat` : champs à changer, ou null pour la retirer). Rend { ok: true } ou { ok: false, code }. */
+export async function setRepeat(ctx, c, repeat, env) {
+  if (c.kind === "partner" || c.kind === "network") return C.saveSourced(ctx, c.kind, c.id, { repeat }, env);
+  return saveCommand(ctx, { kind: c.kind, id: c.id }, { repeat }, env);
 }
 
 /* ───────────── L'état : en mémoire, écrit de temps en temps ───────────── */
@@ -76,8 +58,9 @@ async function load(ctx, m) {
 async function flush(ctx, m, ids, now) {
   m.flushedAt = now; m.dirty = false;
   const items = {};
+  for (const [id, x] of m.items) if (!id.includes(":")) items[id] = { lastAt: x.lastAt, lines: x.lines, ...(x.closed ? { closed: true } : {}) };
   for (const id of ids) { const x = m.items.get(id); if (x) items[id] = { lastAt: x.lastAt, lines: x.lines, ...(x.closed ? { closed: true } : {}) }; }
-  for (const id of [...m.items.keys()]) if (!ids.includes(id)) m.items.delete(id);   // un timer supprimé ne laisse rien derrière lui
+  for (const id of [...m.items.keys()]) if (!ids.includes(id) && id.includes(":")) m.items.delete(id);   // une répétition retirée ne laisse rien derrière elle (les états des anciens timers, sans « : », sont gardés tant que la migration n'est pas vérifiée)
   await st.serial(ctx, "timers", async () => {
     const r = (await ctx.api.store.list("botTimers", { limit: 1 }))[0];
     if (r) await ctx.api.store.update(r.id, { items }); else await ctx.api.store.add("botTimers", { items });
@@ -89,7 +72,12 @@ export async function stateOf(ctx, id) { const m = of(ctx); await load(ctx, m); 
 async function timersNow(ctx, m, now) {
   const ver = configVersion(ctx);
   if (m.cache && m.cache.ver === ver && m.cache.until > now) return m.cache.list;
-  const list = (await loadConfig(ctx)).data.timers.filter((x) => x.enabled !== false).slice(0, MAX_TIMERS);
+  let cfg = (await loadConfig(ctx)).data;
+  if (needsMigration(cfg) && !m.migrating) {   // filet de sécurité : si la migration des données n'a pas tourné, elle tourne ici (une fois, rejouable, sans effet si tout est déjà repris)
+    m.migrating = true;
+    try { await migrateTimers(ctx); cfg = (await loadConfig(ctx)).data; } catch { /* au pire, au message suivant */ m.migrating = false; }
+  }
+  const list = repeatEntries(cfg).map((e) => ({ id: e.key, minutes: e.repeat.minutes, lines: e.repeat.lines, when: e.repeat.when, period: e.period }));
   m.cache = { ver, until: now + CACHE_MS, list };
   return list;
 }
@@ -148,34 +136,43 @@ export async function processTimers(ctx, chat, { now = Date.now(), commandSent =
   } catch { return { sent: false, why: "error" }; }
 }
 
-/** Écrit le message d'un timer dans le chat. Met à jour l'état et le journal. */
+/** Exécute la commande comme si on l'avait tapée (sa réponse, son état), sans personne derrière : `{utilisateur}` devient « tout le monde ». Met à jour l'état et le journal. */
 async function deliver(ctx, s, d, timer, { now, ids, force = false }) {
   const m = of(ctx);
-  if (!st.takeSendSlot(ctx, { max: s.maxPerWindow, windowMs: 30_000, now })) return { sent: false, why: "rate" };
+  const key = timer.id;
+  const cfg = (await loadConfig(ctx)).data;
   const sources = await src.gather(ctx, d.channel ?? null);
-  const list = catalog((await loadConfig(ctx)).data, sources, ctx.t);
-  const text = await compose(ctx, s, { text: timer.text, kind: "timer", vars: {} }, "", { channel: d.channel ?? null, sources, list, now });
-  const log = (result, reason, extra = {}) => st.addLog(ctx, { user: "timer", command: `⏱ ${timer.name}`, result, reason, ...extra }).catch(() => {});
-  if (!text) { st.giveBackSendSlot(ctx); await log("refused", "empty"); m.fail.set(timer.id, now + FAIL_MS); return { sent: false, why: "empty", timer: timer.id }; }
+  const list = catalog(cfg, sources, ctx.t, { now, timeZone: s.timeZone });
+  const cmd = list.find((c) => c.key === key);
+  if (!cmd || !cmd.repeat) return { sent: false, why: "unknown", timer: key };
+  const label = cmd.title || `${s.prefix}${cmd.name}`;
+  const log = (result, reason, extra = {}) => st.addLog(ctx, { user: "timer", command: `⏱ ${label}`, result, reason, ...extra }).catch(() => {});
+  if (cmd.state !== "on") { m.fail.set(key, now + FAIL_MS); return { sent: false, why: `command_${cmd.state}`, timer: key }; }   // désactivée, hors période, incomplète : la commande n'aurait pas répondu non plus
+  if (!st.takeSendSlot(ctx, { max: s.maxPerWindow, windowMs: 30_000, now })) return { sent: false, why: "rate" };
+  const counts = cmd.kind === "custom" && used(cmd.text).includes("compteur");
+  const next = counts ? ((await st.readCounters(ctx))[cmd.key] ?? 0) + 1 : 0;
+  const text = await compose(ctx, s, cmd, ctx.t("rep_everyone"), { channel: d.channel ?? null, sources, list, now, counter: next });
+  if (!text) { st.giveBackSendSlot(ctx); await log("refused", "empty"); m.fail.set(key, now + FAIL_MS); return { sent: false, why: "empty", timer: key }; }
   const sent = await sendChat(ctx, d, text);
-  if (!sent.sent) { st.giveBackSendSlot(ctx); m.fail.set(timer.id, now + FAIL_MS); await log("error", `send_${sent.code}`, { detail: sent.detail ?? null }); return { sent: false, why: `send_${sent.code}`, timer: timer.id }; }
+  if (!sent.sent) { st.giveBackSendSlot(ctx); m.fail.set(key, now + FAIL_MS); await log("error", `send_${sent.code}`, { detail: sent.detail ?? null }); return { sent: false, why: `send_${sent.code}`, timer: key }; }
   st.rememberSent(ctx, sent.messageId);
-  m.items.set(timer.id, { lastAt: now, lines: 0 }); m.dirty = true;
-  m.fail.delete(timer.id);
+  if (counts) await st.setCounter(ctx, cmd.key, next).catch(() => {});
+  m.items.set(key, { lastAt: now, lines: 0 }); m.dirty = true;
+  m.fail.delete(key);
   await log("sent", force ? "manual" : "ok", { text: text.slice(0, 160) });
-  return { sent: true, timer: timer.id, text };
+  return { sent: true, timer: key, text };
 }
 
 /** « Envoyer maintenant » : sans attendre l'intervalle, les lignes ni le direct ; mais jamais pendant l'arrêt d'urgence, ni si le bot n'est pas prêt, ni au-delà de la limite de réponses. */
-export async function sendNow(ctx, id, { now = Date.now() } = {}) {
+export async function sendNow(ctx, key, { now = Date.now() } = {}) {
   const s = settingsOf(ctx), m = of(ctx);
-  const timer = (await loadConfig(ctx)).data.timers.find((x) => x.id === id);
-  if (!timer) return { ok: false, code: "unknown" };
+  const cfg = (await loadConfig(ctx)).data;
+  if (!catalog(cfg, { partners: { installed: false, items: [] }, networks: { items: [] }, planning: {}, followers: {} }, ctx.t).some((c) => c.key === key && c.repeat)) return { ok: false, code: "unknown" };
   const d = await diagnose(ctx, s, { declare: false });
   if (d.code !== "ready") return { ok: false, code: "not_ready" };
   if (await st.isMuted(ctx)) return { ok: false, code: "muted" };
   await load(ctx, m);
-  const r = await deliver(ctx, s, d, timer, { now, force: true });
-  if (r.sent) { await flush(ctx, m, (await loadConfig(ctx)).data.timers.map((x) => x.id), now); return { ok: true, text: r.text }; }
-  return { ok: false, code: r.why === "rate" ? "rate" : "send" };
+  const r = await deliver(ctx, s, d, { id: key }, { now, force: true });
+  if (r.sent) { await flush(ctx, m, repeatEntries(cfg).map((e) => e.key), now); return { ok: true, text: r.text }; }
+  return { ok: false, code: r.why === "rate" ? "rate" : r.why?.startsWith("command_") ? "command" : "send" };
 }

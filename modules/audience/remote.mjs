@@ -77,6 +77,7 @@ export async function pressPanel(ctx, { panel, action, values }) {
   const out = v.ok === true ? { ok: true, message: L.clean(v.message, 200) } : { ok: false, error: errCode(v.error), message: L.clean(v.message, 200) };
   if (v.field && /^[a-z][a-z0-9_]{0,19}$/.test(String(v.field))) out.field = String(v.field);
   await K.journal(ctx, { who: "remote", what: `${known.key}.${action}`, detail: out.ok ? "ok" : out.error });
+  if (!out.ok) void ctx.api.log?.write({ action: "remote.failed", data: { panel: known.key, action } });   // seuls les échecs vont au journal du cœur
   return out;
 }
 

@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.6.4",
   "id": "twitch-bot",
   "name": {
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.7.2",
+  "version": "1.9.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -37,7 +37,7 @@
       "optional": true
     }
   ],
-  "dataVersion": 5,
+  "dataVersion": 6,
   "consumes": [
     {
       "topic": "ha.result",
@@ -232,12 +232,12 @@
     {
       "id": "timers.manage",
       "label": {
-        "en": "create, change, delete and send the chat timers",
-        "fr": "créer, modifier, supprimer et envoyer les timers du chat"
+        "fr": "gérer et envoyer les timers (commandes répétées)",
+        "en": "manage and send timers (repeating commands)"
       },
       "help": {
-        "en": "Timers write messages in your Twitch chat on their own.",
-        "fr": "Les timers écrivent des messages dans votre chat Twitch sans que personne ne les tape."
+        "en": "A repeating command writes in your Twitch chat on its own.",
+        "fr": "Une commande répétée écrit dans votre chat Twitch sans que personne ne la tape."
       },
       "sensitive": true,
       "default": {
@@ -247,8 +247,8 @@
     }
   ],
   "privacy": {
-    "en": "When someone types a command, the bot keeps their Twitch username, the command and whether it answered in a short log (last 30 entries, seen only by the administration team); for channel point rewards, the last 50 exchanges (username, reward, outcome, never the viewer's message). Timers keep only what you write and their last send time. Chat words used by a command, and giveaway entries, are never kept.",
-    "fr": "Quand une personne tape une commande, le bot garde son pseudo Twitch, la commande et la réponse ou non dans un court journal (30 lignes, visible de l'équipe d'administration seule) ; pour les récompenses, les 50 derniers échanges (pseudo, récompense, résultat, jamais le message). Les timers gardent ce que vous écrivez et l'heure de leur dernier envoi. Les mots tapés dans une commande et les participations à un tirage ne sont jamais gardés."
+    "en": "When someone types a command, the bot keeps their Twitch username, the command and whether it answered in a short log (last 30 entries, seen only by the administration team); for channel point rewards, the last 50 exchanges (username, reward, outcome, never the viewer's message). Repeating commands keep only what you write and their last send time. Chat words used by a command, and giveaway entries, are never kept.",
+    "fr": "Quand une personne tape une commande, le bot garde son pseudo Twitch, la commande et la réponse ou non dans un court journal (30 lignes, visible de l'équipe d'administration seule) ; pour les récompenses, les 50 derniers échanges (pseudo, récompense, résultat, jamais le message). Les commandes qui se répètent gardent ce que vous écrivez et l'heure de leur dernier envoi. Les mots tapés dans une commande et les participations à un tirage ne sont jamais gardés."
   },
   "tabs": [
     {
@@ -556,7 +556,7 @@
       "name": "bot_commands_list",
       "readOnly": true,
       "default": false,
-      "description": "List the chat commands of the Twitch bot of this site: custom ones, ready-made ones (planning, game, title, followers, uptime), partner commands and social network commands, plus the command prefix and whether the emergency switch has muted the bot. For each command: kind, name, aliases, reply text (with {variables}), enabled, who may use it (everyone, subscribers, mods, owner), state (on, off, hidden when something is missing, missing when the source is gone) and the delays in seconds (null = the default). Use it to answer 'what commands does my bot have?' before changing anything.",
+      "description": "List the chat commands of the Twitch bot of this site: custom ones, ready-made ones (planning, game, title, followers, uptime), partner commands and social network commands, plus the command prefix and whether the emergency switch has muted the bot. For each command: kind, name, aliases, reply text (with {variables}), enabled, who may use it (everyone, subscribers, mods, owner), state (on, off, hidden when something is missing, missing when the source is gone) and the delays in seconds (null = the default). Use it to answer 'what commands does my bot have?' before changing anything. Commands with an automatic repeat also give repeatEveryMinutes, repeatMinChatLines, repeatWhen and repeatEnabled; a command only for the timer has timerOnly true and a title.",
       "input": {
         "type": "object",
         "properties": {
@@ -641,6 +641,34 @@
             "minimum": 0,
             "maximum": 3600,
             "description": "Minimum seconds before the same person gets this command answered again."
+          },
+          "repeatEveryMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Repeat the command automatically every this many minutes (1 to 1440). It is only checked when a chat message arrives."
+          },
+          "repeatMinChatLines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200,
+            "description": "With the repeat: at least this many chat lines since the last time (0 to 200, default 5)."
+          },
+          "repeatWhen": {
+            "type": "string",
+            "enum": [
+              "live",
+              "always"
+            ],
+            "description": "With the repeat: 'live' (only while the stream is live, default) or 'always'."
+          },
+          "repeatEnabled": {
+            "type": "boolean",
+            "description": "Turn the automatic repeat on or off (off keeps its settings)."
+          },
+          "timerOnly": {
+            "type": "boolean",
+            "description": "true: the command is only for the timer (nobody can type it in the chat). It needs an active repeat."
           }
         }
       }
@@ -648,7 +676,7 @@
     {
       "name": "bot_command_update",
       "default": false,
-      "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages.",
+      "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages. It can also set the automatic repeat of the command (what used to be a timer): repeatEveryMinutes, repeatMinChatLines, repeatWhen, repeatEnabled, clearRepeat and timerOnly.",
       "input": {
         "type": "object",
         "required": [
@@ -720,6 +748,38 @@
             "minimum": 0,
             "maximum": 3600,
             "description": "Seconds to wait between two answers to the same person (0 to 3600)."
+          },
+          "repeatEveryMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "description": "Repeat the command automatically every this many minutes (1 to 1440). It is only checked when a chat message arrives."
+          },
+          "repeatMinChatLines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200,
+            "description": "With the repeat: at least this many chat lines since the last time (0 to 200, default 5)."
+          },
+          "repeatWhen": {
+            "type": "string",
+            "enum": [
+              "live",
+              "always"
+            ],
+            "description": "With the repeat: 'live' (only while the stream is live, default) or 'always'."
+          },
+          "repeatEnabled": {
+            "type": "boolean",
+            "description": "Turn the automatic repeat on or off (off keeps its settings)."
+          },
+          "timerOnly": {
+            "type": "boolean",
+            "description": "true: the command is only for the timer (nobody can type it in the chat). It needs an active repeat."
+          },
+          "clearRepeat": {
+            "type": "boolean",
+            "description": "true: remove the automatic repeat of this command."
           }
         }
       }
@@ -876,7 +936,7 @@
       "name": "timers_list",
       "readOnly": true,
       "default": false,
-      "description": "List the chat timers of the Twitch bot: name, message (with {variables}), every how many minutes, how many chat lines at least since its last message, whether it works only while live, and whether it is enabled. A timer is only checked when a chat message arrives (there is no background clock), so it needs an active chat.",
+      "description": "List the automatic repeats of the Twitch bot (the chat timers): each one is a command the bot runs by itself. For each: name (title or command word), command, message, every how many minutes, how many chat lines at least since the last time, whether it works only while live, and whether it is enabled. A timer is only checked when a chat message arrives (there is no background clock), so it needs an active chat. Same data as bot_commands_list, restricted to repeating commands.",
       "input": {
         "type": "object",
         "properties": {}
@@ -885,7 +945,7 @@
     {
       "name": "timer_create",
       "default": false,
-      "description": "Create a chat timer: a message the bot writes in the chat by itself. 'text' may use the same variables as a custom command except those about the person typing ({utilisateur}, {cible}, {requete}, {1}, {compteur}); it cannot start with / or . or the prefix and is cut at 450 characters. At most 20 timers. Refused with an explanation otherwise.",
+      "description": "Create a chat timer: a message the bot writes in the chat by itself (it creates a command that only the timer can run; to repeat an existing command, use bot_command_update with repeatEveryMinutes). 'text' may use the same variables as a custom command (the person typing is replaced by 'everyone'); it cannot start with / or . or the prefix and is cut at 450 characters. At most 20 timers. Refused with an explanation otherwise.",
       "input": {
         "type": "object",
         "required": [
@@ -1025,8 +1085,6 @@
         "en": "Bot admin screen with a table of chat commands: search, filters, on/off switches and origin badges."
       }
     },
-
-
     {
       "file": "previews/recompenses.webp",
       "type": "admin",
@@ -1050,6 +1108,29 @@
         "fr": "Onglet Réglages du bot avec trois réglages : répondre seulement en direct, gestion des commandes depuis le chat, fuseau horaire.",
         "en": "Bot Settings tab with three settings: answer only when live, manage commands from the chat, time zone."
       }
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "timers.migrated",
+      "label": {
+        "fr": "Anciens timers repris comme commandes : {count} ({attached} rattachés, {created} créés)",
+        "en": "Old timers turned into repeating commands: {count} ({attached} attached, {created} created)"
+      },
+      "fields": [
+        {
+          "key": "count",
+          "type": "number"
+        },
+        {
+          "key": "attached",
+          "type": "number"
+        },
+        {
+          "key": "created",
+          "type": "number"
+        }
+      ]
     }
   ]
 }

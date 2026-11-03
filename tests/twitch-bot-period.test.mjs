@@ -134,50 +134,44 @@ test("l'administration dit « Hors période : se réactive le … », distinct d
   await C.saveCommand(ctx, { kind: "custom", id: r.key.slice(7) }, { enabled: true }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
   const info = await A.context(ctx, { declare: false });
   const edit = await A.panel(ctx, { query: { edit: r.key } });
-  const text = JSON.stringify(edit);
   assert.ok(edit.some((b) => b.type === "adminForm" && b.action === "save"), "modifiable hors période");
-  const cfg = configOf(edit), per = cfg.layout.find((x) => x.more).more.items.find((x) => x.period).period;
-  assert.equal(per.text.phraseYearly, "Active du {from} au {to}, chaque année");
-  assert.equal(formOfBlocks(edit, "save").fields.find((f) => f.name === "period").value, "01/11 - 30/11");
+  const field = formOfBlocks(edit, "save").fields.find((f) => f.name === "period");
+  assert.deepEqual([field.kind, field.value], ["period", "11-01/11-30"], "relue dans le champ du cœur, « chaque année » comprise");
   void info;
 });
 
-test("le contrôle de période dit le fuseau : UTC quand aucun n'est réglé", async () => {
-  const utc = world({ settings: { timezone: "UTC" } });
-  const r = await make(utc.ctx, "m", { period: per([1, 11], [30, 11]) });
-  const phr = (b) => configOf(b).layout.find((x) => x.more).more.items.find((x) => x.period).period.text.utc;
-  assert.match(phr(await A.panel(utc.ctx, { query: { edit: r.key } })), /heure UTC/);
-  const paris = world();
-  const r2 = await make(paris.ctx, "m", { period: per([1, 11], [30, 11]) });
-  assert.equal(phr(await A.panel(paris.ctx, { query: { edit: r2.key } })), "");
-  assert.match(P.describe(paris.ctx, P.parsePeriod({ yearly: false, from: { d: 1, m: 11, y: 2026 }, to: { d: 30, m: 11, y: 2026 } }).value, "Europe/Paris"), /une seule fois/);
-  assert.match(P.describe(paris.ctx, null, "UTC"), /Toujours active/);
-});
-
-test("formulaire : UN champ de période (texte), erreurs sous le champ avec exemple ; enregistré, relu, effaçable", async () => {
+test("formulaire : UN champ de période (celui du cœur), erreurs sous le champ avec exemple ; enregistré, relu, effaçable ; l'ancienne écriture est encore lue", async () => {
   const { ctx } = world();
   const form = formOfBlocks(await A.panel(ctx, { query: { new: "1" } }), "create");
   const names = form.fields.map((f) => f.name);
   assert.ok(names.includes("period"));
   for (const k of ["fromDay", "fromMonth", "toDay", "toMonth", "yearly", "fromYear", "toYear"]) assert.ok(!names.includes(k), `plus de champ ${k}`);
   const base = { name: "movember", text: "Moustaches", role: "everyone", aliases: "", cdGlobal: "", cdUser: "" };
-  const bad = await A.actions.create(ctx, { ...base, period: "31/02 - 01/03" });
+  const bad = await A.actions.create(ctx, { ...base, period: "02-31/03-01" });
   assert.equal(bad.errors.period, "Le 31 février n'existe pas. Exemple : 28 février.");
   assert.match((await A.actions.create(ctx, { ...base, period: "…" })).errors.period, /Choisissez le jour et le mois du début et de la fin\. Exemple : du 1er novembre au 30 novembre/);
-  assert.match((await A.actions.create(ctx, { ...base, period: "01/11/2026 - 30/11" })).errors.period, /date complète, avec l'année\. Exemple : 1er novembre 2026/);
-  assert.match((await A.actions.create(ctx, { ...base, period: "30/11/2026 - 01/11/2026" })).errors.period, /La fin doit venir après le début/);
+  assert.match((await A.actions.create(ctx, { ...base, period: "1999-11-01/2026-11-30" })).errors.period, /date complète, avec l'année\. Exemple : 1er novembre 2026/);
+  assert.match((await A.actions.create(ctx, { ...base, period: "2026-11-30/2026-11-01" })).errors.period, /La fin doit venir après le début/);
+  assert.match((await A.actions.create(ctx, { ...base, period: "2026-12-01/" })).errors.period, /Exemple/, "une période ouverte n'est pas acceptée (le cœur n'en envoie pas : openEnded n'est pas demandé)");
   assert.equal((await C.loadConfig(ctx)).data.custom.length, 0);
-  assert.deepEqual(await A.actions.create(ctx, { ...base, period: "01/11 - 30/11" }), { ok: ctx.t("created") });
+  assert.deepEqual(await A.actions.create(ctx, { ...base, period: "11-01/11-30" }), { ok: ctx.t("created") });
   const c = (await C.loadConfig(ctx)).data.custom[0];
-  assert.deepEqual(c.period, { yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } });
+  assert.deepEqual(c.period, { yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } }, "enregistré dans la forme du module, inchangée");
   const edit = formOfBlocks(await A.panel(ctx, { query: { edit: `custom:${c.id}` } }), "save");
-  assert.equal(edit.fields.find((f) => f.name === "period").value, "01/11 - 30/11");
+  assert.equal(edit.fields.find((f) => f.name === "period").value, "11-01/11-30");
   assert.equal(edit.fields.find((f) => f.name === "enabled"), undefined, "l'état se change par l'interrupteur de la liste, pas ici");
-  await A.actions.save(ctx, { key: `custom:${c.id}`, name: "movember", text: "Moustaches", role: "everyone", aliases: "", cdGlobal: "", cdUser: "", period: "01/11/2026 - 30/11/2026" });
+  const save = (period) => A.actions.save(ctx, { key: `custom:${c.id}`, ...base, period });
+  await save("2026-11-01/2026-11-30");
   assert.equal((await C.loadConfig(ctx)).data.custom[0].period.yearly, false, "avec les années : une seule fois");
   assert.equal((await C.loadConfig(ctx)).data.custom[0].enabled, true, "enregistrer ne touche pas à l'état");
-  await A.actions.save(ctx, { key: `custom:${c.id}`, name: "movember", text: "Moustaches", role: "everyone", aliases: "", cdGlobal: "", cdUser: "", period: "" });
+  await save("01/11 - 30/11");
+  assert.deepEqual((await C.loadConfig(ctx)).data.custom[0].period, { yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } }, "l'ancienne écriture (page ouverte avant la mise à jour) garde son sens");
+  await save("01/11/2026 - 30/11/2026");
+  assert.equal((await C.loadConfig(ctx)).data.custom[0].period.yearly, false);
+  await save("");
   assert.equal((await C.loadConfig(ctx)).data.custom[0].period, undefined, "tout vider = toujours active");
+  await A.actions.save(ctx, { key: `custom:${c.id}`, ...base });
+  assert.equal((await C.loadConfig(ctx)).data.custom[0].period, undefined, "champ absent : rien ne change");
 });
 
 test("les commandes existantes n'ont pas de période : toujours actives ; « activer / désactiver » ne touche pas à la période", async () => {
@@ -199,12 +193,107 @@ test("les commandes toutes prêtes et le groupe ont aussi une période", async (
   assert.equal((await C.loadConfig(ctx)).data.builtin.jeu.period, undefined);
 });
 
+/* ───────────── Le champ « période » du cœur : anciennes données, nouvelle écriture ───────────── */
+
+const CV = await import("@/core/adminkit/values");
+const CI = await import("@/core/adminkit/periodInputs");
+const CP = await import("@/core/adminkit/periodPresets");
+const once = (a, b) => ({ yearly: false, from: { y: a[2], m: a[1], d: a[0] }, to: { y: b[2], m: b[1], d: b[0] } });
+/** Des périodes DÉJÀ ENREGISTRÉES (forme du module) : [période, valeur du champ du cœur, ancienne écriture du formulaire]. */
+const STORED = [
+  [yearly([1, 11], [30, 11]), "11-01/11-30", "01/11 - 30/11"],
+  [yearly([15, 12], [15, 1]), "12-15/01-15", "15/12 - 15/01"],
+  [yearly([29, 2], [31, 3]), "02-29/03-31", "29/02 - 31/03"],
+  [yearly([1, 2], [29, 2]), "02-01/02-29", "01/02 - 29/02"],
+  [yearly([5, 5], [5, 5]), "05-05/05-05", "05/05 - 05/05"],
+  [once([1, 11, 2026], [30, 11, 2026]), "2026-11-01/2026-11-30", "01/11/2026 - 30/11/2026"],
+  [once([15, 12, 2026], [15, 1, 2027]), "2026-12-15/2027-01-15", "15/12/2026 - 15/01/2027"],
+  [once([29, 2, 2028], [1, 3, 2028]), "2028-02-29/2028-03-01", "29/02/2028 - 01/03/2028"],
+];
+
+test("anciennes données : une période enregistrée (chaque année, à cheval sur l'année, 29 février, années explicites) devient la valeur du champ du cœur, et revient identique", () => {
+  for (const [p, value, legacy] of STORED) {
+    const stored = P.readPeriod(p);
+    assert.deepEqual(stored, p, `${value} : relue telle quelle`);
+    assert.equal(P.periodToValue(stored), value);
+    assert.deepEqual(P.parsePeriodValue(value), { ok: true, value: p }, `${value} : le champ du cœur → la forme du module`);
+    assert.deepEqual(P.parsePeriodValue(legacy), { ok: true, value: p }, `${legacy} : l'ancienne écriture garde son sens`);
+    assert.deepEqual(P.parsePeriodText(legacy).value, p, "l'import et les outils lisent toujours l'ancienne écriture");
+  }
+  assert.equal(P.periodToValue(null), "");
+  assert.deepEqual(P.parsePeriodValue(""), { ok: true, value: null });
+  assert.deepEqual(P.parsePeriodValue(undefined), { ok: true, value: null });
+  assert.equal(P.periodToValue(P.readPeriod({ yearly: true, from: { m: 11, d: 1, y: 2019 }, to: { m: 11, d: 30, y: 2019 } })), "11-01/11-30", "des années laissées sur une période « chaque année » n'ont jamais compté");
+  assert.equal(P.readPeriod({ from: { m: 11, d: 1 }, to: { m: 11, d: 30 } }).yearly, true, "document sans le drapeau : chaque année, comme toujours");
+});
+
+test("le champ du cœur lit la valeur du module et la renvoie inchangée quand on n'y touche pas (aucune dérive en enregistrant)", () => {
+  for (const [p, value] of STORED) {
+    const core = CV.parsePeriod(value);
+    assert.equal(core.ok, true, `${value} : acceptée par le cœur`);
+    const st = CI.toInputs(value, 2026);                                  // ce que le champ affiche au départ
+    assert.equal(st.yearly, p.yearly, `${value} : « chaque année » reste coché ou décoché comme avant`);
+    const posted = CV.serializePeriod(CI.toPeriod(st.from, st.to, st.yearly));   // ce qu'il envoie si l'on enregistre sans rien changer
+    assert.equal(posted, value);
+    assert.deepEqual(P.parsePeriodValue(posted).value, p, "et le module retrouve exactement la même période");
+  }
+});
+
+test("tout ce que le champ du cœur peut écrire est compris : « Tout le mois de », saisons, fêtes (à date fixe et mobiles), une fois ou chaque année", () => {
+  const at = (iso) => Date.parse(`${iso}T12:00:00Z`);
+  const day = (y, m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  // « Tout le mois de [mois] » : premier et dernier jour dedans, la veille et le lendemain dehors.
+  for (let m = 1; m <= 12; m++) for (const yr of [true, false]) {
+    const i = CI.monthInputs(m, yr, "", 2026), value = CV.serializePeriod(CI.toPeriod(i.from, i.to, yr));
+    const r = P.parsePeriodValue(value);
+    assert.equal(r.ok, true, `${m} ${yr} : ${value}`);
+    const y = Number(i.from.slice(0, 4)), last = Number(i.to.slice(8)), lastReal = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    assert.equal(yr || last === lastReal, true, "une seule fois : le vrai dernier jour du mois");
+    assert.equal(P.isOpen(r.value, at(day(y, m, 1))), true, `${value} : le 1er`);
+    assert.equal(P.isOpen(r.value, at(day(y, m, lastReal))), true, `${value} : le dernier jour`);
+    assert.equal(P.isOpen(r.value, at(day(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1, m === 1 ? 31 : new Date(Date.UTC(y, m - 1, 0)).getUTCDate()))), false, `${value} : la veille`);
+    assert.equal(P.isOpen(r.value, at(m === 12 ? day(y + 1, 1, 1) : day(y, m + 1, 1))), false, `${value} : le lendemain`);
+  }
+  assert.equal(P.isOpen(P.parsePeriodValue("02-01/02-29").value, at("2027-02-28")), true, "février « chaque année » couvre tout février, même une année ordinaire");
+  assert.equal(P.isOpen(P.parsePeriodValue("02-01/02-29").value, at("2027-03-01")), false);
+  // Les périodes toutes prêtes : chaque valeur est acceptée, et la période est ouverte son premier et son dernier jour.
+  assert.ok(CP.PRESETS.length >= 20);
+  for (const today of [{ y: 2026, m: 11, d: 3 }, { y: 2027, m: 2, d: 1 }, { y: 2028, m: 12, d: 30 }]) for (const { id } of CP.PRESETS) {
+    const value = CP.presetValue(id, today);
+    assert.ok(value, `${id}`);
+    const r = P.parsePeriodValue(value);
+    assert.equal(r.ok, true, `${id} (${value}) : ${JSON.stringify(r)}`);
+    const first = r.value.from, lastDay = r.value.to, y0 = r.value.yearly ? 2030 : first.y;
+    assert.equal(P.isOpen(r.value, at(day(y0, first.m, first.d))), true, `${id} : premier jour`);
+    assert.equal(P.isOpen(r.value, at(day(r.value.yearly ? (first.m > lastDay.m || (first.m === lastDay.m && first.d > lastDay.d) ? 2031 : 2030) : lastDay.y, lastDay.m, lastDay.d))), true, `${id} : dernier jour`);
+    assert.equal(r.value.yearly, !CP.isMovable(id), `${id} : les fêtes mobiles sont « une seule fois » avec leurs années`);
+  }
+});
+
+test("une période envoyée par le formulaire s'applique à la bonne date : enjambement du 31 décembre, 29 février, fuseau du module (UTC sans fuseau), une seule fois", async () => {
+  const base = { role: "everyone", aliases: "", cdGlobal: "0", cdUser: "0" };
+  const run = async (settings, name, period, checks) => {
+    const { ctx } = world({ settings });
+    assert.deepEqual(await A.actions.create(ctx, { ...base, name, text: `${name} ok`, period }), { ok: ctx.t("created") });
+    let n = 0;
+    for (const [iso, expected] of checks) assert.equal((await say(ctx, `!${name}`, { chatterId: `u${n++}` }, at(iso))).result, expected ? "sent" : "refused", `${name} ${period} ${iso}`);
+  };
+  await run({ timezone: "Europe/Paris" }, "hiver", "12-15/01-15", [["2026-12-14T12:00:00Z", false], ["2026-12-15T12:00:00Z", true], ["2027-01-15T12:00:00Z", true], ["2027-01-16T12:00:00Z", false], ["2031-12-31T12:00:00Z", true]]);
+  await run({ timezone: "Europe/Paris" }, "bissextile", "02-29/03-01", [["2027-02-28T12:00:00Z", false], ["2027-03-01T12:00:00Z", true], ["2027-03-02T12:00:00Z", false], ["2028-02-29T12:00:00Z", true]]);
+  await run({ timezone: "Europe/Paris" }, "novparis", "11-01/11-30", [["2026-10-31T23:30:00Z", true], ["2026-11-30T23:30:00Z", false]]);
+  await run({ timezone: "UTC" }, "novutc", "11-01/11-30", [["2026-10-31T23:30:00Z", false], ["2026-11-30T23:30:00Z", true]]);
+  await run({ timezone: "" }, "novdefaut", "11-01/11-30", [["2026-10-31T23:30:00Z", false], ["2026-11-30T23:30:00Z", true]]);   // fuseau vide : UTC, comme avant
+  await run({ timezone: "Europe/Paris" }, "unefois", "2026-11-01/2026-11-30", [["2026-10-31T12:00:00Z", false], ["2026-11-10T12:00:00Z", true], ["2027-11-10T12:00:00Z", false]]);
+  await run({ timezone: "Europe/Paris" }, "ancien", "01/11 - 30/11", [["2026-11-10T12:00:00Z", true], ["2027-11-10T12:00:00Z", true], ["2027-12-10T12:00:00Z", false]]);
+});
+
 /* ───────────── Les timers ───────────── */
 
 test("timers : hors période ils ne comptent ni n'écrivent (pas de rafale à la réouverture) ; dans la période ils écrivent ; l'état dit quand ils reviennent", async () => {
   T.resetTimersMemory();
   const { ctx, tw } = world({ tw: { live: { channel: "emma", configured: true, known: true, live: true, title: "T", game: "G", startedAt: new Date(OCT).toISOString() } } });
-  const saved = await T.saveTimer(ctx, {}, { name: "Subtember", text: "Septembre en or", minutes: 1, lines: 0, when: "always", period: per([1, 9], [30, 9]) });
+  const env = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
+  const saved = await C.saveCommand(ctx, { kind: "custom" }, { name: "subtember", text: "Septembre en or", repeat: { minutes: 1, lines: 0, when: "always" }, period: per([1, 9], [30, 9]) }, env);
   assert.equal(saved.ok, true);
   const line = (now) => T.processTimers(ctx, chat("coucou", { messageId: `p${now}` }), { now });
   await line(OCT);
@@ -218,13 +307,11 @@ test("timers : hors période ils ne comptent ni n'écrivent (pas de rafale à la
   const row = rowsOf(htmlOf(page, "timers"))[0];
   assert.equal(row.attrs.state, "outside");
   assert.match(row.cells.sw, /Revient le 1(er)? septembre/);
-  const off = await T.saveTimer(ctx, { id: (await C.loadConfig(ctx)).data.timers[0].id }, { enabled: false });
+  const off = await T.setRepeat(ctx, { kind: "custom", id: (await C.loadConfig(ctx)).data.custom[0].id }, { enabled: false }, env);
   assert.equal(off.ok, true);
-  assert.equal(rowsOf(htmlOf(await A.panel(ctx, { query: { tab: "timers" } }), "timers"))[0].attrs.state, "off", "désactivé l'emporte");
-  const err = await T.saveTimer(ctx, {}, { name: "X", text: "x", minutes: 5, period: yearly([31, 2], [1, 3]) });
+  assert.equal(rowsOf(htmlOf(await A.panel(ctx, { query: { tab: "timers" } }), "timers"))[0].attrs.state, "off", "en pause l'emporte");
+  const err = await C.saveCommand(ctx, { kind: "custom" }, { name: "x", text: "x", repeat: { minutes: 5 }, period: yearly([31, 2], [1, 3]) }, env);
   assert.deepEqual([err.ok, err.code, err.field], [false, "period", "fromDay"]);
-  const form = await (await import("../modules/twitch-bot/timersAdmin.mjs")).actions.timerCreate.run(ctx, { name: "Z", text: "z", minutes: "5", lines: "0", when: "always", period: "31/04 - 01/05" });
-  assert.equal(form.errors.period, "Le 31 avril n'existe pas. Exemple : 30 avril.");
 });
 
 /* ───────────── Outils des assistants ───────────── */
@@ -268,7 +355,7 @@ test("migration des données 4 : une configuration d'avant (sans timers ni péri
   assert.equal((await none.ctx.api.store.list("botConfig", { limit: 1 })).length, 0, "pas de configuration : rien n'est créé");
   assert.equal((await say(ctx, "!old", { badges: ["moderator"] }, OCT)).result, "sent", "la commande d'avant répond comme avant, sans période");
   const manifest = JSON.parse((await import("node:fs")).readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
-  assert.equal(manifest.dataVersion, 5);
+  assert.equal(manifest.dataVersion, 6);
   const rows = C.readConfig({ ...before });
   assert.deepEqual(rows.timers, [], "relire une ancienne configuration sans timers ne casse rien");
 });

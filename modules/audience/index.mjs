@@ -163,7 +163,7 @@ const services = {
       if (rr.error) return bad(rr.error);
       const r = await K.setMuted(ctx, rr.room, { id: a.id, pseudo: a.pseudo }, a.muted);
       if (r.error) return bad(r.error);
-      await K.journal(ctx, { who: "admin", what: a.muted ? "mute" : "unmute", room: rr.room.k, detail: r.participant.pseudo || "-" });
+      await K.journal(ctx, { who: "admin", what: a.muted ? "mute" : "unmute", room: rr.room.k, detail: r.participant.pseudo || "-", central: true });   // geste venu d'une autre extension : le cœur ne le voit pas
       return { ok: true, participant: r.participant };
     }),
 
@@ -172,7 +172,7 @@ const services = {
       if (!L.roomOk(a.room)) return bad("invalid");
       const r = await K.clearRoom(ctx, a.room);
       if (!r.ok) return bad(r.error);
-      await K.journal(ctx, { who: "admin", what: "clearRoom", room: a.room, detail: `${r.removed}` });
+      await K.journal(ctx, { who: "admin", what: "clearRoom", room: a.room, detail: `${r.removed}`, central: true });
       return { ok: true, removed: r.removed };
     }),
 
@@ -497,7 +497,7 @@ export default {
         : { type: "markdown", text: ctx.t("noRooms"), tab });
     }
     const log = await ctx.api.store.page(K.AUDIT, { limit: 30 });
-    blocks.push({ type: "heading", text: ctx.t("journalTitle"), tab }, { type: "markdown", text: ctx.t("journalIntro"), tab });
+    blocks.push({ type: "heading", text: ctx.t("journalTitle"), tab }, { type: "markdown", text: ctx.t("journalIntro"), tab }, { type: "links", tab, items: [{ label: ctx.t("journalHistory"), href: "?tab=history" }] });   // l'onglet « Historique » du cœur
     blocks.push(log.items.length
       ? { type: "table", tab, columns: [ctx.t("colWhen"), ctx.t("colWho"), ctx.t("colWhat"), ctx.t("colDetail")], rows: log.items.map((r) => [stamp(ctx, r.data.at), whoText(ctx, r.data.who), whatText(ctx, r.data.what), r.data.detail || r.data.room || ""]) }
       : { type: "markdown", text: ctx.t("journalEmpty"), tab });

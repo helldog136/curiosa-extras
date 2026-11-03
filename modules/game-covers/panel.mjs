@@ -1,6 +1,6 @@
 // L'administration du module, en deux onglets :
-//   « Jaquettes à vérifier » (onglet `use`)   l'état de la clé (jamais sa valeur), puis les titres dont le jeu trouvé est douteux ;
-//   « Jaquettes enregistrées » (onglet `saved`) UN tableau de tout ce que le site retient (corrigées, automatiques, sans jaquette), une recherche de jeu, « Voir », « Changer », « Oublier ».
+//   « Jaquettes à vérifier » (onglet `use`)   l'état de RAWG en une phrase (jamais la clé), puis les titres dont le jeu trouvé est douteux ;
+//   « Jaquettes enregistrées » (onglet `saved`) UN tableau de tout ce que le site retient (corrigées, trouvées toutes seules, sans jaquette), une recherche de jeu, « Voir », « Changer », « Oublier ».
 // Écrans : `?titre=<titre demandé>` « Quel est le bon jeu ? » (adresse stable : les modules qui affichent « Ce n'est pas le bon jeu ? » y renvoient), `&q=<autre recherche>`,
 // `?voir=<titre>` (la jaquette retenue) et `?oublier=<titre>` (confirmation). `&tab=saved` garde la personne dans l'onglet d'où elle vient.
 // Mobile d'abord : des blocs simples (titres, tableaux, formulaires) que le cœur met en page ; les jaquettes sont des images fixes, sans défilement.
@@ -50,6 +50,19 @@ export async function render(ctx, { query } = {}) {
 }
 
 // ── La liste : clé, jaquettes à vérifier, choix gardés ─────────────────────────────────────────────────────────────────────
+/** L'état de RAWG en mots simples : tout fonctionne, ou ne répond pas (les jaquettes déjà trouvées restent affichées), avec la date de la dernière réponse correcte. */
+async function statusBlocks(ctx, { short = false } = {}) {
+  const state = await rawg.readState(ctx);
+  if (state?.state === "unreachable") {
+    return [{ type: "banner", tone: "warning", text: ctx.t("outage") },
+      { type: "markdown", text: short ? ctx.t("outage_saved") : ctx.t(state.okAt ? "outage_since" : "outage_never", { date: state.okAt ? when(ctx, state.okAt) : "" }) }];
+  }
+  if (short) return [];
+  if (state?.state === "ok") return [{ type: "banner", tone: "success", text: ctx.t("all_fine") }, { type: "markdown", text: ctx.t("last_ok", { date: when(ctx, state.okAt ?? state.at) }) }];
+  if (state?.state === "refused") return [{ type: "banner", tone: "warning", text: ctx.t("err_refused") }];
+  return [{ type: "banner", tone: "success", text: ctx.t("key_ok") }, { type: "markdown", text: ctx.t("never_checked") }];
+}
+
 async function keyBlocks(ctx) {
   const { key, source } = await rawg.keyOf(ctx);
   const blocks = [{ type: "heading", text: ctx.t("key_title") }];
@@ -57,10 +70,8 @@ async function keyBlocks(ctx) {
     blocks.push({ type: "banner", tone: "warning", text: ctx.t("key_none") }, { type: "markdown", text: ctx.t("guide") });
     return blocks;
   }
-  blocks.push({ type: "banner", tone: "success", text: ctx.t("key_ok") });
+  blocks.push(...(await statusBlocks(ctx)));
   if (source === "adopted") blocks.push({ type: "markdown", text: ctx.t("key_adopted") }, { type: "adminForm", action: "forgetKey", submitLabel: ctx.t("forget_key"), fields: [] });
-  const state = await rawg.readState(ctx);
-  blocks.push({ type: "markdown", text: state ? ctx.t("last_check", { date: when(ctx, state.at), state: ctx.t(`state_${state.state}`) }) : ctx.t("never_checked") });
   blocks.push({ type: "adminForm", action: "testKey", submitLabel: ctx.t("test_key"), fields: [] });
   blocks.push({ type: "netHealth", items: [{ host: "api.rawg.io", label: ctx.t("health_label") }] });
   return blocks;
@@ -98,6 +109,7 @@ async function savedScreen(ctx) {
   const { key } = await rawg.keyOf(ctx);
   const out = [{ type: "markdown", text: ctx.t("saved_intro") }];
   if (!key) out.push({ type: "banner", tone: "warning", text: ctx.t("err_no_key") });
+  else out.push(...(await statusBlocks(ctx, { short: true })));
   out.push({
     type: "adminForm", action: "find", submitLabel: ctx.t("find_button"),
     fields: [{ name: "q", label: ctx.t("find_label"), required: true, example: ctx.t("find_example"), help: ctx.t("find_help") }],
@@ -128,7 +140,7 @@ async function savedScreen(ctx) {
 async function entryScreen(ctx, rawTitle, mode) {
   const title = ops.checkTitle(rawTitle);
   const key = title ? titleKey(title) : "";
-  const entry = key ? (await fx.savedEntries(ctx)).find((e) => e.key === key) : null;
+  const entry = key ? await fx.entryFor(ctx, title) : null;
   const back = { type: "markdown", text: `[${ctx.t("back_saved")}](?tab=${SAVED_TAB})` };
   if (!entry) return [back, { type: "banner", tone: "warning", text: ctx.t(title ? "forget_gone" : "err_title") }];
   const card = { type: "html", html: `<section class="rounded-2xl border border-line bg-surface p-5" data-testid="entry"><div class="flex items-center gap-4">${coverImg(entry.img ? fx.rawgImageUrl(entry.img) : null)}` +
@@ -153,12 +165,14 @@ async function fixScreen(ctx, title, search, tab) {
   const tabField = { name: "tab", kind: "hidden", value: tab };
   const saved = await fx.fixFor(ctx, title);
   const doubtful = (await fx.readToCheck(ctx)).find((d) => d.key === key);
+  const auto = saved || doubtful ? null : await fx.autoFor(ctx, title);
   const { key: apiKey } = await rawg.keyOf(ctx);
   const tooLong = search.trim().length > 100;
   const list = apiKey && !tooLong ? await ops.candidatesFor(ctx, "admin", title, search.trim() || undefined) : null;
   const current = saved
     ? { url: saved.img ? fx.rawgImageUrl(saved.img) : null, label: choiceText(ctx, saved), id: saved.rawgId, isSaved: true }
-    : doubtful ? { url: fx.rawgImageUrl(doubtful.img), label: doubtful.name, id: doubtful.rawgId, isSaved: false } : null;
+    : doubtful ? { url: fx.rawgImageUrl(doubtful.img), label: doubtful.name, id: doubtful.rawgId, isSaved: false }
+      : auto ? { url: fx.rawgImageUrl(auto.img), label: auto.name ?? ctx.t("kept_game"), id: auto.rawgId, isSaved: false } : null;
 
   const out = [
     { type: "markdown", text: `[${ctx.t(tab === SAVED_TAB ? "back_saved" : "back")}](${href(tab)})` },
@@ -168,7 +182,9 @@ async function fixScreen(ctx, title, search, tab) {
       (current ? `<div class="flex items-center gap-3" data-testid="current">${coverImg(current.url, "h-16 w-12")}<p class="min-w-0 break-words text-sm"><span class="text-muted">${esc(ctx.t(current.isSaved ? "current_saved" : "current_auto"))}</span><br>${esc(current.label)}</p></div>` : "") + `</section>` },
   ];
   if (!apiKey) out.push({ type: "banner", tone: "warning", text: ctx.t("err_no_key") });
-  if (!saved && doubtful) out.push({ type: "adminForm", action: "confirm", submitLabel: ctx.t("act_good"), XX, submitLabel: ctx.t("search_button"), title: ctx.t("search_label"),
+  if (!saved && (doubtful || auto)) out.push({ type: "adminForm", action: "confirm", submitLabel: ctx.t("act_good"), fields: [{ name: "id", kind: "hidden", value: title }, tabField] });
+  out.push({
+    type: "adminForm", action: "search", submitLabel: ctx.t("search_button"), title: ctx.t("search_label"),
     fields: [{ name: "id", kind: "hidden", value: title }, tabField, { name: "q", label: ctx.t("search_label"), value: search, help: ctx.t("search_help") }],
   });
   if (tooLong) out.push({ type: "banner", tone: "warning", text: ctx.t("err_search") });

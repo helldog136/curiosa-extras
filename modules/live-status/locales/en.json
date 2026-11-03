@@ -17,7 +17,7 @@
   "suggestYoutube": "knows when you are live on YouTube (YouTube channel)",
   "ytNeedChannel": "Enter your channel in YouTube channel to announce your YouTube lives.",
   "openYoutube": "Open YouTube channel →",
-  "ytNeedKey": "Connect your site to YouTube (key in the YouTube connector) to announce your YouTube lives.",
+  "ytNeedKey": "Connect your site to YouTube (access code in the YouTube connector) to announce your YouTube lives.",
   "openYoutubeConnector": "Open the YouTube connector →",
   "ytQuota": "YouTube limits the number of checks per day and the limit is reached: your YouTube lives will not be announced until tomorrow.",
   "ytDown": "YouTube is not answering right now: your YouTube lives are not announced. It recovers by itself."

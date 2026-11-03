@@ -5,11 +5,11 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.4.1",
+  "version": "1.4.2",
   "platform": "youtube",
   "description": {
-    "en": "Makes your YouTube channel easier to showcase: your most popular recent video on the home page, your videos in the site's RSS feed, and your subscriber, video and view counts. Works with just the channel id; the site's YouTube key, entered once for the whole site, adds the counts, Shorts detection and exact durations.",
-    "fr": "Facilite la mise en avant de votre chaîne YouTube : votre vidéo récente la plus vue sur l'accueil, vos vidéos dans le flux RSS du site, et le nombre de vos followers, vidéos et vues. Fonctionne avec le seul identifiant de chaîne ; la clé YouTube du site, saisie une fois pour tout le site, ajoute les chiffres, la détection des Shorts et les durées exactes."
+    "en": "Showcases your YouTube channel: its most popular recent video, your videos in the site's feed, your counts.",
+    "fr": "Met en avant votre chaîne YouTube : sa vidéo récente la plus vue, vos vidéos dans le flux, vos chiffres."
   },
   "privacy": {
     "en": "This module collects nothing itself. When a video preview is shown, your browser loads its thumbnail picture from YouTube (Google), so YouTube sees your address, under its own privacy policy. The video itself is not played on this site: clicking the preview opens YouTube in a new tab.",
@@ -125,12 +125,12 @@
       "key": "channelId",
       "type": "text",
       "label": {
-        "en": "Channel id",
-        "fr": "Identifiant de chaîne"
+        "en": "YouTube channel code",
+        "fr": "Code de la chaîne YouTube"
       },
       "help": {
-        "en": "Starts with UC (YouTube Studio → Settings → Channel → Advanced settings).",
-        "fr": "Commence par UC (YouTube Studio → Paramètres → Chaîne → Paramètres avancés)."
+        "en": "Starts with UC, for example UCabc123. Find it in YouTube Studio: Settings, Channel, Advanced settings.",
+        "fr": "Commence par UC, par exemple UCabc123. Dans YouTube Studio : Paramètres, Chaîne, Paramètres avancés."
       },
       "refersTo": "external"
     },
@@ -143,8 +143,8 @@
         "fr": "Suivre mes statistiques"
       },
       "help": {
-        "en": "Counts your subscribers, videos and views for the site's statistics. Needs the site's YouTube key (entered once for the whole site); the subscriber count must be public on your channel.",
-        "fr": "Compte vos followers, vos vidéos et vos vues pour les statistiques du site. Demande la clé YouTube du site (saisie une fois pour tout le site) ; le nombre de followers doit être public sur votre chaîne."
+        "en": "Counts your subscribers, videos and views for the site's statistics. Needs the site's YouTube access code; the subscriber count must be public.",
+        "fr": "Compte vos followers, vos vidéos et vos vues pour les statistiques du site. Demande le code d'accès YouTube du site ; le nombre de followers doit être public."
       }
     },
     {

@@ -5,11 +5,11 @@
     "fr": "Participation",
     "en": "Audience"
   },
-  "version": "1.2.0",
+  "version": "1.3.1",
   "minCore": "0.5.0",
   "description": {
-    "fr": "La base commune des animations de stream : un pseudo par personne sans compte, une voix par salle, des limites contre les abus, une télécommande à gros boutons pour votre téléphone ou en panneau (dock) dans OBS, une mise à jour en direct douce pour l'écran et le tirage au sort (chat du stream et page d'inscription du site). S'installe toute seule avec les animations qui en ont besoin.",
-    "en": "The shared base of stream interactions: a nickname per person with no account, one voice per room, limits against abuse, a big-button remote control for your phone or as a panel (dock) in OBS, a gentle live update for the screen and the prize draw (stream chat and a sign-up page on the site). Installs itself with the activities that need it."
+    "fr": "La base des animations de stream : pseudo sans compte, télécommande pour votre téléphone et tirage au sort.",
+    "en": "The base of stream interactions: a nickname per person with no account, a phone remote and the prize draw."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -411,6 +411,120 @@
           }
         }
       }
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "draw.opened",
+      "label": {
+        "fr": "Tirage ouvert : {title}",
+        "en": "Draw opened: {title}"
+      },
+      "fields": [
+        {
+          "key": "title"
+        }
+      ]
+    },
+    {
+      "key": "draw.closed",
+      "label": {
+        "fr": "Tirage fermé : {title}",
+        "en": "Draw closed: {title}"
+      },
+      "fields": [
+        {
+          "key": "title"
+        }
+      ]
+    },
+    {
+      "key": "draw.reopened",
+      "label": {
+        "fr": "Tirage rouvert : {title}",
+        "en": "Draw reopened: {title}"
+      },
+      "fields": [
+        {
+          "key": "title"
+        }
+      ]
+    },
+    {
+      "key": "draw.picked",
+      "label": {
+        "fr": "Personnes tirées au sort : {count}",
+        "en": "People drawn: {count}"
+      },
+      "fields": [
+        {
+          "key": "count",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "key": "draw.redrawn",
+      "label": {
+        "fr": "Une autre personne a été tirée au sort",
+        "en": "Another person was drawn"
+      }
+    },
+    {
+      "key": "draw.cleared",
+      "label": {
+        "fr": "Tirage vidé ({removed} inscriptions effacées)",
+        "en": "Draw emptied ({removed} entries erased)"
+      },
+      "fields": [
+        {
+          "key": "removed",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "key": "room.cleared",
+      "label": {
+        "fr": "Salle vidée ({removed} personnes effacées)",
+        "en": "Room cleared ({removed} people erased)"
+      },
+      "fields": [
+        {
+          "key": "removed",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "key": "person.muted",
+      "label": {
+        "fr": "Une personne a été mise en sourdine",
+        "en": "A person was muted"
+      }
+    },
+    {
+      "key": "person.unmuted",
+      "label": {
+        "fr": "Une sourdine a été retirée",
+        "en": "A mute was lifted"
+      }
+    },
+    {
+      "key": "remote.failed",
+      "label": {
+        "fr": "Un bouton de la télécommande a échoué ({panel}, {action})",
+        "en": "A remote control button failed ({panel}, {action})"
+      },
+      "level": "warn",
+      "fields": [
+        {
+          "key": "panel"
+        },
+        {
+          "key": "action"
+        }
+      ]
     }
   ]
 }
