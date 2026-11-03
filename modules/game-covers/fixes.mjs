@@ -135,6 +135,41 @@ export function forgetAllFixes(ctx) {
   }, 60_000);
 }
 
+/**
+ * Tout ce que le module retient, en une liste (1 100 lignes au plus : 1 000 corrections et 100 titres à vérifier), le plus récent d'abord. Une seule source pour l'écran
+ * « Jaquettes enregistrées » et pour l'outil de l'assistant.
+ *   origin  « corrected » (un jeu ou une image choisis par la personne), « none » (elle a choisi « Aucune jaquette ») ou « auto » (trouvée par le site, notée « à vérifier »).
+ * Une correction qui n'est pas valide est écartée ; une ligne « à vérifier » qui a une correction n'apparaît pas deux fois.
+ */
+export async function savedEntries(ctx, now = Date.now()) {
+  const out = [];
+  const seen = new Set();
+  const page = await ctx.api.store.page(COL.fixes, { limit: MAX_FIXES });
+  for (const r of page.items) {
+    const fix = sanitizeFix(r.data);
+    const key = fix ? titleKey(fix.title) : "";
+    if (!fix || !key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ key, title: fix.title, origin: fix.kind === "none" ? "none" : "corrected", kind: fix.kind, name: fix.name ?? "", rawgId: fix.rawgId ?? null, img: fix.img ?? null, at: fix.at });
+  }
+  for (const d of await readToCheck(ctx, now)) {
+    if (seen.has(d.key)) continue;
+    seen.add(d.key);
+    out.push({ key: d.key, title: d.title, origin: "auto", kind: "auto", name: d.name, rawgId: d.rawgId ?? null, img: d.img, at: d.at });
+  }
+  return out.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+}
+
+/** Oublie un titre « à vérifier » (clé normalisée) : le site cherchera de nouveau tout seul. Vrai s'il était noté. */
+export function forgetTodo(ctx, key) {
+  return serial(async () => {
+    const doc = await ctx.api.store.getByKey(COL.todo, key);
+    if (!doc) return false;
+    await ctx.api.store.remove(doc.id);
+    return true;
+  });
+}
+
 /** Une page de corrections (les plus récentes d'abord) : { items: [{ key, …fix }], next }. `cursor` vient d'une page précédente (opaque). */
 export async function listFixes(ctx, { cursor, size = 25 } = {}) {
   const page = await ctx.api.store.page(COL.fixes, { limit: Math.min(Math.max(1, size), 100), ...(cursor ? { cursor } : {}) });

@@ -12,12 +12,22 @@ Ce module **trouve la jaquette d'un jeu vidéo** pour les autres modules de votr
 ## « Quel est le bon jeu ? »
 Quand le site n'est pas sûr du jeu qui correspond à un titre (par exemple « Playrooms »), il le note dans **« Jaquettes à vérifier »**. Cliquez sur **Corriger** : vous voyez les jaquettes proposées par RAWG, vous choisissez le bon jeu en un clic (ou « Aucune jaquette »), et le site retient votre choix pour tous les modules. **« Ce choix est bon »** valide le choix du site tel quel.
 
+## « Jaquettes enregistrées »
+Cet onglet réunit en **un seul tableau** tout ce que le site retient pour vos jeux, avec sa recherche en direct et des filtres :
+- **Corrigée** : un jeu ou une image que vous avez choisi ;
+- **Sans jaquette** : un titre pour lequel vous avez choisi « Aucune jaquette » ;
+- **Automatique** : un jeu trouvé par le site, noté parce qu'il hésitait.
+
+Sur chaque ligne : **Voir** (la jaquette en grand), **Changer** (les jaquettes proposées pour ce titre, ou « Aucune jaquette ») et, dans le menu « ⋯ », **Oublier cette jaquette** (une phrase vous dit ce qui sera oublié ; le site cherchera de nouveau tout seul). **« Oublier toutes les corrections »** demande une case à cocher.
+
+Pour retenir une jaquette sans attendre qu'un module la demande, écrivez un titre dans **« Chercher un jeu »** (par exemple *Hollow Knight*), puis choisissez **« Utiliser cette jaquette »**. La recherche part au moment où vous cliquez, jamais en arrière-plan. Le titre est retenu tel que vous l'écrivez : écrivez-le comme vos pages l'écrivent.
+
 ## Ce que le module garde
 - votre clé RAWG (jamais affichée) ;
-- vos corrections (1 000 au plus) et la liste des titres à vérifier (100 au plus, 60 jours) ;
+- vos corrections (1 000 au plus) et la liste des titres à vérifier (100 au plus, 60 jours) ; l'onglet « Jaquettes enregistrées » montre les deux ;
 - le dernier état de la clé (« fonctionne », « refusée »…).
 
-Les jaquettes elles-mêmes ne sont pas téléchargées : le site garde seulement leur adresse, et le navigateur du public les charge depuis RAWG.
+Les jaquettes elles-mêmes ne sont pas téléchargées : le site garde seulement leur adresse (`https://media.rawg.io/media/…`), et le navigateur les charge depuis RAWG, dans l'administration comme sur le site. Les jaquettes trouvées automatiquement et sans doute n'ont pas d'enregistrement : elles ne vivent que quelques heures en mémoire.
 
 ## Vie privée
 Le module ne collecte rien sur votre public. Il envoie à RAWG le titre du jeu (depuis le serveur de votre site) avec votre clé. Quand une jaquette est affichée, le navigateur de la personne qui visite charge l'image depuis RAWG, qui voit donc son adresse.
@@ -32,4 +42,5 @@ Le module ne collecte rien sur votre public. Il envoie à RAWG le titre du jeu (
 - Un module peut aussi écrire « Ce n'est pas le bon jeu ? » avec le lien `/admin/settings/rawg-covers?titre=<titre encodé>` : le cœur le redirige vers l'écran de ce module.
 - Appels vers RAWG : `ctx.api.net` (https, délai de 5 s, 256 Ko, disjoncteur du cœur) ; cache en mémoire (24 h trouvé, 1 h « aucun résultat », 500 recherches) ; aucun minuteur.
 - Stockage : `fixes` (clé = titre normalisé), `todo`, `adoptedKey`, `keyState`, `handover`.
-- Outils de l'assistant : `rawg_covers_to_check` (lecture) et `rawg_cover_set` (écriture, jamais accordée d'office).
+- Journal du cœur : `cover.game`, `cover.image`, `cover.none`, `cover.confirmed`, `cover.forgotten`, `cover.cleared` (titre du jeu et geste, jamais la clé).
+- Outils de l'assistant : `rawg_covers_to_check` et `rawg_covers_list` (lecture), `rawg_cover_set` (écriture, jamais accordée d'office).

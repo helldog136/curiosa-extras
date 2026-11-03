@@ -47,7 +47,7 @@ const titles = () => f.calls.map((c) => new URL(c.url).searchParams.get("search"
 beforeEach(() => { rawg.clearCache(); ops.resetRate(); serve(); n++; });
 afterEach(() => { globalThis.fetch = realFetch; });
 
-test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »), clé en réglage secret facultatif, deux outils pour l'assistant, FR et EN alignés", () => {
+test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »), clé en réglage secret facultatif, trois outils pour l'assistant (dont une liste en lecture), deux onglets, FR et EN alignés", () => {
   const parsed = parseManifest(manifest);
   assert.ok(parsed.ok, parsed.ok ? "" : parsed.error);
   assert.equal(manifest.id, "game-covers");
@@ -56,7 +56,11 @@ test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »
   assert.deepEqual(manifest.offers[0].callerRights, ["fix"]);
   const key = manifest.settings.find((s) => s.key === "rawgKey");
   assert.equal(key.type, "secret"); assert.equal(key.optional, true);
-  assert.deepEqual(manifest.mcp.map((t) => t.name), ["rawg_covers_to_check", "rawg_cover_set"]);
+  assert.deepEqual(manifest.mcp.map((t) => t.name), ["rawg_covers_to_check", "rawg_covers_list", "rawg_cover_set"]);
+  assert.equal(manifest.mcp.find((t) => t.name === "rawg_covers_list").readOnly, true, "la liste est une lecture : même niveau que rawg_covers_to_check");
+  assert.deepEqual(manifest.tabs.map((t) => t.id), ["use", "saved"]);
+  assert.equal(manifest.minCore, "0.6.0", "le tableau enrichi (recherche en direct, pastilles) demande le cœur 0.6.0");
+  assert.ok(manifest.permissions.every((p) => ["storage", "admin", "mcp"].includes(p)), "aucun droit de plus");
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_cover_set").default, false, "l'écriture n'est jamais accordée d'office");
   assert.deepEqual(Object.keys(read("en")).sort(), Object.keys(fr).sort(), "mêmes clés en français et en anglais");
   for (const k of Object.keys(fr)) assert.ok(fr[k].trim() && read("en")[k].trim(), k);
@@ -158,7 +162,7 @@ test("« C'est ce jeu » : la correction passe avant le cache et avant RAWG ; «
   assert.equal((await mod.adminActions.chooseNone(c, { id: "Hades" })).redirect, "?saved=none");
   assert.deepEqual(await svc.cover(c, { title: "Hades" }), { status: "none", url: null });
   // Oublier : le choix automatique revient.
-  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?saved=forgot");
+  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.equal((await svc.cover(c, { title: "Hades" })).id, 21);
   assert.ok((await mod.adminActions.forget(c, { id: "Hades" })).error, "plus rien à oublier");
 });
@@ -172,7 +176,7 @@ test("« Ce choix est bon » garde le jeu trouvé pour un titre douteux ; « Tou
   assert.equal((await fixes.readToCheck(c)).length, 0);
   assert.equal(await fixes.countFixes(c), 1);
   assert.ok((await mod.adminActions.forgetAll(c, {})).errors.confirm);
-  assert.equal((await mod.adminActions.forgetAll(c, { confirm: "on" })).redirect, "?saved=forgot");
+  assert.equal((await mod.adminActions.forgetAll(c, { confirm: "on" })).redirect, "?tab=saved&saved=forgot");
   assert.equal(await fixes.countFixes(c), 0);
 });
 
@@ -286,7 +290,7 @@ test("écran « Quel est le bon jeu ? » : titre, jaquettes proposées (images d
   assert.ok(!/<script|onerror|javascript:/i.test(html));
   const table = blocks.find((b) => b.type === "table");
   assert.deepEqual(table.rowActions.map((a) => a.action), ["choose"]);
-  assert.equal(table.rowIds[0], `21|${encodeURIComponent("Hades")}|`);
+  assert.equal(table.rowIds[0], `21|${encodeURIComponent("Hades")}||use`);
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "chooseNone"));
   // Autre recherche
   const s = await mod.adminActions.search(c, { id: "Playrooms", q: "Astro's Playroom" });
@@ -303,23 +307,255 @@ test("écran « Quel est le bon jeu ? » : titre, jaquettes proposées (images d
   assert.ok(!evil.filter((b) => b.type === "html").some((b) => /<img src=x/.test(b.html)));
 });
 
-test("les listes : titres à vérifier avec « Corriger » (lien) et « Ce choix est bon », corrections avec « Changer » / « Oublier », page suivante", async () => {
+const tabOf = (blocks, tab) => blocks.filter((b) => (b.tab ?? "use") === tab);
+const tableOf = (blocks, tab) => tabOf(blocks, tab).filter((b) => b.type === "table");
+const logged = (c) => c.calls.log.map((l) => l.action);
+const settle = () => new Promise((ok) => setTimeout(ok, 20));
+
+test("onglet « Jaquettes à vérifier » : clé, titres douteux avec « Corriger » (lien) et « Ce choix est bon » ; rien de la liste des jaquettes enregistrées", async () => {
   const c = makeCtx();
   await svc.cover(c, { title: "Playrooms" });
-  await new Promise((ok) => setTimeout(ok, 20));
-  for (let k = 0; k < 30; k++) await fixes.saveFix(c, `Jeu ${k}`, { kind: "none" });
+  await settle();
+  await fixes.saveFix(c, "Hades", { kind: "none" });
   const blocks = await mod.adminPanel(c, { query: {} });
-  const tables = blocks.filter((b) => b.type === "table");
+  assert.ok(blocks.every((b) => ["use", "saved"].includes(b.tab)), "chaque bloc est rangé dans un onglet");
+  const use = tabOf(blocks, "use");
+  const tables = use.filter((b) => b.type === "table");
+  assert.equal(tables.length, 1);
   assert.deepEqual(tables[0].rowActions.map((a) => a.href ?? a.action), ["?titre={id}", "confirm"]);
   assert.deepEqual(tables[0].rowIds, ["Playrooms"]);
-  assert.equal(tables[1].rows.length, 25);
-  assert.deepEqual(tables[1].rowActions.map((a) => a.href ?? a.action), ["?titre={id}", "forget"]);
-  const next = blocks.find((b) => b.type === "markdown" && /cursor=/.test(b.text));
-  assert.ok(next);
-  const cursor = /cursor=([^)]+)\)/.exec(next.text)[1];
-  const page2 = await mod.adminPanel(c, { query: { cursor } });
-  assert.equal(page2.filter((b) => b.type === "table").at(-1).rows.length, 5);
-  assert.ok(page2.some((b) => b.type === "adminForm" && b.action === "forgetAll"));
+  assert.equal(tables[0].searchable, true, "R15 : recherche en direct dès le départ");
+  assert.ok(use.some((b) => b.type === "adminForm" && b.action === "testKey"));
+  assert.ok(!use.some((b) => b.type === "adminForm" && b.action === "forgetAll"), "le oubli groupé est dans l'autre onglet");
+});
+
+test("onglet « Jaquettes enregistrées » : UN tableau, origine en pastille colorée ET écrite, recherche, filtres, 2 actions visibles et « Oublier » dans le menu", async () => {
+  const c = makeCtx();
+  assert.equal((await ops.chooseGame(c, "t", "Hades", 22)).ok, true);
+  assert.equal((await ops.chooseNone(c, "t", "Jeu sans image")).ok, true);
+  assert.equal((await ops.chooseImage(c, "t", "Image a la main", img(5))).ok, true);
+  await svc.cover(c, { title: "Playrooms" });
+  await settle();
+  const blocks = await mod.adminPanel(c, { query: {} });
+  const saved = tabOf(blocks, "saved");
+  const tables = saved.filter((b) => b.type === "table");
+  assert.equal(tables.length, 1, "R30 : un seul tableau, pas plusieurs listes");
+  const t = tables[0];
+  assert.equal(t.columns.length, 4);
+  assert.equal(t.searchable, true);
+  assert.ok(t.pageSize > 0 && t.pageSize <= 50);
+  assert.deepEqual(t.filters.map((x) => x.column), [2]);
+  assert.ok(t.empty && t.empty.length > 0);
+  const byTitle = Object.fromEntries(t.rows.map((r) => [r[0], r]));
+  assert.deepEqual(Object.keys(byTitle).sort(), ["Hades", "Image a la main", "Jeu sans image", "Playrooms"]);
+  assert.deepEqual([byTitle.Hades[2], byTitle["Image a la main"][2]], [{ text: "Corrigée", badge: "accent" }, { text: "Corrigée", badge: "accent" }]);
+  assert.deepEqual(byTitle["Jeu sans image"][2], { text: "Sans jaquette", badge: "neutral" });
+  assert.equal(byTitle.Playrooms[2].text, "Automatique"); assert.equal(byTitle.Playrooms[2].badge, "info");
+  assert.equal(byTitle.Hades[1], "Hades II"); assert.equal(byTitle["Image a la main"][1], "Image choisie à la main");
+  assert.deepEqual(t.rowIds, t.rows.map((r) => r[0]));
+  // Au plus deux actions visibles ; « Oublier » est nommée, dangereuse (menu « ⋯ ») et passe par un écran de confirmation, jamais par un clic direct.
+  const visible = t.rowActions.filter((a) => !a.danger && !a.inMenu);
+  assert.deepEqual(visible.map((a) => a.label), ["Voir", "Changer"]);
+  const forgetAction = t.rowActions.find((a) => a.danger);
+  assert.equal(forgetAction.label, "Oublier cette jaquette");
+  assert.equal(forgetAction.action, undefined); assert.match(forgetAction.href, /^\?tab=saved&oublier=\{id\}$/);
+  assert.ok(t.rowActions.every((a) => !a.href || a.href.startsWith("?tab=saved&")));
+  // Le champ « Chercher un jeu » est distinct de la recherche du tableau.
+  const find = saved.find((b) => b.type === "adminForm" && b.action === "find");
+  assert.equal(find.fields.length, 1); assert.equal(find.fields[0].label, "Chercher un jeu"); assert.equal(find.fields[0].example, "Hollow Knight");
+  assert.equal(find.submitLabel, "Chercher les jaquettes");
+  assert.ok(saved.some((b) => b.type === "adminForm" && b.action === "forgetAll"));
+  assert.ok(!JSON.stringify(blocks).includes(KEY));
+});
+
+test("tableau : toutes les lignes sont dans la page (la recherche en direct les couvre), 1100 au plus, pagination à 50", async () => {
+  const c = makeCtx();
+  for (let k = 0; k < 120; k++) await c.api.store.add("fixes", { title: `Jeu ${k}`, kind: "none", at: new Date(Date.UTC(2026, 0, 1) + k * 1000).toISOString() }, { key: `jeu ${k}` });
+  const t = tableOf(await mod.adminPanel(c, { query: {} }), "saved")[0];
+  assert.equal(t.rows.length, 120);
+  assert.equal(t.pageSize, 50);
+  assert.equal(t.rows[0][0], "Jeu 119", "le plus récent d'abord");
+  // Une correction illisible dans le stockage est écartée, sans exception.
+  await c.api.store.add("fixes", { title: "Mauvaise", kind: "image", img: "//evil.example/x.jpg", at: "2026-01-01T00:00:00.000Z" }, { key: "mauvaise" });
+  assert.equal(tableOf(await mod.adminPanel(c, { query: {} }), "saved")[0].rows.length, 120);
+});
+
+test("état vide : une phrase qui dit quoi faire, le champ « Chercher un jeu » reste là ; sans clé, le chemin pour la saisir", async () => {
+  const c = makeCtx({ settings: {} });
+  const saved = tabOf(await mod.adminPanel(c, { query: {} }), "saved");
+  const t = saved.find((b) => b.type === "table");
+  assert.deepEqual(t.rows, []);
+  assert.match(t.empty, /Cherchez un jeu/);
+  assert.ok(!saved.some((b) => b.type === "adminForm" && b.action === "forgetAll"), "rien à oublier : pas de bouton");
+  assert.ok(saved.some((b) => b.type === "banner" && /onglet « Réglages »/.test(b.text)));
+});
+
+test("« Voir » montre la jaquette retenue (image de media.rawg.io seulement) ; « Oublier » annonce ce qui sera perdu, avec le titre", async () => {
+  const c = makeCtx();
+  await ops.chooseGame(c, "t", "Hades", 22);
+  const view = await mod.adminPanel(c, { query: { tab: "saved", voir: "Hades" } });
+  assert.ok(view.every((b) => b.tab === "saved"));
+  const card = view.find((b) => b.type === "html").html;
+  assert.ok(card.includes(img(22)) && card.includes("Hades II") && card.includes("Corrigée"));
+  assert.ok(!/<script|onerror|javascript:/i.test(card));
+  assert.deepEqual(view.find((b) => b.type === "links").items.map((i) => i.label), ["Changer", "Oublier cette jaquette"]);
+  const ask = await mod.adminPanel(c, { query: { tab: "saved", oublier: "Hades" } });
+  const msg = ask.find((b) => b.type === "markdown" && /sera oubliée/.test(b.text)).text;
+  assert.equal(msg, "La jaquette de « Hades » sera oubliée ; le site cherchera de nouveau automatiquement.");
+  const form = ask.find((b) => b.type === "adminForm");
+  assert.equal(form.action, "forget"); assert.equal(form.submitLabel, "Oublier cette jaquette");
+  assert.ok(ask.some((b) => b.type === "markdown" && /Garder la jaquette/.test(b.text)), "un moyen de renoncer");
+  // Titre inconnu ou piégé : message, jamais d'exception ni de HTML brut.
+  assert.ok((await mod.adminPanel(c, { query: { oublier: "Inconnu" } })).some((b) => b.type === "banner"));
+  const evil = await mod.adminPanel(c, { query: { voir: '<img src=x onerror=alert(1)> Hades' } });
+  assert.ok(!JSON.stringify(evil).includes("<img src=x"));
+  await ops.chooseNone(c, "t", "<b>Gras</b> & co");
+  const raw = await mod.adminPanel(c, { query: { voir: "<b>Gras</b> & co" } });
+  assert.ok(raw.find((b) => b.type === "html").html.includes("&lt;b&gt;Gras&lt;/b&gt; &amp; co"));
+});
+
+test("« Oublier cette jaquette » : la correction part et le choix automatique revient ; un titre automatique est retiré de la liste ; journal central", async () => {
+  const c = makeCtx({ logEvents: manifest.logEvents });
+  await ops.chooseGame(c, "t", "Hades", 22);
+  await svc.cover(c, { title: "Playrooms" });
+  await settle();
+  const before = tableOf(await mod.adminPanel(c, { query: {} }), "saved")[0].rows.length;
+  assert.equal(before, 2);
+  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
+  assert.equal((await mod.adminActions.forget(c, { id: "Playrooms" })).redirect, "?tab=saved&saved=forgot");
+  assert.equal(tableOf(await mod.adminPanel(c, { query: {} }), "saved")[0].rows.length, 0);
+  assert.equal((await svc.cover(c, { title: "Hades" })).id, 21, "le site cherche de nouveau automatiquement");
+  assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus enregistrée/);
+  assert.match((await mod.adminActions.forget(c, { id: "" })).error, /plus enregistrée/);
+  assert.deepEqual(logged(c), ["cover.game", "cover.forgotten", "cover.forgotten"]);
+  assert.deepEqual(c.calls.log.map((l) => l.target), ["Hades", "Hades", "Playrooms"]);
+  assert.ok(c.calls.log.every((l) => Object.keys(l.data).length === 0 && !JSON.stringify(l).includes(KEY)), "ni donnée personnelle ni clé");
+});
+
+test("« Tout oublier » : confirmation obligatoire, journal avec le nombre, les titres automatiques ne sont pas touchés", async () => {
+  const c = makeCtx({ logEvents: manifest.logEvents });
+  await ops.chooseNone(c, "t", "Alpha"); await ops.chooseNone(c, "t", "Beta");
+  await svc.cover(c, { title: "Playrooms" });
+  await settle();
+  const form = tabOf(await mod.adminPanel(c, { query: {} }), "saved").find((b) => b.action === "forgetAll");
+  assert.equal(form.fields[0].required, true); assert.match(form.fields[0].label, /\(2\)/);
+  assert.ok((await mod.adminActions.forgetAll(c, {})).errors.confirm);
+  assert.equal(await fixes.countFixes(c), 2);
+  assert.equal((await mod.adminActions.forgetAll(c, { confirm: "on" })).redirect, "?tab=saved&saved=forgot");
+  assert.equal(await fixes.countFixes(c), 0);
+  assert.equal((await fixes.readToCheck(c)).length, 1);
+  const line = c.calls.log.find((l) => l.action === "cover.cleared");
+  assert.deepEqual(line.data, { count: 2 }); assert.equal(line.level, "warn");
+});
+
+test("« Chercher un jeu » : erreur sous le champ avec exemple, rien demandé au service avant le clic, puis « Utiliser cette jaquette » enregistre et la ligne apparaît", async () => {
+  const c = makeCtx({ logEvents: manifest.logEvents });
+  for (const bad of ["", "   ", "!!!"]) {
+    const r = await mod.adminActions.find(c, { q: bad });
+    assert.match(r.errors.q, /par exemple Hollow Knight/, `« ${bad} »`);
+  }
+  assert.match((await mod.adminActions.find(c, { q: "x".repeat(101) })).errors.q, /100 caractères/);
+  assert.match((await mod.adminActions.find(makeCtx({ settings: {} }), { q: "Hades" })).errors.q, /onglet « Réglages »/, "pas de clé : le chemin pour la saisir, jamais la clé");
+  assert.equal(f.calls.length, 0, "aucune requête tant que la personne n'a pas validé");
+  const go = await mod.adminActions.find(c, { q: "  Hades  " });
+  assert.equal(go.redirect, "?tab=saved&titre=Hades");
+  assert.equal(f.calls.length, 0, "l'action elle-même ne demande rien : la recherche part à l'affichage des propositions");
+  // L'écran des propositions : dans l'onglet, retour à l'onglet, boutons « Utiliser cette jaquette ».
+  const screen = await mod.adminPanel(c, { query: { tab: "saved", titre: "Hades" } });
+  assert.ok(screen.every((b) => b.tab === "saved"));
+  assert.equal(f.calls.length, 1);
+  assert.ok(screen.some((b) => b.type === "markdown" && b.text.includes("(?tab=saved)")));
+  const t = screen.find((b) => b.type === "table");
+  assert.equal(t.rowActions[0].label, "Utiliser cette jaquette");
+  assert.equal(t.rowIds[1], `22|Hades||saved`);
+  assert.ok(screen.find((b) => b.type === "html" && /candidates/.test(b.html)).html.includes(img(22)));
+  // Un clic : enregistré, retour dans l'onglet avec la confirmation.
+  const done = await mod.adminActions.choose(c, { id: t.rowIds[1] });
+  assert.equal(done.redirect, "?tab=saved&saved=game");
+  const back = await mod.adminPanel(c, { query: { tab: "saved", saved: "game" } });
+  assert.ok(back.some((b) => b.type === "banner" && b.tone === "success" && b.tab === "saved"));
+  const row = tableOf(back, "saved")[0].rows.find((r) => r[0] === "Hades");
+  assert.deepEqual([row[1], row[2].text], ["Hades II", "Corrigée"]);
+  // Même chemin que l'assistant : la correction sert tout de suite, sans nouvelle requête.
+  f.calls.length = 0;
+  assert.equal((await svc.cover(c, "Hades")).id, 22);
+  assert.equal(f.calls.length, 0);
+  assert.deepEqual(logged(c), ["cover.game"]);
+});
+
+test("depuis « Jaquettes à vérifier », on reste dans cet onglet ; depuis « Jaquettes enregistrées », on y reste", async () => {
+  const c = makeCtx();
+  const fromUse = await mod.adminPanel(c, { query: { titre: "Hades" } });
+  assert.ok(fromUse.every((b) => b.tab === "use"));
+  assert.equal(fromUse.find((b) => b.type === "table").rowIds[0], "21|Hades||use");
+  assert.equal((await mod.adminActions.choose(c, { id: "21|Hades||use" })).redirect, "?saved=game");
+  assert.equal((await mod.adminActions.chooseNone(c, { id: "Hades", tab: "saved" })).redirect, "?tab=saved&saved=none");
+  assert.equal((await mod.adminActions.search(c, { id: "Hades", q: "Hades II", tab: "saved" })).redirect, "?tab=saved&titre=Hades&q=Hades%20II");
+  assert.equal((await mod.adminActions.search(c, { id: "Hades", q: "Hades II" })).redirect, "?titre=Hades&q=Hades%20II");
+});
+
+test("refus : jeu qui n'est pas dans les propositions, image hors media.rawg.io (écran, service, assistant), limite des 1000, cadence de lecture avec un message clair", async () => {
+  serve(() => ({ json: { results: [{ ...g(77, "Piège", "2020-01-01"), background_image: "https://evil.example/media/games/x.jpg" }, g(21, "Hades", "2020-09-17")] } }));
+  const c = makeCtx();
+  assert.match((await mod.adminActions.choose(c, { id: "77|Hades||saved" })).error, /plus dans la liste/);
+  assert.equal(await fixes.countFixes(c), 0);
+  assert.equal((await ops.chooseImage(c, "t", "Hades", "https://evil.example/media/games/x.jpg")).error, "image");
+  assert.equal((await ops.chooseImage(c, "t", "Hades", "https://media.rawg.io/media/x.jpg?size=big")).error, "image");
+  assert.equal((await mod.adminActions.choose(c, { id: "21|Hades||saved" })).redirect, "?tab=saved&saved=game");
+  assert.equal((await fixes.fixFor(c, "Hades")).img, "/media/games/021/jeu-21.jpg");
+  // La liste des propositions n'affiche jamais l'image d'un autre hôte.
+  const html = (await mod.adminPanel(c, { query: { tab: "saved", titre: "Hades" } })).find((b) => b.type === "html" && /candidates/.test(b.html)).html;
+  assert.ok(!html.includes("evil.example"));
+  // 1000 corrections : message qui dit où faire de la place.
+  const full = makeCtx();
+  for (let k = 0; k < 1000; k++) await full.api.store.add("fixes", { title: `J ${k}`, kind: "none", at: new Date().toISOString() }, { key: `j ${k}` });
+  const out = await mod.adminActions.choose(full, { id: "21|Hades||saved" });
+  assert.match(out.error, /Jaquettes enregistrées/);
+  // Cadence : trop de recherches d'affilée, le message est clair et rien n'est demandé de plus.
+  ops.resetRate();
+  for (let k = 0; k < 30; k++) assert.equal(ops.takeRate("admin", "read"), true);
+  const calls = f.calls.length;
+  const limited = await mod.adminPanel(c, { query: { tab: "saved", titre: "Zelda" } });
+  assert.ok(limited.some((b) => b.type === "markdown" && /trop vite/.test(b.text)));
+  assert.equal(f.calls.length, calls);
+});
+
+test("droits : les actions d'administration sont réservées au rôle Administration (fonctions, pas de droit délégué) et le service garde le droit « fix »", () => {
+  for (const [name, fn] of Object.entries(mod.adminActions)) assert.equal(typeof fn, "function", name);
+  assert.deepEqual(manifest.rights.map((r) => r.id), ["fix"]);
+  assert.deepEqual(manifest.rights[0].default, { admin: true, editor: false });
+  assert.equal(manifest.mcp.find((t) => t.name === "rawg_cover_set").default, false);
+});
+
+test("assistant : rawg_covers_list lit ce que le module retient (filtres, 50 par défaut, 100 au plus), sans appel réseau ni clé", async () => {
+  const c = makeCtx();
+  const actor = { name: "essai", tokenId: "t1" };
+  await ops.chooseGame(c, "t", "Hades", 22);
+  await ops.chooseNone(c, "t", "Jeu sans image");
+  await svc.cover(c, { title: "Playrooms" });
+  await settle();
+  f.calls.length = 0;
+  const all = await mod.mcp.rawg_covers_list(c, {}, actor);
+  assert.equal(all.total, 3);
+  assert.deepEqual(all.items.map((i) => i.origin).sort(), ["auto", "corrected", "none"]);
+  const hades = all.items.find((i) => i.title === "Hades");
+  assert.deepEqual(Object.keys(hades).sort(), ["at", "coverUrl", "game", "origin", "title"]);
+  assert.equal(hades.coverUrl, img(22)); assert.equal(hades.game, "Hades II");
+  assert.equal(all.items.find((i) => i.origin === "none").coverUrl, null);
+  assert.equal((await mod.mcp.rawg_covers_list(c, { origin: "auto" }, actor)).items[0].title, "Playrooms");
+  assert.equal((await mod.mcp.rawg_covers_list(c, { search: "hádes" }, actor)).total, 1);
+  assert.equal((await mod.mcp.rawg_covers_list(c, { limit: 1 }, actor)).items.length, 1);
+  await assert.rejects(mod.mcp.rawg_covers_list(c, { limit: 101 }, actor), (e) => e.expose === true);
+  await assert.rejects(mod.mcp.rawg_covers_list(c, { origin: "x" }, actor), (e) => e.expose === true);
+  assert.equal(f.calls.length, 0, "aucune requête vers le service de jaquettes");
+  assert.ok(!JSON.stringify(all).includes(KEY));
+});
+
+test("aucun nouvel hôte : le code du module ne nomme que api.rawg.io et media.rawg.io ; les textes visibles ne montrent pas la clé", () => {
+  const code = fs.readdirSync(DIR).filter((x) => x.endsWith(".mjs")).map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n");
+  const hosts = new Set([...code.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase()));
+  assert.deepEqual([...hosts].filter((h) => !/(^|\.)rawg\.io$/.test(h)), [], "seul RAWG est joint");
+  assert.ok(!/setTimeout\([^)]*,\s*\d{4,}/.test(code.replace(/timer = setTimeout\(\(\) => reject/, "")), "pas de minuteur de fond");
 });
 
 test("outils de l'assistant : lister (lecture), proposer des jeux pour un titre, corriger (une seule façon à la fois), oublier ; erreurs lisibles, jamais la clé", async () => {

@@ -7,6 +7,11 @@ const { titleKey } = await import(new URL("./match.mjs" + q, import.meta.url).hr
 const fx = await import(new URL("./fixes.mjs" + q, import.meta.url).href);
 const rawg = await import(new URL("./rawg.mjs" + q, import.meta.url).href);
 
+/** Une ligne au journal du cœur (le cœur déduit qui l'a écrite) : le titre du jeu et le geste, jamais une clé ni une adresse. Ne lève jamais. */
+async function journal(ctx, action, title, data) {
+  try { await ctx.api.log?.write({ action, target: String(title ?? "").slice(0, 120), ...(data ? { data } : {}) }); } catch { /* le journal est un plus */ }
+}
+
 const RATE = { read: { max: 30, perMs: 60_000 }, write: { max: 60, perMs: 60_000 } };
 const hits = new Map();
 /** Prend une place dans la cadence de cette personne ; faux si elle a trop demandé. Mémoire bornée (500 personnes ou jetons au plus). */
@@ -35,7 +40,11 @@ export async function candidatesFor(ctx, who, title, search, opts) {
   return rawg.candidates(ctx, title, search, opts);
 }
 
-const finish = (r) => (r.ok ? r : { ok: false, error: r.error });
+const finish = async (r, ctx, action) => {
+  if (!r.ok) return { ok: false, error: r.error };
+  await journal(ctx, action, r.fix.title);
+  return r;
+};
 
 /** « C'est ce jeu » : garde le jeu de numéro `rawgId` parmi les propositions de RAWG pour ce titre (ou pour `search`). → { ok: true, fix } | { ok: false, error } */
 export async function chooseGame(ctx, who, rawTitle, rawgId, search) {
@@ -49,7 +58,7 @@ export async function chooseGame(ctx, who, rawTitle, rawgId, search) {
   if (!game) return { ok: false, error: "candidate" };
   const img = fx.rawgImagePath(game.url);
   if (!img) return { ok: false, error: "image" };
-  return finish(await fx.saveFix(ctx, title, { kind: "game", rawgId: game.id, name: game.name, img }));
+  return finish(await fx.saveFix(ctx, title, { kind: "game", rawgId: game.id, name: game.name, img }), ctx, "cover.game");
 }
 
 /** « Aucune jaquette » : ce titre n'aura plus de jaquette. */
@@ -57,7 +66,7 @@ export async function chooseNone(ctx, who, rawTitle) {
   const title = checkTitle(rawTitle);
   if (!title) return { ok: false, error: "title" };
   if (!takeRate(who, "write")) return { ok: false, error: "rate" };
-  return finish(await fx.saveFix(ctx, title, { kind: "none" }));
+  return finish(await fx.saveFix(ctx, title, { kind: "none" }), ctx, "cover.none");
 }
 
 /** Une image de RAWG choisie à la main (adresse `https://media.rawg.io/media/…` uniquement). */
@@ -67,7 +76,7 @@ export async function chooseImage(ctx, who, rawTitle, address) {
   const img = fx.rawgImagePath(typeof address === "string" ? address.trim() : "");
   if (!img) return { ok: false, error: "image" };
   if (!takeRate(who, "write")) return { ok: false, error: "rate" };
-  return finish(await fx.saveFix(ctx, title, { kind: "image", img }));
+  return finish(await fx.saveFix(ctx, title, { kind: "image", img }), ctx, "cover.image");
 }
 
 /** « Ce choix est bon » : garde le jeu actuellement trouvé pour ce titre, tel quel, et le retire de la liste. */
@@ -77,22 +86,33 @@ export async function confirmCurrent(ctx, who, rawTitle) {
   if (!takeRate(who, "write")) return { ok: false, error: "rate" };
   const key = titleKey(title);
   const entry = (await fx.readToCheck(ctx)).find((d) => d.key === key);
-  if (entry) return finish(await fx.saveFix(ctx, entry.title, entry.rawgId ? { kind: "game", rawgId: entry.rawgId, name: entry.name, img: entry.img } : { kind: "image", img: entry.img, name: entry.name }));
+  if (entry) return finish(await fx.saveFix(ctx, entry.title, entry.rawgId ? { kind: "game", rawgId: entry.rawgId, name: entry.name, img: entry.img } : { kind: "image", img: entry.img, name: entry.name }), ctx, "cover.confirmed");
   // Pas dans la liste (page ouverte à la main) : on garde ce que RAWG donne en ce moment.
   const now = await rawg.cover(ctx, title);
   if (now.status !== "found" || !now.url) return { ok: false, error: now.status === "none" ? "nothing" : now.status === "found" ? "image" : now.status };
   const img = fx.rawgImagePath(now.url);
   if (!img) return { ok: false, error: "image" };
-  return finish(await fx.saveFix(ctx, title, now.id ? { kind: "game", rawgId: now.id, name: now.name ?? "", img } : { kind: "image", img, name: now.name }));
+  return finish(await fx.saveFix(ctx, title, now.id ? { kind: "game", rawgId: now.id, name: now.name ?? "", img } : { kind: "image", img, name: now.name }), ctx, "cover.confirmed");
 }
 
 /** Oublie la correction d'un titre (clé normalisée) : le titre retrouve le choix automatique. */
-export async function forget(ctx, who, key) {
+export async function forget(ctx, who, key, title) {
   if (typeof key !== "string" || key.length > 160 || !takeRate(who, "write")) return false;
-  return fx.forgetFix(ctx, key);
+  const done = await fx.forgetFix(ctx, key);
+  if (done) await journal(ctx, "cover.forgotten", title ?? key);
+  return done;
+}
+/** Oublie un titre noté « à vérifier » (choix automatique du site) : il reviendra de lui-même si le site hésite de nouveau. */
+export async function forgetAuto(ctx, who, key, title) {
+  if (typeof key !== "string" || key.length > 160 || !takeRate(who, "write")) return false;
+  const done = await fx.forgetTodo(ctx, key);
+  if (done) await journal(ctx, "cover.forgotten", title ?? key);
+  return done;
 }
 export async function forgetAll(ctx, who) {
-  return takeRate(who, "write") ? fx.forgetAllFixes(ctx) : null;
+  const n = takeRate(who, "write") ? await fx.forgetAllFixes(ctx) : null;
+  if (n) await journal(ctx, "cover.cleared", "", { count: n });
+  return n;
 }
 
 /** Une ligne lisible du choix (titre et choix, jamais de secret). */

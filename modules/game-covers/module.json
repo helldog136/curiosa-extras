@@ -1,19 +1,19 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.13",
+  "minCore": "0.6.0",
   "id": "game-covers",
   "name": {
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": {
     "en": "Finds the cover picture of a video game for everything about games on your site. Your free RAWG key is entered once, here, and never shown again. If a cover is the wrong one, a simple screen lets you pick the right game, and your choice is remembered.",
     "fr": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu."
   },
   "privacy": {
-    "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the title of the game to RAWG (a video-game database), together with your RAWG key. When another module shows a cover, the visitor's browser loads the picture from RAWG, which therefore sees the visitor's address under its own privacy policy.",
-    "fr": "Ce module ne collecte rien sur votre public. Pour trouver une jaquette, le serveur de votre site envoie à RAWG (une base de données de jeux vidéo) le titre du jeu, avec votre clé RAWG. Quand un autre module affiche une jaquette, le navigateur de la personne qui visite charge l'image depuis RAWG, qui voit donc son adresse selon sa propre politique de confidentialité."
+    "en": "This module collects nothing about your visitors. To find a cover, your site's server sends the title of the game to RAWG (a video-game database), together with your RAWG key. When a cover is shown, on the site or in this administration, the browser loads the picture from RAWG, which therefore sees the person's address under its own privacy policy.",
+    "fr": "Ce module ne collecte rien sur votre public. Pour trouver une jaquette, le serveur de votre site envoie à RAWG (une base de données de jeux vidéo) le titre du jeu, avec votre clé RAWG. Quand une jaquette est affichée, sur le site comme dans cette administration, le navigateur charge l'image depuis RAWG, qui voit donc l'adresse de la personne selon sa propre politique de confidentialité."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -62,6 +62,74 @@
       }
     }
   ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "fr": "Jaquettes à vérifier",
+        "en": "Covers to check"
+      }
+    },
+    {
+      "id": "saved",
+      "label": {
+        "fr": "Jaquettes enregistrées",
+        "en": "Saved covers"
+      },
+      "panel": true
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "cover.game",
+      "label": {
+        "fr": "Jaquette choisie pour un jeu",
+        "en": "Cover chosen for a game"
+      }
+    },
+    {
+      "key": "cover.image",
+      "label": {
+        "fr": "Image choisie à la main pour un jeu",
+        "en": "Picture chosen by hand for a game"
+      }
+    },
+    {
+      "key": "cover.none",
+      "label": {
+        "fr": "Jeu laissé sans jaquette",
+        "en": "Game left without a cover"
+      }
+    },
+    {
+      "key": "cover.confirmed",
+      "label": {
+        "fr": "Choix du site gardé pour un jeu",
+        "en": "Automatic choice kept for a game"
+      }
+    },
+    {
+      "key": "cover.forgotten",
+      "label": {
+        "fr": "Jaquette oubliée",
+        "en": "Cover forgotten"
+      }
+    },
+    {
+      "key": "cover.cleared",
+      "label": {
+        "fr": "Corrections oubliées : {count}",
+        "en": "Corrections forgotten: {count}"
+      },
+      "level": "warn",
+      "fields": [
+        {
+          "key": "count",
+          "type": "number"
+        }
+      ]
+    }
+  ],
   "settings": [
     {
       "key": "rawgKey",
@@ -94,6 +162,36 @@
             "type": "string",
             "maxLength": 100,
             "description": "Optional, with title: other words to look for at RAWG (for example the game's real name)."
+          }
+        }
+      }
+    },
+    {
+      "name": "rawg_covers_list",
+      "readOnly": true,
+      "description": "Lists the covers the module keeps, newest first: the ones the owner corrected (origin \"corrected\"), the games left without a cover (\"none\") and the automatic choices noted for checking (\"auto\"). Each has: title, origin, game (name, may be empty), coverUrl (an https://media.rawg.io/media/... picture, or null) and at. Optional filters: \"search\" (words of the title) and \"origin\"; 50 per call by default (100 at most), with \"total\" for the whole list. Nothing is changed and no key is ever shown. To change or forget one, ask the owner, or use rawg_cover_set with their consent.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Optional. Words of the game title to look for."
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "corrected",
+              "none",
+              "auto"
+            ],
+            "description": "Optional. Only the covers corrected by the owner, left without a cover, or chosen automatically."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Optional. How many to return (50 by default)."
           }
         }
       }

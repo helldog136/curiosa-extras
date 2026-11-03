@@ -38,7 +38,7 @@ export const methods = {
     if (a.forget === true) {
       const title = ops.checkTitle(a.title);
       if (!title) return { ok: false, error: "title" };
-      return { ok: true, forgotten: await ops.forget(ctx, who, match.titleKey(title)) };
+      return { ok: true, forgotten: await ops.forget(ctx, who, match.titleKey(title), title) };
     }
     const out = a.none === true ? await ops.chooseNone(ctx, who, a.title) : await ops.chooseGame(ctx, who, a.title, Number(a.rawgId ?? a.id), typeof a.search === "string" ? a.search : undefined);
     // chooseGame cherche d'abord les propositions de RAWG pour ce titre : l'appel est rejeté si le jeu n'en fait pas partie.
