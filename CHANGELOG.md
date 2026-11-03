@@ -4,9 +4,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.41.1 — 2026-11-03
 
-*En bref : la photo des personnes avec qui vous streamez s'affiche enfin sur le Planning (Planning 2.7.2).*
+*En bref : la photo de profil des personnes avec qui vous streamez s'affiche enfin dans le Planning. Rien à régler, et aucune nouvelle permission à accepter.*
 
 ### Corrections
 
