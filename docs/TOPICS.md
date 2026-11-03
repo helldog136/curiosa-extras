@@ -50,3 +50,11 @@ Le cœur possède le schéma de ces trois sujets (voir `docs/MODULES.md` du cœu
 | `live.event` | `youtube-live-actions` | `alerts-overlay` | `id`, `platform`, `kind` (`superchat`, `supersticker`, `member`, `gift`), `who`, `at`, et selon le cas `amount` (toujours avec `currency`), `count`, `text` ; en mémoire seulement (15 minutes, 50 au plus) | cœur 0.2.8 |
 | `map.place` | `events`, `directory`, tout module qui a des lieux | `map` | `id`, `title`, `lat` (-90 à 90), `lng` (-180 à 180, jamais le point 0,0, 5 décimales), `kind`, `url?`, `at?` (date ISO), `note?` ; 200 éléments au plus. **Jamais d'adresse personnelle sans consentement** : lieu public ou ville arrondie d'une personne qui a dit oui. La carte n'écrit jamais chez la source | cœur 0.2.11 |
 | `mascot.hint` | `daily-game`, tout module qui a une nouveauté à annoncer | `mascot` | `id` (change quand l'état change), `text` (140 caractères, sans balise), `url?` (page du site) ; 10 au plus. Un module qui n'a rien à dire ne publie rien | cœur 0.2.11 |
+
+## Services entre modules (hors sujets)
+
+Un **service** est un appel direct d'un module à un autre (`ctx.api.services.call`). Le détail de chacun est dans le README du module qui le fournit ; seul celui-ci, qui ajoute des données chez un autre module, est répété ici. Même format de ligne que les sujets.
+
+| Service | Fournisseurs | Appelants | Méthodes | Depuis |
+|---|---|---|---|---|
+| `game.played` | `game-suggestions` | `planning` (besoin facultatif, réglage « Ajouter les jeux joués à la liste » coupé par défaut) | `add({ title, via? })` → `{ ok: true, added, status }` ou `{ ok: false, error: "invalid" \| "full" \| "failed" }` : ajoute le jeu en « Déjà joué » s'il n'est pas déjà dans la liste (comparaison sans accents, majuscules ni ponctuation, tous statuts) ; ne modifie jamais une ligne existante ; 100 caractères, un jeu à la fois, plafond de 2000 ; aucune jaquette cherchée | 1.41.0 |

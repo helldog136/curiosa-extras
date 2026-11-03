@@ -1,8 +1,11 @@
 // Planning : les PARTENAIRES d'un stream (« Avec … »). Un créneau porte des pseudos Twitch (champ `partners` du sujet `planning.slot`) ; ici on les nettoie, puis on cherche
 // dans Contacts (service `contact.book`, besoin facultatif) la fiche qui porte chaque pseudo. VIE PRIVÉE : seuls le NOM de la fiche et un lien vers la chaîne Twitch sortent d'ici,
-// jamais un e-mail, un téléphone, une note ni une photo. Une fiche « à relire », une fiche de la catégorie « Ne pas montrer » et un pseudo inconnu ne sont jamais montrés (même règle
+// jamais un e-mail, un téléphone ni une note. La PHOTO publique du compte n'est montrée que pour une fiche affichable, et jamais chargée par le navigateur de la personne qui visite : le site en
+// garde une copie (voir photos.mjs). Une fiche « à relire », une fiche de la catégorie « Ne pas montrer » et un pseudo inconnu ne sont jamais montrés (même règle
 // que le Mur des remerciements et l'Annuaire). Aucun appel à Twitch : Contacts seul fait foi. Chaque appel à Contacts est borné ; rien ne lève. Rien n'est gardé sur disque :
 // les réponses restent en mémoire 2 minutes (une page très visitée ne dérange pas Contacts), et 30 minutes au plus si Contacts ne répond plus.
+const V = new URL(import.meta.url).search;   // la version du module se propage au fichier voisin (mise à jour à chaud)
+const Photos = await import(`./photos.mjs${V}`);
 const NOT_TWITCH = new Set(["videos", "directory", "downloads", "settings", "subscriptions", "friends", "wallet", "inventory", "drops", "prime", "turbo", "jobs", "store", "team", "popout", "embed", "moderator", "dashboard", "broadcast", "login", "signup", "search"]);
 export const MAX_PARTNERS = 5;
 const LOGIN_RE = /^[a-z0-9_]{4,25}$/;
@@ -96,7 +99,7 @@ async function lookup(ctx, logins) {
   for (let i = 0; i < wanted.length; i += 100) {
     const r = await call(ctx, "resolve", { ids: wanted.slice(i, i + 100) });
     if (!r.ok) { cardsOk = false; break; }
-    for (const c of Array.isArray(r.value.contacts) ? r.value.contacts : []) if (c && idOk(c.id)) cards.set(c.id, { status: c.status, name: c.name, categoryIds: c.categoryIds });   // rien d'autre n'est gardé
+    for (const c of Array.isArray(r.value.contacts) ? r.value.contacts : []) if (c && idOk(c.id)) cards.set(c.id, { status: c.status, name: c.name, categoryIds: c.categoryIds, photo: Photos.photoSource(c.photo) });   // nom, état, catégories et l'ORIGINE de la photo (déjà vérifiée) : rien d'autre n'est gardé
   }
   for (const [login, ids] of matches) {
     if (!ids.length) { out.set(login, { state: "unknown" }); continue; }
@@ -104,14 +107,42 @@ async function lookup(ctx, logins) {
     const found = ids.map((id) => cards.get(id));
     if (found.some((c) => !c)) { out.set(login, { state: "unknown" }); continue; }
     const shown = found.filter((c) => isShowable(c, hide.id));
-    out.set(login, shown.length === found.length ? { state: "shown", name: clean(shown[0].name, 80) } : { state: "hidden" });
+    out.set(login, shown.length === found.length ? { state: "shown", name: clean(shown[0].name, 80), source: shown[0].photo } : { state: "hidden" });
   }
   return { out, book: "ok" };
 }
 
 /**
- * Pour des créneaux (champ `partners` = pseudos) : ajoute `people` = [{ name, url }] (seulement les personnes à montrer, dans l'ordre écrit) et rend le bilan pour l'administration :
+ * Après une recherche à Contacts : la photo de chaque personne AFFICHABLE (copie du site ou photo du site, voir photos.mjs) et l'oubli de la copie de toute personne qui ne l'est plus.
+ * `out` : Map(pseudo -> { state, name?, source? }) ; remplace `source` par `photo` (adresse à montrer, ou null).
+ */
+async function settlePhotos(ctx, out, book) {
+  const on = Photos.photosOn(ctx);
+  if (book === "absent" || !on) { await Photos.forgetAll(ctx); for (const v of out.values()) delete v.source; return; }
+  await Promise.all([...out].map(async ([login, v]) => {
+    if (v.state === "shown") v.photo = await Photos.photoFor(ctx, login, v.source).catch(() => null);
+    else if (book === "ok" && (v.state === "hidden" || v.state === "unknown")) await Photos.forget(ctx, Photos.idOf(login));   // effacée, « à relire » ou « Ne pas montrer » : la copie disparaît
+    delete v.source;
+  }));
+}
+
+/** L'état d'un seul pseudo, pour la route de la photo : même lecture, même mémoire de 2 minutes. Rend "shown" · "hidden" · "unknown" · "busy" (et "absent" sans Contacts). */
+export async function stateOf(ctx, login, now = Date.now()) {
+  const k = keyOf(ctx, login), h = cache.get(k);
+  if (h && now - h.at < timing.freshMs) return h.v.state;
+  const r = await lookup(ctx, [login]);
+  if (r.book === "absent") return "absent";
+  const v = r.out.get(login);
+  if (!v) return "busy";
+  await settlePhotos(ctx, new Map([[login, v]]), r.book);
+  cache.set(k, { at: now, v });
+  return v.state;
+}
+
+/**
+ * Pour des créneaux (champ `partners` = pseudos) : ajoute `people` = [{ name, url, photo? }] (seulement les personnes à montrer, dans l'ordre écrit) et rend le bilan pour l'administration :
  * { book: "none" | "ok" | "absent" | "busy", states: Map(pseudo -> "shown" | "hidden" | "unknown" | "busy"), names: Map(pseudo -> nom) }. Sans aucun pseudo : aucun appel à Contacts.
+ * `photo` (adresse sur le site, jamais celle de Twitch) n'est là que si la personne a une photo prête et que le réglage « Afficher la photo des partenaires » est oui.
  */
 export async function attachPartners(ctx, slots, now = Date.now()) {
   const all = [...new Set(slots.flatMap((s) => s.partners ?? []))].slice(0, timing.maxLogins);
@@ -123,16 +154,20 @@ export async function attachPartners(ctx, slots, now = Date.now()) {
   if (stale.length) {
     const r = await lookup(ctx, stale);
     book = r.book;
+    await settlePhotos(ctx, r.out, book);
     for (const [login, v] of r.out) cache.set(keyOf(ctx, login), { at: now, v });
     while (cache.size > 1000) cache.delete(cache.keys().next().value);
+    await Photos.sweep(ctx, now);
   }
   info.book = book;
+  const photos = new Map();
+  const on = Photos.photosOn(ctx);
   for (const l of all) {
     const h = cache.get(keyOf(ctx, l));
     const usable = h && now - h.at < (book === "ok" ? timing.freshMs : timing.staleMs);
     // Contacts absent : plus rien n'est montré (il a pu être retiré avec ses « Ne pas montrer »). Pas de réponse : la dernière réponse connue, 30 minutes au plus.
-    if (usable && book !== "absent") { info.states.set(l, h.v.state); if (h.v.name) info.names.set(l, h.v.name); } else info.states.set(l, "busy");
+    if (usable && book !== "absent") { info.states.set(l, h.v.state); if (h.v.name) info.names.set(l, h.v.name); if (on && h.v.photo) photos.set(l, h.v.photo); } else info.states.set(l, "busy");
   }
-  for (const s of slots) s.people = (s.partners ?? []).filter((l) => info.states.get(l) === "shown").map((l) => ({ name: info.names.get(l), url: `https://www.twitch.tv/${l}` }));
+  for (const s of slots) s.people = (s.partners ?? []).filter((l) => info.states.get(l) === "shown").map((l) => ({ name: info.names.get(l), url: `https://www.twitch.tv/${l}`, ...(photos.has(l) ? { photo: photos.get(l) } : {}) }));
   return info;
 }

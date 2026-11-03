@@ -83,5 +83,10 @@
   "adminWithAddHelp": "In Contacts, choose “Add via” Twitch and paste the name: it then appears on the schedule.",
   "adminWithNoBook": "Names appear on the schedule once Contacts is installed. Until then, these names are not shown.",
   "adminWithSuggest": "shows the name of the people you stream with",
-  "adminWithBusy": "Contacts is not answering right now: names will come back as soon as it does."
+  "adminWithBusy": "Contacts is not answering right now: names will come back as soon as it does.",
+  "adminPlayed": "Played games",
+  "adminPlayedOk": "Game suggestions is installed. Each game of a started stream joins “Already played”, once. A game already there stays as it is.",
+  "adminPlayedNone": "Game suggestions is not installed: no game is added for now.",
+  "adminPlayedSuggest": "keeps the list of the games you have played",
+  "adminPlayedBusy": "Game suggestions does not answer right now: games will be added as soon as it does."
 }

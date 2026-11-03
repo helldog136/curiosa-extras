@@ -1,6 +1,9 @@
 // Planning : petits outils PURS partagés par les apparences (échappement, balises répétées, feuille de style de base).
 // Rien ici ne touche au réseau ni au stockage ; aucune couleur codée en dur : tout passe par les variables du thème (--v-*).
 
+const V = new URL(import.meta.url).search;
+const { personHtml } = await import(`../avatar.mjs${V}`);
+
 export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 /** Adresse https sans espace ni guillemet, sinon null (jamais injectée dans un attribut). */
@@ -55,8 +58,8 @@ export function gamesHtml(slot, t, cls = "pa-games") {
   return (slot.games.length ? `<p class="${cls}">${srOnly(t("gamesLabel"))} ${slot.games.map(esc).join(", ")}</p>` : "") + withHtml(slot, t);
 }
 
-/** « Avec Marie, Paul » : le nom (de la fiche de Contacts), lié à la chaîne Twitch quand la surface le permet. Rien d'autre : ni photo, ni ressource externe. */
-export const peopleInline = (slot) => slot.people.map((p) => (p.href ? `<a class="pa-with-link" style="color:inherit" href="${esc(p.href)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>` : esc(p.name))).join(", ");
+/** « Avec Marie, Paul » : le nom (de la fiche de Contacts), lié à la chaîne Twitch quand la surface le permet, avec un petit rond (photo gardée par le site, sinon initiales) sur la page et dans les sections. Jamais de ressource d'un autre site. */
+export const peopleInline = (slot) => slot.people.map((p) => (p.av ? personHtml({ name: p.name, url: p.href, photo: p.photo }, { cls: p.href ? "pa-with-link" : "" }) : p.href ? `<a class="pa-with-link" style="color:inherit" href="${esc(p.href)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>` : esc(p.name))).join(", ");
 export const withHtml = (slot, t) => (slot.people?.length ? `<p class="pa-games pa-with" style="font-style:normal">${esc(t("withLabel"))} ${peopleInline(slot)}</p>` : "");
 
 /** En-tête d'un jour dans l'un des trois styles : text · tile · short. */
