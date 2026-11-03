@@ -72,7 +72,7 @@
   "testBtn": "Test the address",
   "testOk": "The address works: {n} upcoming stream(s) in the next 30 days.",
   "err_url": "This address is not allowed: use the full secret address of your calendar, starting with https://.",
-  "err_network": "Cannot reach your calendar (service unavailable or too slow). Try again in a few minutes.",
+  "err_network": "Cannot reach your calendar (site unavailable or too slow). Try again in a few minutes.",
   "err_http": "Your calendar refused to be read (code {status}). Check the address: if you reset it in Google, paste the new one.",
   "err_format": "This address does not return a calendar. Copy “Secret address in iCal format” from your calendar's settings.",
   "err_size": "Your calendar is too big to be read. Use a calendar dedicated to your streams.",

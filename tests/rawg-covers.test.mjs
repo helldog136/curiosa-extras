@@ -410,7 +410,7 @@ test("planning : panneau d'admin — clé absente (avec lien), clé refusée, RA
   const cal = calendar(vevent("1", hours(2), "S", ["DESCRIPTION:Jeu: Celeste\\, Fantôme"]));
   const text = async (svc) => JSON.stringify(await pl.adminPanel(plCtx(svc)));
   calendarOnly(cal);
-  const none = await text(service({}, { configured: false })); assert.match(none, /Aucune clé RAWG/); assert.match(none, /Jaquettes de jeux/); assert.match(none, /suggestInstall/);
+  const none = await text(service({}, { configured: false })); assert.match(none, /Aucun code d'accès Rawg/); assert.match(none, /Jaquettes de jeux/); assert.match(none, /suggestInstall/);
   assert.match(await text(service({ Celeste: "refused", "Fantôme": "refused" })), /RAWG refuse la clé/);
   assert.match(await text(service({ Celeste: "unreachable", "Fantôme": "unreachable" })), /RAWG est injoignable/);
   const ok = await text(service({ Celeste: "found" }));

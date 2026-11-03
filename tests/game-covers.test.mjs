@@ -252,7 +252,7 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
 test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; clé reprise (avec « Oublier »)", async () => {
   const none = makeCtx({ settings: {} });
   const blocks = await mod.adminPanel(none, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "banner" && /Aucune clé/.test(b.text)));
+  assert.ok(blocks.some((b) => b.type === "banner" && /Aucun code/.test(b.text)));
   assert.ok(blocks.some((b) => b.type === "markdown" && /rawg\.io\/apidocs/.test(b.text)));
   const c = makeCtx();
   const withKey = await mod.adminPanel(c, { query: {} });
@@ -277,7 +277,7 @@ test("« Tester la clé » : ok, refusée, injoignable, absente, mal formée ; l
   assert.equal((await svc.status(c)).state, "refused");
   serve(() => ({ status: 500, json: {} }));
   assert.match((await mod.adminActions.testKey(makeCtx())).error, /injoignable/);
-  assert.match((await mod.adminActions.testKey(makeCtx({ settings: {} }))).error, /Aucune clé/);
+  assert.match((await mod.adminActions.testKey(makeCtx({ settings: {} }))).error, /Aucun code/);
   assert.match((await mod.adminActions.testKey(makeCtx({ settings: { rawgKey: "x y" } }))).error, /format/);
 });
 

@@ -13,7 +13,7 @@
   "col_address": "Adresse",
   "col_account": "Compte connecté",
   "col_state": "État",
-  "adopted_note": "L'identifiant et le secret de votre application Twitch ont été repris de « Ma Chaîne Twitch », sans les ressaisir. Ils ne sont jamais affichés. Ce que vous saisissez dans les réglages a toujours le dessus.",
+  "adopted_note": "Le Client ID et le secret de votre application Twitch ont été repris de « Ma Chaîne Twitch », sans les ressaisir. Ils ne sont jamais affichés. Ce que vous saisissez dans les réglages a toujours le dessus.",
   "forget": "Oublier l'application reprise",
   "forgotten": "Application reprise oubliée. Seuls les réglages de cette page comptent maintenant.",
   "accounts_title": "Comptes Twitch connectés",

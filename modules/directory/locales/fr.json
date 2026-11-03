@@ -190,7 +190,7 @@
   "personSaved": "Fiche de {name} enregistrée.",
   "personSavedPlaced": "Fiche de {name} enregistrée. Ville placée sur la carte : {place}.",
   "errCityNone": "Je n'ai pas trouvé cette ville. Vérifiez l'orthographe, par exemple « Namur, Belgique ».",
-  "errCityDown": "Le service qui situe les villes ne répond pas. Réessayez dans un moment, ou enregistrez sans ville.",
+  "errCityDown": "Le site qui situe les villes ne répond pas. Réessayez dans un moment, ou enregistrez sans ville.",
   "errTooLong": "C'est trop long : {max} caractères au plus.",
   "errSave": "Je n'ai pas pu enregistrer. Réessayez.",
   "errTooMany": "Vous avez atteint la limite de ce que l'annuaire peut garder ({max}).",

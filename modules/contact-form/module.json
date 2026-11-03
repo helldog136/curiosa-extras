@@ -5,7 +5,7 @@
     "en": "Contact form",
     "fr": "Formulaire de contact"
   },
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.mjs",
   "description": {
     "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
@@ -52,12 +52,12 @@
       "type": "text",
       "translatable": true,
       "label": {
-        "en": "Slug of a page that shows the form under its content (optional)",
-        "fr": "Slug d'une page qui affiche le formulaire sous son contenu (facultatif)"
+        "en": "Page that shows the form (optional)",
+        "fr": "Page qui affiche le formulaire (facultatif)"
       },
       "help": {
-        "en": "Example: contact. Or place the form's section on the home page instead.",
-        "fr": "Exemple : contact. Ou placez la section du formulaire sur l'accueil."
+        "en": "Its name in the address, for example contact. The form appears under its content.",
+        "fr": "Son nom dans l'adresse, par exemple contact. Le formulaire s'affiche sous son contenu."
       },
       "optional": true
     },
