@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.9.0",
+  "version": "1.10.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -1111,6 +1111,37 @@
     }
   ],
   "logEvents": [
+    {
+      "key": "reward.refunded",
+      "label": {
+        "fr": "Points rendus pour {title} : {reason}",
+        "en": "Points given back for {title}: {reason}"
+      },
+      "level": "warn",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "title"
+        },
+        {
+          "key": "reason"
+        }
+      ]
+    },
+    {
+      "key": "reward.failed",
+      "label": {
+        "fr": "Twitch n'a pas confirmé l'échange de points pour {title}",
+        "en": "Twitch did not confirm the points exchange for {title}"
+      },
+      "level": "error",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "title"
+        }
+      ]
+    },
     {
       "key": "timers.migrated",
       "label": {

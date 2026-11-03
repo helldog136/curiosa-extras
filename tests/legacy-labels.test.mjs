@@ -105,8 +105,9 @@ test("dépôt de modules : chaque clé de `settings` est lue par le code du modu
     const dir = path.join(root, "modules", id);
     const manifest = readJson(path.join(dir, "module.json"));
     const code = walkFiles(dir).filter((f) => /\.(m?js|cjs|tsx?)$/.test(f) && !/(^|[\\/])tests?[\\/]/.test(path.relative(dir, f)) && !/\.test\./.test(f)).map((f) => fs.readFileSync(f, "utf8")).join("\n");
-    // `shortLink` (cœur après 0.6.3) : ces réglages sont lus par le cœur, qui crée l'adresse courte pour le module ; le code du module n'a rien à en faire.
-    const readByCore = new Set([manifest.shortLink?.enabled, manifest.shortLink?.name, manifest.shortLink?.target?.setting].filter(Boolean));
+    // Réglages lus par le CŒUR d'après le manifeste, jamais par le code du module : `shortLink` (cœur 0.6.1, adresse courte créée par le cœur) et `pageSetting` (cœur 0.2.12, page allumée par une case).
+    // Même règle que `settingKeysReadByCore` du cœur (0.6.5), écrite ici pour ne pas dépendre d'une fonction du cœur publié.
+    const readByCore = new Set([manifest.pageSetting, manifest.shortLink?.enabled, manifest.shortLink?.name, manifest.shortLink?.target?.setting].filter(Boolean));
     for (const s of manifest.settings ?? []) if (!readByCore.has(s.key) && !new RegExp(`["'\`.]${s.key}\\b`).test(code)) unread.push(`${id} : ${s.key}`);
   }
   assert.deepEqual(unread, [], `Réglages déclarés mais jamais lus (à retirer, ou à passer en legacySettings) :\n${unread.join("\n")}`);
