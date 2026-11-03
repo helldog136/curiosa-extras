@@ -981,7 +981,7 @@ test("page : créer une commande — le formulaire est là, une erreur dit quoi 
   assert.equal(formsOf(await A.panel(ctx, { query: {} }), "create").length, 0, "le formulaire s'ouvre avec « Nouvelle commande » : la liste d'abord");
   const b = await A.panel(ctx, { query: { new: "1" } });
   const form = formsOf(b, "create")[0];
-  assert.deepEqual(form.fields.map((f) => f.name), ["ck", "name", "text", "role", "aliases", "cdGlobal", "cdUser", "period"]);
+  assert.deepEqual(form.fields.map((f) => f.name), ["ck", "name", "text", "role", "aliases", "cdGlobal", "cdUser", "period", "repeatOn", "repeatEvery", "repeatLines", "repeatWhen", "timerOnly"]);
   assert.equal(form.fields.find((f) => f.name === "role").options.length, 4);
   assert.deepEqual(configOf(b).layout.slice(0, 3).map((x) => x.f ?? x.seg), ["name", "text", "role"], "trois champs visibles");
   assert.ok(configOf(b).layout[1].preview.chips.map((c) => c.v).join(" ").startsWith("utilisateur jeu titre uptime followers viewers prochain_stream"));

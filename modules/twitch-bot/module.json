@@ -232,8 +232,8 @@
     {
       "id": "timers.manage",
       "label": {
-        "en": "create, change and send the automatic repeats of commands (timers)",
-        "fr": "régler, modifier et envoyer les répétitions automatiques des commandes (timers)"
+        "fr": "gérer et envoyer les timers (commandes répétées)",
+        "en": "manage and send timers (repeating commands)"
       },
       "help": {
         "en": "A repeating command writes in your Twitch chat on its own.",
@@ -577,7 +577,7 @@
     {
       "name": "bot_command_create",
       "default": false,
-      "description": "Create a custom chat command. 'name' has no prefix (for 'merch' viewers type !merch). 'text' is the reply; it may contain these variables only: {followers} {jeu} {titre} {uptime} {prochain_stream} {utilisateur} (game, title, time since the live started, next stream, the name of the person typing), {viewers} {chaine} {heure} {date} (viewers now, channel name, time and date, optionally with a time zone: {heure Europe/Paris}), {cible} (first word after the command, without @), {requete} (everything after the command), {1} {2} {1:} (words after the command), {compteur} (how many times the command was used), {aleatoire a | b | c} or {aleatoire 1-100}, {calcul 2+3*4} (arithmetic only) and {urlfetch https://…} (only for websites the owner allowed in advanced settings). It cannot start with / or . or the prefix, and is cut at 500 characters. Names and aliases must not collide with another command. Refused with an explanation otherwise. The command is enabled unless 'enabled' is false. It can also set the automatic repeat of the command (what used to be a timer): repeatEveryMinutes, repeatMinChatLines, repeatWhen, repeatEnabled and timerOnly. The bot then runs the command by itself, with its reply, active period and state.",
+      "description": "Create a custom chat command. 'name' has no prefix (for 'merch' viewers type !merch). 'text' is the reply; it may contain these variables only: {followers} {jeu} {titre} {uptime} {prochain_stream} {utilisateur} (game, title, time since the live started, next stream, the name of the person typing), {viewers} {chaine} {heure} {date} (viewers now, channel name, time and date, optionally with a time zone: {heure Europe/Paris}), {cible} (first word after the command, without @), {requete} (everything after the command), {1} {2} {1:} (words after the command), {compteur} (how many times the command was used), {aleatoire a | b | c} or {aleatoire 1-100}, {calcul 2+3*4} (arithmetic only) and {urlfetch https://…} (only for websites the owner allowed in advanced settings). It cannot start with / or . or the prefix, and is cut at 500 characters. Names and aliases must not collide with another command. Refused with an explanation otherwise. The command is enabled unless 'enabled' is false.",
       "input": {
         "type": "object",
         "required": [
@@ -676,7 +676,7 @@
     {
       "name": "bot_command_update",
       "default": false,
-      "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages. It can also set the automatic repeat of the command (what used to be a timer): repeatEveryMinutes, repeatMinChatLines, repeatWhen, repeatEnabled, clearRepeat and timerOnly. The bot then runs the command by itself, with its reply, active period and state.",
+      "description": "Change an existing chat command, found by its current name or alias (without the prefix): custom, ready-made, partner or network commands that are already set up. Only the fields you give change. Same rules as for creation (variables, collisions, no leading / or .). It can also enable or disable a command. It cannot delete anything and cannot send messages. It can also set the automatic repeat of the command (what used to be a timer): repeatEveryMinutes, repeatMinChatLines, repeatWhen, repeatEnabled, clearRepeat and timerOnly.",
       "input": {
         "type": "object",
         "required": [
@@ -1085,8 +1085,6 @@
         "en": "Bot admin screen with a table of chat commands: search, filters, on/off switches and origin badges."
       }
     },
-
-
     {
       "file": "previews/recompenses.webp",
       "type": "admin",
