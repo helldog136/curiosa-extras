@@ -5,7 +5,7 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.3.2",
+  "version": "1.4.1",
   "minCore": "0.5.0",
   "description": {
     "en": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS.",
@@ -730,6 +730,50 @@
         "fr": "Fond de stream coloré avec, au centre, un sondage qui montre une question, trois choix et leurs barres de résultats.",
         "en": "Colourful stream background with, in the centre, a poll showing a question, three choices and their result bars."
       }
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "round.started",
+      "label": {
+        "fr": "Manches lancées depuis la télécommande",
+        "en": "Rounds started from the remote control"
+      }
+    },
+    {
+      "key": "round.stopped",
+      "label": {
+        "fr": "Manches arrêtées depuis la télécommande",
+        "en": "Rounds stopped from the remote control"
+      }
+    },
+    {
+      "key": "poll.quick",
+      "label": {
+        "fr": "Sondage rapide lancé depuis la télécommande",
+        "en": "Quick poll started from the remote control"
+      }
+    },
+    {
+      "key": "round.decided",
+      "label": {
+        "fr": "Manche {n} décidée : {winner} ({voters} votes)",
+        "en": "Round {n} decided: {winner} ({voters} votes)"
+      },
+      "frequent": true,
+      "fields": [
+        {
+          "key": "n",
+          "type": "number"
+        },
+        {
+          "key": "winner"
+        },
+        {
+          "key": "voters",
+          "type": "number"
+        }
+      ]
     }
   ]
 }

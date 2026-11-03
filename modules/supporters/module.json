@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.12",
+  "minCore": "0.6.0",
   "id": "supporters",
   "name": {
     "en": "Supporters",
     "fr": "Soutiens"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": {
     "en": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted.",
     "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos acceptés."
@@ -222,6 +222,7 @@
     },
     {
       "key": "intro",
+      "rare": true,
       "type": "textarea",
       "translatable": true,
       "optional": true,
@@ -236,6 +237,7 @@
     },
     {
       "key": "category",
+      "advanced": true,
       "type": "choice",
       "refersTo": "category",
       "allowCreate": true,
@@ -258,6 +260,7 @@
     },
     {
       "key": "showTiers",
+      "rare": true,
       "type": "boolean",
       "default": true,
       "label": {
@@ -271,6 +274,7 @@
     },
     {
       "key": "othersTitle",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -285,6 +289,7 @@
     },
     {
       "key": "consentIntro",
+      "rare": true,
       "type": "textarea",
       "translatable": true,
       "optional": true,

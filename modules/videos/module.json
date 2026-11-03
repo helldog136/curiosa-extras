@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.6",
+  "minCore": "0.6.0",
   "id": "videos",
   "name": {
     "fr": "Vidéothèque",
     "en": "Video library"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": {
     "fr": "Une page de vidéos YouTube sans rien héberger : grille, catégories, recherche, séries à regarder dans l'ordre et partage.",
     "en": "A page of YouTube videos without hosting anything: grid, categories, search, series to watch in order and sharing."
@@ -109,6 +109,7 @@
   "settings": [
     {
       "key": "vocabPlural",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -123,6 +124,7 @@
     },
     {
       "key": "vocabOne",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -137,6 +139,7 @@
     },
     {
       "key": "vocabSeries",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -151,6 +154,7 @@
     },
     {
       "key": "vocabSeriesOne",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,
@@ -165,6 +169,7 @@
     },
     {
       "key": "vocabFree",
+      "rare": true,
       "type": "text",
       "translatable": true,
       "optional": true,

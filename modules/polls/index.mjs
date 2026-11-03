@@ -354,6 +354,7 @@ async function decideRound(ctx, series, cur, now, { rand, via = "timer" } = {}) 
     }
   });
   await dropRoundPoll(ctx, cur);
+  await ctx.api.log?.write({ action: "round.decided", data: { n: rec.n, winner: rec.winner ?? undefined, voters: rec.voters } });   // journal du cœur (Historique) ; ne lève jamais
   await note(ctx, "round.decision", `${ctx.t("journalRound", { n: rec.n })} : ${rec.winner ?? ctx.t("noWinner")}${tie ? ` (${ctx.t("journalTie", { list: tie.join(", ") })})` : ""}`);
   return rec;
 }
@@ -892,10 +893,11 @@ export default {
       press: async (ctx, a) => {
         const now = Date.now(), values = a?.values && typeof a.values === "object" ? a.values : {};
         switch (a?.action) {
-          case "start": return remoteReply(ctx, await startSeries(ctx, now), "remoteStarted");
-          case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");
-          case "stop": { const r = await stopSeries(ctx, now); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
-          case "quick": return remoteReply(ctx, await quickPoll(ctx, values, now), "remoteQuickOk");
+          // La page d'administration et l'assistant sont déjà notés par le cœur ; la télécommande, non : on l'écrit ici, seulement si le geste a réussi.
+          case "start": { const r = await startSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.started" }); return remoteReply(ctx, r, "remoteStarted"); }
+          case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");   // la décision de la manche est notée par decideRound
+          case "stop": { const r = await stopSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.stopped" }); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
+          case "quick": { const r = await quickPoll(ctx, values, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return remoteReply(ctx, r, "remoteQuickOk"); }
           default: return { ok: false, error: "invalid", message: ctx.t("remoteErrFailed") };
         }
       },

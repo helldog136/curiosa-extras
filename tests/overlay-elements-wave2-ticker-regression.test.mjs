@@ -126,7 +126,7 @@ const GOLDEN = {
     }
   },
   "testimonials": {
-    "manifest": "ab87df7f2caccfb5",
+    "manifest": "7805598329ad28a8",
     "keys": [
       "adminActions",
       "adminDownloads",

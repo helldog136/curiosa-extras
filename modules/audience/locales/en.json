@@ -77,6 +77,7 @@
   "anon": "No nickname",
   "mutedTag": "muted",
   "journalTitle": "The journal",
+  "journalHistory": "See the extension's History (draws, rounds, rooms cleared)",
   "journalIntro": "Who decided what, and when (remote control presses, mutes, rooms cleared, round winners). Lines older than 30 days are erased.",
   "journalEmpty": "Nothing in the journal yet.",
   "downloadJournal": "Download the journal (spreadsheet)",

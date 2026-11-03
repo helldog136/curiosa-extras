@@ -168,7 +168,6 @@
       "R13 setting:mapConsent.help[fr] #54153e",
       "R13 setting:photos.help[en] #b10c9b",
       "R13 setting:photos.help[fr] #9015ce",
-      "R5 tab:settings (15)",
       "R9 locale:fr:adminHideHow #2c2c86"
     ],
     "events": [
@@ -181,8 +180,7 @@
       "R13 description[fr] #92b234",
       "R13 locale:en:emptyUpcoming #f5d89d",
       "R13 locale:fr:emptyUpcoming #4030d4",
-      "R13 locale:fr:fToSeriesHelp #cb1f12",
-      "R5 tab:settings (8)"
+      "R13 locale:fr:fToSeriesHelp #cb1f12"
     ],
     "faq": [
       "R10 locale:en:mailAdmin #799a56",
@@ -223,7 +221,6 @@
       "R13 setting:allowedHosts.help[fr] #262909",
       "R13 setting:maxPhotoKB.help[en] #74c286",
       "R13 setting:maxPhotoKB.help[fr] #3c50d5",
-      "R5 tab:settings (10)",
       "R9 locale:fr:legacyPhotoNote #053d96"
     ],
     "game-covers": [
@@ -280,12 +277,9 @@
       "R13 locale:en:dev_another_help #e0f80c",
       "R13 locale:en:next_text #2c9ad7",
       "R13 locale:en:wiz_1 #c9d31f",
-      "R13 locale:en:words_intro #1a6988",
       "R13 locale:fr:next_text #6520c8",
       "R13 locale:fr:wiz_1 #749186",
       "R13 locale:fr:wiz_3 #188764",
-      "R13 locale:fr:words_intro #b359da",
-      "R5 tab:settings (9)",
       "R9 locale:en:test_custom_help #f75924",
       "R9 locale:en:test_unknown_key #91be70",
       "R9 locale:fr:test_custom_help #75b00e",
@@ -423,7 +417,6 @@
       "R13 locale:fr:errPos_range #d959f3",
       "R13 locale:fr:fMapLinkHelp #03c22d",
       "R13 locale:fr:importIntro #60a21c",
-      "R5 tab:settings (12)",
       "R9 locale:en:mapHelp #e2c7d4",
       "R9 locale:en:mapPrivacy #503fcf",
       "R9 locale:fr:mapPrivacy #4f99ea"
@@ -576,8 +569,7 @@
       "R13 locale:fr:meExplain #4c721d",
       "R13 locale:fr:tiersIntro #105e67",
       "R13 setting:wallCategory.help[en] #57efa1",
-      "R13 setting:wallCategory.help[fr] #ebf226",
-      "R5 tab:settings (10)"
+      "R13 setting:wallCategory.help[fr] #ebf226"
     ],
     "testimonials": [
       "R10 locale:en:errSummary #7140de",
@@ -598,8 +590,7 @@
       "R13 locale:fr:shareHome #c2bb6f",
       "R13 locale:fr:thanksTitle #21284a",
       "R13 setting:structuredData.help[en] #e4df57",
-      "R13 setting:structuredData.help[fr] #21c0b3",
-      "R5 tab:settings (8)"
+      "R13 setting:structuredData.help[fr] #21c0b3"
     ],
     "thanks-wall": [
       "R10 setting:category.label[fr] #6a90f9",
@@ -773,8 +764,7 @@
       "R13 locale:en:welcomeTitle #b28ed8",
       "R13 locale:fr:editNoThumb #9c086f",
       "R13 locale:fr:welcomeTitle #dc148f",
-      "R13 setting:structured.help[fr] #fe5c8f",
-      "R5 tab:settings (8)"
+      "R13 setting:structured.help[fr] #fe5c8f"
     ],
     "youtube-channel": [
       "R13 locale:fr:events_setup_update #9b2dc8",
