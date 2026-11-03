@@ -4,6 +4,26 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : le tableau de bord de l'administration dit maintenant combien de contacts sont à vérifier et combien de partenaires sont à relancer, et propose un bouton « Programmer un stream ». Rien à régler : c'est affiché tout seul avec Curiosa 0.6.1 ou plus, et ignoré par les versions plus anciennes.*
+
+### Nouveautés
+
+- **Contacts 2.4.0 : « Contacts à vérifier (n) ».** Les messages reçus par le formulaire de contact arrivent dans votre carnet avec le statut « à vérifier ». Une ligne apparaît sous « À faire » sur le tableau de bord, avec un lien qui ouvre directement la liste de ces contacts. Elle disparaît quand il n'y en a plus. Le petit chiffre du menu de gauche, qui disait la même chose, est retiré pour ne pas l'afficher deux fois.
+- **Partenariats 2.1.0 : « Partenaires à relancer (n) ».** Elle compte les partenaires à qui vous avez envoyé un message et qui n'ont pas donné de nouvelles depuis le délai de votre réglage « relance après n jours » (14 par défaut). C'est le même compte que le petit réveil du tableau des partenaires : une nouvelle note dans le journal d'un partenaire le retire de la liste.
+- **Streams saisis à la main 1.1.0 : « Programmer un stream ».** Un bouton sous « Créer » sur le tableau de bord, qui ouvre la page où l'on ajoute un stream.
+- **Boîte à idées 1.0.1 : plus de ligne en double, et un libellé correct pour une seule idée.** Les idées à relire s'affichaient deux fois sur le tableau de bord : une ligne « n idées à relire » et une ligne « n à traiter dans Boîte à idées ». Le petit chiffre du menu de gauche est retiré au profit de la première, qui devient « Idées à relire (n) » (« 1 idées à relire » n'était pas correct). Avec un Curiosa plus ancien que 0.6.1, il n'y a donc plus de chiffre dans le menu pour cette extension.
+- **Sobre, et jamais lent.** Une ligne n'apparaît que s'il y a quelque chose à faire. Elle lit seulement ce que l'extension garde déjà sur votre site : aucune demande à un autre site, aucun nom ni message de vos contacts. Si le carnet est occupé à se préparer, la ligne attend au plus une seconde puis réapparaît à l'affichage suivant.
+
+### Pour les développeurs
+
+- Clé `dashboard` de `module.json` (cœur 0.6.1+, aucun `minCore`) : `tasks` pour `contacts` (`review`, lien `?tab=use&review=1`) et `partnerships` (`follow-up`, même calcul que `followUpDue`) ; `quickActions` pour `calendar-manual` (`add`, aucun code). `planning` et `calendar-ical` ne déclarent rien : leurs créneaux viennent de `ctx.api.topics.collect("planning.slot")`, que l'agenda en ligne peut servir par une lecture réseau (jusqu'à 5 s), ce qu'une carte du tableau de bord ne doit pas faire.
+- Contacts : `adminBadge` remplacé par `dashboard.tasks.review`, qui lit l'index en mémoire avec une attente de 1 s au plus (l'ancienne pastille attendait 2 s, plus que le délai du cœur) et rend 0 si l'index n'est pas prêt. Boîte à idées : `adminBadge` retiré (la tâche `review` existait déjà). Les tests lisent la tâche.
+- Libellés de tâche écrits « Sujet à faire ({n}) » : le cœur remplace `{n}` sans accorder le pluriel, ce tour se lit aussi bien pour 1 que pour 12 (« 1 contacts » serait faux). Boîte à idées passe à la même forme.
+- Partenariats : le journal n'est lu que s'il y a au moins un partenaire au statut « envoyé » ; 1 000 fiches et 1 000 lignes de journal au plus, comme l'administration.
+- Versions : Contacts 2.4.0, Partenariats 2.1.0, Streams saisis à la main 1.1.0, Boîte à idées 1.0.1. Tests : `tests/dashboard-relations.test.mjs` (validité `dashboardIssues`, mots, comptes, délais, absence de réseau, carnet bloqué) ; le kit de conformité exige `dashboard.valid`.
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

@@ -6,6 +6,20 @@ const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvail
 const { migrationNotices } = await import(`./migrate.mjs${v}`);
 
 export default {
+  // ── Tableau de bord du cœur : « n partenaires à relancer » ─────────────────────────────────────────────────
+  // Même calcul que le ⏰ du tableau d'administration (`followUpDue` : message envoyé, sans nouvelle depuis « relance après n jours »). Lecture du stockage seulement,
+  // comme l'administration (1 000 fiches et 1 000 lignes de journal au plus), jamais de réseau ni de lecture du carnet de contacts ; le journal n'est lu que s'il y a un message envoyé.
+  dashboard: {
+    tasks: {
+      async "follow-up"(ctx) {
+        const partners = await all(ctx, "partners");
+        if (!partners.some((p) => p.data.status === "envoye")) return 0;
+        const journal = await all(ctx, "journal");
+        return partners.filter((p) => followUpDue(ctx, p, journal)).length;
+      },
+    },
+  },
+
   // ── Panneau d'admin ───────────────────────────────────────────────────────────
   async adminPanel(ctx, { query }) {
     const t = ctx.t;
