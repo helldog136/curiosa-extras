@@ -2,6 +2,8 @@
 
 Ce module **trouve la jaquette d'un jeu vidéo** (et la garde, pour qu'elle reste affichée même quand RAWG est en panne) pour les autres modules de votre site (*Planning*, *Story d'annonce*, *Suggestions de jeux*…). Il garde votre clé RAWG, en sécurité (jamais réaffichée), et retient vos choix quand une jaquette n'est pas la bonne. RAWG est une base de données de jeux vidéo, gratuite.
 
+**Les jaquettes viennent de RAWG** ([rawg.io](https://rawg.io)), une base de données de jeux vidéo.
+
 ## Pour commencer
 1. Créez un compte gratuit sur **rawg.io/apidocs** et copiez votre clé.
 2. Ouvrez l'onglet **Réglages** de ce module et collez-la dans « Clé RAWG ».
