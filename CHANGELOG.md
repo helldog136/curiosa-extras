@@ -4,6 +4,22 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Nouveautés
+
+- **Jaquettes de jeux 1.2.0 : vos jaquettes restent affichées quand RAWG est en panne.** Chaque jaquette que le site trouve toute seule est maintenant gardée (1 000 au plus, les plus anciennes sortent d'elles-mêmes). Après un redémarrage du site, ou quand RAWG ne répond plus, elles s'affichent comme avant, même si elles datent de plus de 24 heures. Dès que RAWG revient, elles se rafraîchissent toutes seules quand une page les demande.
+- **Une panne n'est jamais retenue comme « pas de jaquette ».** Si RAWG ne répond pas, le site n'en conclut rien : la jaquette apparaîtra dès que RAWG reviendra. Après trois échecs d'affilée, le site arrête d'insister (pause de 1, 2, 5 puis 15 minutes au plus) : vos pages ne ralentissent plus.
+- **L'état de RAWG se lit d'un coup d'œil.** En haut de « Jaquettes à vérifier » : « Tout fonctionne » avec la date de la dernière réponse, ou « RAWG ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées. » Le bouton « Tester la clé » réessaie tout de suite. Le Journal du site note une fois le moment où RAWG s'arrête et celui où il revient.
+- **« Jaquettes enregistrées » montre aussi les jaquettes trouvées toutes seules** (pastille « Automatique »), avec « Voir », « Changer » et « Oublier cette jaquette ». La recherche en direct couvre tout le tableau. Vos corrections passent toujours avant.
+- **Un écran de correction qui plantait est réparé.** « Corriger » sur un titre à vérifier affichait une erreur depuis la 1.1.0 ; il montre de nouveau « Ce choix est bon » et « Chercher un autre nom ».
+- **Pour l'assistant.** `rawg_covers_list` liste aussi les jaquettes trouvées toutes seules (origine « auto »). Rien d'autre ne change : aucun droit de plus.
+
+### Pour les développeurs
+
+- `modules/game-covers` 1.2.0 : collection privée `autoCovers` (clé = titre normalisé ; titre, nom, numéro, chemin `/media/…`, `ambiguous`, `at`, `until`) ; lecture mémoire, puis stockage, puis RAWG ; `until` = 24 h, une réponse vide de RAWG sur un titre déjà gardé le repousse d'une heure. Disjoncteur en mémoire (3 échecs de réseau, délai ou 5xx d'affilée ; pauses 1, 2, 5, 15 min ; un seul essai de reprise) ; les réponses « trop de demandes », quota ou bizarres ne comptent pas. Délai de 3 s pour une page du site (5 s à l'écran d'administration). Le document `keyState` garde `okAt`. Journal : `cover.outage` et `cover.back`. Pas de `dashboard` : la personne n'a rien à faire pendant une panne. Aucune permission, aucun hôte, aucune image téléchargée, aucun minuteur.
+- Le tableau d'administration n'a pas de recherche côté serveur (cœur 0.6.4) : les 2 100 lignes au plus (1 000 corrections, 100 titres à vérifier, 1 000 jaquettes trouvées) sont dans la page, 50 par page, d'où la borne de 1 000.
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

@@ -700,11 +700,11 @@
     {
       "id": "game-covers",
       "name": "Jaquettes de jeux",
-      "description": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu.",
+      "description": "Trouve la jaquette d'un jeu vidéo pour tout ce qui parle de jeux sur votre site, et garde celles qu'il a trouvées : elles restent affichées même quand RAWG est en panne. Votre clé RAWG gratuite se saisit une seule fois, ici, et n'est jamais réaffichée. Quand une jaquette n'est pas la bonne, un écran très simple permet de choisir le bon jeu, et votre choix est retenu.",
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
       "ref": "v1.38.0",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
