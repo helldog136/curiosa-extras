@@ -4,9 +4,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.38.0 — 2026-11-03
 
-*En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit, pour les voir, les changer ou les oublier. Pour Curiosa 0.6.0 ou plus.*
+*En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
 
 ### Nouveautés
 
@@ -20,6 +20,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 - `modules/game-covers` 1.1.0 : `minCore` 0.6.0 (tableau enrichi), `tabs` (`use` renommé, `saved` ajouté), `logEvents` (`cover.game`, `cover.image`, `cover.none`, `cover.confirmed`, `cover.forgotten`, `cover.cleared`). Aucun hôte ni droit de plus. Les jaquettes ne sont toujours pas téléchargées : le module garde le chemin `/media/…` de `media.rawg.io`, dans la collection `fixes` (choix de la personne) ou `todo` (choix automatiques douteux). Les autres jaquettes automatiques ne sont gardées qu'en mémoire (24 h).
 - Un tableau d'administration ne sait pas encore montrer d'image dans une cellule : la vignette est donc sur l'écran « Voir » (et sur celui de « Changer »), pas dans la ligne.
+- Versions : dépôt 1.38.0 ; Jaquettes de jeux 1.1.0. Le Catalogue pointe l'étiquette `v1.38.0`.
 
 ## 1.37.0 — 2026-11-03
 
