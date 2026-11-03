@@ -9,9 +9,7 @@
 //  - le dernier état de la clé (ok / refusée / injoignable + date + dernière réponse correcte) est gardé dans le stockage du module ; le passage panne → retour est écrit une fois au journal du cœur ;
 //  - jamais d'exception, jamais la clé dans une valeur renvoyée, un journal, une erreur ou un bloc.
 const q = new URL(import.meta.url).search;
-const match = await import(new URL("./match.mjs" + q, import.meta.url).href);
 const fx = await import(new URL("./fixes.mjs" + q, import.meta.url).href);
-const { rank, isAmbiguous } = match;
 const { COL } = fx;
 
 export const ENDPOINT = "https://api.rawg.io/api/games";
@@ -173,90 +171,21 @@ async function lookup(ctx, key, search, { quiet = false, timeoutMs = TIMEOUT_MS 
   return outcome.kind === "refused" ? { kind: "refused" } : { kind: "unreachable" };
 }
 
-/** La réponse « jaquette » qui correspond à une correction mémorisée. */
-function coverOfFix(fix) {
-  if (fix.kind === "none" || !fix.img) return { status: "none", url: null };
-  return { status: "found", url: fx.rawgImageUrl(fix.img), ...(fix.name ? { name: fix.name } : {}), ...(fix.rawgId ? { id: fix.rawgId } : {}), ambiguous: false };
-}
-/** La réponse « jaquette » qui correspond à une jaquette gardée dans le stockage (utilisable même si elle est « périmée »). */
-const coverOfAuto = (a) => ({ status: "found", url: fx.rawgImageUrl(a.img), ...(a.name ? { name: a.name } : {}), ...(a.rawgId ? { id: a.rawgId } : {}), ...(typeof a.ambiguous === "boolean" ? { ambiguous: a.ambiguous } : {}) });
-
 /**
- * Jaquette d'un jeu → { status: "found" | "none" | "no-key" | "refused" | "unreachable", url, name?, id?, ambiguous? }. Ne lève jamais.
- * Ordre : la correction de la propriétaire (avant tout) ; la mémoire ; la jaquette gardée dans le stockage si elle est encore bonne (24 h) ; RAWG.
- * RAWG injoignable : la jaquette gardée sert quand même, même plus vieille que 24 h, et elle reste en place. RAWG répond « rien » alors qu'on en gardait une : on la garde aussi
- * (une réponse vide pendant un incident ne doit pas effacer une bonne jaquette) et on redemande plus tard. Un titre douteux entre dans « Jaquettes à vérifier ».
+ * La liste brute des jeux que RAWG propose pour ces mots (mémoire, disjoncteur, état de la clé), pour la chaîne de sources (chain.mjs). Ne lève jamais.
+ * → { kind: "ok", list, fresh } | { kind: "off" } (pas de clé) | { kind: "refused" } | { kind: "unreachable", skipped? }. `quiet` : n'écrit pas l'état de la clé (outil de lecture de l'assistant).
  */
-export async function cover(ctx, title) {
+export async function searchList(ctx, words, { quiet = false, timeoutMs = TIMEOUT_MS } = {}) {
   try {
-    // Le titre complet (120 caractères au plus) sert à retrouver une correction ; RAWG n'en reçoit que les 100 premiers.
-    const asked = cleanTitle(title, 120);
-    const search = asked.slice(0, MAX_TITLE).trim();
     const { key, valid } = await keyOf(ctx);
-    if (!key) return { status: "no-key", url: null };
-    if (!valid) return { status: "refused", url: null };
-    if (!search) return { status: "none", url: null };
-
-    const fix = await fx.fixFor(ctx, asked);
-    if (fix) return coverOfFix(fix);
-
-    const stored = await fx.autoFor(ctx, asked);
-    // 1. mémoire (une recherche récente), 2. stockage s'il est encore bon : aucun appel à RAWG
-    let list = peek(search);
-    let fresh = false;
-    if (!list && stored && Date.parse(stored.until) > Date.now()) return coverOfAuto(stored);
-    if (!list) {
-      // 3. RAWG, avec un délai court : la page ne doit jamais attendre longtemps
-      const looked = await lookup(ctx, key, search, { timeoutMs: PAGE_TIMEOUT_MS });
-      if (looked.kind === "unreachable" && stored) return coverOfAuto(stored);   // périmée mais utilisable
-      if (looked.kind !== "ok") return { status: looked.kind, url: null };
-      list = looked.list;
-      fresh = looked.fresh;
-    }
-    const ranked = rank(search, list);
-    const best = ranked[0];
-    if (!best || !best.image) {
-      if (stored) { void fx.deferAuto(ctx, stored, NONE_TTL); return coverOfAuto(stored); }
-      return { status: "none", url: null };
-    }
-    // Sans nom, rien à comparer : `ambiguous` est alors absent (inconnu), et le titre n'entre pas dans la liste.
-    const ambiguous = best.name ? isAmbiguous(ranked) : undefined;
-    // On garde la jaquette trouvée (une même entrée est réécrite, pas doublée) quand RAWG vient de répondre, ou quand rien n'est encore gardé pour ce titre.
-    if (fresh || !stored) void fx.saveAuto(ctx, { title: asked, name: best.name || undefined, rawgId: best.id || undefined, url: best.image, ambiguous, candidates: ranked.length, ttlMs: FOUND_TTL });
-    // Seulement quand RAWG vient d'être interrogé (jamais à chaque lecture du cache) ; une même entrée est mise à jour, pas doublée.
-    if (ambiguous && fresh) void fx.noteDoubtful(ctx, { title: asked, name: best.name, rawgId: best.id || undefined, url: best.image, candidates: ranked.length });
-    return { status: "found", url: best.image, ...(best.name ? { name: best.name } : {}), ...(best.id ? { id: best.id } : {}), ...(ambiguous !== undefined ? { ambiguous } : {}) };
+    if (!key) return { kind: "off" };
+    if (!valid) return { kind: "refused" };
+    return await lookup(ctx, key, cleanTitle(words), { quiet, timeoutMs });
   } catch {
-    return { status: "unreachable", url: null };
+    return { kind: "unreachable" };
   }
 }
-
-/**
- * Les jeux que RAWG propose pour ce titre (6 au plus, jaquette obligatoire, du plus ressemblant au moins ressemblant). `search` : une autre recherche
- * (l'écran de correction laisse taper le vrai nom) ; ce texte n'est qu'un mot de recherche envoyé à RAWG, jamais une adresse. `quiet` : n'écrit rien (outil de lecture de l'assistant). Ne lève jamais.
- */
-export async function candidates(ctx, title, search, { quiet = false } = {}) {
-  try {
-    const asked = cleanTitle(title);
-    const words = cleanTitle(search) || asked;
-    const { key, valid } = await keyOf(ctx);
-    if (!key) return { status: "no-key", candidates: [] };
-    if (!valid) return { status: "refused", candidates: [] };
-    if (!words) return { status: "none", candidates: [] };
-    const looked = await lookup(ctx, key, words, { quiet });
-    if (looked.kind !== "ok") return { status: looked.kind, candidates: [] };
-    const out = [];
-    for (const c of rank(words, looked.list)) {
-      // Seules les images de RAWG (media.rawg.io) sont proposées : rien d'autre n'est montré ni gardé.
-      if (!c.image || !fx.rawgImagePath(c.image) || !c.id || !c.name || out.some((o) => o.id === c.id)) continue;
-      out.push({ id: c.id, name: c.name, year: c.year, platforms: c.platforms, url: c.image });
-      if (out.length >= MAX_CANDIDATES) break;
-    }
-    return { status: out.length ? "found" : "none", candidates: out };
-  } catch {
-    return { status: "unreachable", candidates: [] };
-  }
-}
+export { PAGE_TIMEOUT_MS, FOUND_TTL, NONE_TTL };
 
 /**
  * « Tester la clé » : interroge RAWG avec la clé enregistrée (même si le disjoncteur est en pause : c'est une demande de la personne) et mémorise le résultat.

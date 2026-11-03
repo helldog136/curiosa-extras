@@ -45,6 +45,8 @@ export const ALLOWED = {
     ["GET users", shape({ one: { login: (x) => LOGIN.test(x), id: digits } })],
     ["GET streams", shape({ one: { user_login: (x) => LOGIN.test(x), user_id: digits }, opt: { first: count } })],
     ["GET games", shape({ one: { id: digits } })],
+    // La recherche d'une catégorie (un jeu) par son nom, avec sa jaquette de boîte : un seul mot de recherche (100 caractères au plus, sans caractère de contrôle), 25 résultats au plus. Lecture seule, réponse publique.
+    ["GET search/categories", (q) => q.query !== undefined && shape({ opt: { query: single((x) => x.trim().length >= 1 && x.length <= 100 && !/[\u0000-\u001f\u007f]/.test(x)), first: count } })(q)],
     ["GET channels", shape({ one: { broadcaster_id: digits } })],
     ["GET videos", shape({ one: { user_id: digits }, opt: { first: count, after: single(cursor), type: single((x) => ["all", "archive", "highlight", "upload"].includes(x)) } })],
     ["GET clips", shape({ one: { broadcaster_id: digits }, opt: { first: count, after: single(cursor), started_at: single(isoDate), ended_at: single(isoDate) } })],
@@ -65,8 +67,8 @@ const REWARD_BODY = new Map();
 for (const [route, [scopes, shapeOf, bodyOf]] of REWARD_ROUTES) { ALLOWED.user.set(route, [scopes, (q) => shapeOf(q)]); if (bodyOf) REWARD_BODY.set(route, bodyOf); }
 /** Un corps n'est permis que pour ces appels. */
 const WITH_BODY = new Set(["POST eventsub/subscriptions", "POST chat/messages", ...REWARD_BODY.keys()]);
-/** Réponses publiques et stables, gardées 10 minutes (identité d'une chaîne, nom d'un jeu). */
-const CACHED = new Set(["GET users", "GET games"]);
+/** Réponses publiques et stables, gardées 10 minutes (identité d'une chaîne, nom d'un jeu, recherche d'une catégorie). */
+const CACHED = new Set(["GET users", "GET games", "GET search/categories"]);
 const CACHE_TTL = 10 * 60_000, CACHE_MAX = 300;
 
 /** Requête : { clé: [valeurs] } (texte ou nombre, 200 caractères au plus) ; 10 clés au plus ; null si illisible. */

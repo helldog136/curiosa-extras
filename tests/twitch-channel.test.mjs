@@ -65,7 +65,7 @@ test("clips : affiches https Twitch uniquement, miniature non http(s) écartée,
 });
 
 test("social.link : le bouton de la chaîne, même SANS Connecteur ; rien si la chaîne n'est pas réglée ou invalide", async () => {
-  assert.deepEqual(await def.exports["social.link"](bare({ channel: "Rascane" })), [{ label: "Twitch · rascane", url: "https://twitch.tv/rascane", icon: "twitch" }]);
+  assert.deepEqual(await def.exports["social.link"](bare({ channel: "Etoile_Nord" })), [{ label: "Twitch · etoile_nord", url: "https://twitch.tv/etoile_nord", icon: "twitch" }]);
   for (const bad of ["", "  ", "a", "pas valide!", "../x"]) assert.deepEqual(await def.exports["social.link"](ctx({ channel: bad })), [], JSON.stringify(bad));
 });
 
@@ -122,15 +122,15 @@ test("un SEUL jeton et UN SEUL appel Helix pour le service, stream.live et plusi
 });
 
 test("status({ channel }) : une autre chaîne ; deux instances = deux chaînes, une requête chacune, un seul jeton (une application)", async () => {
-  tw.state.streams = [{ login: "rascane", title: "Chez Rascane" }];
+  tw.state.streams = [{ login: "etoile_nord", title: "Chez Etoile Nord" }];
   const mine = ctx({ channel: "chaine_a" });
-  assert.equal((await svc.status(mine, { channel: "Rascane" })).channel, "rascane");
+  assert.equal((await svc.status(mine, { channel: "Etoile_Nord" })).channel, "etoile_nord");
   assert.equal((await svc.status(mine, { channel: "pas valide" })).channel, "chaine_a", "chaîne invalide ignorée");
-  const friend = fakeCtx({ key: "tw2", settings: { channel: "rascane" }, services: { "twitch.api": C.methods } });
+  const friend = fakeCtx({ key: "tw2", settings: { channel: "etoile_nord" }, services: { "twitch.api": C.methods } });
   const r = await svc.status(friend);
-  assert.deepEqual([r.channel, r.live, r.title], ["rascane", true, "Chez Rascane"]);
+  assert.deepEqual([r.channel, r.live, r.title], ["etoile_nord", true, "Chez Etoile Nord"]);
   assert.equal(tw.log.filter((x) => x.body?.grant_type === "client_credentials").length, 1);
-  assert.equal(tw.log.filter((x) => x.search.includes("user_login=rascane")).length, 1, "même chaîne demandée par deux instances : un appel");
+  assert.equal(tw.log.filter((x) => x.search.includes("user_login=etoile_nord")).length, 1, "même chaîne demandée par deux instances : un appel");
 });
 
 test("erreurs : réseau coupé, 429 → jamais d'exception, erreur explicite, pas de harcèlement (cache d'erreur, pause du Connecteur)", async () => {
@@ -187,11 +187,11 @@ test("admin : une chaîne reprise est signalée ; « oublier » rend la main au 
 });
 
 test("chaque instance répond pour SA chaîne (each) : status() et channel() sans argument, aucun « maître »", async () => {
-  tw.state.streams = [{ login: "rascane" }];
+  tw.state.streams = [{ login: "etoile_nord" }];
   const a = fakeCtx({ key: "a", settings: { channel: "chaine_a" }, services: { "twitch.api": C.methods } });
-  const b = fakeCtx({ key: "b", settings: { channel: "rascane" }, services: { "twitch.api": C.methods } });
+  const b = fakeCtx({ key: "b", settings: { channel: "etoile_nord" }, services: { "twitch.api": C.methods } });
   const [ra, rb] = await Promise.all([svc.status(a), svc.status(b)]);
-  assert.deepEqual([ra.channel, ra.live, rb.channel, rb.live], ["chaine_a", false, "rascane", true]);
+  assert.deepEqual([ra.channel, ra.live, rb.channel, rb.live], ["chaine_a", false, "etoile_nord", true]);
   assert.equal(helix("streams"), 2, "une requête par chaîne");
 });
 
