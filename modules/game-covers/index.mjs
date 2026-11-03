@@ -14,7 +14,7 @@ const copies = await import(new URL("./copies.mjs" + q, import.meta.url).href);
 export default {
   services: { "game.cover": service.methods },
   // La jaquette copiée sur le site, servie par le site lui-même : `/m/<clé>/cover/<repère>` (16 caractères, aucune adresse venue de la personne qui visite, ni cookie, ni paramètre).
-  routes: { "cover/:id": (request, ctx) => copies.response(request, ctx) },
+  routes: { "cover/:slug": (request, ctx) => copies.response(request, ctx) },
   adminPanel: (ctx, args) => panel.render(ctx, args),
   adminActions: panel.actions,
   mcp: mcp.tools,
