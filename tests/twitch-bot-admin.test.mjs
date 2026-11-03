@@ -208,9 +208,10 @@ test("l'aperçu de la réponse : valeurs du moment pour les morceaux simples, mo
 
 test("période : le champ NATIF du cœur (un seul champ), rangé sous « Plus d'options » pour les commandes ET les timers ; aucun contrôle maison", async () => {
   // un timer n'a plus de formulaire : il se règle sur la page d'une commande, où le même champ de période sert
-  await C.saveCommand(owner.ctx, { kind: "custom" }, { name: "periodique", text: "Texte", repeat: { minutes: 10 } }, { src: await SRC.gather(owner.ctx, "emma"), t: owner.ctx.t, prefix: "!" });
-  const pid = (await C.loadConfig(owner.ctx)).data.custom.find((c) => c.name === "periodique").id;
-  const cmdBlocks = await A.panel(owner.ctx, { query: { new: "1" } }), timBlocks = await A.panel(owner.ctx, { query: { tab: "use", edit: `custom:${pid}`, repeat: "1" } });
+  const pw = world();   // un monde à part : le monde partagé garde ses 35 commandes
+  await C.saveCommand(pw.ctx, { kind: "custom" }, { name: "periodique", text: "Texte", repeat: { minutes: 10 } }, { src: await SRC.gather(pw.ctx, "emma"), t: pw.ctx.t, prefix: "!" });
+  const pid = (await C.loadConfig(pw.ctx)).data.custom.find((c) => c.name === "periodique").id;
+  const cmdBlocks = await A.panel(owner.ctx, { query: { new: "1" } }), timBlocks = await A.panel(pw.ctx, { query: { tab: "use", edit: `custom:${pid}`, repeat: "1" } });
   for (const [blocks, action] of [[cmdBlocks, "create"], [timBlocks, "save"]]) {
     const field = formOfBlocks(blocks, action).fields.find((f) => f.name === "period");
     assert.deepEqual([field.kind, field.label, field.value], ["period", "Limiter dans le temps", ""], "champ `period` du cœur, vide : toujours active");
