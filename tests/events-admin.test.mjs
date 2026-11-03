@@ -183,7 +183,8 @@ test("blocs : seuls des blocs et des champs connus du cœur, onglets existants",
       if (b.type === "links") for (const l of b.items) assert.match(l.href, /^\//);
     }
   }
-  assert.equal(await A.badge(ctx), 0);
+  assert.equal(await def.dashboard.tasks.review(ctx), 0);
+  assert.equal(def.adminBadge, undefined, "la tâche remplace la pastille : sinon la même ligne apparaîtrait deux fois");
   await def.mcp.agenda_create_event(ctx, { title: "Brouillon IA", date: "2031-06-01" });
-  assert.equal(await A.badge(ctx), 1);
+  assert.equal(await def.dashboard.tasks.review(ctx), 1);
 });

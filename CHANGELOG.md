@@ -4,6 +4,26 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : le tableau de bord de l'administration dit maintenant ce qui vous attend dans cinq extensions : les avis à valider, les suggestions de jeux à traiter et les événements à relire, plus deux boutons « Écrire un article » et « Ajouter une page ». Rien à régler : c'est affiché tout seul avec Curiosa 0.6.1 ou plus, et ignoré par les versions plus anciennes.*
+
+### Nouveautés
+
+- **Témoignages 1.2.0 : « n avis à valider ».** Quand des avis attendent votre décision, une ligne apparaît sous « À faire » sur le tableau de bord, avec un lien direct vers la liste des avis en attente. Elle disparaît quand il n'y en a plus. Seules les personnes qui ont le droit de valider les avis la voient.
+- **Suggestions de jeux 1.8.0 : « n suggestions de jeux à traiter ».** Elle compte les jeux proposés par vos visiteurs que vous n'avez pas encore classés (retenu, refusé, déjà joué…). Les jeux que vous ajoutez vous-même n'y comptent pas.
+- **Événements 1.1.0 : « n événements à relire ».** Elle compte les brouillons préparés par l'assistant IA qui attendent votre relecture, et mène à l'onglet des brouillons. Vos propres brouillons n'y sont pas.
+- **Blog 1.1.0 : « Écrire un article ».** Un bouton sous « Créer » sur le tableau de bord, qui ouvre directement un article vide.
+- **Pages 1.2.0 : « Ajouter une page ».** Même chose pour une nouvelle page.
+- **Plus de ligne en double.** Témoignages et Événements affichaient déjà un petit chiffre dans le menu de gauche ; le tableau de bord le répétait sous la forme « n à traiter dans … ». Ce chiffre du menu est retiré au profit de la nouvelle ligne, plus claire. Avec un Curiosa plus ancien que 0.6.1, ces deux extensions n'affichent donc plus de chiffre dans le menu.
+- **Sobre, et jamais lent.** Une ligne n'apparaît que s'il y a quelque chose à faire. Elle lit seulement ce que l'extension garde déjà sur votre site : aucune demande à un autre site, aucun nom ni texte de vos visiteurs.
+
+### Pour les développeurs
+
+- Clé `dashboard` de `module.json` (cœur 0.6.1+, aucun `minCore`) : `tasks` pour `testimonials` (`pending`, droit `reviews.moderate`), `game-suggestions` (`proposed`) et `events` (`review`, droit `events.edit`) ; `quickActions` pour `blog` et `pages` (`/admin/entries/new?c={key}`, aucun code, droit par défaut `open` : sans lui, la rédaction garde le bouton « Ajouter dans … » du cœur). Le code est `dashboard.tasks.<id>(ctx)` : un nombre, une lecture du stockage bornée (1 000 avis, 2 000 suggestions, la liste d'événements déjà gardée en mémoire), aucun appel réseau.
+- `adminBadge` retiré de `testimonials` et `events` (même calcul que la tâche, le cœur affichait les deux). Les tests de ces modules lisent la tâche.
+- Versions : Blog 1.1.0, Pages 1.2.0, Témoignages 1.2.0, Suggestions de jeux 1.8.0, Événements 1.1.0. Tests : `tests/dashboard-contenu.test.mjs` (validité `dashboardIssues`, mots, comptes, délais, absence de réseau) ; le kit de conformité exige `dashboard.valid`.
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
