@@ -1951,7 +1951,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.38.0",
-      "version": "1.7.2",
+      "version": "1.8.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1960,7 +1960,7 @@
         "home.actions"
       ],
       "requires": {
-        "core": "0.6.0"
+        "core": "0.6.4"
       },
       "needs": [
         {
