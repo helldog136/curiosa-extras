@@ -21,7 +21,8 @@ const TTL = 60_000;   // la mémoire de la banque vit une minute (et tombe à ch
 // ── Réglages ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 export const flag = (ctx, key, fallback) => { const v = ctx.setting(key); return v === undefined || v === null || v === "" ? fallback : v === true || v === "true" || v === 1 || v === "1"; };
-export const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return isValidTimeZone(z) ? z : DEFAULT_TZ; };
+// Fuseau : le réglage du module (avancé, « Europe/Paris » tant que personne n'en choisit un autre), sinon le fuseau du site (cœur 0.6.4), sinon Paris.
+export const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return isValidTimeZone(z) ? z : isValidTimeZone(ctx.timezone) ? ctx.timezone : DEFAULT_TZ; };
 export const modeOf = (ctx) => (ctx.setting("order") === "random" ? "random" : "sequence");
 export const typeOf = (ctx) => G.gameType(ctx.setting("gameType"));
 export const timerModeOf = (ctx) => (["on", "off", "none"].includes(ctx.setting("timerMode")) ? ctx.setting("timerMode") : "on");

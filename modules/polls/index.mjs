@@ -112,7 +112,8 @@ async function ensureCfg(ctx) {
 }
 const saveCfg = async (ctx, cfg) => { const { id, ...data } = cfg; await ctx.api.store.update(id, data); };
 
-const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return L.isValidTimeZone(z) ? z : DEFAULT_TZ; };
+// Fuseau : le réglage du module (avancé, « Europe/Paris » tant que personne n'en choisit un autre), sinon le fuseau du site (cœur 0.6.4), sinon Paris.
+export const tzOf = (ctx) => { const z = String(ctx.setting("timezone") ?? ""); return L.isValidTimeZone(z) ? z : L.isValidTimeZone(ctx.timezone) ? ctx.timezone : DEFAULT_TZ; };
 const baseOf = (ctx) => { const b = ctx.instance.basePath; return b === null || b === undefined ? null : b ? `/${b}` : ""; };
 /** Lien interne écrit dans du HTML : la langue choisie (préfixe /en) est gardée. */
 const loc = (ctx, href) => (ctx.locale && ctx.defaultLocale && ctx.locale !== ctx.defaultLocale ? `/${ctx.locale}${href === "/" ? "" : href}` || "/" : href);

@@ -11,10 +11,10 @@ export const C = { events: "ev_events", types: "ev_types", meta: "ev_meta" };
 export const SECOND = 1000, HOUR = 3_600_000, DAY = 24 * HOUR;
 const CACHE_MS = 20_000;
 
-/** Le fuseau du site (réglage), ou l'heure universelle si le réglage est abîmé. */
+/** Le fuseau du module (réglage avancé, « Europe/Paris » tant que personne n'en choisit un autre), sinon le fuseau du site (cœur 0.6.4), sinon l'heure universelle. */
 export function siteZone(ctx) {
   const z = String(ctx.setting("timezone") ?? "").trim();
-  return T.isValidZone(z) ? z : "UTC";
+  return T.isValidZone(z) ? z : T.isValidZone(ctx.timezone) ? ctx.timezone : "UTC";
 }
 
 const cache = new Map();
