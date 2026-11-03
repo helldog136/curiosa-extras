@@ -42,7 +42,7 @@ export async function planningSnapshot(root) {
     vevent("4", hours(75), hours(77), "Défis de la communauté", ["DESCRIPTION:Jeu: Sky Ferry"]),
   );
   const ctxWith = (settings = {}) => fakeCtx({ key: "planning", settings: { days: 7, timezone: "Europe/Brussels", ...settings }, topics: feedTopics(() => feed), messages, locale: "fr", rawgConfigured: true, rawgCover: ({ title } = {}) => ({ status: "found", url: `https://media.example.test/${encodeURIComponent(String(title))}.jpg` }), basePath: "planning" });
-  const out = { manifest: manifestRest(readJson(root, "planning", "module.json")), keys: { sections: Object.keys(mod.sections).sort(), routes: Object.keys(mod.routes).filter((k) => k !== "element/:slug" && k !== "photo/:id").sort(), top: Object.keys(mod).filter((k) => k !== "overlayElements").sort() }, scenes: {} };
+  const out = { manifest: manifestRest(readJson(root, "planning", "module.json")), keys: { sections: Object.keys(mod.sections).sort(), routes: Object.keys(mod.routes).filter((k) => k !== "element/:slug" && k !== "photo/:slug").sort(), top: Object.keys(mod).filter((k) => k !== "overlayElements").sort() }, scenes: {} };
   for (const appearance of ["original", "classic", "alternating", "week", "timeline", "posters", "hero"]) {
     const settings = { appearance, hourFormat: appearance === "week" ? "12" : "24" };
     out.scenes[appearance] = json({
