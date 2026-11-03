@@ -269,6 +269,7 @@
   "rw_paused": "“{title}” is paused.",
   "rw_resumed": "“{title}” is on sale again.",
   "rw_deleted": "Reward deleted at Twitch.",
+  "rw_log_history": "See the extension's History",
   "rw_log_title": "Latest exchanges",
   "rw_log_help": "The last {n} point exchanges. The message a viewer writes is never kept.",
   "rw_log_empty": "No exchange yet.",

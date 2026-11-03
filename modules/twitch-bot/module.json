@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.8.0",
+  "version": "1.9.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -1025,8 +1025,6 @@
         "en": "Bot admin screen with a table of chat commands: search, filters, on/off switches and origin badges."
       }
     },
-
-
     {
       "file": "previews/recompenses.webp",
       "type": "admin",
@@ -1050,6 +1048,39 @@
         "fr": "Onglet Réglages du bot avec trois réglages : répondre seulement en direct, gestion des commandes depuis le chat, fuseau horaire.",
         "en": "Bot Settings tab with three settings: answer only when live, manage commands from the chat, time zone."
       }
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "reward.refunded",
+      "label": {
+        "fr": "Points rendus pour {title} : {reason}",
+        "en": "Points given back for {title}: {reason}"
+      },
+      "level": "warn",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "title"
+        },
+        {
+          "key": "reason"
+        }
+      ]
+    },
+    {
+      "key": "reward.failed",
+      "label": {
+        "fr": "Twitch n'a pas confirmé l'échange de points pour {title}",
+        "en": "Twitch did not confirm the points exchange for {title}"
+      },
+      "level": "error",
+      "frequent": true,
+      "fields": [
+        {
+          "key": "title"
+        }
+      ]
     }
   ]
 }

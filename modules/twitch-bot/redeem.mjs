@@ -77,6 +77,11 @@ async function notice(ctx, s, text) {
   try { const d = await diagnose(ctx, s, { declare: false }); if (d.code === "ready") await sendChat(ctx, d, text); } catch { /* le message est un plus */ }
 }
 
+/** Raisons de remboursement normales (maison coupée, pas en direct, trop de demandes, message refusé…) : elles restent dans le journal des échanges, pas dans l'Historique. */
+const BENIGN = new Set(["off", "not_live", "busy", "blocked", "no_text", "expired"]);
+/** Journal du cœur (Historique) : un remboursement qui demande peut-être votre attention, ou un échange que Twitch n'a pas confirmé. Jamais le pseudo ni le message. Ne lève jamais. */
+const centralLog = (ctx, action, doc) => ctx.api.log?.write({ action, data: { title: clean(doc.title, 45), ...(action === "reward.refunded" ? { reason: ctx.t(`rw_reason_${doc.reason}`) } : {}) } });
+
 /** Envoie le verdict à Twitch pour un échange dont `doc.todo` est FULFILLED ou CANCELED. Met le document à jour ; ne lève jamais. */
 async function settle(ctx, s, doc, acc) {
   const reward = await R.byTwitchId(ctx, doc.rewardTid);
@@ -85,12 +90,14 @@ async function settle(ctx, s, doc, acc) {
   if (res.ok || res.code === "gone" || res.code === "refused") {   // déjà traité chez Twitch (ou plus à nous) : rien d'autre à faire
     const next = { ...doc, status: final, todo: null, closed: res.ok ? undefined : true };
     await write(ctx, next);
+    if (final === "refunded" && res.ok && doc.reason && !BENIGN.has(doc.reason) && !doc.test) await centralLog(ctx, "reward.refunded", doc);
     if (final === "refunded" && res.ok && !doc.noticed) { await write(ctx, { ...next, noticed: true }); await notice(ctx, s, ctx.t("redeem_notice", { user: pseudo(doc.name || doc.user), reward: clean(doc.title, 45) })); }
     return next;
   }
   const attempts = (doc.attempts ?? 0) + 1;
   const next = { ...doc, status: attempts >= 5 ? "failed" : "settle", attempts };
   await write(ctx, next);
+  if (next.status === "failed") await centralLog(ctx, "reward.failed", doc);
   return next;
 }
 const verdict = (doc, todo, reason) => ({ ...doc, status: "settle", todo, reason: doc.reason ?? reason });

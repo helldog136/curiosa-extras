@@ -150,7 +150,7 @@ function unmappedBlocks(ctx, state, names, used) {
 /** Le journal des 50 derniers échanges (son propre vidage reste là en attendant l'Historique commun). */
 function journalBlocks(ctx, s, entries, names, advanced) {
   const t = ctx.t, time = (at) => new Date(at).toLocaleTimeString(ctx.locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: s.timeZone });
-  const out = [{ type: "heading", text: t("rw_log_title") }, { type: "markdown", text: t(entries.length ? "rw_log_help" : "rw_log_empty", { n: J.KEEP_RESOLVED }) }];
+  const out = [{ type: "heading", text: t("rw_log_title") }, { type: "markdown", text: t(entries.length ? "rw_log_help" : "rw_log_empty", { n: J.KEEP_RESOLVED }) }, { type: "links", items: [{ label: t("rw_log_history"), href: "?tab=history" }] }];   // l'onglet « Historique » du cœur : remboursements à regarder
   if (!entries.length) return out;
   const tone = { done: "ok", refunded: "warn", failed: "danger" };
   // Le détail ne répète pas le résultat (R14) : il n'est écrit que s'il y a une raison.

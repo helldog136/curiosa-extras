@@ -269,6 +269,7 @@
   "rw_paused": "« {title} » est en pause.",
   "rw_resumed": "« {title} » est de nouveau en vente.",
   "rw_deleted": "Récompense supprimée chez Twitch.",
+  "rw_log_history": "Voir l'Historique de l'extension",
   "rw_log_title": "Derniers échanges",
   "rw_log_help": "Les {n} derniers échanges de points. Le message écrit par le viewer n'est jamais gardé.",
   "rw_log_empty": "Aucun échange pour l'instant.",

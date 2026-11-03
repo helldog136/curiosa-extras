@@ -37,6 +37,7 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 - **Un écran de correction qui plantait est réparé.** « Corriger » sur un titre à vérifier affichait une erreur depuis la 1.1.0 ; il montre de nouveau « Ce choix est bon » et « Chercher un autre nom ».
 - **Pour l'assistant.** `rawg_covers_list` liste aussi les jaquettes trouvées toutes seules (origine « auto »). Rien d'autre ne change : aucun droit de plus.
 - **Bot Twitch 1.7.2 : un visuel de plus sur sa fiche.** L'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
+- **Bot Twitch 1.9.0 : les remboursements à regarder vont à l'Historique.** Quand des points sont rendus pour une raison qui mérite votre attention (la maison ne répond pas, pas de script relié, Home Assistant non installé, message non envoyé…), ou quand Twitch ne confirme pas un échange après plusieurs essais, une ligne apparaît dans l'onglet Historique avec le nom de la récompense et la raison en clair, jamais le pseudo. Les réussites et les remboursements normaux (maison coupée, hors direct, trop de demandes, message refusé) restent seulement dans « Journal des échanges ». Un lien « Voir l'Historique de l'extension » est ajouté sous ce journal.
 
 ### Pour les développeurs
 
@@ -56,6 +57,8 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 - Le tableau d'administration n'a pas de recherche côté serveur (cœur 0.6.4) : les 2 100 lignes au plus (1 000 corrections, 100 titres à vérifier, 1 000 jaquettes trouvées) sont dans la page, 50 par page, d'où la borne de 1 000.
 - `modules/twitch-bot` 1.7.2 : une `preview` ajoutée (`reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
 - `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
+- `modules/twitch-bot` 1.9.0 : `logEvents` (`reward.refunded` en avertissement, `reward.failed` en erreur, tous deux `frequent`), écrits par `redeem.mjs` au moment où le verdict est confirmé par Twitch (une seule fois par échange) avec `ctx.api.log?.write` ; `minCore` inchangé (0.6.4). Les commandes de chat ne sont pas notées (une ligne par message). `!stop` et `!start` sont notés par le Connecteur Home Assistant (`circuit.cut`, `circuit.resumed`). Le journal des échanges, ses 50 lignes et son bouton « Vider » ne changent pas.
+
 
 ## 1.38.0 — 2026-11-03
 
