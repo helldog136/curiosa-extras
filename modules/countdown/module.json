@@ -5,7 +5,7 @@
     "fr": "Compte à rebours",
     "en": "Countdown"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "minCore": "0.6.0",
   "description": {
     "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS.",
@@ -41,6 +41,7 @@
   "settings": [
     {
       "key": "timezone",
+      "advanced": true,
       "type": "select",
       "default": "Europe/Paris",
       "options": [

@@ -13,7 +13,7 @@ export function defaultZone(ctx) {
   const other = String(ctx.setting("timezoneOther") ?? "").trim();
   if (other && T.isValidZone(other)) return other;
   const chosen = String(ctx.setting("timezone") ?? "").trim();
-  return T.isValidZone(chosen) ? chosen : M.DEFAULT_ZONE;
+  return T.isValidZone(chosen) ? chosen : T.isValidZone(ctx.timezone) ? ctx.timezone : M.DEFAULT_ZONE;
 }
 
 const keepOptions = (ctx, withDefault) => [
