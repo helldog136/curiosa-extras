@@ -154,8 +154,8 @@ test("recherche présente même avec peu de commandes (R15) ; sans JavaScript la
 
 const REPEATED = /utilisateur|jeton|webhook|identifiant|payload|JSON|\bAPI\b|\bcache\b|OAuth|slug/i;
 function lint(form, cfg, where) {
-  const visible = new Set(cfg.layout.filter((x) => !x.more).flatMap((x) => (x.f ? [x.f] : x.seg ? [x.seg] : x.sentence ? x.sentence.tokens.filter((t) => t.f).map((t) => t.f) : x.period ? [x.period.field] : [])));
-  const folded = new Set(cfg.layout.filter((x) => x.more).flatMap((x) => x.more.items.flatMap((i) => (i.nested ? i.nested.items.flatMap((n) => (n.seg ? [n.seg] : n.sentence ? n.sentence.tokens.filter((t) => t.f).map((t) => t.f) : [])) : i.f ? [i.f] : i.seg ? [i.seg] : i.sentence ? i.sentence.tokens.filter((t) => t.f).map((t) => t.f) : i.period ? [i.period.field] : []))));
+  const visible = new Set(cfg.layout.filter((x) => !x.more).flatMap((x) => (x.f ? [x.f] : x.seg ? [x.seg] : x.sentence ? x.sentence.tokens.filter((t) => t.f).map((t) => t.f) : [])));
+  const folded = new Set(cfg.layout.filter((x) => x.more).flatMap((x) => x.more.items.flatMap((i) => (i.nested ? i.nested.items.flatMap((n) => (n.seg ? [n.seg] : n.sentence ? n.sentence.tokens.filter((t) => t.f).map((t) => t.f) : [])) : i.f ? [i.f] : i.seg ? [i.seg] : i.sentence ? i.sentence.tokens.filter((t) => t.f).map((t) => t.f) : []))));
   for (const f of form.fields.filter((x) => x.kind !== "hidden")) {
     assert.ok(f.label.length <= 60 && !/:\s*$/.test(f.label), `${where} : libellé « ${f.label} »`);
     assert.ok(!REPEATED.test(f.label) && !REPEATED.test(f.help ?? ""), `${where} : mot technique dans « ${f.label} »`);
@@ -206,60 +206,41 @@ test("l'aperçu de la réponse : valeurs du moment pour les morceaux simples, mo
 
 /* ───────────── Le contrôle de période ───────────── */
 
-test("période : texte ↔ période pour tous les cas (toujours, chaque année, à cheval sur l'année, une fois avec années)", () => {
-  const rt = (text) => client.periodToText(client.parsePeriodText(text));
-  assert.equal(client.parsePeriodText(""), null, "toujours active");
-  assert.equal(P.periodToText(null), "");
-  assert.equal(rt("01/11 - 30/11"), "01/11 - 30/11");
-  assert.deepEqual(client.parsePeriodText("1/11 - 30/11"), { yearly: true, from: { d: 1, m: 11 }, to: { d: 30, m: 11 } });
-  const wrap = client.parsePeriodText("15/12 - 15/01");
-  assert.equal(wrap.yearly, true);
-  assert.equal(client.periodProblem(wrap, P.DAYS_IN_MONTH), null, "à cheval sur l'année : valide chaque année");
-  assert.equal(P.isOpen(P.parsePeriodText("15/12 - 15/01").value, Date.parse("2026-01-10T10:00:00Z")), true);
-  assert.equal(P.isOpen(P.parsePeriodText("15/12 - 15/01").value, Date.parse("2026-02-10T10:00:00Z")), false);
-  const once = client.parsePeriodText("01/11/2026 - 30/11/2026");
-  assert.deepEqual([once.yearly, once.from.y, once.to.y], [false, 2026, 2026]);
-  assert.equal(rt("01/11/2026 - 30/11/2026"), "01/11/2026 - 30/11/2026");
-  assert.equal(client.parsePeriodText("n'importe quoi"), "bad");
-  for (const t of ["", "01/11 - 30/11", "15/12 - 15/01", "01/11/2026 - 30/11/2026", "29/02 - 01/03"]) {
-    const p = P.parsePeriodText(t);
-    assert.equal(p.ok, true, t);
-    assert.equal(P.periodToText(p.value), t ? client.periodToText(client.parsePeriodText(t)) : "", `${t} : le serveur et la page écrivent la même chose`);
+test("période : le champ NATIF du cœur (un seul champ), rangé sous « Plus d'options » pour les commandes ET les timers ; aucun contrôle maison", async () => {
+  const cmdBlocks = await A.panel(owner.ctx, { query: { new: "1" } }), timBlocks = await A.panel(owner.ctx, { query: { tab: "timers", timerNew: "1" } });
+  for (const [blocks, action] of [[cmdBlocks, "create"], [timBlocks, "timerCreate"]]) {
+    const field = formOfBlocks(blocks, action).fields.find((f) => f.name === "period");
+    assert.deepEqual([field.kind, field.label, field.value], ["period", "Limiter dans le temps", ""], "champ `period` du cœur, vide : toujours active");
+    assert.ok(field.help.length <= 60 && !/:\s*$/.test(field.label), field.help);
+    assert.equal(field.openEnded, undefined, "deux dates, comme avant : le moteur du module ne connaît pas les périodes ouvertes");
+    const item = configOf(blocks).layout.find((x) => x.more).more.items.find((x) => x.f === "period");
+    assert.deepEqual(item, { f: "period", label: "Limiter dans le temps" }, "rangé dans le panneau replié, avec son libellé");
+    assert.equal(JSON.stringify(configOf(blocks)).includes("shortcuts"), false, "plus de puces fixes");
   }
+  const src = fs.readFileSync(`${DIR}/timersAdmin.mjs`, "utf8") + fs.readFileSync(`${DIR}/commandsUi.mjs`, "utf8") + fs.readFileSync(`${DIR}/formsUi.mjs`, "utf8");
+  assert.ok(!/periodLayout|periodControl|SHORTCUTS/.test(src + fs.readFileSync(`${DIR}/period.mjs`, "utf8")), "le code du contrôle maison a disparu");
+  const script = fs.readFileSync(`${DIR}/adminkit.client.js`, "utf8");
+  assert.ok(!/periodControl|parsePeriodText|periodToText|dateWords|ck-period|dFrom|yc\.addEventListener/.test(script), "le script de la page ne contient plus de contrôle de période");
+  assert.ok(!/ck-sel|ck-date|ck-phrase|ck-range|ck-check|ck-err\b/.test(KIT.CSS), "ni son style");
+  for (const k of Object.keys(fr)) assert.ok(!/^per_(sc|mode|from|to|yearly|day|month|date|phrase|always|utc)/.test(k), `${k} : texte du contrôle maison à retirer`);
+  for (const text of [JSON.stringify(fr), JSON.stringify(en)]) assert.ok(!/Tout novembre|Tout septembre|Cet été|All of November|This summer|Chaque année|Every year/.test(text), "plus de puces fixes dans les textes");
 });
 
-test("période : les erreurs sont dites avec un exemple, la même chose côté page et côté serveur", () => {
-  const dim = P.DAYS_IN_MONTH;
-  assert.deepEqual(client.periodProblem(client.parsePeriodText("31/02 - 01/03"), dim), { key: "nodate", day: 31, month: 2 });
-  assert.equal(client.periodProblem({ yearly: true, from: { d: 0, m: 0 }, to: { d: 1, m: 1 } }, dim).key, "incomplete");
-  assert.equal(client.periodProblem({ yearly: false, from: { d: 1, m: 11 }, to: { d: 2, m: 11, y: 2026 } }, dim).key, "year");
-  assert.equal(client.periodProblem(client.parsePeriodText("30/11/2026 - 01/11/2026"), dim).key, "order");
-  const ctx = world().ctx;
-  assert.equal(P.periodError(ctx, P.parsePeriodText("31/02 - 01/03")), "Le 31 février n'existe pas. Exemple : 28 février.");
-  assert.equal(P.periodError(ctx, P.parsePeriodText("31/04 - 01/05")), "Le 31 avril n'existe pas. Exemple : 30 avril.");
-  assert.match(P.periodError(ctx, P.parsePeriodText("30/11/2026 - 01/11/2026")), /Exemple : du 1er novembre 2026 au 30 novembre 2026/);
-  assert.match(P.periodError(ctx, P.parsePeriodText("xx")), /Exemple : du 1er novembre au 30 novembre/);
-  const cfg = P.periodControl(ctx, null);
-  assert.equal(client.fill(cfg.text.eNodate, { day: 31, month: "février", example: "28 février" }), "Le 31 février n'existe pas. Exemple : 28 février.", "la même phrase côté page");
+test("période : l'aide du champ dit le fuseau (UTC quand aucun n'est réglé), courte, en français et en anglais", async () => {
+  const help = async (w) => formOfBlocks(await A.panel(w.ctx, { query: { new: "1" } }), "create").fields.find((f) => f.name === "period").help;
+  assert.equal(await help(world({ settings: { timezone: "UTC" } })), "Vide : toujours active. Dates en heure UTC (voir Réglages).");
+  assert.equal(await help(world()), "Vide : toujours active. Fuseau Europe/Paris.");
+  assert.equal(await help(world({ locale: "en", settings: { timezone: "UTC" } })), "Empty: always active. Dates in UTC time (see Settings).");
+  assert.equal(await help(world({ locale: "en" })), "Empty: always active. Time zone Europe/Paris.");
 });
 
-test("période : un seul contrôle, des textes et quatre raccourcis (Tout novembre, Tout septembre, Cet été, Noël) ; la phrase d'aperçu ; les années seulement hors « Chaque année »", () => {
+test("période : les erreurs du serveur sont dites avec un exemple (sous le champ)", () => {
   const ctx = world().ctx;
-  const c = P.periodControl(ctx, P.readPeriod({ yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } }), "Europe/Paris");
-  assert.equal(c.field, "period");
-  assert.deepEqual(c.shortcuts.map((s) => s.label), ["Tout novembre", "Tout septembre", "Cet été", "Noël"]);
-  assert.deepEqual(c.shortcuts[0], { label: "Tout novembre", from: [11, 1], to: [11, 30] });
-  assert.deepEqual([c.text.always, c.text.range, c.text.yearly, c.text.from, c.text.to], ["Toujours active", "Seulement pendant une période", "Chaque année", "Du", "au"]);
-  const words = (x, withYear) => client.dateWords(x, c, withYear);
-  assert.equal(client.fill(c.text.phraseYearly, { from: words({ d: 1, m: 11 }), to: words({ d: 30, m: 11 }) }), "Active du 1er novembre au 30 novembre, chaque année");
-  assert.equal(client.fill(c.text.phraseOnce, { from: words({ d: 1, m: 11, y: 2026 }, true), to: words({ d: 30, m: 11, y: 2026 }, true) }), "Active du 1er novembre 2026 au 30 novembre 2026, une seule fois");
-  assert.equal(c.text.utc, "", "fuseau réglé : pas de remarque");
-  assert.match(P.periodControl(ctx, null, "UTC").text.utc, /heure UTC/);
-  const en_ = P.periodControl(world({ locale: "en" }).ctx, null);
-  assert.deepEqual(en_.shortcuts.map((s) => s.label), ["All of November", "All of September", "This summer", "Christmas"]);
-  const src = fs.readFileSync(`${DIR}/adminkit.client.js`, "utf8");
-  assert.match(src, /yc\.addEventListener\("change"/, "case « Chaque année »");
-  assert.match(src, /dFrom\.type = "date"/, "sans « Chaque année » : deux sélecteurs de date complets");
+  assert.equal(P.periodError(ctx, P.parsePeriodValue("02-31/03-01")), "Le 31 février n'existe pas. Exemple : 28 février.");
+  assert.equal(P.periodError(ctx, P.parsePeriodValue("04-31/05-01")), "Le 31 avril n'existe pas. Exemple : 30 avril.");
+  assert.match(P.periodError(ctx, P.parsePeriodValue("2026-11-30/2026-11-01")), /Exemple : du 1er novembre 2026 au 30 novembre 2026/);
+  assert.match(P.periodError(ctx, P.parsePeriodValue("xx")), /Exemple : du 1er novembre au 30 novembre/);
+  assert.match(P.periodError(ctx, P.parsePeriodValue("1999-11-01/2026-11-30")), /date complète, avec l'année\. Exemple : 1er novembre 2026/);
 });
 
 test("le contrôle de période sert à toute commande, y compris celles qui se répètent (il n'existe plus de formulaire de timer)", async () => {
@@ -430,7 +411,7 @@ test("FR et EN : mêmes textes d'interface, mêmes {variables} ; vouvoiement ; a
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
   for (const k of Object.keys(fr)) assert.equal(vars(fr[k]), vars(en[k]), k);
-  const ui = Object.entries(fr).filter(([k]) => /^(origin|filter|search|col|note|add_|f_|wait|more_|chip|per_f|per_title|per_mode|per_sc|log_help|tm_f|tm_note|tm_intro|sw_|summary_help|new_open|save_btn|act_open)/.test(k));
+  const ui = Object.entries(fr).filter(([k]) => /^(origin|filter|search|col|note|add_|f_|wait|more_|chip|per_f|per_title|log_help|tm_f|tm_note|tm_intro|sw_|summary_help|new_open|save_btn|act_open)/.test(k));
   for (const [k, v] of ui) {
     assert.ok(!/!/.test(v), `${k} : point d'exclamation`);
     assert.ok(!/(?<![\p{L}])(tu|ton|ta|tes|toi|veuillez)(?![\p{L}])/iu.test(v), `${k} : vouvoiement`);

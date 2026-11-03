@@ -277,12 +277,13 @@ test("actions pour assistants : jamais d'e-mail, pages à curseur, publier exige
   await assert.rejects(def.mcp.testimonials_decide(ctx, { id: target.id, action: "explode" }), (e) => e.expose === true);
   assert.deepEqual(await def.mcp.testimonials_delete(ctx, { id: target.id }), { id: target.id, deleted: true });
   await assert.rejects(def.mcp.testimonials_delete(ctx, { id: target.id }), (e) => e.expose === true);
-  assert.equal(await def.adminBadge(ctx), 15 - 1 + 1, "pastille = avis à valider");
+  assert.equal(await def.dashboard.tasks.pending(ctx), 15 - 1 + 1, "tâche du tableau de bord = avis à valider");
 });
 
-test("la pastille du menu compte les avis à valider, et rien d'autre", async () => {
+test("la tâche du tableau de bord compte les avis à valider, et rien d'autre (plus de pastille en double)", async () => {
+  assert.equal(def.adminBadge, undefined, "la tâche remplace la pastille : sinon la même ligne apparaîtrait deux fois");
   const ctx = ctxFor();
-  assert.equal(await def.adminBadge(ctx), 0);
+  assert.equal(await def.dashboard.tasks.pending(ctx), 0);
   await seed(ctx, { status: "pending" }); await seed(ctx, { status: "approved" }); await seed(ctx, { status: "rejected" });
-  assert.equal(await def.adminBadge(ctx), 1);
+  assert.equal(await def.dashboard.tasks.pending(ctx), 1);
 });

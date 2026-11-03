@@ -2,7 +2,7 @@
  * Curiosa — petit script de page pour l'administration d'un module (« kit d'ergonomie »).
  *
  * POURQUOI : le cœur 0.5.x ne sait pas encore faire une recherche qui filtre en direct, un interrupteur dans une ligne, des boutons segmentés, une zone « Plus d'options »
- * ou un contrôle de période. Ce fichier les ajoute APRÈS COUP à du HTML que le module écrit lui-même (amélioration progressive) :
+ * (la période, elle, est un champ du cœur). Ce fichier les ajoute APRÈS COUP à du HTML que le module écrit lui-même (amélioration progressive) :
  *   - sans JavaScript, la page reste complète et lisible (la liste entière, tous les champs) ;
  *   - avec JavaScript, la liste se filtre pendant la frappe, l'état se change d'un clic, et les formulaires se rangent.
  * Il ne dépend de rien (ni bibliothèque ni réseau), ne touche qu'aux éléments marqués `data-ck-*` et aux formulaires qui portent un champ caché `ck`, et peut être réutilisé
@@ -27,7 +27,7 @@
  *    `data-ck-reload` : recharge la page après la réussite. `data-ck-confirm` : demande d'abord, dans la page (jamais window.confirm).
  *
  * 3. Formulaire rangé : un champ caché <input type="hidden" name="ck" value="ID"> dans le formulaire du cœur, et un élément [data-ck-config="ID"] (JSON dans son attribut
- *    `data-ck-json`) qui dit comment ranger les champs : voir `buildForm` plus bas (segmented, more, sentence, period, preview/chips).
+ *    `data-ck-json`) qui dit comment ranger les champs : voir `buildForm` plus bas (segmented, more, sentence, preview/chips ; la période est le champ `period` du cœur, rangé sous « Plus d'options » comme un champ ordinaire).
  */
 (function (root) {
   "use strict";
@@ -56,46 +56,6 @@
     return true;
   }
 
-  var TEXT_RE = /^\s*(\d{1,2})\s*[\/.-]\s*(\d{1,2})(?:\s*[\/.-]\s*(\d{4}))?\s*$/;
-  /** « 01/11 - 30/11 » → { yearly: true, from: {d,m}, to: {d,m} } ; avec années → yearly false ; vide → null ; illisible → "bad". */
-  function parsePeriodText(text) {
-    var raw = String(text == null ? "" : text).trim();
-    if (!raw) return null;
-    var parts = raw.split(/\s+(?:-|–|—|au|to|→|>)\s+|\s*(?:–|—|→)\s*/i);
-    if (parts.length !== 2) return "bad";
-    var a = TEXT_RE.exec(parts[0]), b = TEXT_RE.exec(parts[1]);
-    if (!a || !b) return "bad";
-    var side = function (m) { var o = { d: +m[1], m: +m[2] }; if (m[3]) o.y = +m[3]; return o; };
-    var from = side(a), to = side(b);
-    return { yearly: from.y === undefined && to.y === undefined, from: from, to: to };
-  }
-  var two = function (n) { return (n < 10 ? "0" : "") + n; };
-  /** L'inverse : { yearly, from, to } → « 01/11 - 30/11 » ou « 01/11/2026 - 30/11/2026 ». */
-  function periodToText(p) {
-    if (!p) return "";
-    var one = function (x) { return two(x.d) + "/" + two(x.m) + (p.yearly ? "" : "/" + x.y); };
-    return one(p.from) + " - " + one(p.to);
-  }
-  /** Ce qui ne va pas dans une période saisie (clé de message) ou null : "incomplete", "nodate" (avec day/month), "year", "order". */
-  function periodProblem(p, dim) {
-    if (!p) return null;
-    var sides = [p.from, p.to];
-    for (var i = 0; i < 2; i++) {
-      var s = sides[i];
-      if (!s.d || !s.m) return { key: "incomplete" };
-      if (s.d > dim[s.m - 1]) return { key: "nodate", day: s.d, month: s.m };
-    }
-    if (!p.yearly) {
-      for (var j = 0; j < 2; j++) if (!sides[j].y || sides[j].y < 2000 || sides[j].y > 2100) return { key: "year" };
-      if (p.from.y * 10000 + p.from.m * 100 + p.from.d > p.to.y * 10000 + p.to.m * 100 + p.to.d) return { key: "order" };
-    }
-    return null;
-  }
-  /** « 1er novembre » (fr) / « 1 November » : la date écrite en toutes lettres. */
-  function dateWords(x, cfg, withYear) {
-    var day = String(cfg.locale).indexOf("fr") === 0 && x.d === 1 ? "1er" : String(x.d);
-    return day + " " + cfg.months[x.m - 1] + (withYear && x.y ? " " + x.y : "");
-  }
   /** Remplace {clé} dans un modèle. */
   function fill(tpl, vars) {
     return String(tpl).replace(/\{(\w+)\}/g, function (all, k) { return vars[k] === undefined ? all : String(vars[k]); });
@@ -281,7 +241,6 @@
     var lab = node && node.id ? form.querySelector("label[for='" + node.id + "']") : null;
     return lab ? lab.textContent.trim() : name;
   }
-  function hideAll(box, selector) { var n = box.querySelectorAll(selector); for (var i = 0; i < n.length; i++) n[i].hidden = true; }
 
   /** Un choix à 2-4 valeurs : boutons segmentés, branchés sur la liste d'origine (qui garde la valeur envoyée). */
   function segmented(form, select) {
@@ -341,132 +300,6 @@
     return wrap;
   }
 
-  /** LE contrôle de période (commandes ET timers) : « Toujours active » ↔ « Seulement pendant une période », puis « Du [jour][mois] au [jour][mois] » + « Chaque année ». */
-  function periodControl(form, cfg) {
-    var input = form.elements.namedItem(cfg.field), box = fieldBox(form, cfg.field), T = cfg.text;
-    if (!input || !box) return null;
-    hideAll(box, "label, p");
-    input.hidden = true;
-    var parsed = parsePeriodText(input.value);
-    var st = { range: parsed !== null, yearly: !parsed || parsed === "bad" ? true : parsed.yearly, from: parsed && parsed !== "bad" ? parsed.from : {}, to: parsed && parsed !== "bad" ? parsed.to : {} };
-    var ui = el("div", "ck-section ck-period");
-    ui.appendChild(el("div", "ck-legend", T.title));
-
-    var mode = el("div", "ck-seg"), mAlways = el("button", "ck-seg-b", T.always), mRange = el("button", "ck-seg-b", T.range);
-    mode.setAttribute("role", "radiogroup"); mode.setAttribute("aria-label", T.title);
-    [mAlways, mRange].forEach(function (b, i) {
-      b.type = "button"; b.setAttribute("role", "radio");
-      b.addEventListener("click", function () { st.range = i === 1; render(true); });
-      b.addEventListener("keydown", function (e) {
-        if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); var o = i ? mAlways : mRange; o.focus(); o.click(); }
-      });
-      mode.appendChild(b);
-    });
-    ui.appendChild(mode);
-
-    var panel = el("div", "ck-range");
-    var chips = el("div", "ck-chips");
-    cfg.shortcuts.forEach(function (s) {
-      var c = el("button", "ck-chip", s.label); c.type = "button";
-      c.addEventListener("click", function () { st.yearly = true; st.from = { d: s.from[1], m: s.from[0] }; st.to = { d: s.to[1], m: s.to[0] }; render(true); });
-      chips.appendChild(c);
-    });
-    panel.appendChild(chips);
-
-    function select(kind, value, label) {
-      var s = el("select", "ck-sel"), n = kind === "d" ? 31 : 12;
-      s.setAttribute("aria-label", label);
-      var o0 = el("option", null, label); o0.value = ""; s.appendChild(o0);
-      for (var i = 1; i <= n; i++) { var o = el("option", null, kind === "d" ? String(i) : cfg.months[i - 1]); o.value = String(i); s.appendChild(o); }
-      s.value = value ? String(value) : "";
-      return s;
-    }
-    var line = el("div", "ck-line ck-dates");
-    var fd = select("d", st.from.d, T.day), fm = select("m", st.from.m, T.month), td = select("d", st.to.d, T.day), tm = select("m", st.to.m, T.month);
-    var yearlyLine = [el("span", "ck-word", T.from), fd, fm, el("span", "ck-word", T.to), td, tm];
-    yearlyLine.forEach(function (n) { line.appendChild(n); });
-    var onceLine = el("div", "ck-line ck-dates");
-    var dFrom = el("input", "ck-date"), dTo = el("input", "ck-date");
-    dFrom.type = "date"; dTo.type = "date";
-    dFrom.min = dTo.min = "2000-01-01"; dFrom.max = dTo.max = "2100-12-31";
-    dFrom.setAttribute("aria-label", T.dateFrom); dTo.setAttribute("aria-label", T.dateTo);
-    [el("span", "ck-word", T.from), dFrom, el("span", "ck-word", T.to), dTo].forEach(function (n) { onceLine.appendChild(n); });
-    panel.appendChild(line); panel.appendChild(onceLine);
-
-    var yl = el("label", "ck-check"), yc = el("input"); yc.type = "checkbox";
-    yl.appendChild(yc); yl.appendChild(doc.createTextNode(" " + T.yearly));
-    panel.appendChild(yl);
-    var phrase = el("p", "ck-phrase"), err = el("p", "ck-err");
-    phrase.setAttribute("aria-live", "polite"); err.setAttribute("role", "alert");
-    panel.appendChild(phrase); panel.appendChild(err);
-    ui.appendChild(panel);
-    input.parentNode.insertBefore(ui, input);
-
-    var isoOf = function (x) { return x.y && x.m && x.d ? x.y + "-" + two(x.m) + "-" + two(x.d) : ""; };
-    function fromControls() {
-      if (st.yearly) {
-        st.from = { d: +fd.value || 0, m: +fm.value || 0 }; st.to = { d: +td.value || 0, m: +tm.value || 0 };
-      } else {
-        var a = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dFrom.value), b = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dTo.value);
-        st.from = a ? { y: +a[1], m: +a[2], d: +a[3] } : {}; st.to = b ? { y: +b[1], m: +b[2], d: +b[3] } : {};
-      }
-    }
-    function toControls() {
-      fd.value = st.from.d ? String(st.from.d) : ""; fm.value = st.from.m ? String(st.from.m) : "";
-      td.value = st.to.d ? String(st.to.d) : ""; tm.value = st.to.m ? String(st.to.m) : "";
-      dFrom.value = isoOf(st.from); dTo.value = isoOf(st.to);
-    }
-    function value() {
-      if (!st.range) return "";
-      var p = { yearly: st.yearly, from: st.from, to: st.to };
-      if (periodProblem(p, cfg.dim) && periodProblem(p, cfg.dim).key === "incomplete") return "…";
-      return periodToText(p);
-    }
-    function render(write) {
-      mAlways.setAttribute("aria-checked", st.range ? "false" : "true"); mRange.setAttribute("aria-checked", st.range ? "true" : "false");
-      mAlways.tabIndex = st.range ? -1 : 0; mRange.tabIndex = st.range ? 0 : -1;
-      panel.hidden = !st.range;
-      yc.checked = st.yearly;
-      line.hidden = !st.yearly; onceLine.hidden = st.yearly;
-      if (write) toControls();
-      var p = { yearly: st.yearly, from: st.from, to: st.to }, problem = st.range ? periodProblem(p, cfg.dim) : null;
-      err.hidden = !problem; err.textContent = "";
-      phrase.hidden = !st.range || !!problem;
-      if (problem) {
-        var msg = problem.key === "nodate" ? fill(T.eNodate, { day: problem.day, month: cfg.months[problem.month - 1], example: (problem.month === 2 ? 28 : cfg.dim[problem.month - 1]) + " " + cfg.months[problem.month - 1] })
-          : problem.key === "year" ? T.eYear : problem.key === "order" ? T.eOrder : T.eText;
-        err.textContent = "⚠ " + msg;
-      } else if (st.range) {
-        phrase.textContent = fill(st.yearly ? T.phraseYearly : T.phraseOnce, { from: dateWords(st.from, cfg, !st.yearly), to: dateWords(st.to, cfg, !st.yearly) }) + (T.utc ? " " + T.utc : "");
-      }
-      if (write) { input.value = value(); fire(input, "input"); }
-    }
-    [fd, fm, td, tm, dFrom, dTo].forEach(function (c) { c.addEventListener("change", function () { fromControls(); render(false); input.value = value(); fire(input, "input"); }); });
-    yc.addEventListener("change", function () {
-      var yearNow = cfg.year;
-      if (yc.checked) { st.yearly = true; st.from = { d: st.from.d, m: st.from.m }; st.to = { d: st.to.d, m: st.to.m }; }
-      else {
-        st.yearly = false;
-        var f = { y: yearNow, m: st.from.m, d: st.from.d }, t = { y: yearNow, m: st.to.m, d: st.to.d };
-        if (f.m && t.m && (t.m * 100 + t.d) < (f.m * 100 + f.d)) t.y = yearNow + 1;   // à cheval sur le changement d'année
-        st.from = f; st.to = t;
-      }
-      render(true);
-    });
-    form.addEventListener("reset", function () {
-      root.setTimeout(function () {
-        var p = parsePeriodText(input.value);
-        st.range = p !== null; st.yearly = !p || p === "bad" ? true : p.yearly; st.from = p && p !== "bad" ? p.from : {}; st.to = p && p !== "bad" ? p.to : {};
-        render(true);
-      }, 0);
-    });
-    render(true);
-    input.value = value() || (parsed === "bad" ? input.value : "");
-    ui.__isSet = function () { return st.range; };
-    ui.__focus = function () { var t = st.range ? (st.yearly ? fd : dFrom) : mAlways; t.focus(); ui.scrollIntoView({ block: "center" }); };
-    return ui;
-  }
-
   /** La mise en page d'un formulaire du cœur d'après sa configuration (voir adminkit.mjs, formConfig). */
   function buildForm(form, cfg) {
     var first = cfg.layout.map(function (it) { return it.f || it.seg; }).filter(Boolean)[0];
@@ -500,7 +333,6 @@
         into.appendChild(nd);
         return nd;
       }
-      if (item.period) { var p = periodControl(form, item.period); if (p) { into.appendChild(fieldBox(form, item.period.field)); } return p; }
       return null;
     }
     cfg.layout.forEach(function (item) {
@@ -514,9 +346,9 @@
       rootBox.appendChild(d);
       more = d;
       item.more.items.forEach(function (sub) {
-        var node = place(sub, body), label = sub.label || (sub.sentence && sub.sentence.title) || (sub.period && sub.period.text.title) || (sub.f && labelOf(form, sub.f));
+        var node = place(sub, body), label = sub.label || (sub.sentence && sub.sentence.title) || (sub.f && labelOf(form, sub.f));
         if (sub.showWhen && node) showWhen(form, node, sub.showWhen);
-        if (!sub.quiet) moreItems.push({ node: node, field: sub.f, label: label, sentence: !!sub.sentence, period: !!sub.period });   // `quiet` : fait partie d'un groupe déjà résumé par un autre champ
+        if (!sub.quiet) moreItems.push({ node: node, field: sub.f, label: label, sentence: !!sub.sentence });   // `quiet` : fait partie d'un groupe déjà résumé par un autre champ
       });
       var refresh = function () {
         var set = [];
@@ -532,14 +364,12 @@
       refresh();
     });
 
-    // Une erreur dans un champ replié ou dans le contrôle de période : on ouvre et on amène la personne dessus.
+    // Une erreur dans un champ replié : on ouvre le panneau.
     var watcher = new root.MutationObserver(function () {
       var bad = form.querySelector("[data-field-error]");
       if (!bad) return;
       var det = bad.closest("details");
       if (det && !det.open) det.open = true;
-      var per = bad.closest(".ck-period");
-      if (per && per.__focus) per.__focus();
     });
     watcher.observe(form, { childList: true, subtree: true });
   }
@@ -601,7 +431,7 @@
     root.setTimeout(function () { pending = false; scan(); }, 30);
   }).observe(doc.body, { childList: true, subtree: true });
 
-  var api = { scan: scan, norm: norm, matches: matches, rowPasses: rowPasses, parsePeriodText: parsePeriodText, periodToText: periodToText, periodProblem: periodProblem, dateWords: dateWords, previewText: previewText, fill: fill };
+  var api = { scan: scan, norm: norm, matches: matches, rowPasses: rowPasses, previewText: previewText, fill: fill };
   root.CuriosaKit = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   scan();

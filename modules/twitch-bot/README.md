@@ -2,7 +2,7 @@
 
 Votre site **répond aux commandes tapées dans votre chat Twitch** : une personne écrit `!jeu`, et le chat reçoit « On joue à Zelda ! ». Des commandes sont déjà prêtes, vous créez les vôtres, et un gros bouton coupe tout en une seconde si besoin.
 
-**Il faut Curiosa 0.2.5 ou plus.** Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent tout seuls avec le bot. Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
+**Il faut Curiosa 0.6.4 ou plus** (le champ de période du cœur : « Tout le mois de », périodes toutes prêtes). Le « Connecteur Twitch » et « Ma Chaîne Twitch » s'installent tout seuls avec le bot. Le bot n'a besoin ni d'un agenda de streams (Planning, Agenda en ligne ou Streams saisis à la main), ni de Sponsors, ni des modules de réseaux : s'ils sont là, il en profite ; sinon la page vous explique simplement ce qui manque. Pour `!planning`, un agenda de streams suffit : le Planning n'est pas nécessaire.
 
 ## Pour commencer
 1. **Installez le bot.** Le Connecteur Twitch et Ma Chaîne Twitch s'installent avec lui. Si ce n'est pas déjà fait, suivez le guide du Connecteur Twitch (en haut de sa page) pour renseigner l'application Twitch de votre site, et indiquez votre chaîne dans Ma Chaîne Twitch : c'est la même application pour tout ce qui touche à Twitch, vous ne la saisissez qu'une fois.
@@ -19,14 +19,14 @@ Par défaut, c'est **votre propre compte** qui répond dans le chat.
 - **Un aperçu** de la réponse s'affiche quand vous modifiez une commande.
 
 ## Dates de validité (commandes et timers)
-Une commande ou un timer peut n'être active que sur une **période** : par exemple `!movember` du 1er au 30 novembre, ou `!subtember` en septembre, **chaque année** toute seule. Dans le formulaire : deux sélecteurs jour / mois pour le début et la fin (la fin est incluse), une case **Chaque année**, et des années à indiquer seulement si la période ne revient pas. Une période peut passer d'une année à l'autre (du 15 décembre au 15 janvier). Les erreurs s'affichent sous le champ (« Le 31 février n'existe pas »), et la phrase « Active du 1er novembre au 30 novembre, chaque année » s'affiche en aperçu.
-- La période est regardée **au moment** où une personne tape la commande (ou qu'un timer est évalué) : aucun minuteur. Elle suit votre fuseau horaire ; sans fuseau réglé, c'est l'UTC et l'écran le dit.
+Une commande ou un timer peut n'être active que sur une **période** : par exemple `!movember` du 1er au 30 novembre, ou `!subtember` en septembre, **chaque année** toute seule. Dans le formulaire, sous **Plus d'options** puis **Limiter dans le temps**, c'est le champ « période » de Curiosa : un seul champ, avec **Tout le mois de** (choisissez un mois), **Une période toute prête** (saisons, fêtes), deux dates (la fin est incluse), une case **Chaque année** et la phrase d'aperçu (« Du 1er novembre au 30 novembre, chaque année »). Une période nouvelle part de « une seule fois » ; une période déjà réglée garde son sens, « chaque année » compris. Une période peut passer d'une année à l'autre (du 15 décembre au 15 janvier). Laisser le champ vide, c'est « toujours active ». Les erreurs s'affichent sous le champ.
+- La période est regardée **au moment** où une personne tape la commande (ou qu'un timer est évalué) : aucun minuteur. Elle suit le fuseau horaire réglé dans le bot ; sans fuseau réglé, c'est l'UTC et l'aide du champ le dit.
 - Hors période, la commande **ne répond pas**, mais reste visible et modifiable : l'état est « Hors période : se réactive le 1er novembre », et le journal le dit aussi. Ce n'est pas « désactivée » : la case « Activée » décochée l'emporte toujours.
 - Les commandes d'avant n'ont pas de période : elles restent toujours actives.
 
 ## La page du bot
 - **Commandes** : un seul tableau (les vôtres, les toutes prêtes, celles des partenaires et des réseaux) avec un champ **Rechercher** qui filtre pendant que vous tapez, des filtres en pastilles, l'**origine** de chaque commande en couleur et en toutes lettres, et un **interrupteur** pour activer ou désactiver. « Modifier » change le nom et la réponse ; pour un partenaire, le bouton mène à sa fiche. **Nouvelle commande** ouvre un formulaire de trois champs ; autres noms, attentes et période d'activité sont sous « Plus d'options ».
-- **Période d'activité** : « Toujours active » ou « Seulement pendant une période » (« Du 1er novembre au 30 novembre », case « Chaque année », raccourcis d'un clic). Les années n'apparaissent que pour une période qui ne revient pas.
+- **Limiter dans le temps** : le champ de période de Curiosa, replié sous « Plus d'options » (voir plus haut). Vide : toujours active.
 - **Timers**, **Récompenses** : même modèle (tableau, recherche, interrupteur).
 - **Sans JavaScript**, la page reste complète : la liste entière et tous les champs sont là, seules la recherche en direct, les interrupteurs et le rangement du formulaire disparaissent. Le petit script qui les ajoute est dans `adminkit.client.js` (documenté en tête de fichier ; `adminkit.mjs` écrit le HTML et le sert par la route `kit`) : un autre module peut le reprendre tel quel.
 

@@ -423,6 +423,16 @@ export default {
     2: async (ctx) => { await dropOldKey(ctx); },
   },
 
+  /**
+   * Tableau de bord du cœur : « n suggestions de jeux à traiter » = les propositions des visiteurs encore au statut « proposée » (le même calcul que le titre de l'administration).
+   * Lecture du stockage seulement, bornée (2 000 lignes), jamais de réseau ni de jaquette ; 0 = rien n'est montré.
+   */
+  dashboard: {
+    tasks: {
+      async proposed(ctx) { return (await rows(ctx, MAX_STORED)).filter((g) => g.status === "proposed" && g.origin !== "admin").length; },
+    },
+  },
+
   async adminPanel(ctx, { query } = {}) {
     const list = await rows(ctx, MAX_STORED);
     const q = query ?? {};

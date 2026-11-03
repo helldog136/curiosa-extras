@@ -7,7 +7,7 @@ const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
 const { shownFor, used } = await import(`./variables.mjs${v}`);
-const { reopenLabel, parsePeriodText, periodError } = await import(`./period.mjs${v}`);
+const { reopenLabel, parsePeriodValue, periodError } = await import(`./period.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { preview } = await import(`./engine.mjs${v}`);
 const K = await import(`./adminkit.mjs${v}`);
@@ -213,10 +213,10 @@ function repeatOf(ctx, v, cur) {
   if (raw !== undefined && (!Number.isInteger(raw / 60) || raw < 60)) return { bad: failed(ctx, { code: "timer_minutes" }) };
   return { repeat: { ...(raw !== undefined ? { minutes: raw / 60 } : {}), ...(v.repeatLines !== undefined ? { lines: v.repeatLines } : {}), ...(v.repeatWhen ? { when: v.repeatWhen } : {}), enabled: on } };
 }
-/** Le champ « période » du formulaire (un texte : 01/11 - 30/11) → { period } ou { bad } (la phrase d'erreur va sous le champ). Absent : rien ne change. */
+/** Le champ « période » du formulaire (celui du cœur : 11-01/11-30 ou 2026-11-01/2026-11-30 ; l'ancienne écriture 01/11 - 30/11 est encore lue) → { period } ou { bad } (la phrase d'erreur va sous le champ). Absent : rien ne change. */
 function periodOf(ctx, v) {
   if (v.period === undefined) return {};
-  const p = parsePeriodText(v.period);
+  const p = parsePeriodValue(v.period);
   return p.ok ? { period: p.value } : { bad: { errors: { period: periodError(ctx, p) } } };
 }
 /** Une commande « réservée au timer » sans répétition active ne répondrait jamais : l'erreur est sous l'interrupteur « Seulement pour le timer ». */

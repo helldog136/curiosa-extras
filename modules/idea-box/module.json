@@ -5,7 +5,7 @@
     "fr": "Boîte à idées",
     "en": "Idea box"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minCore": "0.6.0",
   "description": {
     "fr": "Laissez votre public vous proposer des idées. Un champ, un bouton, puis une liste des idées retenues avec leur statut et un bouton « Je soutiens ». Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon.",
@@ -214,8 +214,8 @@
       {
         "id": "review",
         "label": {
-          "fr": "{n} idées à relire",
-          "en": "{n} ideas to review"
+          "fr": "Idées à relire ({n})",
+          "en": "Ideas to review ({n})"
         },
         "href": "?tab=use&show=review",
         "right": "ideas.moderate"
