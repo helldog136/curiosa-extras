@@ -7,7 +7,7 @@ import { fakeRewardsApi } from "../../helpers/fakeRewards.mjs";
 import { fakeHaBridge } from "../../helpers/fakeHaBridge.mjs";
 import { world, entry, link, C, SRC, say, NOW as BOT_NOW } from "../../helpers/botWorld.mjs";
 
-export default async function scenes({ adminFrame, messages }) {
+export default async function scenes({ adminFrame, messages, settingsBlock }) {
   const es = await import("../../../modules/twitch-bot/eventsub.mjs");
   const S = await import("../../../modules/twitch-bot/state.mjs");
   const R = await import("../../../modules/twitch-bot/rewards.mjs");
@@ -87,6 +87,7 @@ export default async function scenes({ adminFrame, messages }) {
 
   return {
     "commandes.webp": { html: neutral(frame(commands, "use")), h: 900, scripts: [fs.readFileSync(new URL("../../../modules/twitch-bot/adminkit.client.js", import.meta.url), "utf8")], forbid: [/\bemma\b/i] },
+    "reglages.webp": { html: neutral(frame([settingsBlock("twitch-bot", { stored: { timezone: "Europe/Paris" } })], "settings")), h: 380, forbid: [/\bemma\b/i] },
     "recompenses.webp": { html: neutral(frame(rewards, "rewards")), h: 1000, forbid: [/\bemma\b/i] },
   };
 }

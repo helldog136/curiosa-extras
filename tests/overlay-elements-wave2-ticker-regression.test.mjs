@@ -126,13 +126,13 @@ const GOLDEN = {
     }
   },
   "testimonials": {
-    "manifest": "842fda2e583facb4",
+    "manifest": "7805598329ad28a8",
     "keys": [
       "adminActions",
-      "adminBadge",
       "adminDownloads",
       "adminPanel",
       "backup",
+      "dashboard",
       "exports",
       "hooks",
       "mcp",

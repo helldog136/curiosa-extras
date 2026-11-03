@@ -24,6 +24,7 @@ const { formLabels, tableLabels } = await import("@/components/admin/kitLabels")
 const { makeTranslator } = await import("@/core/i18n/dictionary");
 const { EntryIcon } = await import("@/components/site/EntryIcon");
 const { EntryList } = await import("@/components/site/EntryList");
+const { ModuleSettings } = await import("@/components/admin/ModuleSettings");
 
 export const NOW = new Date("2026-10-12T08:00:00Z");   // un lundi, 10 h à Paris : l'horloge est figée pendant la fabrication des pages, les captures sont reproductibles
 export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -101,3 +102,20 @@ export const entryListHtml = (entries, display = "links", { locale = "fr" } = {}
   entries: entries.map((e, i) => ({ id: `e${i}`, locale, slug: `e${i}`, summary: null, body: "", cover: null, publishedAt: new Date("2026-10-01"), fields: [], code: null, ...e })),
   collection: { display, clickAction: "external" }, locale, defaultLocale: locale,
 }));
+
+/**
+ * L'onglet « Réglages » d'une extension, rendu par le VRAI composant du cœur (ModuleSettings), avec les réglages du manifeste du module :
+ * version simple (les réglages « avancés » sont absents, comme sur le site), ceux de l'onglet demandé seulement. Renvoie un bloc `html` à passer à `adminFrame`.
+ * `stored` : valeurs déjà enregistrées { clé: valeur } (sinon les valeurs par défaut du manifeste).
+ */
+export function settingsBlock(id, { lang = "fr", tab = "settings", stored = {}, advanced = false } = {}) {
+  const manifest = JSON.parse(read(id, "module.json"));
+  const fields = manifest.settings.filter((f) => (advanced || !f.advanced) && (f.tab ?? "settings") === tab);
+  const tr = makeTranslator(lang);
+  const values = Object.fromEntries(Object.entries(stored).map(([k, v]) => [k, { "": v }]));
+  const html = renderToStaticMarkup(h("form", { className: "space-y-8" }, h(HelpTipProvider, { label: "Aide : {name}" }, h(ModuleSettings, {
+    t: tr, locale: lang, defaultLocale: lang, locales: [lang], fields, allFields: manifest.settings, groups: manifest.optionalGroups ?? [], stored: values,
+    siteByLocale: { [lang]: { name: SITE.name, tagline: "" } }, theme: {}, missing: new Set(), instanceId: "i1", choices: {}, advanced, tabbed: true,
+  }))));
+  return { type: "html", html, tab: "settings" };
+}

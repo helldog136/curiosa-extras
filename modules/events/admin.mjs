@@ -356,11 +356,14 @@ export async function panel(ctx, { query } = {}) {
   return blocks;
 }
 
-/** Les brouillons que l'assistant IA a préparés et qui attendent une relecture (pastille du menu d'administration). */
-export async function badge(ctx) {
+/** Les brouillons que l'assistant IA a préparés et qui attendent une relecture. */
+export async function toReview(ctx) {
   const data = await D.load(ctx);
   return Math.min(99, data.events.filter((e) => e.by === "assistant" && e.status === "draft").length);
 }
+
+/** Tableau de bord du cœur : « n événements à relire ». Lecture du stockage seulement (liste déjà gardée en mémoire), jamais de réseau ; 0 = rien n'est montré. */
+export const dashboard = { tasks: { review: toReview } };
 
 // ── Les actions ──────────────────────────────────────────────────────────────────────────────────────────────────────
 

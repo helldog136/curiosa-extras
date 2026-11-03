@@ -5,7 +5,7 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "minCore": "0.6.0",
   "description": {
     "fr": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
@@ -14,6 +14,19 @@
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "icon": "📅",
+  "dashboard": {
+    "tasks": [
+      {
+        "id": "review",
+        "label": {
+          "en": "Events to review ({n})",
+          "fr": "Événements à relire ({n})"
+        },
+        "href": "?tab=use&show=draft",
+        "right": "events.edit"
+      }
+    ]
+  },
   "main": "index.mjs",
   "type": "widget",
   "instances": "multiple",
