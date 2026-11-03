@@ -26,6 +26,7 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 
 ### Pour les développeurs
 
+- Le test « chaque clé de `settings` est lue par le code du module » accepte aussi `pageSetting` (lu par le cœur, comme `shortLink`) et ne cite plus la mauvaise version du cœur. Il reste écrit ici, sans dépendre d'une fonction du cœur publié.
 - Clé `dashboard` de `module.json` (cœur 0.6.1+, aucun `minCore`) : `tasks` pour `testimonials` (`pending`, droit `reviews.moderate`), `game-suggestions` (`proposed`) et `events` (`review`, droit `events.edit`) ; `quickActions` pour `blog` et `pages` (`/admin/entries/new?c={key}`, aucun code, droit par défaut `open` : sans lui, la rédaction garde le bouton « Ajouter dans … » du cœur). Le code est `dashboard.tasks.<id>(ctx)` : un nombre, une lecture du stockage bornée (1 000 avis, 2 000 suggestions, la liste d'événements déjà gardée en mémoire), aucun appel réseau.
 - Libellés de tâche écrits « Sujet à faire ({n}) » : le cœur remplace `{n}` sans accorder le pluriel, ce tour se lit aussi bien pour 1 que pour 12 (« 1 événements » serait faux).
 - `adminBadge` retiré de `testimonials` et `events` (même calcul que la tâche, le cœur affichait les deux). Les tests de ces modules lisent la tâche.
