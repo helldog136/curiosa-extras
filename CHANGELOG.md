@@ -4,9 +4,11 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.41.0 — 2026-11-03
 
-*En bref : dans la liste en alternance, le contenu de chaque case remplit mieux la largeur (Planning 2.7.1). Le planning peut montrer la photo des personnes avec qui vous streamez, sans que vos visiteurs contactent Twitch, et ajouter tout seul à votre liste « Déjà joué » les jeux que vous avez commencés à jouer. Planning 2.7.0 et Suggestions de jeux 1.9.0 (Curiosa 0.6.0 ou plus pour le second ; le Planning garde Curiosa 0.5.0). Le Planning demande une nouvelle permission : garder des fichiers dans son propre stockage (les photos).*
+*En bref : le Planning peut montrer la photo des personnes avec qui vous streamez, sans que vos visiteurs contactent Twitch. Il peut aussi ajouter tout seul à votre liste « Déjà joué » les jeux que vous avez commencés à jouer (coupé par défaut). Dans la liste en alternance, le contenu de chaque case remplit mieux la largeur.*
+
+*Ce qui demande une mise à jour de Curiosa : Suggestions de jeux 1.9.0 demande Curiosa 0.6.0 ou plus. Le Planning (2.7.1) garde Curiosa 0.5.0. Le Planning demande une nouvelle permission à accepter : garder des fichiers dans son propre stockage (les photos).*
 
 ### Nouveautés
 
