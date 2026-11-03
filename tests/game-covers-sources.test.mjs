@@ -306,7 +306,7 @@ test("la copie est gardée une fois (idempotent), deux demandes en même temps =
   await svc.cover(c, "Hades"); await svc.cover(c, "Hades");
   assert.equal(imageCalls.length, 1);
   assert.equal((await metaDocs(c)).length, 1); assert.equal((await bytesDocs(c)).length, 1);
-  const res = await mod.routes["cover/:id"](new Request("https://example.test/m/game-covers/cover/x"), Object.assign(c, { params: { id: copies.idOf(titleKey("Hades")) } }));
+  const res = await mod.routes["cover/:slug"](new Request("https://example.test/m/game-covers/cover/x"), Object.assign(c, { params: { slug: copies.idOf(titleKey("Hades")) } }));
   assert.equal(res.status, 200);
   assert.deepEqual(new Uint8Array(await res.arrayBuffer()), JPEG);
 });
@@ -315,7 +315,7 @@ test("route publique : GET et HEAD seulement, 404 identique pour un repère inco
   const c = makeCtx();
   await svc.cover(c, "Hades");
   const id = copies.idOf(titleKey("Hades"));
-  const call = (method, p) => mod.routes["cover/:id"](new Request("https://example.test/m/game-covers/cover/x?next=https://evil.example", { method }), Object.assign(c, { params: { id: p } }));
+  const call = (method, p) => mod.routes["cover/:slug"](new Request("https://example.test/m/game-covers/cover/x?next=https://evil.example", { method }), Object.assign(c, { params: { slug: p } }));
   const get = await call("GET", id);
   assert.equal(get.status, 200);
   assert.equal(get.headers.get("content-type"), "image/jpeg");
@@ -445,7 +445,7 @@ test("Twitch : une copie ne dépasse pas 24 heures (conditions des développeurs
   assert.equal(r.source, "twitch");
   assert.equal(copies.keepMs(c, "twitch"), 24 * 3_600_000); assert.equal(copies.keepMs(c, "rawg"), 30 * 86_400_000); assert.equal(copies.keepMs(c, "steam"), 30 * 86_400_000);
   const id = copies.idOf(titleKey("Hades"));
-  const route = (p) => mod.routes["cover/:id"](new Request("https://example.test/x"), Object.assign(c, { params: { id: p } }));
+  const route = (p) => mod.routes["cover/:slug"](new Request("https://example.test/x"), Object.assign(c, { params: { slug: p } }));
   assert.equal((await route(id)).status, 200);
   // Copie Twitch de 25 h demandée par la route : l'adresse mémorisée par un autre module ne devient JAMAIS un 404 tant que la source répond (refaite à la demande, puis 200).
   await ageCopy(c, "Hades", 25 * 3_600_000);
@@ -518,7 +518,7 @@ test("route : une copie Rawg ou Steam due pour le renouvellement est servie tout
   const c = makeCtx({ settings: { useTwitch: false } });
   await svc.cover(c, "Hades");
   const id = copies.idOf(titleKey("Hades"));
-  const route = () => mod.routes["cover/:id"](new Request("https://example.test/x"), Object.assign(c, { params: { id } }));
+  const route = () => mod.routes["cover/:slug"](new Request("https://example.test/x"), Object.assign(c, { params: { slug: id } }));
   const old = (await bytesDocs(c))[0].data.b64;
   await ageCopy(c, "Hades", 45 * 86_400_000);
   mode.images = "down";
@@ -530,4 +530,33 @@ test("route : une copie Rawg ou Steam due pour le renouvellement est servie tout
   await copies.settled();
   assert.ok(imageCalls.length > before, "renouvelée paresseusement par la route elle-même");
   assert.ok(Date.now() - (await metaDocs(c))[0].at < 60_000);
+});
+
+// NON-RÉGRESSION (Jaquettes de jeux 1.3.1). En 1.3.0 la route s'appelait « cover/:id » et lisait `ctx.params.id` : le cœur ne connaît qu'UN segment libre, toujours nommé `slug`
+// (`matchModuleRoute` de src/core/modules/pageMeta.ts) ; /m/<clé>/cover/<repère> répondait donc « Not found » (celui du cœur) sur le vrai site. Ici, la route est trouvée EXACTEMENT
+// comme le fait le cœur, à partir de l'adresse écrite par le module.
+const SLUG_RE = /^[A-Za-z0-9_-]{1,80}$/;
+function coreMatch(routes, segments) {   // recopie fidèle de matchModuleRoute (cœur) : la route de ce nom exact, sinon « …/:slug » avec `params: { slug }` et rien d'autre
+  const last = segments[segments.length - 1];
+  if (last === ":slug") return null;
+  if (routes[segments.join("/")]) return { handler: routes[segments.join("/")], params: {} };
+  if (last === undefined || !SLUG_RE.test(last)) return null;
+  const key = [...segments.slice(0, -1), ":slug"].join("/");
+  return Object.prototype.hasOwnProperty.call(routes, key) ? { handler: routes[key], params: { slug: last } } : null;
+}
+
+test("l'adresse de jaquette écrite par le module est SERVIE par la route telle que le cœur la trouve (forme réelle : params.slug)", async () => {
+  const c = makeCtx();
+  const { url } = await svc.cover(c, "Hades");
+  const { pathname } = new URL(url);
+  assert.match(pathname, /^\/m\/game-covers\/cover\/[0-9a-f]{16}$/, "le module écrit bien une adresse du site");
+  const [, key, ...path] = pathname.split("/").slice(1);   // ["m","game-covers","cover","<repère>"] -> clé, puis segments de la route
+  assert.equal(key, "game-covers");
+  const hit = coreMatch(mod.routes, path);
+  assert.ok(hit, "le cœur trouve une route pour cette adresse (sinon : « Not found » et jaquette absente)");
+  assert.deepEqual(Object.keys(hit.params), ["slug"], "le cœur ne donne que `slug`");
+  const res = await hit.handler(new Request(url), Object.assign(c, { params: Object.freeze({ ...hit.params }) }));
+  assert.equal(res.status, 200); assert.equal(res.headers.get("content-type"), "image/jpeg");
+  assert.deepEqual(new Uint8Array(await res.arrayBuffer()), JPEG);
+  assert.equal(coreMatch(mod.routes, ["cover", "0123456789abcdef/x"]), null, "un seul segment libre");
 });

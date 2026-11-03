@@ -67,8 +67,8 @@ const tabOf = (blocks, tab) => blocks.filter((b) => (b.tab ?? "use") === tab);
 beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCache(); rawg.resetBreaker(); ops.resetRate(); copies.resetCopies(); sources.resetSources(); mode = "up"; serve(); });
 afterEach(() => { mock.timers.reset(); globalThis.fetch = realFetch; });
 
-test("manifeste 1.3.0 : version mineure, une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
-  assert.equal(manifest.version, "1.3.0");
+test("manifeste 1.3.1 : version corrective (1.3.0 + route cover/:slug), une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
+  assert.equal(manifest.version, "1.3.1");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
   assert.equal(manifest.dashboard, undefined, "rien qu'on ne puisse pas agir dessus : pas de carte ni de tâche");
   assert.deepEqual(manifest.logEvents.map((e) => e.key).slice(-2), ["cover.outage", "cover.back"]);

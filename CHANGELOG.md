@@ -4,6 +4,15 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : les jaquettes de vos jeux copiées sur votre site s'affichent enfin sur vos pages publiques (le Planning, par exemple). Rien à régler.*
+
+### Corrections
+
+- **Jaquettes de jeux 1.3.1 : les jaquettes servies par votre site s'affichent.** Dans la 1.3.0, l'adresse d'une jaquette copiée sur votre site répondait « Not found » : l'image ne s'affichait donc pas sur la page publique du Planning. Le module annonçait une route que le cœur ne sait pas trouver (il ne connaît qu'un seul morceau libre dans l'adresse, toujours nommé `slug`). La route s'appelle maintenant `cover/:slug`. Les adresses déjà mémorisées par les autres modules sont inchangées et fonctionnent aussitôt, sans rien refaire.
+- **Un contrôle de plus pour tous les modules.** Un test lit les routes de chaque module du dépôt et refuse toute route dont le morceau libre n'est pas `slug`, pour que ce défaut ne revienne pas.
+
 ## 1.42.0 — 2026-11-03
 
 *En bref : si RAWG est en panne ou si vous n'avez pas de code RAWG, les jaquettes de vos jeux viennent d'autres sources et sont gardées sur votre site. Vos visiteurs ne contactent plus aucune de ces sources. Il y a une seule permission à accepter pour Jaquettes de jeux, et rien d'autre à régler.*
