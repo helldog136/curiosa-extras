@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.37.0 — 2026-11-03
+
+*En bref : votre bandeau d'annonce peut maintenant commencer et finir à des dates choisies, et la page Pages propose des modèles prêts à modifier. L'assistant d'installation posera aussi la question « Vous êtes… ? ». Bannière d'annonce 1.1.0, pour Curiosa 0.6.0 ou plus ; Pages 1.1.0, pour tout cœur. Les modèles de pages et les profils de départ n'apparaissent qu'avec le cœur 0.6.3 (à publier ensuite) : sur le cœur 0.6.2 ou plus ancien, ils sont simplement ignorés, rien ne casse et rien ne change. C'est voulu.*
+
+### Nouveautés
+
+- **Bannière d'annonce 1.1.0 : une annonce qui commence et finit toute seule.** Sous « Plus d'options », « Limiter dans le temps » vous laisse choisir un début et une fin en un seul champ, avec la phrase « Du 1er décembre au 24 décembre » pour vérifier ; « Chaque année » est possible. Hors de ces dates, le bandeau, la note d'accueil et l'annonce proposée aux overlays disparaissent d'eux-mêmes, sans rien à défaire. Sans dates, rien ne change : vos réglages sont conservés. Pour Curiosa 0.6.0 ou plus.
+- **Exemples sous les champs de la Bannière d'annonce** (texte, adresse, note d'accueil).
+- **Pages 1.1.0 : « Partir d'un modèle ».** Cinq modèles de pages à modifier : « Qui sommes-nous », « Infos pratiques », « Chronologie », « À propos de moi » et « Ce que je propose ». Chacun crée un brouillon prérempli, jamais une page publiée.
+- **Une question pour démarrer : « Vous êtes… ? »** Streamer, association, activité indépendante ou artiste : l'assistant d'installation coche d'avance les extensions qui vont avec et propose les pages d'exemple correspondantes. Vous pouvez passer la question et tout changer ensuite.
+- **Aucun texte juridique.** Les modèles ne contiennent ni mentions légales ni politique de confidentialité : ces textes restent à écrire par vous.
+
+### Pour les développeurs
+
+- `examples/announcement-banner` : réglage `period` (`rare`, facultatif, sans valeur par défaut), `minCore` 0.6.0. La décision est prise à l'affichage, d'après l'heure courante dans le fuseau (`ctx.timezone` s'il existe, sinon celui de la machine), sans minuteur. Tests dans `tests/announcement-banner.test.mjs` (fuseaux, changements d'heure, début dans le futur, valeurs illisibles).
+- `catalogue/profiles.json` (nouveau, facultatif) : profils de départ lus par le cœur après 0.6.2. `catalogue/suggested.json` ne change pas. Pages : clé `content.templates` dans `module.json`, ignorée par un cœur plus ancien (aucun `minCore`).
+- Versions : dépôt 1.37.0 ; Bannière d'annonce 1.1.0 ; Pages 1.1.0. Le Catalogue pointe l'étiquette `v1.37.0`.
+
 ## 1.36.0 — 2026-11-02
 
 *Nouveau module : la Boîte à idées. Votre public vous propose des idées sur une page, vous relisez avant que quoi que ce soit apparaisse. Boîte à idées 1.0.0, pour Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

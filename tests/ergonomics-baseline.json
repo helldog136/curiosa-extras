@@ -12,14 +12,6 @@
       "R9 locale:en:noToken #a87a66",
       "R9 locale:fr:noToken #3d88e0"
     ],
-    "announcement-banner": [
-      "R11 setting:homeText.help",
-      "R11 setting:link.help",
-      "R11 setting:text.help[en] #ebbf04",
-      "R11 setting:text.help[fr] #cb252d",
-      "R13 description[en] #27787e",
-      "R13 description[fr] #328588"
-    ],
     "audience": [
       "R10 locale:en:currentPseudo #d22930",
       "R10 locale:fr:currentPseudo #37835f",
