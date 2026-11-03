@@ -70,7 +70,7 @@ test("admin : liste + formulaire ; suppression avec confirmation « danger » ; 
   assert.deepEqual(table.rowIds, [id]);
   const del = table.rowActions.find((a) => a.action === "remove");
   assert.ok(del.danger === true && /définitive/.test(del.confirm), "jamais destructif sans confirmation");
-  assert.deepEqual(table.rows[0].slice(1), ["Soirée", "Celeste", "Chaque semaine, jusqu'au 2026-12-31", "Prévu"]);
+  assert.deepEqual(table.rows[0].slice(1), ["Soirée", "Celeste", "", "Chaque semaine, jusqu'au 2026-12-31", "Prévu"]);
   const edit = (await def.adminPanel(ctx, { query: { edit: id } }))[0];
   assert.equal(edit.type, "adminForm"); assert.equal(edit.cancelHref, "?");
   const v = Object.fromEntries(edit.fields.map((f) => [f.name, f.value]));
@@ -129,7 +129,7 @@ test("i18n et manifeste : fr/en alignés, aucune clé manquante, aucun service, 
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fs.readFileSync(new URL("module.json", dir), "utf8"));
   assert.ok(parseManifest(raw).ok);
-  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.1.0", "0.2.2", "multiple"]);
+  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.2.0", "0.6.0", "multiple"]);
   assert.equal(raw.offers, undefined, "aucun service : deux modules d'agenda n'offrent jamais le même"); assert.deepEqual(raw.provides.map((p) => p.topic), ["planning.slot"]);
   assert.ok(raw.permissions.includes("storage"));
   const declared = new Set(raw.settings.map((s) => s.key));

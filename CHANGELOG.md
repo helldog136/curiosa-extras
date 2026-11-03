@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.40.0 — 2026-11-03
+
+*En bref : vous pouvez maintenant dire avec qui vous streamez. Dans la description d'un événement Google Agenda, ajoutez une ligne « Avec : pseudo1, pseudo2 » (les pseudos Twitch), et le Planning affiche le nom de ces personnes, avec un lien vers leur chaîne. Seuls les partenaires présents dans votre module Contacts s'affichent ; les autres restent invisibles. Pour un stream saisi à la main, le champ « Avec ces pseudos Twitch » est sous « Plus d'options ». Rien n'est modifié dans vos données.*
+
+*Ce qui demande une mise à jour de Curiosa : Streams saisis à la main 1.2.0 demande Curiosa 0.6.0 ou plus (champ replié sous « Plus d'options »). Planning 2.6.0 (Curiosa 0.5.0 ou plus) et Agenda en ligne 1.1.0 (Curiosa 0.2.5 ou plus) gardent leurs exigences. Le Planning n'a besoin de Contacts que pour afficher les partenaires.*
+
+### Nouveautés
+
+- **Planning 2.6.0 : « Avec Camille », le nom de la personne avec qui vous streamez.** Écrivez les pseudos Twitch dans un stream, comme vous précisez le jeu : le planning montre le **nom de la fiche** de votre module Contacts, avec un lien vers sa chaîne, sur la page, dans les morceaux d'accueil, dans les éléments d'overlay (le nom seul) et sur l'image de la semaine. Un pseudo qui n'est pas dans vos contacts n'est pas affiché ; une fiche « à vérifier » ou rangée dans « Ne pas montrer » ne l'est jamais. Jamais d'e-mail, de téléphone, de note ni de photo, et aucune demande à Twitch. Sans Contacts, rien ne change et l'administration le dit.
+- **« Avec qui vous streamez » dans l'administration du Planning.** Chaque pseudo dit ce qui sera fait : affiché sous tel nom, dans vos contacts mais non affiché, ou « pas dans vos contacts » avec un lien **Ajouter** vers Contacts. Rien n'apparaît tant qu'aucun pseudo n'est écrit.
+- **Le réglage « Catégorie « Ne pas montrer » »** (avancé) existe aussi au Planning, comme au Mur des remerciements et à l'Annuaire. Laissé vide, la catégorie qui porte ce nom est utilisée.
+- **Streams saisis à la main 1.2.0 : « Avec ces pseudos Twitch ».** Un champ facultatif sous « Plus d'options », avec un exemple. Cinq pseudos au plus ; `@pseudo` et `twitch.tv/pseudo` collés sont nettoyés. Un pseudo illisible est refusé avec un message sous le champ, et le tableau montre une colonne « Avec ».
+- **Agenda en ligne 1.1.0 : une ligne « Avec : » dans l'événement Google.** Même principe que « Jeu : » : `Avec : etoile_nord, lune_douce` dans la description (« With : » en anglais ; virgule, « et », point-virgule ou retour à la ligne ; `@pseudo` et `twitch.tv/pseudo` acceptés). Rien d'autre de la description n'est lu. Le guide « Comment remplir mon agenda Google ? » et le fichier pour votre assistant IA l'expliquent.
+- **Le même stream saisi à la main et dans Google Agenda** n'est montré qu'une fois, avec les partenaires des deux réunis (cinq au plus, sans doublon).
+- **Pour l'assistant.** `planning_upcoming` (lecture seule, même nom, mêmes droits) ajoute `partners` (nom et lien des personnes montrées) et `partnersNotShown` aux seuls streams qui ont des pseudos.
+- **Aucune donnée ne change.** Vos streams, vos agendas et vos réglages sont conservés tels quels ; sans pseudo, tout s'affiche exactement comme avant.
+- **Visuels du Planning** refaits avec des données inventées (une personne « Camille » avec son stream).
+
+### Pour les développeurs
+
+- `planning.slot` : champ facultatif `partners` (`string[]`, pseudos Twitch en minuscules, 5 au plus), déclaré dans le schéma du Planning et dans `docs/TOPICS.md` ; absent quand il n'y en a pas (créneaux identiques à ceux d'avant). Le Planning renormalise tout ce qu'il reçoit.
+- `planning` 2.6.0 : `partners.mjs` (pseudos, `contact.book` v2 **facultatif** : `search` par pseudo puis `resolve`, jamais d'autre méthode ; réponses 2 minutes en mémoire), `minCore` inchangé (0.5.0 : aucune brique 0.6.0). `calendar-manual` 1.2.0 : `minCore` 0.6.0 (`folded`, `example`). `calendar-ical` 1.1.0 : `partners.mjs`, `minCore` inchangé. Aucune migration, aucun nouvel événement au journal.
+- Tests : `tests/planning-partners.test.mjs` (nouveau) ; `tests/helpers/ergonomics.mjs` resynchronisé avec le kit du cœur 0.6.5 (la copie était en retard et faisait échouer `tests/ergonomics.test.mjs`).
+
 ## 1.39.0 — 2026-11-03
 
 *En bref : le Bot Twitch 1.10.0 change la façon de gérer vos timers : un timer est maintenant une commande que le bot répète tout seul. Vos anciens timers sont repris automatiquement : ils deviennent des commandes « Timer seulement », envoient le même message au même rythme, et rien n'est effacé. La période d'une commande utilise le champ « période » de Curiosa (« Tout le mois de », périodes toutes prêtes), et les remboursements à regarder vont à l'Historique. La Bannière d'annonce 1.2.0 accepte une seule date (« jusqu'au… » ou « à partir du… »). Jaquettes de jeux 1.2.1 garde vos jaquettes affichées quand RAWG est en panne et répare le bouton « Corriger ». Le tableau de bord de l'administration dit ce qui vous attend dans neuf extensions (Blog, Pages, Témoignages, Suggestions de jeux, Événements, Contacts, Partenariats, Streams saisis à la main, Boîte à idées). Home Assistant 1.2.0 vous rappelle de refaire l'association quand l'adresse du site change, et Home Assistant, Participation 1.3.1 et Sondages 1.4.2 écrivent dans l'Historique. Enfin, la version simplifiée est plus légère : onglets de réglages plus courts, mots de tous les jours, fuseau horaire rangé en mode avancé.*

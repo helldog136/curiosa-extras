@@ -2,6 +2,7 @@
 // ni horloge cachée, aucune exception sur des données absurdes. Le Planning ne sait pas d'où viennent les créneaux : il les prend tels que le cœur les lui donne.
 const V = new URL(import.meta.url).search;
 const { zonedTimeToUtc, addDaysToWall } = await import(`./dates.mjs${V}`);
+const { loginsOf } = await import(`./partners.mjs${V}`);
 
 export const MAX_GAMES_PER_STREAM = 3;
 const DAY = 86_400_000;
@@ -30,12 +31,12 @@ export function displayZone(setting, items) {
 }
 
 /**
- * Éléments du sujet `planning.slot` -> créneaux { uid, title, games, start, end, allDay, cancelled } (Dates), triés par début, sans doublon.
+ * Éléments du sujet `planning.slot` -> créneaux { uid, title, games, partners (pseudos), start, end, allDay, cancelled } (Dates), triés par début, sans doublon.
  * Journée entière : la date donnée par le calendrier (`day`) fait foi, lue dans le fuseau d'affichage `tz` (jamais décalée d'un jour) ; la durée en jours est gardée.
  * Un créneau illisible (début absent ou absurde) est écarté seul. Deux calendriers qui annoncent le même stream (même titre, mêmes heures) n'en font qu'un.
  */
 export function toSlots(items, tz = "UTC") {
-  const out = [], seen = new Set();
+  const out = [], seen = new Map();
   for (const it of Array.isArray(items) ? items : []) {
     if (!it || typeof it !== "object") continue;
     let start = toDate(it.start);
@@ -53,10 +54,13 @@ export function toSlots(items, tz = "UTC") {
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
     const title = String(it.title ?? "");
     const key = `${title}|${start.getTime()}|${end.getTime()}|${allDay}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const partners = loginsOf(it.partners);
+    // Le même stream dans deux agendas (ou saisi à la main ET dans Google Agenda) n'en fait qu'un : ses partenaires sont réunis, sans doublon, 5 au plus.
+    if (seen.has(key)) { const first = seen.get(key); first.partners = loginsOf([...(first.partners ?? []), ...partners]); continue; }
     const games = (Array.isArray(it.games) ? it.games : []).filter((g) => typeof g === "string").map((g) => g.trim()).filter(Boolean).slice(0, MAX_GAMES_PER_STREAM);
-    out.push({ uid: String(it.id ?? ""), title, games, start, end, allDay, cancelled: it.status === "cancelled" });
+    const slot = { uid: String(it.id ?? ""), title, games, ...(partners.length ? { partners } : {}), start, end, allDay, cancelled: it.status === "cancelled" };
+    seen.set(key, slot);
+    out.push(slot);
   }
   return out.sort((a, b) => a.start.getTime() - b.start.getTime() || a.title.localeCompare(b.title));
 }

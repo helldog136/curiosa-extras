@@ -442,7 +442,7 @@ test("manifeste : valide, 1.0.2, minCore 0.2.5, aucun service ni dépendance, su
   const { parseManifest } = await import("@/core/modules/manifest");
   const raw = JSON.parse(fsMod.readFileSync(new URL("module.json", dirOf), "utf8"));
   const parsed = parseManifest(raw); assert.ok(parsed.ok, parsed.error);
-  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.0.3", "0.2.5", "multiple"]);
+  assert.deepEqual([raw.version, raw.minCore, raw.instances], ["1.1.0", "0.2.5", "multiple"]);
   assert.deepEqual([raw.offers, raw.requires, raw.seeds], [undefined, undefined, undefined], "ni service ni dépendance : un agenda seul est utile (le bot lit planning.slot)");
   assert.deepEqual(raw.provides.map((p) => p.topic), ["planning.slot"]);
   assert.equal(raw.settings.find((s) => s.key === "url").type, "secret");

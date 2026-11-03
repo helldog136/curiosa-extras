@@ -59,9 +59,11 @@ export const RULES = {
   R13: "Ton neutre, vouvoiement, sans cri",
   R14: "Pas d'étiquette identique sur toutes les lignes",
   R15: "Une recherche pour toute liste qui peut grandir",
+  R16: "Lignes régulières (vignettes affichables)",
   R17: "Un interrupteur montre l'état (pas « Activer / désactiver »)",
   R19: "Le bon contrôle",
   R22: "Erreur avec ce qu'il faut faire et un exemple",
+  R28: "Chaque image a un texte alternatif",
   R29: "FR et EN à parité",
 };
 
@@ -386,10 +388,22 @@ export function errorMessageProblems(message) {
   return out;
 }
 
+/** Pourquoi le cœur n'affichera pas cette vignette (réponse courte), ou null. `hosts` : les `imageHosts` du manifeste ; sans liste, seule la forme est contrôlée. Même règle que src/core/adminkit/image.ts. */
+function imageSrcProblem(src, hosts) {
+  if (typeof src !== "string" || src === "") return "l'image n'a pas d'adresse (« src »)";
+  if (/[\u0000-\u0020\u007f\\]/.test(src) || src.startsWith("//")) return `adresse d'image refusée « ${excerpt(src, 40)} »`;
+  if (src.startsWith("/")) return /^\/(?:api|admin)(?:[/?#]|$)/i.test(src) || /(?:^|\/)\.\.(?:\/|$)/.test(src.split(/[?#]/)[0]) ? `une image du site ne peut pas viser « ${excerpt(src, 40)} » (ni /api, ni /admin, ni « .. »)` : null;
+  let url;
+  try { url = new URL(src); } catch { return `adresse d'image refusée « ${excerpt(src, 40)} »`; }
+  if (url.protocol !== "https:" || url.username || url.password || url.port) return `adresse d'image refusée « ${excerpt(src, 40)} » (https seulement, sans identifiant ni port)`;
+  if (Array.isArray(hosts) && !hosts.includes(url.hostname)) return `l'hôte « ${url.hostname} » n'est pas dans « imageHosts » de module.json : la vignette ne sera pas montrée`;
+  return null;
+}
+
 /**
  * Problèmes d'ergonomie mesurables sur les blocs d'un panneau d'administration. Ne lève jamais.
  * @param {object[]} blocks blocs produits par `adminPanel` (ou par un formulaire) avec le faux contexte du kit
- * @param {{ errors?: string[], skip?: string[] }} [opts] `errors` : messages d'erreur que la page peut afficher (R22) ; `skip` : règles à ne pas contrôler (par exemple ["R15"], avec la raison dans votre test)
+ * @param {{ errors?: string[], skip?: string[], imageHosts?: string[] }} [opts] `errors` : messages d'erreur que la page peut afficher (R22) ; `imageHosts` : les `imageHosts` du manifeste (pour contrôler l'hôte des vignettes) ; `skip` : règles à ne pas contrôler (par exemple ["R15"], avec la raison dans votre test)
  * @returns {{ rule: string, message: string }[]}
  */
 export function adminPageErgonomicsProblems(blocks, opts = {}) {
@@ -423,6 +437,14 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
         }
       }
       for (const a of b.rowActions ?? []) if (TOGGLE_RE.test(a.label ?? "")) add("R17", `le bouton de ligne « ${a.label} » : un interrupteur montre l'état courant`);
+      // Vignettes (cellule `image`) : un texte alternatif (R28) et une adresse que le cœur affichera (R16) ; sinon la vignette disparaît en silence et la ligne est plus courte que les autres.
+      rows.forEach((r, i) => (r ?? []).forEach((c) => {
+        if (!c || typeof c !== "object" || c.image === undefined) return;
+        const where = `ligne ${i + 1} de « ${cols.join(" · ") || "tableau"} »`;
+        if (typeof c.image?.alt !== "string" || c.image.alt.trim() === "") add("R28", `${where} : l'image n'a pas de texte alternatif (« alt »), le cœur ne la montrera pas`);
+        const problem = imageSrcProblem(c.image?.src, opts.imageHosts);
+        if (problem) add("R16", `${where} : ${problem}`);
+      }));
     } else if (b.type === "links") {
       for (const l of b.items ?? []) if (TOGGLE_RE.test(l.label ?? "")) add("R17", `le lien « ${l.label} » : un interrupteur montre l'état`);
     }

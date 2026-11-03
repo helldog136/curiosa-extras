@@ -57,6 +57,7 @@ export default {
           { name: "startTime", label: t("fStartTime"), help: t("hStartTime"), value: d.startTime ?? "" },
           { name: "endTime", label: t("fEndTime"), help: t("hEndTime"), value: d.endTime ?? "" },
           { name: "games", label: t("fGames"), help: t("hGames"), value: (d.games ?? []).join(", ") },
+          { name: "partners", label: t("fPartners"), help: t("hPartners"), example: t("exPartners"), folded: true, value: (d.partners ?? []).join(", ") },
           { name: "allDay", label: t("fAllDay"), help: t("hAllDay"), kind: "select", options: yesNo(ctx), value: d.allDay ? "yes" : "no" },
           { name: "repeat", label: t("fRepeat"), kind: "select", options: [{ value: "none", label: t("repeatNone") }, { value: "weekly", label: t("repeatWeekly") }], value: d.repeat === "weekly" ? "weekly" : "none" },
           { name: "repeatUntil", label: t("fRepeatUntil"), help: t("hRepeatUntil"), kind: "date", value: d.repeatUntil ?? "" },
@@ -80,7 +81,7 @@ export default {
       { type: "markdown", text: t("intro", { tz }) },
       { type: "heading", text: t("listTitle", { n: rows.length }) },
       sorted.length
-        ? { type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colRepeat"), t("colState")], rows: sorted.map((r) => [when(r.data), r.data.title, (Array.isArray(r.data.games) ? r.data.games : []).join(", "), repeat(r.data), r.data.cancelled ? t("stateCancelled") : t("stateOk")]), rowIds: sorted.map((r) => r.id), rowActions: [{ label: t("actEdit"), href: "?edit={id}" }, { label: t("actDelete"), action: "remove", confirm: t("confirmDelete"), danger: true }] }
+        ? { type: "table", columns: [t("colWhen"), t("colTitle"), t("colGames"), t("colWith"), t("colRepeat"), t("colState")], rows: sorted.map((r) => [when(r.data), r.data.title, (Array.isArray(r.data.games) ? r.data.games : []).join(", "), (Array.isArray(r.data.partners) ? r.data.partners : []).join(", "), repeat(r.data), r.data.cancelled ? t("stateCancelled") : t("stateOk")]), rowIds: sorted.map((r) => r.id), rowActions: [{ label: t("actEdit"), href: "?edit={id}" }, { label: t("actDelete"), action: "remove", confirm: t("confirmDelete"), danger: true }] }
         : { type: "markdown", text: t("none") },
       form(null),
     ];
@@ -90,6 +91,7 @@ export default {
     async save(ctx, v) {
       const t = ctx.t;
       const r = cleanStream(v);
+      if (r.error === "errPartners" || r.error === "errPartnersMax") return { errors: { partners: t(r.error, { pseudo: r.pseudo ?? "" }) } };
       if (r.error) return { error: t(r.error) };
       if (v.id) {
         if (!(await ctx.api.store.get(v.id))) return { error: t("notFound") };

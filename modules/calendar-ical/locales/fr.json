@@ -18,7 +18,7 @@
   "tutoGameDoes": "Affiche le nom du jeu et sa jaquette. Plusieurs jeux : « Jeu : Celeste, Hades » ou « Jeu : Celeste + Hades » (3 au plus). Pas de ligne « Jeu : » = pas de jeu : le logo du site est montré à la place de la jaquette.",
   "tutoDescWhat": "Le reste de la description",
   "tutoDescWhere": "La description de l'événement",
-  "tutoDescDoes": "Ignoré : seule la ligne « Jeu : » est lue. Vous pouvez y écrire des notes pour vous.",
+  "tutoDescDoes": "Ignoré : seules les lignes « Jeu : » et « Avec : » sont lues. Vous pouvez y écrire des notes pour vous.",
   "tutoPlaceWhat": "Lieu",
   "tutoPlaceWhere": "Le champ « Ajouter un lieu »",
   "tutoPlaceDoes": "Non lu : inutile de le remplir.",
@@ -45,7 +45,7 @@
   "tutoExTitle": "Soirée découverte",
   "tutoExWhen": "Samedi 10 octobre, 21:00 → 23:30",
   "tutoExPlace": "(vide : non lu)",
-  "tutoExDesc": "Jeu : Celeste",
+  "tutoExDesc": "Jeu : Celeste\nAvec : etoile_nord",
   "tutoExNoGameTitle": "Même chose pour un événement sans jeu (caritatif, discussion…) : n'écrivez simplement aucune ligne « Jeu : ».",
   "tutoExNoGameDesc": "Soirée caritative, venez nombreux !",
   "tutoErrTitle": "Erreurs fréquentes",
@@ -76,5 +76,10 @@
   "err_http": "Votre agenda a refusé la lecture (code {status}). Vérifiez l'adresse : si vous l'avez réinitialisée dans Google, collez la nouvelle.",
   "err_format": "Cette adresse ne renvoie pas un agenda. Copiez « Adresse secrète au format iCal » dans les paramètres de votre agenda.",
   "err_size": "Votre agenda est trop gros pour être lu. Utilisez un agenda dédié à vos streams.",
-  "err_config": "Aucune adresse enregistrée."
+  "err_config": "Aucune adresse enregistrée.",
+  "tutoPartnersWhat": "Avec qui",
+  "tutoPartnersWhere": "Dans la description : une ligne qui commence par « Avec : » suivie de pseudos Twitch",
+  "tutoPartnersDoes": "Exemple : « Avec : etoile_nord, lune_douce » (5 au plus). Le planning montre le nom de la fiche de Contacts qui porte ce pseudo. Un pseudo absent de vos contacts n'est pas affiché. Le reste de la description n'est jamais lu.",
+  "colWith": "Avec",
+  "skillPartners": "## Avec qui (facultatif)\n\n- Écrire dans la **description** une ligne `Avec : etoile_nord, lune_douce`.\n- Séparer les pseudos Twitch par une virgule, 5 au plus.\n- `@pseudo` et `twitch.tv/pseudo` sont acceptés.\n- N'écrire cette ligne que si l'humain donne les pseudos : jamais de pseudo deviné.\n- Sans ligne `Avec :`, personne d'autre n'est montré.\n- Le site montre le nom de la fiche de Contacts qui porte ce pseudo.\n- Un pseudo absent de Contacts n'est pas affiché.\n- Le reste de la description n'est jamais lu."
 }

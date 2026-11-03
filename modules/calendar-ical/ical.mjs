@@ -252,7 +252,7 @@ export function parseIcs(text, opts) {
  * `start` / `end` : instants ISO 8601 en UTC. Journée entière : `day` donne en plus la date (`2026-10-14`) dans le fuseau de l'agenda, pour qu'aucun lecteur
  * n'ait à la deviner ; `end` est alors le début du jour suivant. `games` : la ligne « Jeu : … » de la description (voir games.mjs).
  */
-export function toSlot(e, { timeZone = "UTC", untitled = "", gamesOf = () => [] } = {}) {
+export function toSlot(e, { timeZone = "UTC", untitled = "", gamesOf = () => [], partnersOf = () => [] } = {}) {
   const tz = isValidTimeZone(timeZone) ? timeZone : "UTC";
   const day = dateString(wallDateNow(tz, e.start));
   const games = gamesOf(e.description);
@@ -267,6 +267,8 @@ export function toSlot(e, { timeZone = "UTC", untitled = "", gamesOf = () => [] 
     games,
   };
   if (games.length) out.text = games.join(", ");
+  const partners = partnersOf(e.description);
+  if (partners.length) out.partners = partners;
   if (e.allDay) out.day = day;
   return out;
 }

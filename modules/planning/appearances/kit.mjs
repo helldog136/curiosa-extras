@@ -52,8 +52,12 @@ export function artHtml(slot, model, { fallback = false, cls = "" } = {}) {
 
 /** Noms des jeux (texte), avec une étiquette lisible par les lecteurs d'écran. */
 export function gamesHtml(slot, t, cls = "pa-games") {
-  return slot.games.length ? `<p class="${cls}">${srOnly(t("gamesLabel"))} ${slot.games.map(esc).join(", ")}</p>` : "";
+  return (slot.games.length ? `<p class="${cls}">${srOnly(t("gamesLabel"))} ${slot.games.map(esc).join(", ")}</p>` : "") + withHtml(slot, t);
 }
+
+/** « Avec Marie, Paul » : le nom (de la fiche de Contacts), lié à la chaîne Twitch quand la surface le permet. Rien d'autre : ni photo, ni ressource externe. */
+export const peopleInline = (slot) => slot.people.map((p) => (p.href ? `<a class="pa-with-link" style="color:inherit" href="${esc(p.href)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>` : esc(p.name))).join(", ");
+export const withHtml = (slot, t) => (slot.people?.length ? `<p class="pa-games pa-with" style="font-style:normal">${esc(t("withLabel"))} ${peopleInline(slot)}</p>` : "");
 
 /** En-tête d'un jour dans l'un des trois styles : text · tile · short. */
 export function dayLabel(day, style) {
