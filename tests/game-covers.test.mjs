@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { imageReply, IMAGE_HOSTS } from "./helpers/cover-fakes.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
 const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
@@ -18,9 +19,14 @@ const mod = (await import("../modules/game-covers/index.mjs")).default;
 const rawg = await import("../modules/game-covers/rawg.mjs");
 const fixes = await import("../modules/game-covers/fixes.mjs");
 const ops = await import("../modules/game-covers/ops.mjs");
+const copies = await import("../modules/game-covers/copies.mjs");
+const sources = await import("../modules/game-covers/sources.mjs");
 const svc = mod.services["game.cover"];
+const { titleKey } = await import("../modules/game-covers/match.mjs");
 
 const KEY = "FAKE-RAWG-KEY-0123456789";
+const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}`;
+const txt = (cell) => (cell && typeof cell === "object" ? cell.text : cell);
 const img = (id) => `https://media.rawg.io/media/games/${String(id).padStart(3, "0")}/jeu-${id}.jpg`;
 const g = (id, name, released, plats = ["PC"]) => ({ id, name, released, platforms: plats.map((p) => ({ platform: { name: p } })), background_image: img(id) });
 const DB = {
@@ -30,21 +36,23 @@ const DB = {
   nothing: [],
 };
 const realFetch = globalThis.fetch;
+/** Les images viennent d'un faux hôte d'images à part : elles ne comptent pas dans les appels aux API (f.calls). */
+const withImages = (api) => (input, init) => (IMAGE_HOSTS.has(new URL(typeof input === "string" ? input : input.url).hostname) ? Promise.resolve(imageReply()) : api(input, init));
 let f;
 /** Faux RAWG : `answer(search, url)` donne la réponse (voir fakeFetch) ; par défaut la petite base ci-dessus. */
 const serve = (answer = (s) => ({ json: { results: DB[s.toLowerCase()] ?? [] } })) => {
   f = fakeFetch({ "*": (url) => { const u = new URL(url); return u.hostname === "api.rawg.io" ? answer(u.searchParams.get("search") ?? "", url) : { status: 404 }; } });
-  globalThis.fetch = f;
+  globalThis.fetch = withImages(f);
   return f;
 };
 let n = 0;
 const makeCtx = (extra = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY }, permissions: ["storage", "admin", "mcp"], ...extra });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey: KEY, useSteam: false }, permissions: ["storage", "routes", "admin", "mcp"], ...extra });
   c.can = () => true;
   return c;
 };
-const titles = () => f.calls.map((c) => new URL(c.url).searchParams.get("search"));
-beforeEach(() => { rawg.clearCache(); ops.resetRate(); serve(); n++; });
+const titles = () => f.calls.filter((c) => new URL(c.url).hostname === "api.rawg.io").map((c) => new URL(c.url).searchParams.get("search"));
+beforeEach(() => { rawg.clearCache(); ops.resetRate(); copies.resetCopies(); sources.resetSources(); serve(); n++; });
 afterEach(() => { globalThis.fetch = realFetch; });
 
 test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »), clé en réglage secret facultatif, trois outils pour l'assistant (dont une liste en lecture), deux onglets, FR et EN alignés", () => {
@@ -60,7 +68,7 @@ test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_covers_list").readOnly, true, "la liste est une lecture : même niveau que rawg_covers_to_check");
   assert.deepEqual(manifest.tabs.map((t) => t.id), ["use", "saved"]);
   assert.equal(manifest.minCore, "0.6.0", "le tableau enrichi (recherche en direct, pastilles) demande le cœur 0.6.0");
-  assert.ok(manifest.permissions.every((p) => ["storage", "admin", "mcp"].includes(p)), "aucun droit de plus");
+  assert.ok(manifest.permissions.every((p) => ["storage", "routes", "admin", "mcp"].includes(p)), "un seul droit de plus : la route qui sert les copies");
   assert.equal(manifest.mcp.find((t) => t.name === "rawg_cover_set").default, false, "l'écriture n'est jamais accordée d'office");
   assert.deepEqual(Object.keys(read("en")).sort(), Object.keys(fr).sort(), "mêmes clés en français et en anglais");
   for (const k of Object.keys(fr)) assert.ok(fr[k].trim() && read("en")[k].trim(), k);
@@ -68,11 +76,11 @@ test("manifeste : valide, service game.cover v1 (lecture seule + droit « fix »
 });
 
 test("sans clé : no-key, aucune requête ; clé mal formée : refused, aucune requête", async () => {
-  const none = makeCtx({ settings: {} });
+  const none = makeCtx({ settings: { useSteam: false } });
   assert.deepEqual(await svc.cover(none, { title: "Hades" }), { status: "no-key", url: null });
-  assert.deepEqual(await svc.candidates(none, { title: "Hades" }), { status: "no-key", candidates: [] });
-  assert.deepEqual(await svc.status(none), { ready: false, configured: false, source: null, state: null });
-  const bad = makeCtx({ settings: { rawgKey: "pas bon !" } });
+  assert.deepEqual(await svc.candidates(none, { title: "Hades" }), { status: "no-key", candidates: [], sources: [] });
+  assert.deepEqual(await svc.status(none), { ready: false, configured: false, source: null, state: null, keyHeld: false, sources: [{ source: "rawg", on: false, why: "no-key" }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
+  const bad = makeCtx({ settings: { rawgKey: "pas bon !", useSteam: false } });
   assert.equal((await svc.cover(bad, { title: "Hades" })).status, "refused");
   assert.equal(f.calls.length, 0);
 });
@@ -80,7 +88,7 @@ test("sans clé : no-key, aucune requête ; clé mal formée : refused, aucune r
 test("jaquette trouvée : le titre ressemblant gagne, la clé part vers RAWG (https) et nulle part ailleurs", async () => {
   const c = makeCtx();
   const r = await svc.cover(c, { title: "Hades" });
-  assert.deepEqual(r, { status: "found", url: img(21), name: "Hades", id: 21, ambiguous: false });
+  assert.deepEqual(r, { status: "found", url: cu("Hades"), name: "Hades", id: 21, ambiguous: false, source: "rawg" });
   assert.equal(f.calls.length, 1);
   const u = new URL(f.calls[0].url);
   assert.equal(u.origin + u.pathname, "https://api.rawg.io/api/games");
@@ -91,7 +99,7 @@ test("jaquette trouvée : le titre ressemblant gagne, la clé part vers RAWG (ht
   assert.ok(!JSON.stringify(c.calls.netLog).includes(KEY), "le journal du réseau ne contient pas la clé");
   assert.ok(!JSON.stringify(c.dumpStore()).includes(KEY), "la clé du réglage n'est pas copiée dans le stockage");
   assert.ok(!JSON.stringify(await svc.status(c)).includes(KEY));
-  assert.deepEqual((await svc.status(c)), { ready: true, configured: true, source: "setting", state: "ok", at: (await svc.status(c)).at });
+  assert.deepEqual((await svc.status(c)), { ready: true, configured: true, source: "setting", state: "ok", at: (await svc.status(c)).at, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
 });
 
 test("la cover accepte aussi un simple texte, et un titre vide ou démesuré ne casse rien", async () => {
@@ -132,7 +140,7 @@ test("réponse hostile de RAWG : images en http ou sans nom ignorées, listes tr
   serve(() => ({ json: { results: [{ id: "x", name: 5, background_image: "http://media.rawg.io/a.jpg" }, null, "texte", g(1, "Hades", "pas une date"), ...Array.from({ length: 50 }, (_, i) => g(100 + i, `Jeu ${i}`, "2020-01-01"))] } }));
   const c = makeCtx();
   const r = await svc.cover(c, { title: "Hades" });
-  assert.equal(r.status, "found"); assert.equal(r.url, img(1));
+  assert.equal(r.status, "found"); assert.equal(r.url, cu("Hades"));
   const list = await svc.candidates(c, { title: "Hades" });
   assert.ok(list.candidates.length <= 6);
   assert.ok(list.candidates.every((x) => x.url.startsWith("https://media.rawg.io/media/")));
@@ -144,7 +152,7 @@ test("candidats : 6 au plus, jaquette obligatoire, sans doublon, du plus ressemb
   assert.equal(out.status, "found"); assert.equal(out.candidates.length, 6);
   assert.equal(out.candidates[0].id, 1);
   assert.deepEqual(new Set(out.candidates.map((x) => x.id)).size, 6);
-  assert.deepEqual(Object.keys(out.candidates[0]).sort(), ["id", "name", "platforms", "url", "year"]);
+  assert.deepEqual(Object.keys(out.candidates[0]).sort(), ["id", "name", "platforms", "source", "url", "year"]);
 });
 
 test("« C'est ce jeu » : la correction passe avant le cache et avant RAWG ; « Aucune jaquette » ; « Oublier » ; le jeu doit venir des propositions de RAWG", async () => {
@@ -152,7 +160,7 @@ test("« C'est ce jeu » : la correction passe avant le cache et avant RAWG ; «
   assert.equal((await mod.adminActions.choose(c, { id: `22|${encodeURIComponent("Hades")}|` })).redirect, "?saved=game");
   f.calls.length = 0;
   const r = await svc.cover(c, { title: "hades" });
-  assert.deepEqual(r, { status: "found", url: img(22), name: "Hades II", id: 22, ambiguous: false });
+  assert.deepEqual(r, { status: "found", url: cu("Hades"), name: "Hades II", id: 22, ambiguous: false, source: "rawg" });
   assert.equal(f.calls.length, 0, "aucune requête : la correction suffit");
   assert.ok((await fixes.readToCheck(c)).length === 0);
   // Un jeu qui n'est pas parmi les propositions est refusé.
@@ -220,7 +228,7 @@ test("service fix : réservé à une personne qui a le droit « fix » ; choisir
 });
 
 test("adopt (reprise des données du site) : clé et corrections reprises, rien de remplacé, rien de rendu, rejouable", async () => {
-  const c = makeCtx({ settings: {} });
+  const c = makeCtx({ settings: { useSteam: false } });
   const good = { title: "Hades", kind: "game", rawgId: 22, name: "Hades II", img: "/media/games/022/jeu-22.jpg", at: "2026-01-02T00:00:00.000Z" };
   const input = {
     key: KEY,
@@ -232,7 +240,7 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
   assert.ok(!JSON.stringify(r).includes(KEY));
   // Sans réglage saisi ici, la clé reprise sert.
   assert.equal((await svc.cover(c, "Hades")).id, 22);
-  assert.deepEqual(await svc.status(c), { ready: true, configured: true, source: "adopted", state: null });
+  assert.deepEqual(await svc.status(c), { ready: true, configured: true, source: "adopted", state: null, keyHeld: true, sources: [{ source: "rawg", on: true }, { source: "steam", on: false, why: "off" }, { source: "twitch", on: false, why: "off" }] });
   // Rejoué : rien de plus.
   const again = await svc.adopt(c, input);
   assert.deepEqual([again.keyAdopted, again.fixes, again.todo, again.ready], [false, 0, 0, true]);
@@ -244,24 +252,24 @@ test("adopt (reprise des données du site) : clé et corrections reprises, rien 
   // La clé saisie dans les réglages l'emporte sur la clé reprise ; une autre clé ne remplace pas la reprise.
   const own = makeCtx({ settings: { rawgKey: "UNE-AUTRE-CLE-1234" }, rows: { adoptedKey: [{ key: KEY, at: "x" }] } });
   assert.equal((await rawg.keyOf(own)).key, "UNE-AUTRE-CLE-1234");
-  const other = await svc.adopt(makeCtx({ settings: {} }), { key: "n'importe quoi" });
+  const other = await svc.adopt(makeCtx({ settings: { useSteam: false } }), { key: "n'importe quoi" });
   assert.equal(other.keyAdopted, false); assert.equal(other.ready, false);
   // Rien d'utile à reprendre : jamais d'exception.
-  assert.equal((await svc.adopt(makeCtx({ settings: {} }), undefined)).ok, true);
-  assert.equal((await svc.adopt(makeCtx({ settings: {} }), { fixes: "texte", todo: 5, key: 5 })).ok, true);
+  assert.equal((await svc.adopt(makeCtx({ settings: { useSteam: false } }), undefined)).ok, true);
+  assert.equal((await svc.adopt(makeCtx({ settings: { useSteam: false } }), { fixes: "texte", todo: 5, key: 5 })).ok, true);
 });
 
 test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; clé reprise (avec « Oublier »)", async () => {
-  const none = makeCtx({ settings: {} });
+  const none = makeCtx({ settings: { useSteam: false } });
   const blocks = await mod.adminPanel(none, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "banner" && /Aucun code/.test(b.text)));
+  assert.ok(blocks.some((b) => b.type === "banner" && /Aucune source n'est disponible/.test(b.text)));
   assert.ok(blocks.some((b) => b.type === "markdown" && /rawg\.io\/apidocs/.test(b.text)));
   const c = makeCtx();
   const withKey = await mod.adminPanel(c, { query: {} });
   assert.ok(!JSON.stringify(withKey).includes(KEY));
   assert.ok(withKey.some((b) => b.type === "adminForm" && b.action === "testKey"));
   assert.ok(withKey.some((b) => b.type === "netHealth"));
-  const adopted = makeCtx({ settings: {} });
+  const adopted = makeCtx({ settings: { useSteam: false } });
   await svc.adopt(adopted, { key: KEY });
   const shown = await mod.adminPanel(adopted, { query: {} });
   assert.ok(!JSON.stringify(shown).includes(KEY));
@@ -279,7 +287,7 @@ test("« Tester la clé » : ok, refusée, injoignable, absente, mal formée ; l
   assert.equal((await svc.status(c)).state, "refused");
   serve(() => ({ status: 500, json: {} }));
   assert.match((await mod.adminActions.testKey(makeCtx())).error, /injoignable/);
-  assert.match((await mod.adminActions.testKey(makeCtx({ settings: {} }))).error, /Aucun code/);
+  assert.match((await mod.adminActions.testKey(makeCtx({ settings: { useSteam: false } }))).error, /Aucun code/);
   assert.match((await mod.adminActions.testKey(makeCtx({ settings: { rawgKey: "x y" } }))).error, /format/);
 });
 
@@ -292,7 +300,7 @@ test("écran « Quel est le bon jeu ? » : titre, jaquettes proposées (images d
   assert.ok(!/<script|onerror|javascript:/i.test(html));
   const table = blocks.find((b) => b.type === "table");
   assert.deepEqual(table.rowActions.map((a) => a.action), ["choose"]);
-  assert.equal(table.rowIds[0], `21|${encodeURIComponent("Hades")}||use`);
+  assert.equal(table.rowIds[0], `rawg.21|${encodeURIComponent("Hades")}||use`);
   assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "chooseNone"));
   // Autre recherche
   const s = await mod.adminActions.search(c, { id: "Playrooms", q: "Astro's Playroom" });
@@ -343,17 +351,22 @@ test("onglet « Jaquettes enregistrées » : UN tableau, origine en pastille col
   const tables = saved.filter((b) => b.type === "table");
   assert.equal(tables.length, 1, "R30 : un seul tableau, pas plusieurs listes");
   const t = tables[0];
-  assert.equal(t.columns.length, 4);
+  assert.equal(t.columns.length, 5);
   assert.equal(t.searchable, true);
   assert.ok(t.pageSize > 0 && t.pageSize <= 50);
-  assert.deepEqual(t.filters.map((x) => x.column), [2]);
+  assert.deepEqual(t.filters.map((x) => x.column), [2, 3], "filtres : la source et l'origine");
   assert.ok(t.empty && t.empty.length > 0);
   const byTitle = Object.fromEntries(t.rows.map((r) => [r[0], r]));
   assert.deepEqual(Object.keys(byTitle).sort(), ["Hades", "Image a la main", "Jeu sans image", "Playrooms"]);
-  assert.deepEqual([byTitle.Hades[2], byTitle["Image a la main"][2]], [{ text: "Corrigée", badge: "accent" }, { text: "Corrigée", badge: "accent" }]);
-  assert.deepEqual(byTitle["Jeu sans image"][2], { text: "Sans jaquette", badge: "neutral" });
-  assert.equal(byTitle.Playrooms[2].text, "Automatique"); assert.equal(byTitle.Playrooms[2].badge, "info");
-  assert.equal(byTitle.Hades[1], "Hades II"); assert.equal(byTitle["Image a la main"][1], "Image choisie à la main");
+  assert.deepEqual([byTitle.Hades[3], byTitle["Image a la main"][3]], [{ text: "Corrigée", badge: "accent" }, { text: "Corrigée", badge: "accent" }]);
+  assert.deepEqual(byTitle["Jeu sans image"][3], { text: "Sans jaquette", badge: "neutral" });
+  assert.equal(byTitle.Playrooms[3].text, "Automatique"); assert.equal(byTitle.Playrooms[3].badge, "info");
+  assert.deepEqual(byTitle.Hades[2], { text: "RAWG", badge: "accent" }, "la source est écrite ET colorée");
+  assert.equal(byTitle["Jeu sans image"][2], "—", "pas de source pour « aucune jaquette »");
+  assert.equal(txt(byTitle.Hades[1]), "Hades II"); assert.equal(txt(byTitle["Image a la main"][1]), "Image choisie à la main");
+  // La vignette est la COPIE gardée sur le site (une page du site), jamais l'adresse de RAWG.
+  assert.match(byTitle.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}$/);
+  assert.ok(!JSON.stringify(tabOf(blocks, "saved")).includes("https://media.rawg.io"), "l'administration montre les copies du site, pas l'adresse de RAWG");
   assert.deepEqual(t.rowIds, t.rows.map((r) => r[0]));
   // Au plus deux actions visibles ; « Oublier » est nommée, dangereuse (menu « ⋯ ») et passe par un écran de confirmation, jamais par un clic direct.
   const visible = t.rowActions.filter((a) => !a.danger && !a.inMenu);
@@ -364,7 +377,7 @@ test("onglet « Jaquettes enregistrées » : UN tableau, origine en pastille col
   assert.ok(t.rowActions.every((a) => !a.href || a.href.startsWith("?tab=saved&")));
   // Le champ « Chercher un jeu » est distinct de la recherche du tableau.
   const find = saved.find((b) => b.type === "adminForm" && b.action === "find");
-  assert.equal(find.fields.length, 1); assert.equal(find.fields[0].label, "Chercher un jeu"); assert.equal(find.fields[0].example, "Hollow Knight");
+  assert.equal(find.fields.length, 1); assert.equal(find.fields[0].label, "Chercher une jaquette"); assert.equal(find.fields[0].example, "Hollow Knight");
   assert.equal(find.submitLabel, "Chercher les jaquettes");
   assert.ok(saved.some((b) => b.type === "adminForm" && b.action === "forgetAll"));
   assert.ok(!JSON.stringify(blocks).includes(KEY));
@@ -383,11 +396,11 @@ test("tableau : toutes les lignes sont dans la page (la recherche en direct les 
 });
 
 test("état vide : une phrase qui dit quoi faire, le champ « Chercher un jeu » reste là ; sans clé, le chemin pour la saisir", async () => {
-  const c = makeCtx({ settings: {} });
+  const c = makeCtx({ settings: { useSteam: false } });
   const saved = tabOf(await mod.adminPanel(c, { query: {} }), "saved");
   const t = saved.find((b) => b.type === "table");
   assert.deepEqual(t.rows, []);
-  assert.match(t.empty, /Cherchez un jeu/);
+  assert.match(t.empty, /Cherchez une jaquette/);
   assert.ok(!saved.some((b) => b.type === "adminForm" && b.action === "forgetAll"), "rien à oublier : pas de bouton");
   assert.ok(saved.some((b) => b.type === "banner" && /onglet « Réglages »/.test(b.text)));
 });
@@ -398,7 +411,7 @@ test("« Voir » montre la jaquette retenue (image de media.rawg.io seulement) ;
   const view = await mod.adminPanel(c, { query: { tab: "saved", voir: "Hades" } });
   assert.ok(view.every((b) => b.tab === "saved"));
   const card = view.find((b) => b.type === "html").html;
-  assert.ok(card.includes(img(22)) && card.includes("Hades II") && card.includes("Corrigée"));
+  assert.ok(card.includes("/m/game-covers/cover/") && !card.includes("media.rawg.io") && card.includes("Hades II") && card.includes("Corrigée") && card.includes("RAWG"), "la copie du site, jamais l'adresse de RAWG");
   assert.ok(!/<script|onerror|javascript:/i.test(card));
   assert.deepEqual(view.find((b) => b.type === "links").items.map((i) => i.label), ["Changer", "Oublier cette jaquette"]);
   const ask = await mod.adminPanel(c, { query: { tab: "saved", oublier: "Hades" } });
@@ -429,8 +442,8 @@ test("« Oublier cette jaquette » : la correction part et le choix automatique 
   assert.equal((await svc.cover(c, { title: "Hades" })).id, 21, "le site cherche de nouveau automatiquement");
   await settle();   // retrouvée, la jaquette est gardée de nouveau : on peut l'oublier une fois de plus, pas deux
   assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
-  assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus enregistrée/);
-  assert.match((await mod.adminActions.forget(c, { id: "" })).error, /plus enregistrée/);
+  assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus gardée/);
+  assert.match((await mod.adminActions.forget(c, { id: "" })).error, /plus gardée/);
   assert.deepEqual(logged(c), ["cover.game", "cover.forgotten", "cover.forgotten", "cover.forgotten"]);
   assert.deepEqual(c.calls.log.map((l) => l.target), ["Hades", "Hades", "Playrooms", "Hades"]);
   assert.ok(c.calls.log.every((l) => Object.keys(l.data).length === 0 && !JSON.stringify(l).includes(KEY)), "ni donnée personnelle ni clé");
@@ -459,7 +472,7 @@ test("« Chercher un jeu » : erreur sous le champ avec exemple, rien demandé a
     assert.match(r.errors.q, /par exemple Hollow Knight/, `« ${bad} »`);
   }
   assert.match((await mod.adminActions.find(c, { q: "x".repeat(101) })).errors.q, /100 caractères/);
-  assert.match((await mod.adminActions.find(makeCtx({ settings: {} }), { q: "Hades" })).errors.q, /onglet « Réglages »/, "pas de clé : le chemin pour la saisir, jamais la clé");
+  assert.match((await mod.adminActions.find(makeCtx({ settings: { useSteam: false } }), { q: "Hades" })).errors.q, /onglet « Réglages »/, "pas de clé : le chemin pour la saisir, jamais la clé");
   assert.equal(f.calls.length, 0, "aucune requête tant que la personne n'a pas validé");
   const go = await mod.adminActions.find(c, { q: "  Hades  " });
   assert.equal(go.redirect, "?tab=saved&titre=Hades");
@@ -471,7 +484,7 @@ test("« Chercher un jeu » : erreur sous le champ avec exemple, rien demandé a
   assert.ok(screen.some((b) => b.type === "markdown" && b.text.includes("(?tab=saved)")));
   const t = screen.find((b) => b.type === "table");
   assert.equal(t.rowActions[0].label, "Utiliser cette jaquette");
-  assert.equal(t.rowIds[1], `22|Hades||saved`);
+  assert.equal(t.rowIds[1], `rawg.22|Hades||saved`);
   assert.ok(screen.find((b) => b.type === "html" && /candidates/.test(b.html)).html.includes(img(22)));
   // Un clic : enregistré, retour dans l'onglet avec la confirmation.
   const done = await mod.adminActions.choose(c, { id: t.rowIds[1] });
@@ -479,7 +492,7 @@ test("« Chercher un jeu » : erreur sous le champ avec exemple, rien demandé a
   const back = await mod.adminPanel(c, { query: { tab: "saved", saved: "game" } });
   assert.ok(back.some((b) => b.type === "banner" && b.tone === "success" && b.tab === "saved"));
   const row = tableOf(back, "saved")[0].rows.find((r) => r[0] === "Hades");
-  assert.deepEqual([row[1], row[2].text], ["Hades II", "Corrigée"]);
+  assert.deepEqual([txt(row[1]), row[3].text], ["Hades II", "Corrigée"]);
   // Même chemin que l'assistant : la correction sert tout de suite, sans nouvelle requête.
   f.calls.length = 0;
   assert.equal((await svc.cover(c, "Hades")).id, 22);
@@ -491,7 +504,7 @@ test("depuis « Jaquettes à vérifier », on reste dans cet onglet ; depuis « 
   const c = makeCtx();
   const fromUse = await mod.adminPanel(c, { query: { titre: "Hades" } });
   assert.ok(fromUse.every((b) => b.tab === "use"));
-  assert.equal(fromUse.find((b) => b.type === "table").rowIds[0], "21|Hades||use");
+  assert.equal(fromUse.find((b) => b.type === "table").rowIds[0], "rawg.21|Hades||use");
   assert.equal((await mod.adminActions.choose(c, { id: "21|Hades||use" })).redirect, "?saved=game");
   assert.equal((await mod.adminActions.chooseNone(c, { id: "Hades", tab: "saved" })).redirect, "?tab=saved&saved=none");
   assert.equal((await mod.adminActions.search(c, { id: "Hades", q: "Hades II", tab: "saved" })).redirect, "?tab=saved&titre=Hades&q=Hades%20II");
@@ -514,7 +527,7 @@ test("refus : jeu qui n'est pas dans les propositions, image hors media.rawg.io 
   const full = makeCtx();
   for (let k = 0; k < 1000; k++) await full.api.store.add("fixes", { title: `J ${k}`, kind: "none", at: new Date().toISOString() }, { key: `j ${k}` });
   const out = await mod.adminActions.choose(full, { id: "21|Hades||saved" });
-  assert.match(out.error, /Jaquettes enregistrées/);
+  assert.match(out.error, /Jaquettes gardées/);
   // Cadence : trop de recherches d'affilée, le message est clair et rien n'est demandé de plus.
   ops.resetRate();
   for (let k = 0; k < 30; k++) assert.equal(ops.takeRate("admin", "read"), true);
@@ -543,7 +556,7 @@ test("assistant : rawg_covers_list lit ce que le module retient (filtres, 50 par
   assert.equal(all.total, 3);
   assert.deepEqual(all.items.map((i) => i.origin).sort(), ["auto", "corrected", "none"]);
   const hades = all.items.find((i) => i.title === "Hades");
-  assert.deepEqual(Object.keys(hades).sort(), ["at", "coverUrl", "game", "origin", "title"]);
+  assert.deepEqual(Object.keys(hades).sort(), ["at", "coverUrl", "game", "origin", "source", "title"]);
   assert.equal(hades.coverUrl, img(22)); assert.equal(hades.game, "Hades II");
   assert.equal(all.items.find((i) => i.origin === "none").coverUrl, null);
   assert.equal((await mod.mcp.rawg_covers_list(c, { origin: "auto" }, actor)).items[0].title, "Playrooms");
@@ -558,7 +571,9 @@ test("assistant : rawg_covers_list lit ce que le module retient (filtres, 50 par
 test("aucun nouvel hôte : le code du module ne nomme que api.rawg.io et media.rawg.io ; les textes visibles ne montrent pas la clé", () => {
   const code = fs.readdirSync(DIR).filter((x) => x.endsWith(".mjs")).map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n");
   const hosts = new Set([...code.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase()));
-  assert.deepEqual([...hosts].filter((h) => !/(^|\.)rawg\.io$/.test(h)), [], "seul RAWG est joint");
+  assert.deepEqual([...hosts].filter((h) => !/(^|\.)rawg\.io$/.test(h)).sort(), ["store.steampowered.com"], "adresses écrites en toutes lettres : RAWG et la recherche du magasin Steam, rien d'autre");
+  const named = [...fs.readFileSync(`${DIR}hosts.mjs`, "utf8").matchAll(/host: "([a-z0-9.-]+)"/g)].map((m) => m[1]).sort();
+  assert.deepEqual(named, ["media.rawg.io", "shared.akamai.steamstatic.com", "static-cdn.jtvnw.net"], "les seuls hôtes d'images permis (un par source)");
   assert.ok(!/setTimeout\([^)]*,\s*\d{4,}/.test(code.replace(/timer = setTimeout\(\(\) => reject/, "")), "pas de minuteur de fond");
 });
 
@@ -570,14 +585,14 @@ test("outils de l'assistant : lister (lecture), proposer des jeux pour un titre,
   const list = await mod.mcp.rawg_covers_to_check(c, {}, actor);
   assert.equal(list.total, 1); assert.equal(list.items[0].title, "Playrooms"); assert.ok(list.items[0].coverUrl.startsWith("https://media.rawg.io/media/"));
   const withTitle = await mod.mcp.rawg_covers_to_check(c, { title: "Playrooms" }, actor);
-  assert.equal(withTitle.status, "found"); assert.ok(withTitle.candidates.length >= 2); assert.deepEqual(Object.keys(withTitle.candidates[0]).sort(), ["coverUrl", "name", "platforms", "rawgId", "year"]);
+  assert.equal(withTitle.status, "found"); assert.ok(withTitle.candidates.length >= 2); assert.deepEqual(Object.keys(withTitle.candidates[0]).sort(), ["coverUrl", "gameId", "name", "platforms", "rawgId", "source", "year"]);
   const set = await mod.mcp.rawg_cover_set(c, { title: "Playrooms", rawgId: 11, search: "Astro's Playroom" }, actor);
   assert.deepEqual([set.saved, set.choice, set.game], [true, "game", "Astro's Playroom"]);
   await assert.rejects(mod.mcp.rawg_cover_set(c, { title: "Playrooms", none: true, rawgId: 11 }, actor), /exactly one/);
   await assert.rejects(mod.mcp.rawg_cover_set(c, { title: "", none: true }, actor), (e) => e.expose === true && /title/.test(e.message));
   await assert.rejects(mod.mcp.rawg_cover_set(c, { title: "Playrooms", imageUrl: "https://evil.example/a.jpg" }, actor), (e) => e.expose === true && /media\.rawg\.io/.test(e.message));
   assert.deepEqual(await mod.mcp.rawg_cover_set(c, { title: "Playrooms", forget: true }, actor), { forgotten: true, title: "Playrooms" });
-  await assert.rejects(mod.mcp.rawg_cover_set(makeCtx({ settings: {} }), { title: "Hades", rawgId: 21 }, actor), /No RAWG key/);
+  await assert.rejects(mod.mcp.rawg_cover_set(makeCtx({ settings: { useSteam: false } }), { title: "Hades", rawgId: 21 }, actor), /No cover source/);
   assert.ok(![list, withTitle, set].some((x) => JSON.stringify(x).includes(KEY)));
 });
 
@@ -595,6 +610,6 @@ test("aucun nom de site, aucune clé réelle, aucun minuteur dans le code du mod
   const files = fs.readdirSync(DIR).filter((x) => x.endsWith(".mjs"));
   const code = files.map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n");
   assert.ok(!/setInterval/.test(code), "pas de minuteur de fond");
-  assert.ok(!/\bfetch\(/.test(code), "tout passe par ctx.api.net");
+  assert.ok(!/\bfetch\(/.test(files.filter((x) => x !== "copies.mjs").map((x) => fs.readFileSync(`${DIR}${x}`, "utf8")).join("\n")), "tout passe par ctx.api.net (sauf les octets d'une image, copies.mjs)");
   assert.ok(!/console\.(log|info|warn|error)\([^)]*\bkey\b(?!\w)/.test(code.replace(/error\?\.name/g, "")), "la clé n'est jamais journalisée");
 });

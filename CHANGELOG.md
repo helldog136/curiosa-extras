@@ -4,6 +4,28 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : les jaquettes de vos jeux ne dépendent plus d'une seule source. Si RAWG est en panne, le site cherche chez Twitch puis chez Steam, copie l'image sur votre site et la garde : vos visiteurs ne contactent plus jamais RAWG, Twitch ni Steam. Modules touchés : Jaquettes de jeux 1.3.0 et Connecteur Twitch 1.3.0.*
+
+*Ce qui demande une mise à jour de Curiosa : rien (Curiosa 0.6.0 ou plus, comme avant). Jaquettes de jeux demande une nouvelle permission à accepter (« routes », pour servir les copies).*
+
+### Nouveautés
+
+- **Jaquettes de jeux 1.3.0 : des sources de secours, dans l'ordre.** RAWG d'abord, puis le magasin Steam (sans clé ni compte), puis en dernier secours les jaquettes de boîte de Twitch (par le Connecteur Twitch déjà réglé, aucune clé de plus). Twitch passe en dernier parce que ses conditions ne permettent de garder une image que 24 heures, contre 30 jours pour les autres. La première réponse sûre gagne ; une source en panne ne bloque pas les autres. **Rien n'est obligatoire** : sans code RAWG, le module fonctionne, et l'absence de code n'est plus une erreur.
+- **Vos visiteurs ne contactent plus personne.** Votre site télécharge lui-même l'image choisie, une fois, la garde et la sert depuis sa propre adresse (300 images et 20 Mo au plus). Elle est renouvelée quand elle est demandée et plus vieille que 30 jours (réglable en avancé) ; une source en panne ne fait jamais perdre une jaquette déjà bonne. Vos choix à la main ne sont jamais écrasés.
+- **L'administration dit quelles sources sont actives** : « RAWG : pas de code (facultatif) — Steam : actif ✓ — Twitch : connecté ✓ », et la dernière source qui a répondu.
+- **« Jaquettes gardées »** (ancien « Jaquettes enregistrées ») : la source de chaque jaquette, une vignette de la copie, des filtres, et « Chercher une jaquette » propose les jeux de toutes les sources.
+- **Une limite de Twitch à connaître** : Twitch n'autorise à garder ses données que 24 heures. Une jaquette venue de Twitch est donc refaite chaque jour (à la demande, l'adresse reste valable) ; les autres sources gardent 30 jours.
+- **Connecteur Twitch 1.3.0** : un nouvel appel permis, la recherche d'une catégorie (pour les jaquettes de boîte). Rien ne change pour les autres modules.
+- **Aucune donnée perdue** : les choix déjà gardés restent valables, leur copie est faite au fil de l'eau.
+
+### Pour les développeurs
+
+- `game-covers` 1.3.0 : permission `routes` (route `cover/:id`), besoin facultatif `twitch.api` (min 3), nouveaux fichiers `hosts.mjs`, `breaker.mjs`, `sources.mjs`, `chain.mjs`, `copies.mjs` ; collections `coverMeta` et `coverBytes` ; champs `src` et `srcId` (absents = RAWG). Réglages avancés `useTwitch`, `useSteam`, `refreshDays`, `remoteFallback`. Service `game.cover` : `url` est désormais la copie du site (https absolue) ; `source`, `status().sources` et `keyHeld` ajoutés ; une copie pas encore prête rend `unreachable`. Voir `docs/TOPICS.md`.
+- `twitch-connector` 1.3.0 : `GET search/categories` (`query`, `first`) ajouté à la liste fermée, gardé 10 minutes.
+- Tests : `tests/game-covers-sources.test.mjs` (nouveau, avec une vraie réponse de Steam dans `tests/fixtures`), `tests/helpers/cover-fakes.mjs` ; tests existants mis à jour.
+
 ## 1.41.1 — 2026-11-03
 
 *En bref : la photo de profil des personnes avec qui vous streamez s'affiche enfin dans le Planning. Rien à régler, et aucune nouvelle permission à accepter.*

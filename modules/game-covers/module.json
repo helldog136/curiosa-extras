@@ -6,14 +6,14 @@
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": {
-    "en": "Finds the cover of your video games. Your free Rawg access code is entered once; a wrong cover is fixed in a few clicks.",
-    "fr": "Trouve la jaquette de vos jeux vidéo. Votre code d'accès Rawg gratuit se saisit une fois ; une jaquette fausse se corrige en quelques clics."
+    "en": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks.",
+    "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics."
   },
   "privacy": {
-    "en": "This module collects nothing about your visitors. The covers come from RAWG (rawg.io), a video-game database: your site's server sends it the game title with your RAWG key. Found covers are kept privately on your site (1,000 at most): the title, the game name and the picture address, never a picture file. The browser loads each picture from RAWG, which therefore sees the person's address under its own privacy policy.",
-    "fr": "Ce module ne collecte rien sur votre public. Les jaquettes viennent de RAWG (rawg.io), une base de jeux vidéo : le serveur de votre site lui envoie le titre du jeu, avec votre clé RAWG. Les jaquettes trouvées sont gardées en privé sur votre site (1 000 au plus) : le titre, le nom du jeu et l'adresse de l'image, jamais un fichier. Le navigateur charge chaque image depuis RAWG, qui voit donc l'adresse de la personne selon sa propre politique de confidentialité."
+    "en": "Collects nothing about your visitors, who never contact RAWG, Twitch or Steam: your site's server fetches each cover once, keeps a copy (300 at most) and shows it from its own address. The server sends the game title to RAWG (with your code, if set), to Twitch (through the Twitch connector, if set up) and to Steam's public store. A Twitch copy lasts 24 hours at most; the others 30 days by default.",
+    "fr": "Ne collecte rien sur votre public, qui ne contacte jamais RAWG, Twitch ni Steam : le serveur de votre site va chercher chaque jaquette une fois, en garde une copie (300 au plus) et l'affiche depuis sa propre adresse. Le serveur envoie le titre du jeu à RAWG (avec votre code, si vous en avez un), à Twitch (par le Connecteur Twitch, s'il est réglé) et au magasin public de Steam. Une copie de Twitch dure 24 heures au plus ; les autres 30 jours par défaut."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -24,8 +24,20 @@
   "page": false,
   "permissions": [
     "storage",
+    "routes",
     "admin",
     "mcp"
+  ],
+  "requires": [
+    {
+      "service": "twitch.api",
+      "min": 3,
+      "optional": true,
+      "label": {
+        "en": "Twitch connector (optional): last-resort source, Twitch box art",
+        "fr": "Connecteur Twitch (facultatif) : source de dernier secours, les jaquettes de boîte de Twitch"
+      }
+    }
   ],
   "offers": [
     {
@@ -73,8 +85,8 @@
     {
       "id": "saved",
       "label": {
-        "fr": "Jaquettes enregistrées",
-        "en": "Saved covers"
+        "fr": "Jaquettes gardées",
+        "en": "Kept covers"
       },
       "panel": true
     }
@@ -151,12 +163,79 @@
       "type": "secret",
       "optional": true,
       "label": {
-        "en": "Free Rawg access code",
-        "fr": "Code d'accès gratuit Rawg"
+        "en": "Free Rawg access code (optional)",
+        "fr": "Code d'accès gratuit Rawg (facultatif)"
       },
       "help": {
-        "en": "Free: create it at rawg.io/apidocs. Never shown again. Leave empty if already saved.",
-        "fr": "Gratuit : créez-le sur rawg.io/apidocs. Jamais réaffiché. Laissez vide s'il est déjà enregistré."
+        "en": "Free at rawg.io/apidocs. Never shown again.",
+        "fr": "Gratuit sur rawg.io/apidocs. Jamais réaffiché."
+      }
+    },
+    {
+      "key": "useTwitch",
+      "type": "boolean",
+      "default": true,
+      "advanced": true,
+      "label": {
+        "en": "Use Twitch box art",
+        "fr": "Utiliser les jaquettes de Twitch"
+      },
+      "help": {
+        "en": "Last resort, if the Twitch connector is set up.",
+        "fr": "En dernier secours, si le Connecteur Twitch est réglé."
+      }
+    },
+    {
+      "key": "useSteam",
+      "type": "boolean",
+      "default": true,
+      "advanced": true,
+      "label": {
+        "en": "Use the Steam store",
+        "fr": "Utiliser le magasin Steam"
+      },
+      "help": {
+        "en": "No code needed. Used after Rawg.",
+        "fr": "Aucun code. Utilisé après Rawg."
+      }
+    },
+    {
+      "key": "refreshDays",
+      "type": "number",
+      "default": 30,
+      "advanced": true,
+      "label": {
+        "en": "Renew a kept cover after",
+        "fr": "Renouveler une jaquette gardée après"
+      },
+      "help": {
+        "en": "Between 1 and 365. Empty: 30 days.",
+        "fr": "Entre 1 et 365. Vide : 30 jours."
+      },
+      "min": 1,
+      "max": 365,
+      "step": 1,
+      "unit": {
+        "en": "days",
+        "fr": "jours"
+      },
+      "example": {
+        "en": "30",
+        "fr": "30"
+      }
+    },
+    {
+      "key": "remoteFallback",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "If the copy fails, show the source's picture",
+        "fr": "Si la copie échoue, montrer l'image de la source"
+      },
+      "help": {
+        "en": "Off: visitors never contact another site.",
+        "fr": "Coupé : le public ne contacte jamais un autre site."
       }
     }
   ],
@@ -164,19 +243,19 @@
     {
       "name": "rawg_covers_to_check",
       "readOnly": true,
-      "description": "Lists the game titles whose cover is doubtful (the game RAWG gave is not an almost identical title, or two games looked as good), the 100 most recent first. Each has: title (as asked by a module), foundGame, rawgId, coverUrl, candidates (how many games RAWG proposed) and checkedAt. Pass \"title\" to also get up to 6 candidate games to choose from (rawgId, name, year, platforms, coverUrl); it asks RAWG once. The owner fixes titles in the Game covers module; with the right to, you can use rawg_cover_set. No key is ever shown.",
+      "description": "Lists the game titles whose cover is doubtful (the game found is not an almost identical title, or two games looked as good), the 100 most recent first. Each has: title (as asked by a module), foundGame, source (rawg, twitch or steam), rawgId (RAWG only), coverUrl (the source's address, for information), candidates (how many games were proposed) and checkedAt. Pass \"title\" to also get up to 6 candidate games per source to choose from (source, gameId, rawgId for RAWG, name, year, platforms, coverUrl); it asks each available source once. The owner fixes titles in the Game covers module; with the right to, you can use rawg_cover_set. No key is ever shown.",
       "input": {
         "type": "object",
         "properties": {
           "title": {
             "type": "string",
             "maxLength": 120,
-            "description": "Optional. A title from the list (or any title): also returns up to 6 candidate games from RAWG with their rawgId, year and main platforms."
+            "description": "Optional. A title from the list (or any title): also returns up to 6 candidate games per source with their gameId, year and main platforms."
           },
           "search": {
             "type": "string",
             "maxLength": 100,
-            "description": "Optional, with title: other words to look for at RAWG (for example the game's real name)."
+            "description": "Optional, with title: other words to look for (for example the game's real name)."
           }
         }
       }
@@ -184,7 +263,7 @@
     {
       "name": "rawg_covers_list",
       "readOnly": true,
-      "description": "Lists the covers the module keeps, newest first: the ones the owner corrected (origin \"corrected\"), the games left without a cover (\"none\") and the covers the site found by itself (\"auto\", at most 1000 kept, doubtful or not). Each has: title, origin, game (name, may be empty), coverUrl (an https://media.rawg.io/media/... picture, or null) and at. Optional filters: \"search\" (words of the title) and \"origin\"; 50 per call by default (100 at most), with \"total\" for the whole list. Nothing is changed and no key is ever shown. To change or forget one, ask the owner, or use rawg_cover_set with their consent.",
+      "description": "Lists the covers the module keeps, newest first: the ones the owner corrected (origin \"corrected\"), the games left without a cover (\"none\") and the covers the site found by itself (\"auto\", at most 1000 kept, doubtful or not). Each has: title, origin, game (name, may be empty), source (rawg, twitch or steam; null when none), coverUrl (the source's address, for information, or null) and at. Optional filters: \"search\" (words of the title) and \"origin\"; 50 per call by default (100 at most), with \"total\" for the whole list. Nothing is changed and no key is ever shown. To change or forget one, ask the owner, or use rawg_cover_set with their consent.",
       "input": {
         "type": "object",
         "properties": {
@@ -214,7 +293,7 @@
     {
       "name": "rawg_cover_set",
       "default": false,
-      "description": "Saves the right cover for one game title, for the whole site (modules get it at once). Pass \"title\" and exactly ONE of: rawgId (the right game, chosen among the candidates of rawg_covers_to_check), none=true (no cover for this title), imageUrl (an https://media.rawg.io/media/... picture), forget=true (remove the saved correction). The cover comes from RAWG's own answer; no other address is ever used. At most 1000 corrections are kept. Changes the pictures visitors see: ask the owner before using it.",
+      "description": "Saves the right cover for one game title, for the whole site (modules get it at once). Pass \"title\" and exactly ONE of: rawgId (the right RAWG game), gameId with source (\"twitch\" or \"steam\"; the right game chosen among the candidates of rawg_covers_to_check), none=true (no cover for this title), imageUrl (an https://media.rawg.io/media/... picture), forget=true (remove the saved correction). The picture comes from the source's own answer and is copied onto the site; no other address is ever used. At most 1000 corrections are kept. Changes the pictures visitors see: ask the owner before using it.",
       "input": {
         "type": "object",
         "required": [
@@ -235,7 +314,7 @@
           "search": {
             "type": "string",
             "maxLength": 100,
-            "description": "Optional, with rawgId: the words used to find the candidates (when you listed them with a different search)."
+            "description": "Optional, with rawgId or gameId: the words used to find the candidates (when you listed them with a different search)."
           },
           "none": {
             "type": "boolean",
@@ -249,6 +328,20 @@
           "forget": {
             "type": "boolean",
             "description": "true: forget the saved correction of this title (the automatic choice comes back)."
+          },
+          "gameId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2000000000,
+            "description": "With source: the id of the right game at that source, taken from the candidates of rawg_covers_to_check."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "twitch",
+              "steam"
+            ],
+            "description": "With gameId: the source of the chosen game."
           }
         }
       }
