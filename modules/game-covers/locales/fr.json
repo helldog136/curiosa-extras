@@ -6,11 +6,7 @@
   "key_adopted": "La clé de votre site a été reprise toute seule : vous n'avez rien à refaire. Pour la remplacer, collez-en une autre dans l'onglet « Réglages ».",
   "forget_key": "Oublier la clé reprise",
   "forgot_key": "C'est fait : la clé reprise est oubliée.",
-  "last_check": "Dernière vérification : {date} — {state}",
   "never_checked": "Pas encore vérifiée.",
-  "state_ok": "la clé fonctionne",
-  "state_refused": "RAWG refuse cette clé",
-  "state_unreachable": "RAWG est injoignable depuis ce serveur",
   "test_key": "Tester la clé",
   "test_ok": "La clé fonctionne.",
   "test_refused": "RAWG refuse cette clé. Vérifiez-la sur rawg.io/apidocs.",
@@ -76,7 +72,7 @@
   "err_search": "Ce nom est trop long : 100 caractères au plus. Essayez par exemple Hollow Knight.",
   "err_forget": "Cette jaquette n'est plus enregistrée, ou vous allez trop vite. Rechargez la page.",
   "err_confirm": "Cochez la case pour confirmer.",
-  "saved_intro": "Les jaquettes que le site retient pour vos jeux. Vous pouvez les voir, les changer ou les oublier.",
+  "saved_intro": "Les jaquettes que le site retient pour vos jeux, y compris celles qu'il a trouvées tout seul. Vous pouvez les voir, les changer ou les oublier.",
   "find_label": "Chercher un jeu",
   "find_example": "Hollow Knight",
   "find_help": "Le titre, comme vos pages l'écrivent.",
@@ -101,5 +97,11 @@
   "forget_msg": "La jaquette de « {title} » sera oubliée ; le site cherchera de nouveau automatiquement.",
   "forget_button": "Oublier cette jaquette",
   "forget_keep": "Garder la jaquette",
-  "forget_gone": "Cette jaquette n'est plus enregistrée. Revenez à la liste."
+  "forget_gone": "Cette jaquette n'est plus enregistrée. Revenez à la liste.",
+  "all_fine": "Tout fonctionne.",
+  "last_ok": "Dernière réponse de la base de jaquettes : {date}.",
+  "outage": "La base de jaquettes ne répond pas pour le moment. Les jaquettes déjà trouvées restent affichées.",
+  "outage_since": "Dernière réponse reçue : {date}. Le bouton ci-dessous réessaie tout de suite.",
+  "outage_never": "Aucune réponse reçue pour le moment. Le bouton ci-dessous réessaie tout de suite.",
+  "outage_saved": "Les jaquettes de ce tableau restent affichées sur le site pendant ce temps."
 }

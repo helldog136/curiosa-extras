@@ -7,10 +7,8 @@ const { titleKey } = await import(new URL("./match.mjs" + q, import.meta.url).hr
 const fx = await import(new URL("./fixes.mjs" + q, import.meta.url).href);
 const rawg = await import(new URL("./rawg.mjs" + q, import.meta.url).href);
 
-/** Une ligne au journal du cœur (le cœur déduit qui l'a écrite) : le titre du jeu et le geste, jamais une clé ni une adresse. Ne lève jamais. */
-async function journal(ctx, action, title, data) {
-  try { await ctx.api.log?.write({ action, target: String(title ?? "").slice(0, 120), ...(data ? { data } : {}) }); } catch { /* le journal est un plus */ }
-}
+/** Une ligne au journal du cœur : le titre du jeu et le geste, jamais une clé ni une adresse. Ne lève jamais. */
+const journal = (ctx, action, title, data) => fx.journal(ctx, action, title, data);
 
 const RATE = { read: { max: 30, perMs: 60_000 }, write: { max: 60, perMs: 60_000 } };
 const hits = new Map();
@@ -87,6 +85,9 @@ export async function confirmCurrent(ctx, who, rawTitle) {
   const key = titleKey(title);
   const entry = (await fx.readToCheck(ctx)).find((d) => d.key === key);
   if (entry) return finish(await fx.saveFix(ctx, entry.title, entry.rawgId ? { kind: "game", rawgId: entry.rawgId, name: entry.name, img: entry.img } : { kind: "image", img: entry.img, name: entry.name }), ctx, "cover.confirmed");
+  // Une jaquette que le site a trouvée toute seule (gardée dans le stockage) : on la garde telle quelle, sans interroger RAWG.
+  const auto = await fx.autoFor(ctx, title);
+  if (auto) return finish(await fx.saveFix(ctx, auto.title, auto.rawgId ? { kind: "game", rawgId: auto.rawgId, name: auto.name ?? "", img: auto.img } : { kind: "image", img: auto.img, name: auto.name }), ctx, "cover.confirmed");
   // Pas dans la liste (page ouverte à la main) : on garde ce que RAWG donne en ce moment.
   const now = await rawg.cover(ctx, title);
   if (now.status !== "found" || !now.url) return { ok: false, error: now.status === "none" ? "nothing" : now.status === "found" ? "image" : now.status };
@@ -102,7 +103,7 @@ export async function forget(ctx, who, key, title) {
   if (done) await journal(ctx, "cover.forgotten", title ?? key);
   return done;
 }
-/** Oublie un titre noté « à vérifier » (choix automatique du site) : il reviendra de lui-même si le site hésite de nouveau. */
+/** Oublie un choix automatique (titre noté « à vérifier » et jaquette gardée toute seule) : le site cherchera de nouveau. */
 export async function forgetAuto(ctx, who, key, title) {
   if (typeof key !== "string" || key.length > 160 || !takeRate(who, "write")) return false;
   const done = await fx.forgetTodo(ctx, key);
