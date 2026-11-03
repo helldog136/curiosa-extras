@@ -4,6 +4,19 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : Home Assistant 1.2.0 prévient l'assistant « Adresse du site » de Curiosa quand vous changez de nom de domaine, et note ses incidents dans l'Historique. Rien à refaire de votre côté.*
+
+### Nouveautés
+
+- **Home Assistant 1.2.0 : changement de domaine.** Si vous changez l'adresse de votre site, la page « Adresse du site » de Curiosa vous rappelle maintenant de refaire l'association dans Home Assistant (Appareils et services, Curiosa : retirer l'intégration puis la rajouter avec la nouvelle adresse et un nouveau code). Rien n'est modifié tout seul.
+- **Historique.** L'onglet Historique du connecteur note désormais ce que le site ne voit pas tout seul : Home Assistant associé, code d'association annulé après des essais ratés, « Tout couper » demandé depuis le Bot Twitch, une action échouée, non reliée à un script ou non exécutée à temps, et Home Assistant qui ne répond plus quand un viewer dépense ses points. Jamais de pseudo ni de message, et rien pour les actions réussies (elles restent dans « Dernières actions »). Un lien mène de cette liste à l'Historique.
+
+### Pour les développeurs
+
+- `modules/home-assistant` 1.2.0 : `siteAddressUses` (aucun `returnAddresses` : Home Assistant vient chercher, aucun retour de connexion d'un service tiers) et `logEvents` (`device.paired`, `pairing.locked`, `circuit.cut`, `circuit.resumed`, `action.failed`, `action.unlinked`, `action.expired`, `link.offline`). `minCore` inchangé (0.2.6) : le module écrit avec `ctx.api.log?.write`, un cœur plus ancien ignore le journal et les deux clés. Les lignes sont écrites après l'enregistrement de la transaction (5 au plus par opération), sans minuteur. Les gestes de la page et de l'assistant ne sont pas doublés : le cœur les note déjà (`module…`, `mcp…`). L'ancien journal local (100 lignes, 7 jours) ne change pas.
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

@@ -109,6 +109,8 @@
   "jr_title": "Latest actions",
   "jr_empty": "Nothing yet. Viewers' actions will appear here with their outcome.",
   "jr_note": "The last 50 lines, kept for 7 days. A refused message is not kept: only the reason.",
+  "jr_history": "See the extension's History",
+  "jr_central": "Incidents and state changes are also in the History.",
   "jr_clear": "Clear the log",
   "jr_test": "Test",
   "words_intro": "**Refused words:** {count} words or phrases are watched right now (accents, capitals and digits slipped into words do not fool the list). Complete or correct it below.",

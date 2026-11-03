@@ -109,6 +109,8 @@
   "jr_title": "Dernières actions",
   "jr_empty": "Rien pour le moment. Les actions des viewers apparaîtront ici avec leur résultat.",
   "jr_note": "Les 50 dernières lignes, gardées 7 jours. Un message refusé n'est pas gardé : seulement le motif.",
+  "jr_history": "Voir l'Historique de l'extension",
+  "jr_central": "Les incidents et changements d'état sont aussi dans l'Historique.",
   "jr_clear": "Vider le journal",
   "jr_test": "Test",
   "words_intro": "**Mots refusés :** {count} mots ou expressions sont surveillés en ce moment (les accents, majuscules et chiffres glissés dans les mots ne trompent pas la liste). Complétez ou corrigez ci-dessous.",
