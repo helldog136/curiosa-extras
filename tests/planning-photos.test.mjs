@@ -108,13 +108,13 @@ test("la route de la photo : l'image, rien d'autre ; pas de cookie, pas d'écho,
   seed("Étoile du Nord", "etoile_nord");
   const ctx0 = ctxOf([]); await peopleOf(ctx0, ["etoile_nord"]); await Ph.settled(); P.resetPartners();
   const id = Ph.idOf("etoile_nord");
-  const get = (over = {}, m = "GET") => def.routes["photo/:id"](new Request(`https://site.test/m/pl/photo/${id}`, { method: m }), { ...ctx0, params: { id }, ...over });
+  const get = (over = {}, m = "GET") => def.routes["photo/:slug"](new Request(`https://site.test/m/pl/photo/${id}`, { method: m }), { ...ctx0, params: { slug: id }, ...over });
   const res = await get();
   assert.equal(res.status, 200); assert.equal(res.headers.get("content-type"), "image/png"); assert.equal(res.headers.get("x-content-type-options"), "nosniff");
   assert.equal(res.headers.get("set-cookie"), null); assert.match(res.headers.get("cache-control"), /max-age=300/); assert.match(res.headers.get("content-security-policy"), /default-src 'none'/);
   assert.deepEqual(Buffer.from(await res.arrayBuffer()), PNG);
   assert.equal((await get({}, "POST")).status, 405);
-  for (const bad of ["x", "../etc/passwd", "0123456789abcdeg", "0123456789abcdef", "ETOILE_NORD"]) assert.equal((await get({ params: { id: bad } })).status, 404, bad);
+  for (const bad of ["x", "../etc/passwd", "0123456789abcdeg", "0123456789abcdef", "ETOILE_NORD"]) assert.equal((await get({ params: { slug: bad } })).status, 404, bad);
 });
 
 test("la photo disparaît dès que la fiche n'est plus affichable : « Ne pas montrer », fiche à relire, fiche effacée — la route répond 404 et la copie est effacée", async () => {
@@ -124,7 +124,7 @@ test("la photo disparaît dès que la fiche n'est plus affichable : « Ne pas mo
   const gone = seed("Noé", "noe_stream"); await book.methods.erase({ id: gone.id, confirm: true });
   const ctx = ctxOf([]);
   for (const l of ["visible_tv", "etoile_nord", "lune_douce", "noe_stream"]) await plant(ctx, l);   // des copies faites AVANT que la fiche soit masquée, relue ou effacée
-  const route = (login) => def.routes["photo/:id"](new Request("https://site.test/x"), { ...ctx, params: { id: Ph.idOf(login) } });
+  const route = (login) => def.routes["photo/:slug"](new Request("https://site.test/x"), { ...ctx, params: { slug: Ph.idOf(login) } });
   P.resetPartners(); assert.equal((await route("visible_tv")).status, 200, "la fiche affichable est servie");
   for (const l of ["etoile_nord", "lune_douce", "noe_stream"]) assert.equal((await route(l)).status, 404, l);
   assert.deepEqual((await docs(ctx)).map((d) => d.data.login), ["visible_tv"], "les trois autres copies sont effacées par la route");
@@ -166,7 +166,7 @@ test("réglage « Afficher la photo des partenaires » coupé : aucun rond, aucu
   const ctx = ctxOf(items); await def.page(ctx); await Ph.settled();
   assert.equal((await docs(ctx)).length, 1);
   ctx.st.showPartnerPhotos = false; P.resetPartners(); Ph.resetPhotos(); fetched.length = 0;
-  const route = () => def.routes["photo/:id"](new Request("https://site.test/x"), { ...ctx, params: { id: Ph.idOf("etoile_nord") } });
+  const route = () => def.routes["photo/:slug"](new Request("https://site.test/x"), { ...ctx, params: { slug: Ph.idOf("etoile_nord") } });
   assert.equal((await route()).status, 404, "route fermée tout de suite");
   for (const appearance of ["original", "classic", "timeline"]) {
     ctx.st.appearance = appearance;
@@ -243,4 +243,42 @@ test("manifeste : réglage avancé, activé par défaut, replié ; rien d'obliga
   assert.ok(s.help.fr.length <= 60 && s.help.en.length <= 60 && s.label.fr.length <= 60);
   assert.match(m.privacy.fr, /copie de la photo publique du compte Twitch/); assert.match(m.privacy.en, /keeps a copy of the public photo/);
   assert.deepEqual(Object.keys(frP).sort(), Object.keys(rd("planning", "en")).sort());
+});
+
+// NON-RÉGRESSION (Planning 2.7.2). En 2.7.0/2.7.1 la route s'appelait « photo/:slug » et lisait `ctx.params.id` : le cœur ne connaît qu'UN segment libre, toujours nommé `slug`
+// (cœur 0.2.14, `matchModuleRoute` de src/core/modules/pageMeta.ts) ; l'adresse /m/<clé>/photo/<repère> répondait donc « Not found » sur le vrai site, le <img> se retirait seul (onerror)
+// et la page ne montrait que les initiales. Les essais appelaient la route à la main avec `params: { id }`, une forme que le cœur ne produit jamais. Ici, la route est trouvée EXACTEMENT
+// comme le fait le cœur (recopie de matchModuleRoute), à partir de l'adresse écrite dans la page.
+const SLUG_RE = /^[A-Za-z0-9_-]{1,80}$/;
+function coreMatch(routes, segments) {   // recopie fidèle de matchModuleRoute (cœur) : la route de ce nom exact, sinon « …/:slug » avec `params: { slug }` et rien d'autre
+  const last = segments[segments.length - 1];
+  if (last === ":slug") return null;
+  if (routes[segments.join("/")]) return { handler: routes[segments.join("/")], params: {} };
+  if (last === undefined || !SLUG_RE.test(last)) return null;
+  const key = [...segments.slice(0, -1), ":slug"].join("/");
+  return Object.prototype.hasOwnProperty.call(routes, key) ? { handler: routes[key], params: { slug: last } } : null;
+}
+
+test("l'adresse de photo écrite dans la page est SERVIE par la route telle que le cœur la trouve (forme réelle : params.slug)", async () => {
+  seed("Eosira6", "eosira6");
+  const ctx = ctxOf([slot("a", 30, { partners: ["eosira6"] })]);
+  await peopleOf(ctx, ["eosira6"]); await Ph.settled(); P.resetPartners();
+  const people = await peopleOf(ctx, ["eosira6"]);
+  const href = people[0].photo;
+  assert.match(href, /^\/m\/pl\/photo\/[0-9a-f]{16}$/, "la page écrit bien une adresse du site");
+  const [, m, ...path] = href.split("/").slice(1);   // ["m","pl","photo","<repère>"] -> clé, puis segments de la route
+  assert.equal(m, "pl");
+  const hit = coreMatch(def.routes, path);
+  assert.ok(hit, "le cœur trouve une route pour cette adresse (sinon : « Not found » et initiales seules)");
+  assert.deepEqual(Object.keys(hit.params), ["slug"], "le cœur ne donne que `slug`");
+  const res = await hit.handler(new Request(`https://site.test${href}`), { ...ctx, params: Object.freeze({ ...hit.params }) });
+  assert.equal(res.status, 200); assert.equal(res.headers.get("content-type"), "image/png");
+  assert.deepEqual(Buffer.from(await res.arrayBuffer()), PNG);
+  assert.equal(coreMatch(def.routes, ["photo", "0123456789abcdef/x"]), null, "un seul segment libre");
+});
+
+test("aucune route du Planning ne lit un paramètre autre que `slug` (le cœur n'en donne pas d'autre)", () => {
+  for (const key of Object.keys(def.routes)) assert.ok(!key.includes(":") || key.endsWith("/:slug") || key === ":slug", `route « ${key} » : seul « :slug » existe`);
+  const src = fs.readFileSync(new URL("../modules/planning/index.mjs", import.meta.url), "utf8");
+  assert.ok(!/ctx\.params\??\.id\b/.test(src), "`ctx.params.id` n'existe pas");
 });
