@@ -59,15 +59,22 @@ export function transact(ctx, fn, { now = Date.now(), sweep = true } = {}) {
       }
       return docs.get(name).data;
     };
-    const db = { now, core: () => load("core"), queue: () => load("queue"), results: () => load("results"), log: () => load("log") };
+    const db = { now, events: [], core: () => load("core"), queue: () => load("queue"), results: () => load("results"), log: () => load("log") };
     if (sweep) await closeExpired(db);
     const out = await fn(db);
     for (const [name, d] of docs) {
       if (JSON.stringify(d.data) === d.before) continue;
       if (d.id) await ctx.api.store.update(d.id, d.data); else await ctx.api.store.add(COLLECTIONS[name], d.data);
     }
+    // Journal du cœur : écrit APRÈS l'enregistrement (rien n'est écrit si la transaction échoue) ; `write` ne lève jamais. 5 lignes au plus par opération.
+    for (const e of db.events.slice(0, 5)) await ctx.api.log?.write(e);
     return out;
   });
+}
+
+/** Retient une ligne pour le journal du cœur (écrite à la fin de la transaction). */
+export function noteEvent(db, action, data, level) {
+  db.events.push({ action, ...(data ? { data } : {}), ...(level ? { level } : {}) });
 }
 
 /* ───────────── Journal ───────────── */
@@ -112,6 +119,7 @@ export async function closeExpired(db) {
   queue.items = keep;
   for (const a of gone) {
     await addResult(db, { id: a.id, ref: a.ref ?? null, status: "expired", code: "expired" });
+    if (!a.test) noteEvent(db, "action.expired", { action: a.key }, "warn");
     await updateLog(db, a.id, { status: "expired", code: "expired", doneAt: a.expiresAt });
   }
   return gone.length;

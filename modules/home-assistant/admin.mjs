@@ -257,9 +257,10 @@ function journalHtml(ctx, o) {
 function journalBlocks(ctx, o) {
   const t = ctx.t;
   const out = [{ type: "heading", text: t("jr_title") }];
-  if (!o.lines.length) { out.push({ type: "markdown", text: t("jr_empty") }); return out; }
+  const history = [{ type: "markdown", text: t("jr_central") }, { type: "links", items: [{ label: t("jr_history"), href: "?tab=history" }] }];   // l'onglet « Historique » du cœur (selon les droits de la personne)
+  if (!o.lines.length) { out.push({ type: "markdown", text: t("jr_empty") }, ...history); return out; }
   out.push({ type: "html", html: journalHtml(ctx, o) });
-  out.push({ type: "markdown", text: t("jr_note") });
+  out.push({ type: "markdown", text: t("jr_note") }, ...history);
   if (can(ctx, "ha.manage")) out.push({ type: "adminForm", action: "clearLog", submitLabel: t("jr_clear"), fields: [] });
   return out;
 }
