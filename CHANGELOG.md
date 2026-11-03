@@ -4,9 +4,11 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.40.0 — 2026-11-03
 
-*Ce qui demande une mise à jour de Curiosa : Streams saisis à la main 1.2.0 demande Curiosa 0.6.0 ou plus (champ replié sous « Plus d'options »). Planning 2.6.0 et Agenda en ligne 1.1.0 gardent leurs exigences.*
+*En bref : vous pouvez maintenant dire avec qui vous streamez. Dans la description d'un événement Google Agenda, ajoutez une ligne « Avec : pseudo1, pseudo2 » (les pseudos Twitch), et le Planning affiche le nom de ces personnes, avec un lien vers leur chaîne. Seuls les partenaires présents dans votre module Contacts s'affichent ; les autres restent invisibles. Pour un stream saisi à la main, le champ « Avec ces pseudos Twitch » est sous « Plus d'options ». Rien n'est modifié dans vos données.*
+
+*Ce qui demande une mise à jour de Curiosa : Streams saisis à la main 1.2.0 demande Curiosa 0.6.0 ou plus (champ replié sous « Plus d'options »). Planning 2.6.0 (Curiosa 0.5.0 ou plus) et Agenda en ligne 1.1.0 (Curiosa 0.2.5 ou plus) gardent leurs exigences. Le Planning n'a besoin de Contacts que pour afficher les partenaires.*
 
 ### Nouveautés
 
