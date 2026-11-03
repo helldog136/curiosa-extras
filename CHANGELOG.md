@@ -6,9 +6,16 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
+*En bref : Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… », en plus de « Du… au… ». Ce module demande Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
+
 *En bref : dans Bot Twitch 1.9.0, un timer n'est plus un message à part avec un titre : c'est une commande que le bot répète tout seul. L'onglet Timers liste vos commandes répétées ; on règle la répétition sur la page de la commande. Vos timers actuels sont repris tels quels : même message, même rythme.*
 
 ### Nouveautés
+
+- **Bannière d'annonce 1.2.0 : « jusqu'au 24 décembre » ou « à partir du 1er décembre » en une seule date.** Sous « Plus d'options », « Limiter dans le temps » n'oblige plus à choisir un début et une fin : la phrase sous le champ dit ce qui est compris (« À partir du 1er décembre 2026 », « Jusqu'au 24 décembre 2026 »). Le dernier jour compte jusqu'à minuit, et « à partir du » commence dès 00:00. Avec deux dates, ou « chaque année », rien ne change : vos réglages sont conservés tels quels.
+- **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
+- **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
+
 
 - **Bot Twitch 1.9.0 : un timer répète une commande.** Sur la page d'une commande, sous « Plus d'options », « Répéter automatiquement » : un interrupteur et « Toutes les … » (une durée, de 1 minute à 24 heures), puis un minimum de messages dans le chat et « en direct seulement » ou « toujours ». À chaque échéance, le bot écrit la réponse de la commande ; une commande désactivée ou hors de sa période n'est pas répétée.
 - **L'onglet Timers est un seul tableau** des commandes qui se répètent : recherche en direct, filtres « Actifs · En pause · Hors période » avec leur nombre, un interrupteur par ligne, « Modifier » (ouvre la commande sur son bloc) et « Envoyer maintenant ».
@@ -18,9 +25,13 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Pour les développeurs
 
+- `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
+
+
 - `modules/twitch-bot` 1.9.0 : `dataVersion` 6 (migration `timersMigrate.mjs`, additive et rejouable, 20 timers au plus par passage ; l'ancienne liste `timers` reste dans `botConfig`, inerte et marquée `migrated`), `logEvents` (`timers.migrated`, des nombres seulement). `minCore` reste 0.6.0 (champs `switch` et `duration`, journal du cœur). La répétition est le champ `repeat` de la commande ; l'état d'attente (`botTimers`) est rangé par commande.
 - Le moteur ne lit plus que les commandes. `timerOnly` : la commande ne répond jamais dans le chat (ni gestion `!editcom`). Un filet de sécurité lance la migration au premier message du chat si elle n'a pas tourné. Les répétitions ne portent pas de délais d'attente (ceux-ci sont pour les personnes) et ignorent « répondre seulement en direct » (elles ont leur propre condition, comme avant).
 - Pas de répétition pour la commande d'un partenaire (elle se règle dans la fiche du partenaire, qui n'a pas ce bloc).
+
 
 ## 1.38.0 — 2026-11-03
 
