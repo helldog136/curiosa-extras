@@ -366,7 +366,7 @@ test("onglet « Jaquettes enregistrées » : UN tableau, origine en pastille col
   assert.equal(txt(byTitle.Hades[1]), "Hades II"); assert.equal(txt(byTitle["Image a la main"][1]), "Image choisie à la main");
   // La vignette est la COPIE gardée sur le site (une page du site), jamais l'adresse de RAWG.
   assert.match(byTitle.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}$/);
-  assert.ok(!JSON.stringify(blocks).includes("media.rawg.io") || true);
+  assert.ok(!JSON.stringify(tabOf(blocks, "saved")).includes("https://media.rawg.io"), "l'administration montre les copies du site, pas l'adresse de RAWG");
   assert.deepEqual(t.rowIds, t.rows.map((r) => r[0]));
   // Au plus deux actions visibles ; « Oublier » est nommée, dangereuse (menu « ⋯ ») et passe par un écran de confirmation, jamais par un clic direct.
   const visible = t.rowActions.filter((a) => !a.danger && !a.inMenu);

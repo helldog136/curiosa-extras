@@ -32,7 +32,7 @@ const coverImg = (url, cls = "h-24 w-[4.5rem]") => url
   : `<div aria-hidden="true" class="${cls} shrink-0 rounded-lg border border-dashed border-line bg-bg"></div>`;
 
 /** Le texte du choix gardé : « Aucune jaquette », « Image choisie à la main » ou le nom du jeu. */
-const choiceText = (ctx, f) => (f.kind === "none" ? ctx.t("kept_none") : f.kind === "image" ? ctx.t("kept_image") : f.name || ctx.t("kept_game"));
+const choiceText = (ctx, f) => (f.kind === "none" ? ctx.t("kept_none") : f.kind === "image" && !f.name ? ctx.t("kept_image") : f.name || ctx.t("kept_game"));
 
 /** Les blocs d'un onglet : le cœur range chaque bloc dans l'onglet qui porte son nom (`use` quand rien n'est dit). */
 const tagged = (blocks, tab) => blocks.map((b) => ({ ...b, tab }));
@@ -121,7 +121,7 @@ const dayOrDash = (ctx, iso) => (Date.parse(iso) > 0 ? day(ctx, iso) : "—");
 const ORIGIN_TONE = { corrected: "accent", auto: "info", none: "neutral" };
 const originText = (ctx, e) => ctx.t(`origin_${e.origin}`);
 /** Le nom de ce qui est retenu, en mots simples. */
-const coverText = (ctx, e) => (e.origin === "none" ? "—" : e.kind === "image" ? ctx.t("kept_image") : e.name || ctx.t("kept_game"));
+const coverText = (ctx, e) => (e.origin === "none" ? "—" : e.kind === "image" && !e.name ? ctx.t("kept_image") : e.name || ctx.t("kept_game"));
 
 async function savedScreen(ctx) {
   const entries = await fx.savedEntries(ctx);

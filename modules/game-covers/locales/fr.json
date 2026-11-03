@@ -1,5 +1,5 @@
 {
-  "guide": "Les jaquettes sont cherchées chez RAWG, puis chez Twitch, puis chez Steam. Un code Rawg est facultatif, mais il élargit les résultats.\n\n1. Créez un compte gratuit sur [rawg.io/apidocs](https://rawg.io/apidocs) et copiez votre code d'accès.\n2. Ouvrez l'onglet « Réglages » de cette page et collez-le dans « Code d'accès gratuit Rawg ».\n3. Revenez ici et cliquez sur « Tester le code ».",
+  "guide": "Les jaquettes sont cherchées chez Rawg, puis chez Twitch, puis chez Steam. Un code Rawg est facultatif, mais il élargit les résultats.\n\n1. Créez un compte gratuit sur [rawg.io/apidocs](https://rawg.io/apidocs) et copiez votre code d'accès.\n2. Ouvrez l'onglet « Réglages » de cette page et collez-le dans « Code d'accès gratuit Rawg ».\n3. Revenez ici et cliquez sur « Tester le code ».",
   "key_adopted": "Le code d'accès de votre site a été repris tout seul : vous n'avez rien à refaire. Pour le remplacer, collez-en un autre dans l'onglet « Réglages ».",
   "forget_key": "Oublier le code repris",
   "forgot_key": "C'est fait : le code repris est oublié.",
