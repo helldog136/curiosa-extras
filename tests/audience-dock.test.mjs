@@ -258,7 +258,7 @@ test("dock : textes en français et en anglais à parité exacte, mêmes variabl
   assert.deepEqual(dockKeys, ["dockTitle", "dockSteps", "dockAddress", "dockOpen", "dockAgain"]);
   for (const k of dockKeys) { assert.ok(fr[k] && en[k], k); assert.ok(!/<[a-z!/]/i.test(fr[k] + en[k]), `${k} : du texte, pas du HTML`); }
   assert.equal(fr.dockSteps.split("\n").filter((l) => /^\d\. /.test(l)).length, 3); assert.equal(en.dockSteps.split("\n").filter((l) => /^\d\. /.test(l)).length, 3);
-  assert.equal(manifest.version, "1.2.0"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.apiVersion, 2);
+  assert.equal(manifest.version, "1.3.0"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.apiVersion, 2);
   assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["draw.manage", "moderate", "remote.use"], "le dock reste derrière le même secret ; seul le tirage a son droit");
   assert.equal(manifest.dataVersion, undefined, "aucune donnée nouvelle, aucune migration");
 });

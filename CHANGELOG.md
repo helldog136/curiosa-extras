@@ -23,6 +23,8 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 - **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
 - **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
 - **Bot Twitch 1.7.2 : un visuel de plus sur sa fiche.** L'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
+- **Participation 1.3.0 et Sondages 1.4.0 : l'Historique en dit plus.** Participation y note ce que le site ne voit pas tout seul : un tirage ouvert, fermé (même tout seul à l'échéance), rouvert, tiré ou vidé depuis la télécommande, une sourdine, une salle vidée, un bouton de la télécommande qui échoue. Sondages y note les manches lancées ou arrêtées et les sondages rapides depuis la télécommande, et la décision de chaque manche (numéro, vainqueur, nombre de votes). Jamais de pseudo ni de vote ; les gestes de la page d'administration et de l'assistant n'apparaissent pas deux fois. L'ancien journal de Participation, et son lien « Voir l'Historique de l'extension », restent là.
+
 
 ### Pour les développeurs
 
@@ -33,6 +35,7 @@ La fiche du Bot Twitch montre aussi son onglet Réglages.
 - `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
 - `modules/twitch-bot` 1.7.2 : une `preview` ajoutée (`reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
 - `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
+- `modules/audience` 1.3.0 et `modules/polls` 1.4.0 : `logEvents` (Participation : `draw.opened`, `draw.closed`, `draw.reopened`, `draw.picked`, `draw.redrawn`, `draw.cleared`, `room.cleared`, `person.muted`, `person.unmuted`, `remote.failed` ; Sondages : `round.started`, `round.stopped`, `poll.quick`, `round.decided`, `frequent`). `minCore` inchangé (0.5.0) : écriture par `ctx.api.log?.write`, ignorée par un cœur plus ancien. Participation écrit sans attendre (le geste ne dépend pas du journal) via `K.journal`, qui reste l'unique point d'écriture de l'ancien journal ; les manches des autres extensions (`round.start`, `round.stop`, `round.decision` envoyés par le service `journal`) ne sont pas recopiés : chaque extension les note sous son nom. Rien n'est supprimé, aucune migration.
 
 ## 1.38.0 — 2026-11-03
 

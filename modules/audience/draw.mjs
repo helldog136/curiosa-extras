@@ -295,7 +295,7 @@ export async function pick(ctx, { count, who = "admin", rnd, now = Date.now() } 
     const d = { ...rec.data };
     if (d.purged || P.purgeDue(d, now)) return err("gone");
     const r = await pickIn(ctx, rec, d, P.winnersCount(count, d.winners || 1), rnd, now);
-    if (r.ok) await K.journal(ctx, { who, what: "draw.pick", detail: r.winners.join(", ") });
+    if (r.ok) await K.journal(ctx, { who, what: "draw.pick", detail: r.winners.join(", "), count: r.winners.length });
     return r;
   });
   if (out.ok) await syncLive(ctx, now).catch(() => {});
