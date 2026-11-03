@@ -4,11 +4,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.42.0 — 2026-11-03
 
-*En bref : les jaquettes de vos jeux ne dépendent plus d'une seule source. Si RAWG est en panne, le site cherche chez Twitch puis chez Steam, copie l'image sur votre site et la garde : vos visiteurs ne contactent plus jamais RAWG, Twitch ni Steam. Modules touchés : Jaquettes de jeux 1.3.0 et Connecteur Twitch 1.3.0.*
-
-*Ce qui demande une mise à jour de Curiosa : rien (Curiosa 0.6.0 ou plus, comme avant). Jaquettes de jeux demande une nouvelle permission à accepter (« routes », pour servir les copies).*
+*En bref : si RAWG est en panne ou si vous n'avez pas de code RAWG, les jaquettes de vos jeux viennent d'autres sources et sont gardées sur votre site. Vos visiteurs ne contactent plus aucune de ces sources. Il y a une seule permission à accepter pour Jaquettes de jeux, et rien d'autre à régler.*
 
 ### Nouveautés
 
