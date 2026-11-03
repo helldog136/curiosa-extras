@@ -260,10 +260,10 @@ function coreMatch(routes, segments) {   // recopie fidèle de matchModuleRoute 
 }
 
 test("l'adresse de photo écrite dans la page est SERVIE par la route telle que le cœur la trouve (forme réelle : params.slug)", async () => {
-  seed("Eosira6", "eosira6");
-  const ctx = ctxOf([slot("a", 30, { partners: ["eosira6"] })]);
-  await peopleOf(ctx, ["eosira6"]); await Ph.settled(); P.resetPartners();
-  const people = await peopleOf(ctx, ["eosira6"]);
+  seed("Lune Douce", "lune_douce");
+  const ctx = ctxOf([slot("a", 30, { partners: ["lune_douce"] })]);
+  await peopleOf(ctx, ["lune_douce"]); await Ph.settled(); P.resetPartners();
+  const people = await peopleOf(ctx, ["lune_douce"]);
   const href = people[0].photo;
   assert.match(href, /^\/m\/pl\/photo\/[0-9a-f]{16}$/, "la page écrit bien une adresse du site");
   const [, m, ...path] = href.split("/").slice(1);   // ["m","pl","photo","<repère>"] -> clé, puis segments de la route
