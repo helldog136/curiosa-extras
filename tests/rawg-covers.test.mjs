@@ -411,7 +411,7 @@ test("planning : panneau d'admin — clé absente (avec lien), clé refusée, RA
   const text = async (svc) => JSON.stringify(await pl.adminPanel(plCtx(svc)));
   calendarOnly(cal);
   const none = await text(service({}, { configured: false })); assert.match(none, /Aucun code d'accès Rawg/); assert.match(none, /Jaquettes de jeux/); assert.match(none, /suggestInstall/);
-  assert.match(await text(service({ Celeste: "refused", "Fantôme": "refused" })), /RAWG refuse la clé/);
+  assert.match(await text(service({ Celeste: "refused", "Fantôme": "refused" })), /Rawg refuse le code d.accès/);
   assert.match(await text(service({ Celeste: "unreachable", "Fantôme": "unreachable" })), /RAWG est injoignable/);
   const ok = await text(service({ Celeste: "found" }));
   assert.match(ok, /1 jaquette\(s\) trouvée\(s\) pour 2 jeu/); assert.match(ok, /RAWG ne connaît pas : Fantôme/); assert.ok(ok.includes(IMG));
@@ -453,7 +453,7 @@ test("planning : hauteur de l'image — 150 px par jour, 270 px dès qu'un jour 
 test("planning : plus de réglage de clé, permission rawg déclarée (pas de storage), version montée, textes alignés", () => {
   const m = readJson("planning/module.json");
   assert.ok(parseManifest(m).ok);
-  assert.equal(m.version, "2.5.1");
+  assert.equal(m.version, "2.5.2");
   assert.ok(!m.settings.some((s) => s.key === "rawgApiKey"));
   assert.ok(m.permissions.includes("rawg") && !m.permissions.includes("storage"));
   assert.deepEqual(Object.keys(readJson("planning/locales/fr.json")).sort(), Object.keys(readJson("planning/locales/en.json")).sort());

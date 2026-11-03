@@ -264,7 +264,7 @@ test("l'administration : jamais la clé ; guide sans clé ; état avec clé ; cl
   const shown = await mod.adminPanel(adopted, { query: {} });
   assert.ok(!JSON.stringify(shown).includes(KEY));
   assert.ok(shown.some((b) => b.type === "adminForm" && b.action === "forgetKey"));
-  assert.match((await mod.adminActions.forgetKey(adopted)).ok, /oubliée/);
+  assert.match((await mod.adminActions.forgetKey(adopted)).ok, /oublié/);
   assert.equal((await svc.status(adopted)).configured, false);
 });
 
