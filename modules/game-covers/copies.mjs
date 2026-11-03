@@ -221,7 +221,7 @@ const NOT_FOUND = () => new Response(null, { status: 404, headers: { "Cache-Cont
 export async function response(request, ctx) {
   if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" } });
   try {
-    const id = ctx.params?.id;
+    const id = ctx.params?.slug;
     let copy = await copyOf(ctx, id);
     if (!copy) return NOT_FOUND();
     const now = Date.now();
