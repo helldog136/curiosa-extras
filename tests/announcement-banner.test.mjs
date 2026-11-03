@@ -179,7 +179,9 @@ test("dates : le manifeste déclare UN seul réglage « period », rare, faculta
   assert.equal(f.optional, true);
   assert.ok(!("default" in f), "sans dates, le bandeau marche comme avant");
   assert.ok(!f.translatable && !f.advanced);
-  assert.equal(manifestJson.minCore, "0.6.0", "le type period demande le cœur 0.6.0");
+  assert.equal(f.openEnded, true, "une seule date suffit : « jusqu'au… » ou « à partir du… »");
+  assert.equal(manifestJson.minCore, "0.6.4", "openEnded et ctx.timezone demandent le cœur 0.6.4");
+  assert.equal(manifestJson.version, "1.2.0");
   assert.ok(!manifestJson.settings.some((x) => ["datetime", "period"].includes(x.type) && x.key !== "period"), "pas de second champ de date");
   for (const lang of ["fr", "en"]) {
     for (const k of ["label", "help", "example"]) assert.ok(f[k][lang] && f[k][lang].length <= 60, `${k}.${lang}`);
@@ -275,7 +277,7 @@ test("dates : un fuseau inconnu ou absent ne casse rien (repli sur celui de la m
 });
 
 test("dates : une valeur illisible ou à l'envers n'éteint jamais l'annonce", (t) => {
-  for (const period of ["n'importe quoi", "2026-12-24/2026-12-01", "2026-12-01/", "/2026-12-24", "2026-13-40/2026-14-01"]) {
+  for (const period of ["n'importe quoi", "2026-12-24/2026-12-01", "2026-13-40/2026-14-01", "2026-02-30/", "/2026-13-01", "/", "//", "2026-12-01/x", "/2026-12-24/", "12-01/", "/12-24", "2026-12-01 2026-12-24"]) {
     assert.deepEqual(shown(t, "2026-12-10T12:00:00Z", { period }, PARIS), ALL, period);
   }
 });
@@ -299,13 +301,15 @@ test("dates : aucun minuteur ni tâche de fond — la décision se prend à l'af
   assert.ok(!def.tasks && !def.hooks && !manifestJson.tasks);
 });
 
-test("dates : le cœur refuse une fin avant le début, sous le champ, avec un exemple (en et fr)", async () => {
+test("dates : le cœur refuse une fin avant le début, sous le champ, avec un exemple (en et fr) ; une seule date est acceptée", async () => {
   const { checkFieldInput } = await import("@/core/modules/settingValues");
   const field = manifestJson.settings.find((x) => x.key === "period");
   assert.deepEqual(checkFieldInput(field, "2026-12-24/2026-12-01"), { ok: false, reason: "period" });
-  assert.deepEqual(checkFieldInput(field, "2026-12-01/"), { ok: false, reason: "period" }, "un début seul ou une fin seule ne s'enregistre pas : le contrôle demande les deux");
   assert.deepEqual(checkFieldInput(field, "2026-12-01/2026-12-24"), { ok: true, value: "2026-12-01/2026-12-24" });
   assert.deepEqual(checkFieldInput(field, "12-20/01-05"), { ok: true, value: "12-20/01-05" });
+  assert.deepEqual(checkFieldInput(field, "2026-12-01/"), { ok: true, value: "2026-12-01/" }, "à partir du 1er décembre 2026");
+  assert.deepEqual(checkFieldInput(field, "/2026-12-24"), { ok: true, value: "/2026-12-24" }, "jusqu'au 24 décembre 2026");
+  for (const bad of ["/", "//", "2026-13-01/", "/2026-02-30", "12-01/", "/12-24"]) assert.equal(checkFieldInput(field, bad).ok, false, bad);
   const core = process.env.CURIOSA_DIR;
   for (const [lang, example] of [["fr", /par exemple/], ["en", /for example/]]) {
     const msg = JSON.parse(fs.readFileSync(`${core}/src/locales/${lang}.json`, "utf8"))["instances.error.period"];
@@ -313,7 +317,148 @@ test("dates : le cœur refuse une fin avant le début, sous le champ, avec un ex
   }
 });
 
+test("dates : sans openEnded, le cœur refuserait une date seule (c'est bien la clé du manifeste qui l'autorise)", async () => {
+  const { checkFieldInput } = await import("@/core/modules/settingValues");
+  const { openEnded, ...closed } = manifestJson.settings.find((x) => x.key === "period");
+  assert.equal(openEnded, true);
+  for (const v of ["2026-12-01/", "/2026-12-24"]) assert.deepEqual(checkFieldInput(closed, v), { ok: false, reason: "period" });
+});
+
 test("dates : le réglage a ses trois textes en fr et en (l'aperçu en une phrase vient du contrôle du cœur)", () => {
   const f = manifestJson.settings.find((x) => x.key === "period");
   for (const k of ["label", "help", "example"]) assert.deepEqual(Object.keys(f[k]).sort(), ["en", "fr"]);
+});
+
+/* ───────────── Période ouverte : « à partir du… », « jusqu'au… » (cœur 0.6.4) ───────────── */
+
+test("dates : début seul — rien avant, visible dès 00:00 le jour du début et sans fin ensuite (heure du site)", (t) => {
+  const period = "2026-12-01/";
+  assert.deepEqual(shown(t, "2026-11-30T22:59:59Z", { period }, PARIS), NONE, "la veille à 23:59:59");
+  assert.deepEqual(shown(t, "2026-11-30T23:00:00Z", { period }, PARIS), ALL, "le 1er à 00:00");
+  assert.deepEqual(shown(t, "2026-12-24T12:00:00Z", { period }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2031-06-15T12:00:00Z", { period }, PARIS), ALL, "aucune fin : toujours visible, des années plus tard");
+});
+
+test("dates : fin seule — visible dès maintenant, le dernier jour entier jusqu'à 23:59, puis plus rien (heure du site)", (t) => {
+  const period = "/2026-12-24";
+  assert.deepEqual(shown(t, "2020-01-01T12:00:00Z", { period }, PARIS), ALL, "aucun début");
+  assert.deepEqual(shown(t, "2026-11-03T12:00:00Z", { period }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2026-12-24T22:59:59Z", { period }, PARIS), ALL, "le 24 à 23:59:59");
+  assert.deepEqual(shown(t, "2026-12-24T23:00:00Z", { period }, PARIS), NONE, "le 25 à 00:00");
+  assert.deepEqual(shown(t, "2027-06-01T12:00:00Z", { period }, PARIS), NONE);
+});
+
+test("dates : deux dates — le comportement d'avant, début et fin inclus", (t) => {
+  const period = "2026-12-01/2026-12-24";
+  assert.deepEqual(shown(t, "2026-11-30T12:00:00Z", { period }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2026-12-01T12:00:00Z", { period }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2026-12-24T12:00:00Z", { period }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2026-12-25T12:00:00Z", { period }, PARIS), NONE);
+});
+
+test("dates : une période ouverte suit le fuseau du site (même instant, autre jour)", (t) => {
+  const instant = "2026-12-24T23:30:00Z"; // 00:30 le 25 à Paris, 18:30 le 24 à New York
+  assert.deepEqual(shown(t, instant, { period: "/2026-12-24" }, "Europe/Paris"), NONE);
+  assert.deepEqual(shown(t, instant, { period: "/2026-12-24" }, "America/New_York"), ALL);
+  assert.deepEqual(shown(t, instant, { period: "2026-12-25/" }, "Europe/Paris"), ALL);
+  assert.deepEqual(shown(t, instant, { period: "2026-12-25/" }, "America/New_York"), NONE);
+});
+
+test("dates : période ouverte et changements d'heure — un jour de 23 ou 25 heures compte comme un jour entier", (t) => {
+  assert.deepEqual(shown(t, "2027-03-27T22:59:59Z", { period: "2027-03-28/" }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2027-03-27T23:00:00Z", { period: "2027-03-28/" }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2027-03-28T21:59:59Z", { period: "/2027-03-28" }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2027-03-28T22:00:00Z", { period: "/2027-03-28" }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2026-10-25T22:59:59Z", { period: "/2026-10-25" }, PARIS), ALL, "jour de 25 heures");
+  assert.deepEqual(shown(t, "2026-10-25T23:00:00Z", { period: "/2026-10-25" }, PARIS), NONE);
+});
+
+test("dates : 29 février — réel en 2028 (début ou fin seuls), illisible en 2027 (jamais caché) ; « chaque année » garde le 29", (t) => {
+  assert.deepEqual(shown(t, "2028-02-28T12:00:00Z", { period: "2028-02-29/" }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2028-02-29T12:00:00Z", { period: "2028-02-29/" }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2028-02-29T12:00:00Z", { period: "/2028-02-29" }, PARIS), ALL);
+  assert.deepEqual(shown(t, "2028-03-01T12:00:00Z", { period: "/2028-02-29" }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2027-06-01T12:00:00Z", { period: "2027-02-29/" }, PARIS), ALL, "29 février 2027 n'existe pas : illisible, rien n'est caché");
+  assert.deepEqual(shown(t, "2027-03-01T12:00:00Z", { period: "02-01/02-29" }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2027-02-28T12:00:00Z", { period: "02-29/03-05" }, PARIS), NONE);
+  assert.deepEqual(shown(t, "2027-03-01T12:00:00Z", { period: "02-29/03-05" }, PARIS), ALL);
+});
+
+test("dates : le fuseau vient de ctx.timezone (cœur 0.6.4) ; repli sur la machine s'il manque ou est inconnu", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: at("2026-12-24T23:30:00Z").getTime() }); // 00:30 le 25 à Paris, 18:30 le 24 à New York
+  const make = (timezone) => fakeCtx({ key: "banner", timezone, settings: { enabled: true, text: "Soldes", period: "/2026-12-24" } });
+  assert.equal(def.slots["layout.banner"](make("Europe/Paris")), null);
+  assert.notEqual(def.slots["layout.banner"](make("America/New_York")), null);
+  assert.equal(mod.zoneOf(make("Asia/Tokyo")), "Asia/Tokyo");
+  const machine = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  for (const timezone of [null, "", "Mars/Olympus"]) assert.equal(mod.zoneOf({ timezone }), machine, String(timezone));
+  assert.equal(mod.zoneOf({}), machine);
+  assert.equal(mod.zoneOf(undefined), machine);
+  assert.doesNotMatch(source, /n'expose pas encore/, "le cœur 0.6.4 expose le fuseau du site");
+});
+
+/** Copie de la lecture de la version 1.1.0 (deux dates ou « chaque année »), pour prouver que les valeurs déjà enregistrées donnent EXACTEMENT les mêmes jours montrés. */
+function referenceV110(period, day) {
+  const raw = String(period ?? "").trim();
+  if (!raw) return true;
+  const real = (m, d, y) => m >= 1 && m <= 12 && d >= 1 && d <= (y === undefined && m === 2 ? 29 : new Date(Date.UTC(y ?? 2000, m, 0)).getUTCDate());
+  const once = /^(\d{4})-(\d{2})-(\d{2})\/(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (once) {
+    const [fy, fm, fd, ty, tm, td] = once.slice(1).map(Number);
+    const a = fy * 10000 + fm * 100 + fd, b = ty * 10000 + tm * 100 + td;
+    if (!real(fm, fd, fy) || !real(tm, td, ty) || a > b) return true;
+    const k = day.y * 10000 + day.m * 100 + day.d;
+    return k >= a && k <= b;
+  }
+  const yearly = /^(\d{2})-(\d{2})\/(\d{2})-(\d{2})$/.exec(raw);
+  if (yearly) {
+    const [fm, fd, tm, td] = yearly.slice(1).map(Number);
+    if (!real(fm, fd) || !real(tm, td)) return true;
+    const a = fm * 100 + fd, b = tm * 100 + td, k = day.m * 100 + day.d;
+    return a <= b ? k >= a && k <= b : k >= a || k <= b;
+  }
+  return true;
+}
+
+test("dates : compatibilité exacte — les valeurs déjà enregistrées (deux dates, chaque année, vide, illisible) donnent les mêmes résultats qu'en 1.1.0, jour par jour", () => {
+  const values = ["", "   ", "2026-12-01/2026-12-24", "2026-12-24/2026-12-24", "2028-02-29/2028-03-02", "2026-12-24/2026-12-01", "2027-02-29/2027-03-02", "12-01/12-24", "12-20/01-05", "02-01/02-29", "02-29/03-05", "01-01/12-31", "02-30/03-01", "13-01/13-02", "n'importe quoi", "2026-12-01 2026-12-24"];
+  let compared = 0;
+  for (let ms = Date.UTC(2026, 10, 1, 12); ms < Date.UTC(2029, 2, 5, 12); ms += 86400000) {
+    const now = new Date(ms);
+    for (const tz of ["UTC", PARIS, "Pacific/Auckland"]) {
+      const day = mod.wallDay(now, tz);
+      for (const v of values) { assert.equal(mod.isActive(v, now, tz), referenceV110(v, day), `${JSON.stringify(v)} le ${day.y}-${day.m}-${day.d} (${tz})`); compared++; }
+    }
+  }
+  assert.ok(compared > 40000);
+});
+
+test("dates : la phrase d'aperçu du cœur dit « À partir du… » / « Jusqu'au… », et l'exemple du réglage est cette phrase (fr et en)", async () => {
+  const { parsePeriod, describePeriod } = await import("@/core/adminkit/values");
+  const core = process.env.CURIOSA_DIR;
+  const f = manifestJson.settings.find((x) => x.key === "period");
+  const say = (lang, value) => {
+    const m = JSON.parse(fs.readFileSync(`${core}/src/locales/${lang}.json`, "utf8"));
+    const r = parsePeriod(value, { openEnded: true });
+    assert.ok(r.ok, value);
+    return describePeriod(r.period, lang, { yearly: m["period.sentenceYearly"], once: m["period.sentenceOnce"], since: m["period.sentenceSince"], until: m["period.sentenceUntil"] });
+  };
+  assert.equal(say("fr", "2026-12-01/"), "À partir du 1er décembre 2026");
+  assert.equal(say("fr", "/2026-12-24"), "Jusqu'au 24 décembre 2026");
+  assert.equal(say("fr", "2026-12-01/2026-12-24"), "Du 1er décembre 2026 au 24 décembre 2026");
+  assert.equal(say("en", "/2026-12-24"), "Until 24 December 2026");
+  assert.equal(say("en", "2026-12-01/"), "From 1 December 2026");
+  for (const lang of ["fr", "en"]) assert.equal(f.example[lang], say(lang, "/2026-12-24"), "l'exemple est exactement ce que le contrôle écrit sous le champ");
+  assert.ok(!/chaque année|every year/i.test(JSON.stringify(f.example)), "la saisie part de « une seule fois » : l'exemple ne promet pas « chaque année »");
+  assert.match(f.help.fr, /période/);
+});
+
+test("dates : « jusqu'au… » et « à partir du… » ne cachent rien de plus que ce qu'ils disent (balayage jour par jour)", () => {
+  const from = Date.UTC(2026, 11, 20, 12), to = Date.UTC(2027, 0, 5, 12);
+  for (let ms = from; ms <= to; ms += 86400000) {
+    const now = new Date(ms), iso = now.toISOString().slice(0, 10);
+    assert.equal(mod.isActive("2026-12-25/", now, "UTC"), iso >= "2026-12-25", iso);
+    assert.equal(mod.isActive("/2026-12-25", now, "UTC"), iso <= "2026-12-25", iso);
+    assert.equal(mod.isActive("2026-12-25/2026-12-25", now, "UTC"), iso === "2026-12-25", iso);
+  }
 });
