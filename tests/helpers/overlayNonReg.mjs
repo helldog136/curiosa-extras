@@ -1,4 +1,4 @@
-// Non-régression des éléments d'overlay (Planning 2.5.0, Statistiques de la communauté 1.2.0) : ce que les modules rendaient AVANT (dépôt 1.25.0) doit rester identique, octet pour octet.
+// Non-régression des éléments d'overlay (Planning 2.5.0, Statistiques de la communauté 1.2.0) : ce que les modules rendaient AVANT (dépôt 1.25.0) doit rester identique, octet pour octet (exception voulue : la scène « alternating » et son aperçu dans l'administration, refaite avec Planning 2.7.1, voir CHANGELOG).
 // `planningSnapshot` / `statsSnapshot` rejouent les mêmes scénarios sur le code d'un dossier de dépôt ; les fichiers tests/golden/*.json ont été produits avec le dépôt 1.25.0
 // (commit 85019dc), avant toute modification. Horloge simulée par l'appelant (Date fixe : mercredi 14 octobre 2026, 10:00 UTC).
 import fs from "node:fs";
