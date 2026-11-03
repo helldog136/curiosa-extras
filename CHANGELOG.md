@@ -4,7 +4,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.37.0 — 2026-11-03
+
+*En bref : votre bandeau d'annonce peut maintenant commencer et finir à des dates choisies, et la page Pages propose des modèles prêts à modifier. L'assistant d'installation posera aussi la question « Vous êtes… ? ». Bannière d'annonce 1.1.0, pour Curiosa 0.6.0 ou plus ; Pages 1.1.0, pour tout cœur. Les modèles de pages et les profils de départ n'apparaissent qu'avec le cœur 0.6.3 (à publier ensuite) : sur le cœur 0.6.2 ou plus ancien, ils sont simplement ignorés, rien ne casse et rien ne change. C'est voulu.*
 
 ### Nouveautés
 
@@ -18,6 +20,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 - `examples/announcement-banner` : réglage `period` (`rare`, facultatif, sans valeur par défaut), `minCore` 0.6.0. La décision est prise à l'affichage, d'après l'heure courante dans le fuseau (`ctx.timezone` s'il existe, sinon celui de la machine), sans minuteur. Tests dans `tests/announcement-banner.test.mjs` (fuseaux, changements d'heure, début dans le futur, valeurs illisibles).
 - `catalogue/profiles.json` (nouveau, facultatif) : profils de départ lus par le cœur après 0.6.2. `catalogue/suggested.json` ne change pas. Pages : clé `content.templates` dans `module.json`, ignorée par un cœur plus ancien (aucun `minCore`).
+- Versions : dépôt 1.37.0 ; Bannière d'annonce 1.1.0 ; Pages 1.1.0. Le Catalogue pointe l'étiquette `v1.37.0`.
 
 ## 1.36.0 — 2026-11-02
 
