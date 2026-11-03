@@ -8,15 +8,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 *En bref : Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… », en plus de « Du… au… ». Ce module demande Curiosa 0.6.4 ou plus ; les autres modules ne changent pas.*
 
+La fiche du Bot Twitch montre aussi son onglet Réglages.
+
 ### Nouveautés
 
 - **Bannière d'annonce 1.2.0 : « jusqu'au 24 décembre » ou « à partir du 1er décembre » en une seule date.** Sous « Plus d'options », « Limiter dans le temps » n'oblige plus à choisir un début et une fin : la phrase sous le champ dit ce qui est compris (« À partir du 1er décembre 2026 », « Jusqu'au 24 décembre 2026 »). Le dernier jour compte jusqu'à minuit, et « à partir du » commence dès 00:00. Avec deux dates, ou « chaque année », rien ne change : vos réglages sont conservés tels quels.
 - **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
 - **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
+- **Bot Twitch 1.7.2 : un visuel de plus sur sa fiche.** L'onglet Réglages (trois réglages seulement). Ce sont de vrais écrans, avec des exemples inventés. Le bot, lui, ne change pas.
 
 ### Pour les développeurs
 
 - `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
+- `modules/twitch-bot` 1.7.2 : une `preview` ajoutée (`reglages.webp`), légendes en français et en anglais. Aucun code du module n'est touché.
+- `tests/visual/previews/kit.mjs` : nouvelle fonction `settingsBlock(id, …)`, qui rend l'onglet Réglages d'un module avec le vrai composant du cœur (`ModuleSettings`), à partir de son `module.json`. Les scènes des autres modules peuvent la réutiliser.
 
 ## 1.38.0 — 2026-11-03
 
