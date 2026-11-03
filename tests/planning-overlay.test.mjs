@@ -44,7 +44,7 @@ beforeEach(() => { mock.timers.setTime(Date.parse("2026-10-14T10:00:00Z")); over
 
 test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec taille minimale, plage de ratios, style suivi, options minimales", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.6.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "2.7.1"); assert.equal(manifest.minCore, "0.5.0");
   assert.deepEqual(manifest.overlayElements.map((e) => e.id), ["week", "next"]);
   for (const e of manifest.overlayElements) {
     assert.equal(e.fit, "fluid", e.id); assert.equal(e.followsStyle, true, e.id); assert.equal(e.demo, true, e.id);
@@ -57,7 +57,7 @@ test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec tai
   assert.deepEqual(w.options.map((o) => o.id), ["look", "days", "covers"]);
   assert.deepEqual(w.options[0].choices.map((c) => c.value), ["auto", "week", "classic", "alternating", "timeline", "posters"]);
   assert.deepEqual(manifest.overlayElements.find((e) => e.id === "next").options.map((o) => o.id), ["more", "covers"]);
-  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "pages", "rawg", "routes", "sections", "topics"], "aucun nouveau droit : « routes » existait déjà");
+  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "pages", "rawg", "routes", "sections", "storage", "topics"], "aucun droit de plus pour les éléments d'overlay (« routes » existait déjà) ; « storage » vient de 2.7.0 : la copie des photos de partenaires");
 });
 
 test("manifeste : libellés, descriptions, options et choix en français ET en anglais, mots simples", () => {

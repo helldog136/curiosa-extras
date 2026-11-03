@@ -40,7 +40,7 @@ Le même agenda, présenté de six manières (plus l'affichage d'origine, **choi
 |---|---|---|
 | **Liste simple** (défaut) | Le rendu d'origine : un titre par jour, puis les streams. | — |
 | **Liste classique** | Agenda sobre : un jour par rangée, heure à gauche, jaquette, titre et jeux. | Apple Calendrier, Dieter Rams |
-| **Liste en alternance** | L'en-tête de jour passe de gauche à droite d'un jour à l'autre, en cases arrondies ; jusqu'à 3 jaquettes ; semaine vide = un seul message ; en colonne sur mobile. | L'ancien site de la personne qui a créé ce module |
+| **Liste en alternance** | L'en-tête de jour passe de gauche à droite d'un jour à l'autre, en cases arrondies ; jusqu'à 3 jaquettes ; dans chaque case, le contenu occupe toute la largeur (l'heure et l'état « Demain » aux deux bouts de la ligne, titre en grand, jeu et partenaires sur une ligne, jour vide au centre) sans changer la taille des cases ; semaine vide = un seul message ; en colonne sur mobile. | L'ancien site de la personne qui a créé ce module |
 | **Semaine en grille** | 7 colonnes (premier jour de la semaine au choix), créneaux empilés ; liste verticale sur mobile. | Vue semaine d'un agenda |
 | **Timeline** | Rail vertical, points datés, vignettes, aéré ; les jours vides se résument en une ligne. | Linear, Stripe |
 | **Affiches** | Cartes verticales : jaquette pleine hauteur, dégradé, date en pastille, titre dessus ; sans jeu, logo du site sur mauve Twitch. | Apple TV, Netflix, Spotify |
@@ -88,11 +88,34 @@ Quand un stream est en compagnie d'autres personnes, écrivez leurs **pseudos Tw
 
 Le planning montre alors « Avec Camille » **si ce pseudo est le compte Twitch d'une fiche de votre module Contacts** : c'est le **nom de la fiche** qui s'affiche, avec un lien vers la chaîne Twitch, sur la page, dans les morceaux d'accueil, dans les éléments d'overlay (le nom seul, rien à cliquer) et sur l'image de la semaine (en texte).
 
-- **Vie privée.** Seuls le nom de la fiche et le lien Twitch sortent de Contacts : jamais l'e-mail, le téléphone, les notes ni la photo (aucune image tierce n'est chargée). Un pseudo absent de Contacts n'est **pas affiché** (il reste dans le stream). Une fiche encore « à vérifier », une fiche de la catégorie « Ne pas montrer » (ou celle choisie dans le réglage avancé du même nom, comme au Mur des remerciements) ne sont jamais montrées. Si Contacts ne peut pas dire qui est caché, rien de nouveau n'est montré. Aucune demande n'est faite à Twitch.
+- **Vie privée.** Seuls le nom de la fiche, le lien Twitch et (depuis la version 2.7.0) la photo publique du compte sortent de Contacts : jamais l'e-mail, le téléphone ni les notes. Un pseudo absent de Contacts n'est **pas affiché** (il reste dans le stream). Une fiche encore « à vérifier », une fiche de la catégorie « Ne pas montrer » (ou celle choisie dans le réglage avancé du même nom, comme au Mur des remerciements) ne sont jamais montrées, ni leur nom ni leur photo. Si Contacts ne peut pas dire qui est caché, rien de nouveau n'est montré. Aucune demande n'est faite à Twitch pour les noms.
 - **Sans Contacts**, le planning marche comme avant : aucun nom n'est montré, et l'administration le dit (« Les noms apparaissent sur le planning quand Contacts est installé »).
 - **Dans l'administration**, « Avec qui vous streamez » dit pour chaque pseudo ce qui sera fait : affiché sous tel nom, dans vos contacts mais non affiché, ou « pas dans vos contacts » avec un lien **Ajouter** vers Contacts (choisissez « Ajouter via » Twitch et collez le pseudo).
 - **Le même stream dans deux endroits** (saisi à la main et dans Google Agenda) n'en fait qu'un : ses partenaires sont réunis, sans doublon, 5 au plus.
 - **Bornes** : 5 personnes par stream ; pseudo en minuscules (4 à 25 lettres, chiffres ou `_`), `@pseudo` et `twitch.tv/pseudo` acceptés. Les réponses de Contacts restent 2 minutes en mémoire (30 minutes au plus si Contacts ne répond plus), jamais sur disque.
+
+## La photo des partenaires (version 2.7.0)
+
+Devant le nom d'un partenaire (page, morceaux d'accueil), un petit rond avec **sa photo**, ou ses initiales s'il n'en a pas ou si elle ne charge pas. Le nom reste écrit à côté : le rond est décoratif (texte alternatif vide, caché des lecteurs d'écran) et le lien entier (rond + nom) fait au moins 44 px de haut.
+
+- **Le public ne contacte jamais Twitch.** C'est **le site** qui télécharge la photo publique du compte (la photo que Contacts connaît déjà), une seule fois, la garde dans son propre stockage (donc dans la sauvegarde) et la sert à votre public depuis **sa propre adresse** (`/m/<clé>/photo/<repère>`). Aucun cookie, aucun réglage libre : l'adresse ne contient qu'un repère de 16 caractères (une empreinte du pseudo), jamais l'adresse de la photo.
+- **Seulement pour une fiche affichable.** La copie n'est lancée que pour une personne que le planning montre déjà. Elle est **effacée** dès que la fiche est effacée, masquée (« Ne pas montrer »), « à vérifier », ou que Contacts disparaît ; la route vérifie la fiche à chaque demande et répond « introuvable » sinon (un navigateur peut garder l'image 5 minutes au plus).
+- **Au premier passage, les initiales** : la copie se fait pendant que la page s'affiche (rien n'attend), la photo apparaît ensuite. Si le téléchargement échoue (Twitch ne répond pas, image trop lourde, adresse inattendue), les initiales restent, sans message ; le site réessaie au plus toutes les 6 heures.
+- **Bornes** : hôtes d'avatars de Twitch, YouTube et Bluesky seulement (la même liste que « Story »), https, sans redirection, 256 Ko au plus par image, type lu dans les premiers octets (jamais SVG), 30 photos au plus (la plus ancienne fait place), deux téléchargements à la fois, rafraîchie au plus une fois par semaine, oubliée après 30 jours sans rafraîchissement. Aucune tâche de fond : tout part quand le planning s'affiche.
+- **Photo envoyée à la main dans Contacts** (sur votre site, `/uploads/…`) : montrée telle quelle, sans copie. Une photo choisie à la main sur un autre serveur n'est pas copiée : initiales.
+- **Pas montrée** dans les éléments d'overlay (le nom seul, pour OBS), l'aperçu de l'administration et l'image PNG de la semaine : cette image est gardée longtemps par Twitch et les réseaux, elle figerait la photo d'une personne ensuite masquée.
+- **Réglage avancé « Afficher la photo des partenaires »** (oui par défaut, onglet Apparence) : coupé, plus aucun rond, plus aucune copie, celles qui existent sont effacées.
+- Nouvelle permission : **`storage`** (la copie vit dans la collection `partnerPhotos`, une ligne par pseudo). Développeurs : `photos.mjs` (règles, copie, route), `avatar.mjs` (le rond, pur), route `photo/:id`, test `tests/planning-photos.test.mjs`.
+
+## Ajouter les jeux joués à votre liste (version 2.7.0)
+
+Réglage **« Ajouter les jeux joués à la liste « Déjà joué » »** (coupé par défaut). Quand il est oui et que le module **Suggestions de jeux** (1.9.0 ou plus) est installé, le jeu d'un stream **commencé** (en cours ou passé) est ajouté à sa liste « Déjà joué », **une seule fois** :
+
+- **Jamais un jeu seulement prévu** : un stream à venir, annulé ou en journée entière n'ajoute rien.
+- **Sans doublon** : le jeu est comparé sans tenir compte des accents, des majuscules ni de la ponctuation. S'il est déjà dans la liste (proposé, planifié, rejeté…), **rien n'est modifié**. Les jeux ajoutés n'ont pas de pseudo ; leur jaquette est cherchée plus tard par le rattrapage de Suggestions de jeux.
+- **Sans minuteur** : le passage part quand le planning lit vos streams (page, accueil, administration), au plus **une fois toutes les 10 minutes**, sur les 7 derniers jours, 20 jeux au plus. Si personne ne visite le site pendant plus de 7 jours, les jeux de cette période ne sont pas ajoutés (ajoutez-les à la main dans Suggestions de jeux).
+- Sans Suggestions de jeux, ou s'il ne répond pas, il ne se passe rien ; l'administration du planning le dit (« Jeux joués »), avec un lien pour l'installer.
+- Développeurs : service `game.played` (version 1, méthode `add({ title, via? })` → `{ ok: true, added, status }`), besoin **facultatif** du Planning ; fichier `played.mjs`, test `tests/planning-played.test.mjs`.
 
 ## Image à partager (PNG)
 

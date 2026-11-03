@@ -25,7 +25,10 @@ test("SRP : les agendas de streams fournissent `planning.slot`, le Planning et l
     assert.ok(!/planning(?!\.slot)/i.test(strip(m.code)), `${id} ne connaît pas le Planning`);
   }
   const planning = mods.find((m) => m.id === "planning");
-  const code = strip(planning.code);
+  // 2.7.0 : le SEUL contact avec un réseau est photos.mjs (copie de la photo publique d'un partenaire, hôtes d'avatars de la liste blanche, https, sans redirection) ; aucun agenda n'y est lu.
+  const photosSrc = fs.readFileSync(path.join(root, "modules/planning/photos.mjs"), "utf8");
+  assert.ok(/export const HOSTS = \{[\s\S]*static-cdn\.jtvnw\.net/.test(photosSrc) && /redirect: "manual"/.test(photosSrc) && !/VEVENT|VCALENDAR/.test(photosSrc), "photos.mjs : liste blanche d'hôtes, aucune redirection suivie");
+  const code = strip(planning.code.replace(photosSrc, ""));
   assert.deepEqual((planning.manifest.requires ?? []).filter((r) => !r.optional), [], "pas de dépendance forte");
   assert.ok(!/VEVENT|VCALENDAR|RRULE|DTSTART|\bfetch\(/.test(code), "le Planning ne lit aucun agenda et ne parle à aucun réseau");
   assert.ok(!/\bcalendar-manual\b/.test(code), "le Planning ne nomme pas un agenda");

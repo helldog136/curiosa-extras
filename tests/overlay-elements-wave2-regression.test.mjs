@@ -18,9 +18,11 @@ test("Suggestions de jeux : page publique (tous les statuts), administration, MC
   const before = golden("game-suggestions-1.5.1.json"), now = await gamesSnapshot(ROOT);
   // Suggestions de jeux 1.7.0 (administration refaite) : le manifeste ne change que par version, minCore, overlayElements, description et textes d'aide des deux réglages de la page ;
   // la phrase de remerciement perd son point d'exclamation (règle R13) ; l'administration est un autre écran (voir game-suggestions-add.test.mjs). Tout le reste est identique.
-  const rest = (m) => { const { description, settings, dashboard, ...r } = m; return { ...r, settings: settings.map((x) => x.key) }; };
+  const rest = (m) => { const { description, settings, dashboard, offers, ...r } = m;   // 1.9.0 : `offers` (service game.played)
+   return { ...r, settings: settings.map((x) => x.key) }; };
   assert.deepEqual(rest(now.manifest), rest(before.manifest), "le manifeste n'a changé que par version, minCore, overlayElements, description et textes des réglages");
-  assert.deepEqual(now.top.filter((k) => k !== "dashboard"), before.top); assert.deepEqual(now.routes, before.routes, "aucune route ajoutée à part celle de l'élément"); assert.deepEqual(now.tasks, before.tasks);
+  assert.deepEqual(now.top.filter((k) => k !== "dashboard" && k !== "services"), before.top);   // « services » : game.played, 1.9.0
+   assert.deepEqual(now.routes, before.routes, "aucune route ajoutée à part celle de l'élément"); assert.deepEqual(now.tasks, before.tasks);
   const thanks = (v) => JSON.parse(JSON.stringify(v).replaceAll("Merci ! Votre suggestion", "Merci. Votre suggestion"));
   for (const k of Object.keys(before.pages)) assert.deepEqual(now.pages[k], thanks(before.pages[k]), `page « ${k} »`);
   assert.deepEqual(now.pageEmpty, thanks(before.pageEmpty));

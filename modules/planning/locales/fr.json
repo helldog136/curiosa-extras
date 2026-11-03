@@ -83,5 +83,10 @@
   "adminWithAddHelp": "Dans Contacts, choisissez « Ajouter via » Twitch et collez le pseudo : le nom apparaît ensuite sur le planning.",
   "adminWithNoBook": "Les noms apparaissent sur le planning quand Contacts est installé. En attendant, ces pseudos ne sont pas affichés.",
   "adminWithSuggest": "affiche le nom des personnes avec qui vous streamez",
-  "adminWithBusy": "Contacts ne répond pas pour l'instant : les noms reviendront dès qu'il répondra."
+  "adminWithBusy": "Contacts ne répond pas pour l'instant : les noms reviendront dès qu'il répondra.",
+  "adminPlayed": "Jeux joués",
+  "adminPlayedOk": "Suggestions de jeux est installé. Chaque jeu d'un stream commencé rejoint « Déjà joué », une seule fois. Un jeu déjà présent reste tel quel.",
+  "adminPlayedNone": "Suggestions de jeux n'est pas installé : aucun jeu n'est ajouté pour l'instant.",
+  "adminPlayedSuggest": "garde la liste des jeux que vous avez joués",
+  "adminPlayedBusy": "Suggestions de jeux ne répond pas pour l'instant : les jeux seront ajoutés dès qu'il répondra."
 }

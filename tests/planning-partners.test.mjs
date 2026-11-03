@@ -248,6 +248,6 @@ test("manifestes : contact.book est FACULTATIF, le sujet déclare `partners`, l'
   assert.deepEqual(m.consumes.find((c) => c.topic === "planning.slot").schema.find((f) => f.key === "partners"), { key: "partners", type: "string[]" });
   assert.deepEqual(m.mcp.map((t) => [t.name, t.readOnly, t.default]), [["planning_upcoming", true, true]]);
   assert.equal(m.minCore, "0.5.0", "le Planning n'utilise aucune brique de la 0.6.0 : minCore inchangé");
-  assert.deepEqual([m.version, manifest("calendar-manual").version, manifest("calendar-ical").version], ["2.6.0", "1.2.0", "1.1.0"]);
+  assert.deepEqual([m.version, manifest("calendar-manual").version, manifest("calendar-ical").version], ["2.7.1", "1.2.0", "1.1.0"]);
   assert.equal(m.logEvents, undefined, "pas de nouvel événement au journal");
 });

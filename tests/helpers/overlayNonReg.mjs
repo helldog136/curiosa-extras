@@ -1,4 +1,4 @@
-// Non-régression des éléments d'overlay (Planning 2.5.0, Statistiques de la communauté 1.2.0) : ce que les modules rendaient AVANT (dépôt 1.25.0) doit rester identique, octet pour octet.
+// Non-régression des éléments d'overlay (Planning 2.5.0, Statistiques de la communauté 1.2.0) : ce que les modules rendaient AVANT (dépôt 1.25.0) doit rester identique, octet pour octet (exception voulue : la scène « alternating » et son aperçu dans l'administration, refaite avec Planning 2.7.1, voir CHANGELOG).
 // `planningSnapshot` / `statsSnapshot` rejouent les mêmes scénarios sur le code d'un dossier de dépôt ; les fichiers tests/golden/*.json ont été produits avec le dépôt 1.25.0
 // (commit 85019dc), avant toute modification. Horloge simulée par l'appelant (Date fixe : mercredi 14 octobre 2026, 10:00 UTC).
 import fs from "node:fs";
@@ -17,8 +17,9 @@ const manifestRest = (m, extraPermission) => {
   const { version, minCore, overlayElements, previews, ...rest } = m;
   if (rest.id === "planning") {   // 2.6.0 : les partenaires (« Avec… ») sont un ajout ; tout le reste du manifeste est celui de la 1.25.0
     rest.consumes = rest.consumes.map((c) => (c.topic === "planning.slot" ? { ...c, schema: c.schema.filter((f) => f.key !== "partners") } : c));
-    rest.settings = rest.settings.filter((x) => x.key !== "hide");
-    rest.requires = rest.requires.filter((r) => r.service !== "contact.book");
+    rest.settings = rest.settings.filter((x) => !["hide", "addPlayedGames", "showPartnerPhotos"].includes(x.key));   // 2.7.0 : deux réglages de plus (jeux joués, photos des partenaires)
+    rest.requires = rest.requires.filter((r) => !["contact.book", "game.played"].includes(r.service));
+    rest.permissions = (rest.permissions ?? []).filter((p) => p !== "storage");   // 2.7.0 : la copie locale des photos de partenaires
     delete rest.privacy;   // deux phrases de plus sur les partenaires (la référence 1.25.0 est comparée sans cette clé, voir planningGolden)
     rest.mcp = rest.mcp.map(({ description, ...x }) => x);
   }
@@ -41,7 +42,7 @@ export async function planningSnapshot(root) {
     vevent("4", hours(75), hours(77), "Défis de la communauté", ["DESCRIPTION:Jeu: Sky Ferry"]),
   );
   const ctxWith = (settings = {}) => fakeCtx({ key: "planning", settings: { days: 7, timezone: "Europe/Brussels", ...settings }, topics: feedTopics(() => feed), messages, locale: "fr", rawgConfigured: true, rawgCover: ({ title } = {}) => ({ status: "found", url: `https://media.example.test/${encodeURIComponent(String(title))}.jpg` }), basePath: "planning" });
-  const out = { manifest: manifestRest(readJson(root, "planning", "module.json")), keys: { sections: Object.keys(mod.sections).sort(), routes: Object.keys(mod.routes).filter((k) => k !== "element/:slug").sort(), top: Object.keys(mod).filter((k) => k !== "overlayElements").sort() }, scenes: {} };
+  const out = { manifest: manifestRest(readJson(root, "planning", "module.json")), keys: { sections: Object.keys(mod.sections).sort(), routes: Object.keys(mod.routes).filter((k) => k !== "element/:slug" && k !== "photo/:id").sort(), top: Object.keys(mod).filter((k) => k !== "overlayElements").sort() }, scenes: {} };
   for (const appearance of ["original", "classic", "alternating", "week", "timeline", "posters", "hero"]) {
     const settings = { appearance, hourFormat: appearance === "week" ? "12" : "24" };
     out.scenes[appearance] = json({

@@ -4,6 +4,28 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.41.0 — 2026-11-03
+
+*En bref : le Planning peut montrer la photo des personnes avec qui vous streamez, sans que vos visiteurs contactent Twitch. Il peut aussi ajouter tout seul à votre liste « Déjà joué » les jeux que vous avez commencés à jouer (coupé par défaut). Dans la liste en alternance, le contenu de chaque case remplit mieux la largeur.*
+
+*Ce qui demande une mise à jour de Curiosa : Suggestions de jeux 1.9.0 demande Curiosa 0.6.0 ou plus. Le Planning (2.7.1) garde Curiosa 0.5.0. Le Planning demande une nouvelle permission à accepter : garder des fichiers dans son propre stockage (les photos).*
+
+### Nouveautés
+
+- **Planning 2.7.1 : la liste en alternance remplit mieux ses cases.** Les cases gardent la même taille et l'alternance gauche/droite ne change pas. Dedans, l'image est plus grande, l'heure et l'état (« Demain », « Dans 2 jours », « En cours ») sont aux deux bouts de la première ligne, le titre est plus grand et prend toute la largeur, le jeu et la personne avec qui vous streamez tiennent sur une ligne, avec une photo plus visible. Un jour sans stream affiche « Pas de stream prévu » au centre, en discret. Les images de jeux ne sont plus étirées. Aucun réglage à changer ; les autres apparences, les morceaux d'accueil des autres apparences et les éléments d'overlay ne changent pas.
+- **Planning 2.7.0 : la photo des partenaires.** Devant le nom d'une personne (« Avec Camille »), un petit rond avec sa photo, ou ses initiales si elle n'en a pas. Sur la page et dans les morceaux d'accueil ; pas dans les éléments d'overlay ni sur l'image de la semaine (le nom seul).
+- **Vos visiteurs ne contactent jamais Twitch.** Votre site télécharge lui-même la photo publique du compte, une fois, la garde et la sert depuis sa propre adresse. Elle est effacée dès que la fiche est effacée, masquée (« Ne pas montrer »), « à vérifier », ou que Contacts disparaît. Une photo qui ne peut pas être copiée se remplace par les initiales, sans message d'erreur. Rafraîchie au plus une fois par semaine, 30 photos au plus.
+- **Réglage avancé « Afficher la photo des partenaires »** (oui par défaut) : coupé, plus aucun rond ni aucune copie.
+- **Planning 2.7.0 + Suggestions de jeux 1.9.0 : « Ajouter les jeux joués à la liste « Déjà joué » ».** Réglage **coupé par défaut**. Quand il est activé, le jeu d'un stream commencé (jamais un stream à venir, annulé ou en journée entière) est ajouté une seule fois à la liste « Déjà joué » de Suggestions de jeux. Un jeu déjà dans la liste n'est jamais modifié. Le Planning dit dans son administration si Suggestions de jeux est installé.
+- **Aucune donnée ne change.** Sans partenaire ni réglage, tout s'affiche comme avant.
+
+### Pour les développeurs
+
+- `planning` 2.7.1 : `appearances/layouts/alternating.mjs` seulement (nouvelle ligne d'en-tête `pa-alt-head`, bloc `pa-alt-meta`, classe `is-empty`, `--pa-cw` propre à l'apparence) ; `kit.mjs` : paramètre facultatif de taille de photo (`gamesHtml`, `withHtml`, `peopleInline`), sans effet pour les autres apparences. La référence `tests/golden/planning-1.25.0.json` n'est changée que pour la scène « alternating ». Version du dépôt non changée.
+- `planning` 2.7.0 : permission `storage` (collection `partnerPhotos`, une ligne par pseudo, clé = empreinte du pseudo), `photos.mjs` (règles de Story : mêmes hôtes d'avatars, https, sans redirection, 256 Ko, type lu dans les octets ; copie paresseuse, 2 à la fois ; rafraîchissement 7 jours ; oubli 30 jours ; 30 copies), `avatar.mjs`, route publique `photo/:id` (404 identique si la copie n'existe pas ou si la fiche n'est plus affichable), `played.mjs`, besoin facultatif `game.played`. `minCore` inchangé (0.5.0). Aucune migration.
+- `game-suggestions` 1.9.0 : offre le service `game.played` (version 1) : `add({ title, via? })`, idempotent (clé de titre sans accents, majuscules ni ponctuation, tous statuts), 100 caractères, plafond 2000, aucune jaquette cherchée. Voir `docs/TOPICS.md` (section « Services entre modules »). `catalogue/index.json` régénéré (`node scripts/build-index.mjs`) ; la version du dépôt n'est pas changée.
+- Tests : `tests/planning-photos.test.mjs`, `tests/planning-played.test.mjs` (nouveaux) ; versions et permission resynchronisées dans les tests qui les épinglent.
+
 ## 1.40.0 — 2026-11-03
 
 *En bref : vous pouvez maintenant dire avec qui vous streamez. Dans la description d'un événement Google Agenda, ajoutez une ligne « Avec : pseudo1, pseudo2 » (les pseudos Twitch), et le Planning affiche le nom de ces personnes, avec un lien vers leur chaîne. Seuls les partenaires présents dans votre module Contacts s'affichent ; les autres restent invisibles. Pour un stream saisi à la main, le champ « Avec ces pseudos Twitch » est sous « Plus d'options ». Rien n'est modifié dans vos données.*

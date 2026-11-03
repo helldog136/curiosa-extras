@@ -17,7 +17,10 @@ const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`
 export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
 const { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone } = await import(`./slots.mjs${V}`);
 export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone };
-const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS } = await import(`./partners.mjs${V}`);
+const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS, stateOf } = await import(`./partners.mjs${V}`);
+const Photos = await import(`./photos.mjs${V}`);
+const Played = await import(`./played.mjs${V}`);
+const { personHtml, avatarHtml, safePhoto } = await import(`./avatar.mjs${V}`);
 export { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS };
 
 /* ───────────────────────────── Grille de jours ───────────────────────────── */
@@ -153,6 +156,7 @@ async function loadSlots(ctx, days, { cancelled = false } = {}) {
   const timeZone = displayZone(ctx.setting("timezone"), items);
   const slots = toSlots(items, timeZone).filter((e) => (cancelled || !e.cancelled) && e.end.getTime() >= now && e.start.getTime() <= windowEnd.getTime());
   const partners = await attachPartners(ctx, slots);   // les noms des partenaires (Contacts) ; sans aucun pseudo, aucun appel
+  Played.syncPlayed(ctx, { read: (from, to) => collectSlots(ctx, from, to), toSlots: (list) => toSlots(list, timeZone ?? "UTC") });   // réglage « Ajouter les jeux joués à la liste » : sans attendre, au plus toutes les 10 minutes ; rien sans le réglage
   return { slots, timeZone, failed, partners };
 }
 
@@ -166,7 +170,9 @@ const escMd = (s) => String(s).replace(/([\\`*_[\]<>])/g, "\\$1");
 
 /** « Avec Marie, Paul » : le nom de la fiche de Contacts, lié à sa chaîne. Seules les personnes à montrer sont dans `people` (voir partners.mjs). */
 const peopleMd = (slot, ctx) => (slot.people?.length ? ` · ${escMd(ctx.t("withLabel"))} ${slot.people.map((p) => `[${escMd(p.name)}](${p.url})`).join(", ")}` : "");
-const peopleHtml = (slot, ctx, cls) => (slot.people?.length ? `<${cls.tag} class="${cls.name}">${esc(ctx.t("withLabel"))} ${slot.people.map((p) => `<a style="color:inherit" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>`).join(", ")}</${cls.tag}>` : "");
+// Un petit rond (photo gardée par le site, sinon initiales) devant le nom, sauf si le réglage « Afficher la photo des partenaires » est coupé. Jamais une ressource d'un autre site.
+const personLink = (p, ctx) => (Photos.photosOn(ctx) ? personHtml({ name: p.name, url: p.url, photo: safePhoto(p.photo) }) : `<a style="color:inherit" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>`);
+const peopleHtml = (slot, ctx, cls) => (slot.people?.length ? `<${cls.tag} class="${cls.name}">${esc(ctx.t("withLabel"))} ${slot.people.map((p) => personLink(p, ctx)).join(", ")}</${cls.tag}>` : "");
 
 function slotLine(slot, ctx, tz) {
   const when = slot.allDay ? ctx.t("allDay") : fmtTime(slot.start, ctx.locale, tz);
@@ -317,7 +323,7 @@ function upcomingListHtml(slots, ctx, tz, covers, now, vis) {
     const rel = relativeLabel(s, now, tz, t);
     return `<li class="cpl-row"><time class="cpl-tile" datetime="${esc(isoOf(s, tz))}"><span class="cpl-tw">${esc(wd)}</span><span class="cpl-td">${esc(dn)}</span></time>` +
       `${gc ? `<img class="cpl-thumb" src="${esc(gc.url)}" alt="${esc(t("coverAlt", { game: gc.name }))}" loading="lazy" width="40" height="54">` : placeholderHtml(vis, true)}` +
-      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}${s.people?.length ? ` · ${esc(t("withLabel"))} ${s.people.map((p) => esc(p.name)).join(", ")}` : ""}</span></div>` +
+      `<div class="cpl-info"><span class="cpl-title">${esc(s.title)}</span><span class="cpl-meta"><time datetime="${esc(isoOf(s, tz))}">${esc(hour)}</time>${games.length ? ` · ${games.map(esc).join(", ")}` : ""}${s.people?.length ? ` · ${esc(t("withLabel"))} ${s.people.map((p) => (Photos.photosOn(ctx) ? `${avatarHtml({ name: p.name, photo: safePhoto(p.photo) }, 20)} ${esc(p.name)}` : esc(p.name))).join(", ")}` : ""}</span></div>` +
       `${rel ? `<span class="cpl-badge">${esc(rel)}</span>` : ""}</li>`;
   }).join("");
   return wrapCards(`<div class="cpl-list"><ul>${rows}</ul>${href ? `<div class="cpl-foot"><a class="cpl-link" href="${esc(href)}">${esc(t("fullPlanning"))}</a></div>` : ""}</div>`);
@@ -418,6 +424,17 @@ async function partnersAdminBlocks(ctx, info) {
   return blocks;
 }
 
+/** « Jeux joués » : l'état de l'autre côté (Suggestions de jeux), seulement quand le réglage est oui. */
+async function playedAdminBlocks(ctx) {
+  if (!Played.playedOn(ctx)) return [];
+  const t = ctx.t, blocks = [{ type: "heading", text: t("adminPlayed") }];
+  const has = await Played.hasList(ctx);
+  if (has === true) blocks.push({ type: "markdown", text: t("adminPlayedOk") });
+  else if (has === false) blocks.push({ type: "markdown", text: t("adminPlayedNone") }, { type: "suggestInstall", service: Played.SERVICE, reason: t("adminPlayedSuggest") });
+  else blocks.push({ type: "markdown", text: t("adminPlayedBusy") });
+  return blocks;
+}
+
 /** L'état des streams et les prochains créneaux (haut du panneau d'admin). Quand il n'y a rien à montrer, dit POURQUOI et quoi faire. */
 async function adminStatusBlocks(ctx) {
     const t = ctx.t;
@@ -430,6 +447,7 @@ async function adminStatusBlocks(ctx) {
     blocks.push({ type: "heading", text: t("adminNext") });
     blocks.push({ type: "table", columns: [t("date"), t("time"), t("slot"), t("games")], rows: slots.slice(0, 20).map((s) => [new Intl.DateTimeFormat(ctx.locale, { weekday: "short", day: "numeric", month: "short", timeZone: tz }).format(s.start), s.allDay ? t("allDay") : fmtTime(s.start, ctx.locale, tz), s.title, gamesOf(s).join(", ")]) });
     blocks.push(...(await partnersAdminBlocks(ctx, partners)));
+    blocks.push(...(await playedAdminBlocks(ctx)));
     // Jaquettes : un message clair plutôt qu'un manque silencieux (clé absente, refusée, RAWG injoignable, jeux inconnus de RAWG).
     const next = slots.slice(0, 20);
     const { covers, states, ambiguous } = await coversForSlots(ctx, next);
@@ -482,12 +500,30 @@ async function carryOverCalendar(ctx) {
 const overlay = await import(`./overlay.mjs${V}`);
 const overlayDeps = { loadSlots, coversForSlots, brandVisual, wantsCancelled };
 
+const NO_PHOTO = () => new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+async function photoResponse(request, ctx) {
+  if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" } });
+  try {
+    if (!Photos.photosOn(ctx)) return NO_PHOTO();
+    const copy = await Photos.copyOf(ctx, ctx.params?.id);
+    if (!copy) return NO_PHOTO();
+    const state = await stateOf(ctx, copy.login);
+    if (state === "hidden" || state === "unknown") await Photos.forget(ctx, ctx.params.id);
+    if (state !== "shown") return NO_PHOTO();
+    return new Response(request.method === "HEAD" ? null : copy.bytes, { headers: { "Content-Type": copy.type, "Content-Length": String(copy.bytes.length), "Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'" } });
+  } catch { return NO_PHOTO(); }
+}
+
 export default {
   overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),
 
   // Image PNG de la semaine (aussi pour une extension de panneau Twitch) : /m/<clé>/image?week=0 (0 = cette semaine, jusqu'à 8).
   routes: {
     "element/:slug": (request, ctx) => overlay.elementResponse(request, ctx, overlayDeps),   // la page d'un élément d'overlay (week, next), fragment avec ?frag=1
+
+    // La photo d'un partenaire, servie par le site lui-même (copie gardée par photos.mjs). Le repère (16 caractères) ne désigne qu'une copie déjà faite ; la photo n'est rendue que si la fiche
+    // est TOUJOURS affichable à cet instant (sinon 404 identique, et la copie est effacée). Ni cookie, ni paramètre, ni adresse donnée par la personne qui visite.
+    "photo/:id": (request, ctx) => photoResponse(request, ctx),
 
     async image(request, ctx) {
       const offset = Math.min(8, Math.max(0, Math.trunc(Number(new URL(request.url).searchParams.get("week"))) || 0));
@@ -518,7 +554,9 @@ export default {
       blocks.push({ type: "heading", text: fmtDay(day.wall, ctx.locale, tz) });
       const mixed = anyCover(day.streams, covers) && day.streams.some((s) => !coversOf(s, covers).length);
       if (mixed) vis ??= await brandVisual(ctx);
-      blocks.push(anyCover(day.streams, covers)
+      // Un jour avec des partenaires passe en HTML (pour le petit rond devant le nom, que le Markdown ne sait pas dessiner) ; les autres jours restent une liste simple comme avant.
+      const rich = anyCover(day.streams, covers) || (Photos.photosOn(ctx) && day.streams.some((s) => s.people?.length));
+      blocks.push(rich
         ? { type: "html", html: (mixed ? `<style>${CARD_CSS}</style>` : "") + day.streams.map((s) => slotHtml(s, ctx, tz, coversOf(s, covers), "", mixed ? vis : null)).join("") }
         : { type: "markdown", text: day.streams.length ? day.streams.map((s) => `- ${slotLine(s, ctx, tz)}`).join("\n") : `*${ctx.t("none")}*` });
     }
