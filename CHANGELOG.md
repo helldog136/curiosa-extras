@@ -6,7 +6,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
-*En bref : le tableau de bord de l'administration dit maintenant combien de contacts sont à vérifier et combien de partenaires sont à relancer, et propose un bouton « Programmer un stream ». Rien à régler : c'est affiché tout seul avec Curiosa 0.6.1 ou plus, et ignoré par les versions plus anciennes.*
+*En bref : le tableau de bord de l'administration dit maintenant combien de contacts sont à vérifier et combien de partenaires sont à relancer, et propose un bouton « Programmer un stream ». Rien à régler : c'est affiché tout seul avec Curiosa 0.6.1 ou plus, et ignoré par les versions plus anciennes. Par ailleurs, la Bannière d'annonce 1.2.0 accepte une seule date, « À partir du… » ou « Jusqu'au… » (Curiosa 0.6.4 ou plus).*
 
 ### Nouveautés
 
@@ -15,6 +15,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - **Streams saisis à la main 1.1.0 : « Programmer un stream ».** Un bouton sous « Créer » sur le tableau de bord, qui ouvre la page où l'on ajoute un stream.
 - **Boîte à idées 1.0.1 : plus de ligne en double, et un libellé correct pour une seule idée.** Les idées à relire s'affichaient deux fois sur le tableau de bord : une ligne « n idées à relire » et une ligne « n à traiter dans Boîte à idées ». Le petit chiffre du menu de gauche est retiré au profit de la première, qui devient « Idées à relire (n) » (« 1 idées à relire » n'était pas correct). Avec un Curiosa plus ancien que 0.6.1, il n'y a donc plus de chiffre dans le menu pour cette extension.
 - **Sobre, et jamais lent.** Une ligne n'apparaît que s'il y a quelque chose à faire. Elle lit seulement ce que l'extension garde déjà sur votre site : aucune demande à un autre site, aucun nom ni message de vos contacts. Si le carnet est occupé à se préparer, la ligne attend au plus une seconde puis réapparaît à l'affichage suivant.
+- **Bannière d'annonce 1.2.0 : « jusqu'au 24 décembre » ou « à partir du 1er décembre » en une seule date.** Sous « Plus d'options », « Limiter dans le temps » n'oblige plus à choisir un début et une fin : la phrase sous le champ dit ce qui est compris (« À partir du 1er décembre 2026 », « Jusqu'au 24 décembre 2026 »). Le dernier jour compte jusqu'à minuit, et « à partir du » commence dès 00:00. Avec deux dates, ou « chaque année », rien ne change : vos réglages sont conservés tels quels.
+- **L'exemple sous le champ dit vrai.** Il montrait « Du 1er décembre au 24 décembre, chaque année », alors que le champ part maintenant de « une seule fois ». Il montre désormais « Jusqu'au 24 décembre 2026 », exactement la phrase que le champ écrit.
+- **Le jour change à minuit dans le fuseau de votre site.** Curiosa 0.6.4 donne ce fuseau aux modules ; la documentation du module ne dit plus le contraire.
 
 ### Pour les développeurs
 
@@ -23,6 +26,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 - Libellés de tâche écrits « Sujet à faire ({n}) » : le cœur remplace `{n}` sans accorder le pluriel, ce tour se lit aussi bien pour 1 que pour 12 (« 1 contacts » serait faux). Boîte à idées passe à la même forme.
 - Partenariats : le journal n'est lu que s'il y a au moins un partenaire au statut « envoyé » ; 1 000 fiches et 1 000 lignes de journal au plus, comme l'administration.
 - Versions : Contacts 2.4.0, Partenariats 2.1.0, Streams saisis à la main 1.1.0, Boîte à idées 1.0.1. Tests : `tests/dashboard-relations.test.mjs` (validité `dashboardIssues`, mots, comptes, délais, absence de réseau, carnet bloqué) ; le kit de conformité exige `dashboard.valid`.
+- `examples/announcement-banner` 1.2.0 : `minCore` 0.6.4, réglage `period` avec `openEnded: true`. `isActive` lit en plus `"AAAA-MM-JJ/"` (début seul) et `"/AAAA-MM-JJ"` (fin seule) ; les valeurs d'avant (`AAAA-MM-JJ/AAAA-MM-JJ`, `MM-JJ/MM-JJ`) donnent les mêmes résultats (test de comparaison jour par jour avec la lecture de la 1.1.0), sans migration. Une valeur illisible ne cache toujours pas l'annonce. `zoneOf(ctx)` : `ctx.timezone` du cœur 0.6.4, repli sur le fuseau de la machine.
 
 ## 1.38.0 — 2026-11-03
 
