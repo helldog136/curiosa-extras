@@ -4,9 +4,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.42.1 — 2026-11-03
 
-*En bref : les jaquettes de vos jeux copiées sur votre site s'affichent enfin sur vos pages publiques (le Planning, par exemple). Rien à régler.*
+*En bref : les jaquettes de jeux gardées sur votre site s'affichent correctement. Rien à régler, et aucune nouvelle permission.*
 
 ### Corrections
 
