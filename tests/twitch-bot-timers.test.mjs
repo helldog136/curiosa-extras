@@ -250,7 +250,7 @@ test("« Ajouter un timer » : créer une nouvelle commande (nom + réponse), er
   assert.match((await err({ name: "!!" })).errors.name, /./, "nom invalide : sous le champ");
   assert.match((await err({ text: "" })).errors.text, /./);
   assert.match((await err({ repeatEvery: "90" })).errors.repeatEvery, /entre 1 et 1440.*15/, "pas un nombre entier de minutes");
-  assert.match((await err({ repeatEvery: "60000" })).errors.repeatEvery, /entre 1 et 1440/);
+  assert.match((await err({ repeatEvery: "100000" })).errors.repeatEvery, /entre 1 et 1440/);
   const only = await TA.actions.timerNew.run(ctx, { name: "Pub", text: "Pensez à boire.", timerOnly: "on", repeatEvery: "1800" });
   assert.equal(only.ok, ctx.t("tm_created"));
   const pub = (await C.loadConfig(ctx)).data.custom.find((x) => x.name === "pub");
@@ -265,27 +265,27 @@ test("réglage sur la page d'une commande : durée en secondes (minutes entière
   const key = await add(ctx, "Rappel", { minutes: 20, lines: 4, when: "always" });
   const base = { key, name: "rappel", text: "Message Rappel", role: "everyone", aliases: "", repeatOn: "on", repeatEvery: "1200", repeatLines: "4", repeatWhen: "always" };
   const cmd = async () => (await C.loadConfig(ctx)).data.custom[0];
-  assert.equal((await A.actions.save.run(ctx, { ...base, repeatEvery: "3600", repeatLines: "0", repeatWhen: "live" })).ok, ctx.t("saved"));
+  assert.equal((await A.actions.save(ctx, { ...base, repeatEvery: "3600", repeatLines: "0", repeatWhen: "live" })).ok, ctx.t("saved"));
   assert.deepEqual((await cmd()).repeat, { minutes: 60, lines: 0, when: "live", enabled: true });
-  assert.match((await A.actions.save.run(ctx, { ...base, repeatEvery: "30" })).errors.repeatEvery, /entre 1 et 1440.*15/);
-  assert.match((await A.actions.save.run(ctx, { ...base, repeatEvery: "90000" })).errors.repeatEvery, /entre 1 et 1440/);
-  assert.match((await A.actions.save.run(ctx, { ...base, repeatLines: "201" })).errors.repeatLines, /entre 0 et 200.*5/);
+  assert.match((await A.actions.save(ctx, { ...base, repeatEvery: "30" })).errors.repeatEvery, /entre 1 et 1440.*15/);
+  assert.match((await A.actions.save(ctx, { ...base, repeatEvery: "90000" })).errors.repeatEvery, /entre 1 et 1440/);
+  assert.match((await A.actions.save(ctx, { ...base, repeatLines: "201" })).errors.repeatLines, /entre 0 et 200.*5/);
   assert.equal((await cmd()).repeat.minutes, 60, "la saisie refusée ne change rien");
   // interrupteur éteint (absent du formulaire) : pause, les réglages restent
   const { repeatOn, ...off } = base;
-  assert.equal((await A.actions.save.run(ctx, { ...off, repeatEvery: "3600", repeatLines: "0" })).ok, ctx.t("saved"));
+  assert.equal((await A.actions.save(ctx, { ...off, repeatEvery: "3600", repeatLines: "0" })).ok, ctx.t("saved"));
   assert.deepEqual((await cmd()).repeat, { minutes: 60, lines: 0, when: "live", enabled: false });
   // réservée au timer : refusée sans aucune répétition
   const info = await A.context(ctx, { declare: false });
   await C.saveCommand(ctx, { kind: "custom" }, { name: "ordinaire", text: "Texte" }, info.env);
   const ord = (await C.loadConfig(ctx)).data.custom.find((x) => x.name === "ordinaire");
-  assert.match((await A.actions.save.run(ctx, { key: `custom:${ord.id}`, name: "ordinaire", text: "Texte", role: "everyone", repeatEvery: "900", timerOnly: "on" })).errors.timerOnly, /Allumez/);
-  assert.equal((await A.actions.save.run(ctx, { ...base, repeatEvery: "3600", timerOnly: "on" })).ok, ctx.t("saved"));
+  assert.match((await A.actions.save(ctx, { key: `custom:${ord.id}`, name: "ordinaire", text: "Texte", role: "everyone", repeatEvery: "900", timerOnly: "on" })).errors.timerOnly, /Allumez/);
+  assert.equal((await A.actions.save(ctx, { ...base, repeatEvery: "3600", timerOnly: "on" })).ok, ctx.t("saved"));
   assert.equal((await cmd()).timerOnly, true);
   // sans le droit : la répétition n'est pas modifiable depuis le formulaire (le reste l'est)
   const ro = fresh({ can: false });
   const k2 = await add(ro.ctx, "Ro", { minutes: 10 });
-  await A.actions.save.run(ro.ctx, { key: k2, name: "ro", text: "Message Ro", role: "everyone", repeatOn: "on", repeatEvery: "6000" });
+  await A.actions.save(ro.ctx, { key: k2, name: "ro", text: "Message Ro", role: "everyone", repeatOn: "on", repeatEvery: "6000" });
   assert.equal((await C.loadConfig(ro.ctx)).data.custom[0].repeat.minutes, 10);
 });
 
@@ -303,7 +303,7 @@ test("administration : l'onglet Timers est UN tableau des commandes qui se rép�
   assert.match(row.html, /data-ck-act="timerSend"[^>]*data-ck-confirm/);
   assert.equal((row.html.match(/class="ck-btn small/g) ?? []).length, 2, "au plus deux actions visibles");
   assert.ok(row.html.includes(`href="?tab=use&amp;edit=${encodeURIComponent(key)}&amp;repeat=1#edit"`), "Modifier ouvre la commande sur son bloc");
-  assert.equal(row.cells.org, "toutes les 10 min Même hors direct · Au moins 3 messages");
+  assert.equal(row.cells.org, "toutes les 10 min Au moins 3 messages");
   assert.match(row.html, /title="Prêt : il compte à partir du prochain message du chat"/);
   assert.match(rows.find((r) => r.cells.name === "!pause").html, /aria-checked="false"[^>]*data-ck-act="timerToggle"/);
   assert.equal(rows.find((r) => r.cells.name === "!pause").cells.org, "toutes les 90 min", "5 messages en direct = l'ordinaire : rien de plus (R14)");

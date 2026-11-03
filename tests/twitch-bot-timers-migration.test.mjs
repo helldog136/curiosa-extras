@@ -122,7 +122,7 @@ const line = (ctx, now) => T.processTimers(ctx, chat("bonjour", { messageId: `M$
 test("après la migration, un ancien timer envoie EXACTEMENT le même message au même rythme (intervalle, lignes, direct) ; l'attente en cours est reprise", async () => {
   T.resetTimersMemory();
   const { ctx, tw } = world();
-  await seed(ctx, [LEGACY[0], { ...LEGACY[1], enabled: true, lines: 2 }]);
+  await seed(ctx, [LEGACY[0], { ...LEGACY[1], enabled: true, lines: 4 }]);
   await ctx.api.store.add("botTimers", { items: { t1: { lastAt: NOW - 19 * MIN, lines: 9 }, t2: { lastAt: NOW - 29 * MIN, lines: 0 } } });
   await M.migrateTimers(ctx, { now: NOW });
   const items = (await ctx.api.store.list("botTimers", { limit: 1 }))[0].data.items;
@@ -160,9 +160,10 @@ test("l'ancienne liste est inerte : modifier ou supprimer l'ancien enregistremen
   T.resetTimersMemory();
   await line(ctx, NOW);
   const r = await line(ctx, NOW + MIN);
+  await line(ctx, NOW + MIN + 1);   // un seul timer par message : le vide a eu sa chance, l'autre part au message suivant
   assert.equal(tw.chat.length, 1, "le message vide n'est pas envoyé, l'autre l'est");
   assert.equal(tw.chat[0].message, LEGACY[0].text);
-  assert.ok(r.sent);
+  assert.equal(r.sent, false, "le message vide ne part pas");
   assert.ok((await S.readLog(ctx)).some((e) => e.result === "refused" && e.reason === "empty"));
   const E = await import("../modules/twitch-bot/engine.mjs");
   const out = await E.processChat(ctx, chat("!rappeldudiscord", { messageId: "x1" }), { now: NOW + 2 * MIN });

@@ -1086,30 +1086,6 @@
       }
     },
     {
-      "file": "previews/timers.webp",
-      "type": "admin",
-      "caption": {
-        "fr": "Les commandes que le bot répète tout seul : un tableau, une recherche, un interrupteur par ligne.",
-        "en": "The commands the bot repeats by itself: one table, a search, a switch on every row."
-      },
-      "alt": {
-        "fr": "Onglet Timers du bot : tableau des commandes répétées avec leur rythme, un interrupteur d'état et la pastille « Timer seulement ».",
-        "en": "Bot Timers tab: table of repeating commands with their rhythm, an on/off switch and the “Timer only” badge."
-      }
-    },
-    {
-      "file": "previews/timers-ajouter.webp",
-      "type": "admin",
-      "caption": {
-        "fr": "Ajouter un timer : choisir une commande qui existe, ou en créer une nouvelle en deux champs.",
-        "en": "Adding a timer: pick an existing command, or create a new one with two fields."
-      },
-      "alt": {
-        "fr": "Écran « Ajouter un timer » avec la liste des commandes sans timer, une recherche et un court formulaire de nouvelle commande.",
-        "en": "“Add a timer” screen with the list of commands without a timer, a search and a short new command form."
-      }
-    },
-    {
       "file": "previews/recompenses.webp",
       "type": "admin",
       "caption": {

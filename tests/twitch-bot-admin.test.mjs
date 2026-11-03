@@ -291,7 +291,7 @@ test("page d'une commande : « Répéter automatiquement » est sous Plus d'opti
   assert.equal(more.find((i) => i.f === "repeatEvery").showWhen, "repeatOn", "éteint : seul l'interrupteur se voit");
   assert.equal(more.find((i) => i.nested).showWhen, "repeatOn");
   assert.equal(more.find((i) => i.nested).nested.title, "Conditions", "minimum de messages et direct/toujours : repliés");
-  assert.equal(formOfBlocks(open, "save").submitLabel, "Enregistrer");
+  assert.equal(formOfBlocks(open, "save").submitLabel, "Enregistrer la commande");
   const fresh_ = world();
   await C.saveCommand(fresh_.ctx, { kind: "custom" }, { name: "libre", text: "Libre" }, { src: await SRC.gather(fresh_.ctx, "emma"), t: fresh_.ctx.t, prefix: "!" });
   const k2 = `custom:${(await C.loadConfig(fresh_.ctx)).data.custom[0].id}`;
@@ -450,5 +450,5 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.7.1");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.9.0");
 });
