@@ -111,8 +111,8 @@ test("textes : fr et en alignés, toutes les clés utilisées existent, libellé
 test("chaque erreur dit quoi faire (phrases exactes demandées pour YouTube)", () => {
   const yt = mods["youtube-channel"].fr;
   assert.equal(yt.err_hidden, "YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio.");
-  assert.equal(yt.err_auth, "La clé YouTube est refusée : vérifiez-la dans Réglages, sur la page du connecteur YouTube du site.");
-  assert.match(yt.err_config_key, /Ajoutez votre clé YouTube dans Réglages/);
+  assert.equal(yt.err_auth, "Le code d'accès YouTube est refusé : vérifiez-le dans Réglages, sur la page du connecteur YouTube du site.");
+  assert.match(yt.err_config_key, /ajoutez votre code d'accès YouTube dans Réglages/);
   for (const id of ids) for (const k of Object.keys(mods[id].fr).filter((k) => /^err_/.test(k))) assert.match(mods[id].fr[k], /\p{L}+.*[.]$/su, `${id}.${k} : phrase complète`);
 });
 
@@ -242,13 +242,13 @@ test("YouTube : compteur d'abonnés caché → abonnés en error « hidden » SA
 test("YouTube : sans connecteur ou sans clé → « config » + message d'aide, AUCUNE requête, le reste du module ne casse pas ; clé refusée → auth ; quota → rate", async () => {
   const noConnector = fakeCtx({ key: "inst", locale: "fr", messages: mods["youtube-channel"].fr, settings: { trackStats: true, channelId: YT } });
   assert.deepEqual((await statOf("youtube-channel", noConnector)).map((i) => [i.error, "value" in i]), [["config", false], ["config", false], ["config", false]]);
-  assert.match((await def("youtube-channel").adminPanel(noConnector)).find((b) => b.type === "table").rows[0][1], /il faut la clé YouTube du site/);
+  assert.match((await def("youtube-channel").adminPanel(noConnector)).find((b) => b.type === "table").rows[0][1], /il faut le code d'accès YouTube du site/);
   resetYt({ apiKey: null });
   const noKey = ctxOf("youtube-channel");
   const items = await statOf("youtube-channel", noKey);
   assert.deepEqual(items.map((i) => [i.metric, i.error, "value" in i]), [["followers", "config", false], ["content", "config", false], ["views", "config", false]]);
   assert.equal(calls.length, 0);
-  assert.match((await def("youtube-channel").adminPanel(noKey)).find((b) => b.type === "table").rows[0][1], /Ajoutez votre clé YouTube dans Réglages/);
+  assert.match((await def("youtube-channel").adminPanel(noKey)).find((b) => b.type === "table").rows[0][1], /ajoutez votre code d'accès YouTube dans Réglages/);
   assert.deepEqual((await def("youtube-channel").exports["social.link"](noKey)).map((x) => x.icon), ["youtube"], "le bouton marche toujours");
   for (const [status, body, error] of [
     [400, { error: { code: 400, message: "API key not valid", errors: [{ reason: "keyInvalid" }] } }, "auth"],

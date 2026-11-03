@@ -129,7 +129,7 @@ test("sans connecteur : la fiche propose d'installer PAR SERVICE (Twitch, YouTub
     assert.ok(!/twitch-connector|youtube-connector|twitch-channel|youtube-channel/.test(JSON.stringify(page)), "un service, jamais un nom de module");
     assert.match(plain(page), /Photo Bluesky \(4.200 followers\)/, "Bluesky ne demande aucun connecteur");
     const r = await def.adminActions.refreshPhoto(ctx, { id });
-    assert.match(r.ok, /Photo et followers mis à jour\. Pour Twitch, YouTube, installez le module qui parle à ce service \(voir la proposition plus haut\)\./);
+    assert.match(r.ok, /Photo et followers mis à jour\. Pour Twitch, YouTube, installez l'extension qui parle à ce site \(voir la proposition plus haut\)\./);
   });
 });
 

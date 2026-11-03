@@ -17,7 +17,7 @@
   "suggestYoutube": "sait quand vous êtes en direct sur YouTube (Chaîne YouTube)",
   "ytNeedChannel": "Indiquez votre chaîne dans Chaîne YouTube pour annoncer vos directs YouTube.",
   "openYoutube": "Ouvrir Chaîne YouTube →",
-  "ytNeedKey": "Reliez votre site à YouTube (clé du Connecteur YouTube) pour annoncer vos directs YouTube.",
+  "ytNeedKey": "Reliez votre site à YouTube (code d'accès du Connecteur YouTube) pour annoncer vos directs YouTube.",
   "openYoutubeConnector": "Ouvrir le Connecteur YouTube →",
   "ytQuota": "YouTube limite le nombre de vérifications par jour et la limite est atteinte : vos directs YouTube ne seront pas annoncés avant demain.",
   "ytDown": "YouTube ne répond pas pour le moment : vos directs YouTube ne sont pas annoncés. Cela se rétablit tout seul."

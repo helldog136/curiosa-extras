@@ -8,8 +8,8 @@
   },
   "version": "1.1.0",
   "description": {
-    "en": "Thank the people who support your site through a membership platform. Connect your platform (or import a file), see who supports you, file them in Contacts if you want, and show on a public page only the nickname each person agreed to show. No amount is ever displayed.",
-    "fr": "Remerciez les personnes qui vous soutiennent sur une plateforme de mécénat. Connectez votre plateforme (ou importez un fichier), voyez qui vous soutient, rangez-les dans Contacts si vous le souhaitez, et montrez sur une page publique seulement le pseudo que chaque personne a accepté de montrer. Aucun montant n'est jamais affiché."
+    "en": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted.",
+    "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos acceptés."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -140,8 +140,8 @@
         "fr": "D'où viennent vos soutiens ?"
       },
       "help": {
-        "en": "Pick your platform, then follow the steps in the “My supporters” tab. Several platforms? Add one more instance of this module for each.",
-        "fr": "Choisissez votre plateforme, puis suivez les étapes de l'onglet « Mes soutiens ». Plusieurs plateformes ? Ajoutez une instance de ce module pour chacune."
+        "en": "Pick your platform, then follow the steps in the “My supporters” tab. Several platforms? Add this extension once for each.",
+        "fr": "Choisissez votre plateforme, puis suivez les étapes de l'onglet « Mes soutiens ». Plusieurs plateformes ? Ajoutez cette extension une fois pour chacune."
       },
       "options": [
         {
@@ -172,12 +172,12 @@
       "type": "secret",
       "optional": true,
       "label": {
-        "en": "Secret key from the platform",
-        "fr": "Clé secrète de la plateforme"
+        "en": "Access code of the platform",
+        "fr": "Code d'accès de la plateforme"
       },
       "help": {
-        "en": "Patreon: your creator access key. Ko-fi: your verification key. Entered once, never shown again. Not needed for a file import.",
-        "fr": "Patreon : la clé d'accès de votre page. Ko-fi : votre clé de vérification. Saisie une fois, jamais réaffichée. Inutile pour un import de fichier."
+        "en": "Patreon: your creator access code. Ko-fi: your verification code. Entered once, never shown again. Not needed for a file import.",
+        "fr": "Patreon : le code d'accès de votre page. Ko-fi : votre code de vérification. Saisi une fois, jamais réaffiché. Inutile pour un import de fichier."
       }
     },
     {

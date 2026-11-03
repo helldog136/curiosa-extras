@@ -37,7 +37,7 @@
   "dockAddress": "Address of the dock (OBS)",
   "dockOpen": "Open the dock in a tab",
   "dockAgain": "click again to confirm",
-  "remoteSecret": "These addresses are secret (the phone and the dock share the same key): anyone who knows one of them can use the buttons. Do not share them; if someone saw them, create new ones below. Scan the code with your phone to open it without typing anything.",
+  "remoteSecret": "These addresses are secret, and the phone and the panel share the same code. Anyone who knows one can use the buttons. Do not share them; if someone saw them, create new ones below. Scan the code with your phone to open it without typing anything.",
   "regenTitle": "Change the secret address",
   "regenBtn": "Create a new address",
   "regenConfirm": "Yes, the previous addresses (phone and dock) will stop working",

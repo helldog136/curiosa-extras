@@ -6,7 +6,7 @@
     "en": "Live status",
     "fr": "Statut du live"
   },
-  "version": "1.4.2",
+  "version": "1.4.3",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {
@@ -139,8 +139,8 @@
         "fr": "Chaînes à annoncer (facultatif)"
       },
       "help": {
-        "en": "Leave empty to announce all your Twitch channels. Otherwise type their logins separated by commas (for example mychannel, myfriend).",
-        "fr": "Laissez vide pour annoncer toutes vos chaînes Twitch. Sinon, saisissez leurs identifiants séparés par des virgules (par exemple machaine, autrechaine)."
+        "en": "Leave empty to announce all your Twitch channels. Otherwise type their names, separated by commas (for example mychannel, myfriend).",
+        "fr": "Laissez vide pour annoncer toutes vos chaînes Twitch. Sinon, saisissez leurs noms séparés par des virgules (par exemple machaine, autrechaine)."
       },
       "optional": true
     }

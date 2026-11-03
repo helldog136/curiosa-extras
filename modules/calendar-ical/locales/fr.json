@@ -72,7 +72,7 @@
   "testBtn": "Tester l'adresse",
   "testOk": "L'adresse fonctionne : {n} stream(s) à venir dans les 30 prochains jours.",
   "err_url": "Cette adresse n'est pas autorisée : utilisez l'adresse secrète complète de votre agenda, qui commence par https://.",
-  "err_network": "Impossible de joindre votre agenda (service indisponible ou trop lent). Réessayez dans quelques minutes.",
+  "err_network": "Impossible de joindre votre agenda (site indisponible ou trop lent). Réessayez dans quelques minutes.",
   "err_http": "Votre agenda a refusé la lecture (code {status}). Vérifiez l'adresse : si vous l'avez réinitialisée dans Google, collez la nouvelle.",
   "err_format": "Cette adresse ne renvoie pas un agenda. Copiez « Adresse secrète au format iCal » dans les paramètres de votre agenda.",
   "err_size": "Votre agenda est trop gros pour être lu. Utilisez un agenda dédié à vos streams.",

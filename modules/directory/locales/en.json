@@ -190,7 +190,7 @@
   "personSaved": "Profile of {name} saved.",
   "personSavedPlaced": "Profile of {name} saved. City placed on the map: {place}.",
   "errCityNone": "I could not find this city. Check the spelling, for example “Namur, Belgium”.",
-  "errCityDown": "The service that locates cities is not answering. Try again in a moment, or save without a city.",
+  "errCityDown": "The site that locates cities is not answering. Try again in a moment, or save without a city.",
   "errTooLong": "That is too long: {max} characters at most.",
   "errSave": "I could not save. Try again.",
   "errTooMany": "You have reached the limit of what the directory can keep ({max}).",
