@@ -260,5 +260,8 @@ export async function backupFiles(ctx) {
   return [{ path: "reviews.csv", content }];
 }
 
-// ── Pastille du menu : les avis qui attendent ─────────────────────────────────────────────────────────────────────
+// ── Les avis qui attendent ────────────────────────────────────────────────────────────────────────────────────────
 export async function pendingCount(ctx) { return (await D.readAll(ctx)).filter((r) => r.status === "pending").length; }
+
+/** Tableau de bord du cœur : « n avis à valider ». Lecture du stockage seulement (au plus 1 000 avis), jamais de réseau ; 0 = rien n'est montré. */
+export const dashboard = { tasks: { pending: pendingCount } };
