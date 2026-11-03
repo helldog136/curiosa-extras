@@ -5,7 +5,7 @@
     "en": "Pages",
     "fr": "Pages"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
   "instances": "single",
@@ -18,6 +18,18 @@
     "sections"
   ],
   "icon": "📄",
+  "dashboard": {
+    "quickActions": [
+      {
+        "id": "add",
+        "label": {
+          "en": "Add a page",
+          "fr": "Ajouter une page"
+        },
+        "href": "/admin/entries/new?c={key}"
+      }
+    ]
+  },
   "description": {
     "en": "Free-form pages at the site root (/about, /contact…).",
     "fr": "Des pages libres à la racine du site (/a-propos, /contact…)."

@@ -88,7 +88,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/blog",
       "ref": "v1.38.0",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📰"
@@ -491,7 +491,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/events",
       "ref": "v1.38.0",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -722,7 +722,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
       "ref": "v1.38.0",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
@@ -1159,7 +1159,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/pages",
       "ref": "v1.38.0",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📄"
@@ -1788,7 +1788,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/testimonials",
       "ref": "v1.38.0",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "💬",
@@ -1951,7 +1951,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.38.0",
-      "version": "1.7.1",
+      "version": "1.7.2",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2000,6 +2000,18 @@
           "alt": {
             "fr": "Onglet Récompenses du bot avec la liste des récompenses, leur coût, leur action et les dernières utilisations.",
             "en": "Bot Rewards tab with the list of rewards, their cost, their action and the latest uses."
+          }
+        },
+        {
+          "file": "previews/reglages.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Les réglages du bot tiennent en trois cases et champs. Le reste est déjà réglé pour vous.",
+            "en": "The bot settings fit in three fields. Everything else is already set for you."
+          },
+          "alt": {
+            "fr": "Onglet Réglages du bot avec trois réglages : répondre seulement en direct, gestion des commandes depuis le chat, fuseau horaire.",
+            "en": "Bot Settings tab with three settings: answer only when live, manage commands from the chat, time zone."
           }
         }
       ]
@@ -2265,7 +2277,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/announcement-banner",
       "ref": "v1.38.0",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📣",
@@ -2273,7 +2285,7 @@
         "overlay.item"
       ],
       "requires": {
-        "core": "0.6.0"
+        "core": "0.6.4"
       }
     },
     {
