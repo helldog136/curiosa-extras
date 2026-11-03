@@ -155,7 +155,7 @@ test("recherche présente même avec peu de commandes (R15) ; sans JavaScript la
 const REPEATED = /utilisateur|jeton|webhook|identifiant|payload|JSON|\bAPI\b|\bcache\b|OAuth|slug/i;
 function lint(form, cfg, where) {
   const visible = new Set(cfg.layout.filter((x) => !x.more).flatMap((x) => (x.f ? [x.f] : x.seg ? [x.seg] : x.sentence ? x.sentence.tokens.filter((t) => t.f).map((t) => t.f) : x.period ? [x.period.field] : [])));
-  const folded = new Set(cfg.layout.filter((x) => x.more).flatMap((x) => x.more.items.flatMap((i) => (i.f ? [i.f] : i.sentence ? i.sentence.tokens.filter((t) => t.f).map((t) => t.f) : i.period ? [i.period.field] : []))));
+  const folded = new Set(cfg.layout.filter((x) => x.more).flatMap((x) => x.more.items.flatMap((i) => (i.nested ? i.nested.items.flatMap((n) => (n.seg ? [n.seg] : n.sentence ? n.sentence.tokens.filter((t) => t.f).map((t) => t.f) : [])) : i.f ? [i.f] : i.seg ? [i.seg] : i.sentence ? i.sentence.tokens.filter((t) => t.f).map((t) => t.f) : i.period ? [i.period.field] : []))));
   for (const f of form.fields.filter((x) => x.kind !== "hidden")) {
     assert.ok(f.label.length <= 60 && !/:\s*$/.test(f.label), `${where} : libellé « ${f.label} »`);
     assert.ok(!REPEATED.test(f.label) && !REPEATED.test(f.help ?? ""), `${where} : mot technique dans « ${f.label} »`);
@@ -170,12 +170,12 @@ test("formulaire d'une commande : 3 champs visibles (Nom, Ce que le bot répond,
   const form = formOfBlocks(b, "create"), cfg = configOf(b);
   const { visible, folded } = lint(form, cfg, "nouvelle commande");
   assert.deepEqual([...visible], ["name", "text", "role"]);
-  assert.deepEqual([...folded].sort(), ["aliases", "cdGlobal", "cdUser", "period"]);
+  assert.deepEqual([...folded].sort(), ["aliases", "cdGlobal", "cdUser", "period", "repeatEvery", "repeatLines", "repeatOn", "repeatWhen", "timerOnly"]);
   assert.deepEqual(form.fields.filter((f) => f.kind !== "hidden").slice(0, 3).map((f) => f.label), ["Nom", "Ce que le bot répond", "Qui peut l'utiliser"]);
   assert.deepEqual(form.fields.find((f) => f.name === "role").options.map((o) => o.label), ["Tout le monde", "Personnes abonnées", "Modération", "Vous seulement"]);
   const more = cfg.layout.find((x) => x.more).more;
   assert.deepEqual([more.title, more.open], ["Plus d'options", false]);
-  assert.deepEqual(more.items.map((i) => i.f ?? Object.keys(i)[0]), ["aliases", "sentence", "period"]);
+  assert.deepEqual(more.items.map((i) => i.f ?? Object.keys(i)[0]), ["aliases", "sentence", "period", "repeatOn", "repeatEvery", "nested", "timerOnly"], "le bloc « Répéter automatiquement » est rangé sous Plus d'options, jamais avec les champs du chemin court");
   assert.equal(form.submitLabel, "Créer la commande");
   assert.equal(b.some((x) => x.type === "adminForm" && x.action === "create") && (await A.panel(owner.ctx, { query: {} })).some((x) => x.action === "create"), false, "sans « Nouvelle commande », pas de formulaire en bas de page");
   const key = `custom:${(await C.loadConfig(owner.ctx)).data.custom.find((c) => c.name === "alive").id}`;
@@ -262,61 +262,77 @@ test("période : un seul contrôle, des textes et quatre raccourcis (Tout novemb
   assert.match(src, /dFrom\.type = "date"/, "sans « Chaque année » : deux sélecteurs de date complets");
 });
 
-test("le même contrôle de période sert aux commandes et aux timers", async () => {
-  const cmd = configOf(await A.panel(owner.ctx, { query: { new: "1" } })).layout.find((x) => x.more).more.items.find((x) => x.period).period;
-  const tim = configOf(await A.panel(owner.ctx, { query: { tab: "timers", timerNew: "1" } })).layout.find((x) => x.more).more.items.find((x) => x.period).period;
-  assert.deepEqual(cmd, tim);
-  const src = fs.readFileSync(`${DIR}/timersAdmin.mjs`, "utf8") + fs.readFileSync(`${DIR}/commandsUi.mjs`, "utf8");
-  assert.equal((src.match(/F\.periodLayout/g) ?? []).length, 2, "un seul composant, appelé des deux côtés");
+test("le contrôle de période sert à toute commande, y compris celles qui se répètent (il n'existe plus de formulaire de timer)", async () => {
+  const src = fs.readFileSync(`${DIR}/timersAdmin.mjs`, "utf8");
+  assert.ok(!/periodLayout|periodField|timerSave|timerCreate/.test(src), "un timer se règle sur la page de la commande");
 });
 
-/* ───────────── Timers ───────────── */
+/* ───────────── Timers (le bloc « Répéter automatiquement » d'une commande) ───────────── */
 
-test("timers : tableau avec recherche, interrupteur, lignes régulières ; formulaire de 5 champs visibles au plus, période repliée", async () => {
+test("page d'une commande : « Répéter automatiquement » est sous Plus d'options (ouvert par le lien de l'onglet Timers), l'interrupteur et UNE durée ; l'ancien timer n'a plus de formulaire", async () => {
   const { ctx } = world();
-  await T.saveTimer(ctx, {}, { name: "Rappel du Discord", text: "Rejoignez le Discord.", minutes: 20, lines: 5, when: "live", enabled: true });
-  await T.saveTimer(ctx, {}, { name: "Hydratation", text: "Pensez à boire.", minutes: 30, lines: 3, when: "always", enabled: false });
-  const b = await A.panel(ctx, { query: { tab: "timers" } });
-  const html = htmlOf(b, "timers"), r = rowsOf(html);
-  assert.equal(r.length, 2);
-  assert.match(html, /data-ck-q/);
-  assert.match(r[0].html, /role="switch" aria-checked="true"[^>]*data-ck-act="timerToggle"/);
-  assert.match(r[1].html, /aria-checked="false"/);
-  assert.deepEqual(r.map((x) => x.attrs.state), ["on", "off"]);
-  assert.equal((r[0].html.match(/class="ck-btn small/g) ?? []).length, 2, "au plus deux actions visibles : Modifier et Envoyer maintenant");
-  assert.match(r[1].cells.org, /30 min · 3 lignes · Toujours/);
-  assert.ok(!/En direct seulement/.test(r[0].html), "la valeur ordinaire n'est pas répétée");
-  const nb = await A.panel(ctx, { query: { tab: "timers", timerNew: "1" } });
-  const cfg = configOf(nb), form = formOfBlocks(nb, "timerCreate");
-  const { visible } = lint(form, cfg, "timer");
-  assert.deepEqual([...visible], ["name", "text", "minutes", "lines", "when"]);
-  assert.ok(visible.size <= 5);
-  assert.deepEqual(cfg.layout.find((x) => x.more).more.items.map((i) => Object.keys(i)[0]), ["period"]);
-  assert.deepEqual(form.fields.find((f) => f.name === "when").options.map((o) => o.label), ["En direct seulement", "Toujours"]);
-  assert.equal(form.submitLabel, "Ajouter le timer");
-  const sentence = cfg.layout.find((x) => x.sentence).sentence;
-  assert.deepEqual(sentence.tokens.map((t) => (typeof t === "string" ? t : t.f)), ["Toutes les", "minutes", "minutes, après au moins", "lines", "lignes de chat"]);
-  const ro = world({ can: false });
-  await T.saveTimer(ro.ctx, {}, { name: "R", text: "x", minutes: 5, lines: 0, when: "live", enabled: true });
-  const rr = rowsOf(htmlOf(await A.panel(ro.ctx, { query: { tab: "timers" } }), "timers"))[0];
-  assert.match(rr.html, /disabled/);
-  assert.ok(!rr.html.includes("Modifier"), "sans le droit : lecture seule");
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "discord", text: "Rejoignez le Discord.", repeat: { minutes: 20, lines: 4, when: "always" } }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
+  const key = `custom:${(await C.loadConfig(ctx)).data.custom[0].id}`;
+  const closed = await A.panel(ctx, { query: { edit: key } });
+  const open = await A.panel(ctx, { query: { tab: "use", edit: key, repeat: "1" } });
+  assert.equal(configOf(closed).layout.find((x) => x.more).more.open, false);
+  assert.equal(configOf(open).layout.find((x) => x.more).more.open, true, "le lien « Modifier » de l'onglet Timers ouvre le bloc");
+  const form = formOfBlocks(open, "save"), cfg = configOf(open);
+  const { visible } = lint(form, cfg, "répétition");
+  assert.deepEqual([...visible], ["name", "text", "role"], "le chemin court ne change pas");
+  const f = Object.fromEntries(form.fields.map((x) => [x.name, x]));
+  assert.deepEqual([f.repeatOn.kind, f.repeatOn.value, f.repeatEvery.kind, f.repeatEvery.value, f.repeatEvery.min, f.repeatEvery.max], ["switch", "on", "duration", 1200, 60, 86400]);
+  assert.match(f.repeatEvery.example, /minutes/);
+  assert.deepEqual([f.repeatLines.value, f.repeatWhen.value], [4, "always"]);
+  assert.ok(open.some((b) => b.type === "table" && b.rowActions?.[0]?.action === "timerRemove"), "retirer le timer : séparé, avec confirmation");
+  const rm = open.find((b) => b.type === "table" && b.rowActions?.[0]?.action === "timerRemove").rowActions[0];
+  assert.match(rm.confirm, /La commande reste/);
+  const more = configOf(open).layout.find((x) => x.more).more.items;
+  assert.equal(more.find((i) => i.f === "repeatEvery").showWhen, "repeatOn", "éteint : seul l'interrupteur se voit");
+  assert.equal(more.find((i) => i.nested).showWhen, "repeatOn");
+  assert.equal(more.find((i) => i.nested).nested.title, "Conditions", "minimum de messages et direct/toujours : repliés");
+  assert.equal(formOfBlocks(open, "save").submitLabel, "Enregistrer");
+  const fresh_ = world();
+  await C.saveCommand(fresh_.ctx, { kind: "custom" }, { name: "libre", text: "Libre" }, { src: await SRC.gather(fresh_.ctx, "emma"), t: fresh_.ctx.t, prefix: "!" });
+  const k2 = `custom:${(await C.loadConfig(fresh_.ctx)).data.custom[0].id}`;
+  const intent = await A.panel(fresh_.ctx, { query: { tab: "use", edit: k2, repeat: "1" } });
+  assert.equal(formOfBlocks(intent, "save").submitLabel, "Ajouter ce timer", "un seul bouton principal, verbe précis");
+  assert.equal(formOfBlocks(intent, "save").fields.find((x) => x.name === "repeatOn").value, "on", "venu d'« Ajouter un timer » : l'interrupteur est déjà allumé");
+  assert.ok(!intent.some((b) => b.type === "table" && b.rowActions?.[0]?.action === "timerRemove"), "rien à retirer tant qu'il n'y a pas de timer");
 });
 
-test("timers : état vide qui dit quoi faire ; créer et activer par l'interrupteur", async () => {
+test("liste des commandes : une commande réservée au timer porte la pastille écrite « Timer seulement » (et seulement elle, R14), montre son titre et reste modifiable", async () => {
   const { ctx } = world();
-  const empty = plain((await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers").map((b) => b.html ?? "").join(""));
-  assert.match(empty, /Vous n'avez pas encore de timer\./);
-  assert.match(empty, /Nouveau timer/);
-  const x = { name: "Rappel", text: "Suivez la chaîne.", minutes: "10", lines: "2", when: "live", period: "" };
-  assert.deepEqual(await TA.actions.timerCreate.run(ctx, x), { ok: fr.tm_created });
-  const id = (await C.loadConfig(ctx)).data.timers[0].id;
-  assert.equal((await C.loadConfig(ctx)).data.timers[0].enabled, true);
-  assert.match((await TA.actions.timerToggle.run(ctx, { id })).ok, /désactivé/);
-  assert.equal((await C.loadConfig(ctx)).data.timers[0].enabled, false);
-  assert.equal((await TA.actions.timerSave.run(ctx, { ...x, id, text: "Nouveau texte.", period: "01/11 - 30/11" })).redirect, "?tab=timers");
-  const t0 = (await C.loadConfig(ctx)).data.timers[0];
-  assert.deepEqual([t0.enabled, t0.text, t0.period.yearly], [false, "Nouveau texte.", true], "enregistrer ne touche pas à l'état");
+  const env = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "merch", text: "Boutique" }, env);
+  await C.mutate(ctx, (cfg) => { cfg.custom.push({ id: "tx1", name: "rappel", title: "Rappel du Discord", aliases: [], text: "Le Discord !", role: "everyone", enabled: true, cdGlobal: null, cdUser: null, timerOnly: true, repeat: { minutes: 15, lines: 5, when: "live", enabled: true } }); return { ok: true }; });
+  const b = await A.panel(ctx, { query: {} });
+  const html = htmlOf(b, "commands"), rows = rowsOf(html);
+  const timer = rows.find((r) => r.cells.name.startsWith("Rappel du Discord"));
+  assert.ok(timer && timer.attrs.origin === "timer");
+  assert.match(timer.cells.org, /^Timer seulement$/);
+  assert.equal((html.match(/ck-origin timer/g) ?? []).length, 1);
+  assert.match(timer.html, /href="\?edit=custom%3Atx1#edit"/);
+  assert.ok(pills(html).some((p) => p.key === "origin" && p.val === "timer" && p.label === "Timer seulement" && p.count === 1));
+  const e = await A.panel(ctx, { query: { edit: "custom:tx1" } });
+  assert.ok(!configOf(e).layout.some((x) => x.seg === "role"), "personne à qui la permettre : pas de choix du rôle");
+  // dans le chat, personne ne peut la taper
+  const out = await say(ctx, "!rappel", { login: "curieux" }, NOW);
+  assert.equal(out.handled, false);
+  // retirer le timer d'une commande « seulement pour le timer » : DEUX choix confirmés, aucun silencieux
+  const acts = e.find((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "timerKeep")).rowActions;
+  assert.deepEqual(acts.map((a) => a.action), ["remove", "timerKeep"]);
+  assert.match(acts[0].confirm, /n'existe que pour ce timer/);
+  assert.match(acts[1].confirm, /devient une commande du chat.*Tout le monde pourra la taper avec !rappel/);
+  assert.ok(!e.some((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "timerRemove")));
+  assert.equal(e.filter((b) => b.type === "table" && b.rowActions?.some((a) => a.action === "remove")).length, 1, "un seul bloc de suppression");
+  assert.equal((await TA.actions.timerRemove.run(ctx, { id: "custom:tx1" })).error, ctx.t("rep_choose"), "jamais de passage silencieux dans le chat");
+  assert.equal((await C.loadConfig(ctx)).data.custom.find((c) => c.id === "tx1").timerOnly, true);
+  assert.equal((await say(ctx, "!rappel", { login: "curieux" }, NOW + 1000)).handled, false);
+  assert.match((await TA.actions.timerKeep.run(ctx, { id: "custom:tx1" })).ok, /utilisable dans le chat/);
+  const kept = (await C.loadConfig(ctx)).data.custom.find((c) => c.id === "tx1");
+  assert.deepEqual([kept.timerOnly, kept.repeat], [undefined, undefined]);
+  assert.equal((await say(ctx, "!rappel", { login: "curieux" }, NOW + 60_000)).result, "sent");
 });
 
 /* ───────────── Journal ───────────── */
@@ -373,7 +389,7 @@ test("page : plus de lien d'import ; un ancien « ?import=1 » ne casse rien", a
 
 test("migration des données 5 : un ancien brouillon d'import est effacé sans erreur, aucune commande ni aucun timer n'est touché ; sans brouillon, rien ne se passe ; rejouable", async () => {
   const { ctx } = world();
-  await T.saveTimer(ctx, {}, { name: "Rappel", text: "Texte.", minutes: 5, lines: 0, when: "live", enabled: true });
+  await C.mutate(ctx, (cfg) => { cfg.timers.push({ id: "told", name: "Rappel", text: "Texte.", minutes: 5, lines: 0, when: "live", enabled: true }); return { ok: true }; });
   await C.saveCommand(ctx, { kind: "custom" }, { name: "merch", text: "Boutique", enabled: true }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
   await ctx.api.store.add("botImport", { rows: [{ i: 0, kind: "command", name: "x", text: "y" }], at: Date.now() });
   const before = structuredClone((await C.loadConfig(ctx)).data);
@@ -383,7 +399,7 @@ test("migration des données 5 : un ancien brouillon d'import est effacé sans e
   assert.deepEqual((await C.loadConfig(ctx)).data, before, "aucune commande perdue");
   await def.migrations[5](ctx);
   assert.deepEqual((await C.loadConfig(ctx)).data, before);
-  assert.equal(manifest.dataVersion, 5);
+  assert.equal(manifest.dataVersion, 6);
   const none = world();
   await def.migrations[5](none.ctx);
 });

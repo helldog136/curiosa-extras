@@ -85,8 +85,32 @@ export default async function scenes({ adminFrame, messages }) {
   const info = await A.context(rw.ctx, { declare: false });
   const rewards = await RA.blocks(rw.ctx, info);
 
+  /* ───── Timers : les commandes que le bot répète tout seul ───── */
+  const wt = world({ followers: null, settings: { cooldownGlobal: 0, cooldownUser: 0, maxPer30s: 18 } });
+  const envT = { src: await SRC.gather(wt.ctx, "chaine_demo"), t: wt.ctx.t, prefix: "!" };
+  const REPEATS = [
+    ["discord", "Rejoignez-nous sur Discord : discord.example.org/chaine_demo", { minutes: 20, lines: 5, when: "live" }],
+    ["boutique", "La boutique est ouverte : boutique.example.org", { minutes: 45, lines: 10, when: "live" }],
+    ["lurk", "Un lurk, ça fait plaisir : dites bonjour quand vous voulez.", { minutes: 30, lines: 0, when: "always" }],
+    ["reseaux", "Retrouvez-moi aussi sur les réseaux : tapez !reseaux.", { minutes: 60, lines: 5, when: "live" }],
+  ];
+  for (const [name, text, repeat] of REPEATS) await C.saveCommand(wt.ctx, { kind: "custom" }, { name, text, enabled: true, repeat }, envT);
+  await C.saveCommand(wt.ctx, { kind: "custom" }, { name: "boire", text: "Pensez à boire un verre d'eau.", enabled: true, timerOnly: true, repeat: { minutes: 90, lines: 3, when: "live" } }, envT);
+  await C.saveCommand(wt.ctx, { kind: "custom" }, { name: "hiver", text: "Les décorations sont de sortie ce mois-ci.", enabled: true, period: { yearly: true, from: { m: 12, d: 1 }, to: { m: 12, d: 31 } }, repeat: { minutes: 25, lines: 5, when: "live" } }, envT);
+  await C.saveCommand(wt.ctx, { kind: "custom" }, { name: "clip", text: "Un moment à revoir : le clip du jour.", enabled: true, repeat: { minutes: 40, lines: 5, when: "live", enabled: false } }, envT);
+  await C.mutate(wt.ctx, (cfg) => { const c = cfg.custom.find((x) => x.name === "boire"); c.title = "Rappel : boire de l'eau"; return { ok: true }; });
+  for (const [name, text] of [["planning", "Le planning est sur le site."], ["regles", "Soyez bienveillants et respectueux."]]) await C.saveCommand(wt.ctx, { kind: "custom" }, { name, text, enabled: true }, envT);
+  SRC.resetSources();
+  await A.panel(wt.ctx, { query: {} });
+  for (const sub of wt.tw.subs) sub.status = "enabled";
+  await A.actions.check(wt.ctx);
+  const timers = await A.panel(wt.ctx, { query: { tab: "timers" } });
+  const adding = await A.panel(wt.ctx, { query: { tab: "timers", timerAdd: "1" } });
+
   return {
     "commandes.webp": { html: neutral(frame(commands, "use")), h: 900, scripts: [fs.readFileSync(new URL("../../../modules/twitch-bot/adminkit.client.js", import.meta.url), "utf8")], forbid: [/\bemma\b/i] },
+    "timers.webp": { html: neutral(frame(timers, "timers")), h: 800, scripts: [fs.readFileSync(new URL("../../../modules/twitch-bot/adminkit.client.js", import.meta.url), "utf8")], forbid: [/\bemma\b/i] },
+    "timers-ajouter.webp": { html: neutral(frame(adding, "timers")), h: 1100, scripts: [fs.readFileSync(new URL("../../../modules/twitch-bot/adminkit.client.js", import.meta.url), "utf8")], forbid: [/\bemma\b/i] },
     "recompenses.webp": { html: neutral(frame(rewards, "rewards")), h: 1000, forbid: [/\bemma\b/i] },
   };
 }

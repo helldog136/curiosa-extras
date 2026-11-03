@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : dans Bot Twitch 1.9.0, un timer n'est plus un message à part avec un titre : c'est une commande que le bot répète tout seul. L'onglet Timers liste vos commandes répétées ; on règle la répétition sur la page de la commande. Vos timers actuels sont repris tels quels : même message, même rythme.*
+
+### Nouveautés
+
+- **Bot Twitch 1.9.0 : un timer répète une commande.** Sur la page d'une commande, sous « Plus d'options », « Répéter automatiquement » : un interrupteur et « Toutes les … » (une durée, de 1 minute à 24 heures), puis un minimum de messages dans le chat et « en direct seulement » ou « toujours ». À chaque échéance, le bot écrit la réponse de la commande ; une commande désactivée ou hors de sa période n'est pas répétée.
+- **L'onglet Timers est un seul tableau** des commandes qui se répètent : recherche en direct, filtres « Actifs · En pause · Hors période » avec leur nombre, un interrupteur par ligne, « Modifier » (ouvre la commande sur son bloc) et « Envoyer maintenant ».
+- **« Ajouter un timer » propose deux voies.** Choisir une commande qui existe (liste avec recherche), ou en créer une nouvelle avec deux champs, un nom et ce que le bot écrit. Sous « Plus d'options » : « Seulement pour le timer, pas dans le chat », pour une commande que personne ne peut taper.
+- **Vos anciens timers sont repris automatiquement, sans perte.** Chacun devient une commande « Timer seulement » (pastille écrite dans la liste des commandes) avec son titre, son message mot pour mot, son rythme, ses conditions, sa période et son état (un timer désactivé reste en pause). Si un timer disait déjà exactement la réponse d'une de vos commandes, il se rattache à cette commande. L'ancien enregistrement n'est jamais effacé.
+- **Pour l'assistant.** `bot_commands_list`, `bot_command_create` et `bot_command_update` lisent et écrivent la répétition (`repeatEveryMinutes`, `repeatMinChatLines`, `repeatWhen`, `repeatEnabled`, `clearRepeat`, `timerOnly`). `timers_list`, `timer_create` et `timer_update` gardent leurs noms et leurs droits.
+
+### Pour les développeurs
+
+- `modules/twitch-bot` 1.9.0 : `dataVersion` 6 (migration `timersMigrate.mjs`, additive et rejouable, 20 timers au plus par passage ; l'ancienne liste `timers` reste dans `botConfig`, inerte et marquée `migrated`), `logEvents` (`timers.migrated`, des nombres seulement). `minCore` reste 0.6.0 (champs `switch` et `duration`, journal du cœur). La répétition est le champ `repeat` de la commande ; l'état d'attente (`botTimers`) est rangé par commande.
+- Le moteur ne lit plus que les commandes. `timerOnly` : la commande ne répond jamais dans le chat (ni gestion `!editcom`). Un filet de sécurité lance la migration au premier message du chat si elle n'a pas tourné. Les répétitions ne portent pas de délais d'attente (ceux-ci sont pour les personnes) et ignorent « répondre seulement en direct » (elles ont leur propre condition, comme avant).
+- Pas de répétition pour la commande d'un partenaire (elle se règle dans la fiche du partenaire, qui n'a pas ce bloc).
+
 ## 1.38.0 — 2026-11-03
 
 *En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*

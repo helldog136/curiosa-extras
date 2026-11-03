@@ -28,6 +28,8 @@ export function saveError(ctx, r) {
     case "timer_minutes": return t("err_timer_minutes");
     case "timer_lines": return t("err_timer_lines");
     case "timer_when": return t("err_timer_when");
+    case "timer_only": return t("err_timer_only");
+    case "repeat_kind": return t("err_repeat_kind");
     case "timer_many": return t("err_timer_many", { max: 20 });
     default: return t("err_unknown");
   }

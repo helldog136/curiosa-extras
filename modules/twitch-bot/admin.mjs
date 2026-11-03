@@ -132,13 +132,21 @@ async function editBlocks(ctx, info, key, query) {
   if (kind === "builtin" && view.state && view.state !== "on" && view.state !== "off") out.push({ type: "banner", tone: "warning", text: t(`why_${view.why}`) });
   if (kind === "group") out.push({ type: "markdown", text: t("edit_group_info") });
   if (c?.state === "outside") out.push({ type: "banner", tone: "warning", text: reopenLabel(ctx, c.reopen) });
-  out.push(...(await CU.commandForm(ctx, info, { mode: "edit", view, key, kind, unsaved: !c })));
+  out.push(...(await CU.commandForm(ctx, info, { mode: "edit", view, key, kind, unsaved: !c, repeatIntent: !!query?.repeat })));
   if (kind === "custom" && used(view.text).includes("compteur")) {
     const n = (await st.readCounters(ctx))[view.key] ?? 0;
     out.push({ type: "markdown", text: t("edit_counter", { n }) }, K.inlineActions(ctx, K.actionButton({ label: t("counter_reset_btn"), act: "counterReset", id: view.key, cls: "small", fail: t("err_toggle") })));
   }
   if (kind === "builtin") out.push(K.inlineActions(ctx, K.actionButton({ label: t("reset_btn"), act: "resetText", id: key, cls: "small", fail: t("err_toggle") })));
-  if (kind === "custom") out.push({ type: "table", columns: [t("delete_title")], rows: [[`${s.prefix}${view.name}`]], rowIds: [view.id], rowActions: [{ label: t("delete_btn"), action: "remove", confirm: t("delete_confirm", { command: `${s.prefix}${view.name}` }), danger: true }] });
+  const shown = view.title || `${s.prefix}${view.name}`;
+  if (view.repeat && can(ctx) && view.timerOnly) {
+    // Une commande « seulement pour le timer » : deux choix explicites, aucun par défaut. Jamais de passage silencieux dans le chat.
+    out.push({ type: "table", columns: [t("rep_remove_title")], rows: [[t("rep_only_help", { name: shown })]], rowIds: [view.key], rowActions: [
+      { label: t("rep_delete_cmd_btn"), action: "remove", confirm: t("rep_delete_cmd_confirm", { name: shown }), danger: true },
+      { label: t("rep_keep_btn"), action: "timerKeep", confirm: t("rep_keep_confirm", { name: shown, word: `${s.prefix}${view.name}`, who: t(`role_${view.role}`) }) },
+    ] });
+  } else if (view.repeat && can(ctx)) out.push({ type: "table", columns: [t("rep_remove_title")], rows: [[shown]], rowIds: [view.key], rowActions: [{ label: t("rep_remove_btn"), action: "timerRemove", confirm: t("rep_remove_confirm", { name: shown }) }] });
+  if (kind === "custom" && !(view.repeat && view.timerOnly && can(ctx))) out.push({ type: "table", columns: [t("delete_title")], rows: [[`${s.prefix}${view.name}`]], rowIds: [view.id], rowActions: [{ label: t("delete_btn"), action: "remove", confirm: t("delete_confirm", { command: `${s.prefix}${view.name}` }), danger: true }] });
   return out;
 }
 
@@ -188,12 +196,34 @@ export async function panel(ctx, { query }) {
 /* ───────────── Actions ───────────── */
 
 /** Une erreur d'enregistrement : sous le champ quand on sait lequel (la période), sinon en haut. */
-const failed = (ctx, r) => (r.code === "period" ? { errors: { period: saveError(ctx, r) } } : { error: saveError(ctx, r) });
+const FIELD_OF = { period: "period", timer_minutes: "repeatEvery", timer_lines: "repeatLines", timer_many: "repeatOn", repeat_kind: "repeatOn", timer_only: "timerOnly" };
+const failed = (ctx, r) => (FIELD_OF[r.code] ? { errors: { [FIELD_OF[r.code]]: saveError(ctx, r) } } : { error: saveError(ctx, r) });
+const can = (ctx) => typeof ctx.can === "function" && ctx.can("timers.manage") === true;
+/**
+ * Les champs « Répéter automatiquement » du formulaire (interrupteur, durée en secondes, minimum de lignes, quand) → { repeat } ou { bad }. Rien n'est envoyé quand le formulaire n'a pas ces champs
+ * (la fiche d'un partenaire) ; une commande sans répétition et un interrupteur éteint : rien ne change. Éteint sur une commande qui se répète : elle est mise en pause (ses réglages restent).
+ * Sans le droit « timers.manage », la répétition n'est pas modifiable depuis ce formulaire.
+ */
+function repeatOf(ctx, v, cur) {
+  if (v.repeatEvery === undefined && v.repeatOn === undefined) return {};
+  if (!can(ctx)) return {};
+  const on = v.repeatOn === "on";
+  if (!cur && !on) return {};
+  const raw = v.repeatEvery === undefined || v.repeatEvery === "" ? undefined : Number(v.repeatEvery);
+  if (raw !== undefined && (!Number.isInteger(raw / 60) || raw < 60)) return { bad: failed(ctx, { code: "timer_minutes" }) };
+  return { repeat: { ...(raw !== undefined ? { minutes: raw / 60 } : {}), ...(v.repeatLines !== undefined ? { lines: v.repeatLines } : {}), ...(v.repeatWhen ? { when: v.repeatWhen } : {}), enabled: on } };
+}
 /** Le champ « période » du formulaire (un texte : 01/11 - 30/11) → { period } ou { bad } (la phrase d'erreur va sous le champ). Absent : rien ne change. */
 function periodOf(ctx, v) {
   if (v.period === undefined) return {};
   const p = parsePeriodText(v.period);
   return p.ok ? { period: p.value } : { bad: { errors: { period: periodError(ctx, p) } } };
+}
+/** Une commande « réservée au timer » sans répétition active ne répondrait jamais : l'erreur est sous l'interrupteur « Seulement pour le timer ». */
+function timerOnlyCheck(ctx, fields, cur) {
+  if (fields.timerOnly !== true) return null;
+  const rep = fields.repeat ?? cur;
+  return rep ? null : { errors: { timerOnly: ctx.t("err_timer_only") } };
 }
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };
 const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled === "on" } : {}), name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
@@ -220,7 +250,12 @@ export const actions = {
     const { kind, id } = parseKey(v.key);
     const per = periodOf(ctx, v);
     if (per.bad) return per.bad;
-    const fields = { ...fieldsFrom(v), ...(per.period !== undefined ? { period: per.period } : {}) };
+    const cur = info.list.find((x) => x.key === v.key);
+    const rep = repeatOf(ctx, v, cur?.repeat ?? null);
+    if (rep.bad) return rep.bad;
+    const fields = { ...fieldsFrom(v), ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(kind === "custom" && v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
+    const bad = timerOnlyCheck(ctx, fields, cur?.repeat ?? null);
+    if (bad) return bad;
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, fields, info.env) : await saveCommand(ctx, { kind, id }, fields, info.env);
     return r.ok === false ? failed(ctx, r) : { ok: ctx.t("saved") };
   },
@@ -228,7 +263,12 @@ export const actions = {
     const info = await context(ctx, { declare: false });
     const per = periodOf(ctx, v);
     if (per.bad) return per.bad;
-    const r = await saveCommand(ctx, { kind: "custom" }, { ...fieldsFrom(v), enabled: true, ...(per.period !== undefined ? { period: per.period } : {}) }, info.env);
+    const rep = repeatOf(ctx, v, null);
+    if (rep.bad) return rep.bad;
+    const fields = { ...fieldsFrom(v), enabled: true, ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
+    const bad = timerOnlyCheck(ctx, fields, null);
+    if (bad) return bad;
+    const r = await saveCommand(ctx, { kind: "custom" }, fields, info.env);
     return r.ok === false ? failed(ctx, r) : { ok: ctx.t("created") };
   },
   async toggle(ctx, v) {

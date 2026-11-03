@@ -204,7 +204,8 @@ test("les commandes toutes prêtes et le groupe ont aussi une période", async (
 test("timers : hors période ils ne comptent ni n'écrivent (pas de rafale à la réouverture) ; dans la période ils écrivent ; l'état dit quand ils reviennent", async () => {
   T.resetTimersMemory();
   const { ctx, tw } = world({ tw: { live: { channel: "emma", configured: true, known: true, live: true, title: "T", game: "G", startedAt: new Date(OCT).toISOString() } } });
-  const saved = await T.saveTimer(ctx, {}, { name: "Subtember", text: "Septembre en or", minutes: 1, lines: 0, when: "always", period: per([1, 9], [30, 9]) });
+  const env = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
+  const saved = await C.saveCommand(ctx, { kind: "custom" }, { name: "subtember", text: "Septembre en or", repeat: { minutes: 1, lines: 0, when: "always" }, period: per([1, 9], [30, 9]) }, env);
   assert.equal(saved.ok, true);
   const line = (now) => T.processTimers(ctx, chat("coucou", { messageId: `p${now}` }), { now });
   await line(OCT);
@@ -218,13 +219,11 @@ test("timers : hors période ils ne comptent ni n'écrivent (pas de rafale à la
   const row = rowsOf(htmlOf(page, "timers"))[0];
   assert.equal(row.attrs.state, "outside");
   assert.match(row.cells.sw, /Revient le 1(er)? septembre/);
-  const off = await T.saveTimer(ctx, { id: (await C.loadConfig(ctx)).data.timers[0].id }, { enabled: false });
+  const off = await T.setRepeat(ctx, { kind: "custom", id: (await C.loadConfig(ctx)).data.custom[0].id }, { enabled: false }, env);
   assert.equal(off.ok, true);
-  assert.equal(rowsOf(htmlOf(await A.panel(ctx, { query: { tab: "timers" } }), "timers"))[0].attrs.state, "off", "désactivé l'emporte");
-  const err = await T.saveTimer(ctx, {}, { name: "X", text: "x", minutes: 5, period: yearly([31, 2], [1, 3]) });
+  assert.equal(rowsOf(htmlOf(await A.panel(ctx, { query: { tab: "timers" } }), "timers"))[0].attrs.state, "off", "en pause l'emporte");
+  const err = await C.saveCommand(ctx, { kind: "custom" }, { name: "x", text: "x", repeat: { minutes: 5 }, period: yearly([31, 2], [1, 3]) }, env);
   assert.deepEqual([err.ok, err.code, err.field], [false, "period", "fromDay"]);
-  const form = await (await import("../modules/twitch-bot/timersAdmin.mjs")).actions.timerCreate.run(ctx, { name: "Z", text: "z", minutes: "5", lines: "0", when: "always", period: "31/04 - 01/05" });
-  assert.equal(form.errors.period, "Le 31 avril n'existe pas. Exemple : 30 avril.");
 });
 
 /* ───────────── Outils des assistants ───────────── */
@@ -268,7 +267,7 @@ test("migration des données 4 : une configuration d'avant (sans timers ni péri
   assert.equal((await none.ctx.api.store.list("botConfig", { limit: 1 })).length, 0, "pas de configuration : rien n'est créé");
   assert.equal((await say(ctx, "!old", { badges: ["moderator"] }, OCT)).result, "sent", "la commande d'avant répond comme avant, sans période");
   const manifest = JSON.parse((await import("node:fs")).readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
-  assert.equal(manifest.dataVersion, 5);
+  assert.equal(manifest.dataVersion, 6);
   const rows = C.readConfig({ ...before });
   assert.deepEqual(rows.timers, [], "relire une ancienne configuration sans timers ne casse rien");
 });

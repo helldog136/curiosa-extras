@@ -260,6 +260,22 @@
     while (node && node.parentElement && node.parentElement.parentElement !== form) node = node.parentElement;
     return node && node.parentElement ? node : null;
   }
+  /** Montre `node` seulement quand l'interrupteur `name` est allumé (sans script, tout reste visible). */
+  function showWhen(form, node, name) {
+    var upd = function () { node.hidden = !fieldIsSet(form, name); };
+    form.addEventListener("change", upd); form.addEventListener("input", upd);
+    form.addEventListener("reset", function () { root.setTimeout(upd, 0); });
+    upd();
+  }
+  /** Le champ a-t-il une valeur ? Un interrupteur ou une case compte quand il est allumé (sa valeur, elle, est toujours « on »). */
+  function fieldIsSet(form, name) {
+    var node = form.elements.namedItem(name);
+    if (!node) return false;
+    var list = node.length !== undefined && node.tagName !== "SELECT" ? Array.prototype.slice.call(node) : [node];
+    var box = list.filter(function (n) { return n.type === "checkbox"; })[0];
+    if (box) return !!box.checked;
+    return String(list[list.length - 1].value).trim() !== "";
+  }
   function labelOf(form, name) {
     var node = form.elements.namedItem(name);
     var lab = node && node.id ? form.querySelector("label[for='" + node.id + "']") : null;
@@ -477,6 +493,13 @@
         return sb;
       }
       if (item.sentence) { var sn = sentence(form, item.sentence); into.appendChild(sn); return sn; }
+      if (item.nested) {   // un groupe replié dans « Plus d'options » (conditions rares)
+        var nd = el("details", "ck-more ck-nested"), ns = el("summary"), nb = el("div", "ck-more-body");
+        ns.appendChild(el("span", "ck-more-t", item.nested.title)); nd.appendChild(ns); nd.appendChild(nb);
+        item.nested.items.forEach(function (x) { place(x, nb); });
+        into.appendChild(nd);
+        return nd;
+      }
       if (item.period) { var p = periodControl(form, item.period); if (p) { into.appendChild(fieldBox(form, item.period.field)); } return p; }
       return null;
     }
@@ -492,12 +515,13 @@
       more = d;
       item.more.items.forEach(function (sub) {
         var node = place(sub, body), label = sub.label || (sub.sentence && sub.sentence.title) || (sub.period && sub.period.text.title) || (sub.f && labelOf(form, sub.f));
-        moreItems.push({ node: node, field: sub.f, label: label, sentence: !!sub.sentence, period: !!sub.period });
+        if (sub.showWhen && node) showWhen(form, node, sub.showWhen);
+        if (!sub.quiet) moreItems.push({ node: node, field: sub.f, label: label, sentence: !!sub.sentence, period: !!sub.period });   // `quiet` : fait partie d'un groupe déjà résumé par un autre champ
       });
       var refresh = function () {
         var set = [];
         moreItems.forEach(function (m) {
-          var on = m.field ? (form.elements.namedItem(m.field) && String(form.elements.namedItem(m.field).value).trim() !== "") : m.node && m.node.__isSet && m.node.__isSet();
+          var on = m.field ? fieldIsSet(form, m.field) : m.node && m.node.__isSet && m.node.__isSet();
           if (on) set.push(m.label);
         });
         now.textContent = set.length ? set.join(" · ") : "";
