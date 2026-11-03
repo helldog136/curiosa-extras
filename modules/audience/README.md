@@ -10,7 +10,7 @@ La base commune des animations de votre stream : **un pseudo par personne sans c
 - **Le dock pour OBS** (depuis la 1.1.0) : la **même** télécommande, avec **toutes** ses fonctions, dans un petit panneau à placer dans OBS. Il se manie à la souris comme au clavier.
 - **Le direct** : l'écran de votre stream (OBS) et les pages publiques se mettent à jour tout seuls, sans surcharger le site : la mise à jour est douce, ralentit quand rien ne change, s'arrête quand la page est cachée et demande plus d'espace quand il y a beaucoup de monde.
 - **Le tirage au sort** (depuis la 1.2.0) : chat et site, au hasard, sans reprendre une personne déjà tirée, sur l'écran du stream pendant 20 secondes (voir plus bas).
-- **Le journal** : qui a décidé quoi et quand (appuis sur la télécommande, sourdines, salles vidées, choix gagnants des manches, tirages). Il se vide tout seul après 30 jours.
+- **Le journal** : qui a décidé quoi et quand (appuis sur la télécommande, sourdines, salles vidées, choix gagnants des manches, tirages). Il se vide tout seul après 30 jours. Les gestes qui n'ont pas de trace ailleurs (tirage fermé tout seul, tirages lancés ou tirés depuis la télécommande, sourdines et salles vidées depuis la télécommande) sont aussi dans l'**Historique** de l'extension (journal du cœur, 90 jours) : jamais de pseudo, seulement le titre du tirage, un nombre ou la salle.
 
 ## Comment l'utiliser
 1. **Rien à faire** pour que ça marche : installez Sondages (ou un autre module d'animation) et Participation arrive avec lui.
