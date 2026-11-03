@@ -40,7 +40,9 @@ const OVERLAY_ELEMENTS = ["alerts-overlay", "community-stats", "countdown", "gam
 // Modules qui lisent `ambiguous` de ctx.api.rawg.cover (lien « Ce n'est pas le bon jeu ? », cœur 0.2.10).
 const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules/stream-story"];
 // Réseaux au gabarit « adresse de votre profil » et Annonces Discord : exemple sous le champ et options rares repliées (cœur 0.6.0).
-const CORE_060 = ["bluesky", "discord", "github", "mastodon", "reddit", "discord-announcer"].map((d) => `modules/${d}`);
+const CORE_060 = ["bluesky", "discord", "github", "mastodon", "reddit", "discord-announcer",
+  // Réglages rares repliés sous « Plus d'options » (mode simple, R5) :
+  "directory", "map", "gallery", "supporters", "countdown", "home-assistant", "videos", "events", "testimonials"].map((d) => `modules/${d}`);
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
