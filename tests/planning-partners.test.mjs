@@ -34,7 +34,7 @@ const ctxOf = (items, { withBook = true, settings = {}, ...over } = {}) => fakeC
 const text = (blocks) => JSON.stringify(blocks);
 
 /* ───────────── Normalisation : la même règle partout ───────────── */
-const CASES = [["rascane_x", "rascane_x"], ["@Etoile_Nord", "etoile_nord"], ["  LUNE_douce ", "lune_douce"], ["https://www.twitch.tv/Etoile_Nord/", "etoile_nord"], ["twitch.tv/lune_douce?sr=a", "lune_douce"], ["<https://m.twitch.tv/abcd>", "abcd"],
+const CASES = [["sapin_x", "sapin_x"], ["@Etoile_Nord", "etoile_nord"], ["  LUNE_douce ", "lune_douce"], ["https://www.twitch.tv/Etoile_Nord/", "etoile_nord"], ["twitch.tv/lune_douce?sr=a", "lune_douce"], ["<https://m.twitch.tv/abcd>", "abcd"],
   ["abc", null], ["a".repeat(26), null], ["nom avec espace", null], ["pseudo-tiret", null], ["twitch.tv/directory", null], ["", null], [null, null], ["é_éééé", null]];
 test("pseudo Twitch : minuscules, @ et lien twitch.tv acceptés, 4 à 25 lettres/chiffres/_ ; la MÊME règle dans les trois modules", () => {
   for (const [input, want] of CASES) {
@@ -52,10 +52,10 @@ const win = { from: new Date("2026-10-01T00:00:00Z"), to: new Date("2027-01-01T0
 
 test("saisie : des pseudos collés de toutes les façons sont nettoyés, dédoublonnés, bornés à 5 ; le créneau les porte, sans eux rien ne change", async () => {
   const ctx = mkManual();
-  assert.equal((await manual.default.adminActions.save(ctx, form({ partners: "@Etoile_Nord, https://twitch.tv/Lune_Douce ; etoile_nord\nnoe_stream et  RASCANE_X" }))).ok, "Enregistré.");
+  assert.equal((await manual.default.adminActions.save(ctx, form({ partners: "@Etoile_Nord, https://twitch.tv/Lune_Douce ; etoile_nord\nnoe_stream et  SAPIN_X" }))).ok, "Enregistré.");
   await manual.default.adminActions.save(ctx, form({ title: "Sans", startDate: "2026-10-15" }));
   const [a, b] = await manual.default.exports["planning.slot"](ctx, win);
-  assert.deepEqual(a.partners, ["etoile_nord", "lune_douce", "noe_stream", "rascane_x"]);
+  assert.deepEqual(a.partners, ["etoile_nord", "lune_douce", "noe_stream", "sapin_x"]);
   assert.equal("partners" in b, false, "sans partenaire, le créneau est identique à celui d'avant");
   assert.deepEqual((await ctx.api.store.list("streams")).find((r) => r.data.title === "Soirée").data.partners, a.partners);
 });

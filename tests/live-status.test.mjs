@@ -324,11 +324,11 @@ test("migration 2 : seulement une partie reprise (chaîne illisible, secret manq
 });
 
 test("migration 2 avec plusieurs Chaînes Twitch : la chaîne reprise va dans la PREMIÈRE seulement, l'application va au Connecteur (une seule pour le site, donc commune)", async () => {
-  const { ctx, pctxs } = wireMany([{ settings: { clientId: "", clientSecret: "" } }, { settings: { channel: "rascane", clientId: "", clientSecret: "" } }], { own: {}, legacy: legacyOwn });
+  const { ctx, pctxs } = wireMany([{ settings: { clientId: "", clientSecret: "" } }, { settings: { channel: "etoile_nord", clientId: "", clientSecret: "" } }], { own: {}, legacy: legacyOwn });
   await def.migrations[2](ctx);
   assert.deepEqual(await svc.channel(pctxs[0]), { channel: "ancienne_chaine", url: "https://twitch.tv/ancienne_chaine", configured: true, ready: true, missing: [] }, "la première chaîne reçoit la reprise");
   const second = await svc.channel(pctxs[1]);
-  assert.equal(second.channel, "rascane", "la chaîne de la deuxième n'est pas touchée");
+  assert.equal(second.channel, "etoile_nord", "la chaîne de la deuxième n'est pas touchée");
   assert.equal(second.ready, true, "Ma Chaîne Twitch 2.0 : l'application est celle du Connecteur, commune à toutes les chaînes");
   assert.equal(await pctxs[1].api.store.count("adopted"), 0);
   assert.deepEqual(ctx.calls.legacyCleared.sort(), ["channel", "clientId", "clientSecret"]);
@@ -370,7 +370,7 @@ function fakeHelix({ lives = {}, errors = {} } = {}) {
   };
   return calls;
 }
-const two = [{ name: "Twitch Helldog136", settings: { channel: "helldog136" } }, { name: "Twitch Rascane", settings: { channel: "rascane" } }];
+const two = [{ name: "Twitch Helldog136", settings: { channel: "helldog136" } }, { name: "Twitch Etoile_Nord", settings: { channel: "etoile_nord" } }];
 
 test("manifeste : minCore 0.2.2, réglage facultatif « Chaînes à annoncer » (texte, pas avancé)", async () => {
   assert.equal(manifest.minCore, "0.2.2");
@@ -380,12 +380,12 @@ test("manifeste : minCore 0.2.2, réglage facultatif « Chaînes à annoncer » 
 });
 
 test("2 chaînes, une seule en direct : exactement l'affichage d'une chaîne (bannière simple, lecteur simple)", async () => {
-  fakeHelix({ lives: { rascane: {} } });
+  fakeHelix({ lives: { etoile_nord: {} } });
   const { ctx } = wireMany(two);
-  assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "rascane est en direct", href: "https://twitch.tv/rascane" }]);
+  assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "etoile_nord est en direct", href: "https://twitch.tv/etoile_nord" }]);
   const [p] = await player(ctx);
   assert.equal(p.type, "embed");
-  assert.equal(new URL(p.src).searchParams.get("channel"), "rascane");
+  assert.equal(new URL(p.src).searchParams.get("channel"), "etoile_nord");
 });
 
 test("aucune des deux en direct : rien (bannière et lecteur) ; « toujours » : lecteur de la PREMIÈRE chaîne seulement", async () => {
@@ -400,26 +400,26 @@ test("aucune des deux en direct : rien (bannière et lecteur) ; « toujours » :
 });
 
 test("les deux en direct : bannière = une ligne par chaîne (nom, titre, jeu, spectateurs, Regarder), dans l'ordre de création", async () => {
-  fakeHelix({ lives: { helldog136: { title: "Soirée A", game: "Zelda", viewers: 12, name: "Helldog136" }, rascane: { title: "Soirée B", game: "Celeste", viewers: 1, name: "Rascane" } } });
+  fakeHelix({ lives: { helldog136: { title: "Soirée A", game: "Zelda", viewers: 12, name: "Helldog136" }, etoile_nord: { title: "Soirée B", game: "Celeste", viewers: 1, name: "Etoile_Nord" } } });
   const [b] = await banner(wireMany(two).ctx);
   assert.equal(b.type, "html");
   const rows = [...b.html.matchAll(/<li>(.*?)<\/li>/g)].map((m) => m[1]);
   assert.equal(rows.length, 2);
   assert.match(rows[0], /Helldog136.*Soirée A.*Zelda · 12 spectateurs.*href="https:\/\/twitch\.tv\/helldog136".*Regarder/);
-  assert.match(rows[1], /Rascane.*Soirée B.*Celeste · 1 spectateur<.*href="https:\/\/twitch\.tv\/rascane"/);
-  assert.ok(b.html.indexOf("Helldog136") < b.html.indexOf("Rascane"));
+  assert.match(rows[1], /Etoile_Nord.*Soirée B.*Celeste · 1 spectateur<.*href="https:\/\/twitch\.tv\/etoile_nord"/);
+  assert.ok(b.html.indexOf("Helldog136") < b.html.indexOf("Etoile_Nord"));
 });
 
 test("les deux en direct : lecteur de la première avec une pastille par chaîne (boutons radio, étiquettes, première cochée), un lecteur par chaîne", async () => {
-  fakeHelix({ lives: { helldog136: { name: "Helldog136" }, rascane: { name: "Rascane" } } });
+  fakeHelix({ lives: { helldog136: { name: "Helldog136" }, etoile_nord: { name: "Etoile_Nord" } } });
   const [p] = await player(wireMany(two, { siteUrl: "https://www.exemple.fr" }).ctx);
   assert.equal(p.type, "html");
   assert.equal([...p.html.matchAll(/type="radio"/g)].length, 2);
   assert.equal([...p.html.matchAll(/ checked/g)].length, 1);
   assert.match(p.html, /id="lsp-live-status-0" checked><label class="p" for="lsp-live-status-0">Helldog136<\/label>/);
-  assert.match(p.html, /for="lsp-live-status-1">Rascane<\/label>/);
+  assert.match(p.html, /for="lsp-live-status-1">Etoile_Nord<\/label>/);
   const srcs = [...p.html.matchAll(/<iframe src="([^"]+)"/g)].map((m) => new URL(m[1].replaceAll("&amp;", "&")));
-  assert.deepEqual(srcs.map((u) => u.searchParams.get("channel")), ["helldog136", "rascane"]);
+  assert.deepEqual(srcs.map((u) => u.searchParams.get("channel")), ["helldog136", "etoile_nord"]);
   for (const u of srcs) { assert.equal(u.origin, "https://player.twitch.tv"); assert.equal(u.searchParams.get("parent"), "www.exemple.fr"); assert.equal(u.searchParams.get("muted"), "true"); }
   assert.ok(!/<script/i.test(p.html), "aucun script");
   assert.match(p.html, /#lsp-live-status \.r0:checked~\.w0\{display:block\}/);
@@ -427,7 +427,7 @@ test("les deux en direct : lecteur de la première avec une pastille par chaîne
 
 test("échappement : titre, jeu et nom d'affichage hostiles ne produisent jamais de balise ; nom d'affichage qui n'est pas la chaîne → on garde la chaîne", async () => {
   const evil = '<img src=x onerror=alert(1)>"\'&';
-  fakeHelix({ lives: { helldog136: { title: evil, game: evil, name: "Helldog136" }, rascane: { title: evil, game: evil, name: evil } } });
+  fakeHelix({ lives: { helldog136: { title: evil, game: evil, name: "Helldog136" }, etoile_nord: { title: evil, game: evil, name: evil } } });
   const { ctx } = wireMany(two);
   const [b] = await banner(ctx);
   const [p] = await player(ctx);
@@ -436,29 +436,29 @@ test("échappement : titre, jeu et nom d'affichage hostiles ne produisent jamais
   }
   assert.match(b.html, /&lt;img src=x onerror=alert\(1\)&gt;&quot;&#39;&amp;/);
   assert.ok(!b.html.includes(evil) && !p.html.includes(evil));
-  assert.match(p.html, />rascane<\/label>/, "nom d'affichage qui n'est pas la chaîne écarté");
+  assert.match(p.html, />etoile_nord<\/label>/, "nom d'affichage qui n'est pas la chaîne écarté");
 });
 
 test("une instance en erreur (401, 429, réseau) n'empêche pas l'autre ; l'erreur n'affiche rien", async () => {
   for (const err of [401, 429, "net"]) {
     tw.resetCache();
-    fakeHelix({ lives: { rascane: {} }, errors: { helldog136: err } });
+    fakeHelix({ lives: { etoile_nord: {} }, errors: { helldog136: err } });
     const { ctx } = wireMany(two);
-    assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "rascane est en direct", href: "https://twitch.tv/rascane" }], String(err));
+    assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "etoile_nord est en direct", href: "https://twitch.tv/etoile_nord" }], String(err));
     assert.equal((await player(ctx))[0].type, "embed");
   }
   tw.resetCache();
   // un fournisseur qui plante (callAll renvoie ok:false) ne gêne pas les autres
-  fakeHelix({ lives: { rascane: {} } });
+  fakeHelix({ lives: { etoile_nord: {} } });
   const { ctx, pctxs } = wireMany(two);
   const real = ctx.api.services.callAll;
   ctx.api.services.callAll = async (...a) => (await real(...a)).map((r, i) => (i === 0 ? { instance: r.instance, ok: false, error: "failed" } : r));
-  assert.equal((await banner(ctx))[0].href, "https://twitch.tv/rascane");
+  assert.equal((await banner(ctx))[0].href, "https://twitch.tv/etoile_nord");
   assert.ok(pctxs.length === 2);
 });
 
 test("un seul jeton pour deux chaînes aux mêmes identifiants, une requête Helix par chaîne, même pour bannière + lecteur + visiteurs simultanés", async () => {
-  const calls = fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  const calls = fakeHelix({ lives: { helldog136: {}, etoile_nord: {} } });
   const { ctx } = wireMany(two);
   await Promise.all([banner(ctx), player(ctx), banner(ctx)]);
   assert.equal(calls.filter((c) => c.url.includes("oauth2")).length, 1);
@@ -466,16 +466,16 @@ test("un seul jeton pour deux chaînes aux mêmes identifiants, une requête Hel
 });
 
 test("« Chaînes à annoncer » : vide = toutes ; sinon seulement celles listées (bannière et lecteur)", async () => {
-  fakeHelix({ lives: { helldog136: {}, rascane: {} } });
-  const only = wireMany(two, { own: { channels: " Rascane, inconnue " } }).ctx;
-  assert.equal((await banner(only))[0].href, "https://twitch.tv/rascane");
-  assert.equal(new URL((await player(only))[0].src).searchParams.get("channel"), "rascane");
+  fakeHelix({ lives: { helldog136: {}, etoile_nord: {} } });
+  const only = wireMany(two, { own: { channels: " Etoile_Nord, inconnue " } }).ctx;
+  assert.equal((await banner(only))[0].href, "https://twitch.tv/etoile_nord");
+  assert.equal(new URL((await player(only))[0].src).searchParams.get("channel"), "etoile_nord");
   assert.equal((await banner(wireMany(two, { own: { channels: "nobody_here" } }).ctx)), null);
   assert.equal((await banner(wireMany(two).ctx))[0].type, "html");
 });
 
 test("vieux cœur sans callAll : repli sur l'appel unique (première chaîne), aucune exception", async () => {
-  fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  fakeHelix({ lives: { helldog136: {}, etoile_nord: {} } });
   const { ctx } = wireMany(two, { oldCore: true });
   assert.equal(typeof ctx.api.services.callAll, "undefined");
   assert.deepEqual(await banner(ctx), [{ type: "banner", tone: "success", text: "helldog136 est en direct", href: "https://twitch.tv/helldog136" }]);
@@ -491,7 +491,7 @@ test("un callAll qui lève → pas d'exception (repli sur rien)", async () => {
 });
 
 test("aucun secret ni jeton dans ce que présente Statut live ; aucun appel réseau de live-status lui-même", async () => {
-  const calls = fakeHelix({ lives: { helldog136: {}, rascane: {} } });
+  const calls = fakeHelix({ lives: { helldog136: {}, etoile_nord: {} } });
   const { ctx } = wireMany(two);
   const dump = JSON.stringify([await banner(ctx), await player(ctx), await def.adminPanel(ctx)]);
   for (const v of ["sec", "tok", "cid", "Bearer", "oauth"]) assert.ok(!dump.includes(v), v);
