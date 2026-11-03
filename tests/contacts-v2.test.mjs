@@ -91,7 +91,7 @@ test("trou noir : un stockage qui ne répond jamais → réponse « busy » dans
   assert.deepEqual(await svc.list(ctx, {}), { ok: false, error: "busy" });
   assert.deepEqual(await svc.accounts(ctx, { network: "twitch" }), { ok: false, error: "busy" });
   assert.ok(Date.now() - t < 1500, "borné");
-  assert.equal(await def.adminBadge(ctx), 0, "la pastille ne bloque pas l'admin");
+  assert.equal(await def.dashboard.tasks.review(ctx), 0, "la tâche du tableau de bord ne bloque pas l'admin");
   assert.equal((await def.adminPanel(ctx, { query: {} }))[0].type, "banner", "l'admin explique au lieu d'attendre");
   store.faults.hang.delete("page");
   await new Promise((r) => setTimeout(r, 200));
@@ -369,7 +369,7 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
 });
 
 test("manifeste 2.1 : version, minCore 0.2.2, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion], ["2.3.1", "0.2.2", 2]);
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion], ["2.4.1", "0.2.2", 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   assert.equal(typeof def.migrations[2], "function");

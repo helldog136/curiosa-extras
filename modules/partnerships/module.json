@@ -6,7 +6,7 @@
     "en": "Partnerships (internal)",
     "fr": "Partenariats (interne)"
   },
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": {
     "en": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
     "fr": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
@@ -14,6 +14,18 @@
   "author": "Helldog136",
   "license": "MIT",
   "icon": "🤝",
+  "dashboard": {
+    "tasks": [
+      {
+        "id": "follow-up",
+        "label": {
+          "en": "Partners to follow up ({n})",
+          "fr": "Partenaires à relancer ({n})"
+        },
+        "href": "?tab=use"
+      }
+    ]
+  },
   "main": "index.mjs",
   "type": "utility",
   "instances": "single",

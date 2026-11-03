@@ -95,7 +95,7 @@ test("JAMAIS hors interaction : lister, chercher, importer, exporter, fusionner,
     await def.adminPanel(ctx, { query: { view: "dupes" } });
     await def.adminPanel(ctx, { query: { view: "categories" } });
     await def.adminPanel(ctx, { query: { view: "import" } });
-    await def.adminBadge(ctx);
+    await def.dashboard.tasks.review(ctx);
     await I.stage(ctx, "name,accounts\nA,bluesky:aaa.example.test | twitch:aaa_live | youtube:@aaa\n", { locale: "en" });
     await I.step(ctx, "preview");
     await I.step(ctx, "run");

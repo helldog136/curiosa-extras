@@ -82,7 +82,7 @@ test("le bandeau d'accueil n'accepte que la vidéo envoyée au site, Contacts si
   const hero = read("modules/hero/index.mjs");
   assert.ok(manifests.find((m) => m.id === "hero").settings.some((s) => s.type === "video"), "hero : réglage de type video");
   assert.match(hero, /\^\\\/uploads\\\/\[0-9a-f-\]\{36\}\\\.\(mp4\|webm\)\$/, "jamais d'adresse externe");
-  assert.match(read("modules/contacts/admin.mjs"), /async adminBadge[\s\S]*to_review/);
+  assert.match(read("modules/contacts/admin.mjs"), /dashboard:[\s\S]*async review[\s\S]*to_review/, "la tâche du tableau de bord compte les fiches à vérifier");
 });
 
 // Les descriptions du catalogue : celles des modules (les exemples pour développeurs sont hors règle).

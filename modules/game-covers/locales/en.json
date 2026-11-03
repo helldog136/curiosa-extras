@@ -6,11 +6,7 @@
   "key_adopted": "Your site's access code was picked up automatically: there is nothing for you to redo. To replace it, paste another one in the “Settings” tab.",
   "forget_key": "Forget the picked-up code",
   "forgot_key": "Done: the picked-up code is forgotten.",
-  "last_check": "Last check: {date} — {state}",
   "never_checked": "Not checked yet.",
-  "state_ok": "the access code works",
-  "state_refused": "Rawg refuses this access code",
-  "state_unreachable": "RAWG cannot be reached from this server",
   "test_key": "Test the code",
   "test_ok": "The access code works.",
   "test_refused": "Rawg refuses this access code. Check it on rawg.io/apidocs.",
@@ -76,7 +72,7 @@
   "err_search": "This name is too long: 100 characters at most. Try for example Hollow Knight.",
   "err_forget": "This cover is no longer saved, or you are going too fast. Reload the page.",
   "err_confirm": "Tick the box to confirm.",
-  "saved_intro": "The covers the site keeps for your games. You can view, change or forget them.",
+  "saved_intro": "The covers the site keeps for your games, including the ones it found by itself. You can view, change or forget them.",
   "find_label": "Look for a game",
   "find_example": "Hollow Knight",
   "find_help": "The title, as your pages write it.",
@@ -101,5 +97,11 @@
   "forget_msg": "The cover of “{title}” will be forgotten; the site will look again on its own.",
   "forget_button": "Forget this cover",
   "forget_keep": "Keep the cover",
-  "forget_gone": "This cover is no longer saved. Go back to the list."
+  "forget_gone": "This cover is no longer saved. Go back to the list.",
+  "all_fine": "Everything works.",
+  "last_ok": "Last answer from the cover database: {date}.",
+  "outage": "The cover database is not answering right now. The covers already found stay displayed.",
+  "outage_since": "Last answer received: {date}. The button below tries again right away.",
+  "outage_never": "No answer received yet. The button below tries again right away.",
+  "outage_saved": "The covers in this table stay displayed on the site in the meantime."
 }

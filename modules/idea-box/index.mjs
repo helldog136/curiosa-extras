@@ -10,7 +10,7 @@
 // Chaque fichier voisin est importé AVEC la version du fichier principal : sinon une mise à jour à chaud garderait l'ancien (voir docs/HOT-UPDATE.md).
 const v = new URL(import.meta.url).search;
 const { forgetInstance, loadAll } = await import(`./lib.mjs${v}`);
-const { adminActions, adminBadge, adminPanel, dashboard } = await import(`./admin.mjs${v}`);
+const { adminActions, adminPanel, dashboard } = await import(`./admin.mjs${v}`);
 const { mcp } = await import(`./mcp.mjs${v}`);
 const { routes } = await import(`./routes.mjs${v}`);
 const { renderPage } = await import(`./view.mjs${v}`);
@@ -34,7 +34,6 @@ export default {
   routes,
   adminPanel,
   adminActions,
-  adminBadge,
   dashboard,
   mcp,
 

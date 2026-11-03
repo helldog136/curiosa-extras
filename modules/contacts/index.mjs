@@ -21,7 +21,7 @@ const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = `
 
 export default {
   ...service, // services
-  ...admin, // adminBadge, adminPanel, adminActions
+  ...admin, // dashboard, adminPanel, adminActions
   ...tools, // mcp
   adminDownloads: downloads, // « contacts » (tout le carnet), « template », « importReport », « person » : servis par le cœur, droit « exporter le carnet »
   migrations: {

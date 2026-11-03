@@ -164,6 +164,8 @@ test("« C'est ce jeu » : la correction passe avant le cache et avant RAWG ; «
   // Oublier : le choix automatique revient.
   assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.equal((await svc.cover(c, { title: "Hades" })).id, 21);
+  await settle();   // la jaquette trouvée est maintenant gardée (jaquette automatique) : « Oublier » la retire aussi
+  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.ok((await mod.adminActions.forget(c, { id: "Hades" })).error, "plus rien à oublier");
 });
 
@@ -425,10 +427,12 @@ test("« Oublier cette jaquette » : la correction part et le choix automatique 
   assert.equal((await mod.adminActions.forget(c, { id: "Playrooms" })).redirect, "?tab=saved&saved=forgot");
   assert.equal(tableOf(await mod.adminPanel(c, { query: {} }), "saved")[0].rows.length, 0);
   assert.equal((await svc.cover(c, { title: "Hades" })).id, 21, "le site cherche de nouveau automatiquement");
+  await settle();   // retrouvée, la jaquette est gardée de nouveau : on peut l'oublier une fois de plus, pas deux
+  assert.equal((await mod.adminActions.forget(c, { id: "Hades" })).redirect, "?tab=saved&saved=forgot");
   assert.match((await mod.adminActions.forget(c, { id: "Hades" })).error, /plus enregistrée/);
   assert.match((await mod.adminActions.forget(c, { id: "" })).error, /plus enregistrée/);
-  assert.deepEqual(logged(c), ["cover.game", "cover.forgotten", "cover.forgotten"]);
-  assert.deepEqual(c.calls.log.map((l) => l.target), ["Hades", "Hades", "Playrooms"]);
+  assert.deepEqual(logged(c), ["cover.game", "cover.forgotten", "cover.forgotten", "cover.forgotten"]);
+  assert.deepEqual(c.calls.log.map((l) => l.target), ["Hades", "Hades", "Playrooms", "Hades"]);
   assert.ok(c.calls.log.every((l) => Object.keys(l.data).length === 0 && !JSON.stringify(l).includes(KEY)), "ni donnée personnelle ni clé");
 });
 
