@@ -2001,6 +2001,18 @@
             "fr": "Onglet Récompenses du bot avec la liste des récompenses, leur coût, leur action et les dernières utilisations.",
             "en": "Bot Rewards tab with the list of rewards, their cost, their action and the latest uses."
           }
+        },
+        {
+          "file": "previews/reglages.webp",
+          "type": "admin",
+          "caption": {
+            "fr": "Les réglages du bot tiennent en trois cases et champs. Le reste est déjà réglé pour vous.",
+            "en": "The bot settings fit in three fields. Everything else is already set for you."
+          },
+          "alt": {
+            "fr": "Onglet Réglages du bot avec trois réglages : répondre seulement en direct, gestion des commandes depuis le chat, fuseau horaire.",
+            "en": "Bot Settings tab with three settings: answer only when live, manage commands from the chat, time zone."
+          }
         }
       ]
     },
