@@ -9,7 +9,7 @@ const ops = await import(new URL("./ops.mjs" + q, import.meta.url).href);
 
 const WHY = {
   title: "title: give the game title as asked by the module (1 to 120 characters).",
-  full: "There are already 1000 saved corrections: ask the owner to forget some in the Game covers module.",
+  full: "There are already 1000 saved corrections: ask the owner to forget some in the Game covers module (Saved covers tab).",
   candidate: "rawgId: that game is not among the games RAWG proposes for this title. Call rawg_covers_to_check with this title to list them (or pass \"search\" with the real name).",
   image: "imageUrl: only https://media.rawg.io/media/... pictures (png, jpg or webp) are allowed, with no parameter.",
   rate: "Too many requests: wait a minute and try again.",
@@ -32,12 +32,26 @@ export const tools = {
     return { items, total: items.length, title, status: found.status, candidates: found.candidates.map((c) => ({ rawgId: c.id, name: c.name, year: c.year, platforms: c.platforms, coverUrl: c.url })) };
   },
 
+  /** Lecture seule : ce que le module retient (même liste que l'onglet « Jaquettes enregistrées »). Aucun appel au service de jaquettes, aucune clé. */
+  async rawg_covers_list(ctx, args) {
+    const origin = args?.origin;
+    if (origin !== undefined && origin !== "corrected" && origin !== "none" && origin !== "auto") throw fail("origin: corrected, none or auto.");
+    const limit = args?.limit === undefined ? 50 : Number(args.limit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw fail("limit: a whole number from 1 to 100.");
+    const words = typeof args?.search === "string" ? titleKey(args.search.slice(0, 100)) : "";
+    const all = (await fx.savedEntries(ctx)).filter((e) => (!origin || e.origin === origin) && (!words || titleKey(e.title).includes(words)));
+    return {
+      total: all.length,
+      items: all.slice(0, limit).map((e) => ({ title: e.title, origin: e.origin, game: e.name || null, coverUrl: e.img ? fx.rawgImageUrl(e.img) : null, at: e.at })),
+    };
+  },
+
   async rawg_cover_set(ctx, args, actor) {
     const modes = [args?.rawgId !== undefined, args?.none === true, args?.imageUrl !== undefined, args?.forget === true].filter(Boolean).length;
     if (modes !== 1) throw fail("pass exactly one of rawgId, none, imageUrl or forget");
     const title = ops.checkTitle(args.title);
     if (!title) throw fail(WHY.title);
-    if (args.forget === true) return { forgotten: await ops.forget(ctx, who(actor), titleKey(title)), title };
+    if (args.forget === true) return { forgotten: await ops.forget(ctx, who(actor), titleKey(title), title), title };
     const out = args.rawgId !== undefined ? await ops.chooseGame(ctx, who(actor), title, args.rawgId, args.search)
       : args.none === true ? await ops.chooseNone(ctx, who(actor), title)
       : await ops.chooseImage(ctx, who(actor), title, args.imageUrl);

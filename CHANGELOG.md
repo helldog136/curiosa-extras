@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.38.0 — 2026-11-03
+
+*En bref : Jaquettes de jeux 1.1.0 ajoute un onglet « Jaquettes enregistrées » : toutes les jaquettes que le site retient pour vos jeux, au même endroit. Vous pouvez en voir une, la changer ou l'oublier, et un champ « Chercher un jeu » vous aide à en trouver une. Ce module demande Curiosa 0.6.0 ou plus ; les autres modules ne changent pas.*
+
+### Nouveautés
+
+- **Jaquettes de jeux 1.1.0 : l'onglet « Jaquettes enregistrées ».** Un seul tableau avec une ligne par jeu : celles que vous avez corrigées, celles que le site a trouvées tout seul et les jeux laissés sans jaquette, chacune avec sa pastille de couleur écrite en toutes lettres. Une recherche en direct, des filtres avec leur nombre et 50 lignes par page. Chaque ligne a « Voir » (la jaquette en grand), « Changer » (les jaquettes proposées pour ce jeu, ou « Aucune jaquette ») et, dans le menu « ⋯ », « Oublier cette jaquette » : une phrase vous dit ce qui sera oublié, et le site cherche de nouveau tout seul.
+- **« Chercher un jeu ».** Au-dessus du tableau : tapez un titre, par exemple « Hollow Knight », cliquez sur « Chercher les jaquettes » et choisissez « Utiliser cette jaquette ». Rien n'est demandé tant que vous n'avez pas cliqué, jamais en arrière-plan. Si la clé manque, le message vous dit où la saisir.
+- **L'ancien onglet se range.** « Jaquettes à vérifier » ne montre plus que les titres douteux ; la liste de vos corrections est passée dans le nouvel onglet.
+- **Journal du site.** Chaque choix, chaque oubli et chaque « tout oublier » apparaît dans l'onglet Historique (le titre du jeu et le geste, jamais la clé).
+- **Pour l'assistant.** Un nouvel outil en lecture seule, `rawg_covers_list`, liste ce que le module retient (même niveau de droit que `rawg_covers_to_check`). `rawg_cover_set` ne change pas et reste à accorder à la main.
+
+### Pour les développeurs
+
+- `modules/game-covers` 1.1.0 : `minCore` 0.6.0 (tableau enrichi), `tabs` (`use` renommé, `saved` ajouté), `logEvents` (`cover.game`, `cover.image`, `cover.none`, `cover.confirmed`, `cover.forgotten`, `cover.cleared`). Aucun hôte ni droit de plus. Les jaquettes ne sont toujours pas téléchargées : le module garde le chemin `/media/…` de `media.rawg.io`, dans la collection `fixes` (choix de la personne) ou `todo` (choix automatiques douteux). Les autres jaquettes automatiques ne sont gardées qu'en mémoire (24 h).
+- Un tableau d'administration ne sait pas encore montrer d'image dans une cellule : la vignette est donc sur l'écran « Voir » (et sur celui de « Changer »), pas dans la ligne.
+- Versions : dépôt 1.38.0 ; Jaquettes de jeux 1.1.0. Le Catalogue pointe l'étiquette `v1.38.0`.
+
 ## 1.37.0 — 2026-11-03
 
 *En bref : votre bandeau d'annonce peut maintenant commencer et finir à des dates choisies, et la page Pages propose des modèles prêts à modifier. L'assistant d'installation posera aussi la question « Vous êtes… ? ». Bannière d'annonce 1.1.0, pour Curiosa 0.6.0 ou plus ; Pages 1.1.0, pour tout cœur. Les modèles de pages et les profils de départ n'apparaissent qu'avec le cœur 0.6.3 (à publier ensuite) : sur le cœur 0.6.2 ou plus ancien, ils sont simplement ignorés, rien ne casse et rien ne change. C'est voulu.*
