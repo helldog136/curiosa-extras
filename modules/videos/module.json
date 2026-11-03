@@ -8,8 +8,8 @@
   },
   "version": "1.1.0",
   "description": {
-    "fr": "Une page de vidéos (masterclass, rétrospectives, tutoriels, présentations…) qui viennent de YouTube, sans rien héberger : grille avec miniatures, catégories, recherche, séries à regarder dans l'ordre, transcription, partage. Vous collez une adresse et le titre se remplit tout seul. Le lecteur ne se charge qu'après un clic de la personne qui visite.",
-    "en": "A page of videos (masterclasses, retrospectives, tutorials, presentations…) that come from YouTube, with nothing hosted here: grid with thumbnails, categories, search, series to watch in order, transcript, sharing. You paste an address and the title fills in by itself. The player only loads after a click from the visitor."
+    "fr": "Une page de vidéos YouTube sans rien héberger : grille, catégories, recherche, séries à regarder dans l'ordre et partage.",
+    "en": "A page of YouTube videos without hosting anything: grid, categories, search, series to watch in order and sharing."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",

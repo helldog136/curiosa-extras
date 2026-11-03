@@ -50,7 +50,7 @@ test("action « addPhoto » : adresses refusées avec une phrase lisible sous le
   assert.equal((await act(ctx, "addPhoto", good)).ok, "Photo ajoutée.");
   assert.match((await act(ctx, "addPhoto", { ...photoFields(a.id), full: good.full })).errors.photo, /déjà dans l'album/);
   assert.equal((await act(ctx, "addPhoto", photoFields(a.id))).ok, "Photo ajoutée.");
-  assert.match((await act(ctx, "addPhoto", photoFields(a.id))).errors.photo, /album est plein \(2 photos\).*autre service/);
+  assert.match((await act(ctx, "addPhoto", photoFields(a.id))).errors.photo, /album est plein \(2 photos\).*autre site/);
   assert.match((await act(ctx, "addPhoto", photoFields("inconnu"))).error, /Introuvable/);
   const site = ctxFor({ maxTotalPhotos: 10, maxPhotos: 300 });
   const b = await makeAlbum(site, { n: 10 });

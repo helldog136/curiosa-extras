@@ -6,11 +6,11 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.2.4",
+  "version": "2.2.5",
   "platform": "twitch",
   "description": {
-    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider. La liste vit dans Contacts (catégorie « Cible de raid »). Ajoutez une chaîne en tapant un nom, un pseudo ou un lien : nom et photo viennent de Twitch. Un clic copie la commande de raid ; au-delà de 500 chaînes, un bouton en trouve une au hasard. Facultatif : une « Sélection du moment » de 1 à 10 chaînes en direct tirées au hasard, pour OBS et pour une page publique.",
-    "en": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid. The list lives in Contacts (“Raid target” category). Add a channel by typing a name, a Twitch name or a link: name and picture come from Twitch. One click copies the raid command; beyond 500 channels, a button finds one at random. Optional: “Featured picks”, 1 to 10 live channels drawn at random, for OBS and for a public page."
+    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider.",
+    "en": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid."
   },
   "author": "Helldog136",
   "license": "MIT",

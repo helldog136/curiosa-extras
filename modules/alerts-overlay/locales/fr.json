@@ -10,7 +10,7 @@
   "kind_raid": "Raid",
   "kind_test": "Test",
   "kind_alert": "Alerte",
-  "noToken": "Aucun jeton d'envoi défini : seule l'alerte de test fonctionne. Pour en définir un : onglet « Réglages », option « Jeton d'envoi » (mode avancé).",
+  "noToken": "Aucun code d'envoi défini : seule l'alerte de test fonctionne. Pour en définir un : onglet « Réglages », option « Code d'envoi » (mode avancé).",
   "kind_superchat": "Super Chat",
   "kind_supersticker": "Super Sticker",
   "kind_member": "Nouveau membre",

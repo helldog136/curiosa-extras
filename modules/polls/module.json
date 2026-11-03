@@ -5,11 +5,11 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.4.1",
+  "version": "1.4.2",
   "minCore": "0.5.0",
   "description": {
-    "en": "Ask your audience a question: 2 to 8 choices, one vote per person with no account, an end date, live results as clear bars, a page to share and a live view for your stream (OBS). New: rounds (\"every 10 minutes the chat decides\", with the winner shown on screen) and a quick \"A or B?\" poll from your phone.",
-    "fr": "Posez une question à votre communauté : 2 à 8 choix, un vote par personne sans compte, une date de fin, des résultats en barres claires, une page à partager et un affichage en direct pour votre stream (OBS). Nouveau : des manches (« toutes les 10 minutes, le chat décide », avec le choix gagnant à l'écran) et un sondage rapide « A ou B ? » depuis votre téléphone."
+    "en": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS.",
+    "fr": "Posez une question à votre public. Un vote par personne sans compte, des résultats en barres, un affichage pour OBS."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -155,12 +155,12 @@
       "translatable": true,
       "optional": true,
       "label": {
-        "fr": "Texte d'introduction de la page (Markdown)",
-        "en": "Intro text of the page (Markdown)"
+        "fr": "Texte d'introduction de la page",
+        "en": "Intro text of the page"
       },
       "help": {
-        "fr": "Affiché au-dessus de la liste des sondages. Laissez vide pour ne rien afficher.",
-        "en": "Shown above the list of polls. Leave empty to show nothing."
+        "fr": "Par exemple : « Votez pour notre prochaine soirée ». Gras et liens possibles.",
+        "en": "For example: “Vote for our next evening”. Bold and links allowed."
       }
     },
     {

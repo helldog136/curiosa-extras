@@ -37,7 +37,7 @@
   "dockAddress": "Adresse du dock (OBS)",
   "dockOpen": "Ouvrir le dock dans un onglet",
   "dockAgain": "cliquez encore pour confirmer",
-  "remoteSecret": "Ces adresses sont secrètes (le téléphone et le dock partagent la même clé) : toute personne qui en connaît une peut utiliser les boutons. Ne les partagez pas ; si une personne les a vues, créez-en de nouvelles ci-dessous. Flashez le code avec votre téléphone pour l'ouvrir sans rien taper.",
+  "remoteSecret": "Ces adresses sont secrètes, et le téléphone et le panneau partagent le même code. Toute personne qui en connaît une peut utiliser les boutons. Ne les partagez pas ; si une personne les a vues, créez-en de nouvelles ci-dessous. Flashez le code avec votre téléphone pour l'ouvrir sans rien taper.",
   "regenTitle": "Changer l'adresse secrète",
   "regenBtn": "Créer une nouvelle adresse",
   "regenConfirm": "Oui, les adresses d'avant (téléphone et dock) cesseront de marcher",

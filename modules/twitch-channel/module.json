@@ -6,7 +6,7 @@
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.2.0",
+  "version": "2.2.1",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -201,7 +201,7 @@
       "type": "text",
       "label": {
         "en": "Twitch channel (login)",
-        "fr": "Chaîne Twitch (identifiant)"
+        "fr": "Chaîne Twitch"
       },
       "help": {
         "en": "For example mychannel. Shared with the other Twitch modules: type it only here.",
