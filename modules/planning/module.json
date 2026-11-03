@@ -5,15 +5,15 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.6.0",
+  "version": "2.7.0",
   "minCore": "0.5.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
   },
   "privacy": {
-    "en": "This module collects nothing itself. When game covers are shown, your browser loads those pictures from RAWG (a video-game database), so RAWG sees your address, under its own privacy policy. Without a cover, nothing is loaded from elsewhere. Partner names come from Contacts (name and Twitch link only); a card marked “Do not show” is never shown.",
-    "fr": "Ce module ne collecte rien lui-même. Quand des jaquettes de jeux sont affichées, votre navigateur charge ces images depuis RAWG (une base de données de jeux vidéo) : RAWG voit alors votre adresse, selon sa propre politique de confidentialité. Sans jaquette, rien n'est chargé ailleurs. Le nom des partenaires vient de Contacts (nom et lien Twitch seulement) ; une fiche « Ne pas montrer » n'est jamais montrée."
+    "fr": "Ce module ne collecte rien sur votre public. Les jaquettes de jeux sont chargées depuis RAWG par le navigateur, qui lui montre l'adresse de la personne qui visite. Les partenaires viennent de Contacts (nom, lien Twitch) ; une fiche « Ne pas montrer » n'est jamais montrée. La photo d'un partenaire n'est jamais chargée depuis Twitch par le public : le site garde une copie de la photo publique du compte Twitch d'une personne présente dans vos contacts ET affichée. Elle disparaît avec la fiche.",
+    "en": "This module collects nothing about your audience. When game covers are shown, the browser loads them from RAWG, which then sees the visitor's address. Partner names come from Contacts (name and Twitch link); a card marked “Do not show” is never shown. A partner's photo is never loaded from Twitch by the public: the site keeps a copy of the public photo of the Twitch account of a person who is in your Contacts AND shown. It is deleted when the card is erased or hidden."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -220,12 +220,21 @@
     "admin",
     "topics",
     "mcp",
-    "rawg"
+    "rawg",
+    "storage"
   ],
   "requires": [
     {
       "service": "game.cover",
       "optional": true
+    },
+    {
+      "service": "game.played",
+      "optional": true,
+      "label": {
+        "en": "Game suggestions (optional): the games you play can be added to its “Already played” list",
+        "fr": "Suggestions de jeux (facultatif) : les jeux que vous jouez peuvent être ajoutés à sa liste « Déjà joué »"
+      }
     },
     {
       "service": "contact.book",
@@ -266,6 +275,19 @@
         "fr": "Facultatif. Inutile si la Chaîne Twitch est installée avec votre chaîne : son lien est repris. Sans lien, le bouton n'est pas affiché."
       },
       "optional": true
+    },
+    {
+      "key": "addPlayedGames",
+      "type": "boolean",
+      "default": false,
+      "label": {
+        "en": "Add played games to the “Already played” list",
+        "fr": "Ajouter les jeux joués à la liste « Déjà joué »"
+      },
+      "help": {
+        "en": "Started streams only, no duplicates.",
+        "fr": "Streams commencés seulement, sans doublon."
+      }
     },
     {
       "key": "days",
@@ -420,6 +442,22 @@
       "label": {
         "en": "Show game covers",
         "fr": "Afficher les jaquettes des jeux"
+      }
+    },
+    {
+      "key": "showPartnerPhotos",
+      "type": "boolean",
+      "default": true,
+      "advanced": true,
+      "group": "appearance",
+      "tab": "look",
+      "label": {
+        "en": "Show partners' photos",
+        "fr": "Afficher la photo des partenaires"
+      },
+      "help": {
+        "en": "A copy kept on your site, never loaded from Twitch.",
+        "fr": "Copie gardée sur votre site, jamais chargée depuis Twitch."
       }
     },
     {

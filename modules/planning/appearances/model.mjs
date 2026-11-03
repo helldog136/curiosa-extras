@@ -5,6 +5,7 @@ const V = new URL(import.meta.url).search;
 const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`../dates.mjs${V}`);
 const { relativeLabel } = await import(`../relative.mjs${V}`);
 const { gamesOf } = await import(`../slots.mjs${V}`);
+const { safePhoto } = await import(`../avatar.mjs${V}`);
 
 const safeTwitch = (u) => (/^https:\/\/www\.twitch\.tv\/[a-z0-9_]{4,25}$/.test(String(u ?? "")) ? String(u) : null);
 const pad = (n) => String(n).padStart(2, "0");
@@ -41,12 +42,13 @@ export function buildModel(input) {
   const locale = validLocale(input.locale);
   const fm = formatters(locale, tz, !!opts.h12);
   const nowMs = now.getTime();
+  const avatars = !!opts.partnerPhotos && (surface === "page" || surface === "section");   // un rond (photo du site ou initiales) devant le nom ; jamais dans un overlay ni dans l'aperçu
   const slots = (Array.isArray(rawSlots) ? rawSlots : []).filter((s) => s && s.start instanceof Date && !Number.isNaN(s.start.getTime())).map((s) => {
     const end = s.end instanceof Date && !Number.isNaN(s.end.getTime()) ? s.end : new Date(s.start.getTime() + 3_600_000);
     const w = wallDateNow(tz, s.start);
     const games = s.allDay ? [] : gamesOf(s);
     // « Avec … » : seulement les personnes que partners.mjs a jugées montrables (nom de fiche, chaîne Twitch). Dans un overlay, rien ne se clique : le nom seul.
-    const people = s.allDay ? [] : (Array.isArray(s.people) ? s.people : []).filter((p) => p && typeof p.name === "string" && p.name).slice(0, 5).map((p) => ({ name: p.name, href: surface === "overlay" || surface === "preview" ? null : safeTwitch(p.url) }));
+    const people = s.allDay ? [] : (Array.isArray(s.people) ? s.people : []).filter((p) => p && typeof p.name === "string" && p.name).slice(0, 5).map((p) => ({ name: p.name, href: surface === "overlay" || surface === "preview" ? null : safeTwitch(p.url), ...(avatars ? { av: true, photo: safePhoto(p.photo) } : {}) }));
     const cancelled = !!s.cancelled;
     const live = !cancelled && !s.allDay && s.start.getTime() <= nowMs && end.getTime() >= nowMs;
     const rel = cancelled || !opts.relative ? null : (() => { const r = relativeLabel({ ...s, end }, now, tz, t); return live ? null : r; })();

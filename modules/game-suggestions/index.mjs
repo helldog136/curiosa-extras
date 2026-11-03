@@ -346,7 +346,35 @@ function card(ctx, g) {
     (g.note ? `<p style="margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(g.note)}</p>` : "") + vote + `</article>`;
 }
 
+/* ───────────── Service « game.played » : un autre module (le Planning) y ajoute un jeu qu'on vient de jouer ───────────── */
+
+// UN seul appel, `add({ title })` : le jeu est ajouté en « déjà joué » s'il n'est pas déjà dans la liste (même écrit avec d'autres majuscules, sans accent ou sans ponctuation,
+// quel que soit son statut, rejeté compris) ; sinon rien ne change, et la réponse dit son statut. Idempotent : le rappeler cent fois n'ajoute rien. Une seule ligne à la fois
+// (jamais de lot), 100 caractères au plus, plafond de 2000 jeux comme partout. Aucune jaquette cherchée ici (aucune requête à RAWG) : le rattrapage existant s'en charge.
+// Un jeu déjà présent n'est JAMAIS modifié (un jeu « planifié » ou « accepté » par vous reste tel quel). La ligne porte `origin: "admin"` et `via` (qui l'a ajoutée).
+let playedQueue = Promise.resolve();   // une seule écriture à la fois : deux appels du même titre en même temps n'en font pas deux lignes
+const VIA = /^[a-z][a-z0-9.-]{0,29}$/;
+export const playedService = {
+  async add(ctx, args) {
+    const title = typeof args?.title === "string" ? clean(args.title, 1000) : "";
+    if (!title || title.length > TITLE_MAX || !titleKey(title)) return { ok: false, error: "invalid" };
+    const via = typeof args?.via === "string" && VIA.test(args.via) ? args.via : "";
+    const run = playedQueue.then(async () => {
+      const key = titleKey(title);
+      const all = await rows(ctx, MAX_STORED);
+      const known = all.find((g) => titleKey(g.title) === key);
+      if (known) return { ok: true, added: false, status: known.status };
+      if (all.length >= MAX_STORED) return { ok: false, error: "full" };
+      await ctx.api.store.add(COLLECTION, { title, status: "already_played", coverUrl: null, origin: "admin", ...(via ? { via } : {}), submitterName: null, note: null, replayVotes: 0, lastVotedAt: null });
+      return { ok: true, added: true, status: "already_played" };
+    });
+    playedQueue = run.catch(() => {});
+    try { return await run; } catch { return { ok: false, error: "failed" }; }
+  },
+};
+
 export default {
+  services: { "game.played": playedService },
   // L'élément « Top des jeux proposés » des pages d'overlay : une adresse publique sans secret (elle ne rend que ce que la page publique montre).
   overlayElements: Object.fromEntries(overlay.ELEMENTS.map((id) => [id, (ctx, request) => overlay.elementAddress(ctx, id, request)])),
 

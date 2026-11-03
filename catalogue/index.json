@@ -722,13 +722,16 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
       "ref": "v1.40.0",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
       "requires": {
         "core": "0.6.0"
       },
+      "offers": [
+        "game.played"
+      ],
       "needs": [
         {
           "service": "game.cover",
@@ -1272,7 +1275,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
       "ref": "v1.40.0",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📅",
@@ -1282,6 +1285,10 @@
       "needs": [
         {
           "service": "game.cover",
+          "optional": true
+        },
+        {
+          "service": "game.played",
           "optional": true
         },
         {
