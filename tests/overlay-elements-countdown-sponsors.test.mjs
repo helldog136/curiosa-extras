@@ -32,12 +32,12 @@ const initialOf = (out) => JSON.parse(out.script.match(/bootOverlay\(window,docu
 const get = (url) => new Request(`https://example.test${url}`);
 
 // ── Déclaration ─────────────────────────────────────────────────────────────────────────────────────────────────────
-for (const [name, manifest, def, id] of [["Compte à rebours", cdManifest, cd, "countdown"], ["Overlay sponsors", tkManifest, tk, "sponsors"]]) {
-  test(`${name} : manifeste valide, minCore 0.5.0, un élément « ${id} » qui garde ses proportions`, () => {
+for (const [name, manifest, def, id, minCore, version] of [["Compte à rebours", cdManifest, cd, "countdown", "0.6.0", "1.2.0"], ["Overlay sponsors", tkManifest, tk, "sponsors", "0.5.0", "1.1.0"]]) {
+  test(`${name} : manifeste valide, minCore ${minCore}, un élément « ${id} » qui garde ses proportions`, () => {
     const r = parseManifest(manifest);
     assert.ok(r.ok, r.ok ? "" : r.error);
-    assert.equal(r.manifest.minCore, "0.5.0");
-    assert.equal(r.manifest.version, "1.1.0");
+    assert.equal(r.manifest.minCore, minCore);
+    assert.equal(r.manifest.version, version);
     assert.deepEqual(r.manifest.overlayElements.map((e) => e.id), [id]);
     const e = r.manifest.overlayElements[0];
     assert.equal(e.fit, "scale");

@@ -42,7 +42,7 @@ const lines = (w) => w.ctx.dumpLog();
 test("le manifeste déclare ses événements et l'adresse du site, sans rien exiger de plus du cœur", () => {
   const r = parseManifest(manifest);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.minCore, "0.2.6", "le journal du cœur est facultatif : un cœur plus ancien l'ignore");
+  assert.equal(manifest.minCore, "0.6.0", "le journal du cœur est écrit avec ctx.api.log?.write : un cœur plus ancien l'ignorerait de toute façon");
   assert.equal(manifest.returnAddresses, undefined, "aucun retour de connexion d'un service tiers : Home Assistant vient chercher, c'est lui qui connaît l'adresse");
   assert.equal(manifest.siteAddressUses.length, 1);
   const use = manifest.siteAddressUses[0];

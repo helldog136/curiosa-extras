@@ -113,7 +113,7 @@
   "jr_central": "Incidents and state changes are also in the History.",
   "jr_clear": "Clear the log",
   "jr_test": "Test",
-  "words_intro": "**Refused words:** {count} words or phrases are watched right now (accents, capitals and digits slipped into words do not fool the list). Complete or correct it below.",
+  "words_intro": "**Refused words:** {count} words or phrases are watched right now. Accents, capitals and digits slipped into a word do not fool the list. To complete or correct it, switch to advanced mode.",
   "words_show": "See the provided list ({count} entries)",
   "keys_seen": "**Actions already received:** {keys}",
   "keys_none": "**Actions already received:** none yet.",

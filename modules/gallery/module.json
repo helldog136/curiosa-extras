@@ -5,8 +5,8 @@
     "fr": "Galeries photos",
     "en": "Photo galleries"
   },
-  "version": "1.1.2",
-  "minCore": "0.2.13",
+  "version": "1.2.0",
+  "minCore": "0.6.0",
   "description": {
     "fr": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Les photos sont réduites et hébergées sur votre site (dans des limites que vous réglez), ou l'album mène vers un autre service. Visionneuse plein écran, lien par photo, demande de retrait.",
     "en": "Photo albums for your site: event recaps, portfolio, behind the scenes. Photos are shrunk and kept on your site (within limits you set), or the album leads to another service. Full-screen viewer, a link for each photo, takedown requests."
@@ -166,6 +166,7 @@
     },
     {
       "key": "consent",
+      "rare": true,
       "type": "textarea",
       "translatable": true,
       "optional": true,
@@ -206,6 +207,7 @@
     },
     {
       "key": "forwardToContacts",
+      "advanced": true,
       "type": "boolean",
       "default": true,
       "label": {
@@ -219,6 +221,7 @@
     },
     {
       "key": "sort",
+      "rare": true,
       "type": "select",
       "default": "",
       "optional": true,
@@ -256,6 +259,7 @@
     },
     {
       "key": "dates",
+      "rare": true,
       "type": "select",
       "default": "",
       "optional": true,
@@ -289,6 +293,7 @@
     },
     {
       "key": "markup",
+      "advanced": true,
       "type": "boolean",
       "default": false,
       "label": {

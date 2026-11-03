@@ -113,7 +113,7 @@
   "jr_central": "Les incidents et changements d'état sont aussi dans l'Historique.",
   "jr_clear": "Vider le journal",
   "jr_test": "Test",
-  "words_intro": "**Mots refusés :** {count} mots ou expressions sont surveillés en ce moment (les accents, majuscules et chiffres glissés dans les mots ne trompent pas la liste). Complétez ou corrigez ci-dessous.",
+  "words_intro": "**Mots refusés :** {count} mots ou expressions sont surveillés en ce moment. Les accents, les majuscules et les chiffres glissés dans un mot ne trompent pas la liste. Pour la compléter ou la corriger, passez en mode avancé.",
   "words_show": "Voir la liste fournie ({count} entrées)",
   "keys_seen": "**Actions déjà reçues :** {keys}",
   "keys_none": "**Actions déjà reçues :** aucune pour le moment.",
