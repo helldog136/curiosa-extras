@@ -448,7 +448,7 @@
   "filter_outside": "Hors période",
   "filter_hidden": "Masquées",
   "tm_filter_on": "Actifs",
-  "tm_filter_off": "Désactivés",
+  "tm_filter_off": "En pause",
   "tm_filter_outside": "Hors période",
   "search_label": "Rechercher",
   "search_commands": "Un nom, un mot de la réponse…",

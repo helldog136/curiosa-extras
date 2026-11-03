@@ -274,7 +274,7 @@ test("réglage sur la page d'une commande : durée en secondes (minutes entière
   // interrupteur éteint (absent du formulaire) : pause, les réglages restent
   const { repeatOn, ...off } = base;
   assert.equal((await A.actions.save(ctx, { ...off, repeatEvery: "3600", repeatLines: "0" })).ok, ctx.t("saved"));
-  assert.deepEqual((await cmd()).repeat, { minutes: 60, lines: 0, when: "live", enabled: false });
+  assert.deepEqual((await cmd()).repeat, { minutes: 60, lines: 0, when: "always", enabled: false });
   // réservée au timer : refusée sans aucune répétition
   const info = await A.context(ctx, { declare: false });
   await C.saveCommand(ctx, { kind: "custom" }, { name: "ordinaire", text: "Texte" }, info.env);

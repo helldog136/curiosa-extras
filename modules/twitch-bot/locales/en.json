@@ -448,7 +448,7 @@
   "filter_outside": "Outside period",
   "filter_hidden": "Hidden",
   "tm_filter_on": "On",
-  "tm_filter_off": "Off",
+  "tm_filter_off": "Paused",
   "tm_filter_outside": "Outside period",
   "search_label": "Search",
   "search_commands": "A name, a word of the answer…",
