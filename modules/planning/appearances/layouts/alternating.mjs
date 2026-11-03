@@ -7,8 +7,11 @@ const { esc, timeTag, statusChips, gamesHtml, artHtml, whenText, emptyHtml, foot
 
 function streamHtml(s, model) {
   const chips = statusChips(s, model.t);
+  const meta = gamesHtml(s, model.t, "pa-games", 40);
+  // Ligne du haut : l'heure à un bout, l'état (« Demain », « En cours »…) à l'autre. Dessous : le titre sur toute la largeur, puis le jeu et les partenaires sur une ligne.
   return `<div class="pa-alt-s${s.cancelled ? " pa-cancelled" : ""}${s.live ? " is-live" : ""}">${artHtml(s, model, { fallback: true })}` +
-    `<div class="pa-alt-txt"><p class="pa-alt-time">${timeTag(s, whenText(s, model.opts.showEnd))}</p><p class="pa-title">${esc(s.title)}</p>${gamesHtml(s, model.t)}${chips ? `<p class="pa-alt-chips">${chips}</p>` : ""}</div></div>`;
+    `<div class="pa-alt-txt"><div class="pa-alt-head"><p class="pa-alt-time">${timeTag(s, whenText(s, model.opts.showEnd))}</p>${chips ? `<p class="pa-alt-chips">${chips}</p>` : ""}</div>` +
+    `<p class="pa-title">${esc(s.title)}</p>${meta ? `<div class="pa-alt-meta">${meta}</div>` : ""}</div></div>`;
 }
 
 function labelHtml(day, model) {
@@ -28,13 +31,13 @@ export function render(model, options = {}) {
   const rows = model.days.map((day, i) => {
     const side = (i + flip) % 2 === 0 ? "left" : "right";
     const box = day.slots.length ? day.slots.map((s) => streamHtml(s, model)).join("") : `<p class="pa-alt-none">${esc(model.t("none"))}</p>`;
-    return `<li class="pa-alt-day is-${side}${day.isToday ? " is-today" : ""}">${labelHtml(day, model)}<div class="pa-alt-box">${box}</div></li>`;
+    return `<li class="pa-alt-day is-${side}${day.isToday ? " is-today" : ""}${day.slots.length ? "" : " is-empty"}">${labelHtml(day, model)}<div class="pa-alt-box">${box}</div></li>`;
   }).join("");
   return { html: `<ol class="pa-alt">${rows}</ol>${footHtml(model)}`, css: CSS };
 }
 
 const CSS = minify(`
-.pa-alt{display:flex;flex-direction:column;gap:var(--pa-gap)}
+.pa-alt{display:flex;flex-direction:column;gap:var(--pa-gap);--pa-cw:3.25rem}
 .pa-alt-day{display:flex;flex-direction:column;gap:.35rem}
 .pa-alt-label{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .6rem}
 .is-right>.pa-alt-label{justify-content:flex-end;text-align:right}
@@ -43,23 +46,34 @@ const CSS = minify(`
 .pa-alt-d{font-size:.875rem;color:var(--pa-muted)}
 .pa-alt-box{display:flex;flex-direction:column;justify-content:center;gap:var(--pa-gap);min-height:5rem;padding:var(--pa-pad);background:var(--pa-surface);border:1px solid var(--pa-hair);border-radius:var(--pa-radius)}
 .is-today>.pa-alt-box{border-color:var(--pa-hl);box-shadow:0 0 0 1px var(--pa-hl)}
-.pa-alt-s{display:flex;align-items:center;gap:.75rem;min-width:0}
+.pa-alt-s{display:flex;align-items:center;gap:.75rem 1rem;min-width:0}
 .pa-alt-s+.pa-alt-s{padding-top:var(--pa-gap);border-top:1px solid var(--pa-hair)}
-.pa-alt-txt{display:flex;flex-direction:column;gap:.1rem;min-width:0}
-.pa-alt-time{font-weight:700;font-size:.9375rem}
+.pa-alt-txt{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:.2rem}
+.pa-alt-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem .75rem}
+.pa-alt-time{font-weight:700;font-size:1rem}
 .pa-alt-time time{border-bottom:2px solid var(--pa-hl);padding-bottom:.05rem}
-.pa-alt-s .pa-title{font-size:1.0625rem;font-weight:550}
-.pa-alt-chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.2rem}
-.pa-alt-none{color:var(--pa-muted)}
-.pa-alt .pa-covers{gap:.25rem}
-.pa-alt .pa-covers img+img{margin-left:0}
+.pa-alt-s .pa-title{font-size:1.1875rem;font-weight:600;line-height:1.25}
+.pa-alt-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.3rem;margin-left:auto}
+.pa-alt-meta{display:flex;flex-wrap:wrap;align-items:center;gap:0 1rem}
+.pa-alt-meta .pa-games{font-size:.9375rem}
+.pa-alt-none{color:var(--pa-muted);font-size:.9375rem;text-align:center}
+.pa-alt-day.is-empty .pa-alt-box{background:var(--pa-sunk)}
+.pa-alt .pa-ph{font-size:1.5rem}
+.pa-alt .pa-covers{gap:0}
+.pa-alt .pa-covers img{height:auto}
+.pa-alt .pa-covers img+img{margin-left:calc(var(--pa-cw)*-.6)}
 @container (min-width:32rem){
+ .pa-alt{--pa-cw:4.25rem}
+ .pa-alt .pa-covers{gap:.25rem}
+ .pa-alt .pa-covers img+img{margin-left:0}
  .pa-alt-day{flex-direction:row;align-items:stretch;gap:.75rem}
  .pa-alt-day.is-right{flex-direction:row-reverse}
  .pa-alt-label{flex:0 0 7rem;flex-direction:column;justify-content:center;gap:.4rem;text-align:center}
  .pa-alt-label time{align-items:center}
  .is-right>.pa-alt-label{justify-content:center;text-align:center}
  .pa-alt-box{flex:1 1 0;min-width:0;min-height:7rem}
+ .pa-alt-s .pa-title{font-size:1.375rem}
+ .pa-alt-time{font-size:1.0625rem}
 }
 @container (min-width:44rem){.pa-alt-label{flex-basis:8rem}.pa-alt-wd{font-size:1.25rem}}
 `);
