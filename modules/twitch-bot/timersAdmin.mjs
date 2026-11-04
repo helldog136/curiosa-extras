@@ -9,6 +9,7 @@ const { used } = await import(`./variables.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const K = await import(`./adminkit.mjs${v}`);
 const CU = await import(`./commandsUi.mjs${v}`);
+const F = await import(`./formsUi.mjs${v}`);
 
 const { esc } = K;
 const tab = (blocks) => blocks.map((b) => ({ ...b, tab: "timers" }));
@@ -84,6 +85,7 @@ function chooser(ctx, info) {
     const first = `${info.s.prefix}${c.name}`, origin = c.kind === "group" ? "builtin" : c.kind;
     return `<tr ${K.rowAttrs({ origin }, `${first} ${c.aliases.join(" ")} ${c.text} ${t(`origin_${origin}`)}`)}><td class="c-name"><span class="ck-ell" title="${esc(first)}"><span class="ck-name">${esc(first)}</span></span></td><td class="c-ans"><span class="ck-ell" title="${esc(c.text)}">${esc(c.text)}</span></td><td class="c-org">${K.originPill(origin, t(`origin_${origin}`))}</td><td class="c-act"><div class="ck-acts"><a class="ck-btn small" href="${esc(editHref(c.key))}">${esc(t("tm_pick_btn"))}</a></div></td></tr>`;
   }).join("");
+  const newTimer = K.formConfig("timer-new", { layout: [], stateHelp: F.timerOnlyHelp(ctx, info.s.prefix, { on: null }) });   // no layout: only the line under the "Started by" choice
   return [
     ADD,
     { type: "heading", text: t("tm_add_title") },
@@ -94,10 +96,12 @@ function chooser(ctx, info) {
       rows, text: { search: t("search_label"), placeholder: t("search_commands"), empty: t("search_none"), clear: t("search_clear"), count: t("search_count") },
     }) },
     { type: "html", html: `<div class="ck"><p class="ck-intro"><b>${esc(t("tm_route_new"))}</b></p></div>` },
+    newTimer.block,
     { type: "adminForm", action: "timerNew", submitLabel: t("tm_new_btn"), cancelHref: "?tab=timers", fields: [
+      newTimer.field,
       { name: "name", label: t("tm_n_name"), required: true, example: t("tm_n_name_example"), help: t("tm_n_name_help", { prefix: info.s.prefix }) },
       { name: "text", label: t("tm_n_text"), kind: "textarea", required: true, example: t("tm_n_text_example") },
-      { name: "timerOnly", label: t("f_timer_only"), kind: "switch", value: "", folded: true, help: t("f_timer_only_help") },
+      F.timerOnlyField(ctx, false, { folded: true }),
       { name: "repeatEvery", label: t("rep_every"), kind: "duration", min: 60, max: REPEAT_LIMITS.minutes * 60, value: 900, folded: true, example: t("rep_every_example") },
     ] },
   ];

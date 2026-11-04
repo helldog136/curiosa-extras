@@ -435,5 +435,92 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.10.0");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.10.1");
+});
+
+/* ───────────── "Started by": the timer and the chat | the timer only ───────────── */
+
+const HELP_KEYS = ["timer", "both"].flatMap((k) => ["named_every", "every", "named", "plain"].map((c) => `th_${k}_${c}`));
+// The configuration the page receives (what `timerOnlyHelp` builds), for the pure function of the page script.
+const pickSpec = (lang) => { const L = lang === "en" ? en : fr; return { prefix: "!", first: L.th_first, everyMin: L.rep_every_m, everyHour: L.rep_every_h, texts: Object.fromEntries(HELP_KEYS.map((k) => [k.slice(3), L[k]])) }; };
+
+test("Started by: a two-choice segmented control on the same stored field, with no fixed help line, in both languages", async () => {
+  for (const lang of ["fr", "en"]) {
+    const L = lang === "en" ? en : fr;
+    const { ctx } = world(lang === "en" ? { locale: "en" } : {});
+    const env = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
+    await C.saveCommand(ctx, { kind: "custom" }, { name: "movember", text: "Hello", repeat: { minutes: 15, lines: 5, when: "live", enabled: true }, timerOnly: true }, env);
+    await C.saveCommand(ctx, { kind: "custom" }, { name: "regular", text: "Hello", repeat: { minutes: 15, lines: 5, when: "live", enabled: true } }, env);
+    const list = (await C.loadConfig(ctx)).data.custom;
+    for (const [name, value] of [["movember", "on"], ["regular", "off"]]) {
+      const b = await A.panel(ctx, { query: { edit: `custom:${list.find((c) => c.name === name).id}` } });
+      const f = formOfBlocks(b, "save").fields.find((x) => x.name === "timerOnly");
+      assert.deepEqual([f.kind, f.value, f.label, f.help], ["segmented", value, L.f_timer_only, undefined], `${lang} ${name}: no switch, no fixed help`);
+      assert.deepEqual(f.options, [{ value: "off", label: L.f_timer_only_both }, { value: "on", label: L.f_timer_only_timer }]);
+      assert.ok(f.label.length <= 60 && !/:\s*$/.test(f.label));
+      const spec = configOf(b).stateHelp;
+      assert.deepEqual([spec.field, spec.on, spec.nameField, spec.everyField, spec.prefix, spec.first], ["timerOnly", "repeatOn", "name", "repeatEvery", "!", L.th_first]);
+      assert.deepEqual(Object.keys(spec.texts).sort(), HELP_KEYS.map((k) => k.slice(3)).sort());
+      assert.equal(spec.texts.timer_named_every, L.th_timer_named_every);
+      assert.deepEqual(configOf(b).layout.find((x) => x.more).more.items.find((i) => i.f === "timerOnly").label, L.pill_timer_only, "the summary of More options names it");
+    }
+    const t = await A.panel(ctx, { query: { tab: "timers", timerAdd: "1" } });
+    const nf = formOfBlocks(t, "timerNew").fields.find((x) => x.name === "timerOnly");
+    assert.deepEqual([nf.kind, nf.value, nf.folded, nf.help], ["segmented", "off", true, undefined]);
+    assert.equal(configOf(t).stateHelp.on, null, "a new timer always repeats: no switch to follow");
+  }
+  assert.ok(!("f_timer_only_help" in en) && !("f_timer_only_help" in fr), "the fixed line is gone");
+});
+
+test("Started by: the stored value does not change (same field, same meaning, 'on' = the timer only)", async () => {
+  const { ctx } = world();
+  const base = { name: "rappel", text: "Hello", role: "everyone", aliases: "", repeatOn: "on", repeatEvery: "900", repeatLines: "5", repeatWhen: "live" };
+  assert.equal((await A.actions.create(ctx, { ...base, timerOnly: "on" })).ok, ctx.t("created"));
+  const one = () => C.loadConfig(ctx).then((c) => c.data.custom.find((x) => x.name === "rappel"));
+  assert.equal((await one()).timerOnly, true);
+  assert.equal((await A.actions.save(ctx, { ...base, key: `custom:${(await one()).id}`, timerOnly: "off" })).ok, ctx.t("saved"));
+  assert.equal((await one()).timerOnly, undefined, "the timer and the chat: the field is simply not stored");
+  assert.equal((await A.actions.save(ctx, { ...base, key: `custom:${(await one()).id}`, timerOnly: "on" })).ok, ctx.t("saved"));
+  assert.equal((await one()).timerOnly, true);
+  await C.saveCommand(ctx, { kind: "custom" }, { name: "plain", text: "Hello" }, { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" });
+  const plain_ = (await C.loadConfig(ctx)).data.custom.find((x) => x.name === "plain");
+  const bad = await A.actions.save(ctx, { key: `custom:${plain_.id}`, name: "plain", text: "Hello", role: "everyone", repeatEvery: "900", timerOnly: "on" });
+  assert.ok(bad.errors?.timerOnly, "the timer only without a repeat is still refused, under the choice");
+});
+
+test("Started by: the line under the choice follows the choice, the name and the interval; never a sentence that contradicts the state", () => {
+  for (const lang of ["fr", "en"]) {
+    const L = lang === "en" ? en : fr, spec = pickSpec(lang);
+    const only = client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "movember", seconds: 900 });
+    const both = client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "movember", seconds: 900 });
+    assert.notEqual(only, both);
+    const nothing = lang === "en" ? /does nothing/ : /ne fait rien/, anyone = lang === "en" ? /Anyone can also type it/ : /Le chat peut aussi la taper/;
+    assert.match(only, nothing); assert.doesNotMatch(only, anyone);
+    assert.match(both, anyone); assert.doesNotMatch(both, nothing);
+    assert.ok(only.includes(lang === "en" ? "every 15 min" : "toutes les 15 min") && both.includes(lang === "en" ? "every 15 min" : "toutes les 15 min"));
+    assert.ok(only.length <= 60 && both.length <= 60, `${lang}: one line`);
+    // no repeat: it explains nothing misleading, whatever the choice
+    for (const timerOnly of [true, false]) assert.equal(client.stateHelpText(spec, { timerOnly, repeating: false, name: "movember", seconds: 900 }), L.th_first);
+    // the name comes from the form as typed; empty name or no interval: still true and short
+    assert.ok(client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "movember", seconds: 900 }).includes("!movember") || lang === "fr");
+    assert.equal(client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "", seconds: 900 }), L.th_timer_every.replace("{every}", L.rep_every_m.replace("{min}", "15")));
+    assert.equal(client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "ab", seconds: null }), L.th_both_named.replace("{name}", "!ab"));
+    assert.equal(client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "", seconds: 30 }), L.th_both_plain, "an interval that is not whole minutes is not announced");
+    assert.match(client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "x", seconds: 7200 }), lang === "en" ? /every 2 h/ : /toutes les 2 h/);
+    // a very long name never pushes the line past one line: it is left out
+    const long = client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "unetresgrandenomdecommandequiremplitlaligne", seconds: 900 });
+    assert.ok(long.length <= 60 && !long.includes("unetres"), `${lang}: ${long}`);
+    // the fallbacks without a name always fit one line (the named ones are only used when they fit)
+    for (const k of HELP_KEYS.filter((x) => !x.includes("named"))) assert.ok(L[k].replace("{every}", L.rep_every_h.replace("{h}", "24")).length <= 60, `${lang} ${k}`);
+  }
+});
+
+test("Started by: FR and EN have the same keys and the same {variables}; neutral, formal, short", () => {
+  const vars = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
+  for (const k of ["f_timer_only", "f_timer_only_both", "f_timer_only_timer", "th_first", ...HELP_KEYS]) {
+    assert.ok(en[k] && fr[k], k);
+    assert.equal(vars(en[k]), vars(fr[k]), k);
+    for (const L of [en, fr]) assert.ok(!/[!]|Veuillez|\bkey\b|clé/.test(L[k]) && L[k].split(/\s+/).length <= 20 && !L[k].endsWith(":"), `${k}: ${L[k]}`);
+  }
+  assert.equal(vars(en.th_timer_named_every), "every,name");
 });

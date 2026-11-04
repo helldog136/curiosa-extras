@@ -111,7 +111,7 @@ export async function commandForm(ctx, info, { mode, view, key, unsaved = false,
     { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: repeatIntent, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), { f: "period", label: t("per_title") }, ...F.repeatLayout(ctx, kind)] } },
   ];
   const id = mode === "new" ? "cmd-new" : "cmd-edit";
-  const conf = K.formConfig(id, { layout });
+  const conf = K.formConfig(id, { layout, ...(kind === "custom" ? { stateHelp: F.timerOnlyHelp(ctx, s.prefix) } : {}) });
   const form = { type: "adminForm", action: mode === "new" ? "create" : "save", submitLabel: t(mode === "new" ? "new_btn" : repeatIntent && !view.repeat ? "rep_add_btn" : "save_btn"), cancelHref: "?", fields: [
     conf.field,
     ...(mode === "edit" ? [{ name: "key", kind: "hidden", value: key }] : []),
