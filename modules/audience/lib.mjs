@@ -168,14 +168,14 @@ export function sanitizePanel(raw) {
     id: String(b.id), label: clean(b.label, 40), tone: TONES.has(b.tone) ? b.tone : "plain", confirm: b.confirm ? clean(b.confirm, 120) : "", disabled: b.disabled === true,
   }));
   const forms = (Array.isArray(raw.forms) ? raw.forms : []).filter((f) => isObj(f) && ID_RE.test(String(f.id ?? "")) && clean(f.title, 60)).slice(0, LIMITS.forms).map((f) => ({
-    id: String(f.id), title: clean(f.title, 60), submit: clean(f.submit, 30) || "OK",
+    id: String(f.id), title: clean(f.title, 60), submit: clean(f.submit, 30) || "OK", confirm: f.confirm ? clean(f.confirm, 120) : "",
     fields: (Array.isArray(f.fields) ? f.fields : []).filter((x) => isObj(x) && /^[a-z][a-z0-9_]{0,19}$/.test(String(x.name ?? ""))).slice(0, LIMITS.fields).map((x) => ({
       name: String(x.name), label: clean(x.label, 40), type: FIELD_TYPES.has(x.type) ? x.type : "text", required: x.required === true,
-      max: num(x.max, 60, 1, 200), placeholder: clean(x.placeholder, 40), value: clean(x.value, 60),
+      max: num(x.max, 60, 1, 200), placeholder: clean(x.placeholder, 40), example: clean(x.example, 60), more: x.more === true, value: clean(x.value, 60),
       options: x.type === "select" ? (Array.isArray(x.options) ? x.options : []).slice(0, 12).filter((o) => isObj(o)).map((o) => ({ value: clean(o.value, 30), label: clean(o.label, 40) })) : [],
     })),
   }));
-  return { title, state, buttons, forms };
+  return { title, tab: clean(raw.tab, 30), state, buttons, forms };
 }
 
 /** Les valeurs d'un formulaire de télécommande : texte seulement, bornées (le module qui reçoit valide à son tour). */
