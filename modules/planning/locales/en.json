@@ -94,7 +94,7 @@
   "adminPhotoWhy_save": "the site could not keep the copy",
   "adminPhotoNone_missing": "No photo in Contacts",
   "adminPhotoNone_address": "This photo cannot be copied here",
-  "adminWhenSoon": "less than a minute",
+  "adminWhenSoon": "under a minute",
   "adminWhenMin": "{n} min",
   "adminWhenHour": "{n} h",
   "adminPhotoRetry": "Retry photos",
