@@ -244,7 +244,7 @@ test("pages publiques : « en cours » avec compte à rebours et décision, hist
   const html = (await pollsDef.page(c, { segments: ["now"] })).blocks[0].html;
   const r1 = await current(c);
   assert.ok(html.includes(`data-poll="${r1.slug}"`) && html.includes("data-vp-cd") && /data-left="\d+"/.test(html) && html.includes('data-reload="1"'));
-  assert.ok(html.includes("Manche 1") && html.includes("Il reste") && !html.includes("data-vp-live="), "sans Participation : pas de direct, mais le compte à rebours recharge la page");
+  assert.ok(html.includes("Tour 1") && html.includes("Il reste") && !html.includes("data-vp-live="), "sans Participation : pas de direct, mais le compte à rebours recharge la page");
   assert.ok(html.includes("data-vp-decision") && html.includes(" hidden"), "bandeau de décision prêt, caché");
   await vote(c, r1.slug, ["c3"], 1);
   await pollsMod.nextRound(c);
@@ -298,7 +298,7 @@ test("administration, onglet « En direct » : état, lien à partager, boutons 
   assert.ok((await pollsDef.adminActions.roundStart(c, {})).ok);
   b = await screen();
   assert.ok(b.some((x) => x.action === "roundNext") && b.some((x) => x.action === "roundStop" && x.fields[0].required) && !b.some((x) => x.action === "roundStart"));
-  assert.ok(flat(b).includes("Manche 1 en cours"));
+  assert.ok(flat(b).includes("Tour 1 en cours"));
   assert.equal((await pollsDef.adminActions.roundStart(c, {})).error, pollsFr.remoteErrAlready);
   assert.deepEqual(Object.keys((await pollsDef.adminActions.roundStop(c, {})).errors), ["confirm"]);
   assert.ok((await pollsDef.adminActions.roundNext(c, {})).ok);

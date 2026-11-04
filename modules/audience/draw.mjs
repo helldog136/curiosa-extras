@@ -456,29 +456,82 @@ export async function remotePanel(ctx, now = Date.now()) {
   const n = d ? (d.purged ? d.total || 0 : d.count || 0) : 0;
   const names = latestBatch(d).map((w) => w.pseudo).join(", ");
   const state = st === "none" ? { text: t("drawRemoteNone"), tone: "idle" }
-    : st === "open" ? { text: t("drawRemoteOpen", { title: d.title, n }), tone: "live", until: d.untilClosed ? null : iso(P.deadlineOf(d)) }
+    : st === "open" ? { text: d.keyword ? t("drawRemoteOpen", { title: d.title, keyword: d.keyword, n }) : t("drawRemoteOpenSite", { title: d.title, n }), tone: "live", until: d.untilClosed ? null : iso(P.deadlineOf(d)) }
       : st === "drawn" ? { text: t("drawRemoteDrawn", { title: d.title, names }), tone: "done" }
         : { text: t("drawRemoteClosed", { title: d.title, n }), tone: "idle" };
   const many = d && P.winnersCount(d.winners) > 1 ? P.winnersCount(d.winners) : 1;
   const replaces = st !== "open" && !!d && !d.purged && (d.count || 0) > 0 && ((d.picked ?? []).length > 0 || st === "drawn");
-  return {
-    title: t("drawRemoteTitle"), state,
-    buttons: [
-      { id: "draw-open", label: t("drawBtnOpen"), tone: "primary", disabled: st === "open", confirm: replaces ? t("drawOpenConfirm") : "" },
-      { id: "draw-close", label: t("drawBtnClose"), tone: "danger", confirm: t("drawCloseConfirm"), disabled: st !== "open" },
-      { id: "draw-pick", label: many > 1 ? t("drawBtnPickMany", { n: many }) : t("drawBtnPick"), tone: "primary", confirm: t("drawPickConfirm"), disabled: st === "none" || !d || d.purged || eligibleLeft(d) < 1 },
+  // Une action = un bouton + des réglages modifiables, préremplis par les valeurs du dernier tirage (voir `actionForm`, réutilisable par les autres panneaux).
+  const buttons = [
+    ...(st === "open" ? [{ id: "draw-close", label: t("drawBtnClose"), tone: "danger", confirm: t("drawCloseConfirm") }] : []),
+    // « Tirer » n'apparaît que s'il y a quelqu'un à tirer : sinon le seul bouton principal est « Ouvrir le tirage » (R3)
+    ...(st === "open" || (d && !d.purged && eligibleLeft(d) > 0) ? [{ id: "draw-pick", label: many > 1 ? t("drawBtnPickMany", { n: many }) : t("drawBtnPick"), tone: "primary", confirm: t("drawPickConfirm"), disabled: !d || d.purged || eligibleLeft(d) < 1 }] : []),
+  ];
+  const forms = st === "open" ? [] : [actionForm({
+    id: "draw-open", title: t("drawRemoteFormTitle"), submit: t("drawBtnOpen"), confirm: replaces ? t("drawOpenConfirm") : "",
+    fields: [
+      { name: "keyword", label: t("drawRemoteFKeyword"), max: DRAW.keyword + 1, example: t("drawRemoteFKeywordEx"), value: d?.keyword || t("drawRemoteDefaultKeyword") },
+      { name: "title", label: t("drawRemoteFTitle"), max: DRAW.title, example: t("drawRemoteFTitleEx"), value: d?.title || t("drawDefaultTitle") },
+      { name: "level", label: t("drawFLevel"), type: "select", more: true, value: d?.level || "all", options: P.LEVELS.map((v) => ({ value: v, label: t(`drawLevelShort_${v}`) })) },
+      { name: "site", label: t("drawFSite"), type: "select", more: true, value: d && d.site === false ? "0" : "1", options: [{ value: "1", label: t("drawYes") }, { value: "0", label: t("drawNo") }] },
+      { name: "winners", label: t("drawFWinners"), type: "number", more: true, max: 2, example: t("drawRemoteFWinnersEx"), value: String(P.winnersCount(d?.winners)) },
+      { name: "minutes", label: t("drawFMinutes"), type: "number", more: true, max: 3, example: t("drawRemoteFMinutesEx"), value: d?.minutes ? String(d.minutes) : "" },
     ],
-    forms: [],
-  };
+  })];
+  return { title: t("drawRemoteTitle"), tab: t("drawRemoteTitle"), state, buttons, forms };
+}
+
+/**
+ * « Action = un bouton principal + des réglages modifiables avec des valeurs par défaut » : la forme commune des formulaires de la télécommande.
+ * Les champs sans `more` sont toujours visibles (deux au plus pour le chemin court) ; ceux avec `more: true` sont repliés sous « Plus d'options ».
+ * `value` est la valeur par défaut = celle de la dernière fois. `confirm` : second clic demandé avant d'appliquer. À réutiliser par les autres panneaux.
+ */
+export const actionForm = ({ id, title, submit, confirm = "", fields }) => ({ id, title, submit, confirm, fields: fields.map((f) => ({ type: "text", ...f })) });
+
+/**
+ * Lit les valeurs du formulaire « Ouvrir le tirage » (mot, titre, et les réglages repliés ; ce qui manque garde la valeur du dernier tirage).
+ * Le mot suit la MÊME règle que l'administration (`normKeyword`). Renvoie { value } ou { field, message } (erreur à montrer sous le champ).
+ */
+export function readOpenValues(ctx, raw, cur) {
+  const v = L.isObj(raw) ? raw : {};
+  const kw = P.normKeyword(v.keyword);
+  if (!kw.ok || !kw.value) return { field: "keyword", message: ctx.t("drawRemoteErrWord") };
+  const pick = (k, dflt) => (v[k] === undefined ? dflt : v[k]);
+  const f = P.validateForm({
+    title: L.clean(v.title, P.DRAW.title + 40) || cur?.title || ctx.t("drawDefaultTitle"), keyword: kw.value,
+    level: pick("level", cur?.level ?? "all"), site: pick("site", cur ? (cur.site === false ? "0" : "1") : "1"), minutes: pick("minutes", cur?.minutes ?? ""), winners: pick("winners", cur?.winners ?? 1),
+  });
+  const field = ["title", "level", "site", "minutes", "winners"].find((k) => f.errors[k]);
+  if (field) return { field, message: ctx.t(`drawErr_${f.errors[field]}`) };
+  return { value: f.value };
+}
+
+/** « Ouvrir le tirage » avec le mot choisi sur la télécommande. Un tirage fermé par erreur, sans personne tirée, dont rien ne change, est simplement rouvert (ses inscriptions restent). */
+export async function openFromRemote(ctx, values, { who = "remote", now = Date.now() } = {}) {
+  const cur = await current(ctx, now);
+  if (cur && P.stateOf(cur, now) === "open") return err("already_open");
+  const r = readOpenValues(ctx, values, cur);
+  if (!r.value) return r;
+  const x = r.value;
+  if (cur && !cur.purged && !(cur.picked ?? []).length && cur.keyword === x.keyword && cur.title === x.title && cur.level === x.level && (cur.site !== false) === x.site && (cur.minutes ?? null) === x.minutes && P.winnersCount(cur.winners) === x.winners) {
+    const re = await reopen(ctx, { who, now });
+    if (re.ok || re.error !== "cannot_reopen") return { ...re, reopened: re.ok };
+  }
+  return openNew(ctx, x, { who, now });
 }
 
 /** Un message lisible pour une erreur du tirage (télécommande, administration). */
 export const errorText = (ctx, code) => ctx.t(({ already_open: "drawErrAlreadyOpen", not_open: "drawErrNotOpen", none: "drawErrNone", empty: "drawErrEmpty", gone: "drawErrGone", cannot_reopen: "drawErrReopen" })[code] ?? "drawErrFailed");
 
 /** Un geste de la télécommande ou de l'assistant. Renvoie { ok, message } ou { ok: false, error, message }. */
-export async function pressDraw(ctx, action, { who = "remote", now = Date.now() } = {}) {
+export async function pressDraw(ctx, action, { who = "remote", now = Date.now(), values = null } = {}) {
   let r;
-  if (action === "draw-open") { r = await openQuick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") }; }
+  if (action === "draw-open" && values) {   // le formulaire de la télécommande
+    r = await openFromRemote(ctx, values, { who, now });
+    if (r.field) return { ok: false, error: "invalid", field: r.field, message: r.message };
+    if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") };
+  }
+  else if (action === "draw-open") { r = await openQuick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") }; }
   else if (action === "draw-close") { r = await close(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkClosed") }; }
   else if (action === "draw-pick") { r = await pick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.winners.length > 1 ? "drawOkPickedMany" : "drawOkPicked", { names: r.winners.join(", "), n: r.winners.length }) }; }
   else return { ok: false, error: "invalid" };

@@ -116,19 +116,21 @@ test("dock : mêmes boutons, même formulaire « A ou B ? » et mêmes valeurs q
     await page.advance(10);
     const root = page.root;
     assert.equal(page.live.textContent, fr.remoteConnected);
-    const heads = root.all("h2").map((h) => h.textContent);
-    assert.deepEqual(heads, ["Sondages", fr.drawRemoteTitle, fr.remoteRooms], "Participation ajoute son panneau « Tirage au sort » après ceux des modules branchés");
+    const tabsEls = page.doc.getElementById("ar-tabs").all("button");
+    const heads = tabsEls.map((h) => h.textContent.replace(/ \(.*\)$/, ""));
+    assert.deepEqual(heads, ["Sondages", fr.drawRemoteTitle, fr.remoteTabRooms], "un onglet par panneau : Participation ajoute « Tirage au sort » après ceux des modules branchés, puis les salles");
+    assert.equal(tabsEls[0].getAttribute("aria-selected"), "true", "un vote en cours : l'onglet Sondages est celui qui s'ouvre");
     const btns = root.all("button").map((b) => b.textContent);
     labels[extra] = { heads, btns, fields: root.all("label").map((l) => l.textContent), tones: root.all("button").map((b) => b.className.replace(/ar-(btn|mini) ?/, "")) };
-    assert.deepEqual(btns.slice(0, 3), ["Lancer", "Suivant", "Arrêter"]);
+    assert.deepEqual(btns.slice(0, 3), ["Lancer", "Suivant", "Arrêter"]);   // (les onglets sont dans la barre du haut, pas dans le contenu)
     assert.ok(btns.includes("Lancer le sondage") && btns.includes(fr.remoteMute) && btns.includes(fr.remoteClear));
-    assert.deepEqual(root.all("label").map((l) => l.textContent), ["Premier choix", "Deuxième choix", "Durée"]);
+    assert.deepEqual(root.all("label").map((l) => l.textContent).slice(0, 3), ["Premier choix", "Deuxième choix", "Durée"]);
     const [start, next, stop] = root.all("button");
     assert.deepEqual([start.disabled, next.disabled, stop.disabled], [true, false, false], "« Lancer » est grisé pendant une manche");
     assert.equal(root.all("select")[0].value, "30");
     assert.equal(root.all("[data-until]").length, 1, "le compte à rebours est là");
     assert.ok(/^\d\d:\d\d$/.test(root.all("[data-until]")[0].textContent));
-    assert.ok(root.all("summary")[0].textContent.includes("polls") || root.all("summary")[0].textContent.includes("1"), "les salles sont là");
+    assert.ok(root.all("summary").some((x) => x.textContent.includes("polls")), "les salles sont là");
 
     // « Suivant » : un geste
     next.click(); await page.advance(10);
@@ -258,7 +260,7 @@ test("dock : textes en français et en anglais à parité exacte, mêmes variabl
   assert.deepEqual(dockKeys, ["dockTitle", "dockSteps", "dockAddress", "dockOpen", "dockAgain"]);
   for (const k of dockKeys) { assert.ok(fr[k] && en[k], k); assert.ok(!/<[a-z!/]/i.test(fr[k] + en[k]), `${k} : du texte, pas du HTML`); }
   assert.equal(fr.dockSteps.split("\n").filter((l) => /^\d\. /.test(l)).length, 3); assert.equal(en.dockSteps.split("\n").filter((l) => /^\d\. /.test(l)).length, 3);
-  assert.equal(manifest.version, "1.3.1"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.apiVersion, 2);
+  assert.equal(manifest.version, "1.4.0"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.apiVersion, 2);
   assert.deepEqual(manifest.rights.map((x) => x.id).sort(), ["draw.manage", "moderate", "remote.use"], "le dock reste derrière le même secret ; seul le tirage a son droit");
   assert.equal(manifest.dataVersion, undefined, "aucune donnée nouvelle, aucune migration");
 });
@@ -268,7 +270,7 @@ test("dock : la feuille de style du dock respecte les tailles demandées (bouton
   const dockCss = /const DOCK_CSS = `([\s\S]*?)`;/.exec(css)[1];
   const heights = [...dockCss.matchAll(/min-height:(\d+)px/g)].map((m) => Number(m[1]));
   assert.ok(heights.length >= 5 && heights.every((h) => h >= 40), `toutes les cibles de clic font 40 px ou plus : ${heights}`);
-  assert.match(dockCss, /\.ar-dock\{font-size:14px/); assert.match(dockCss, /\.ar-dock \.ar-row\{grid-template-columns:1fr/);
+  assert.match(dockCss, /\.ar-dock\{font-size:14px/); assert.doesNotMatch(dockCss, /\.ar-dock \.ar-row\{grid-template-columns/, "une colonne vient de la largeur, pas du dock : la même page s'adapte");
   assert.doesNotMatch(dockCss, /min-width:\s*[3-9]\d\dpx/, "rien ne force une largeur de plus de 300 px");
   assert.doesNotThrow(() => new vm.Script(C.REMOTE_JS));
 });
