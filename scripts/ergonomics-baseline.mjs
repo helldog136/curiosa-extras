@@ -20,6 +20,9 @@ const root = path.resolve(value("--root") ?? new URL("..", import.meta.url).path
 const BASELINE = path.join(root, "tests", "ergonomics-baseline.json");
 const COMMENT = "Écarts d'ergonomie CONNUS par module (docs/ERGONOMIE-ADMIN.md, règles [auto]). Ce fichier ne peut que rétrécir : corrigez un écart, puis node scripts/ergonomics-baseline.mjs --write. Ne rajoutez jamais une ligne à la main.";
 
+/** Only English and French are checked by the word lists and tone rules; community languages (locales/<code>.json) are reviewed by their maintainers. */
+export const officialLocales = (locales) => Object.fromEntries(Object.entries(locales ?? {}).filter(([lang]) => lang === "en" || lang === "fr"));
+
 /** Les modules du dépôt : [{ name, dir, manifest, locales }] (dossiers de modules/ et examples/ qui ont un module.json). */
 export function readModules(base = root) {
   return ["modules", "examples"].flatMap((group) => {
@@ -40,14 +43,14 @@ const render = (modules) => `${JSON.stringify({ $comment: COMMENT, version: 1, m
 
 /** { name: écarts[] } pour tous les modules du dépôt. */
 export function currentGaps(base = root) {
-  return Object.fromEntries(readModules(base).map((m) => [m.name, analyzeModule({ id: m.manifest.id ?? m.name, manifest: m.manifest, locales: m.locales })]));
+  return Object.fromEntries(readModules(base).map((m) => [m.name, analyzeModule({ id: m.manifest.id ?? m.name, manifest: m.manifest, locales: officialLocales(m.locales) })]));
 }
 
 /** Le tableau « module → nombre d'écarts par règle », du plus fautif au moins fautif. */
 export function reportRows(base = root) {
   const mods = readModules(base);
   return mods.map((m) => {
-    const gaps = analyzeModule({ id: m.manifest.id ?? m.name, manifest: m.manifest, locales: m.locales });
+    const gaps = analyzeModule({ id: m.manifest.id ?? m.name, manifest: m.manifest, locales: officialLocales(m.locales) });
     return { name: m.name, group: m.group, total: gaps.length, byRule: countByRule(gaps), bubble: bubbleCount(m) };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 }

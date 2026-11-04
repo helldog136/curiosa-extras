@@ -626,10 +626,11 @@ test("renommage : « Connecteur Home Assistant » / « Home Assistant connector 
   assert.deepEqual(Object.keys(haDef.routes).sort(), ["ack", "pair", "pull"]);
   const root = new URL("../modules/", import.meta.url).pathname;
   const index = JSON.parse(fs.readFileSync(new URL("../catalogue/index.json", import.meta.url), "utf8")).modules.find((m) => m.id === "home-assistant");
-  assert.equal(index.name, "Connecteur Home Assistant");
+  assert.equal(index.name, "Home Assistant connector", "the plain text of the index is English");
+  assert.equal(index.i18n.fr.name, "Connecteur Home Assistant");
   assert.equal(index.subdir, "modules/home-assistant");
   assert.equal(index.version, haManifest.version);
-  assert.match(index.description, /Relie vos points de chaîne à votre maison/);
+  assert.match(index.i18n.fr.description, /Relie vos points de chaîne à votre maison/);
   // aucun texte (manifeste, textes, README, outils) ne parle encore du « module Home Assistant »
   const OLD = /module Home Assistant|module « Home Assistant »|Home Assistant module|“Home Assistant” module|module « Home Assistant/i;
   const files = [];

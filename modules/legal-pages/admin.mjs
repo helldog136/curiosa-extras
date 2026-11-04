@@ -7,7 +7,7 @@
 
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { appliedSteps, applyStep, evaluate, fieldsFor, stepById, withDefaults } = await import(`./answers.mjs${v}`);
-const { buildDocs, longDate } = await import(`./docs.mjs${v}`);
+const { buildDocs, docLang, longDate } = await import(`./docs.mjs${v}`);
 const { fingerprint, publish, readAnswers, readPages, readState, unpublish, writeOne } = await import(`./data.mjs${v}`);
 const { gatherFacts } = await import(`./facts.mjs${v}`);
 const { isCollector, isQuiet, KINDS } = await import(`./known.mjs${v}`);
@@ -153,7 +153,7 @@ async function overview(ctx, s, query) {
 
   // Aperçu et publication
   blocks.push({ type: "heading", text: ctx.t("adm.publish.title") });
-  blocks.push({ type: "markdown", text: `[${ctx.t("adm.preview.open")}](?view=preview&lang=${ctx.locale === "en" ? "en" : "fr"})` });
+  blocks.push({ type: "markdown", text: `[${ctx.t("adm.preview.open")}](?view=preview&lang=${docLang(undefined, ctx)})` });
   const upToDate = state.published && !dirty;
   if (ready && base(ctx) !== null && !upToDate) {
     blocks.push({
@@ -222,7 +222,7 @@ const absolutize = (md, ctx) => md.replace(/\]\(@(privacy|notice|cookies|home)\)
 
 function previewScreen(ctx, s, query) {
   const { a, facts, missing } = s;
-  const lang = query.lang === "en" ? "en" : "fr";
+  const lang = docLang(query.lang, ctx);
   const built = buildDocs({ answers: a, facts, lang, mode: "preview" });
   const blocks = [disclaimer(ctx, true), { type: "heading", text: ctx.t("adm.preview.title") }];
   blocks.push({ type: "markdown", text: `${lang === "fr" ? `**${ctx.t("adm.lang.fr")}**` : `[${ctx.t("adm.lang.fr")}](?view=preview&lang=fr)`} · ${lang === "en" ? `**${ctx.t("adm.lang.en")}**` : `[${ctx.t("adm.lang.en")}](?view=preview&lang=en)`} · [${ctx.t("adm.toOverview")}](?)` });

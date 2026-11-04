@@ -66,6 +66,10 @@ Sources fournies aujourd'hui : *Chaîne YouTube* (directs et premières **public
 ## Les jaquettes de jeux : le service `game.cover`
 Le module *Jaquettes de jeux* (`game-covers`) trouve la jaquette d'un jeu (clé RAWG saisie une seule fois, corrections « Ce n'est pas le bon jeu ? »). Il **offre** le service `game.cover` (version 1) : `status`, `cover({ title })`, `candidates({ title, search? })`, `fix` et `adopt`. Les modules qui montrent des jaquettes (*Suggestions de jeux*, *Planning*, *Story d'annonce*) le déclarent en **besoin facultatif** (`"requires": [{ "service": "game.cover", "optional": true }]`) : sans lui, ils s'affichent sans jaquette (ou utilisent l'ancienne interface du cœur tant qu'elle existe). Le cœur installe ce module tout seul sur les sites qui utilisaient RAWG.
 
+## Languages
+
+English and French are always supported by every extension (`tests/module-i18n.test.mjs`; known gaps are listed in `tests/i18n-baseline.json`, which can only shrink; `node scripts/i18n-baseline.mjs --report` lists them with the migration plan). Any other language is added with **files only**: see [CONTRIBUTING.md](CONTRIBUTING.md) and [TRANSLATING.md](https://github.com/helldog136/Curiosa/blob/dev/docs/TRANSLATING.md) in the core. `catalogue/index.json` publishes the name and description of every extension in every language (`i18n`), the plain text being English.
+
 ## Tests
 ```
 git clone https://github.com/helldog136/Curiosa ../Curiosa && (cd ../Curiosa && npm ci)

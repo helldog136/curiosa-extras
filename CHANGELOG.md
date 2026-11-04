@@ -6,7 +6,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## Prochaine version (non publiée)
 
-*En bref : la télécommande et le dock OBS passent par onglets, le mot du tirage se choisit depuis la télécommande, et « manche » devient « vote en boucle ». Rien à régler.*
+*En bref : la télécommande et le dock OBS passent par onglets, le mot du tirage se choisit depuis la télécommande, « manche » devient « vote en boucle », et le catalogue publie chaque description dans les deux langues. Rien à régler.*
 
 ### Nouveautés
 
@@ -17,9 +17,14 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 ### Améliorations
 
 - **Sondages 1.4.3 : « manche » disparaît des textes.** Le mode s'appelle « vote en boucle » (le chat vote, le choix gagnant s'affiche, puis un nouveau vote démarre) et une unité « Tour 3 ». Seuls les textes changent : vos réglages, vos données et vos liens sont ceux d'avant.
+- **Le catalogue donne chaque texte dans la langue de la personne.** Avant, il ne gardait qu'une seule description par extension, en français : une personne qui installait son site en anglais pouvait lire du français dans l'assistant d'installation. Désormais le nom et la description sont publiés en anglais et en français, et une langue ajoutée par la communauté s'y ajoute d'elle-même.
+- **Pages légales 1.0.2 : la langue des textes ne retombe plus sur le français par hasard.** L'aperçu et l'outil pour l'IA choisissent la langue de l'administration, puis celle du site, puis l'anglais, seulement parmi les deux langues relues (anglais et français). Un modèle n'est jamais produit dans une autre langue.
 
 ### Pour les développeurs
 
+- **Languages.** `catalogue/index.json` entries carry `i18n: { "<lang>": { "name", "description" } }`; the plain `name` and `description` are English (an older core shows them). `scripts/build-index.mjs` builds them with `entryTexts` (`scripts/rules.mjs`), also from the community languages (`locales/<code>.json`, keys `manifest.name`, `manifest.description`).
+- **Baseline.** `tests/i18n-baseline.json` and `node scripts/i18n-baseline.mjs --write | --report | --check`: manifest and locale-file gaps (0 today, blocking), MCP tool descriptions without a French translation (148, advisory) and code that picks French for every language but English (12). Every counter can only go down; `--report` prints the phase-2 batches.
+- `scripts/i18n-audit.mjs` is a verbatim copy of `src/core/i18n/audit.mjs` of the core (a test compares them); `scripts/i18n-add-language.mjs <code>` calls the core's script for this repository; `.github/PULL_REQUEST_TEMPLATE/new-language.md` and `CONTRIBUTING.md` describe the contribution.
 - Le panneau décrit par un module peut ajouter `tab` (libellé court), et ses formulaires `confirm`, `more` et `example` par champ (forme réutilisable : `actionForm`). Aucune route ajoutée (les routes `remote-state` et `remote-press` servent aussi les onglets). Tests : `tests/audience-tabs.test.mjs`, `tests/audience-draw.test.mjs`, `tests/audience-dock.test.mjs`.
 
 ## 1.42.1 — 2026-11-03
