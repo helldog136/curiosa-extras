@@ -188,3 +188,42 @@ test("jaquette versionnée (game-covers 1.3.2) : `?v=<hex>` est gardé sur le ch
   }
   assert.equal(images.ownImage("https://evil.example/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f", SITE), "");
 });
+
+/* ───────────── 2.6.1 : jetons de version réels des jaquettes, et `partners` dans le sujet lu ───────────── */
+
+test("2.6.1 jaquette : tous les jetons `?v=` que « Jaquettes de jeux » produit (empreinte hexadécimale ET date en base 36 comme tmw1bbib6) sont acceptés ; le reste est refusé", async () => {
+  const gc = await import("../modules/game-covers/copies.mjs");
+  const ctxGc = { instance: { key: "game-covers" }, api: { siteUrl: SITE } };
+  const metas = [{ id: "0123456789abcdef", sum: "0a1b2c3d4e5f" }, { id: "0123456789abcdef", at: Date.parse("2026-11-04T14:00:00Z") }, { id: "0123456789abcdef" }, { id: "0123456789abcdef", sum: "XYZ", at: 1 }, { id: "0123456789abcdef", at: Date.now() * 40 }];
+  for (const meta of metas) {
+    const url = gc.urlOf(ctxGc, meta), want = `/m/game-covers/cover/0123456789abcdef?v=${gc.versionOf(meta)}`;
+    assert.equal(images.ownImage(url, SITE), want, url);
+    assert.equal(images.ownImage(want), want, "chemin relatif");
+    assert.equal(images.drawable(url, SITE), want);
+  }
+  assert.equal(images.ownImage(`${SITE}/m/game-covers/cover/0123456789abcdef?v=tmw1bbib6`, SITE), "/m/game-covers/cover/0123456789abcdef?v=tmw1bbib6");
+  const bad = ["?v=", "?v=T123", "?v=tMW1", "?v=t", "?v=tmw1bbib6zzzzzz", "?v=ABCDEF012345", "?v=0a1b2c3d4e5", "?v=tmw1bbib6&x=1", "?x=tmw1bbib6", "?v=tm-1", "?v=tmw1bbib6#a", "?v=../x", "?v=%74mw1"];
+  for (const q of bad) assert.equal(images.ownImage(`${SITE}/m/game-covers/cover/0123456789abcdef${q}`, SITE), "", q);
+  for (const q of bad.filter((x) => !x.includes("#"))) assert.equal(images.ownImage(`/m/game-covers/cover/0123456789abcdef${q}`), "", q);
+  const r = await src.coverOf(mk(covers({ status: "found", url: `${LOCAL}?v=tmw1bbib6`, name: GAME })), GAME);
+  assert.deepEqual([r.cover, r.coverState], ["/m/game-covers/cover/0123456789abcdef?v=tmw1bbib6", ""]);
+});
+
+test("2.6.1 co-streamers du planning : le manifeste déclare `partners` dans le sujet `planning.slot`, sinon le cœur le retire avant Story (cause réelle de la 2.6.0) ; avec le vrai filtre du cœur, l'invitée est dans l'événement et ajoutée par défaut", async () => {
+  const { conform } = await import("@/core/services/topics");
+  const schema = manifest.consumes.find((c) => c.topic === "planning.slot").schema;
+  assert.ok(schema.some((f) => f.key === "partners" && f.type === "string[]"), "partners déclaré");
+  const raw = { id: "s1@2026-11-05", title: "Soirée avec Lune Douce", start: "2026-11-05T18:00:00Z", end: "2026-11-05T21:00:00Z", games: [GAME], partners: ["lune_douce"], timezone: "Europe/Paris", status: "confirmed" };
+  assert.deepEqual(conform(raw, schema.filter((f) => f.key !== "partners")).partners, undefined, "sans la déclaration, le cœur retire `partners`");
+  const { cb } = seed();
+  const ctx = mk(cb.services, { topics: { "planning.slot": () => [conform(raw, schema)] } });
+  const ev = await src.loadEvents(ctx, { now: NOW, zone: "Europe/Paris" });
+  const pub = E.publicEvent(ev.events[0]);
+  assert.deepEqual(pub.partners, ["lune_douce"]);
+  assert.equal(P.cleanConfig({}).schedulePeople, true, "ajoutés par défaut");
+  assert.equal(P.cleanConfig({ style: "neon" }, P.DEFAULT_CONFIG).schedulePeople, true, "réglage enregistré avant la 2.6 sans la clé");
+  const route = await def.routes.partners(new Request("https://site.example.test/m/story/partners?logins=lune_douce", { headers: {} }), ctx).catch((e) => e);
+  assert.ok(route instanceof Response || route instanceof Error);
+  const people = await book.schedulePeople(ctx, pub.partners);
+  assert.deepEqual(people.items.map((x) => [x.login, x.name]), [["lune_douce", "Lune Douce"]]);
+});
