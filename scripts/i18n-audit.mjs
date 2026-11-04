@@ -216,7 +216,10 @@ export function auditDictionaries(dictionaries, opts = {}) {
   return out;
 }
 
-/** The status of a language for a person: "official" (English, French), else "community"; "complete" or "partial: 82%". */
+/**
+ * The status of a language for a person: "official" (English, French), else "community"; "complete" or "partial: 82%".
+ * An official language below 100% is not "partial" (partial is allowed): it is "incomplete" and the tests refuse it.
+ */
 export function languageLabel({ status, percent }) {
-  return { status, coverage: percent >= 100 ? "complete" : `partial: ${percent}%` };
+  return { status, coverage: percent >= 100 ? "complete" : status === "official" ? `incomplete: ${percent}%` : `partial: ${percent}%` };
 }
