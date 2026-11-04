@@ -18,6 +18,7 @@ if (head !== remote) problems.push(`HEAD (${head.slice(0, 7)}) n'est pas origin/
 const version = JSON.parse(readFileSync("package.json", "utf8")).version;
 if (!new RegExp(`^## ${version.replace(/\./g, "\\.")}(?: — \\d{4}-\\d{2}-\\d{2})?$`, "m").test(readFileSync("CHANGELOG.md", "utf8"))) problems.push(`CHANGELOG.md n'a pas de section « ## ${version} ».`);
 try { sh("node scripts/build-index.mjs --check"); } catch { problems.push("catalogue/index.json est périmé : lancez node scripts/build-index.mjs."); }
+try { sh("node scripts/i18n-baseline.mjs --check"); } catch (error) { problems.push(`Translation baseline: ${String(error.stderr ?? error.message).trim().split("\n").slice(0, 3).join(" | ")} (node scripts/i18n-baseline.mjs --write).`); }
 
 
 // Règles de kit : `requires[].optional` transporté par l'index, et dataVersion qui ne baisse jamais depuis l'étiquette précédente.

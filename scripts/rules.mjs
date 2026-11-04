@@ -2,6 +2,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { LANG_CODE_RE, applyTranslations } from "./i18n-audit.mjs";
 
 /**
  * Services offerts / requis annoncés par l'index du catalogue : le cœur choisit et annonce un fournisseur AVANT de télécharger le module (« installe aussi… »).
@@ -171,3 +172,22 @@ export function previewProblems(previews, dir) {
 
 /** Ce que l'index du catalogue recopie de `previews` : la déclaration seulement (file, type, caption, alt), dans l'ordre d'affichage, jamais les images. */
 export const previewIndex = (previews) => (Array.isArray(previews) ? previews.map((p) => ({ file: p.file, type: p.type, caption: p.caption, alt: p.alt })) : []);
+
+/* ───────────────────────── Languages: the texts of a catalogue entry ───────────────────────── */
+
+const LANG_ORDER = (a, b) => (a === "en" ? -1 : b === "en" ? 1 : a === "fr" ? -1 : b === "fr" ? 1 : a.localeCompare(b));
+/**
+ * Name and description of a catalogue entry (catalogue/index.json), from a parsed `module.json` and its language files:
+ *   name, description   the ENGLISH text (what a core that does not know `i18n` shows: English, never French by accident);
+ *   i18n                { "<lang>": { name, description } } for every language the module has, English and French first, then the community languages
+ *                       (those come from `locales/<code>.json`, keys `manifest.name` and `manifest.description`).
+ * A module that still writes a plain string has no language to publish: the plain text is kept and there is no `i18n` for that field.
+ */
+export function entryTexts(manifest, locales = {}) {
+  const merged = applyTranslations(structuredClone(manifest ?? {}), locales);
+  const read = (v) => (typeof v === "string" ? { plain: v, by: {} } : { plain: typeof v?.en === "string" ? v.en : "", by: Object.fromEntries(Object.entries(v ?? {}).filter(([l, t]) => LANG_CODE_RE.test(l) && typeof t === "string" && t.trim())) });
+  const name = read(merged.name), description = read(merged.description);
+  const langs = [...new Set([...Object.keys(name.by), ...Object.keys(description.by)])].sort(LANG_ORDER);
+  const i18n = Object.fromEntries(langs.map((l) => [l, { ...(name.by[l] ? { name: name.by[l] } : {}), ...(description.by[l] ? { description: description.by[l] } : {}) }]));
+  return { name: name.plain, description: description.plain, ...(langs.length ? { i18n } : {}) };
+}

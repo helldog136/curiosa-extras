@@ -61,7 +61,16 @@ const mail = (email) => `[${esc(email)}](mailto:${email})`;
  * Les trois textes d'une langue. `facts` : { siteName, ... } (voir facts.mjs) ; `mode` : « preview » ou « final ».
  * Renvoie `{ notice, privacy, cookies, gaps }` ; chaque texte : `{ title, description, md }` (Markdown, liens internes écrits `(@privacy)`, `(@notice)`, `(@cookies)`, `(@home)`).
  */
-export function buildDocs({ answers: a, facts, lang, mode = "preview" }) {
+/** The languages the legal texts exist in: the two OFFICIAL ones, written and kept by the maintainers. A translation into another language is never produced or published here: it needs a person from the country. */
+export const DOC_LANGS = ["en", "fr"];
+/** The language of a document: the wanted one, else the language of the admin, else the main language of the site (each only if official), else English. Never French by accident. */
+export function docLang(wanted, ctx) {
+  for (const l of [wanted, ctx?.locale, ctx?.defaultLocale]) if (DOC_LANGS.includes(l)) return l;
+  return "en";
+}
+
+export function buildDocs({ answers: a, facts, lang: wantedLang, mode = "preview" }) {
+  const lang = docLang(wantedLang);
   const T = translator(lang);
   const gaps = [];
   const site = esc(facts?.siteName?.[lang] ?? facts?.siteName?.en ?? "");
