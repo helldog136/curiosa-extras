@@ -25,7 +25,7 @@ const art = (seed) => { let h = 0; for (const ch of String(seed)) h = (h * 31 + 
 const drawn = (h) => h.replace(/(src=")(?:\/m\/[^"/]+\/cover\/[0-9a-f]{16}|https:\/\/(?:media\.rawg\.io|static-cdn\.jtvnw\.net|shared\.akamai\.steamstatic\.com)\/[^"]+)(")/g, (_, a, b) => `${a}${art(_ + b + h.length)}${b}`);
 async function html(blocks, tab) {
   const mine = blocks.filter((b) => (tab ? b.tab === tab : !b.tab || b.tab === "use"));
-  return drawn(renderToStaticMarkup(await Blocks({ blocks: mine, locale: "fr", adminInstanceId: "i1" })));
+  return drawn(renderToStaticMarkup(await Blocks({ blocks: mine, locale: LOC, adminInstanceId: "i1" })));
 }
 async function write(name, title, blocks, { tab, open = false } = {}) {
   const body = await html(blocks, tab);
@@ -39,7 +39,8 @@ const fx = await import(path.join(root, "modules/game-covers/fixes.mjs"));
 const cp = await import(path.join(root, "modules/game-covers/copies.mjs"));
 const { titleKey } = await import(path.join(root, "modules/game-covers/match.mjs"));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "modules/game-covers/module.json"), "utf8"));
-const fr = JSON.parse(fs.readFileSync(path.join(root, "modules/game-covers/locales/fr.json"), "utf8"));
+const LOC = process.env.GC_LOCALE === "en" ? "en" : "fr";   // GC_LOCALE=en for the English screens
+const fr = JSON.parse(fs.readFileSync(path.join(root, `modules/game-covers/locales/${LOC}.json`), "utf8"));
 const NOW = Date.parse("2026-11-03T10:00:00Z");
 const names = ["Celeste", "Hollow Knight", "Hades", "Outer Wilds", "Stardew Valley", "Tunic", "Dave the Diver", "Disco Elysium", "Inscryption", "Hi-Fi Rush", "Cult of the Lamb", "Pizza Tower", "Vampire Survivors", "Baba Is You", "Return of the Obra Dinn", "Dead Cells"];
 const SRC = ["rawg", "rawg", "twitch", "steam"];
@@ -52,7 +53,7 @@ const fetchFake = async (input) => {
 };
 const twitch = { status: () => ({ ready: true }), request: () => ({ ok: true, status: 200, json: { data: [{ id: "509658", name: "Hades", box_art_url: "https://static-cdn.jtvnw.net/ttv-boxart/509658-52x72.jpg" }] } }) };
 const mk = ({ rawgKey = "FAKE-KEY-0123456789", twitchOn = true, steam = true } = {}) => {
-  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: "fr", settings: { rawgKey, useSteam: steam }, logEvents: manifest.logEvents, services: twitchOn ? { "twitch.api": twitch } : {} });
+  const c = fakeCtx({ moduleId: "game-covers", key: "game-covers", name: "Jaquettes", messages: fr, locale: LOC, settings: { rawgKey, useSteam: steam }, logEvents: manifest.logEvents, services: twitchOn ? { "twitch.api": twitch } : {} });
   c.can = () => true;
   return c;
 };
@@ -87,3 +88,21 @@ await write("jaq-gardees-sans-code", "Jaquettes gardées : sans code Rawg", awai
 await write("jaq-choisir", "Quel est le bon jeu ? (toutes les sources)", await mod.adminPanel(ok, { query: { tab: "saved", titre: "Hades" } }), { tab: "saved" });
 await write("jaq-voir", "Voir une jaquette gardée", await mod.adminPanel(ok, { query: { tab: "saved", voir: "Hollow Knight" } }), { tab: "saved" });
 await write("jaq-oublier", "Oublier une jaquette gardée", await mod.adminPanel(ok, { query: { tab: "saved", oublier: "Outer Wilds" } }), { tab: "saved" });
+
+/* ───── 1.3.2: state of the local copy of a corrected cover (invented title) ───── */
+const copyWorld = async (state) => {
+  const c = mk({});
+  const title = "Ember Vale", key = titleKey(title), img = "/ttv-boxart/847310440_IGDB-285x380.jpg";
+  await c.api.store.add("fixes", { title, kind: "image", name: "Ember Vale", img, src: "twitch", srcId: 847310440, at: new Date(NOW).toISOString() }, { key });
+  if (state === "copied") await c.api.store.add("coverMeta", { id: cp.idOf(key), key, src: "twitch", img, type: "image/jpeg", bytes: 52_000, sum: "0123456789ab", at: Date.now() }, { key: cp.idOf(key) });
+  if (state === "failed") {
+    const real = cp.hooks.fetch;
+    cp.hooks.fetch = async () => new Response(null, { status: 302, headers: { location: "https://static-cdn.jtvnw.net/x.jpg" } });
+    await cp.ensure(c, key, "twitch", img, { waitMs: 500, force: true });
+    cp.hooks.fetch = real;
+  }
+  return c;
+};
+for (const state of ["copied", "pending", "failed"]) {
+  await write(`jaq-copie-${state}-${LOC}`, `Copy state: ${state}`, await mod.adminPanel(await copyWorld(state), { query: { tab: "saved", titre: "Ember Vale" } }), { tab: "saved" });
+}

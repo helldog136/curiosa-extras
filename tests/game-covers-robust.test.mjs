@@ -3,11 +3,12 @@
 // Faux RAWG : fakeFetch du kit du cœur, à travers le VRAI client réseau (ctx.api.net de fakeCtx). Jamais le vrai RAWG, jamais une vraie clé. L'heure est simulée (Date seulement).
 import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { imageReply, IMAGE_HOSTS } from "./helpers/cover-fakes.mjs";
+import { JPEG, imageReply, IMAGE_HOSTS } from "./helpers/cover-fakes.mjs";
 
 const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
 const { fakeFetch, assertAdminPageErgonomics } = kit;
@@ -27,7 +28,8 @@ const svc = mod.services["game.cover"];
 const KEY = "FAKE-RAWG-KEY-0123456789";
 const T0 = Date.parse("2026-11-03T10:00:00Z");
 const MIN = 60_000, HOUR = 3_600_000;
-const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}`;
+// the served address carries the version of the image (a short hash of its bytes): every fake image host serves the same one-pixel JPEG
+const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}?v=${createHash("sha256").update(JPEG).digest("hex").slice(0, 12)}`;
 const img = (id) => `https://media.rawg.io/media/games/${String(id).padStart(3, "0")}/jeu-${id}.jpg`;
 const g = (id, name, released, plats = ["PC"]) => ({ id, name, released, platforms: plats.map((p) => ({ platform: { name: p } })), background_image: img(id) });
 const DB = {
@@ -67,8 +69,8 @@ const tabOf = (blocks, tab) => blocks.filter((b) => (b.tab ?? "use") === tab);
 beforeEach(() => { mock.timers.enable({ apis: ["Date"], now: T0 }); rawg.clearCache(); rawg.resetBreaker(); ops.resetRate(); copies.resetCopies(); sources.resetSources(); mode = "up"; serve(); });
 afterEach(() => { mock.timers.reset(); globalThis.fetch = realFetch; });
 
-test("manifeste 1.3.1 : version corrective (1.3.0 + route cover/:slug), une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
-  assert.equal(manifest.version, "1.3.1");
+test("manifeste 1.3.2 : version corrective (1.3.0 + route cover/:slug), une seule permission de plus (la route des copies), deux lignes de journal pour la panne, FR et EN alignés", () => {
+  assert.equal(manifest.version, "1.3.2");
   assert.deepEqual(manifest.permissions, ["storage", "routes", "admin", "mcp"]);
   assert.equal(manifest.dashboard, undefined, "rien qu'on ne puisse pas agir dessus : pas de carte ni de tâche");
   assert.deepEqual(manifest.logEvents.map((e) => e.key).slice(-2), ["cover.outage", "cover.back"]);

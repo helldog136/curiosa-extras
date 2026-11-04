@@ -108,5 +108,15 @@
   "none_available": "Aucune source n'est disponible. Activez Steam dans l'onglet « Réglages », ou saisissez un code Rawg.",
   "last_found": "Dernière jaquette trouvée : {source}, le {date}.",
   "col_source": "Source",
-  "health_label_steam": "Steam (magasin)"
+  "health_label_steam": "Steam (magasin)",
+  "copy_copied": "L'image est gardée sur votre site et montrée par toutes les pages.",
+  "copy_pending": "L'image n'est pas encore sur votre site. Elle est copiée au prochain affichage d'une page qui la montre.",
+  "copy_failed": "L'image n'a pas pu être copiée : {reason}.",
+  "copy_why_status": "le site des images a refusé la demande",
+  "copy_why_redirect": "le site des images nous a envoyé ailleurs",
+  "copy_why_type": "la réponse n'était pas une image",
+  "copy_why_size": "l'image est trop lourde (300 Ko au plus)",
+  "copy_why_format": "le fichier n'est pas une image PNG, JPEG ou WebP",
+  "copy_why_network": "le site des images n'a pas répondu",
+  "copy_retry": "Copier l'image maintenant"
 }

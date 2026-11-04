@@ -42,7 +42,7 @@ export async function candidatesFor(ctx, who, title, search, opts) {
 }
 
 /** Garde une copie de l'image choisie sans attendre longtemps ; un échec n'est jamais une erreur (elle sera refaite à la prochaine demande). */
-const copyNow = (ctx, title, src, img) => copies.ensure(ctx, titleKey(title), src, img, { waitMs: 4_000 });
+const copyNow = (ctx, title, src, img) => copies.ensure(ctx, titleKey(title), src, img, { waitMs: 4_000, force: true });
 
 const finish = async (r, ctx, action) => {
   if (!r.ok) return { ok: false, error: r.error };
@@ -73,7 +73,9 @@ export async function chooseNone(ctx, who, rawTitle) {
   const title = checkTitle(rawTitle);
   if (!title) return { ok: false, error: "title" };
   if (!takeRate(who, "write")) return { ok: false, error: "rate" };
-  return finish(await fx.saveFix(ctx, title, { kind: "none" }), ctx, "cover.none");
+  const done = await finish(await fx.saveFix(ctx, title, { kind: "none" }), ctx, "cover.none");
+  if (done.ok) await copies.dropForKey(ctx, titleKey(title));   // no cover: the kept copy must not be served any more
+  return done;
 }
 
 /** Une image de RAWG choisie à la main (adresse `https://media.rawg.io/media/…` uniquement). */
@@ -131,7 +133,9 @@ export async function forgetAuto(ctx, who, key, title) {
   return done;
 }
 export async function forgetAll(ctx, who) {
-  const n = takeRate(who, "write") ? await fx.forgetAllFixes(ctx) : null;
+  const keys = [];
+  const n = takeRate(who, "write") ? await fx.forgetAllFixes(ctx, keys) : null;
+  for (const k of keys) await copies.dropForKey(ctx, k);   // the copies of the forgotten corrections go too (the next request searches again)
   if (n) await journal(ctx, "cover.cleared", "", { count: n });
   return n;
 }
