@@ -38,14 +38,19 @@ export function allowedUrl(input) {
  * Rend le chemin (« /m/game-covers/cover/0123456789abcdef »), ou "" pour tout le reste.
  */
 const OWN = /^\/(?:m\/[A-Za-z0-9_-]{1,64}\/(?:cover|photo)\/[A-Za-z0-9_-]{8,64}|uploads\/[A-Za-z0-9._-]{1,120})$/;
+const VERSION = /^v=[0-9a-f]{8,32}$/;   // la copie d'une jaquette est « versionnée » : `?v=` + 12 caractères hexadécimaux, rien d'autre
 export function ownImage(input, siteUrl = "") {
   if (typeof input !== "string" || input.length > 500 || /[\u0000-\u0020\u007f\\]/.test(input)) return "";
-  if (input.startsWith("/") && !input.startsWith("//")) return OWN.test(input) && !input.includes("..") ? input : "";
+  if (input.startsWith("/") && !input.startsWith("//")) {
+    const [path, query, ...rest] = input.split("?");
+    return !rest.length && OWN.test(path) && !path.includes("..") && (query === undefined || VERSION.test(query)) ? input : "";
+  }
   let u;
   try { u = new URL(input); } catch { return ""; }
-  if (u.protocol !== "https:" || u.port || u.username || u.password || u.search || u.hash || !OWN.test(u.pathname) || u.pathname.includes("..")) return "";
+  if (u.protocol !== "https:" || u.port || u.username || u.password || u.hash || !OWN.test(u.pathname) || u.pathname.includes("..")) return "";
+  if (u.search && !VERSION.test(u.search.slice(1))) return "";   // seule la version de la copie (`?v=…`) est permise
   if (siteUrl) { try { if (new URL(siteUrl).origin !== u.origin) return ""; } catch { return ""; } }
-  return u.pathname;
+  return u.pathname + u.search;
 }
 /** L'adresse que la page peut dessiner pour une jaquette ou une photo : la copie du site (chemin), sinon une adresse permise du relais ; "" sinon. */
 export const drawable = (input, siteUrl = "") => ownImage(input, siteUrl) || allowedUrl(input)?.href || "";

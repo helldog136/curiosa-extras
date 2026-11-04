@@ -174,3 +174,17 @@ test("textes : la case « personnes du planning » existe en FR et EN, courte (R
   }
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
 });
+
+test("jaquette versionnée (game-covers 1.3.2) : `?v=<hex>` est gardé sur le chemin du site, tout autre paramètre est refusé ; photo du Planning acceptée", async () => {
+  const V = `${SITE}/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f`;
+  const r = await src.coverOf(mk(covers({ status: "found", url: V })), GAME);
+  assert.deepEqual([r.cover, r.coverState], ["/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f", ""]);
+  assert.equal((await src.loadStreams(mk(covers({ status: "found", url: V }), { topics: { "planning.slot": () => [{ id: "s", title: "T", start: "2026-11-05T18:00:00Z", games: [GAME] }] } }), { now: NOW })).streams[0].cover, "/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f");
+  assert.equal(images.ownImage("/m/planning/photo/Ab12Cd34Ef56Gh78"), "/m/planning/photo/Ab12Cd34Ef56Gh78");
+  assert.equal(images.ownImage("/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f"), "/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f");
+  for (const bad of ["?v=xyz", "?v=0a1b2c3", "?v=0a1b2c3d4e5f&x=1", "?x=0a1b2c3d4e5f", "?v=0a1b2c3d4e5f?v=0a1b2c3d4e5f"]) {
+    assert.equal(images.ownImage(`${SITE}/m/game-covers/cover/fedcba9876543210${bad}`), "", bad);
+    assert.equal(images.ownImage(`/m/game-covers/cover/fedcba9876543210${bad}`), "", bad);
+  }
+  assert.equal(images.ownImage("https://evil.example/m/game-covers/cover/fedcba9876543210?v=0a1b2c3d4e5f", SITE), "");
+});
