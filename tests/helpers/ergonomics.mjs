@@ -63,6 +63,7 @@ export const RULES = {
   R17: "Un interrupteur montre l'état (pas « Activer / désactiver »)",
   R19: "Le bon contrôle",
   R22: "Erreur avec ce qu'il faut faire et un exemple",
+  R24: "Une fenêtre de modification sait revenir à la liste",
   R28: "Chaque image a un texte alternatif",
   R29: "FR et EN à parité",
 };
@@ -416,7 +417,10 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
     if (b.type === "heading") { closeSection(); sectionTitle = stripTags(b.text); continue; }
     if (b.type === "adminForm") {
       const shown = (b.fields ?? []).filter((f) => !hiddenKind(f) && !folded_(f));
-      sectionFields += shown.length;
+      // A form with `presentation: "dialog"` shows in its own window: its fields count for ITS budget (R4, 5 visible fields) but not for the section of the list under it.
+      const inDialog = b.presentation === "dialog";
+      if (!inDialog) sectionFields += shown.length;
+      if (inDialog && typeof b.cancelHref !== "string") add("R24", `the form ${b.title ? `« ${b.title} »` : `(action « ${b.action} »)`} opens in a dialog without a \`cancelHref\`: closing it cannot return to the list (set cancelHref, for example "?")`);
       const name = b.title ? `« ${b.title} »` : `(action « ${b.action} »)`;
       if (shown.length > FORM_FIELDS_MAX) add("R4", `le formulaire ${name} montre ${shown.length} champs (${FORM_FIELDS_MAX} au plus) : replier ou découper`);
       if (WEAK_BUTTONS.test(b.submitLabel ?? "")) add("R3", `le formulaire ${name} a un bouton « ${b.submitLabel} » : écrire un verbe précis (« Ajouter la personne »)`);
@@ -436,6 +440,7 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
           if (cells[0] && !/^[-–—·]+$/.test(cells[0]) && cells.every((x) => x === cells[0])) add("R14", `la colonne « ${cols[c] ?? c + 1} » affiche « ${excerpt(cells[0], 30)} » sur toutes les ${rows.length} lignes : c'est un titre, pas une étiquette`);
         }
       }
+      for (const a of b.rowActions ?? []) if (a.presentation === "dialog" && (typeof a.href !== "string" || a.action)) add("R24", `the row button « ${a.label} » asks for a dialog (presentation: "dialog") but is not a link: give it an \`href\` such as "?edit={id}", not an \`action\``);
       for (const a of b.rowActions ?? []) if (TOGGLE_RE.test(a.label ?? "")) add("R17", `le bouton de ligne « ${a.label} » : un interrupteur montre l'état courant`);
       // Vignettes (cellule `image`) : un texte alternatif (R28) et une adresse que le cœur affichera (R16) ; sinon la vignette disparaît en silence et la ligne est plus courte que les autres.
       rows.forEach((r, i) => (r ?? []).forEach((c) => {

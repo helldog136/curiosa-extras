@@ -4,9 +4,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Prochaine version (non publiée)
+## 1.43.0 — 2026-11-04
 
-*En bref : la télécommande et le dock OBS passent par onglets, le mot du tirage se choisit depuis la télécommande, « manche » devient « vote en boucle », et le catalogue publie chaque description dans les deux langues. Rien à régler.*
+*En bref : le catalogue des extensions donne maintenant chaque description en anglais et en français. Le Press kit se remplit à la main ou avec un assistant IA. Le Bot Twitch dit clairement qui peut déclencher une commande répétée par un timer. La télécommande et le dock OBS passent par onglets, et « manche » devient « vote en boucle ». Rien à régler, et aucune nouvelle permission.*
 
 ### Nouveautés
 
