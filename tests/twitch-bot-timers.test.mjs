@@ -336,7 +336,7 @@ test("état vide et « Ajouter un timer » : une phrase + un bouton ; deux voies
   assert.match(html, /data-ck-q/);
   const form = formOfBlocks(tab, "timerNew");
   assert.equal(form.submitLabel, "Créer la commande et son timer");
-  assert.deepEqual(form.fields.filter((f) => !f.folded).map((f) => f.name), ["name", "text"], "chemin court : deux champs visibles");
+  assert.deepEqual(form.fields.filter((f) => !f.folded && f.kind !== "hidden").map((f) => f.name), ["name", "text"], "chemin court : deux champs visibles");
   assert.deepEqual(form.fields.filter((f) => f.folded).map((f) => f.name), ["timerOnly", "repeatEvery"]);
   assert.ok(form.fields.every((f) => !f.example || !/:$/.test(f.label)));
 });
