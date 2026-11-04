@@ -4,18 +4,22 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
-## Unreleased
+## 1.44.0 — 2026-11-04
 
-*En bref : les photos des partenaires du Planning n'attendent plus des heures pour apparaître, et l'administration dit où en est chaque photo.*
+*En bref : les photos des partenaires du Planning apparaissent sans attendre des heures, et l'administration dit où en est chaque photo. Une jaquette corrigée est reprise partout aussitôt, et la story d'annonce affiche enfin la jaquette du jeu et les personnes du stream. Rien à régler, et aucune nouvelle permission.*
 
 ### Corrections
 
+- **Game covers 1.3.2: a corrected cover reaches every page at once.** After you corrected a cover, some pages kept showing the old image (browsers and caches had remembered its address). The address of a kept cover now changes with the image, so a corrected cover is fetched again everywhere, and addresses remembered earlier keep working and show the current image. A download of an older image can no longer replace the one you just chose, and a failed download of one image no longer blocks the next image you pick.
+- **Jaquettes de jeux 1.3.2 : une jaquette corrigée arrive partout aussitôt.** Après une correction, certaines pages gardaient l'ancienne image (navigateurs et caches avaient retenu son adresse). L'adresse d'une jaquette gardée change maintenant avec l'image : une jaquette corrigée est rechargée partout, et les adresses retenues avant continuent de marcher et montrent l'image actuelle. Le téléchargement d'une ancienne image ne remplace plus celle que vous venez de choisir, et un échec sur une image ne bloque plus la suivante.
 - **Planning 2.7.3: partner photos no longer stay on initials for hours.** Only two photos were copied per visit and a single failure (a slow first connection, a busy storage) paused that person for 6 hours, so with five partners some kept their initials long after the others had a photo. Now all the partners of the page are copied together, a failed copy is retried after 1 minute, then 5, then 30 minutes, and a photo that worked is kept. The photo of the very Twitch account is used when the card's own photo cannot be copied.
 - **Planning 2.7.3 : les photos des partenaires ne restent plus des heures sur les initiales.** Deux photos seulement étaient copiées par visite, et un seul échec (première connexion lente, stockage occupé) mettait la personne en pause 6 heures : avec cinq partenaires, certains gardaient leurs initiales longtemps après les autres. Désormais tous les partenaires de la page sont copiés ensemble, une copie qui échoue est retentée après 1 minute, puis 5, puis 30 minutes, et une photo réussie est conservée. La photo du compte Twitch lui-même sert quand celle de la fiche ne peut pas être copiée.
 - **Story d'annonce 2.6.0 : la jaquette du jeu apparaît enfin dans la vidéo.** Quand la jaquette est gardée sur votre site (module « Jaquettes de jeux »), la story l'écartait et n'affichait que le nom du jeu, alors que le Planning la montrait. Elles viennent maintenant de la même source. Si elle n'est vraiment pas prête, la vidéo reste propre et une phrase le dit.
 
 ### Nouveautés
 
+- **Game covers 1.3.2: the correction screen says where the image stands.** "The image is kept on your site", "not on your site yet" or "could not be copied: the reason" (in plain words), with a "Copy the image now" button.
+- **Jaquettes de jeux 1.3.2 : l'écran de correction dit où en est l'image.** « L'image est gardée sur votre site », « pas encore sur votre site » ou « n'a pas pu être copiée : la raison » (en clair), avec un bouton « Copier l'image maintenant ».
 - **Planning 2.7.3: the admin page says where each photo stands.** In "Who you stream with": "Photo copied", "Photo pending (next try in 3 min)" or "Photo failed: the reason", with a single "Retry photos" button that tries again right now.
 - **Planning 2.7.3 : l'administration dit où en est chaque photo.** Dans « Avec qui vous streamez » : « Photo copiée », « Photo en attente (prochain essai dans 3 min) » ou « Photo non copiée : la raison », avec un seul bouton « Réessayer les photos » qui réessaie tout de suite.
 - **Story d'annonce 2.6.0 : les personnes du planning sont dans la vidéo.** Les personnes indiquées sur le stream (« Avec … ») sont ajoutées avec leur nom et leur photo, dans les quatre styles (« +N » au-delà de 6). Seules les fiches affichables de Contacts sont montrées. Une case repliée sous « Co-streamers » les retire.
@@ -23,6 +27,8 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Pour les développeurs
 
+- `game-covers`: `urlOf(ctx, meta)` / `versionOf(meta)` (`?v=<12 hex of the image hash>`, `t<date>` for older copies); the route ignores `v` except for the cache policy (current version kept up to 1 hour, any other address `no-cache` with an `ETag`); failures and pending downloads are keyed by the chosen image, `latest` protects a newer choice; `copyState`, `retryCopy`, failure reasons `status`/`redirect`/`type`/`size`/`format`/`network`; `adminActions.retryCopy`. Tests: `tests/game-covers-correction.test.mjs`.
+- `stream-story`: draws site-kept covers (`/m/<key>/cover/<id>?v=<hex>`) and reads the guests of a stream from Contacts with the Planning's privacy rule; tests `tests/stream-story-cover-partners.test.mjs`.
 - `photos.mjs`: `ensure(ctx, jobs)` replaces the fire-and-forget `kick` (batch of 5, bounded wait `timing.waitMs`, failure marks per instance and token with `timing.backoffMs`, reasons `unreachable`/`refused`/`notImage`/`tooBig`/`save`); `statusOf`, `clearFailures(ctx)`; a damaged record is replaced instead of shadowing the copy; `idOf` ignores case; the 30-copy cap evicts copies the current page does not show first; `ownPath` accepts sub-folders and the focus fragment of `/uploads/`.
 - `partners.mjs`: `photoOrigin(card, login)` (card photo, then the Twitch avatar of the pseudo); `attachPartners` also returns `photos` (state per pseudo) for the admin page; the missing photos of remembered answers are retried on the next render without asking Contacts again. `index.mjs`: `adminActions.retryPhotos`.
 - Tests: `tests/planning-photos.test.mjs` (14 new tests, realistic data shapes, invented names). No new permission, no migration.
