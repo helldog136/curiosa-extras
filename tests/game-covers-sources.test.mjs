@@ -3,6 +3,7 @@
 // Twitch : la forme documentée de « Search Categories » (id, name, box_art_url à 52x72) ; RAWG : celle de la liste de jeux. Les images sont un vrai petit JPEG.
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -27,7 +28,8 @@ const { titleKey } = await import("../modules/game-covers/match.mjs");
 const svc = mod.services["game.cover"];
 
 const KEY = "FAKE-RAWG-KEY-0123456789";
-const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}`;
+// the served address carries the version of the image (a short hash of its bytes): every fake image host serves the same one-pixel JPEG
+const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}?v=${createHash("sha256").update(JPEG).digest("hex").slice(0, 12)}`;
 const rawgGame = (id, name, released = "2020-09-17") => ({ id, name, released, platforms: [{ platform: { name: "PC" } }], background_image: `https://media.rawg.io/media/games/${String(id).padStart(3, "0")}/jeu-${id}.jpg` });
 const twitchCat = (id, name, igdb = true) => ({ id: String(id), name, box_art_url: `https://static-cdn.jtvnw.net/ttv-boxart/${id}${igdb ? "_IGDB" : ""}-52x72.jpg` });
 const steamItem = (id, name) => ({ type: "app", name, id, tiny_image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/capsule_231x87.jpg?t=1`, metascore: "", platforms: { windows: true, mac: false, linux: false }, streamingvideo: false });
@@ -485,7 +487,7 @@ test("« Jaquettes gardées » : source en pastille écrite ET colorée, vignett
   assert.deepEqual(by.Hades[2], { text: "RAWG", badge: "accent" });
   assert.deepEqual(by["Jeu Rare"][2], { text: "Steam", badge: "neutral" });
   assert.equal(by["Sans image"][2], "—");
-  assert.match(by.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}$/);
+  assert.match(by.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}\?v=[0-9a-f]{12}$/);
   assert.equal(t.searchable, true);
   assert.deepEqual(t.filters.map((f) => f.column), [2, 3]);
   assert.ok(t.rowActions.filter((a) => !a.danger && !a.inMenu).length <= 2);

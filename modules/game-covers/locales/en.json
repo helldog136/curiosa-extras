@@ -108,5 +108,15 @@
   "none_available": "No source is available. Turn on Steam in the “Settings” tab, or enter a Rawg code.",
   "last_found": "Last cover found: {source}, on {date}.",
   "col_source": "Source",
-  "health_label_steam": "Steam (store)"
+  "health_label_steam": "Steam (store)",
+  "copy_copied": "The image is kept on your site and shown by every page.",
+  "copy_pending": "The image is not on your site yet. It is copied the next time a page shows it.",
+  "copy_failed": "The image could not be copied: {reason}.",
+  "copy_why_status": "the image site refused the request",
+  "copy_why_redirect": "the image site sent us somewhere else",
+  "copy_why_type": "the answer was not an image",
+  "copy_why_size": "the image is too big (300 KB at most)",
+  "copy_why_format": "the file is not a PNG, JPEG or WebP image",
+  "copy_why_network": "the image site did not answer",
+  "copy_retry": "Copy the image now"
 }

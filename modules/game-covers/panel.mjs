@@ -136,7 +136,7 @@ async function savedScreen(ctx) {
     const id = copies.idOf(e.key);
     const m = kept.get(id);
     const text = coverText(ctx, e);
-    return m && m.img === e.img && m.src === (e.src ?? "rawg") ? { text, image: { src: `/m/${ctx.instance.key}/cover/${id}`, alt: e.title } } : text;
+    return m && m.img === e.img && m.src === (e.src ?? "rawg") ? { text, image: { src: `/m/${ctx.instance.key}/cover/${id}?v=${copies.versionOf(m)}`, alt: e.title } } : text;
   };
   out.push({
     type: "table", columns: [ctx.t("col_game"), ctx.t("col_cover"), ctx.t("col_source"), ctx.t("col_origin"), ctx.t("col_when")],
@@ -165,7 +165,7 @@ async function shownUrl(ctx, e) {
   if (!e.img) return null;
   const src = e.src ?? "rawg";
   const m = (await copies.allMeta(ctx)).get(copies.idOf(e.key ?? titleKey(e.title)));
-  return m && m.img === e.img && m.src === src ? `/m/${ctx.instance.key}/cover/${m.id}` : fx.imgUrl(src, e.img);
+  return m && m.img === e.img && m.src === src ? `/m/${ctx.instance.key}/cover/${m.id}?v=${copies.versionOf(m)}` : fx.imgUrl(src, e.img);
 }
 
 /** « Voir » et « Oublier » : une jaquette retenue, en grand ; pour l'oubli, la phrase qui dit ce qui sera perdu. */
@@ -191,6 +191,16 @@ async function entryScreen(ctx, rawTitle, mode) {
     { type: "markdown", text: `[${ctx.t("forget_keep")}](?tab=${SAVED_TAB})` }];
 }
 
+// ── State of the local copy of a corrected cover ───────────────────────────────────────────────────────────────────────────
+/** Says in plain words whether the image of a correction is kept on the site (consumers only ever show the kept copy), and offers a retry when it is not. */
+async function copyBlocks(ctx, fix, tab) {
+  const st = await copies.copyState(ctx, titleKey(fix.title), fix.src ?? "rawg", fix.img);
+  if (st.state === "copied") return [{ type: "banner", tone: "success", text: ctx.t("copy_copied") }];
+  const text = st.state === "failed" ? ctx.t("copy_failed", { reason: ctx.t(`copy_why_${st.why}`) }) : ctx.t("copy_pending");
+  return [{ type: "banner", tone: st.state === "failed" ? "warning" : "info", text },
+    { type: "adminForm", action: "retryCopy", submitLabel: ctx.t("copy_retry"), fields: [{ name: "id", kind: "hidden", value: fix.title }, { name: "tab", kind: "hidden", value: tab }] }];
+}
+
 // ── « Quel est le bon jeu ? » ─────────────────────────────────────────────────────────────────────────────────────────────
 async function fixScreen(ctx, title, search, tab) {
   const key = titleKey(title);
@@ -214,6 +224,7 @@ async function fixScreen(ctx, title, search, tab) {
       (current ? `<div class="flex items-center gap-3" data-testid="current">${coverImg(current.url, "h-16 w-12")}<p class="min-w-0 break-words text-sm"><span class="text-muted">${esc(ctx.t(current.isSaved ? "current_saved" : "current_auto"))}</span><br>${esc(current.label)}</p></div>` : "") + `</section>` },
   ];
   if (!anySource) out.push({ type: "banner", tone: "warning", text: ctx.t("none_available") });
+  if (saved?.img) out.push(...(await copyBlocks(ctx, saved, tab)));
   if (!saved && (doubtful || auto)) out.push({ type: "adminForm", action: "confirm", submitLabel: ctx.t("act_good"), fields: [{ name: "id", kind: "hidden", value: title }, tabField] });
   out.push({
     type: "adminForm", action: "search", submitLabel: ctx.t("search_button"), title: ctx.t("search_label"),
@@ -289,6 +300,14 @@ export const actions = {
     const [src, id] = ref.includes(".") ? ref.split(".") : ["rawg", ref];
     const out = await ops.chooseGame(ctx, who, decodeURIComponentSafe(title), Number(id), decodeURIComponentSafe(search) || undefined, src);
     return out.ok ? back("game", tab) : fail(ctx, out.error);
+  },
+  /** « Copy again now »: forces the download of the corrected image, then says what happened. */
+  async retryCopy(ctx, values) {
+    const title = ops.checkTitle(String(values?.id ?? ""));
+    const fix = title ? await fx.fixFor(ctx, title) : null;
+    if (!fix?.img) return { error: ctx.t("err_forget") };
+    const st = await copies.retryCopy(ctx, titleKey(title), fix.src ?? "rawg", fix.img);
+    return st.state === "copied" ? { ok: ctx.t("copy_copied"), redirect: href(tabOf(values?.tab), `titre=${enc(title)}`) } : { error: ctx.t("copy_failed", { reason: ctx.t(`copy_why_${st.why ?? "network"}`) }) };
   },
   async chooseNone(ctx, values) {
     const out = await ops.chooseNone(ctx, who, String(values?.id ?? ""));
