@@ -17,7 +17,7 @@ const { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall } = await import(`
 export { zonedTimeToUtc, wallDateNow, weekdayOf, addDaysToWall };
 const { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone } = await import(`./slots.mjs${V}`);
 export { MAX_GAMES_PER_STREAM, gamesOf, toSlots, displayZone };
-const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS, stateOf } = await import(`./partners.mjs${V}`);
+const { attachPartners, normalizeLogin, loginsOf, MAX_PARTNERS, stateOf, resetPartners } = await import(`./partners.mjs${V}`);
 const Photos = await import(`./photos.mjs${V}`);
 const Played = await import(`./played.mjs${V}`);
 const { personHtml, avatarHtml, safePhoto } = await import(`./avatar.mjs${V}`);
@@ -414,14 +414,31 @@ async function partnersAdminBlocks(ctx, info) {
   try { contacts = (await ctx.api?.instances?.list?.({ module: "contacts" }))?.[0]?.adminPath ?? ""; } catch { contacts = ""; }
   const lines = [...info.states].slice(0, 30).map(([login, state]) => {
     const who = `**${escMd(login)}**`;
-    if (state === "shown") return `- ${who} : ${t("adminWithShown", { name: escMd(info.names.get(login) ?? "") })}`;
+    if (state === "shown") return `- ${who} : ${t("adminWithShown", { name: escMd(info.names.get(login) ?? "") })}${photoLine(ctx, info.photos?.get(login))}`;
     if (state === "hidden") return `- ${who} : ${t("adminWithHidden")}`;
     if (state === "unknown") return `- ${who} : ${t("adminWithUnknown")}${contacts ? ` [${t("adminWithAdd")}](${contacts}?new=person)` : ""}`;
     return `- ${who} : ${t("adminWithWait")}`;
   });
   blocks.push({ type: "markdown", text: lines.join("\n") });
   if ([...info.states.values()].includes("unknown")) blocks.push({ type: "markdown", text: t("adminWithAddHelp") });
+  // One small button, only when a photo is still missing: it clears the failure marks and tries again right now (the answer appears next to the button).
+  if ([...(info.photos?.values() ?? [])].some((p) => p.state === "pending" || p.state === "failed")) blocks.push({ type: "adminForm", action: "retryPhotos", submitLabel: t("adminPhotoRetry"), fields: [] });
   return blocks;
+}
+
+/** "3 min" · "2 h" · "less than a minute": the wait before the next try of a photo. */
+function whenText(ctx, ms) {
+  if (!(ms > 60_000)) return ctx.t("adminWhenSoon");
+  return ms < 90 * 60_000 ? ctx.t("adminWhenMin", { n: Math.round(ms / 60_000) }) : ctx.t("adminWhenHour", { n: Math.round(ms / 3_600_000) });
+}
+/** What the admin page says about the photo of a shown partner, in plain words (" — Photo copied"), or "" when the photo setting is off. */
+function photoLine(ctx, p) {
+  if (!p) return "";
+  const t = ctx.t;
+  if (p.state === "copied") return ` — ${t("adminPhotoCopied")}`;
+  if (p.state === "pending") return ` — ${t("adminPhotoPending", { when: whenText(ctx, p.nextMs) })}`;
+  if (p.state === "failed") return ` — ${t("adminPhotoFailed", { reason: t(`adminPhotoWhy_${p.reason}`), when: whenText(ctx, p.nextMs) })}`;
+  return ` — ${t(p.why === "address" ? "adminPhotoNone_address" : "adminPhotoNone_missing")}`;
 }
 
 /** « Jeux joués » : l'état de l'autre côté (Suggestions de jeux), seulement quand le réglage est oui. */
@@ -620,6 +637,24 @@ export default {
   migrations: {
     2: carryOverCalendar,
     3: carryOverCalendar,
+  },
+
+  adminActions: {
+    /** "Retry photos": forgets the failure marks and the remembered answers, then copies the missing photos again right now (a few passes at most, each bounded). */
+    async retryPhotos(ctx) {
+      const t = ctx.t;
+      if (!Photos.photosOn(ctx)) return { error: t("adminPhotoRetryOff") };
+      Photos.clearFailures(ctx); resetPartners();
+      const days = clampDays(ctx.setting("days"));
+      let photos = new Map();
+      for (let pass = 0; pass < 3; pass++) {
+        photos = (await loadSlots(ctx, Math.max(days, 14), { cancelled: false })).partners.photos ?? new Map();
+        if (![...photos.values()].some((p) => p.state === "pending" || p.state === "failed")) break;
+      }
+      const left = [...photos.values()].filter((p) => p.state === "pending" || p.state === "failed").length;
+      const copied = [...photos.values()].filter((p) => p.state === "copied").length;
+      return { ok: t("adminPhotoRetryDone", { copied, missing: left }) };
+    },
   },
 
   async adminPanel(ctx) {
