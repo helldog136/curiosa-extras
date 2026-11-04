@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.44.1 — 2026-11-04
+
+*En bref : dans la story d'annonce, la jaquette gardée sur votre site s'affiche de nouveau, et les personnes indiquées avec un stream sont bien ajoutées par défaut. Rien à régler, et aucune nouvelle permission.*
+
+### Corrections
+
+- **Announcement story 2.6.1: the game cover kept on your site is drawn in the story again.** Story 2.6.0 rejected the version mark of covers copied before the last update of Game covers.
+- **Story d'annonce 2.6.1 : la jaquette gardée sur votre site s'affiche de nouveau.** La 2.6.0 refusait la marque de version des jaquettes copiées avant la dernière mise à jour de Jaquettes de jeux.
+- **Announcement story 2.6.1: the people listed with a stream are now added by default.** The core only passes on the fields a module declares, and Story did not declare the list of people of a stream.
+- **Story d'annonce 2.6.1 : les personnes indiquées avec un stream sont maintenant ajoutées par défaut.** Le cœur ne transmet que les champs qu'un module déclare, et Story ne déclarait pas la liste des personnes d'un stream.
+
+### Pour les développeurs
+
+- `images.COVER_VERSION` accepts `[0-9a-f]{12}` or `t[0-9a-z]{1,12}` (what `versionOf` of Game covers produces); `module.json` declares `partners` (`string[]`) in the `planning.slot` schema. Tests: `tests/stream-story-cover-partners.test.mjs`. Détail : `docs/changelog-parts/story-2-6-1.md`.
+
 ## 1.44.0 — 2026-11-04
 
 *En bref : les photos des partenaires du Planning apparaissent sans attendre des heures, et l'administration dit où en est chaque photo. Une jaquette corrigée est reprise partout aussitôt, et la story d'annonce affiche enfin la jaquette du jeu et les personnes du stream. Rien à régler, et aucune nouvelle permission.*

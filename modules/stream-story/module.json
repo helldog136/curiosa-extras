@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.6.0",
+  "version": "2.6.1",
   "platform": "instagram",
   "description": {
     "en": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post.",
@@ -166,6 +166,10 @@
         },
         {
           "key": "games",
+          "type": "string[]"
+        },
+        {
+          "key": "partners",
           "type": "string[]"
         },
         {
