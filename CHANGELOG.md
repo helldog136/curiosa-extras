@@ -4,6 +4,20 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+*En bref : l'assistant d'installation de Curiosa, en anglais, montre enfin les extensions proposées en anglais. Aucun module ne change de version, rien à régler.*
+
+### Corrections
+
+- **Les extensions proposées au premier lancement parlent la langue choisie.** Le Catalogue ne gardait qu'un seul texte par extension, le français, et le montrait tel quel : en anglais, « Blog », « Liste de liens » et « Pages » apparaissaient avec une description française. Chaque extension du Catalogue porte maintenant son nom et sa description en français ET en anglais. Les cœurs plus anciens continuent de lire le texte français comme avant ; les cœurs récents choisissent la langue de la personne.
+- **Un contrôle de plus pour tous les modules.** Un test vérifie que chaque nom, description, libellé, aide et légende de chaque module existe en français ET en anglais, chacun dans sa langue, et que le Catalogue reprend bien les deux. Les 73 modules actuels passaient déjà ce contrôle : ce sont les textes du Catalogue qui manquaient.
+
+### Pour les développeurs
+
+- `scripts/build-index.mjs` écrit `names` et `descriptions` (un texte par langue du manifeste) à côté de `name` et `description` (le français, chaîne simple : cœurs plus anciens et index de tiers). `catalogue/index.json` régénéré ; version du dépôt et étiquette `ref` inchangées.
+- `tests/manifests-languages.test.mjs` (nouveau) : parité FR/EN et langue de chaque texte (mots-sentinelles) pour tous les manifestes, chaînes simples refusées hors cas listés avec leur raison, cohérence manifeste ↔ index. Il lit seulement les fichiers du dépôt.
+
 ## 1.42.1 — 2026-11-03
 
 *En bref : les jaquettes de jeux gardées sur votre site s'affichent correctement. Rien à régler, et aucune nouvelle permission.*
