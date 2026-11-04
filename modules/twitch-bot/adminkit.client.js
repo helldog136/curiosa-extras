@@ -234,6 +234,10 @@
     var list = node.length !== undefined && node.tagName !== "SELECT" ? Array.prototype.slice.call(node) : [node];
     var box = list.filter(function (n) { return n.type === "checkbox"; })[0];
     if (box) return !!box.checked;
+    if (list[0].type === "radio") {   // a segmented choice: set when it is not the first (default) option
+      var chosen = list.filter(function (n) { return n.checked; })[0];
+      return !!chosen && chosen !== list[0];
+    }
     return String(list[list.length - 1].value).trim() !== "";
   }
   function labelOf(form, name) {
@@ -298,6 +302,48 @@
     if (spec.hint) wrap.appendChild(el("p", "ck-hint", spec.hint));
     wrap.__isSet = function () { return fields.some(function (f) { return String(f.value).trim() !== ""; }); };
     return wrap;
+  }
+
+  /** "every 15 min" / "every 2 h" from a number of seconds (whole minutes only); "" when the interval is not usable. */
+  function everyText(spec, seconds) {
+    if (!(seconds >= 60) || seconds % 60 !== 0) return "";
+    var min = seconds / 60;
+    return min >= 120 && min % 60 === 0 ? spec.everyHour.replace("{h}", String(min / 60)) : spec.everyMin.replace("{min}", String(min));
+  }
+  /**
+   * The line under a two-choice control that tells what the CURRENT choice means (pure, tested without a page). `state`: { timerOnly, repeating, name, seconds }.
+   * Never a fixed sentence: the core cannot show a different help for each choice, so the line is written here and follows the choice.
+   * The name is shown only when it fits (72 characters) in BOTH choices, so that switching the choice never makes the name come and go; the interval only when it is whole minutes.
+   */
+  var HELP_MAX = 72;
+  function stateHelpText(spec, state) {
+    if (!state.repeating) return spec.first;
+    var every = everyText(spec, state.seconds), name = state.name ? spec.prefix + state.name : "";
+    var fill = function (kind, c) { return spec.texts[kind + "_" + c].replace("{name}", name).replace("{every}", every); };
+    var named = every ? "named_every" : "named", plain = every ? "every" : "plain";
+    var fits = name && ["timer", "both"].every(function (k) { return fill(k, named).length <= HELP_MAX; });
+    return fill(state.timerOnly ? "timer" : "both", fits ? named : plain);
+  }
+  /** Writes `stateHelpText` under the segmented choice `spec.field` and keeps it up to date (choice, repeat switch, name, interval). */
+  function stateHelp(form, spec) {
+    var radios = form.elements.namedItem(spec.field);
+    if (!radios || radios.length === undefined) return;
+    var first = radios[0], holder = first.closest("fieldset") || first.parentNode;
+    var line = el("p", "ck-hint ck-state-help");
+    line.id = spec.field + "__state"; line.setAttribute("aria-live", "polite");
+    holder.appendChild(line);
+    holder.setAttribute("aria-describedby", ((holder.getAttribute("aria-describedby") || "") + " " + line.id).trim());
+    var value = function (name) { var n = name && form.elements.namedItem(name); return n && n.value !== undefined ? String(n.value).trim() : ""; };
+    var update = function () {
+      var chosen = Array.prototype.filter.call(radios, function (r) { return r.checked; })[0];
+      var seconds = value(spec.everyField) === "" ? null : Number(value(spec.everyField));
+      line.textContent = stateHelpText(spec, { timerOnly: !!chosen && chosen.value === "on", repeating: spec.on ? fieldIsSet(form, spec.on) : true, name: value(spec.nameField), seconds: seconds });
+      line.hidden = !line.textContent;
+    };
+    // React (the core's fields) updates its hidden inputs after our listeners: read them one tick later.
+    var later = function () { root.setTimeout(update, 0); };
+    form.addEventListener("input", later); form.addEventListener("change", later); form.addEventListener("reset", later);
+    update(); root.setTimeout(update, 400);
   }
 
   /** La mise en page d'un formulaire du cœur d'après sa configuration (voir adminkit.mjs, formConfig). */
@@ -414,6 +460,7 @@
     form.setAttribute("data-ck-ready", "1");
     form.classList.add("ck-form-on");
     try { buildForm(form, cfg); } catch (e) { form.removeAttribute("data-ck-ready"); if (root.console) root.console.error("[kit]", e); }
+    if (cfg.stateHelp) { try { stateHelp(form, cfg.stateHelp); } catch (e) { if (root.console) root.console.error("[kit]", e); } }
   }
 
   /* ───────────── Mise en route ───────────── */
@@ -431,7 +478,7 @@
     root.setTimeout(function () { pending = false; scan(); }, 30);
   }).observe(doc.body, { childList: true, subtree: true });
 
-  var api = { scan: scan, norm: norm, matches: matches, rowPasses: rowPasses, previewText: previewText, fill: fill };
+  var api = { scan: scan, norm: norm, matches: matches, rowPasses: rowPasses, previewText: previewText, fill: fill, stateHelpText: stateHelpText };
   root.CuriosaKit = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   scan();

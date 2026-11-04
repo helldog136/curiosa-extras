@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.43.0 — 2026-11-04
+
+*En bref : le catalogue des extensions donne maintenant chaque description en anglais et en français. Le Press kit se remplit à la main ou avec un assistant IA. Le Bot Twitch dit clairement qui peut déclencher une commande répétée par un timer. La télécommande et le dock OBS passent par onglets, et « manche » devient « vote en boucle ». Rien à régler, et aucune nouvelle permission.*
+
+### Nouveautés
+
+- **Press kit 1.1.0: fill the kit from its settings, by hand or with an assistant.** The page still works with no setting (it shows the site's presentation, tagline, logos, colors and font). You can now add a presentation and a one-line description per language, a list of main facts and a press contact name, and choose "From the site (recommended)" or "My own values". Under "More options", "My own values" take up to 8 colors (a name and a code such as `#1B1A2E`), a font for titles and for text, and four logos chosen among the files already uploaded to the site. An assistant can read and fill all of it (`maintenance_module_settings`, `maintenance_module_configure`). Nothing is loaded from a third party by visitors. Needs Curiosa 0.6.0 or later.
+- **Participation 1.4.0 : la télécommande et le dock ont des onglets.** Une barre en haut du panneau (toujours visible) : « Sondages », « Tirage au sort », « Salles et pseudos »… un onglet par type de participation installé. Chaque onglet ne montre que ce qui le concerne. S'ouvre d'abord l'onglet où quelque chose est en cours, sinon le premier ; il ne saute pas quand le panneau se met à jour. Au clavier : flèches, Tab, Entrée.
+- **Le mot du tirage se choisit depuis la télécommande.** Dans l'onglet « Tirage au sort » : « Mot à dire dans le chat » (avec ou sans « ! ») et « Titre », préremplis avec ceux du dernier tirage, puis « Ouvrir le tirage ». Qui peut s'inscrire, le site, le nombre de personnes et la durée sont sous « Plus d'options ». L'état montre le mot à taper, les inscriptions et le compte à rebours. Le Bot Twitch écoute ce mot, sans rien changer de son côté.
+- **Une seule page pour tous les écrans** : dock de 300 px, téléphone (portrait et paysage), tablette, bureau.
+
+### Améliorations
+
+- **Twitch bot 1.10.1: "Started by" says what it does.** On a command page and on the new-timer form, the switch "Only for the timer, not in the chat" is now a two-button choice, "The timer and the chat" or "The timer only". The line under it used to say "Nobody can type it in the chat" even when the switch was off. It now follows the choice, the command name and the repeat interval ("!movember is sent every 15 min. Typing it does nothing."), and asks you to turn on "Repeat automatically" first when there is no repeat. Nothing changes in your data: the same commands stay "timer only".
+- **Sondages 1.4.3 : « manche » disparaît des textes.** Le mode s'appelle « vote en boucle » (le chat vote, le choix gagnant s'affiche, puis un nouveau vote démarre) et une unité « Tour 3 ». Seuls les textes changent : vos réglages, vos données et vos liens sont ceux d'avant.
+- **Le catalogue donne chaque texte dans la langue de la personne.** Avant, il ne gardait qu'une seule description par extension, en français : une personne qui installait son site en anglais pouvait lire du français dans l'assistant d'installation. Désormais le nom et la description sont publiés en anglais et en français, et une langue ajoutée par la communauté s'y ajoute d'elle-même.
+- **Pages légales 1.0.2 : la langue des textes ne retombe plus sur le français par hasard.** L'aperçu et l'outil pour l'IA choisissent la langue de l'administration, puis celle du site, puis l'anglais, seulement parmi les deux langues relues (anglais et français). Un modèle n'est jamais produit dans une autre langue.
+
+### Pour les développeurs
+
+- **Languages.** `catalogue/index.json` entries carry `i18n: { "<lang>": { "name", "description" } }`; the plain `name` and `description` are English (an older core shows them). `scripts/build-index.mjs` builds them with `entryTexts` (`scripts/rules.mjs`), also from the community languages (`locales/<code>.json`, keys `manifest.name`, `manifest.description`).
+- **Baseline.** `tests/i18n-baseline.json` and `node scripts/i18n-baseline.mjs --write | --report | --check`: manifest and locale-file gaps (0 today, blocking), MCP tool descriptions without a French translation (148, advisory) and code that picks French for every language but English (12). Every counter can only go down; `--report` prints the phase-2 batches.
+- `scripts/i18n-audit.mjs` is a verbatim copy of `src/core/i18n/audit.mjs` of the core (a test compares them); `scripts/i18n-add-language.mjs <code>` calls the core's script for this repository; `.github/PULL_REQUEST_TEMPLATE/new-language.md` and `CONTRIBUTING.md` describe the contribution.
+- Le panneau décrit par un module peut ajouter `tab` (libellé court), et ses formulaires `confirm`, `more` et `example` par champ (forme réutilisable : `actionForm`). Aucune route ajoutée (les routes `remote-state` et `remote-press` servent aussi les onglets). Tests : `tests/audience-tabs.test.mjs`, `tests/audience-draw.test.mjs`, `tests/audience-dock.test.mjs`.
+
 ## 1.42.1 — 2026-11-03
 
 *En bref : les jaquettes de jeux gardées sur votre site s'affichent correctement. Rien à régler, et aucune nouvelle permission.*
@@ -88,7 +113,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 ### Pour les développeurs
 
 - `planning.slot` : champ facultatif `partners` (`string[]`, pseudos Twitch en minuscules, 5 au plus), déclaré dans le schéma du Planning et dans `docs/TOPICS.md` ; absent quand il n'y en a pas (créneaux identiques à ceux d'avant). Le Planning renormalise tout ce qu'il reçoit.
-- `planning` 2.6.0 : `partners.mjs` (pseudos, `contact.book` v2 **facultatif** : `search` par pseudo puis `resolve`, jamais d'autre méthode ; réponses 2 minutes en mémoire), `minCore` inchangé (0.5.0 : aucune brique 0.6.0). `calendar-manual` 1.2.0 : `minCore` 0.6.0 (`folded`, `example`). `calendar-ical` 1.1.0 : `partners.mjs`, `minCore` inchangé. Aucune migration, aucun nouvel événement au journal.
+- `planning` 2.6.0 : `partners.mjs` (pseudos, `contact.book` v2 **facultatif** : `search` par pseudo puis `resolve`, jamais d'autre méthode ; réponses 2 minutes en mémoire), `minCore` inchangé (0.5.0 : aucune brique 0.6.0). `calendar-manual` 1.2.0 : `minCore` 0.6.0 (`more`, `example`). `calendar-ical` 1.1.0 : `partners.mjs`, `minCore` inchangé. Aucune migration, aucun nouvel événement au journal.
 - Tests : `tests/planning-partners.test.mjs` (nouveau) ; `tests/helpers/ergonomics.mjs` resynchronisé avec le kit du cœur 0.6.5 (la copie était en retard et faisait échouer `tests/ergonomics.test.mjs`).
 
 ## 1.39.0 — 2026-11-03
@@ -295,7 +320,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Pour les développeurs
 
-- Les deux modules demandent maintenant Curiosa 0.6.0 (`minCore`) : tableau enrichi, champs `segmented` et `folded`, réglages `rare`, `display: "segmented"` et `example`.
+- Les deux modules demandent maintenant Curiosa 0.6.0 (`minCore`) : tableau enrichi, champs `segmented` et `more`, réglages `rare`, `display: "segmented"` et `example`.
 - `tests/helpers/ergonomics.mjs` est recopié depuis `testsupport/ergonomics.mjs` du cœur 0.6.0 (il connaît les réglages `rare` et `example`). La base d'écarts d'ergonomie passe de 1185 à 1114 écarts.
 - `answers_<langue>` remplace `a1_<langue>` à `a4_<langue>` dans le formulaire du Jeu du jour ; les anciens noms sont encore lus par l'action `saveQuestion`.
 
@@ -337,7 +362,7 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ### Pour les développeurs
 
-- Bot Twitch 1.7.0, `minCore` 0.6.0 : tableau enrichi, champs `duration`, `switch`, `folded`, `example` du cœur. L'action `rewardToggle` devient `rewardEnable` (l'interrupteur dit l'état voulu : `enabled` vaut `1` ou `0`). Le champ `cooldownMin` reste accepté ; le formulaire envoie `cooldown` en secondes. Le choix de la couleur est replié (vide : rouge).
+- Bot Twitch 1.7.0, `minCore` 0.6.0 : tableau enrichi, champs `duration`, `switch`, `more`, `example` du cœur. L'action `rewardToggle` devient `rewardEnable` (l'interrupteur dit l'état voulu : `enabled` vaut `1` ou `0`). Le champ `cooldownMin` reste accepté ; le formulaire envoie `cooldown` en secondes. Le choix de la couleur est replié (vide : rouge).
 - `adminkit.client.js` reste pour les parties que le cœur ne couvre pas encore : période des commandes et des timers (la migration vers le contrôle natif est un lot suivant), aperçu et morceaux à insérer, et les boutons d'action en ligne (sans carte) en attendant une brique du cœur.
 ### Pour les développeurs
 

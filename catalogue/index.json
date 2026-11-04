@@ -3,11 +3,21 @@
   "modules": [
     {
       "id": "alerts-overlay",
-      "name": "Overlay alertes (OBS)",
-      "description": "Une fenêtre pour OBS qui affiche vos alertes (follow, sub, raid…), envoyées par vos outils de stream ou YouTube.",
+      "name": "Alerts overlay (OBS)",
+      "description": "A pop-up for OBS that shows your alerts (new follower, sub, raid…), sent by your stream tools or by YouTube.",
+      "i18n": {
+        "en": {
+          "name": "Alerts overlay (OBS)",
+          "description": "A pop-up for OBS that shows your alerts (new follower, sub, raid…), sent by your stream tools or by YouTube."
+        },
+        "fr": {
+          "name": "Overlay alertes (OBS)",
+          "description": "Une fenêtre pour OBS qui affiche vos alertes (follow, sub, raid…), envoyées par vos outils de stream ou YouTube."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -18,12 +28,22 @@
     },
     {
       "id": "audience",
-      "name": "Participation",
-      "description": "La base des animations de stream : pseudo sans compte, télécommande pour votre téléphone et tirage au sort.",
+      "name": "Audience",
+      "description": "The base of stream interactions: a nickname per person with no account, a phone remote and the prize draw.",
+      "i18n": {
+        "en": {
+          "name": "Audience",
+          "description": "The base of stream interactions: a nickname per person with no account, a phone remote and the prize draw."
+        },
+        "fr": {
+          "name": "Participation",
+          "description": "La base des animations de stream : pseudo sans compte, télécommande pour votre téléphone et tirage au sort."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/audience",
-      "ref": "v1.42.1",
-      "version": "1.3.1",
+      "ref": "v1.43.0",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🙌",
@@ -44,10 +64,20 @@
     {
       "id": "bandcamp",
       "name": "Bandcamp",
-      "description": "Affiche le bouton de votre Bandcamp dans l'en-tête du site.",
+      "description": "Shows your Bandcamp button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Bandcamp",
+          "description": "Shows your Bandcamp button in the site header."
+        },
+        "fr": {
+          "name": "Bandcamp",
+          "description": "Affiche le bouton de votre Bandcamp dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bandcamp",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "bandcamp",
       "apiVersion": 2,
@@ -84,10 +114,20 @@
     {
       "id": "blog",
       "name": "Blog",
-      "description": "Des articles avec image, résumé et contenu mis en forme simplement. Ajoutez autant de blogs que vous voulez.",
+      "description": "Articles with an image, a summary and simply formatted content. Add as many blogs as you want.",
+      "i18n": {
+        "en": {
+          "name": "Blog",
+          "description": "Articles with an image, a summary and simply formatted content. Add as many blogs as you want."
+        },
+        "fr": {
+          "name": "Blog",
+          "description": "Des articles avec image, résumé et contenu mis en forme simplement. Ajoutez autant de blogs que vous voulez."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/blog",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -96,10 +136,20 @@
     {
       "id": "bluesky",
       "name": "Bluesky",
-      "description": "Affiche le bouton de votre Bluesky dans l'en-tête et partage vos followers et vos publications.",
+      "description": "Shows your Bluesky button in the site header and shares your follower and post counts.",
+      "i18n": {
+        "en": {
+          "name": "Bluesky",
+          "description": "Shows your Bluesky button in the site header and shares your follower and post counts."
+        },
+        "fr": {
+          "name": "Bluesky",
+          "description": "Affiche le bouton de votre Bluesky dans l'en-tête et partage vos followers et vos publications."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/bluesky",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "platform": "bluesky",
       "apiVersion": 2,
@@ -133,11 +183,21 @@
     },
     {
       "id": "calendar-ical",
-      "name": "Agenda en ligne",
-      "description": "Lit votre Google Agenda (ou tout agenda en ligne) pour que votre site montre vos streams : planning, bot du chat… Rien à recopier.",
+      "name": "Online calendar",
+      "description": "Reads your Google Calendar (or any online calendar) so your site can show your streams: schedule, chat bot… Nothing to retype.",
+      "i18n": {
+        "en": {
+          "name": "Online calendar",
+          "description": "Reads your Google Calendar (or any online calendar) so your site can show your streams: schedule, chat bot… Nothing to retype."
+        },
+        "fr": {
+          "name": "Agenda en ligne",
+          "description": "Lit votre Google Agenda (ou tout agenda en ligne) pour que votre site montre vos streams : planning, bot du chat… Rien à recopier."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-ical",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -151,11 +211,21 @@
     },
     {
       "id": "calendar-manual",
-      "name": "Streams saisis à la main",
-      "description": "Écrivez vos streams ici (jour, heure, jeux, chaque semaine) et votre site les montre : le planning, le bot du chat… Aucun compte Google ni agenda à régler.",
+      "name": "Hand-written streams",
+      "description": "Write your streams here (day, time, games, every week) and your site shows them: the schedule, the chat bot… No Google account or calendar to set up.",
+      "i18n": {
+        "en": {
+          "name": "Hand-written streams",
+          "description": "Write your streams here (day, time, games, every week) and your site shows them: the schedule, the chat bot… No Google account or calendar to set up."
+        },
+        "fr": {
+          "name": "Streams saisis à la main",
+          "description": "Écrivez vos streams ici (jour, heure, jeux, chaque semaine) et votre site les montre : le planning, le bot du chat… Aucun compte Google ni agenda à régler."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/calendar-manual",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -169,11 +239,21 @@
     },
     {
       "id": "codes",
-      "name": "Codes promo",
-      "description": "Les offres de vos partenaires : code, lien et date d'expiration.",
+      "name": "Promo codes",
+      "description": "Partner offers with a code, a link and an expiry date.",
+      "i18n": {
+        "en": {
+          "name": "Promo codes",
+          "description": "Partner offers with a code, a link and an expiry date."
+        },
+        "fr": {
+          "name": "Codes promo",
+          "description": "Les offres de vos partenaires : code, lien et date d'expiration."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/codes",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -181,11 +261,21 @@
     },
     {
       "id": "collection",
-      "name": "Collection personnalisée",
-      "description": "Un module de contenu vierge : choisissez vous-même affichage, champs et comportement.",
+      "name": "Custom collection",
+      "description": "A blank content module: choose its display, fields and behavior yourself.",
+      "i18n": {
+        "en": {
+          "name": "Custom collection",
+          "description": "A blank content module: choose its display, fields and behavior yourself."
+        },
+        "fr": {
+          "name": "Collection personnalisée",
+          "description": "Un module de contenu vierge : choisissez vous-même affichage, champs et comportement."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/collection",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -193,11 +283,21 @@
     },
     {
       "id": "commissions",
-      "name": "Commandes",
-      "description": "Une file de commandes claire pour toute personne qui crée sur commande : ouvert, complet ou fermé avec les places libres, vos formules avec leurs prix indicatifs, un formulaire court, un lien de suivi privé pour chaque personne qui commande et une liste de demandes simple pour vous. Aucun paiement.",
+      "name": "Commissions",
+      "description": "A clear commission queue for anyone who creates on request: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment.",
+      "i18n": {
+        "en": {
+          "name": "Commissions",
+          "description": "A clear commission queue for anyone who creates on request: open, full or closed with the free places, your packages with indicative prices, a short request form, a private tracking link for each customer and a simple list of requests for you. No payment."
+        },
+        "fr": {
+          "name": "Commandes",
+          "description": "Une file de commandes claire pour toute personne qui crée sur commande : ouvert, complet ou fermé avec les places libres, vos formules avec leurs prix indicatifs, un formulaire court, un lien de suivi privé pour chaque personne qui commande et une liste de demandes simple pour vous. Aucun paiement."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/commissions",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -235,11 +335,21 @@
     },
     {
       "id": "community-stats",
-      "name": "Statistiques de la communauté",
-      "description": "Garde les chiffres de vos réseaux (followers, abonnements payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord.",
+      "name": "Community statistics",
+      "description": "Keeps the numbers of your networks (followers, paying followers, posts, views) and how they evolve, for you and for your AI. Nothing is shown on your site without your say-so.",
+      "i18n": {
+        "en": {
+          "name": "Community statistics",
+          "description": "Keeps the numbers of your networks (followers, paying followers, posts, views) and how they evolve, for you and for your AI. Nothing is shown on your site without your say-so."
+        },
+        "fr": {
+          "name": "Statistiques de la communauté",
+          "description": "Garde les chiffres de vos réseaux (followers, abonnements payants, publications, vues) et leur évolution, pour vous et pour votre IA. Rien n'est montré sur votre site sans votre accord."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/community-stats",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -250,11 +360,21 @@
     },
     {
       "id": "contact-form",
-      "name": "Formulaire de contact",
-      "description": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses.",
+      "name": "Contact form",
+      "description": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+      "i18n": {
+        "en": {
+          "name": "Contact form",
+          "description": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book."
+        },
+        "fr": {
+          "name": "Formulaire de contact",
+          "description": "Ajoute un formulaire de contact sous la page de votre choix. Chaque message devient un contact à vérifier dans votre carnet d'adresses."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contact-form",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.4",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -269,10 +389,20 @@
     {
       "id": "contacts",
       "name": "Contacts",
-      "description": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux (Twitch, YouTube, Bluesky…), catégories, notes et photo. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer.",
+      "description": "Your private address book: people and organisations, their accounts on the networks (Twitch, YouTube, Bluesky…), categories, notes and photo. Each person lives here once; the rest of the site only links to them.",
+      "i18n": {
+        "en": {
+          "name": "Contacts",
+          "description": "Your private address book: people and organisations, their accounts on the networks (Twitch, YouTube, Bluesky…), categories, notes and photo. Each person lives here once; the rest of the site only links to them."
+        },
+        "fr": {
+          "name": "Contacts",
+          "description": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux (Twitch, YouTube, Bluesky…), catégories, notes et photo. Chaque personne n'y existe qu'une fois ; le reste du site ne fait que s'y référer."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/contacts",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "2.4.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -306,11 +436,21 @@
     },
     {
       "id": "content-planner",
-      "name": "Cahier de contenu",
-      "description": "Votre cahier privé pour vos vidéos, articles et posts : idées, en préparation et publié, avec des étapes à cocher et une date visée. Rien n'est jamais montré sur votre site.",
+      "name": "Content notebook",
+      "description": "Your private notebook for videos, articles and posts: ideas, work in progress and published, with steps to tick off and a target date. Nothing is ever shown on your site.",
+      "i18n": {
+        "en": {
+          "name": "Content notebook",
+          "description": "Your private notebook for videos, articles and posts: ideas, work in progress and published, with steps to tick off and a target date. Nothing is ever shown on your site."
+        },
+        "fr": {
+          "name": "Cahier de contenu",
+          "description": "Votre cahier privé pour vos vidéos, articles et posts : idées, en préparation et publié, avec des étapes à cocher et une date visée. Rien n'est jamais montré sur votre site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/content-planner",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -321,11 +461,21 @@
     },
     {
       "id": "countdown",
-      "name": "Compte à rebours",
-      "description": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS.",
+      "name": "Countdown",
+      "description": "Announce a release, a launch, a birthday or a convention: visitors see the time left and the time where they live, and can add it to their calendar. A page, a home section and an OBS source.",
+      "i18n": {
+        "en": {
+          "name": "Countdown",
+          "description": "Announce a release, a launch, a birthday or a convention: visitors see the time left and the time where they live, and can add it to their calendar. A page, a home section and an OBS source."
+        },
+        "fr": {
+          "name": "Compte à rebours",
+          "description": "Annoncez une sortie, un lancement, un anniversaire ou une convention : votre public voit le temps qui reste et l'heure chez lui, et peut l'ajouter à son agenda. Une page, un morceau d'accueil et une source pour OBS."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/countdown",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -336,11 +486,21 @@
     },
     {
       "id": "daily-game",
-      "name": "Jeu du jour",
-      "description": "Un petit jeu une fois par jour pour donner envie de revenir. Une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option.",
+      "name": "Daily game",
+      "description": "A small game once a day to make people want to come back. One question, a few answers, an explanation, then “come back tomorrow”. The streak of days is kept in each visitor's browser, with no account. Weekly ranking as an option.",
+      "i18n": {
+        "en": {
+          "name": "Daily game",
+          "description": "A small game once a day to make people want to come back. One question, a few answers, an explanation, then “come back tomorrow”. The streak of days is kept in each visitor's browser, with no account. Weekly ranking as an option."
+        },
+        "fr": {
+          "name": "Jeu du jour",
+          "description": "Un petit jeu une fois par jour pour donner envie de revenir. Une question, quelques réponses, une explication, puis « revenez demain ». La série de jours est gardée dans le navigateur de chaque personne, sans compte. Classement de la semaine en option."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/daily-game",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -374,11 +534,21 @@
     },
     {
       "id": "directory",
-      "name": "Annuaire",
-      "description": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper.",
+      "name": "Directory",
+      "description": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype.",
+      "i18n": {
+        "en": {
+          "name": "Directory",
+          "description": "A public showcase of your members, creators or partners, and of your team: visitors search by name, filter by category, open a profile, print or download the list. The people come from Contacts, nothing to retype."
+        },
+        "fr": {
+          "name": "Annuaire",
+          "description": "Une vitrine publique de vos membres, artistes ou partenaires, et de votre équipe : on cherche par nom, on filtre par catégorie, on ouvre une fiche, on imprime ou on télécharge la liste. Les personnes viennent de Contacts, rien n'est à retaper."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/directory",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -419,10 +589,20 @@
     {
       "id": "discord",
       "name": "Discord",
-      "description": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres.",
+      "description": "Shows your Discord button in the site header and shares your member count.",
+      "i18n": {
+        "en": {
+          "name": "Discord",
+          "description": "Shows your Discord button in the site header and shares your member count."
+        },
+        "fr": {
+          "name": "Discord",
+          "description": "Affiche le bouton de votre Discord dans l'en-tête et partage le nombre de vos membres."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.3.0",
       "platform": "discord",
       "apiVersion": 2,
@@ -464,11 +644,21 @@
     },
     {
       "id": "discord-announcer",
-      "name": "Annonces Discord",
-      "description": "Annonce vos nouveautés sur un salon Discord, sans bot ni compte à lier. Prévient aussi quand vous passez en direct.",
+      "name": "Discord announcements",
+      "description": "Announces your new content on a Discord channel, with no bot or account to link. Also tells it when you go live.",
+      "i18n": {
+        "en": {
+          "name": "Discord announcements",
+          "description": "Announces your new content on a Discord channel, with no bot or account to link. Also tells it when you go live."
+        },
+        "fr": {
+          "name": "Annonces Discord",
+          "description": "Annonce vos nouveautés sur un salon Discord, sans bot ni compte à lier. Prévient aussi quand vous passez en direct."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/discord-announcer",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "platform": "discord",
       "apiVersion": 2,
@@ -486,11 +676,21 @@
     },
     {
       "id": "events",
-      "name": "Événements",
-      "description": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
+      "name": "Events",
+      "description": "An agenda of events and trainings: upcoming dates with a filter by type and search, a monthly calendar, a detailed page (time where the visitor lives, programme, speakers, sign-up, video, add to one's calendar) and a look back at past events.",
+      "i18n": {
+        "en": {
+          "name": "Events",
+          "description": "An agenda of events and trainings: upcoming dates with a filter by type and search, a monthly calendar, a detailed page (time where the visitor lives, programme, speakers, sign-up, video, add to one's calendar) and a look back at past events."
+        },
+        "fr": {
+          "name": "Événements",
+          "description": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/events",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -559,10 +759,20 @@
     {
       "id": "facebook",
       "name": "Facebook",
-      "description": "Affiche le bouton de votre Facebook dans l'en-tête du site.",
+      "description": "Shows your Facebook button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Facebook",
+          "description": "Shows your Facebook button in the site header."
+        },
+        "fr": {
+          "name": "Facebook",
+          "description": "Affiche le bouton de votre Facebook dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/facebook",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "facebook",
       "apiVersion": 2,
@@ -605,11 +815,21 @@
     },
     {
       "id": "faq",
-      "name": "Questions fréquentes",
-      "description": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a été utile » et une boîte pour les questions du public.",
+      "name": "FAQ",
+      "description": "A page of questions and answers grouped by category, that open and close, with search, “It helped” feedback and a box for visitors' questions.",
+      "i18n": {
+        "en": {
+          "name": "FAQ",
+          "description": "A page of questions and answers grouped by category, that open and close, with search, “It helped” feedback and a box for visitors' questions."
+        },
+        "fr": {
+          "name": "Questions fréquentes",
+          "description": "Une page de questions et réponses rangées par thèmes, qui s'ouvrent et se referment, avec recherche, avis « Cela m'a été utile » et une boîte pour les questions du public."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/faq",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.3",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -646,11 +866,21 @@
     },
     {
       "id": "gallery",
-      "name": "Galeries photos",
-      "description": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Visionneuse plein écran et demande de retrait.",
+      "name": "Photo galleries",
+      "description": "Photo albums for your site: event recaps, portfolio, behind the scenes. Full-screen viewer and takedown requests.",
+      "i18n": {
+        "en": {
+          "name": "Photo galleries",
+          "description": "Photo albums for your site: event recaps, portfolio, behind the scenes. Full-screen viewer and takedown requests."
+        },
+        "fr": {
+          "name": "Galeries photos",
+          "description": "Des albums de photos pour votre site : rétrospectives, portfolio, coulisses. Visionneuse plein écran et demande de retrait."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/gallery",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -699,11 +929,21 @@
     },
     {
       "id": "game-covers",
-      "name": "Jaquettes de jeux",
-      "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics.",
+      "name": "Game covers",
+      "description": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks.",
+      "i18n": {
+        "en": {
+          "name": "Game covers",
+          "description": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks."
+        },
+        "fr": {
+          "name": "Jaquettes de jeux",
+          "description": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-covers",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.3.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -724,11 +964,21 @@
     },
     {
       "id": "game-suggestions",
-      "name": "Suggestions de jeux",
-      "description": "Laissez votre public suggérer à quoi jouer. Une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion et des votes « rejoue-le ». Vous pouvez ajouter des jeux vous-même, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement.",
+      "name": "Game suggestions",
+      "description": "Let your audience suggest what to play. A public list with statuses (proposed, planned, played…), a suggestion form and \"play it again\" votes. You can add games yourself, one by one or a whole list. Covers are found automatically.",
+      "i18n": {
+        "en": {
+          "name": "Game suggestions",
+          "description": "Let your audience suggest what to play. A public list with statuses (proposed, planned, played…), a suggestion form and \"play it again\" votes. You can add games yourself, one by one or a whole list. Covers are found automatically."
+        },
+        "fr": {
+          "name": "Suggestions de jeux",
+          "description": "Laissez votre public suggérer à quoi jouer. Une liste publique avec statuts (proposé, planifié, joué…), un formulaire de suggestion et des votes « rejoue-le ». Vous pouvez ajouter des jeux vous-même, un par un ou toute une liste. Les jaquettes sont trouvées automatiquement."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.9.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -749,10 +999,20 @@
     {
       "id": "github",
       "name": "GitHub",
-      "description": "Affiche le bouton de votre GitHub dans l'en-tête et partage vos followers.",
+      "description": "Shows your GitHub button in the site header and shares your follower count.",
+      "i18n": {
+        "en": {
+          "name": "GitHub",
+          "description": "Shows your GitHub button in the site header and shares your follower count."
+        },
+        "fr": {
+          "name": "GitHub",
+          "description": "Affiche le bouton de votre GitHub dans l'en-tête et partage vos followers."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/github",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "platform": "github",
       "apiVersion": 2,
@@ -786,11 +1046,21 @@
     },
     {
       "id": "hero",
-      "name": "Bandeau d'accueil",
-      "description": "Grand titre et introduction pour le haut de l'accueil. Placez sa section où vous voulez.",
+      "name": "Home banner",
+      "description": "Big title and intro for the top of the home page. Place its section where you want it.",
+      "i18n": {
+        "en": {
+          "name": "Home banner",
+          "description": "Big title and intro for the top of the home page. Place its section where you want it."
+        },
+        "fr": {
+          "name": "Bandeau d'accueil",
+          "description": "Grand titre et introduction pour le haut de l'accueil. Placez sa section où vous voulez."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/hero",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -798,11 +1068,21 @@
     },
     {
       "id": "home-assistant",
-      "name": "Connecteur Home Assistant",
-      "description": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Avec un gros bouton « Tout couper ».",
+      "name": "Home Assistant connector",
+      "description": "Links your channel points to your home: lights, a message read aloud, actions you name. With a big “Cut everything” button.",
+      "i18n": {
+        "en": {
+          "name": "Home Assistant connector",
+          "description": "Links your channel points to your home: lights, a message read aloud, actions you name. With a big “Cut everything” button."
+        },
+        "fr": {
+          "name": "Connecteur Home Assistant",
+          "description": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Avec un gros bouton « Tout couper »."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/home-assistant",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -830,11 +1110,21 @@
     },
     {
       "id": "idea-box",
-      "name": "Boîte à idées",
-      "description": "Laissez votre public vous proposer des idées. Un champ, un bouton, puis une liste des idées retenues avec leur statut et un bouton « Je soutiens ». Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon.",
+      "name": "Idea box",
+      "description": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep with their status and a support button. Each idea is reviewed before it shows: you publish it, refuse it or merge it with a duplicate.",
+      "i18n": {
+        "en": {
+          "name": "Idea box",
+          "description": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep with their status and a support button. Each idea is reviewed before it shows: you publish it, refuse it or merge it with a duplicate."
+        },
+        "fr": {
+          "name": "Boîte à idées",
+          "description": "Laissez votre public vous proposer des idées. Un champ, un bouton, puis une liste des idées retenues avec leur statut et un bouton « Je soutiens ». Chaque idée est relue avant d'apparaître : vous la publiez, la refusez ou la fusionnez avec un doublon."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/idea-box",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.1",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -884,10 +1174,20 @@
     {
       "id": "instagram",
       "name": "Instagram",
-      "description": "Affiche le bouton de votre Instagram dans l'en-tête du site.",
+      "description": "Shows your Instagram button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Instagram",
+          "description": "Shows your Instagram button in the site header."
+        },
+        "fr": {
+          "name": "Instagram",
+          "description": "Affiche le bouton de votre Instagram dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/instagram",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "instagram",
       "apiVersion": 2,
@@ -921,10 +1221,20 @@
     {
       "id": "kick",
       "name": "Kick",
-      "description": "Affiche le bouton de votre Kick dans l'en-tête du site.",
+      "description": "Shows your Kick button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Kick",
+          "description": "Shows your Kick button in the site header."
+        },
+        "fr": {
+          "name": "Kick",
+          "description": "Affiche le bouton de votre Kick dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/kick",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "kick",
       "apiVersion": 2,
@@ -958,10 +1268,20 @@
     {
       "id": "kofi",
       "name": "Ko-fi",
-      "description": "Affiche le bouton de votre Ko-fi dans l'en-tête du site.",
+      "description": "Shows your Ko-fi button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Ko-fi",
+          "description": "Shows your Ko-fi button in the site header."
+        },
+        "fr": {
+          "name": "Ko-fi",
+          "description": "Affiche le bouton de votre Ko-fi dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/kofi",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "ko-fi",
       "apiVersion": 2,
@@ -994,12 +1314,22 @@
     },
     {
       "id": "legal-pages",
-      "name": "Mentions légales",
-      "description": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais, pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique.",
+      "name": "Legal pages",
+      "description": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English, for Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice.",
+      "i18n": {
+        "en": {
+          "name": "Legal pages",
+          "description": "Answer a few simple questions and get your legal notice, privacy page and cookies page, in French and English, for Belgium, France, Switzerland, Canada or elsewhere. Help templates to read before publishing: not legal advice."
+        },
+        "fr": {
+          "name": "Mentions légales",
+          "description": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et votre page cookies, en français et en anglais, pour la Belgique, la France, la Suisse, le Canada ou ailleurs. Des modèles d'aide à relire avant de publier : ce n'est pas un conseil juridique."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/legal-pages",
-      "ref": "v1.42.1",
-      "version": "1.0.1",
+      "ref": "v1.43.0",
+      "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "⚖️",
@@ -1009,11 +1339,21 @@
     },
     {
       "id": "links",
-      "name": "Liste de liens",
-      "description": "Une liste de liens avec icônes — vos sites, vos projets, vos pages préférées. Les réseaux sociaux ont leurs propres modules.",
+      "name": "Link list",
+      "description": "A list of links with icons — your sites, your projects, your favourite pages. Social networks have their own modules.",
+      "i18n": {
+        "en": {
+          "name": "Link list",
+          "description": "A list of links with icons — your sites, your projects, your favourite pages. Social networks have their own modules."
+        },
+        "fr": {
+          "name": "Liste de liens",
+          "description": "Une liste de liens avec icônes — vos sites, vos projets, vos pages préférées. Les réseaux sociaux ont leurs propres modules."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/links",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1035,11 +1375,21 @@
     },
     {
       "id": "live-status",
-      "name": "Statut du live",
-      "description": "Affiche une bannière « en direct » et votre lecteur sur l'accueil quand vous êtes en direct sur Twitch, sur YouTube ou sur les deux.",
+      "name": "Live status",
+      "description": "Shows a “live now” banner and your player on the home page when you are live on Twitch, on YouTube, or on both.",
+      "i18n": {
+        "en": {
+          "name": "Live status",
+          "description": "Shows a “live now” banner and your player on the home page when you are live on Twitch, on YouTube, or on both."
+        },
+        "fr": {
+          "name": "Statut du live",
+          "description": "Affiche une bannière « en direct » et votre lecteur sur l'accueil quand vous êtes en direct sur Twitch, sur YouTube ou sur les deux."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/live-status",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.4.3",
       "platform": "twitch",
       "apiVersion": 2,
@@ -1061,11 +1411,21 @@
     },
     {
       "id": "map",
-      "name": "Carte",
-      "description": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande de la personne qui visite, avec un bouton « Près de moi ».",
+      "name": "Map",
+      "description": "A list of useful places (studios, good addresses, events…) with filters by type and search, and an OpenStreetMap map that only shows when the visitor asks for it, with a “Near me” button.",
+      "i18n": {
+        "en": {
+          "name": "Map",
+          "description": "A list of useful places (studios, good addresses, events…) with filters by type and search, and an OpenStreetMap map that only shows when the visitor asks for it, with a “Near me” button."
+        },
+        "fr": {
+          "name": "Carte",
+          "description": "Une liste de lieux utiles (studios, bonnes adresses, événements…) avec filtres par type et recherche, et une carte OpenStreetMap qui ne s'affiche qu'à la demande de la personne qui visite, avec un bouton « Près de moi »."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/map",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1076,11 +1436,21 @@
     },
     {
       "id": "mascot",
-      "name": "Mascotte",
-      "description": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
+      "name": "Mascot",
+      "description": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy.",
+      "i18n": {
+        "en": {
+          "name": "Mascot",
+          "description": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy."
+        },
+        "fr": {
+          "name": "Mascotte",
+          "description": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mascot",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1106,10 +1476,20 @@
     {
       "id": "mastodon",
       "name": "Mastodon",
-      "description": "Affiche le bouton de votre Mastodon dans l'en-tête et partage vos followers et vos publications.",
+      "description": "Shows your Mastodon button in the site header and shares your follower and post counts.",
+      "i18n": {
+        "en": {
+          "name": "Mastodon",
+          "description": "Shows your Mastodon button in the site header and shares your follower and post counts."
+        },
+        "fr": {
+          "name": "Mastodon",
+          "description": "Affiche le bouton de votre Mastodon dans l'en-tête et partage vos followers et vos publications."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/mastodon",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "platform": "mastodon",
       "apiVersion": 2,
@@ -1149,11 +1529,21 @@
     },
     {
       "id": "maze-overlay",
-      "name": "Overlay labyrinthe 3D (OBS)",
-      "description": "Un labyrinthe 3D rétro pour OBS. Le personnage se promène dans les couloirs et s'arrête devant des affiches faites avec le contenu de votre site.",
+      "name": "3D maze overlay (OBS)",
+      "description": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",
+      "i18n": {
+        "en": {
+          "name": "3D maze overlay (OBS)",
+          "description": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content."
+        },
+        "fr": {
+          "name": "Overlay labyrinthe 3D (OBS)",
+          "description": "Un labyrinthe 3D rétro pour OBS. Le personnage se promène dans les couloirs et s'arrête devant des affiches faites avec le contenu de votre site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/maze-overlay",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1165,10 +1555,20 @@
     {
       "id": "pages",
       "name": "Pages",
-      "description": "Des pages libres à la racine du site (/a-propos, /contact…).",
+      "description": "Free-form pages at the site root (/about, /contact…).",
+      "i18n": {
+        "en": {
+          "name": "Pages",
+          "description": "Free-form pages at the site root (/about, /contact…)."
+        },
+        "fr": {
+          "name": "Pages",
+          "description": "Des pages libres à la racine du site (/a-propos, /contact…)."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/pages",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1176,11 +1576,21 @@
     },
     {
       "id": "partnerships",
-      "name": "Partenariats (interne)",
-      "description": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique.",
+      "name": "Partnerships (internal)",
+      "description": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page.",
+      "i18n": {
+        "en": {
+          "name": "Partnerships (internal)",
+          "description": "Your private partnership pipeline: brands you approach, status, follow-ups and journal. The people are linked from your address book. Has no public page."
+        },
+        "fr": {
+          "name": "Partenariats (interne)",
+          "description": "Votre suivi privé des partenariats : marques démarchées, statut, relances et journal. Les personnes sont reliées depuis votre carnet d'adresses. N'a aucune page publique."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/partnerships",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "2.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1204,10 +1614,20 @@
     {
       "id": "patreon",
       "name": "Patreon",
-      "description": "Affiche le bouton de votre Patreon dans l'en-tête du site.",
+      "description": "Shows your Patreon button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Patreon",
+          "description": "Shows your Patreon button in the site header."
+        },
+        "fr": {
+          "name": "Patreon",
+          "description": "Affiche le bouton de votre Patreon dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/patreon",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "patreon",
       "apiVersion": 2,
@@ -1241,10 +1661,20 @@
     {
       "id": "pinterest",
       "name": "Pinterest",
-      "description": "Affiche le bouton de votre Pinterest dans l'en-tête du site.",
+      "description": "Shows your Pinterest button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Pinterest",
+          "description": "Shows your Pinterest button in the site header."
+        },
+        "fr": {
+          "name": "Pinterest",
+          "description": "Affiche le bouton de votre Pinterest dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/pinterest",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "pinterest",
       "apiVersion": 2,
@@ -1277,11 +1707,21 @@
     },
     {
       "id": "planning",
-      "name": "Planning des streams",
-      "description": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
+      "name": "Stream schedule",
+      "description": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand.",
+      "i18n": {
+        "en": {
+          "name": "Stream schedule",
+          "description": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
+        },
+        "fr": {
+          "name": "Planning des streams",
+          "description": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/planning",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "2.7.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1345,11 +1785,21 @@
     },
     {
       "id": "platform-links",
-      "name": "Autres plateformes",
-      "description": "Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi ou une autre page en icône à côté de vos réseaux, avec en option une page d'avertissement (18 ans et plus) avant l'ouverture du lien.",
+      "name": "Other platforms",
+      "description": "Add your OnlyFans, Mym, Fansly, Patreon, Ko-fi or any other page as an icon next to your social networks, with an optional notice page (18+) before the link opens.",
+      "i18n": {
+        "en": {
+          "name": "Other platforms",
+          "description": "Add your OnlyFans, Mym, Fansly, Patreon, Ko-fi or any other page as an icon next to your social networks, with an optional notice page (18+) before the link opens."
+        },
+        "fr": {
+          "name": "Autres plateformes",
+          "description": "Ajoutez votre OnlyFans, Mym, Fansly, Patreon, Ko-fi ou une autre page en icône à côté de vos réseaux, avec en option une page d'avertissement (18 ans et plus) avant l'ouverture du lien."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/platform-links",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1389,12 +1839,22 @@
     },
     {
       "id": "polls",
-      "name": "Sondages",
-      "description": "Posez une question à votre public. Un vote par personne sans compte, des résultats en barres, un affichage pour OBS.",
+      "name": "Polls",
+      "description": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS.",
+      "i18n": {
+        "en": {
+          "name": "Polls",
+          "description": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS."
+        },
+        "fr": {
+          "name": "Sondages",
+          "description": "Posez une question à votre public. Un vote par personne sans compte, des résultats en barres, un affichage pour OBS."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/polls",
-      "ref": "v1.42.1",
-      "version": "1.4.2",
+      "ref": "v1.43.0",
+      "version": "1.4.3",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📊",
@@ -1442,23 +1902,46 @@
     },
     {
       "id": "press-kit",
-      "name": "Kit presse",
-      "description": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, logo, couleurs, police, contact. Elle n'affiche que ce que vous remplissez dans son onglet « Réglages » — rien d'autre à entretenir.",
+      "name": "Press kit",
+      "description": "A public page presenting your identity to press and partners: presentation, main facts, logos, colors, fonts, contact. It uses your site by default. Fill in your own values in its “Settings” tab, or ask an assistant.",
+      "i18n": {
+        "en": {
+          "name": "Press kit",
+          "description": "A public page presenting your identity to press and partners: presentation, main facts, logos, colors, fonts, contact. It uses your site by default. Fill in your own values in its “Settings” tab, or ask an assistant."
+        },
+        "fr": {
+          "name": "Kit presse",
+          "description": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, faits marquants, logos, couleurs, polices, contact. Elle reprend votre site par défaut. Mettez-y vos propres valeurs dans l'onglet « Réglages », ou demandez à un assistant."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/press-kit",
-      "ref": "v1.42.1",
-      "version": "1.0.1",
+      "ref": "v1.43.0",
+      "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "📰"
+      "icon": "📰",
+      "requires": {
+        "core": "0.6.0"
+      }
     },
     {
       "id": "reddit",
       "name": "Reddit",
-      "description": "Affiche le bouton de votre Reddit dans l'en-tête et partage vos followers.",
+      "description": "Shows your Reddit button in the site header and shares your follower count.",
+      "i18n": {
+        "en": {
+          "name": "Reddit",
+          "description": "Shows your Reddit button in the site header and shares your follower count."
+        },
+        "fr": {
+          "name": "Reddit",
+          "description": "Affiche le bouton de votre Reddit dans l'en-tête et partage vos followers."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/reddit",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.1",
       "platform": "reddit",
       "apiVersion": 2,
@@ -1509,10 +1992,20 @@
     {
       "id": "snapchat",
       "name": "Snapchat",
-      "description": "Affiche le bouton de votre Snapchat dans l'en-tête du site.",
+      "description": "Shows your Snapchat button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Snapchat",
+          "description": "Shows your Snapchat button in the site header."
+        },
+        "fr": {
+          "name": "Snapchat",
+          "description": "Affiche le bouton de votre Snapchat dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/snapchat",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "snapchat",
       "apiVersion": 2,
@@ -1550,10 +2043,20 @@
     {
       "id": "soundcloud",
       "name": "SoundCloud",
-      "description": "Affiche le bouton de votre SoundCloud dans l'en-tête du site.",
+      "description": "Shows your SoundCloud button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "SoundCloud",
+          "description": "Shows your SoundCloud button in the site header."
+        },
+        "fr": {
+          "name": "SoundCloud",
+          "description": "Affiche le bouton de votre SoundCloud dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/soundcloud",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "soundcloud",
       "apiVersion": 2,
@@ -1586,11 +2089,21 @@
     },
     {
       "id": "sponsor-ticker",
-      "name": "Overlay sponsors (OBS)",
-      "description": "Un bandeau pour OBS qui affiche périodiquement l'un de vos sponsors avec son code promo et un QR code.",
+      "name": "Sponsor ticker overlay (OBS)",
+      "description": "A lower-third for OBS that periodically shows one of your sponsors with its promo code and a QR code.",
+      "i18n": {
+        "en": {
+          "name": "Sponsor ticker overlay (OBS)",
+          "description": "A lower-third for OBS that periodically shows one of your sponsors with its promo code and a QR code."
+        },
+        "fr": {
+          "name": "Overlay sponsors (OBS)",
+          "description": "Un bandeau pour OBS qui affiche périodiquement l'un de vos sponsors avec son code promo et un QR code."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/sponsor-ticker",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1602,10 +2115,20 @@
     {
       "id": "sponsors",
       "name": "Sponsors",
-      "description": "Affiche vos sponsors et leurs codes promo sur le site, avec la mention de partenariat obligatoire.",
+      "description": "Shows your sponsors and their promo codes on the site, with the mandatory partnership mention.",
+      "i18n": {
+        "en": {
+          "name": "Sponsors",
+          "description": "Shows your sponsors and their promo codes on the site, with the mandatory partnership mention."
+        },
+        "fr": {
+          "name": "Sponsors",
+          "description": "Affiche vos sponsors et leurs codes promo sur le site, avec la mention de partenariat obligatoire."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/sponsors",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1617,10 +2140,20 @@
     {
       "id": "spotify",
       "name": "Spotify",
-      "description": "Affiche le bouton de votre Spotify dans l'en-tête du site.",
+      "description": "Shows your Spotify button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Spotify",
+          "description": "Shows your Spotify button in the site header."
+        },
+        "fr": {
+          "name": "Spotify",
+          "description": "Affiche le bouton de votre Spotify dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/spotify",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "spotify",
       "apiVersion": 2,
@@ -1648,10 +2181,20 @@
     {
       "id": "steam",
       "name": "Steam",
-      "description": "Affiche le bouton de votre Steam dans l'en-tête du site.",
+      "description": "Shows your Steam button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Steam",
+          "description": "Shows your Steam button in the site header."
+        },
+        "fr": {
+          "name": "Steam",
+          "description": "Affiche le bouton de votre Steam dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/steam",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "steam",
       "apiVersion": 2,
@@ -1691,11 +2234,21 @@
     },
     {
       "id": "stream-story",
-      "name": "Story d'annonce",
-      "description": "Une petite vidéo animée qui annonce un de vos prochains événements, prête pour une story Instagram ou une publication portrait.",
+      "name": "Announcement story",
+      "description": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post.",
+      "i18n": {
+        "en": {
+          "name": "Announcement story",
+          "description": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post."
+        },
+        "fr": {
+          "name": "Story d'annonce",
+          "description": "Une petite vidéo animée qui annonce un de vos prochains événements, prête pour une story Instagram ou une publication portrait."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-story",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "2.5.2",
       "platform": "instagram",
       "apiVersion": 2,
@@ -1728,11 +2281,21 @@
     },
     {
       "id": "supporters",
-      "name": "Soutiens",
-      "description": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos acceptés.",
+      "name": "Supporters",
+      "description": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted.",
+      "i18n": {
+        "en": {
+          "name": "Supporters",
+          "description": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted."
+        },
+        "fr": {
+          "name": "Soutiens",
+          "description": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos acceptés."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/supporters",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1765,10 +2328,20 @@
     {
       "id": "telegram",
       "name": "Telegram",
-      "description": "Affiche le bouton de votre Telegram dans l'en-tête du site.",
+      "description": "Shows your Telegram button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Telegram",
+          "description": "Shows your Telegram button in the site header."
+        },
+        "fr": {
+          "name": "Telegram",
+          "description": "Affiche le bouton de votre Telegram dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/telegram",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "telegram",
       "apiVersion": 2,
@@ -1802,11 +2375,21 @@
     },
     {
       "id": "testimonials",
-      "name": "Témoignages",
-      "description": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",
+      "name": "Testimonials",
+      "description": "Collect reviews: a shareable “Leave a review” link, every review waits for your approval before it appears, with optional stars, a grid or slow scrolling, favourites and three reviews on the home page.",
+      "i18n": {
+        "en": {
+          "name": "Testimonials",
+          "description": "Collect reviews: a shareable “Leave a review” link, every review waits for your approval before it appears, with optional stars, a grid or slow scrolling, favourites and three reviews on the home page."
+        },
+        "fr": {
+          "name": "Témoignages",
+          "description": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/testimonials",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.3.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1834,11 +2417,21 @@
     },
     {
       "id": "thanks-wall",
-      "name": "Mur des remerciements",
-      "description": "Une page de remerciements pour votre communauté : cartes avec photos, une personne à l'honneur chaque mois. Les noms restent dans Contacts.",
+      "name": "Thank-you wall",
+      "description": "A thank-you page for your community: cards with photos, one person in the spotlight each month. Names stay in Contacts.",
+      "i18n": {
+        "en": {
+          "name": "Thank-you wall",
+          "description": "A thank-you page for your community: cards with photos, one person in the spotlight each month. Names stay in Contacts."
+        },
+        "fr": {
+          "name": "Mur des remerciements",
+          "description": "Une page de remerciements pour votre communauté : cartes avec photos, une personne à l'honneur chaque mois. Les noms restent dans Contacts."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/thanks-wall",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.2",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1876,10 +2469,20 @@
     {
       "id": "threads",
       "name": "Threads",
-      "description": "Affiche le bouton de votre Threads dans l'en-tête du site.",
+      "description": "Shows your Threads button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "Threads",
+          "description": "Shows your Threads button in the site header."
+        },
+        "fr": {
+          "name": "Threads",
+          "description": "Affiche le bouton de votre Threads dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/threads",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "threads",
       "apiVersion": 2,
@@ -1913,11 +2516,21 @@
     },
     {
       "id": "ticker-overlay",
-      "name": "Overlay défilant (OBS)",
-      "description": "Une source navigateur transparente pour OBS qui fait défiler des cartes issues de votre site (codes promo, articles, annonces…).",
+      "name": "Ticker overlay (OBS)",
+      "description": "A transparent browser source for OBS that rotates cards from your site (promo codes, articles, announcements…).",
+      "i18n": {
+        "en": {
+          "name": "Ticker overlay (OBS)",
+          "description": "A transparent browser source for OBS that rotates cards from your site (promo codes, articles, announcements…)."
+        },
+        "fr": {
+          "name": "Overlay défilant (OBS)",
+          "description": "Une source navigateur transparente pour OBS qui fait défiler des cartes issues de votre site (codes promo, articles, annonces…)."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/ticker-overlay",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -1929,10 +2542,20 @@
     {
       "id": "tiktok",
       "name": "TikTok",
-      "description": "Affiche le bouton de votre TikTok dans l'en-tête du site.",
+      "description": "Shows your TikTok button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "TikTok",
+          "description": "Shows your TikTok button in the site header."
+        },
+        "fr": {
+          "name": "TikTok",
+          "description": "Affiche le bouton de votre TikTok dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/tiktok",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "tiktok",
       "apiVersion": 2,
@@ -1965,12 +2588,22 @@
     },
     {
       "id": "twitch-bot",
-      "name": "Bot Twitch",
-      "description": "Votre site répond aux commandes de votre chat Twitch, et gère timers, récompenses en points de chaîne et arrêt d'urgence.",
+      "name": "Twitch bot",
+      "description": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
+      "i18n": {
+        "en": {
+          "name": "Twitch bot",
+          "description": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop."
+        },
+        "fr": {
+          "name": "Bot Twitch",
+          "description": "Votre site répond aux commandes de votre chat Twitch, et gère timers, récompenses en points de chaîne et arrêt d'urgence."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
-      "ref": "v1.42.1",
-      "version": "1.10.0",
+      "ref": "v1.43.0",
+      "version": "1.10.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2037,11 +2670,21 @@
     },
     {
       "id": "twitch-channel",
-      "name": "Ma Chaîne Twitch",
-      "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnements payants. Mesure aussi vos directs (audience moyenne et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos.",
+      "name": "My Twitch channel",
+      "description": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
+      "i18n": {
+        "en": {
+          "name": "My Twitch channel",
+          "description": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos."
+        },
+        "fr": {
+          "name": "Ma Chaîne Twitch",
+          "description": "Facilite la mise en avant de votre chaîne Twitch : bouton, statut en direct, derniers clips et, une fois votre chaîne connectée, vos followers et abonnements payants. Mesure aussi vos directs (audience moyenne et pic, heures de live et regardées, followers par jeu) et les vues de vos vidéos."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-channel",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "2.2.1",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2075,11 +2718,21 @@
     },
     {
       "id": "twitch-connector",
-      "name": "Connecteur Twitch",
-      "description": "Relie votre site à Twitch une seule fois pour tout ce qui touche à Twitch. Réglage guidé en 5 minutes, avec un bouton « Copier ».",
+      "name": "Twitch connector",
+      "description": "Links your site to Twitch once for everything that touches Twitch. Guided setup in 5 minutes, with a “Copy” button.",
+      "i18n": {
+        "en": {
+          "name": "Twitch connector",
+          "description": "Links your site to Twitch once for everything that touches Twitch. Guided setup in 5 minutes, with a “Copy” button."
+        },
+        "fr": {
+          "name": "Connecteur Twitch",
+          "description": "Relie votre site à Twitch une seule fois pour tout ce qui touche à Twitch. Réglage guidé en 5 minutes, avec un bouton « Copier »."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-connector",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.3.0",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2097,11 +2750,21 @@
     },
     {
       "id": "twitch-raid",
-      "name": "Raid Twitch",
-      "description": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider.",
+      "name": "Twitch raid",
+      "description": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid.",
+      "i18n": {
+        "en": {
+          "name": "Twitch raid",
+          "description": "A panel for OBS that shows which of your partners are live on Twitch, to choose who to raid."
+        },
+        "fr": {
+          "name": "Raid Twitch",
+          "description": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "2.2.5",
       "platform": "twitch",
       "apiVersion": 2,
@@ -2131,11 +2794,21 @@
     },
     {
       "id": "videos",
-      "name": "Vidéothèque",
-      "description": "Une page de vidéos YouTube sans rien héberger : grille, catégories, recherche, séries à regarder dans l'ordre et partage.",
+      "name": "Video library",
+      "description": "A page of YouTube videos without hosting anything: grid, categories, search, series to watch in order and sharing.",
+      "i18n": {
+        "en": {
+          "name": "Video library",
+          "description": "A page of YouTube videos without hosting anything: grid, categories, search, series to watch in order and sharing."
+        },
+        "fr": {
+          "name": "Vidéothèque",
+          "description": "Une page de vidéos YouTube sans rien héberger : grille, catégories, recherche, séries à regarder dans l'ordre et partage."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/videos",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2159,10 +2832,20 @@
     {
       "id": "x-twitter",
       "name": "X (Twitter)",
-      "description": "Affiche le bouton de votre X dans l'en-tête du site.",
+      "description": "Shows your X button in the site header.",
+      "i18n": {
+        "en": {
+          "name": "X (Twitter)",
+          "description": "Shows your X button in the site header."
+        },
+        "fr": {
+          "name": "X (Twitter)",
+          "description": "Affiche le bouton de votre X dans l'en-tête du site."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/x-twitter",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.1",
       "platform": "x",
       "apiVersion": 2,
@@ -2201,11 +2884,21 @@
     },
     {
       "id": "youtube-channel",
-      "name": "Chaîne YouTube",
-      "description": "Met en avant votre chaîne YouTube : sa vidéo récente la plus vue, vos vidéos dans le flux, vos chiffres.",
+      "name": "YouTube channel",
+      "description": "Showcases your YouTube channel: its most popular recent video, your videos in the site's feed, your counts.",
+      "i18n": {
+        "en": {
+          "name": "YouTube channel",
+          "description": "Showcases your YouTube channel: its most popular recent video, your videos in the site's feed, your counts."
+        },
+        "fr": {
+          "name": "Chaîne YouTube",
+          "description": "Met en avant votre chaîne YouTube : sa vidéo récente la plus vue, vos vidéos dans le flux, vos chiffres."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-channel",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.4.2",
       "platform": "youtube",
       "apiVersion": 2,
@@ -2239,11 +2932,21 @@
     },
     {
       "id": "youtube-connector",
-      "name": "Connecteur YouTube",
-      "description": "Garde le code d'accès YouTube de votre site à un seul endroit. Il lit les chiffres des chaînes et le chat du direct.",
+      "name": "YouTube connector",
+      "description": "Keeps your site's YouTube access code in one place. It reads channel counts and the chat of your live.",
+      "i18n": {
+        "en": {
+          "name": "YouTube connector",
+          "description": "Keeps your site's YouTube access code in one place. It reads channel counts and the chat of your live."
+        },
+        "fr": {
+          "name": "Connecteur YouTube",
+          "description": "Garde le code d'accès YouTube de votre site à un seul endroit. Il lit les chiffres des chaînes et le chat du direct."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-connector",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.3.2",
       "platform": "youtube",
       "apiVersion": 2,
@@ -2258,11 +2961,21 @@
     },
     {
       "id": "youtube-live-actions",
-      "name": "Actions du live YouTube",
-      "description": "Quand une personne soutient votre direct YouTube (Super Chat, adhésion…), une action se déclenche chez vous.",
+      "name": "YouTube live actions",
+      "description": "When someone supports your YouTube live (Super Chat, membership…), an action runs at your place.",
+      "i18n": {
+        "en": {
+          "name": "YouTube live actions",
+          "description": "When someone supports your YouTube live (Super Chat, membership…), an action runs at your place."
+        },
+        "fr": {
+          "name": "Actions du live YouTube",
+          "description": "Quand une personne soutient votre direct YouTube (Super Chat, adhésion…), une action se déclenche chez vous."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/youtube-live-actions",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.1.2",
       "platform": "youtube",
       "apiVersion": 2,
@@ -2291,11 +3004,21 @@
     },
     {
       "id": "announcement-banner",
-      "name": "Bannière d'annonce",
-      "description": "Un bandeau en haut de chaque page, qui peut avoir des dates, et une note pour l'accueil. Module d'exemple.",
+      "name": "Announcement banner",
+      "description": "A banner at the top of every page that can have dates, and a note for the home page. Example module.",
+      "i18n": {
+        "en": {
+          "name": "Announcement banner",
+          "description": "A banner at the top of every page that can have dates, and a note for the home page. Example module."
+        },
+        "fr": {
+          "name": "Bannière d'annonce",
+          "description": "Un bandeau en haut de chaque page, qui peut avoir des dates, et une note pour l'accueil. Module d'exemple."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/announcement-banner",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2309,11 +3032,21 @@
     },
     {
       "id": "guestbook",
-      "name": "Livre d'or",
-      "description": "Un livre d'or modéré : le public signe, vous validez. Module d'exemple qui utilise toutes les capacités du framework.",
+      "name": "Guestbook",
+      "description": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework.",
+      "i18n": {
+        "en": {
+          "name": "Guestbook",
+          "description": "A moderated guestbook: visitors sign, you approve. Example module that uses every capability of the framework."
+        },
+        "fr": {
+          "name": "Livre d'or",
+          "description": "Un livre d'or modéré : le public signe, vous validez. Module d'exemple qui utilise toutes les capacités du framework."
+        }
+      },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "examples/guestbook",
-      "ref": "v1.42.1",
+      "ref": "v1.43.0",
       "version": "1.0.6",
       "apiVersion": 2,
       "author": "Helldog136",

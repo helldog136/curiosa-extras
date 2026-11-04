@@ -5,7 +5,7 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.4.2",
+  "version": "1.4.3",
   "minCore": "0.5.0",
   "description": {
     "en": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS.",
@@ -21,7 +21,7 @@
   "basePath": "polls",
   "privacy": {
     "en": "No account. Your browser keeps a random private code (local storage, not a cookie); the site keeps only a scrambled version, different for each poll, and your ticked choices. Your IP address is never saved: scrambled with a daily salt never written to disk, it only slows down abuse. No name is kept. Codes are erased 30 days after a poll ends (at once for a decided round). With Audience installed, a scrambled code is kept per room for 14 days.",
-    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, propre à chaque sondage, et vos choix. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert seulement à freiner les abus. Aucun nom. Codes effacés 30 jours après la fin du sondage (tout de suite pour une manche décidée). Avec Participation : une version brouillée par salle, 14 jours."
+    "fr": "Aucun compte. Votre navigateur garde un code privé au hasard (stockage local, pas un cookie) ; le site n'en garde qu'une version brouillée, propre à chaque sondage, et vos choix. Votre adresse IP n'est jamais enregistrée : brouillée par un sel quotidien jamais écrit sur disque, elle sert seulement à freiner les abus. Aucun nom. Codes effacés 30 jours après la fin du sondage (tout de suite pour un tour décidé). Avec Participation : une version brouillée par salle, 14 jours."
   },
   "permissions": [
     "slots",
@@ -106,8 +106,8 @@
             "en": "Which poll"
           },
           "help": {
-            "fr": "Laissez vide pour montrer le sondage de l'écran en direct : celui que vous avez choisi dans l'onglet « En direct », sinon la manche en cours, sinon le sondage ouvert le plus récent. Pour un sondage précis, écrivez le nom de son adresse. S'il n'existe plus, c'est le choix automatique qui s'affiche.",
-            "en": "Leave empty to show the poll of the live screen: the one you picked in the \"Live\" tab, otherwise the running round, otherwise the most recent open poll. For one particular poll, write the name of its address. If it no longer exists, the automatic choice is shown."
+            "fr": "Laissez vide pour montrer le sondage de l'écran en direct : celui que vous avez choisi dans l'onglet « En direct », sinon le tour en cours, sinon le sondage ouvert le plus récent. Pour un sondage précis, écrivez le nom de son adresse. S'il n'existe plus, c'est le choix automatique qui s'affiche.",
+            "en": "Leave empty to show the poll of the live screen: the one you picked in the \"Live\" tab, otherwise the running vote, otherwise the most recent open poll. For one particular poll, write the name of its address. If it no longer exists, the automatic choice is shown."
           },
           "example": "quel-jeu",
           "default": ""
@@ -421,8 +421,8 @@
         "en": "Seconds the decision stays on screen"
       },
       "help": {
-        "fr": "De 5 à 120. Le choix gagnant d'une manche reste affiché ce temps-là.",
-        "en": "From 5 to 120. The winner of a round stays displayed that long."
+        "fr": "De 5 à 120. Le choix gagnant d'un tour reste affiché ce temps-là.",
+        "en": "From 5 to 120. The winner of a vote stays displayed that long."
       }
     },
     {
@@ -611,7 +611,7 @@
       "name": "poll_delete",
       "destructive": true,
       "default": false,
-      "description": "Permanently delete one poll with its choices, votes and results. It cannot be undone: ask the person first, and check the poll id with polls_list. A poll that is still open is refused unless allowOpen is true; to keep the result, use poll_close instead. The running round of the rounds cannot be deleted (use round_control).",
+      "description": "Permanently delete one poll with its choices, votes and results. It cannot be undone: ask the person first, and check the poll id with polls_list. A poll that is still open is refused unless allowOpen is true; to keep the result, use poll_close instead. The running vote of the rounds cannot be deleted (use round_control).",
       "input": {
         "type": "object",
         "required": [
@@ -737,15 +737,15 @@
     {
       "key": "round.started",
       "label": {
-        "fr": "Manches lancées depuis la télécommande",
-        "en": "Rounds started from the remote control"
+        "fr": "Vote en boucle lancé depuis la télécommande",
+        "en": "Repeating vote started from the remote control"
       }
     },
     {
       "key": "round.stopped",
       "label": {
-        "fr": "Manches arrêtées depuis la télécommande",
-        "en": "Rounds stopped from the remote control"
+        "fr": "Vote en boucle arrêté depuis la télécommande",
+        "en": "Repeating vote stopped from the remote control"
       }
     },
     {
@@ -758,8 +758,8 @@
     {
       "key": "round.decided",
       "label": {
-        "fr": "Manche {n} décidée : {winner} ({voters} votes)",
-        "en": "Round {n} decided: {winner} ({voters} votes)"
+        "fr": "Tour {n} décidé : {winner} ({voters} votes)",
+        "en": "Vote {n} decided: {winner} ({voters} votes)"
       },
       "frequent": true,
       "fields": [

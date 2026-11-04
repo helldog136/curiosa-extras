@@ -166,8 +166,9 @@ export const REMOTE_JS = String.raw`(function () {
   var C = window.__AR;
   var root = document.getElementById("ar-root");
   var toast = document.getElementById("ar-toast");
+  var tabsBox = document.getElementById("ar-tabs");
   var live = document.getElementById("ar-live");
-  var data = null, timer = null, delay = 4000, inflight = false, skew = 0, armed = null, armTimer = null, seq = 0, pendingFk = null;
+  var data = null, timer = null, delay = 4000, inflight = false, skew = 0, armed = null, armTimer = null, seq = 0, pendingFk = null, sel = null, drafts = {}, tabEls = [], panEls = [], tabIds = [], keep = {};
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
   function signal() { try { return typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined; } catch (x) { return undefined; } }
   function say(text, bad) { toast.textContent = text || ""; toast.className = "ar-toast" + (bad ? " bad" : ""); toast.hidden = !text; }
@@ -183,8 +184,8 @@ export const REMOTE_JS = String.raw`(function () {
   }
   // Au clavier, la page se redessine sous les doigts : on retrouve le bouton qui avait le focus grâce à son repère (data-fk).
   function fk(n, key) { n.setAttribute("data-fk", key); return n; }
-  function focusFk(key) { if (!key) return; var n = root.querySelector('[data-fk="' + key + '"]'); if (n && !n.disabled) n.focus({ preventScroll: true }); }
-  function press(panel, action, values, btn, label) {
+  function focusFk(key) { if (!key) return; var n = root.querySelector('[data-fk="' + key + '"]') || tabsBox.querySelector('[data-fk="' + key + '"]'); if (n && !n.disabled) n.focus({ preventScroll: true }); }
+  function press(panel, action, values, btn, label, onOk) {
     if (btn.disabled) return;
     var hadFocus = document.activeElement === btn, key = btn.getAttribute("data-fk");
     if (hadFocus) pendingFk = key;
@@ -192,7 +193,7 @@ export const REMOTE_JS = String.raw`(function () {
     var old = btn.textContent; btn.textContent = C.t.busy;
     say("");
     api(C.press, { k: C.k, panel: panel, action: action, values: values || {} }).then(function (j) {
-      if (j && j.ok) { say(j.message || C.t.done, false); delay = 4000; refresh(); }
+      if (j && j.ok) { say(j.message || C.t.done, false); delay = 4000; if (onOk) onOk(); refresh(); }
       else { say((j && j.message) || C.t["e_" + ((j && j.error) || "net")] || C.t.e_net, true); if (j && j.field) fieldError(panel, j.field, j.message); }
     }, function () { say(C.t.e_net, true); }).then(function () {
       btn.disabled = false; btn.removeAttribute("aria-busy"); btn.textContent = old;
@@ -223,12 +224,14 @@ export const REMOTE_JS = String.raw`(function () {
     });
     return n;
   }
+  // Un formulaire = une action : un bouton principal et des réglages préremplis (ceux de la dernière fois). Les champs « more » sont repliés sous « Plus d'options ».
   function form(panel, f) {
+    var pid = panel.provider || panel.id;
     var box = el("form", "ar-form"); box.noValidate = true;
     box.appendChild(el("h3", "ar-h3", f.title));
-    var hint = f.fields.length ? null : null;
+    var more = null;
     f.fields.forEach(function (fd) {
-      var id = "f" + (++seq);
+      var id = "f" + (++seq), dk = pid + ":" + f.id + ":" + fd.name;
       var wrap = el("div", "ar-field");
       var lab = el("label", "", fd.label); lab.setAttribute("for", id);
       wrap.appendChild(lab);
@@ -244,72 +247,137 @@ export const REMOTE_JS = String.raw`(function () {
         if (fd.placeholder) input.placeholder = fd.placeholder;
         if (fd.value) input.value = fd.value;
       }
-      input.id = id; input.name = fd.name; input.setAttribute("data-in", (panel.provider || panel.id) + ":" + fd.name);
+      if (drafts[dk] !== undefined) input.value = drafts[dk];   // ce qui a été tapé reste, même si la page se redessine
+      input.addEventListener("input", function () { drafts[dk] = input.value; });
+      input.addEventListener("change", function () { drafts[dk] = input.value; });
+      input.id = id; input.name = fd.name; input.setAttribute("data-in", pid + ":" + fd.name);
       wrap.appendChild(input);
-      var er = el("p", "ar-err"); er.hidden = true; er.setAttribute("role", "alert"); er.setAttribute("data-err", (panel.provider || panel.id) + ":" + fd.name); er.id = id + "e";
-      input.setAttribute("aria-describedby", er.id);
+      var desc = [];
+      if (fd.example) { var ex = el("p", "ar-hint", fd.example); ex.id = id + "x"; wrap.appendChild(ex); desc.push(ex.id); }
+      var er = el("p", "ar-err"); er.hidden = true; er.setAttribute("role", "alert"); er.setAttribute("data-err", pid + ":" + fd.name); er.id = id + "e";
+      desc.push(er.id);
+      input.setAttribute("aria-describedby", desc.join(" "));
       wrap.appendChild(er);
-      box.appendChild(wrap);
+      if (fd.more) {
+        if (!more) { more = el("details", "ar-more"); more.setAttribute("data-id", "more:" + pid + ":" + f.id); if (keep["more:" + pid + ":" + f.id]) more.open = true; more.appendChild(el("summary", "", C.t.more)); box.appendChild(more); }
+        more.appendChild(wrap);
+      } else box.appendChild(wrap);
     });
-    var go = fk(el("button", "ar-btn primary", f.submit), "f:" + (panel.provider || panel.id) + ":" + f.id); go.type = "submit";
+    var go = fk(el("button", "ar-btn primary", f.submit), "f:" + pid + ":" + f.id); go.type = "submit";
     box.appendChild(go);
     box.addEventListener("submit", function (ev) {
       ev.preventDefault();
+      if (f.confirm && !(armed && armed.btn === go)) {   // second clic pour confirmer, comme un bouton à confirmation
+        disarm(); armed = { btn: go, label: f.submit }; go.textContent = f.confirm + " — " + C.t.again; go.classList.add("armed"); armTimer = setTimeout(disarm, 5000);
+        return;
+      }
+      disarm();
       var values = {}, ins = box.querySelectorAll("input,select");
       for (var i = 0; i < ins.length; i++) { values[ins[i].name] = ins[i].value; ins[i].removeAttribute("aria-invalid"); }
       var errs = box.querySelectorAll(".ar-err"); for (var e = 0; e < errs.length; e++) errs[e].hidden = true;
-      press(panel.provider || panel.id, f.id, values, go);
+      press(pid, f.id, values, go, null, function () { f.fields.forEach(function (fd) { delete drafts[pid + ":" + f.id + ":" + fd.name]; }); });
     });
     return box;
+  }
+  // Les onglets (motif WAI-ARIA « tabs ») : un par panneau utilisable. Le choix est gardé en mémoire de la page seulement.
+  function showTab(id, focus) {
+    sel = id; disarm();
+    for (var i = 0; i < tabIds.length; i++) {
+      var on = tabIds[i] === id;
+      tabEls[i].setAttribute("aria-selected", on ? "true" : "false"); tabEls[i].setAttribute("tabindex", on ? "0" : "-1");
+      tabEls[i].className = tabEls[i].className.replace(/ on\b/, "") + (on ? " on" : "");
+      panEls[i].hidden = !on;
+      if (on && focus) tabEls[i].focus({ preventScroll: true });
+    }
+  }
+  function tabKey(ev, i) {
+    var k = ev.key, n = tabIds.length, to = -1;
+    if (k === "ArrowRight" || k === "ArrowDown") to = (i + 1) % n; else if (k === "ArrowLeft" || k === "ArrowUp") to = (i + n - 1) % n; else if (k === "Home") to = 0; else if (k === "End") to = n - 1;
+    if (to < 0) return;
+    ev.preventDefault(); showTab(tabIds[to], true);
   }
   function draw() {
     var keepOpen = {};
     var opened = root.querySelectorAll("details[open]"); for (var o = 0; o < opened.length; o++) keepOpen[opened[o].getAttribute("data-id")] = true;
+    keep = keepOpen;
     var typing = document.activeElement && root.contains(document.activeElement) && /^(INPUT|SELECT)$/.test(document.activeElement.tagName);
     if (typing) return;   // jamais de redessin pendant que la personne écrit
-    var focusKey = document.activeElement && root.contains(document.activeElement) ? document.activeElement.getAttribute("data-fk") : pendingFk;
+    var ae = document.activeElement, focusKey = ae && (root.contains(ae) || tabsBox.contains(ae)) ? ae.getAttribute("data-fk") : pendingFk;
     var frag = document.createDocumentFragment();
     if (!data.panels.length) {
       var empty = el("section", "ar-card"); empty.appendChild(el("p", "ar-muted", C.t.nopanels)); frag.appendChild(empty);
     }
-    data.panels.forEach(function (p) {
+    // un onglet par panneau, puis les salles
+    var tabs = data.panels.map(function (p) { return { id: "p:" + (p.provider || p.id), label: p.tab || p.title, live: !!(p.state && p.state.tone === "live"), panel: p }; });
+    tabs.push({ id: "rooms", label: C.t.tabRooms, live: false, rooms: true });
+    var ids = tabs.map(function (t) { return t.id; });
+    if (sel === null || ids.indexOf(sel) < 0) {   // par défaut : l'onglet en cours d'action (un tirage ouvert, un vote en cours), sinon le premier
+      var act = tabs.filter(function (t) { return t.live; })[0];
+      sel = (act || tabs[0]).id;
+    }
+    var multi = tabs.length > 1, newBar = null;
+    tabEls = []; panEls = []; tabIds = ids;
+    if (multi) {
+      var bar = el("div", "ar-tabs"); bar.setAttribute("role", "tablist"); bar.setAttribute("aria-label", C.t.tabs);
+      tabs.forEach(function (t, i) {
+        var on = t.id === sel;
+        var b = fk(el("button", "ar-tab" + (on ? " on" : ""), t.label), "t:" + t.id); b.type = "button";
+        if (t.live) b.appendChild(el("span", "ar-sr", " (" + C.t.tabLive + ")"));
+        b.id = "ar-tab" + i; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false"); b.setAttribute("aria-controls", "ar-pan" + i); b.setAttribute("tabindex", on ? "0" : "-1");
+        if (t.live) b.classList.add("live");
+        b.addEventListener("click", function () { showTab(t.id, false); });
+        b.addEventListener("keydown", function (ev) { tabKey(ev, i); });
+        tabEls.push(b); bar.appendChild(b);
+      });
+      newBar = bar;
+    }
+    function panelEl(t, i, body) {
       var card = el("section", "ar-card");
-      card.appendChild(el("h2", "ar-h2", p.title));
-      if (p.state) {
-        var st = el("p", "ar-state " + (p.state.tone || "idle"));
-        st.appendChild(document.createTextNode(p.state.text));
-        if (p.state.until) { var cd = el("strong", "ar-clock", clock(p.state.until)); cd.setAttribute("data-until", p.state.until); st.appendChild(document.createTextNode(" ")); st.appendChild(cd); }
-        card.appendChild(st);
-      }
-      if (p.buttons.length) { var row = el("div", "ar-row"); p.buttons.forEach(function (b) { row.appendChild(button(p, b)); }); card.appendChild(row); }
-      p.forms.forEach(function (f) { card.appendChild(form(p, f)); });
+      if (multi) { card.id = "ar-pan" + i; card.setAttribute("role", "tabpanel"); card.setAttribute("aria-labelledby", "ar-tab" + i); card.hidden = t.id !== sel; panEls.push(card); }
+      else card.appendChild(el("h2", "ar-h2", t.rooms ? C.t.rooms : t.panel.title));
+      body(card);
       frag.appendChild(card);
-    });
-    var mod = el("section", "ar-card");
-    mod.appendChild(el("h2", "ar-h2", C.t.rooms));
-    if (!data.rooms.length) mod.appendChild(el("p", "ar-muted", C.t.noRooms));
-    data.rooms.forEach(function (r) {
-      var d = el("details", "ar-room"); d.setAttribute("data-id", r.key); if (keepOpen[r.key]) d.open = true;
-      var sum = fk(el("summary", "", r.label + " · " + r.count + " " + (r.count === 1 ? C.t.person : C.t.people)), "r:" + r.key);
-      d.appendChild(sum);
-      if (!r.recent.length) d.appendChild(el("p", "ar-muted", C.t.noOne));
-      r.recent.forEach(function (m) {
-        var line = el("div", "ar-person");
-        line.appendChild(el("span", "ar-name" + (m.muted ? " muted" : ""), (m.pseudo || C.t.anon) + (m.muted ? " · " + C.t.mutedTag : "")));
-        var b = fk(el("button", "ar-mini", m.muted ? C.t.unmute : C.t.mute), "m:" + r.key + ":" + m.id); b.type = "button";
-        b.addEventListener("click", function () { press("audience", "mute", { room: r.key, id: m.id, muted: m.muted ? "0" : "1" }, b); });
-        line.appendChild(b);
-        d.appendChild(line);
+    }
+    tabs.forEach(function (t, i) {
+      if (t.rooms) return;
+      var p = t.panel;
+      panelEl(t, i, function (card) {
+        if (p.state) {
+          var st = el("p", "ar-state " + (p.state.tone || "idle"));
+          st.appendChild(document.createTextNode(p.state.text));
+          if (p.state.until) { var cd = el("strong", "ar-clock", clock(p.state.until)); cd.setAttribute("data-until", p.state.until); st.appendChild(document.createTextNode(" ")); st.appendChild(cd); }
+          card.appendChild(st);
+        }
+        if (p.buttons.length) { var row = el("div", "ar-row"); p.buttons.forEach(function (b) { row.appendChild(button(p, b)); }); card.appendChild(row); }
+        p.forms.forEach(function (f) { card.appendChild(form(p, f)); });
       });
-      var clear = fk(el("button", "ar-btn danger", C.t.clear), "c:" + r.key); clear.type = "button";
-      clear.addEventListener("click", function () {
-        if (!(armed && armed.btn === clear)) { disarm(); armed = { btn: clear, label: C.t.clear }; clear.textContent = C.t.clearConfirm + " — " + C.t.again; clear.classList.add("armed"); armTimer = setTimeout(disarm, 5000); return; }
-        disarm(); press("audience", "clear", { room: r.key }, clear);
-      });
-      d.appendChild(clear);
-      mod.appendChild(d);
     });
-    frag.appendChild(mod);
+    var ri = tabs.length - 1;
+    panelEl(tabs[ri], ri, function (mod) {
+      if (!data.rooms.length) mod.appendChild(el("p", "ar-muted", C.t.noRooms));
+      data.rooms.forEach(function (r) {
+        var d = el("details", "ar-room"); d.setAttribute("data-id", r.key); if (keepOpen[r.key]) d.open = true;
+        var sum = fk(el("summary", "", r.label + " · " + r.count + " " + (r.count === 1 ? C.t.person : C.t.people)), "r:" + r.key);
+        d.appendChild(sum);
+        if (!r.recent.length) d.appendChild(el("p", "ar-muted", C.t.noOne));
+        r.recent.forEach(function (m) {
+          var line = el("div", "ar-person");
+          line.appendChild(el("span", "ar-name" + (m.muted ? " muted" : ""), (m.pseudo || C.t.anon) + (m.muted ? " · " + C.t.mutedTag : "")));
+          var b = fk(el("button", "ar-mini", m.muted ? C.t.unmute : C.t.mute), "m:" + r.key + ":" + m.id); b.type = "button";
+          b.addEventListener("click", function () { press("audience", "mute", { room: r.key, id: m.id, muted: m.muted ? "0" : "1" }, b); });
+          line.appendChild(b);
+          d.appendChild(line);
+        });
+        var clear = fk(el("button", "ar-btn danger", C.t.clear), "c:" + r.key); clear.type = "button";
+        clear.addEventListener("click", function () {
+          if (!(armed && armed.btn === clear)) { disarm(); armed = { btn: clear, label: C.t.clear }; clear.textContent = C.t.clearConfirm + " — " + C.t.again; clear.classList.add("armed"); armTimer = setTimeout(disarm, 5000); return; }
+          disarm(); press("audience", "clear", { room: r.key }, clear);
+        });
+        d.appendChild(clear);
+        mod.appendChild(d);
+      });
+    });
+    if (newBar) tabsBox.replaceChildren(newBar); else tabsBox.replaceChildren();
     root.replaceChildren(frag);
     armed = null;
     focusFk(focusKey);

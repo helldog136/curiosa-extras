@@ -6,14 +6,20 @@
 // REF force une autre référence (étiquette ou commit) ; REPO : adresse de ce dépôt.
 import fs from "node:fs";
 import path from "node:path";
-import { optionalNeedsProblems, previewIndex, previewProblems, serviceList } from "./rules.mjs";
+import { entryTexts, optionalNeedsProblems, previewIndex, previewProblems, serviceList } from "./rules.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const repo = process.env.REPO ?? "https://github.com/helldog136/curiosa-extras";
 const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
 const ref = process.env.REF ?? `v${version}`;
 if (!/^(v\d+\.\d+\.\d+|[0-9a-f]{7,40})$/.test(ref)) { console.error(`Référence « ${ref} » refusée : une étiquette vX.Y.Z ou un commit, jamais une branche.`); process.exit(1); }
-const pick = (v) => (typeof v === "string" ? v : v?.fr ?? v?.en ?? Object.values(v ?? {})[0] ?? "");
+// Name and description: the plain texts are ENGLISH (an older core shows them), `i18n` has every language (see entryTexts in scripts/rules.mjs). The index never flattens a text to one language.
+const readLocales = (dir) => {
+  const out = {};
+  const localesDir = path.join(dir, "locales");
+  if (fs.existsSync(localesDir)) for (const f of fs.readdirSync(localesDir)) if (f.endsWith(".json")) out[f.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(localesDir, f), "utf8"));
+  return out;
+};
 // Services offerts / requis : le cœur choisit et annonce un fournisseur AVANT de télécharger le module (« installe aussi… »). Clé `needs` pour ne pas
 // la confondre avec `requires: { core }` (version minimale du cœur). Le manifeste du module fait toujours foi à l'installation.
 // Fonction partagée avec release-check.mjs et les tests : scripts/rules.mjs (elle recopie aussi `requires[].optional`, seulement la valeur true).
@@ -26,7 +32,7 @@ for (const group of ["modules", "examples"]) {
     // Visuels de la fiche (`previews`) : la déclaration est recopiée dans l'entrée (le cœur peut ainsi les annoncer sans télécharger le module) ; les images restent dans le dépôt.
     // Un visuel invalide ou absent fait échouer l'index (écriture comme --check) : mieux vaut le savoir ici que voir le cœur l'écarter en silence.
     for (const p of previewProblems(m.previews, path.join(root, group, id))) previewErrors.push(`${m.id} : ${p}`);
-    modules.push({ id: m.id, name: pick(m.name), description: pick(m.description), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}), ...(m.previews?.length ? { previews: previewIndex(m.previews) } : {}) });
+    modules.push({ id: m.id, ...entryTexts(m, readLocales(path.join(root, group, id))), repo, subdir: `${group}/${id}`, ref, version: m.version, ...(m.platform ? { platform: m.platform } : {}), apiVersion: m.apiVersion, author: m.author, icon: m.icon, ...(m.provides?.length ? { provides: m.provides.map((p) => p.topic) } : {}), ...(m.social ? { social: m.social } : {}), ...(m.minCore ? { requires: { core: m.minCore } } : {}), ...(m.offers?.length ? { offers: services(m.offers, "version") } : {}), ...(m.requires?.length ? { needs: services(m.requires, "min") } : {}), ...(m.previews?.length ? { previews: previewIndex(m.previews) } : {}) });
   }
 }
 if (previewErrors.length) { console.error("Visuels de fiche (previews) :\n- " + previewErrors.join("\n- ")); process.exit(1); }

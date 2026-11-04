@@ -1,0 +1,51 @@
+{
+  "$comment": "Known translation gaps per module (English and French are always required). This file can only shrink: translate, then node scripts/i18n-baseline.mjs --write. See docs/TRANSLATING.md of the core.",
+  "version": 1,
+  "totals": {
+    "manifest": 0,
+    "agentTools": 148,
+    "localeFiles": 0,
+    "frenchDefaults": 12
+  },
+  "modules": {},
+  "agentTools": {
+    "audience": 8,
+    "commissions": 5,
+    "community-stats": 3,
+    "contacts": 9,
+    "content-planner": 6,
+    "countdown": 5,
+    "daily-game": 2,
+    "directory": 5,
+    "events": 5,
+    "faq": 4,
+    "gallery": 5,
+    "game-covers": 3,
+    "game-suggestions": 3,
+    "guestbook": 3,
+    "home-assistant": 4,
+    "idea-box": 3,
+    "legal-pages": 3,
+    "map": 3,
+    "mascot": 2,
+    "partnerships": 8,
+    "planning": 1,
+    "platform-links": 3,
+    "polls": 9,
+    "stream-story": 4,
+    "supporters": 9,
+    "testimonials": 4,
+    "thanks-wall": 6,
+    "twitch-bot": 10,
+    "twitch-channel": 3,
+    "twitch-raid": 2,
+    "videos": 4,
+    "youtube-live-actions": 4
+  },
+  "localeFiles": {},
+  "frenchDefaults": {
+    "home-assistant": 1,
+    "stream-story": 8,
+    "youtube-live-actions": 3
+  }
+}

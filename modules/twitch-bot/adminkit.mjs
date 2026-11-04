@@ -104,6 +104,7 @@ export const CSS = `
 .ck-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .ck-word{color:var(--v-fg)}
 .ck-hint{margin:0;font-size:13px;color:var(--v-muted)}
+.ck-state-help{margin-top:6px}
 .ck-form .ck-line input.ck-num{width:84px;min-height:44px;box-sizing:border-box;padding:6px 10px;border:1px solid var(--v-line);border-radius:10px;background:var(--v-bg);color:var(--v-fg);font:inherit;text-align:center}
 .ck-seg{align-self:flex-start;display:inline-flex;flex-wrap:wrap;border:1px solid var(--v-line);border-radius:12px;background:var(--v-bg);padding:3px;gap:2px;max-width:100%}
 .ck-seg-b{min-height:40px;padding:4px 14px;border:0;border-radius:9px;background:none;color:var(--v-fg);font:inherit;font-size:14px;cursor:pointer}
