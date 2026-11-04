@@ -15,7 +15,7 @@ import { makeTempDir } from "./helpers/tmp.mjs";
 import {
   analyzeModule, assertAdminPageErgonomics, adminPageErgonomicsProblems, baselineGrowth, compareToBaseline, ratchetMessages, countByRule, forbiddenWords, toneProblems, labelProblems, hasExample,
 } from "./helpers/ergonomics.mjs";
-import { readModules, readBaseline, reportRows, formatReport } from "../scripts/ergonomics-baseline.mjs";
+import { officialLocales, readModules, readBaseline, reportRows, formatReport } from "../scripts/ergonomics-baseline.mjs";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
 const modules = readModules(root);
@@ -32,7 +32,7 @@ test("la base d'ergonomie existe et ne parle que de modules du dépôt", () => {
 
 for (const m of modules) {
   test(`[${m.name}] ergonomie — aucun nouvel écart, aucun écart disparu`, (t) => {
-    const gaps = analyzeModule({ id: m.manifest.id ?? m.name, manifest: m.manifest, locales: m.locales });
+    const gaps = analyzeModule({ id: m.manifest.id ?? m.name, manifest: m.manifest, locales: officialLocales(m.locales) });
     const r = compareToBaseline(gaps, baseline?.modules?.[m.name] ?? []);
     const problems = ratchetMessages(r);
     if (r.tolerated.length) t.diagnostic(`⚠ ${r.tolerated.length} écart(s) connu(s) à résorber : ${Object.entries(countByRule(r.tolerated)).map(([k, n]) => `${k}×${n}`).join(" ")}`);

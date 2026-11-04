@@ -133,10 +133,10 @@ export function toneProblems(text, lang = "*") {
   if (/\bveuillez\b/i.test(body)) out.push("contient « Veuillez »");
   const caps = [...body.matchAll(/(?<![\p{L}\p{N}_])([A-ZÀ-ÖØ-Þ]{4,})(?![\p{L}\p{N}_])/gu)].map((m) => m[1]).filter((w) => !ALLOWED_CAPS.includes(w));
   if (caps.length) out.push(`MAJUSCULES « ${[...new Set(caps)].join(" ")} »`);
-  if ((lang === "fr" || lang === "*") && (/(?<![\p{L}\p{N}_])(?:tu|toi|ton|ta|tes|te)(?![\p{L}\p{N}_])/iu.test(body.replace(/[A-Za-z]+-(?:tu|te)\b/g, " ")) || /(?<![\p{L}\p{N}_])t['’]\p{L}/iu.test(body))) out.push("tutoiement (le vouvoiement est la règle)");
+  if (lang !== "en" && (/(?<![\p{L}\p{N}_])(?:tu|toi|ton|ta|tes|te)(?![\p{L}\p{N}_])/iu.test(body.replace(/[A-Za-z]+-(?:tu|te)\b/g, " ")) || /(?<![\p{L}\p{N}_])t['’]\p{L}/iu.test(body))) out.push("tutoiement (le vouvoiement est la règle)");
   const long = sentences(t).find((s) => wordCount(s) > SENTENCE_MAX_WORDS);
   if (long) out.push(`phrase de ${wordCount(long)} mots (${SENTENCE_MAX_WORDS} au plus) : « ${excerpt(long, 40)} »`);
-  if ((lang === "fr" || lang === "*") && (/[\p{L}]·[\p{L}]/u.test(body) || /[éèiuntlrsfcdv]\((?:e|es|ne|le|ve|trice|rice|euse|ère|se)\)/iu.test(body))) out.push("écriture qui suppose un genre (point médian ou « (e) »)");
+  if (lang !== "en" && (/[\p{L}]·[\p{L}]/u.test(body) || /[éèiuntlrsfcdv]\((?:e|es|ne|le|ve|trice|rice|euse|ère|se)\)/iu.test(body))) out.push("écriture qui suppose un genre (point médian ou « (e) »)");
   return out;
 }
 
@@ -285,7 +285,6 @@ export function analyzeModule(m) {
   /* Locales : R9 (hors réglages avancés, inconnus ici : la liste blanche et la base s'en chargent), R13, R17, R10 (deux-points final), R29. */
   const flat = Object.fromEntries(Object.entries(m.locales ?? {}).map(([lang, obj]) => [lang, flattenLocale(obj)]));
   for (const [lang, msgs] of Object.entries(flat)) {
-    if (lang !== "en" && lang !== "fr") continue; // the word lists and tone rules are English and French; other (community) languages are reviewed by their own maintainers
     for (const [k, text] of Object.entries(msgs)) {
       const where = `locale:${lang}:${k}`;
       const bad = forbiddenWords(text, id);
