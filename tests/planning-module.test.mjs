@@ -145,7 +145,7 @@ test("admin : sans stream → dit quoi faire (installer et régler un agenda) ; 
   assert.equal(table.rows.length, 1);
   assert.deepEqual([table.rows[0][2], table.rows[0][3]], ["A", "Zelda"]);
   assert.ok(!ok.some((b) => b.type === "adminForm" && b.action === "refresh"));
-  assert.equal(def.adminActions, undefined);
+  assert.deepEqual(Object.keys(def.adminActions), ["retryPhotos"], "the only admin action is \"Retry photos\" (no more \"Refresh\" button)");
 });
 
 test("déclarations : tout ce que le manifeste annonce est implémenté, et réciproquement ; le Planning lit le sujet sans le fournir ni dépendre d'un module", async () => {

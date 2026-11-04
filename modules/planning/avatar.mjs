@@ -4,7 +4,7 @@
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 /** Une adresse de photo permise (chemin du site seulement), sinon null. */
-export const safePhoto = (v) => (typeof v === "string" && (/^\/m\/[A-Za-z0-9_-]{1,64}\/photo\/[0-9a-f]{16}$/.test(v) || /^\/uploads\/[A-Za-z0-9._-]{1,120}$/.test(v)) && !v.includes("..") ? v : null);
+export const safePhoto = (v) => (typeof v === "string" && (/^\/m\/[A-Za-z0-9_-]{1,64}\/photo\/[0-9a-f]{16}$/.test(v) || /^\/uploads\/[A-Za-z0-9._~%-]+(?:\/[A-Za-z0-9._~%-]+){0,4}$/.test(v)) && !v.includes("..") ? v : null);
 
 /** Les initiales d'un nom (deux lettres au plus). */
 export function initialsOf(name) {
