@@ -115,6 +115,16 @@ export async function fixFor(ctx, title) {
   } catch { return null; }
 }
 
+/** The correction stored under this normalised key (what a kept copy carries as `key`), or null. Never throws. */
+export async function fixByKey(ctx, key) {
+  try {
+    if (typeof key !== "string" || !key || key.length > 160) return null;
+    const doc = await fixDoc(ctx, key);
+    const fix = doc ? sanitizeFix(doc.data) : null;
+    return fix && titleKey(fix.title) === key ? fix : null;
+  } catch { return null; }
+}
+
 export const countFixes = (ctx) => ctx.api.store.count(COL.fixes);
 
 /**
@@ -148,14 +158,18 @@ export function forgetFix(ctx, key) {
   });
 }
 
-/** Oublie toutes les corrections (par paquets de 200 : jamais tout en mémoire). Renvoie combien il y en avait. */
-export function forgetAllFixes(ctx) {
+/** Forgets every correction (by batches of 200, never all in memory). Returns how many there were; `keys`, when given, receives their normalised keys (to drop their kept copies). */
+export function forgetAllFixes(ctx, keys) {
   return serial(async () => {
     let n = 0;
     for (let guard = 0; guard < 8; guard++) {
       const rows = await ctx.api.store.list(COL.fixes, { limit: 200 });
       if (!rows.length) break;
-      for (const r of rows) { await ctx.api.store.remove(r.id); n++; }
+      for (const r of rows) {
+        const fix = sanitizeFix(r.data);
+        if (Array.isArray(keys) && fix) keys.push(titleKey(fix.title));
+        await ctx.api.store.remove(r.id); n++;
+      }
     }
     return n;
   }, 60_000);

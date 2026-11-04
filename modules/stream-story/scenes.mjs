@@ -26,7 +26,12 @@ function drawAvatar(ctx, cell, member, img, pal, alpha) {
   const r = cell.d / 2;
   ctx.save(); ctx.globalAlpha *= alpha;
   ctx.beginPath(); ctx.arc(cell.cx, cell.cy, r + 6, 0, Math.PI * 2); ctx.fillStyle = pal.ring; ctx.fill();
-  if (usable(img)) {
+  if (member.more) {
+    // la pastille « +N » : les personnes en plus, qui ne tiennent pas dans la vidéo
+    ctx.beginPath(); ctx.arc(cell.cx, cell.cy, r, 0, Math.PI * 2); ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fill();
+    ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `800 ${Math.round(cell.d * 0.34)}px ${pal.family}`;
+    ctx.fillText(member.name, cell.cx, cell.cy + cell.d * 0.02);
+  } else if (usable(img)) {
     ctx.save(); ctx.beginPath(); ctx.arc(cell.cx, cell.cy, r, 0, Math.PI * 2); ctx.clip();
     const s = imgSize(img), k = Math.max(cell.d / s.w, cell.d / s.h);
     ctx.drawImage(img, cell.cx - (s.w * k) / 2, cell.cy - (s.h * k) / 2, s.w * k, s.h * k); ctx.restore();
@@ -371,7 +376,7 @@ export function createScene(opts = {}) {
         const a = clamp01(progress(t, startOf(blocks.indexOf(b)) + 0.15 * k, 0.5)) * fx.alpha, m = members[k];
         drawAvatar(ctx, cell, m, assets.avatars?.[m.login], pal, style === "minimal" ? fx.alpha : Math.max(a, 0));
         const px = Math.max(20, Math.min(34 * u, cell.d * 0.22));
-        ctx.save(); ctx.font = font(700, px); const label = ellipsize((s) => ctx.measureText(s).width, m.name, cell.labelW);
+        ctx.save(); ctx.font = font(700, px); const label = m.more ? "" : ellipsize((s) => ctx.measureText(s).width, m.name, cell.labelW);
         ctx.globalAlpha = style === "minimal" ? fx.alpha : a; ctx.fillStyle = pal.text; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(label, cell.cx, cell.labelY); ctx.restore();
       });
     }

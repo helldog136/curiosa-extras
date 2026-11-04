@@ -6,7 +6,7 @@
     "en": "Game covers",
     "fr": "Jaquettes de jeux"
   },
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": {
     "en": "Finds the cover of your video games, even when one source is down: Rawg, then Steam, then Twitch. No code is required; a wrong cover is fixed in a few clicks.",
     "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : Rawg, puis Steam, puis Twitch. Aucun code n'est obligatoire ; une jaquette fausse se corrige en quelques clics."

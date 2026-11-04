@@ -121,6 +121,12 @@ const routes = {
     return json({ ok: true, items: page.items.map(E.publicEvent), next: page.next, total: list.length, totalAll: all.events.length, sources: all.sources, selected: selected ? E.publicEvent(selected) : null, at: all.at });
   }),
   cover: guarded("GET", async (request, ctx) => json({ ok: true, ...(await src.coverOf(ctx, new URL(request.url).searchParams.get("game") ?? "")) })),
+  // Les personnes que le planning indique pour un stream (« Avec … ») : nom et photo d'une fiche affichable de Contacts, rien d'autre.
+  partners: guarded("GET", async (request, ctx) => {
+    const raw = (new URL(request.url).searchParams.get("logins") ?? "").slice(0, 300).split(",");
+    const r = await src.within(book.schedulePeople(ctx, raw), src.timing.bookMs * 3, { state: "slow", items: [] });
+    return json({ ok: true, state: r.state, items: r.items });
+  }),
   prep: guarded("GET", async (request, ctx) => {
     const id = new URL(request.url).searchParams.get("id") ?? "";
     const prep = await data.readPrep(ctx, id);

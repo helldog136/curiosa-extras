@@ -42,7 +42,7 @@ const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "full", 
 /* ───────────── L'état ───────────── */
 const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
-  ev: { items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
+  ev: { partners: [], items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
   images: new Map(), step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
@@ -58,7 +58,13 @@ const keyOf = P.memberKey;
 const viewOf = (entry) => (entry.id
   ? S.known.get(`id:${entry.id}`) ?? { key: `id:${entry.id}`, state: "loading", name: "", login: "", image: "", accounts: [] }
   : { key: keyOf(entry), state: "ok", name: entry.name || entry.login, login: entry.login, image: entry.image, accounts: [], inline: true });
-const chosenMembers = () => S.cfg.costreamers.map(viewOf).filter((m) => m.state === "ok").map((m) => ({ login: m.key, name: m.name, image: m.image }));
+// Les co-streamers de la vidéo : ceux que la personne a choisis, puis ceux que le planning indique pour ce stream (sans doublon, même pseudo = même personne).
+const chosenMembers = () => {
+  const mine = S.cfg.costreamers.map(viewOf).filter((m) => m.state === "ok").map((m) => ({ login: m.key, name: m.name, image: m.image }));
+  if (S.cfg.schedulePeople === false || S.useManual) return mine;
+  const seen = new Set(S.cfg.costreamers.map(viewOf).flatMap((m) => [m.login, m.name].filter(Boolean).map((x) => String(x).toLowerCase())));
+  return [...mine, ...S.ev.partners.filter((p) => !seen.has(p.login))];
+};
 const zoneOf = (stream) => (stream && P.validZone(stream.timezone) ? stream.timezone : TZ);
 
 /* ───────────── Images ───────────── */
@@ -228,6 +234,7 @@ function renderNotes() {
     else if (x.state === "ok" && x.note) box.append(h("p", { class: "muted", text: L("ev_note", { source: x.label, note: x.note }) }));
   }
   if (E.coverState === "no_key" && E.selected?.games?.length && S.cfg.elements.includes("game")) box.append(h("p", { class: "muted", text: L("cover_no_key") }));
+  else if (E.coverState === "down" && E.selected?.games?.length && !E.selected.cover && S.cfg.elements.includes("game")) box.append(h("p", { class: "muted", text: L("cover_down") }));
   box.append(h("p", { class: "muted", text: L("event_zone", { zone: TZ }) }));
 }
 
@@ -261,7 +268,7 @@ function pickEvent(e, { quiet = false, auto = false } = {}) {
   S.ev.selected = { ...e, cover: "" };
   if (auto) S.defaultId = e.id;
   S.cfg.eventId = e.id; S.cfg.eventSource = kindOf(e.source); S.cfg.streamKey = e.legacyKey || "";
-  S.ev.coverState = ""; S.ev.coverAmbiguous = false;
+  S.ev.coverState = ""; S.ev.coverAmbiguous = false; S.ev.partners = [];
   const wasOpen = S.pickerOpen; S.pickerOpen = false;
   renderEvents(); rebuild();
   if (!quiet) {
@@ -269,10 +276,20 @@ function pickEvent(e, { quiet = false, auto = false } = {}) {
     try { if (wasOpen) $("event-change").focus?.(); } catch { /* sans importance */ }   // le travail en cours (style, phrase, co-streamers…) n'est pas touché : seul l'événement change
   }
   if (e.games?.[0]) loadCover(e);
+  if (e.partners?.length) loadPartners(e);
 }
-async function loadCover(e) {
+/** Les personnes du planning pour cet événement (nom + photo d'une fiche affichable de Contacts) ; sans réponse, la vidéo se fait sans elles. */
+async function loadPartners(e) {
+  const r = await api(`partners?logins=${encodeURIComponent(e.partners.join(","))}`, { ms: 15000 });
+  if (!r.ok || S.ev.selected?.id !== e.id) return;
+  S.ev.partners = (Array.isArray(r.items) ? r.items : []).map((p) => ({ login: String(p.login), name: String(p.name || p.login), image: String(p.image || "") }));
+  if (S.ev.partners.length) { renderRecap(); rebuild(); }
+}
+async function loadCover(e, retry = true) {
   const r = await api(`cover?game=${encodeURIComponent(e.games[0])}`, { ms: 12000 });
   if (!r.ok || S.ev.selected?.id !== e.id) return;
+  // la copie de la jaquette sur le site peut ne pas être prête à la toute première demande : une seule nouvelle tentative, un peu plus tard
+  if (!r.cover && r.coverState === "down" && retry) { await new Promise((ok) => setTimeout(ok, 2500)); if (S.ev.selected?.id === e.id) return loadCover(e, false); return; }
   S.ev.coverState = r.coverState || "";
   S.ev.coverAmbiguous = r.ambiguous === true && !!r.cover; S.ev.coverTitle = String(r.title || ""); S.ev.coverFound = String(r.found || "");
   if (r.cover) { S.ev.selected.cover = r.cover; rebuild(); }
@@ -483,14 +500,14 @@ const STEPS = [1, 2, 3];
 const stepName = (n) => L(`step_${n}`);
 /** Résumé de l'étape 3 : chaque ligne a son bouton « Modifier » qui ramène à l'étape où elle se règle (rien n'est perdu : les étapes gardent leur état). */
 function renderRecap() {
-  const e = selectedStream(), people = S.cfg.costreamers.length;
+  const e = selectedStream(), who = chosenMembers().map((m) => m.name || m.login).filter(Boolean), people = who.length;
   const fmt = P.formatOf(S.cfg.format), rows = [
     [1, L("recap_event"), e ? `${e.title || L("untitled")} · ${whenText(e)}` : L("event_none_chosen")],
     [2, L("recap_style"), L(`style_${S.cfg.style}`)],
     [2, L("recap_format"), `${L(`format_${fmt.id}`)} · ${L("seconds", { n: S.cfg.duration })}`],
     [2, L("recap_text"), S.cfg.text ? S.cfg.text : L("recap_none_f")],
     [2, L("recap_mark"), L(S.cfg.watermark === true ? "recap_yes" : "recap_no")],
-    [2, L("recap_people"), people ? S.cfg.costreamers.map((x) => { const m = viewOf(x); return m.name || m.login; }).filter(Boolean).join(", ") || String(people) : L("recap_none")],
+    [2, L("recap_people"), people ? who.join(", ") : L("recap_none")],
   ];
   $("recap").replaceChildren(...rows.map(([n, what, value]) => h("li", {}, h("span", { class: "what" }, h("small", { text: what }), h("span", { text: value })),
     h("button", { type: "button", text: L("recap_edit"), "aria-label": L("recap_edit_aria", { what }), onclick: () => setStep(n) }))));
@@ -577,6 +594,7 @@ function syncControls() {
   $("duration").value = S.cfg.duration; $("duration-out").textContent = L("seconds", { n: S.cfg.duration });
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
   $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang; $("watermark").checked = S.cfg.watermark === true;
+  $("schedule-people").checked = S.cfg.schedulePeople !== false;
   if (advancedUsed() && !S.advanced) setAdvanced(true);   // un réglage avancé déjà modifié (modèle, assistant) ne reste jamais caché
   renderStreamPicker();
 }
@@ -599,6 +617,7 @@ function bind() {
   on("channel", "input", () => { S.cfg.channelName = P.oneLine($("channel").value, P.LIMITS.channelName); rebuild(); });
   on("lang", "change", () => { S.cfg.lang = $("lang").value === "en" ? "en" : "fr"; renderStreamPicker(); rebuild(); });
   // La mention « Made with Curiosa » : l'aperçu suit tout de suite ; le choix est retenu pour les prochaines vidéos (un échec n'empêche pas de fabriquer celle-ci).
+  on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; rebuild(); });
   on("watermark", "change", async () => {
     S.cfg.watermark = $("watermark").checked; rebuild();
     const r = await api("act", { method: "POST", body: { op: "prefs.watermark", watermark: S.cfg.watermark } });

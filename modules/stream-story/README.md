@@ -57,6 +57,8 @@ Instagram cache une partie de l'image : en haut et en bas d'une story (le nom du
 Pour vérifier, cochez **« Montrer les zones de sécurité »** (dans « Options avancées ») : elles apparaissent hachurées sur l'aperçu, avec leur explication. Elles ne sont **jamais** dessinées dans la vidéo.
 
 ## Vos co-streamers
+
+- **Les personnes du planning** : quand le stream choisi en indique (« Avec … »), elles sont ajoutées à la vidéo avec leur nom et leur photo (initiales sans photo), après celles que vous choisissez ; au-delà de 6, une pastille « +N ». Seules les fiches de Contacts affichables sont montrées (même règle que le Planning : ni « à relire », ni « Ne pas montrer »). Une case « Ajouter les personnes indiquées sur ce stream » (cochée au départ, repliée sous « Co-streamers ») les retire.
 Ils viennent de **Contacts** : Story n'en garde ni le nom, ni les pseudos, ni la photo, seulement le numéro de la fiche (donc rien à retaper, et un nom corrigé dans Contacts l'est aussi dans vos vidéos).
 - **Chercher dans mes contacts** : tapez un nom ou un pseudo (2 lettres au moins), sur n'importe quel réseau. La liste montre la photo et les comptes de chaque personne (Twitch, YouTube…). Un clic sur **Ajouter** la met dans la vidéo (**6 au plus**). Sans photo connue, la vidéo montre ses initiales dans un cercle de couleur.
 - **Ajouter depuis une catégorie de Contacts** : choisissez une catégorie (par exemple celle de vos cibles de raid), ajoutez les personnes une à une, ou cliquez sur **« Ajouter les premiers »** pour remplir les places libres. Seuls les comptes Twitch de la catégorie sont proposés.

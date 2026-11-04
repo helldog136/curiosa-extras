@@ -52,7 +52,7 @@ export function cleanEvent(raw, source, { fallbackZone = "UTC" } = {}) {
     id: raw.id, title: P.oneLine(raw.title, LIMITS.title), start: new Date(t.startMs).toISOString(), startMs: t.startMs,
     end: new Date(t.endMs).toISOString(), endMs: t.endMs, allDay: t.allDay, day: t.day, timezone: t.zone,
     type: TYPES.includes(raw.type) ? raw.type : "event", source: source.kind, sourceLabel: source.label, alsoIn: [], ids: [raw.id],
-    url: httpsUrl(raw.url), image: httpsUrl(raw.image), games, legacyKey: typeof raw.legacyKey === "string" && /^[a-z0-9]{1,20}$/.test(raw.legacyKey) ? raw.legacyKey : "",
+    url: httpsUrl(raw.url), image: httpsUrl(raw.image), games, partners: P.partnerLogins(raw.partners), legacyKey: typeof raw.legacyKey === "string" && /^[a-z0-9]{1,20}$/.test(raw.legacyKey) ? raw.legacyKey : "",
   };
 }
 
@@ -81,7 +81,7 @@ export function calendarEvents(items, nowMs, fallbackZone, source, max = LIMITS.
     const stable = slot && typeof slot.id === "string" && slot.id ? P.shortHash(`${slot.id}|${slot.start}`) : P.shortHash(`${s.start}|${s.title}`);
     return {
       id: `calendar:${stable}`, title: s.title, start: s.start, startMs: s.startMs, end: new Date(s.startMs + (s.allDay ? 86_400_000 : 3_600_000)).toISOString(), endMs: s.startMs + (s.allDay ? 86_400_000 : 3_600_000),
-      allDay: s.allDay, day: s.day, timezone: s.timezone, type: "stream", source: source.kind, sourceLabel: source.label, alsoIn: [], ids: [`calendar:${stable}`], url: "", image: "", games: s.games, legacyKey: s.key,
+      allDay: s.allDay, day: s.day, timezone: s.timezone, type: "stream", source: source.kind, sourceLabel: source.label, alsoIn: [], ids: [`calendar:${stable}`], url: "", image: "", games: s.games, partners: s.partners, legacyKey: s.key,
     };
   });
 }
@@ -116,7 +116,7 @@ function merge(kept, twin, e) {
   const ids = [...first.ids];
   for (const id of other.ids) if (!ids.includes(id) && ids.length < 8) ids.push(id);
   const merged = {
-    ...first, alsoIn: also, ids, url: first.url || other.url, image: first.image || other.image, games: first.games.length ? first.games : other.games,
+    ...first, alsoIn: also, ids, url: first.url || other.url, image: first.image || other.image, games: first.games.length ? first.games : other.games, partners: P.partnerLogins([...(first.partners ?? []), ...(other.partners ?? [])]),
     legacyKey: first.legacyKey || other.legacyKey, timezone: first.timezone || other.timezone,
   };
   kept[kept.indexOf(twin)] = merged;
@@ -189,5 +189,5 @@ export function pageOf(events, { cursor = "", limit = LIMITS.pageDefault } = {})
 /** Ce que la page et les outils de l'IA reçoivent d'un événement. */
 export const publicEvent = (e) => ({
   id: e.id, title: e.title, start: e.start, startMs: e.startMs, allDay: e.allDay, day: e.day, timezone: e.timezone, type: e.type, source: e.source, sourceLabel: e.sourceLabel,
-  alsoIn: e.alsoIn, url: e.url, games: e.games, legacyKey: e.legacyKey,
+  alsoIn: e.alsoIn, url: e.url, games: e.games, partners: e.partners ?? [], legacyKey: e.legacyKey,
 });

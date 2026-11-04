@@ -24,6 +24,8 @@ export function within(p, ms, fallback) {
  * interface du cœur (`ctx.api.rawg`, permission `rawg`, cale à retirer en 0.3.0) : un site dont le cœur garde encore la clé ne perd aucune jaquette entre deux mises à jour.
  */
 const viaModule = (ctx, method, args) => Promise.resolve().then(() => ctx.api?.services?.call?.("game.cover", method, args)).then((r) => r ?? null, () => null);
+/** L'adresse du site (pour reconnaître une image gardée par lui) ; "" si inconnue. */
+const siteOf = (ctx) => String(ctx.api?.siteUrl ?? "");
 /** Une clé RAWG est-elle réglée sur le site ? Ne lève jamais. */
 export async function hasKey(ctx) {
   const m = await viaModule(ctx, "status", {});
@@ -60,8 +62,9 @@ export async function loadStreams(ctx, { zone = "", now = Date.now(), max = P.LI
       const found = new Map();
       await within(Promise.all(names.map(async (n) => {
         const r = await coverRaw(ctx, n);
-        if (r?.status === "found" && images.allowedUrl(r.url)) found.set(n, String(r.url));
-        else if (r?.status === "unreachable" || r?.status === "refused") coverState = "down";
+        const src = r?.status === "found" ? images.drawable(r.url, siteOf(ctx)) : "";
+        if (src) found.set(n, src);
+        else if (r?.status === "unreachable" || r?.status === "refused" || r?.status === "found") coverState = "down";
       })), timing.coverMs, null);
       for (const s of streams) s.cover = found.get(s.games[0]) ?? "";
     }
@@ -164,6 +167,7 @@ export async function coverOf(ctx, game) {
   const configured = await within(hasKey(ctx), timing.coverMs, false);
   if (!configured) return { cover: "", coverState: "no_key", title: name, ambiguous: false, found: "" };
   const r = await within(coverRaw(ctx, name), timing.coverMs, null);
-  if (r?.status === "found" && images.allowedUrl(r.url)) return { cover: String(r.url), coverState: "", title: name, ambiguous: r.ambiguous === true, found: typeof r.name === "string" ? P.oneLine(r.name, 120) : "" };
-  return { cover: "", coverState: r?.status === "unreachable" || r?.status === "refused" || r === null ? "down" : "", title: name, ambiguous: false, found: "" };
+  const src = r?.status === "found" ? images.drawable(r.url, siteOf(ctx)) : "";
+  if (src) return { cover: src, coverState: "", title: name, ambiguous: r.ambiguous === true, found: typeof r.name === "string" ? P.oneLine(r.name, 120) : "" };
+  return { cover: "", coverState: r?.status === "unreachable" || r?.status === "refused" || r?.status === "found" || r === null ? "down" : "", title: name, ambiguous: false, found: "" };
 }
