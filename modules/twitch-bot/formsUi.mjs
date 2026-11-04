@@ -74,7 +74,7 @@ export function timerOnlyField(ctx, timerOnly, extra = {}) {
 /**
  * The configuration of the line under the "Started by" choice, for the page script: it follows the choice, the command name and the repeat interval, so it never says
  * something false. `on` : the "Repeat automatically" switch (absent on the new-timer form, where a repeat is always set). Texts: one per choice and per case, the
- * script picks the first one that fits on one line (60 characters) in this order: name + interval, interval, name, neither.
+ * script uses the one that fits (72 characters in both choices): with the name when it is short enough, without it otherwise; with the interval when there is a usable one.
  */
 export function timerOnlyHelp(ctx, prefix, { on = "repeatOn" } = {}) {
   const t = ctx.t, texts = {};

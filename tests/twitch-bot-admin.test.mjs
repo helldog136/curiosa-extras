@@ -498,19 +498,27 @@ test("Started by: the line under the choice follows the choice, the name and the
     assert.match(only, nothing); assert.doesNotMatch(only, anyone);
     assert.match(both, anyone); assert.doesNotMatch(both, nothing);
     assert.ok(only.includes(lang === "en" ? "every 15 min" : "toutes les 15 min") && both.includes(lang === "en" ? "every 15 min" : "toutes les 15 min"));
-    assert.ok(only.length <= 60 && both.length <= 60, `${lang}: one line`);
+    assert.ok(only.length <= 72 && both.length <= 72, `${lang}: short`);
+    assert.ok(only.includes("!movember") && both.includes("!movember"), `${lang}: the real name, in both choices`);
     // no repeat: it explains nothing misleading, whatever the choice
     for (const timerOnly of [true, false]) assert.equal(client.stateHelpText(spec, { timerOnly, repeating: false, name: "movember", seconds: 900 }), L.th_first);
     // the name comes from the form as typed; empty name or no interval: still true and short
-    assert.ok(client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "movember", seconds: 900 }).includes("!movember") || lang === "fr");
     assert.equal(client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "", seconds: 900 }), L.th_timer_every.replace("{every}", L.rep_every_m.replace("{min}", "15")));
     assert.equal(client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "ab", seconds: null }), L.th_both_named.replace("{name}", "!ab"));
     assert.equal(client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "", seconds: 30 }), L.th_both_plain, "an interval that is not whole minutes is not announced");
     assert.match(client.stateHelpText(spec, { timerOnly: true, repeating: true, name: "x", seconds: 7200 }), lang === "en" ? /every 2 h/ : /toutes les 2 h/);
     // a very long name never pushes the line past one line: it is left out
-    const long = client.stateHelpText(spec, { timerOnly: false, repeating: true, name: "unetresgrandenomdecommandequiremplitlaligne", seconds: 900 });
-    assert.ok(long.length <= 60 && !long.includes("unetres"), `${lang}: ${long}`);
-    // the fallbacks without a name always fit one line (the named ones are only used when they fit)
+    const longName = "unetresgrandenomdecommandequiremplitlaligne";
+    for (const timerOnly of [true, false]) {
+      const long = client.stateHelpText(spec, { timerOnly, repeating: true, name: longName, seconds: 900 });
+      assert.ok(long.length <= 72 && !long.includes("unetres"), `${lang}: ${long}`);
+    }
+    // the name never comes and goes when the choice changes: either both choices show it or neither does
+    for (const name of ["a", "movember", "unnomdecommandeunpeulong", longName]) {
+      const shown = [true, false].map((timerOnly) => client.stateHelpText(spec, { timerOnly, repeating: true, name, seconds: 900 }).includes(`!${name}`));
+      assert.equal(shown[0], shown[1], `${lang} ${name}`);
+    }
+    // the fallbacks without a name are always short (the named ones are only used when they fit)
     for (const k of HELP_KEYS.filter((x) => !x.includes("named"))) assert.ok(L[k].replace("{every}", L.rep_every_h.replace("{h}", "24")).length <= 60, `${lang} ${k}`);
   }
 });

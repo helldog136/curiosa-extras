@@ -313,16 +313,16 @@
   /**
    * The line under a two-choice control that tells what the CURRENT choice means (pure, tested without a page). `state`: { timerOnly, repeating, name, seconds }.
    * Never a fixed sentence: the core cannot show a different help for each choice, so the line is written here and follows the choice.
-   * Order of preference (the first that fits on one line, 60 characters): name + interval, interval, name, neither.
+   * The name is shown only when it fits (72 characters) in BOTH choices, so that switching the choice never makes the name come and go; the interval only when it is whole minutes.
    */
+  var HELP_MAX = 72;
   function stateHelpText(spec, state) {
     if (!state.repeating) return spec.first;
-    var kind = state.timerOnly ? "timer" : "both", every = everyText(spec, state.seconds), name = state.name ? spec.prefix + state.name : "";
-    var fill = function (text) { return text.replace("{name}", name).replace("{every}", every); };
-    var picks = every ? (name ? ["named_every", "every"] : ["every"]) : (name ? ["named", "plain"] : ["plain"]);
-    var texts = picks.map(function (c) { return fill(spec.texts[kind + "_" + c]); });
-    for (var i = 0; i < texts.length; i++) if (texts[i].length <= 60) return texts[i];
-    return texts[texts.length - 1];
+    var every = everyText(spec, state.seconds), name = state.name ? spec.prefix + state.name : "";
+    var fill = function (kind, c) { return spec.texts[kind + "_" + c].replace("{name}", name).replace("{every}", every); };
+    var named = every ? "named_every" : "named", plain = every ? "every" : "plain";
+    var fits = name && ["timer", "both"].every(function (k) { return fill(k, named).length <= HELP_MAX; });
+    return fill(state.timerOnly ? "timer" : "both", fits ? named : plain);
   }
   /** Writes `stateHelpText` under the segmented choice `spec.field` and keeps it up to date (choice, repeat switch, name, interval). */
   function stateHelp(form, spec) {
