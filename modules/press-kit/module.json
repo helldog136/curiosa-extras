@@ -5,11 +5,11 @@
     "en": "Press kit",
     "fr": "Kit presse"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "main": "index.mjs",
   "description": {
-    "en": "A public page presenting your identity to press and partners: presentation, logo, colors, font, contact. It only displays what you fill in on its “Settings” tab — nothing else to maintain.",
-    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, logo, couleurs, police, contact. Elle n'affiche que ce que vous remplissez dans son onglet « Réglages » — rien d'autre à entretenir."
+    "en": "A public page presenting your identity to press and partners: presentation, main facts, logos, colors, fonts, contact. It uses your site by default. Fill in your own values in its “Settings” tab, or ask an assistant.",
+    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires : présentation, faits marquants, logos, couleurs, polices, contact. Elle reprend votre site par défaut. Mettez-y vos propres valeurs dans l'onglet « Réglages », ou demandez à un assistant."
   },
   "author": "Helldog136",
   "license": "Curiosa License 1.0",
@@ -25,6 +25,105 @@
     "pages"
   ],
   "settings": [
+    {
+      "key": "about",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Presentation",
+        "fr": "Présentation"
+      },
+      "help": {
+        "en": "Empty: the site presentation is used.",
+        "fr": "Vide : la présentation du site est utilisée."
+      },
+      "example": {
+        "en": "We make cosy puzzle games.",
+        "fr": "Nous créons des jeux de réflexion apaisants."
+      }
+    },
+    {
+      "key": "tagline",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "default": "site:tagline",
+      "label": {
+        "en": "What we do in one line",
+        "fr": "Ce que nous faisons en une ligne"
+      },
+      "help": {
+        "en": "Used as the short description to copy.",
+        "fr": "Sert de description courte à copier."
+      },
+      "example": {
+        "en": "Cosy puzzle games, streamed live.",
+        "fr": "Des jeux de réflexion apaisants, en direct."
+      }
+    },
+    {
+      "key": "facts",
+      "type": "textarea",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Main facts",
+        "fr": "Faits marquants"
+      },
+      "help": {
+        "en": "One per line, 12 at most.",
+        "fr": "Un par ligne, 12 au plus."
+      },
+      "example": {
+        "en": "Created in 2021",
+        "fr": "Créé en 2021"
+      }
+    },
+    {
+      "key": "contactName",
+      "type": "text",
+      "optional": true,
+      "label": {
+        "en": "Press contact name",
+        "fr": "Nom du contact presse"
+      },
+      "help": {
+        "en": "Shown above the contact e-mail.",
+        "fr": "Affiché avant l'e-mail de contact."
+      },
+      "example": "Camille"
+    },
+    {
+      "key": "brandSource",
+      "type": "select",
+      "display": "segmented",
+      "default": "site",
+      "label": {
+        "en": "Colors, fonts and logos",
+        "fr": "Couleurs, polices et logos"
+      },
+      "help": {
+        "en": "Your own values are set under More options.",
+        "fr": "Vos valeurs se règlent sous « Plus d'options »."
+      },
+      "options": [
+        {
+          "value": "site",
+          "label": {
+            "en": "From the site (recommended)",
+            "fr": "Depuis le site (recommandé)"
+          }
+        },
+        {
+          "value": "own",
+          "label": {
+            "en": "My own values",
+            "fr": "Mes propres valeurs"
+          }
+        }
+      ]
+    },
     {
       "key": "showTypography",
       "type": "boolean",
@@ -44,6 +143,111 @@
         "en": "Show the contact email",
         "fr": "Afficher l'email de contact"
       }
+    },
+    {
+      "key": "ownColors",
+      "type": "textarea",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Own colors",
+        "fr": "Couleurs personnalisées"
+      },
+      "help": {
+        "en": "One per line, 8 at most: a name, then a code.",
+        "fr": "Une par ligne, 8 au plus : un nom, puis un code."
+      },
+      "example": {
+        "en": "Night blue #1B1A2E",
+        "fr": "Bleu nuit #1B1A2E"
+      }
+    },
+    {
+      "key": "ownHeadingFont",
+      "type": "text",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Own font for titles",
+        "fr": "Police des titres"
+      },
+      "help": {
+        "en": "Only the name; used with your own values.",
+        "fr": "Seulement le nom ; utilisée avec vos valeurs."
+      },
+      "example": "Lora"
+    },
+    {
+      "key": "ownTextFont",
+      "type": "text",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Own font for text",
+        "fr": "Police du texte"
+      },
+      "help": {
+        "en": "Only the name; used with your own values.",
+        "fr": "Seulement le nom ; utilisée avec vos valeurs."
+      },
+      "example": "Open Sans"
+    },
+    {
+      "key": "ownLogoWide",
+      "type": "image",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Horizontal logo",
+        "fr": "Logo horizontal"
+      },
+      "help": {
+        "en": "A file already uploaded to the site.",
+        "fr": "Un fichier déjà envoyé sur le site."
+      }
+    },
+    {
+      "key": "ownLogoSquare",
+      "type": "image",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Icon",
+        "fr": "Icône"
+      },
+      "help": {
+        "en": "A file already uploaded to the site.",
+        "fr": "Un fichier déjà envoyé sur le site."
+      }
+    },
+    {
+      "key": "ownLogoWideDark",
+      "type": "image",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Horizontal logo, dark background",
+        "fr": "Logo horizontal, fond sombre"
+      },
+      "help": {
+        "en": "A file already uploaded to the site.",
+        "fr": "Un fichier déjà envoyé sur le site."
+      }
+    },
+    {
+      "key": "ownLogoSquareDark",
+      "type": "image",
+      "rare": true,
+      "optional": true,
+      "label": {
+        "en": "Icon, dark background",
+        "fr": "Icône, fond sombre"
+      },
+      "help": {
+        "en": "A file already uploaded to the site.",
+        "fr": "Un fichier déjà envoyé sur le site."
+      }
     }
-  ]
+  ],
+  "minCore": "0.6.0"
 }
