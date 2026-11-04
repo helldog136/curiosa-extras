@@ -34,8 +34,8 @@ export const stateOf = (why) => (why === "absent" ? "absent" : why === "slow" ? 
 /* ───────────── Ce qui est montré d'une fiche ───────────── */
 
 const text = (x, max) => P.oneLine(x, max);
-/** L'adresse de la photo, SEULEMENT si le relais d'images sait la servir (hôte de la liste blanche) ; sinon "" (la vidéo montre les initiales). */
-export const photoOf = (contact) => images.allowedUrl(contact?.photo?.url)?.href ?? "";
+/** L'adresse de la photo : une copie gardée par le site (chemin du site), ou, SEULEMENT si le relais d'images sait la servir (hôte de la liste blanche) ; sinon "" (la vidéo montre les initiales). */
+export const photoOf = (contact) => images.ownImage(contact?.photo?.url) || images.allowedUrl(contact?.photo?.url)?.href || "";
 /** Un compte, en pastille : { network, handle, label }. */
 const badge = (a) => ({ network: P.NETWORKS.includes(a?.network) ? a.network : "other", handle: text(a?.handle, 80), label: text(a?.displayName || a?.handle, 60) });
 /** Le pseudo montré d'une fiche : son compte Twitch d'abord, sinon son premier compte. */
@@ -147,4 +147,51 @@ export async function idOfTwitchLogin(ctx, login) {
     if (x && typeof x.id === "string" && (x.accounts ?? []).some((a) => a?.network === "twitch" && String(a.handle).toLowerCase() === login)) return x.id;
   }
   return "";
+}
+
+/* ───────────── Les personnes d'un stream du planning (« Avec … ») ───────────── */
+
+const HIDE_NAMES = ["ne pas montrer", "do not show"];
+const fold = (v) => String(v ?? "").normalize("NFD").replace(/\p{M}/gu, "").replace(/\s+/g, " ").trim().toLowerCase();
+const idOk = (v) => typeof v === "string" && v.length > 0 && v.length <= 80;
+
+/** L'identifiant de la catégorie « Ne pas montrer » : { state: "ok", id: string|null } ou { state: "unverified" } (Contacts n'a pas pu le dire : on ne montre alors personne). Même règle que le Planning. */
+async function hideCategoryId(ctx) {
+  const found = await Promise.all(HIDE_NAMES.map((q) => call(ctx, "categories", { q, limit: 20 })));
+  if (found.some((r) => !r.ok)) return { state: "unverified" };
+  for (const r of found) for (const k of Array.isArray(r.value.items) ? r.value.items : []) if (idOk(k?.id) && HIDE_NAMES.includes(fold(k.label ?? k.name))) return { state: "ok", id: k.id };
+  return { state: "ok", id: null };
+}
+
+/**
+ * Les personnes à montrer pour ces pseudos Twitch (ceux que l'agenda donne pour un stream), avec la MÊME règle que le « Avec … » du Planning : seule une fiche de Contacts qui porte
+ * ce pseudo, qui est « active » (relue) et qui n'est pas dans la catégorie « Ne pas montrer » est montrée. Un pseudo inconnu, une fiche « à relire », une fiche cachée, ou un doute (Contacts
+ * muet) : personne. Rend { state: "ok" | "absent" | "slow" | "failed", items: [{ login, name, image }] } dans l'ordre de l'agenda. Seuls le nom et la photo sortent d'ici.
+ */
+export async function schedulePeople(ctx, logins) {
+  const wanted = P.partnerLogins(logins);
+  if (!wanted.length) return { state: "ok", items: [] };
+  if (!(await hasBook(ctx))) return { state: "absent", items: [] };
+  const hide = await hideCategoryId(ctx);
+  if (hide.state !== "ok") return { state: "slow", items: [] };
+  const ids = new Map();   // pseudo -> [identifiants de fiche]
+  const queue = [...wanted];
+  let failed = false;
+  await Promise.all(Array.from({ length: Math.min(3, queue.length) }, async () => {
+    for (let login = queue.shift(); login; login = queue.shift()) {
+      const r = await call(ctx, "search", { q: login, network: "twitch", limit: 5 });
+      if (!r.ok) { failed = true; continue; }
+      ids.set(login, [...new Set((Array.isArray(r.value.items) ? r.value.items : []).filter((i) => idOk(i?.id) && (i.accounts ?? []).some((a) => a?.network === "twitch" && P.normalizeLogin(a.handle).login === login)).map((i) => i.id))]);
+    }
+  }));
+  if (failed) return { state: "slow", items: [] };
+  const cards = await resolveCards(ctx, [...ids.values()].flat());
+  const items = [];
+  for (const login of wanted) {
+    const mine = (ids.get(login) ?? []).map((id) => cards.get(id));
+    if (!mine.length || mine.some((c) => !c)) continue;
+    const ok = mine.every((c) => c.status === "active" && text(c.name, P.LIMITS.displayName) && !(hide.id && Array.isArray(c.categoryIds) && c.categoryIds.includes(hide.id)));
+    if (ok) items.push({ login, name: text(mine[0].name, P.LIMITS.displayName), image: photoOf(mine[0]) });
+  }
+  return { state: "ok", items };
 }

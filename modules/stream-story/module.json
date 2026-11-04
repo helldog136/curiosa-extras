@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.5.2",
+  "version": "2.6.0",
   "platform": "instagram",
   "description": {
     "en": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post.",
@@ -28,8 +28,8 @@
     "rawg"
   ],
   "privacy": {
-    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events are read live and held in memory for under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
-    "fr": "Rien n'est collecté sur votre public, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events and the people they list are read live and kept in memory under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
+    "fr": "Rien n'est collecté sur votre public, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir et les personnes qu'ils citent sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
   },
   "tabs": [
     {

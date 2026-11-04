@@ -30,7 +30,7 @@
   "ui_el_game": "Jeu et jaquette (quand on la connaît)",
   "ui_el_brand": "Logo et nom de la chaîne",
   "ui_el_text": "Ma phrase personnalisée",
-  "ui_el_costreamers": "Les co-streamers choisis (section « Co-streamers »)",
+  "ui_el_costreamers": "Les co-streamers (ceux du planning et ceux que vous avez choisis)",
   "ui_countdown_is": "La vidéo dira : « {text} ».",
   "ui_no_stream_info": "Aucun événement n'est choisi : le titre, le jour, le compte à rebours et le jeu ne peuvent pas s'afficher.",
   "ui_h_texts": "Textes",
@@ -228,5 +228,8 @@
   "ui_recap_edit": "Modifier",
   "ui_recap_edit_aria": "Modifier : {what}",
   "ui_step_now": "Étape {n} sur 3 : {name}",
-  "ui_recap_none_f": "aucune"
+  "ui_recap_none_f": "aucune",
+  "ui_cover_down": "La jaquette du jeu n'est pas encore prête. La vidéo marche sans elle ; réessayez dans un instant.",
+  "ui_schedule_people_label": "Ajouter les personnes indiquées sur ce stream",
+  "ui_schedule_people_help": "Noms et photos des personnes du planning."
 }

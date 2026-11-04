@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.5.2");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.6.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -49,7 +49,7 @@ test("manifeste : un module à lui, une instance, aucune page publique, 4 permis
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);
   assert.ok(manifest.privacy.fr && manifest.privacy.en && !/visiteur/.test("") );
   assert.match(manifest.privacy.fr, /Rien n'est collecté sur votre public/); assert.match(manifest.privacy.fr, /Aucune vidéo n'est gardée/); assert.match(manifest.privacy.fr, /restent dans Contacts/);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "people", "prep", "streams", "studio", "wordmark"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "partners", "people", "prep", "streams", "studio", "wordmark"]);
 });
 
 test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ de la mention, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {

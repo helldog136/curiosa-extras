@@ -31,6 +31,30 @@ export function allowedUrl(input) {
   return u;
 }
 
+/**
+ * Une image GARDÉE PAR LE SITE LUI-MÊME (la copie d'une jaquette du module « Jaquettes de jeux » : `/m/<module>/cover/<repère>` ; la copie d'une photo : `/m/<module>/photo/<repère>` ;
+ * une image téléversée : `/uploads/<fichier>`). Ces images sont à la MÊME adresse que la page : le navigateur les dessine sans relais, et le canvas reste « propre ».
+ * Le service des jaquettes rend une adresse ABSOLUE du site (`https://site/m/…`) : on n'en garde que le chemin, et seulement si elle est bien celle du site (`siteUrl`, quand on la connaît).
+ * Rend le chemin (« /m/game-covers/cover/0123456789abcdef »), ou "" pour tout le reste.
+ */
+const OWN = /^\/(?:m\/[A-Za-z0-9_-]{1,64}\/(?:cover|photo)\/[A-Za-z0-9_-]{8,64}|uploads\/[A-Za-z0-9._-]{1,120})$/;
+const VERSION = /^v=[0-9a-f]{8,32}$/;   // la copie d'une jaquette est « versionnée » : `?v=` + 12 caractères hexadécimaux, rien d'autre
+export function ownImage(input, siteUrl = "") {
+  if (typeof input !== "string" || input.length > 500 || /[\u0000-\u0020\u007f\\]/.test(input)) return "";
+  if (input.startsWith("/") && !input.startsWith("//")) {
+    const [path, query, ...rest] = input.split("?");
+    return !rest.length && OWN.test(path) && !path.includes("..") && (query === undefined || VERSION.test(query)) ? input : "";
+  }
+  let u;
+  try { u = new URL(input); } catch { return ""; }
+  if (u.protocol !== "https:" || u.port || u.username || u.password || u.hash || !OWN.test(u.pathname) || u.pathname.includes("..")) return "";
+  if (u.search && !VERSION.test(u.search.slice(1))) return "";   // seule la version de la copie (`?v=…`) est permise
+  if (siteUrl) { try { if (new URL(siteUrl).origin !== u.origin) return ""; } catch { return ""; } }
+  return u.pathname + u.search;
+}
+/** L'adresse que la page peut dessiner pour une jaquette ou une photo : la copie du site (chemin), sinon une adresse permise du relais ; "" sinon. */
+export const drawable = (input, siteUrl = "") => ownImage(input, siteUrl) || allowedUrl(input)?.href || "";
+
 /** Le vrai type d'une image, lu dans ses premiers octets (jamais SVG ni autre chose). */
 export function sniff(b) {
   if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
