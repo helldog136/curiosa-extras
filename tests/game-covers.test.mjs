@@ -2,11 +2,12 @@
 // Faux RAWG : fakeFetch du kit du cœur, à travers le VRAI client réseau (ctx.api.net de fakeCtx). Jamais le vrai RAWG, jamais une vraie clé.
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { imageReply, IMAGE_HOSTS } from "./helpers/cover-fakes.mjs";
+import { JPEG, imageReply, IMAGE_HOSTS } from "./helpers/cover-fakes.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
 const kit = await import(pathToFileURL(path.join(process.env.CURIOSA_DIR ?? process.cwd(), "testsupport/index.mjs")).href);
@@ -25,7 +26,8 @@ const svc = mod.services["game.cover"];
 const { titleKey } = await import("../modules/game-covers/match.mjs");
 
 const KEY = "FAKE-RAWG-KEY-0123456789";
-const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}`;
+// the served address carries the version of the image (a short hash of its bytes): every fake image host serves the same one-pixel JPEG
+const cu = (title) => `https://example.test/m/game-covers/cover/${copies.idOf(titleKey(title))}?v=${createHash("sha256").update(JPEG).digest("hex").slice(0, 12)}`;
 const txt = (cell) => (cell && typeof cell === "object" ? cell.text : cell);
 const img = (id) => `https://media.rawg.io/media/games/${String(id).padStart(3, "0")}/jeu-${id}.jpg`;
 const g = (id, name, released, plats = ["PC"]) => ({ id, name, released, platforms: plats.map((p) => ({ platform: { name: p } })), background_image: img(id) });
@@ -365,7 +367,7 @@ test("onglet « Jaquettes enregistrées » : UN tableau, origine en pastille col
   assert.equal(byTitle["Jeu sans image"][2], "—", "pas de source pour « aucune jaquette »");
   assert.equal(txt(byTitle.Hades[1]), "Hades II"); assert.equal(txt(byTitle["Image a la main"][1]), "Image choisie à la main");
   // La vignette est la COPIE gardée sur le site (une page du site), jamais l'adresse de RAWG.
-  assert.match(byTitle.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}$/);
+  assert.match(byTitle.Hades[1].image.src, /^\/m\/game-covers\/cover\/[0-9a-f]{16}\?v=[0-9a-f]{12}$/);
   assert.ok(!JSON.stringify(tabOf(blocks, "saved")).includes("https://media.rawg.io"), "l'administration montre les copies du site, pas l'adresse de RAWG");
   assert.deepEqual(t.rowIds, t.rows.map((r) => r[0]));
   // Au plus deux actions visibles ; « Oublier » est nommée, dangereuse (menu « ⋯ ») et passe par un écran de confirmation, jamais par un clic direct.
