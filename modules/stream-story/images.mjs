@@ -38,17 +38,23 @@ export function allowedUrl(input) {
  * Rend le chemin (« /m/game-covers/cover/0123456789abcdef »), ou "" pour tout le reste.
  */
 const OWN = /^\/(?:m\/[A-Za-z0-9_-]{1,64}\/(?:cover|photo)\/[A-Za-z0-9_-]{8,64}|uploads\/[A-Za-z0-9._-]{1,120})$/;
-const VERSION = /^v=[0-9a-f]{8,32}$/;   // la copie d'une jaquette est « versionnée » : `?v=` + 12 caractères hexadécimaux, rien d'autre
+// La copie d'une jaquette est « versionnée » : `?v=<version>`, rien d'autre. LE FORMAT vient du module « Jaquettes de jeux » (`versionOf`, copies.mjs, depuis 1.3.2) : soit l'empreinte de l'image
+// (12 caractères hexadécimaux : `0a1b2c3d4e5f`), soit, pour une copie plus ancienne qui n'en a pas, `t` + une date en base 36 (chiffres et lettres minuscules : `tmw1bbib6`).
+// Ce n'est donc PAS que de l'hexadécimal : la 2.6.0 ne reconnaissait que l'hexadécimal et écartait en silence toutes les jaquettes `t…`. Le test tests/stream-story-cover-partners.test.mjs
+// fait produire de vrais jetons par `versionOf` du module des jaquettes : si l'un des deux change, il casse.
+export const COVER_VERSION = /^[0-9a-f]{12}$|^t[0-9a-z]{1,12}$/;
+const VERSION = /^v=(.+)$/;
+const versionOk = (q) => { const m = VERSION.exec(q); return !!m && COVER_VERSION.test(m[1]); };
 export function ownImage(input, siteUrl = "") {
   if (typeof input !== "string" || input.length > 500 || /[\u0000-\u0020\u007f\\]/.test(input)) return "";
   if (input.startsWith("/") && !input.startsWith("//")) {
     const [path, query, ...rest] = input.split("?");
-    return !rest.length && OWN.test(path) && !path.includes("..") && (query === undefined || VERSION.test(query)) ? input : "";
+    return !rest.length && OWN.test(path) && !path.includes("..") && (query === undefined || versionOk(query)) ? input : "";
   }
   let u;
   try { u = new URL(input); } catch { return ""; }
   if (u.protocol !== "https:" || u.port || u.username || u.password || u.hash || !OWN.test(u.pathname) || u.pathname.includes("..")) return "";
-  if (u.search && !VERSION.test(u.search.slice(1))) return "";   // seule la version de la copie (`?v=…`) est permise
+  if (u.search && !versionOk(u.search.slice(1))) return "";   // seule la version de la copie (`?v=…`) est permise
   if (siteUrl) { try { if (new URL(siteUrl).origin !== u.origin) return ""; } catch { return ""; } }
   return u.pathname + u.search;
 }
