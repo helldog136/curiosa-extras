@@ -1,3 +1,12 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/curiosa-logo-dark.svg">
+  <img src="docs/brand/curiosa-logo.svg" alt="Curiosa" width="360">
+</picture>
+
+</div>
+
 # curiosa-extras
 
 Les modules de [Curiosa](https://github.com/helldog136/Curiosa). Le cœur de Curiosa est volontairement minimal (le site et son admin) : tout le reste vit ici.
