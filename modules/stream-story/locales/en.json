@@ -30,7 +30,7 @@
   "ui_el_game": "Game and cover (when it is known)",
   "ui_el_brand": "Logo and channel name",
   "ui_el_text": "My own sentence",
-  "ui_el_costreamers": "The guest streamers you picked (“Guest streamers” section)",
+  "ui_el_costreamers": "The guest streamers (from the schedule and the ones you picked)",
   "ui_countdown_is": "The video will say: \"{text}\".",
   "ui_no_stream_info": "No event is selected: the title, day, countdown and game cannot be shown.",
   "ui_h_texts": "Texts",
@@ -228,5 +228,8 @@
   "ui_recap_edit": "Change",
   "ui_recap_edit_aria": "Change: {what}",
   "ui_step_now": "Step {n} of 3: {name}",
-  "ui_recap_none_f": "none"
+  "ui_recap_none_f": "none",
+  "ui_cover_down": "The game cover is not ready yet. The video works without it; try again in a moment.",
+  "ui_schedule_people_label": "Add the people listed with this stream",
+  "ui_schedule_people_help": "Names and photos of the people in the schedule."
 }

@@ -16,7 +16,7 @@ export const FORMATS = [
 export const STYLES = ["neon", "poster", "countdown", "minimal"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
 export const LANGS = ["fr", "en"];
-export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, savedCostreamers: 60, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
+export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, savedCostreamers: 60, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
 
 export const formatOf = (id) => FORMATS.find((f) => f.id === id) ?? FORMATS[0];
 /** La zone où l'on peut placer du contenu essentiel : { x, y, w, h }. */
@@ -87,7 +87,7 @@ export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).
 /** L'identifiant d'un événement (donné par sa source, stable) et le type de sa source (« calendar », « youtube »…) : de courtes chaînes sûres, jamais une adresse. */
 export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,99}$/;
 export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
-export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false });
+export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true });
 
 /** La mention de marque, dessinée en bas de la vidéo quand la case est cochée. C'est un nom de marque : elle n'est JAMAIS traduite (donc absente des locales). */
 export const WATERMARK_LEAD = "Made with ", WATERMARK_NAME = "Curiosa", WATERMARK_TEXT = WATERMARK_LEAD + WATERMARK_NAME;
@@ -119,6 +119,8 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
     lang: LANGS.includes(r.lang) ? r.lang : LANGS.includes(d.lang) ? d.lang : "fr",
     // La mention « Made with Curiosa » : un simple oui/non, NON par défaut. Seul un `true` explicite l'ajoute (jamais une chaîne, un 1 ou un objet).
     watermark: typeof r.watermark === "boolean" ? r.watermark : r.watermark === undefined && d.watermark === true,
+    // Les personnes que le planning indique pour ce stream (« Avec … ») : OUI par défaut ; seul un `false` explicite les retire (un modèle enregistré avant cette option les montre aussi).
+    schedulePeople: r.schedulePeople === false ? false : r.schedulePeople === undefined ? d.schedulePeople !== false : true,
   };
 }
 function pickEvent(r, d) {
@@ -235,6 +237,15 @@ export function countdownParts(startMs, nowMs) {
  * Les éléments du sujet `planning.slot` → les prochains streams { key, title, start (ISO), startMs, allDay, day, games, timezone }, à partir de `nowMs`.
  * Un stream annulé ou illisible est écarté seul ; un stream déjà commencé depuis moins de 3 h reste proposé ; deux annonces identiques n'en font qu'une.
  */
+/** Les pseudos Twitch des personnes d'un événement (liste donnée par l'agenda) : nettoyés par la même règle que la saisie, sans doublon, 5 au plus. */
+export function partnerLogins(list) {
+  const out = [];
+  for (const x of Array.isArray(list) ? list : []) {
+    const n = typeof x === "string" ? normalizeLogin(x) : null;
+    if (n?.login && !out.includes(n.login) && out.length < LIMITS.partners) out.push(n.login);
+  }
+  return out;
+}
 export function upcomingStreams(items, nowMs, fallbackZone = "UTC", max = LIMITS.streams) {
   const out = [], seen = new Set();
   for (const it of Array.isArray(items) ? items : []) {
@@ -253,9 +264,9 @@ export function upcomingStreams(items, nowMs, fallbackZone = "UTC", max = LIMITS
     const title = oneLine(it.title, LIMITS.title);
     const games = (Array.isArray(it.games) ? it.games : []).filter((g) => typeof g === "string").map((g) => oneLine(g, 80)).filter(Boolean).slice(0, 3);
     const dedupe = `${title}|${startMs}|${allDay}`;
-    if (seen.has(dedupe)) continue;
+    if (seen.has(dedupe)) { const first = out.find((x) => `${x.title}|${x.startMs}|${x.allDay}` === dedupe); if (first) first.partners = partnerLogins([...first.partners, ...(Array.isArray(it.partners) ? it.partners : [])]); continue; }   // le même stream dans deux agendas : leurs personnes sont réunies
     seen.add(dedupe);
-    out.push({ key: streamKeyOf({ id: it.id, start: it.start, title: it.title }), title, start: new Date(startMs).toISOString(), startMs, allDay, day: day ? it.day : "", games, timezone: slotZone || (allDay ? tz : "") });
+    out.push({ key: streamKeyOf({ id: it.id, start: it.start, title: it.title }), title, start: new Date(startMs).toISOString(), startMs, allDay, day: day ? it.day : "", games, partners: allDay ? [] : partnerLogins(it.partners), timezone: slotZone || (allDay ? tz : "") });
   }
   return out.sort((a, b) => a.startMs - b.startMs || a.title.localeCompare(b.title)).slice(0, max);
 }
@@ -311,7 +322,12 @@ export function buildContent(config, { stream, coStreamers = [], site = {}, nowM
   }
   if (has("brand")) out.brand = oneLine(c.channelName || site.name, LIMITS.channelName);
   if (has("text")) out.text = freeText(c.text, LIMITS.text);
-  if (has("costreamers")) out.costreamers = coStreamers.slice(0, LIMITS.costreamers).map((x) => ({ login: String(x.login), name: oneLine(x.name || x.login, LIMITS.displayName) }));
+  if (has("costreamers")) {
+    // Au plus 6 : au-delà, les 5 premiers puis une dernière pastille « +N » (jamais une sixième personne cachée sans le dire).
+    const all = coStreamers.filter((x) => x && (x.login || x.name)), shown = all.length > LIMITS.costreamers ? all.slice(0, LIMITS.costreamers - 1) : all;
+    out.costreamers = shown.map((x) => ({ login: String(x.login || x.name), name: oneLine(x.name || x.login, LIMITS.displayName) }));
+    if (all.length > shown.length) out.costreamers.push({ login: "+more", name: `+${all.length - shown.length}`, more: true });
+  }
   return out;
 }
 

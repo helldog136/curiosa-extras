@@ -4,6 +4,17 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## Prochaine version (non publiée)
+
+### Corrections
+
+- **Story d'annonce 2.6.0 : la jaquette du jeu apparaît enfin dans la vidéo.** Quand la jaquette est gardée sur votre site (module « Jaquettes de jeux »), la story l'écartait et n'affichait que le nom du jeu, alors que le Planning la montrait. Elles viennent maintenant de la même source. Si elle n'est vraiment pas prête, la vidéo reste propre et une phrase le dit.
+
+### Nouveautés
+
+- **Story d'annonce 2.6.0 : les personnes du planning sont dans la vidéo.** Les personnes indiquées sur le stream (« Avec … ») sont ajoutées avec leur nom et leur photo, dans les quatre styles (« +N » au-delà de 6). Seules les fiches affichables de Contacts sont montrées. Une case repliée sous « Co-streamers » les retire.
+- **Story 2.6.0: the schedule's guests and the game cover are in the video.** The cover kept on your site is now drawn in the story, and the people listed with a stream are added (name and photo, "+N" beyond 6). One folded checkbox turns the guests off.
+
 ## 1.43.0 — 2026-11-04
 
 *En bref : le catalogue des extensions donne maintenant chaque description en anglais et en français. Le Press kit se remplit à la main ou avec un assistant IA. Le Bot Twitch dit clairement qui peut déclencher une commande répétée par un timer. La télécommande et le dock OBS passent par onglets, et « manche » devient « vote en boucle ». Rien à régler, et aucune nouvelle permission.*
