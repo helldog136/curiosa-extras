@@ -272,13 +272,18 @@ export const REMOTE_JS = String.raw`(function () {
     if (node && node.disabled) return;
     if (node) { node.disabled = true; node.setAttribute("aria-busy", "true"); }
     return api(C.press, { k: C.k, panel: pid, action: action, values: values || {} }).then(function (j) {
-      if (j && j.ok) { say(j.message || T.done, "ok"); if (after) after(); delay = 1500; refresh(); }
+      if (j && j.ok) {
+        say(j.message || T.done, "ok"); if (after) after(); delay = 1500;
+        var ae = document.activeElement; if (ae && elStage.contains(ae) && ae.tagName === "INPUT" && ae.type !== "radio") { ae.blur(); typing = false; dirty = false; }   // Enter in a field: the form is done, the stage must be drawn again
+        refresh();
+      }
       else if (j && j.status === 404) { net = "denied"; paintStrip(); }
       else if (!j || j.error === "net" || j.status >= 500) { say(T.notSent, "err"); net = "offline"; retryAt = Date.now() + 3000; paintStrip(); }
       else { say((j && j.message) || T["e_" + ((j && j.error) || "net")] || T.e_net, "err"); if (j && j.field) fieldError(pid, j.field, j.message); }
     }, function () { say(T.notSent, "err"); }).then(function () { if (node && document.body.contains(node)) { node.disabled = false; node.removeAttribute("aria-busy"); } });
   }
   function fieldError(pid, field, message) {
+    typing = false; dirty = false;   // the answer is in: draw it even if the person was still in a field (Enter)
     ui.errors[pid + ":" + field] = message || ""; ui.sheet = ui.sheet && ui.sheet.moreFields && ui.sheet.moreFields.indexOf(field) >= 0 ? ui.sheet : null; renderStage();
     var i = elStage.querySelector('[data-in="' + pid + ":" + field + '"]'); if (i) i.focus();
   }
@@ -287,17 +292,40 @@ export const REMOTE_JS = String.raw`(function () {
   function valueOf(pid, f, fd) { var k = draftKey(pid, f, fd); return ui.drafts[k] !== undefined ? ui.drafts[k] : (fd.value || ""); }
   function control(pid, f, fd) {
     var id = "f" + (++seq), dk = draftKey(pid, f, fd), cur = valueOf(pid, f, fd), err = ui.errors[pid + ":" + fd.name];
-    var wrap = h("div", "fld");
+    var wrap = h("div", "fld" + (fd.low ? " wide" : ""));
     if (fd.type === "select" && fd.seg) {
       var lab0 = h("span", "seglab", fd.label); wrap.appendChild(lab0);
       var seg = h("div", "seg"); seg.setAttribute("role", "radiogroup"); seg.setAttribute("aria-label", fd.label);
+      var customOpt = fd.options.filter(function (o) { return o.custom; })[0], cin = null, ck = dk + "~c";
+      function syncCustom(focus) {   // the "Other" chip turns into ONE compact field in the same row; the "Last" chip makes room for it
+        if (!customOpt) return;
+        var on = (ui.drafts[dk] !== undefined ? ui.drafts[dk] : cur) === customOpt.value;
+        seg.classList.toggle("oth", on); cin.hidden = !on;
+        if (on && cin.clientWidth >= 150 && cin.getAttribute("data-ex")) cin.placeholder = cin.getAttribute("data-ex");
+        if (on && focus) cin.focus();
+      }
       fd.options.forEach(function (o, i) {
         var rid = id + "r" + i, r = h("input"); r.type = "radio"; r.name = id; r.id = rid; r.value = o.value; if (o.value === cur) r.checked = true;
-        r.addEventListener("change", function () { ui.drafts[dk] = o.value; });
-        var l = h("label", "", o.short || o.label); l.setAttribute("for", rid);
+        r.addEventListener("change", function () { ui.drafts[dk] = o.value; syncCustom(true); });
+        var l = h("label", o.last ? "lastopt" : "", o.short || o.label); l.setAttribute("for", rid); if (o.short && o.short !== o.label) l.title = o.label;
+        if (o.last) l.setAttribute("aria-label", o.label);
         seg.appendChild(r); seg.appendChild(l);
+        if (o.custom) {
+          r.className = "cr";
+          cin = h("input", "in cust"); cin.type = "text"; cin.autocomplete = "off"; cin.spellcheck = false; cin.setAttribute("autocapitalize", "off"); cin.setAttribute("autocorrect", "off");
+          cin.inputMode = "text"; cin.setAttribute("enterkeyhint", "go"); cin.setAttribute("pattern", "[0-9:msMS ]*"); cin.maxLength = 20;
+          cin.placeholder = fd.placeholder || fd.example || ""; cin.title = fd.example || ""; cin.setAttribute("data-ex", fd.example || ""); cin.setAttribute("aria-label", fd.label + " – " + o.label); cin.setAttribute("data-in", pid + ":" + fd.name); cin.name = fd.name + "_other";
+          cin.value = ui.drafts[ck] || "";
+          cin.addEventListener("input", function () { ui.drafts[ck] = cin.value; if (ui.errors[pid + ":" + fd.name]) { delete ui.errors[pid + ":" + fd.name]; cin.removeAttribute("aria-invalid"); var e0 = wrap.querySelector(".err"); if (e0) e0.hidden = true; } });
+          seg.appendChild(cin);
+        }
       });
+      if (customOpt || fd.options.length >= 6) seg.classList.add("many");   // six chips on a narrow row: no room for the tick, the chosen one is marked by a thick bar instead
       wrap.appendChild(seg);
+      if (customOpt) {
+        var er = h("p", "err", err || ""); er.hidden = !err; er.setAttribute("role", "alert"); er.id = id + "e"; cin.setAttribute("aria-describedby", er.id); if (err) cin.setAttribute("aria-invalid", "true");
+        wrap.appendChild(er); syncCustom(false);
+      }
       return wrap;
     }
     var lab = h("label", "", fd.label); lab.setAttribute("for", id); wrap.appendChild(lab);
@@ -314,20 +342,31 @@ export const REMOTE_JS = String.raw`(function () {
     input.id = id; input.name = fd.name; input.setAttribute("data-in", pid + ":" + fd.name);
     input.addEventListener("input", function () { ui.drafts[dk] = input.value; if (ui.errors[pid + ":" + fd.name]) { delete ui.errors[pid + ":" + fd.name]; input.removeAttribute("aria-invalid"); var e = wrap.querySelector(".err"); if (e) e.hidden = true; } });
     input.addEventListener("change", function () { ui.drafts[dk] = input.value; });
-    wrap.appendChild(input);
+    if (fd.recall && fd.type === "text") {   // "Last: …": the previous text, offered again in one tap, in the same row as the field
+      var rowIn = h("div", "recallrow"), rb = h("button", "btn recall", fd.recallLabel || fd.recall); rb.type = "button"; rb.title = fd.recallLabel || fd.recall; rb.setAttribute("data-fk", "recall:" + fd.name);
+      rb.addEventListener("click", function () { ui.drafts[dk] = fd.recall; input.value = fd.recall; input.focus(); });
+      rowIn.appendChild(input); rowIn.appendChild(rb); wrap.appendChild(rowIn);
+    } else wrap.appendChild(input);
     var e = h("p", "err", err || ""); e.hidden = !err; e.setAttribute("role", "alert"); e.id = id + "e"; input.setAttribute("aria-describedby", e.id); if (err) input.setAttribute("aria-invalid", "true");
     wrap.appendChild(e);
     return wrap;
   }
   function submitValues(pid, f) {
     var v = {};
-    f.fields.forEach(function (fd) { v[fd.name] = valueOf(pid, f, fd); });
+    f.fields.forEach(function (fd) {
+      v[fd.name] = valueOf(pid, f, fd);
+      var oc = fd.type === "select" && fd.seg ? fd.options.filter(function (o) { return o.custom; })[0] : null;
+      if (oc && v[fd.name] === oc.value) v[fd.name] = (ui.drafts[draftKey(pid, f, fd) + "~c"] || "").trim() || oc.value;   // the typed time goes as typed: the site reads it ("other" alone is refused with a message under the field)
+    });
     return v;
   }
-  function clearDrafts(pid, f) { f.fields.forEach(function (fd) { delete ui.drafts[draftKey(pid, f, fd)]; }); }
+  function clearDrafts(pid, f) { f.fields.forEach(function (fd) { delete ui.drafts[draftKey(pid, f, fd)]; delete ui.drafts[draftKey(pid, f, fd) + "~c"]; }); }
+  /* A short stage has no room for the optional "low" fields: they move to the options sheet. */
+  function shortStage() { return elStage.clientHeight <= 440; }
+  function isMore(fd) { return fd.more || (fd.low && shortStage()); }
   function formBody(t, f, moreHost) {
-    var box = h("div", "form"), more = f.fields.filter(function (x) { return x.more; });
-    f.fields.forEach(function (fd) { if (!fd.more) box.appendChild(control(t.pid, f, fd)); });
+    var box = h("div", "form"), more = f.fields.filter(isMore);
+    f.fields.forEach(function (fd) { if (!isMore(fd)) box.appendChild(control(t.pid, f, fd)); });
     if (more.length) {
       var mb = h("button", "btn chip more", moreHost ? "⋯" : T.more); mb.type = "button"; mb.setAttribute("data-fk", "more"); mb.title = T.more; mb.setAttribute("aria-label", T.more);
       mb.addEventListener("click", function () { ui.sheet = { tab: t.id, moreFields: more.map(function (x) { return x.name; }) }; renderStage(); });
@@ -338,7 +377,7 @@ export const REMOTE_JS = String.raw`(function () {
   function sheet(t, f) {
     var box = h("div", "sheet"), top = h("p", "ttl", f.title);
     var rows = h("div", "rows");
-    f.fields.forEach(function (fd) { if (fd.more) rows.appendChild(control(t.pid, f, fd)); });
+    f.fields.forEach(function (fd) { if (isMore(fd)) rows.appendChild(control(t.pid, f, fd)); });
     var done = h("button", "btn primary", T.done2); done.type = "button"; done.setAttribute("data-fk", "sheet-done");
     done.addEventListener("click", function () { ui.sheet = null; renderStage(); });
     box.appendChild(top); box.appendChild(rows); box.appendChild(done);
@@ -348,7 +387,18 @@ export const REMOTE_JS = String.raw`(function () {
   function runBtn(t, b, node) {
     if (b.id === "compose") { ui.compose[t.id] = true; renderStage(); return; }
     if (b.loss) { arm("b:" + b.id + (b.values && b.values.pid ? ":" + b.values.pid : ""), function () { press(t.pid, b.id, b.values, null); }, b.loss, t.id); return; }
-    press(t.pid, b.id, b.values, node);
+    press(t.pid, b.id, withTyped(t, b), node, function () {   // a one-tap start from the start form: what was typed for it is used up, and the form is closed
+      var f = t.view && t.view.form; if (f && b.with) f.fields.forEach(function (fd) { if (b.with.indexOf(fd.name) >= 0) delete ui.drafts[draftKey(t.pid, f, fd)]; });
+      delete ui.compose[t.id];
+    });
+  }
+  /* A button may carry what was typed in the start form (the question of a Yes / No poll). */
+  function withTyped(t, b) {
+    if (!b.with || !b.with.length) return b.values;
+    var f = t.view && t.view.form, v = {}, k;
+    for (k in (b.values || {})) v[k] = b.values[k];
+    if (f) f.fields.forEach(function (fd) { if (b.with.indexOf(fd.name) >= 0) v[fd.name] = valueOf(t.pid, f, fd); });
+    return v;
   }
   function viewEl(t) {
     var v = t.view, form = (v.stage === "idle" || ui.compose[t.id]) && v.form ? v.form : null;
@@ -496,6 +546,7 @@ export const REMOTE_JS = String.raw`(function () {
     if (ui.sheet && ui.sheet.tab === t.id && t.view && t.view.form) kids.push(sheet(t, t.view.form));
     elStage.replaceChildren.apply(elStage, kids);
     elStage.setAttribute("aria-busy", "false");
+    var cu = elStage.querySelectorAll(".seg .cust"); for (var ci = 0; ci < cu.length; ci++) if (cu[ci].clientWidth >= 150 && cu[ci].getAttribute("data-ex")) cu[ci].placeholder = cu[ci].getAttribute("data-ex");   // the whole example when the field is wide enough, the short one otherwise
     if (t.chat) {   // how many people fit: measured once the list is in the page (rows are 52 px), then drawn again if the guess was wrong
       var pp = elStage.querySelector(".people"), fit = pp ? Math.max(1, Math.floor(pp.clientHeight / 52)) : 0;
       if (pp && fit !== ui.per && !ui.measuring) { ui.per = fit; ui.measuring = true; renderStage(); ui.measuring = false; return; }
@@ -551,7 +602,7 @@ export const REMOTE_JS = String.raw`(function () {
   });
   document.addEventListener("focusin", function (ev) { var tg = ev.target; typing = !!(tg && /^(INPUT|SELECT)$/.test(tg.tagName) && elStage.contains(tg) && tg.type !== "radio"); });
   document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; typing = !!(a && /^(INPUT|SELECT)$/.test(a.tagName) && elStage.contains(a) && a.type !== "radio"); if (!typing && dirty) { dirty = false; renderStage(); } }, 0); });
-  window.addEventListener("resize", function () { if (sel === "chat") renderStage(); });
+  window.addEventListener("resize", function () { var low = shortStage(); if (sel === "chat" || low !== ui.low) { ui.low = low; renderStage(); } });
   /* ───────── polling: planned AFTER each answer; slower when nothing changes; paused when hidden ───────── */
   function anyLive() { return tabs.some(function (t) { return t.view && t.view.stage === "live"; }); }
   function refresh() {
