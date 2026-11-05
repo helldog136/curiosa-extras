@@ -20,6 +20,12 @@ Vous finissez votre live et vous voulez **raider une personne amie**. Mais qui e
 - Il est pensé pour un **dock étroit** (300 pixels) comme pour un téléphone, en sombre, et se manie aussi au clavier.
 - Aucun partenaire en direct ? Il écrit simplement « Aucun de vos partenaires n'est en direct pour le moment ».
 
+## The look of the docks (since 2.3.0)
+Both docks (the ordinary one and the featured picks) wear the look of the Curiosa administration: its colours, font, corners and focus ring (`ctx.api.adminTheme`, tokens `--cur-*`; an older core gets the same names with the dark palette). They are dark by default, as OBS is; add `&scheme=light` (or `&scheme=dark`) to the address to force one. The addresses and the secret do not change: docks already set up in OBS keep working.
+- The page never scrolls: the main action ("Pick one at random" or "Draw again") and the sort are always visible, rows are the same height, in columns when the dock is wide, and the list only scrolls inside itself when more channels are live than the height allows. Targets are at least 44 px.
+- "Draw again" replaces the picks for everyone, so it asks once more: one tap, then 3 seconds of "Confirm / Undo" on the same button (Esc undoes). Copying a command asks nothing: the raid itself is never launched from the dock.
+- A line at the bottom says when the list was updated, or "Offline" if the site cannot be reached (the last list stays). A dock that is hidden asks for nothing.
+
 ## La sélection du moment (facultatif, depuis la 2.2)
 Au lieu de montrer **tous** vos partenaires en direct, ce mode en choisit **quelques-uns au hasard** (de 1 à 10, 5 par défaut) pour donner envie de les raider, ou de les découvrir. Il est **éteint par défaut** : tant que vous n'y touchez pas, le dock ne change pas d'un pixel. Tout se règle dans l'onglet **« Sélection du moment »** de la page de Raid.
 
