@@ -2765,7 +2765,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-raid",
       "ref": "v1.45.0",
-      "version": "2.2.5",
+      "version": "2.3.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
