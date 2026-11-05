@@ -9,7 +9,7 @@ const pure = await import(`./pure.mjs${v}`);
 const dock = await import(`./dock.mjs${v}`);
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const FD_KEYS = ["title", "again", "again_busy", "until", "rerolled", "wait", "empty", "empty_hint", "stale", "list_label"];
+const FD_KEYS = ["title", "again", "again_busy", "again_loss", "until", "rerolled", "wait", "empty", "empty_hint", "stale", "list_label"];
 /** Les phrases de la page : celles du dock ordinaire (copier, erreurs, adresse refusée… sans le préfixe `dock_`) et celles de la sélection (clés `fd_…`). */
 export const labelsOf = (ctx) => ({ ...dock.labelsOf(ctx), ...Object.fromEntries(FD_KEYS.map((k) => [`fd_${k}`, ctx.t(`fd_${k}`)])) });
 
@@ -22,13 +22,15 @@ const CLIENT = `
   __SHARED__
   var $ = function (id) { return document.getElementById(id); };
   var fmt = function (s, vars) { return String(s).replace(/\\{(\\w+)\\}/g, function (m, k) { return vars && vars[k] !== undefined ? vars[k] : m; }); };
-  var st = { picks: [], ready: false, rows: {}, busy: false, rerolling: false, timer: null, toastTimer: null, lastFetch: 0, failed: false, denied: false, offset: 0, endsAt: 0, lastReroll: 0 };
+  var st = { picks: [], ready: false, rows: {}, busy: false, rerolling: false, timer: null, toastTimer: null, lastFetch: 0, failed: false, denied: false, offset: 0, endsAt: 0, lastReroll: 0, armed: false, armTimer: null, updatedText: "" };
 
   function toast(text, kind) {
     var t = $("toast"); t.textContent = text; t.className = "toast show " + (kind || "");
     clearTimeout(st.toastTimer); st.toastTimer = setTimeout(function () { t.className = "toast"; }, 6000);
   }
   function banner(text) { var b = $("banner"); b.textContent = text || ""; b.hidden = !text; }
+  /* The status strip (validity of the picks, or "Offline"): a dot AND words, never colour alone. */
+  function setStrip(text, off) { var s = $("strip"); s.hidden = !text; s.className = off ? "strip off" : "strip"; $("updated").textContent = text || ""; }
   function message(text, hint) {
     var m = $("msg"); m.replaceChildren();
     if (!text) { m.hidden = true; return; }
@@ -117,14 +119,15 @@ const CLIENT = `
       st.picks = d.picks.map(function (p, i) { p.pos = i; return p; }); st.ready = true; st.lastFetch = Date.now(); st.endsAt = d.endsAt || 0;
       banner(d.stale ? fmt(L.fd_stale, { time: clock(d.stale) }) : "");
       message(d.picks.length ? "" : L.fd_empty, d.picks.length ? "" : L.fd_empty_hint);
-      $("updated").textContent = d.endsAt ? fmt(L.fd_until, { time: clock(d.endsAt) }) : "";
+      st.updatedText = d.endsAt ? fmt(L.fd_until, { time: clock(d.endsAt) }) : ""; setStrip(st.updatedText, false);
     } else if (d.state === "error") {
       st.failed = true; st.lastFetch = Date.now();
+      setStrip(d.reason === "site" ? L.offline : st.updatedText, true);   // clear offline state: the site itself cannot be reached
       if (st.ready) { banner(reasonText(d) + " " + L.retry); }
       else { banner(""); message(reasonText(d), L.retry); }
     } else {
       st.picks = []; st.ready = false; st.failed = d.state === "not_ready"; banner(""); message(reasonText(d), d.state === "not_ready" ? L.retry : "");
-      $("updated").textContent = "";
+      setStrip("", false);
     }
     renderList();
   }
@@ -132,6 +135,7 @@ const CLIENT = `
   function schedule() {
     clearTimeout(st.timer);
     if (st.denied) return;
+    if (document.hidden) return;   // hidden (another OBS dock tab, a locked phone): no news asked; the page asks again when it is shown
     st.timer = setTimeout(function () { refresh(); }, (st.failed ? C.retryMs : C.intervalMs) + Math.floor(Math.random() * 2000));
   }
   function refresh() {
@@ -143,7 +147,22 @@ const CLIENT = `
       .then(function () { clearTimeout(cut); st.busy = false; $("refresh").classList.remove("spin"); schedule(); });
   }
 
-  /* « Tirer de nouveau » : une nouvelle sélection pour tout le monde. Une demande à la fois, jamais deux à moins de 2 secondes d'écart ; le serveur limite aussi (5 s). */
+  /* « Tirer de nouveau » replaces the picks for everybody (the public page too) and the old ones cannot be brought back: one tap, then 3 seconds of "Confirm / Undo" on the SAME button.
+     Nothing happens by itself; no window. Esc or "Undo" gives the button back. */
+  function disarm(focusBack) {
+    clearTimeout(st.armTimer); if (!st.armed) return; st.armed = false;
+    var b = $("again"); b.classList.remove("arm"); b.querySelector(".label").textContent = L.fd_again; b.querySelector(".loss").hidden = true; b.querySelector(".glyph").hidden = false;
+    $("undo").hidden = true; $("refresh").hidden = false; if (focusBack) b.focus({ preventScroll: true });
+  }
+  function arm() {
+    if (st.rerolling || Date.now() - st.lastReroll < 2000) return;
+    st.armed = true; var b = $("again"); b.classList.remove("arm"); void b.offsetWidth; b.classList.add("arm");   // (re)starts the 3-second bar
+    b.querySelector(".label").textContent = L.confirm; b.querySelector(".loss").textContent = L.fd_again_loss; b.querySelector(".loss").hidden = false; b.querySelector(".glyph").hidden = true;
+    $("undo").hidden = false; $("refresh").hidden = true;
+    clearTimeout(st.armTimer); st.armTimer = setTimeout(function () { disarm(false); }, 3000);
+  }
+  function onAgain() { if (st.armed) { disarm(false); again(); } else arm(); }
+  /* A new selection for everyone. One request at a time, never two less than 2 seconds apart; the server limits too (5 s). */
   function again() {
     if (st.rerolling || Date.now() - st.lastReroll < 2000) return;
     st.rerolling = true; st.lastReroll = Date.now();
@@ -163,33 +182,39 @@ const CLIENT = `
       });
   }
 
-  $("again").addEventListener("click", again);
+  $("again").addEventListener("click", onAgain);
+  $("undo").addEventListener("click", function () { disarm(true); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && st.armed) { e.preventDefault(); disarm(true); } });
   $("refresh").addEventListener("click", refresh);
   $("manual-input").addEventListener("focus", function () { this.select(); });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden && Date.now() - st.lastFetch > 20000) refresh(); });
-  setInterval(function () { if (st.picks.length) renderList(); }, 30000);   // la durée des directs avance sans rien redemander
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { clearTimeout(st.timer); disarm(false); return; }
+    if (Date.now() - st.lastFetch > 20000) refresh(); else if (!st.denied) schedule();
+    renderList();
+  });
+  setInterval(function () { if (!document.hidden && st.picks.length) renderList(); }, 30000);   // la durée des directs avance sans rien redemander
   message(L.loading, ""); refresh();
 })();`;
 
 /** La page du dock de sélection. `dataUrl` et `againUrl` portent la clé secrète. */
-export function featuredPage(ctx, { dataUrl, againUrl }) {
+export function featuredPage(ctx, { dataUrl, againUrl, scheme = null }) {
   const nonce = randomBytes(16).toString("base64");
   const L = labelsOf(ctx);
-  const accent = /^#[0-9a-fA-F]{6}$/.test(String(ctx.theme?.accent ?? "")) ? ctx.theme.accent : "#9147ff";
   const config = { dataUrl, againUrl, labels: L, retryMs: 20_000, intervalMs: 45_000, fetchMs: 14_000, locale: ctx.locale || "en" };
   const script = CLIENT.replace("__SHARED__", () => shared).replace("__CONFIG__", () => JSON.stringify(config).replace(/</g, "\\u003c"));
   const html = `<!doctype html>
-<html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>${esc(L.fd_title)}</title><link rel="icon" href="data:,"><style nonce="${nonce}">${dock.CSS(accent)}</style></head>
-<body><div class="wrap">
+<html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light dark">
+<title>${esc(L.fd_title)}</title><link rel="icon" href="data:,"><style nonce="${nonce}">${dock.themeCss(ctx, scheme)}\n${dock.CSS}</style></head>
+<body><div class="app" id="app">
 <header class="head"><h1><span>${esc(L.fd_title)}</span><span class="count" id="count"></span></h1>
-<div class="bar"><button type="button" class="primary" id="again"><span aria-hidden="true">🎲 </span><span class="label">${esc(L.fd_again)}</span></button>
-<button type="button" class="icon" id="refresh" title="${esc(L.refresh)}" aria-label="${esc(L.refresh)}"><span aria-hidden="true">↻</span></button></div></header>
+<button type="button" class="primary" id="again"><span class="glyph" aria-hidden="true">🎲 </span><span class="label">${esc(L.fd_again)}</span><span class="loss" hidden></span></button>
+<button type="button" class="undo" id="undo" hidden>${esc(L.undo)}</button>
+<button type="button" class="icon" id="refresh" title="${esc(L.refresh)}" aria-label="${esc(L.refresh)}"><span aria-hidden="true">↻</span></button></header>
 <div class="banner" id="banner" role="status" hidden></div>
-<main><div class="msg" id="msg" role="status"></div>
+<main class="stage" id="stage"><div class="msg" id="msg" role="status"></div>
 <ul class="list" id="list" aria-label="${esc(L.fd_list_label)}" hidden></ul>
 <div class="manual" id="manual" hidden><label for="manual-input">${esc(L.manual_label)}</label><input id="manual-input" readonly></div></main>
-<p class="foot" id="updated"></p>
+${dock.STRIP}
 </div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script nonce="${nonce}">${script}</script></body></html>`;
   return new Response(html, { headers: dock.headers(nonce) });

@@ -30,7 +30,7 @@ async function snapshot(settings) {
   out.dockStatus = page.status; out.dockCsp = (page.headers.get("content-security-policy") ?? "").replace(/nonce-[^']+/g, "nonce-N");
   out.dockPage = sha(norm(await page.text(), k, w.ctx));
   const denied = await def.routes.dock(new Request(`${base}/dock?k=wrong`), w.ctx);
-  out.denied = [denied.status, sha(await denied.text())];
+  out.denied = [denied.status, sha(norm(await denied.text(), k, w.ctx))];
   const lv = await (await def.routes.live(new Request(`${base}/live?k=${k}`), w.ctx)).json(); delete lv.now; delete lv.asOf;
   out.live = lv;
   const bad = await def.routes.live(new Request(`${base}/live?k=wrong`), w.ctx);

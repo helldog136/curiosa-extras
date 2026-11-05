@@ -235,5 +235,9 @@
   "pub_thumbs_note": "Previews are images served by Twitch: they load only if you click.",
   "pub_list_label": "Channels live now",
   "pub_description": "The channels that are live on Twitch right now.",
-  "pub_loading": "Loading…"
+  "pub_loading": "Loading…",
+  "dock_offline": "Offline. Trying again shortly.",
+  "dock_confirm": "Confirm",
+  "dock_undo": "Undo",
+  "fd_again_loss": "Replaces the picks for everyone"
 }
