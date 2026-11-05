@@ -86,7 +86,7 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.10.1");
+  assert.equal(manifest.version, "1.11.0");
   assert.equal(manifest.minCore, "0.6.4");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
@@ -112,9 +112,9 @@ test("textes : parité exacte FR/EN (clés et {variables}) ; toute clé écrite 
   for (const [k, text] of Object.entries(en)) if (/^(rw_|kill_|redeem_|act_)/.test(k)) assert.ok(!/webhook|eventsub|token|payload|endpoint/i.test(text), `${k} : jargon`);
 });
 
-test("aucun minuteur de fond : ni setInterval, ni tâche nouvelle pour les récompenses ; les tâches du bot restent celles d'avant", () => {
+test("aucun minuteur de fond : ni setInterval, ni tâche propre aux récompenses ; la tâche d'une minute (tick, 1.11.0) les relit avec le reste", () => {
   assert.ok(!/setInterval/.test(source));
-  assert.deepEqual(Object.keys(def.tasks).sort(), ["listen", "tidy"]);
+  assert.deepEqual(Object.keys(def.tasks).sort(), ["listen", "tick", "tidy"], "no task of its own for the rewards: the one-minute tick (1.11.0) re-reads them");
   assert.ok(!/fetch\(/.test(source.replace(/\/\/.*$/gm, "")), "pas de fetch direct");
 });
 

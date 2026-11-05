@@ -1,7 +1,7 @@
 // Un échange de points arrive : on le note UNE fois (clé = identifiant de l'échange), on lance l'action, puis on le valide (FULFILLED) ou on rend les points (CANCELED).
 //   - action du bot (répondre dans le chat) : jouée tout de suite ;
 //   - action de la maison : confiée au service facultatif `home-assistant.bridge` (file d'attente) ; la suite arrive par le sujet `ha.result`, lu À LA LECTURE SUIVANTE
-//     (un évènement de Twitch, l'ouverture de l'administration) : AUCUN minuteur. Un échange sans résultat après `rewardWaitSec` est remboursé à ce moment-là.
+//     (un évènement de Twitch, l'ouverture de l'administration, la tâche d'une minute, et quelques relectures espacées après un échange confié à la maison, voir `followUp`) : aucune boucle. Un échange sans résultat après `rewardWaitSec` est remboursé à ce moment-là.
 // Journal : un document `redeem` par échange (50 résolus gardés + 100 en attente au plus, purge à la lecture) ; rien du message du viewer n'est gardé.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const es = await import(`./eventsub.mjs${v}`);
@@ -9,7 +9,7 @@ const st = await import(`./state.mjs${v}`);
 const R = await import(`./rewards.mjs${v}`);
 const A = await import(`./actions.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
+const { diagnose, diagnoseFast, sendChat } = await import(`./listen.mjs${v}`);
 const { render, pseudo, clean } = await import(`./variables.mjs${v}`);
 
 const COL = "redeem";
@@ -115,13 +115,19 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
   if (Number.isFinite(red.at) && Math.abs(now - red.at) > 15 * 60_000) return { handled: false, why: "stale" };
   const reward = await R.byTwitchId(ctx, red.rewardId);
   if (!reward || reward.gone) return NOT_OURS;
-  await reconcile(ctx, { now, force: true }).catch(() => {});   // d'abord le retard éventuel (résultats reçus, échanges expirés), puis celui-ci
-  return st.serial(ctx, "redeem", async () => {
-    if (await known(ctx, red.id)) return { handled: false, why: "duplicate" };   // un échange n'est traité qu'une fois, même après un redémarrage
-    const acc = await R.access(ctx, s);
+  // First the backlog, if any (results received, redemptions that waited too long), then this one. Reading the state of the home (another module, up to 3 s) has nothing to do with THIS redemption:
+  // it happens while this one is handled, and is awaited before returning.
+  await reconcile(ctx, { now, force: true, house: false }).catch(() => {});
+  const house = syncHouse(ctx, s, { now }).catch(() => {});
+  const out = await st.serial(ctx, "redeem", async () => {
+    // Everything that depends on nothing else is read at the same time; the chat diagnosis is only needed for the bot's own actions.
+    const doubled = known(ctx, red.id), rowsP = rows(ctx), accP = R.access(ctx, s), namedP = A.named(ctx, s), chatP = R.isHome(reward.action) ? null : diagnoseFast(ctx, s);
+    for (const p of [doubled, rowsP, accP, namedP, chatP]) p?.catch(() => {});
+    if (await doubled) return { handled: false, why: "duplicate" };   // a redemption is handled only once, even after a restart
+    const acc = await accP;
     if (acc.ok && acc.broadcasterId !== red.broadcasterId) return { handled: false, why: "other_channel" };
-    const waiting = (await rows(ctx)).filter((r) => PENDING.has(r.status) && !r.test).length;
-    const an = (await A.named(ctx, s)).find((a) => a.key === reward.action)?.label;   // le nom de l'action au moment de l'échange : le journal le garde lisible même si elle disparaît
+    const waiting = (await rowsP).filter((r) => PENDING.has(r.status) && !r.test).length;
+    const an = (await namedP).find((a) => a.key === reward.action)?.label;   // the name of the action at the time of the redemption: the journal stays readable even if it disappears
     const doc0 = { rid: red.id, rewardTid: red.rewardId, title: reward.title, action: reward.action, ...(an ? { an } : {}), user: red.login, name: red.name, at: now, status: "new", todo: null, reason: null, attempts: 0 };
     const id = await ctx.api.store.add(COL, doc0, { key: red.id });
     let doc = { id, ...doc0 };
@@ -137,7 +143,7 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
       }
     } else {
       // action du bot : répondre dans le chat (texte de la récompense, pseudo nettoyé ; jamais le message du viewer)
-      const d = await diagnose(ctx, s, { declare: false });
+      const d = await chatP;
       const text = render(reward.reply, { utilisateur: pseudo(red.name || red.login), recompense: reward.title }, s.prefix);
       if (d.code !== "ready" || !text) doc = verdict(doc, "CANCELED", "chat_not_ready");
       else { const sent = await sendChat(ctx, d, text); if (sent.sent) { st.rememberSent(ctx, sent.messageId); doc = verdict(doc, "FULFILLED", "ok"); } else doc = verdict(doc, "CANCELED", "send_failed"); }
@@ -150,6 +156,8 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
     if (["off", "not_live", "not_paired"].includes(doc.reason)) await syncHouse(ctx, s, { now }).catch(() => {});
     return { handled: true, result: doc.status === "waiting" ? "waiting" : doc.status === "done" ? "done" : doc.status === "refunded" ? "refunded" : "settling", reason: doc.reason };
   });
+  await house;
+  return out;
 }
 
 /* ───────────── La lecture suivante : résultats, délais, pauses ───────────── */
@@ -166,7 +174,7 @@ export async function syncHouse(ctx, s, { now = Date.now() } = {}) {
  * qui n'ont pas pu partir sont renvoyés, l'état de la maison est lu. Appelée à l'arrivée d'un évènement de Twitch et à l'ouverture de l'administration — jamais par un minuteur.
  * Au plus une fois toutes les 5 s (sauf `force`), au plus 20 appels à Twitch. Ne lève jamais.
  */
-export async function reconcile(ctx, { now = Date.now(), force = false } = {}) {
+export async function reconcile(ctx, { now = Date.now(), force = false, house = true } = {}) {
   const k = ctx.instance.key;
   if (!force && (lastRun.get(k) ?? 0) > now - 5000) return { skipped: true };
   lastRun.set(k, now);
@@ -174,10 +182,10 @@ export async function reconcile(ctx, { now = Date.now(), force = false } = {}) {
     const s = settingsOf(ctx);
     const out = await st.serial(ctx, "redeem", async () => {
       const pending = (await rows(ctx)).filter((r) => PENDING.has(r.status));
-      if (!pending.length) return { n: 0 };
+      if (!pending.length) return { n: 0, open: 0 };
       const results = new Map((await collect(ctx, "ha.result", 100)).filter((x) => typeof x.ref === "string").map((x) => [x.ref, x]));
       const acc = await R.access(ctx, s);
-      let calls = 0, n = 0;
+      let calls = 0, n = 0, open = 0;
       for (const doc0 of pending) {
         let doc = doc0;
         const res = results.get(doc.rid);
@@ -191,11 +199,12 @@ export async function reconcile(ctx, { now = Date.now(), force = false } = {}) {
           else if (now - doc.at > s.rewardWaitSec * 1000) doc = verdict(doc, "CANCELED", "timeout");
         } else if (doc.status === "new" && now - doc.at > 60_000) doc = verdict(doc, "CANCELED", "lost");   // interrompu en cours de route
         if (doc !== doc0) { await write(ctx, doc); n++; }
-        if (doc.status === "settle" && acc.ok && calls < 20) { calls++; await settle(ctx, s, doc, acc); }
+        if (doc.status === "settle" && acc.ok && calls < 20) { calls++; doc = await settle(ctx, s, doc, acc); }
+        if (doc.status === "waiting" || doc.status === "settle") open++;
       }
-      return { n };
+      return { n, open };
     });
-    await syncHouse(ctx, s, { now }).catch(() => {});
+    if (house) await syncHouse(ctx, s, { now }).catch(() => {});
     return out;
   } catch (e) {
     console.error(`[twitch-bot] ${ctx.instance.key}: lecture des échanges en échec (${e?.message ?? e})`);
@@ -203,6 +212,31 @@ export async function reconcile(ctx, { now = Date.now(), force = false } = {}) {
   }
 }
 export const resetRedeem = () => lastRun.clear();
+
+/**
+ * After a redemption is handed to the home, the result arrives a few seconds later — and nobody read it before the next event from Twitch (sometimes minutes later): the redemption stayed
+ * "unfulfilled" at Twitch. A few spaced re-reads (1.5 s, 4 s, 9 s, 20 s, 45 s) validate or refund as soon as the result is there, then the one-minute task takes over.
+ * Never a loop: at most five re-reads per series, one series at a time per instance, stopped as soon as nothing waits any more. `now`: the caller's clock (tests).
+ */
+export const followTiming = { delays: [1500, 4000, 9000, 20_000, 45_000] };
+const following = new Set();
+export function followUp(ctx, { now = Date.now() } = {}) {
+  const k = ctx.instance.key;
+  if (following.has(k) || !followTiming.delays.length) return Promise.resolve();
+  following.add(k);
+  const t0 = Date.now();
+  return (async () => {
+    try {
+      let last = 0;
+      for (const at of followTiming.delays) {
+        await new Promise((ok) => { const t = setTimeout(ok, Math.max(0, at - last)); t.unref?.(); });
+        last = at;
+        const r = await reconcile(ctx, { now: now + (Date.now() - t0), force: true, house: false });
+        if (r?.error || !r?.open) break;
+      }
+    } catch { /* the one-minute task will take over */ } finally { following.delete(k); }
+  })();
+}
 
 /* ───────────── Simulation (aucun appel à Twitch, aucun point) ───────────── */
 
