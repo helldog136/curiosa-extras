@@ -14,6 +14,8 @@ const KEYS = [
   "sort_viewers_asc", "sort_viewers_desc", "sort_newest", "sort_oldest", "sort_mine", "manual_label", "rm_button", "rm_intro", "rm_searching", "rm_none", "limited", "partial",
   // 2.0 : la liste vient de Contacts (voir source.mjs) ; ce qui peut manquer de ce côté
   "nr_contacts_missing", "nr_contacts_old", "nr_contacts_down", "nr_category_gone", "nr_no_category", "nr_choose",
+  // 2.3 : the look of the administration, the offline line, the Confirm / Undo pattern
+  "offline", "confirm", "undo",
 ];
 /** `{label}` : le nom de la catégorie par défaut (« Cible de raid »), dans la langue de la page. */
 export const labelsOf = (ctx) => { const label = ctx.t("default_category"); return Object.fromEntries(KEYS.map((k) => [k, ctx.t(`dock_${k}`, { label })])); };
@@ -36,6 +38,8 @@ const CLIENT = `
     clearTimeout(st.toastTimer); st.toastTimer = setTimeout(function () { t.className = "toast"; }, 7000);
   }
   function banner(text) { var b = $("banner"); b.textContent = text || ""; b.hidden = !text; }
+  /* The status strip (last update, or "Offline"): a dot AND words, never colour alone. */
+  function setStrip(text, off) { var s = $("strip"); s.hidden = !text; s.className = off ? "strip off" : "strip"; $("updated").textContent = text || ""; }
   function message(text, hint) {
     var m = $("msg"); m.replaceChildren();
     if (!text) { m.hidden = true; return; }
@@ -137,20 +141,22 @@ const CLIENT = `
     if (d.state === "ok" && d.mode === "random") {
       setMode("random"); st.listed = d.listed; st.ready = true; st.lastFetch = Date.now(); st.failed = false;
       banner(""); if (!st.live.length && !st.noneShown) message(L.rm_intro, "");
-      $("updated").textContent = "";
+      setStrip("", false);
     } else if (d.state === "ok") {
       setMode("full");
       st.live = d.live; st.listed = d.listed; st.ready = true; st.lastFetch = Date.now();
       banner(d.partial ? L.partial : ""); message(d.live.length ? "" : L.empty, d.live.length ? "" : fmt(L.empty_hint, { n: d.listed }));
-      $("updated").textContent = fmt(L.updated, { time: new Date(Date.now()).toLocaleTimeString(C.locale, { hour: "2-digit", minute: "2-digit" }) });
+      st.updatedText = fmt(L.updated, { time: new Date(Date.now()).toLocaleTimeString(C.locale, { hour: "2-digit", minute: "2-digit" }) });
+      setStrip(st.updatedText, false);
     } else if (d.state === "error") {
       st.failed = true; st.lastFetch = Date.now();
+      setStrip(d.reason === "site" ? L.offline : (st.updatedText || ""), true);   // clear offline state: the site itself cannot be reached
       if (d.stale) { st.live = d.stale.live; st.listed = d.stale.listed; st.ready = true; }
       if (st.ready && st.mode === "random") { banner(reasonText(d)); }
       else if (st.ready) { banner(reasonText(d) + " " + L.retry); message(st.live.length ? "" : L.empty, st.live.length ? "" : fmt(L.empty_hint, { n: st.listed })); }
       else { banner(""); message(reasonText(d), L.retry); }
     } else {
-      st.live = []; st.ready = false; st.failed = d.state === "not_ready"; banner(""); message(reasonText(d), d.state === "not_ready" ? L.retry : "");
+      st.live = []; st.ready = false; st.failed = d.state === "not_ready"; banner(""); message(reasonText(d), d.state === "not_ready" ? L.retry : ""); setStrip("", false);
     }
     if (st.mode === "full" && st.picked && !st.live.some(function (x) { return x.login === st.picked; })) st.picked = null;
     renderList();
@@ -159,6 +165,7 @@ const CLIENT = `
   function schedule() {
     clearTimeout(st.timer);
     if (st.mode === "random") return;   // « au hasard » : Twitch n'est interrogé que sur un clic
+    if (document.hidden) return;   // hidden (another OBS dock tab, a locked phone): no news asked; the page asks again when it is shown
     var wait = st.failed ? C.retryMs : C.intervalMs;
     st.timer = setTimeout(function () { refresh(); }, wait + Math.floor(Math.random() * 2000));
   }
@@ -219,79 +226,121 @@ const CLIENT = `
   $("rand").addEventListener("click", random);
   $("refresh").addEventListener("click", refresh);
   $("manual-input").addEventListener("focus", function () { this.select(); });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden && Date.now() - st.lastFetch > 20000) refresh(); });
-  setInterval(function () { if (st.live.length) renderList(); }, 30000);   // la durée des directs avance sans rien redemander
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { clearTimeout(st.timer); return; }
+    if (Date.now() - st.lastFetch > 20000) refresh(); else if (!st.denied) schedule();
+    renderList();
+  });
+  setInterval(function () { if (!document.hidden && st.live.length) renderList(); }, 30000);   // la durée des directs avance sans rien redemander
   message(L.loading, ""); refresh();
 })();`;
 
-export const CSS = (accent) => `
-:root{color-scheme:dark;--bg:#0e0e10;--panel:#18181b;--panel2:#1f1f23;--line:#2f2f35;--fg:#efeff1;--muted:#adadb8;--accent:${accent};--ok:#3ddc84;--warn:#f5b041}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.35 system-ui,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
-.wrap{max-width:560px;margin:0 auto;padding:0 12px 84px}
-.head{position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 0 8px;border-bottom:1px solid var(--line)}
-h1{margin:0 0 8px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
-h1 .count{min-width:1.6em;padding:0 .45em;border-radius:99px;background:var(--accent);color:#fff;font-size:12px;text-align:center;line-height:1.6}
-h1 .count:empty{display:none}
-.bar{display:flex;gap:8px;flex-wrap:wrap}
-button,select,input{font:inherit;color:inherit}
-.primary{flex:1 1 100%;min-height:44px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
-.primary:hover{filter:brightness(1.1)}
-.primary:disabled{opacity:.6;cursor:default;filter:none}
-.primary.big{min-height:84px;font-size:18px;padding:8px 14px;line-height:1.25}
-.rmode .msg{margin-top:26px}
-.sortbox{flex:1 1 0;min-width:0;display:flex}
-select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 8px}
-.icon{flex:0 0 44px;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;font-size:18px;line-height:1}
-.icon.spin{opacity:.55}
-.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.banner{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:#3b2a05;border:1px solid #6b4d0e;color:#ffd98a}
-.msg{margin:22px 4px;text-align:center}
-.msg-main{margin:0 0 6px;font-size:15px}
-.msg-hint{margin:0;color:var(--muted);font-size:13px}
-.list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
-.row{width:100%;display:grid;grid-template-columns:1fr auto;column-gap:10px;row-gap:2px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer}
-.row:hover{background:var(--panel2);border-left-color:var(--accent)}
-.n{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.v{color:var(--ok);font-weight:600;white-space:nowrap;font-size:13px}
-.m{grid-column:1/-1;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.t{grid-column:1/-1;font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-.t:empty{display:none}
-.c{grid-column:1/-1;display:none;color:var(--ok);font-weight:600;font-size:13px}
-.copied .c{display:block}
-.picked .row{border-color:var(--accent);border-left-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
-.manual{margin:12px 0 0;padding:10px;border:1px solid var(--warn);border-radius:10px;background:var(--panel)}
-.manual label{display:block;margin-bottom:6px;color:var(--warn)}
-.manual input{width:100%;min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-family:ui-monospace,Consolas,monospace}
-.foot{margin-top:12px;color:var(--muted);font-size:12px;text-align:center}
-.toast{position:fixed;left:12px;right:12px;bottom:12px;max-width:536px;margin:0 auto;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s;overflow-wrap:anywhere}
-.toast.show{opacity:1;transform:none}
-.toast.ok{border-color:var(--ok)}.toast.warn{border-color:var(--warn)}
-[hidden]{display:none!important}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}`;
+// ───────────── The look: the administration's (the same variables --cur-*, given by `ctx.api.adminTheme()`) ─────────────
+// The stylesheet below writes NO colour and NO font: only the tokens (tests/twitch-raid-dock-look.test.mjs enforces it). A core without `adminTheme` (before 0.6.6) gets the fallback
+// declared first, with the same names and the administration's dark palette; the theme CSS, when there is one, comes after and wins.
+export const FALLBACK_TOKENS = ":root{--cur-bg:#15141a;--cur-fg:#ecebf2;--cur-muted:#9d9bad;--cur-surface:#1e1d26;--cur-line:#2d2b38;--cur-accent:#9b8cff;--cur-accent-fg:#15141a;--cur-ok:#6ee7b7;--cur-ok-fg:#052e1c;--cur-warn:#fcd34d;--cur-warn-fg:#2a2000;--cur-danger:#fca5a5;--cur-danger-fg:#3a0a0a;--cur-focus:#9b8cff;--cur-radius:.5rem;--cur-radius-lg:1rem;--cur-shadow:0 1px 2px #0000000d;--cur-space:.25rem;--cur-font:ui-sans-serif,system-ui,sans-serif;color-scheme:dark}";
 
-/** La réponse complète : la page, avec une politique de sécurité qui n'autorise que ses propres scripts et ne contacte que le site lui-même. */
-export function dockPage(ctx, { sorts = pure.SORTS, liveUrl, pickUrl }) {
+/** `?scheme=light` or `?scheme=dark` forces the look; anything else: null (the dock is dark, as OBS expects). */
+export const wantsScheme = (url) => { try { const s = new URL(url).searchParams.get("scheme"); return s === "light" || s === "dark" ? s : null; } catch { return null; } };
+
+/** The tokens of the page (fallback first, then the core's theme). A failing or missing theme never blocks the dock. */
+export function themeCss(ctx, scheme) {
+  let theme = null;
+  try { theme = typeof ctx.api?.adminTheme === "function" ? ctx.api.adminTheme({ scheme: scheme ?? "dark" }) : null; } catch { theme = null; }
+  const tokens = typeof theme?.css === "string" ? theme.css.replace(/[<>]/g, "") : "";   // the theme text can never close the <style>
+  return FALLBACK_TOKENS + tokens;
+}
+
+// The page is ONE full-height grid that never scrolls: head (title, the main action, sort, refresh), an optional banner, the stage (the list: it only scrolls inside itself
+// when there are more channels than the height allows), and a one-line status strip. Rows are 46 px high, in columns when the dock is wide; targets are at least 44 px.
+export const CSS = `
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--cur-bg);color:var(--cur-fg);font:14px/1.3 var(--cur-font);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,select,input{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.sr{position:absolute!important;top:0;left:0;margin:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--cur-focus);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;height:100dvh;max-height:100dvh;overflow:hidden}
+.head{grid-row:1;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t t" "p r" "s s";gap:4px 6px;padding:6px 10px;background:var(--cur-surface);border-bottom:1px solid var(--cur-line)}
+h1{grid-area:t;margin:0;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;min-width:0;line-height:1.3}
+h1 span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+h1 .count{flex:none;min-width:1.6em;padding:0 .45em;border-radius:99px;background:var(--cur-accent);color:var(--cur-accent-fg);font-size:12px;text-align:center;line-height:1.6}
+h1 .count:empty{display:none}
+.primary{grid-area:p;position:relative;overflow:hidden;min-height:48px;min-width:0;padding:4px 12px;border:0;border-radius:var(--cur-radius);background:var(--cur-accent);color:var(--cur-accent-fg);font-weight:700;font-size:15px;line-height:1.2;cursor:pointer;touch-action:manipulation}
+.primary:hover{background:color-mix(in srgb,var(--cur-accent) 88%,var(--cur-fg))}
+.primary:disabled{opacity:.6;cursor:default}
+.primary.big{min-height:72px;font-size:17px}
+.primary.arm{background:var(--cur-warn);color:var(--cur-warn-fg);display:grid;gap:1px;align-content:center;justify-items:center}
+.primary.arm .loss{font-size:11px;font-weight:400;white-space:normal}
+.primary.arm::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:100%;background:currentColor;opacity:.55;transform-origin:left;animation:arm 3s linear forwards}
+@keyframes arm{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.undo{grid-area:r;min-height:48px;min-width:64px;padding:0 14px;border:2px solid var(--cur-fg);border-radius:var(--cur-radius);background:transparent;font-weight:700;cursor:pointer;touch-action:manipulation}
+.sortbox{grid-area:s;display:flex;min-width:0}
+select{width:100%;min-height:44px;border:1px solid var(--cur-line);border-radius:var(--cur-radius);background:var(--cur-bg);padding:0 8px}
+.icon{grid-area:r;min-width:44px;min-height:48px;border:1px solid var(--cur-line);border-radius:var(--cur-radius);background:var(--cur-bg);cursor:pointer;font-size:18px;line-height:1;touch-action:manipulation}
+.icon.spin{opacity:.55}
+.banner{grid-row:2;margin:6px 10px 0;padding:6px 10px;border-radius:var(--cur-radius);background:color-mix(in srgb,var(--cur-warn) 14%,var(--cur-surface));border:1px solid var(--cur-warn);color:var(--cur-fg);font-size:13px;overflow-wrap:anywhere}
+.stage{grid-row:3;min-height:0;overflow:auto;padding:6px 10px;overscroll-behavior:contain}
+.msg{margin:16px 4px;text-align:center}
+.rmode .msg{margin-top:22px}
+.msg-main{margin:0 0 6px;font-size:15px;overflow-wrap:anywhere}
+.msg-hint{margin:0;color:var(--cur-muted);font-size:13px;overflow-wrap:anywhere}
+.list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:4px}
+.row{width:100%;height:100%;min-height:44px;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:0;align-content:center;text-align:left;padding:4px 10px;border:1px solid var(--cur-line);border-left:4px solid var(--cur-line);border-radius:var(--cur-radius);background:var(--cur-surface);cursor:pointer;touch-action:manipulation}
+.row:hover{background:color-mix(in srgb,var(--cur-fg) 6%,var(--cur-surface));border-left-color:var(--cur-accent)}
+.n{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.v{color:var(--cur-ok);font-weight:600;white-space:nowrap;font-size:13px}
+.m,.c{grid-row:2;grid-column:1/-1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.m{color:var(--cur-muted)}
+.c{visibility:hidden;color:var(--cur-ok);font-weight:600}
+.copied .c{visibility:visible}
+.copied .m{visibility:hidden}
+.t{display:none;grid-column:1/-1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-height:640px){.t{display:block}.t:empty{display:none}}
+.picked .row{border-color:var(--cur-accent);border-left-color:var(--cur-accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--cur-accent) 45%,transparent)}
+.picked .n::before{content:"★ ";color:var(--cur-accent)}
+.manual{margin:8px 0 0;padding:10px;border:1px solid var(--cur-warn);border-radius:var(--cur-radius);background:var(--cur-surface)}
+.manual label{display:block;margin-bottom:6px}
+.manual input{width:100%;min-height:44px;padding:0 10px;border:1px solid var(--cur-line);border-radius:var(--cur-radius);background:var(--cur-bg)}
+.strip{grid-row:4;display:flex;align-items:center;gap:8px;min-height:28px;padding:3px 10px;border-top:1px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-muted);font-size:12px;line-height:1.25}
+.strip .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--cur-ok)}
+.strip.off{color:var(--cur-fg)}
+.strip.off .dot{background:var(--cur-warn)}
+.toast{position:fixed;left:8px;right:8px;bottom:6px;max-width:560px;margin:0 auto;padding:8px 12px;border-radius:var(--cur-radius);background:var(--cur-surface);color:var(--cur-fg);border:2px solid var(--cur-line);box-shadow:var(--cur-shadow);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .2s;overflow-wrap:anywhere}
+.toast.show{opacity:1;transform:none}
+.toast.ok{border-color:var(--cur-ok)}.toast.warn{border-color:var(--cur-warn)}
+@media (min-width:640px){
+  .head{grid-template-columns:auto minmax(200px,340px) 1fr auto auto;grid-template-areas:"t p . s r";align-items:center;column-gap:12px}
+  .sortbox{min-width:170px}
+  .undo{grid-area:s}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}.primary.arm::after{animation:none;transform:none;opacity:.35}}`;
+
+/** The strip and the toast, shared by both pages. */
+const STRIP = `<footer class="strip" id="strip" hidden><span class="dot" aria-hidden="true"></span><span id="updated"></span></footer>`;
+
+/** The complete answer: the page, with a security policy that only allows its own script and style and only contacts the site itself. */
+export function dockPage(ctx, { sorts = pure.SORTS, liveUrl, pickUrl, scheme = null }) {
   const nonce = randomBytes(16).toString("base64");
   const L = labelsOf(ctx);
-  const accent = /^#[0-9a-fA-F]{6}$/.test(String(ctx.theme?.accent ?? "")) ? ctx.theme.accent : "#9147ff";
   const config = { liveUrl, labels: L, sorts: [...sorts], pickUrl, searchMinMs: 2000, pickMs: 18_000, intervalMs: 45_000, retryMs: 20_000, fetchMs: 14_000, locale: ctx.locale || "en" };
   const script = CLIENT.replace("__SHARED__", () => shared).replace("__CONFIG__", () => JSON.stringify(config).replace(/</g, "\\u003c"));
   const options = sorts.map((s) => `<option value="${esc(s)}">${esc(L[`sort_${s}`])}</option>`).join("");
   const html = `<!doctype html>
-<html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>${esc(L.title)}</title><link rel="icon" href="data:,"><style nonce="${nonce}">${CSS(accent)}</style></head>
-<body><div class="wrap">
+<html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light dark">
+<title>${esc(L.title)}</title><link rel="icon" href="data:,"><style nonce="${nonce}">${themeCss(ctx, scheme)}\n${CSS}</style></head>
+<body><div class="app" id="app">
 <header class="head"><h1><span>${esc(L.title)}</span><span class="count" id="count"></span></h1>
-<div class="bar"><button type="button" class="primary" id="rand"><span aria-hidden="true">🎲 </span><span class="label">${esc(L.random)}</span></button>
+<button type="button" class="primary" id="rand"><span aria-hidden="true">🎲 </span><span class="label">${esc(L.random)}</span></button>
 <label class="sortbox" id="sortbox"><span class="sr">${esc(L.sort)}</span><select id="sort">${options}</select></label>
-<button type="button" class="icon" id="refresh" title="${esc(L.refresh)}" aria-label="${esc(L.refresh)}"><span aria-hidden="true">↻</span></button></div></header>
+<button type="button" class="icon" id="refresh" title="${esc(L.refresh)}" aria-label="${esc(L.refresh)}"><span aria-hidden="true">↻</span></button></header>
 <div class="banner" id="banner" role="status" hidden></div>
-<main><div class="msg" id="msg" role="status"></div>
+<main class="stage" id="stage"><div class="msg" id="msg" role="status"></div>
 <ul class="list" id="list" aria-label="${esc(L.list_label)}" hidden></ul>
 <div class="manual" id="manual" hidden><label for="manual-input">${esc(L.manual_label)}</label><input id="manual-input" readonly></div></main>
-<p class="foot" id="updated"></p>
+${STRIP}
 </div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script nonce="${nonce}">${script}</script></body></html>`;
   return new Response(html, { headers: headers(nonce) });
@@ -303,11 +352,13 @@ export const headers = (nonce) => ({
   "Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'`,
 });
 export const jsonHeaders = { ...baseHeaders, "Content-Type": "application/json; charset=utf-8" };
+export { STRIP };
 
-/** La page affichée quand l'adresse est incomplète ou n'est plus la bonne : une phrase simple, rien d'autre. */
-export function deniedPage(ctx) {
+/** The page shown when the address is incomplete or no longer the right one: one plain sentence, in the same look, nothing else. */
+export function deniedPage(ctx, scheme = null) {
+  const nonce = randomBytes(16).toString("base64");
   const L = labelsOf(ctx);
-  const html = `<!doctype html><html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(L.title)}</title>
-<style>:root{color-scheme:dark}body{margin:0;padding:24px 16px;background:#0e0e10;color:#efeff1;font:15px/1.4 system-ui,sans-serif}p{max-width:34em;margin:0 auto}</style></head><body><p>${esc(L.denied)}</p></body></html>`;
-  return new Response(html, { status: 403, headers: { ...baseHeaders, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'" } });
+  const html = `<!doctype html><html lang="${esc(ctx.locale || "en")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="color-scheme" content="light dark"><title>${esc(L.title)}</title>
+<style nonce="${nonce}">${themeCss(ctx, scheme)}\nbody{margin:0;padding:24px 16px;background:var(--cur-bg);color:var(--cur-fg);font:15px/1.4 var(--cur-font)}p{max-width:34em;margin:0 auto}</style></head><body><p>${esc(L.denied)}</p></body></html>`;
+  return new Response(html, { status: 403, headers: { ...baseHeaders, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": `default-src 'none'; style-src 'nonce-${nonce}'` } });
 }

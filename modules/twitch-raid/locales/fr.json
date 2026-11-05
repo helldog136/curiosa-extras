@@ -235,5 +235,9 @@
   "pub_thumbs_note": "Les aperçus sont des images servies par Twitch : elles ne se chargent que si vous cliquez.",
   "pub_list_label": "Chaînes en direct",
   "pub_description": "Les chaînes qui sont en direct sur Twitch en ce moment.",
-  "pub_loading": "Chargement…"
+  "pub_loading": "Chargement…",
+  "dock_offline": "Hors ligne. Nouvel essai dans un instant.",
+  "dock_confirm": "Confirmer",
+  "dock_undo": "Annuler",
+  "fd_again_loss": "Remplace la sélection pour tout le monde"
 }

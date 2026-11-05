@@ -37,19 +37,19 @@ export default {
     // La page du dock.
     async dock(request, ctx) {
       const no = onlyGet(request); if (no) return no;
-      if (!(await data.secretMatches(ctx, keyOf(request)))) return dock.deniedPage(ctx);
+      if (!(await data.secretMatches(ctx, keyOf(request)))) return dock.deniedPage(ctx, dock.wantsScheme(request.url));
       const k = encodeURIComponent(keyOf(request));
       // 2.2 : si la propriétaire l'a choisi (réglage « Que montre le dock ordinaire ? »), la même adresse montre la sélection du moment. Par défaut : le dock d'avant, inchangé.
-      if (ctx.setting("dockMode") === "selection") return featured.featuredPage(ctx, { dataUrl: `/m/${ctx.instance.key}/featured-data?k=${k}`, againUrl: `/m/${ctx.instance.key}/featured-again?k=${k}` });
-      return dock.dockPage(ctx, { liveUrl: `/m/${ctx.instance.key}/live?k=${k}`, pickUrl: `/m/${ctx.instance.key}/pick?k=${k}` });
+      if (ctx.setting("dockMode") === "selection") return featured.featuredPage(ctx, { dataUrl: `/m/${ctx.instance.key}/featured-data?k=${k}`, againUrl: `/m/${ctx.instance.key}/featured-again?k=${k}`, scheme: dock.wantsScheme(request.url) });
+      return dock.dockPage(ctx, { liveUrl: `/m/${ctx.instance.key}/live?k=${k}`, pickUrl: `/m/${ctx.instance.key}/pick?k=${k}`, scheme: dock.wantsScheme(request.url) });
     },
 
     // 2.2 — LA SÉLECTION DU MOMENT. Le dock dédié (même clé secrète que le dock ordinaire), ce qu'il lit, « Tirer de nouveau », et la route publique de la page facultative.
     async featured(request, ctx) {
       const no = onlyGet(request); if (no) return no;
-      if (!(await data.secretMatches(ctx, keyOf(request)))) return dock.deniedPage(ctx);
+      if (!(await data.secretMatches(ctx, keyOf(request)))) return dock.deniedPage(ctx, dock.wantsScheme(request.url));
       const k = encodeURIComponent(keyOf(request));
-      return featured.featuredPage(ctx, { dataUrl: `/m/${ctx.instance.key}/featured-data?k=${k}`, againUrl: `/m/${ctx.instance.key}/featured-again?k=${k}` });
+      return featured.featuredPage(ctx, { dataUrl: `/m/${ctx.instance.key}/featured-data?k=${k}`, againUrl: `/m/${ctx.instance.key}/featured-again?k=${k}`, scheme: dock.wantsScheme(request.url) });
     },
     async "featured-data"(request, ctx) {
       const no = onlyGet(request); if (no) return no;
