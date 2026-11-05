@@ -12,6 +12,14 @@ La base commune des animations de votre stream : **un pseudo par personne sans c
 - **Le tirage au sort** (depuis la 1.2.0) : chat et site, au hasard, sans reprendre une personne déjà tirée, sur l'écran du stream pendant 20 secondes (voir plus bas).
 - **Le journal** : qui a décidé quoi et quand (appuis sur la télécommande, sourdines, salles vidées, choix gagnants des tours, tirages). Il se vide tout seul après 30 jours. Les gestes qui n'ont pas de trace ailleurs (tirage fermé tout seul, tirages lancés ou tirés depuis la télécommande, sourdines et salles vidées depuis la télécommande) sont aussi dans l'**Historique** de l'extension (journal du cœur, 90 jours) : jamais de pseudo, seulement le titre du tirage, un nombre ou la salle.
 
+## The control dock (since 1.6.0)
+
+The phone remote and the OBS dock are one page that never scrolls: tabs at the top (Poll, Giveaway, Chat) with live badges (time left and vote count on a running poll), a "Stop everything" button on every tab, one stage with the main action of the moment as the biggest button, and a status line (connected, or "offline, retrying"). Destructive gestures take a tap and a 3-second Confirm / Undo on the same row. In the OBS dock the buttons show keyboard hints (C close, X cancel, E more time, A announce, R reopen, N new, Space main action, 1 2 3 tabs, S stop everything, Esc undo). The address is unchanged (`/m/<key>/remote?k=<secret>`, `&dock=1` for the dock, `&scheme=light` or `&scheme=dark` to force a look). It wears the administration's look through `ctx.api.adminTheme`. Layout test: `tests/dock-layout.test.mjs` (needs Chromium and Playwright, skipped without).
+
+## All the live powers on the remote (since 1.5.0)
+
+Prize draw: close, reopen sign-ups, draw, pick someone else (the last winner is not there), cancel the draw (closes it and empties the list). Polls: close, cancel, add time, reopen, announce, tidy up (see the Polls README). "Stop everything" closes the open draw and tells every connected module to stop what runs, without deleting anything. All of them use the secret address as their only authorization and write a journal line with "Remote control" as the author.
+
 ## Comment l'utiliser
 1. **Rien à faire** pour que ça marche : installez Sondages (ou un autre module d'animation) et Participation arrive avec lui.
 2. **La télécommande** : onglet **En direct** → ouvrez l'adresse sur votre téléphone (ou flashez le code). Mettez-la en favori. Elle est **secrète** : toute personne qui la connaît peut utiliser les boutons ; « Créer une nouvelle adresse » rend l'ancienne inutile, **pour le téléphone comme pour le dock**.

@@ -5,7 +5,7 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.4.3",
+  "version": "1.6.0",
   "minCore": "0.5.0",
   "description": {
     "en": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS.",
@@ -753,6 +753,69 @@
       "label": {
         "fr": "Sondage rapide lancé depuis la télécommande",
         "en": "Quick poll started from the remote control"
+      }
+    },
+    {
+      "key": "poll.closed",
+      "label": {
+        "fr": "Sondage fermé depuis la télécommande",
+        "en": "Poll closed from the remote control"
+      }
+    },
+    {
+      "key": "poll.cancelled",
+      "label": {
+        "fr": "Sondage annulé depuis la télécommande",
+        "en": "Poll cancelled from the remote control"
+      }
+    },
+    {
+      "key": "poll.deleted",
+      "label": {
+        "fr": "Sondage supprimé depuis la télécommande",
+        "en": "Poll deleted from the remote control"
+      }
+    },
+    {
+      "key": "poll.reopened",
+      "label": {
+        "fr": "Sondage rouvert depuis la télécommande",
+        "en": "Poll reopened from the remote control"
+      }
+    },
+    {
+      "key": "poll.extended",
+      "label": {
+        "fr": "Temps ajouté à un sondage depuis la télécommande",
+        "en": "Time added to a poll from the remote control"
+      }
+    },
+    {
+      "key": "poll.shown",
+      "label": {
+        "fr": "Sondage affiché à l'écran depuis la télécommande",
+        "en": "Poll shown on screen from the remote control"
+      }
+    },
+    {
+      "key": "poll.hidden",
+      "label": {
+        "fr": "Écran du stream remis en automatique depuis la télécommande",
+        "en": "Stream screen set back to automatic from the remote control"
+      }
+    },
+    {
+      "key": "poll.archived",
+      "label": {
+        "fr": "Sondage rangé depuis la télécommande",
+        "en": "Poll tidied up from the remote control"
+      }
+    },
+    {
+      "key": "panic.stopped",
+      "label": {
+        "fr": "Tout arrêté depuis la télécommande",
+        "en": "Everything stopped from the remote control"
       }
     },
     {

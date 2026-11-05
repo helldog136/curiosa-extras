@@ -840,6 +840,162 @@ async function roundsBlocks(ctx, manage, now) {
 
 /* ───────────── Le module ───────────── */
 
+/* ───────────── Live controls: everything the website does to ONE poll, for the remote control ───────────── */
+// The remote drives "the poll in front of the streamer": the newest open poll that is not a repeating-vote round, else the one that ended in the last hour (to announce it,
+// reopen it, tidy it). A stale remote may pass `id`: if the poll in front of the streamer is no longer that one, nothing happens ("changed").
+// Each gesture takes the same lock and goes through the same functions as the website (closeNow, deletePoll, archiveOne). The authorization is the secret address,
+// checked by Participation before the call (see README); the journal line is written here with "remote" as the author.
+
+const RECENT_DONE_MS = HOUR;
+const newest = (a, b) => String(b.createdAt).localeCompare(String(a.createdAt));
+
+/** The poll the remote controls: { poll, state: "open" | "closed" | "none" }. Never a round (those belong to start / next / stop). */
+export async function controlledPoll(ctx, now = Date.now()) {
+  const polls = (await livePolls(ctx)).filter((p) => !p.round);
+  const open = polls.filter((p) => L.stateOf(p, now) === "open").sort(newest)[0];
+  if (open) return { poll: open, state: "open" };
+  const done = polls.filter((p) => L.stateOf(p, now) === "closed" && now - (L.endedAtMs(p, now) || 0) < RECENT_DONE_MS).sort((a, b) => (L.endedAtMs(b, now) || 0) - (L.endedAtMs(a, now) || 0))[0];
+  return done ? { poll: done, state: "closed" } : { poll: null, state: "none" };
+}
+
+/** The target of a live gesture, or an error code: "none" (nothing to act on) or "changed" (the remote shows another poll than the current one). */
+async function target(ctx, values, now) {
+  const cur = await controlledPoll(ctx, now);
+  if (!cur.poll) return { error: "none" };
+  const asked = typeof values?.id === "string" ? values.id : "";
+  if (asked && asked !== cur.poll.id) return { error: "changed" };
+  return cur;
+}
+
+/** Seconds from a form value: a whole number between `min` and `max`, else the default. */
+const secondsOf = (v, dflt, min = 5, max = 900) => { const raw = String(v ?? "").trim(); return /^\d{1,4}$/.test(raw) && Number(raw) >= min && Number(raw) <= max ? Number(raw) : dflt; };
+
+/** Writes what a live gesture did: the core's log (remote gestures only; the website's are noted by the core) and Participation's journal. */
+async function noted(ctx, logAction, what, detail) {
+  await ctx.api.log?.write({ action: logAction });
+  await note(ctx, what, detail);
+}
+
+/** Puts a poll on the stream screen until `until` (then the screen goes back to its automatic choice). */
+async function pinOnScreen(ctx, p, until) {
+  await withLock(ctx, async () => { const cfg = await ensureCfg(ctx); await saveCfg(ctx, { ...cfg, onAir: p.slug, onAirUntil: isoOf(until) }); });
+}
+
+/** "Close now": the poll ends at once, its result stays. */
+export async function remoteClose(ctx, values, now = Date.now()) {
+  const t = await target(ctx, values, now);
+  if (t.error) return { ok: false, error: t.error };
+  if (t.state !== "open") return { ok: false, error: "closed" };
+  const r = await closeNow(ctx, t.poll.id, now);
+  if (!r.ok) return { ok: false, error: r.error === "already" ? "closed" : r.error };
+  await syncLive(ctx, now);
+  await noted(ctx, "poll.closed", "poll.close", t.poll.question);
+  return { ok: true, voters: Number(t.poll.voters) || 0 };
+}
+
+/** "Cancel": the poll and its votes are deleted (the website's "Delete" with the open-poll confirmation). Works on an open poll and on a finished one. */
+export async function remoteCancel(ctx, values, now = Date.now()) {
+  const t = await target(ctx, values, now);
+  if (t.error) return { ok: false, error: t.error };
+  const r = await deletePoll(ctx, t.poll.id, { allowOpen: true, now });
+  if (!r.ok) return { ok: false, error: r.error };
+  await noted(ctx, t.state === "open" ? "poll.cancelled" : "poll.deleted", t.state === "open" ? "poll.cancel" : "poll.delete", t.poll.question);
+  return { ok: true, voters: r.voters, wasOpen: r.wasOpen };
+}
+
+/** "Reopen" a finished poll for `seconds` more (the website reopens with no end at all; on a live show a bounded time is what is wanted). */
+export async function remoteReopen(ctx, values, now = Date.now()) {
+  const t = await target(ctx, values, now);
+  if (t.error) return { ok: false, error: t.error };
+  if (t.state !== "closed") return { ok: false, error: "open" };
+  if (t.poll.purgedAt) return { ok: false, error: "purged" };
+  const seconds = secondsOf(values?.seconds, 60, 15, 900);
+  const ends = now + seconds * 1000;
+  await withLock(ctx, async () => { const f = await ctx.api.store.get(t.poll.id); await ctx.api.store.update(t.poll.id, { ...f.data, closedAt: null, endsAt: isoOf(ends), rev: (Number(f.data.rev) || 0) + 1 }); });
+  await pinOnScreen(ctx, t.poll, ends + ROUND.pinGraceMs);
+  await syncLive(ctx, now);
+  await noted(ctx, "poll.reopened", "poll.reopen", t.poll.question);
+  return { ok: true, seconds };
+}
+
+/** "+30 s": an open poll with an end time ends later; a finished poll is reopened for that long. A poll with no end time has nothing to extend. */
+export async function remoteExtend(ctx, values, now = Date.now()) {
+  const t = await target(ctx, values, now);
+  if (t.error) return { ok: false, error: t.error };
+  if (t.state === "closed") return remoteReopen(ctx, { ...values, seconds: values?.seconds ?? "30" }, now);
+  if (!t.poll.endsAt) return { ok: false, error: "noend" };
+  const seconds = secondsOf(values?.seconds, 30, 5, 900);
+  const ends = Math.min(Date.parse(t.poll.endsAt) + seconds * 1000, now + LIMITS.maxEndMs);
+  await withLock(ctx, async () => { const f = await ctx.api.store.get(t.poll.id); await ctx.api.store.update(t.poll.id, { ...f.data, endsAt: isoOf(ends), rev: (Number(f.data.rev) || 0) + 1 }); });
+  await syncLive(ctx, now);
+  await noted(ctx, "poll.extended", "poll.extend", t.poll.question);
+  return { ok: true, seconds };
+}
+
+/** "Show on screen" / "Hide": the poll (running or finished) goes on the stream screen for a minute at least, or the screen goes back to automatic. */
+export async function remoteScreen(ctx, values, { show = true, now = Date.now() } = {}) {
+  if (!show) {
+    await withLock(ctx, async () => { const cfg = await ensureCfg(ctx); await saveCfg(ctx, { ...cfg, onAir: null, onAirUntil: null }); });
+    await syncLive(ctx, now);
+    await noted(ctx, "poll.hidden", "poll.hide", "-");
+    return { ok: true };
+  }
+  const t = await target(ctx, values, now);
+  if (t.error) return { ok: false, error: t.error };
+  const end = t.state === "open" && t.poll.endsAt ? Date.parse(t.poll.endsAt) + ROUND.pinGraceMs : 0;
+  await pinOnScreen(ctx, t.poll, Math.max(now + 60_000, end));
+  await syncLive(ctx, now);
+  await noted(ctx, "poll.shown", "poll.show", t.poll.question);
+  return { ok: true };
+}
+
+/** "Tidy up": a finished poll goes to the archive (totals kept, votes erased). */
+export async function remoteArchive(ctx, values, now = Date.now()) {
+  const t = await target(ctx, values, now);
+  if (t.error) return { ok: false, error: t.error };
+  if (t.state !== "closed") return { ok: false, error: "open" };
+  await withLock(ctx, () => archiveOne(ctx, t.poll, now));
+  await syncLive(ctx, now);
+  await noted(ctx, "poll.archived", "poll.archive", t.poll.question);
+  return { ok: true };
+}
+
+/** The last quick poll (live or archived): what "again" repeats. */
+async function lastQuick(ctx) {
+  const live = (await livePolls(ctx)).filter((p) => p.quick).sort(newest)[0];
+  if (live) return live;
+  const old = (await ctx.api.store.page(ARCHIVE, { limit: 50 })).items.filter((r) => r.data?.quick).sort((a, b) => String(b.data.createdAt).localeCompare(String(a.data.createdAt)))[0];
+  return old ? pollOf(old, "archive") : null;
+}
+
+/** A quick poll again: same question, same choices, same length as the last quick poll. */
+export async function remoteAgain(ctx, now = Date.now()) {
+  const last = await lastQuick(ctx);
+  if (!last) return { ok: false, error: "none" };
+  const length = last.endsAt && last.createdAt ? Math.round((Date.parse(last.endsAt) - Date.parse(last.createdAt)) / 1000) : quickDefault(ctx);
+  const [a, b, c, d] = last.choices.map((x) => x.text);
+  const r = await quickPoll(ctx, { a, b, c, d, seconds: secondsOf(length, quickDefault(ctx), 15, 900), question: last.question }, now);
+  return r.ok ? r : { ok: false, error: r.errors ? "invalid" : r.error };
+}
+
+/** A Yes / No poll in one tap, with the usual length. */
+export async function remoteYesNo(ctx, now = Date.now()) {
+  const r = await quickPoll(ctx, { a: ctx.t("quickYes"), b: ctx.t("quickNo"), seconds: quickDefault(ctx), question: "" }, now);
+  return r.ok ? r : { ok: false, error: r.errors ? "invalid" : r.error };
+}
+
+/**
+ * "Stop everything" for this module: the repeating vote stops (its current round is cancelled, as with "Stop") and every open poll is closed (results kept, nothing deleted).
+ * It always succeeds, even when nothing runs.
+ */
+export async function remotePanic(ctx, now = Date.now()) {
+  const rounds = (await stopSeries(ctx, now)).ok;
+  let closed = 0;
+  for (const p of (await livePolls(ctx)).filter((x) => L.stateOf(x, now) === "open" && !x.round)) if ((await closeNow(ctx, p.id, now)).ok) closed++;
+  if (rounds || closed) { await syncLive(ctx, now); await noted(ctx, "panic.stopped", "poll.panic", `${closed}${rounds ? " + rounds" : ""}`); }
+  return { ok: true, closed, rounds };
+}
+
 /* ───────────── La télécommande : ce que Sondages montre à Participation (service « audience.remote ») ───────────── */
 
 const remoteReply = (ctx, r, okKey) => {
@@ -848,21 +1004,94 @@ const remoteReply = (ctx, r, okKey) => {
   return { ok: false, error: r.error === "idle" || r.error === "already" ? r.error : "failed", message: ctx.t(r.error === "already" ? "remoteErrAlready" : r.error === "idle" ? "remoteErrIdle" : r.error === "full" ? "errFullShort" : "remoteErrFailed") };
 };
 
+const LIVE_ERRORS = { none: "remoteErrNone", changed: "remoteErrChanged", closed: "remoteErrClosed", open: "remoteErrOpen", noend: "remoteErrNoEnd", purged: "errPurged", full: "errFullShort", partial: "remoteErrPartial", gone: "errGone", round: "deleteRound" };
+/** The answer for a live gesture on one poll: { ok, message } or { ok: false, error, message }. */
+const liveReply = (ctx, r, okKey, vars) => (r.ok
+  ? { ok: true, message: ctx.t(okKey, vars) }
+  : { ok: false, error: ["none", "changed", "closed", "noend", "open", "gone", "purged", "partial"].includes(r.error) ? r.error : "failed", message: ctx.t(LIVE_ERRORS[r.error] ?? "remoteErrFailed") });
+
+/** The live view of Polls for the dock (see `sanitizeView` in Audience): one stage at a time, the main action first. */
+function pollView(ctx, { series, round, cp, now, again }) {
+  const t = (k, v) => ctx.t(k, v);
+  const btn = (id, key, label, short, extra = {}) => ({ id, label: t(label), short: t(short), key, ...extra });
+  const barsOf = (p) => L.rows(p).map((r) => ({ text: r.text, n: r.count, pct: r.pct, lead: r.lead }));
+  const quickSeconds = L.ROUND.quickSeconds;
+  const form = {
+    id: "quick", title: t("quickTitle"), submit: t("quickGo"),
+    fields: [
+      { name: "a", label: t("fQuickAShort"), type: "text", required: true, max: LIMITS.choice },
+      { name: "b", label: t("fQuickBShort"), type: "text", required: true, max: LIMITS.choice },
+      { name: "seconds", label: t("fQuickSeconds"), type: "select", seg: true, value: String(quickDefault(ctx)), options: quickSeconds.map((n) => ({ value: String(n), label: t(SEC_LABELS[n]), short: t(`${SEC_LABELS[n]}Short`) })) },
+      { name: "c", label: t("fQuickCShort"), type: "text", max: LIMITS.choice, more: true },
+      { name: "d", label: t("fQuickDShort"), type: "text", max: LIMITS.choice, more: true },
+    ],
+  };
+  const chips = [btn("poll-yesno", "Y", "remoteYesNo", "remoteYesNoShort"), ...(again ? [btn("poll-again", "R", "remoteAgain", "remoteAgainShort")] : []), btn("start", "L", "dockChipLoop", "dockChipLoopShort")];
+  if (series.status === "running") {
+    const open = cp.state === "open";
+    return {
+      type: "poll", stage: "live", title: round?.question ?? series.question, sub: t("dockRound", { n: round?.round?.n ?? series.n }), note: open ? t("remotePollOpen", { question: cp.poll.question, voters: Number(cp.poll.voters) || 0 }) : "",
+      from: round?.createdAt, until: round?.endsAt ?? null, count: Number(round?.voters) || 0, unit: t("dockVotes"), bars: round ? barsOf(round) : [],
+      primary: btn("next", "N", "remoteNext", "remoteNext"), danger: btn("stop", "X", "remoteStop", "remoteStop", { loss: t("remoteStopConfirm") }), form: null,
+    };
+  }
+  if (cp.state === "open") {
+    const p = cp.poll, v = { id: p.id };
+    return {
+      type: "poll", stage: "live", title: p.question, sub: p.quick ? t("dockQuick") : "", from: p.createdAt, until: p.endsAt ?? null, count: Number(p.voters) || 0, unit: t("dockVotes"), bars: barsOf(p),
+      primary: btn("poll-close", "C", "remoteClose", "remoteCloseShort", { values: v }),
+      actions: [btn("poll-extend", "E", "remoteExtend", "remoteExtendShort", { values: v, disabled: !p.endsAt }), btn("poll-show", "A", "remoteShow", "remoteShowShort", { values: v })],
+      danger: btn("poll-cancel", "X", "remoteCancel", "remoteCancelShort", { values: v, loss: t("remoteCancelConfirm") }), form: null,
+    };
+  }
+  if (cp.state === "closed") {
+    const p = cp.poll, v = { id: p.id };
+    return {
+      type: "poll", stage: "done", title: p.question, sub: t("dockFinished"), count: Number(p.voters) || 0, unit: t("dockVotes"), bars: barsOf(p),
+      primary: btn("poll-show", "A", "remoteShowResult", "remoteShowResultShort", { values: v }),
+      actions: [btn("compose", "N", "dockNewPoll", "dockNewPollShort"), btn("poll-reopen", "R", "remoteReopen", "remoteReopenShort", { values: v }), btn("poll-archive", "T", "remoteArchive", "remoteArchiveShort", { values: v })],
+      danger: btn("poll-cancel", "X", "remoteDelete", "remoteDeleteShort", { values: v, loss: t("remoteDeleteConfirm") }), chips, form,
+    };
+  }
+  return { type: "poll", stage: "idle", title: t("dockNoPoll"), sub: series.lastDecision ? t("remoteLast", { n: series.lastDecision.n, winner: series.lastDecision.winner ?? t("noWinnerShort") }) : "", chips, form };
+}
+
 async function remotePanel(ctx, now) {
   await advance(ctx, now);
   const series = await ensureSeries(ctx);
   const running = series.status === "running";
   const cur = running ? await bySlug(ctx, series.current) : null;
+  const cp = await controlledPoll(ctx, now);
+  const open = cp.state === "open", done = cp.state === "closed";
   const last = series.lastDecision ? ` ${ctx.t("remoteLast", { n: series.lastDecision.n, winner: series.lastDecision.winner ?? ctx.t("noWinnerShort") })}` : "";
+  const pollLine = open ? ctx.t("remotePollOpen", { question: cp.poll.question, voters: Number(cp.poll.voters) || 0 }) : done ? ctx.t("remotePollDone", { question: cp.poll.question, voters: Number(cp.poll.voters) || 0 }) : "";
   const state = running
-    ? { text: `${ctx.t("remoteRunning", { n: cur?.round?.n ?? series.n, voters: Number(cur?.voters) || 0 })}${last}`, tone: "live", until: cur?.endsAt ?? null }
-    : { text: `${ctx.t("remoteIdle")}${last}`, tone: "idle" };
+    ? { text: `${ctx.t("remoteRunning", { n: cur?.round?.n ?? series.n, voters: Number(cur?.voters) || 0 })}${last}${pollLine ? ` ${pollLine}` : ""}`, tone: "live", until: cur?.endsAt ?? null }
+    : open ? { text: pollLine, tone: "live", until: cp.poll.endsAt ?? null }
+      : { text: `${done ? pollLine : ctx.t("remoteIdle")}${last}`, tone: done ? "done" : "idle" };
+  const quickAgain = !open && !running && (await lastQuick(ctx));
+  const poll = open ? [
+    { id: "poll-close", label: ctx.t("remoteClose"), tone: "primary" },
+    { id: "poll-extend", label: ctx.t("remoteExtend"), disabled: !cp.poll.endsAt },
+    { id: "poll-show", label: ctx.t("remoteShow") },
+    { id: "poll-cancel", label: ctx.t("remoteCancel"), tone: "danger", confirm: ctx.t("remoteCancelConfirm") },
+  ] : [
+    ...(done ? [
+      { id: "poll-show", label: ctx.t("remoteShowResult") },
+      { id: "poll-reopen", label: ctx.t("remoteReopen") },
+      { id: "poll-archive", label: ctx.t("remoteArchive") },
+      { id: "poll-cancel", label: ctx.t("remoteDelete"), tone: "danger", confirm: ctx.t("remoteDeleteConfirm") },
+    ] : []),
+    ...(!running ? [{ id: "poll-yesno", label: ctx.t("remoteYesNo") }] : []),
+    ...(quickAgain ? [{ id: "poll-again", label: ctx.t("remoteAgain") }] : []),
+  ];
   return {
-    title: ctx.t("remoteTitle"), state,
+    title: ctx.t("remoteTitle"), state, view: pollView(ctx, { series, round: cur, cp, now, again: !!quickAgain }),
     buttons: [
       { id: "start", label: ctx.t("remoteStart"), tone: "primary", disabled: running },
       { id: "next", label: ctx.t("remoteNext"), disabled: !running },
       { id: "stop", label: ctx.t("remoteStop"), tone: "danger", confirm: ctx.t("remoteStopConfirm"), disabled: !running },
+      ...poll,
     ],
     forms: [{ id: "quick", title: ctx.t("quickTitle"), submit: ctx.t("quickGo"), fields: [
       { name: "a", label: ctx.t("fQuickAShort"), type: "text", required: true, max: LIMITS.choice },
@@ -899,6 +1128,17 @@ export default {
           case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");   // la décision de la manche est notée par decideRound
           case "stop": { const r = await stopSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.stopped" }); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
           case "quick": { const r = await quickPoll(ctx, values, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return remoteReply(ctx, r, "remoteQuickOk"); }
+          // Live gestures on the poll in front of the streamer (see "Live controls" above): same functions as the website, journal line written there.
+          case "poll-close": { const r = await remoteClose(ctx, values, now); return liveReply(ctx, r, "remoteClosed"); }
+          case "poll-cancel": { const r = await remoteCancel(ctx, values, now); return liveReply(ctx, r, r.wasOpen ? "remoteCancelled" : "remoteDeleted"); }
+          case "poll-reopen": { const r = await remoteReopen(ctx, values, now); return liveReply(ctx, r, "remoteReopened", { n: r.seconds }); }
+          case "poll-extend": { const r = await remoteExtend(ctx, values, now); return liveReply(ctx, r, "remoteExtended", { n: r.seconds }); }
+          case "poll-show": return liveReply(ctx, await remoteScreen(ctx, values, { now }), "remoteShown");
+          case "poll-hide": return liveReply(ctx, await remoteScreen(ctx, values, { show: false, now }), "remoteHidden");
+          case "poll-archive": return liveReply(ctx, await remoteArchive(ctx, values, now), "remoteArchived");
+          case "poll-again": { const r = await remoteAgain(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return liveReply(ctx, r, "remoteQuickOk"); }
+          case "poll-yesno": { const r = await remoteYesNo(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return liveReply(ctx, r, "remoteQuickOk"); }
+          case "panic": { const r = await remotePanic(ctx, now); return { ok: true, message: ctx.t(r.closed || r.rounds ? "remotePanicDone" : "remotePanicNothing", { n: r.closed }) }; }
           default: return { ok: false, error: "invalid", message: ctx.t("remoteErrFailed") };
         }
       },

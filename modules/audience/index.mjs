@@ -253,7 +253,7 @@ const personsText = (ctx, n) => ctx.t(n === 1 ? "persons_one" : "persons_many", 
 const needs = (right, fn) => async (ctx, values) => (can(ctx, right) ? fn(ctx, values) : { error: ctx.t("errRight") });
 
 const WHO = ["remote", "admin", "assistant", "system"];
-const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick", "draw.new", "draw.close", "draw.reopen", "draw.pick", "draw.redraw", "draw.remove", "draw.clear", "draw.key"];
+const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick", "poll.close", "poll.cancel", "poll.delete", "poll.reopen", "poll.extend", "poll.show", "poll.hide", "poll.archive", "poll.panic", "panic", "draw.new", "draw.close", "draw.reopen", "draw.pick", "draw.redraw", "draw.remove", "draw.clear", "draw.key"];
 const whoText = (ctx, w) => (WHO.includes(w) ? ctx.t(`who_${w}`) : w);
 const whatText = (ctx, w) => (WHAT.includes(w) ? ctx.t(`what_${w.replace(".", "_")}`) : w);
 const remoteUrl = (ctx, meta) => `${ctx.api.siteUrl}/m/${ctx.instance.key}/remote?k=${meta.remoteKey}`;
@@ -399,7 +399,7 @@ export default {
         return new Response("Not found", { status: 404 });
       }
       // Même adresse secrète pour le téléphone et pour le dock OBS : `&dock=1` choisit la présentation étroite, rien d'autre ne change.
-      return R.remoteResponse(ctx, meta.remoteKey, C.REMOTE_JS, { dock: R.wantsDock(request.url) });
+      return R.remoteResponse(ctx, meta.remoteKey, C.REMOTE_JS, { dock: R.wantsDock(request.url), scheme: R.wantsScheme(request.url) });
     },
 
     async "remote-state"(request, ctx) {

@@ -160,250 +160,426 @@ export const CLIENT_JS = String.raw`(function () {
 })();
 `;
 
-/** La télécommande. Configuration dans window.__AR : { state, press, lang, base, t: { textes } }. */
+/**
+ * The control dock (phone and OBS dock: the same script). Configuration in window.__AR: { k, dock, state, press, lang, t: { texts } }.
+ * It draws what the modules describe (`panel.view`, see lib.mjs): tabs at the top with live badges, one stage, one status line, a "stop everything" button.
+ * No scrolling anywhere (the page is a 100dvh grid); no interval timer (each poll is planned AFTER the previous answer; paused when the page is hidden).
+ */
 export const REMOTE_JS = String.raw`(function () {
   "use strict";
-  var C = window.__AR;
-  var root = document.getElementById("ar-root");
-  var toast = document.getElementById("ar-toast");
-  var tabsBox = document.getElementById("ar-tabs");
-  var live = document.getElementById("ar-live");
-  var data = null, timer = null, delay = 4000, inflight = false, skew = 0, armed = null, armTimer = null, seq = 0, pendingFk = null, sel = null, drafts = {}, tabEls = [], panEls = [], tabIds = [], keep = {};
-  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+  var C = window.__AR, T = C.t;
+  var $ = function (id) { return document.getElementById(id); };
+  var elTabs = $("tabs"), elStage = $("stage"), elStrip = $("strip"), elMsg = $("msg"), elSt = $("st"), elSr = $("sr"), elPanic = $("panic"), elTop = $("top");
+  var data = null, skew = 0, sel = null, timer = null, delay = 3000, inflight = false, net = "connecting", retryAt = 0, hidden = false;
+  var ui = { compose: {}, sheet: null, armed: null, page: {}, room: null, drafts: {}, errors: {} };
+  var again = false, seq = 0, msgTimer = null, armTimer = null, typing = false, dirty = false, lastStage = {}, tabs = [];
+  function h(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined && text !== null) n.textContent = text; return n; }
+  function fmt(s, vars) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return vars && vars[k] !== undefined ? vars[k] : m; }); }
   function signal() { try { return typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined; } catch (x) { return undefined; } }
-  function say(text, bad) { toast.textContent = text || ""; toast.className = "ar-toast" + (bad ? " bad" : ""); toast.hidden = !text; }
+  function api(path, body) {
+    var init = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "omit", signal: signal() } : { cache: "no-store", credentials: "omit", signal: signal() };
+    return fetch(path, init).then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }, function () { return { ok: false, error: "net", status: r.status }; }); });
+  }
+  function keep(k, v) { try { if (v === undefined) return window.sessionStorage.getItem(k); window.sessionStorage.setItem(k, v); } catch (x) { /* storage unavailable: harmless */ } return null; }
   function clock(until) {
     var ms = Date.parse(until) - (Date.now() + skew);
     if (!(ms > 0)) return "00:00";
-    var s = Math.round(ms / 1000), m = Math.floor(s / 60);
-    return (m < 10 ? "0" : "") + m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+    var s = Math.round(ms / 1000), m = Math.floor(s / 60), hh = Math.floor(m / 60);
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    return hh > 0 ? hh + ":" + p(m % 60) + ":" + p(s % 60) : p(m) + ":" + p(s % 60);
   }
-  function api(path, body) {
-    var init = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "omit", signal: signal() } : { cache: "no-store", credentials: "omit", signal: signal() };
-    return fetch(path, init).then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }, function () { return { ok: false, "error": "net", status: r.status }; }); });
+  /* ───────── status line and announcements ───────── */
+  function paintStrip() {
+    var cls = "strip", text = "", st = "";
+    if (net === "online") { cls += " ok"; st = T.connected; } else if (net === "offline") { cls += " bad"; text = "⚠ " + fmt(T.retry, { n: Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)) }); } else if (net === "denied") { cls += " err"; text = T.denied; } else { st = T.connecting; }
+    if (msgTimer && elMsg.getAttribute("data-say")) { return; }
+    elStrip.className = cls; elMsg.textContent = text; elSt.textContent = st;
   }
-  // Au clavier, la page se redessine sous les doigts : on retrouve le bouton qui avait le focus grâce à son repère (data-fk).
-  function fk(n, key) { n.setAttribute("data-fk", key); return n; }
-  function focusFk(key) { if (!key) return; var n = root.querySelector('[data-fk="' + key + '"]') || tabsBox.querySelector('[data-fk="' + key + '"]'); if (n && !n.disabled) n.focus({ preventScroll: true }); }
-  function press(panel, action, values, btn, label, onOk) {
-    if (btn.disabled) return;
-    var hadFocus = document.activeElement === btn, key = btn.getAttribute("data-fk");
-    if (hadFocus) pendingFk = key;
-    btn.disabled = true; btn.setAttribute("aria-busy", "true");
-    var old = btn.textContent; btn.textContent = C.t.busy;
-    say("");
-    api(C.press, { k: C.k, panel: panel, action: action, values: values || {} }).then(function (j) {
-      if (j && j.ok) { say(j.message || C.t.done, false); delay = 4000; if (onOk) onOk(); refresh(); }
-      else { say((j && j.message) || C.t["e_" + ((j && j.error) || "net")] || C.t.e_net, true); if (j && j.field) fieldError(panel, j.field, j.message); }
-    }, function () { say(C.t.e_net, true); }).then(function () {
-      btn.disabled = false; btn.removeAttribute("aria-busy"); btn.textContent = old;
-      if (hadFocus) { if (document.body.contains(btn)) btn.focus({ preventScroll: true }); else focusFk(key); }
-      pendingFk = null;
+  function say(text, tone) {
+    clearTimeout(msgTimer);
+    elStrip.className = "strip" + (tone === "err" ? " err" : tone === "ok" ? " ok" : "");
+    elMsg.textContent = text || ""; elMsg.setAttribute("data-say", "1"); elSt.textContent = "";
+    msgTimer = setTimeout(function () { msgTimer = null; elMsg.removeAttribute("data-say"); paintStrip(); }, tone === "err" ? 8000 : 5000);
+  }
+  function announce(text) { elSr.textContent = ""; setTimeout(function () { elSr.textContent = text; }, 30); }
+  /* ───────── the tabs model ───────── */
+  function buildTabs() {
+    var out = [], used = {};
+    (data.panels || []).forEach(function (p) {
+      var t = p.view && p.view.type, id = t && !used[t] ? t : "p:" + (p.provider || p.id);
+      if (t && !used[t]) used[t] = 1;
+      out.push({ id: id, label: id === "poll" ? T.tabPoll : id === "draw" ? T.tabDraw : (p.tab || p.title), panel: p, view: id === "poll" || id === "draw" ? p.view : null, pid: p.provider || p.id });
     });
+    var order = { poll: 0, draw: 1 };
+    out.sort(function (a, b) { return (order[a.id] === undefined ? 2 : order[a.id]) - (order[b.id] === undefined ? 2 : order[b.id]); });
+    var people = 0; (data.rooms || []).forEach(function (r) { people += r.count || 0; });
+    out.push({ id: "chat", label: T.tabChat, chat: true, people: people });
+    return out;
   }
-  function fieldError(panel, field, message) {
-    var n = root.querySelector('[data-err="' + panel + ":" + field + '"]');
-    if (n) { n.textContent = message || ""; n.hidden = !message; var i = root.querySelector('[data-in="' + panel + ":" + field + '"]'); if (i) { i.setAttribute("aria-invalid", "true"); i.focus(); } }
+  /* The badge of a tab: the dot (decoration), the remaining time, the count. It is rebuilt every second. */
+  function fillBadge(node, t) {
+    var v = t.view, kids = [];
+    function part(cls, text) { kids.push(h("span", cls, text)); }
+    if (t.chat) { if (t.people) { part("g", "👥"); part("", " " + t.people); } }
+    else if (v && v.stage === "live") { part("g", "●"); if (v.until) part("", clock(v.until)); if (v.count !== null) part("c", (v.until ? " · " : " ") + v.count); }
+    else if (v && v.stage === "done") { part("g", "✓"); if (v.count !== null) part("", " " + v.count); }
+    node.replaceChildren.apply(node, kids);
   }
-  function disarm() { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove("armed"); armed = null; } clearTimeout(armTimer); }
-  function button(panel, b) {
-    var n = fk(el("button", "ar-btn " + (b.tone || "plain"), b.label), "b:" + (panel.provider || panel.id) + ":" + b.id);
-    n.type = "button";
+  function paintTabs() {
+    var old = elTabs.querySelector("[data-fk]:focus"), fk = document.activeElement && elTabs.contains(document.activeElement) ? document.activeElement.getAttribute("data-fk") : null;
+    var frag = document.createDocumentFragment();
+    tabs.forEach(function (t, i) {
+      var on = t.id === sel, live = t.view && t.view.stage === "live";
+      var b = h("button", "tab" + (live ? " live" : ""));
+      b.type = "button"; b.id = "tab-" + i; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false"); b.setAttribute("tabindex", on ? "0" : "-1"); b.setAttribute("data-fk", "t:" + t.id); b.setAttribute("data-tab", t.id);
+      b.setAttribute("aria-label", t.label + (live ? ", " + T.live : t.view && t.view.stage === "done" ? ", " + T.finished : ""));
+      b.appendChild(h("span", "tl", t.label));
+      var bg = h("span", "tb"); fillBadge(bg, t); bg.setAttribute("aria-hidden", "true"); b.appendChild(bg);
+      b.addEventListener("click", function () { pick(t.id); });
+      b.addEventListener("keydown", function (ev) { tabKey(ev, i); });
+      frag.appendChild(b);
+    });
+    elTabs.replaceChildren(frag);
+    if (fk) { var n = elTabs.querySelector('[data-fk="' + fk + '"]'); if (n) n.focus({ preventScroll: true }); }
+  }
+  function tickBadges() {
+    var bs = elTabs.querySelectorAll(".tab");
+    for (var i = 0; i < bs.length && i < tabs.length; i++) { var tb = bs[i].querySelector(".tb"); if (tb && tabs[i].view && tabs[i].view.stage === "live") fillBadge(tb, tabs[i]); }
+  }
+  function pick(id) { sel = id; keep("ar-tab", id); ui.sheet = null; disarm(); paintTabs(); renderStage(); }
+  function tabKey(ev, i) {
+    var k = ev.key, n = tabs.length, to = -1;
+    if (k === "ArrowRight") to = (i + 1) % n; else if (k === "ArrowLeft") to = (i + n - 1) % n; else if (k === "Home") to = 0; else if (k === "End") to = n - 1;
+    if (to < 0) return;
+    ev.preventDefault(); pick(tabs[to].id); var b = elTabs.querySelector('[data-tab="' + tabs[to].id + '"]'); if (b) b.focus({ preventScroll: true });
+  }
+  /* ───────── the confirm / undo pattern (3 seconds, on the same row) ───────── */
+  function disarm() { clearTimeout(armTimer); if (ui.armed) { ui.armed = null; if (!typing) { renderStage(); renderPanic(); } } }
+  function arm(key, run, loss, tab) { disarm(); ui.armed = { key: key, run: run, loss: loss || "", tab: tab || "" }; armTimer = setTimeout(disarm, 3000); renderStage(); renderPanic(); announce((loss ? loss + ". " : "") + T.armed); }
+  /* ───────── buttons ───────── */
+  function btn(b, cls, run) {
+    var n = h("button", "btn" + (cls ? " " + cls : "")); n.type = "button";
+    n.appendChild(h("span", "lb l", b.label)); n.appendChild(h("span", "lb s", b.short || b.label));
+    if (b.key && C.dock) { var k = h("kbd", "", b.key); k.setAttribute("aria-hidden", "true"); n.appendChild(k); }
+    n.title = b.label + (b.key ? " (" + T.keys + " " + b.key + ")" : "");
+    n.setAttribute("data-fk", "b:" + b.id + (b.values && b.values.pid ? ":" + b.values.pid : ""));
+    if (b.key) n.setAttribute("aria-keyshortcuts", b.key);
     if (b.disabled) n.disabled = true;
-    n.addEventListener("click", function () {
-      if (b.confirm && !(armed && armed.btn === n)) {
-        disarm();
-        armed = { btn: n, label: b.label };
-        n.textContent = b.confirm + " — " + C.t.again;
-        n.classList.add("armed");
-        armTimer = setTimeout(disarm, 5000);
-        return;
-      }
-      disarm();
-      press(panel.provider || panel.id, b.id, {}, n);
-    });
+    n.addEventListener("click", function () { run(b, n); });
     return n;
   }
-  // Un formulaire = une action : un bouton principal et des réglages préremplis (ceux de la dernière fois). Les champs « more » sont repliés sous « Plus d'options ».
-  function form(panel, f) {
-    var pid = panel.provider || panel.id;
-    var box = el("form", "ar-form"); box.noValidate = true;
-    box.appendChild(el("h3", "ar-h3", f.title));
-    var more = null;
-    f.fields.forEach(function (fd) {
-      var id = "f" + (++seq), dk = pid + ":" + f.id + ":" + fd.name;
-      var wrap = el("div", "ar-field");
-      var lab = el("label", "", fd.label); lab.setAttribute("for", id);
-      wrap.appendChild(lab);
-      var input;
-      if (fd.type === "select") {
-        input = el("select", "ar-in");
-        fd.options.forEach(function (o) { var op = el("option", "", o.label); op.value = o.value; if (o.value === fd.value) op.selected = true; input.appendChild(op); });
-      } else {
-        input = el("input", "ar-in");
-        input.type = fd.type === "number" ? "number" : "text";
-        if (fd.type === "number") input.inputMode = "numeric"; else input.maxLength = fd.max || 60;
-        input.autocomplete = "off"; input.autocapitalize = "off"; input.spellcheck = false;
-        if (fd.placeholder) input.placeholder = fd.placeholder;
-        if (fd.value) input.value = fd.value;
-      }
-      if (drafts[dk] !== undefined) input.value = drafts[dk];   // ce qui a été tapé reste, même si la page se redessine
-      input.addEventListener("input", function () { drafts[dk] = input.value; });
-      input.addEventListener("change", function () { drafts[dk] = input.value; });
-      input.id = id; input.name = fd.name; input.setAttribute("data-in", pid + ":" + fd.name);
-      wrap.appendChild(input);
-      var desc = [];
-      if (fd.example) { var ex = el("p", "ar-hint", fd.example); ex.id = id + "x"; wrap.appendChild(ex); desc.push(ex.id); }
-      var er = el("p", "ar-err"); er.hidden = true; er.setAttribute("role", "alert"); er.setAttribute("data-err", pid + ":" + fd.name); er.id = id + "e";
-      desc.push(er.id);
-      input.setAttribute("aria-describedby", desc.join(" "));
-      wrap.appendChild(er);
-      if (fd.more) {
-        if (!more) { more = el("details", "ar-more"); more.setAttribute("data-id", "more:" + pid + ":" + f.id); if (keep["more:" + pid + ":" + f.id]) more.open = true; more.appendChild(el("summary", "", C.t.more)); box.appendChild(more); }
-        more.appendChild(wrap);
-      } else box.appendChild(wrap);
-    });
-    var go = fk(el("button", "ar-btn primary", f.submit), "f:" + pid + ":" + f.id); go.type = "submit";
-    box.appendChild(go);
-    box.addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      if (f.confirm && !(armed && armed.btn === go)) {   // second clic pour confirmer, comme un bouton à confirmation
-        disarm(); armed = { btn: go, label: f.submit }; go.textContent = f.confirm + " — " + C.t.again; go.classList.add("armed"); armTimer = setTimeout(disarm, 5000);
-        return;
-      }
-      disarm();
-      var values = {}, ins = box.querySelectorAll("input,select");
-      for (var i = 0; i < ins.length; i++) { values[ins[i].name] = ins[i].value; ins[i].removeAttribute("aria-invalid"); }
-      var errs = box.querySelectorAll(".ar-err"); for (var e = 0; e < errs.length; e++) errs[e].hidden = true;
-      press(pid, f.id, values, go, null, function () { f.fields.forEach(function (fd) { delete drafts[pid + ":" + f.id + ":" + fd.name]; }); });
-    });
+  function press(pid, action, values, node, after) {
+    if (node && node.disabled) return;
+    if (node) { node.disabled = true; node.setAttribute("aria-busy", "true"); }
+    return api(C.press, { k: C.k, panel: pid, action: action, values: values || {} }).then(function (j) {
+      if (j && j.ok) { say(j.message || T.done, "ok"); if (after) after(); delay = 1500; refresh(); }
+      else if (j && j.status === 404) { net = "denied"; paintStrip(); }
+      else if (!j || j.error === "net" || j.status >= 500) { say(T.notSent, "err"); net = "offline"; retryAt = Date.now() + 3000; paintStrip(); }
+      else { say((j && j.message) || T["e_" + ((j && j.error) || "net")] || T.e_net, "err"); if (j && j.field) fieldError(pid, j.field, j.message); }
+    }, function () { say(T.notSent, "err"); }).then(function () { if (node && document.body.contains(node)) { node.disabled = false; node.removeAttribute("aria-busy"); } });
+  }
+  function fieldError(pid, field, message) {
+    ui.errors[pid + ":" + field] = message || ""; ui.sheet = ui.sheet && ui.sheet.moreFields && ui.sheet.moreFields.indexOf(field) >= 0 ? ui.sheet : null; renderStage();
+    var i = elStage.querySelector('[data-in="' + pid + ":" + field + '"]'); if (i) i.focus();
+  }
+  /* ───────── forms ───────── */
+  function draftKey(pid, f, fd) { return pid + ":" + f.id + ":" + fd.name; }
+  function valueOf(pid, f, fd) { var k = draftKey(pid, f, fd); return ui.drafts[k] !== undefined ? ui.drafts[k] : (fd.value || ""); }
+  function control(pid, f, fd) {
+    var id = "f" + (++seq), dk = draftKey(pid, f, fd), cur = valueOf(pid, f, fd), err = ui.errors[pid + ":" + fd.name];
+    var wrap = h("div", "fld");
+    if (fd.type === "select" && fd.seg) {
+      var lab0 = h("span", "seglab", fd.label); wrap.appendChild(lab0);
+      var seg = h("div", "seg"); seg.setAttribute("role", "radiogroup"); seg.setAttribute("aria-label", fd.label);
+      fd.options.forEach(function (o, i) {
+        var rid = id + "r" + i, r = h("input"); r.type = "radio"; r.name = id; r.id = rid; r.value = o.value; if (o.value === cur) r.checked = true;
+        r.addEventListener("change", function () { ui.drafts[dk] = o.value; });
+        var l = h("label", "", o.short || o.label); l.setAttribute("for", rid);
+        seg.appendChild(r); seg.appendChild(l);
+      });
+      wrap.appendChild(seg);
+      return wrap;
+    }
+    var lab = h("label", "", fd.label); lab.setAttribute("for", id); wrap.appendChild(lab);
+    var input;
+    if (fd.type === "select") {
+      input = h("select", "in");
+      fd.options.forEach(function (o) { var op = h("option", "", o.label); op.value = o.value; if (o.value === cur) op.selected = true; input.appendChild(op); });
+    } else {
+      input = h("input", "in"); input.type = "text"; input.autocomplete = "off"; input.spellcheck = false; input.setAttribute("autocapitalize", "off");
+      if (fd.type === "number") input.inputMode = "numeric"; else input.maxLength = fd.max || 60;
+      input.placeholder = fd.example || fd.label;
+      input.value = cur;
+    }
+    input.id = id; input.name = fd.name; input.setAttribute("data-in", pid + ":" + fd.name);
+    input.addEventListener("input", function () { ui.drafts[dk] = input.value; if (ui.errors[pid + ":" + fd.name]) { delete ui.errors[pid + ":" + fd.name]; input.removeAttribute("aria-invalid"); var e = wrap.querySelector(".err"); if (e) e.hidden = true; } });
+    input.addEventListener("change", function () { ui.drafts[dk] = input.value; });
+    wrap.appendChild(input);
+    var e = h("p", "err", err || ""); e.hidden = !err; e.setAttribute("role", "alert"); e.id = id + "e"; input.setAttribute("aria-describedby", e.id); if (err) input.setAttribute("aria-invalid", "true");
+    wrap.appendChild(e);
+    return wrap;
+  }
+  function submitValues(pid, f) {
+    var v = {};
+    f.fields.forEach(function (fd) { v[fd.name] = valueOf(pid, f, fd); });
+    return v;
+  }
+  function clearDrafts(pid, f) { f.fields.forEach(function (fd) { delete ui.drafts[draftKey(pid, f, fd)]; }); }
+  function formBody(t, f, moreHost) {
+    var box = h("div", "form"), more = f.fields.filter(function (x) { return x.more; });
+    f.fields.forEach(function (fd) { if (!fd.more) box.appendChild(control(t.pid, f, fd)); });
+    if (more.length) {
+      var mb = h("button", "btn chip more", moreHost ? "⋯" : T.more); mb.type = "button"; mb.setAttribute("data-fk", "more"); mb.title = T.more; mb.setAttribute("aria-label", T.more);
+      mb.addEventListener("click", function () { ui.sheet = { tab: t.id, moreFields: more.map(function (x) { return x.name; }) }; renderStage(); });
+      (moreHost || box).appendChild(mb);
+    }
     return box;
   }
-  // Les onglets (motif WAI-ARIA « tabs ») : un par panneau utilisable. Le choix est gardé en mémoire de la page seulement.
-  function showTab(id, focus) {
-    sel = id; disarm();
-    for (var i = 0; i < tabIds.length; i++) {
-      var on = tabIds[i] === id;
-      tabEls[i].setAttribute("aria-selected", on ? "true" : "false"); tabEls[i].setAttribute("tabindex", on ? "0" : "-1");
-      tabEls[i].className = tabEls[i].className.replace(/ on\b/, "") + (on ? " on" : "");
-      panEls[i].hidden = !on;
-      if (on && focus) tabEls[i].focus({ preventScroll: true });
-    }
+  function sheet(t, f) {
+    var box = h("div", "sheet"), top = h("p", "ttl", f.title);
+    var rows = h("div", "rows");
+    f.fields.forEach(function (fd) { if (fd.more) rows.appendChild(control(t.pid, f, fd)); });
+    var done = h("button", "btn primary", T.done2); done.type = "button"; done.setAttribute("data-fk", "sheet-done");
+    done.addEventListener("click", function () { ui.sheet = null; renderStage(); });
+    box.appendChild(top); box.appendChild(rows); box.appendChild(done);
+    return box;
   }
-  function tabKey(ev, i) {
-    var k = ev.key, n = tabIds.length, to = -1;
-    if (k === "ArrowRight" || k === "ArrowDown") to = (i + 1) % n; else if (k === "ArrowLeft" || k === "ArrowUp") to = (i + n - 1) % n; else if (k === "Home") to = 0; else if (k === "End") to = n - 1;
-    if (to < 0) return;
-    ev.preventDefault(); showTab(tabIds[to], true);
+  /* ───────── the stage: one view ───────── */
+  function runBtn(t, b, node) {
+    if (b.id === "compose") { ui.compose[t.id] = true; renderStage(); return; }
+    if (b.loss) { arm("b:" + b.id + (b.values && b.values.pid ? ":" + b.values.pid : ""), function () { press(t.pid, b.id, b.values, null); }, b.loss, t.id); return; }
+    press(t.pid, b.id, b.values, node);
   }
-  function draw() {
-    var keepOpen = {};
-    var opened = root.querySelectorAll("details[open]"); for (var o = 0; o < opened.length; o++) keepOpen[opened[o].getAttribute("data-id")] = true;
-    keep = keepOpen;
-    var typing = document.activeElement && root.contains(document.activeElement) && /^(INPUT|SELECT)$/.test(document.activeElement.tagName);
-    if (typing) return;   // jamais de redessin pendant que la personne écrit
-    var ae = document.activeElement, focusKey = ae && (root.contains(ae) || tabsBox.contains(ae)) ? ae.getAttribute("data-fk") : pendingFk;
-    var frag = document.createDocumentFragment();
-    if (!data.panels.length) {
-      var empty = el("section", "ar-card"); empty.appendChild(el("p", "ar-muted", C.t.nopanels)); frag.appendChild(empty);
+  function viewEl(t) {
+    var v = t.view, form = (v.stage === "idle" || ui.compose[t.id]) && v.form ? v.form : null;
+    var root = h(form ? "form" : "div", "view"); if (form) root.noValidate = true;
+    var hd = h("div", "hd"), ttl = h("p", "ttl", form && v.stage !== "idle" ? form.title : v.title); ttl.title = v.title; hd.appendChild(ttl);
+    if (v.sub && !(form && v.stage !== "idle")) hd.appendChild(h("p", "sub", v.sub));
+    if (v.note) hd.appendChild(h("p", "sub", v.note));
+    root.appendChild(hd);
+    var meter = h("div", "meter");
+    if (!form && v.stage === "live" && v.until) { var cl = h("span", "clock", clock(v.until)); cl.setAttribute("data-until", v.until); meter.appendChild(cl); }
+    if (!form && v.count !== null && v.stage !== "idle") { var ct = h("div", "cnt"); ct.appendChild(h("b", "", String(v.count))); ct.appendChild(h("span", "", v.unit)); meter.appendChild(ct); }
+    if (!form && v.stage === "live" && v.until && v.from) { var pr = h("div", "prog"); pr.setAttribute("aria-hidden", "true"); var pi = h("i"); pi.setAttribute("data-from", v.from); pi.setAttribute("data-until", v.until); pr.appendChild(pi); meter.appendChild(pr); }
+    root.appendChild(meter);
+    var bd = h("div", "bd" + (form ? " start" : ""));
+    if (form) {
+      var chips = null;
+      if (v.chips && v.chips.length) { chips = h("div", "chips"); v.chips.forEach(function (c) { chips.appendChild(btn(c, "chip", function (b, n) { runBtn(t, b, n); })); }); bd.appendChild(chips); }
+      bd.appendChild(formBody(t, form, chips));
+    } else {
+      if (v.word) { var w = h("p", "word", v.word); bd.appendChild(w); }
+      if (v.bars.length) {
+        var bars = h("div", "bars"); bars.setAttribute("data-n", String(v.bars.length)); bars.style.setProperty("--n", String(v.bars.length));
+        bars.setAttribute("role", "list");
+        v.bars.forEach(function (x) {
+          var r = h("div", "bar" + (x.lead ? " lead" : "")); r.style.setProperty("--p", x.pct + "%"); r.setAttribute("role", "listitem");
+          var tt = h("span", "bt", x.text); tt.title = x.text; r.appendChild(tt);
+          var vv = h("span", "bv", x.pct + "%"); vv.appendChild(h("small", "", String(x.n))); r.appendChild(vv);
+          if (x.lead) r.setAttribute("aria-label", x.text + ", " + T.leading + ", " + x.pct + "%, " + x.n);
+          bars.appendChild(r);
+        });
+        bd.appendChild(bars);
+      }
+      if (v.names.length) {
+        var ws = h("div", "winners"); ws.setAttribute("data-n", String(v.names.length));
+        v.names.forEach(function (x) {
+          var b = h("button", "win"); b.type = "button"; b.title = x.text + (x.label ? " — " + x.label : ""); b.setAttribute("data-fk", "w:" + (x.values && x.values.pid || x.text));
+          b.setAttribute("aria-label", x.text + (x.label ? ", " + x.label : ""));
+          b.appendChild(h("span", "wn", x.text));
+          if (x.action) { b.appendChild(h("span", "nh", x.label)); var g = h("span", "gl", "↻"); g.setAttribute("aria-hidden", "true"); b.appendChild(g); b.addEventListener("click", function () { runBtn(t, { id: x.action, label: x.label, values: x.values, loss: x.loss || x.label }, b); }); }
+          ws.appendChild(b);
+        });
+        bd.appendChild(ws);
+      }
     }
-    // un onglet par panneau, puis les salles
-    var tabs = data.panels.map(function (p) { return { id: "p:" + (p.provider || p.id), label: p.tab || p.title, live: !!(p.state && p.state.tone === "live"), panel: p }; });
-    tabs.push({ id: "rooms", label: C.t.tabRooms, live: false, rooms: true });
-    var ids = tabs.map(function (t) { return t.id; });
-    if (sel === null || ids.indexOf(sel) < 0) {   // par défaut : l'onglet en cours d'action (un tirage ouvert, un vote en cours), sinon le premier
-      var act = tabs.filter(function (t) { return t.live; })[0];
-      sel = (act || tabs[0]).id;
-    }
-    var multi = tabs.length > 1, newBar = null;
-    tabEls = []; panEls = []; tabIds = ids;
-    if (multi) {
-      var bar = el("div", "ar-tabs"); bar.setAttribute("role", "tablist"); bar.setAttribute("aria-label", C.t.tabs);
-      tabs.forEach(function (t, i) {
-        var on = t.id === sel;
-        var b = fk(el("button", "ar-tab" + (on ? " on" : ""), t.label), "t:" + t.id); b.type = "button";
-        if (t.live) b.appendChild(el("span", "ar-sr", " (" + C.t.tabLive + ")"));
-        b.id = "ar-tab" + i; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false"); b.setAttribute("aria-controls", "ar-pan" + i); b.setAttribute("tabindex", on ? "0" : "-1");
-        if (t.live) b.classList.add("live");
-        b.addEventListener("click", function () { showTab(t.id, false); });
-        b.addEventListener("keydown", function (ev) { tabKey(ev, i); });
-        tabEls.push(b); bar.appendChild(b);
+    root.appendChild(bd);
+    var acts = h("div", "acts");
+    if (form) {
+      var go = h("button", "btn primary"); go.type = "submit"; go.setAttribute("data-fk", "f:" + form.id);
+      go.appendChild(h("span", "lb l", form.submit)); go.appendChild(h("span", "lb s", form.submit));
+      acts.appendChild(go);
+      if (ui.compose[t.id]) { var cb = h("button", "btn", T.back); cb.type = "button"; cb.addEventListener("click", function () { delete ui.compose[t.id]; renderStage(); }); acts.appendChild(cb); }
+      root.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        if (go.disabled) return;
+        ui.errors = {};
+        press(t.pid, form.id, submitValues(t.pid, form), go, function () { clearDrafts(t.pid, form); delete ui.compose[t.id]; });
       });
-      newBar = bar;
-    }
-    function panelEl(t, i, body) {
-      var card = el("section", "ar-card");
-      if (multi) { card.id = "ar-pan" + i; card.setAttribute("role", "tabpanel"); card.setAttribute("aria-labelledby", "ar-tab" + i); card.hidden = t.id !== sel; panEls.push(card); }
-      else card.appendChild(el("h2", "ar-h2", t.rooms ? C.t.rooms : t.panel.title));
-      body(card);
-      frag.appendChild(card);
-    }
-    tabs.forEach(function (t, i) {
-      if (t.rooms) return;
-      var p = t.panel;
-      panelEl(t, i, function (card) {
-        if (p.state) {
-          var st = el("p", "ar-state " + (p.state.tone || "idle"));
-          st.appendChild(document.createTextNode(p.state.text));
-          if (p.state.until) { var cd = el("strong", "ar-clock", clock(p.state.until)); cd.setAttribute("data-until", p.state.until); st.appendChild(document.createTextNode(" ")); st.appendChild(cd); }
-          card.appendChild(st);
+    } else {
+      if (v.primary) acts.appendChild(btn(v.primary, "primary", function (b, n) { runBtn(t, b, n); }));
+      var list = (v.actions || []).slice(); if (v.danger) list.push(v.danger);
+      if (list.length || (ui.armed && ui.armed.tab === t.id)) {
+        var armedHere = ui.armed && ui.armed.tab === t.id;
+        var row = h("div", "row"); row.setAttribute("data-n", String(list.length));
+        if (armedHere) {
+          var ok = h("button", "btn danger go arm"); ok.type = "button"; ok.setAttribute("data-fk", "confirm");
+          var col = h("span", "col"); col.appendChild(h("span", "", T.confirm)); var ls = h("span", "loss", ui.armed.loss); col.appendChild(ls); ok.appendChild(col);
+          ok.addEventListener("click", function () { var run = ui.armed.run; clearTimeout(armTimer); ui.armed = null; run(); renderStage(); });
+          var un = h("button", "btn undo", T.undo); un.type = "button"; un.setAttribute("data-fk", "undo"); un.addEventListener("click", disarm);
+          row.appendChild(ok); row.appendChild(un);
+        } else {
+          list.forEach(function (b) { row.appendChild(btn(b, v.danger && b === v.danger ? "danger" : "", function (bb, n) { runBtn(t, bb, n); })); });
         }
-        if (p.buttons.length) { var row = el("div", "ar-row"); p.buttons.forEach(function (b) { row.appendChild(button(p, b)); }); card.appendChild(row); }
-        p.forms.forEach(function (f) { card.appendChild(form(p, f)); });
-      });
-    });
-    var ri = tabs.length - 1;
-    panelEl(tabs[ri], ri, function (mod) {
-      if (!data.rooms.length) mod.appendChild(el("p", "ar-muted", C.t.noRooms));
-      data.rooms.forEach(function (r) {
-        var d = el("details", "ar-room"); d.setAttribute("data-id", r.key); if (keepOpen[r.key]) d.open = true;
-        var sum = fk(el("summary", "", r.label + " · " + r.count + " " + (r.count === 1 ? C.t.person : C.t.people)), "r:" + r.key);
-        d.appendChild(sum);
-        if (!r.recent.length) d.appendChild(el("p", "ar-muted", C.t.noOne));
-        r.recent.forEach(function (m) {
-          var line = el("div", "ar-person");
-          line.appendChild(el("span", "ar-name" + (m.muted ? " muted" : ""), (m.pseudo || C.t.anon) + (m.muted ? " · " + C.t.mutedTag : "")));
-          var b = fk(el("button", "ar-mini", m.muted ? C.t.unmute : C.t.mute), "m:" + r.key + ":" + m.id); b.type = "button";
-          b.addEventListener("click", function () { press("audience", "mute", { room: r.key, id: m.id, muted: m.muted ? "0" : "1" }, b); });
-          line.appendChild(b);
-          d.appendChild(line);
-        });
-        var clear = fk(el("button", "ar-btn danger", C.t.clear), "c:" + r.key); clear.type = "button";
-        clear.addEventListener("click", function () {
-          if (!(armed && armed.btn === clear)) { disarm(); armed = { btn: clear, label: C.t.clear }; clear.textContent = C.t.clearConfirm + " — " + C.t.again; clear.classList.add("armed"); armTimer = setTimeout(disarm, 5000); return; }
-          disarm(); press("audience", "clear", { room: r.key }, clear);
-        });
-        d.appendChild(clear);
-        mod.appendChild(d);
-      });
-    });
-    if (newBar) tabsBox.replaceChildren(newBar); else tabsBox.replaceChildren();
-    root.replaceChildren(frag);
-    armed = null;
-    focusFk(focusKey);
+        acts.appendChild(row);
+      }
+    }
+    root.appendChild(acts);
+    return root;
   }
-  function tickClock() {
-    if (!document.hidden) { var cs = root.querySelectorAll("[data-until]"); for (var i = 0; i < cs.length; i++) cs[i].textContent = clock(cs[i].getAttribute("data-until")); }
-    setTimeout(tickClock, 1000);
+  /* A panel without a live view (a module that only gives buttons and forms): plain, but usable. */
+  function genericEl(t) {
+    var p = t.panel, root = h("div", "view"); root.appendChild(h("p", "ttl", p.title));
+    if (p.state) root.appendChild(h("p", "sub", p.state.text));
+    var bd = h("div", "bd"); root.appendChild(bd);
+    var acts = h("div", "acts");
+    (p.buttons || []).forEach(function (b) {
+      var d = { id: b.id, label: b.label, short: b.label, disabled: b.disabled, loss: b.confirm };
+      acts.appendChild(btn(d, b.tone === "primary" ? "primary" : b.tone === "danger" ? "danger" : "", function (bb, n) { if (b.confirm) arm("g:" + b.id, function () { press(t.pid, b.id, {}, null); }, b.confirm, t.id); else press(t.pid, b.id, {}, n); }));
+    });
+    (p.forms || []).forEach(function (f) { var fm = formBody(t, f); var go = h("button", "btn primary", f.submit); go.type = "button"; go.addEventListener("click", function () { ui.errors = {}; press(t.pid, f.id, submitValues(t.pid, f), go, function () { clearDrafts(t.pid, f); }); }); bd.appendChild(fm); acts.appendChild(go); });
+    root.appendChild(acts);
+    return root;
   }
+  /* ───────── the chat tab: rooms and people, mute, clear ───────── */
+  function chatEl() {
+    var rooms = data.rooms || [], root = h("div", "chat");
+    if (!rooms.length) { root.appendChild(h("p", "empty", T.noRooms)); return root; }
+    if (!ui.room || !rooms.some(function (r) { return r.key === ui.room; })) ui.room = rooms[0].key;
+    var room = rooms.filter(function (r) { return r.key === ui.room; })[0];
+    var head = h("div", "hd");
+    if (rooms.length > 1) {
+      var sl = h("select", "in"); sl.setAttribute("aria-label", T.rooms); sl.setAttribute("data-fk", "room");
+      rooms.forEach(function (r) { var o = h("option", "", r.label + " · " + r.count); o.value = r.key; if (r.key === ui.room) o.selected = true; sl.appendChild(o); });
+      sl.addEventListener("change", function () { ui.room = sl.value; ui.page = {}; renderStage(); });
+      head.appendChild(sl);
+    } else head.appendChild(h("p", "ttl", room.label + " · " + room.count + " " + (room.count === 1 ? T.person : T.people)));
+    root.appendChild(head);
+    var per = ui.per || 3, list = room.recent || [], pages = Math.max(1, Math.ceil(list.length / per)), pg = Math.min(ui.page[room.key] || 0, pages - 1);
+    var ppl = h("div", "people");
+    if (!list.length) ppl.appendChild(h("p", "empty", T.noOne));
+    list.slice(pg * per, pg * per + per).forEach(function (m) {
+      var line = h("div", "pp"), nm = h("span", "pn" + (m.muted ? " m" : ""), m.pseudo || T.anon); nm.title = m.pseudo || T.anon;
+      if (m.muted) nm.appendChild(h("span", "tag", T.mutedTag));
+      line.appendChild(nm);
+      var b = btn({ id: "mute", label: m.muted ? T.unmute : T.mute, short: m.muted ? T.unmute : T.mute, values: { room: room.key, id: m.id, muted: m.muted ? "0" : "1" } }, "", function (bb, n) { press("audience", "mute", bb.values, n); });
+      b.setAttribute("data-fk", "m:" + m.id); line.appendChild(b); ppl.appendChild(line);
+    });
+    root.appendChild(ppl);
+    var foot = h("div", "foot");
+    if (pages > 1) {
+      var pgr = h("div", "pager"), pv = h("button", "btn", "‹"), nx = h("button", "btn", "›");
+      pv.type = nx.type = "button"; pv.setAttribute("aria-label", T.prev); nx.setAttribute("aria-label", T.next); pv.disabled = pg === 0; nx.disabled = pg >= pages - 1;
+      pv.addEventListener("click", function () { ui.page[room.key] = pg - 1; renderStage(); }); nx.addEventListener("click", function () { ui.page[room.key] = pg + 1; renderStage(); });
+      pgr.appendChild(pv); pgr.appendChild(h("span", "", fmt(T.pageOf, { a: pg + 1, b: pages }))); pgr.appendChild(nx); foot.appendChild(pgr);
+    }
+    var armedClear = ui.armed && ui.armed.key === "clear:" + room.key;
+    if (armedClear) {
+      var rw = h("div", "row"), ok = h("button", "btn danger go arm"); ok.type = "button"; ok.setAttribute("data-fk", "confirm");
+      var col = h("span", "col"); col.appendChild(h("span", "", T.confirm)); col.appendChild(h("span", "loss", T.clearLoss)); ok.appendChild(col);
+      ok.addEventListener("click", function () { var run = ui.armed.run; clearTimeout(armTimer); ui.armed = null; run(); renderStage(); });
+      var un = h("button", "btn undo", T.undo); un.type = "button"; un.addEventListener("click", disarm); rw.appendChild(ok); rw.appendChild(un); foot.appendChild(rw);
+    } else {
+      var cl = btn({ id: "clear", label: T.clear, short: T.clear, key: "X", loss: T.clearLoss }, "danger", function () { arm("clear:" + room.key, function () { press("audience", "clear", { room: room.key }, null); }, T.clearLoss, "chat"); });
+      foot.appendChild(cl);
+    }
+    root.appendChild(foot);
+    return root;
+  }
+  function renderStage() {
+    if (!data) return;
+    if (typing) { dirty = true; return; }
+    var t = tabs.filter(function (x) { return x.id === sel; })[0] || tabs[0]; if (!t) return;
+    var ae = document.activeElement, fk = ae && elStage.contains(ae) ? ae.getAttribute("data-fk") : null;
+    var node = t.chat ? chatEl() : t.view ? viewEl(t) : genericEl(t);
+    var kids = [node];
+    if (ui.sheet && ui.sheet.tab === t.id && t.view && t.view.form) kids.push(sheet(t, t.view.form));
+    elStage.replaceChildren.apply(elStage, kids);
+    elStage.setAttribute("aria-busy", "false");
+    if (t.chat) {   // how many people fit: measured once the list is in the page (rows are 52 px), then drawn again if the guess was wrong
+      var pp = elStage.querySelector(".people"), fit = pp ? Math.max(1, Math.floor(pp.clientHeight / 52)) : 0;
+      if (pp && fit !== ui.per && !ui.measuring) { ui.per = fit; ui.measuring = true; renderStage(); ui.measuring = false; return; }
+    }
+    if (fk) { var n = elStage.querySelector('[data-fk="' + fk + '"]'); if (n && !n.disabled) n.focus({ preventScroll: true }); }
+    else if (ui.armed) { var c = elStage.querySelector('[data-fk="confirm"]'); if (c) c.focus({ preventScroll: true }); }
+    tickClocks();
+  }
+  function renderPanic() {
+    var old = elTop.querySelector(".armbar"); if (old) elTop.removeChild(old);
+    if (!(ui.armed && ui.armed.key === "panic")) { elPanic.hidden = false; return; }
+    var bar = h("div", "armbar"), ok = h("button", "btn danger go arm"); ok.type = "button"; ok.setAttribute("data-fk", "confirm");
+    var col = h("span", "col"); col.appendChild(h("span", "", T.confirm + " · " + T.panic)); col.appendChild(h("span", "loss", T.panicLoss)); ok.appendChild(col);
+    ok.addEventListener("click", function () { var run = ui.armed.run; clearTimeout(armTimer); ui.armed = null; run(); renderPanic(); renderStage(); });
+    var un = h("button", "btn undo", T.undo); un.type = "button"; un.addEventListener("click", disarm);
+    bar.appendChild(ok); bar.appendChild(un); elTop.appendChild(bar); ok.focus({ preventScroll: true });
+  }
+  elPanic.addEventListener("click", function () { arm("panic", function () { press("audience", "panic", {}, null); }, T.panicLoss, ""); });
+  /* ───────── clocks ───────── */
+  function tickClocks() {
+    var cs = elStage.querySelectorAll("[data-until]"), now = Date.now() + skew, expired = false;
+    for (var i = 0; i < cs.length; i++) {
+      var u = cs[i].getAttribute("data-until"), f = cs[i].getAttribute("data-from");
+      if (f) { var span = Date.parse(u) - Date.parse(f), done = span > 0 ? Math.min(1, Math.max(0, (now - Date.parse(f)) / span)) : 1; cs[i].style.width = Math.round((1 - done) * 100) + "%"; }
+      else { cs[i].textContent = clock(u); var left = Date.parse(u) - now; if (left < 10000) cs[i].classList.add("end"); if (left <= 0) expired = true; }
+    }
+    return expired;
+  }
+  function loopClock() {
+    if (!hidden) {
+      var expired = tickClocks(); tickBadges();
+      if (net === "offline") paintStrip();
+      if (expired && !inflight) { delay = 800; refresh(); }
+    }
+    setTimeout(loopClock, 1000);
+  }
+  /* ───────── keyboard (desktop docks): one letter per action, shown as a hint on the button ───────── */
+  function currentView() { var t = tabs.filter(function (x) { return x.id === sel; })[0]; return t && t.view ? t : null; }
+  document.addEventListener("keydown", function (ev) {
+    var tg = ev.target, tag = tg && tg.tagName;
+    if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    if (ev.key === "Escape") { if (ui.armed) { ev.preventDefault(); disarm(); } else if (ui.sheet) { ui.sheet = null; renderStage(); } return; }
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+    var k = String(ev.key || "").toUpperCase();
+    if (ui.armed && (k === "ENTER" || k === "Y")) { var c = document.querySelector('[data-fk="confirm"]'); if (c && tg !== c) { ev.preventDefault(); c.click(); } return; }
+    if (/^[1-9]$/.test(k) && Number(k) <= tabs.length) { ev.preventDefault(); pick(tabs[Number(k) - 1].id); return; }
+    if (k === "S") { ev.preventDefault(); elPanic.click(); return; }
+    var t = currentView(); if (!t || ui.sheet) return;
+    var v = t.view, all = (v.stage === "idle" || ui.compose[t.id]) ? (v.chips || []) : [v.primary].concat(v.actions || [], [v.danger]);
+    var hit = null;
+    all.forEach(function (b) { if (b && !b.disabled && ((b.key && b.key === k) || (k === " " && b === v.primary))) hit = b; });
+    if (hit) { if (tag === "BUTTON" && k === " ") return; ev.preventDefault(); runBtn(t, hit, null); }
+  });
+  document.addEventListener("focusin", function (ev) { var tg = ev.target; typing = !!(tg && /^(INPUT|SELECT)$/.test(tg.tagName) && elStage.contains(tg) && tg.type !== "radio"); });
+  document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; typing = !!(a && /^(INPUT|SELECT)$/.test(a.tagName) && elStage.contains(a) && a.type !== "radio"); if (!typing && dirty) { dirty = false; renderStage(); } }, 0); });
+  window.addEventListener("resize", function () { if (sel === "chat") renderStage(); });
+  /* ───────── polling: planned AFTER each answer; slower when nothing changes; paused when hidden ───────── */
+  function anyLive() { return tabs.some(function (t) { return t.view && t.view.stage === "live"; }); }
   function refresh() {
     clearTimeout(timer);
-    if (inflight) return;
+    if (inflight) { again = true; return; }   // an answer is on its way but may be older than what was just done: ask again as soon as it lands
     inflight = true;
     api(C.state + "&lang=" + encodeURIComponent(C.lang)).then(function (j) {
       if (j && j.ok) {
-        skew = j.now - Date.now();
-        var sig = JSON.stringify(j.panels) + JSON.stringify(j.rooms);
-        if (!data || data.sig !== sig) { data = { panels: j.panels, rooms: j.rooms, sig: sig }; delay = 4000; draw(); } else delay = Math.min(15000, Math.round(delay * 1.4));
-        live.textContent = C.t.connected; live.className = "ar-dot ok";
-      } else if (j && j.status === 404) { live.textContent = C.t.denied; live.className = "ar-dot bad"; delay = 60000; }
+        skew = j.now - Date.now(); net = "online";
+        var sig = JSON.stringify([j.panels, j.rooms]);
+        if (!data || data.sig !== sig) {
+          data = { panels: j.panels, rooms: j.rooms, sig: sig }; tabs = buildTabs();
+          if (sel === null) sel = keep("ar-tab") || null;
+          if (!tabs.some(function (t) { return t.id === sel; })) { var live = tabs.filter(function (t) { return t.view && t.view.stage === "live"; })[0]; sel = (live || tabs[0]).id; }
+          tabs.forEach(function (t) { if (t.view) { var was = lastStage[t.id]; if (was && was !== t.view.stage) announce(t.label + ": " + (t.view.stage === "live" ? T.live : t.view.stage === "done" ? T.finished : "")); lastStage[t.id] = t.view.stage; } });
+          paintTabs(); renderStage();
+        }
+        delay = anyLive() ? 2000 : 4000;
+        paintStrip();
+      } else if (j && j.status === 404) { net = "denied"; delay = 60000; paintStrip(); }
+      else if (j && j.status === 429) { net = "online"; delay = 10000; }
       else throw new Error("state");
-    }).catch(function () { live.textContent = C.t.offline; live.className = "ar-dot bad"; delay = Math.min(30000, delay * 2); })
-      .then(function () { inflight = false; schedule(); });
+    }).catch(function () { net = "offline"; delay = Math.min(30000, Math.max(3000, delay * 2)); retryAt = Date.now() + delay; paintStrip(); })
+      .then(function () { inflight = false; if (again) { again = false; refresh(); } else schedule(); });
   }
-  function schedule() { clearTimeout(timer); timer = setTimeout(function () { if (document.hidden) { schedule(); return; } refresh(); }, document.hidden ? 15000 : delay); }
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) { delay = 4000; refresh(); } });
-  tickClock();
-  refresh();
+  function schedule() { clearTimeout(timer); timer = setTimeout(function () { if (hidden) { schedule(); return; } refresh(); }, hidden ? 15000 : delay); }
+  document.addEventListener("visibilitychange", function () { hidden = document.hidden; if (!hidden) { delay = 1500; refresh(); } });
+  hidden = !!document.hidden;
+  paintStrip(); loopClock(); refresh();
 })();
 `;
