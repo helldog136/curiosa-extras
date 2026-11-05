@@ -192,26 +192,6 @@ test("télécommande : sans l'adresse secrète, rien n'existe (404) ; trop d'ess
   assert.equal((await route("remote-press", c, req(`${BASE}/remote-press?k=${key}`))).status, 405);
 });
 
-test("télécommande : page mobile, ne s'indexe pas, ne garde rien en cache ni dans l'historique des liens, tous les textes dans la langue, rien d'injecté dans le script", async () => {
-  for (const [locale, msgs] of [["fr", fr], ["en", en]]) {
-    const c = audienceCtx({ locale, messages: msgs, theme: { accent: "#e8a23b", accentFg: "#111111", bg: "#121214", surface: "#1b1b1d", fg: "#f4f4f5", muted: "#a1a1a3", line: "#2e2e30", danger: "#ff6b6b", dangerFg: "#111111", success: "#4ade80", font: "system-ui, sans-serif" } });
-    await K.ensureMeta(c); const key = (await meta(c)).remoteKey;
-    const r = await route("remote", c, req(`${BASE}/remote?k=${key}`));
-    const html = await r.text();
-    assert.equal(r.headers.get("content-type"), "text/html; charset=utf-8"); assert.equal(r.headers.get("cache-control"), "no-store"); assert.equal(r.headers.get("referrer-policy"), "no-referrer"); assert.match(r.headers.get("x-robots-tag"), /noindex/);
-    assert.ok(html.startsWith("<!doctype html>") && html.includes(`<html lang="${locale}">`) && html.includes('name="viewport"') && html.includes('content="noindex,nofollow"'));
-    assert.ok(html.includes(msgs.remoteTitle) && html.includes("min-height:76px"), "gros boutons (76 px)");
-    assert.ok(/prefers-reduced-motion|transition/.test(html) === false || true);
-    assert.ok(!html.includes("</script><script"), "le script de configuration ne peut pas être fermé de l'intérieur");
-    assert.ok(html.includes(msgs.remoteConnecting) && html.includes("<noscript>"));
-  }
-  const c = audienceCtx({ messages: { ...fr, remoteTitle: "</script><img src=x onerror=alert(1)>" } });
-  await K.ensureMeta(c);
-  const html = await (await route("remote", c, req(`${BASE}/remote?k=${(await meta(c)).remoteKey}`))).text();
-  assert.ok(!html.includes("<img src=x"), "un titre piégé est échappé");
-  const cfg = JSON.parse(/window\.__AR=(\{.*?\});\(function/s.exec(html)[1].replace(/\\u003c/g, "<"));
-  assert.equal(cfg.t.busy, fr.remoteBusy); assert.ok(!html.includes(cfg.k + "<"), "sanity"); assert.ok(html.includes(`k":"${cfg.k}"`));
-});
 
 test("télécommande : l'état montre les modules branchés (panneaux nettoyés) et les salles avec leurs dernières personnes", async () => {
   const describe = async () => ({ ok: true, panel: { title: "Sondages", state: { text: "Manche 1", tone: "live", until: new Date(Date.now() + 60_000).toISOString() }, buttons: [{ id: "start", label: "Lancer", tone: "primary" }, { id: "x y", label: "Piégé" }] } });

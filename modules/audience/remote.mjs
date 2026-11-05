@@ -132,109 +132,255 @@ export function tickProviders(ctx, room, channel, now = Date.now()) {
   return p;
 }
 
-/* ───────────── La page de la télécommande ───────────── */
-// Une seule page, deux présentations : le téléphone (grands boutons, claire ou sombre selon le thème du site) et le DOCK pour OBS (étroit, 300 px, sombre, boutons de 40 px, souris et clavier).
-// C'est la MÊME adresse secrète : `…/remote?k=<clé>` pour le téléphone, `…/remote?k=<clé>&dock=1` pour le dock. Même script, mêmes routes `remote-state` et `remote-press`, mêmes droits : seule la mise en page change.
+/* ───────────── The remote page: one control dock for every screen ───────────── */
+// ONE page for the phone and for the OBS dock (the same secret address; `&dock=1` only adds the keyboard hints and the dark look OBS expects).
+//   - a full-height grid (100dvh) that never scrolls: tab bar at the top (always visible, with live badges and the "stop everything" button), one stage, one status line;
+//   - the stage is a size container: type, spacing and layout follow ITS size (container queries, clamp()), so the same page fits 300x420, a phone and a wide dock;
+//   - the look is the administration's: variables --cur-* given by `ctx.api.adminTheme()` (a fallback with the same names is declared first, for an older core);
+//   - the data is a "live view" given by each module (see `sanitizeView`): the page knows stages (idle, live, done) and buttons, not polls or draws.
 
-const color = (v, d) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : d);
-const fontOf = (v) => (typeof v === "string" && /^[\w\s,"'.-]{1,120}$/.test(v) ? v : "system-ui,sans-serif");
+export const wantsScheme = (url) => { const v = new URL(url).searchParams.get("scheme"); return v === "light" || v === "dark" ? v : null; };
 
-/** Le dock est demandé par `&dock=1` (rien d'autre : un paramètre inconnu donne la télécommande du téléphone). */
+/** The dock is requested by `&dock=1` (nothing else: an unknown value gives the phone page). */
 export const wantsDock = (url) => new URL(url).searchParams.get("dock") === "1";
 
-const BASE_CSS = `*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.45 var(--font);padding-bottom:env(safe-area-inset-bottom)}
-.ar-head{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:1px solid var(--line)}
-.ar-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px}
-.ar-top h1{margin:0;font-size:1.15rem}.ar-dot{font-size:.9rem;color:var(--muted)}.ar-dot::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);margin-right:8px}.ar-dot.ok::before{background:var(--ok)}.ar-dot.bad::before{background:var(--danger)}
-.ar-main{max-width:640px;margin:0 auto;padding:16px;display:grid;gap:16px}
-.ar-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:16px;display:grid;gap:12px}
-.ar-h2{margin:0;font-size:1.25rem}.ar-h3{margin:4px 0 0;font-size:1.05rem}.ar-muted{margin:0;color:var(--muted)}
-.ar-state{margin:0;font-weight:600}.ar-state.live{color:var(--ok)}.ar-clock{font-variant-numeric:tabular-nums;font-size:1.6rem;margin-left:6px;color:var(--fg)}
-.ar-row{display:grid;gap:10px;grid-template-columns:1fr}@media (min-width:520px){.ar-row{grid-template-columns:1fr 1fr}}
-.ar-btn{min-height:76px;width:100%;border-radius:var(--r-btn);border:2px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:1.2rem;font-weight:700;padding:12px 16px;cursor:pointer;touch-action:manipulation}
-.ar-btn.primary{background:var(--accent);color:var(--accent-fg);border-color:transparent}.ar-btn.danger{background:var(--danger);color:var(--danger-fg);border-color:transparent}
-.ar-btn.armed{outline:4px solid var(--fg);outline-offset:2px}.ar-btn:disabled{opacity:.5;cursor:not-allowed}.ar-btn[aria-busy=true]{cursor:wait}
-.ar-btn:focus-visible,.ar-mini:focus-visible,.ar-in:focus-visible,.ar-tab:focus-visible,summary:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
-.ar-form{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:12px}.ar-field{display:grid;gap:4px}.ar-field label{font-weight:600}
-.ar-in{min-height:52px;width:100%;border-radius:var(--r-ctl);border:2px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;padding:8px 12px}.ar-in[aria-invalid=true]{border-color:var(--danger)}
-.ar-err{margin:0;color:var(--danger);font-weight:600}.ar-hint{margin:0;color:var(--muted);font-size:.9em}
-.ar-more{border-top:1px solid var(--line);padding-top:4px;display:grid;gap:8px}.ar-more summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-weight:600}.ar-more summary::after{content:"▾"}.ar-more[open] summary::after{content:"▴"}
-.ar-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.ar-tabs{display:flex;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:0 8px}
-.ar-tab{flex:0 0 auto;min-height:48px;padding:6px 12px;border:0;border-bottom:4px solid transparent;border-radius:0;background:transparent;color:var(--muted);font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
-.ar-tab:focus-visible{outline-offset:-4px}
-.ar-tab.on{color:var(--fg);font-weight:800;border-bottom-color:var(--accent)}.ar-tab.live::before{content:"●";margin-right:6px;color:var(--ok)}
-.ar-room summary{min-height:48px;display:flex;align-items:center;cursor:pointer;font-weight:600}.ar-room{border-top:1px solid var(--line);padding-top:6px}
-.ar-person{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:52px;border-bottom:1px solid var(--line)}.ar-name{overflow-wrap:anywhere}.ar-name.muted{color:var(--muted);text-decoration:line-through}
-.ar-mini{min-height:44px;min-width:96px;border-radius:var(--r-ctl);border:2px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
-.ar-toast{position:sticky;bottom:12px;margin:0 16px;padding:14px 16px;border-radius:var(--r-ctl);background:var(--fg);color:var(--bg);font-weight:700;text-align:center}.ar-toast.bad{background:var(--danger);color:var(--danger-fg)}
-.ar-foot{text-align:center;color:var(--muted);font-size:.9rem;padding:0 16px 24px}[hidden]{display:none!important}
-/* Une seule page pour toutes les largeurs : lecture bornée et centrée, deux colonnes quand c'est plus lisible, zones sûres, paysage, mouvement réduit. */
-body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}.ar-main{width:100%}.ar-in{scroll-margin:140px 0}
-@media (min-width:640px){.ar-main{max-width:720px}.ar-top,.ar-tabs{max-width:720px;margin:0 auto}
-.ar-form{grid-template-columns:1fr 1fr;column-gap:12px;align-items:start}.ar-form>.ar-h3,.ar-form>.ar-more,.ar-form>.ar-btn{grid-column:1/-1}
-.ar-more{grid-template-columns:1fr 1fr;column-gap:12px}.ar-more>summary{grid-column:1/-1}}
-@media (max-height:520px){.ar-top{padding-top:6px;padding-bottom:6px}.ar-toast{position:static}.ar-btn{min-height:56px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}`;
+// Fallback for a core without `adminTheme` (before 0.6.6): the same variable names, the administration's dark palette. The theme CSS, when there is one, comes after and wins.
+const FALLBACK_TOKENS = ":root{--cur-bg:#15141a;--cur-fg:#ecebf2;--cur-muted:#9d9bad;--cur-surface:#1e1d26;--cur-line:#2d2b38;--cur-accent:#9b8cff;--cur-accent-fg:#15141a;--cur-ok:#6ee7b7;--cur-ok-fg:#052e1c;--cur-warn:#fcd34d;--cur-warn-fg:#2a2000;--cur-danger:#fca5a5;--cur-danger-fg:#3a0a0a;--cur-focus:#9b8cff;--cur-radius:.5rem;--cur-radius-lg:1rem;--cur-shadow:0 1px 2px #0000000d;--cur-space:.25rem;--cur-font:ui-sans-serif,system-ui,sans-serif;color-scheme:dark}";
 
-// Le dock : un panneau OBS de 300 px de large (la hauteur est libre : la page défile), toujours sombre, texte de 14 px, boutons de 40 px au moins, bien visible au clavier, survol à la souris.
-const DOCK_CSS = `.ar-dock{font-size:14px;line-height:1.4;padding-bottom:0;overflow-wrap:anywhere}
-@media (pointer:coarse){.ar-dock .ar-in{font-size:16px}}
-.ar-dock .ar-top{padding:8px 10px;gap:8px}.ar-dock .ar-top h1{font-size:1rem}.ar-dock .ar-dot{font-size:.8rem;white-space:nowrap}.ar-dock .ar-dot::before{width:8px;height:8px;margin-right:6px}
-.ar-dock .ar-main{max-width:560px;padding:10px;gap:10px}
-.ar-dock .ar-card{padding:10px;gap:8px;min-width:0}
-.ar-dock .ar-h2{font-size:1rem}.ar-dock .ar-h3{font-size:.95rem}.ar-dock .ar-state{font-size:.95rem}.ar-dock .ar-clock{font-size:1.1rem;margin-left:4px}
-.ar-dock .ar-row{gap:6px}
-.ar-dock .ar-btn{min-height:40px;border-width:1px;font-size:.95rem;font-weight:600;padding:6px 10px;touch-action:auto}
-.ar-dock .ar-btn:hover:not(:disabled),.ar-dock .ar-mini:hover{filter:brightness(1.2)}
-.ar-dock .ar-btn.armed{outline-width:3px}
-.ar-dock .ar-form{gap:8px;padding-top:8px}.ar-dock .ar-field label{font-size:.9rem}
-.ar-dock .ar-in{min-height:40px;border-width:1px;padding:6px 10px;font-size:.95rem}
-.ar-dock .ar-room summary,.ar-dock .ar-more summary{min-height:40px}
-.ar-dock .ar-tabs{padding:0 4px}.ar-dock .ar-tab{min-height:40px;border-bottom-width:3px;padding:4px 10px;font-size:.95rem}
-.ar-dock .ar-person{min-height:44px;gap:8px}.ar-dock .ar-name{min-width:0}
-.ar-dock .ar-room>.ar-btn{margin-top:8px}
-.ar-dock .ar-mini{min-height:40px;min-width:76px;border-width:1px;padding:0 8px}
-.ar-dock .ar-toast{bottom:8px;margin:0 10px;padding:8px 10px;}
-.ar-dock .ar-foot{font-size:.8rem;padding:0 10px 12px}
+const DOCK_CSS = String.raw`
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--cur-bg);color:var(--cur-fg);font:15px/1.35 var(--cur-font);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.sr{position:absolute;top:0;left:0;margin:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--cur-focus);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;height:100dvh;max-height:100dvh;overflow:hidden}
+
+/* Top bar: tabs + stop everything. Always visible. */
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:6px;background:var(--cur-surface);border-bottom:1px solid var(--cur-line);position:relative}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.tab{min-height:52px;min-width:0;display:grid;align-content:center;justify-items:center;gap:1px;padding:4px 4px;border:2px solid transparent;border-radius:var(--cur-radius);background:transparent;color:var(--cur-muted);cursor:pointer;touch-action:manipulation;line-height:1.15}
+.tab .tl{font-weight:700;font-size:clamp(12px,3.6vw,15px);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .tb .g{font-size:.8em;margin-right:3px}
+@media (max-width:359px){.tab .tb .g,.tab .tb .c{display:none}}
+.tab .tb{font-size:12px;font-variant-numeric:tabular-nums;min-height:1.2em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab[aria-selected=true]{background:var(--cur-bg);color:var(--cur-fg);border-color:var(--cur-accent)}
+.tab.live .tb{color:var(--cur-ok);font-weight:700}
+.tab:hover:not([aria-selected=true]){background:color-mix(in srgb,var(--cur-fg) 8%,transparent)}
+.panic{min-height:52px;min-width:56px;max-width:68px;display:grid;align-content:center;justify-items:center;gap:1px;padding:4px 6px;text-align:center;white-space:normal;border:2px solid var(--cur-danger);border-radius:var(--cur-radius);background:transparent;color:var(--cur-danger);font-weight:700;font-size:11px;cursor:pointer;touch-action:manipulation;line-height:1.1}
+.panic .gl{font-size:16px;line-height:1}
+.panic:hover{background:color-mix(in srgb,var(--cur-danger) 14%,transparent)}
+.armbar{position:absolute;inset:6px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;z-index:3}
+.armbar{background:var(--cur-surface)}
+.armbar .btn{min-height:52px}
+
+/* Stage: a size container; its own size drives the layout. */
+.stage{container:stage/size;position:relative;min-height:0;min-width:0;overflow:hidden}
+.view{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);gap:clamp(6px,1.8cqh,12px);padding:clamp(8px,2.4cqmin,16px);font-size:clamp(13px,2.2cqmin + 8px,18px)}
+.hd{min-width:0;display:grid;gap:2px}
+.ttl{margin:0;font-size:1.18em;font-weight:800;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.sub{margin:0;color:var(--cur-muted);font-size:.92em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 12px}
+.clock{font-size:clamp(26px,10cqmin,60px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock.end{color:var(--cur-warn)}
+.cnt{grid-column:2;display:grid;gap:1px;justify-items:end;text-align:right;min-width:0}
+.cnt b{font-size:1.5em;line-height:1;font-variant-numeric:tabular-nums}
+.cnt span{color:var(--cur-muted);font-size:.9em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog{grid-column:1/-1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--cur-fg) 14%,transparent);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--cur-accent)}
+.word{font-size:clamp(26px,15cqmin,88px);font-weight:800;line-height:1.1;overflow-wrap:anywhere;color:var(--cur-accent);margin:0;align-self:center;text-align:center}
+.bd:has(>.word){align-content:center}
+
+/* Body: results, winners, start form. */
+.bd{min-height:0;min-width:0;display:grid;gap:clamp(4px,1cqh,8px);align-content:stretch;overflow:hidden}
+.bd.start{align-content:start}
+.bars{min-height:0;display:grid;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.8cqh,8px)}
+.bar{--p:0%;position:relative;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:0 10px;border-radius:var(--cur-radius);border:1px solid var(--cur-line);background:linear-gradient(90deg,color-mix(in srgb,var(--cur-accent) 38%,var(--cur-surface)) var(--p),var(--cur-surface) var(--p));overflow:hidden;line-height:1.1}
+.bar .bt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:clamp(11px,calc(34cqh / var(--n,4)),1em)}
+.bar .bv{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;font-size:clamp(11px,calc(38cqh / var(--n,4)),1.1em)}
+.bar .bv small{font-weight:500;color:var(--cur-muted);margin-left:4px}
+.bar.lead{border-color:var(--cur-accent);border-width:2px}
+.bar.lead .bt::before{content:"★ ";color:var(--cur-accent)}
+.bars[data-n="2"]{grid-auto-flow:column;grid-auto-rows:auto;grid-template-columns:repeat(2,minmax(0,1fr))}
+.bars[data-n="2"] .bar{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);justify-items:center;align-items:start;padding:8px;text-align:center;background:linear-gradient(0deg,color-mix(in srgb,var(--cur-accent) 38%,var(--cur-surface)) var(--p),var(--cur-surface) var(--p))}
+.bars[data-n="2"] .bar .bt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:1em}
+.bars[data-n="2"] .bar .bv{align-self:center;font-size:clamp(22px,13cqmin,64px)}
+.bars[data-n="3"],.bars[data-n="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bars[data-n="3"] .bar:last-child{grid-column:1/-1}
+.bars[data-n="3"] .bar,.bars[data-n="4"] .bar{grid-template-columns:minmax(0,1fr);justify-items:start;gap:2px;padding:6px 10px;align-content:center}
+.bars[data-n="3"] .bar .bv,.bars[data-n="4"] .bar .bv{font-size:clamp(16px,6cqmin,34px)}
+@container stage (min-width:520px){
+  .bars[data-n="3"],.bars[data-n="4"]{grid-auto-flow:column;grid-auto-rows:auto}
+  .bars[data-n="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}.bars[data-n="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .bars[data-n="3"] .bar:last-child{grid-column:auto}
+  .bars[data-n="3"] .bar,.bars[data-n="4"] .bar{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);justify-items:center;align-items:start;padding:8px;text-align:center;background:linear-gradient(0deg,color-mix(in srgb,var(--cur-accent) 38%,var(--cur-surface)) var(--p),var(--cur-surface) var(--p))}
+  .bars[data-n="3"] .bar .bt,.bars[data-n="4"] .bar .bt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:1em}
+  .bars[data-n="3"] .bar .bv,.bars[data-n="4"] .bar .bv{align-self:center;font-size:clamp(20px,9cqmin,52px)}
+}
+.bars[data-n="5"] .bar,.bars[data-n="6"] .bar,.bars[data-n="7"] .bar,.bars[data-n="8"] .bar{padding:0 8px}
+.empty{align-self:center;justify-self:center;text-align:center;color:var(--cur-muted);margin:0}
+.winners{display:grid;gap:6px;align-content:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,128px),1fr));grid-auto-rows:minmax(48px,auto)}
+.winners[data-n="1"]{grid-auto-rows:minmax(64px,auto)}
+.win{min-height:48px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:0 6px;padding:4px 10px;border-radius:var(--cur-radius);border:2px solid var(--cur-ok);background:var(--cur-surface);color:var(--cur-fg);cursor:pointer;text-align:left;touch-action:manipulation}
+.win:hover{background:color-mix(in srgb,var(--cur-ok) 12%,var(--cur-surface))}
+.win .wn{grid-column:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;font-size:1.1em}
+.win .wn::before{content:"★ ";color:var(--cur-ok)}
+.win .nh{grid-column:1;grid-row:2;display:none;font-size:.8em;color:var(--cur-muted)}
+.win .gl{grid-column:2;grid-row:1/3;font-size:1.3em;color:var(--cur-muted)}
+.winners[data-n="1"] .nh,.winners[data-n="2"] .nh{display:block}
+
+/* Buttons */
+.btn{min-height:48px;min-width:48px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 12px;border-radius:var(--cur-radius);border:2px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-fg);font-weight:700;cursor:pointer;touch-action:manipulation;line-height:1.1;text-align:center;position:relative;min-width:0}
+.btn .lb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn .lb.s{display:none}
+.btn:hover:not(:disabled){border-color:var(--cur-fg)}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+.btn[aria-busy=true]{cursor:wait}
+.btn.primary{min-height:clamp(56px,13cqh,92px);background:var(--cur-accent);color:var(--cur-accent-fg);border-color:transparent;font-size:clamp(15px,3.2cqmin + 6px,24px);font-weight:800}
+.btn.primary .lb.l{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-align:center}
+.btn.primary .lb.s{display:none}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08);border-color:transparent}
+.btn.danger{border-color:var(--cur-danger);color:var(--cur-danger)}
+.btn.danger.go{background:var(--cur-danger);color:var(--cur-danger-fg)}
+.btn.undo{background:transparent}
+.btn.ok{background:var(--cur-ok);color:var(--cur-ok-fg);border-color:transparent}
+.btn.chip{border-style:dashed}
+.btn .loss{display:block;font-weight:500;font-size:.78em}
+.btn.arm{padding:2px 8px}
+.btn.arm .col{display:grid;gap:1px;min-width:0}
+.btn.arm .col span{white-space:normal;overflow-wrap:anywhere}
+.btn.arm .loss{font-size:11px}
+.row:has(.btn.arm){grid-auto-columns:unset;grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+.btn.arm::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:100%;background:currentColor;opacity:.55;transform-origin:left;animation:arm 3s linear forwards}
+@keyframes arm{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+kbd{display:none;font:600 11px/1 ui-monospace,monospace;padding:2px 5px;border-radius:4px;border:1px solid currentColor;opacity:.7}
+@media (pointer:fine){.dk kbd{display:inline-block}}
+.acts{display:grid;gap:clamp(6px,1.4cqh,10px);min-width:0}
+.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;min-width:0}
+.chips{display:flex;gap:6px;min-width:0}.chips .btn{flex:1 1 0}.chips .btn.more{flex:0 0 52px;padding:0}
+/* Long labels when the row is wide enough for them, short ones otherwise (a label is never cut). */
+.row[data-n="3"] .btn,.row[data-n="4"] .btn{padding-left:4px;padding-right:4px}.row[data-n="4"] .btn{font-size:.84em}
+.acts,.chips{container-type:inline-size}
+@container (max-width:300px){.row[data-n="2"] .lb.l,.chips .lb.l{display:none}.row[data-n="2"] .lb.s,.chips .lb.s{display:inline}}
+@container (max-width:560px){.row[data-n="3"] .lb.l,.chips .lb.l{display:none}.row[data-n="3"] .lb.s,.chips .lb.s{display:inline}}
+@container (max-width:760px){.row[data-n="4"] .lb.l{display:none}.row[data-n="4"] .lb.s{display:inline}}
+
+/* Start form */
+.form{display:grid;gap:clamp(5px,1.2cqh,10px);align-content:start;min-height:0}
+.fld{display:grid;gap:2px;min-width:0}
+.fld label{font-weight:600;font-size:.88em;color:var(--cur-muted)}
+.in{min-height:48px;width:100%;min-width:0;padding:6px 12px;border-radius:var(--cur-radius);border:2px solid var(--cur-line);background:var(--cur-bg);color:var(--cur-fg)}
+.in[aria-invalid=true]{border-color:var(--cur-danger)}
+.in::placeholder{color:var(--cur-muted)}
+@container stage (min-height:441px){.form .in::placeholder{color:transparent}}
+.err{margin:0;color:var(--cur-danger);font-weight:600;font-size:.88em}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.seg label{min-height:48px;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:var(--cur-radius);border:2px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-fg);font-weight:600;cursor:pointer;text-align:center;font-size:.92em;padding:0 4px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg input:checked+label{border-color:var(--cur-accent);background:color-mix(in srgb,var(--cur-accent) 22%,var(--cur-surface));font-weight:800}
+.seg input:checked+label::before{content:"✓ "}
+.seg input:focus-visible+label{outline:3px solid var(--cur-focus);outline-offset:2px}
+.seglab{font-weight:600;font-size:.88em;color:var(--cur-muted)}.form .seglab{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sheet{position:absolute;inset:0;z-index:2;background:var(--cur-bg);display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:clamp(8px,2.4cqmin,16px)}
+.sheet .rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 8px;align-content:start;min-height:0}
+.sheet .fld>label,.sheet .fld>.seglab{font-size:.8em;line-height:1.15;min-height:2.3em;display:flex;align-items:flex-end}
+
+/* Chat tab */
+.chat{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:clamp(8px,2.4cqmin,16px)}
+.people{display:grid;gap:4px;align-content:start;min-height:0;overflow:hidden}
+.pp{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;min-height:50px;border-bottom:1px solid var(--cur-line)}
+.pp .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp .pn.m{color:var(--cur-muted);text-decoration:line-through}
+.pp .tag{font-size:.8em;font-weight:700;border:1px solid currentColor;border-radius:99px;padding:0 6px;margin-left:6px;text-decoration:none;display:inline-block}
+.pager .btn{min-width:48px}.pager{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px;text-align:center;color:var(--cur-muted);font-size:.9em}
+.foot{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+@container stage (min-width:560px) and (max-height:560px){
+  .chat{grid-template-columns:minmax(0,1fr) minmax(0,280px);grid-template-rows:auto minmax(0,1fr)}
+  .chat>.hd{grid-column:1/-1}.chat>.people{grid-column:1;grid-row:2}.chat>.foot{grid-column:2;grid-row:2;align-self:end}
+}
+
+/* Status line */
+.strip{display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 10px;border-top:1px solid var(--cur-line);background:var(--cur-surface);font-size:13px}
+.strip .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--cur-muted)}
+.strip.ok .dot{background:var(--cur-ok)}
+.strip.bad{background:var(--cur-warn);color:var(--cur-warn-fg);font-weight:700}
+.strip.bad .dot{background:var(--cur-warn-fg)}
+.strip.err{background:var(--cur-danger);color:var(--cur-danger-fg);font-weight:700}
+.strip .msg{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip .st{flex:none;color:inherit;opacity:.85;font-weight:600}
+
+/* Low stage (a 300 x 420 dock): the labels become the placeholders, the subtitle goes, the title keeps one line. */
+@container stage (max-height:440px){
+  .sub{display:none}.ttl{-webkit-line-clamp:1}.prog{display:none}
+  .form .fld>label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .sheet>.ttl{display:none}.sheet{grid-template-rows:minmax(0,1fr) auto}
+  .btn.primary{min-height:52px}
+  .sheet .frow{grid-template-columns:minmax(0,1fr)}
+}
+@container stage (max-height:440px) and (max-width:559px){
+  .view{gap:4px;padding:8px;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto}
+  .view .hd{grid-column:1;grid-row:1;align-self:center}.view .meter{grid-column:2;grid-row:1;grid-template-columns:auto auto;gap:0 10px}
+  .view .bd{grid-column:1/-1;grid-row:2}.view .acts{grid-column:1/-1;grid-row:3}
+  .clock{font-size:26px}.cnt b{font-size:1.25em}.cnt span{display:none}
+  .bars{gap:2px}.bar{border-width:1px}.bar.lead{border-width:1px;outline:2px solid var(--cur-accent);outline-offset:-2px}
+}
+
+/* Wide stage: two columns (header and actions left, results right). */
+@container stage (min-width:560px) and (max-height:560px){
+  .view{grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:auto auto minmax(0,1fr)}
+  .view .hd,.view .meter{grid-column:1}.view .hd{grid-row:1}.view .meter{grid-row:2}.view .bd{grid-column:2;grid-row:1/4}.view .acts{grid-column:1;grid-row:3;align-self:end}
+}
+@container stage (min-width:560px) and (max-height:560px){.row[data-n="3"],.row[data-n="4"]{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container stage (min-width:900px){
+  .view{grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:auto auto minmax(0,1fr)}
+  .view .hd,.view .meter{grid-column:1}.view .hd{grid-row:1}.view .meter{grid-row:2}.view .bd{grid-column:2;grid-row:1/4}.view .acts{grid-column:1;grid-row:3;align-self:end}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.btn.arm::after{animation:none;transform:none;opacity:.35}}
+@media (forced-colors:active){.bar.lead,.tab[aria-selected=true]{outline:2px solid CanvasText}}
 `;
 
-/** Les textes dont le script a besoin : ceux du dock disent « cliquez » (souris et clavier), ceux du téléphone « touchez ». */
+/** The texts the script needs. Dock and phone use the same words, except the "tap / click" ones. */
 export function remoteConfig(ctx, key, { dock = false } = {}) {
   const t = (k) => ctx.t(k);
   return {
     k: key, dock, state: `/m/${ctx.instance.key}/remote-state?k=${encodeURIComponent(key)}`, press: `/m/${ctx.instance.key}/remote-press`, lang: ctx.locale,
     t: {
-      busy: t("remoteBusy"), done: t("remoteDone"), again: t(dock ? "dockAgain" : "remoteAgain"), tabs: t("remoteTabs"), tabRooms: t("remoteTabRooms"), tabLive: t("remoteTabLive"), more: t("remoteMore"), nopanels: t("remoteNoPanels"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
-      person: t("person_one"), people: t("person_many"), anon: t("anon"), mutedTag: t("mutedTag"), mute: t("remoteMute"), unmute: t("remoteUnmute"), clear: t("remoteClear"), clearConfirm: t("remoteClearConfirm"),
-      connected: t("remoteConnected"), offline: t("remoteOffline"), denied: t("remoteDenied"),
+      done: t("remoteDone"), more: t("remoteMore"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
+      person: t("person_one"), people: t("person_many"), anon: t("anon"), mutedTag: t("mutedTag"), mute: t("remoteMute"), unmute: t("remoteUnmute"), clear: t("remoteClear"), 
+      connected: t("remoteConnected"), offline: t("remoteOffline"), denied: t("remoteDenied"), connecting: t("remoteConnecting"),
       e_net: t("remoteErrNet"), e_gone: t("remoteErrGone"), e_failed: t("remoteErrFailed"), e_invalid: t("remoteErrInvalid"), e_limit: t("remoteErrLimit"),
+      panic: t("remotePanic"), panicLoss: t("remotePanicConfirm"),
+      tabPoll: t("dockTabPoll"), tabDraw: t("dockTabDraw"), tabChat: t("dockTabChat"),
+      confirm: t("dockConfirm"), undo: t("dockUndo"), armed: t("dockArmed"), retry: t("dockRetry"), notSent: t("dockNotSent"), back: t("dockBack"), done2: t("dockDone"), 
+      prev: t("dockPrev"), next: t("dockNext"), pageOf: t("dockPageOf"), live: t("dockStateLive"), finished: t("dockStateFinished"), leading: t("dockLeading"), keys: t("dockKeys"), 
+      clearLoss: t("dockClearLoss"), 
     },
   };
 }
 
-export function remoteHtml(ctx, key, REMOTE_JS, { dock = false, nonce = "" } = {}) {
-  const th = ctx.theme ?? {};
+export function remoteHtml(ctx, key, REMOTE_JS, { dock = false, nonce = "", scheme = null } = {}) {
   const json = JSON.stringify(remoteConfig(ctx, key, { dock })).replace(/</g, "\\u003c");
-  const accent = color(th.accent, "#e8a23b"), accentFg = color(th.accentFg, "#111111"), danger = color(th.danger, "#ff6b6b"), dangerFg = color(th.dangerFg, "#111111"), ok = color(th.success, "#4ade80");
-  // TOUT l'habillage de la page (couleurs, police, rayons) passe par ces variables, fixées ICI et nulle part ailleurs : pour suivre la direction artistique de l'administration, il suffit de changer cette fonction.
-  // le dock est toujours sombre (il vit dans le décor d'OBS) ; seules les couleurs d'accent suivent le thème du site
-  const c = dock
-    ? { bg: "#0e0e10", fg: "#efeff1", surface: "#18181b", line: "#3a3a40", muted: "#b4b4be", font: "system-ui,'Segoe UI',Roboto,sans-serif" }
-    : { bg: color(th.bg, "#121214"), fg: color(th.fg, "#f4f4f5"), surface: color(th.surface, "#1b1b1d"), line: color(th.line, "#2e2e30"), muted: color(th.muted, "#a1a1a3"), font: fontOf(th.font) };
-  const css = `:root{${dock ? "color-scheme:dark;" : ""}--bg:${c.bg};--fg:${c.fg};--surface:${c.surface};--line:${c.line};--accent:${accent};--accent-fg:${accentFg};--muted:${c.muted};--danger:${danger};--danger-fg:${dangerFg};--ok:${ok};--font:${c.font};--r-card:${dock ? "10px" : "18px"};--r-btn:${dock ? "8px" : "16px"};--r-ctl:${dock ? "8px" : "12px"}}\n${BASE_CSS}${dock ? `\n${DOCK_CSS}` : ""}`;
+  // The look of the administration: the dock is dark (OBS is dark) unless asked otherwise; the phone follows the device.
+  let theme = null;
+  try { theme = typeof ctx.api?.adminTheme === "function" ? ctx.api.adminTheme({ scheme: scheme ?? (dock ? "dark" : "auto") }) : null; } catch { theme = null; }
+  const tokens = typeof theme?.css === "string" ? theme.css.replace(/[<>]/g, "") : "";
+  const css = `${FALLBACK_TOKENS}${tokens}\n${DOCK_CSS}`;
   const n = nonce ? ` nonce="${L.esc(nonce)}"` : "";
-  return `<!doctype html><html lang="${L.esc(ctx.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>${L.esc(ctx.t("remoteTitle"))}</title><link rel="icon" href="data:,"><style${n}>${css}</style></head><body${dock ? ' class="ar-dock"' : ""}>` +
-    `<div class="ar-head"><header class="ar-top"><h1>${L.esc(ctx.t("remoteTitle"))}</h1><span id="ar-live" class="ar-dot" role="status">${L.esc(ctx.t("remoteConnecting"))}</span></header><div id="ar-tabs"></div></div>` +
-    `<main class="ar-main" id="ar-root" aria-live="polite"><section class="ar-card"><p class="ar-muted">${L.esc(ctx.t("remoteLoading"))}</p></section></main>` +
-    `<p id="ar-toast" class="ar-toast" role="status" hidden></p><p class="ar-foot">${L.esc(ctx.t("remoteFoot"))}</p>` +
-    `<noscript><p class="ar-foot">${L.esc(ctx.t("needScript"))}</p></noscript><script${n}>window.__AR=${json};${REMOTE_JS}</script></body></html>`;
+  return `<!doctype html><html lang="${L.esc(ctx.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light dark"><title>${L.esc(ctx.t("remoteTitle"))}</title><link rel="icon" href="data:,"><style${n}>${css}</style></head><body class="${dock ? "dk dock" : "dk"}">` +
+    `<div class="app" id="app"><header class="top" id="top"><div class="tabs" id="tabs" role="tablist" aria-label="${L.esc(ctx.t("remoteTabs"))}"></div><button type="button" class="panic" id="panic" aria-label="${L.esc(ctx.t("remotePanic"))}"><span class="gl" aria-hidden="true">■</span><span>${L.esc(ctx.t("dockPanicShort"))}</span></button></header>` +
+    `<main class="stage" id="stage" aria-busy="true"><div class="view"><p class="empty">${L.esc(ctx.t("remoteLoading"))}</p></div></main>` +
+    `<footer class="strip" id="strip" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span class="msg" id="msg">${L.esc(ctx.t("remoteConnecting"))}</span><span class="st" id="st"></span></footer></div>` +
+    `<p class="sr" id="sr" role="status" aria-live="polite"></p>` +
+    `<noscript><p class="empty">${L.esc(ctx.t("needScript"))}</p></noscript><script${n}>window.__AR=${json};${REMOTE_JS}</script></body></html>`;
 }
 
 const SECURE = { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-robots-tag": "noindex, nofollow", "x-content-type-options": "nosniff" };
 
 /** La réponse complète. Une politique de sécurité n'autorise que le script et le style de la page elle-même, et ne laisse contacter que le site. */
-export function remoteResponse(ctx, key, REMOTE_JS, { dock = false } = {}) {
+export function remoteResponse(ctx, key, REMOTE_JS, { dock = false, scheme = null } = {}) {
   const nonce = randomBytes(16).toString("base64");
-  return new Response(remoteHtml(ctx, key, REMOTE_JS, { dock, nonce }), { headers: { ...SECURE, "content-security-policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'` } });
+  return new Response(remoteHtml(ctx, key, REMOTE_JS, { dock, nonce, scheme }), { headers: { ...SECURE, "content-security-policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'` } });
 }

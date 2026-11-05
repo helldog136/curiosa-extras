@@ -399,7 +399,7 @@ export default {
         return new Response("Not found", { status: 404 });
       }
       // Même adresse secrète pour le téléphone et pour le dock OBS : `&dock=1` choisit la présentation étroite, rien d'autre ne change.
-      return R.remoteResponse(ctx, meta.remoteKey, C.REMOTE_JS, { dock: R.wantsDock(request.url) });
+      return R.remoteResponse(ctx, meta.remoteKey, C.REMOTE_JS, { dock: R.wantsDock(request.url), scheme: R.wantsScheme(request.url) });
     },
 
     async "remote-state"(request, ctx) {

@@ -64,3 +64,16 @@ Visible : **mots interdits dans les pseudos** (liste de départ sobre, FR + EN, 
 
 ## Idées pour la suite
 Salle « de la semaine » avec un classement sans pression (top 5) ; relier un pseudo à une fiche Contacts à la demande de la personne ; envoi d'un message « bienvenue » à l'arrivée d'une nouvelle personne dans la salle générale (avec la bibliothèque d'alertes) ; mode « invités seulement » (une liste de pseudos autorisés) pour un stream privé ; export du palmarès mensuel.
+
+## The control dock and the live view (since Audience 1.6.0)
+
+The phone remote and the OBS dock are one page: a full-height grid that never scrolls (tab bar with live badges and a "stop everything" button at the top, one stage, one status line). It wears the administration's look (`ctx.api.adminTheme`, `--cur-*` tokens; dark for the dock, the device's choice for the phone; `&scheme=light|dark` forces one).
+
+A module that wants the stage (instead of a plain list of buttons and forms) adds `view` to its `describe` panel. One shape for every kind of animation, bounded and checked by `sanitizeView` (`lib.mjs`):
+
+- `type`: `poll` or `draw` (the tab it takes); `stage`: `idle` (nothing yet: the form is shown), `live` (running: results, time left, the main action) or `done` (finished: result, announce).
+- `title`, `sub`, `note`, `until` / `from` (ISO, for the clock and the progress), `count` + `unit`, `word` (the sign-up word of a draw), `bars` (2 to 8 rows `{ text, n, pct, lead }`), `names` (up to 6 people, each may carry an `action`, `values` and `loss`).
+- `primary` (the single biggest control), `actions` (up to 4), `danger` (confirmed on the same row: Confirm / Undo for 3 seconds, `loss` says what is lost in a few words), `chips` (up to 3 one-tap smart starts), `form` (fields marked `more` go to the "more options" sheet).
+- A button is `{ id, label ≤ 40, short ≤ 14, key (one letter or digit), values, loss, disabled }`; `id: "compose"` is handled by the page itself (opens the form). `values.id` lets a module refuse a stale remote.
+
+A panel with no `view` still works: plain buttons and forms in their own tab. `press` actions added in 1.5.0 and 1.6.0: Polls `poll-close`, `poll-cancel`, `poll-reopen`, `poll-extend`, `poll-show`, `poll-hide`, `poll-archive`, `poll-again`, `poll-yesno`, `panic`; Audience `draw-reopen`, `draw-redraw` (`values.pid`), `draw-cancel`, `draw-open` with no values (same settings as the last draw), `panic`. A module that does not know `panic` answers `invalid` and is ignored.

@@ -1010,6 +1010,52 @@ const liveReply = (ctx, r, okKey, vars) => (r.ok
   ? { ok: true, message: ctx.t(okKey, vars) }
   : { ok: false, error: ["none", "changed", "closed", "noend", "open", "gone", "purged", "partial"].includes(r.error) ? r.error : "failed", message: ctx.t(LIVE_ERRORS[r.error] ?? "remoteErrFailed") });
 
+/** The live view of Polls for the dock (see `sanitizeView` in Audience): one stage at a time, the main action first. */
+function pollView(ctx, { series, round, cp, now, again }) {
+  const t = (k, v) => ctx.t(k, v);
+  const btn = (id, key, label, short, extra = {}) => ({ id, label: t(label), short: t(short), key, ...extra });
+  const barsOf = (p) => L.rows(p).map((r) => ({ text: r.text, n: r.count, pct: r.pct, lead: r.lead }));
+  const quickSeconds = L.ROUND.quickSeconds;
+  const form = {
+    id: "quick", title: t("quickTitle"), submit: t("quickGo"),
+    fields: [
+      { name: "a", label: t("fQuickAShort"), type: "text", required: true, max: LIMITS.choice },
+      { name: "b", label: t("fQuickBShort"), type: "text", required: true, max: LIMITS.choice },
+      { name: "seconds", label: t("fQuickSeconds"), type: "select", seg: true, value: String(quickDefault(ctx)), options: quickSeconds.map((n) => ({ value: String(n), label: t(SEC_LABELS[n]), short: t(`${SEC_LABELS[n]}Short`) })) },
+      { name: "c", label: t("fQuickCShort"), type: "text", max: LIMITS.choice, more: true },
+      { name: "d", label: t("fQuickDShort"), type: "text", max: LIMITS.choice, more: true },
+    ],
+  };
+  const chips = [btn("poll-yesno", "Y", "remoteYesNo", "remoteYesNoShort"), ...(again ? [btn("poll-again", "R", "remoteAgain", "remoteAgainShort")] : []), btn("start", "L", "dockChipLoop", "dockChipLoopShort")];
+  if (series.status === "running") {
+    const open = cp.state === "open";
+    return {
+      type: "poll", stage: "live", title: round?.question ?? series.question, sub: t("dockRound", { n: round?.round?.n ?? series.n }), note: open ? t("remotePollOpen", { question: cp.poll.question, voters: Number(cp.poll.voters) || 0 }) : "",
+      from: round?.createdAt, until: round?.endsAt ?? null, count: Number(round?.voters) || 0, unit: t("dockVotes"), bars: round ? barsOf(round) : [],
+      primary: btn("next", "N", "remoteNext", "remoteNext"), danger: btn("stop", "X", "remoteStop", "remoteStop", { loss: t("remoteStopConfirm") }), form: null,
+    };
+  }
+  if (cp.state === "open") {
+    const p = cp.poll, v = { id: p.id };
+    return {
+      type: "poll", stage: "live", title: p.question, sub: p.quick ? t("dockQuick") : "", from: p.createdAt, until: p.endsAt ?? null, count: Number(p.voters) || 0, unit: t("dockVotes"), bars: barsOf(p),
+      primary: btn("poll-close", "C", "remoteClose", "remoteCloseShort", { values: v }),
+      actions: [btn("poll-extend", "E", "remoteExtend", "remoteExtendShort", { values: v, disabled: !p.endsAt }), btn("poll-show", "A", "remoteShow", "remoteShowShort", { values: v })],
+      danger: btn("poll-cancel", "X", "remoteCancel", "remoteCancelShort", { values: v, loss: t("remoteCancelConfirm") }), form: null,
+    };
+  }
+  if (cp.state === "closed") {
+    const p = cp.poll, v = { id: p.id };
+    return {
+      type: "poll", stage: "done", title: p.question, sub: t("dockFinished"), count: Number(p.voters) || 0, unit: t("dockVotes"), bars: barsOf(p),
+      primary: btn("poll-show", "A", "remoteShowResult", "remoteShowResultShort", { values: v }),
+      actions: [btn("compose", "N", "dockNewPoll", "dockNewPollShort"), btn("poll-reopen", "R", "remoteReopen", "remoteReopenShort", { values: v }), btn("poll-archive", "T", "remoteArchive", "remoteArchiveShort", { values: v })],
+      danger: btn("poll-cancel", "X", "remoteDelete", "remoteDeleteShort", { values: v, loss: t("remoteDeleteConfirm") }), chips, form,
+    };
+  }
+  return { type: "poll", stage: "idle", title: t("dockNoPoll"), sub: series.lastDecision ? t("remoteLast", { n: series.lastDecision.n, winner: series.lastDecision.winner ?? t("noWinnerShort") }) : "", chips, form };
+}
+
 async function remotePanel(ctx, now) {
   await advance(ctx, now);
   const series = await ensureSeries(ctx);
@@ -1040,7 +1086,7 @@ async function remotePanel(ctx, now) {
     ...(quickAgain ? [{ id: "poll-again", label: ctx.t("remoteAgain") }] : []),
   ];
   return {
-    title: ctx.t("remoteTitle"), state,
+    title: ctx.t("remoteTitle"), state, view: pollView(ctx, { series, round: cur, cp, now, again: !!quickAgain }),
     buttons: [
       { id: "start", label: ctx.t("remoteStart"), tone: "primary", disabled: running },
       { id: "next", label: ctx.t("remoteNext"), disabled: !running },

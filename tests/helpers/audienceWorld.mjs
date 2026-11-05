@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import { fakeCtx } from "./fakeCtx.mjs";
 import { pollsStore } from "./pollsStore.mjs";
-import { audienceCtx, def as audienceDef } from "./audienceHarness.mjs";
+import { audienceCtx, def as audienceDef, fr as audienceFr, en as audienceEn } from "./audienceHarness.mjs";
 
 const read = (rel) => JSON.parse(fs.readFileSync(new URL(`../../modules/${rel}`, import.meta.url), "utf8"));
 export const pollsFr = read("polls/locales/fr.json");
@@ -26,7 +26,7 @@ export function world({ audience = true, pollsSettings = {}, audSettings = {}, l
   polls.can = () => true;
   let aud = null;
   if (audience) {
-    aud = audienceCtx({ settings: audSettings, locale, services: audServices, serviceInstances: audInstances });
+    aud = audienceCtx({ settings: audSettings, locale, messages: locale === "fr" ? audienceFr : audienceEn, services: audServices, serviceInstances: audInstances });
     // Sondages appelle Participation
     const wrap = (method) => async (args) => {
       state.calls.push([method, args]);

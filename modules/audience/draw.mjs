@@ -504,7 +504,41 @@ export async function remotePanel(ctx, now = Date.now()) {
       { name: "minutes", label: t("drawFMinutes"), type: "number", more: true, max: 3, example: t("drawRemoteFMinutesEx"), value: d?.minutes ? String(d.minutes) : "" },
     ],
   })];
-  return { title: t("drawRemoteTitle"), tab: t("drawRemoteTitle"), state, buttons, forms };
+  return { title: t("drawRemoteTitle"), tab: t("drawRemoteTitle"), state, buttons, forms, view: drawView(ctx, { d, st, n, many, canPick, canReopen, winnersNow }) };
+}
+
+/** The live view of the prize draw for the dock (same shape as Polls: see `sanitizeView` in lib.mjs). One tap for the main action of each stage. */
+function drawView(ctx, { d, st, n, many, canPick, canReopen, winnersNow }) {
+  const t = (k, v) => ctx.t(k, v);
+  const btn = (id, key, label, short, extra = {}) => ({ id, key, label: t(label, extra.vars), short: t(short, extra.vars), ...(extra.loss ? { loss: extra.loss } : {}), ...(extra.values ? { values: extra.values } : {}), ...(extra.disabled ? { disabled: true } : {}) });
+  const form = {
+    id: "draw-open", title: t("drawRemoteFormTitle"), submit: t("drawBtnOpen"),
+    fields: [
+      { name: "keyword", label: t("drawRemoteFKeyword"), type: "text", max: DRAW.keyword + 1, example: t("drawRemoteFKeywordEx"), value: d?.keyword || t("drawRemoteDefaultKeyword") },
+      { name: "title", label: t("drawRemoteFTitle"), type: "text", max: DRAW.title, example: t("drawRemoteFTitleEx"), value: d?.title || t("drawDefaultTitle"), more: true },
+      { name: "level", label: t("drawFLevel"), type: "select", more: true, value: d?.level || "all", options: P.LEVELS.map((v) => ({ value: v, label: t(`drawLevelShort_${v}`) })) },
+      { name: "site", label: t("drawFSite"), type: "select", more: true, seg: true, value: d && d.site === false ? "0" : "1", options: [{ value: "1", label: t("drawYes"), short: t("drawYes") }, { value: "0", label: t("drawNo"), short: t("drawNo") }] },
+      { name: "winners", label: t("drawFWinners"), type: "number", more: true, max: 2, example: t("drawRemoteFWinnersEx"), value: String(P.winnersCount(d?.winners)) },
+      { name: "minutes", label: t("drawFMinutes"), type: "number", more: true, max: 3, example: t("drawRemoteFMinutesEx"), value: d?.minutes ? String(d.minutes) : "" },
+    ],
+  };
+  const base = { type: "draw", unit: t("dockEntries"), count: n };
+  const cancel = (loss) => btn("draw-cancel", "X", "drawBtnCancel", "drawBtnCancelShort", { loss });
+  if (st === "none" || !d || d.purged) {
+    return { ...base, stage: "idle", count: null, title: t("drawRemoteNone"), sub: d?.title ? t("dockLastDraw", { title: d.title }) : "", chips: d ? [btn("draw-open", "L", "drawChipSame", "drawChipSameShort")] : [], form };
+  }
+  const pick = btn("draw-pick", "D", many > 1 ? "drawBtnPickMany" : "drawBtnPick", "drawBtnPickShort", { vars: { n: many }, disabled: !canPick && st !== "open" });
+  if (st === "open") {
+    return { ...base, stage: "live", title: d.title, sub: d.keyword ? t("dockSayWord") : t("dockSiteOnly"), word: d.keyword || "", from: d.openedAt, until: d.untilClosed ? null : iso(P.deadlineOf(d)),
+      primary: { ...pick, disabled: n < 1 }, actions: [btn("draw-close", "C", "drawBtnClose", "drawBtnClose")], danger: cancel(t("drawCancelConfirm")) };
+  }
+  if (st === "drawn") {
+    return { ...base, stage: "done", title: d.title, sub: t("dockDrawn"), word: "", names: latestBatch(d).map((w) => ({ text: w.pseudo, action: "draw-redraw", label: t("drawBtnNotHere"), loss: t("drawNotHereLoss"), values: { pid: w.k } })),
+      primary: btn("draw-open", "N", "drawBtnNew", "drawBtnNewShort"), actions: [...(canPick ? [pick] : []), btn("compose", "W", "drawBtnOtherWord", "drawBtnOtherWordShort")], danger: cancel(t("drawCancelDrawnLoss")), form };
+  }
+  return { ...base, stage: "done", title: d.title, sub: t("dockClosed"), word: d.keyword || "",
+    primary: canPick ? pick : (canReopen ? btn("draw-reopen", "R", "drawBtnReopen", "drawBtnReopenShort") : btn("draw-open", "N", "drawBtnNew", "drawBtnNewShort")),
+    actions: [...(canPick && canReopen ? [btn("draw-reopen", "R", "drawBtnReopen", "drawBtnReopenShort")] : []), btn("compose", "W", "drawBtnOtherWord", "drawBtnOtherWordShort")], danger: cancel(t("drawCancelConfirm")), form };
 }
 
 /**
@@ -552,7 +586,7 @@ export const errorText = (ctx, code) => ctx.t(({ already_open: "drawErrAlreadyOp
 /** Un geste de la télécommande ou de l'assistant. Renvoie { ok, message } ou { ok: false, error, message }. */
 export async function pressDraw(ctx, action, { who = "remote", now = Date.now(), values = null } = {}) {
   let r;
-  if (action === "draw-open" && values) {   // le formulaire de la télécommande
+  if (action === "draw-open" && values && Object.keys(values).length) {   // the remote's form (with no values: "same as the last one", see below)
     r = await openFromRemote(ctx, values, { who, now });
     if (r.field) return { ok: false, error: "invalid", field: r.field, message: r.message };
     if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") };
