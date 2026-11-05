@@ -14,6 +14,10 @@ Posez une question à votre communauté (« À quel jeu jouons-nous samedi ? »,
 - **Un sondage rapide « A ou B ? »** depuis la télécommande de votre téléphone (2 à 4 choix, 15 secondes à 15 minutes) : il passe tout de suite à l'écran.
 - **Une page publique** (`/polls`) avec les sondages en cours et la liste des sondages passés, et une page par sondage à partager. Un petit encart « Le sondage en cours » peut aussi se poser sur votre page d'accueil.
 
+## Live controls on the remote control (since 1.5.0)
+
+The remote control (phone and OBS dock) can do to the current poll everything the website does: close it now, cancel it (its votes are deleted; the button says so), add 30 seconds, reopen it for a minute, show or announce it on the stream screen, tidy it up (totals kept), delete it. "Yes or no poll" and "Repeat the last poll" start a quick poll in one tap. "Stop everything" (Audience) closes every open poll and stops the repeating vote; nothing is deleted. The poll in front of the streamer is the newest open poll that is not a round, else the one that ended in the last hour. A remote that shows an older poll cannot act on a newer one.
+
 ## Comment l'utiliser
 1. **Mes sondages** → « Nouveau sondage » : écrivez la question et les choix, puis « Créer le sondage ». Rien d'autre n'est obligatoire.
 2. Copiez le lien affiché (bouton « Copier ») et partagez-le, ou ajoutez la section « Le sondage en cours » à votre accueil (Page d'accueil → Ajouter).

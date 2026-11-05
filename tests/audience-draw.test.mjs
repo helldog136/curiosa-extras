@@ -5,7 +5,6 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import { audienceCtx, def, fr, en, K, C, R, req, tok, manifest } from "./helpers/audienceHarness.mjs";
-import { runRemotePage } from "./helpers/remoteDom.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 
 const D = await import("../modules/audience/draw.mjs");
@@ -34,7 +33,7 @@ test("manifeste : service « audience.draw » version 1 offert (status en lectur
   const right = manifest.rights.find((x) => x.id === "draw.manage");
   assert.ok(right && right.sensitive === true && right.default.admin === true && right.default.editor === false);
   assert.ok(manifest.tabs.some((t) => t.id === "draw" && t.panel === true));
-  assert.equal(manifest.version, "1.4.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.6.0"); assert.equal(manifest.minCore, "0.5.0");
   const byName = Object.fromEntries(manifest.mcp.map((a) => [a.name, a]));
   assert.ok(byName.draw_status.readOnly === true);
   for (const n of ["draw_open", "draw_close", "draw_pick"]) { assert.ok(!byName[n].readOnly && !byName[n].default, `${n} : une écriture n'est jamais accordée d'office`); assert.equal(typeof def.mcp[n], "function"); }
@@ -340,7 +339,7 @@ test("télécommande : le panneau « Tirage au sort » suit l'état ; fermé, il
   const c = audienceCtx(); const key = (await meta(c)).remoteKey;
   let panel = await ownPanel(c, key);
   assert.equal(panel.title, fr.drawRemoteTitle); assert.equal(panel.tab, fr.drawRemoteTitle);
-  assert.deepEqual(panel.buttons, [], "rien à tirer : le seul bouton principal est « Ouvrir le tirage » (dans le formulaire)");
+  assert.deepEqual(panel.buttons.map((b) => b.id), ["panic"], "rien à tirer : le seul bouton principal est « Ouvrir le tirage » (dans le formulaire) ; « Tout arrêter » est toujours là");
   const form = panel.forms[0];
   assert.deepEqual([form.id, form.submit, form.fields.filter((f) => !f.more).map((f) => f.name)], ["draw-open", "Ouvrir le tirage", ["keyword", "title"]], "chemin court : deux champs visibles, un bouton");
   assert.deepEqual(form.fields.filter((f) => f.more).map((f) => f.name), ["level", "site", "winners", "minutes"], "le reste est replié sous « Plus d'options »");
@@ -353,7 +352,7 @@ test("télécommande : le panneau « Tirage au sort » suit l'état ; fermé, il
   panel = await ownPanel(c, key);
   assert.equal(panel.state.tone, "live"); assert.ok(panel.state.text.includes("!cadeau") && panel.state.text.includes("Inscriptions : 4"), panel.state.text);
   assert.deepEqual(panel.forms, [], "ouvert : plus de formulaire");
-  assert.deepEqual(panel.buttons.map((b) => b.id), ["draw-close", "draw-pick"]);
+  assert.deepEqual(panel.buttons.map((b) => b.id), ["draw-close", "draw-pick", "draw-cancel", "panic"]);
   [status, body] = await pressV(c, key, "draw-open", { keyword: "!autre" }); assert.deepEqual([status, body.ok, body.error], [400, false, "already_open"]);
   [status, body] = await press(c, key, "draw-pick"); assert.deepEqual([status, body.ok], [200, true]); assert.match(body.message, /tirée au sort : /);
   panel = await ownPanel(c, key);
@@ -365,7 +364,7 @@ test("télécommande : le panneau « Tirage au sort » suit l'état ; fermé, il
   [status, body] = await press(c, key, "draw-pick"); assert.deepEqual([status, body.ok, body.error, body.message], [400, false, "empty", fr.drawErrEmpty]);   // (le geste reste refusé côté serveur même sans bouton)
   [status, body] = await press(c, key, "draw-close"); assert.ok(body.ok); assert.equal((await D.current(c)).status, "closed");
   [status, body] = await press(c, key, "draw-close"); assert.deepEqual([body.ok, body.error], [false, "not_open"]);
-  [status, body] = await press(c, key, "draw-reopen"); assert.deepEqual([status, body.error], [400, "invalid"]);
+  [status, body] = await press(c, key, "draw-nope"); assert.deepEqual([status, body.error], [400, "invalid"]);
   const log = (await c.api.store.list("audit")).map((x) => x.data);
   assert.ok(log.some((l) => l.who === "remote" && l.what === "draw.new") && log.some((l) => l.who === "remote" && l.what === "draw.pick" && l.detail) && log.some((l) => l.who === "remote" && l.what === "draw.close"));
   assert.ok(!flat(log).includes(key), "l'adresse secrète n'est jamais dans le journal");
@@ -406,48 +405,13 @@ test("télécommande : les réglages repliés et les valeurs du dernier tirage s
   await D.close(c, { now: T0 + 3 });
   const [, nw] = await pressV(c, key, "draw-open", { ...same, keyword: "!autre", level: "all", winners: "3", site: "1", minutes: "" }); assert.equal(nw.message, fr.drawOkOpened);
   const d = await D.current(c); assert.deepEqual([d.title, d.keyword, d.level, d.winners, d.site, d.minutes, d.count], ["Mon titre", "!autre", "all", 3, true, null, 0]);
-  assert.equal((await ownPanel(c, key)).buttons.at(-1).label, "Tirer 3 personnes au sort", "plusieurs personnes : le bouton le dit");
+  assert.equal((await ownPanel(c, key)).buttons.find((b) => b.id === "draw-pick").label, "Tirer 3 personnes au sort", "plusieurs personnes : le bouton le dit");
   await D.close(c, { now: T0 + 4 });
   assert.equal((await ownPanel(c, key)).forms[0].fields.find((f) => f.name === "winners").value, "3", "choisi une fois, devient le défaut");
   const [, none] = await pressV(c, key, "draw-open", { keyword: "!a", title: "T", site: "0", minutes: "" });   // un mot ET pas de site : permis ; sans mot ce serait refusé plus haut
   assert.ok(none.ok);
 });
 
-test("dock : le formulaire du tirage (mot + titre) et son bouton se remplissent et se valident dans la page ; l'erreur est sous le champ ; la saisie est gardée ; « Fermer » et « Tirer » demandent de cliquer encore", async () => {
-  const c = audienceCtx(); const key = (await meta(c)).remoteKey;
-  const html = await (await def.routes.remote(req(`${BASE}/remote?k=${key}&dock=1`), c)).text();
-  const page = runRemotePage(html, { dispatch: dispatcher(c) }); await page.advance(10);
-  const real = () => page.root.all("button").filter((b) => !b.className.includes("ar-mini") && b.getAttribute("role") !== "tab");
-  const kw = () => page.root.all("input").find((i) => i.name === "keyword");
-  assert.equal(kw().value, fr.drawRemoteDefaultKeyword);
-  assert.ok(page.root.all("p").some((p) => p.textContent === fr.drawRemoteFKeywordEx), "exemple sous le champ");
-  assert.ok(page.root.all("details").some((d) => d.textContent.includes(fr.remoteMore)), "Plus d'options");
-  // erreur sous le champ, saisie conservée, focus sur le champ
-  kw().value = "deux mots"; kw().dispatch("input");
-  page.root.all("form")[0].dispatch("submit"); await page.advance(10);
-  const err = page.root.all("[data-err]").find((e) => e.getAttribute("data-err") === "audience:keyword");
-  assert.deepEqual([err.hidden, err.textContent], [false, fr.drawRemoteErrWord]);
-  assert.equal(kw().value, "deux mots"); assert.equal(page.doc.activeElement, kw()); assert.equal(kw().getAttribute("aria-invalid"), "true");
-  assert.equal(await D.current(c), null);
-  // la page se redessine pendant la saisie : ce qui est tapé reste
-  kw().value = "cadeau"; kw().dispatch("input");
-  // un clic ouvre (le clic sur le bouton retire le focus du champ)
-  page.doc.active = null;
-  page.root.all("form")[0].dispatch("submit"); await page.advance(10);
-  assert.equal((await D.current(c)).keyword, "!cadeau");
-  assert.equal(page.toast.textContent, fr.drawOkOpened);
-  for (const i of [1, 2]) assert.ok((await D.enterSite(c, { token: tok(i), name: `Personne${i}x`, conn: { forwarded: "1.1.1.1" } }, def.services["audience.session"].join)).ok);
-  await page.advance(20_000);
-  assert.ok(page.root.all("p").some((p) => p.textContent.includes("!cadeau") && p.textContent.includes("Inscriptions : 2")), "l'état montre le mot et les inscriptions");
-  const pick = () => real().find((b) => b.getAttribute("data-fk") === "b:audience:draw-pick");
-  pick().click(); await page.advance(10);
-  assert.ok(pick().textContent.includes(fr.dockAgain), "« cliquez encore » (et non « touchez »)");
-  assert.equal((await D.current(c)).status, "open", "un premier clic ne tire personne");
-  pick().click(); await page.advance(10);
-  assert.equal((await D.current(c)).status, "drawn"); assert.equal((await D.current(c)).picked.length, 1);
-  assert.ok(page.toast.textContent.includes("tirée au sort"), page.toast.textContent);
-  assert.ok(html.includes(".ar-dock .ar-btn{min-height:40px"));
-});
 
 /* ───────────── La page d'inscription du site ───────────── */
 

@@ -6,6 +6,7 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { checkTemplate, used, allowedFor } = await import(`./variables.mjs${v}`);
 const { parsePeriod, readPeriod, isOpen, nextOpening } = await import(`./period.mjs${v}`);
+const { memoryOf } = await import(`./state.mjs${v}`);
 
 export const ROLES = ["everyone", "subscribers", "mods", "owner"];
 export const ROLE_LEVEL = { everyone: 0, subscribers: 1, mods: 2, owner: 3 };
@@ -88,6 +89,22 @@ export async function loadConfig(ctx) {
   const row = (await ctx.api.store.list("botConfig", { limit: 1 }))[0];
   return { id: row?.id ?? null, data: readConfig(row?.data) };
 }
+/** How long the in-memory copy of the configuration is trusted by the chat path (a safety net: every write made by this module drops it at once, see `forgetConfig`). */
+export const configTiming = { ttlMs: 60_000 };
+export const forgetConfig = (ctx) => { const m = memoryOf(ctx); m.configGen = (m.configGen ?? 0) + 1; m.config = null; };
+/**
+ * The configuration for the CHAT path (commands, timers): read once and remembered, instead of one database read per chat message. The admin pages keep using `loadConfig` (always from the database).
+ * Every caller gets its own copy. Every write made by this module (`mutate`, the migration) drops the copy; a read that was in flight during a write is never stored.
+ */
+export async function loadConfigCached(ctx) {
+  const m = memoryOf(ctx), hit = m.config;
+  if (hit && hit.until > Date.now()) return { id: hit.id, data: readConfig(structuredClone(hit.raw)) };
+  const gen = m.configGen ?? 0;
+  const row = (await ctx.api.store.list("botConfig", { limit: 1 }))[0];
+  const raw = structuredClone(rec(row?.data)), id = row?.id ?? null;
+  if ((m.configGen ?? 0) === gen) m.config = { until: Date.now() + configTiming.ttlMs, id, raw };
+  return { id, data: readConfig(row?.data) };
+}
 const chain = new Map();
 const bumps = new Map();
 /** Un numéro qui change à chaque écriture de la configuration : de quoi savoir qu'une copie gardée en mémoire est périmée. */
@@ -99,7 +116,9 @@ export function mutate(ctx, fn) {
     const cfg = await loadConfig(ctx);
     const result = await fn(cfg.data);
     if (result?.ok === false) return result;
+    forgetConfig(ctx);
     if (cfg.id) await ctx.api.store.update(cfg.id, cfg.data); else await ctx.api.store.add("botConfig", cfg.data);
+    forgetConfig(ctx);
     bumps.set(k, (bumps.get(k) ?? 0) + 1);
     return result;
   });
@@ -112,6 +131,7 @@ export async function migrateConfig(ctx) {
   const row = (await ctx.api.store.list("botConfig", { limit: 1 }))[0];
   if (!row || (row.data && Array.isArray(row.data.timers))) return;
   await ctx.api.store.update(row.id, { ...rec(row.data), timers: [] });
+  forgetConfig(ctx);
 }
 
 /* ───────────── Les commandes telles qu'elles sont (réglage + ce que fournissent les autres modules) ───────────── */

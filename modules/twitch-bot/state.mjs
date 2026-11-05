@@ -88,7 +88,9 @@ export function dropCounter(ctx, key) {
 /* ───────────── En mémoire : délais, débit, messages vus ───────────── */
 
 const mem = new Map();
-const of = (ctx) => { const k = ctx.instance.key; if (!mem.has(k)) mem.set(k, { global: new Map(), user: new Map(), sends: [], seen: new Map(), sent: new Set() }); return mem.get(k); };
+const of = (ctx) => { const k = ctx.instance.key; if (!mem.has(k)) mem.set(k, { global: new Map(), user: new Map(), sends: [], seen: new Map(), sent: new Set(), diag: null, config: null }); return mem.get(k); };
+/** The memory of this instance (the quick diagnosis of the listening and the configuration: see listen.mjs and commands.mjs). Cleared by `resetMemory`. */
+export const memoryOf = of;
 export const resetMemory = () => mem.clear();
 
 /** Le délai d'une commande est-il écoulé ? Rend 0 si la commande peut répondre, sinon les secondes à attendre ; `reserve` démarre alors les délais. */

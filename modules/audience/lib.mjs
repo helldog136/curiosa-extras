@@ -156,6 +156,51 @@ const TONES = new Set(["primary", "danger", "plain"]);
 const FIELD_TYPES = new Set(["text", "number", "select"]);
 const ID_RE = /^[a-z][a-z0-9_-]{0,29}$/;
 
+const isoOr = (v) => (typeof v === "string" && Number.isFinite(Date.parse(v)) ? new Date(Date.parse(v)).toISOString() : null);
+
+/** A form described by a module, reduced to a safe, bounded shape. Returns null when it is unusable. */
+export function sanitizeForm(f) {
+  if (!isObj(f) || !ID_RE.test(String(f.id ?? "")) || !clean(f.title, 60)) return null;
+  return {
+    id: String(f.id), title: clean(f.title, 60), submit: clean(f.submit, 30) || "OK", confirm: f.confirm ? clean(f.confirm, 120) : "",
+    fields: (Array.isArray(f.fields) ? f.fields : []).filter((x) => isObj(x) && /^[a-z][a-z0-9_]{0,19}$/.test(String(x.name ?? ""))).slice(0, LIMITS.fields).map((x) => ({
+      name: String(x.name), label: clean(x.label, 40), type: FIELD_TYPES.has(x.type) ? x.type : "text", required: x.required === true,
+      max: num(x.max, 60, 1, 200), placeholder: clean(x.placeholder, 40), example: clean(x.example, 60), more: x.more === true, value: clean(x.value, 60), seg: x.seg === true,
+      options: x.type === "select" ? (Array.isArray(x.options) ? x.options : []).slice(0, 12).filter((o) => isObj(o)).map((o) => ({ value: clean(o.value, 30), label: clean(o.label, 40), short: clean(o.short, 10) })) : [],
+    })),
+  };
+}
+
+/** A button of the live view: an action, its labels (long and short), an optional one-key shortcut, the values it sends and, for a risky one, what will be lost. */
+function sanitizeButton(b) {
+  if (!isObj(b) || !ID_RE.test(String(b.id ?? "")) || !clean(b.label, 40)) return null;
+  const key = String(b.key ?? "").toUpperCase();
+  return { id: String(b.id), label: clean(b.label, 40), short: clean(b.short, 14), key: /^[A-Z0-9]$/.test(key) ? key : "", values: sanitizeValues(b.values), loss: clean(b.loss, 40), disabled: b.disabled === true };
+}
+
+const VIEW_TYPES = new Set(["poll", "draw"]);
+const STAGES = new Set(["idle", "live", "done"]);
+
+/**
+ * The LIVE VIEW a module gives for the dock (`panel.view`): one shape for every kind of animation, drawn by the same page.
+ *   stage   idle (nothing yet: show the start form), live (running: results, time, the main action), done (finished: result, announce)
+ *   bars    results of a poll (2 to 8 rows); names  people drawn (each may carry an action such as "not here")
+ *   chips   one-tap smart starts; primary / actions / danger  the buttons of the stage; form  how to start (extra fields are marked `more`)
+ * Everything is text, bounded and checked here: the browser never receives anything else.
+ */
+export function sanitizeView(raw) {
+  if (!isObj(raw) || !VIEW_TYPES.has(raw.type) || !STAGES.has(raw.stage)) return null;
+  const btns = (list, max) => (Array.isArray(list) ? list : []).map(sanitizeButton).filter(Boolean).slice(0, max);
+  const count = raw.count === null || raw.count === undefined ? null : num(raw.count, 0, 0, 1_000_000);
+  return {
+    type: raw.type, stage: raw.stage, title: clean(raw.title, 140), sub: clean(raw.sub, 80), note: clean(raw.note, 120),
+    until: isoOr(raw.until), from: isoOr(raw.from), count, unit: clean(raw.unit, 16), word: clean(raw.word, 40),
+    bars: (Array.isArray(raw.bars) ? raw.bars : []).filter(isObj).slice(0, 8).map((x) => ({ text: clean(x.text, 60), n: num(x.n, 0, 0, 1_000_000), pct: num(x.pct, 0, 0, 100), lead: x.lead === true })),
+    names: (Array.isArray(raw.names) ? raw.names : []).filter(isObj).slice(0, 6).map((x) => ({ text: clean(x.text, 40), action: ID_RE.test(String(x.action ?? "")) ? String(x.action) : "", label: clean(x.label, 30), loss: clean(x.loss, 40), values: sanitizeValues(x.values) })),
+    chips: btns(raw.chips, 3), primary: btns([raw.primary], 1)[0] ?? null, actions: btns(raw.actions, 4), danger: btns([raw.danger], 1)[0] ?? null, form: sanitizeForm(raw.form),
+  };
+}
+
 /** Un panneau décrit par un module, ramené à une forme sûre et bornée (le navigateur ne reçoit que cela). Renvoie null s'il est inutilisable. */
 export function sanitizePanel(raw) {
   if (!isObj(raw)) return null;
@@ -167,22 +212,15 @@ export function sanitizePanel(raw) {
   const buttons = (Array.isArray(raw.buttons) ? raw.buttons : []).filter((b) => isObj(b) && ID_RE.test(String(b.id ?? "")) && clean(b.label, 40)).slice(0, LIMITS.buttons).map((b) => ({
     id: String(b.id), label: clean(b.label, 40), tone: TONES.has(b.tone) ? b.tone : "plain", confirm: b.confirm ? clean(b.confirm, 120) : "", disabled: b.disabled === true,
   }));
-  const forms = (Array.isArray(raw.forms) ? raw.forms : []).filter((f) => isObj(f) && ID_RE.test(String(f.id ?? "")) && clean(f.title, 60)).slice(0, LIMITS.forms).map((f) => ({
-    id: String(f.id), title: clean(f.title, 60), submit: clean(f.submit, 30) || "OK", confirm: f.confirm ? clean(f.confirm, 120) : "",
-    fields: (Array.isArray(f.fields) ? f.fields : []).filter((x) => isObj(x) && /^[a-z][a-z0-9_]{0,19}$/.test(String(x.name ?? ""))).slice(0, LIMITS.fields).map((x) => ({
-      name: String(x.name), label: clean(x.label, 40), type: FIELD_TYPES.has(x.type) ? x.type : "text", required: x.required === true,
-      max: num(x.max, 60, 1, 200), placeholder: clean(x.placeholder, 40), example: clean(x.example, 60), more: x.more === true, value: clean(x.value, 60),
-      options: x.type === "select" ? (Array.isArray(x.options) ? x.options : []).slice(0, 12).filter((o) => isObj(o)).map((o) => ({ value: clean(o.value, 30), label: clean(o.label, 40) })) : [],
-    })),
-  }));
-  return { title, tab: clean(raw.tab, 30), state, buttons, forms };
+  const forms = (Array.isArray(raw.forms) ? raw.forms : []).slice(0, LIMITS.forms).map(sanitizeForm).filter(Boolean);
+  return { title, tab: clean(raw.tab, 30), state, buttons, forms, view: sanitizeView(raw.view) };
 }
 
 /** Les valeurs d'un formulaire de télécommande : texte seulement, bornées (le module qui reçoit valide à son tour). */
 export function sanitizeValues(raw) {
   const out = {};
   if (!isObj(raw)) return out;
-  for (const [k, v] of Object.entries(raw).slice(0, LIMITS.fields)) if (/^[a-z][a-z0-9_]{0,19}$/.test(k)) out[k] = clean(typeof v === "number" ? String(v) : v, 200);
+  for (const [k, v] of Object.entries(raw).slice(0, LIMITS.fields)) if (/^[a-z][a-z0-9_]{0,19}$/.test(k) && (typeof v === "string" || typeof v === "number")) out[k] = clean(typeof v === "number" ? String(v) : v, 200);
   return out;
 }
 

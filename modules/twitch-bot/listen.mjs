@@ -3,6 +3,7 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const es = await import(`./eventsub.mjs${v}`);
 const { ensureSecret, readState, updateState } = await import(`./state.mjs${v}`);
+const st = await import(`./state.mjs${v}`);
 const { resolveChannel, firstAccount } = await import(`./channel.mjs${v}`);
 
 const SERVICE = "twitch.api";
@@ -51,6 +52,7 @@ const lacks = (acc, scopes) => scopes.filter((x) => !(acc?.scopes ?? []).include
 
 /** Dit au Connecteur Twitch ce dont le bot a besoin pour cette chaîne (il l'ajoute à ses autorisations) — idempotent. */
 export async function declareScopes(ctx, s, channel) {
+  forgetDiagnosis(ctx);
   const n = need(s), returnTo = `/admin/instances/${ctx.instance.id}`;
   // Les autorisations des récompenses ne sont demandées qu'une fois la propriétaire entrée dans l'onglet Récompenses et ayant dit oui : le chat ne s'arrête jamais pour ça.
   const main = (await readState(ctx)).rewardsOn === true ? [...new Set([...n.main, ...es.REWARD_SCOPES])] : n.main;
@@ -80,6 +82,29 @@ export async function diagnose(ctx, s, { declare = true } = {}) {
   }
   if (!isPublicSite(ctx.api.siteUrl)) return { code: "site_private", ...base };
   return { code: "ready", ...base, broadcasterId: main.userId, senderId: s.replyAs === "bot" ? bot.userId : main.userId, slot: s.replyAs === "bot" ? "bot" : "main" };
+}
+
+/**
+ * The diagnosis for the CHAT: the same as `diagnose`, but a "ready" diagnosis is remembered for `timing.diagnoseMs` (a burst of messages does not check the accounts for every message;
+ * two simultaneous messages share one check). Never remembered when something is missing: the admin page and the chat see a reconnection at once.
+ * Forgotten as soon as a send fails, permissions are declared or an account setting changes (`replyAs`, `channel`, site address).
+ */
+export const timing = { diagnoseMs: 5000, sendParallel: 3 };
+export const forgetDiagnosis = (ctx) => { const m = st.memoryOf(ctx); m.diag = null; };
+export async function diagnoseFast(ctx, s) {
+  const m = st.memoryOf(ctx), fp = `${s.replyAs}|${s.channel}|${ctx.api.siteUrl ?? ""}`;
+  const hit = m.diag;
+  if (hit && hit.fp === fp) {
+    if (hit.d && hit.until > Date.now()) return hit.d;
+    if (hit.flight) return hit.flight;
+  }
+  const entry = { fp, d: null, until: 0, flight: null };
+  entry.flight = diagnose(ctx, s, { declare: false }).then((d) => {
+    if (m.diag === entry) { if (d.code === "ready" && timing.diagnoseMs > 0) { entry.d = d; entry.until = Date.now() + timing.diagnoseMs; } else m.diag = null; entry.flight = null; }
+    return d;
+  }, (e) => { if (m.diag === entry) m.diag = null; throw e; });
+  m.diag = entry;
+  return entry.flight;
 }
 
 const FAIL = { auth: "need_reconnect", scope: "need_more", config: "creds_missing", rate: "twitch_busy", network: "twitch_down" };
@@ -128,9 +153,26 @@ export async function ensureListening(ctx, s, { renew = false, settle = false } 
   return { code };
 }
 
-/** Envoie un message dans le chat avec le compte qui répond. { sent: true, messageId } ou { sent: false, code, detail? } ; ne lève jamais. */
-export async function sendChat(ctx, d, text) {
+/**
+ * Sends a message to the chat with the account that answers. { sent: true, messageId } or { sent: false, code, detail? }; never throws.
+ * The sends of one instance leave through a FIFO queue, `timing.sendParallel` at a time (nothing waits when the queue is empty): replies start in the order they were asked, and a burst of
+ * answers cannot overrun the core's network client (4 calls at a time, 16 admitted per host, beyond which a call is refused at once, which would be a lost reply). The queue is drained
+ * as soon as a place is free; the number of replies per 30 s is still limited by `takeSendSlot`. Three at a time leaves a place for the other calls to Twitch (live state, accounts).
+ */
+export function sendChat(ctx, d, text) {
+  const m = st.memoryOf(ctx);
+  const q = (m.outbox ??= { active: 0, waiting: [] });
+  return new Promise((resolve) => {
+    const go = () => {
+      q.active += 1;
+      sendNow(ctx, d, text).then(resolve, (e) => resolve({ sent: false, code: "twitch", detail: String(e?.message ?? e).slice(0, 80) })).finally(() => { q.active -= 1; q.waiting.shift()?.(); });
+    };
+    if (q.active < timing.sendParallel) go(); else q.waiting.push(go);
+  });
+}
+async function sendNow(ctx, d, text) {
   const res = await twitch(ctx, d.channel, es.sendRequest({ broadcasterId: d.broadcasterId, senderId: d.senderId, text, slot: d.slot }));
+  if (!res.ok || res.status === 401 || res.status === 403) forgetDiagnosis(ctx);   // a refusal or an outage: at the next message the accounts are checked again
   if (!res.ok) return { sent: false, code: res.error === "auth" || res.error === "scope" ? "denied" : res.error === "rate" ? "rate" : "twitch" };
   return es.readSend(res);
 }

@@ -256,7 +256,7 @@ test("télécommande de bout en bout : la streameuse lance, passe au suivant, la
   const press = (action, values = {}, panel = "id-polls") => audDef.routes["remote-press"](areq("https://x.test/m/audience/remote-press", { k: rk, panel, action, values }), w.aud).then(async (r) => ({ status: r.status, ...(await r.json()) }));
   let st = await state();
   const panel = st.panels[0];
-  assert.equal(panel.title, "Sondages"); assert.deepEqual(panel.buttons.map((b) => [b.id, b.disabled]), [["start", false], ["next", true], ["stop", true]]);
+  assert.equal(panel.title, "Sondages"); assert.deepEqual(panel.buttons.map((b) => [b.id, b.disabled]), [["start", false], ["next", true], ["stop", true], ["poll-yesno", false]]);
   assert.equal(panel.buttons[2].tone, "danger"); assert.ok(panel.buttons[2].confirm);
   assert.deepEqual(panel.forms[0].fields.map((f) => f.name), ["a", "b", "c", "d", "seconds"]); assert.equal(panel.forms[0].fields[4].options.length, 4);
   let r = await press("start"); assert.deepEqual([r.status, r.ok], [200, true]); assert.match(r.message, /C'est parti/);

@@ -366,6 +366,24 @@ export async function clear(ctx, { who = "admin", now = Date.now() } = {}) {
   return out;
 }
 
+/** "Cancel the draw" (remote): sign-ups are closed if they were open, then the list is emptied. Two journal lines, the same as "Close" then "Empty" on the website. */
+export async function cancel(ctx, { who = "remote", now = Date.now() } = {}) {
+  const cur = await current(ctx, now);
+  if (!cur) return err("none");
+  if (P.stateOf(cur, now) === "open") { const c = await close(ctx, { who, now }); if (!c.ok && c.error !== "not_open") return c; }
+  return clear(ctx, { who, now });
+}
+
+/** "Pick someone else" from the remote: the last person drawn is not here (or `pid`, when given). */
+export async function redrawLast(ctx, { pid, who = "remote", rnd, now = Date.now() } = {}) {
+  const cur = await current(ctx, now);
+  if (!cur || cur.purged) return err("gone");
+  const last = picked(cur).at(-1);
+  const target = pid ?? last?.k;
+  if (!target) return err("gone");
+  return redraw(ctx, { pid: target, who, rnd, now });
+}
+
 /* ───────────── Pour l'administration ───────────── */
 
 export async function entriesPage(ctx, d, cursor, limit = DRAW.pageSize) {
@@ -462,10 +480,18 @@ export async function remotePanel(ctx, now = Date.now()) {
   const many = d && P.winnersCount(d.winners) > 1 ? P.winnersCount(d.winners) : 1;
   const replaces = st !== "open" && !!d && !d.purged && (d.count || 0) > 0 && ((d.picked ?? []).length > 0 || st === "drawn");
   // Une action = un bouton + des réglages modifiables, préremplis par les valeurs du dernier tirage (voir `actionForm`, réutilisable par les autres panneaux).
+  const canPick = !!d && !d.purged && eligibleLeft(d) > 0;
+  const winnersNow = d ? picked(d) : [];
+  const canReopen = st === "closed" && !!d && !d.purged && !(d.picked ?? []).length;
   const buttons = [
     ...(st === "open" ? [{ id: "draw-close", label: t("drawBtnClose"), tone: "danger", confirm: t("drawCloseConfirm") }] : []),
     // « Tirer » n'apparaît que s'il y a quelqu'un à tirer : sinon le seul bouton principal est « Ouvrir le tirage » (R3)
-    ...(st === "open" || (d && !d.purged && eligibleLeft(d) > 0) ? [{ id: "draw-pick", label: many > 1 ? t("drawBtnPickMany", { n: many }) : t("drawBtnPick"), tone: "primary", confirm: t("drawPickConfirm"), disabled: !d || d.purged || eligibleLeft(d) < 1 }] : []),
+    ...(st === "open" || canPick ? [{ id: "draw-pick", label: many > 1 ? t("drawBtnPickMany", { n: many }) : t("drawBtnPick"), tone: "primary", confirm: t("drawPickConfirm"), disabled: !d || d.purged || eligibleLeft(d) < 1 }] : []),
+    // Live powers (the same gestures as the administration): reopen sign-ups, pick someone else, cancel the whole draw.
+    ...(canReopen ? [{ id: "draw-reopen", label: t("drawBtnReopen") }] : []),
+    ...(st === "drawn" && winnersNow.length ? [{ id: "draw-redraw", label: t("drawBtnRedraw"), confirm: t("drawBtnRedrawConfirm") }] : []),
+    ...(d && !d.purged && st !== "none" && ((d.count || 0) > 0 || st === "open") ? [{ id: "draw-cancel", label: t("drawBtnCancel"), tone: "danger", confirm: t("drawCancelConfirm") }] : []),
+    { id: "panic", label: t("remotePanic"), tone: "danger", confirm: t("remotePanicConfirm") },   // "Stop everything": always there (see remote.mjs, panic)
   ];
   const forms = st === "open" ? [] : [actionForm({
     id: "draw-open", title: t("drawRemoteFormTitle"), submit: t("drawBtnOpen"), confirm: replaces ? t("drawOpenConfirm") : "",
@@ -478,7 +504,41 @@ export async function remotePanel(ctx, now = Date.now()) {
       { name: "minutes", label: t("drawFMinutes"), type: "number", more: true, max: 3, example: t("drawRemoteFMinutesEx"), value: d?.minutes ? String(d.minutes) : "" },
     ],
   })];
-  return { title: t("drawRemoteTitle"), tab: t("drawRemoteTitle"), state, buttons, forms };
+  return { title: t("drawRemoteTitle"), tab: t("drawRemoteTitle"), state, buttons, forms, view: drawView(ctx, { d, st, n, many, canPick, canReopen, winnersNow }) };
+}
+
+/** The live view of the prize draw for the dock (same shape as Polls: see `sanitizeView` in lib.mjs). One tap for the main action of each stage. */
+function drawView(ctx, { d, st, n, many, canPick, canReopen, winnersNow }) {
+  const t = (k, v) => ctx.t(k, v);
+  const btn = (id, key, label, short, extra = {}) => ({ id, key, label: t(label, extra.vars), short: t(short, extra.vars), ...(extra.loss ? { loss: extra.loss } : {}), ...(extra.values ? { values: extra.values } : {}), ...(extra.disabled ? { disabled: true } : {}) });
+  const form = {
+    id: "draw-open", title: t("drawRemoteFormTitle"), submit: t("drawBtnOpen"),
+    fields: [
+      { name: "keyword", label: t("drawRemoteFKeyword"), type: "text", max: DRAW.keyword + 1, example: t("drawRemoteFKeywordEx"), value: d?.keyword || t("drawRemoteDefaultKeyword") },
+      { name: "title", label: t("drawRemoteFTitle"), type: "text", max: DRAW.title, example: t("drawRemoteFTitleEx"), value: d?.title || t("drawDefaultTitle"), more: true },
+      { name: "level", label: t("drawFLevel"), type: "select", more: true, value: d?.level || "all", options: P.LEVELS.map((v) => ({ value: v, label: t(`drawLevelShort_${v}`) })) },
+      { name: "site", label: t("drawFSite"), type: "select", more: true, seg: true, value: d && d.site === false ? "0" : "1", options: [{ value: "1", label: t("drawYes"), short: t("drawYes") }, { value: "0", label: t("drawNo"), short: t("drawNo") }] },
+      { name: "winners", label: t("drawFWinners"), type: "number", more: true, max: 2, example: t("drawRemoteFWinnersEx"), value: String(P.winnersCount(d?.winners)) },
+      { name: "minutes", label: t("drawFMinutes"), type: "number", more: true, max: 3, example: t("drawRemoteFMinutesEx"), value: d?.minutes ? String(d.minutes) : "" },
+    ],
+  };
+  const base = { type: "draw", unit: t("dockEntries"), count: n };
+  const cancel = (loss) => btn("draw-cancel", "X", "drawBtnCancel", "drawBtnCancelShort", { loss });
+  if (st === "none" || !d || d.purged) {
+    return { ...base, stage: "idle", count: null, title: t("drawRemoteNone"), sub: d?.title ? t("dockLastDraw", { title: d.title }) : "", chips: d ? [btn("draw-open", "L", "drawChipSame", "drawChipSameShort")] : [], form };
+  }
+  const pick = btn("draw-pick", "D", many > 1 ? "drawBtnPickMany" : "drawBtnPick", "drawBtnPickShort", { vars: { n: many }, disabled: !canPick && st !== "open" });
+  if (st === "open") {
+    return { ...base, stage: "live", title: d.title, sub: d.keyword ? t("dockSayWord") : t("dockSiteOnly"), word: d.keyword || "", from: d.openedAt, until: d.untilClosed ? null : iso(P.deadlineOf(d)),
+      primary: { ...pick, disabled: n < 1 }, actions: [btn("draw-close", "C", "drawBtnClose", "drawBtnClose")], danger: cancel(t("drawCancelConfirm")) };
+  }
+  if (st === "drawn") {
+    return { ...base, stage: "done", title: d.title, sub: t("dockDrawn"), word: "", names: latestBatch(d).map((w) => ({ text: w.pseudo, action: "draw-redraw", label: t("drawBtnNotHere"), loss: t("drawNotHereLoss"), values: { pid: w.k } })),
+      primary: btn("draw-open", "N", "drawBtnNew", "drawBtnNewShort"), actions: [...(canPick ? [pick] : []), btn("compose", "W", "drawBtnOtherWord", "drawBtnOtherWordShort")], danger: cancel(t("drawCancelDrawnLoss")), form };
+  }
+  return { ...base, stage: "done", title: d.title, sub: t("dockClosed"), word: d.keyword || "",
+    primary: canPick ? pick : (canReopen ? btn("draw-reopen", "R", "drawBtnReopen", "drawBtnReopenShort") : btn("draw-open", "N", "drawBtnNew", "drawBtnNewShort")),
+    actions: [...(canPick && canReopen ? [btn("draw-reopen", "R", "drawBtnReopen", "drawBtnReopenShort")] : []), btn("compose", "W", "drawBtnOtherWord", "drawBtnOtherWordShort")], danger: cancel(t("drawCancelConfirm")), form };
 }
 
 /**
@@ -526,12 +586,15 @@ export const errorText = (ctx, code) => ctx.t(({ already_open: "drawErrAlreadyOp
 /** Un geste de la télécommande ou de l'assistant. Renvoie { ok, message } ou { ok: false, error, message }. */
 export async function pressDraw(ctx, action, { who = "remote", now = Date.now(), values = null } = {}) {
   let r;
-  if (action === "draw-open" && values) {   // le formulaire de la télécommande
+  if (action === "draw-open" && values && Object.keys(values).length) {   // the remote's form (with no values: "same as the last one", see below)
     r = await openFromRemote(ctx, values, { who, now });
     if (r.field) return { ok: false, error: "invalid", field: r.field, message: r.message };
     if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") };
   }
   else if (action === "draw-open") { r = await openQuick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") }; }
+  else if (action === "draw-reopen") { r = await reopen(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkReopened") }; }
+  else if (action === "draw-redraw") { r = await redrawLast(ctx, { who, now, pid: typeof values?.pid === "string" ? values.pid : undefined }); if (r.ok) return { ok: true, message: ctx.t("drawOkRedrawn", { names: r.winners.join(", ") }) }; }
+  else if (action === "draw-cancel") { r = await cancel(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkCancelled") }; }
   else if (action === "draw-close") { r = await close(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkClosed") }; }
   else if (action === "draw-pick") { r = await pick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.winners.length > 1 ? "drawOkPickedMany" : "drawOkPicked", { names: r.winners.join(", "), n: r.winners.length }) }; }
   else return { ok: false, error: "invalid" };
