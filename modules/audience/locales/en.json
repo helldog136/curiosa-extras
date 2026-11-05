@@ -297,7 +297,7 @@
   "drawRemoteDefaultKeyword": "!draw",
   "drawRemoteErrWord": "Write a single word, for example !gift",
   "drawRemoteFWinnersEx": "Between 1 and 10",
-  "drawRemoteFMinutesEx": "Empty: until you close it",
+  "drawRemoteFMinutesEx": "Empty: no limit",
   "drawLevelShort_all": "Everyone",
   "drawLevelShort_sub": "Subscribers and moderation",
   "drawLevelShort_mod": "Moderation",

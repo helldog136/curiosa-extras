@@ -297,7 +297,7 @@
   "drawRemoteDefaultKeyword": "!tirage",
   "drawRemoteErrWord": "Écrivez un seul mot, par exemple !cadeau",
   "drawRemoteFWinnersEx": "Entre 1 et 10",
-  "drawRemoteFMinutesEx": "Vide : jusqu'à la fermeture",
+  "drawRemoteFMinutesEx": "Vide : sans limite",
   "drawLevelShort_all": "Tout le monde",
   "drawLevelShort_sub": "Personnes abonnées et modération",
   "drawLevelShort_mod": "Modération",
