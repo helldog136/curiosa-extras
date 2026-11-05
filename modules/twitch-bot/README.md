@@ -148,8 +148,8 @@ The bot answers a chat command in about one round trip to Twitch. What used to c
 - **An older reading answers at once.** Those four readings, and the "only when live" check, may be up to 10 minutes (live state: 1 minute) old and are renewed in the background; `{jeu}`, `{titre}`, `{uptime}` and `{viewers}` still ask for a fresh reading (at most 15 s old).
 - **The configuration and the account check are remembered** (the configuration until you change it, the account check for 5 s, forgotten as soon as a send fails).
 - **The journal is written after the reply.** The call only ends once it is written, so nothing is lost.
-- **Replies leave through a short queue** (3 at a time, in the order they were asked), so a burst cannot overrun the site's network client.
+- **Replies leave through a short queue** (3 at a time, in the order they were asked), so a burst of answers cannot overload the site.
 - **A task runs every minute** (`tick`): it keeps the readings warm, sends a repeat that asks for chat lines already counted at its time, and re-reads the rewards. A silent chat still gets nothing.
 - **A home reward is validated by itself** a few seconds after the home answered (re-reads at 1.5, 4, 9, 20 and 45 s), instead of at the next event from Twitch.
 
-What stays outside the code: Twitch delivers each chat message to the site by a webhook (EventSub), and that hop is Twitch's; the 12 replies per 30 s default (Twitch allows 20, and 100 for the broadcaster and moderators) is a setting.
+What stays outside the code: the time Twitch takes to pass each chat message on to the site is Twitch's own; the default of 12 replies per 30 seconds (Twitch allows 20, and 100 for the channel owner and moderators) is a setting.
