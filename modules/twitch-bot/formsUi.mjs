@@ -26,9 +26,9 @@ export function repeatFields(ctx, view, kind, intent = false) {
 
 /**
  * "Started by": the timer and the chat | the timer only. Two choices are a segmented control (R19), never a switch that reads like a verb (R17). The stored
- * field is still `timerOnly`: "on" means the timer only, "off" the timer and the chat (the action reads `values.timerOnly === "on"`, as it always did).
+ * field is still `timerOnly`: "on" means the timer only, "" (the default, so "More options" does not count it) the timer and the chat (the action reads `values.timerOnly === "on"`, as it always did).
  */
 export function timerOnlyField(ctx, timerOnly, extra = {}) {
   const t = ctx.t;
-  return { name: "timerOnly", label: t("f_timer_only"), kind: "segmented", value: timerOnly ? "on" : "off", options: [{ value: "off", label: t("f_timer_only_both") }, { value: "on", label: t("f_timer_only_timer") }], ...extra };
+  return { name: "timerOnly", label: t("f_timer_only"), kind: "segmented", value: timerOnly ? "on" : "", options: [{ value: "", label: t("f_timer_only_both") }, { value: "on", label: t("f_timer_only_timer") }], ...extra };
 }

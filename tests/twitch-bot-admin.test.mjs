@@ -454,16 +454,16 @@ test("Started by: a two-choice segmented control on the same stored field, folde
     await C.saveCommand(ctx, { kind: "custom" }, { name: "movember", text: "Hello", repeat: { minutes: 15, lines: 5, when: "live", enabled: true }, timerOnly: true }, env);
     await C.saveCommand(ctx, { kind: "custom" }, { name: "regular", text: "Hello", repeat: { minutes: 15, lines: 5, when: "live", enabled: true } }, env);
     const list_ = (await C.loadConfig(ctx)).data.custom;
-    for (const [name, value] of [["movember", "on"], ["regular", "off"]]) {
+    for (const [name, value] of [["movember", "on"], ["regular", ""]]) {
       const b = await A.panel(ctx, { query: { edit: `custom:${list_.find((c) => c.name === name).id}` } });
       const f = formOfBlocks(b, "save").fields.find((x) => x.name === "timerOnly");
       assert.deepEqual([f.kind, f.value, f.label, f.help, f.folded], ["segmented", value, L.f_timer_only, undefined, true], `${lang} ${name}: no switch, no fixed help, folded`);
-      assert.deepEqual(f.options, [{ value: "off", label: L.f_timer_only_both }, { value: "on", label: L.f_timer_only_timer }]);
+      assert.deepEqual(f.options, [{ value: "", label: L.f_timer_only_both }, { value: "on", label: L.f_timer_only_timer }]);
       assert.ok(f.label.length <= 60 && !/:\s*$/.test(f.label));
     }
     const t = await A.panel(ctx, { query: { tab: "timers", timerAdd: "1" } });
     const nf = formOfBlocks(t, "timerNew").fields.find((x) => x.name === "timerOnly");
-    assert.deepEqual([nf.kind, nf.value, nf.folded, nf.help], ["segmented", "off", true, undefined]);
+    assert.deepEqual([nf.kind, nf.value, nf.folded, nf.help], ["segmented", "", true, undefined]);
   }
   assert.ok(!("f_timer_only_help" in en) && !("f_timer_only_help" in fr), "the fixed line is gone");
   assert.ok(!Object.keys(fr).some((k) => /^th_/.test(k)), "the lines written by the page script are gone with it");

@@ -123,3 +123,17 @@ test("en anglais aussi : les fenêtres, les boutons et les confirmations sont é
   assert.match(list.rowActions[1].confirm, /answer.*settings.*repeat.*lost/);
   assert.equal(cellOf(list.rows[0][3]), "On");
 });
+
+test("« Plus d'options » ne compte et ne résume que ce qui s'écarte du défaut (R14) : une commande ordinaire n'a ni pastille ni résumé", async () => {
+  const { summarizeGroup } = await import("@/core/adminkit/summary");
+  const { makeTranslator } = await import("@/core/i18n/dictionary");
+  const summary = async (query) => {
+    const f = dialogsOf(await A.panel(owner.ctx, { query }))[0], folded = foldedFields(f);
+    return summarizeGroup(folded.map((x) => ({ key: x.name, label: x.label, type: x.kind === "switch" ? "boolean" : x.kind === "segmented" ? "select" : x.kind ?? "text", options: x.options, unit: x.unit })), (k) => { const x = folded.find((y) => y.name === k); return x.kind === "switch" ? (x.value === "on" ? true : undefined) : x.value; }, "fr", makeTranslator("fr"));
+  };
+  const key = `custom:${(await C.loadConfig(owner.ctx)).data.custom.find((c) => c.name === "tip").id}`;
+  assert.deepEqual(await summary({ edit: key }), { summary: "", count: 0 });
+  assert.deepEqual(await summary({ new: "1" }), { summary: "", count: 0 });
+  const timer = `custom:${(await C.loadConfig(owner.ctx)).data.custom.find((c) => c.name === "rappel").id}`;
+  assert.ok((await summary({ tab: "timers", edit: timer })).count >= 1, "un timer réglé se voit");
+});
