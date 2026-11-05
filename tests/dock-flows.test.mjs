@@ -108,6 +108,70 @@ test("poll: from a hunch to a running poll in one tap (Yes / No), or two words a
   } finally { await h.close(); }
 });
 
+test("poll: a custom length is typed in ONE field in the length row (Other), Enter starts the poll, a wrong time is explained under it, and the next form offers 'Last: 2:30' in one tap", { skip, timeout: 40_000 }, async () => {
+  for (const locale of ["en", "fr"]) {
+    const h = await open("poll-idle", { locale });
+    try {
+      await h.page.fill("input[name=a]", "Pizza"); await h.page.fill("input[name=b]", "Pasta");
+      assert.equal(await h.page.locator(".seg .cust:visible").count(), 0, "closed: no field, the row is only chips");
+      const other = h.page.locator(".seg label", { hasText: h.T.polls.quickSecOtherShort });
+      const row = await h.page.locator(".seg").boundingBox();
+      await other.click();
+      const cust = h.page.locator(".seg .cust"); await cust.waitFor({ state: "visible" });
+      const box = await cust.boundingBox();
+      assert.ok(box.y >= row.y - 1 && box.y + box.height <= row.y + row.height + 1, "the field sits inside the same row as the chips");
+      assert.equal(await h.page.evaluate(() => document.activeElement.className.includes("cust")), true, "and takes the focus");
+      assert.equal(await cust.getAttribute("placeholder"), h.T.polls.fQuickSecondsShort, "the short example fits the small field"); assert.equal(await cust.getAttribute("title"), h.T.polls.fQuickSecondsExample, "the full one is its tooltip");
+      assert.equal(await cust.getAttribute("enterkeyhint"), "go"); assert.equal(await cust.getAttribute("autocapitalize"), "off");
+      await cust.fill("abc"); await cust.press("Enter"); await settle(h, 400);
+      const err = h.page.locator(".fld .err:not([hidden])");
+      assert.equal(await err.innerText(), h.T.polls.err_quick_seconds, "bounds and an example, under the field");
+      assert.equal(await cust.getAttribute("aria-invalid"), "true"); assert.equal(await h.page.evaluate(() => document.activeElement.className.includes("cust")), true, "the field in error has the focus");
+      assert.equal(await cust.inputValue(), "abc", "what was typed is kept");
+      assert.equal((await polls(h.w)).length, 0, "nothing started");
+      await cust.fill("2:30"); assert.equal(await h.page.locator(".fld .err:not([hidden])").count(), 0, "typing clears the message");
+      await cust.press("Enter"); await settle(h, 600);
+      const p = (await polls(h.w))[0];
+      assert.equal((Date.parse(p.endsAt) - Date.parse(p.createdAt)) / 1000, 150, "Enter started a 2:30 poll");
+      assert.ok((await audit(h.w)).some((l) => l.what === "polls.quick" && l.who === "remote"));
+      await h.page.locator(".clock").waitFor();   // the stage shows the running poll
+      await h.page.click(".btn.primary"); await settle(h, 500);   // close
+      await btn(h, h.T.polls.dockNewPollShort).click(); await settle(h, 200);
+      const last = h.page.locator(".seg label.lastopt"); assert.equal(await last.innerText(), "↺2:30"); assert.equal(await last.getAttribute("aria-label"), h.T.polls.dockLastOne.replace("{what}", "2:30"));
+      await h.page.fill("input[name=a]", "Pizza"); await h.page.fill("input[name=b]", "Pasta");
+      await last.click(); await h.page.click(".btn.primary"); await settle(h, 600);
+      const q = (await polls(h.w)).find((x) => L.stateOf(x) === "open"); assert.equal((Date.parse(q.endsAt) - Date.parse(q.createdAt)) / 1000, 150, "one tap on Last repeats it");
+      assert.deepEqual(h.errors, []);
+    } finally { await h.close(); }
+  }
+});
+
+test("poll: a typed question becomes the title of Yes / No in one tap; the last question comes back as a chip; empty keeps the one-tap default", { skip, timeout: 40_000 }, async () => {
+  const h = await open("poll-idle");
+  try {
+    await btn(h, "Yes / No").click(); await settle(h, 500);
+    assert.equal((await polls(h.w))[0].question, h.T.polls.quickQuestion2.replace("{a}", "Yes").replace("{b}", "No"), "no question: the usual title");
+    await h.page.click(".btn.primary"); await settle(h);   // close
+    await btn(h, h.T.polls.dockNewPollShort).click(); await settle(h, 200);
+    assert.equal(await h.page.locator(".recall").count(), 0, "nothing typed before: no 'Last' chip");
+    const q = h.page.locator("input[name=question]");
+    assert.equal(await q.getAttribute("placeholder"), h.T.polls.fQuickQuestionExample); assert.equal(await q.getAttribute("maxlength"), "140");
+    await q.fill("Do we raid now?");
+    await btn(h, "Yes / No").click(); await settle(h, 600);
+    const open = (await polls(h.w)).find((x) => L.stateOf(x) === "open");
+    assert.equal(open.question, "Do we raid now?"); assert.deepEqual(open.choices.map((c) => c.text), ["Yes", "No"]);
+    assert.equal(await h.page.locator(".view .ttl").first().innerText(), "Do we raid now?", "the stage shows the title");
+    await h.page.click(".btn.primary"); await settle(h);
+    await btn(h, h.T.polls.dockNewPollShort).click(); await settle(h, 200);
+    assert.equal(await q.inputValue(), "", "the field is empty again: the next Yes / No uses the default");
+    const rec = h.page.locator(".recall"); assert.equal(await rec.innerText(), h.T.polls.dockLastOne.replace("{what}", "Do we raid now?"));
+    await rec.click(); assert.equal(await q.inputValue(), "Do we raid now?");
+    await h.page.fill("input[name=a]", "Pizza"); await h.page.fill("input[name=b]", "Pasta"); await h.page.click(".btn.primary"); await settle(h, 600);
+    assert.equal((await polls(h.w)).find((x) => L.stateOf(x) === "open").question, "Do we raid now?", "the A / B form uses the same field");
+    assert.deepEqual(h.errors, []);
+  } finally { await h.close(); }
+});
+
 test("draw: open with the word, draw, 'not here' asks to confirm then draws someone else, cancel asks to confirm", { skip, timeout: 30_000 }, async () => {
   const h = await open("draw-idle");
   try {

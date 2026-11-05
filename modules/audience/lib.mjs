@@ -166,7 +166,8 @@ export function sanitizeForm(f) {
     fields: (Array.isArray(f.fields) ? f.fields : []).filter((x) => isObj(x) && /^[a-z][a-z0-9_]{0,19}$/.test(String(x.name ?? ""))).slice(0, LIMITS.fields).map((x) => ({
       name: String(x.name), label: clean(x.label, 40), type: FIELD_TYPES.has(x.type) ? x.type : "text", required: x.required === true,
       max: num(x.max, 60, 1, 200), placeholder: clean(x.placeholder, 40), example: clean(x.example, 60), more: x.more === true, value: clean(x.value, 60), seg: x.seg === true,
-      options: x.type === "select" ? (Array.isArray(x.options) ? x.options : []).slice(0, 12).filter((o) => isObj(o)).map((o) => ({ value: clean(o.value, 30), label: clean(o.label, 40), short: clean(o.short, 10) })) : [],
+      low: x.low === true, recall: clean(x.recall, 140), recallLabel: clean(x.recallLabel, 150),
+      options: x.type === "select" ? (Array.isArray(x.options) ? x.options : []).slice(0, 12).filter((o) => isObj(o)).map((o) => ({ value: clean(o.value, 30), label: clean(o.label, 40), short: clean(o.short, 10), custom: o.custom === true, last: o.last === true })) : [],
     })),
   };
 }
@@ -175,7 +176,8 @@ export function sanitizeForm(f) {
 function sanitizeButton(b) {
   if (!isObj(b) || !ID_RE.test(String(b.id ?? "")) || !clean(b.label, 40)) return null;
   const key = String(b.key ?? "").toUpperCase();
-  return { id: String(b.id), label: clean(b.label, 40), short: clean(b.short, 14), key: /^[A-Z0-9]$/.test(key) ? key : "", values: sanitizeValues(b.values), loss: clean(b.loss, 40), disabled: b.disabled === true };
+  const withNames = (Array.isArray(b.with) ? b.with : []).map(String).filter((n) => /^[a-z][a-z0-9_]{0,19}$/.test(n)).slice(0, 4);   // fields of the start form whose typed value goes along with this button
+  return { id: String(b.id), label: clean(b.label, 40), short: clean(b.short, 14), key: /^[A-Z0-9]$/.test(key) ? key : "", values: sanitizeValues(b.values), with: withNames, loss: clean(b.loss, 40), disabled: b.disabled === true };
 }
 
 const VIEW_TYPES = new Set(["poll", "draw"]);

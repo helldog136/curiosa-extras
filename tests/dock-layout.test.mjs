@@ -123,6 +123,13 @@ test("dock layout: the more-options sheet, the confirm / undo row, a field error
       await h.page.click("button.undo");
       h.srv.down(true); await h.page.waitForSelector("#strip.bad", { timeout: 12_000 }); await check(h, "offline");
     } finally { await h.close(); }
+    h = await open(await scene("poll-idle-last", { locale }), { viewport: vp, locale });
+    try {   // the custom length: closed (with the 'Last' chip and a long last question), open, in error, and the question in the options sheet
+      await check(h, "last-chips");
+      await h.page.fill("input[name=a]", "Pizza"); await h.page.fill("input[name=b]", "Pasta"); await h.page.locator(".seg label", { hasText: /^(Other|Autre)$/ }).click(); await h.page.waitForTimeout(150); await check(h, "custom-open");
+      await h.page.locator(".seg .cust").fill("2m 30 x"); await h.page.locator(".seg .cust").press("Enter"); await h.page.waitForTimeout(400); await check(h, "custom-error");
+      await h.page.click(".btn.more"); await h.page.waitForTimeout(150); await check(h, "sheet-last");
+    } finally { await h.close(); }
     for (const [name, tabId] of [["poll-run8", "poll"], ["poll-done8", "poll"], ["draw-drawn5", "draw"], ["chat", "chat"]]) {
       h = await open(await scene(name, { locale }), { viewport: vp, locale });
       try {

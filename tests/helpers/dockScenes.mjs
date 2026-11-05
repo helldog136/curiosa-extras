@@ -31,6 +31,7 @@ export async function scene(name, { locale = "en" } = {}) {
   const finish = async (slug) => { const p = (await w.polls.api.store.list("polls")).find((x) => x.data.slug === slug); await pollsDef.mcp.poll_close(w.polls, { id: p.id }); };
   switch (name) {
     case "poll-idle": break;
+    case "poll-idle-last": await w.polls.api.store.add("meta", { k: "dock", seconds: 150, question: q.slice(0, 140) }, { key: "dock" }); break;   // a long last question and a last custom time: the extra chips of the start form
     case "poll-idle-again": { const r = await regular("A or B", ["Cats", "Dogs"], { c1: 2 }); await finish(r.slug); await w.polls.api.store.update((await w.polls.api.store.list("polls"))[0].id, { ...(await w.polls.api.store.list("polls"))[0].data, closedAt: new Date(now - 2 * 3_600_000).toISOString() }); break; }
     case "poll-run2": await regular(fr ? "Chats ou chiens" : "Cats or dogs", fr ? ["Chats", "Chiens"] : ["Cats", "Dogs"], { c1: 9, c2: 5 }); break;
     case "poll-run3": await regular(fr ? "Quel jeu" : "Which game", CHOICES8.slice(0, 3), { c1: 4, c2: 9, c3: 2 }); break;
@@ -53,4 +54,4 @@ export async function scene(name, { locale = "en" } = {}) {
   }
   return w;
 }
-export const SCENES = ["poll-idle", "poll-run2", "poll-run3", "poll-run4", "poll-run8", "poll-long2", "poll-done2", "poll-done8", "poll-round", "draw-idle", "draw-idle-prev", "draw-open", "draw-open-timed", "draw-drawn1", "draw-drawn5", "draw-closed", "chat", "chat-empty"];
+export const SCENES = ["poll-idle", "poll-idle-last", "poll-run2", "poll-run3", "poll-run4", "poll-run8", "poll-long2", "poll-done2", "poll-done8", "poll-round", "draw-idle", "draw-idle-prev", "draw-open", "draw-open-timed", "draw-drawn1", "draw-drawn5", "draw-closed", "chat", "chat-empty"];
