@@ -1,81 +1,215 @@
-// Captures de l'administration du Bot Twitch (non lancé par npm test) :
-//   cd $CURIOSA_DIR && node --import ./tests/helpers/register.mjs <ce dépôt>/tests/visual/render.mjs <dossier de pages>
-//   NODE_PATH=<modules node globaux> CHROMIUM_PATH=<chrome> node <ce dépôt>/tests/visual/shoot.cjs '[{"page":"list","w":1280,"theme":"light","name":"liste"}]' <dossier de pages> <dossier de captures>
-// Génère les pages HTML de l'administration du Bot Twitch (mêmes blocs que le cœur, rendus par un petit rendu qui reproduit le balisage des formulaires du cœur 0.5.1).
+// Captures de l'administration du Bot Twitch (non lancé par npm test) : la liste, la fenêtre « Nouvelle commande » / « Modifier », la confirmation de suppression et une erreur, aux largeurs
+// 1280 et 390 px, en clair et en sombre, en français et en anglais. Les tableaux et les formulaires sont rendus par les VRAIS composants du cœur (AdminTable, AdminBlockForm, DialogLink),
+// sans JavaScript (rendu statique) ; ce que le navigateur ajoute seulement quand la page est vivante est rejoué par un petit script copié du cœur : les messages d'erreur sous les champs
+// (`useFieldErrorsDom`) et la boîte de confirmation (`askConfirm`, compilée telle quelle). Les messages d'erreur sont ceux que renvoient les VRAIES actions du module. Toutes les données sont inventées.
+//   cd $CURIOSA_DIR && PREVIEWS_CSS=<app.css compilé du cœur> CHROMIUM_PATH=<chrome> node --import ./tests/helpers/register.mjs <ce dépôt>/tests/visual/render.mjs <dossier de captures> [scène…]
+// Le CSS : postcss + @tailwindcss/postcss sur src/app/globals.css du cœur (voir scripts/shoot-previews.mjs).
 import fs from "node:fs";
-import { ownerWorld } from "../helpers/ownerSet.mjs";
-import { world, C, SRC, say, NOW } from "../helpers/botWorld.mjs";
-const { adminThemeCss } = await import(`${process.env.CURIOSA_DIR}/src/core/adminTheme.ts`);
-const A = await import("../../modules/twitch-bot/admin.mjs");
-const T = await import("../../modules/twitch-bot/timers.mjs");
-const OUT = process.argv[2];
-const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+import path from "node:path";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import assert from "node:assert/strict";
+import { fakeCtx } from "../helpers/fakeCtx.mjs";
+import { fakeRewardsApi } from "../helpers/fakeRewards.mjs";
+import { fakeHaBridge } from "../helpers/fakeHaBridge.mjs";
+import { world, entry, link, C, SRC } from "../helpers/botWorld.mjs";
+import { CSS, esc, messages } from "./previews/kit.mjs";
 
-function field(f) {
-  const id = `f_${f.name}`;
-  if (f.kind === "hidden") return `<input type="hidden" name="${esc(f.name)}" value="${esc(f.value ?? "")}">`;
-  const help = f.help ? `<p class="help">${esc(f.help)}</p>` : "";
-  if (f.kind === "checkbox") return `<div class="wrap"><div><div class="cb"><label><input type="checkbox" name="${f.name}" value="on"${f.value === "on" ? " checked" : ""}> ${esc(f.label)}</label></div>${help}</div></div>`;
-  const ctl = f.kind === "textarea" ? `<textarea id="${id}" name="${f.name}" rows="4" ${f.required ? "required" : ""}>${esc(f.value ?? "")}</textarea>`
-    : f.kind === "select" ? `<select id="${id}" name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}"${o.value === f.value ? " selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`
-    : `<input id="${id}" name="${f.name}" type="${f.kind ?? "text"}" value="${esc(f.value ?? "")}" ${f.required ? "required" : ""}>`;
-  return `<div class="wrap${f.kind === "textarea" ? " full" : ""}"><div><label for="${id}">${esc(f.label)}</label>${ctl}${help}</div></div>`;
-}
-function block(b) {
+const here = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(here, "../..");
+const CORE = process.env.CURIOSA_DIR ?? process.cwd();
+const OUT = path.resolve(process.argv[2] ?? "shots");
+const ONLY = process.argv.slice(3);
+const coreRequire = createRequire(`${CORE}/package.json`);
+const React = coreRequire("react");
+const { renderToStaticMarkup } = coreRequire("react-dom/server");
+const ts = coreRequire("typescript");
+const h = React.createElement;
+const { adminThemeCss } = await import("@/core/adminTheme");
+const { HelpTipProvider } = await import("@/components/admin/HelpTip");
+const kit = await import("@/components/site/adminKit");
+const { formLabels, tableLabels } = await import("@/components/admin/kitLabels");
+const { makeTranslator } = await import("@/core/i18n/dictionary");
+const need = (name) => { for (const base of [process.env.PLAYWRIGHT_MODULE, `${CORE}/node_modules`, "/opt/node-tools/node_modules"].filter(Boolean)) { try { return createRequire(path.join(base, "x.js"))(name); } catch { /* suivant */ } } throw new Error(`${name} introuvable`); };
+const { chromium } = need("playwright");
+
+const A = await import("../../modules/twitch-bot/admin.mjs");
+const RA = await import("../../modules/twitch-bot/rewardsAdmin.mjs");
+const es = await import("../../modules/twitch-bot/eventsub.mjs");
+const S = await import("../../modules/twitch-bot/state.mjs");
+const R = await import("../../modules/twitch-bot/rewards.mjs");
+const J = await import("../../modules/twitch-bot/redeem.mjs");
+const manifest = JSON.parse(fs.readFileSync(path.join(REPO, "modules/twitch-bot/module.json"), "utf8"));
+const CLIENT = fs.readFileSync(path.join(REPO, "modules/twitch-bot/adminkit.client.js"), "utf8");
+fs.mkdirSync(OUT, { recursive: true });
+
+/* ───────────── Le rendu : les composants du cœur, la fenêtre au-dessus de la page ───────────── */
+
+const tone = { info: "border-line", success: "border-success", warning: "border-warning" };
+const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="underline" href="$2">$1</a>');
+function renderBlock(b, locale) {
+  const tr = makeTranslator(locale);
   switch (b.type) {
-    case "heading": return `<h2 class="h">${esc(b.text)}</h2>`;
-    case "markdown": return `<p class="md">${md(b.text)}</p>`;
-    case "html": return `<div data-skin-part="module-html">${b.html}</div>`;
-    case "banner": return `<div class="banner ${b.tone ?? "info"}">${esc(b.text)}</div>`;
-    case "table": return `<div style="overflow-x:auto"><table class="coretable"><thead><tr>${b.columns.map((c) => `<th>${esc(c)}</th>`).join("")}${b.rowActions ? "<th></th>" : ""}</tr></thead><tbody>${b.rows.map((r, i) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}${b.rowActions ? `<td>${b.rowActions.map((a) => `<button class="btn${a.danger ? " danger" : ""}">${esc(a.label)}</button>`).join(" ")}</td>` : ""}</tr>`).join("")}</tbody></table></div>`;
-    case "adminForm": return `<form class="card" onsubmit="return false">${b.fields.filter((f) => f.kind === "hidden").map(field).join("")}<div class="grid">${b.fields.filter((f) => f.kind !== "hidden").map(field).join("")}</div><div class="actions"><button class="primary" type="submit">${esc(b.submitLabel)}</button>${b.cancelHref ? '<a class="btn" href="' + b.cancelHref + '">↩</a>' : ""}</div></form>`;
+    case "heading": return `<h2 class="text-xl font-semibold">${esc(b.text)}</h2>`;
+    case "markdown": return `<p class="text-[15px] leading-relaxed">${md(b.text)}</p>`;
+    case "html": return `<div>${b.html}</div>`;
+    case "banner": return `<div class="rounded-xl border ${tone[b.tone ?? "info"]} bg-surface px-4 py-3 text-[15px]">${esc(b.text)}</div>`;
+    case "links": return `<p class="flex flex-wrap gap-x-3 gap-y-2">${b.items.map((i) => renderToStaticMarkup(h(kit.DialogLink, { href: i.href, className: "inline-flex min-h-11 items-center rounded-xl border border-line bg-surface px-4 text-sm font-medium" }, i.label))).join("")}</p>`;
+    case "table": return renderToStaticMarkup(h(kit.AdminTable, { block: b, instanceId: "i1", labels: tableLabels(tr) }));
+    case "adminForm": return renderToStaticMarkup(h(HelpTipProvider, { label: "?" }, h(kit.AdminBlockForm, { instanceId: "i1", block: b, labels: formLabels(tr, locale, b) })));
     default: return "";
   }
 }
-const BASE = `
-*{box-sizing:border-box}body{margin:0;background:var(--v-bg);color:var(--v-fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px}
-.page{max-width:1080px;margin:0 auto;padding:24px 16px 80px}.stack>*+*{margin-top:1.5rem}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--v-line);margin-bottom:20px;overflow-x:auto}.tabs a{padding:10px 14px;text-decoration:none;color:var(--v-muted);white-space:nowrap}.tabs a.on{color:var(--v-fg);border-bottom:2px solid var(--v-accent);font-weight:600}
-.h{font-size:20px;font-weight:600;margin:0}.md{margin:0;color:var(--v-fg);line-height:1.5}.md a{color:var(--v-accent)}
-.banner{padding:12px 16px;border-radius:12px;border:1px solid var(--v-line);background:var(--v-surface)}.banner.warning{border-color:#e0a030}.banner.success{border-color:#3aa86a}
-.card{border:1px solid var(--v-line);border-radius:16px;background:var(--v-surface);padding:20px}.grid{display:grid;gap:16px}@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}.wrap.full{grid-column:1/-1}}
-label{display:block;margin-bottom:6px;font-size:15px;font-weight:500}.cb label{display:flex;gap:8px;align-items:center}
-input:not([type=checkbox]):not([type=hidden]),select,textarea{width:100%;border:1px solid var(--v-line);border-radius:12px;background:var(--v-bg);color:var(--v-fg);padding:10px 16px;font:inherit}
-.help{margin:6px 0 0;font-size:13px;color:var(--v-muted);max-width:70ch}.actions{display:flex;gap:12px;margin-top:16px;align-items:center}
-.primary{background:var(--v-accent);color:var(--v-accent-fg);border:0;border-radius:12px;padding:10px 20px;font:inherit;font-weight:600;cursor:pointer}
-.btn{display:inline-flex;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-fg);padding:8px 16px;font:inherit;text-decoration:none;cursor:pointer}.btn.danger{color:#dc2626}
-.coretable{width:100%;border-collapse:collapse}.coretable th,.coretable td{padding:8px 12px;text-align:left;border-top:1px solid var(--v-line)}
-`;
-function page(blocks, { tab = "use", theme = "light" } = {}) {
-  const tabs = [["use", "Commandes"], ["timers", "Timers"], ["rewards", "Récompenses"], ["settings", "Réglages"], ["sources", "Sources"], ["general", "Général"]];
+const isDialog = (b) => b.type === "adminForm" && b.presentation === "dialog";
+
+/** Le texte de `confirmDialog.ts` du cœur, compilé tel quel : la boîte est celle de la vraie page. */
+const ASK = ts.transpileModule(fs.readFileSync(`${CORE}/src/components/admin/confirmDialog.ts`, "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace(/^export /m, "");
+/** Ce que `useFieldErrorsDom` (src/components/admin/FieldErrors.tsx) fait au DOM, rejoué après le rendu statique. */
+const SHOW_ERRORS = `window.showErrors = function (errors) {
+  var root = document.querySelector("[data-testid='edit-dialog-form']");
+  Object.keys(errors).forEach(function (key) {
+    var el = root.elements.namedItem(key); if (!el) return;
+    if (el.type === "hidden") el = el.closest("[data-duration-field]") ? el.closest("[data-duration-field]").querySelector("input:not([type=hidden])") : el;
+    var id = "err-" + key, p = document.createElement("p"); p.id = id; p.setAttribute("data-field-error", "");
+    p.className = "mt-1.5 flex items-start gap-1.5 text-sm font-medium text-red-700";
+    var i = document.createElement("span"); i.setAttribute("aria-hidden", "true"); i.textContent = "\\u26A0";
+    var t = document.createElement("span"); t.className = "min-w-0 [overflow-wrap:anywhere]"; t.textContent = errors[key];
+    p.append(i, t); var holder = el.closest("[data-duration-field]") || el; holder.after(p);
+    el.setAttribute("aria-invalid", "true"); el.classList.add("border-red-500");
+    var fold = el.closest("details"); if (fold) fold.open = true;
+    el.scrollIntoView({ block: "center" }); el.focus({ preventScroll: true });
+  });
+};`;
+
+function page({ locale, theme, tab, blocks, tabs, title, lead }) {
   const mine = blocks.filter((b) => (b.tab ?? "use") === tab);
-  return `<!doctype html><html lang="fr" data-admin-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bot Twitch</title><style>${adminThemeCss()}${BASE}</style></head><body><div class="page"><h1 style="margin:0 0 16px">🤖 Bot Twitch</h1><nav class="tabs">${tabs.map(([id, l]) => `<a class="${id === tab ? "on" : ""}" href="?tab=${id}">${l}</a>`).join("")}</nav><div class="stack" id="app">${mine.map(block).join("\n")}</div></div></body></html>`;
+  const body = [...mine.filter((b) => !isDialog(b)), ...mine.filter(isDialog)];
+  const inPage = body.filter((b) => !isDialog(b)).map((b) => renderBlock(b, locale)).join("\n");
+  const dialogs = body.filter(isDialog).map((b) => renderBlock(b, locale)).join("\n");
+  const nav = tabs.map(([id, l]) => `<a href="#" class="whitespace-nowrap px-3.5 py-2.5 ${id === tab ? "border-b-2 border-accent font-semibold" : "text-muted"}">${esc(l)}</a>`).join("");
+  return `<!doctype html><html lang="${locale}" data-admin-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${CSS}\n${adminThemeCss()}\nbody{margin:0;background:var(--v-bg);color:var(--v-fg);font-family:system-ui,sans-serif}</style></head><body><div class="mx-auto max-w-5xl px-4 pb-20 pt-6"><h1 class="mb-1 text-2xl font-semibold">🤖 ${esc(title)}</h1><p class="mb-4 text-sm text-muted">${esc(lead)}</p><nav class="mb-5 flex gap-1 overflow-x-auto border-b border-line">${nav}</nav><div class="space-y-6">${inPage}</div></div>${dialogs}</body></html>`;
 }
 
-const { ctx, tw } = await ownerWorld({ settings: { cooldownGlobal: 0, cooldownUser: 0, maxPer30s: 18 } });
-for (const [t, o] of [["!discord", { login: "lea_92" }], ["!tip", { login: "marc" }], ["!so Zoe", { login: "curieux" }], ["!tesla", { login: "nina" }], ["!jeu", { login: "paul" }], ["!discord", { login: "lea_92" }]]) await say(ctx, t, o, NOW + Math.random() * 1e6);
-// des timers pour la page Timers
-const e = { src: await SRC.gather(ctx, "emma"), t: ctx.t, prefix: "!" };
-const sv = (f, p) => T.saveTimer(ctx, {}, f, { prefix: "!" });
-await sv({ name: "Rappel du Discord", text: "Rejoignez le Discord : discord.example.org/emma", minutes: 20, lines: 5, when: "live", enabled: true });
-await sv({ name: "Hydratation", text: "Pensez à boire de l'eau.", minutes: 30, lines: 3, when: "always", enabled: true });
-await sv({ name: "Boutique de novembre", text: "La boutique de novembre est ouverte.", minutes: 45, lines: 5, when: "live", enabled: false, period: { yearly: true, from: { m: 11, d: 1 }, to: { m: 11, d: 30 } } });
-await sv({ name: "Offre d'été", text: "L'offre d'été est ouverte jusqu'au 31 août.", minutes: 60, lines: 8, when: "live", enabled: true, period: { yearly: true, from: { m: 6, d: 21 }, to: { m: 9, d: 21 } } });
-SRC.resetSources();
-const key = (await C.loadConfig(ctx)).data.custom.find((c) => c.name === "movember").id;
-const scenes = {
-  list: [{ query: {} }, "use"],
-  new: [{ query: { new: "1" } }, "use"],
-  edit: [{ query: { edit: `custom:${key}` } }, "use"],
-  timers: [{ query: { tab: "timers" } }, "timers"],
-  timernew: [{ query: { tab: "timers", timerNew: "1" } }, "timers"],
-  rewards: [{ query: { tab: "rewards" } }, "rewards"],
-};
-for (const [name, [q, tab]] of Object.entries(scenes)) {
-  for (const theme of ["light", "dark"]) {
-    const blocks = await A.panel(ctx, q);
-    fs.writeFileSync(`${OUT}/${name}-${theme}.html`, page(blocks, { tab, theme }));
-  }
+/* ───────────── Les mondes inventés ───────────── */
+
+async function commandsWorld(locale) {
+  const w = world({
+    locale, sponsors: [entry("p1", "atelier-aurore", "Atelier Aurore"), entry("p2", "cafe-bellevue", "Café Bellevue"), entry("p3", "papeterie-lune", "Papeterie Lune")],
+    links: [link("twitch-channel", "twitch-channel", "Twitch", "https://twitch.example.org/chaine_demo"), link("youtube-channel", "youtube-channel", "YouTube", "https://video.example.org/chaine_demo"), link("instagram", "instagram", "Instagram", "https://insta.example.org/chaine_demo")],
+    followers: null, settings: { cooldownGlobal: 0, cooldownUser: 0, maxPer30s: 18 },
+  });
+  const env = { src: await SRC.gather(w.ctx, "chaine_demo"), t: w.ctx.t, prefix: "!" };
+  const fr = locale === "fr";
+  const ACTIVE = fr
+    ? [["discord", "Rejoignez-nous sur Discord : discord.example.org/chaine_demo"], ["so", "Allez voir {cible} sur sa chaîne.", { role: "mods" }], ["lurk", "{utilisateur} se met en mode lurk, à tout à l'heure."], ["regles", "Soyez bienveillants et respectueux, les règles sont dans le panneau sous le stream."], ["setup", "Mon matériel : liste complète sur la page Matériel du site."], ["boutique", "La boutique est ouverte : boutique.example.org"], ["bonjour", "Bonjour {utilisateur}, bienvenue dans le chat."]]
+    : [["discord", "Join us on Discord: discord.example.org/chaine_demo"], ["so", "Go and see {cible} on their channel.", { role: "mods" }], ["lurk", "{utilisateur} is lurking, see you later."], ["rules", "Be kind and respectful, the rules are in the panel under the stream."], ["setup", "My gear: full list on the Gear page of the site."], ["shop", "The shop is open: shop.example.org"], ["hello", "Hello {utilisateur}, welcome to the chat."]];
+  const OFF = fr
+    ? [["alive", "Toujours en vie, merci de demander.", { aliases: ["a-live"] }], ["noel", "Les décorations sont de sortie ce mois-ci.", { period: { yearly: true, from: { m: 12, d: 1 }, to: { m: 12, d: 31 } } }], ["pc", "Mon PC : processeur et carte graphique à retrouver sur la page Matériel."]]
+    : [["alive", "Still alive, thanks for asking.", { aliases: ["a-live"] }], ["xmas", "The decorations are out this month.", { period: { yearly: true, from: { m: 12, d: 1 }, to: { m: 12, d: 31 } } }], ["pc", "My PC: processor and graphics card on the Gear page."]];
+  for (const [name, text, extra = {}] of ACTIVE) await C.saveCommand(w.ctx, { kind: "custom" }, { name, text, enabled: true, ...extra }, env);
+  for (const [name, text, extra = {}] of OFF) await C.saveCommand(w.ctx, { kind: "custom" }, { name, text, enabled: false, ...extra }, env);
+  await C.saveCommand(w.ctx, { kind: "builtin", id: "jeu" }, { name: fr ? "jeu" : "game", aliases: [fr ? "queljeu" : "whatgame"] }, env);
+  await C.saveSourced(w.ctx, "partner", "p1", { enabled: true, name: "atelier-aurore" }, env);
+  await C.saveSourced(w.ctx, "partner", "p2", { enabled: true, name: "cafe-bellevue" }, env);
+  await C.saveSourced(w.ctx, "partner", "p3", { enabled: false, name: "papeterie-lune" }, env);
+  // trois timers, dont un réservé au timer
+  await C.saveCommand(w.ctx, { kind: "custom" }, { name: fr ? "rappel" : "reminder", text: fr ? "Pensez à boire de l'eau." : "Remember to drink water.", repeat: { minutes: 30, lines: 5, when: "live", enabled: true } }, env);
+  await C.saveCommand(w.ctx, { kind: "custom" }, { name: fr ? "pub" : "promo", text: fr ? "Rejoignez le Discord, lien en description." : "Join the Discord, link in the description.", timerOnly: true, repeat: { minutes: 20, lines: 3, when: "always", enabled: true } }, env);
+  await C.saveCommand(w.ctx, { kind: "custom" }, { name: fr ? "novembre" : "november", text: fr ? "La boutique de novembre est ouverte." : "The November shop is open.", repeat: { minutes: 45, lines: 5, when: "live", enabled: false } }, env);
+  SRC.resetSources();
+  await A.panel(w.ctx, { query: {} });
+  for (const sub of w.tw.subs) sub.status = "enabled";
+  await A.actions.check(w.ctx);
+  return w;
 }
-console.log("ok");
+async function rewardsWorld(locale) {
+  S.resetMemory(); SRC.resetSources(); R.resetRewards(); J.resetRedeem(); J.resetSims();
+  const tw = fakeRewardsApi(), ha = fakeHaBridge();
+  const acct = { ok: true, channel: "chaine_demo", ready: true, https: true, status: "ok", login: "chaine_demo", userId: "100", scopes: [...es.SCOPES.own, ...es.REWARD_SCOPES], wanted: [], adminPath: "/admin/instances/tw1" };
+  const now = Date.parse("2026-10-14T20:00:00Z");
+  const ctx = fakeCtx({
+    key: "bot", moduleId: "twitch-bot", locale, defaultLocale: "fr", locales: ["fr", "en"], messages: messages("twitch-bot", locale), siteUrl: "https://site.example.org",
+    settings: { onlyWhenLive: true, timezone: "Europe/Paris" }, topics: { "social.stat": [], "planning.slot": [], "social.link": [], ...ha.topics }, services: { "home-assistant.bridge": ha.methods },
+    serviceInstances: {
+      "twitch.api": [{ instance: "chaine_demo", name: "chaine_demo", methods: { account: (a) => (a?.slot === "bot" ? { ...acct, status: "none", userId: null, scopes: [] } : acct), wantScopes: () => ({ ok: true }), connectLink: () => ({ ok: true, url: "https://id.twitch.example.org/main" }), disconnect: () => ({ ok: true }), request: (a) => tw.request(a) } }],
+      "twitch.live": [{ instance: "chaine_demo", name: "chaine_demo", methods: { status: () => ({ channel: "chaine_demo", configured: true, known: true, live: true, title: "T", game: "G", startedAt: new Date(now - 3_600_000).toISOString() }) } }],
+    },
+  });
+  ctx.can = () => true;
+  await A.actions.rewardsEnable.run(ctx, {});
+  const fr = locale === "fr";
+  const mk = async (over) => { const r = await A.actions.rewardCreate.run(ctx, { cost: "500", cooldownMin: "1", prompt: "", ...over }); assert.ok(r.ok, JSON.stringify(r)); };
+  await mk({ title: fr ? "Lumières rouges" : "Red lights", action: "lumieres:rouge" });
+  await mk({ title: fr ? "Lumières vertes" : "Green lights", action: "lumieres:vert" });
+  await mk({ title: fr ? "Parle au salon" : "Talk to the room", action: "tts:lire", cost: "300" });
+  await mk({ title: fr ? "Un mot gentil" : "A kind word", action: "chat:repondre", reply: "Merci {utilisateur}.", cost: "100" });
+  await mk({ title: fr ? "Lance l'aspirateur" : "Start the vacuum", cost: "1500", what: "custom", actionName: fr ? "Lancer l'aspirateur" : "Start the vacuum", cooldownMin: "10" });
+  const rows = await R.list(ctx);
+  await A.actions.rewardEnable.run(ctx, { id: rows.find((r) => /vertes|Green/.test(r.title)).id, enabled: "0" });
+  return { ctx, rows };
+}
+
+/* ───────────── Les scènes ───────────── */
+
+const SCENES = {};
+const scene = (name, fn) => { SCENES[name] = fn; };
+const run = {
+  full: true,
+};
+scene("cmd-list", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: {} }), tab: "use" }));
+scene("cmd-new", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { new: "1" } }), tab: "use", dialog: true }));
+scene("cmd-edit", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { edit: c.key("discord") } }), tab: "use", dialog: true }));
+scene("cmd-edit-open", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { edit: c.key("alive") } }), tab: "use", dialog: true, script: "document.querySelectorAll('[role=dialog] details').forEach(d=>d.open=true)" }));
+scene("cmd-confirm", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: {} }), tab: "use", script: `${ASK}\naskConfirm(${JSON.stringify(c.cmd.ctx.t("delete_row_confirm"))});` }));
+scene("cmd-error", async (c) => {
+  const key = c.key("discord");
+  const res = await A.actions.save(c.cmd.ctx, { key, name: c.locale === "fr" ? "discord" : "discord", text: "Rejoignez-nous.", role: "everyone", repeatOn: "on", repeatEvery: "90", repeatLines: "", repeatWhen: "", timerOnly: "off" });
+  assert.ok(res.errors?.repeatEvery, JSON.stringify(res));
+  return { blocks: await A.panel(c.cmd.ctx, { query: { edit: key } }), tab: "use", dialog: true, script: `${SHOW_ERRORS}\nshowErrors(${JSON.stringify(res.errors)});` };
+});
+scene("cmd-partner", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { edit: c.partnerKey } }), tab: "use", dialog: true }));
+scene("timers-list", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { tab: "timers" } }), tab: "timers" }));
+scene("timers-new", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { tab: "timers", timerAdd: "1" } }), tab: "timers", dialog: true }));
+scene("timers-edit", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { tab: "timers", edit: c.key(c.locale === "fr" ? "rappel" : "reminder"), repeat: "1" } }), tab: "timers", dialog: true }));
+scene("timers-confirm", async (c) => ({ blocks: await A.panel(c.cmd.ctx, { query: { tab: "timers" } }), tab: "timers", script: `${ASK}\naskConfirm(${JSON.stringify(c.cmd.ctx.t("tm_delete_confirm"))});` }));
+scene("rewards-list", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.context(c.rw.ctx, { declare: false }), {}), tab: "rewards" }));
+scene("rewards-new", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.context(c.rw.ctx, { declare: false }), { rewardNew: "1" }), tab: "rewards", dialog: true }));
+scene("rewards-edit", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.context(c.rw.ctx, { declare: false }), { rewardEdit: c.rw.rows[0].id }), tab: "rewards", dialog: true }));
+scene("rewards-rename", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.context(c.rw.ctx, { declare: false }), { actionEdit: "perso:lancer-l-aspirateur" }), tab: "rewards", dialog: true }));
+
+const TABS = (locale) => manifest.tabs.map((t) => [t.id, t.label[locale]]).concat([["settings", locale === "fr" ? "Réglages" : "Settings"]]);
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ["--no-sandbox"] });
+const problems = [];
+try {
+  for (const locale of ["fr", "en"]) {
+    const cmd = await commandsWorld(locale), rw = await rewardsWorld(locale);
+    const list = (await C.loadConfig(cmd.ctx)).data.custom;
+    const ctx = { locale, cmd, rw, key: (name) => `custom:${list.find((x) => x.name === name).id}`, partnerKey: "partner:p1" };
+    for (const [name, fn] of Object.entries(SCENES)) {
+      if (ONLY.length && !ONLY.includes(name)) continue;
+      const s = await fn(ctx);
+      for (const theme of ["light", "dark"]) {
+        const html = page({ locale, theme, tab: s.tab, blocks: s.blocks, tabs: TABS(locale), title: manifest.name[locale], lead: manifest.description[locale] });
+        for (const width of [1280, 390]) {
+          const context = await browser.newContext({ viewport: { width, height: width === 1280 ? 900 : 844 }, colorScheme: theme, deviceScaleFactor: 1, locale: locale === "fr" ? "fr-FR" : "en-US" });
+          const p = await context.newPage();
+          const errors = [];
+          p.on("pageerror", (e) => errors.push(e.message));
+          await p.route("**/*", (route) => (/^(data:|about:)/.test(route.request().url()) ? route.continue() : route.abort()));
+          await p.setContent(html, { waitUntil: "load" });
+          await p.addScriptTag({ content: CLIENT });
+          if (s.script) await p.evaluate(`(() => { ${s.script}\n })()`);
+          await p.waitForTimeout(250);
+          const overflow = await p.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+          if (overflow) problems.push(`${name} ${locale} ${theme} ${width} : défilement horizontal`);
+          if (errors.length) problems.push(`${name} ${locale} ${theme} ${width} : ${errors.join(" | ")}`);
+          await p.screenshot({ path: path.join(OUT, `${name}-${width}-${theme}-${locale}.png`), fullPage: !s.dialog && !s.script?.includes("askConfirm") });
+          await context.close();
+        }
+      }
+      console.log(name, locale);
+    }
+  }
+} finally { await browser.close(); }
+if (problems.length) { console.error(problems.join("\n")); process.exit(1); }
+void run;

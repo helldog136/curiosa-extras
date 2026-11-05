@@ -1,4 +1,5 @@
-// La page d'administration du bot : arrêt d'urgence, « le bot écoute ? », résumé de toutes les commandes, édition, partenaires, réseaux, journal.
+// La page d'administration du bot : arrêt d'urgence, « le bot écoute ? », résumé de toutes les commandes, partenaires, réseaux, journal. Modifier ou créer une commande ouvre une FENÊTRE
+// au-dessus de la page (`presentation: "dialog"`, cœur 0.6.7) : la liste garde sa recherche, son filtre et sa place.
 // Pensée pour une personne qui n'est pas technicienne : des phrases, pas de jargon, et chaque problème dit quoi faire.
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { catalog, loadConfig, proposeNetwork, saveCommand, saveSourced, removeCustom } = await import(`./commands.mjs${v}`);
@@ -25,8 +26,6 @@ export const PANEL_ID = "chat-command";
 const panelAnchor = (ctx) => `panel-${ctx.instance.key}-${PANEL_ID}`.replace(/[^a-zA-Z0-9_-]/g, "-");
 /** Le lien « Modifier » d'un partenaire : sa fiche, ouverte sur la section de la commande (la fiche ajoute elle-même l'étiquette du contenu dans l'adresse). */
 const partnerHref = (ctx) => `/admin/entries/{id}#${panelAnchor(ctx)}`;
-/** Pour que « Modifier » d'une ligne amène sur le formulaire (en dessous des états) et non en haut de la page. */
-const EDIT_ANCHOR = { type: "html", html: '<div id="edit" style="scroll-margin-top:5rem"></div>' };
 
 /** Le bouton « Autoriser chez Twitch » : un lien (adresse construite par Chaîne Twitch) habillé aux couleurs de l'administration. */
 const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
@@ -111,48 +110,38 @@ export const delayFields = (t, c, s = { cdGlobal: 20, cdUser: 60 }) => [
 ];
 export const varsHelp = (t, kind) => t("f_text_help_vars", { vars: shownFor(kind).map((v) => `{${v}}`).join(" ") });
 
-/* ───────────── Création et modification d'une commande ───────────── */
+/* ───────────── Création et modification d'une commande (une fenêtre) ───────────── */
 
+/** L'onglet où la fenêtre s'ouvre : « Timers » quand le lien vient de là (la liste des timers reste derrière), sinon « Commandes ». */
+const tabOf = (query) => (query?.tab === "timers" ? "timers" : "use");
+
+/**
+ * Le bloc de la fenêtre « Modifier » (un seul formulaire), ou une phrase quand la commande n'existe pas ou a disparu. Ce que l'ancien écran posait AUTOUR du formulaire se range ailleurs :
+ * le compteur et le texte d'origine sont deux interrupteurs sous « Plus d'options », « Supprimer » est dans le menu « ⋯ » de la ligne (avec ce qui sera perdu), et l'état (hors période,
+ * masquée) est écrit dans la ligne. Le cœur n'a pas encore de texte d'introduction dans une fenêtre : l'information « réseau » devient l'aide du champ « Ce que le bot répond ».
+ */
 async function editBlocks(ctx, info, key, query) {
   const t = ctx.t, { s, sources, list } = info;
   const [kind, ...rest] = String(key).split(":");
   const id = rest.join(":");
-  // Un ancien lien vers la configuration d'un partenaire : elle se fait maintenant dans la fiche du partenaire.
-  if (kind === "partner") return [{ type: "markdown", text: t("edit_partner_moved", { href: partnerHref(ctx).replace("{id}", encodeURIComponent(id)) }) }];
+  const tab = tabOf(query);
   const c = list.find((x) => x.key === key);
-  const out = [EDIT_ANCHOR];
   let proposal = null, item = null;
   if (!c && kind === "network") { item = sources.networks.items.find((n) => n.key === id); if (item) proposal = proposeNetwork(item, list, t); }
   if (!c && !proposal) return [{ type: "banner", tone: "warning", text: t("edit_unknown") }];
-  const view = c ?? { kind, id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: { reseau: item.name, lien: String(item.url).replace(/^https?:\/\//i, "") }, label: item?.name ?? id };
   if (c?.missing) return [{ type: "banner", tone: "warning", text: t("network_gone") }];
+  const view = c ?? { kind, id, name: proposal.name, aliases: proposal.aliases, text: proposal.text, role: "everyone", cdGlobal: null, cdUser: null, enabled: false, vars: { reseau: item.name, lien: String(item.url).replace(/^https?:\/\//i, "") }, label: item?.name ?? id };
+  // La commande d'un partenaire se règle dans sa fiche : la fenêtre le dit et son bouton y mène (R30).
+  if (kind === "partner") return [CU.partnerStub(ctx, info, { view, key, tab })];
   const source = c?.source ?? item;
-  out.push({ type: "heading", text: t("edit_title", { command: `${s.prefix}${view.name}` }) });
-  if (kind === "network" && source) out.push({ type: "markdown", text: t("edit_network_info", { name: source.name, address: source.url }) + (source.adminPath ? ` [${t("edit_network_module")}](${source.adminPath})` : "") });
-  if (kind === "builtin" && view.state && view.state !== "on" && view.state !== "off") out.push({ type: "banner", tone: "warning", text: t(`why_${view.why}`) });
-  if (kind === "group") out.push({ type: "markdown", text: t("edit_group_info") });
-  if (c?.state === "outside") out.push({ type: "banner", tone: "warning", text: reopenLabel(ctx, c.reopen) });
-  out.push(...(await CU.commandForm(ctx, info, { mode: "edit", view, key, kind, unsaved: !c, repeatIntent: !!query?.repeat })));
-  if (kind === "custom" && used(view.text).includes("compteur")) {
-    const n = (await st.readCounters(ctx))[view.key] ?? 0;
-    out.push({ type: "markdown", text: t("edit_counter", { n }) }, K.inlineActions(ctx, K.actionButton({ label: t("counter_reset_btn"), act: "counterReset", id: view.key, cls: "small", fail: t("err_toggle") })));
-  }
-  if (kind === "builtin") out.push(K.inlineActions(ctx, K.actionButton({ label: t("reset_btn"), act: "resetText", id: key, cls: "small", fail: t("err_toggle") })));
-  const shown = view.title || `${s.prefix}${view.name}`;
-  if (view.repeat && can(ctx) && view.timerOnly) {
-    // Une commande « seulement pour le timer » : deux choix explicites, aucun par défaut. Jamais de passage silencieux dans le chat.
-    out.push({ type: "table", columns: [t("rep_remove_title")], rows: [[t("rep_only_help", { name: shown })]], rowIds: [view.key], rowActions: [
-      { label: t("rep_delete_cmd_btn"), action: "remove", confirm: t("rep_delete_cmd_confirm", { name: shown }), danger: true },
-      { label: t("rep_keep_btn"), action: "timerKeep", confirm: t("rep_keep_confirm", { name: shown, word: `${s.prefix}${view.name}`, who: t(`role_${view.role}`) }) },
-    ] });
-  } else if (view.repeat && can(ctx)) out.push({ type: "table", columns: [t("rep_remove_title")], rows: [[shown]], rowIds: [view.key], rowActions: [{ label: t("rep_remove_btn"), action: "timerRemove", confirm: t("rep_remove_confirm", { name: shown }) }] });
-  if (kind === "custom" && !(view.repeat && view.timerOnly && can(ctx))) out.push({ type: "table", columns: [t("delete_title")], rows: [[`${s.prefix}${view.name}`]], rowIds: [view.id], rowActions: [{ label: t("delete_btn"), action: "remove", confirm: t("delete_confirm", { command: `${s.prefix}${view.name}` }), danger: true }] });
-  return out;
+  const counter = kind === "custom" && used(view.text).includes("compteur") ? ((await st.readCounters(ctx))[view.key] ?? 0) : null;
+  const vars = varsHelp(t, kind);
+  const form = CU.commandForm(ctx, info, { mode: "edit", view, key, kind, unsaved: !c, repeatIntent: !!query?.repeat, tab, counter, canReset: kind === "builtin" || kind === "group", varsHelp: kind === "network" && source ? `${t("edit_network_help", { name: source.name })} ${vars}` : vars });
+  return [form];
 }
 
-async function newBlocks(ctx, info) {
-  const t = ctx.t;
-  return [EDIT_ANCHOR, { type: "heading", text: t("new_title") }, ...(await CU.commandForm(ctx, info, { mode: "new", kind: "custom", view: { name: "", text: "", role: "everyone", aliases: [], vars: {} } }))];
+function newBlocks(ctx, info, query) {
+  return [CU.commandForm(ctx, info, { mode: "new", kind: "custom", tab: tabOf(query), varsHelp: varsHelp(ctx.t, "custom"), view: { name: "", text: "", role: "everyone", aliases: [], vars: {} } })];
 }
 
 /* ───────────── Compte qui répond (mode avancé) ───────────── */
@@ -180,12 +169,12 @@ export async function panel(ctx, { query }) {
     state = await st.readState(ctx);
   }
   const blocks = [K.bootstrap(ctx), topBar(ctx, info, state), ...(await listenBlocks(ctx, info, state)), ...botAccountBlocks(ctx, info)];
+  // La fenêtre « Modifier » ou « Nouvelle commande » : le formulaire n'est renvoyé que quand l'adresse le demande (`?edit=…`, `?new=1`) ; la liste est toujours là, dessous.
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
-  else if (query?.new) blocks.push(...(await newBlocks(ctx, info)));
-  const href = partnerHref(ctx);
-  blocks.push(CU.commandsList(ctx, info, { partnerHref: href }));
-  const add = CU.addChooser(ctx, info, { partnerHref: href });
+  else if (query?.new) blocks.push(...newBlocks(ctx, info, query));
+  blocks.push({ type: "heading", text: t("summary_title") }, { type: "markdown", text: t("summary_help") }, CU.newLink(ctx), CU.commandsTable(ctx, info));
+  const add = CU.addChooser(ctx, info, { partnerHref: partnerHref(ctx) });
   if (add) blocks.push(add);
   blocks.push(CU.logBlock(ctx, info.s, await st.readLog(ctx)));
   blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
@@ -229,9 +218,8 @@ const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); retur
 const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled === "on" } : {}), name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
 
 /**
- * Les actions NE redirigent PAS (sauf deux cas ci-dessous) : une redirection recharge la page et ramène tout en haut. Le cœur rafraîchit la page à la place, et le message
- * de réussite ou d'erreur s'affiche sous le bouton cliqué : la personne reste où elle est.
- * Exceptions : supprimer une commande et rétablir un texte d'origine reviennent à la page de cette commande (sa configuration change ou disparaît sous les yeux).
+ * Les actions NE redirigent PAS (sauf « Ouvrir la fiche du partenaire ») : une redirection recharge la page et ramène tout en haut. Le cœur rafraîchit la page à la place, et le message
+ * de réussite ou d'erreur s'affiche sous le bouton cliqué ; une réussite dans une fenêtre la ferme et marque la ligne enregistrée : la personne reste où elle est.
  */
 export const actions = {
   async mute(ctx) { await st.setMuted(ctx, true); return { ok: ctx.t("muted_done") }; },
@@ -247,17 +235,21 @@ export const actions = {
   },
   async save(ctx, v) {
     const info = await context(ctx, { declare: false });
-    const { kind, id } = parseKey(v.key);
+    const key = v.key ?? v.id;   // la fenêtre envoie les deux (`id` sert à repérer la ligne enregistrée)
+    const { kind, id } = parseKey(key);
     const per = periodOf(ctx, v);
     if (per.bad) return per.bad;
-    const cur = info.list.find((x) => x.key === v.key);
+    const cur = info.list.find((x) => x.key === key);
     const rep = repeatOf(ctx, v, cur?.repeat ?? null);
     if (rep.bad) return rep.bad;
     const fields = { ...fieldsFrom(v), ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(kind === "custom" && v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
+    if (v.resetText === "on" && (kind === "builtin" || kind === "group") && cur?.defaultText !== undefined) fields.text = cur.defaultText;   // « Rétablir le texte d'origine »
     const bad = timerOnlyCheck(ctx, fields, cur?.repeat ?? null);
     if (bad) return bad;
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, fields, info.env) : await saveCommand(ctx, { kind, id }, fields, info.env);
-    return r.ok === false ? failed(ctx, r) : { ok: ctx.t("saved") };
+    if (r.ok === false) return failed(ctx, r);
+    if (v.counterReset === "on" && kind === "custom" && cur) await st.setCounter(ctx, cur.key, 0);   // « Remettre le compteur à zéro »
+    return { ok: ctx.t("saved") };
   },
   async create(ctx, v) {
     const info = await context(ctx, { declare: false });
@@ -271,36 +263,32 @@ export const actions = {
     const r = await saveCommand(ctx, { kind: "custom" }, fields, info.env);
     return r.ok === false ? failed(ctx, r) : { ok: ctx.t("created") };
   },
+  /** L'interrupteur de la liste DIT l'état voulu (`enabled` : « 1 » ou « 0 ») : un double clic ne défait rien. Sans `enabled` (ancien appel), l'état est inversé. */
   async toggle(ctx, v) {
     const info = await context(ctx, { declare: false });
     const { kind, id } = parseKey(v.id);
     const c = info.list.find((x) => x.key === v.id);
     if (!c) return { error: ctx.t("err_unknown") };
-    const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, { enabled: !c.enabled }, info.env) : await saveCommand(ctx, { kind, id }, { enabled: !c.enabled }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t(c.enabled ? "toggled_off" : "toggled_on", { command: `${info.s.prefix}${c.name}` }) };
+    const want = v.enabled === undefined ? !c.enabled : String(v.enabled) === "1";
+    const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, { enabled: want }, info.env) : await saveCommand(ctx, { kind, id }, { enabled: want }, info.env);
+    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t(want ? "toggled_on" : "toggled_off", { command: `${info.s.prefix}${c.name}` }) };
   },
+  /** « Supprimer » du menu de la ligne : seules les commandes à vous se suppriment (les autres se coupent avec l'interrupteur). La ligne envoie sa clé (`custom:…`). */
   async remove(ctx, v) {
-    const r = await removeCustom(ctx, v.id);
-    return r.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("deleted"), redirect: "?" };
+    const raw = String(v.id ?? "");
+    const { kind, id } = raw.includes(":") ? parseKey(raw) : { kind: "custom", id: raw };
+    if (kind !== "custom") return { error: ctx.t("delete_own_only") };
+    const r = await removeCustom(ctx, id);
+    return r.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("deleted") };
   },
-  async resetText(ctx, v) {
-    const info = await context(ctx, { declare: false });
-    const full = v.key ?? v.id;
-    const { kind, id } = parseKey(full);
-    const c = info.list.find((x) => x.key === full);
-    if (!c || (kind !== "builtin" && kind !== "group")) return { error: ctx.t("err_unknown") };
-    const r = await saveCommand(ctx, { kind, id }, { text: c.defaultText }, info.env);
-    return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t("reset_done"), redirect: `?edit=${full}#edit` };
+  /** « Ouvrir la fiche du partenaire » : la commande d'un partenaire se règle dans sa fiche (R30). */
+  async openPartner(ctx, v) {
+    const { kind, id } = parseKey(v.id ?? v.key);
+    if (kind !== "partner" || !id) return { error: ctx.t("err_unknown") };
+    return { ok: ctx.t("act_open_partner"), redirect: partnerHref(ctx).replace("{id}", encodeURIComponent(id)) };
   },
   ...RA.actions,
   ...TA.actions,
-  async counterReset(ctx, v) {
-    const info = await context(ctx, { declare: false });
-    const c = info.list.find((x) => x.key === (v.key ?? v.id) && x.kind === "custom");
-    if (!c) return { error: ctx.t("err_unknown") };
-    await st.setCounter(ctx, c.key, 0);
-    return { ok: ctx.t("counter_reset_done") };
-  },
   async clearLog(ctx) { await st.clearLog(ctx); return { ok: ctx.t("log_cleared") }; },
   async disconnectBot(ctx) {
     const info = await context(ctx, { declare: false });

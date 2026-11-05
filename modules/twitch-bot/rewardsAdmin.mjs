@@ -16,6 +16,7 @@ const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const cut = (x, n) => { const s = String(x ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 /** Tous les blocs de cet écran vont dans l'onglet « Récompenses » (cœur 0.2.5). */
 const tab = (blocks) => blocks.map((b) => ({ ...b, tab: "rewards" }));
+const TAB = "?tab=rewards";
 const can = (ctx) => typeof ctx.can === "function" && ctx.can("rewards.manage") === true;
 
 /** Une erreur de création / modification en phrases : { errors: { champ: texte } } ou { error: texte }. */
@@ -80,15 +81,15 @@ function whatOptions(ctx, namedList, homeInstalled, current) {
 }
 
 /**
- * Le formulaire d'une récompense. Visibles : Titre, Coût, Ce qui se passe (3). Sous « Plus d'options » : la réponse du bot, la couleur, le nom d'une nouvelle action,
- * le délai de recharge, le texte d'aide, le message du viewer. Tous les contrôles sont ceux du cœur 0.6.0.
+ * Le formulaire d'une récompense, dans une FENÊTRE au-dessus de la page (`presentation: "dialog"`, cœur 0.6.7). Visibles : Titre, Coût, Ce qui se passe (3). Sous « Plus d'options » :
+ * la réponse du bot, la couleur, le nom d'une nouvelle action, le délai de recharge, le texte d'aide, le message du viewer. Tous les contrôles sont ceux du cœur 0.6.0.
  */
 function rewardForm(ctx, info, namedList, homeInstalled, doc) {
   const t = ctx.t, s = info.s;
   const v = doc ?? { title: "", cost: "", cooldown: 0, prompt: "", needsInput: false, action: homeInstalled ? A.lightKey("rouge") : A.BOT_ACTION, reply: "" };
   const w = whatOf(v.action);
   return {
-    type: "adminForm", action: doc ? "rewardSave" : "rewardCreate", submitLabel: t(doc ? "rw_save_btn" : "rw_new_btn"), ...(doc ? { cancelHref: "?tab=rewards" } : {}),
+    type: "adminForm", presentation: "dialog", action: doc ? "rewardSave" : "rewardCreate", title: doc ? t("rw_edit_title", { title: doc.title }) : t("rw_new_title"), submitLabel: t(doc ? "rw_save_btn" : "rw_new_btn"), cancelHref: TAB,
     fields: [
       ...(doc ? [{ name: "id", kind: "hidden", value: doc.id }] : []),
       { name: "title", label: t("rw_f_title"), value: v.title, required: true, help: t("rw_f_title_help"), example: t("rw_ex_title") },
@@ -124,7 +125,7 @@ function houseBlocks(ctx, house) {
   if (!house.installed) return [{ type: "markdown", text: t("rw_house_absent") }, { type: "suggestInstall", service: J.SERVICE, reason: t("rw_suggest_reason") }];
   return [
     { type: "banner", tone: houseReady(house) ? "success" : "warning", text: houseLine(t, house) },
-    ...(house.adminPath ? [{ type: "links", items: [{ label: t("rw_house_link"), href: house.adminPath }, { label: t("rw_new_link"), href: "#new" }] }] : []),
+    ...(house.adminPath ? [{ type: "links", items: [{ label: t("rw_house_link"), href: house.adminPath }, { label: t("rw_new_link"), href: `${TAB}&rewardNew=1`, presentation: "dialog" }] }] : []),
   ];
 }
 
@@ -204,9 +205,11 @@ export async function blocks(ctx, info, query = {}) {
 
   const writable = can(ctx);
   out.push({ type: "heading", text: t("rw_list_title") });
+  if (writable && rows.length < R.MAX_REWARDS) out.push({ type: "links", items: [{ label: t("rw_new_title"), href: `${TAB}&rewardNew=1`, presentation: "dialog" }] });
+  else if (writable) out.push({ type: "markdown", text: t("rw_err_too_many", { max: R.MAX_REWARDS }) });
   if (!rows.length) out.push({ type: "markdown", text: t("rw_list_empty") });
   else {
-    // UN tableau : titre, ce qui se passe (pastille colorée ET écrite), coût, état avec son interrupteur. Une seule action visible (« Modifier ) ; le test et la suppression sont dans « ⋯ ».
+    // UN tableau : titre, ce qui se passe (pastille colorée ET écrite), coût, état avec son interrupteur. « Modifier » ouvre une fenêtre ; la simulation et la suppression sont dans « ⋯ ».
     const unmapped = (r) => linkOf(fresh, r.action) === "unmapped";
     out.push({ type: "table", columns: [t("rw_col_reward"), t("rw_col_what"), t("rw_col_cost"), t("rw_col_state")], rowIds: rows.map((r) => r.id),
       searchable: true, searchPlaceholder: t("rw_search"), filters: [{ column: 1, allLabel: t("rw_filter_all") }, { column: 3, allLabel: t("rw_filter_any") }], truncate: [0], empty: t("rw_list_empty"),
@@ -219,19 +222,18 @@ export async function blocks(ctx, info, query = {}) {
               onText: unmapped(r) ? `${t("rw_state_active")} · ${t("rw_note_unmapped")}` : t("rw_state_active"), offText: r.pause === "auto" ? t("rw_state_paused_auto") : t("rw_state_paused") } } : {}) };
         return [{ text: r.title, title: r.title }, { text: what, badge: toneOf(r.action) }, t("rw_points", { n: r.cost }), stateCell];
       }),
-      rowActions: writable ? [{ label: t("act_edit"), href: "?tab=rewards&rewardEdit={id}#edit" }, { label: t("rw_sim_row_btn"), href: "?tab=rewards&rewardEdit={id}#test", inMenu: true }, { label: t("rw_delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] : [] });
+      rowActions: writable ? [{ label: t("act_edit"), href: `${TAB}&rewardEdit={id}`, presentation: "dialog" }, { label: t("rw_sim_row_btn"), href: `${TAB}&rewardTest={id}#test`, inMenu: true }, { label: t("rw_delete_btn"), action: "rewardRemove", confirm: t("rw_delete_confirm"), danger: true }] : [] });
   }
   if (writable) {
-    const editId = typeof query.rewardEdit === "string" ? query.rewardEdit : typeof query.rewardTest === "string" ? query.rewardTest : null;
-    const editing = editId ? rows.find((r) => r.id === editId) : null;
-    out.push({ type: "html", html: '<div id="edit" style="scroll-margin-top:5rem"></div>' });
-    if (editing) {
-      out.push({ type: "heading", text: t("rw_edit_title", { title: editing.title }) }, rewardForm(ctx, info, namedList, house.installed, editing));
-      out.push({ type: "html", html: '<div id="test" style="scroll-margin-top:5rem"></div>' }, { type: "markdown", text: t("rw_sim_help") });
-      out.push({ type: "adminForm", action: "rewardSimulate", submitLabel: t("rw_sim_row_btn"), title: t("rw_sim_title"), fields: [{ name: "id", kind: "hidden", value: editing.id }, ...(editing.needsInput ? [{ name: "text", label: t("rw_sim_f_text"), help: t("rw_sim_f_text_help"), example: t("rw_ex_sim") }] : [])] });
+    // Les fenêtres : seulement quand l'adresse les demande. La simulation reste dans la page : sa réponse (« Test réussi… ») doit rester lisible, ce qu'une fenêtre ne permet pas encore.
+    const editing = typeof query.rewardEdit === "string" ? rows.find((r) => r.id === query.rewardEdit) : null;
+    const testing = typeof query.rewardTest === "string" ? rows.find((r) => r.id === query.rewardTest) : null;
+    if (editing) out.push(rewardForm(ctx, info, namedList, house.installed, editing));
+    else if (query.rewardNew && rows.length < R.MAX_REWARDS) out.push(rewardForm(ctx, info, namedList, house.installed, null));
+    if (testing) {
+      out.push({ type: "html", html: '<div id="test" style="scroll-margin-top:5rem"></div>' }, { type: "heading", text: t("rw_sim_title") }, { type: "markdown", text: t("rw_sim_help") });
+      out.push({ type: "adminForm", action: "rewardSimulate", submitLabel: t("rw_sim_row_btn"), title: testing.title, cancelHref: TAB, fields: [{ name: "id", kind: "hidden", value: testing.id }, ...(testing.needsInput ? [{ name: "text", label: t("rw_sim_f_text"), help: t("rw_sim_f_text_help"), example: t("rw_ex_sim") }] : [])] });
     }
-    else if (rows.length < R.MAX_REWARDS) out.push({ type: "html", html: '<div id="new" style="scroll-margin-top:5rem"></div>' }, { type: "heading", text: t("rw_new_title") }, { type: "markdown", text: t("rw_new_help") }, rewardForm(ctx, info, namedList, house.installed, null));
-    else out.push({ type: "markdown", text: t("rw_err_too_many", { max: R.MAX_REWARDS }) });
   }
   out.push(...actionsBlocks(ctx, info, namedList, rows, fresh, query, advanced));
   out.push(...journalBlocks(ctx, s, await J.journal(ctx), names, advanced));
@@ -245,13 +247,15 @@ function actionsBlocks(ctx, info, namedList, rows, state, query, advanced) {
   const used = (key) => rows.filter((r) => r.action === key);
   // La colonne « Maison » ne dit que ce qui sort de l'ordinaire (R14) : reliée, ou à relier ; « pas encore essayée » est le cas normal et reste vide.
   const house = (key) => { const l = A.linkOf(state, key); return l === "ok" ? { text: t("rw_link_ok"), badge: "ok" } : l === "unmapped" ? { text: t("rw_link_unmapped"), badge: "warn" } : ""; };
-  const out = [{ type: "html", html: '<div id="action" style="scroll-margin-top:5rem"></div>' }, { type: "heading", text: t("rw_acts_title") }, { type: "markdown", text: t("rw_acts_help") }];
+  const out = [{ type: "heading", text: t("rw_acts_title") }, { type: "markdown", text: t("rw_acts_help") }];
   out.push({ type: "table", columns: [t("rw_acts_col_name"), t("rw_acts_col_used"), t("rw_acts_col_house")], searchable: true, searchPlaceholder: t("rw_search_acts"), truncate: [0, 1],
     rows: namedList.map((a) => [advanced ? `${a.label} (${a.key})` : a.label, used(a.key).length ? cut(used(a.key).map((r) => r.title).join(", "), 60) : t("rw_acts_unused"), house(a.key)]), rowIds: namedList.map((a) => a.key),
-    rowActions: can(ctx) ? [{ label: t("act_rename"), href: "?tab=rewards&actionEdit={id}#action" }, { label: t("act_remove"), action: "actionRemove", confirm: t("rw_acts_remove_confirm"), danger: true }] : [] });
+    rowActions: can(ctx) ? [{ label: t("act_rename"), href: `${TAB}&actionEdit={id}`, presentation: "dialog" }, { label: t("act_remove"), action: "actionRemove", confirm: t("rw_acts_remove_confirm"), danger: true }] : [] });
   const cur = can(ctx) && typeof query.actionEdit === "string" ? namedList.find((a) => a.key === query.actionEdit) : null;
-  if (cur) out.push({ type: "heading", text: t("rw_acts_edit_title", { name: cur.label }) }, { type: "adminForm", action: "actionSave", submitLabel: t("rw_save_btn"), cancelHref: "?tab=rewards", fields: [
-    { name: "ref", kind: "hidden", value: cur.key },
+  // « Renommer » : une fenêtre ; `id` (la ligne enregistrée) et `ref` (ce que lit l'action) portent la même valeur.
+  if (cur) out.push({ type: "adminForm", presentation: "dialog", action: "actionSave", title: t("rw_acts_edit_title", { name: cur.label }), submitLabel: t("rw_rename_btn"), cancelHref: TAB, fields: [
+    { name: "id", kind: "hidden", label: "id", value: cur.key },
+    { name: "ref", kind: "hidden", label: "ref", value: cur.key },
     { name: "name", label: t("rw_f_an_rename"), value: cur.label, required: true, help: t("rw_acts_name_help"), example: t("rw_ex_action") },
     ...(info.s.showKeys ? [{ name: "actionKey", label: t("rw_f_key"), value: cur.key, help: t("rw_acts_key_help") }] : []),
   ] });
@@ -346,7 +350,7 @@ export const actions = {
     await A.commit(ctx, c.plan);
     const r = await R.update(ctx, s, x.id, c.value);
     if (!r.ok) { await A.discard(ctx, c.plan).catch(() => {}); return failure(ctx, r); }
-    return { ok: c.plan?.isNew && R.isHome(c.value.action) ? createdText(ctx, c.value, c.plan) : ctx.t("rw_saved"), redirect: "?tab=rewards" };
+    return { ok: c.plan?.isNew && R.isHome(c.value.action) ? createdText(ctx, c.value, c.plan) : ctx.t("rw_saved") };
   }),
   actionSave: run(async (ctx, x) => {
     const s = settingsOf(ctx), rewards = await R.list(ctx), key = String(x.ref ?? "");
@@ -357,12 +361,12 @@ export const actions = {
       return { errors: { [field]: ctx.t(`rw_e_${NAME_ERRORS[r.code] ?? (r.code === "dup" ? "an_dup" : r.code)}`, { max: A.MAX_LABEL, limit: A.MAX_ACTIONS }) } };
     }
     if (r.to !== r.from) await R.retarget(ctx, r.from, r.to);   // la clé n'a changé que par la volonté de la personne (mode avancé) : les récompenses la suivent
-    return { ok: ctx.t("rw_action_saved", { name: r.label }), redirect: "?tab=rewards" };
+    return { ok: ctx.t("rw_action_saved", { name: r.label }) };
   }),
   actionRemove: run(async (ctx, x) => {
     const s = settingsOf(ctx), key = String(x.id ?? "");
     const r = await A.remove(ctx, s, key, (await R.list(ctx)).map((w) => w.action));
-    if (r.ok) return { ok: ctx.t("rw_action_removed"), redirect: "?tab=rewards" };
+    if (r.ok) return { ok: ctx.t("rw_action_removed") };
     return { error: ctx.t(r.code === "used" ? "rw_action_used" : r.code === "legacy" ? "rw_action_legacy" : "err_unknown") };
   }),
   /** L'interrupteur de la liste DIT l'état voulu (« 1 » en vente, « 0 » en pause) : un double clic ne défait rien. */
@@ -375,7 +379,7 @@ export const actions = {
   }),
   rewardRemove: run(async (ctx, x) => {
     const r = await R.remove(ctx, settingsOf(ctx), x.id);
-    return r.ok ? { ok: ctx.t("rw_deleted"), redirect: "?tab=rewards" } : failure(ctx, r);
+    return r.ok ? { ok: ctx.t("rw_deleted") } : failure(ctx, r);
   }),
   rewardSimulate: run(async (ctx, x) => {
     const s = settingsOf(ctx), r = await J.simulate(ctx, s, x.id, { text: x.text ?? "" });

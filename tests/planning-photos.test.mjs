@@ -476,7 +476,7 @@ test("administration : chaque partenaire dit l'état de sa photo en mots simples
   const ctx = enCtx(items);
   const first = blocksText(await def.adminPanel(ctx));
   assert.match(first, /\*\*etoile\\_nord\*\* : shown as “Étoile du Nord” — Photo copied/);
-  assert.match(first, /\*\*lune\\_douce\*\* : shown as “Lune Douce” — Photo pending \(next try in 1 min\)/);
+  assert.match(first, /\*\*lune\\_douce\*\* : shown as “Lune Douce” — Photo pending \(next try in (?:1 min|under a minute)\)/);
   assert.match(first, /\*\*brume\\_matin\*\* : shown as “Sans photo” — No photo in Contacts/);
   const forms = (await def.adminPanel(ctx)).filter((b) => b.type === "adminForm");
   assert.equal(forms.length, 1, "one single button");

@@ -96,7 +96,7 @@ test("formulaire : la question simple, quatre choix lisibles, huit couleurs, un 
   const w = world(); await enable(w);
   await create(w, { title: "Parle", what: "voice" });
   assert.ok((await create(w, { title: "Aspi", what: "custom", actionName: "Lancer l'aspirateur" })).ok);
-  const f = fieldsOf(await panel(w), "rewardCreate");
+  const f = fieldsOf(await panel(w, { rewardNew: "1" }), "rewardCreate");
   const what = f.find((x) => x.name === "what");
   assert.equal(what.label, "Ce qui se passe");
   const shown = f.filter((x) => x.kind !== "hidden" && !x.folded).map((x) => x.name);
@@ -238,8 +238,10 @@ test("« Vos actions » : la liste avec l'état de la maison, renommer, retirer 
   assert.deepEqual(table.rowActions.map((a) => a.label), ["Renommer", "Retirer"]);
   assert.match(table.rowActions[0].href, /actionEdit=\{id\}/);
   blocks = await panel(w, { actionEdit: "perso:lancer-l-aspirateur" });
-  assert.ok(blocks.some((b) => b.type === "heading" && /Renommer « Lancer l'aspirateur »/.test(b.text)));
-  assert.deepEqual(fieldsOf(blocks, "actionSave").map((f) => f.name), ["ref", "name"], "pas de champ de clé hors mode avancé");
+  const rename = blocks.find((b) => b.type === "adminForm" && b.action === "actionSave");
+  assert.deepEqual([rename.presentation, rename.title, rename.cancelHref], ["dialog", "Renommer « Lancer l'aspirateur »", "?tab=rewards"], "une fenêtre, comme la modification d'une récompense");
+  assert.equal(table.rowActions[0].presentation, "dialog");
+  assert.deepEqual(fieldsOf(blocks, "actionSave").map((f) => f.name), ["id", "ref", "name"], "pas de champ de clé hors mode avancé (`id` repère la ligne enregistrée)");
   assert.match((await RA.actions.actionRemove.run(w.bot, { id: "perso:lancer-l-aspirateur" })).error, /encore cette action/);
   await RA.actions.rewardRemove.run(w.bot, { id: (await rewards(w))[0].id });
   assert.ok((await RA.actions.actionRemove.run(w.bot, { id: "perso:lancer-l-aspirateur" })).ok);
@@ -251,7 +253,7 @@ test("« Vos actions » : la liste avec l'état de la maison, renommer, retirer 
 
 test("mode avancé : la clé se voit et s'écrit ; hors mode avancé jamais", async () => {
   const w = world({ settings: { showKeys: true } }); await enable(w);
-  const f = fieldsOf(await panel(w), "rewardCreate");
+  const f = fieldsOf(await panel(w, { rewardNew: "1" }), "rewardCreate");
   assert.ok(f.find((x) => x.name === "actionKey"), "le champ de clé n'existe qu'en mode avancé");
   assert.ok((await create(w, { title: "Aspi", what: "custom", actionName: "Lancer l'aspirateur", actionKey: "aspirateur:lancer" })).ok);
   assert.deepEqual((await named(w)).map((a) => [a.key, a.label]), [["aspirateur:lancer", "Lancer l'aspirateur"]], "la clé voulue est gardée telle quelle");
@@ -293,7 +295,7 @@ test("migration : les mots de l'ancien réglage et les clés déjà portées par
   await botDef.migrations[3](w.bot);
   assert.equal((await ACT.list(w.bot)).length, 2, "rejouée, elle n'ajoute rien");
   // elles se choisissent dans « Vos actions » et marchent comme avant
-  const what = fieldsOf(await panel(w), "rewardCreate").find((f) => f.name === "what").options.map((o) => o.value);
+  const what = fieldsOf(await panel(w, { rewardNew: "1" }), "rewardCreate").find((f) => f.name === "what").options.map((o) => o.value);
   assert.ok(what.includes("named:scene:cinema") && what.includes("named:lumieres:turquoise"));
   assert.ok((await create(w, { title: "Cinéma 2", what: "named:scene:cinema" })).ok);
   assert.ok((await create(w, { title: "Cinéma 3", action: "scene:cinema" })).ok, "l'ancienne façon (assistant) marche toujours");
@@ -529,7 +531,7 @@ test("liens : le Connecteur mène à l'onglet Récompenses du Bot Twitch, le Bot
   let i = blocks.findIndex((b) => b.type === "links" && b.items[0].label === "Relier à votre maison");
   assert.ok(i > 0, "le lien « Relier à votre maison »");
   assert.equal(blocks[i].items[0].href, "/admin/instances/h1");
-  assert.equal(blocks[i].items[1].href, "#new", "R25 : l'état de la maison et, à côté, le lien pour créer une récompense");
+  assert.deepEqual([blocks[i].items[1].href, blocks[i].items[1].presentation], ["?tab=rewards&rewardNew=1", "dialog"], "R25 : l'état de la maison et, à côté, le lien pour créer une récompense (dans une fenêtre)");
   assert.equal(blocks[i - 1].type, "banner", "l'état de la maison est dit juste au-dessus des liens");
   assert.ok(blocks.every((b) => b.tab === "rewards"));
   // Connecteur -> Bot Twitch : « Étape suivante », une fois associé

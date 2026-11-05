@@ -114,7 +114,14 @@ test("réponses : {compteur} compte chaque réponse envoyée (pas les refus), se
   await say(ctx, "!fois", { chatterId: "y", login: "y" });
   assert.equal(sent(tw).at(-1), "Déjà 4 fois");
   const A = await import("../modules/twitch-bot/admin.mjs");
-  assert.deepEqual(await A.actions.counterReset(ctx, { key: r.key }), { ok: ctx.t("counter_reset_done") });
+  // « Remettre le compteur à zéro » : un interrupteur sous « Plus d'options » de la fenêtre, appliqué par l'enregistrement
+  const form = (await A.panel(ctx, { query: { edit: r.key } })).find((b) => b.type === "adminForm" && b.action === "save");
+  const reset = form.fields.find((f) => f.name === "counterReset");
+  assert.deepEqual([reset.kind, reset.folded, reset.help], ["switch", true, ctx.t("edit_counter", { n: 4 })]);
+  assert.equal((await A.panel(ctx, { query: { new: "1" } })).find((b) => b.action === "create").fields.some((f) => f.name === "counterReset"), false, "pas de compteur à remettre pour une commande qui n'existe pas encore");
+  const noCounter = await add(ctx, "sans", "Sans compteur");
+  assert.equal((await A.panel(ctx, { query: { edit: noCounter.key } })).find((b) => b.action === "save").fields.some((f) => f.name === "counterReset"), false, "seulement si le texte compte");
+  assert.deepEqual(await A.actions.save(ctx, { key: r.key, name: "fois", text: "Déjà {compteur} fois", role: "everyone", counterReset: "on" }), { ok: ctx.t("saved") });
   assert.equal((await S.readCounters(ctx))[r.key], 0);
   for (let i = 0; i < 305; i++) await S.setCounter(ctx, `custom:k${i}`, i);
   assert.equal(Object.keys(await S.readCounters(ctx)).length, S.COUNTERS_MAX);

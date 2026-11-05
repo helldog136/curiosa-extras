@@ -1,6 +1,7 @@
-// La page « Commandes » : UN tableau de toutes les commandes (recherche en direct, filtres en pastilles, interrupteur dans la ligne), le choix « ajouter une commande pour un partenaire
-// ou un réseau », le formulaire d'une commande (3 champs visibles, le reste sous « Plus d'options ») et le journal. Les règles : docs/ERGONOMIE-ADMIN.md (R14 à R17, R30).
-// Le HTML des listes vient de adminkit.mjs ; le formulaire reste un formulaire du cœur, rangé par adminkit.client.js.
+// La page « Commandes » : UN tableau du cœur de toutes les commandes (recherche en direct, filtres en pastilles, interrupteur dans la ligne, « Modifier » qui ouvre une FENÊTRE),
+// le choix « ajouter une commande pour un partenaire ou un réseau », le formulaire d'une commande (3 champs visibles, le reste sous « Plus d'options ») et le journal.
+// Les règles : docs/ERGONOMIE-ADMIN.md (R14 à R17, R30). Seuls le choix « ajouter… » et le journal sont encore du HTML du module (adminkit.mjs) : le cœur n'a pas de bloc « liste
+// à choisir » ni de bloc « journal à vider ».
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const K = await import(`./adminkit.mjs${v}`);
 const F = await import(`./formsUi.mjs${v}`);
@@ -8,21 +9,29 @@ const { roleOptions } = F;
 const { reopenLabel, periodField, isoText } = await import(`./period.mjs${v}`);
 
 const { esc, norm } = K;
-const ORIGINS = ["custom", "builtin", "partner", "network", "timer"];
+const BADGES = { custom: "accent", builtin: "neutral", partner: "ok", network: "warn", timer: "info" };   // la couleur ne porte jamais seule l'information : le mot est écrit dans la pastille
 const originOf = (c) => (c.timerOnly ? "timer" : c.kind === "group" ? "builtin" : c.kind);
+/** Où revient la fenêtre quand elle se ferme (et où mènent ses liens) : l'onglet qui l'a ouverte. */
+export const tabHref = (tab, query = "") => `?tab=${tab}${query}`;
 
 /** « 1er novembre » (jour et mois seulement) pour la note d'une ligne. */
 function shortDate(ctx, n) {
   const text = new Intl.DateTimeFormat(ctx.locale, { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(n.y ?? 2024, n.m - 1, n.d)));
   return String(ctx.locale).startsWith("fr") && n.d === 1 ? text.replace(/^1 /, "1er ") : text;
 }
-/** La phrase longue de l'état (info-bulle, recherche) et la note courte sous l'interrupteur (seulement quand l'état sort de l'ordinaire). */
+/**
+ * La phrase longue de l'état (info-bulle, recherche), la note courte (seulement quand l'état sort de l'ordinaire), le mot de l'état (la pastille de filtre) et `text`, ce que
+ * l'interrupteur écrit à côté de lui.
+ */
 export function stateTexts(ctx, state, why, reopen) {
   const t = ctx.t;
-  if (state === "on") return { full: t("state_on"), note: "", word: t("state_on") };
-  if (state === "off") return { full: t("state_off"), note: "", word: t("state_off") };
-  if (state === "outside") return { full: reopenLabel(ctx, reopen), note: reopen ? t("note_outside", { date: shortDate(ctx, reopen) }) : t("note_ended"), word: t("state_outside") };
-  return { full: t(`why_${why}`), note: t(`note_${why}`), word: t(state === "missing" ? "state_missing" : "state_hidden") };
+  if (state === "on") return { full: t("state_on"), note: "", word: t("state_on"), text: t("state_on") };
+  if (state === "off") return { full: t("state_off"), note: "", word: t("state_off"), text: t("state_off") };
+  if (state === "outside") {
+    const note = reopen ? t("note_outside", { date: shortDate(ctx, reopen) }) : t("note_ended");
+    return { full: reopenLabel(ctx, reopen), note, word: t("state_outside"), text: `${t("state_outside")} · ${note}` };
+  }
+  return { full: t(`why_${why}`), note: t(`note_${why}`), word: t(state === "missing" ? "state_missing" : "state_hidden"), text: t(`note_${why}`) };
 }
 
 const words = (prefix, c) => [c.name, ...c.aliases].map((w) => `${prefix}${w}`);
@@ -30,7 +39,8 @@ const byName = (ctx) => (a, b) => (a.enabled === b.enabled ? 0 : a.enabled ? -1 
 
 /* ───────────── Le tableau ───────────── */
 
-function commandRow(ctx, info, c, partnerHref) {
+/** Une ligne : [nom, réponse, origine (pastille écrite), état (interrupteur)]. Une source disparue n'a pas d'interrupteur : seulement son état écrit. */
+function commandRow(ctx, info, c) {
   const t = ctx.t, p = info.s.prefix, origin = originOf(c);
   const onState = c.kind === "partner" || c.kind === "network" ? (c.missing ? c.state : c.onState ?? "on") : c.onState ?? "on";
   const cur = stateTexts(ctx, c.state, c.why, c.reopen);
@@ -38,34 +48,24 @@ function commandRow(ctx, info, c, partnerHref) {
   const [first0, ...others0] = words(p, c);
   const first = c.timerOnly ? (c.title || first0) : first0, others = c.timerOnly ? [] : others0;   // une commande réservée au timer n'a pas de mot à taper : on montre son titre
   const role = c.role === "everyone" || c.timerOnly ? "" : t(`role_${c.role}`);
-  const hay = [...words(p, c), c.name, ...c.aliases, c.text, t(`origin_${origin}`), cur.word, role].join(" ");
-  const href = c.kind === "partner" ? partnerHref.replace("{id}", encodeURIComponent(c.id)) : `?edit=${encodeURIComponent(c.key)}#edit`;
-  const action = c.missing ? "" : `<a class="ck-btn small" href="${esc(href)}">${esc(c.kind === "partner" ? t("act_open_partner") : t("act_edit"))}</a>`;
-  return `<tr ${K.rowAttrs({ origin, state: c.state, "on-state": onState, "on-note": would.note }, hay)}>
-<td class="c-name"><span class="ck-ell" title="${esc(words(p, c).join("  "))}"><span class="ck-name">${esc(first)}</span>${others.length ? ` <span class="ck-alias">${esc(others.join(" · "))}</span>` : ""}${role ? `<span class="ck-chipr">${esc(role)}</span>` : ""}</span></td>
-<td class="c-ans"><span class="ck-ell" title="${esc(c.text)}">${esc(c.text)}</span></td>
-<td class="c-org">${K.originPill(origin, t(`origin_${origin}`))}</td>
-<td class="c-sw">${K.switchHtml({ id: c.key, on: c.enabled, label: t("sw_label", { command: first }), disabled: !!c.missing, fail: t("err_toggle") })}<span class="ck-note" data-ck-note title="${esc(cur.full)}"${cur.note ? "" : " hidden"}>${esc(cur.note)}</span></td>
-<td class="c-act"><div class="ck-acts">${action}</div></td></tr>`;
+  const name = `${[first, ...others].join(" · ")}${role ? ` (${role})` : ""}`;   // le rôle par défaut n'est jamais répété (R14) ; la recherche trouve aussi les autres noms
+  const state = c.missing
+    ? { text: cur.word, title: cur.full }
+    : { text: cur.word, title: cur.full, switch: { on: c.enabled, action: "toggle", label: t("sw_label", { command: first }), onText: (c.enabled ? cur : would).text, offText: t("state_off") } };
+  return [{ text: name, title: `${words(p, c).join("  ")}${role ? `  (${role})` : ""}` }, { text: c.text, title: c.text }, { text: t(`origin_${origin}`), badge: BADGES[origin] }, state];
 }
 
-export function commandsList(ctx, info, { partnerHref }) {
+/**
+ * UN tableau pour toutes les commandes (R30) : la colonne d'origine, la recherche, les pastilles d'origine et d'état, l'interrupteur dans la ligne. « Modifier » ouvre la fenêtre
+ * (`presentation: "dialog"`) ; « Supprimer » est dans le menu « ⋯ », avec ce qui sera perdu (la fenêtre n'a pas de bouton destructif).
+ */
+export function commandsTable(ctx, info) {
   const t = ctx.t, list = [...info.list].sort(byName(ctx));
-  const count = (f) => list.filter(f).length;
-  const origin = ORIGINS.map((o) => ({ val: o, label: t(`filter_${o}`), count: count((c) => originOf(c) === o) })).filter((x) => x.count > 0);
-  const states = [["on", "filter_on"], ["off", "filter_off"], ["outside", "filter_outside"], ["hidden", "filter_hidden"]]
-    .map(([val, key]) => ({ val, label: t(key), count: count((c) => (val === "hidden" ? c.state === "hidden" || c.state === "missing" : c.state === val)) })).filter((x) => x.count > 0);
-  const head = `<div class="ck-head"><h2 class="ck-title">${esc(t("summary_title"))}</h2><a class="ck-btn primary" href="?new=1#edit">${esc(t("new_open"))}</a></div><p class="ck-intro">${esc(t("summary_help"))}</p>`;
   return {
-    type: "html",
-    html: K.listShell({
-      ctx, id: "commands", head,
-      columns: [{ label: t("col_command"), width: "21%" }, { label: t("col_answer") }, { label: t("col_origin"), width: "11%" }, { label: t("col_active"), width: "25%" }, { label: t("col_action"), width: "15%", sr: true }],
-      rows: list.map((c) => commandRow(ctx, info, c, partnerHref)).join(""),
-      pills: [{ key: "origin", label: t("filter_origin"), items: [{ val: "all", label: t("filter_all"), count: list.length }, ...origin] }, { key: "state", label: t("filter_state"), items: [{ val: "all", label: t("filter_any"), count: list.length }, ...states] }],
-      groups: { state: { hidden: ["hidden", "missing"] } },
-      text: { search: t("search_label"), placeholder: t("search_commands"), empty: t("search_none"), clear: t("search_clear"), count: t("search_count") },
-    }),
+    type: "table", columns: [t("col_command"), t("col_answer"), t("col_origin"), t("col_active")], rowIds: list.map((c) => c.key),
+    searchable: true, searchPlaceholder: t("search_commands"), filters: [{ column: 2, allLabel: t("filter_all") }, { column: 3, allLabel: t("filter_any") }], truncate: [0, 1],
+    rows: list.map((c) => commandRow(ctx, info, c)),
+    rowActions: [{ label: t("act_edit"), href: `${tabHref("use")}&edit={id}`, presentation: "dialog" }, { label: t("delete_btn"), action: "remove", confirm: t("delete_row_confirm"), danger: true }],
   };
 }
 
@@ -79,7 +79,7 @@ export function addChooser(ctx, info, { partnerHref }) {
   if (!partners.length && !networks.length) return null;
   const rows = [
     ...partners.map((p) => ({ origin: "partner", name: p.title, href: partnerHref.replace("{id}", encodeURIComponent(p.id)) })),
-    ...networks.map((n) => ({ origin: "network", name: n.label || n.name, href: `?edit=${encodeURIComponent(`network:${n.key}`)}#edit` })),
+    ...networks.map((n) => ({ origin: "network", name: n.label || n.name, href: `${tabHref("use")}&edit=${encodeURIComponent(`network:${n.key}`)}` })),
   ];
   const part = (n, one, many) => (n === 1 ? t(one) : t(many, { n }));
   const bits = [partners.length ? part(partners.length, "add_partners_1", "add_partners_n") : "", networks.length ? part(networks.length, "add_networks_1", "add_networks_n") : ""].filter(Boolean);
@@ -93,39 +93,52 @@ export function addChooser(ctx, info, { partnerHref }) {
   return { type: "html", html: `<div class="ck"><details class="ck-add"><summary><span class="ck-add-b">${esc(t("add_btn"))}</span><span class="ck-add-s">${esc(status)}</span></summary><div class="ck-add-body">${body}</div></details></div>` };
 }
 
-/* ───────────── Le formulaire d'une commande ───────────── */
+/* ───────────── Le formulaire d'une commande (dans une fenêtre) ───────────── */
+
+/** Le bouton « Nouvelle commande » : un lien qui ouvre la fenêtre (cœur 0.6.7). */
+export const newLink = (ctx) => ({ type: "links", items: [{ label: ctx.t("new_open"), href: `${tabHref("use")}&new=1`, presentation: "dialog" }] });
 
 /**
- * `view` : la commande (ou la proposition) ; `mode` : "new" ou "edit" ; `unsaved` : une proposition pas encore enregistrée (la sauvegarde l'active).
- * Champs visibles : Nom, Ce que le bot répond, Qui peut l'utiliser (3). Sous « Plus d'options » : autres noms, attentes, période.
+ * Le formulaire d'une commande, dans une fenêtre (`presentation: "dialog"`). `view` : la commande (ou la proposition) ; `mode` : "new" ou "edit" ; `unsaved` : une proposition pas
+ * encore enregistrée (la sauvegarde l'active) ; `tab` : l'onglet où la fenêtre revient en se fermant ; `counter` : combien de fois la commande a servi (si son texte compte) ;
+ * `canReset` : un texte d'origine peut être rétabli.
+ * Champs visibles : Nom, Ce que le bot répond, Qui peut l'utiliser (3). Sous « Plus d'options » : autres noms, attentes, période, répétition, et (si besoin) le compteur et le texte d'origine.
  */
-export async function commandForm(ctx, info, { mode, view, key, unsaved = false, kind, repeatIntent = false }) {
+export function commandForm(ctx, info, { mode, view, key, unsaved = false, kind, repeatIntent = false, tab = "use", counter = null, canReset = false, varsHelp = "" }) {
   const t = ctx.t, s = info.s;
-  const env = { channel: info.d.channel ?? null, sources: info.sources, list: info.list };
-  const cfg = F.textExtras ? await F.textExtras(ctx, kind, view.vars, env) : null;
   const timerOnly = view.timerOnly === true;
-  const layout = [
-    { f: "name" },
-    { f: "text", preview: cfg },
-    ...(timerOnly ? [] : [{ seg: "role" }]),   // une commande réservée au timer n'a personne à qui la permettre
-    { more: { title: t("more_title"), hint: t("more_hint_cmd"), open: repeatIntent, items: [{ f: "aliases", label: t("f_aliases") }, F.waitSentence(ctx, s), { f: "period", label: t("per_title") }, ...F.repeatLayout(ctx, kind)] } },
-  ];
-  const id = mode === "new" ? "cmd-new" : "cmd-edit";
-  const conf = K.formConfig(id, { layout, ...(kind === "custom" ? { stateHelp: F.timerOnlyHelp(ctx, s.prefix) } : {}) });
-  const form = { type: "adminForm", action: mode === "new" ? "create" : "save", submitLabel: t(mode === "new" ? "new_btn" : repeatIntent && !view.repeat ? "rep_add_btn" : "save_btn"), cancelHref: "?", fields: [
-    conf.field,
-    ...(mode === "edit" ? [{ name: "key", kind: "hidden", value: key }] : []),
-    ...(unsaved ? [{ name: "enabled", kind: "hidden", value: "on" }] : []),
-    { name: "name", label: t("f_name"), value: view.name ?? "", required: true, help: t("f_name_help", { prefix: s.prefix }) },
-    { name: "text", label: t("f_text"), kind: "textarea", value: view.text ?? "", required: true, help: t("f_text_help") },
-    { name: "role", label: t("f_role"), kind: "select", value: view.role ?? "everyone", options: roleOptions(t) },
-    { name: "aliases", label: t("f_aliases"), value: (view.aliases ?? []).join(", "), help: t("f_aliases_help") },
-    { name: "cdGlobal", label: t("f_cd_global"), kind: "number", value: view.cdGlobal ?? "", help: t("f_cd_help", { n: s.cdGlobal }) },
-    { name: "cdUser", label: t("f_cd_user"), kind: "number", value: view.cdUser ?? "", help: t("f_cd_help", { n: s.cdUser }) },
-    periodField(ctx, view.period ?? null, s.timeZone),
-    ...F.repeatFields(ctx, view, kind, repeatIntent),
-  ] };
-  return [conf.block, form];
+  const edit = mode === "edit";
+  const adding = edit && repeatIntent && !view.repeat;   // venu de « Ajouter ce timer » : la commande n'a pas encore de timer
+  const label = view.title || `${s.prefix}${view.name}`;
+  const submit = !edit ? "new_btn" : adding ? "rep_add_btn" : tab === "timers" ? "tm_save_btn" : "save_btn";
+  const title = !edit ? t(tab === "timers" ? "tm_add_title" : "new_title") : adding ? t("tm_adding_title", { name: label }) : tab === "timers" ? t("tm_edit_title", { name: label }) : t("edit_title", { command: `${s.prefix}${view.name}` });
+  return {
+    type: "adminForm", presentation: "dialog", action: edit ? "save" : "create", title, submitLabel: t(submit), cancelHref: tabHref(tab), ...(tab !== "use" ? { tab } : {}),
+    fields: [
+      ...(edit ? [{ name: "id", kind: "hidden", label: "id", value: key }, { name: "key", kind: "hidden", label: "key", value: key }] : []),
+      ...(unsaved ? [{ name: "enabled", kind: "hidden", label: "enabled", value: "on" }] : []),
+      { name: "name", label: t("f_name"), value: view.name ?? "", required: true, help: t("f_name_help", { prefix: s.prefix }) },
+      { name: "text", label: t("f_text"), kind: "textarea", value: view.text ?? "", required: true, help: varsHelp || t("f_text_help"), example: t("f_text_example") },
+      ...(timerOnly ? [] : [{ name: "role", label: t("f_role"), kind: "segmented", value: view.role ?? "everyone", options: roleOptions(t) }]),   // une commande réservée au timer n'a personne à qui la permettre
+      { name: "aliases", label: t("f_aliases"), value: (view.aliases ?? []).join(", "), help: t("f_aliases_help"), folded: true },
+      { name: "cdGlobal", label: t("f_wait_all"), kind: "number", value: view.cdGlobal ?? "", placeholder: String(s.cdGlobal), min: 0, max: 3600, step: 1, unit: t("unit_seconds"), help: t("f_cd_help", { n: s.cdGlobal }), folded: true },
+      { name: "cdUser", label: t("f_wait_user"), kind: "number", value: view.cdUser ?? "", placeholder: String(s.cdUser), min: 0, max: 3600, step: 1, unit: t("unit_seconds"), help: t("f_cd_help", { n: s.cdUser }), folded: true },
+      { ...periodField(ctx, view.period ?? null, s.timeZone), folded: true },
+      ...F.repeatFields(ctx, view, kind, repeatIntent),
+      ...(counter !== null ? [{ name: "counterReset", label: t("counter_reset_btn"), kind: "switch", value: "", help: t("edit_counter", { n: counter }), folded: true }] : []),
+      ...(canReset ? [{ name: "resetText", label: t("reset_btn"), kind: "switch", value: "", help: t("reset_help"), folded: true }] : []),
+    ],
+  };
+}
+
+/**
+ * La commande d'un partenaire se règle dans SA fiche (R30) : la fenêtre le dit dans son titre et son seul bouton y mène. Un tableau du cœur n'a qu'une série d'actions pour toutes
+ * les lignes ; en attendant des actions par ligne, « Modifier » d'une ligne de partenaire ouvre cette fenêtre.
+ */
+export function partnerStub(ctx, info, { view, key, tab = "use" }) {
+  const t = ctx.t;
+  return { type: "adminForm", presentation: "dialog", action: "openPartner", title: t("edit_partner_title", { command: `${info.s.prefix}${view.name}` }), submitLabel: t("act_open_partner"), cancelHref: tabHref(tab), ...(tab !== "use" ? { tab } : {}),
+    fields: [{ name: "id", kind: "hidden", label: "id", value: key }] };
 }
 
 /* ───────────── Le journal ───────────── */
