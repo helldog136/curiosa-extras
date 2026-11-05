@@ -1,12 +1,14 @@
 /*
  * Curiosa — petit script de page pour l'administration d'un module (« kit d'ergonomie »).
  *
- * POURQUOI : le cœur 0.5.x ne sait pas encore faire une recherche qui filtre en direct, un interrupteur dans une ligne, des boutons segmentés, une zone « Plus d'options »
- * (la période, elle, est un champ du cœur). Ce fichier les ajoute APRÈS COUP à du HTML que le module écrit lui-même (amélioration progressive) :
- *   - sans JavaScript, la page reste complète et lisible (la liste entière, tous les champs) ;
- *   - avec JavaScript, la liste se filtre pendant la frappe, l'état se change d'un clic, et les formulaires se rangent.
- * Il ne dépend de rien (ni bibliothèque ni réseau), ne touche qu'aux éléments marqués `data-ck-*` et aux formulaires qui portent un champ caché `ck`, et peut être réutilisé
- * tel quel par un autre module (voir adminkit.mjs pour la partie qui écrit le HTML et la route qui sert ce fichier). À proposer comme composants du cœur : voir le rapport de la PR.
+ * POURQUOI : le cœur ne fournit pas (encore) de bloc « liste à choisir » ni de bloc « journal à vider », ni de bouton d'action isolé sans cadre. Ce fichier ajoute APRÈS COUP, à du
+ * HTML que le module écrit lui-même, la recherche en direct et les boutons d'action (amélioration progressive) :
+ *   - sans JavaScript, la page reste complète et lisible (la liste entière) ;
+ *   - avec JavaScript, la liste se filtre pendant la frappe et un bouton appelle l'action du module.
+ * Depuis la 1.12.0 les listes de commandes, de timers et de récompenses sont des TABLEAUX DU CŒUR et leurs formulaires s'ouvrent dans des FENÊTRES du cœur : ce script n'y touche plus
+ * (il rangeait les formulaires, posait les interrupteurs et l'aperçu du texte ; tout cela est retiré). Il ne sert plus qu'au journal, aux listes repliées « ajouter… », « choisir
+ * une commande » et aux boutons d'action en ligne (vérifier, couper, vider).
+ * Il ne dépend de rien (ni bibliothèque ni réseau) et ne touche qu'aux éléments marqués `data-ck-*` (voir adminkit.mjs pour la partie qui écrit le HTML et la route qui sert ce fichier).
  *
  * LES COMPOSANTS (les attributs à poser dans le HTML) :
  *
@@ -18,16 +20,12 @@
  *      <div data-ck-empty hidden> … <button data-ck-clear>     « Aucun résultat » + « Effacer la recherche »
  *      <p data-ck-count data-ck-count-tpl="{n} sur {total}">   (facultatif) annonce le nombre de lignes affichées
  *    Une clé de pastille filtre sur l'attribut du même nom de la ligne (`data-<clé>`). Valeur « bad » d'état : les groupes d'états se déclarent dans `data-ck-groups` (JSON,
- *    ex. {"state":{"hidden":["hidden","missing"]}}).
+ *    ex. {"result":{"not":["refused","error"]}}).
  *
- * 2. Interrupteur / action dans une ligne
- *    <button role="switch" aria-checked="true" data-ck-act="toggle" data-ck-id="custom:ab12" data-ck-switch>
- *    <button data-ck-act="timerSend" data-ck-id="t1" data-ck-confirm="Envoyer ce message tout de suite ?">
+ * 2. Action dans un bouton
+ *    <button data-ck-act="clearLog" data-ck-confirm="Les 5 dernières lignes seront effacées." data-ck-reload>
  *    Appelle l'action du module par la route du cœur (/api/admin/modules/<instance>/action/<action>), montre le résultat dans [data-ck-status] de la liste.
  *    `data-ck-reload` : recharge la page après la réussite. `data-ck-confirm` : demande d'abord, dans la page (jamais window.confirm).
- *
- * 3. Formulaire rangé : un champ caché <input type="hidden" name="ck" value="ID"> dans le formulaire du cœur, et un élément [data-ck-config="ID"] (JSON dans son attribut
- *    `data-ck-json`) qui dit comment ranger les champs : voir `buildForm` plus bas (segmented, more, sentence, preview/chips ; la période est le champ `period` du cœur, rangé sous « Plus d'options » comme un champ ordinaire).
  */
 (function (root) {
   "use strict";
@@ -59,13 +57,6 @@
   /** Remplace {clé} dans un modèle. */
   function fill(tpl, vars) {
     return String(tpl).replace(/\{(\w+)\}/g, function (all, k) { return vars[k] === undefined ? all : String(vars[k]); });
-  }
-  /** Aperçu d'une réponse : remplace les morceaux simples connus ({jeu}…) par leur valeur du moment ; les autres restent tels quels. */
-  function previewText(text, samples) {
-    return String(text).replace(/\{([^{}\s]+)\}/g, function (all, name) {
-      var k = norm(name);
-      return Object.prototype.hasOwnProperty.call(samples || {}, k) ? samples[k] : all;
-    });
   }
 
   /* ───────────── Le DOM ───────────── */
@@ -157,34 +148,20 @@
   }
   function run(btn) {
     var host = btn.closest("[data-ck-instance]"), list = btn.closest("[data-ck-list]") || host;
-    var isSwitch = btn.hasAttribute("data-ck-switch"), was = btn.getAttribute("aria-checked");
     if (btn.disabled || !host) return;
-    if (isSwitch) btn.setAttribute("aria-checked", was === "true" ? "false" : "true");
     btn.disabled = true;
     say(list, "", false);
     call(host, btn.getAttribute("data-ck-act"), { id: btn.getAttribute("data-ck-id") || "" }).then(function (j) {
       btn.disabled = false;
       if (j.error || (j.status && j.status >= 400 && !j.ok)) {
-        if (isSwitch) btn.setAttribute("aria-checked", was);
         say(list, j.error || btn.getAttribute("data-ck-fail") || "", true);
         return;
-      }
-      if (isSwitch) {
-        var row = btn.closest("[data-ck-row]"), on = btn.getAttribute("aria-checked") === "true";
-        if (row) {
-          var next = on ? (row.getAttribute("data-on-state") || "on") : "off";
-          row.setAttribute("data-state", next);
-          var note = row.querySelector("[data-ck-note]");
-          if (note) { note.textContent = on ? (row.getAttribute("data-on-note") || "") : ""; note.hidden = !note.textContent; }
-          if (list) applyList(list);
-        }
       }
       say(list, j.ok || "", false);
       if (j.redirect) { root.location.href = j.redirect; return; }
       if (btn.hasAttribute("data-ck-reload")) root.location.reload();
     }).catch(function () {
       btn.disabled = false;
-      if (isSwitch) btn.setAttribute("aria-checked", was);
       say(list, btn.getAttribute("data-ck-fail") || "", true);
     });
   }
@@ -210,266 +187,11 @@
     if (btn.hasAttribute("data-ck-confirm")) ask(btn); else run(btn);
   });
 
-  /* 3. Formulaires rangés */
-
-  /** Le bloc (enfant direct de la grille du formulaire du cœur) qui porte le champ `name`. */
-  function fieldBox(form, name) {
-    var node = form.elements.namedItem(name);
-    if (!node) return null;
-    if (node.length !== undefined && node.tagName !== "SELECT") node = node[0];
-    while (node && node.parentElement && node.parentElement.parentElement !== form) node = node.parentElement;
-    return node && node.parentElement ? node : null;
-  }
-  /** Montre `node` seulement quand l'interrupteur `name` est allumé (sans script, tout reste visible). */
-  function showWhen(form, node, name) {
-    var upd = function () { node.hidden = !fieldIsSet(form, name); };
-    form.addEventListener("change", upd); form.addEventListener("input", upd);
-    form.addEventListener("reset", function () { root.setTimeout(upd, 0); });
-    upd();
-  }
-  /** Le champ a-t-il une valeur ? Un interrupteur ou une case compte quand il est allumé (sa valeur, elle, est toujours « on »). */
-  function fieldIsSet(form, name) {
-    var node = form.elements.namedItem(name);
-    if (!node) return false;
-    var list = node.length !== undefined && node.tagName !== "SELECT" ? Array.prototype.slice.call(node) : [node];
-    var box = list.filter(function (n) { return n.type === "checkbox"; })[0];
-    if (box) return !!box.checked;
-    if (list[0].type === "radio") {   // a segmented choice: set when it is not the first (default) option
-      var chosen = list.filter(function (n) { return n.checked; })[0];
-      return !!chosen && chosen !== list[0];
-    }
-    return String(list[list.length - 1].value).trim() !== "";
-  }
-  function labelOf(form, name) {
-    var node = form.elements.namedItem(name);
-    var lab = node && node.id ? form.querySelector("label[for='" + node.id + "']") : null;
-    return lab ? lab.textContent.trim() : name;
-  }
-
-  /** Un choix à 2-4 valeurs : boutons segmentés, branchés sur la liste d'origine (qui garde la valeur envoyée). */
-  function segmented(form, select) {
-    var group = el("div", "ck-seg"), buttons = [];
-    group.setAttribute("role", "radiogroup");
-    group.setAttribute("aria-label", labelOf(form, select.name));
-    function sync() {
-      buttons.forEach(function (b) {
-        var on = b.getAttribute("data-v") === select.value;
-        b.setAttribute("aria-checked", on ? "true" : "false");
-        b.tabIndex = on ? 0 : -1;
-      });
-    }
-    Array.prototype.forEach.call(select.options, function (o, i) {
-      var b = el("button", "ck-seg-b", o.text);
-      b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("data-v", o.value);
-      b.addEventListener("click", function () { select.value = o.value; fire(select, "change"); sync(); });
-      b.addEventListener("keydown", function (e) {
-        var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-        if (!d) return;
-        e.preventDefault();
-        var n = buttons[(i + d + buttons.length) % buttons.length];
-        n.focus(); n.click();
-      });
-      buttons.push(b); group.appendChild(b);
-    });
-    select.hidden = true;
-    select.parentNode.insertBefore(group, select.nextSibling);
-    form.addEventListener("reset", function () { root.setTimeout(sync, 0); });
-    select.addEventListener("change", sync);
-    sync();
-    return group;
-  }
-
-  /** « Attendre [ ] s entre deux réponses, et [ ] s pour une même personne » : une phrase, des champs au milieu. */
-  function sentence(form, spec) {
-    var wrap = el("div", "ck-section");
-    if (spec.title) wrap.appendChild(el("div", "ck-legend", spec.title));
-    var line = el("div", "ck-line"), fields = [];
-    spec.tokens.forEach(function (tok) {
-      if (typeof tok === "string") { line.appendChild(el("span", "ck-word", tok)); return; }
-      var input = form.elements.namedItem(tok.f), box = fieldBox(form, tok.f);
-      if (!input) return;
-      input.setAttribute("aria-label", labelOf(form, tok.f));
-      input.classList.add("ck-num");
-      if (tok.ph) input.placeholder = tok.ph;
-      if (tok.min != null) input.min = tok.min;
-      if (tok.max != null) input.max = tok.max;
-      input.inputMode = "numeric";
-      if (box) box.hidden = true;
-      line.appendChild(input);
-      fields.push(input);
-    });
-    wrap.appendChild(line);
-    if (spec.hint) wrap.appendChild(el("p", "ck-hint", spec.hint));
-    wrap.__isSet = function () { return fields.some(function (f) { return String(f.value).trim() !== ""; }); };
-    return wrap;
-  }
-
-  /** "every 15 min" / "every 2 h" from a number of seconds (whole minutes only); "" when the interval is not usable. */
-  function everyText(spec, seconds) {
-    if (!(seconds >= 60) || seconds % 60 !== 0) return "";
-    var min = seconds / 60;
-    return min >= 120 && min % 60 === 0 ? spec.everyHour.replace("{h}", String(min / 60)) : spec.everyMin.replace("{min}", String(min));
-  }
-  /**
-   * The line under a two-choice control that tells what the CURRENT choice means (pure, tested without a page). `state`: { timerOnly, repeating, name, seconds }.
-   * Never a fixed sentence: the core cannot show a different help for each choice, so the line is written here and follows the choice.
-   * The name is shown only when it fits (72 characters) in BOTH choices, so that switching the choice never makes the name come and go; the interval only when it is whole minutes.
-   */
-  var HELP_MAX = 72;
-  function stateHelpText(spec, state) {
-    if (!state.repeating) return spec.first;
-    var every = everyText(spec, state.seconds), name = state.name ? spec.prefix + state.name : "";
-    var fill = function (kind, c) { return spec.texts[kind + "_" + c].replace("{name}", name).replace("{every}", every); };
-    var named = every ? "named_every" : "named", plain = every ? "every" : "plain";
-    var fits = name && ["timer", "both"].every(function (k) { return fill(k, named).length <= HELP_MAX; });
-    return fill(state.timerOnly ? "timer" : "both", fits ? named : plain);
-  }
-  /** Writes `stateHelpText` under the segmented choice `spec.field` and keeps it up to date (choice, repeat switch, name, interval). */
-  function stateHelp(form, spec) {
-    var radios = form.elements.namedItem(spec.field);
-    if (!radios || radios.length === undefined) return;
-    var first = radios[0], holder = first.closest("fieldset") || first.parentNode;
-    var line = el("p", "ck-hint ck-state-help");
-    line.id = spec.field + "__state"; line.setAttribute("aria-live", "polite");
-    holder.appendChild(line);
-    holder.setAttribute("aria-describedby", ((holder.getAttribute("aria-describedby") || "") + " " + line.id).trim());
-    var value = function (name) { var n = name && form.elements.namedItem(name); return n && n.value !== undefined ? String(n.value).trim() : ""; };
-    var update = function () {
-      var chosen = Array.prototype.filter.call(radios, function (r) { return r.checked; })[0];
-      var seconds = value(spec.everyField) === "" ? null : Number(value(spec.everyField));
-      line.textContent = stateHelpText(spec, { timerOnly: !!chosen && chosen.value === "on", repeating: spec.on ? fieldIsSet(form, spec.on) : true, name: value(spec.nameField), seconds: seconds });
-      line.hidden = !line.textContent;
-    };
-    // React (the core's fields) updates its hidden inputs after our listeners: read them one tick later.
-    var later = function () { root.setTimeout(update, 0); };
-    form.addEventListener("input", later); form.addEventListener("change", later); form.addEventListener("reset", later);
-    update(); root.setTimeout(update, 400);
-  }
-
-  /** La mise en page d'un formulaire du cœur d'après sa configuration (voir adminkit.mjs, formConfig). */
-  function buildForm(form, cfg) {
-    var first = cfg.layout.map(function (it) { return it.f || it.seg; }).filter(Boolean)[0];
-    var anchor = first && fieldBox(form, first);
-    if (!anchor) return;
-    var grid = anchor.parentElement, rootBox = el("div", "ck-form");
-    grid.insertBefore(rootBox, grid.firstChild);
-    var more = null, moreItems = [];
-
-    function place(item, into) {
-      if (item.f) {
-        var b = fieldBox(form, item.f);
-        if (!b) return null;
-        into.appendChild(b);
-        b.classList.add("ck-field");
-        if (item.preview) textExtras(form, item.f, b, item.preview);
-        return b;
-      }
-      if (item.seg) {
-        var s = form.elements.namedItem(item.seg), sb = fieldBox(form, item.seg);
-        if (!s || !sb) return null;
-        into.appendChild(sb); sb.classList.add("ck-field");
-        segmented(form, s);
-        return sb;
-      }
-      if (item.sentence) { var sn = sentence(form, item.sentence); into.appendChild(sn); return sn; }
-      if (item.nested) {   // un groupe replié dans « Plus d'options » (conditions rares)
-        var nd = el("details", "ck-more ck-nested"), ns = el("summary"), nb = el("div", "ck-more-body");
-        ns.appendChild(el("span", "ck-more-t", item.nested.title)); nd.appendChild(ns); nd.appendChild(nb);
-        item.nested.items.forEach(function (x) { place(x, nb); });
-        into.appendChild(nd);
-        return nd;
-      }
-      return null;
-    }
-    cfg.layout.forEach(function (item) {
-      if (!item.more) { place(item, rootBox); return; }
-      var d = el("details", "ck-more"), sum = el("summary"), t = el("span", "ck-more-t", item.more.title), h = el("span", "ck-more-h", item.more.hint), now = el("span", "ck-more-now");
-      sum.appendChild(t); sum.appendChild(h); sum.appendChild(now);
-      d.appendChild(sum);
-      var body = el("div", "ck-more-body");
-      d.appendChild(body);
-      if (item.more.open) d.open = true;
-      rootBox.appendChild(d);
-      more = d;
-      item.more.items.forEach(function (sub) {
-        var node = place(sub, body), label = sub.label || (sub.sentence && sub.sentence.title) || (sub.f && labelOf(form, sub.f));
-        if (sub.showWhen && node) showWhen(form, node, sub.showWhen);
-        if (!sub.quiet) moreItems.push({ node: node, field: sub.f, label: label, sentence: !!sub.sentence });   // `quiet` : fait partie d'un groupe déjà résumé par un autre champ
-      });
-      var refresh = function () {
-        var set = [];
-        moreItems.forEach(function (m) {
-          var on = m.field ? fieldIsSet(form, m.field) : m.node && m.node.__isSet && m.node.__isSet();
-          if (on) set.push(m.label);
-        });
-        now.textContent = set.length ? set.join(" · ") : "";
-        now.hidden = !set.length;
-      };
-      form.addEventListener("input", refresh); form.addEventListener("change", refresh);
-      form.addEventListener("reset", function () { root.setTimeout(refresh, 0); });
-      refresh();
-    });
-
-    // Une erreur dans un champ replié : on ouvre le panneau.
-    var watcher = new root.MutationObserver(function () {
-      var bad = form.querySelector("[data-field-error]");
-      if (!bad) return;
-      var det = bad.closest("details");
-      if (det && !det.open) det.open = true;
-    });
-    watcher.observe(form, { childList: true, subtree: true });
-  }
-
-  /** Sous le champ « réponse » : l'aperçu en direct et les morceaux à insérer d'un clic. */
-  function textExtras(form, name, box, spec) {
-    var ta = form.elements.namedItem(name);
-    if (!ta) return;
-    var wrap = el("div", "ck-extras");
-    if (spec.chips && spec.chips.length) {
-      var row = el("div", "ck-chips"), lab = el("span", "ck-word", spec.chipsLabel);
-      row.appendChild(lab);
-      spec.chips.forEach(function (c) {
-        var b = el("button", "ck-chip", c.label); b.type = "button";
-        b.addEventListener("click", function () {
-          var s = ta.selectionStart == null ? ta.value.length : ta.selectionStart, e = ta.selectionEnd == null ? s : ta.selectionEnd, add = "{" + c.v + "}";
-          ta.value = ta.value.slice(0, s) + add + ta.value.slice(e);
-          ta.focus(); ta.setSelectionRange(s + add.length, s + add.length);
-          fire(ta, "input");
-        });
-        row.appendChild(b);
-      });
-      wrap.appendChild(row);
-    }
-    var pv = el("p", "ck-preview");
-    pv.setAttribute("aria-live", "polite");
-    wrap.appendChild(pv);
-    var upd = function () { var v = ta.value.trim(); pv.hidden = !v; pv.textContent = v ? spec.label + " " + previewText(v, spec.samples) : ""; };
-    ta.addEventListener("input", upd);
-    form.addEventListener("reset", function () { root.setTimeout(upd, 0); });
-    upd();
-    ta.parentNode.insertBefore(wrap, ta.nextSibling);
-  }
-
-  function bootForm(marker) {
-    var form = marker.closest("form");
-    if (!form || form.getAttribute("data-ck-ready")) return;
-    var cfgNode = doc.querySelector("[data-ck-config='" + marker.value + "']");
-    if (!cfgNode) return;
-    var cfg;
-    try { cfg = JSON.parse(cfgNode.getAttribute("data-ck-json")); } catch (e) { return; }
-    form.setAttribute("data-ck-ready", "1");
-    form.classList.add("ck-form-on");
-    try { buildForm(form, cfg); } catch (e) { form.removeAttribute("data-ck-ready"); if (root.console) root.console.error("[kit]", e); }
-    if (cfg.stateHelp) { try { stateHelp(form, cfg.stateHelp); } catch (e) { if (root.console) root.console.error("[kit]", e); } }
-  }
-
   /* ───────────── Mise en route ───────────── */
 
   function scan() {
     var lists = doc.querySelectorAll("[data-ck-list]");
     for (var i = 0; i < lists.length; i++) bootList(lists[i]);
-    var marks = doc.querySelectorAll("input[type='hidden'][name='ck']");
-    for (var j = 0; j < marks.length; j++) bootForm(marks[j]);
   }
   var pending = false;
   new root.MutationObserver(function () {
@@ -478,7 +200,7 @@
     root.setTimeout(function () { pending = false; scan(); }, 30);
   }).observe(doc.body, { childList: true, subtree: true });
 
-  var api = { scan: scan, norm: norm, matches: matches, rowPasses: rowPasses, previewText: previewText, fill: fill, stateHelpText: stateHelpText };
+  var api = { scan: scan, norm: norm, matches: matches, rowPasses: rowPasses, fill: fill };
   root.CuriosaKit = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   scan();
