@@ -968,19 +968,42 @@ async function lastQuick(ctx) {
   return old ? pollOf(old, "archive") : null;
 }
 
-/** A quick poll again: same question, same choices, same length as the last quick poll. */
-export async function remoteAgain(ctx, now = Date.now()) {
+/* What the dock remembers for the next quick poll: the last custom length and the last typed question (one small row next to the other settings of the module). */
+const DOCK_KEY = "dock";
+const presetSeconds = (n) => L.ROUND.quickSeconds.includes(n);
+async function getDock(ctx) {
+  const r = await byKey(ctx, META, DOCK_KEY, "k");
+  const d = r?.data ?? {};
+  const seconds = Number(d.seconds);
+  return { seconds: Number.isInteger(seconds) && seconds >= L.QUICK.minSeconds && seconds <= L.QUICK.maxSeconds && !presetSeconds(seconds) ? seconds : 0, question: clean(d.question, LIMITS.question) };
+}
+/** Keeps the last custom length (only when it is not one of the presets) and the last question (only when one was typed). Never throws: this is a convenience. */
+async function rememberDock(ctx, { seconds, question }) {
+  try {
+    await withLock(ctx, async () => {
+      const r = await byKey(ctx, META, DOCK_KEY, "k");
+      const old = r?.data ?? { k: DOCK_KEY };
+      const next = { ...old, k: DOCK_KEY };
+      if (Number.isInteger(seconds) && !presetSeconds(seconds)) next.seconds = seconds;
+      if (clean(question, LIMITS.question)) next.question = clean(question, LIMITS.question);
+      if (r) await ctx.api.store.update(r.id, next, { key: DOCK_KEY }); else await ctx.api.store.add(META, next, { key: DOCK_KEY });
+    });
+  } catch { /* the poll is already running: forgetting a convenience is not an error */ }
+}
+
+/** A quick poll again: same question (or the one just typed), same choices, same length as the last quick poll. */
+export async function remoteAgain(ctx, now = Date.now(), question = "") {
   const last = await lastQuick(ctx);
   if (!last) return { ok: false, error: "none" };
   const length = last.endsAt && last.createdAt ? Math.round((Date.parse(last.endsAt) - Date.parse(last.createdAt)) / 1000) : quickDefault(ctx);
   const [a, b, c, d] = last.choices.map((x) => x.text);
-  const r = await quickPoll(ctx, { a, b, c, d, seconds: secondsOf(length, quickDefault(ctx), 15, 900), question: last.question }, now);
+  const r = await quickPoll(ctx, { a, b, c, d, seconds: secondsOf(length, quickDefault(ctx), 15, 900), question: clean(question, LIMITS.question) || last.question }, now);
   return r.ok ? r : { ok: false, error: r.errors ? "invalid" : r.error };
 }
 
 /** A Yes / No poll in one tap, with the usual length. */
-export async function remoteYesNo(ctx, now = Date.now()) {
-  const r = await quickPoll(ctx, { a: ctx.t("quickYes"), b: ctx.t("quickNo"), seconds: quickDefault(ctx), question: "" }, now);
+export async function remoteYesNo(ctx, now = Date.now(), question = "") {
+  const r = await quickPoll(ctx, { a: ctx.t("quickYes"), b: ctx.t("quickNo"), seconds: quickDefault(ctx), question }, now);
   return r.ok ? r : { ok: false, error: r.errors ? "invalid" : r.error };
 }
 
@@ -1011,7 +1034,7 @@ const liveReply = (ctx, r, okKey, vars) => (r.ok
   : { ok: false, error: ["none", "changed", "closed", "noend", "open", "gone", "purged", "partial"].includes(r.error) ? r.error : "failed", message: ctx.t(LIVE_ERRORS[r.error] ?? "remoteErrFailed") });
 
 /** The live view of Polls for the dock (see `sanitizeView` in Audience): one stage at a time, the main action first. */
-function pollView(ctx, { series, round, cp, now, again }) {
+function pollView(ctx, { series, round, cp, now, again, dock = { seconds: 0, question: "" } }) {
   const t = (k, v) => ctx.t(k, v);
   const btn = (id, key, label, short, extra = {}) => ({ id, label: t(label), short: t(short), key, ...extra });
   const barsOf = (p) => L.rows(p).map((r) => ({ text: r.text, n: r.count, pct: r.pct, lead: r.lead }));
@@ -1019,14 +1042,19 @@ function pollView(ctx, { series, round, cp, now, again }) {
   const form = {
     id: "quick", title: t("quickTitle"), submit: t("quickGo"),
     fields: [
+      { name: "question", label: t("fQuickQuestion"), type: "text", max: LIMITS.question, example: t("fQuickQuestionExample"), low: true, recall: dock.question, recallLabel: dock.question ? t("dockLastOne", { what: dock.question }) : "" },
       { name: "a", label: t("fQuickAShort"), type: "text", required: true, max: LIMITS.choice },
       { name: "b", label: t("fQuickBShort"), type: "text", required: true, max: LIMITS.choice },
-      { name: "seconds", label: t("fQuickSeconds"), type: "select", seg: true, value: String(quickDefault(ctx)), options: quickSeconds.map((n) => ({ value: String(n), label: t(SEC_LABELS[n]), short: t(`${SEC_LABELS[n]}Short`) })) },
+      { name: "seconds", label: t("fQuickSeconds"), type: "select", seg: true, example: t("fQuickSecondsExample"), placeholder: t("fQuickSecondsShort"), value: String(quickDefault(ctx)), options: [
+        ...quickSeconds.map((n) => ({ value: String(n), label: t(SEC_LABELS[n]), short: t(`${SEC_LABELS[n]}Short`) })),
+        ...(dock.seconds ? [{ value: String(dock.seconds), label: t("dockLastOne", { what: L.showDuration(dock.seconds) }), short: `↺${L.showDuration(dock.seconds)}`, last: true }] : []),
+        { value: "other", label: t("quickSecOther"), short: t("quickSecOtherShort"), custom: true },
+      ] },
       { name: "c", label: t("fQuickCShort"), type: "text", max: LIMITS.choice, more: true },
       { name: "d", label: t("fQuickDShort"), type: "text", max: LIMITS.choice, more: true },
     ],
   };
-  const chips = [btn("poll-yesno", "Y", "remoteYesNo", "remoteYesNoShort"), ...(again ? [btn("poll-again", "R", "remoteAgain", "remoteAgainShort")] : []), btn("start", "L", "dockChipLoop", "dockChipLoopShort")];
+  const chips = [btn("poll-yesno", "Y", "remoteYesNo", "remoteYesNoShort", { with: ["question"] }), ...(again ? [btn("poll-again", "R", "remoteAgain", "remoteAgainShort", { with: ["question"] })] : []), btn("start", "L", "dockChipLoop", "dockChipLoopShort")];
   if (series.status === "running") {
     const open = cp.state === "open";
     return {
@@ -1086,7 +1114,7 @@ async function remotePanel(ctx, now) {
     ...(quickAgain ? [{ id: "poll-again", label: ctx.t("remoteAgain") }] : []),
   ];
   return {
-    title: ctx.t("remoteTitle"), state, view: pollView(ctx, { series, round: cur, cp, now, again: !!quickAgain }),
+    title: ctx.t("remoteTitle"), state, view: pollView(ctx, { series, round: cur, cp, now, again: !!quickAgain, dock: await getDock(ctx) }),
     buttons: [
       { id: "start", label: ctx.t("remoteStart"), tone: "primary", disabled: running },
       { id: "next", label: ctx.t("remoteNext"), disabled: !running },
@@ -1127,7 +1155,11 @@ export default {
           case "start": { const r = await startSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.started" }); return remoteReply(ctx, r, "remoteStarted"); }
           case "next": return remoteReply(ctx, await nextRound(ctx, now), "remoteNexted");   // la décision de la manche est notée par decideRound
           case "stop": { const r = await stopSeries(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "round.stopped" }); return remoteReply(ctx, r, r.cancelled ? "remoteStoppedCancelled" : "remoteStopped"); }
-          case "quick": { const r = await quickPoll(ctx, values, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return remoteReply(ctx, r, "remoteQuickOk"); }
+          case "quick": {
+            const r = await quickPoll(ctx, values, now);
+            if (r.ok) { await ctx.api.log?.write({ action: "poll.quick" }); await rememberDock(ctx, { seconds: L.parseDuration(values.seconds), question: values.question }); }
+            return remoteReply(ctx, r, "remoteQuickOk");
+          }
           // Live gestures on the poll in front of the streamer (see "Live controls" above): same functions as the website, journal line written there.
           case "poll-close": { const r = await remoteClose(ctx, values, now); return liveReply(ctx, r, "remoteClosed"); }
           case "poll-cancel": { const r = await remoteCancel(ctx, values, now); return liveReply(ctx, r, r.wasOpen ? "remoteCancelled" : "remoteDeleted"); }
@@ -1136,8 +1168,8 @@ export default {
           case "poll-show": return liveReply(ctx, await remoteScreen(ctx, values, { now }), "remoteShown");
           case "poll-hide": return liveReply(ctx, await remoteScreen(ctx, values, { show: false, now }), "remoteHidden");
           case "poll-archive": return liveReply(ctx, await remoteArchive(ctx, values, now), "remoteArchived");
-          case "poll-again": { const r = await remoteAgain(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return liveReply(ctx, r, "remoteQuickOk"); }
-          case "poll-yesno": { const r = await remoteYesNo(ctx, now); if (r.ok) await ctx.api.log?.write({ action: "poll.quick" }); return liveReply(ctx, r, "remoteQuickOk"); }
+          case "poll-again": { const r = await remoteAgain(ctx, now, values.question); if (r.ok) { await ctx.api.log?.write({ action: "poll.quick" }); await rememberDock(ctx, { question: values.question }); } return liveReply(ctx, r, "remoteQuickOk"); }
+          case "poll-yesno": { const r = await remoteYesNo(ctx, now, values.question); if (r.ok) { await ctx.api.log?.write({ action: "poll.quick" }); await rememberDock(ctx, { question: values.question }); } return liveReply(ctx, r, "remoteQuickOk"); }
           case "panic": { const r = await remotePanic(ctx, now); return { ok: true, message: ctx.t(r.closed || r.rounds ? "remotePanicDone" : "remotePanicNothing", { n: r.closed }) }; }
           default: return { ok: false, error: "invalid", message: ctx.t("remoteErrFailed") };
         }

@@ -283,6 +283,12 @@ kbd{display:none;font:600 11px/1 ui-monospace,monospace;padding:2px 5px;border-r
 .seg input:checked+label{border-color:var(--cur-accent);background:color-mix(in srgb,var(--cur-accent) 22%,var(--cur-surface));font-weight:800}
 .seg input:checked+label::before{content:"✓ "}
 .seg input:focus-visible+label{outline:3px solid var(--cur-focus);outline-offset:2px}
+.seg input.cust{position:static;opacity:1;pointer-events:auto;grid-column:span 2;min-height:48px;padding:4px 6px;text-align:center}.seg input.cust[hidden]{display:none}.form .seg input.cust::placeholder{color:var(--cur-muted)}
+.seg.oth .lastopt,.seg input.cr:checked+label{display:none}
+.seg.many{gap:3px}.seg.many label{white-space:nowrap;font-size:.86em;padding:0 2px}.seg.many .lastopt{font-size:.8em;letter-spacing:-.02em}.seg.many input:checked+label::before{content:none}.seg.many input:checked+label{box-shadow:inset 0 -5px 0 var(--cur-accent)}
+.sheet .fld.wide{grid-column:1/-1}
+.recallrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:6px;min-width:0}
+.btn.recall{font-weight:600;font-size:.88em;padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;text-align:left}
 .seglab{font-weight:600;font-size:.88em;color:var(--cur-muted)}.form .seglab{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sheet{position:absolute;inset:0;z-index:2;background:var(--cur-bg);display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:clamp(8px,2.4cqmin,16px)}
 .sheet .rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 8px;align-content:start;min-height:0}

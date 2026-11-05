@@ -226,6 +226,30 @@ export function validateSeriesForm(values) {
   return { errors, value: { question, choices: list, minutes } };
 }
 
+/** Quick poll length bounds, in seconds (the website form, the dock and the assistant tools all use these). */
+export const QUICK = { minSeconds: 15, maxSeconds: 900 };
+
+/**
+ * A time typed by a person, in seconds, or null when it cannot be read. One rule, shown as an example in the dock ("90 s or 2:30"):
+ *   a whole number alone is SECONDS ("45", "90"); "2m", "2 min", "2 minutes" are minutes; "90s", "90 sec" are seconds;
+ *   "1:30" is minutes and seconds; "1m30" and "1m 30s" are accepted too. Nothing else (no decimals, no negative number).
+ */
+export function parseDuration(text) {
+  const t = String(text ?? "").normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+  if (!t || t.length > 20) return null;
+  let m;
+  if ((m = /^(\d{1,5})(?: ?s(?:ec(?:onde?s?)?s?)?)?$/.exec(t))) return Number(m[1]);
+  if ((m = /^(\d{1,3}):([0-5]\d)$/.exec(t))) return Number(m[1]) * 60 + Number(m[2]);
+  if ((m = /^(\d{1,3}) ?m(?:in(?:ute?s?)?)?(?: ?(?:(\d{1,2}) ?s?(?:ec(?:onde?s?)?s?)?)?)?$/.exec(t))) return Number(m[1]) * 60 + (m[2] ? Number(m[2]) : 0);
+  return null;
+}
+
+/** "45 s" under a minute, else "m:ss" ("2:30"): the short form used to offer the last custom duration again. */
+export const showDuration = (seconds) => {
+  const n = Math.max(0, Math.round(Number(seconds) || 0));
+  return n < 60 ? `${n} s` : `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
+};
+
 /** « A ou B ? » : de 2 à 4 choix (les deux premiers sont obligatoires) et une durée courte. */
 export function validateQuick(values) {
   const errors = {};
@@ -244,8 +268,9 @@ export function validateQuick(values) {
   const rawSeconds = String(values.seconds ?? "").trim();
   let seconds = 60;
   if (rawSeconds !== "") {
-    if (!/^\d+$/.test(rawSeconds) || Number(rawSeconds) < 15 || Number(rawSeconds) > 900) errors.seconds = "quick_seconds";
-    else seconds = Number(rawSeconds);
+    const parsed = parseDuration(rawSeconds);
+    if (parsed === null || parsed < QUICK.minSeconds || parsed > QUICK.maxSeconds) errors.seconds = "quick_seconds";
+    else seconds = parsed;
   }
   const question = clean(values.question, LIMITS.question);
   return { errors, value: { choices, seconds, question } };

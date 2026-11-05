@@ -133,7 +133,7 @@ test("polls view: idle, running, finished, cancelled, a repeating vote; the main
   const w = world(); const aud = w.aud; await K.ensureMeta(aud);
   const view = async () => (await (await route("remote-state", aud, req(`${BASE}/remote-state?k=${(await meta(aud)).remoteKey}`))).json()).panels.find((p) => p.id === "id-polls").view;
   let v = await view();
-  assert.deepEqual([v.stage, v.primary, v.chips.map((c) => c.id), v.form.fields.filter((f) => !f.more).map((f) => f.name)], ["idle", null, ["poll-yesno", "start"], ["a", "b", "seconds"]], "idle: smart starts and a two-field form");
+  assert.deepEqual([v.stage, v.primary, v.chips.map((c) => c.id), v.form.fields.filter((f) => !f.more).map((f) => f.name)], ["idle", null, ["poll-yesno", "start"], ["question", "a", "b", "seconds"]], "idle: smart starts and a short form (the optional question comes first)");
   assert.deepEqual(v.form.fields.filter((f) => f.more).map((f) => f.name), ["c", "d"]);
   const now = Date.now();
   const q = await pollsMod.quickPoll(w.polls, { a: "Cats", b: "Dogs", seconds: "60" }, now);
