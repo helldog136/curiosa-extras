@@ -202,7 +202,7 @@ test("état borné : 20 timers au plus, état écrit au plus toutes les 10 s, ti
   assert.equal(tw.chat.length, 0);
 });
 
-test("l'état survit à un redémarrage (lu dans le stockage) et aucun minuteur de fond n'existe", async () => {
+test("l'état survit à un redémarrage (lu dans le stockage) et aucun setInterval n'existe", async () => {
   const { ctx, tw } = fresh();
   await add(ctx, "A", { minutes: 1, lines: 2, when: "always" });
   await line(ctx, NOW);
@@ -212,7 +212,7 @@ test("l'état survit à un redémarrage (lu dans le stockage) et aucun minuteur 
   const r = await line(ctx, NOW + MIN + 1);
   assert.equal(r.sent, true, "intervalle et lignes relus depuis le stockage");
   assert.equal(tw.chat.length, 1);
-  assert.deepEqual(Object.keys(def.tasks).sort(), ["listen", "tidy"], "aucune tâche de timers");
+  assert.deepEqual(Object.keys(def.tasks).sort(), ["listen", "tick", "tidy"], "pas de tâche propre aux timers : la tâche d'une minute (tick) ne fait que les évaluer plus tôt");
   const dir = new URL("../modules/twitch-bot/", import.meta.url).pathname;
   for (const f of ["timers.mjs", "draw.mjs", "manage.mjs", "engine.mjs", "webhook.mjs"]) assert.ok(!/setInterval\(/.test(fs.readFileSync(dir + f, "utf8")), `${f} : pas de setInterval`);
 });

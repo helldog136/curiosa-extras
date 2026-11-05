@@ -12,7 +12,9 @@ const webhook = await import(`./webhook.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
 const entry = await import(`./entry.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
-const { ensureListening, ensureRedeemListening, diagnose, twitch } = await import(`./listen.mjs${v}`);
+const { ensureListening, ensureRedeemListening, diagnose, diagnoseFast, twitch } = await import(`./listen.mjs${v}`);
+const { processTimers } = await import(`./timers.mjs${v}`);
+const { reconcile } = await import(`./redeem.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { tidy, migrateConfig } = await import(`./commands.mjs${v}`);
 const es = await import(`./eventsub.mjs${v}`);
@@ -35,6 +37,20 @@ export default {
   tasks: {
     // Twitch coupe un abonnement dont le site n'a pas répondu assez de fois : on vérifie qu'il existe et fonctionne, et on le recrée sinon.
     listen: { everyMinutes: 10, run: async (ctx) => { await ensureListening(ctx, settingsOf(ctx)); await ensureRedeemListening(ctx, settingsOf(ctx)).catch(() => {}); } },
+    // Every minute, three small jobs that avoid waiting for an event from Twitch: (1) the readings from other modules stay warm (the first command of a quiet chat finds them ready);
+    // (2) a repeat that asks for chat lines, already counted, goes out at its time and not at the next message; (3) the results from the home and the redemptions that wait are read again.
+    // Each one is isolated from the others, and none writes into the chat when nothing is due.
+    tick: {
+      everyMinutes: 1,
+      run: async (ctx) => {
+        const s = settingsOf(ctx);
+        const d = await diagnoseFast(ctx, s).catch(() => null);
+        const work = [sources.warm(ctx, d?.channel ?? null)];
+        if (d?.code === "ready") work.push(processTimers(ctx, null, { tick: true }).catch(() => {}));
+        if ((await st.readState(ctx).catch(() => ({}))).rewardsOn === true) work.push(reconcile(ctx, { force: true }).catch(() => {}));
+        await Promise.all(work);
+      },
+    },
     // Une fiche de partenaire supprimée, un réseau retiré : la commande est en pause, puis disparaît après deux semaines.
     tidy: {
       everyMinutes: 60,

@@ -1,6 +1,6 @@
 // Les timers : une COMMANDE qui se répète toute seule. Dans l'administration, un timer est un réglage d'une commande (« Répéter automatiquement » : toutes les N minutes, après au moins N lignes
 // de chat, en direct seulement ou toujours). À chaque échéance, le bot exécute la commande comme si on l'avait tapée : sa réponse, sa période d'activité, son état (désactivée, en pause…).
-// AUCUN minuteur de fond : une répétition n'est regardée qu'à l'arrivée d'un message du chat (Twitch appelle le site à chaque message). Un chat silencieux n'envoie donc rien,
+// AUCUNE boucle de fond : une répétition est regardée à l'arrivée d'un message du chat, et chaque minute par la tâche `tick` (qui n'envoie que celles dont les lignes de chat sont déjà comptées) (Twitch appelle le site à chaque message). Un chat silencieux n'envoie donc rien,
 // et c'est voulu. À chaque message : on compte la ligne, on cherche la première répétition due (intervalle écoulé ET assez de lignes depuis son dernier envoi), et on en envoie UNE SEULE
 // (les autres attendent le message suivant). Jamais pendant l'arrêt d'urgence, jamais si le bot n'est pas prêt, jamais au-delà de la limite de réponses.
 // Où vit quoi : le réglage (`repeat`) est dans le document `botConfig`, sur la commande ; l'état (dernier envoi, lignes comptées) dans le document `botTimers`, par commande, borné à 20.
@@ -92,10 +92,17 @@ async function readyNow(ctx, s, m, now) {
  * Un message du chat est arrivé. Compte la ligne et envoie au plus UN timer dû. `commandSent` : une commande vient de répondre à ce message (alors les timers attendent le suivant).
  * Rend { sent: boolean, why?, timer? }. Ne lève jamais.
  */
-export async function processTimers(ctx, chat, { now = Date.now(), commandSent = false } = {}) {
+export async function processTimers(ctx, chat, { now = Date.now(), commandSent = false, tick = false } = {}) {
+  // One pass at a time per instance: a message and the one-minute task arriving together cannot send the same repeat twice.
+  const m0 = of(ctx);
+  const run = (m0.running ?? Promise.resolve()).catch(() => {}).then(() => pass(ctx, chat, { now, commandSent, tick }));
+  m0.running = run;
+  return run;
+}
+async function pass(ctx, chat, { now, commandSent, tick }) {
   try {
     const s = settingsOf(ctx), m = of(ctx);
-    if (chat.foreign || st.isOwnMessage(ctx, chat.messageId) || s.bots.has(chat.login)) return { sent: false, why: "ignored" };
+    if (!tick && (chat.foreign || st.isOwnMessage(ctx, chat.messageId) || s.bots.has(chat.login))) return { sent: false, why: "ignored" };
     const timers = await timersNow(ctx, m, now);
     if (!timers.length) return { sent: false, why: "none" };
     await load(ctx, m);
@@ -104,7 +111,7 @@ export async function processTimers(ctx, chat, { now = Date.now(), commandSent =
     const needsLive = timers.some((x) => x.when === "live");
     if (needsLive) {
       d = await readyNow(ctx, s, m, now);
-      if (d.code === "ready" && chat.broadcasterId === d.broadcasterId) { const l = await src.liveState(ctx, d.channel); liveNow = l?.known === true && l.live === true; }
+      if (d.code === "ready" && (tick || chat.broadcasterId === d.broadcasterId)) { const l = await src.liveState(ctx, d.channel); liveNow = l?.known === true && l.live === true; }
     }
     const started = needsLive && liveNow === true && m.wasLive === false;
     if (needsLive && liveNow !== null) m.wasLive = liveNow;
@@ -115,13 +122,14 @@ export async function processTimers(ctx, chat, { now = Date.now(), commandSent =
       if (!open.get(x.id)) { it.lastAt = now; it.lines = 0; if (!it.closed) { it.closed = true; m.dirty = true; } continue; }   // hors période : on note qu'il est fermé
       if (it.closed) { it.closed = false; it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // il vient de rouvrir : on repart de zéro, pas de rafale
       if (x.when === "live" && (liveNow !== true || started)) { it.lastAt = now; it.lines = 0; m.dirty = true; continue; }   // hors direct, ou le direct vient de commencer : on repart de zéro
-      it.lines = Math.min(it.lines + 1, 1_000_000); m.dirty = true;
+      if (!tick) { it.lines = Math.min(it.lines + 1, 1_000_000); m.dirty = true; }   // the one-minute task counts no line
     }
-    const due = timers.filter((x) => { const it = m.items.get(x.id); return open.get(x.id) && it && now - it.lastAt >= x.minutes * 60_000 && it.lines >= x.lines && (m.fail.get(x.id) ?? 0) <= now; });
+    // With no message at hand (the one-minute task), only a repeat that asks for chat lines — already counted since its last send — can go out: a chat that stayed silent still sends nothing.
+    const due = timers.filter((x) => { const it = m.items.get(x.id); return open.get(x.id) && it && now - it.lastAt >= x.minutes * 60_000 && it.lines >= x.lines && (!tick || x.lines >= 1) && (m.fail.get(x.id) ?? 0) <= now; });
     let result = { sent: false, why: due.length ? "wait" : "none" };
     if (due.length && !commandSent) {
       d = d ?? (await readyNow(ctx, s, m, now));
-      if (d.code !== "ready" || chat.broadcasterId !== d.broadcasterId) result = { sent: false, why: "not_ready" };
+      if (d.code !== "ready" || (!tick && chat.broadcasterId !== d.broadcasterId)) result = { sent: false, why: "not_ready" };
       else {
         muted = await st.isMuted(ctx);
         if (muted) { for (const x of timers) { const it = m.items.get(x.id); if (it) { it.lastAt = now; it.lines = 0; } } m.dirty = true; result = { sent: false, why: "muted" }; }   // pas de rafale au retour de l'arrêt d'urgence
