@@ -3,7 +3,7 @@
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { levelOf } = await import(`./eventsub.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { catalog, loadConfig, norm, ROLE_LEVEL } = await import(`./commands.mjs${v}`);
+const { catalog, loadConfigCached, norm, ROLE_LEVEL } = await import(`./commands.mjs${v}`);
 const { renderRich, used, pseudo, clean, plain, parseRandom } = await import(`./variables.mjs${v}`);
 const { calc } = await import(`./calc.mjs${v}`);
 const { reopenIso } = await import(`./period.mjs${v}`);
@@ -12,7 +12,7 @@ const { handleManage, MANAGE_WORDS } = await import(`./manage.mjs${v}`);
 const { randomInt } = await import("node:crypto");
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
-const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
+const { diagnoseFast, sendChat } = await import(`./listen.mjs${v}`);
 const { handleKill } = await import(`./kill.mjs${v}`);
 
 /* ───────────── Les valeurs des variables ───────────── */
@@ -111,12 +111,27 @@ export async function preview(ctx, cmd, { channel, sources, list, counter = 0 })
 /* ───────────── Un message du chat ───────────── */
 
 const REASONS = { muted: "muted", off: "off", hidden: "hidden", missing: "missing", outside: "outside" };
+/** The variables that ask for the state of the live (a fresh reading from the Twitch channel module). */
+const LIVE_VARS = ["jeu", "titre", "uptime", "chaine", "viewers"];
+
+/** The readings from other modules that THIS command needs to answer (the others are not done: see sources.gather). */
+export function needsOf(cmd) {
+  const need = new Set(), vars = used(cmd.text);
+  if (cmd.kind === "partner") need.add("partners");
+  if (cmd.kind === "network" || cmd.kind === "group") need.add("networks");
+  if (cmd.kind === "builtin" && (cmd.needs === "planning" || cmd.needs === "followers")) need.add(cmd.needs);
+  if (vars.includes("followers")) need.add("followers");
+  if (vars.includes("prochain_stream")) need.add("planning");
+  if (vars.includes("liste")) need.add("networks");
+  return need;
+}
 
 /**
  * Traite un message du chat. Rend { handled: false, why } quand le message n'est pas pour nous (silencieux), sinon { handled: true, result: "sent" | "refused" | "error", reason, text? }.
- * `now` : pour les tests.
+ * `now`: for tests. `state`: the state the caller already read (saves one read). `deferLog`: the reply goes out, then the journal is written while the caller carries on;
+ * the promise of that write is in `result.logged` (the caller awaits it before it returns: nothing is lost).
  */
-export async function processChat(ctx, chat, { now = Date.now() } = {}) {
+export async function processChat(ctx, chat, { now = Date.now(), state = null, deferLog = false } = {}) {
   const s = settingsOf(ctx);
   const text = chat.text.trim();
   if (!s.prefix || !text.startsWith(s.prefix)) return { handled: false, why: "not_command" };
@@ -128,27 +143,49 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
   if (s.bots.has(chat.login)) return { handled: false, why: "bot" };
 
   if (word === "stop" || word === "start") return handleKill(ctx, s, chat, word, { now });
-  const cfg = (await loadConfig(ctx)).data;
-  const d = await diagnose(ctx, s, { declare: false });
-  const channel = d.channel ?? null;
-  const sources = await src.gather(ctx, channel);
-  const list = catalog(cfg, sources, ctx.t, { now, timeZone: s.timeZone });
-  const cmd = list.find((c) => !c.timerOnly && (c.name === word || c.aliases.includes(word)));   // une commande « réservée au timer » ne répond jamais dans le chat
-  if (!cmd) {
+  const cfg = (await loadConfigCached(ctx)).data;
+  // Which command is it? The NAMES come from the configuration alone, so this is known without asking anybody: a "!something" that is not a command costs nothing.
+  const known = catalog(cfg, src.noSources(), ctx.t, { now, timeZone: s.timeZone }).find((c) => !c.timerOnly && (c.name === word || c.aliases.includes(word)));   // a command "reserved for the timer" never answers in the chat
+  if (!known) {
     // Les commandes de gestion (!addcom…) : seulement si la personne les a permises, et jamais si une commande portant ce nom existe déjà.
-    if (s.chatManage && MANAGE_WORDS.includes(word)) return handleManage(ctx, s, chat, word, text, { now, d, channel, sources });
+    if (s.chatManage && MANAGE_WORDS.includes(word)) {
+      const d = await diagnoseFast(ctx, s);
+      const channel = d.channel ?? null;
+      return handleManage(ctx, s, chat, word, text, { now, d, channel, sources: await src.gather(ctx, channel) });
+    }
     return { handled: false, why: "unknown_command" };
   }
 
-  const log = async (result, reason, extra = {}) => { await st.addLog(ctx, { user: chat.login, command: cmd.name, result, reason, ...extra }); return { handled: true, result, reason, ...extra }; };
+  // Everything that depends on nothing else starts at the same time: the accounts, the readings from other modules this command needs, the emergency stop.
+  const need = needsOf(known);
+  const diag = diagnoseFast(ctx, s);
+  const channelP = diag.then((d) => d.channel ?? null);
+  const gathering = src.gather(ctx, channelP, [...need]);
+  const mutedP = state ? Promise.resolve(state.muted === true) : st.isMuted(ctx);
+  for (const p of [diag, channelP, gathering, mutedP]) p.catch(() => {});   // a failure is picked up by the `await` below; no promise is left without a listener
+  const d = await diag;
+  const channel = d.channel ?? null;
+  // The text talks about the live ({jeu}…): the fresh reading starts right now, during the checks below.
+  if (channel && d.code === "ready" && used(known.text).some((n) => LIVE_VARS.includes(n))) src.liveState(ctx, channel).catch(() => {});
+  const sources = await gathering;
+  const list = catalog(cfg, sources, ctx.t, { now, timeZone: s.timeZone });
+  const cmd = list.find((c) => !c.timerOnly && (c.name === word || c.aliases.includes(word))) ?? known;
+
+  const logs = [];
+  const log = async (result, reason, extra = {}) => {
+    const written = st.addLog(ctx, { user: chat.login, command: cmd.name, result, reason, ...extra });
+    if (deferLog) { logs.push(written.catch(() => {})); const out = { handled: true, result, reason, ...extra }; Object.defineProperty(out, "logged", { value: Promise.all(logs).then(() => {}), enumerable: false }); return out; }
+    await written;
+    return { handled: true, result, reason, ...extra };
+  };
   if (d.code !== "ready") return log("refused", "not_ready");
   if (chat.broadcasterId !== d.broadcasterId) return { handled: false, why: "other_channel" };
   if (s.replyAs === "bot" && chat.chatterId === d.senderId) return { handled: false, why: "own" };   // le compte bot ne se répond jamais à lui-même
-  if (await st.isMuted(ctx)) return log("refused", "muted");
+  if (await mutedP) return log("refused", "muted");
   if (cmd.state === "outside") return log("refused", "outside", { reopen: reopenIso(cmd.period, now, s.timeZone) });   // hors période : se réactive tout seul, la commande reste visible
   if (cmd.state !== "on") return log("refused", REASONS[cmd.state] ?? "hidden", cmd.why ? { detail: cmd.why } : {});
   if (s.onlyWhenLive) {
-    const live = await src.liveState(ctx, channel);
+    const live = await src.liveGate(ctx, channel);
     if (!live?.known) return log("refused", "live_unknown");
     if (!live.live) return log("refused", "offline");
   }
@@ -171,7 +208,8 @@ export async function processChat(ctx, chat, { now = Date.now() } = {}) {
     return log("error", `send_${sent.code}`, { detail: sent.detail ?? null });
   }
   st.rememberSent(ctx, sent.messageId);
-  if (counts) await st.setCounter(ctx, cmd.key, next).catch(() => {});
+  // The reply is gone: the counter and the journal are written now (one after the other, in order).
+  if (counts) { const w = st.setCounter(ctx, cmd.key, next).catch(() => {}); if (deferLog) logs.push(w); else await w; }
   // Ce que les gens tapent n'est jamais gardé : si la réponse reprend leurs mots, le journal n'en garde pas le texte.
   return log("sent", "ok", usesChatWords(cmd.text) ? {} : { text: message.slice(0, 160) });
 }

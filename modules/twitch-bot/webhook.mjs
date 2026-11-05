@@ -7,7 +7,7 @@ const { readState, updateState, seenBefore } = await import(`./state.mjs${v}`);
 const { processChat } = await import(`./engine.mjs${v}`);
 const { processTimers } = await import(`./timers.mjs${v}`);
 const { feedDraw } = await import(`./draw.mjs${v}`);
-const { processRedemption, reconcile } = await import(`./redeem.mjs${v}`);
+const { processRedemption, reconcile, followUp } = await import(`./redeem.mjs${v}`);
 const { ensureListening } = await import(`./listen.mjs${v}`);
 
 const MAX_BODY = 100_000;
@@ -54,16 +54,18 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
     }
     if (body.kind === "redemption") {
       // Un échange de points : traité une seule fois (identifiant du message, puis identifiant de l'échange gardé en mémoire durable) ; la réponse à Twitch part tout de suite
-      const done = processRedemption(ctx, body.redemption, { now }).catch((e) => { console.error(`[twitch-bot] ${ctx.instance.key}: échange en échec (${e?.message ?? e})`); });
+      const done = processRedemption(ctx, body.redemption, { now }).then((r) => { if (r?.result === "waiting") followUp(ctx, { now }).catch(() => {}); }).catch((e) => { console.error(`[twitch-bot] ${ctx.instance.key}: échange en échec (${e?.message ?? e})`); });
       return { response: reply(204), done };
     }
     const done = (async () => {
-      await reconcile(ctx, { now }).catch(() => {});   // à chaque évènement : les résultats de la maison et les échanges trop longs sont vus (au plus toutes les 5 secondes)
-      if ((lastNote.get(ctx.instance.key) ?? 0) < now - 60_000) { lastNote.set(ctx.instance.key, now); await updateState(ctx, (d) => { d.lastMessageAt = now; }); }
-      const r = await processChat(ctx, body.chat, { now });
-      // Les timers et l'alimentation d'un tirage regardent chaque message (jamais de minuteur de fond) ; une erreur de l'un ne gêne jamais l'autre.
+      // The reply to the command comes before everything else: the results from the home and the redemptions that waited too long (at most every 5 seconds), the "last message received" note and
+      // the feeding of a draw happen DURING that time, without delaying it; all of them are awaited before returning (nothing is lost).
+      const side = [reconcile(ctx, { now }).catch(() => {}), feedDraw(ctx, body.chat, { now }).catch(() => {})];
+      if ((lastNote.get(ctx.instance.key) ?? 0) < now - 60_000) { lastNote.set(ctx.instance.key, now); side.push(updateState(ctx, (d) => { d.lastMessageAt = now; }).catch(() => {})); }
+      const r = await processChat(ctx, body.chat, { now, state, deferLog: true });
+      // The timers look at every message; an error in one never hinders the other.
       await processTimers(ctx, body.chat, { now, commandSent: r?.handled === true && r.result === "sent" }).catch(() => {});
-      await feedDraw(ctx, body.chat, { now }).catch(() => {});
+      await Promise.all([...side, r?.logged]);
     })().catch((e) => { console.error(`[twitch-bot] ${ctx.instance.key}: traitement d'un message en échec (${e?.message ?? e})`); });
     return { response: reply(204), done };
   } catch (e) {
