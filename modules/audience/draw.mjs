@@ -366,6 +366,24 @@ export async function clear(ctx, { who = "admin", now = Date.now() } = {}) {
   return out;
 }
 
+/** "Cancel the draw" (remote): sign-ups are closed if they were open, then the list is emptied. Two journal lines, the same as "Close" then "Empty" on the website. */
+export async function cancel(ctx, { who = "remote", now = Date.now() } = {}) {
+  const cur = await current(ctx, now);
+  if (!cur) return err("none");
+  if (P.stateOf(cur, now) === "open") { const c = await close(ctx, { who, now }); if (!c.ok && c.error !== "not_open") return c; }
+  return clear(ctx, { who, now });
+}
+
+/** "Pick someone else" from the remote: the last person drawn is not here (or `pid`, when given). */
+export async function redrawLast(ctx, { pid, who = "remote", rnd, now = Date.now() } = {}) {
+  const cur = await current(ctx, now);
+  if (!cur || cur.purged) return err("gone");
+  const last = picked(cur).at(-1);
+  const target = pid ?? last?.k;
+  if (!target) return err("gone");
+  return redraw(ctx, { pid: target, who, rnd, now });
+}
+
 /* ───────────── Pour l'administration ───────────── */
 
 export async function entriesPage(ctx, d, cursor, limit = DRAW.pageSize) {
@@ -462,10 +480,18 @@ export async function remotePanel(ctx, now = Date.now()) {
   const many = d && P.winnersCount(d.winners) > 1 ? P.winnersCount(d.winners) : 1;
   const replaces = st !== "open" && !!d && !d.purged && (d.count || 0) > 0 && ((d.picked ?? []).length > 0 || st === "drawn");
   // Une action = un bouton + des réglages modifiables, préremplis par les valeurs du dernier tirage (voir `actionForm`, réutilisable par les autres panneaux).
+  const canPick = !!d && !d.purged && eligibleLeft(d) > 0;
+  const winnersNow = d ? picked(d) : [];
+  const canReopen = st === "closed" && !!d && !d.purged && !(d.picked ?? []).length;
   const buttons = [
     ...(st === "open" ? [{ id: "draw-close", label: t("drawBtnClose"), tone: "danger", confirm: t("drawCloseConfirm") }] : []),
     // « Tirer » n'apparaît que s'il y a quelqu'un à tirer : sinon le seul bouton principal est « Ouvrir le tirage » (R3)
-    ...(st === "open" || (d && !d.purged && eligibleLeft(d) > 0) ? [{ id: "draw-pick", label: many > 1 ? t("drawBtnPickMany", { n: many }) : t("drawBtnPick"), tone: "primary", confirm: t("drawPickConfirm"), disabled: !d || d.purged || eligibleLeft(d) < 1 }] : []),
+    ...(st === "open" || canPick ? [{ id: "draw-pick", label: many > 1 ? t("drawBtnPickMany", { n: many }) : t("drawBtnPick"), tone: "primary", confirm: t("drawPickConfirm"), disabled: !d || d.purged || eligibleLeft(d) < 1 }] : []),
+    // Live powers (the same gestures as the administration): reopen sign-ups, pick someone else, cancel the whole draw.
+    ...(canReopen ? [{ id: "draw-reopen", label: t("drawBtnReopen") }] : []),
+    ...(st === "drawn" && winnersNow.length ? [{ id: "draw-redraw", label: t("drawBtnRedraw"), confirm: t("drawBtnRedrawConfirm") }] : []),
+    ...(d && !d.purged && st !== "none" && ((d.count || 0) > 0 || st === "open") ? [{ id: "draw-cancel", label: t("drawBtnCancel"), tone: "danger", confirm: t("drawCancelConfirm") }] : []),
+    { id: "panic", label: t("remotePanic"), tone: "danger", confirm: t("remotePanicConfirm") },   // "Stop everything": always there (see remote.mjs, panic)
   ];
   const forms = st === "open" ? [] : [actionForm({
     id: "draw-open", title: t("drawRemoteFormTitle"), submit: t("drawBtnOpen"), confirm: replaces ? t("drawOpenConfirm") : "",
@@ -532,6 +558,9 @@ export async function pressDraw(ctx, action, { who = "remote", now = Date.now(),
     if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") };
   }
   else if (action === "draw-open") { r = await openQuick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.reopened ? "drawOkReopened" : "drawOkOpened") }; }
+  else if (action === "draw-reopen") { r = await reopen(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkReopened") }; }
+  else if (action === "draw-redraw") { r = await redrawLast(ctx, { who, now, pid: typeof values?.pid === "string" ? values.pid : undefined }); if (r.ok) return { ok: true, message: ctx.t("drawOkRedrawn", { names: r.winners.join(", ") }) }; }
+  else if (action === "draw-cancel") { r = await cancel(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkCancelled") }; }
   else if (action === "draw-close") { r = await close(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t("drawOkClosed") }; }
   else if (action === "draw-pick") { r = await pick(ctx, { who, now }); if (r.ok) return { ok: true, message: ctx.t(r.winners.length > 1 ? "drawOkPickedMany" : "drawOkPicked", { names: r.winners.join(", "), n: r.winners.length }) }; }
   else return { ok: false, error: "invalid" };

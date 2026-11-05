@@ -101,7 +101,24 @@ async function pressOwn(ctx, action, values) {
     await K.journal(ctx, { who: "remote", what: "clearRoom", room: values.room, detail: `${r.removed}` });
     return { ok: true, message: ctx.t("remoteCleared", { n: r.removed }) };
   }
+  if (action === "panic") return panic(ctx);
   return no("invalid");
+}
+
+/**
+ * "Stop everything": what runs stops, nothing is deleted and nobody is drawn. The open draw is closed, and every connected module receives the "panic" gesture
+ * (Polls closes its open polls and stops the repeating vote). A module that does not know the gesture, or does not answer in time, is simply ignored.
+ */
+export async function panic(ctx, now = Date.now()) {
+  let stopped = 0;
+  const cur = await D.current(ctx, now);
+  if (cur && D.stateOf(cur, now) === "open") { const c = await D.close(ctx, { who: "remote", now }); if (c.ok) stopped++; }
+  const results = await Promise.all((await providersOf(ctx)).map((p) => withTimeout(ctx.api.services.call(SERVICE, "press", { action: "panic", values: {}, locale: ctx.locale }, { provider: p.id }).catch(() => null), 6000, null)));
+  for (const r of results) if (r?.ok && r.value?.ok === true) stopped++;
+  K.mem.roomsView = null;
+  await K.journal(ctx, { who: "remote", what: "panic", detail: `${stopped}` }, now);
+  void ctx.api.log?.write({ action: "panic.stopped" });
+  return { ok: true, message: ctx.t("remotePanicDone") };
 }
 
 /** Demande à tous les modules branchés de rafraîchir leur direct (un seul appel à la fois par canal, réutilisé pendant 1 s : des centaines de lecteurs ne le répètent pas). */

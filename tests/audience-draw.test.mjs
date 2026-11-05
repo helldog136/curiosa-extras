@@ -34,7 +34,7 @@ test("manifeste : service « audience.draw » version 1 offert (status en lectur
   const right = manifest.rights.find((x) => x.id === "draw.manage");
   assert.ok(right && right.sensitive === true && right.default.admin === true && right.default.editor === false);
   assert.ok(manifest.tabs.some((t) => t.id === "draw" && t.panel === true));
-  assert.equal(manifest.version, "1.4.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.5.0"); assert.equal(manifest.minCore, "0.5.0");
   const byName = Object.fromEntries(manifest.mcp.map((a) => [a.name, a]));
   assert.ok(byName.draw_status.readOnly === true);
   for (const n of ["draw_open", "draw_close", "draw_pick"]) { assert.ok(!byName[n].readOnly && !byName[n].default, `${n} : une écriture n'est jamais accordée d'office`); assert.equal(typeof def.mcp[n], "function"); }
@@ -340,7 +340,7 @@ test("télécommande : le panneau « Tirage au sort » suit l'état ; fermé, il
   const c = audienceCtx(); const key = (await meta(c)).remoteKey;
   let panel = await ownPanel(c, key);
   assert.equal(panel.title, fr.drawRemoteTitle); assert.equal(panel.tab, fr.drawRemoteTitle);
-  assert.deepEqual(panel.buttons, [], "rien à tirer : le seul bouton principal est « Ouvrir le tirage » (dans le formulaire)");
+  assert.deepEqual(panel.buttons.map((b) => b.id), ["panic"], "rien à tirer : le seul bouton principal est « Ouvrir le tirage » (dans le formulaire) ; « Tout arrêter » est toujours là");
   const form = panel.forms[0];
   assert.deepEqual([form.id, form.submit, form.fields.filter((f) => !f.more).map((f) => f.name)], ["draw-open", "Ouvrir le tirage", ["keyword", "title"]], "chemin court : deux champs visibles, un bouton");
   assert.deepEqual(form.fields.filter((f) => f.more).map((f) => f.name), ["level", "site", "winners", "minutes"], "le reste est replié sous « Plus d'options »");
@@ -353,7 +353,7 @@ test("télécommande : le panneau « Tirage au sort » suit l'état ; fermé, il
   panel = await ownPanel(c, key);
   assert.equal(panel.state.tone, "live"); assert.ok(panel.state.text.includes("!cadeau") && panel.state.text.includes("Inscriptions : 4"), panel.state.text);
   assert.deepEqual(panel.forms, [], "ouvert : plus de formulaire");
-  assert.deepEqual(panel.buttons.map((b) => b.id), ["draw-close", "draw-pick"]);
+  assert.deepEqual(panel.buttons.map((b) => b.id), ["draw-close", "draw-pick", "draw-cancel", "panic"]);
   [status, body] = await pressV(c, key, "draw-open", { keyword: "!autre" }); assert.deepEqual([status, body.ok, body.error], [400, false, "already_open"]);
   [status, body] = await press(c, key, "draw-pick"); assert.deepEqual([status, body.ok], [200, true]); assert.match(body.message, /tirée au sort : /);
   panel = await ownPanel(c, key);
@@ -365,7 +365,7 @@ test("télécommande : le panneau « Tirage au sort » suit l'état ; fermé, il
   [status, body] = await press(c, key, "draw-pick"); assert.deepEqual([status, body.ok, body.error, body.message], [400, false, "empty", fr.drawErrEmpty]);   // (le geste reste refusé côté serveur même sans bouton)
   [status, body] = await press(c, key, "draw-close"); assert.ok(body.ok); assert.equal((await D.current(c)).status, "closed");
   [status, body] = await press(c, key, "draw-close"); assert.deepEqual([body.ok, body.error], [false, "not_open"]);
-  [status, body] = await press(c, key, "draw-reopen"); assert.deepEqual([status, body.error], [400, "invalid"]);
+  [status, body] = await press(c, key, "draw-nope"); assert.deepEqual([status, body.error], [400, "invalid"]);
   const log = (await c.api.store.list("audit")).map((x) => x.data);
   assert.ok(log.some((l) => l.who === "remote" && l.what === "draw.new") && log.some((l) => l.who === "remote" && l.what === "draw.pick" && l.detail) && log.some((l) => l.who === "remote" && l.what === "draw.close"));
   assert.ok(!flat(log).includes(key), "l'adresse secrète n'est jamais dans le journal");
@@ -406,7 +406,7 @@ test("télécommande : les réglages repliés et les valeurs du dernier tirage s
   await D.close(c, { now: T0 + 3 });
   const [, nw] = await pressV(c, key, "draw-open", { ...same, keyword: "!autre", level: "all", winners: "3", site: "1", minutes: "" }); assert.equal(nw.message, fr.drawOkOpened);
   const d = await D.current(c); assert.deepEqual([d.title, d.keyword, d.level, d.winners, d.site, d.minutes, d.count], ["Mon titre", "!autre", "all", 3, true, null, 0]);
-  assert.equal((await ownPanel(c, key)).buttons.at(-1).label, "Tirer 3 personnes au sort", "plusieurs personnes : le bouton le dit");
+  assert.equal((await ownPanel(c, key)).buttons.find((b) => b.id === "draw-pick").label, "Tirer 3 personnes au sort", "plusieurs personnes : le bouton le dit");
   await D.close(c, { now: T0 + 4 });
   assert.equal((await ownPanel(c, key)).forms[0].fields.find((f) => f.name === "winners").value, "3", "choisi une fois, devient le défaut");
   const [, none] = await pressV(c, key, "draw-open", { keyword: "!a", title: "T", site: "0", minutes: "" });   // un mot ET pas de site : permis ; sans mot ce serait refusé plus haut
