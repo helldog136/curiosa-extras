@@ -13,11 +13,14 @@ export const validPrefix = (v) => /^[^\p{L}\p{N}\s/.\\]{1,3}$/u.test(String(v ??
 /** Les noms de bots connus (en plus de ceux que l'on ajoute) : leurs messages ne déclenchent jamais de commande. */
 export const KNOWN_BOTS = ["nightbot", "streamelements", "streamlabs", "moobot", "fossabot", "wizebot", "soundalerts", "commanderroot", "sery_bot", "streamlootsbot", "pretzelrocks", "lurxx", "tangiabot"];
 
+const zones = new Map();   // time zone name → valid? (building an Intl.DateTimeFormat is costly: each name is checked once)
+const validZone = (tz) => { let ok = zones.get(tz); if (ok === undefined) { try { new Intl.DateTimeFormat("en", { timeZone: tz }); ok = true; } catch { ok = false; } if (zones.size > 50) zones.clear(); zones.set(tz, ok); } return ok; };
+
 export function settingsOf(ctx) {
   const extra = String(ctx.setting("ignoredBots") ?? "").toLowerCase().split(/[\s,;]+/).map((s) => s.replace(/^@/, "")).filter((s) => /^[a-z0-9_]{2,25}$/.test(s));
   const tz = String(ctx.setting("timezone") ?? "").trim();
   let timeZone = "UTC";
-  try { if (tz) { new Intl.DateTimeFormat("en", { timeZone: tz }); timeZone = tz; } } catch { /* fuseau inconnu : UTC */ }
+  if (tz && validZone(tz)) timeZone = tz;   // unknown time zone: UTC
   return {
     prefix: prefixOf(ctx),
     onlyWhenLive: ctx.setting("onlyWhenLive") !== false,

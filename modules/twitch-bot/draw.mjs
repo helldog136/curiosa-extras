@@ -9,7 +9,7 @@ const { levelOf } = await import(`./eventsub.mjs${v}`);
 const { pseudo } = await import(`./variables.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
-const { diagnose } = await import(`./listen.mjs${v}`);
+const { diagnoseFast } = await import(`./listen.mjs${v}`);
 
 export const SERVICE = "audience.draw";
 export const DRAW_LIMITS = { statusTtlMs: 10_000, callMs: 1500, maxEntered: 5000 };
@@ -60,10 +60,10 @@ export async function feedDraw(ctx, chat, { now = Date.now() } = {}) {
     if (NEED[role] < NEED[open.level]) return { entered: false, why: "level" };
     if (m.entered.has(chat.chatterId)) return { entered: false, why: "already" };
     if (m.entered.size >= DRAW_LIMITS.maxEntered) return { entered: false, why: "full" };
-    const d = await diagnose(ctx, s, { declare: false });
+    const d = await diagnoseFast(ctx, s);
     if (d.code !== "ready" || chat.broadcasterId !== d.broadcasterId) return { entered: false, why: "not_ready" };
     if (await st.isMuted(ctx)) return { entered: false, why: "muted" };
-    if (s.onlyWhenLive) { const live = await src.liveState(ctx, d.channel); if (!live?.known || !live.live) return { entered: false, why: "offline" }; }
+    if (s.onlyWhenLive) { const live = await src.liveGate(ctx, d.channel); if (!live?.known || !live.live) return { entered: false, why: "offline" }; }
     m.entered.add(chat.chatterId);
     await bounded(Promise.resolve(ctx.api.services.call(SERVICE, "enter", { pseudo: pseudo(chat.name || chat.login), platform: "twitch", login: chat.login, role })), DRAW_LIMITS.callMs, null).catch(() => null);   // la réponse est ignorée
     return { entered: true };
