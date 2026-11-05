@@ -86,8 +86,8 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.11.0");
-  assert.equal(manifest.minCore, "0.6.4");
+  assert.equal(manifest.version, "1.12.0");
+  assert.equal(manifest.minCore, "0.6.7");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
   assert.deepEqual(manifest.tabs.map((x) => x.id), ["use", "timers", "rewards", "sources"]);
@@ -191,7 +191,7 @@ test("action de la maison sans Home Assistant : refusée sous le champ Action, a
   const ok = await A.actions.rewardCreate.run(w.ctx, { title: "Merci", cost: "10", action: "chat:repondre", reply: "Merci {utilisateur} !" });
   assert.ok(ok.ok);
   const info = await A.context(w.ctx, { declare: false });
-  const panel = await (await import("../modules/twitch-bot/rewardsAdmin.mjs")).blocks(w.ctx, info);
+  const panel = await (await import("../modules/twitch-bot/rewardsAdmin.mjs")).blocks(w.ctx, info, { rewardNew: "1" });
   const s = panel.find((b) => b.type === "suggestInstall");
   assert.equal(s.service, "home-assistant.bridge"); assert.ok(s.reason);
   assert.ok(panel.every((b) => b.tab === "rewards"));
@@ -202,7 +202,7 @@ test("action de la maison sans Home Assistant : refusée sous le champ Action, a
 
 test("avec Home Assistant installé : pas de bloc « installer » ; la voix impose le message du viewer ; la saisie libre vient des réglages avancés", async () => {
   const w = await setup({ settings: { extraActions: "lumieres:turquoise, cle!, scene:cinema" } });
-  const panel = await (await import("../modules/twitch-bot/rewardsAdmin.mjs")).blocks(w.ctx, await A.context(w.ctx, { declare: false }));
+  const panel = await (await import("../modules/twitch-bot/rewardsAdmin.mjs")).blocks(w.ctx, await A.context(w.ctx, { declare: false }), { rewardNew: "1" });
   assert.ok(!panel.some((b) => b.type === "suggestInstall"));
   assert.ok(panel.some((b) => b.type === "banner" && /cle!/.test(b.text)), "la clé mal écrite est signalée avec un exemple");
   const opts = panel.find((b) => b.action === "rewardCreate").fields.find((f) => f.name === "what").options.map((o) => o.value);
@@ -748,7 +748,7 @@ test("l'onglet : avant activation une explication et un bouton ; ensuite liste, 
   for (const locale of ["fr", "en"]) {
     const x = world({ locale }); await enable(x.ctx);
     await mk(x);
-    const b = await RA.blocks(x.ctx, await A.context(x.ctx, { declare: false }));
+    const b = await RA.blocks(x.ctx, await A.context(x.ctx, { declare: false }), { rewardNew: "1" });
     const types = b.map((y) => y.type);
     for (const t of ["table", "adminForm", "heading"]) assert.ok(types.includes(t), `${locale} ${t}`);
     const dump = JSON.stringify(b);
@@ -756,8 +756,8 @@ test("l'onglet : avant activation une explication et un bouton ; ensuite liste, 
     assert.ok(!/\{[a-z_]+\}/.test(dump.replace(/\{utilisateur\}|\{recompense\}|\{jeu\}|\{titre\}|\{uptime\}|\{followers\}|\{prochain_stream\}|\{id\}/g, "")), `variable non remplacée (${locale})`);
   }
   const ro = world({ can: false }); await enable(ro.ctx);
-  const b = await RA.blocks(ro.ctx, await A.context(ro.ctx, { declare: false }));
-  assert.ok(!b.some((y) => y.type === "adminForm" && y.action === "rewardCreate"));
+  const b = await RA.blocks(ro.ctx, await A.context(ro.ctx, { declare: false }), { rewardNew: "1" });
+  assert.ok(!b.some((y) => y.type === "adminForm" && y.action === "rewardCreate"), "droit absent : pas de formulaire, même si l'adresse le demande");
   // la page entière : l'onglet ajouté reçoit ses blocs, les commandes gardent les leurs
   const page = await A.panel(w.ctx, { query: {} });
   assert.ok(page.some((y) => !y.tab) && page.some((y) => y.tab === "rewards"));
@@ -767,8 +767,11 @@ test("la page de modification d'une récompense charge ses valeurs ; le test est
   const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
   const w = await setup();
   const rw = await mk(w, { cooldownMin: "2.5" });
-  const b = await RA.blocks(w.ctx, await A.context(w.ctx, { declare: false }), { rewardEdit: rw.id });
+  const b = await RA.blocks(w.ctx, await A.context(w.ctx, { declare: false }), { rewardEdit: rw.id, rewardTest: rw.id });
   const form = b.find((x) => x.type === "adminForm" && x.action === "rewardSave");
+  assert.deepEqual([form.presentation, form.cancelHref, form.title, form.tab], ["dialog", "?tab=rewards", "Modifier « Rouge »", "rewards"], "une fenêtre au-dessus de la liste");
+  assert.equal(form.fields.find((f) => f.name === "id" && f.kind === "hidden").value, rw.id, "le champ `id` repère la ligne enregistrée");
+  assert.equal(b.find((x) => x.type === "adminForm" && x.action === "rewardSimulate").presentation, undefined, "le test reste dans la page : sa réponse doit rester lisible");
   assert.equal(form.fields.find((f) => f.name === "title").value, "Rouge");
   assert.equal(form.fields.find((f) => f.name === "cooldown").value, "150", "le délai de recharge est une durée en secondes");
   const t = b.find((x) => x.type === "adminForm" && x.action === "rewardSimulate");
@@ -842,5 +845,80 @@ test("Historique : sans journal du cœur (cœur plus ancien), les échanges marc
 test("Historique : événements déclarés valides, en deux langues", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
   assert.ok(["reward.refunded", "reward.failed"].every((k) => manifest.logEvents.some((e) => e.key === k)));
-  assert.equal(manifest.minCore, "0.6.4");
+  assert.equal(manifest.minCore, "0.6.7");
+});
+
+/* ───────────── 1.12.0 : la création, la modification et le renommage s'ouvrent dans une fenêtre ───────────── */
+
+test("fenêtres des récompenses : « Nouvelle récompense », « Modifier » et « Renommer » s'ouvrent au-dessus de la liste (une seule à la fois), reviennent à l'onglet, repèrent la ligne enregistrée ; le test reste dans la page", async () => {
+  const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
+  const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
+  const w = await setup();
+  const rw = await mk(w);
+  await A.actions.rewardCreate.run(w.ctx, { title: "Aspi", cost: "200", what: "custom", actionName: "Lancer l'aspirateur" });
+  const info = await A.context(w.ctx, { declare: false });
+  const at = (q) => RA.blocks(w.ctx, info, q);
+  const dialogs = (b) => b.filter((x) => x.type === "adminForm" && x.presentation === "dialog");
+  // la liste d'abord : aucune fenêtre tant que l'adresse ne la demande pas, un bouton qui l'ouvre
+  const list = await at({});
+  assert.deepEqual(dialogs(list), []);
+  const link = list.find((b) => b.type === "links" && b.items[0].label === "Nouvelle récompense");
+  assert.deepEqual(link.items, [{ label: "Nouvelle récompense", href: "?tab=rewards&rewardNew=1", presentation: "dialog" }]);
+  const table = list.find((b) => b.type === "table" && b.columns[0] === "Récompense");
+  assert.deepEqual(table.rowActions.map((a) => [a.label, a.presentation, !!a.inMenu, !!a.danger]), [["Modifier", "dialog", false, false], ["Simuler cette récompense", undefined, true, false], ["Supprimer la récompense", undefined, false, true]]);
+  assert.equal(table.rowActions[0].href, "?tab=rewards&rewardEdit={id}");
+  assert.ok(table.rowActions[1].href.includes("rewardTest={id}"), "le test reste dans la page, sa réponse doit rester lisible");
+  assert.equal(list.some((b) => b.html?.includes('id="new"') || b.html?.includes('id="edit"')), false, "plus d'ancres : le formulaire n'est plus dans la page");
+  // créer
+  const created = dialogs(await at({ rewardNew: "1" }));
+  assert.equal(created.length, 1);
+  assert.deepEqual([created[0].action, created[0].title, created[0].submitLabel, created[0].cancelHref, created[0].tab], ["rewardCreate", "Nouvelle récompense", "Créer la récompense", "?tab=rewards", "rewards"]);
+  assert.deepEqual(created[0].fields.filter((f) => !f.folded && f.kind !== "hidden").map((f) => f.name), ["title", "cost", "what"], "trois champs visibles");
+  assert.deepEqual(created[0].fields.filter((f) => f.folded).map((f) => f.name), ["reply", "color", "actionName", "cooldown", "prompt", "needsInput"]);
+  // modifier : `id` repère la ligne ; la fenêtre n'est PAS ouverte en même temps que celle de création
+  const edited = dialogs(await at({ rewardEdit: rw.id, rewardNew: "1" }));
+  assert.equal(edited.length, 1, "une seule fenêtre à la fois");
+  assert.deepEqual([edited[0].action, edited[0].title, edited[0].submitLabel], ["rewardSave", "Modifier « Rouge »", "Enregistrer la récompense"]);
+  assert.equal(edited[0].fields.find((f) => f.name === "id").value, rw.id);
+  assert.ok(table.rowIds.includes(rw.id), "le même identifiant que la ligne du tableau");
+  assert.deepEqual(dialogs(await at({ rewardEdit: "inconnue" })), [], "une récompense qui n'existe pas : pas de fenêtre");
+  // renommer une action
+  const named = dialogs(await at({ actionEdit: "perso:lancer-l-aspirateur" }));
+  assert.equal(named.length, 1);
+  assert.deepEqual([named[0].action, named[0].title, named[0].cancelHref], ["actionSave", "Renommer « Lancer l'aspirateur »", "?tab=rewards"]);
+  // le test reste une section de la page (pas de fenêtre)
+  const test_ = await at({ rewardTest: rw.id });
+  assert.deepEqual(dialogs(test_), []);
+  assert.equal(test_.find((b) => b.type === "adminForm" && b.action === "rewardSimulate").presentation, undefined);
+  assert.ok(test_.some((b) => b.type === "html" && b.html.includes('id="test"')));
+  // R3, R4, R9, R10, R11, R14, R15, R17, R24 sur chaque état
+  for (const q of [{}, { rewardNew: "1" }, { rewardEdit: rw.id }, { actionEdit: "perso:lancer-l-aspirateur" }, { rewardTest: rw.id }]) assertAdminPageErgonomics(await at(q));
+});
+
+test("fenêtres des récompenses : un succès ne redirige plus (la fenêtre se ferme, la ligne est marquée) ; sans le droit, ni bouton, ni fenêtre, ni action dans la ligne ; en anglais aussi", async () => {
+  const RA = await import("../modules/twitch-bot/rewardsAdmin.mjs");
+  const w = await setup();
+  const ok = await A.actions.rewardCreate.run(w.ctx, { title: "Rouge", cost: "500", what: "lights", color: "rouge" });
+  const rw = (await R.list(w.ctx))[0];
+  assert.equal(ok.redirect, undefined);
+  for (const [name, r] of Object.entries({
+    save: await A.actions.rewardSave.run(w.ctx, { id: rw.id, title: "Rouge vif", cost: "900", what: "lights", color: "rouge" }),
+    pause: await A.actions.rewardEnable.run(w.ctx, { id: rw.id, enabled: "0" }),
+    resume: await A.actions.rewardEnable.run(w.ctx, { id: rw.id, enabled: "1" }),
+  })) assert.ok(r.ok && r.redirect === undefined, `${name} : ${JSON.stringify(r)}`);
+  await A.actions.rewardCreate.run(w.ctx, { title: "Aspi", cost: "200", what: "custom", actionName: "Lancer l'aspirateur" });
+  const rename = await A.actions.actionSave.run(w.ctx, { ref: "perso:lancer-l-aspirateur", name: "Aspirer" });
+  assert.ok(rename.ok && rename.redirect === undefined);
+  assert.ok((await A.actions.rewardRemove.run(w.ctx, { id: rw.id })).ok);
+  assert.equal((await A.actions.rewardRemove.run(w.ctx, { id: rw.id })).redirect, undefined);
+  // sans le droit
+  const ro = await setup({ can: false });
+  const b = await RA.blocks(ro.ctx, await A.context(ro.ctx, { declare: false }), { rewardNew: "1", rewardEdit: "x", actionEdit: "y" });
+  assert.ok(!b.some((x) => x.type === "adminForm") && !b.some((x) => x.type === "links" && x.items.some((i) => i.presentation === "dialog")));
+  assert.ok(b.filter((x) => x.type === "table").every((x) => (x.rowActions ?? []).length === 0));
+  // en anglais
+  const en_ = await setup({ locale: "en" });
+  await mk(en_, { title: "Red" });
+  const eb = await RA.blocks(en_.ctx, await A.context(en_.ctx, { declare: false }), { rewardNew: "1" });
+  assert.deepEqual([eb.find((x) => x.action === "rewardCreate").title, eb.find((x) => x.type === "links").items[0].label], ["New reward", "New reward"]);
 });

@@ -4,8 +4,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHmac } from "node:crypto";
-import { htmlOf, rowsOf, configOf, formOfBlocks, plain } from "./helpers/ui.mjs";
-import { world, chat, NOW, S, SRC, C, es } from "./helpers/botWorld.mjs";
+import { htmlOf, rowsOf, formOfBlocks, plain, cellOf, tableOf, tableRow } from "./helpers/ui.mjs";
+import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
+import { world, chat, NOW, S, SRC, C, es, fr } from "./helpers/botWorld.mjs";
 
 const T = await import("../modules/twitch-bot/timers.mjs");
 const TA = await import("../modules/twitch-bot/timersAdmin.mjs");
@@ -242,7 +243,7 @@ test("« Ajouter un timer » : créer une nouvelle commande (nom + réponse), er
   const { ctx } = fresh();
   const ok = await TA.actions.timerNew.run(ctx, { name: "Discord", text: "Rejoignez le Discord.", repeatEvery: "900" });
   assert.equal(ok.ok, ctx.t("tm_created"));
-  assert.match(ok.redirect, /^\?tab=use&edit=custom%3A.+&repeat=1#edit$/);
+  assert.equal(ok.redirect, undefined, "un succès ferme la fenêtre : le tableau montre la nouvelle ligne, sans recharger la page");
   const c = (await C.loadConfig(ctx)).data.custom[0];
   assert.deepEqual([c.name, c.timerOnly, c.repeat], ["discord", undefined, { minutes: 15, lines: 5, when: "live", enabled: true }]);
   const err = async (over) => (await TA.actions.timerNew.run(ctx, { name: "Autre", text: "Salut", ...over }));
@@ -256,7 +257,8 @@ test("« Ajouter un timer » : créer une nouvelle commande (nom + réponse), er
   const pub = (await C.loadConfig(ctx)).data.custom.find((x) => x.name === "pub");
   assert.deepEqual([pub.timerOnly, pub.repeat.minutes], [true, 30]);
   assert.equal((await C.loadConfig(ctx)).data.custom.length, 2, "les erreurs n'ont rien créé");
-  for (const k of ["timerNew", "timerToggle", "timerRemove", "timerSend"]) assert.equal(TA.actions[k].right, "timers.manage", k);
+  for (const k of ["timerNew", "timerToggle", "timerDelete", "timerSend"]) assert.equal(TA.actions[k].right, "timers.manage", k);
+  assert.deepEqual(Object.keys(TA.actions).sort(), ["timerDelete", "timerNew", "timerSend", "timerToggle"]);
   for (const k of Object.keys(TA.actions)) assert.equal(A.actions[k], TA.actions[k]);
 });
 
@@ -289,56 +291,90 @@ test("réglage sur la page d'une commande : durée en secondes (minutes entière
   assert.equal((await C.loadConfig(ro.ctx)).data.custom[0].repeat.minutes, 10);
 });
 
-test("administration : l'onglet Timers est UN tableau des commandes qui se répètent (recherche, pastilles, interrupteur, 2 actions), l'état dit quand ça part ; sans le droit, rien à modifier", async () => {
+test("administration : l'onglet Timers est UN tableau du cœur des commandes qui se répètent (recherche, pastille d'état, interrupteur, 2 actions visibles), l'état dit quand ça part ; sans le droit, rien à modifier", async () => {
   const { ctx } = fresh();
   const key = await add(ctx, "Rappel", { text: "Allez sur {chaine} : {calcul 2+3}", minutes: 10, lines: 3 });
-  await add(ctx, "Pause", { enabled: false, minutes: 90, lines: 5 });
+  const pause = await add(ctx, "Pause", { enabled: false, minutes: 90, lines: 5 });
   const page = await A.panel(ctx, { query: { tab: "timers" } });
   const tab = page.filter((b) => b.tab === "timers");
   assert.ok(tab.length >= 2 && tab.every((b) => b.tab === "timers"));
   assert.match(JSON.stringify(tab), /Les commandes que le bot répète tout seul/);
-  const html = htmlOf(tab, "timers"), rows = rowsOf(html), row = rows.find((r) => r.cells.name === "!rappel");
-  assert.equal(rows.length, 2);
-  assert.match(html, /data-ck-q/, "recherche dès le départ");
-  assert.match(row.html, /data-ck-act="timerSend"[^>]*data-ck-confirm/);
-  assert.equal((row.html.match(/class="ck-btn small/g) ?? []).length, 2, "au plus deux actions visibles");
-  assert.ok(row.html.includes(`href="?tab=use&amp;edit=${encodeURIComponent(key)}&amp;repeat=1#edit"`), "Modifier ouvre la commande sur son bloc");
-  assert.equal(row.cells.org, "toutes les 10 min Au moins 3 messages");
-  assert.match(row.html, /title="Prêt : il compte à partir du prochain message du chat"/);
-  assert.match(rows.find((r) => r.cells.name === "!pause").html, /aria-checked="false"[^>]*data-ck-act="timerToggle"/);
-  assert.equal(rows.find((r) => r.cells.name === "!pause").cells.org, "toutes les 90 min", "5 messages en direct = l'ordinaire : rien de plus (R14)");
-  assert.ok(!/ck-origin timer/.test(html), "aucune pastille quand rien ne sort de l'ordinaire");
-  assert.match(html, /data-ck-val="off"[^>]*>En pause <b>1<\/b>/);
+  assert.equal(htmlOf(tab, "timers"), "", "plus de liste écrite à la main");
+  const t = tableOf(tab, fr.col_command);
+  assert.deepEqual(t.columns, [fr.col_command, fr.col_answer, fr.tm_col_rhythm, fr.col_active]);
+  assert.equal(t.rows.length, 2);
+  assert.deepEqual([t.searchable, t.truncate, t.filters.map((f) => f.column)], [true, [0, 1, 2], [3]], "recherche dès le départ, pastille d'état");
+  assert.deepEqual(t.rowIds, [pause, key], "par ordre alphabétique");
+  const row = tableRow(t, "!rappel"), p = tableRow(t, "!pause");
+  assert.equal(cellOf(row[2]), "toutes les 10 min · Au moins 3 messages");
+  assert.equal(row[3].title, "Prêt : il compte à partir du prochain message du chat");
+  assert.deepEqual([row[3].switch.action, row[3].switch.on, p[3].switch.on], ["timerToggle", true, false]);
+  assert.equal(cellOf(p[2]), "toutes les 90 min", "5 messages en direct = l'ordinaire : rien de plus (R14)");
+  assert.equal(cellOf(p[3]), fr.tm_filter_off);
+  assert.deepEqual(t.rowActions.map((a) => [a.label, a.action ?? a.href, a.presentation, !!a.danger]), [
+    [fr.act_edit, "?tab=timers&edit={id}&repeat=1", "dialog", false], [fr.tm_send_btn, "timerSend", undefined, false], [fr.tm_delete_btn, "timerDelete", undefined, true]], "Modifier (fenêtre) et Envoyer maintenant visibles, la suppression dans « ⋯ »");
+  assert.equal(t.rowActions[1].confirm, fr.tm_send_confirm);
+  assert.ok(!JSON.stringify(t.rows).includes("Timer seulement"), "aucune pastille quand rien ne sort de l'ordinaire");
+  // le bouton « Ajouter un timer » ouvre la fenêtre
+  assert.deepEqual(tab.find((b) => b.type === "links").items, [{ label: fr.tm_new_open, href: "?tab=timers&timerAdd=1", presentation: "dialog" }]);
+  // sans le droit : ni interrupteur, ni action, ni fenêtre
   const ro = fresh({ can: false });
   await add(ro.ctx, "Rappel");
   const roTab = (await A.panel(ro.ctx, { query: { tab: "timers", timerAdd: "1" } })).filter((b) => b.tab === "timers");
-  assert.ok(!roTab.some((b) => b.type === "adminForm") && !/Ajouter un timer/.test(JSON.stringify(roTab)));
-  assert.match(rowsOf(htmlOf(roTab, "timers"))[0].html, /disabled/);
+  assert.ok(!roTab.some((b) => b.type === "adminForm" || b.type === "links") && !/Ajouter un timer/.test(JSON.stringify(roTab.filter((b) => b.type !== "heading"))));
+  const rt = tableOf(roTab, fr.col_command);
+  assert.deepEqual([rt.rowActions, rt.rows[0][3].switch], [[], undefined]);
   const manifest = JSON.parse(fs.readFileSync(new URL("../modules/twitch-bot/module.json", import.meta.url), "utf8"));
   assert.ok(manifest.rights.some((r) => r.id === "timers.manage" && r.sensitive && r.default.editor === false));
   assert.ok(manifest.tabs.some((t) => t.id === "timers" && t.panel));
+  assertAdminPageErgonomics(tab); assertAdminPageErgonomics(await A.panel(ctx, { query: { tab: "timers", timerAdd: "1" } }));
 });
 
-test("état vide et « Ajouter un timer » : une phrase + un bouton ; deux voies (choisir une commande avec recherche, ou en créer une : 2 champs visibles) ; les commandes qui se répètent déjà ne sont pas proposées", async () => {
+test("l'interrupteur d'un timer dit l'état voulu (« 1 » / « 0 ») ; « Supprimer le timer » retire la répétition et laisse la commande", async () => {
   const { ctx } = fresh();
-  const empty = plain((await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers").map((b) => b.html ?? "").join(""));
-  assert.match(empty, /Aucun timer pour l'instant\. Ajoutez-en un/);
-  assert.match(empty, /Ajouter un timer/);
+  const key = await add(ctx, "Rappel");
+  const rep = async () => (await C.loadConfig(ctx)).data.custom[0].repeat;
+  for (const [enabled, state] of [["0", false], ["0", false], ["1", true], ["1", true]]) {
+    assert.ok((await TA.actions.timerToggle.run(ctx, { id: key, enabled })).ok);
+    assert.equal((await rep()).enabled, state, `enabled=${enabled}`);
+  }
+  assert.ok((await TA.actions.timerToggle.run(ctx, { id: key })).ok, "sans `enabled` (ancien appel) : l'état est inversé");
+  assert.equal((await rep()).enabled, false);
+  assert.equal((await TA.actions.timerDelete.run(ctx, { id: key })).ok, fr.tm_deleted);
+  const c = (await C.loadConfig(ctx)).data.custom[0];
+  assert.deepEqual([c.name, c.repeat ?? null], ["rappel", null], "la commande reste, sans timer");
+  assert.equal((await TA.actions.timerDelete.run(ctx, { id: key })).error, fr.err_unknown, "plus de timer : rien à supprimer");
+  assert.equal((await TA.actions.timerDelete.run(ctx, { id: "custom:nexistepas" })).error, fr.err_unknown);
+});
+
+test("état vide et « Ajouter un timer » : une phrase + un bouton ; deux voies (choisir une commande avec recherche, ou en créer une dans une fenêtre : 2 champs visibles) ; les commandes qui se répètent déjà ne sont pas proposées", async () => {
+  const { ctx } = fresh();
+  const emptyTab = (await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers");
+  const et = tableOf(emptyTab, fr.col_command);
+  assert.deepEqual([et.rows.length, et.empty], [0, fr.tm_empty], "un état vide dit quoi faire");
+  assert.match(et.empty, /Aucun timer pour l'instant\. Ajoutez-en un/);
+  assert.equal(emptyTab.find((b) => b.type === "links").items[0].label, "Ajouter un timer");
   const info = await A.context(ctx, { declare: false });
   await C.saveCommand(ctx, { kind: "custom" }, { name: "deja", text: "Déjà", repeat: { minutes: 5 } }, info.env);
   await C.saveCommand(ctx, { kind: "custom" }, { name: "libre", text: "Libre" }, info.env);
   const tab = (await A.panel(ctx, { query: { tab: "timers", timerAdd: "1" } })).filter((b) => b.tab === "timers");
+  const pickBlock = tab.find((b) => b.type === "html" && b.html.includes('data-ck-list="timer-pick"'));
+  assert.match(pickBlock.html, /<details class="ck-add">/, "repliée sous le tableau : elle ne pousse pas la liste");
   const pick = rowsOf(htmlOf(tab, "timer-pick"));
   const names = pick.map((r) => r.cells.name);
   assert.ok(names.includes("!libre") && names.includes("!jeu") && !names.includes("!deja"), names.join());
-  assert.match(pick.find((r) => r.cells.name === "!libre").html, /href="\?tab=use&amp;edit=custom%3A[^"]+&amp;repeat=1#edit"[^>]*>Ajouter ce timer</);
-  const html = htmlOf(tab, "timer-pick");
-  assert.match(html, /data-ck-q/);
+  assert.match(pick.find((r) => r.cells.name === "!libre").html, /href="\?tab=timers&amp;edit=custom%3A[^"]+&amp;repeat=1"[^>]*>Ajouter ce timer</);
+  assert.match(htmlOf(tab, "timer-pick"), /data-ck-q/);
   const form = formOfBlocks(tab, "timerNew");
+  assert.deepEqual([form.presentation, form.title, form.cancelHref, form.tab], ["dialog", "Ajouter un timer", "?tab=timers", "timers"]);
   assert.equal(form.submitLabel, "Créer la commande et son timer");
   assert.deepEqual(form.fields.filter((f) => !f.folded && f.kind !== "hidden").map((f) => f.name), ["name", "text"], "chemin court : deux champs visibles");
   assert.deepEqual(form.fields.filter((f) => f.folded).map((f) => f.name), ["timerOnly", "repeatEvery"]);
   assert.ok(form.fields.every((f) => !f.example || !/:$/.test(f.label)));
+  assert.equal(formOfBlocks((await A.panel(ctx, { query: { tab: "timers" } })), "timerNew"), undefined, "la fenêtre ne s'ouvre que quand l'adresse le demande");
+  // la fenêtre « Modifier » d'un timer vient de l'onglet Timers et y revient
+  const edit = formOfBlocks(await A.panel(ctx, { query: { tab: "timers", edit: (await A.context(ctx, { declare: false })).list.find((c) => c.name === "deja").key, repeat: "1" } }), "save");
+  assert.deepEqual([edit.presentation, edit.tab, edit.cancelHref], ["dialog", "timers", "?tab=timers"]);
 });
 
 test("outils : lister, créer, modifier un timer (= une commande qui se répète) ; les noms d'outils ne changent pas ; jamais accordés d'office", async () => {

@@ -1,9 +1,9 @@
-// Le « kit d'ergonomie » de ce module, côté serveur : le HTML des listes (recherche en direct, pastilles, interrupteurs), le style, le petit script qui les anime
-// (adminkit.client.js) et la route qui le sert. Rien ici ne connaît les commandes ou les timers : un autre module peut reprendre ce fichier et le script tels quels.
+// Le « kit d'ergonomie » de ce module, côté serveur : le HTML des quelques listes que le cœur ne sait pas encore faire (le journal, les listes repliées « ajouter… » et « choisir une
+// commande », la ligne d'état du haut), le style, le petit script qui les anime (adminkit.client.js) et la route qui le sert. Rien ici ne connaît les commandes ou les timers.
 //
-// Pourquoi du HTML écrit à la main : le cœur 0.5.x n'a ni recherche en direct, ni interrupteur, ni zone « Plus d'options », ni boutons segmentés. Le module écrit donc des listes
-// complètes et lisibles SANS JavaScript (bloc `html`), que le script améliore s'il peut s'exécuter. Il est chargé par une petite image (`onload`) posée dans le bloc, parce que le
-// cœur ne fournit aucun moyen de charger un script dans l'administration d'un module. À proposer au cœur sous forme de composants (voir la PR).
+// Depuis la 1.12.0, les listes de commandes, de timers et de récompenses sont des tableaux du cœur (recherche, pastilles, interrupteur, menu « ⋯ ») et leurs formulaires s'ouvrent
+// dans des fenêtres du cœur : tout ce qui les imitait ici a été retiré. Reste du HTML complet et lisible SANS JavaScript (bloc `html`), que le script améliore s'il peut s'exécuter. Il est
+// chargé par une petite image (`onload`) posée dans le bloc, parce que le cœur ne fournit aucun moyen de charger un script dans l'administration d'un module.
 import fs from "node:fs";
 import crypto from "node:crypto";
 
@@ -32,8 +32,8 @@ export const CSS = `
 :root{${vars(PALETTE.light)}}
 :root[data-admin-theme="dark"]{${vars(PALETTE.dark)}}
 @media (prefers-color-scheme:dark){:root[data-admin-theme="auto"]{${vars(PALETTE.dark)}}}
-.ck,.ck-form,.ck-log{font-size:14px;line-height:1.4;color:var(--v-fg)}
-.ck [hidden],.ck-form [hidden],.ck-log [hidden],.ck-ask[hidden]{display:none!important}
+.ck,.ck-log{font-size:14px;line-height:1.4;color:var(--v-fg)}
+.ck [hidden],.ck-log [hidden],.ck-ask[hidden]{display:none!important}
 .ck-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ck-js{display:none}.ck.ck-on .ck-js,.ck-log.ck-on .ck-js{display:flex}
 .ck-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px}
@@ -42,7 +42,7 @@ export const CSS = `
 .ck-tools{flex-direction:column;gap:10px;margin:0 0 12px}
 .ck-search{display:flex;flex-direction:column;gap:4px;font-weight:500}
 .ck-search input{width:100%;max-width:520px;box-sizing:border-box;min-height:44px;padding:8px 14px;border:1px solid var(--v-line);border-radius:12px;background:var(--v-bg);color:var(--v-fg);font:inherit;font-weight:400}
-.ck-search input:focus-visible,.ck-btn:focus-visible,.ck-sw:focus-visible,.ck-pill:focus-visible,.ck-seg-b:focus-visible,.ck-chip:focus-visible,.ck-num:focus-visible,.ck-more>summary:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
+.ck-search input:focus-visible,.ck-btn:focus-visible,.ck-pill:focus-visible,.ck-add>summary:focus-visible{outline:2px solid var(--v-accent);outline-offset:2px}
 .ck-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ck-pills-l{font-size:12px;color:var(--v-muted);margin-right:4px}
 .ck-pill{min-height:32px;padding:4px 12px;border:1px solid var(--v-line);border-radius:999px;background:var(--v-surface);color:var(--v-fg);font:inherit;font-size:13px;cursor:pointer}
@@ -56,8 +56,7 @@ export const CSS = `
 .ck-table .c-act{overflow:visible}
 .ck-table tr[data-ck-row]:hover td{background:color-mix(in srgb,var(--v-accent) 5%,transparent)}
 .ck-ell{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ck-name{font-weight:600}.ck-alias{color:var(--v-muted);font-weight:400}
-.ck-chipr{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;border:1px solid var(--v-line);font-size:12px;font-weight:500;color:var(--v-muted);vertical-align:1px}
+.ck-name{font-weight:600}
 .ck-origin{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
 .ck-origin.custom{background:var(--ck-custom-bg);color:var(--ck-custom-fg)}.ck-origin.builtin{background:var(--ck-builtin-bg);color:var(--ck-builtin-fg)}
 .ck-origin.partner{background:var(--ck-partner-bg);color:var(--ck-partner-fg)}.ck-origin.network{background:var(--ck-network-bg);color:var(--ck-network-fg)}.ck-origin.timer{background:var(--ck-timer-bg);color:var(--ck-timer-fg)}
@@ -68,13 +67,6 @@ export const CSS = `
 .ck-bar-t{font-size:14px}.ck-bar-g{font-size:13px;color:var(--v-muted)}.ck-bar-sp{flex:1 1 auto}
 .ck-bar .ck-btn,.ck-inline .ck-btn{min-height:44px}
 .ck-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0}.ck-inline .ck-status{margin:0}
-.ck-sw{position:relative;display:inline-flex;align-items:center;min-width:52px;min-height:44px;padding:0 6px;border:0;background:none;cursor:pointer}
-.ck-sw::before{content:"";width:40px;height:22px;border-radius:999px;background:var(--v-muted);transition:background .15s}
-.ck-sw::after{content:"";position:absolute;left:9px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:#fff;transition:transform .15s}
-.ck-sw[aria-checked="true"]::before{background:var(--v-accent)}.ck-sw[aria-checked="true"]::after{transform:translateX(18px)}
-.ck-sw[disabled]{opacity:.55;cursor:default}
-.c-sw{white-space:nowrap}.c-sw .ck-sw{vertical-align:middle}
-.ck-note{display:inline-block;max-width:calc(100% - 60px);vertical-align:middle;font-size:12px;line-height:1.25;color:var(--v-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .c-act .ck-btn{white-space:normal;text-align:center;line-height:1.15;padding:3px 10px}
 .ck-btn{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:4px 14px;border:1px solid var(--v-line);border-radius:10px;background:var(--v-surface);color:var(--v-fg);font:inherit;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;white-space:nowrap}
 .ck-btn:hover{border-color:var(--v-accent);color:var(--v-accent)}
@@ -92,45 +84,17 @@ export const CSS = `
 .ck-add-s{color:var(--v-muted);font-size:13px}
 .ck-add-body{padding:0 14px 14px}
 .ck-add-body .ck-table td{height:48px}
-.ck-state-pills{margin-top:2px}
 /* journal */
 .ck-log .ck-table td{height:44px}
-/* formulaires rangés */
-.ck-form{display:flex;flex-direction:column;gap:16px;grid-column:1/-1}
-.ck-form .ck-field{margin:0}
-.ck-form label{font-weight:500}
-.ck-section{display:flex;flex-direction:column;gap:8px}
-.ck-legend{font-size:15px;font-weight:500}
-.ck-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.ck-word{color:var(--v-fg)}
-.ck-hint{margin:0;font-size:13px;color:var(--v-muted)}
-.ck-state-help{margin-top:6px}
-.ck-form .ck-line input.ck-num{width:84px;min-height:44px;box-sizing:border-box;padding:6px 10px;border:1px solid var(--v-line);border-radius:10px;background:var(--v-bg);color:var(--v-fg);font:inherit;text-align:center}
-.ck-seg{align-self:flex-start;display:inline-flex;flex-wrap:wrap;border:1px solid var(--v-line);border-radius:12px;background:var(--v-bg);padding:3px;gap:2px;max-width:100%}
-.ck-seg-b{min-height:40px;padding:4px 14px;border:0;border-radius:9px;background:none;color:var(--v-fg);font:inherit;font-size:14px;cursor:pointer}
-.ck-seg-b[aria-checked="true"]{background:var(--v-accent);color:var(--v-accent-fg);font-weight:600}
-.ck-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.ck-chip{min-height:32px;padding:2px 12px;border:1px solid var(--v-line);border-radius:999px;background:var(--v-surface);color:var(--v-fg);font:inherit;font-size:13px;cursor:pointer}
-.ck-chip:hover{border-color:var(--v-accent);color:var(--v-accent)}
-.ck-extras{display:flex;flex-direction:column;gap:6px;margin-top:6px}
-.ck-preview{margin:0;padding:8px 12px;border-radius:10px;background:var(--v-bg);border:1px solid var(--v-line);font-size:13px;overflow-wrap:anywhere}
-.ck-more{border:1px solid var(--v-line);border-radius:12px;background:var(--v-bg)}
-.ck-more>summary{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;min-height:44px;padding:8px 14px;cursor:pointer;list-style:none}
-.ck-more>summary::-webkit-details-marker{display:none}
-.ck-more>summary::before{content:"▸";color:var(--v-muted)}.ck-more[open]>summary::before{content:"▾"}
-.ck-more-t{font-weight:600}.ck-more-h{color:var(--v-muted);font-size:13px}.ck-more-now{font-size:12px;padding:0 8px;border-radius:999px;background:var(--v-accent);color:var(--v-accent-fg)}
-.ck-more-body{display:flex;flex-direction:column;gap:18px;padding:4px 14px 16px}
 :root[data-admin-theme="dark"] .ck-status.bad{color:#fca5a5}
 @media (prefers-color-scheme:dark){:root[data-admin-theme="auto"] .ck-status.bad{color:#fca5a5}}
-.ck-form-on .ck-form [data-field-error]{margin-top:6px}
 @media (max-width:760px){
   .ck-table thead{position:absolute;left:-9999px}
   .ck-table,.ck-table tbody{display:block}
-  .ck-table tr[data-ck-row]{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name sw" "ans ans" "note note" "org act";gap:2px 10px;padding:10px 12px;border-top:1px solid var(--v-line);align-items:center}
+  .ck-table tr[data-ck-row]{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name name" "ans ans" "org act";gap:2px 10px;padding:10px 12px;border-top:1px solid var(--v-line);align-items:center}
   .ck-table td{display:block;border:0;padding:0;height:auto;background:none!important}
   .ck-table .c-name{grid-area:name}.ck-table .c-ans{grid-area:ans}.ck-table .c-org{grid-area:org}.ck-table .c-act{grid-area:act}
-  .ck-table .c-sw{display:contents}.ck-table .c-sw .ck-sw{grid-area:sw;justify-self:end}.ck-table .c-sw .ck-note{grid-area:note;max-width:none}
-  .ck-table .c-extra{grid-area:ans}
+    .ck-table .c-extra{grid-area:ans}
   .ck-add-body .ck-table tr[data-ck-row]{grid-template-areas:"name act" "ans ans" "org org"}
   .ck-search input{max-width:none}
 }
@@ -149,10 +113,6 @@ export function bootstrap(ctx) {
 /* ───────────── Les morceaux de HTML ───────────── */
 
 export const originPill = (kind, text) => `<span class="ck-origin ${esc(kind)}">${esc(text)}</span>`;
-/** Un interrupteur d'état. `disabled` : lecture seule (droit manquant, source disparue). */
-export function switchHtml({ id, on, label, act = "toggle", disabled = false, fail = "" }) {
-  return `<button type="button" class="ck-sw" role="switch" aria-checked="${on ? "true" : "false"}" aria-label="${esc(label)}" data-ck-act="${esc(act)}" data-ck-id="${esc(id)}" data-ck-switch data-ck-fail="${esc(fail)}"${disabled ? " disabled" : ""}></button>`;
-}
 /** Une pastille de filtre ; la première d'un groupe est enfoncée. */
 const pill = (key, p, pressed) => `<button type="button" class="ck-pill" data-ck-pill data-ck-key="${esc(key)}" data-ck-val="${esc(p.val)}" aria-pressed="${pressed ? "true" : "false"}">${esc(p.label)}${p.count !== undefined ? ` <b>${p.count}</b>` : ""}</button>`;
 
@@ -173,11 +133,6 @@ export function listShell({ ctx, id, columns, rows, pills = [], groups, text, cl
 
 /** Les attributs d'une ligne filtrable : le texte cherché est déjà sans accents ni majuscules. */
 export const rowAttrs = (attrs, hay) => `data-ck-row ${Object.entries(attrs).map(([k, v]) => `data-${k}="${esc(v)}"`).join(" ")} data-hay="${esc(norm(hay))}"`;
-
-/** La configuration d'un formulaire rangé par le script : un bloc invisible + le champ caché `ck` à ajouter au formulaire du cœur (voir buildForm dans adminkit.client.js). */
-export function formConfig(id, config) {
-  return { block: { type: "html", html: `<div data-ck-config="${esc(id)}" data-ck-json="${esc(JSON.stringify(config))}" hidden></div>` }, field: { name: "ck", kind: "hidden", value: id } };
-}
 
 /* ───────────── Boutons d'action en ligne (en attendant une brique du cœur) ───────────── */
 

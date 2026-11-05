@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { world, say, sent, logOf, chat, NOW, S, SRC, C } from "./helpers/botWorld.mjs";
-import { htmlOf, rowsOf, byName, configOf, formOfBlocks } from "./helpers/ui.mjs";
+import { htmlOf, tableOf, tableRow, cellOf, formOfBlocks } from "./helpers/ui.mjs";
 
 const P = await import("../modules/twitch-bot/period.mjs");
 const A = await import("../modules/twitch-bot/admin.mjs");
@@ -116,7 +116,7 @@ test("hors période : la commande ne répond pas, le journal dit quand elle revi
   assert.equal((await say(ctx, "!movember", { chatterId: "3" }, Date.parse("2027-11-30T10:00:00Z"))).result, "sent", "l'année suivante, sans rien faire");
   assert.equal((await say(ctx, "!movember", { chatterId: "4" }, Date.parse("2027-12-01T10:00:00Z"))).reason, "outside");
   const page = await A.panel(ctx, { query: {} });
-  const row = byName(rowsOf(htmlOf(page, "commands")), "!movember");
+  const row = tableRow(tableOf(page, "Commande"), "!movember");
   assert.ok(row, "la commande est dans la liste, dans ou hors période");
   assert.match(htmlOf(page, "log"), /Hors période : se réactive le 1er novembre 2028.*Hors période : se réactive le 1er novembre 2026/s);
 });
@@ -304,12 +304,12 @@ test("timers : hors période ils ne comptent ni n'écrivent (pas de rafale à la
   assert.equal((await line(sep + 61_000)).sent, true);
   assert.deepEqual(sent(tw), ["Septembre en or"]);
   const page = await A.panel(ctx, { query: { tab: "timers" } });
-  const row = rowsOf(htmlOf(page, "timers"))[0];
-  assert.equal(row.attrs.state, "outside");
-  assert.match(row.cells.sw, /Revient le 1(er)? septembre/);
+  const row = tableOf(page.filter((b) => b.tab === "timers"), "Commande").rows[0];
+  assert.equal(cellOf(row[3]), "Hors période");
+  assert.match(row[3].switch.onText, /Revient le 1(er)? septembre/);
   const off = await T.setRepeat(ctx, { kind: "custom", id: (await C.loadConfig(ctx)).data.custom[0].id }, { enabled: false }, env);
   assert.equal(off.ok, true);
-  assert.equal(rowsOf(htmlOf(await A.panel(ctx, { query: { tab: "timers" } }), "timers"))[0].attrs.state, "off", "en pause l'emporte");
+  assert.equal(cellOf(tableOf((await A.panel(ctx, { query: { tab: "timers" } })).filter((b) => b.tab === "timers"), "Commande").rows[0][3]), "En pause", "en pause l'emporte");
   const err = await C.saveCommand(ctx, { kind: "custom" }, { name: "x", text: "x", repeat: { minutes: 5 }, period: yearly([31, 2], [1, 3]) }, env);
   assert.deepEqual([err.ok, err.code, err.field], [false, "period", "fromDay"]);
 });

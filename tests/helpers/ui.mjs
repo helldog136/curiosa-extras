@@ -14,3 +14,18 @@ export const pills = (html) => [...String(html).matchAll(/data-ck-key="(\w+)" da
 export const formOfBlocks = (blocks, action) => blocks.find((b) => b.type === "adminForm" && b.action === action);
 export const configOf = (blocks) => { const b = blocks.find((x) => x.type === "html" && x.html.includes("data-ck-config=")); const m = b && /data-ck-json="([^"]*)"/.exec(b.html); return m ? JSON.parse(decode(m[1])) : null; };
 export const plain = (html) => decode(String(html).replace(/<style>[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+
+/* ───────────── Les tableaux du cœur (commandes, timers, récompenses) et les fenêtres ───────────── */
+/** Le texte d'une cellule de tableau (un texte ou un objet `{ text, … }`). */
+export const cellOf = (c) => (typeof c === "string" ? c : c?.text ?? "");
+/** Le tableau du cœur dont la première colonne s'appelle `firstColumn`. */
+export const tableOf = (blocks, firstColumn) => blocks.find((b) => b.type === "table" && b.columns[0] === firstColumn);
+/** La ligne d'un tableau dont la première cellule commence par `name` (le premier mot : « !tip » dans « !tip · !pourboire »). */
+export const tableRow = (table, name) => table.rows.find((r) => cellOf(r[0]).split(" ")[0] === name);
+/** La clé (identifiant de ligne) de cette ligne. */
+export const rowId = (table, row) => table.rowIds[table.rows.indexOf(row)];
+/** Les fenêtres (`presentation: "dialog"`) d'une page. */
+export const dialogsOf = (blocks) => blocks.filter((b) => b.type === "adminForm" && b.presentation === "dialog");
+/** Les champs visibles (ni cachés ni repliés) et les champs repliés d'un formulaire. */
+export const shownFields = (form) => form.fields.filter((f) => f.kind !== "hidden" && !f.folded);
+export const foldedFields = (form) => form.fields.filter((f) => f.kind !== "hidden" && f.folded);
