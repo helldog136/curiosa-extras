@@ -1,5 +1,5 @@
-// L'éditeur de « Story d'annonce » (page servie par la route `studio`, dans le panneau d'administration). Tout ce qui s'affiche est écrit avec `textContent` (jamais de HTML) ;
-// la vidéo est dessinée avec `fillText` sur un canvas. Les phrases viennent de locales/ (clés `ui_…`, passées par le serveur dans #story-config).
+// The editor of "Announcement story" (page served by the `studio` route, in the administration panel). Everything that is displayed is written with `textContent` (never HTML);
+// the video is drawn with `fillText` on a canvas. The sentences come from locales/ (`ui_…` keys, passed by the server in #story-config).
 import * as P from "./pure.mjs";
 import { createScene } from "./scenes.mjs";
 import { detectCapabilities, renderVideo } from "./encode.mjs";
@@ -9,12 +9,12 @@ const L = (k, vars) => String(C.labels[k] ?? k).replace(/\{(\w+)\}/g, (m, n) => 
 const $ = (id) => document.getElementById(id);
 const frag = new URLSearchParams(location.hash.slice(1));
 const TOKEN = frag.get("t") || "", PREP = frag.get("p") || "";
-try { history.replaceState(null, "", location.pathname + location.search); } catch { /* sans importance */ }
+try { history.replaceState(null, "", location.pathname + location.search); } catch { /* not important */ }
 const BROWSER_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "UTC"; } })();
 const TZ = P.validZone(C.timezone) ? C.timezone : P.validZone(BROWSER_TZ) ? BROWSER_TZ : "UTC";
 const REDUCED = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } })();
 
-/* ───────────── Petits outils ───────────── */
+/* ───────────── Small tools ───────────── */
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs ?? {})) {
@@ -39,12 +39,12 @@ async function api(path, { method = "GET", body, ms = 15000 } = {}) {
 }
 const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "full", "missing", "name", "exists", "image"].includes(e) ? e : "generic"}`);
 
-/* ───────────── L'état ───────────── */
+/* ───────────── The state ───────────── */
 const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
   ev: { partners: [], items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -53,12 +53,12 @@ const selectedStream = () => {
   if (S.useManual) { const m = P.manualStream(S.manual, TZ); return m.error ? null : m; }
   return S.ev.selected;
 };
-/* Les co-streamers de la vidéo : chaque entrée est { id } (une fiche de Contacts, lue au besoin) ou une saisie « pour cette vidéo seulement ». `key` : ce qui les distingue. */
+/* The guest streamers of the video: each entry is { id } (a Contacts card, read when needed) or a "for this video only" entry. `key`: what tells them apart. */
 const keyOf = P.memberKey;
 const viewOf = (entry) => (entry.id
   ? S.known.get(`id:${entry.id}`) ?? { key: `id:${entry.id}`, state: "loading", name: "", login: "", image: "", accounts: [] }
   : { key: keyOf(entry), state: "ok", name: entry.name || entry.login, login: entry.login, image: entry.image, accounts: [], inline: true });
-// Les co-streamers de la vidéo : ceux que la personne a choisis, puis ceux que le planning indique pour ce stream (sans doublon, même pseudo = même personne).
+// The guest streamers of the video: the ones the person chose, then the ones the schedule lists for this stream (no duplicates, same handle = same person).
 const chosenMembers = () => {
   const mine = S.cfg.costreamers.map(viewOf).filter((m) => m.state === "ok").map((m) => ({ login: m.key, name: m.name, image: m.image }));
   if (S.cfg.schedulePeople === false || S.useManual) return mine;
@@ -78,18 +78,18 @@ function loadImage(url) {
     const img = new Image();
     img.onload = () => finish(img); img.onerror = () => finish(null);
     if (url.startsWith("/")) { img.src = url; return; }
-    // une image venue d'ailleurs passe par le relais du site (même adresse que la page : le canvas reste « propre »)
+    // an image from elsewhere goes through the site's relay (same address as the page: the canvas stays "clean")
     fetch(`${C.base}/img?u=${encodeURIComponent(url)}`, { headers: { "X-Story-Token": TOKEN } })
       .then((r) => (r.ok ? r.blob() : null)).then((b) => { if (!b) return finish(null); img.src = URL.createObjectURL(b); }).catch(() => finish(null));
   });
   S.images.set(url, job);
-  if (S.images.size > 80) S.images.delete(S.images.keys().next().value); // borné : on ne garde pas toutes les photos vues
+  if (S.images.size > 80) S.images.delete(S.images.keys().next().value); // bounded: not every photo seen is kept
   return job;
 }
 
-/* ───────────── La police du nom « Curiosa » ───────────── */
-// Le logo du site met « Curiosa » en Fraunces italique 600 : le fichier vient du module (route `wordmark`), est chargé par FontFace et doit être PRÊT avant le premier dessin (sinon le canvas
-// prend en silence une police de secours). Délai court (3 s) : en cas d'échec ou de lenteur, Georgia italique prend le relais et la vidéo se fabrique quand même.
+/* ───────────── The "Curiosa" wordmark font ───────────── */
+// The site logo sets "Curiosa" in Fraunces italic 600: the file comes from the module (`wordmark` route), is loaded by FontFace and must be READY before the first drawing (otherwise the canvas
+// silently takes a fallback font). Short delay (3 s): if it fails or is slow, Georgia italic takes over and the video is made anyway.
 let fontJob = null;
 function loadWordmarkFont() {
   fontJob ??= (async () => {
@@ -106,7 +106,7 @@ function loadWordmarkFont() {
   return fontJob;
 }
 
-/* ───────────── La scène et l'aperçu ───────────── */
+/* ───────────── The scene and the preview ───────────── */
 function contentNow() {
   const stream = selectedStream();
   return { stream, content: P.buildContent(S.cfg, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ }) };
@@ -124,10 +124,38 @@ async function buildScene(nowMs = Date.now()) {
   if (mine !== S.building) return null;
   const avatars = Object.fromEntries(members.map((m, i) => [m.login, av[i]]));
   const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
+  S.thumbAssets = { logo, cover, avatars };   // the same images serve the thumbnails of the style picker
   return { scene, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
 let rebuildTimer = null;
-function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); }, 140); }
+function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); scheduleThumbs(); }, 140); }
+/* ───────────── The style picker: one live thumbnail per style ───────────── */
+/** Each card shows the real scene of the style, at the instant when everything is in place (`restTime`), with the current content and images: it is cheap (one small image per style). */
+let thumbTimer = null, thumbDirty = true;
+function scheduleThumbs() { thumbDirty = true; clearTimeout(thumbTimer); if (S.step !== 2) return; thumbTimer = setTimeout(renderThumbs, 160); }
+function renderThumbs() {
+  if (!thumbDirty || !S.thumbAssets) return;
+  thumbDirty = false;
+  const stream = selectedStream(), fmt = P.formatOf(S.cfg.format);
+  for (const cv of document.querySelectorAll("canvas.thumb")) {
+    const st = cv.dataset.style; if (!P.STYLES.includes(st)) continue;
+    try {
+      const content = P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ });
+      const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, assets: S.thumbAssets, colors, font: C.font, measureContext: mctx });
+      cv.width = 108; cv.height = Math.round(108 * fmt.height / fmt.width); cv.style.aspectRatio = `${fmt.width} / ${fmt.height}`;
+      const ctx = cv.getContext("2d"); ctx.setTransform(cv.width / sc.width, 0, 0, cv.height / sc.height, 0, 0); sc.draw(ctx, sc.restTime);
+    } catch { /* a thumbnail that fails stays empty: the name and the sentence are enough */ }
+  }
+}
+/** Choosing a style. The "countdown" style needs the countdown element: it is ticked for the person, with a visible sentence, and unticked if they change style without having touched it. */
+function chooseStyle(st) {
+  const prev = S.cfg.style, need = P.STYLE_NEEDS[st];
+  S.cfg.style = st;
+  if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; $(`el-${need}`).checked = true; }
+  else if (S.autoTicked && !need && P.STYLE_NEEDS[prev] === S.autoTicked) { S.cfg.elements = S.cfg.elements.filter((e) => e !== S.autoTicked); $(`el-${S.autoTicked}`).checked = false; S.autoTicked = ""; }
+  renderStyleNote(); renderCoverWarn(); rebuild();
+}
+function renderStyleNote() { const n = $("style-note"); n.textContent = S.autoTicked && S.cfg.style === "countdown" ? L("style_countdown_on") : ""; n.hidden = !n.textContent; }
 function sizePreview() {
   const cv = $("preview"), s = S.scene; if (!s) return;
   const k = 0.5; cv.width = Math.round(s.width * k); cv.height = Math.round(s.height * k); cv.style.aspectRatio = `${s.width} / ${s.height}`;
@@ -165,12 +193,12 @@ function setPlaying(on) {
   if (!on) drawPreview();
 }
 
-/* ───────────── Les éléments de l'éditeur ───────────── */
-const FIRST_PAGE = 5, NEXT_PAGE = 10, SEARCH_FROM = 8;   // une liste courte ; la recherche n'apparaît que s'il y en a beaucoup
+/* ───────────── The elements of the editor ───────────── */
+const FIRST_PAGE = 5, NEXT_PAGE = 10, SEARCH_FROM = 8;   // a short list; the search only appears when there are many
 const ELEMENT_KEYS = P.ELEMENTS;
 const kindOf = (k) => (P.SOURCE_KIND.test(String(k)) ? String(k) : "other");
 const typeLabel = (t) => L(`type_${["stream", "live", "premiere", "video", "event"].includes(t) ? t : "other"}`);
-/** La date d'un événement, lisible, dans le fuseau du site (ou celui du réglage) ; entre parenthèses l'heure sur place quand elle est différente. */
+/** The date of an event, readable, in the site's time zone (or the setting's); in brackets the local time when it is different. */
 function whenText(e) {
   const day = P.formatDay(e.startMs, TZ, C.lang);
   if (e.allDay) return day;
@@ -246,7 +274,7 @@ function renderEvents() {
   $("event-change").textContent = L(open ? "event_change_close" : "event_change");
   $("event-change").setAttribute("aria-expanded", open ? "true" : "false");
   $("event-change").hidden = S.useManual;
-  const bare = S.ev.state !== "loading" && !S.ev.totalAll && !S.ev.q && !S.ev.source;   // rien à choisir : on va droit à la saisie, sans titre de liste ni « revenir à la liste »
+  const bare = S.ev.state !== "loading" && !S.ev.totalAll && !S.ev.q && !S.ev.source;   // nothing to choose: go straight to the form, with no list title and no "back to the list"
   $("h-pick").hidden = bare; $("event-list").hidden = bare; $("event-count").hidden = bare; $("event-manual-toggle").hidden = bare && S.useManual;
   $("manual").hidden = !S.useManual;
   $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
@@ -258,11 +286,11 @@ function renderEvents() {
 function togglePicker(on) {
   S.pickerOpen = on ?? !S.pickerOpen;
   renderEvents();
-  try { if (S.pickerOpen) $("h-pick").focus?.(); else $("event-change").focus?.(); } catch { /* sans importance */ }
+  try { if (S.pickerOpen) $("h-pick").focus?.(); else $("event-change").focus?.(); } catch { /* not important */ }
 }
 const renderStreamPicker = renderEvents;
 
-/** Choisit un événement de la liste : la vidéo se remplit, et le choix (identifiant + source) est gardé dans les réglages de la demande. */
+/** Chooses an event from the list: the video fills itself in, and the choice (identifier + source) is kept in the settings of the request. */
 function pickEvent(e, { quiet = false, auto = false } = {}) {
   S.useManual = false;
   S.ev.selected = { ...e, cover: "" };
@@ -273,12 +301,12 @@ function pickEvent(e, { quiet = false, auto = false } = {}) {
   renderEvents(); rebuild();
   if (!quiet) {
     say(L("event_ready", { title: e.title || L("untitled") }), "ok");
-    try { if (wasOpen) $("event-change").focus?.(); } catch { /* sans importance */ }   // le travail en cours (style, phrase, co-streamers…) n'est pas touché : seul l'événement change
+    try { if (wasOpen) $("event-change").focus?.(); } catch { /* not important */ }   // the work in progress (style, sentence, guest streamers…) is not touched: only the event changes
   }
   if (e.games?.[0]) loadCover(e);
   if (e.partners?.length) loadPartners(e);
 }
-/** Les personnes du planning pour cet événement (nom + photo d'une fiche affichable de Contacts) ; sans réponse, la vidéo se fait sans elles. */
+/** The people of the schedule for this event (name + photo of a displayable Contacts card); with no answer, the video is made without them. */
 async function loadPartners(e) {
   const r = await api(`partners?logins=${encodeURIComponent(e.partners.join(","))}`, { ms: 15000 });
   if (!r.ok || S.ev.selected?.id !== e.id) return;
@@ -288,16 +316,16 @@ async function loadPartners(e) {
 async function loadCover(e, retry = true) {
   const r = await api(`cover?game=${encodeURIComponent(e.games[0])}`, { ms: 12000 });
   if (!r.ok || S.ev.selected?.id !== e.id) return;
-  // la copie de la jaquette sur le site peut ne pas être prête à la toute première demande : une seule nouvelle tentative, un peu plus tard
+  // the site's copy of the cover may not be ready at the very first request: a single new try, a little later
   if (!r.cover && r.coverState === "down" && retry) { await new Promise((ok) => setTimeout(ok, 2500)); if (S.ev.selected?.id === e.id) return loadCover(e, false); return; }
   S.ev.coverState = r.coverState || "";
   S.ev.coverAmbiguous = r.ambiguous === true && !!r.cover; S.ev.coverTitle = String(r.title || ""); S.ev.coverFound = String(r.found || "");
   if (r.cover) { S.ev.selected.cover = r.cover; rebuild(); }
   renderNotes(); renderCoverWarn();
 }
-/** Le lien stable du cœur vers l'écran qui permet de choisir le bon jeu (le titre est encodé). */
+/** The core's stable link to the screen that lets you choose the right game (the title is encoded). */
 const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title)}`;
-/** Avant de fabriquer la vidéo : si la jaquette est peut-être celle d'un autre jeu, on le dit, avec le lien. Ne bloque jamais la vidéo. */
+/** Before making the video: if the cover may be the one of another game, say so, with the link. Never blocks the video. */
 function renderCoverWarn() {
   const E = S.ev, boxes = [$("cover-warn"), $("cover-warn-3")];
   const show = !S.useManual && E.coverAmbiguous && E.coverTitle && E.selected?.games?.length && S.cfg.elements.includes("game");
@@ -309,7 +337,7 @@ function renderCoverWarn() {
   }
 }
 
-/** Lit la liste (`more` : la page suivante). Les réponses arrivées en retard d'une recherche précédente sont ignorées. */
+/** Reads the list (`more`: the next page). Answers that arrive late from a previous search are ignored. */
 async function loadEvents(more, { fresh = false, id = "", key = "" } = {}) {
   const E = S.ev, mine = ++E.seq;
   E.busy = true; E.more = !!more; if (!more) { E.state = E.items.length ? E.state : "loading"; } renderEventList(); renderNotes();
@@ -334,19 +362,19 @@ async function loadEvents(more, { fresh = false, id = "", key = "" } = {}) {
 let eventTimer = null;
 function onEventSearch() { clearTimeout(eventTimer); eventTimer = setTimeout(() => { S.ev.q = $("event-q").value.trim().slice(0, 80); loadEvents(false); }, 280); }
 
-/* ───────────── Les co-streamers ───────────── */
+/* ───────────── The guest streamers ───────────── */
 const NET = { twitch: "Twitch", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", discord: "Discord", x: "X", bluesky: "Bluesky", mastodon: "Mastodon" };
 const netName = (n) => NET[n] ?? L(n === "web" ? "net_web" : "net_other");
 const isFull = () => S.cfg.costreamers.length >= P.LIMITS.costreamers;
 const inVideo = (key) => S.cfg.costreamers.some((e) => keyOf(e) === key);
 
-/** Une pastille ronde : la photo (lue par le relais du site) ou, à défaut, les initiales. */
+/** A round badge: the photo (read through the site's relay) or, failing that, the initials. */
 function thumb(image, name) {
   const box = h("span", { class: "avatar", "aria-hidden": "true", text: P.initials(name) });
   if (image) loadImage(image).then((img) => { if (img) { const i = new Image(); i.alt = ""; i.src = img.src; box.replaceChildren(i); } });
   return box;
 }
-/** Une ligne de personne : photo, nom, pastilles de comptes (ou pseudo), puis les boutons donnés. */
+/** A row for a person: photo, name, account pills (or handle), then the given buttons. */
 function personRow(m, ...actions) {
   const pills = m.accounts?.length ? h("span", { class: "pills" }, m.accounts.slice(0, 6).map((a) => h("span", { class: "pill", text: `${netName(a.network)} · ${a.label || a.handle}` }))) : (m.login && m.login !== m.name ? h("span", { class: "muted", text: m.login }) : null);
   return h("li", { class: "row" }, h("span", { class: "person" }, thumb(m.image, m.name || m.login), h("span", { class: "who" }, h("strong", { text: m.name || m.login }), m.inline ? h("em", { class: "tag", text: L("only_this_video") }) : null, m.tag ? h("em", { class: "tag", text: m.tag }) : null, pills)), ...actions);
@@ -398,7 +426,7 @@ function renderMembers() {
   if (S.step === 3) renderRecap();
 }
 
-/** Relit les fiches de Contacts nommées par la vidéo (modèle chargé, préparation de l'IA) : nom, pseudo, photo. Une fiche fusionnée est suivie, une fiche effacée est signalée. */
+/** Re-reads the Contacts cards named by the video (loaded model, AI preparation): name, handle, photo. A merged card is followed, a deleted card is reported. */
 async function resolveRefs() {
   const todo = [...new Set(S.cfg.costreamers.filter((e) => e.id && S.known.get(`id:${e.id}`)?.state !== "ok" && S.known.get(`id:${e.id}`)?.state !== "missing").map((e) => e.id))];
   for (let i = 0; i < todo.length; i += 24) {
@@ -414,7 +442,7 @@ async function resolveRefs() {
 }
 async function refreshMembers() { renderMembers(); await resolveRefs(); renderMembers(); rebuild(); }
 
-/* La recherche à la saisie : une liste de 30 au plus (limite de Contacts), montrée 10 par 10. */
+/* Search as you type: a list of 30 at most (Contacts' limit), shown 10 by 10. */
 let searchTimer = null;
 function onSearchInput() {
   clearTimeout(searchTimer);
@@ -436,7 +464,7 @@ async function runSearch(q, seq) {
   renderResults();
 }
 
-/* Ajouter depuis une catégorie de Contacts : les catégories (par pages), puis les comptes de celle qu'on choisit (par pages). */
+/* Adding from a Contacts category: the categories (by pages), then the accounts of the chosen one (by pages). */
 const catNote = (text) => { $("cat-note").textContent = text || ""; };
 function renderCategoryPicker() {
   const sel = $("cat");
@@ -479,7 +507,7 @@ async function addFirstOfCategory() {
   renderMembers(); rebuild();
 }
 
-/* Une personne « pour cette vidéo seulement » : le serveur remet la saisie en ordre (et refuse une photo qu'il ne saurait pas relayer) ; rien n'est enregistré dans Contacts. */
+/* A person "for this video only": the server puts the input in order (and refuses a photo it could not relay); nothing is saved in Contacts. */
 async function addAdhoc() {
   $("a-error").textContent = "";
   const r = await withBusy("adhoc-add", "busy_adding", () => api("act", { method: "POST", body: { op: "adhoc.check", login: $("a-login").value, name: $("a-name").value, image: $("a-image").value.trim() } }));
@@ -495,10 +523,10 @@ async function removeSaved(m) {
   S.adhoc = S.adhoc.filter((x) => x.id !== m.id); renderSaved();
 }
 
-/* ───────────── Les trois étapes ───────────── */
+/* ───────────── The three steps ───────────── */
 const STEPS = [1, 2, 3];
 const stepName = (n) => L(`step_${n}`);
-/** Résumé de l'étape 3 : chaque ligne a son bouton « Modifier » qui ramène à l'étape où elle se règle (rien n'est perdu : les étapes gardent leur état). */
+/** Summary of step 3: each row has its "Edit" button that leads back to the step where it is set (nothing is lost: the steps keep their state). */
 function renderRecap() {
   const e = selectedStream(), who = chosenMembers().map((m) => m.name || m.login).filter(Boolean), people = who.length;
   const fmt = P.formatOf(S.cfg.format), rows = [
@@ -527,14 +555,14 @@ function renderSteps() {
 function setStep(n, { focus = true } = {}) {
   if (S.job) return;
   S.step = Math.min(3, Math.max(1, n)); S.visited.add(S.step);
-  renderSteps();
+  renderSteps(); if (S.step === 2) scheduleThumbs();
   $("step-live").textContent = L("step_now", { n: S.step, name: stepName(S.step) });
-  try { globalThis.scrollTo?.({ top: 0, behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
-  if (focus) { try { $(["h-event", "h-look", "h-video"][S.step - 1]).focus?.(); } catch { /* sans importance */ } }
+  try { globalThis.scrollTo?.({ top: 0, behavior: REDUCED ? "auto" : "smooth" }); } catch { /* not important */ }
+  if (focus) { try { $(["h-event", "h-look", "h-video"][S.step - 1]).focus?.(); } catch { /* not important */ } }
 }
 
-/* ───────────── Les modèles ───────────── */
-function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "", watermark: false }; }   // la mention n'est jamais dans un modèle : elle suit la case
+/* ───────────── The models ───────────── */
+function configForModel() { return { ...S.cfg, streamKey: "", eventId: "", eventSource: "", watermark: false }; }   // the mention is never in a model: it follows the box
 function renderModels() {
   const box = $("model-list");
   box.replaceChildren(...(S.models.length ? S.models.map((m) => {
@@ -549,7 +577,7 @@ function renderModels() {
 function loadModel(m) {
   const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
-  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);   // le modèle remplit tout : on arrive sur le récapitulatif, avec « Modifier » pour chaque réglage
+  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);   // the model fills everything: we land on the summary, with "Edit" for each setting
 }
 const modelError = (text) => { $("model-error").textContent = text || ""; $("model-name").setAttribute("aria-invalid", text ? "true" : "false"); };
 async function withBusy(id, key, work) {
@@ -577,15 +605,15 @@ async function removeModel(m) {
   S.models = r.items; say(L("model_removed", { name: m.name }), "ok"); renderModels();
 }
 
-/* ───────────── Les réglages visibles ───────────── */
+/* ───────────── The visible settings ───────────── */
 const ADV_KEY = "story-advanced";
 function advancedUsed() {
   const d = P.DEFAULT_CONFIG, c = S.cfg;
-  return c.elements.join() !== d.elements.join() || c.format !== d.format || c.duration !== d.duration || !!c.channelName || c.lang !== (C.lang === "en" ? "en" : "fr");
+  return c.elements.filter((e) => e !== S.autoTicked).join() !== d.elements.join() || c.format !== d.format || c.duration !== d.duration || !!c.channelName || c.lang !== (C.lang === "en" ? "en" : "fr");
 }
 function setAdvanced(on, { remember = false } = {}) {
   S.advanced = !!on; $("adv").checked = S.advanced; $("advanced").hidden = !S.advanced;
-  if (remember) { try { localStorage.setItem(ADV_KEY, S.advanced ? "1" : "0"); } catch { /* sans importance */ } }
+  if (remember) { try { localStorage.setItem(ADV_KEY, S.advanced ? "1" : "0"); } catch { /* not important */ } }
 }
 function syncControls() {
   for (const e of ELEMENT_KEYS) $(`el-${e}`).checked = S.cfg.elements.includes(e);
@@ -595,7 +623,7 @@ function syncControls() {
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
   $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang; $("watermark").checked = S.cfg.watermark === true;
   $("schedule-people").checked = S.cfg.schedulePeople !== false;
-  if (advancedUsed() && !S.advanced) setAdvanced(true);   // un réglage avancé déjà modifié (modèle, assistant) ne reste jamais caché
+  if (advancedUsed() && !S.advanced) setAdvanced(true);   // an advanced setting that was already changed (model, assistant) is never left hidden
   renderStreamPicker();
 }
 function updateInfo() {
@@ -609,14 +637,14 @@ function updateInfo() {
 
 function bind() {
   const on = (id, ev, fn) => $(id).addEventListener(ev, fn);
-  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); renderCoverWarn(); rebuild(); });
-  for (const st of P.STYLES) on(`style-${st}`, "change", () => { S.cfg.style = st; rebuild(); });
+  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); if (e === S.autoTicked) S.autoTicked = ""; renderStyleNote(); renderCoverWarn(); rebuild(); });
+  for (const st of P.STYLES) on(`style-${st}`, "change", () => chooseStyle(st));
   for (const f of P.FORMATS) on(`format-${f.id}`, "change", () => { S.cfg.format = f.id; rebuild(); });
   on("duration", "input", () => { S.cfg.duration = Number($("duration").value) || 15; $("duration-out").textContent = L("seconds", { n: S.cfg.duration }); rebuild(); });
   on("text", "input", () => { S.cfg.text = P.freeText($("text").value, P.LIMITS.text); $("text-count").textContent = `${[...$("text").value].length}/${P.LIMITS.text}`; rebuild(); });
   on("channel", "input", () => { S.cfg.channelName = P.oneLine($("channel").value, P.LIMITS.channelName); rebuild(); });
   on("lang", "change", () => { S.cfg.lang = $("lang").value === "en" ? "en" : "fr"; renderStreamPicker(); rebuild(); });
-  // La mention « Made with Curiosa » : l'aperçu suit tout de suite ; le choix est retenu pour les prochaines vidéos (un échec n'empêche pas de fabriquer celle-ci).
+  // The "Made with Curiosa" mention: the preview follows at once; the choice is remembered for the next videos (a failure does not prevent making this one).
   on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; rebuild(); });
   on("watermark", "change", async () => {
     S.cfg.watermark = $("watermark").checked; rebuild();
@@ -648,7 +676,7 @@ function bind() {
   on("generate", "click", generate); on("cancel", "click", () => S.job?.abort());
 }
 
-/* ───────────── Fabriquer la vidéo ───────────── */
+/* ───────────── Making the video ───────────── */
 function setBusy(on) {
   $("progress-box").hidden = !on; $("generate").disabled = on || !S.scene || S.empty; $("generate-now").disabled = $("generate").disabled;
   $("generate").setAttribute("aria-busy", on ? "true" : "false"); if (!on) $("generate").textContent = L("generate");
@@ -678,13 +706,13 @@ async function generate() {
     resultBox.replaceChildren(...[h("p", { class: "ok", text: L("done", { name, size: (blob.size / 1048576).toFixed(1) }) }), link,
       out.mime !== "video/mp4" ? h("p", { class: "warn", text: L("webm_notice") }) : null, out.mode === "recorder" ? h("p", { class: "muted", text: L("recorder_notice") }) : null].filter(Boolean));
     resultBox.hidden = false; link.click();
-    try { resultBox.scrollIntoView?.({ block: "nearest", behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
+    try { resultBox.scrollIntoView?.({ block: "nearest", behavior: REDUCED ? "auto" : "smooth" }); } catch { /* not important */ }
   } catch (e) {
     say(e?.code === "aborted" ? L("cancelled") : e?.code === "unsupported" ? L("err_unsupported") : L("err_encoder"), e?.code === "aborted" ? "" : "error");
   } finally { S.job = null; setBusy(false); setPlaying(prevPlaying); rebuild(); }
 }
 
-/* ───────────── Démarrage ───────────── */
+/* ───────────── Start-up ───────────── */
 function applyPrep(prep) {
   S.cfg = P.cleanConfig(prep.config);
   if (prep.manual && prep.manual.title) { S.manual = { title: prep.manual.title, date: prep.manual.date, time: prep.manual.time }; S.useManual = true; for (const f of ["title", "date", "time"]) $(`m-${f}`).value = S.manual[f]; }
@@ -692,23 +720,23 @@ function applyPrep(prep) {
 }
 async function start() {
   if (!TOKEN) { $("app").hidden = true; $("noaccess").hidden = false; return; }
-  try { if (localStorage.getItem(ADV_KEY) === "1") setAdvanced(true); } catch { /* sans importance */ }
+  try { if (localStorage.getItem(ADV_KEY) === "1") setAdvanced(true); } catch { /* not important */ }
   bind(); syncControls(); renderMembers(); renderModels();
   const [data, prep] = await Promise.all([api("data"), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
   if (data.ok) {
-    if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // la case retenue ; une préparation de l'IA dit déjà la sienne
+    if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // the remembered box; an AI preparation already says its own
     S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
     if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
   else say(errText(data.error), "error");
-  if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // une préparation de l'assistant remplit tout : on ouvre sur le récapitulatif
+  if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // an assistant preparation fills everything: we open on the summary
   syncControls();
-  // Les événements de toutes les sources. L'événement déjà choisi (par une préparation) est retrouvé même s'il n'est pas dans la première page.
+  // The events of all sources. The event already chosen (by a preparation) is found again even if it is not in the first page.
   const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
   const ev = await loadEvents(false, { id: wantId, key: wantKey });
   if (ev?.error === "auth") return;
-  const first = P.nextEvent(S.ev.items, Date.now(), TZ);   // le PROCHAIN à venir (pas un événement déjà commencé), toutes sources confondues
+  const first = P.nextEvent(S.ev.items, Date.now(), TZ);   // the NEXT upcoming one (not an event that has already started), all sources together
   if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true, auto: ev.selected.id === first?.id });
   else {
     if (wantId || wantKey) { if (first) $("prep-stream-gone").hidden = false; }
@@ -718,7 +746,7 @@ async function start() {
   const r = await buildScene();
   if (r) { S.scene = r.scene; S.empty = r.empty; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }
   setPlaying(S.playing); renderSteps();
-  refreshMembers(); // les fiches de Contacts nommées par un modèle ou une préparation : nom, pseudo et photo arrivent ensuite, sans retarder l'aperçu
+  refreshMembers(); // the Contacts cards named by a model or a preparation: name, handle and photo arrive afterwards, without delaying the preview
   $("reduced").hidden = !REDUCED;
   requestAnimationFrame(loop);
 }

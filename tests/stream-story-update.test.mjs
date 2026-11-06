@@ -13,7 +13,7 @@ const copy = (from, to) => { fs.rmSync(to, { recursive: true, force: true }); fs
 /** Comme registry.ts du cœur : l'adresse du fichier principal porte `?v=<version>`. */
 const load = (dir, v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).href}?v=${v}`);
 // Fichiers chargés par le SERVEUR (les autres, listés dans page.mjs, ne sont servis qu'au navigateur : « Cache-Control: no-cache »).
-const BROWSER = new Set(["pure.mjs", "scenes.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]);
+const BROWSER = new Set(["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]);
 
 test("mise à jour 2.1.0 → version courante dans le même processus : le module se recharge et expose les nouveautés", async () => {
   const dir = makeTempDir("story-update-");
@@ -65,7 +65,7 @@ for (const from of ["2.3.0", "2.4.0"]) {
       assert.ok(html.includes('id="step-btn-3"') && html.includes('id="generate-now"') && html.includes('id="event-change"'), "2.5.0 : l'assistant en 3 étapes est servi");
       assert.ok(html.includes("Changer d&#39;événement") || html.includes("Changer d'événement"));
       const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
-      assert.equal(manifest.version, "2.6.1"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");
+      assert.equal(manifest.version, "2.7.0"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");
       for (const tool of ["story_models", "story_next_streams", "story_events", "story_prepare"]) assert.ok(manifest.mcp.some((t) => t.name === tool) && typeof after.mcp[tool] === "function", tool);
       for (const route of ["studio", "events", "cover", "data", "prep", "act", "people", "members", "categories", "category", "streams", "img", "wordmark"]) assert.equal(typeof after.routes[route], "function", route);
       const keys = manifest.settings.map((x) => x.key);

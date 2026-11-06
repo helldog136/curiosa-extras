@@ -1,38 +1,48 @@
-// Les petites règles de « Story d'annonce », sans aucune connaissance de Curiosa, de Twitch ni du navigateur (pas de ctx, pas de réseau, pas d'horloge cachée :
-// l'heure « maintenant » est toujours donnée par l'appelant). Ce fichier est exécuté EXACTEMENT tel quel par le serveur, par la page de l'éditeur et par les tests
-// (il fonctionne aussi dans un `vm` vierge : aucun import, aucune API de Node ou du navigateur autre que `Intl`).
+// The small rules of "Announcement story", with no knowledge of Curiosa, Twitch or the browser (no ctx, no network, no hidden clock:
+// the "now" time is always given by the caller). This file is run EXACTLY as it is by the server, by the editor page and by the tests
+// (it also works in a blank `vm`: no import, no Node or browser API other than `Intl`).
 
-/* ───────────── Les formats : UNE seule table ─────────────
- * `margins` : la zone sûre, où l'on place tout ce qui est essentiel (en pixels du format). `zones` : ce qui est caché ou recadré (montré sur l'aperçu seulement).
- * Vertical : le haut (250 px) et le bas (340 px) d'une story sont masqués par le nom du compte et la barre de réponse.
- * Passeport (4:5, le portrait presque carré) : la grille du profil recadre au centre en 3:4, soit 34 px perdus de chaque côté ; marges de 64 px, haut et bas de 60 px.
- * Changer de ratio = changer une ligne de cette table. */
+/* ───────────── The formats: ONE table ─────────────
+ * `margins`: the safe area, where everything essential goes (in pixels of the format). `zones`: what is hidden or cropped (shown on the preview only).
+ * Vertical: the top (250 px) and the bottom (340 px) of a story are covered by the account name and the reply bar.
+ * Passport (4:5, the almost-square portrait): the profile grid crops the centre to 3:4, so 34 px are lost on each side; margins of 64 px, top and bottom of 60 px.
+ * Changing the ratio = changing one line of this table. */
 export const FORMATS = [
   { id: "vertical", width: 1080, height: 1920, margins: { top: 250, bottom: 340, left: 64, right: 64 },
     zones: [{ id: "ui", x: 0, y: 0, w: 1080, h: 250 }, { id: "ui", x: 0, y: 1580, w: 1080, h: 340 }] },
   { id: "passeport", width: 1080, height: 1350, margins: { top: 60, bottom: 60, left: 64, right: 64 },
     zones: [{ id: "grid", x: 0, y: 0, w: 34, h: 1350 }, { id: "grid", x: 1046, y: 0, w: 34, h: 1350 }] },
 ];
-export const STYLES = ["neon", "poster", "countdown", "minimal"];
+/** The animation styles: the first four since 1.0, then six styles of very different character (2.7.0). The order is the one of the editor's picker. */
+export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
+/** What a NEW video shows: everything but the countdown (a person who wants it ticks it). Saved models keep what they stored. */
+export const DEFAULT_ELEMENTS = Object.freeze(ELEMENTS.filter((e) => e !== "countdown"));
+/** The element a style needs to be itself: the "countdown" style draws big numbers that come from the "countdown" element. */
+export const STYLE_NEEDS = Object.freeze({ countdown: "countdown" });
+/** The list of elements to show for this style: the one given, plus the element the style needs (nothing is ever removed). */
+export function elementsForStyle(style, elements) {
+  const list = Array.isArray(elements) ? elements : DEFAULT_ELEMENTS, need = STYLE_NEEDS[style];
+  return need && !list.includes(need) ? ELEMENTS.filter((e) => e === need || list.includes(e)) : ELEMENTS.filter((e) => list.includes(e));
+}
 export const LANGS = ["fr", "en"];
 export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, savedCostreamers: 60, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
 
 export const formatOf = (id) => FORMATS.find((f) => f.id === id) ?? FORMATS[0];
-/** La zone où l'on peut placer du contenu essentiel : { x, y, w, h }. */
+/** The area where essential content can be placed: { x, y, w, h }. */
 export function safeArea(format) {
   const f = typeof format === "string" ? formatOf(format) : format, m = f.margins;
   return { x: m.left, y: m.top, w: f.width - m.left - m.right, h: f.height - m.top - m.bottom };
 }
 
-/* ───────────── Texte ───────────── */
+/* ───────────── Text ───────────── */
 
-/** Une ligne de texte : sans caractère de contrôle, espaces réduits, coupée à `max` (en caractères entiers, jamais au milieu d'un emoji). */
+/** One line of text: no control characters, spaces collapsed, cut at `max` (whole characters, never in the middle of an emoji). */
 export function oneLine(v, max) {
   const s = String(v ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
   return [...s].slice(0, max).join("");
 }
-/** Une phrase libre : jusqu'à 3 lignes (retours à la ligne gardés), sans caractère de contrôle, coupée à `max` caractères au total. */
+/** A free sentence: up to 3 lines (line breaks kept), no control characters, cut at `max` characters in total. */
 export function freeText(v, max) {
   const lines = String(v ?? "").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b-\u001f\u007f]+/g, " ").replace(/\p{Zl}|\p{Zp}/gu, "\n").split("\n").map((l) => l.replace(/[ \t]+/g, " ").trim());
   while (lines.length && !lines[lines.length - 1]) lines.pop();
@@ -40,10 +50,10 @@ export function freeText(v, max) {
   return [...lines.slice(0, 3).join("\n")].slice(0, max).join("");
 }
 
-/** Un pseudo Twitch : 4 à 25 caractères, lettres, chiffres et _ (en minuscules). */
+/** A Twitch handle: 4 to 25 characters, letters, digits and _ (lowercase). */
 export const LOGIN = /^[a-z0-9_]{4,25}$/;
 const NOT_CHANNELS = new Set(["videos", "directory", "downloads", "settings", "subscriptions", "friends", "wallet", "inventory", "drops", "prime", "turbo", "jobs", "store", "team", "popout", "embed", "moderator", "dashboard", "broadcast", "login", "signup", "search"]);
-/** Lit ce que la personne a tapé : `pseudo`, `@pseudo` ou `twitch.tv/pseudo`. Rend { login } ou { error: "empty" | "invalid" | "not_channel" }. */
+/** Reads what the person typed: `handle`, `@handle` or `twitch.tv/handle`. Returns { login } or { error: "empty" | "invalid" | "not_channel" }. */
 export function normalizeLogin(input) {
   let s = String(input ?? "").trim();
   if (!s) return { error: "empty" };
@@ -54,7 +64,7 @@ export function normalizeLogin(input) {
   return LOGIN.test(s) ? { login: s } : { error: "invalid" };
 }
 
-/** Une adresse d'image utilisable par la page : un chemin du site (`/uploads/…`) ou une adresse https. Rien d'autre (jamais `javascript:` ni `data:`). */
+/** An image address the page can use: a site path (`/uploads/…`) or an https address. Nothing else (never `javascript:` or `data:`). */
 export function safeImageUrl(v) {
   const s = String(v ?? "").trim();
   if (!s || s.length > 500 || /[\u0000-\u001f\u007f\s"'<>\\]/.test(s)) return "";
@@ -62,16 +72,16 @@ export function safeImageUrl(v) {
   return /^https:\/\/[^/]+\//.test(s) ? s : "";
 }
 
-/* ───────────── Les co-streamers d'une vidéo ─────────────
- * Une entrée est l'UNE de ces deux formes :
- *   { id }                          une RÉFÉRENCE à une fiche de Contacts (identifiant opaque : on ne suppose rien de sa forme). Nom, pseudo et photo restent chez Contacts ;
- *   { login, name, image }          un co-streamer « pour cette vidéo seulement » : saisi à la main, jamais une fiche. `login` est un pseudo libre, `name` un nom, `image` une adresse https
- *                                   (le serveur ne la fait suivre que si l'hôte est permis) ; au moins l'un des deux, pseudo ou nom.
- * Un modèle de la version 1 gardait une simple liste de pseudos Twitch (« alice_tv ») : elle est lue comme des entrées « pour cette vidéo seulement » (puis la migration les remplace par des références). */
+/* ───────────── The guest streamers of a video ─────────────
+ * An entry is ONE of these two forms:
+ *   { id }                          a REFERENCE to a Contacts card (opaque identifier: nothing is assumed about its shape). Name, handle and photo stay in Contacts;
+ *   { login, name, image }          a guest streamer "for this video only": typed by hand, never a card. `login` is a free handle, `name` a name, `image` an https address
+ *                                   (the server only relays it if the host is allowed); at least one of the two, handle or name.
+ * A version 1 model kept a simple list of Twitch handles ("alice_tv"): it is read as "for this video only" entries (then the migration replaces them with references). */
 const MEMBER_ID = /^[^\s\u0000-\u001f\u007f]{1,80}$/;
 export const NETWORKS = ["twitch", "youtube", "tiktok", "instagram", "discord", "x", "bluesky", "mastodon", "web", "other"];
 const httpsImage = (v) => { const u = safeImageUrl(v); return /^https:\/\//.test(u) ? u : ""; };
-/** Une entrée remise au bon format, ou null. */
+/** An entry put in the right format, or null. */
 export function cleanMember(x) {
   if (typeof x === "string") { const n = normalizeLogin(x); return n.login ? { login: n.login, name: "", image: "" } : null; }
   if (!x || typeof x !== "object" || Array.isArray(x)) return null;
@@ -79,22 +89,22 @@ export function cleanMember(x) {
   const login = oneLine(x.login, LIMITS.handle).replace(/^@+/, ""), name = oneLine(x.name, LIMITS.displayName);
   return login || name ? { login, name, image: httpsImage(x.image) } : null;
 }
-/** Ce qui rend deux entrées « la même personne » dans une vidéo. */
+/** What makes two entries "the same person" in a video. */
 export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).toLowerCase()}`);
 
-/* ───────────── Les réglages d'une génération ───────────── */
+/* ───────────── The settings of a generation ───────────── */
 
-/** L'identifiant d'un événement (donné par sa source, stable) et le type de sa source (« calendar », « youtube »…) : de courtes chaînes sûres, jamais une adresse. */
+/** The identifier of an event (given by its source, stable) and the type of its source ("calendar", "youtube"…): short safe strings, never an address. */
 export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,99}$/;
 export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
-export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true });
+export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: DEFAULT_ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true });
 
-/** La mention de marque, dessinée en bas de la vidéo quand la case est cochée. C'est un nom de marque : elle n'est JAMAIS traduite (donc absente des locales). */
+/** The brand mention, drawn at the bottom of the video when the box is ticked. It is a brand name: it is NEVER translated (so it is absent from the locales). */
 export const WATERMARK_LEAD = "Made with ", WATERMARK_NAME = "Curiosa", WATERMARK_TEXT = WATERMARK_LEAD + WATERMARK_NAME;
-/** Le nom « Curiosa » suit la charte du logo : Fraunces italique 600 (fichier du module, licence SIL OFL), à 1,15 fois la taille du texte voisin comme dans le pied de page du site. */
+/** The name "Curiosa" follows the logo's style: Fraunces italic 600 (module file, SIL OFL licence), at 1.15 times the size of the neighbouring text as in the site's footer. */
 export const WORDMARK = { family: "CuriosaWordmark", weight: 600, scale: 1.15, fallback: "Georgia, serif" };
 
-/** Remet n'importe quelle entrée (modèle enregistré, IA, navigateur) au bon format : valeurs inconnues écartées, durées et longueurs bornées. Ne lève jamais. */
+/** Puts any input (saved model, AI, browser) in the right format: unknown values dropped, durations and lengths bounded. Never throws. */
 export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
   const r = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const d = fallback && typeof fallback === "object" ? fallback : DEFAULT_CONFIG;
@@ -102,7 +112,7 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
   const format = FORMATS.some((f) => f.id === r.format) ? r.format : FORMATS.some((f) => f.id === d.format) ? d.format : DEFAULT_CONFIG.format;
   const dn = Number(r.duration);
   const duration = Number.isInteger(dn) && dn >= LIMITS.durationMin && dn <= LIMITS.durationMax ? dn : Number.isFinite(dn) && dn > 0 ? Math.min(LIMITS.durationMax, Math.max(LIMITS.durationMin, Math.round(dn))) : cleanConfigDuration(d.duration);
-  const elements = Array.isArray(r.elements) ? ELEMENTS.filter((e) => r.elements.includes(e)) : ELEMENTS.filter((e) => (Array.isArray(d.elements) ? d.elements : ELEMENTS).includes(e));
+  const elements = Array.isArray(r.elements) ? ELEMENTS.filter((e) => r.elements.includes(e)) : ELEMENTS.filter((e) => (Array.isArray(d.elements) ? d.elements : DEFAULT_ELEMENTS).includes(e));
   const members = [], seen = new Set();
   for (const x of Array.isArray(r.costreamers) ? r.costreamers : Array.isArray(d.costreamers) ? d.costreamers : []) {
     const m = cleanMember(x);
@@ -114,12 +124,12 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
     channelName: oneLine(r.channelName ?? d.channelName, LIMITS.channelName),
     costreamers: members,
     streamKey: /^[a-z0-9]{1,20}$/.test(String(r.streamKey ?? "")) ? String(r.streamKey) : /^[a-z0-9]{1,20}$/.test(String(d.streamKey ?? "")) && r.streamKey === undefined ? String(d.streamKey) : "",
-    // L'événement choisi pour la vidéo : son identifiant (donné par sa source) et le type de sa source. L'un sans l'autre n'a pas de sens : tous deux valides, sinon rien.
+    // The event chosen for the video: its identifier (given by its source) and the type of its source. One without the other makes no sense: both valid, otherwise nothing.
     ...pickEvent(r, d),
     lang: LANGS.includes(r.lang) ? r.lang : LANGS.includes(d.lang) ? d.lang : "fr",
-    // La mention « Made with Curiosa » : un simple oui/non, NON par défaut. Seul un `true` explicite l'ajoute (jamais une chaîne, un 1 ou un objet).
+    // The "Made with Curiosa" mention: a simple yes/no, NO by default. Only an explicit `true` adds it (never a string, a 1 or an object).
     watermark: typeof r.watermark === "boolean" ? r.watermark : r.watermark === undefined && d.watermark === true,
-    // Les personnes que le planning indique pour ce stream (« Avec … ») : OUI par défaut ; seul un `false` explicite les retire (un modèle enregistré avant cette option les montre aussi).
+    // The people the schedule lists for this stream ("With …"): YES by default; only an explicit `false` removes them (a model saved before this option shows them too).
     schedulePeople: r.schedulePeople === false ? false : r.schedulePeople === undefined ? d.schedulePeople !== false : true,
   };
 }
@@ -132,7 +142,7 @@ function pickEvent(r, d) {
 }
 const cleanConfigDuration = (n) => (Number.isInteger(n) && n >= LIMITS.durationMin && n <= LIMITS.durationMax ? n : LIMITS.durationDefault);
 
-/** Petite empreinte de texte (FNV-1a), en base 36 : sert d'identifiant court d'un stream. */
+/** A small text fingerprint (FNV-1a), in base 36: used as the short identifier of a stream. */
 export function shortHash(text) {
   let h = 0x811c9dc5;
   for (const ch of String(text ?? "")) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
@@ -140,7 +150,7 @@ export function shortHash(text) {
 }
 export const streamKeyOf = (slot) => shortHash(`${slot?.id ?? ""}|${slot?.start ?? ""}|${slot?.title ?? ""}`);
 
-/* ───────────── Dates et heures (Intl seulement) ───────────── */
+/* ───────────── Dates and times (Intl only) ───────────── */
 
 export function validZone(tz) {
   if (typeof tz !== "string" || !tz || tz.length > 60) return false;
@@ -154,14 +164,14 @@ function dtf(tz, key, opts) {
   if (!f) { f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", ...opts }); dtfCache.set(k, f); }
   return f;
 }
-/** La date et l'heure « sur l'horloge » du fuseau : { y, m, d, h, mi, wd } (wd : 0 = dimanche). */
+/** The date and time "on the clock" of the time zone: { y, m, d, h, mi, wd } (wd: 0 = Sunday). */
 export function wallParts(ms, tz) {
   const parts = dtf(tz, "wall", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", weekday: "short" }).formatToParts(new Date(ms));
   const g = (t) => parts.find((p) => p.type === t)?.value ?? "0";
   const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(g("weekday"));
   return { y: Number(g("year")), m: Number(g("month")), d: Number(g("day")), h: Number(g("hour")) % 24, mi: Number(g("minute")), wd };
 }
-/** L'instant (en ms) où l'horloge du fuseau `tz` marque cette date et cette heure. Un jour de changement d'heure est géré (deux essais). */
+/** The instant (in ms) when the clock of time zone `tz` shows this date and time. A daylight-saving day is handled (two tries). */
 export function zonedToUtc(y, m, d, h, mi, tz) {
   const asUtc = Date.UTC(y, m - 1, d, h, mi);
   let guess = asUtc;
@@ -175,29 +185,29 @@ export function zonedToUtc(y, m, d, h, mi, tz) {
   return guess;
 }
 const dayNumber = (p) => Math.floor(Date.UTC(p.y, p.m - 1, p.d) / 86_400_000);
-/** Nombre de jours de calendrier entre « maintenant » et le début, sur l'horloge du fuseau (0 = le même jour, 1 = demain, -1 = hier). */
+/** Number of calendar days between "now" and the start, on the clock of the time zone (0 = the same day, 1 = tomorrow, -1 = yesterday). */
 export const dayDiff = (startMs, nowMs, tz) => dayNumber(wallParts(startMs, tz)) - dayNumber(wallParts(nowMs, tz));
 
 const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-/** « Samedi 24 octobre » / « Saturday, October 24 ». */
+/** "Samedi 24 octobre" / "Saturday, October 24". */
 export function formatDay(ms, tz, lang) {
   const loc = lang === "en" ? "en-GB" : "fr-FR";
   const f = new Intl.DateTimeFormat(loc, { timeZone: tz, weekday: "long", day: "numeric", month: "long" });
   return capital(f.format(new Date(ms)));
 }
-/** « 19 h 30 » (« 19 h » pile) en français ; « 7:30 PM » en anglais. */
+/** "19 h 30" ("19 h" exactly) in French; "7:30 PM" in English. */
 export function formatTime(ms, tz, lang) {
   const w = wallParts(ms, tz);
   if (lang === "en") return `${w.h % 12 === 0 ? 12 : w.h % 12}:${pad(w.mi)} ${w.h < 12 ? "AM" : "PM"}`;
   return w.mi === 0 ? `${w.h} h` : `${w.h} h ${pad(w.mi)}`;
 }
-/** « 2026-10-22 » : la date du stream sur l'horloge du fuseau (sert au nom du fichier). */
+/** "2026-10-22": the date of the stream on the clock of the time zone (used for the file name). */
 export function isoDay(ms, tz) { const w = wallParts(ms, tz); return `${w.y}-${pad(w.m)}-${pad(w.d)}`; }
 
 /**
- * Le texte du compte à rebours, calculé à l'instant `nowMs` (celui de la génération) pour un stream qui commence à `startMs`.
- * « Dans 45 min » · « Dans 2 h 15 » · « Ce soir à 19 h 30 » · « Aujourd'hui à 14 h » · « Demain à 19 h 30 » · « Dans 4 jours » · « C'est maintenant ».
- * Un stream de plus de 3 heures dans le passé : rien ("").
+ * The countdown text, computed at the instant `nowMs` (the one of the generation) for a stream that starts at `startMs`.
+ * "Dans 45 min" · "Dans 2 h 15" · "Ce soir à 19 h 30" · "Aujourd'hui à 14 h" · "Demain à 19 h 30" · "Dans 4 jours" · "C'est maintenant" (English: "In 45 min", "Tonight at 7:30 PM", "Tomorrow"…).
+ * A stream more than 3 hours in the past: nothing ("").
  */
 export function countdownText({ startMs, nowMs, tz, lang, allDay = false }) {
   if (!Number.isFinite(startMs) || !Number.isFinite(nowMs) || !validZone(tz)) return "";
@@ -223,7 +233,7 @@ export function countdownText({ startMs, nowMs, tz, lang, allDay = false }) {
   if (days < 0) return en ? "Starting now" : "C'est maintenant";
   return en ? `In ${days} days` : `Dans ${days} jours`;
 }
-/** Les trois chiffres du grand compte à rebours : { days, hours, minutes, started }. Au-delà de 99 jours : 99 jours. */
+/** The three figures of the big countdown: { days, hours, minutes, started }. Beyond 99 days: 99 days. */
 export function countdownParts(startMs, nowMs) {
   const diff = Number.isFinite(startMs) && Number.isFinite(nowMs) ? startMs - nowMs : 0;
   if (diff <= 0) return { days: 0, hours: 0, minutes: 0, started: true };
@@ -231,13 +241,13 @@ export function countdownParts(startMs, nowMs) {
   return { days, hours: Math.floor((total % 1440) / 60), minutes: total % 60, started: false };
 }
 
-/* ───────────── Les streams ───────────── */
+/* ───────────── The streams ───────────── */
 
 /**
- * Les éléments du sujet `planning.slot` → les prochains streams { key, title, start (ISO), startMs, allDay, day, games, timezone }, à partir de `nowMs`.
- * Un stream annulé ou illisible est écarté seul ; un stream déjà commencé depuis moins de 3 h reste proposé ; deux annonces identiques n'en font qu'une.
+ * The items of the `planning.slot` topic → the next streams { key, title, start (ISO), startMs, allDay, day, games, timezone }, from `nowMs`.
+ * A cancelled or unreadable stream is dropped alone; a stream that started less than 3 h ago is still offered; two identical announcements make one.
  */
-/** Les pseudos Twitch des personnes d'un événement (liste donnée par l'agenda) : nettoyés par la même règle que la saisie, sans doublon, 5 au plus. */
+/** The Twitch handles of the people of an event (list given by the schedule): cleaned by the same rule as the input, no duplicates, 5 at most. */
 export function partnerLogins(list) {
   const out = [];
   for (const x of Array.isArray(list) ? list : []) {
@@ -264,7 +274,7 @@ export function upcomingStreams(items, nowMs, fallbackZone = "UTC", max = LIMITS
     const title = oneLine(it.title, LIMITS.title);
     const games = (Array.isArray(it.games) ? it.games : []).filter((g) => typeof g === "string").map((g) => oneLine(g, 80)).filter(Boolean).slice(0, 3);
     const dedupe = `${title}|${startMs}|${allDay}`;
-    if (seen.has(dedupe)) { const first = out.find((x) => `${x.title}|${x.startMs}|${x.allDay}` === dedupe); if (first) first.partners = partnerLogins([...first.partners, ...(Array.isArray(it.partners) ? it.partners : [])]); continue; }   // le même stream dans deux agendas : leurs personnes sont réunies
+    if (seen.has(dedupe)) { const first = out.find((x) => `${x.title}|${x.startMs}|${x.allDay}` === dedupe); if (first) first.partners = partnerLogins([...first.partners, ...(Array.isArray(it.partners) ? it.partners : [])]); continue; }   // the same stream in two schedules: their people are merged
     seen.add(dedupe);
     out.push({ key: streamKeyOf({ id: it.id, start: it.start, title: it.title }), title, start: new Date(startMs).toISOString(), startMs, allDay, day: day ? it.day : "", games, partners: allDay ? [] : partnerLogins(it.partners), timezone: slotZone || (allDay ? tz : "") });
   }
@@ -272,9 +282,9 @@ export function upcomingStreams(items, nowMs, fallbackZone = "UTC", max = LIMITS
 }
 
 /**
- * Quand commence (et finit) un événement donné par une source : { startMs, endMs, allDay, day, zone } ou null s'il est illisible.
- * `start` / `end` : des instants ISO 8601 (UTC de préférence) ; `allDay` + `day` (AAAA-MM-JJ) : une journée entière sur l'horloge de `timezone` (ou de `fallbackZone`).
- * Même règle que pour les streams des agendas : un jour entier commence à minuit du fuseau, et dure 24 h (23 ou 25 h le jour d'un changement d'heure, mais ici on ne s'en sert que pour trier).
+ * When an event given by a source starts (and ends): { startMs, endMs, allDay, day, zone } or null if it is unreadable.
+ * `start` / `end`: ISO 8601 instants (UTC preferably); `allDay` + `day` (YYYY-MM-DD): a whole day on the clock of `timezone` (or `fallbackZone`).
+ * Same rule as for the streams of the schedules: a whole day starts at midnight of the time zone, and lasts 24 h (23 or 25 h on a daylight-saving day, but here it is only used for sorting).
  */
 export function eventTimes(it, fallbackZone = "UTC") {
   if (!it || typeof it !== "object") return null;
@@ -289,7 +299,7 @@ export function eventTimes(it, fallbackZone = "UTC") {
   return { startMs, endMs, allDay, day: d ? it.day : "", zone: own || (allDay ? zone : "") };
 }
 
-/** Un stream saisi à la main (titre, jour AAAA-MM-JJ, heure HH:MM) → un stream comme ci-dessus, ou { error }. */
+/** A hand-written stream (title, day YYYY-MM-DD, time HH:MM) → a stream as above, or { error }. */
 export function manualStream({ title, date, time }, tz) {
   const t = oneLine(title, LIMITS.title);
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date ?? "")), h = /^(\d{1,2}):(\d{2})$/.exec(String(time ?? ""));
@@ -300,15 +310,15 @@ export function manualStream({ title, date, time }, tz) {
   if (!allDay && (!h || Number(h[1]) > 23 || Number(h[2]) > 59)) return { error: "time" };
   const startMs = zonedToUtc(Number(d[1]), Number(d[2]), Number(d[3]), allDay ? 0 : Number(h[1]), allDay ? 0 : Number(h[2]), zone);
   const w = wallParts(startMs, zone);
-  if (w.d !== Number(d[3]) || w.m !== Number(d[2])) return { error: "date" };   // un 31 février
+  if (w.d !== Number(d[3]) || w.m !== Number(d[2])) return { error: "date" };   // a 31 February
   return { key: "manual", title: t, start: new Date(startMs).toISOString(), startMs, allDay, day: allDay ? String(date) : "", games: [], timezone: zone, manual: true };
 }
 
-/* ───────────── Ce que dit la vidéo ───────────── */
+/* ───────────── What the video says ───────────── */
 
 /**
- * Tout ce que la vidéo écrit, prêt à dessiner : un élément n'est présent que s'il est choisi ET qu'il a de quoi s'afficher.
- * `stream` : un stream (voir plus haut) ou null ; `coStreamers` : [{ login, name }] déjà choisis ; `site` : { name } ; `nowMs` : l'instant de la génération.
+ * Everything the video writes, ready to draw: an element is present only if it is chosen AND has something to show.
+ * `stream`: a stream (see above) or null; `coStreamers`: [{ login, name }] already chosen; `site`: { name }; `nowMs`: the instant of the generation.
  */
 export function buildContent(config, { stream, coStreamers = [], site = {}, nowMs, tz }) {
   const c = cleanConfig(config), has = (e) => c.elements.includes(e);
@@ -323,7 +333,7 @@ export function buildContent(config, { stream, coStreamers = [], site = {}, nowM
   if (has("brand")) out.brand = oneLine(c.channelName || site.name, LIMITS.channelName);
   if (has("text")) out.text = freeText(c.text, LIMITS.text);
   if (has("costreamers")) {
-    // Au plus 6 : au-delà, les 5 premiers puis une dernière pastille « +N » (jamais une sixième personne cachée sans le dire).
+    // 6 at most: beyond that, the first 5 then a last "+N" pill (never a sixth person hidden without saying so).
     const all = coStreamers.filter((x) => x && (x.login || x.name)), shown = all.length > LIMITS.costreamers ? all.slice(0, LIMITS.costreamers - 1) : all;
     out.costreamers = shown.map((x) => ({ login: String(x.login || x.name), name: oneLine(x.name || x.login, LIMITS.displayName) }));
     if (all.length > shown.length) out.costreamers.push({ login: "+more", name: `+${all.length - shown.length}`, more: true });
@@ -331,17 +341,17 @@ export function buildContent(config, { stream, coStreamers = [], site = {}, nowM
   return out;
 }
 
-/** Le nom du fichier : annonce-2026-10-22-vertical.mp4 (announcement-… en anglais). */
+/** The file name: annonce-2026-10-22-vertical.mp4 (announcement-… in English). */
 export function fileName({ startMs, tz, format, lang, ext, nowMs }) {
   const day = Number.isFinite(startMs) && validZone(tz) ? isoDay(startMs, tz) : isoDay(nowMs ?? 0, "UTC");
   return `${lang === "en" ? "announcement" : "annonce"}-${day}-${FORMATS.some((f) => f.id === format) ? format : "vertical"}.${ext === "webm" ? "webm" : "mp4"}`;
 }
 
-/* ───────────── Mise en lignes ───────────── */
+/* ───────────── Breaking into lines ───────────── */
 
 /**
- * Découpe un texte en lignes qui tiennent dans `maxWidth` (`measure(texte)` rend la largeur). Les retours à la ligne voulus sont respectés ; un mot trop long est coupé ;
- * au-delà de `maxLines`, la dernière ligne finit par « … ». Rend un tableau de lignes (jamais vide pour un texte non vide).
+ * Breaks a text into lines that fit `maxWidth` (`measure(text)` returns the width). Wanted line breaks are respected; a word that is too long is cut;
+ * beyond `maxLines`, the last line ends with "…". Returns an array of lines (never empty for a non-empty text).
  */
 export function wrapText(measure, text, maxWidth, maxLines = 3) {
   const lines = [];
@@ -352,7 +362,7 @@ export function wrapText(measure, text, maxWidth, maxLines = 3) {
     const push = () => { lines.push(cur); cur = ""; };
     for (let w of words) {
       while (measure(w) > maxWidth && [...w].length > 1) {
-        // un mot plus large qu'une ligne : on le coupe au dernier caractère qui tient
+        // a word wider than a line: it is cut at the last character that fits
         let k = [...w].length - 1;
         while (k > 1 && measure([...w].slice(0, k).join("")) > maxWidth) k--;
         const head = [...w].slice(0, k).join(""), rest = [...w].slice(k).join("");
@@ -372,7 +382,7 @@ export function wrapText(measure, text, maxWidth, maxLines = 3) {
   kept[maxLines - 1] = `${last.replace(/\s+$/, "")}…`;
   return kept;
 }
-/** Coupe un texte d'une seule ligne pour qu'il tienne dans `maxWidth` (… à la fin). */
+/** Cuts a single-line text so that it fits `maxWidth` (… at the end). */
 export function ellipsize(measure, text, maxWidth) {
   const s = String(text ?? "");
   if (measure(s) <= maxWidth) return s;
@@ -382,7 +392,7 @@ export function ellipsize(measure, text, maxWidth) {
 }
 
 /**
- * La plus grande échelle `u` (jusqu'à `max`) pour laquelle `heightAt(u)` tient dans `avail`. `heightAt` doit croître avec `u`. Cherche par dichotomie ; rend au moins `min`.
+ * The biggest scale `u` (up to `max`) for which `heightAt(u)` fits in `avail`. `heightAt` must grow with `u`. Searches by bisection; returns at least `min`.
  */
 export function solveScale(heightAt, avail, max = 1, min = 0.3) {
   if (heightAt(max) <= avail) return max;
@@ -392,8 +402,8 @@ export function solveScale(heightAt, avail, max = 1, min = 0.3) {
 }
 
 /**
- * Les cases des co-streamers dans la zone `box` ({ x, y, w, h }) : de 0 à 6 pastilles rondes (une rangée jusqu'à 3, deux rangées au-delà), toutes dans la zone,
- * sans se toucher. Chaque case : { cx, cy, d (diamètre), labelY (haut du nom), labelW (largeur permise du nom) }.
+ * The cells of the guest streamers in the area `box` ({ x, y, w, h }): from 0 to 6 round badges (one row up to 3, two rows beyond), all inside the area,
+ * not touching. Each cell: { cx, cy, d (diameter), labelY (top of the name), labelW (width allowed for the name) }.
  */
 export function layoutCostreamers(n, box, { maxD = 190, gap = 28, labelH = 44 } = {}) {
   const count = Math.max(0, Math.min(LIMITS.costreamers, Math.floor(Number(n) || 0)));
@@ -416,14 +426,14 @@ export function layoutCostreamers(n, box, { maxD = 190, gap = 28, labelH = 44 } 
   return cells;
 }
 
-/** Les initiales d'un nom (« Alice Martin » → « AM », « zoe_live » → « Z »), pour la pastille quand l'image manque. */
+/** The initials of a name ("Alice Martin" → "AM", "zoe_live" → "Z"), for the badge when the image is missing. */
 export function initials(name) {
   const parts = String(name ?? "").replace(/[_\-.]+/g, " ").trim().split(/\s+/).filter(Boolean);
   const first = [...(parts[0] ?? "?")][0] ?? "?", second = parts.length > 1 ? [...parts[1]][0] : "";
   return (first + second).toUpperCase();
 }
 
-/* ───────────── Couleurs et mouvements ───────────── */
+/* ───────────── Colours and motion ───────────── */
 
 export function parseHex(hex) {
   const s = String(hex ?? "").trim().replace(/^#/, "");
@@ -438,9 +448,9 @@ export function luminance(hex) {
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 }
 export const contrast = (a, b) => { const la = luminance(a), lb = luminance(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
-/** Le texte (blanc ou presque noir) le plus lisible sur ce fond. */
+/** The text (white or near-black) that reads best on this background. */
 export const readableOn = (bg) => (contrast(bg, "#ffffff") >= contrast(bg, "#111111") ? "#ffffff" : "#111111");
-/** Éclaircit ou fonce une couleur jusqu'à ce qu'elle soit lisible (≥ `ratio`) sur `bg` ; sinon rend le blanc ou le noir lisible. */
+/** Lightens or darkens a colour until it is readable (≥ `ratio`) on `bg`; otherwise returns the readable white or black. */
 export function ensureContrast(color, bg, ratio = 4.5) {
   if (!parseHex(color)) return readableOn(bg);
   if (contrast(color, bg) >= ratio) return color;
@@ -453,21 +463,21 @@ export const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 export const easeOutCubic = (x) => 1 - (1 - clamp01(x)) ** 3;
 export const easeInOutCubic = (x) => { const t = clamp01(x); return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2; };
 export const easeOutBack = (x) => { const t = clamp01(x), c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2; };
-/** Avancement (0 à 1) d'un mouvement qui commence à `start` et dure `len` secondes. */
+/** Progress (0 to 1) of a move that starts at `start` and lasts `len` seconds. */
 export const progress = (t, start, len) => clamp01((t - start) / (len > 0 ? len : 1));
-/** Un petit générateur au hasard « reproductible » : la même graine donne toujours la même suite (la vidéo est déterministe). */
+/** A small "reproducible" random generator: the same seed always gives the same sequence (the video is deterministic). */
 export function seeded(seed) {
   let a = (Number(seed) || 0) >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** Un événement est « à venir » s'il n'a pas encore commencé ; une journée entière compte jusqu'à la fin du jour. `e` : { startMs, allDay, day }. */
+/** An event is "upcoming" if it has not started yet; a whole day counts until the end of the day. `e`: { startMs, allDay, day }. */
 export function isUpcoming(e, nowMs, tz = "UTC") {
   if (!e || !Number.isFinite(e.startMs)) return false;
   if (e.allDay) return typeof e.day === "string" && e.day >= isoDay(nowMs, validZone(tz) ? tz : "UTC");
   return e.startMs > nowMs;
 }
-/** Le prochain événement d'une liste déjà triée par date : le premier qui n'a pas commencé ; à défaut (tout est en cours), le premier. Jamais d'exception. */
+/** The next event of a list already sorted by date: the first one that has not started; failing that (everything is under way), the first one. Never throws. */
 export function nextEvent(items, nowMs, tz = "UTC") {
   const list = Array.isArray(items) ? items : [];
   return list.find((e) => isUpcoming(e, nowMs, tz)) ?? list[0] ?? null;

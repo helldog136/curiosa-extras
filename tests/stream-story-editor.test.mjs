@@ -182,3 +182,34 @@ test("éditeur sans Contacts : le repli est dit, la saisie ponctuelle marche, et
   await ctx.api.store.list("story_costreamers").then((r) => assert.equal(r.length, 1, "la liste d'avant n'a pas bougé"));
   server.restore();
 });
+
+test("2.7.0 editor: ten style cards with a live thumbnail each; the countdown is unticked in a new video; the countdown style ticks it with a visible note and unticks it again if you leave without touching it", async () => {
+  const ctx = mk(null);
+  const html = await (await def.routes.studio(new Request(`${SITE}/m/story/studio`), ctx)).text();
+  const ids = [...html.matchAll(/<input type="radio" name="style" id="style-([a-z]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(ids, ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"]);
+  assert.equal([...html.matchAll(/<canvas class="thumb" data-style="([a-z]+)"[^>]*aria-hidden="true">/g)].length, 10, "one decorative thumbnail per card (the name and hint carry the meaning)");
+  for (const id of ids) { assert.match(html, new RegExp(`<label for="style-${id}" class="stylecard">`)); assert.ok(fr[`ui_style_${id}`] && fr[`ui_style_${id}_hint`], id); }
+  assert.match(html, /id="style-note"[^>]*role="status"[^>]*hidden/);
+
+  const { els, server } = await boot(ctx, "styles-2-7");
+  assert.equal(els.get("el-countdown").checked, false, "countdown unticked by default");
+  for (const e of ["title", "when", "game", "brand", "text", "costreamers"]) assert.equal(els.get(`el-${e}`).checked, true, `${e} still ticked`);
+  assert.equal(els.get("style-note").hidden, true);
+  els.get("style-countdown").fire("change"); await wait(300);
+  assert.equal(els.get("el-countdown").checked, true, "the countdown style ticks the countdown");
+  assert.equal(els.get("style-note").hidden, false); assert.equal(els.get("style-note").textContent, fr.ui_style_countdown_on);
+  els.get("style-kinetic").fire("change"); await wait(300);
+  assert.equal(els.get("el-countdown").checked, false, "left without touching it: unticked again");
+  assert.equal(els.get("style-note").hidden, true);
+  // ticked by hand: it stays when the style changes
+  els.get("style-countdown").fire("change"); await wait(100);
+  els.get("el-countdown").checked = false; els.get("el-countdown").fire("change");
+  els.get("el-countdown").checked = true; els.get("el-countdown").fire("change");
+  els.get("style-geometric").fire("change"); await wait(300);
+  assert.equal(els.get("el-countdown").checked, true, "ticked by the person: kept");
+  assert.equal(els.get("style-note").hidden, true);
+  // every style draws in the preview without an error
+  for (const id of ids) { els.get(`style-${id}`).fire("change"); await wait(200); assert.ok(drawn(els).length > 0, id); }
+  server.restore();
+});

@@ -54,7 +54,9 @@ test("textes : une ligne sans caractère de contrôle ; une phrase libre de 3 li
 test("réglages : valeurs inconnues écartées, durée de 5 à 15 (entiers), éléments et co-streamers bornés, ne lève jamais", () => {
   const d = P.cleanConfig({});
   assert.deepEqual([d.style, d.format, d.duration, d.lang], ["neon", "vertical", 15, "fr"]);
-  assert.deepEqual(d.elements, P.ELEMENTS);
+  assert.deepEqual(d.elements, P.ELEMENTS.filter((e) => e !== "countdown"), "le compte à rebours n'est PAS coché par défaut (2.7.0)");
+  assert.deepEqual(P.DEFAULT_ELEMENTS, d.elements);
+  assert.deepEqual(P.cleanConfig({ elements: P.ELEMENTS }).elements, P.ELEMENTS, "une liste enregistrée est gardée telle quelle : le compte à rebours reste possible");
   for (const [raw, want] of [[3, 5], [4.4, 5], [5, 5], [9.6, 10], [15, 15], [99, 15], ["12", 12], ["abc", 15], [null, 15]]) assert.equal(P.cleanConfig({ duration: raw }).duration, want, String(raw));
   assert.equal(P.cleanConfig({ style: "<script>", format: "paysage" }).style, "neon");
   assert.equal(P.cleanConfig({ format: "paysage" }).format, "vertical", "le paysage n'existe pas");
@@ -169,7 +171,9 @@ test("stream saisi à la main : titre, jour, heure (facultative) ; un 31 févrie
 test("contenu de la vidéo : chaque élément n'apparaît que s'il est choisi ET qu'il a de quoi s'afficher ; le texte personnalisé est gardé tel quel", () => {
   const stream = { title: "Soirée", startMs: at("2026-10-22T17:30:00Z"), allDay: false, games: ["Hades", "Zelda"], timezone: TZ };
   const base = { stream, coStreamers: [{ login: "alice_tv", name: "Alice" }, { login: "bob_x", name: "" }], site: { name: "Emma Live" }, nowMs: at("2026-10-22T09:00:00Z"), tz: TZ };
-  const all = P.buildContent({ ...P.DEFAULT_CONFIG, text: "Venez !", costreamers: ["alice_tv", "bob_x"] }, base);
+  const all = P.buildContent({ ...P.DEFAULT_CONFIG, elements: P.ELEMENTS, text: "Venez !", costreamers: ["alice_tv", "bob_x"] }, base);
+  const byDefault = P.buildContent({ ...P.DEFAULT_CONFIG, text: "Venez !" }, base);
+  assert.deepEqual([byDefault.countdown, byDefault.parts, byDefault.title, byDefault.dayLine], ["", null, "Soirée", "Jeudi 22 octobre"], "par défaut : pas de compte à rebours, le reste est là");
   assert.deepEqual([all.title, all.dayLine, all.timeLine, all.countdown, all.game, all.brand, all.text], ["Soirée", "Jeudi 22 octobre", "19 h 30", "Ce soir à 19 h 30", "Hades", "Emma Live", "Venez !"]);
   assert.deepEqual(all.costreamers, [{ login: "alice_tv", name: "Alice" }, { login: "bob_x", name: "bob_x" }]);
   assert.deepEqual(all.parts, { days: 0, hours: 8, minutes: 30, started: false });
@@ -249,4 +253,21 @@ test("vm vierge : pure.mjs s'exécute tel quel, sans Node ni navigateur (seuleme
   assert.equal(JSON.stringify(run(`wrapText((s) => s.length * 10, "un deux trois", 70, 3)`)), JSON.stringify(P.wrapText((s) => s.length * 10, "un deux trois", 70, 3)));
   assert.equal(JSON.stringify(run(`cleanConfig({ duration: 99, style: "poster" })`)), JSON.stringify(P.cleanConfig({ duration: 99, style: "poster" })));
   assert.equal(run(`FORMATS.length`), 2);
+});
+
+test("2.7.0: the countdown element is off in a new video; the countdown style asks for it; a stored list is never changed", () => {
+  assert.ok(!P.DEFAULT_ELEMENTS.includes("countdown") && P.DEFAULT_ELEMENTS.length === P.ELEMENTS.length - 1);
+  assert.deepEqual(P.DEFAULT_CONFIG.elements, [...P.DEFAULT_ELEMENTS]);
+  assert.deepEqual(P.cleanConfig({ style: "poster" }).elements, [...P.DEFAULT_ELEMENTS], "no elements stored: the new default");
+  assert.deepEqual(P.cleanConfig({ elements: ["title", "countdown"] }).elements, ["title", "countdown"], "a stored list keeps its countdown");
+  assert.deepEqual(P.cleanConfig({ elements: [] }).elements, [], "an empty stored list stays empty");
+  assert.deepEqual(P.STYLE_NEEDS, { countdown: "countdown" });
+  assert.deepEqual(P.elementsForStyle("countdown", P.DEFAULT_ELEMENTS), P.ELEMENTS, "the countdown style adds the countdown, in the canonical order");
+  assert.deepEqual(P.elementsForStyle("countdown", ["title"]), ["title", "countdown"]);
+  assert.deepEqual(P.elementsForStyle("neon", P.DEFAULT_ELEMENTS), [...P.DEFAULT_ELEMENTS], "other styles add nothing");
+  assert.deepEqual(P.elementsForStyle("neon", P.ELEMENTS), P.ELEMENTS, "and remove nothing");
+  assert.deepEqual(P.elementsForStyle("countdown", undefined), P.ELEMENTS);
+  for (const style of P.STYLES) assert.ok(P.cleanConfig({ style }).style === style, `${style} is accepted`);
+  assert.equal(P.cleanConfig({ style: "kinetic" }, { ...P.DEFAULT_CONFIG, style: "cinema" }).style, "kinetic");
+  assert.equal(P.cleanConfig({ style: "nope" }, { ...P.DEFAULT_CONFIG, style: "cinema" }).style, "cinema", "an unknown style falls back to the model's, then to the default");
 });
