@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.48.0 — 2026-11-06
+
+*En bref : le module Blog passe en 1.2.0 et demande Curiosa 0.6.18 ou plus. L'affichage « liste » d'un blog devient une suite de cartes pleine largeur, et un champ « Rechercher » peut filtrer la liste pendant que le public tape. Rien à régler, aucune nouvelle permission.*
+
+*In short: the Blog module moves to 1.2.0 and needs Curiosa 0.6.18 or later. The "list" display of a blog becomes a series of full-width cards, and a "Search" field can filter the list while visitors type. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Blog 1.2.0: a list that looks like your cards.** Each article has a frame with its title and its summary, cut with "…" when long, the same height everywhere, and the whole row opens the article. It follows your skin, light or dark, on a phone or a computer.
+- **Blog 1.2.0 : une liste qui ressemble à vos cartes.** Chaque article a un cadre avec son titre et son résumé, coupés par « … » s'ils sont longs, la même hauteur partout, et toute la ligne ouvre l'article. Elle suit votre skin, en clair comme en sombre, sur téléphone comme sur ordinateur.
+- **Blog 1.2.0: a search field above the list.** It filters while typing, with no button or reload, ignoring capitals and accents, and also searches the other pages of a long blog. "Show a search field" is in the General tab of each blog; it is on by default in list display.
+- **Blog 1.2.0 : un champ de recherche au-dessus de la liste.** Il filtre pendant la frappe, sans bouton ni rechargement, sans tenir compte des majuscules ni des accents, et cherche aussi dans les autres pages d'un long blog. « Afficher un champ de recherche » est dans l'onglet Général de chaque blog ; il est activé d'office en affichage liste.
+
+### Pour les développeurs
+
+- **Blog 1.2.0**: `minCore` set to 0.6.18 (none before) (no code, no setting, no migration: the rows, the search and the per-blog setting `instance.<id>.__search` belong to the core, optional manifest key `content.search`). An older core does not offer this version and keeps Blog 1.1.1. Showcase entry and README updated. Détail : `docs/changelog-parts/blog-list-search.md`.
+- No migration, no new permission.
+
 ## 1.47.0 — 2026-11-06
 
 *En bref : une vitrine de tous les modules (une page par module, avec des captures d'écran) est désormais tenue à jour avec les modules, et chaque nouveau module devra arriver avec sa page de vitrine. Aucun module ne change : rien à régler, aucune nouvelle permission.*
