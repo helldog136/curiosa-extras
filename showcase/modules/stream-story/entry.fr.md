@@ -3,6 +3,7 @@
 Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle est prête pour une story Instagram ou un post en portrait.
 
 - Choisissez un prochain stream ou événement.
+- Trois étapes : l'événement (ou aucun), les informations à corriger ou retirer, puis le style.
 - Fabriquez la vidéo au format portrait.
 - Choisissez les couleurs de la vidéo.
 - Choisissez parmi dix styles d'animation, comme un générique de film ou un collage papier.
@@ -36,4 +37,4 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.7.0.
+Disponible depuis la version 1.0.0. Version actuelle : 2.8.0.

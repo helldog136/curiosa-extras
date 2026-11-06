@@ -16,6 +16,12 @@ export const FORMATS = [
 /** The animation styles: the first four since 1.0, then six styles of very different character (2.7.0). The order is the one of the editor's picker. */
 export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
+/**
+ * The style of the preview while the person edits the event and the information (steps 1 and 2), before any style is chosen. Minimal: a plain background, left-aligned blocks
+ * that stack in a fixed order, no frame, bar, stamp or ticker that would look wrong around a missing field, and nothing but the text moves. It is also the style that "Generate now" uses
+ * until a style is chosen, so a video is never made in a style that the person has not seen in the preview.
+ */
+export const EDIT_STYLE = "minimal";
 /** What a NEW video shows: everything but the countdown (a person who wants it ticks it). Saved models keep what they stored. */
 export const DEFAULT_ELEMENTS = Object.freeze(ELEMENTS.filter((e) => e !== "countdown"));
 /** The element a style needs to be itself: the "countdown" style draws big numbers that come from the "countdown" element. */
@@ -314,6 +320,48 @@ export function manualStream({ title, date, time }, tz) {
   return { key: "manual", title: t, start: new Date(startMs).toISOString(), startMs, allDay, day: allDay ? String(date) : "", games: [], timezone: zone, manual: true };
 }
 
+/**
+ * The editable information of a video ("step 2"): { title, date (YYYY-MM-DD), time (HH:MM, empty = whole day), game }, read from a stream on the clock of its own
+ * time zone (or `tz`). With no stream, everything is empty.
+ */
+export function infoFromStream(stream, tz = "UTC") {
+  const empty = { title: "", date: "", time: "", game: "" };
+  if (!stream || typeof stream !== "object") return empty;
+  const zone = validZone(stream.timezone) ? stream.timezone : validZone(tz) ? tz : "UTC", has = Number.isFinite(stream.startMs);
+  const w = has ? wallParts(stream.startMs, zone) : null;
+  return {
+    title: oneLine(stream.title, LIMITS.title),
+    date: has ? (stream.allDay && /^\d{4}-\d{2}-\d{2}$/.test(String(stream.day ?? "")) ? stream.day : isoDay(stream.startMs, zone)) : "",
+    time: has && !stream.allDay ? `${pad(w.h)}:${pad(w.mi)}` : "",
+    game: oneLine(Array.isArray(stream.games) ? stream.games[0] : "", 80),
+  };
+}
+
+/**
+ * The stream that the video is made from, drawn from the editable information. `base`: the event the information came from (or null for "no event"); when the day and the time
+ * are still the event's own, its exact start (and zone) is kept. Returns { stream, error }: `stream` is null when there is nothing to say about an event (no title, day or game);
+ * `error` is "date" (a time without a valid day, or a day that does not exist) or "time", the stream then being built without its day.
+ */
+export function streamFromInfo(info, { base = null, tz = "UTC" } = {}) {
+  const i = info && typeof info === "object" ? info : {};
+  const title = oneLine(i.title, LIMITS.title), game = oneLine(i.game, 80), date = String(i.date ?? "").trim(), time = String(i.time ?? "").trim();
+  const zone = base && validZone(base.timezone) ? base.timezone : validZone(tz) ? tz : "UTC";
+  let when = null, error = "";
+  if (date) {
+    const own = base ? infoFromStream(base, tz) : null;
+    if (own && own.date === date && own.time === time && Number.isFinite(base.startMs)) when = { startMs: base.startMs, allDay: base.allDay === true, day: base.day || "" };
+    else {
+      const m = manualStream({ title: "x", date, time }, zone);
+      if (m.error) error = m.error; else when = { startMs: m.startMs, allDay: m.allDay, day: m.day };
+    }
+  } else if (time) error = "date";
+  if (!title && !game && !when) return { stream: null, error };
+  return {
+    stream: { key: base?.key || "manual", title, start: when ? new Date(when.startMs).toISOString() : "", startMs: when ? when.startMs : null, allDay: when ? when.allDay : false, day: when ? when.day : "", games: game ? [game] : [], timezone: base?.timezone || "", manual: !base },
+    error,
+  };
+}
+
 /* ───────────── What the video says ───────────── */
 
 /**
@@ -326,8 +374,9 @@ export function buildContent(config, { stream, coStreamers = [], site = {}, nowM
   const out = { lang: c.lang, title: "", dayLine: "", timeLine: "", countdown: "", parts: null, game: "", brand: "", text: "", costreamers: [], zone, startMs: stream?.startMs ?? null };
   if (stream) {
     if (has("title")) out.title = oneLine(stream.title, LIMITS.title);
-    if (has("when")) { out.dayLine = formatDay(stream.startMs, zone, c.lang); out.timeLine = stream.allDay ? "" : formatTime(stream.startMs, zone, c.lang); }
-    if (has("countdown")) { out.countdown = countdownText({ startMs: stream.startMs, nowMs, tz: zone, lang: c.lang, allDay: stream.allDay }); out.parts = stream.allDay ? null : countdownParts(stream.startMs, nowMs); }
+    const dated = Number.isFinite(stream.startMs);   // an event written by hand may have no day yet
+    if (has("when") && dated) { out.dayLine = formatDay(stream.startMs, zone, c.lang); out.timeLine = stream.allDay ? "" : formatTime(stream.startMs, zone, c.lang); }
+    if (has("countdown") && dated) { out.countdown = countdownText({ startMs: stream.startMs, nowMs, tz: zone, lang: c.lang, allDay: stream.allDay }); out.parts = stream.allDay ? null : countdownParts(stream.startMs, nowMs); }
     if (has("game") && stream.games?.[0]) out.game = oneLine(stream.games[0], 80);
   }
   if (has("brand")) out.brand = oneLine(c.channelName || site.name, LIMITS.channelName);

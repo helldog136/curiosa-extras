@@ -3,6 +3,7 @@
 A short animated video that announces one of your upcoming events. It is ready for an Instagram story or a portrait post.
 
 - Pick an upcoming stream or event.
+- Three steps: the event (or none), the information you can correct or remove, then the style.
 - Make the video in a portrait format.
 - Choose the colours of the video.
 - Pick one of ten animation styles, such as a film title card or a paper collage.
@@ -36,4 +37,4 @@ A short animated video that announces one of your upcoming events. It is ready f
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.7.0.
+Available since version 1.0.0. Current version: 2.8.0.

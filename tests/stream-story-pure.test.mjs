@@ -271,3 +271,50 @@ test("2.7.0: the countdown element is off in a new video; the countdown style as
   assert.equal(P.cleanConfig({ style: "kinetic" }, { ...P.DEFAULT_CONFIG, style: "cinema" }).style, "kinetic");
   assert.equal(P.cleanConfig({ style: "nope" }, { ...P.DEFAULT_CONFIG, style: "cinema" }).style, "cinema", "an unknown style falls back to the model's, then to the default");
 });
+
+/* ───────────── 2.8.0: the editable information of the second step ───────────── */
+
+test("infoFromStream / streamFromInfo: an event becomes four editable fields and back; an untouched day keeps the exact start and zone", () => {
+  assert.equal(P.EDIT_STYLE, "minimal"); assert.ok(P.STYLES.includes(P.EDIT_STYLE));
+  const ev = { key: "k1", title: "Soirée découverte", startMs: Date.UTC(2031, 2, 4, 18, 30), allDay: false, day: "", games: ["Hades", "Celeste"], timezone: "Europe/Paris" };
+  const info = P.infoFromStream(ev, "UTC");
+  assert.deepEqual(info, { title: "Soirée découverte", date: "2031-03-04", time: "19:30", game: "Hades" }, "read on the clock of the event's own zone");
+  const same = P.streamFromInfo(info, { base: ev, tz: "UTC" });
+  assert.equal(same.error, ""); assert.equal(same.stream.startMs, ev.startMs); assert.equal(same.stream.timezone, "Europe/Paris"); assert.deepEqual(same.stream.games, ["Hades"]);
+  // the title corrected, the day untouched: same start; the time corrected: the new start on the event's clock
+  assert.equal(P.streamFromInfo({ ...info, title: "Autre titre" }, { base: ev, tz: "UTC" }).stream.title, "Autre titre");
+  assert.equal(P.streamFromInfo({ ...info, time: "21:00" }, { base: ev, tz: "UTC" }).stream.startMs, Date.UTC(2031, 2, 4, 20, 0));
+  // a whole day: no time, the day kept
+  const allDay = { title: "Journée", startMs: Date.UTC(2031, 2, 4, 23, 0), allDay: true, day: "2031-03-05", games: [], timezone: "Europe/Paris" };
+  assert.deepEqual(P.infoFromStream(allDay, "UTC"), { title: "Journée", date: "2031-03-05", time: "", game: "" });
+  const back = P.streamFromInfo(P.infoFromStream(allDay, "UTC"), { base: allDay, tz: "UTC" }).stream;
+  assert.deepEqual([back.allDay, back.day, back.startMs], [true, "2031-03-05", allDay.startMs]);
+  // nothing: an empty info, no event, no stream
+  assert.deepEqual(P.infoFromStream(null), { title: "", date: "", time: "", game: "" });
+  assert.deepEqual(P.streamFromInfo(P.infoFromStream(null), { tz: "UTC" }), { stream: null, error: "" });
+  assert.equal(P.streamFromInfo(undefined).stream, null); assert.deepEqual(P.infoFromStream("nope"), P.infoFromStream(null));
+});
+
+test("streamFromInfo: written by hand, partly or completely; errors are named and the stream is built without its day", () => {
+  const a = P.streamFromInfo({ title: "  Soirée   découverte ", date: "2031-03-04", time: "19:30", game: "Hades" }, { tz: "Europe/Paris" });
+  assert.equal(a.error, ""); assert.equal(a.stream.title, "Soirée découverte"); assert.equal(a.stream.startMs, Date.UTC(2031, 2, 4, 18, 30)); assert.deepEqual(a.stream.games, ["Hades"]); assert.equal(a.stream.manual, true);
+  const whole = P.streamFromInfo({ title: "x", date: "2031-03-04", time: "" }, { tz: "UTC" }).stream;
+  assert.deepEqual([whole.allDay, whole.day], [true, "2031-03-04"]);
+  const titleOnly = P.streamFromInfo({ title: "Juste un titre" }, { tz: "UTC" });
+  assert.equal(titleOnly.error, ""); assert.equal(titleOnly.stream.startMs, null); assert.equal(titleOnly.stream.title, "Juste un titre");
+  assert.equal(P.streamFromInfo({ game: "Hades" }, { tz: "UTC" }).stream.games[0], "Hades");
+  assert.equal(P.streamFromInfo({ time: "19:30" }, { tz: "UTC" }).error, "date", "a time with no day");
+  assert.equal(P.streamFromInfo({ title: "x", date: "2031-02-31" }, { tz: "UTC" }).error, "date", "a 31 February");
+  assert.equal(P.streamFromInfo({ title: "x", date: "2031-03-04", time: "25:00" }, { tz: "UTC" }).error, "time");
+  const noDay = P.streamFromInfo({ title: "x", date: "2031-02-31" }, { tz: "UTC" }).stream;
+  assert.equal(noDay.title, "x"); assert.equal(noDay.startMs, null);
+  assert.equal(P.streamFromInfo({ title: "y".repeat(200) }, { tz: "UTC" }).stream.title.length, P.LIMITS.title);
+});
+
+test("buildContent: a stream with no day yet shows its title and game but no day line, no time and no countdown (never an invalid date)", () => {
+  const stream = P.streamFromInfo({ title: "Soirée", game: "Hades" }, { tz: "UTC" }).stream;
+  const c = P.buildContent({ ...P.DEFAULT_CONFIG, elements: P.ELEMENTS.slice() }, { stream, nowMs: Date.UTC(2031, 0, 1), tz: "UTC" });
+  assert.equal(c.title, "Soirée"); assert.equal(c.game, "Hades");
+  assert.deepEqual([c.dayLine, c.timeLine, c.countdown, c.parts, c.startMs], ["", "", "", null, null]);
+  assert.ok(!JSON.stringify(c).includes("NaN") && !JSON.stringify(c).includes("Invalid"));
+});

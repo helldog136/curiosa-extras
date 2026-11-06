@@ -60,8 +60,8 @@ test("la page : la case est DÉCOCHÉE (aucun attribut checked), fait au moins 4
   const box = /<input type="checkbox" id="watermark"[^>]*>/.exec(html)[0];
   assert.ok(!/checked/.test(box), box); assert.ok(!/tabindex/.test(box), "dans l'ordre naturel du clavier");
   assert.match(html, /label\.check\.tap\{[^}]*min-height:44px/);
-  assert.ok(html.indexOf('id="text"') < html.indexOf('id="watermark"') && html.indexOf('id="watermark"') < html.indexOf('id="members-box"'), "dans « Personnaliser », juste après le style et la phrase, avant les co-streamers");
-  assert.ok(html.indexOf('id="watermark"') < html.indexOf('id="advanced"'), "le choix de la mention n'est pas rangé dans les options avancées");
+  assert.ok(html.indexOf('id="style-geometric"') < html.indexOf('id="watermark"') && html.indexOf('id="watermark"') < html.indexOf('id="models-box"'), "on the style step, right after the style and the format");
+  assert.ok(html.indexOf('id="watermark"') < html.indexOf('id="more-3"'), "the mark is not folded under \"More options\"");
   assert.ok(/aria-describedby="watermark-help"/.test(box) && html.includes('id="watermark-help"'));
 });
 
@@ -281,7 +281,8 @@ const bootStudio = async (ctx, tag, { prep } = {}) => {
   await wait(700);
   return { els, server };
 };
-const manualEvent = async (els) => { els.get("event-manual-toggle").click(); els.get("m-title").value = "Soirée"; els.get("m-title").fire("input"); els.get("m-date").value = "2030-01-05"; els.get("m-date").fire("input"); els.get("m-time").value = "20:00"; els.get("m-time").fire("input"); await wait(500); };
+// An event written by hand: "No event", then the title, the day and the time in the information step.
+const manualEvent = async (els) => { els.get("event-none").click(); els.get("info-title").value = "Soirée"; els.get("info-title").fire("input"); els.get("info-date").value = "2030-01-05"; els.get("info-date").fire("input"); els.get("info-time").value = "20:00"; els.get("info-time").fire("input"); await wait(500); };
 
 test("éditeur : la case est décochée à l'ouverture, l'aperçu n'a pas la mention ; cocher l'ajoute à l'aperçu et le choix est envoyé et RETENU ; à la prochaine ouverture elle est cochée ; décocher la retire", async () => {
   const ctx = mkCtx();
