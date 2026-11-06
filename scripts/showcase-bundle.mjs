@@ -20,8 +20,9 @@ export function buildBundle(root, version) {
     const base = path.join(dir, "modules", m.id);
     const entry = JSON.parse(fs.readFileSync(path.join(base, "entry.json"), "utf8"));
     const shots = entry.screenshots.map((s) => {
-      const buf = fs.readFileSync(path.join(base, "shots", s.file));
-      return { file: s.file, kind: s.kind, path: `showcase/modules/${m.id}/shots/${s.file}`, bytes: buf.length, sha256: sha256(buf), url: `${rawBase(version)}/${m.id}/shots/${s.file}` };
+      const rel = s.shared ? `showcase/shared/${s.file}` : `showcase/modules/${m.id}/shots/${s.file}`;
+      const buf = fs.readFileSync(path.join(dir, "..", rel));
+      return { file: s.file, kind: s.kind, shared: !!s.shared, path: rel, bytes: buf.length, sha256: sha256(buf), url: `https://raw.githubusercontent.com/${REPO}/v${version}/${rel}` };
     });
     return { id: m.id, entry, texts: { en: fs.readFileSync(path.join(base, "entry.en.md"), "utf8"), fr: fs.readFileSync(path.join(base, "entry.fr.md"), "utf8") }, shots };
   });

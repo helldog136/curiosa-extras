@@ -6,6 +6,7 @@
 //   - a summary is longer than 160 characters or an alt text longer than 125;
 //   - a text contains a word of the ergonomics kit's R9 list (tests/helpers/ergonomics.mjs), an exclamation mark,
 //     a sentence of more than 20 words, or (in French) a "tu" form;
+//   (a screenshot with `shared: true` lives in showcase/shared/, for pictures several entries show)
 //   - a screenshot is not a WebP, is over 80 KB, or is not 1280 px wide (390 px for a mobile shot), or a file of shots/ is not listed;
 //   - the `since` version is newer than the module's version, or `requires` does not match the module's own requirements;
 //   - showcase/index.json is not what the entries produce.
@@ -134,8 +135,8 @@ export function checkShowcase(root, { write = false } = {}) {
         if (!s.alt?.[l]) bad(id, `screenshot ${s.file}: alt.${l} is missing`); else if (s.alt[l].length > LIMITS.alt) bad(id, `screenshot ${s.file}: alt.${l} is ${s.alt[l].length} characters (125 at most)`);
         if (!s.caption?.[l]) bad(id, `screenshot ${s.file}: caption.${l} is missing`);
       }
-      const f = path.join(shotsDir, s.file ?? "");
-      if (!s.file || !fs.existsSync(f)) { bad(id, `screenshot ${s.file}: file not found in shots/`); continue; }
+      const f = s.shared ? path.join(dir, "shared", s.file ?? "") : path.join(shotsDir, s.file ?? "");
+      if (!s.file || !fs.existsSync(f)) { bad(id, `screenshot ${s.file}: file not found in ${s.shared ? "showcase/shared/" : "shots/"}`); continue; }
       const b = fs.readFileSync(f);
       const size = webpSize(b);
       if (!size) { bad(id, `screenshot ${s.file}: not a WebP file`); continue; }
