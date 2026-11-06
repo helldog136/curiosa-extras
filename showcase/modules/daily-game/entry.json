@@ -1,0 +1,35 @@
+{
+  "id": "daily-game",
+  "category": "community",
+  "tags": [
+    "game",
+    "daily",
+    "quiz"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Daily game",
+    "fr": "Jeu du jour"
+  },
+  "summary": {
+    "en": "A small game once a day, to give people a reason to come back. One question, a few answers, an explanation.",
+    "fr": "Un petit jeu par jour, pour donner envie de revenir. Une question, quelques réponses, une explication."
+  },
+  "pitch": {
+    "en": "A small game once a day, to give people a reason to come back. One question, a few answers, an explanation.",
+    "fr": "Un petit jeu par jour, pour donner envie de revenir. Une question, quelques réponses, une explication."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.2",
+  "requires": [],
+  "worksWith": [
+    "audience",
+    "mascot"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/daily-game/module.json",
+    "modules/daily-game/README.md"
+  ]
+}

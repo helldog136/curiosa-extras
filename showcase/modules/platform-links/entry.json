@@ -1,0 +1,34 @@
+{
+  "id": "platform-links",
+  "category": "social",
+  "tags": [
+    "links",
+    "platforms",
+    "18+"
+  ],
+  "order": 5,
+  "title": {
+    "en": "Other platforms",
+    "fr": "Autres plateformes"
+  },
+  "summary": {
+    "en": "Add any other platform as an icon next to your social networks. An optional notice page (18+) can open first.",
+    "fr": "Ajoutez n'importe quelle autre plateforme en icône à côté de vos réseaux. Une page d'avertissement (18+) peut s'ouvrir d'abord."
+  },
+  "pitch": {
+    "en": "Add any other platform as an icon next to your social networks. An optional notice page (18+) can open first.",
+    "fr": "Ajoutez n'importe quelle autre plateforme en icône à côté de vos réseaux. Une page d'avertissement (18+) peut s'ouvrir d'abord."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.2",
+  "requires": [],
+  "worksWith": [
+    "links"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/platform-links/module.json",
+    "modules/platform-links/README.md"
+  ]
+}

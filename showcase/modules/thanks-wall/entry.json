@@ -1,0 +1,37 @@
+{
+  "id": "thanks-wall",
+  "category": "community",
+  "tags": [
+    "thanks",
+    "supporters",
+    "people"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Thank-you wall",
+    "fr": "Mur des remerciements"
+  },
+  "summary": {
+    "en": "A thank-you page for your community: cards with photos, and one person in the spotlight each month. Names stay in Contacts.",
+    "fr": "Une page de remerciements pour votre communauté : des cartes avec photo, et une personne à l'honneur chaque mois. Les noms restent dans Contacts."
+  },
+  "pitch": {
+    "en": "A thank-you page for your community: cards with photos, and one person in the spotlight each month. Names stay in Contacts.",
+    "fr": "Une page de remerciements pour votre communauté : des cartes avec photo, et une personne à l'honneur chaque mois. Les noms restent dans Contacts."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.2",
+  "requires": [
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "supporters"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/thanks-wall/module.json",
+    "modules/thanks-wall/README.md"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "sponsors",
+  "category": "content",
+  "tags": [
+    "sponsors",
+    "promo codes",
+    "partnership notice"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Sponsors",
+    "fr": "Sponsors"
+  },
+  "summary": {
+    "en": "Shows your sponsors and their promo codes on your site, with the partnership notice that the rules ask for.",
+    "fr": "Affiche vos sponsors et leurs codes promo sur votre site, avec la mention de partenariat que la réglementation demande."
+  },
+  "pitch": {
+    "en": "Shows your sponsors and their promo codes on your site, with the partnership notice that the rules ask for.",
+    "fr": "Affiche vos sponsors et leurs codes promo sur votre site, avec la mention de partenariat que la réglementation demande."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "codes",
+    "sponsor-ticker"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/sponsors/module.json",
+    "modules/sponsors/README.md"
+  ]
+}

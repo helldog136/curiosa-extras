@@ -1,0 +1,32 @@
+{
+  "id": "testimonials",
+  "category": "community",
+  "tags": [
+    "reviews",
+    "trust",
+    "moderation"
+  ],
+  "order": 50,
+  "title": {
+    "en": "Testimonials",
+    "fr": "Témoignages"
+  },
+  "summary": {
+    "en": "Collect reviews from people who like what you do. Every review waits for your approval before it appears.",
+    "fr": "Récoltez les avis des personnes qui aiment ce que vous faites. Chaque avis attend votre accord avant d'apparaître."
+  },
+  "pitch": {
+    "en": "Collect reviews from people who like what you do. Every review waits for your approval before it appears.",
+    "fr": "Récoltez les avis des personnes qui aiment ce que vous faites. Chaque avis attend votre accord avant d'apparaître."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.3.0",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/testimonials/module.json",
+    "modules/testimonials/README.md"
+  ]
+}

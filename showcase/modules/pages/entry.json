@@ -1,0 +1,36 @@
+{
+  "id": "pages",
+  "category": "content",
+  "tags": [
+    "pages",
+    "about",
+    "free-form"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Pages",
+    "fr": "Pages"
+  },
+  "summary": {
+    "en": "Free-form pages at the root of your site, such as /about or /contact.",
+    "fr": "Des pages libres à la racine de votre site, comme /a-propos ou /contact."
+  },
+  "pitch": {
+    "en": "Free-form pages at the root of your site, such as /about or /contact.",
+    "fr": "Des pages libres à la racine de votre site, comme /a-propos ou /contact."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.0",
+  "requires": [],
+  "worksWith": [
+    "blog",
+    "contact-form",
+    "legal-pages"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/pages/module.json",
+    "modules/pages/README.md"
+  ]
+}

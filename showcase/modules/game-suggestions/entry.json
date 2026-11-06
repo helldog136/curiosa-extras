@@ -1,0 +1,35 @@
+{
+  "id": "game-suggestions",
+  "category": "streaming",
+  "tags": [
+    "games",
+    "suggestions",
+    "votes"
+  ],
+  "order": 40,
+  "title": {
+    "en": "Game suggestions",
+    "fr": "Suggestions de jeux"
+  },
+  "summary": {
+    "en": "Let your audience suggest what to play. A public list shows each game with its status: proposed, planned, played.",
+    "fr": "Laissez votre public suggérer à quoi jouer. Une liste publique montre chaque jeu avec son statut : proposé, prévu, joué."
+  },
+  "pitch": {
+    "en": "Let your audience suggest what to play. A public list shows each game with its status: proposed, planned, played.",
+    "fr": "Laissez votre public suggérer à quoi jouer. Une liste publique montre chaque jeu avec son statut : proposé, prévu, joué."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.9.0",
+  "requires": [],
+  "worksWith": [
+    "game-covers",
+    "planning"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/game-suggestions/module.json",
+    "modules/game-suggestions/README.md"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "id": "videos",
+  "category": "content",
+  "tags": [
+    "videos",
+    "youtube",
+    "series"
+  ],
+  "order": 40,
+  "title": {
+    "en": "Video library",
+    "fr": "Vidéothèque"
+  },
+  "summary": {
+    "en": "A page of YouTube videos without hosting anything: a grid, categories, search, series to watch in order and sharing.",
+    "fr": "Une page de vidéos YouTube sans rien héberger. Une grille, des catégories, une recherche, des séries à voir dans l'ordre."
+  },
+  "pitch": {
+    "en": "A page of YouTube videos without hosting anything: a grid, categories, search, series to watch in order and sharing.",
+    "fr": "Une page de vidéos YouTube sans rien héberger. Une grille, des catégories, une recherche, des séries à voir dans l'ordre."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "gallery",
+    "events",
+    "youtube-channel"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/videos/module.json",
+    "modules/videos/README.md"
+  ]
+}

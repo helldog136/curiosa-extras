@@ -1,0 +1,34 @@
+{
+  "id": "idea-box",
+  "category": "community",
+  "tags": [
+    "ideas",
+    "feedback",
+    "votes"
+  ],
+  "order": 110,
+  "title": {
+    "en": "Idea box",
+    "fr": "Boîte à idées"
+  },
+  "summary": {
+    "en": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep, each with a support button.",
+    "fr": "Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une liste des idées que vous gardez, chacune avec un bouton de soutien."
+  },
+  "pitch": {
+    "en": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep, each with a support button.",
+    "fr": "Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une liste des idées que vous gardez, chacune avec un bouton de soutien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.1",
+  "requires": [],
+  "worksWith": [
+    "audience"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/idea-box/module.json",
+    "modules/idea-box/README.md"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "id": "twitch-raid",
+  "category": "streaming",
+  "tags": [
+    "twitch",
+    "raid",
+    "partners"
+  ],
+  "order": 40,
+  "title": {
+    "en": "Twitch raid",
+    "fr": "Raid Twitch"
+  },
+  "summary": {
+    "en": "A panel for OBS that shows which partners are live on Twitch, so you can choose who to raid.",
+    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider."
+  },
+  "pitch": {
+    "en": "A panel for OBS that shows which partners are live on Twitch, so you can choose who to raid.",
+    "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.3.0",
+  "requires": [
+    "twitch-connector",
+    "twitch-channel",
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "twitch-connector",
+    "twitch-channel"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/twitch-raid/module.json",
+    "modules/twitch-raid/README.md"
+  ]
+}

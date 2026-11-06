@@ -1,0 +1,39 @@
+{
+  "id": "planning",
+  "category": "streaming",
+  "tags": [
+    "schedule",
+    "streams",
+    "calendar",
+    "obs"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Stream schedule",
+    "fr": "Planning des streams"
+  },
+  "summary": {
+    "en": "Show your upcoming streams in the look you choose. They come from your Google Calendar or from what you write by hand.",
+    "fr": "Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de votre Google Agenda ou de ce que vous écrivez à la main."
+  },
+  "pitch": {
+    "en": "Show your upcoming streams in the look you choose. They come from your Google Calendar or from what you write by hand.",
+    "fr": "Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de votre Google Agenda ou de ce que vous écrivez à la main."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.7.3",
+  "requires": [],
+  "worksWith": [
+    "calendar-ical",
+    "calendar-manual",
+    "game-covers",
+    "game-suggestions",
+    "contacts"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/planning/module.json",
+    "modules/planning/README.md"
+  ]
+}

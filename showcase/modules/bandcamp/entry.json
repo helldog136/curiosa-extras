@@ -1,0 +1,31 @@
+{
+  "id": "bandcamp",
+  "category": "social",
+  "tags": [
+    "bandcamp",
+    "button"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Bandcamp",
+    "fr": "Bandcamp"
+  },
+  "summary": {
+    "en": "A Bandcamp button in your site header, with your own link.",
+    "fr": "Un bouton Bandcamp dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Bandcamp button in your site header, with your own link.",
+    "fr": "Un bouton Bandcamp dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/bandcamp/module.json",
+    "modules/bandcamp/README.md"
+  ]
+}

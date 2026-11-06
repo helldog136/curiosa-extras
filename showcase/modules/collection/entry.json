@@ -1,0 +1,35 @@
+{
+  "id": "collection",
+  "category": "content",
+  "tags": [
+    "custom",
+    "content",
+    "blank"
+  ],
+  "order": 80,
+  "title": {
+    "en": "Custom collection",
+    "fr": "Collection personnalisée"
+  },
+  "summary": {
+    "en": "A blank content module: you choose its display, its fields and its behaviour yourself.",
+    "fr": "Un module de contenu vierge : vous choisissez vous-même son affichage, ses champs et son comportement."
+  },
+  "pitch": {
+    "en": "A blank content module: you choose its display, its fields and its behaviour yourself.",
+    "fr": "Un module de contenu vierge : vous choisissez vous-même son affichage, ses champs et son comportement."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "blog",
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/collection/module.json",
+    "modules/collection/README.md"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "soundcloud",
+  "category": "social",
+  "tags": [
+    "soundcloud",
+    "button"
+  ],
+  "order": 140,
+  "title": {
+    "en": "SoundCloud",
+    "fr": "SoundCloud"
+  },
+  "summary": {
+    "en": "A SoundCloud button in your site header, with your own link.",
+    "fr": "Un bouton SoundCloud dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A SoundCloud button in your site header, with your own link.",
+    "fr": "Un bouton SoundCloud dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/soundcloud/module.json",
+    "modules/soundcloud/README.md"
+  ]
+}

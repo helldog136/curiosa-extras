@@ -1,0 +1,36 @@
+{
+  "id": "youtube-live-actions",
+  "category": "streaming",
+  "tags": [
+    "youtube",
+    "super chat",
+    "actions"
+  ],
+  "order": 95,
+  "title": {
+    "en": "YouTube live actions",
+    "fr": "Actions du live YouTube"
+  },
+  "summary": {
+    "en": "When someone supports your YouTube live, with a Super Chat or a membership, an action runs at your place.",
+    "fr": "Quand quelqu'un soutient votre direct YouTube, avec un Super Chat ou un abonnement, une action se déclenche chez vous."
+  },
+  "pitch": {
+    "en": "When someone supports your YouTube live, with a Super Chat or a membership, an action runs at your place.",
+    "fr": "Quand quelqu'un soutient votre direct YouTube, avec un Super Chat ou un abonnement, une action se déclenche chez vous."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.2",
+  "requires": [],
+  "worksWith": [
+    "home-assistant",
+    "alerts-overlay",
+    "youtube-connector"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/youtube-live-actions/module.json",
+    "modules/youtube-live-actions/README.md"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "instagram",
+  "category": "social",
+  "tags": [
+    "instagram",
+    "button"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Instagram",
+    "fr": "Instagram"
+  },
+  "summary": {
+    "en": "A Instagram button in your site header, with your own link.",
+    "fr": "Un bouton Instagram dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Instagram button in your site header, with your own link.",
+    "fr": "Un bouton Instagram dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/instagram/module.json",
+    "modules/instagram/README.md"
+  ]
+}

@@ -1,0 +1,1413 @@
+{
+  "categories": [
+    {
+      "id": "content",
+      "name": {
+        "en": "Content",
+        "fr": "Contenu"
+      },
+      "blurb": {
+        "en": "Pages, articles, photos and videos for your own site.",
+        "fr": "Pages, articles, photos et vidéos pour votre propre site."
+      }
+    },
+    {
+      "id": "streaming",
+      "name": {
+        "en": "Streaming",
+        "fr": "Streaming"
+      },
+      "blurb": {
+        "en": "Your lives, your schedule, your games and your chat.",
+        "fr": "Vos directs, votre planning, vos jeux et votre chat."
+      }
+    },
+    {
+      "id": "community",
+      "name": {
+        "en": "Community",
+        "fr": "Communauté"
+      },
+      "blurb": {
+        "en": "Ways to hear from your audience and to thank it.",
+        "fr": "Des façons d'écouter votre public et de le remercier."
+      }
+    },
+    {
+      "id": "looks",
+      "name": {
+        "en": "Looks & overlays",
+        "fr": "Apparence et overlays"
+      },
+      "blurb": {
+        "en": "What viewers see on screen and on your home page.",
+        "fr": "Ce que voit votre public à l'écran et sur votre accueil."
+      }
+    },
+    {
+      "id": "social",
+      "name": {
+        "en": "Social networks",
+        "fr": "Réseaux sociaux"
+      },
+      "blurb": {
+        "en": "Your networks as buttons, with their figures when possible.",
+        "fr": "Vos réseaux en boutons, avec leurs chiffres quand c'est possible."
+      }
+    },
+    {
+      "id": "tools",
+      "name": {
+        "en": "Tools & maintenance",
+        "fr": "Outils et organisation"
+      },
+      "blurb": {
+        "en": "Private tools to keep your work and your contacts in order.",
+        "fr": "Des outils privés pour garder votre travail et vos contacts en ordre."
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "blog",
+      "category": "content",
+      "order": 5,
+      "title": {
+        "en": "Blog",
+        "fr": "Blog"
+      },
+      "pitch": {
+        "en": "Articles with an image, a summary and simply formatted content. You can add as many blogs as you want.",
+        "fr": "Des articles avec une image, un résumé et un contenu simplement mis en forme. Ajoutez autant de blogs que vous voulez."
+      },
+      "tags": [
+        "articles",
+        "news",
+        "writing"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "faq",
+      "category": "content",
+      "order": 10,
+      "title": {
+        "en": "FAQ",
+        "fr": "Questions fréquentes"
+      },
+      "pitch": {
+        "en": "A page of questions and answers, grouped by category, that open and close. Visitors can search and ask their own question.",
+        "fr": "Une page de questions et réponses, classées par catégorie, qui s'ouvrent et se ferment. Les visiteurs peuvent chercher et poser leur question."
+      },
+      "tags": [
+        "questions",
+        "support",
+        "search"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "gallery",
+      "category": "content",
+      "order": 20,
+      "title": {
+        "en": "Photo galleries",
+        "fr": "Galeries photos"
+      },
+      "pitch": {
+        "en": "Photo albums for your site: event recaps, portfolio or behind the scenes. Visitors open them in a full-screen viewer.",
+        "fr": "Des albums photo pour votre site : récits d'événements, portfolio ou coulisses. Les visiteurs les ouvrent dans une visionneuse plein écran."
+      },
+      "tags": [
+        "photos",
+        "albums",
+        "portfolio"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "pages",
+      "category": "content",
+      "order": 20,
+      "title": {
+        "en": "Pages",
+        "fr": "Pages"
+      },
+      "pitch": {
+        "en": "Free-form pages at the root of your site, such as /about or /contact.",
+        "fr": "Des pages libres à la racine de votre site, comme /a-propos ou /contact."
+      },
+      "tags": [
+        "pages",
+        "about",
+        "free-form"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "events",
+      "category": "content",
+      "order": 30,
+      "title": {
+        "en": "Events",
+        "fr": "Événements"
+      },
+      "pitch": {
+        "en": "An agenda of your events and trainings: upcoming dates, a monthly calendar and a detailed page for each date.",
+        "fr": "Un agenda de vos événements et formations : les prochaines dates, un calendrier mensuel et une page détaillée pour chaque date."
+      },
+      "tags": [
+        "agenda",
+        "events",
+        "calendar"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "countdown",
+      "category": "content",
+      "order": 40,
+      "title": {
+        "en": "Countdown",
+        "fr": "Compte à rebours"
+      },
+      "pitch": {
+        "en": "Announce a release, a launch, a birthday or a convention. Visitors see the time left, and the time where they live.",
+        "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention. Les visiteurs voient le temps restant, et l'heure chez eux."
+      },
+      "tags": [
+        "countdown",
+        "launch",
+        "obs"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "videos",
+      "category": "content",
+      "order": 40,
+      "title": {
+        "en": "Video library",
+        "fr": "Vidéothèque"
+      },
+      "pitch": {
+        "en": "A page of YouTube videos without hosting anything: a grid, categories, search, series to watch in order and sharing.",
+        "fr": "Une page de vidéos YouTube sans rien héberger. Une grille, des catégories, une recherche, des séries à voir dans l'ordre."
+      },
+      "tags": [
+        "videos",
+        "youtube",
+        "series"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "sponsors",
+      "category": "content",
+      "order": 60,
+      "title": {
+        "en": "Sponsors",
+        "fr": "Sponsors"
+      },
+      "pitch": {
+        "en": "Shows your sponsors and their promo codes on your site, with the partnership notice that the rules ask for.",
+        "fr": "Affiche vos sponsors et leurs codes promo sur votre site, avec la mention de partenariat que la réglementation demande."
+      },
+      "tags": [
+        "sponsors",
+        "promo codes",
+        "partnership notice"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "codes",
+      "category": "content",
+      "order": 70,
+      "title": {
+        "en": "Promo codes",
+        "fr": "Codes promo"
+      },
+      "pitch": {
+        "en": "Partner offers with a code, a link and an expiry date.",
+        "fr": "Les offres de vos partenaires : un code, un lien et une date d'expiration."
+      },
+      "tags": [
+        "promo codes",
+        "partners",
+        "offers"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "collection",
+      "category": "content",
+      "order": 80,
+      "title": {
+        "en": "Custom collection",
+        "fr": "Collection personnalisée"
+      },
+      "pitch": {
+        "en": "A blank content module: you choose its display, its fields and its behaviour yourself.",
+        "fr": "Un module de contenu vierge : vous choisissez vous-même son affichage, ses champs et son comportement."
+      },
+      "tags": [
+        "custom",
+        "content",
+        "blank"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "legal-pages",
+      "category": "content",
+      "order": 90,
+      "title": {
+        "en": "Legal pages",
+        "fr": "Mentions légales"
+      },
+      "pitch": {
+        "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page. They come in two languages.",
+        "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et celle des cookies. Elles existent en deux langues."
+      },
+      "tags": [
+        "legal",
+        "privacy",
+        "cookies"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "links",
+      "category": "content",
+      "order": 90,
+      "title": {
+        "en": "Link list",
+        "fr": "Liste de liens"
+      },
+      "pitch": {
+        "en": "A list of links with icons: your sites, your projects, your favourite pages. Social networks have their own modules.",
+        "fr": "Une liste de liens avec icônes : vos sites, vos projets, vos pages préférées. Les réseaux sociaux ont leurs propres modules."
+      },
+      "tags": [
+        "links",
+        "icons",
+        "lists"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "map",
+      "category": "content",
+      "order": 100,
+      "title": {
+        "en": "Map",
+        "fr": "Carte"
+      },
+      "pitch": {
+        "en": "A list of useful places, with filters by type, a search and an OpenStreetMap map. Studios, good addresses, events.",
+        "fr": "Une liste de lieux utiles, avec filtres par type, recherche et carte OpenStreetMap. Studios, bonnes adresses, événements."
+      },
+      "tags": [
+        "places",
+        "map",
+        "openstreetmap"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "press-kit",
+      "category": "content",
+      "order": 110,
+      "title": {
+        "en": "Press kit",
+        "fr": "Kit presse"
+      },
+      "pitch": {
+        "en": "A public page that presents your identity to press and partners. Presentation, facts, logos, colours, fonts, contact.",
+        "fr": "Une page publique qui présente votre identité à la presse et aux partenaires. Présentation, faits, logos, couleurs, polices, contact."
+      },
+      "tags": [
+        "press",
+        "brand",
+        "logos"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "twitch-connector",
+      "category": "streaming",
+      "order": 5,
+      "title": {
+        "en": "Twitch connector",
+        "fr": "Connecteur Twitch"
+      },
+      "pitch": {
+        "en": "Links your site to Twitch once, for everything that touches Twitch. A guided setup takes about five minutes.",
+        "fr": "Relie votre site à Twitch une seule fois, pour tout ce qui touche Twitch. Un assistant guidé prend environ cinq minutes."
+      },
+      "tags": [
+        "twitch",
+        "setup",
+        "connection"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "youtube-connector",
+      "category": "streaming",
+      "order": 6,
+      "title": {
+        "en": "YouTube connector",
+        "fr": "Connecteur YouTube"
+      },
+      "pitch": {
+        "en": "Keeps your site's YouTube access in one place. It reads your channel counts and the chat of your live.",
+        "fr": "Garde l'accès YouTube de votre site à un seul endroit. Il lit les chiffres de votre chaîne et le chat de votre direct."
+      },
+      "tags": [
+        "youtube",
+        "setup",
+        "connection"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "planning",
+      "category": "streaming",
+      "order": 10,
+      "title": {
+        "en": "Stream schedule",
+        "fr": "Planning des streams"
+      },
+      "pitch": {
+        "en": "Show your upcoming streams in the look you choose. They come from your Google Calendar or from what you write by hand.",
+        "fr": "Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de votre Google Agenda ou de ce que vous écrivez à la main."
+      },
+      "tags": [
+        "schedule",
+        "streams",
+        "calendar",
+        "obs"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "twitch-bot",
+      "category": "streaming",
+      "order": 20,
+      "title": {
+        "en": "Twitch bot",
+        "fr": "Bot Twitch"
+      },
+      "pitch": {
+        "en": "Your site answers the commands typed in your Twitch chat. It also runs timers, channel point rewards and an emergency stop.",
+        "fr": "Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi les minuteurs, les récompenses de points de chaîne et un arrêt d'urgence."
+      },
+      "tags": [
+        "twitch",
+        "chat",
+        "commands",
+        "rewards",
+        "timers"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "twitch-channel",
+      "category": "streaming",
+      "order": 30,
+      "title": {
+        "en": "My Twitch channel",
+        "fr": "Ma Chaîne Twitch"
+      },
+      "pitch": {
+        "en": "Showcases your Twitch channel: a header button, your live status and your latest clips. Once connected, it adds your followers.",
+        "fr": "Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos derniers clips. Une fois connectée, elle ajoute vos abonnés."
+      },
+      "tags": [
+        "twitch",
+        "channel",
+        "statistics",
+        "clips"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "youtube-channel",
+      "category": "streaming",
+      "order": 35,
+      "title": {
+        "en": "YouTube channel",
+        "fr": "Chaîne YouTube"
+      },
+      "pitch": {
+        "en": "Showcases your YouTube channel. Its most popular recent video, your videos in the site's feed, your counts.",
+        "fr": "Met en avant votre chaîne YouTube. Sa vidéo récente la plus populaire, vos vidéos dans le flux du site, vos chiffres."
+      },
+      "tags": [
+        "youtube",
+        "channel",
+        "videos",
+        "statistics"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "game-suggestions",
+      "category": "streaming",
+      "order": 40,
+      "title": {
+        "en": "Game suggestions",
+        "fr": "Suggestions de jeux"
+      },
+      "pitch": {
+        "en": "Let your audience suggest what to play. A public list shows each game with its status: proposed, planned, played.",
+        "fr": "Laissez votre public suggérer à quoi jouer. Une liste publique montre chaque jeu avec son statut : proposé, prévu, joué."
+      },
+      "tags": [
+        "games",
+        "suggestions",
+        "votes"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "twitch-raid",
+      "category": "streaming",
+      "order": 40,
+      "title": {
+        "en": "Twitch raid",
+        "fr": "Raid Twitch"
+      },
+      "pitch": {
+        "en": "A panel for OBS that shows which partners are live on Twitch, so you can choose who to raid.",
+        "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider."
+      },
+      "tags": [
+        "twitch",
+        "raid",
+        "partners"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "game-covers",
+      "category": "streaming",
+      "order": 50,
+      "title": {
+        "en": "Game covers",
+        "fr": "Jaquettes de jeux"
+      },
+      "pitch": {
+        "en": "Finds the cover of your video games, even when one source is down: RAWG first, then Steam, then Twitch.",
+        "fr": "Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : RAWG d'abord, puis Steam, puis Twitch."
+      },
+      "tags": [
+        "games",
+        "covers",
+        "images"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "calendar-ical",
+      "category": "streaming",
+      "order": 60,
+      "title": {
+        "en": "Online calendar",
+        "fr": "Agenda en ligne"
+      },
+      "pitch": {
+        "en": "Reads your Google Calendar, or any online calendar, so your site can show your streams without retyping anything.",
+        "fr": "Lit votre Google Agenda, ou tout autre agenda en ligne, pour que votre site montre vos streams sans rien retaper."
+      },
+      "tags": [
+        "calendar",
+        "google",
+        "schedule"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "calendar-manual",
+      "category": "streaming",
+      "order": 70,
+      "title": {
+        "en": "Hand-written streams",
+        "fr": "Streams saisis à la main"
+      },
+      "pitch": {
+        "en": "Write your streams here, with day, time, games and weekly repeats. Your site shows them, with no Google account to set up.",
+        "fr": "Écrivez vos streams ici, avec le jour, l'heure, les jeux et les répétitions chaque semaine. Votre site les montre, sans compte Google à régler."
+      },
+      "tags": [
+        "schedule",
+        "streams",
+        "no account"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "discord-announcer",
+      "category": "streaming",
+      "order": 80,
+      "title": {
+        "en": "Discord announcements",
+        "fr": "Annonces Discord"
+      },
+      "pitch": {
+        "en": "Announces your new content on a Discord channel, with no bot or account to link. It also tells your server when you go live.",
+        "fr": "Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relier. Il prévient aussi votre serveur quand vous passez en direct."
+      },
+      "tags": [
+        "discord",
+        "announcements",
+        "live"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "home-assistant",
+      "category": "streaming",
+      "order": 90,
+      "title": {
+        "en": "Home Assistant connector",
+        "fr": "Connecteur Home Assistant"
+      },
+      "pitch": {
+        "en": "Links your channel points to your home: lights, a message read aloud, and actions you name. A big “Cut everything” button stops it all.",
+        "fr": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Un grand bouton « Tout couper » arrête tout."
+      },
+      "tags": [
+        "home",
+        "smart home",
+        "channel points"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "youtube-live-actions",
+      "category": "streaming",
+      "order": 95,
+      "title": {
+        "en": "YouTube live actions",
+        "fr": "Actions du live YouTube"
+      },
+      "pitch": {
+        "en": "When someone supports your YouTube live, with a Super Chat or a membership, an action runs at your place.",
+        "fr": "Quand quelqu'un soutient votre direct YouTube, avec un Super Chat ou un abonnement, une action se déclenche chez vous."
+      },
+      "tags": [
+        "youtube",
+        "super chat",
+        "actions"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "live-status",
+      "category": "streaming",
+      "order": 100,
+      "title": {
+        "en": "Live status",
+        "fr": "Statut du live"
+      },
+      "pitch": {
+        "en": "Shows a “live now” banner and your player on your home page while you are live.",
+        "fr": "Montre une bannière « en direct » et votre lecteur sur votre accueil pendant vos directs."
+      },
+      "tags": [
+        "live",
+        "player",
+        "banner"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "stream-story",
+      "category": "streaming",
+      "order": 110,
+      "title": {
+        "en": "Announcement story",
+        "fr": "Story d'annonce"
+      },
+      "pitch": {
+        "en": "A short animated video that announces one of your upcoming events. It is ready for an Instagram story or a portrait post.",
+        "fr": "Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle est prête pour une story Instagram ou un post en portrait."
+      },
+      "tags": [
+        "video",
+        "story",
+        "announcement"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "polls",
+      "category": "community",
+      "order": 10,
+      "title": {
+        "en": "Polls",
+        "fr": "Sondages"
+      },
+      "pitch": {
+        "en": "Ask your audience a question and watch the answers come in as bars. One vote per person, with no account to create.",
+        "fr": "Posez une question à votre public et regardez les réponses arriver en barres. Un vote par personne, sans compte à créer."
+      },
+      "tags": [
+        "vote",
+        "obs",
+        "audience"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "audience",
+      "category": "community",
+      "order": 20,
+      "title": {
+        "en": "Audience",
+        "fr": "Participation"
+      },
+      "pitch": {
+        "en": "The base of your stream interactions: a nickname per person with no account, a phone remote and a prize draw.",
+        "fr": "La base de vos interactions de stream : un pseudo par personne sans compte, une télécommande et un tirage au sort."
+      },
+      "tags": [
+        "nicknames",
+        "remote",
+        "prize-draw",
+        "live"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "testimonials",
+      "category": "community",
+      "order": 50,
+      "title": {
+        "en": "Testimonials",
+        "fr": "Témoignages"
+      },
+      "pitch": {
+        "en": "Collect reviews from people who like what you do. Every review waits for your approval before it appears.",
+        "fr": "Récoltez les avis des personnes qui aiment ce que vous faites. Chaque avis attend votre accord avant d'apparaître."
+      },
+      "tags": [
+        "reviews",
+        "trust",
+        "moderation"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "thanks-wall",
+      "category": "community",
+      "order": 60,
+      "title": {
+        "en": "Thank-you wall",
+        "fr": "Mur des remerciements"
+      },
+      "pitch": {
+        "en": "A thank-you page for your community: cards with photos, and one person in the spotlight each month. Names stay in Contacts.",
+        "fr": "Une page de remerciements pour votre communauté : des cartes avec photo, et une personne à l'honneur chaque mois. Les noms restent dans Contacts."
+      },
+      "tags": [
+        "thanks",
+        "supporters",
+        "people"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "commissions",
+      "category": "community",
+      "order": 70,
+      "title": {
+        "en": "Commissions",
+        "fr": "Commandes"
+      },
+      "pitch": {
+        "en": "A clear queue for anyone who creates on request: open, full or closed, with your packages and a short form.",
+        "fr": "Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec vos formules et un court formulaire."
+      },
+      "tags": [
+        "commissions",
+        "requests",
+        "queue"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "contact-form",
+      "category": "community",
+      "order": 80,
+      "title": {
+        "en": "Contact form",
+        "fr": "Formulaire de contact"
+      },
+      "pitch": {
+        "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+        "fr": "Ajoute un formulaire de contact sous une page de votre choix. Chaque message devient un contact à relire dans votre carnet d'adresses."
+      },
+      "tags": [
+        "contact",
+        "form",
+        "messages"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "daily-game",
+      "category": "community",
+      "order": 90,
+      "title": {
+        "en": "Daily game",
+        "fr": "Jeu du jour"
+      },
+      "pitch": {
+        "en": "A small game once a day, to give people a reason to come back. One question, a few answers, an explanation.",
+        "fr": "Un petit jeu par jour, pour donner envie de revenir. Une question, quelques réponses, une explication."
+      },
+      "tags": [
+        "game",
+        "daily",
+        "quiz"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "directory",
+      "category": "community",
+      "order": 100,
+      "title": {
+        "en": "Directory",
+        "fr": "Annuaire"
+      },
+      "pitch": {
+        "en": "A public showcase of your members, creators or partners, and of your team. Visitors search, filter and open a profile.",
+        "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe. Les visiteurs cherchent, filtrent et ouvrent un profil."
+      },
+      "tags": [
+        "members",
+        "creators",
+        "partners"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "idea-box",
+      "category": "community",
+      "order": 110,
+      "title": {
+        "en": "Idea box",
+        "fr": "Boîte à idées"
+      },
+      "pitch": {
+        "en": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep, each with a support button.",
+        "fr": "Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une liste des idées que vous gardez, chacune avec un bouton de soutien."
+      },
+      "tags": [
+        "ideas",
+        "feedback",
+        "votes"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "supporters",
+      "category": "community",
+      "order": 120,
+      "title": {
+        "en": "Supporters",
+        "fr": "Soutiens"
+      },
+      "pitch": {
+        "en": "Thank your supporters from a patronage platform. The public page shows only the nicknames they accepted.",
+        "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos qu'ils ont acceptés."
+      },
+      "tags": [
+        "patronage",
+        "supporters",
+        "thanks"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "alerts-overlay",
+      "category": "looks",
+      "order": 10,
+      "title": {
+        "en": "Alerts overlay (OBS)",
+        "fr": "Overlay alertes (OBS)"
+      },
+      "pitch": {
+        "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
+        "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+      },
+      "tags": [
+        "obs",
+        "alerts",
+        "overlay"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "hero",
+      "category": "looks",
+      "order": 20,
+      "title": {
+        "en": "Home banner",
+        "fr": "Bandeau d'accueil"
+      },
+      "pitch": {
+        "en": "A big title and an intro for the top of your home page. You place its section where you want it.",
+        "fr": "Un grand titre et une introduction pour le haut de votre page d'accueil. Vous placez sa section où vous voulez."
+      },
+      "tags": [
+        "home",
+        "banner",
+        "title"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "mascot",
+      "category": "looks",
+      "order": 30,
+      "title": {
+        "en": "Mascot",
+        "fr": "Mascotte"
+      },
+      "pitch": {
+        "en": "A small, discreet character in a corner of your site. It says hello, gives a tip or announces something new, then steps aside.",
+        "fr": "Un petit personnage discret dans un coin de votre site. Il dit bonjour, donne un conseil ou annonce une nouveauté, puis s'efface."
+      },
+      "tags": [
+        "mascot",
+        "character",
+        "tips"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "maze-overlay",
+      "category": "looks",
+      "order": 40,
+      "title": {
+        "en": "3D maze overlay (OBS)",
+        "fr": "Overlay labyrinthe 3D (OBS)"
+      },
+      "pitch": {
+        "en": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",
+        "fr": "Un labyrinthe 3D rétro pour OBS. Le marcheur parcourt les couloirs et s'arrête devant des affiches faites avec le contenu de votre site."
+      },
+      "tags": [
+        "obs",
+        "3d",
+        "retro",
+        "overlay"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "sponsor-ticker",
+      "category": "looks",
+      "order": 50,
+      "title": {
+        "en": "Sponsor ticker overlay (OBS)",
+        "fr": "Overlay sponsors (OBS)"
+      },
+      "pitch": {
+        "en": "A lower-third banner for OBS. From time to time it shows one sponsor, with its promo code and a QR code.",
+        "fr": "Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponsor, avec son code promo et un code QR."
+      },
+      "tags": [
+        "obs",
+        "sponsors",
+        "qr code"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "ticker-overlay",
+      "category": "looks",
+      "order": 60,
+      "title": {
+        "en": "Ticker overlay (OBS)",
+        "fr": "Overlay défilant (OBS)"
+      },
+      "pitch": {
+        "en": "A transparent browser source for OBS that rotates cards from your site, such as promo codes, articles and announcements.",
+        "fr": "Une source navigateur transparente pour OBS. Elle fait défiler des cartes de votre site : codes promo, articles, annonces."
+      },
+      "tags": [
+        "obs",
+        "banner",
+        "cards"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "platform-links",
+      "category": "social",
+      "order": 5,
+      "title": {
+        "en": "Other platforms",
+        "fr": "Autres plateformes"
+      },
+      "pitch": {
+        "en": "Add any other platform as an icon next to your social networks. An optional notice page (18+) can open first.",
+        "fr": "Ajoutez n'importe quelle autre plateforme en icône à côté de vos réseaux. Une page d'avertissement (18+) peut s'ouvrir d'abord."
+      },
+      "tags": [
+        "links",
+        "platforms",
+        "18+"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "bandcamp",
+      "category": "social",
+      "order": 10,
+      "title": {
+        "en": "Bandcamp",
+        "fr": "Bandcamp"
+      },
+      "pitch": {
+        "en": "A Bandcamp button in your site header, with your own link.",
+        "fr": "Un bouton Bandcamp dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "bandcamp",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "bluesky",
+      "category": "social",
+      "order": 20,
+      "title": {
+        "en": "Bluesky",
+        "fr": "Bluesky"
+      },
+      "pitch": {
+        "en": "A Bluesky button in your site header, plus your followers and posts.",
+        "fr": "Un bouton Bluesky dans l'en-tête de votre site, et vos abonnés et publications."
+      },
+      "tags": [
+        "bluesky",
+        "button",
+        "statistics"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "discord",
+      "category": "social",
+      "order": 30,
+      "title": {
+        "en": "Discord",
+        "fr": "Discord"
+      },
+      "pitch": {
+        "en": "A Discord button in your site header, plus your members (an approximate number).",
+        "fr": "Un bouton Discord dans l'en-tête de votre site, et vos membres (un nombre approximatif)."
+      },
+      "tags": [
+        "discord",
+        "button",
+        "statistics"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "facebook",
+      "category": "social",
+      "order": 40,
+      "title": {
+        "en": "Facebook",
+        "fr": "Facebook"
+      },
+      "pitch": {
+        "en": "A Facebook button in your site header, with your own link.",
+        "fr": "Un bouton Facebook dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "facebook",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "github",
+      "category": "social",
+      "order": 50,
+      "title": {
+        "en": "GitHub",
+        "fr": "GitHub"
+      },
+      "pitch": {
+        "en": "A GitHub button in your site header, plus your followers.",
+        "fr": "Un bouton GitHub dans l'en-tête de votre site, et vos abonnés."
+      },
+      "tags": [
+        "github",
+        "button",
+        "statistics"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "instagram",
+      "category": "social",
+      "order": 60,
+      "title": {
+        "en": "Instagram",
+        "fr": "Instagram"
+      },
+      "pitch": {
+        "en": "A Instagram button in your site header, with your own link.",
+        "fr": "Un bouton Instagram dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "instagram",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "kick",
+      "category": "social",
+      "order": 70,
+      "title": {
+        "en": "Kick",
+        "fr": "Kick"
+      },
+      "pitch": {
+        "en": "A Kick button in your site header, with your own link.",
+        "fr": "Un bouton Kick dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "kick",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "kofi",
+      "category": "social",
+      "order": 80,
+      "title": {
+        "en": "Ko-fi",
+        "fr": "Ko-fi"
+      },
+      "pitch": {
+        "en": "A Ko-fi button in your site header, with your own link.",
+        "fr": "Un bouton Ko-fi dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "ko-fi",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "mastodon",
+      "category": "social",
+      "order": 90,
+      "title": {
+        "en": "Mastodon",
+        "fr": "Mastodon"
+      },
+      "pitch": {
+        "en": "A Mastodon button in your site header, plus your followers and posts.",
+        "fr": "Un bouton Mastodon dans l'en-tête de votre site, et vos abonnés et publications."
+      },
+      "tags": [
+        "mastodon",
+        "button",
+        "statistics"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "patreon",
+      "category": "social",
+      "order": 100,
+      "title": {
+        "en": "Patreon",
+        "fr": "Patreon"
+      },
+      "pitch": {
+        "en": "A Patreon button in your site header, with your own link.",
+        "fr": "Un bouton Patreon dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "patreon",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "pinterest",
+      "category": "social",
+      "order": 110,
+      "title": {
+        "en": "Pinterest",
+        "fr": "Pinterest"
+      },
+      "pitch": {
+        "en": "A Pinterest button in your site header, with your own link.",
+        "fr": "Un bouton Pinterest dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "pinterest",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "reddit",
+      "category": "social",
+      "order": 120,
+      "title": {
+        "en": "Reddit",
+        "fr": "Reddit"
+      },
+      "pitch": {
+        "en": "A Reddit button in your site header, plus your followers.",
+        "fr": "Un bouton Reddit dans l'en-tête de votre site, et vos abonnés."
+      },
+      "tags": [
+        "reddit",
+        "button",
+        "statistics"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "snapchat",
+      "category": "social",
+      "order": 130,
+      "title": {
+        "en": "Snapchat",
+        "fr": "Snapchat"
+      },
+      "pitch": {
+        "en": "A Snapchat button in your site header, with your own link.",
+        "fr": "Un bouton Snapchat dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "snapchat",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "soundcloud",
+      "category": "social",
+      "order": 140,
+      "title": {
+        "en": "SoundCloud",
+        "fr": "SoundCloud"
+      },
+      "pitch": {
+        "en": "A SoundCloud button in your site header, with your own link.",
+        "fr": "Un bouton SoundCloud dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "soundcloud",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "spotify",
+      "category": "social",
+      "order": 150,
+      "title": {
+        "en": "Spotify",
+        "fr": "Spotify"
+      },
+      "pitch": {
+        "en": "A Spotify button in your site header, with your own link.",
+        "fr": "Un bouton Spotify dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "spotify",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "steam",
+      "category": "social",
+      "order": 160,
+      "title": {
+        "en": "Steam",
+        "fr": "Steam"
+      },
+      "pitch": {
+        "en": "A Steam button in your site header, with your own link.",
+        "fr": "Un bouton Steam dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "steam",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "telegram",
+      "category": "social",
+      "order": 170,
+      "title": {
+        "en": "Telegram",
+        "fr": "Telegram"
+      },
+      "pitch": {
+        "en": "A Telegram button in your site header, with your own link.",
+        "fr": "Un bouton Telegram dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "telegram",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "threads",
+      "category": "social",
+      "order": 180,
+      "title": {
+        "en": "Threads",
+        "fr": "Threads"
+      },
+      "pitch": {
+        "en": "A Threads button in your site header, with your own link.",
+        "fr": "Un bouton Threads dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "threads",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "tiktok",
+      "category": "social",
+      "order": 190,
+      "title": {
+        "en": "TikTok",
+        "fr": "TikTok"
+      },
+      "pitch": {
+        "en": "A TikTok button in your site header, with your own link.",
+        "fr": "Un bouton TikTok dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "tiktok",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "x-twitter",
+      "category": "social",
+      "order": 200,
+      "title": {
+        "en": "X (Twitter)",
+        "fr": "X (Twitter)"
+      },
+      "pitch": {
+        "en": "A X button in your site header, with your own link.",
+        "fr": "Un bouton X dans l'en-tête de votre site, avec votre propre lien."
+      },
+      "tags": [
+        "x",
+        "button"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "contacts",
+      "category": "tools",
+      "order": 10,
+      "title": {
+        "en": "Contacts",
+        "fr": "Contacts"
+      },
+      "pitch": {
+        "en": "Your private address book: people and organisations, their accounts on the networks, categories, notes and a photo.",
+        "fr": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux, des catégories, des notes et une photo."
+      },
+      "tags": [
+        "address book",
+        "people",
+        "private"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "community-stats",
+      "category": "tools",
+      "order": 20,
+      "title": {
+        "en": "Community statistics",
+        "fr": "Statistiques de la communauté"
+      },
+      "pitch": {
+        "en": "Keeps the numbers of your networks, such as followers, paying followers, posts and views, and how they evolve.",
+        "fr": "Garde les chiffres de vos réseaux, comme les abonnés, les abonnés payants, les publications et les vues, et leur évolution."
+      },
+      "tags": [
+        "statistics",
+        "followers",
+        "history"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "content-planner",
+      "category": "tools",
+      "order": 30,
+      "title": {
+        "en": "Content notebook",
+        "fr": "Cahier de contenu"
+      },
+      "pitch": {
+        "en": "Your private notebook for videos, articles and posts. Ideas, work in progress, published: with steps to tick off.",
+        "fr": "Votre carnet privé pour vos vidéos, articles et publications. Idées, travaux en cours, publiés : avec des étapes à cocher."
+      },
+      "tags": [
+        "ideas",
+        "planning",
+        "private"
+      ],
+      "shots": 0
+    },
+    {
+      "id": "partnerships",
+      "category": "tools",
+      "order": 40,
+      "title": {
+        "en": "Partnerships (internal)",
+        "fr": "Partenariats (interne)"
+      },
+      "pitch": {
+        "en": "Your private partnership pipeline: the brands you approach, their status, follow-ups and a journal. It has no public page.",
+        "fr": "Votre suivi privé des partenariats : les marques que vous approchez, leur statut, les relances et un journal. Il n'a aucune page publique."
+      },
+      "tags": [
+        "partners",
+        "brands",
+        "pipeline"
+      ],
+      "shots": 0
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "commissions",
+  "category": "community",
+  "tags": [
+    "commissions",
+    "requests",
+    "queue"
+  ],
+  "order": 70,
+  "title": {
+    "en": "Commissions",
+    "fr": "Commandes"
+  },
+  "summary": {
+    "en": "A clear queue for anyone who creates on request: open, full or closed, with your packages and a short form.",
+    "fr": "Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec vos formules et un court formulaire."
+  },
+  "pitch": {
+    "en": "A clear queue for anyone who creates on request: open, full or closed, with your packages and a short form.",
+    "fr": "Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec vos formules et un court formulaire."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "contacts"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/commissions/module.json",
+    "modules/commissions/README.md"
+  ]
+}

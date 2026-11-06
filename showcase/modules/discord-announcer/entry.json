@@ -1,0 +1,36 @@
+{
+  "id": "discord-announcer",
+  "category": "streaming",
+  "tags": [
+    "discord",
+    "announcements",
+    "live"
+  ],
+  "order": 80,
+  "title": {
+    "en": "Discord announcements",
+    "fr": "Annonces Discord"
+  },
+  "summary": {
+    "en": "Announces your new content on a Discord channel, with no bot or account to link. It also tells your server when you go live.",
+    "fr": "Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relier. Il prévient aussi votre serveur quand vous passez en direct."
+  },
+  "pitch": {
+    "en": "Announces your new content on a Discord channel, with no bot or account to link. It also tells your server when you go live.",
+    "fr": "Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relier. Il prévient aussi votre serveur quand vous passez en direct."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "discord",
+    "youtube-channel",
+    "twitch-channel"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/discord-announcer/module.json",
+    "modules/discord-announcer/README.md"
+  ]
+}

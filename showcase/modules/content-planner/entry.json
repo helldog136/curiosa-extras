@@ -1,0 +1,35 @@
+{
+  "id": "content-planner",
+  "category": "tools",
+  "tags": [
+    "ideas",
+    "planning",
+    "private"
+  ],
+  "order": 30,
+  "title": {
+    "en": "Content notebook",
+    "fr": "Cahier de contenu"
+  },
+  "summary": {
+    "en": "Your private notebook for videos, articles and posts. Ideas, work in progress, published: with steps to tick off.",
+    "fr": "Votre carnet privé pour vos vidéos, articles et publications. Idées, travaux en cours, publiés : avec des étapes à cocher."
+  },
+  "pitch": {
+    "en": "Your private notebook for videos, articles and posts. Ideas, work in progress, published: with steps to tick off.",
+    "fr": "Votre carnet privé pour vos vidéos, articles et publications. Idées, travaux en cours, publiés : avec des étapes à cocher."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.1",
+  "requires": [],
+  "worksWith": [
+    "planning",
+    "blog"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/content-planner/module.json",
+    "modules/content-planner/README.md"
+  ]
+}

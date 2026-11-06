@@ -1,0 +1,35 @@
+{
+  "id": "live-status",
+  "category": "streaming",
+  "tags": [
+    "live",
+    "player",
+    "banner"
+  ],
+  "order": 100,
+  "title": {
+    "en": "Live status",
+    "fr": "Statut du live"
+  },
+  "summary": {
+    "en": "Shows a “live now” banner and your player on your home page while you are live.",
+    "fr": "Montre une bannière « en direct » et votre lecteur sur votre accueil pendant vos directs."
+  },
+  "pitch": {
+    "en": "Shows a “live now” banner and your player on your home page while you are live.",
+    "fr": "Montre une bannière « en direct » et votre lecteur sur votre accueil pendant vos directs."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.4.3",
+  "requires": [],
+  "worksWith": [
+    "twitch-channel",
+    "youtube-channel"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/live-status/module.json",
+    "modules/live-status/README.md"
+  ]
+}

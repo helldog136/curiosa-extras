@@ -48,5 +48,6 @@ jobs:
       - run: npm ci --ignore-scripts && npx prisma generate
         working-directory: core
       - run: node scripts/build-index.mjs --check
+      - run: node scripts/showcase-check.mjs
       - run: node scripts/test.mjs
         env: { CURIOSA_DIR: core, HOT_UPDATE_REQUIRE_HISTORY: "1" }

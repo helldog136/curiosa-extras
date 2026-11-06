@@ -1,0 +1,37 @@
+{
+  "id": "contacts",
+  "category": "tools",
+  "tags": [
+    "address book",
+    "people",
+    "private"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Contacts",
+    "fr": "Contacts"
+  },
+  "summary": {
+    "en": "Your private address book: people and organisations, their accounts on the networks, categories, notes and a photo.",
+    "fr": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux, des catégories, des notes et une photo."
+  },
+  "pitch": {
+    "en": "Your private address book: people and organisations, their accounts on the networks, categories, notes and a photo.",
+    "fr": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux, des catégories, des notes et une photo."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.4.1",
+  "requires": [],
+  "worksWith": [
+    "partnerships",
+    "directory",
+    "thanks-wall",
+    "twitch-raid"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/contacts/module.json",
+    "modules/contacts/README.md"
+  ]
+}

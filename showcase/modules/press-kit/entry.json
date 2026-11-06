@@ -1,0 +1,35 @@
+{
+  "id": "press-kit",
+  "category": "content",
+  "tags": [
+    "press",
+    "brand",
+    "logos"
+  ],
+  "order": 110,
+  "title": {
+    "en": "Press kit",
+    "fr": "Kit presse"
+  },
+  "summary": {
+    "en": "A public page that presents your identity to press and partners. Presentation, facts, logos, colours, fonts, contact.",
+    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires. Présentation, faits, logos, couleurs, polices, contact."
+  },
+  "pitch": {
+    "en": "A public page that presents your identity to press and partners. Presentation, facts, logos, colours, fonts, contact.",
+    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires. Présentation, faits, logos, couleurs, polices, contact."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "pages",
+    "legal-pages"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/press-kit/module.json",
+    "modules/press-kit/README.md"
+  ]
+}
