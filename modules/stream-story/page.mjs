@@ -1,12 +1,12 @@
-// La page de l'éditeur (servie par la route `studio`, dans un cadre du panneau d'administration) et les fichiers de code qu'elle charge (route `lib/…`).
-// La page ne contient AUCUNE donnée de la personne : seulement des phrases, des couleurs et des réglages. Les données arrivent par les routes protégées par un jeton.
+// The editor page (served by the `studio` route, in a frame of the administration panel) and the code files it loads (`lib/…` route).
+// The page contains NO data of the person: only sentences, colours and settings. The data arrives by the routes protected by a token.
 import { readFile } from "node:fs/promises";
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+const v = new URL(import.meta.url).search; // the module version spreads to the neighbouring files (otherwise the old code would stay in cache after an update)
 const P = await import(`./pure.mjs${v}`);
 
 const LINE_SEPARATORS = new RegExp(`[${String.fromCharCode(0x2028, 0x2029)}]`, "g");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-/** Les phrases de la page (clés `ui_…` des locales, sans le préfixe). */
+/** The sentences of the page (`ui_…` keys of the locales, without the prefix). */
 export const KEYS = [
   "title", "no_access", "no_access_hint", "prep_note", "prep_expired", "prep_stream_gone", "help_intro",
   "h_event", "event_next", "event_started", "event_change", "event_change_close", "event_manual_tag", "event_pick_title", "event_same", "steps_label", "step_1", "step_2", "step_3", "prev", "next_look", "next_video", "gen_now", "h_video", "recap_intro", "recap_edit_hint", "recap_event", "recap_style", "recap_format", "recap_text", "recap_mark", "recap_people", "recap_yes", "recap_no", "recap_none", "recap_none_f", "recap_edit", "recap_edit_aria", "step_now", "adv_label", "adv_help", "h_advanced", "progress_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "event_chosen", "event_none_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match", "event_count", "event_more", "event_capped",
@@ -28,10 +28,10 @@ export const KEYS = [
 ];
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`ui_${k}`)]));
 
-/** Les fichiers que la page charge : la liste est fermée (jamais un nom donné par la requête). */
+/** The files the page loads: the list is closed (never a name given by the request). */
 export const LIB = ["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
 const sourceCache = new Map();
-/** La police du nom « Curiosa » (copie exacte du fichier du cœur, licence SIL OFL à côté) : servie par le module lui-même, aucun appel extérieur. */
+/** The font of the name "Curiosa" (exact copy of the core's file, SIL OFL licence next to it): served by the module itself, no outside call. */
 let fontBytes = null;
 export async function wordmarkFont() { return (fontBytes ??= await readFile(new URL("./curiosa-wordmark.woff2", import.meta.url))); }
 export async function libSource(name) {
@@ -115,7 +115,7 @@ details.sub-d{border:1px solid var(--line);border-radius:10px;background:var(--f
 button.busy{position:relative}button[aria-busy=true]{cursor:progress}
 `;
 
-/** La page. `cfg` : ce que l'éditeur sait déjà (couleurs, fuseau, adresse des routes). */
+/** The page. `cfg`: what the editor already knows (colours, time zone, address of the routes). */
 export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg }) {
   const T = (k) => esc(ctx.t(`ui_${k}`));
   const lang = ctx.locale === "en" ? "en" : "fr";

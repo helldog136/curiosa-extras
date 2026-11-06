@@ -11,7 +11,6 @@ export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collag
 export const EXTRA_WORDS = { fr: { next: "À SUIVRE", start: "START" }, en: { next: "UP NEXT", start: "START" } };
 
 /* ───────────── Time and easing ───────────── */
-const xLerp = (a, b, k) => a + (b - a) * k;
 const xOutQuart = (x) => 1 - (1 - clamp01(x)) ** 4;
 const xOutExpo = (x) => { const t = clamp01(x); return t >= 1 ? 1 : 1 - 2 ** (-10 * t); };
 const xInOutQuart = (x) => { const t = clamp01(x); return t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2; };
@@ -209,7 +208,7 @@ function xHas(K) {
  * Returns { blocks, boxes, scale, draw(ctx, t) } (no watermark: scenes.mjs draws it on top).
  */
 export function createExtraScene(K) {
-  K.D = K.duration; K.has = xHas(K); K.lang = K.lang === "en" ? "en" : "fr"; K.xw = EXTRA_WORDS[K.lang];
+  K.D = K.duration; K.has = xHas(K); K.xw = EXTRA_WORDS[K.lang] ?? EXTRA_WORDS.en;   // `lang` is already "fr" or "en" (createScene)
   const spec = STYLE_IMPL[K.style](K);
   const { blocks, u, A } = xLayout(K, spec);
   K.u = u;
@@ -837,7 +836,7 @@ function styleCollage(K) {
     } else if (b.id === "when") {
       piece(ctx, i, tq, s, cx, cy, b.a, () => {
         xPaper(ctx, b.iw + b.tag * 2, b.ih + b.tag * 2, 303, { fill: pal.cream, shadow: 0.3, at: c });
-        const st = 1 + 0.35 * (1 - xOutQuart(progress(tq, s + L * 0.5, 0.3))), ink = pal.accent2;
+        const st = 1 + 0.35 * (1 - xOutBack(progress(tq, s + L * 0.5, 0.3))), ink = pal.accent2;   // the stamp presses down: a restrained overshoot, the only one of the six styles
         ctx.save(); ctx.translate(cx, cy); ctx.rotate(0.05); ctx.scale(st, st); ctx.translate(-cx, -cy); ctx.globalAlpha = clamp01(progress(tq, s + L * 0.45, 0.2)) * 0.94;
         const w = b.iw, h = b.ih, bw = Math.max(5, b.sp * 0.22);
         ctx.strokeStyle = ink; ctx.lineWidth = bw; ctx.strokeRect(cx - w / 2, cy - h / 2, w, h); ctx.lineWidth = Math.max(2, bw * 0.4); ctx.strokeRect(cx - w / 2 + bw * 2, cy - h / 2 + bw * 2, w - bw * 4, h - bw * 4);

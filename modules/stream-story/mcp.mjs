@@ -1,29 +1,29 @@
-// Les outils pour l'IA. Deux lectures (les modèles, les prochains streams) et UNE préparation : l'IA n'écrit rien d'autre qu'une « préparation » (des réglages gardés 7 jours)
-// et reçoit un LIEN. La vidéo, elle, se fabrique dans le navigateur de la personne, qui ouvre le lien (connectée à l'administration : ses droits restent les siens) et clique.
-// Toutes les entrées de l'IA sont vérifiées une à une ; rien n'est jamais lu comme du HTML (le texte est dessiné avec `fillText`).
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+// The tools for the AI. Two reads (the models, the next streams) and ONE preparation: the AI writes nothing but a "preparation" (settings kept 7 days)
+// and receives a LINK. The video itself is made in the browser of the person, who opens the link (signed in to the administration: their rights stay theirs) and clicks.
+// Every input from the AI is checked one by one; nothing is ever read as HTML (the text is drawn with `fillText`).
+const v = new URL(import.meta.url).search; // the module version spreads to the neighbouring files (otherwise the old code would stay in cache after an update)
 const P = await import(`./pure.mjs${v}`);
 const E = await import(`./events.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 
 /**
- * Un modèle tel que l'IA le voit. Les co-streamers sont rendus par leur NOM (celui que Contacts donne à la fiche, ou le pseudo saisi à la main) : `names` est une Map
- * identifiant de fiche → nom ; une fiche que Contacts ne connaît plus (ou que l'on n'a pas pu lire) est simplement omise.
+ * A model as the AI sees it. The guest streamers are given by their NAME (the one Contacts gives to the card, or the handle typed by hand): `names` is a Map
+ * card identifier → name; a card that Contacts no longer knows (or that could not be read) is simply left out.
  */
 export const publicModel = (m, names = new Map()) => ({
   name: m.name, style: m.config.style, format: m.config.format, durationSeconds: m.config.duration, elements: m.config.elements, text: m.config.text, channelName: m.config.channelName,
   costreamers: m.config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), language: m.config.lang,
 });
 
-/** Un modèle pour la sauvegarde lisible : les co-streamers y sont des références (`contactId`) ou des saisies ponctuelles (pseudo, nom, photo). */
+/** A model for the readable backup: the guest streamers there are references (`contactId`) or one-off entries (handle, name, photo). */
 export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.costreamers.map((e) => (e.id ? { contactId: e.id } : { login: e.login, name: e.name, image: e.image })) });
 
 /**
- * Vérifie ce que l'IA demande et en tire { config, manual } (réglages complets et stream manuel éventuel) ; lève une erreur claire (visible de l'IA) sinon.
- * `models` : les modèles enregistrés. Un modèle sert de point de départ ; les autres valeurs le complètent ou le remplacent.
- * `watermarkDefault` : la valeur de la case « Made with Curiosa » de la personne, utilisée quand l'IA ne dit rien.
- * `events` : les événements à venir de toutes les sources (pour `event`) ; `sourcesDown` : toutes les sources se sont tues (le message le dit).
+ * Checks what the AI asks and draws { config, manual } from it (complete settings and the hand-written stream, if any); throws a clear error (visible to the AI) otherwise.
+ * `models`: the saved models. A model is the starting point; the other values complete or replace it.
+ * `watermarkDefault`: the value of the person's "Made with Curiosa" box, used when the AI says nothing.
+ * `events`: the upcoming events of all sources (for `event`); `sourcesDown`: all sources went silent (the message says so).
  */
 export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false }) {
   const a = args && typeof args === "object" ? args : {};
@@ -34,7 +34,7 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     if (!m) throw expose(`No saved model named '${P.oneLine(a.model, 60)}'. Call story_models to list them.`);
     base = m.config;
   }
-  const next = { ...base, watermark: watermarkDefault === true };   // la mention : le réglage de la personne, sauf si l'IA le dit autrement (jamais un modèle)
+  const next = { ...base, watermark: watermarkDefault === true };   // the mention: the person's setting, unless the AI says otherwise (never a model)
   if (a.watermark !== undefined) { if (typeof a.watermark !== "boolean") throw expose("'watermark' must be true or false."); next.watermark = a.watermark; }
   if (a.style !== undefined) { if (!P.STYLES.includes(a.style)) throw expose(`'style' must be one of: ${P.STYLES.join(", ")}.`); next.style = a.style; }
   if (a.format !== undefined) { if (!P.FORMATS.some((f) => f.id === a.format)) throw expose(`'format' must be one of: ${P.FORMATS.map((f) => f.id).join(", ")}.`); next.format = a.format; }
@@ -49,7 +49,7 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     if (bad !== undefined) throw expose(`Unknown element '${P.oneLine(bad, 30)}'. Allowed: ${P.ELEMENTS.join(", ")}.`);
     next.elements = P.ELEMENTS.filter((e) => a.elements.includes(e));
   }
-  // Le style « countdown » dessine les grands chiffres du compte à rebours : sans liste d'éléments donnée, l'élément est ajouté (une liste donnée est respectée telle quelle).
+  // The "countdown" style draws the big numbers of the countdown: with no list of elements given, the element is added (a given list is respected as it is).
   if (a.elements === undefined && a.style === "countdown") next.elements = P.elementsForStyle("countdown", next.elements);
   if (a.text !== undefined) { if (typeof a.text !== "string" || [...a.text].length > P.LIMITS.text) throw expose(`'text' must be a text of at most ${P.LIMITS.text} characters.`); next.text = P.freeText(a.text, P.LIMITS.text); }
   if (a.channelName !== undefined) { if (typeof a.channelName !== "string" || [...a.channelName].length > P.LIMITS.channelName) throw expose(`'channelName' must be a text of at most ${P.LIMITS.channelName} characters.`); next.channelName = P.oneLine(a.channelName, P.LIMITS.channelName); }
