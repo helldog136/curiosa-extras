@@ -1,0 +1,37 @@
+{
+  "id": "events",
+  "category": "content",
+  "tags": [
+    "agenda",
+    "events",
+    "calendar"
+  ],
+  "order": 30,
+  "title": {
+    "en": "Events",
+    "fr": "Événements"
+  },
+  "summary": {
+    "en": "An agenda of your events and trainings: upcoming dates, a monthly calendar and a detailed page for each date.",
+    "fr": "Un agenda de vos événements et formations : les prochaines dates, un calendrier mensuel et une page détaillée pour chaque date."
+  },
+  "pitch": {
+    "en": "An agenda of your events and trainings: upcoming dates, a monthly calendar and a detailed page for each date.",
+    "fr": "Un agenda de vos événements et formations : les prochaines dates, un calendrier mensuel et une page détaillée pour chaque date."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "gallery",
+    "videos",
+    "mascot",
+    "stream-story"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/events/module.json",
+    "modules/events/README.md"
+  ]
+}

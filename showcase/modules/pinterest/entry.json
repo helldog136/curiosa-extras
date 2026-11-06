@@ -1,0 +1,31 @@
+{
+  "id": "pinterest",
+  "category": "social",
+  "tags": [
+    "pinterest",
+    "button"
+  ],
+  "order": 110,
+  "title": {
+    "en": "Pinterest",
+    "fr": "Pinterest"
+  },
+  "summary": {
+    "en": "A Pinterest button in your site header, with your own link.",
+    "fr": "Un bouton Pinterest dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Pinterest button in your site header, with your own link.",
+    "fr": "Un bouton Pinterest dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/pinterest/module.json",
+    "modules/pinterest/README.md"
+  ]
+}

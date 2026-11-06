@@ -1,0 +1,36 @@
+{
+  "id": "twitch-connector",
+  "category": "streaming",
+  "tags": [
+    "twitch",
+    "setup",
+    "connection"
+  ],
+  "order": 5,
+  "title": {
+    "en": "Twitch connector",
+    "fr": "Connecteur Twitch"
+  },
+  "summary": {
+    "en": "Links your site to Twitch once, for everything that touches Twitch. A guided setup takes about five minutes.",
+    "fr": "Relie votre site à Twitch une seule fois, pour tout ce qui touche Twitch. Un assistant guidé prend environ cinq minutes."
+  },
+  "pitch": {
+    "en": "Links your site to Twitch once, for everything that touches Twitch. A guided setup takes about five minutes.",
+    "fr": "Relie votre site à Twitch une seule fois, pour tout ce qui touche Twitch. Un assistant guidé prend environ cinq minutes."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.3.0",
+  "requires": [],
+  "worksWith": [
+    "twitch-channel",
+    "twitch-bot",
+    "twitch-raid"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/twitch-connector/module.json",
+    "modules/twitch-connector/README.md"
+  ]
+}

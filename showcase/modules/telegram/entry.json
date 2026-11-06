@@ -1,0 +1,31 @@
+{
+  "id": "telegram",
+  "category": "social",
+  "tags": [
+    "telegram",
+    "button"
+  ],
+  "order": 170,
+  "title": {
+    "en": "Telegram",
+    "fr": "Telegram"
+  },
+  "summary": {
+    "en": "A Telegram button in your site header, with your own link.",
+    "fr": "Un bouton Telegram dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Telegram button in your site header, with your own link.",
+    "fr": "Un bouton Telegram dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/telegram/module.json",
+    "modules/telegram/README.md"
+  ]
+}

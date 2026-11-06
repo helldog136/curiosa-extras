@@ -1,0 +1,32 @@
+{
+  "id": "faq",
+  "category": "content",
+  "tags": [
+    "questions",
+    "support",
+    "search"
+  ],
+  "order": 10,
+  "title": {
+    "en": "FAQ",
+    "fr": "Questions fréquentes"
+  },
+  "summary": {
+    "en": "A page of questions and answers, grouped by category, that open and close. Visitors can search and ask their own question.",
+    "fr": "Une page de questions et réponses, classées par catégorie, qui s'ouvrent et se ferment. Les visiteurs peuvent chercher et poser leur question."
+  },
+  "pitch": {
+    "en": "A page of questions and answers, grouped by category, that open and close. Visitors can search and ask their own question.",
+    "fr": "Une page de questions et réponses, classées par catégorie, qui s'ouvrent et se ferment. Les visiteurs peuvent chercher et poser leur question."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.3",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/faq/module.json",
+    "modules/faq/README.md"
+  ]
+}

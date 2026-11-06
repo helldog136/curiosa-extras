@@ -1,0 +1,31 @@
+{
+  "id": "spotify",
+  "category": "social",
+  "tags": [
+    "spotify",
+    "button"
+  ],
+  "order": 150,
+  "title": {
+    "en": "Spotify",
+    "fr": "Spotify"
+  },
+  "summary": {
+    "en": "A Spotify button in your site header, with your own link.",
+    "fr": "Un bouton Spotify dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Spotify button in your site header, with your own link.",
+    "fr": "Un bouton Spotify dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/spotify/module.json",
+    "modules/spotify/README.md"
+  ]
+}

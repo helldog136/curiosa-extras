@@ -1,0 +1,34 @@
+{
+  "id": "bluesky",
+  "category": "social",
+  "tags": [
+    "bluesky",
+    "button",
+    "statistics"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Bluesky",
+    "fr": "Bluesky"
+  },
+  "summary": {
+    "en": "A Bluesky button in your site header, plus your followers and posts.",
+    "fr": "Un bouton Bluesky dans l'en-tête de votre site, et vos abonnés et publications."
+  },
+  "pitch": {
+    "en": "A Bluesky button in your site header, plus your followers and posts.",
+    "fr": "Un bouton Bluesky dans l'en-tête de votre site, et vos abonnés et publications."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "community-stats"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/bluesky/module.json",
+    "modules/bluesky/README.md"
+  ]
+}

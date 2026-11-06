@@ -1,0 +1,35 @@
+{
+  "id": "links",
+  "category": "content",
+  "tags": [
+    "links",
+    "icons",
+    "lists"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Link list",
+    "fr": "Liste de liens"
+  },
+  "summary": {
+    "en": "A list of links with icons: your sites, your projects, your favourite pages. Social networks have their own modules.",
+    "fr": "Une liste de liens avec icônes : vos sites, vos projets, vos pages préférées. Les réseaux sociaux ont leurs propres modules."
+  },
+  "pitch": {
+    "en": "A list of links with icons: your sites, your projects, your favourite pages. Social networks have their own modules.",
+    "fr": "Une liste de liens avec icônes : vos sites, vos projets, vos pages préférées. Les réseaux sociaux ont leurs propres modules."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "blog",
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/links/module.json",
+    "modules/links/README.md"
+  ]
+}

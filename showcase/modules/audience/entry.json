@@ -1,0 +1,37 @@
+{
+  "id": "audience",
+  "category": "community",
+  "tags": [
+    "nicknames",
+    "remote",
+    "prize-draw",
+    "live"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Audience",
+    "fr": "Participation"
+  },
+  "summary": {
+    "en": "The base of your stream interactions: a nickname per person with no account, a phone remote and a prize draw.",
+    "fr": "La base de vos interactions de stream : un pseudo par personne sans compte, une télécommande et un tirage au sort."
+  },
+  "pitch": {
+    "en": "The base of your stream interactions: a nickname per person with no account, a phone remote and a prize draw.",
+    "fr": "La base de vos interactions de stream : un pseudo par personne sans compte, une télécommande et un tirage au sort."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.7.0",
+  "requires": [],
+  "worksWith": [
+    "polls",
+    "twitch-bot",
+    "daily-game"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/audience/module.json",
+    "modules/audience/README.md"
+  ]
+}

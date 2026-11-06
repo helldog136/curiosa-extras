@@ -1,0 +1,34 @@
+{
+  "id": "discord",
+  "category": "social",
+  "tags": [
+    "discord",
+    "button",
+    "statistics"
+  ],
+  "order": 30,
+  "title": {
+    "en": "Discord",
+    "fr": "Discord"
+  },
+  "summary": {
+    "en": "A Discord button in your site header, plus your members (an approximate number).",
+    "fr": "Un bouton Discord dans l'en-tête de votre site, et vos membres (un nombre approximatif)."
+  },
+  "pitch": {
+    "en": "A Discord button in your site header, plus your members (an approximate number).",
+    "fr": "Un bouton Discord dans l'en-tête de votre site, et vos membres (un nombre approximatif)."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.3.0",
+  "requires": [],
+  "worksWith": [
+    "community-stats"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/discord/module.json",
+    "modules/discord/README.md"
+  ]
+}

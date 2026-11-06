@@ -1,0 +1,35 @@
+{
+  "id": "blog",
+  "category": "content",
+  "tags": [
+    "articles",
+    "news",
+    "writing"
+  ],
+  "order": 5,
+  "title": {
+    "en": "Blog",
+    "fr": "Blog"
+  },
+  "summary": {
+    "en": "Articles with an image, a summary and simply formatted content. You can add as many blogs as you want.",
+    "fr": "Des articles avec une image, un résumé et un contenu simplement mis en forme. Ajoutez autant de blogs que vous voulez."
+  },
+  "pitch": {
+    "en": "Articles with an image, a summary and simply formatted content. You can add as many blogs as you want.",
+    "fr": "Des articles avec une image, un résumé et un contenu simplement mis en forme. Ajoutez autant de blogs que vous voulez."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [
+    "pages",
+    "links"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/blog/module.json",
+    "modules/blog/README.md"
+  ]
+}

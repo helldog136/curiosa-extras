@@ -1,0 +1,37 @@
+{
+  "id": "contact-form",
+  "category": "community",
+  "tags": [
+    "contact",
+    "form",
+    "messages"
+  ],
+  "order": 80,
+  "title": {
+    "en": "Contact form",
+    "fr": "Formulaire de contact"
+  },
+  "summary": {
+    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+    "fr": "Ajoute un formulaire de contact sous une page de votre choix. Chaque message devient un contact à relire dans votre carnet d'adresses."
+  },
+  "pitch": {
+    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+    "fr": "Ajoute un formulaire de contact sous une page de votre choix. Chaque message devient un contact à relire dans votre carnet d'adresses."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.4",
+  "requires": [
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/contact-form/module.json",
+    "modules/contact-form/README.md"
+  ]
+}

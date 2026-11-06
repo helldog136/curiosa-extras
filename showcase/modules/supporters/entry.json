@@ -1,0 +1,36 @@
+{
+  "id": "supporters",
+  "category": "community",
+  "tags": [
+    "patronage",
+    "supporters",
+    "thanks"
+  ],
+  "order": 120,
+  "title": {
+    "en": "Supporters",
+    "fr": "Soutiens"
+  },
+  "summary": {
+    "en": "Thank your supporters from a patronage platform. The public page shows only the nicknames they accepted.",
+    "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos qu'ils ont acceptés."
+  },
+  "pitch": {
+    "en": "Thank your supporters from a patronage platform. The public page shows only the nicknames they accepted.",
+    "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos qu'ils ont acceptés."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "thanks-wall",
+    "contacts",
+    "directory"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/supporters/module.json",
+    "modules/supporters/README.md"
+  ]
+}

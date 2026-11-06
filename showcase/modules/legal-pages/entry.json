@@ -1,0 +1,34 @@
+{
+  "id": "legal-pages",
+  "category": "content",
+  "tags": [
+    "legal",
+    "privacy",
+    "cookies"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Legal pages",
+    "fr": "Mentions légales"
+  },
+  "summary": {
+    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page. They come in two languages.",
+    "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et celle des cookies. Elles existent en deux langues."
+  },
+  "pitch": {
+    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page. They come in two languages.",
+    "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et celle des cookies. Elles existent en deux langues."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/legal-pages/module.json",
+    "modules/legal-pages/README.md"
+  ]
+}

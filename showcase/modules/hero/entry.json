@@ -1,0 +1,35 @@
+{
+  "id": "hero",
+  "category": "looks",
+  "tags": [
+    "home",
+    "banner",
+    "title"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Home banner",
+    "fr": "Bandeau d'accueil"
+  },
+  "summary": {
+    "en": "A big title and an intro for the top of your home page. You place its section where you want it.",
+    "fr": "Un grand titre et une introduction pour le haut de votre page d'accueil. Vous placez sa section où vous voulez."
+  },
+  "pitch": {
+    "en": "A big title and an intro for the top of your home page. You place its section where you want it.",
+    "fr": "Un grand titre et une introduction pour le haut de votre page d'accueil. Vous placez sa section où vous voulez."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "pages",
+    "blog"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/hero/module.json",
+    "modules/hero/README.md"
+  ]
+}

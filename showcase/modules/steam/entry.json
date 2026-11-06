@@ -1,0 +1,31 @@
+{
+  "id": "steam",
+  "category": "social",
+  "tags": [
+    "steam",
+    "button"
+  ],
+  "order": 160,
+  "title": {
+    "en": "Steam",
+    "fr": "Steam"
+  },
+  "summary": {
+    "en": "A Steam button in your site header, with your own link.",
+    "fr": "Un bouton Steam dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Steam button in your site header, with your own link.",
+    "fr": "Un bouton Steam dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/steam/module.json",
+    "modules/steam/README.md"
+  ]
+}

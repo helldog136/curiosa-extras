@@ -1,0 +1,35 @@
+{
+  "id": "gallery",
+  "category": "content",
+  "tags": [
+    "photos",
+    "albums",
+    "portfolio"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Photo galleries",
+    "fr": "Galeries photos"
+  },
+  "summary": {
+    "en": "Photo albums for your site: event recaps, portfolio or behind the scenes. Visitors open them in a full-screen viewer.",
+    "fr": "Des albums photo pour votre site : récits d'événements, portfolio ou coulisses. Les visiteurs les ouvrent dans une visionneuse plein écran."
+  },
+  "pitch": {
+    "en": "Photo albums for your site: event recaps, portfolio or behind the scenes. Visitors open them in a full-screen viewer.",
+    "fr": "Des albums photo pour votre site : récits d'événements, portfolio ou coulisses. Les visiteurs les ouvrent dans une visionneuse plein écran."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.0",
+  "requires": [],
+  "worksWith": [
+    "events",
+    "videos"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/gallery/module.json",
+    "modules/gallery/README.md"
+  ]
+}

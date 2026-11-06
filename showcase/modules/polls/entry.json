@@ -1,0 +1,34 @@
+{
+  "id": "polls",
+  "category": "community",
+  "tags": [
+    "vote",
+    "obs",
+    "audience"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Polls",
+    "fr": "Sondages"
+  },
+  "summary": {
+    "en": "Ask your audience a question and watch the answers come in as bars. One vote per person, with no account to create.",
+    "fr": "Posez une question à votre public et regardez les réponses arriver en barres. Un vote par personne, sans compte à créer."
+  },
+  "pitch": {
+    "en": "Ask your audience a question and watch the answers come in as bars. One vote per person, with no account to create.",
+    "fr": "Posez une question à votre public et regardez les réponses arriver en barres. Un vote par personne, sans compte à créer."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.7.0",
+  "requires": [],
+  "worksWith": [
+    "audience"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/polls/module.json",
+    "modules/polls/README.md"
+  ]
+}

@@ -1,0 +1,8 @@
+[
+  { "id": "content", "name": { "en": "Content", "fr": "Contenu" }, "blurb": { "en": "Pages, articles, photos and videos for your own site.", "fr": "Pages, articles, photos et vidéos pour votre propre site." } },
+  { "id": "streaming", "name": { "en": "Streaming", "fr": "Streaming" }, "blurb": { "en": "Your lives, your schedule, your games and your chat.", "fr": "Vos directs, votre planning, vos jeux et votre chat." } },
+  { "id": "community", "name": { "en": "Community", "fr": "Communauté" }, "blurb": { "en": "Ways to hear from your audience and to thank it.", "fr": "Des façons d'écouter votre public et de le remercier." } },
+  { "id": "looks", "name": { "en": "Looks & overlays", "fr": "Apparence et overlays" }, "blurb": { "en": "What viewers see on screen and on your home page.", "fr": "Ce que voit votre public à l'écran et sur votre accueil." } },
+  { "id": "social", "name": { "en": "Social networks", "fr": "Réseaux sociaux" }, "blurb": { "en": "Your networks as buttons, with their figures when possible.", "fr": "Vos réseaux en boutons, avec leurs chiffres quand c'est possible." } },
+  { "id": "tools", "name": { "en": "Tools & maintenance", "fr": "Outils et organisation" }, "blurb": { "en": "Private tools to keep your work and your contacts in order.", "fr": "Des outils privés pour garder votre travail et vos contacts en ordre." } }
+]

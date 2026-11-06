@@ -1,0 +1,34 @@
+{
+  "id": "countdown",
+  "category": "content",
+  "tags": [
+    "countdown",
+    "launch",
+    "obs"
+  ],
+  "order": 40,
+  "title": {
+    "en": "Countdown",
+    "fr": "Compte à rebours"
+  },
+  "summary": {
+    "en": "Announce a release, a launch, a birthday or a convention. Visitors see the time left, and the time where they live.",
+    "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention. Les visiteurs voient le temps restant, et l'heure chez eux."
+  },
+  "pitch": {
+    "en": "Announce a release, a launch, a birthday or a convention. Visitors see the time left, and the time where they live.",
+    "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention. Les visiteurs voient le temps restant, et l'heure chez eux."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "events"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/countdown/module.json",
+    "modules/countdown/README.md"
+  ]
+}

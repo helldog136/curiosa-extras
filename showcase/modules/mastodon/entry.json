@@ -1,0 +1,34 @@
+{
+  "id": "mastodon",
+  "category": "social",
+  "tags": [
+    "mastodon",
+    "button",
+    "statistics"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Mastodon",
+    "fr": "Mastodon"
+  },
+  "summary": {
+    "en": "A Mastodon button in your site header, plus your followers and posts.",
+    "fr": "Un bouton Mastodon dans l'en-tête de votre site, et vos abonnés et publications."
+  },
+  "pitch": {
+    "en": "A Mastodon button in your site header, plus your followers and posts.",
+    "fr": "Un bouton Mastodon dans l'en-tête de votre site, et vos abonnés et publications."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "community-stats"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/mastodon/module.json",
+    "modules/mastodon/README.md"
+  ]
+}

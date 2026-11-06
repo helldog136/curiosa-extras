@@ -1,0 +1,41 @@
+{
+  "id": "twitch-bot",
+  "category": "streaming",
+  "tags": [
+    "twitch",
+    "chat",
+    "commands",
+    "rewards",
+    "timers"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Twitch bot",
+    "fr": "Bot Twitch"
+  },
+  "summary": {
+    "en": "Your site answers the commands typed in your Twitch chat. It also runs timers, channel point rewards and an emergency stop.",
+    "fr": "Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi les minuteurs, les récompenses de points de chaîne et un arrêt d'urgence."
+  },
+  "pitch": {
+    "en": "Your site answers the commands typed in your Twitch chat. It also runs timers, channel point rewards and an emergency stop.",
+    "fr": "Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi les minuteurs, les récompenses de points de chaîne et un arrêt d'urgence."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.12.0",
+  "requires": [
+    "twitch-connector",
+    "twitch-channel"
+  ],
+  "worksWith": [
+    "home-assistant",
+    "audience",
+    "twitch-channel"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/twitch-bot/module.json",
+    "modules/twitch-bot/README.md"
+  ]
+}

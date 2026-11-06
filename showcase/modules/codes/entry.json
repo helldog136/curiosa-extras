@@ -1,0 +1,36 @@
+{
+  "id": "codes",
+  "category": "content",
+  "tags": [
+    "promo codes",
+    "partners",
+    "offers"
+  ],
+  "order": 70,
+  "title": {
+    "en": "Promo codes",
+    "fr": "Codes promo"
+  },
+  "summary": {
+    "en": "Partner offers with a code, a link and an expiry date.",
+    "fr": "Les offres de vos partenaires : un code, un lien et une date d'expiration."
+  },
+  "pitch": {
+    "en": "Partner offers with a code, a link and an expiry date.",
+    "fr": "Les offres de vos partenaires : un code, un lien et une date d'expiration."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "sponsors",
+    "sponsor-ticker",
+    "ticker-overlay"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/codes/module.json",
+    "modules/codes/README.md"
+  ]
+}

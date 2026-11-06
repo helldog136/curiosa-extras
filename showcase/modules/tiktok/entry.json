@@ -1,0 +1,31 @@
+{
+  "id": "tiktok",
+  "category": "social",
+  "tags": [
+    "tiktok",
+    "button"
+  ],
+  "order": 190,
+  "title": {
+    "en": "TikTok",
+    "fr": "TikTok"
+  },
+  "summary": {
+    "en": "A TikTok button in your site header, with your own link.",
+    "fr": "Un bouton TikTok dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A TikTok button in your site header, with your own link.",
+    "fr": "Un bouton TikTok dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/tiktok/module.json",
+    "modules/tiktok/README.md"
+  ]
+}

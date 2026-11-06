@@ -1,0 +1,38 @@
+{
+  "id": "community-stats",
+  "category": "tools",
+  "tags": [
+    "statistics",
+    "followers",
+    "history"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Community statistics",
+    "fr": "Statistiques de la communauté"
+  },
+  "summary": {
+    "en": "Keeps the numbers of your networks, such as followers, paying followers, posts and views, and how they evolve.",
+    "fr": "Garde les chiffres de vos réseaux, comme les abonnés, les abonnés payants, les publications et les vues, et leur évolution."
+  },
+  "pitch": {
+    "en": "Keeps the numbers of your networks, such as followers, paying followers, posts and views, and how they evolve.",
+    "fr": "Garde les chiffres de vos réseaux, comme les abonnés, les abonnés payants, les publications et les vues, et leur évolution."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.0",
+  "requires": [],
+  "worksWith": [
+    "bluesky",
+    "mastodon",
+    "github",
+    "twitch-channel",
+    "youtube-channel"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/community-stats/module.json",
+    "modules/community-stats/README.md"
+  ]
+}

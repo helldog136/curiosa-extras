@@ -1,0 +1,36 @@
+{
+  "id": "calendar-manual",
+  "category": "streaming",
+  "tags": [
+    "schedule",
+    "streams",
+    "no account"
+  ],
+  "order": 70,
+  "title": {
+    "en": "Hand-written streams",
+    "fr": "Streams saisis à la main"
+  },
+  "summary": {
+    "en": "Write your streams here, with day, time, games and weekly repeats. Your site shows them, with no Google account to set up.",
+    "fr": "Écrivez vos streams ici, avec le jour, l'heure, les jeux et les répétitions chaque semaine. Votre site les montre, sans compte Google à régler."
+  },
+  "pitch": {
+    "en": "Write your streams here, with day, time, games and weekly repeats. Your site shows them, with no Google account to set up.",
+    "fr": "Écrivez vos streams ici, avec le jour, l'heure, les jeux et les répétitions chaque semaine. Votre site les montre, sans compte Google à régler."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.0",
+  "requires": [],
+  "worksWith": [
+    "planning",
+    "twitch-bot",
+    "calendar-ical"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/calendar-manual/module.json",
+    "modules/calendar-manual/README.md"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "kick",
+  "category": "social",
+  "tags": [
+    "kick",
+    "button"
+  ],
+  "order": 70,
+  "title": {
+    "en": "Kick",
+    "fr": "Kick"
+  },
+  "summary": {
+    "en": "A Kick button in your site header, with your own link.",
+    "fr": "Un bouton Kick dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Kick button in your site header, with your own link.",
+    "fr": "Un bouton Kick dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/kick/module.json",
+    "modules/kick/README.md"
+  ]
+}

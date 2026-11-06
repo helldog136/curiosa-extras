@@ -1,0 +1,35 @@
+{
+  "id": "alerts-overlay",
+  "category": "looks",
+  "tags": [
+    "obs",
+    "alerts",
+    "overlay"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Alerts overlay (OBS)",
+    "fr": "Overlay alertes (OBS)"
+  },
+  "summary": {
+    "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+  },
+  "pitch": {
+    "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "twitch-channel",
+    "youtube-live-actions"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/alerts-overlay/module.json",
+    "modules/alerts-overlay/README.md"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "map",
+  "category": "content",
+  "tags": [
+    "places",
+    "map",
+    "openstreetmap"
+  ],
+  "order": 100,
+  "title": {
+    "en": "Map",
+    "fr": "Carte"
+  },
+  "summary": {
+    "en": "A list of useful places, with filters by type, a search and an OpenStreetMap map. Studios, good addresses, events.",
+    "fr": "Une liste de lieux utiles, avec filtres par type, recherche et carte OpenStreetMap. Studios, bonnes adresses, événements."
+  },
+  "pitch": {
+    "en": "A list of useful places, with filters by type, a search and an OpenStreetMap map. Studios, good addresses, events.",
+    "fr": "Une liste de lieux utiles, avec filtres par type, recherche et carte OpenStreetMap. Studios, bonnes adresses, événements."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "events",
+    "directory"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/map/module.json",
+    "modules/map/README.md"
+  ]
+}
