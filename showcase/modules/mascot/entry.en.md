@@ -13,6 +13,11 @@ A small, discreet character in a corner of your site. It says hello, gives a tip
 - It adds personality without being pushy.
 - You control how often it speaks.
 
+## How it looks
+
+![Mascot admin page, with demo data](shot:admin.webp)
+*The Mascot admin page, filled with demo data.*
+
 ## Works well with
 
 - [Events](entry:events)

@@ -26,7 +26,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "GitHub admin page, with demo data",
+        "fr": "Page d'administration de GitHub, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The GitHub admin page, filled with demo data.",
+        "fr": "La page d'administration de GitHub, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/github/module.json",
     "modules/github/README.md"

@@ -13,6 +13,17 @@ Answer a few simple questions and get your legal notice, privacy page and cookie
 - You do not start from a blank page.
 - The pages are in two languages.
 
+## How it looks
+
+![Legal pages admin page, with demo data](shot:admin.webp)
+*The Legal pages admin page, filled with demo data.*
+
+![Legal pages page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Legal pages page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Pages](entry:pages)

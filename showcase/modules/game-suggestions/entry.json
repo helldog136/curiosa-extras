@@ -27,7 +27,44 @@
     "planning"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Game suggestions admin page, with demo data",
+        "fr": "Page d'administration de Suggestions de jeux, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Game suggestions admin page, filled with demo data.",
+        "fr": "La page d'administration de Suggestions de jeux, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Game suggestions page of the demo site",
+        "fr": "Page Suggestions de jeux du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Game suggestions page on a phone screen",
+        "fr": "Page Suggestions de jeux sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
   "sources": [
     "modules/game-suggestions/module.json",
     "modules/game-suggestions/README.md"

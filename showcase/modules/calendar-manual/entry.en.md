@@ -12,6 +12,11 @@ Write your streams here, with day, time, games and weekly repeats. Your site sho
 - Nothing to connect: you just type.
 - A good start if you do not use an online calendar.
 
+## How it looks
+
+![Hand-written streams admin page, with demo data](shot:admin.webp)
+*The Hand-written streams admin page, filled with demo data.*
+
 ## Works well with
 
 - [Stream schedule](entry:planning)

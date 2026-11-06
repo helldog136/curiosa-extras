@@ -12,6 +12,11 @@ Add any other platform as an icon next to your social networks. An optional noti
 - Platforms without their own module still get an icon.
 - Visitors are warned before an adult platform opens.
 
+## How it looks
+
+![Other platforms admin page, with demo data](shot:admin.webp)
+*The Other platforms admin page, filled with demo data.*
+
 ## Works well with
 
 - [Link list](entry:links)

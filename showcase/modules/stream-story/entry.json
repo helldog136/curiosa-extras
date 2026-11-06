@@ -29,7 +29,20 @@
     "partnerships"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Announcement story admin page, with demo data",
+        "fr": "Page d'administration de Story d'annonce, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Announcement story admin page, filled with demo data.",
+        "fr": "La page d'administration de Story d'annonce, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/stream-story/module.json",
     "modules/stream-story/README.md"

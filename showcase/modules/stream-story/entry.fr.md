@@ -13,6 +13,11 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 - Une annonce prête à publier en quelques minutes.
 - La vidéo reprend les vrais détails de votre événement.
 
+## À quoi ça ressemble
+
+![Page d'administration de Story d'annonce, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Story d'annonce, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Événements](entry:events)

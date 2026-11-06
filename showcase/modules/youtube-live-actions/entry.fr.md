@@ -13,6 +13,11 @@ Quand quelqu'un soutient votre direct YouTube, avec un Super Chat ou un abonneme
 - Le soutien de votre public a un effet visible.
 - Vous pouvez tout couper d'un coup.
 
+## À quoi ça ressemble
+
+![Page d'administration de Actions du live YouTube, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Actions du live YouTube, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Connecteur Home Assistant](entry:home-assistant)

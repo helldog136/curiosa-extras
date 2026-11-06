@@ -12,6 +12,17 @@ Ask your audience a question and watch the answers come in as bars. One vote per
 - The results are easy to read for you and for your audience.
 - You choose how long a quick poll lasts.
 
+## How it looks
+
+![Polls admin page, with demo data](shot:admin.webp)
+*The Polls admin page, filled with demo data.*
+
+![Polls page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Polls page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Audience](entry:audience)

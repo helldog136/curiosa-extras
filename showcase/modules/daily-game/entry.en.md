@@ -14,6 +14,17 @@ A small game once a day, to give people a reason to come back. One question, a f
 - Your mascot can invite people to play.
 - You choose the order of the questions.
 
+## How it looks
+
+![Daily game admin page, with demo data](shot:admin.webp)
+*The Daily game admin page, filled with demo data.*
+
+![Daily game page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Daily game page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Audience](entry:audience)

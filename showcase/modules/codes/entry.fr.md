@@ -11,6 +11,14 @@ Les offres de vos partenaires : un code, un lien et une date d'expiration.
 - Votre public trouve tous les codes au même endroit.
 - Chaque offre garde ensemble son code, son lien et sa date.
 
+## À quoi ça ressemble
+
+![Page d'administration de Codes promo, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Codes promo, remplie de données de démonstration.*
+
+![Page Codes promo du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
 ## Ça marche bien avec
 
 - [Sponsors](entry:sponsors)

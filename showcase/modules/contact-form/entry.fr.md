@@ -11,6 +11,11 @@ Ajoute un formulaire de contact sous une page de votre choix. Chaque message dev
 - Les visiteurs vous écrivent sans voir votre adresse e-mail.
 - Les messages ne se perdent pas dans une boîte de réception.
 
+## À quoi ça ressemble
+
+![Page d'administration de Formulaire de contact, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Formulaire de contact, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Contacts](entry:contacts)

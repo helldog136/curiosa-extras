@@ -12,6 +12,11 @@ Un bouton Reddit dans l'en-tête de votre site, et vos abonnés.
 - Votre public trouve votre Reddit en un clic.
 - Les chiffres sont publics : il n'y a rien à connecter.
 
+## À quoi ça ressemble
+
+![Page d'administration de Reddit, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Reddit, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Statistiques de la communauté](entry:community-stats)

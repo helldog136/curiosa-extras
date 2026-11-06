@@ -14,6 +14,17 @@ An agenda of your events and trainings: upcoming dates, a monthly calendar and a
 - One agenda for talks, trainings, lives and meetings.
 - Past events stay available as a look back.
 
+## How it looks
+
+![Events admin page, with demo data](shot:admin.webp)
+*The Events admin page, filled with demo data.*
+
+![Events page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Events page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Photo galleries](entry:gallery)

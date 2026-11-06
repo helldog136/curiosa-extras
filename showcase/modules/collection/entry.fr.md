@@ -11,6 +11,14 @@ Un module de contenu vierge : vous choisissez vous-même son affichage, ses cham
 - Inutile d'attendre un module fait pour votre idée.
 - Vous décidez vous-même du comportement.
 
+## À quoi ça ressemble
+
+![Page d'administration de Collection personnalisée, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Collection personnalisée, remplie de données de démonstration.*
+
+![Page Collection personnalisée du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
 ## Ça marche bien avec
 
 - [Blog](entry:blog)

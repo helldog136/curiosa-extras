@@ -14,6 +14,17 @@ La base de vos interactions de stream : un pseudo par personne sans compte, une 
 - La télécommande tient dans votre poche.
 - D'autres modules, comme Sondages, partagent les mêmes pseudos.
 
+## À quoi ça ressemble
+
+![Page d'administration de Participation, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Participation, remplie de données de démonstration.*
+
+![Page Participation du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Participation sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Sondages](entry:polls)

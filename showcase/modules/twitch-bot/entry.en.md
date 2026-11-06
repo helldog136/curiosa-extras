@@ -14,6 +14,11 @@ Your site answers the commands typed in your Twitch chat. It also runs timers, c
 - A reward can trigger an action at home with Home Assistant.
 - If you allow it, moderators manage commands from the chat.
 
+## How it looks
+
+![Twitch bot admin page, with demo data](shot:admin.webp)
+*The Twitch bot admin page, filled with demo data.*
+
 ## Works well with
 
 - [Home Assistant connector](entry:home-assistant)

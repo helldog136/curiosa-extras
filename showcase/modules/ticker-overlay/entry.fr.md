@@ -11,6 +11,14 @@ Une source navigateur transparente pour OBS. Elle fait défiler des cartes de vo
 - Le contenu de votre site travaille pour vous pendant le direct.
 - Le fond est transparent : il se fond dans votre scène.
 
+## À quoi ça ressemble
+
+![Page d'administration de Overlay défilant (OBS), avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Overlay défilant (OBS), remplie de données de démonstration.*
+
+![Overlay Overlay défilant (OBS) dans OBS, sur fond sombre](shot:overlay.webp)
+*Ce que voit votre public dans OBS.*
+
 ## Ça marche bien avec
 
 - [Codes promo](entry:codes)

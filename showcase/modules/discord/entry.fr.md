@@ -13,6 +13,11 @@ Un bouton Discord dans l'en-tête de votre site, et vos membres (un nombre appro
 - Votre public trouve votre Discord en un clic.
 - Les chiffres sont publics : il n'y a rien à connecter.
 
+## À quoi ça ressemble
+
+![Page d'administration de Discord, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Discord, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Statistiques de la communauté](entry:community-stats)

@@ -13,6 +13,11 @@ When someone supports your YouTube live, with a Super Chat or a membership, an a
 - Support from your audience has a visible effect.
 - You can cut everything at once.
 
+## How it looks
+
+![YouTube live actions admin page, with demo data](shot:admin.webp)
+*The YouTube live actions admin page, filled with demo data.*
+
 ## Works well with
 
 - [Home Assistant connector](entry:home-assistant)

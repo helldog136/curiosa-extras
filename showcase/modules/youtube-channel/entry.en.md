@@ -12,6 +12,11 @@ Showcases your YouTube channel. Its most popular recent video, your videos in th
 - Your best video is on your home page without effort.
 - New videos reach your site's feed by themselves.
 
+## How it looks
+
+![YouTube channel admin page, with demo data](shot:admin.webp)
+*The YouTube channel admin page, filled with demo data.*
+
 ## Works well with
 
 - [YouTube connector](entry:youtube-connector)

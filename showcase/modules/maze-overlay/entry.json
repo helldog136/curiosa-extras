@@ -28,7 +28,20 @@
     "ticker-overlay"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "3D maze overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay labyrinthe 3D (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The 3D maze overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay labyrinthe 3D (OBS), remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/maze-overlay/module.json",
     "modules/maze-overlay/README.md"

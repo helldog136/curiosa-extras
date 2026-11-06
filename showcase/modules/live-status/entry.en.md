@@ -12,6 +12,11 @@ Shows a “live now” banner and your player on your home page while you are li
 - Visitors can join your live from your home page.
 - The banner disappears when you stop.
 
+## How it looks
+
+![Live status admin page, with demo data](shot:admin.webp)
+*The Live status admin page, filled with demo data.*
+
 ## Works well with
 
 - [My Twitch channel](entry:twitch-channel)

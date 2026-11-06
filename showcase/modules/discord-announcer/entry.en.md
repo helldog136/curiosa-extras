@@ -12,6 +12,11 @@ Announces your new content on a Discord channel, with no bot or account to link.
 - Your Discord hears about it first.
 - There is no bot to install or to feed.
 
+## How it looks
+
+![Discord announcements admin page, with demo data](shot:admin.webp)
+*The Discord announcements admin page, filled with demo data.*
+
 ## Works well with
 
 - [Discord](entry:discord)

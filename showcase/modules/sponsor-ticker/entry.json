@@ -27,7 +27,32 @@
     "codes"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Sponsor ticker overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay sponsors (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Sponsor ticker overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay sponsors (OBS), remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "overlay.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "Sponsor ticker overlay (OBS) overlay in OBS, on a dark background",
+        "fr": "Overlay Overlay sponsors (OBS) dans OBS, sur fond sombre"
+      },
+      "caption": {
+        "en": "What your audience sees in OBS.",
+        "fr": "Ce que voit votre public dans OBS."
+      }
+    }
+  ],
   "sources": [
     "modules/sponsor-ticker/module.json",
     "modules/sponsor-ticker/README.md"

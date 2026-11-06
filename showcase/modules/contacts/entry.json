@@ -29,7 +29,20 @@
     "twitch-raid"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Contacts admin page, with demo data",
+        "fr": "Page d'administration de Contacts, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Contacts admin page, filled with demo data.",
+        "fr": "La page d'administration de Contacts, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/contacts/module.json",
     "modules/contacts/README.md"

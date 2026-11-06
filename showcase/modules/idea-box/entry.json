@@ -26,7 +26,44 @@
     "audience"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Idea box admin page, with demo data",
+        "fr": "Page d'administration de Boîte à idées, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Idea box admin page, filled with demo data.",
+        "fr": "La page d'administration de Boîte à idées, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Idea box page of the demo site",
+        "fr": "Page Boîte à idées du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Idea box page on a phone screen",
+        "fr": "Page Boîte à idées sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
   "sources": [
     "modules/idea-box/module.json",
     "modules/idea-box/README.md"

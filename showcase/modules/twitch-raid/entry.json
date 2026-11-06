@@ -32,7 +32,20 @@
     "twitch-channel"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Twitch raid admin page, with demo data",
+        "fr": "Page d'administration de Raid Twitch, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Twitch raid admin page, filled with demo data.",
+        "fr": "La page d'administration de Raid Twitch, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/twitch-raid/module.json",
     "modules/twitch-raid/README.md"

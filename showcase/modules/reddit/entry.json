@@ -26,7 +26,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Reddit admin page, with demo data",
+        "fr": "Page d'administration de Reddit, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Reddit admin page, filled with demo data.",
+        "fr": "La page d'administration de Reddit, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/reddit/module.json",
     "modules/reddit/README.md"

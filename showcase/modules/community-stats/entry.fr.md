@@ -12,6 +12,11 @@ Garde les chiffres de vos réseaux, comme les abonnés, les abonnés payants, le
 - Vous voyez votre progression dans le temps.
 - Votre assistant IA peut répondre à « combien d'abonnés ai-je gagnés ce mois-ci ? ».
 
+## À quoi ça ressemble
+
+![Page d'administration de Statistiques de la communauté, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Statistiques de la communauté, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Bluesky](entry:bluesky)

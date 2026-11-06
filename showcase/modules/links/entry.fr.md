@@ -10,6 +10,14 @@ Une liste de liens avec icônes : vos sites, vos projets, vos pages préférées
 - Une seule page qui rassemble tous vos liens.
 - Facile à partager dans une bio.
 
+## À quoi ça ressemble
+
+![Page d'administration de Liste de liens, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Liste de liens, remplie de données de démonstration.*
+
+![Page Liste de liens du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
 ## Ça marche bien avec
 
 - [Blog](entry:blog)

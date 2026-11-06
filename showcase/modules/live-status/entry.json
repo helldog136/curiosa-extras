@@ -27,7 +27,20 @@
     "youtube-channel"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Live status admin page, with demo data",
+        "fr": "Page d'administration de Statut du live, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Live status admin page, filled with demo data.",
+        "fr": "La page d'administration de Statut du live, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/live-status/module.json",
     "modules/live-status/README.md"

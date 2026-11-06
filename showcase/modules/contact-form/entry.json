@@ -29,7 +29,20 @@
     "pages"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Contact form admin page, with demo data",
+        "fr": "Page d'administration de Formulaire de contact, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Contact form admin page, filled with demo data.",
+        "fr": "La page d'administration de Formulaire de contact, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/contact-form/module.json",
     "modules/contact-form/README.md"

@@ -13,6 +13,17 @@ A public showcase of your members, creators or partners, and of your team. Visit
 - The people come from Contacts: nothing to retype.
 - The category “Do not show” always wins.
 
+## How it looks
+
+![Directory admin page, with demo data](shot:admin.webp)
+*The Directory admin page, filled with demo data.*
+
+![Directory page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Directory page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Contacts](entry:contacts)

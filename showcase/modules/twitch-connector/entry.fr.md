@@ -11,6 +11,11 @@ Relie votre site à Twitch une seule fois, pour tout ce qui touche Twitch. Un as
 - Vous vous connectez une fois, pas une fois par module.
 - Les autres modules Twitch fonctionnent ensuite tout seuls.
 
+## À quoi ça ressemble
+
+![Page d'administration de Connecteur Twitch, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Connecteur Twitch, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Ma Chaîne Twitch](entry:twitch-channel)

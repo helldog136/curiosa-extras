@@ -11,6 +11,14 @@ Partner offers with a code, a link and an expiry date.
 - Your audience finds every code in one place.
 - Each offer keeps its code, its link and its date together.
 
+## How it looks
+
+![Promo codes admin page, with demo data](shot:admin.webp)
+*The Promo codes admin page, filled with demo data.*
+
+![Promo codes page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
 ## Works well with
 
 - [Sponsors](entry:sponsors)

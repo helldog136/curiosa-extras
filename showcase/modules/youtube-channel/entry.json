@@ -30,7 +30,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "YouTube channel admin page, with demo data",
+        "fr": "Page d'administration de Chaîne YouTube, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The YouTube channel admin page, filled with demo data.",
+        "fr": "La page d'administration de Chaîne YouTube, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/youtube-channel/module.json",
     "modules/youtube-channel/README.md"

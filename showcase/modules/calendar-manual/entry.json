@@ -28,7 +28,20 @@
     "calendar-ical"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Hand-written streams admin page, with demo data",
+        "fr": "Page d'administration de Streams saisis à la main, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Hand-written streams admin page, filled with demo data.",
+        "fr": "La page d'administration de Streams saisis à la main, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/calendar-manual/module.json",
     "modules/calendar-manual/README.md"

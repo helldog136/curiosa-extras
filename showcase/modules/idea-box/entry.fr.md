@@ -12,6 +12,17 @@ Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une list
 - Vous entendez ce que les gens veulent sans lire un long fil.
 - Les doublons sont fusionnés : les soutiens s'additionnent.
 
+## À quoi ça ressemble
+
+![Page d'administration de Boîte à idées, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Boîte à idées, remplie de données de démonstration.*
+
+![Page Boîte à idées du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Boîte à idées sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Participation](entry:audience)

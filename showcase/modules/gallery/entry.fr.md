@@ -13,6 +13,17 @@ Des albums photo pour votre site : récits d'événements, portfolio ou coulisse
 - Vos photos sont rangées sur votre propre site.
 - Vous pouvez afficher un avis de consentement sur les personnes photographiées.
 
+## À quoi ça ressemble
+
+![Page d'administration de Galeries photos, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Galeries photos, remplie de données de démonstration.*
+
+![Page Galeries photos du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Galeries photos sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Événements](entry:events)

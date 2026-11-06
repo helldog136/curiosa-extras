@@ -12,6 +12,11 @@ Votre carnet privé pour vos vidéos, articles et publications. Idées, travaux 
 - Vous ne perdez plus aucune idée.
 - Vous voyez d'un coup d'œil ce qui vient ensuite.
 
+## À quoi ça ressemble
+
+![Page d'administration de Cahier de contenu, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Cahier de contenu, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Planning des streams](entry:planning)

@@ -14,6 +14,17 @@ Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec
 - Aucun paiement n'est géré : vous gardez la main.
 - Les clients voient leur place dans la file, si vous l'autorisez.
 
+## À quoi ça ressemble
+
+![Page d'administration de Commandes, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Commandes, remplie de données de démonstration.*
+
+![Page Commandes du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Commandes sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Contacts](entry:contacts)

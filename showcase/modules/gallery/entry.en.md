@@ -13,6 +13,17 @@ Photo albums for your site: event recaps, portfolio or behind the scenes. Visito
 - Your photos are stored on your own site.
 - You can show a consent notice about people in the photos.
 
+## How it looks
+
+![Photo galleries admin page, with demo data](shot:admin.webp)
+*The Photo galleries admin page, filled with demo data.*
+
+![Photo galleries page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Photo galleries page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Events](entry:events)

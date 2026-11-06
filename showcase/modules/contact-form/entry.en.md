@@ -11,6 +11,11 @@ Adds a contact form under a page of your choice. Each message becomes a contact 
 - Visitors can write to you without showing your e-mail address.
 - Messages never get lost in a mailbox.
 
+## How it looks
+
+![Contact form admin page, with demo data](shot:admin.webp)
+*The Contact form admin page, filled with demo data.*
+
 ## Works well with
 
 - [Contacts](entry:contacts)

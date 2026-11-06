@@ -12,6 +12,17 @@ A thank-you page for your community: cards with photos, and one person in the sp
 - Thanking people in public takes you only a few clicks.
 - People already in your address book appear without retyping.
 
+## How it looks
+
+![Thank-you wall admin page, with demo data](shot:admin.webp)
+*The Thank-you wall admin page, filled with demo data.*
+
+![Thank-you wall page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Thank-you wall page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Contacts](entry:contacts)

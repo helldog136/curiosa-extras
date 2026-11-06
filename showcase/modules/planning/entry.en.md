@@ -13,6 +13,17 @@ Show your upcoming streams in the look you choose. They come from your Google Ca
 - No retyping: the calendar you already use feeds the page.
 - Game covers and partners' photos make each slot easy to spot.
 
+## How it looks
+
+![Stream schedule admin page, with demo data](shot:admin.webp)
+*The Stream schedule admin page, filled with demo data.*
+
+![Stream schedule page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Stream schedule page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Online calendar](entry:calendar-ical)

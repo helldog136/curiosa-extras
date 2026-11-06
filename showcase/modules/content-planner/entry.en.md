@@ -12,6 +12,11 @@ Your private notebook for videos, articles and posts. Ideas, work in progress, p
 - You never lose an idea.
 - You see what is next at a glance.
 
+## How it looks
+
+![Content notebook admin page, with demo data](shot:admin.webp)
+*The Content notebook admin page, filled with demo data.*
+
 ## Works well with
 
 - [Stream schedule](entry:planning)

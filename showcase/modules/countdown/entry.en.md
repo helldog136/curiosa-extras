@@ -13,6 +13,17 @@ Announce a release, a launch, a birthday or a convention. Visitors see the time 
 - The same countdown works on your site and on stream.
 - Each visitor sees the date in their own time zone.
 
+## How it looks
+
+![Countdown admin page, with demo data](shot:admin.webp)
+*The Countdown admin page, filled with demo data.*
+
+![Countdown page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Countdown page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Events](entry:events)

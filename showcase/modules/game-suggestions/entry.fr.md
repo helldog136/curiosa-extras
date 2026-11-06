@@ -14,6 +14,17 @@ Laissez votre public suggérer à quoi jouer. Une liste publique montre chaque j
 - Vous voyez d'un coup d'œil ce que les gens veulent.
 - Un jeu suggéré peut devenir un stream prévu.
 
+## À quoi ça ressemble
+
+![Page d'administration de Suggestions de jeux, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Suggestions de jeux, remplie de données de démonstration.*
+
+![Page Suggestions de jeux du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Suggestions de jeux sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Jaquettes de jeux](entry:game-covers)

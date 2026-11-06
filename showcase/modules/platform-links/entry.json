@@ -26,7 +26,20 @@
     "links"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Other platforms admin page, with demo data",
+        "fr": "Page d'administration de Autres plateformes, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Other platforms admin page, filled with demo data.",
+        "fr": "La page d'administration de Autres plateformes, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/platform-links/module.json",
     "modules/platform-links/README.md"

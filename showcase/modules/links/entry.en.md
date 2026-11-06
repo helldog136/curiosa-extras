@@ -10,6 +10,14 @@ A list of links with icons: your sites, your projects, your favourite pages. Soc
 - One page that gathers all your links.
 - Easy to share in a bio.
 
+## How it looks
+
+![Link list admin page, with demo data](shot:admin.webp)
+*The Link list admin page, filled with demo data.*
+
+![Link list page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
 ## Works well with
 
 - [Blog](entry:blog)

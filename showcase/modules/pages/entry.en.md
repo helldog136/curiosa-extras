@@ -11,6 +11,14 @@ Free-form pages at the root of your site, such as /about or /contact.
 - A home for everything that is not an article.
 - Nothing is published without you: templates start as drafts.
 
+## How it looks
+
+![Pages admin page, with demo data](shot:admin.webp)
+*The Pages admin page, filled with demo data.*
+
+![Pages page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
 ## Works well with
 
 - [Blog](entry:blog)

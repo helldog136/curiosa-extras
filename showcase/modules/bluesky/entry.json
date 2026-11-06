@@ -26,7 +26,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Bluesky admin page, with demo data",
+        "fr": "Page d'administration de Bluesky, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Bluesky admin page, filled with demo data.",
+        "fr": "La page d'administration de Bluesky, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/bluesky/module.json",
     "modules/bluesky/README.md"

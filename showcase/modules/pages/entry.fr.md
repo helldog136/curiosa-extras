@@ -11,6 +11,14 @@ Des pages libres à la racine de votre site, comme /a-propos ou /contact.
 - Un endroit pour tout ce qui n'est pas un article.
 - Rien n'est publié sans vous : les modèles démarrent en brouillon.
 
+## À quoi ça ressemble
+
+![Page d'administration de Pages, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Pages, remplie de données de démonstration.*
+
+![Page Pages du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
 ## Ça marche bien avec
 
 - [Blog](entry:blog)

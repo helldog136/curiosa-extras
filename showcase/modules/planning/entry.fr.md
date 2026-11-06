@@ -13,6 +13,17 @@ Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de v
 - Rien à retaper : l'agenda que vous utilisez déjà alimente la page.
 - Les jaquettes et les photos des partenaires rendent chaque créneau facile à repérer.
 
+## À quoi ça ressemble
+
+![Page d'administration de Planning des streams, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Planning des streams, remplie de données de démonstration.*
+
+![Page Planning des streams du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Planning des streams sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Agenda en ligne](entry:calendar-ical)

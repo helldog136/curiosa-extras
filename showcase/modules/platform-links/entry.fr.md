@@ -12,6 +12,11 @@ Ajoutez n'importe quelle autre plateforme en icône à côté de vos réseaux. U
 - Les plateformes sans module à elles ont quand même une icône.
 - Les visiteurs sont prévenus avant l'ouverture d'une plateforme pour adultes.
 
+## À quoi ça ressemble
+
+![Page d'administration de Autres plateformes, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Autres plateformes, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Liste de liens](entry:links)

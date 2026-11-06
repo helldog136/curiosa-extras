@@ -28,7 +28,32 @@
     "sponsor-ticker"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Ticker overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay défilant (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Ticker overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay défilant (OBS), remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "overlay.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "Ticker overlay (OBS) overlay in OBS, on a dark background",
+        "fr": "Overlay Overlay défilant (OBS) dans OBS, sur fond sombre"
+      },
+      "caption": {
+        "en": "What your audience sees in OBS.",
+        "fr": "Ce que voit votre public dans OBS."
+      }
+    }
+  ],
   "sources": [
     "modules/ticker-overlay/module.json",
     "modules/ticker-overlay/README.md"

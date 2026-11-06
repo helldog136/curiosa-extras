@@ -14,6 +14,17 @@ A clear queue for anyone who creates on request: open, full or closed, with your
 - No payment is handled: you stay in charge.
 - Customers can see their place in the queue, if you allow it.
 
+## How it looks
+
+![Commissions admin page, with demo data](shot:admin.webp)
+*The Commissions admin page, filled with demo data.*
+
+![Commissions page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Commissions page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Contacts](entry:contacts)

@@ -13,6 +13,17 @@ A page of YouTube videos without hosting anything: a grid, categories, search, s
 - You host nothing: the videos stay on YouTube.
 - Series let people watch in the right order.
 
+## How it looks
+
+![Video library admin page, with demo data](shot:admin.webp)
+*The Video library admin page, filled with demo data.*
+
+![Video library page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Video library page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Photo galleries](entry:gallery)

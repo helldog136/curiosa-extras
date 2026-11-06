@@ -13,6 +13,17 @@ Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équ
 - Les personnes viennent de Contacts : rien à retaper.
 - La catégorie « Ne pas montrer » l'emporte toujours.
 
+## À quoi ça ressemble
+
+![Page d'administration de Annuaire, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Annuaire, remplie de données de démonstration.*
+
+![Page Annuaire du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Annuaire sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Contacts](entry:contacts)

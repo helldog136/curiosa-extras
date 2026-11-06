@@ -13,6 +13,11 @@ A panel for OBS that shows which partners are live on Twitch, so you can choose 
 - Choosing who to raid takes seconds.
 - Your partners come from Contacts: nothing to retype.
 
+## How it looks
+
+![Twitch raid admin page, with demo data](shot:admin.webp)
+*The Twitch raid admin page, filled with demo data.*
+
 ## Works well with
 
 - [Contacts](entry:contacts)

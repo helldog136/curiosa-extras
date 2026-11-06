@@ -12,6 +12,11 @@ Montre une bannière « en direct » et votre lecteur sur votre accueil pendant 
 - Les visiteurs rejoignent votre direct depuis votre accueil.
 - La bannière disparaît quand vous arrêtez.
 
+## À quoi ça ressemble
+
+![Page d'administration de Statut du live, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Statut du live, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Ma Chaîne Twitch](entry:twitch-channel)

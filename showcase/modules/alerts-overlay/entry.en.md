@@ -12,6 +12,14 @@ A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid.
 - You choose the look and the accent colour.
 - You can check the result before going live.
 
+## How it looks
+
+![Alerts overlay (OBS) admin page, with demo data](shot:admin.webp)
+*The Alerts overlay (OBS) admin page, filled with demo data.*
+
+![Alerts overlay (OBS) overlay in OBS, on a dark background](shot:overlay.webp)
+*What your audience sees in OBS.*
+
 ## Works well with
 
 - [My Twitch channel](entry:twitch-channel)

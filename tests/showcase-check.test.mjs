@@ -161,6 +161,22 @@ test("the release bundle lists every entry, its two texts and its screenshots wi
   assert.throws(() => buildBundle(root, "9.9.9"), /problem/);
 });
 
+test("a shared screenshot lives in showcase/shared/ and is checked and bundled there", (t) => {
+  const root = repoWith(t, (r) => {
+    fs.mkdirSync(path.join(r, "showcase/shared"), { recursive: true });
+    fs.writeFileSync(path.join(r, "showcase/shared/head.webp"), fakeWebp(1280, 110));
+    editJson(r, "demo", (e) => { e.screenshots = [{ ...SHOT, file: "head.webp", kind: "public", shared: true }]; });
+    for (const l of ["en", "fr"]) edit(r, "demo", `entry.${l}.md`, (x) => x.replace("shot:admin.webp", "shot:head.webp"));
+    fs.rmSync(path.join(r, "showcase/modules/demo/shots/admin.webp"));
+  });
+  assert.deepEqual(problems(root), []);
+  const b = buildBundle(root, "1.0.0");
+  assert.equal(b.modules[0].shots[0].path, "showcase/shared/head.webp");
+  assert.equal(b.modules[0].shots[0].url, "https://raw.githubusercontent.com/helldog136/curiosa-extras/v1.0.0/showcase/shared/head.webp");
+  fs.rmSync(path.join(root, "showcase/shared/head.webp"));
+  has(problems(root), "file not found in showcase/shared/");
+});
+
 test("the showcase of this repository passes (every module has an entry)", () => {
   const r = checkShowcase(repo);
   assert.deepEqual(r.problems, [], `\n${r.problems.join("\n")}`);

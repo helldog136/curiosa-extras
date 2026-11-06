@@ -13,6 +13,17 @@ A list of useful places, with filters by type, a search and an OpenStreetMap map
 - The list works without any outside map.
 - Visitors choose when to load the map.
 
+## How it looks
+
+![Map admin page, with demo data](shot:admin.webp)
+*The Map admin page, filled with demo data.*
+
+![Map page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Map page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Events](entry:events)

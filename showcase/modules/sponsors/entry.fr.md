@@ -11,6 +11,14 @@ Affiche vos sponsors et leurs codes promo sur votre site, avec la mention de par
 - La mention est intégrée : elle n'est pas oubliée.
 - Une page par sponsor, avec un lien court.
 
+## À quoi ça ressemble
+
+![Page d'administration de Sponsors, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Sponsors, remplie de données de démonstration.*
+
+![Page Sponsors du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
 ## Ça marche bien avec
 
 - [Codes promo](entry:codes)

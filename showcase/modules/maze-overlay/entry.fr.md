@@ -12,6 +12,11 @@ Un labyrinthe 3D rétro pour OBS. Le marcheur parcourt les couloirs et s'arrête
 - Un fond ludique et inhabituel pour un moment calme du stream.
 - Il montre votre propre contenu en affiches.
 
+## À quoi ça ressemble
+
+![Page d'administration de Overlay labyrinthe 3D (OBS), avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Overlay labyrinthe 3D (OBS), remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Overlay alertes (OBS)](entry:alerts-overlay)

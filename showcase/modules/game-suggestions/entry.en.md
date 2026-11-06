@@ -14,6 +14,17 @@ Let your audience suggest what to play. A public list shows each game with its s
 - You see at a glance what people want.
 - A suggested game can become a planned stream.
 
+## How it looks
+
+![Game suggestions admin page, with demo data](shot:admin.webp)
+*The Game suggestions admin page, filled with demo data.*
+
+![Game suggestions page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Game suggestions page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Game covers](entry:game-covers)

@@ -10,6 +10,11 @@ Un bouton Instagram dans l'en-tête de votre site, avec votre propre lien.
 - Votre public trouve votre Instagram en un clic.
 - Un seul réglage à remplir : il n'y a rien à connecter.
 
+## À quoi ça ressemble
+
+![En-tête du site de démonstration avec les boutons de plusieurs réseaux sociaux](shot:header-buttons.webp)
+*Vos réseaux en boutons, dans l'en-tête de votre site.*
+
 ## Bon à savoir
 
 - Seule une adresse sécurisée du bon site est acceptée.

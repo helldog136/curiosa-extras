@@ -12,6 +12,14 @@ A big title and an intro for the top of your home page. You place its section wh
 - Visitors understand who you are in the first second.
 - One block, and your home page has a front door.
 
+## How it looks
+
+![Home banner admin page, with demo data](shot:admin.webp)
+*The Home banner admin page, filled with demo data.*
+
+![Home banner page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
 ## Works well with
 
 - [Pages](entry:pages)
