@@ -254,3 +254,20 @@ test("vm vierge : pure.mjs s'exécute tel quel, sans Node ni navigateur (seuleme
   assert.equal(JSON.stringify(run(`cleanConfig({ duration: 99, style: "poster" })`)), JSON.stringify(P.cleanConfig({ duration: 99, style: "poster" })));
   assert.equal(run(`FORMATS.length`), 2);
 });
+
+test("2.7.0: the countdown element is off in a new video; the countdown style asks for it; a stored list is never changed", () => {
+  assert.ok(!P.DEFAULT_ELEMENTS.includes("countdown") && P.DEFAULT_ELEMENTS.length === P.ELEMENTS.length - 1);
+  assert.deepEqual(P.DEFAULT_CONFIG.elements, [...P.DEFAULT_ELEMENTS]);
+  assert.deepEqual(P.cleanConfig({ style: "poster" }).elements, [...P.DEFAULT_ELEMENTS], "no elements stored: the new default");
+  assert.deepEqual(P.cleanConfig({ elements: ["title", "countdown"] }).elements, ["title", "countdown"], "a stored list keeps its countdown");
+  assert.deepEqual(P.cleanConfig({ elements: [] }).elements, [], "an empty stored list stays empty");
+  assert.deepEqual(P.STYLE_NEEDS, { countdown: "countdown" });
+  assert.deepEqual(P.elementsForStyle("countdown", P.DEFAULT_ELEMENTS), P.ELEMENTS, "the countdown style adds the countdown, in the canonical order");
+  assert.deepEqual(P.elementsForStyle("countdown", ["title"]), ["title", "countdown"]);
+  assert.deepEqual(P.elementsForStyle("neon", P.DEFAULT_ELEMENTS), [...P.DEFAULT_ELEMENTS], "other styles add nothing");
+  assert.deepEqual(P.elementsForStyle("neon", P.ELEMENTS), P.ELEMENTS, "and remove nothing");
+  assert.deepEqual(P.elementsForStyle("countdown", undefined), P.ELEMENTS);
+  for (const style of P.STYLES) assert.ok(P.cleanConfig({ style }).style === style, `${style} is accepted`);
+  assert.equal(P.cleanConfig({ style: "kinetic" }, { ...P.DEFAULT_CONFIG, style: "cinema" }).style, "kinetic");
+  assert.equal(P.cleanConfig({ style: "nope" }, { ...P.DEFAULT_CONFIG, style: "cinema" }).style, "cinema", "an unknown style falls back to the model's, then to the default");
+});

@@ -9,6 +9,7 @@ import { fakeCanvasContext, fakeImage } from "./helpers/fakeCanvas.mjs";
 const DIR = new URL("../modules/stream-story", import.meta.url).pathname;
 const P = await import("../modules/stream-story/pure.mjs");
 const S = await import("../modules/stream-story/scenes.mjs");
+const X = await import("../modules/stream-story/scenes-extra.mjs");
 
 const TZ = "Europe/Brussels", NOW = Date.parse("2026-10-22T10:00:00Z");
 const LONG_TITLE = "Grande soirée découverte de Hollow Knight Silksong : on explore Pharloom !";
@@ -133,7 +134,7 @@ test("minimal : le texte apparaît lettre par lettre (de plus en plus de lettres
 });
 
 test("couleurs : le texte reste lisible sur le fond de chaque style, même avec un thème clair, une couleur d'accent pâle ou sombre, ou une couleur invalide", () => {
-  const themes = [THEME, { accent: "#ffee88", accent2: "#ffee88", bg: "#ffffff", fg: "#222222" }, { accent: "#101010", accent2: "#202020", bg: "#fafafa", fg: "#eeeeee" }, { accent: "rouge", accent2: undefined, bg: "n'importe quoi", fg: "#ffffff" }, { accent: "#00ff00", accent2: "#00ff00", bg: "#00ff00", fg: "#00ff00" }];
+  const themes = [THEME, { accent: "#ffee88", accent2: "#ffee88", bg: "#ffffff", fg: "#222222" }, { accent: "#101010", accent2: "#202020", bg: "#fafafa", fg: "#eeeeee" }, { accent: "rouge", accent2: undefined, bg: "n'importe quoi", fg: "#ffffff" }, { accent: "#00ff00", accent2: "#00ff00", bg: "#00ff00", fg: "#00ff00" }, { accent: "#ff0000", accent2: "#0000ff", bg: "#ff00ff", fg: "#00ffff" }, { accent: "#7f7f7f", accent2: "#808080", bg: "#808080", fg: "#7f7f7f" }];
   for (const style of P.STYLES) for (const th of themes) {
     const pal = S.paletteFor(style, th);
     for (const k of ["text", "accent", "soft"]) {
@@ -169,4 +170,98 @@ test("vm vierge : pure.mjs + scenes-extra.mjs + scenes.mjs concaténés (sans im
     const c = fakeCanvasContext(); sc.draw(c, 9); return JSON.stringify(c.log);
   })();
   assert.equal(out, ref);
+});
+
+/* ───────────── 2.7.0: the six new styles ───────────── */
+const NEW_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"];
+const textsAt = (sc, t) => run(sc, t).filter((e) => e[0] === "fillText").map((e) => [e[1], e[2], e[3], e[4], e[5]]);   // text, x, y, font, align (not the alpha)
+
+test("six new styles: ids, order and the four first styles untouched", () => {
+  assert.deepEqual(P.STYLES, ["neon", "poster", "countdown", "minimal", ...NEW_STYLES]);
+  assert.deepEqual(X.EXTRA_STYLES, NEW_STYLES, "scenes-extra.mjs draws exactly the six new ones");
+});
+
+test("hold: from restTime to the end every text is at exactly the same place (the composition is still), and all of them are drawn well before", () => {
+  for (const style of NEW_STYLES) for (const format of ["vertical", "passeport"]) for (const duration of [5, 15]) {
+    const sc = scene({ style, format, n: 3, text: LONG_TEXT, duration });
+    assert.ok(Math.abs(sc.restTime - duration * 0.78) < 1e-9);
+    const at = textsAt(sc, sc.restTime), end = textsAt(sc, duration), mid = textsAt(sc, sc.restTime + (duration - sc.restTime) / 2);
+    assert.ok(at.length >= 6, `${style}: text is drawn`);
+    assert.deepEqual(end, at, `${style}/${format}/${duration} s: still from restTime to the end`);
+    assert.deepEqual(mid, at, `${style}/${format}/${duration} s: still in the middle of the hold`);
+    // entrances are over before the hold: at 62 % of the video the texts are already where they will stay
+    const late = textsAt(sc, duration * 0.7), key = (x) => JSON.stringify(x);
+    assert.ok(late.every((x) => at.map(key).includes(key(x))), `${style}/${format}/${duration} s: at 70 % every text drawn is already at its final place`);
+    assert.notDeepEqual(run(sc, 0.1), run(sc, sc.restTime), `${style}: the start is not the end`);
+  }
+});
+
+test("determinism: the same t gives the same drawing for the new styles, also across two scenes, with grain, paper, jitter and weave", () => {
+  for (const style of NEW_STYLES) {
+    const a = scene({ style, format: "vertical", n: 4, text: "Court" }), b = scene({ style, format: "vertical", n: 4, text: "Court" });
+    for (const t of [0, 0.37, 1.2, 3.3, 7.77, 11.7, 14.9, 15]) assert.deepEqual(run(a, t), run(b, t), `${style} t=${t}`);
+    assert.notDeepEqual(run(a, 0.5), run(a, 5), `${style}: it moves`);
+  }
+});
+
+test("watermark: in vertical and passport, no box of the new styles touches the mention, and everything stays in the safe area", () => {
+  for (const style of NEW_STYLES) for (const format of ["vertical", "passeport"]) for (const n of [0, 3, 6]) {
+    const sc = scene({ style, format, n, text: LONG_TEXT, config: {} });
+    const wm = S.createScene({ style, format, duration: 15, watermark: true, content: P.buildContent({ ...P.DEFAULT_CONFIG, elements: P.ELEMENTS, style, format, text: LONG_TEXT, costreamers: members(n).map((m) => m.login) }, { stream: stream(), coStreamers: members(n), site: { name: "Emma Live" }, nowMs: NOW, tz: TZ }), assets: { logo: fakeImage(200, 200), cover: fakeImage(600, 338), avatars: {} }, colors: THEME, measureContext: fakeCanvasContext() });
+    const A = P.safeArea(format), m = wm.watermark;
+    assert.ok(m && wm.boxes.length >= 4 && sc.boxes.length >= 4);
+    for (const b of wm.boxes) {
+      assert.ok(b.y + b.h <= m.y + 0.5 && b.y >= A.y - 0.5 && b.x >= A.x - 0.5 && b.x + b.w <= A.x + A.w + 0.5, `${style}/${format}/${n}: ${b.id} above the mention (${Math.round(b.y + b.h)} vs ${m.y})`);
+    }
+    assert.ok(run(wm, wm.restTime).some((e) => e[0] === "fillText" && e[1].startsWith("Made with")), `${style}: the mention is drawn`);
+  }
+});
+
+test("content combinations: no title, no game, no logo, no brand, no text, all-day event, English, 0 to 6 guests: always drawn, inside the safe area, never an exception", () => {
+  for (const style of NEW_STYLES) for (const format of ["vertical", "passeport"]) {
+    const A = P.safeArea(format);
+    for (const variant of [{ title: "", cover: false }, { title: "x" }, { cover: false, logo: false, config: { channelName: "" } }, { streamOver: { allDay: true, startMs: Date.parse("2026-10-22T22:00:00Z") }, n: 2 }, { config: { lang: "en" }, n: 6, text: LONG_TEXT }, { n: 1, text: "a" }, { withStream: false, cover: false }]) {
+      const sc = scene({ style, format, ...variant });
+      assert.doesNotThrow(() => { for (const t of [0, 3, 8, 12, 15]) run(sc, t); }, `${style}/${format}/${JSON.stringify(variant).slice(0, 50)}`);
+      for (const b of sc.boxes) assert.ok(b.x >= A.x - 0.5 && b.x + b.w <= A.x + A.w + 0.5 && b.y >= A.y - 0.5 && b.y + b.h <= A.y + A.h + 0.5, `${style}/${format}: ${b.id} in the safe area`);
+    }
+    const none = scene({ style, format, withStream: false, cover: false, logo: false, config: { elements: [] } });
+    assert.equal(none.boxes.length, 0);
+  }
+});
+
+test("words written by the styles themselves: neutral, in both languages, drawn in the right one", () => {
+  const W = X.EXTRA_WORDS;
+  assert.deepEqual(Object.keys(W.fr).sort(), Object.keys(W.en).sort(), "same keys in French and English");
+  for (const lang of ["fr", "en"]) for (const w of Object.values(W[lang])) assert.match(w, /^[A-ZÀ-Ü ]+$/, "short capitals, no punctuation, no exclamation");
+  const fr = textsAt(scene({ style: "broadcast", format: "vertical" }), 15).map((x) => x[0]).join(""), en = textsAt(scene({ style: "broadcast", format: "vertical", config: { lang: "en" } }), 15).map((x) => x[0]).join("");
+  assert.ok(fr.includes("À SUIVRE") && !fr.includes("UP NEXT"));
+  assert.ok(en.includes("UP NEXT") && !en.includes("À SUIVRE"));
+  assert.ok(textsAt(scene({ style: "arcade", format: "vertical" }), 15).some((x) => x[0] === "START"));
+});
+
+test("text size: no word of the new styles under 20 px even in the crowded worst case, and names are shrunk before being cut", () => {
+  for (const style of NEW_STYLES) for (const format of ["vertical", "passeport"]) {
+    const sc = scene({ style, format, n: 6, text: LONG_TEXT, title: LONG_TITLE });
+    for (const e of run(sc, sc.restTime).filter((x) => x[0] === "fillText")) assert.ok(extent(e).px >= 20, `${style}/${format}: « ${e[1].slice(0, 20)} » ${extent(e).px}px`);
+  }
+});
+
+test("palettes of the new styles: the site colours, text at 4.5:1 or more on the style's own background, whatever the accent (pale, dark, saturated, grey, the same twice)", () => {
+  for (const style of NEW_STYLES) for (const th of [THEME, { accent: "#ffe27a", accent2: "#ffd1e8", bg: "#ffffff", fg: "#222222" }, { accent: "#12172b", accent2: "#12172b", bg: "#0b0b10", fg: "#eeeeee" }, { accent: "#ff0000", accent2: "#ff0000", bg: "#ff0000", fg: "#ff0000" }, { accent: "#808080", accent2: "#808080", bg: "#808080", fg: "#808080" }, {}]) {
+    const pal = S.paletteFor(style, th);
+    for (const k of ["text", "accent", "soft"]) assert.ok(P.contrast(pal[k], pal.base) >= 4.5 - 0.01, `${style} ${k} ${pal[k]} on ${pal.base}: ${P.contrast(pal[k], pal.base).toFixed(2)}`);
+    for (const k of ["fill", "fill2", "s1", "s2"]) if (pal[k]) assert.ok(Math.max(P.contrast(pal[k], "#ffffff"), P.contrast(pal[k], "#111111")) >= 4.7, `${style} ${k} ${pal[k]} carries text`);
+  }
+});
+
+test("hold, whole drawing: for the styles without grain, EVERY drawing call (shapes, masks, transforms, not only the texts) is the same from just after restTime to the end", () => {
+  for (const style of ["broadcast", "kinetic", "arcade", "geometric", "collage"]) for (const duration of [5, 15]) {
+    const sc = scene({ style, format: "vertical", n: 3, text: LONG_TEXT, duration });
+    const a = run(sc, duration * 0.8), b = run(sc, duration * 0.9), c = run(sc, duration);
+    assert.deepEqual(b, a, `${style}/${duration} s: still at 80 % and 90 %`); assert.deepEqual(c, a, `${style}/${duration} s: still at the end`);
+  }
+  // cinema: only the film grain (small rectangles) and the weave move; no text
+  const sc = scene({ style: "cinema", format: "vertical", n: 3, text: LONG_TEXT });
+  assert.deepEqual(textsAt(sc, 12), textsAt(sc, 15));
 });

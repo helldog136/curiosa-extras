@@ -412,3 +412,27 @@ test("sauvegarde lisible : les modèles (références de fiche), les ponctuels e
   const bare = await def.backup.readable(mk());
   assert.deepEqual(bare.map((f) => f.path), ["models.json"], "rien à dire : pas de fichier vide");
 });
+
+test("2.7.0 MCP: the six new styles are accepted and described; the countdown style adds the countdown element unless a list is given; a model keeps what it stored", async () => {
+  const ctx = mk(), token = await data.mintToken(ctx);
+  const tool = manifest.mcp.find((t) => t.name === "story_prepare"), enumOf = tool.input.properties.style.enum;
+  assert.deepEqual(enumOf, P.STYLES, "the manifest lists the styles of pure.mjs, in the same order");
+  assert.ok(tool.input.properties.style.description.length <= 500);
+  for (const id of ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"]) {
+    assert.ok(tool.input.properties.style.description.includes(id), `${id} is described`);
+    const r = await prepare(ctx, { style: id });
+    assert.equal(r.prepared.style, id);
+    assert.deepEqual(r.prepared.elements, P.DEFAULT_ELEMENTS, `${id}: no countdown by default`);
+  }
+  assert.deepEqual((await prepare(ctx, {})).prepared.elements, P.DEFAULT_ELEMENTS);
+  assert.deepEqual((await prepare(ctx, { style: "countdown" })).prepared.elements, P.ELEMENTS, "the countdown style needs its element: added when no list is given");
+  assert.deepEqual((await prepare(ctx, { style: "countdown", elements: ["title", "when"] })).prepared.elements, ["title", "when"], "an explicit list is respected as given");
+  assert.match(tool.input.properties.elements.description, /except countdown/);
+  // a model saved with every element (as before 2.7.0) keeps its countdown
+  await act(ctx, token, { op: "model.save", name: "Ancien", config: { style: "neon", elements: P.ELEMENTS } });
+  assert.deepEqual((await prepare(ctx, { model: "ancien" })).prepared.elements, P.ELEMENTS);
+  await act(ctx, token, { op: "model.save", name: "Neuf", config: { style: "collage" } });
+  assert.deepEqual((await prepare(ctx, { model: "neuf" })).prepared.elements, P.DEFAULT_ELEMENTS);
+  assert.deepEqual((await prepare(ctx, { model: "neuf", style: "countdown" })).prepared.elements, P.ELEMENTS, "a model + the countdown style: the element is added");
+  await refuse(ctx, { style: "disco" }, /broadcast, kinetic, cinema, arcade, collage, geometric/);
+});
