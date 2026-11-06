@@ -128,10 +128,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/blog",
       "ref": "v1.47.0",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "apiVersion": 2,
       "author": "Helldog136",
-      "icon": "📰"
+      "icon": "📰",
+      "requires": {
+        "core": "0.6.18"
+      }
     },
     {
       "id": "bluesky",

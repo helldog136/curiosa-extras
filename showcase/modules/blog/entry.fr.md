@@ -5,6 +5,7 @@ Des articles avec une image, un résumé et un contenu simplement mis en forme. 
 - Écrivez des articles avec une image et un résumé.
 - Tenez plusieurs blogs, chacun avec sa propre page.
 - Placez un blog sur votre page d'accueil.
+- Affichez un blog en liste de cartes, avec un champ de recherche qui filtre pendant la frappe.
 
 ## Pourquoi vous allez l'aimer
 
@@ -34,4 +35,4 @@ Des articles avec une image, un résumé et un contenu simplement mis en forme. 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.2.0.

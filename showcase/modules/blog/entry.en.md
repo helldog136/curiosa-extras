@@ -5,6 +5,7 @@ Articles with an image, a summary and simply formatted content. You can add as m
 - Write articles with an image and a summary.
 - Run several blogs, each with its own page.
 - Place a blog on your home page.
+- Show a blog as a list of cards, with a search field that filters while you type.
 
 ## Why you will like it
 
@@ -34,4 +35,4 @@ Articles with an image, a summary and simply formatted content. You can add as m
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.1.
+Available since version 1.0.0. Current version: 1.2.0.
