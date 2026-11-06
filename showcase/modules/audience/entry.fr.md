@@ -5,6 +5,7 @@ La base de vos interactions de stream : un pseudo par personne sans compte, une 
 - Donnez un pseudo à chaque personne, sans aucun compte.
 - Menez votre direct depuis votre téléphone : démarrer, arrêter ou passer au suivant.
 - Rendez quelqu'un muet, videz une salle et lisez le journal.
+- Mettez votre bot Twitch en pause et ajoutez une commande de chat depuis la même télécommande.
 - Faites un tirage au sort : ouvrez-le, fermez-le et choisissez les gagnants.
 - Affichez le tirage au sort dans OBS.
 
@@ -41,4 +42,4 @@ La base de vos interactions de stream : un pseudo par personne sans compte, une 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.7.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.8.0.

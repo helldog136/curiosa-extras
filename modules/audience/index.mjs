@@ -255,7 +255,13 @@ const needs = (right, fn) => async (ctx, values) => (can(ctx, right) ? fn(ctx, v
 const WHO = ["remote", "admin", "assistant", "system"];
 const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick", "poll.close", "poll.cancel", "poll.delete", "poll.reopen", "poll.extend", "poll.show", "poll.hide", "poll.archive", "poll.panic", "panic", "draw.new", "draw.close", "draw.reopen", "draw.pick", "draw.redraw", "draw.remove", "draw.clear", "draw.key"];
 const whoText = (ctx, w) => (WHO.includes(w) ? ctx.t(`who_${w}`) : w);
-const whatText = (ctx, w) => (WHAT.includes(w) ? ctx.t(`what_${w.replace(".", "_")}`) : w);
+// A gesture on a plugged-in module's panel is written "<module>.<action>": the actions we know by name (the Twitch bot panel) get words, the others stay as written.
+const PANEL_WHAT = new Set(["pause", "resume", "addcom", "undo"]);
+const whatText = (ctx, w) => {
+  if (WHAT.includes(w)) return ctx.t(`what_${w.replace(".", "_")}`);
+  const m = /^[\w-]+\.([a-z]+)$/.exec(String(w));
+  return m && PANEL_WHAT.has(m[1]) ? ctx.t(`what_panel_${m[1]}`) : w;
+};
 const remoteUrl = (ctx, meta) => `${ctx.api.siteUrl}/m/${ctx.instance.key}/remote?k=${meta.remoteKey}`;
 const dockUrl = (ctx, meta) => `${remoteUrl(ctx, meta)}&dock=1`;   // la même adresse secrète, avec la présentation « dock » en plus
 

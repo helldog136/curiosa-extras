@@ -357,5 +357,9 @@
   "dockLeading": "En tête",
   "dockKeys": "Raccourci clavier",
   "dockClearLoss": "Tout le monde quitte la salle",
-  "drawNotHereLoss": "Personne écartée"
+  "drawNotHereLoss": "Personne écartée",
+  "what_panel_pause": "Bot Twitch mis en pause",
+  "what_panel_resume": "Bot Twitch de nouveau actif",
+  "what_panel_addcom": "Commande de chat ajoutée",
+  "what_panel_undo": "Commande de chat supprimée"
 }

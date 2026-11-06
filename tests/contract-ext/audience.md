@@ -51,6 +51,8 @@ Offerte avec `each: true` (chaque module répond pour lui-même) ; Participation
 | `press` | `{ action, values, locale? }` (`values` : texte, 6 champs, 200 caractères) | `{ ok: true, message? ≤ 200 }` ou `{ ok: false, error: "<code>", message?, field? }` (`field` : le champ à corriger, le message s'affiche sous lui). 6 s au plus. |
 | `tick` | `{ room, channel }` | `{ ok: true, handled: bool }` : « ton direct est périmé, rafraîchis-le » (facultatif). |
 
+**Optional fields added in Audience 1.8.0 (the convention stays version 1).** A panel may also give `toggles: [{ id, label ≤ 40, on, text ≤ 60, hint ≤ 80, values? }]` (≤ 3: a switch that shows the CURRENT state; pressing it sends the action `id`, so a module gives the action that flips the state and a repeated press changes nothing), `badge` (≤ 14, a few words under the tab name) with `alert` (the tab stands out), and `note` (≤ 160). A button may carry `values` and a `group` heading (≤ 30). A `press` error that sets `field: "tg"` is shown under the switch. Panels that give none of these are drawn as before.
+
 Aucun droit n'est transmis : la télécommande a déjà vérifié l'adresse secrète. Un module qui offre `press` n'y fait donc aucune écriture sensible au-delà de ce que sa télécommande permet.
 
 ## Service `audience.draw` v1 (offert par Participation 1.2.0, consommé par le Bot Twitch)
