@@ -15,7 +15,7 @@ export const KEYS = [
   "cover_no_key", "cover_down", "schedule_people_label", "schedule_people_help", "cover_ambiguous", "cover_ambiguous_named", "cover_wrong", "untitled", "m_title", "m_date", "m_time", "m_time_hint", "manual_title", "manual_date", "manual_time",
   "h_elements", "el_title", "el_when", "el_countdown", "el_game", "el_brand", "el_text", "el_costreamers", "countdown_is", "no_stream_info",
   "h_texts", "text_label", "text_help", "channel_label", "channel_help", "lang_label", "lang_fr", "lang_en",
-  "h_look", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown", "style_countdown_hint", "style_minimal", "style_minimal_hint",
+  "h_look", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown", "style_countdown_hint", "style_minimal", "style_minimal_hint", "style_broadcast", "style_broadcast_hint", "style_kinetic", "style_kinetic_hint", "style_cinema", "style_cinema_hint", "style_arcade", "style_arcade_hint", "style_collage", "style_collage_hint", "style_geometric", "style_geometric_hint", "style_countdown_on",
   "watermark_label", "watermark_help", "format_label", "format_vertical", "format_passeport", "format_help_vertical", "format_help_passeport", "duration_label", "duration_help", "seconds",
   "h_members", "members_help", "members_chosen", "members_none", "members_max", "member_missing", "member_unreadable", "member_loading", "only_this_video", "legacy_tag",
   "search_label", "search_placeholder", "search_hint", "search_busy", "search_none", "search_slow", "search_refine", "show_more", "add", "already", "remove",
@@ -29,7 +29,7 @@ export const KEYS = [
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`ui_${k}`)]));
 
 /** Les fichiers que la page charge : la liste est fermée (jamais un nom donné par la requête). */
-export const LIB = ["pure.mjs", "scenes.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
+export const LIB = ["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"];
 const sourceCache = new Map();
 /** La police du nom « Curiosa » (copie exacte du fichier du cœur, licence SIL OFL à côté) : servie par le module lui-même, aucun appel extérieur. */
 let fontBytes = null;
@@ -74,6 +74,9 @@ button.danger{color:var(--danger);border-color:var(--danger)}button:disabled{opa
 .cards label{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;gap:8px;background:var(--field)}
 .cards label:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .cards small{display:block;color:var(--muted)}
+.styles{gap:10px}.styles label{align-items:center;gap:12px;min-height:112px}.styles label>span{min-width:0;overflow-wrap:anywhere}.styles input[type=radio]{margin:0;align-self:flex-start}
+canvas.thumb{flex:none;width:56px;height:auto;aspect-ratio:9/16;border-radius:6px;background:#000;border:1px solid var(--line)}
+.styles label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}#style-note{margin:8px 0 0}
 ul.list{list-style:none;margin:6px 0;padding:0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.grow{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}
 .confirm{display:flex;gap:8px;flex-wrap:wrap}.tag{font-size:.8rem;color:var(--muted);margin-left:6px}
 .sub{font-weight:600;margin:12px 0 2px}.person{display:flex;gap:10px;align-items:center;flex:1 1 200px;min-width:0}.who{min-width:0;overflow-wrap:anywhere}
@@ -119,7 +122,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
   const config = { base, lang, colors, timezone: timezone || "", font, labels: labelsOf(ctx), formats: P.FORMATS };
   const json = JSON.stringify(config).replace(/</g, "\\u003c").replace(LINE_SEPARATORS, (c) => `\\u${c.charCodeAt(0).toString(16)}`);
   const check = (id, key) => `<label class="check" for="el-${id}"><input type="checkbox" id="el-${id}"><span>${T(key)}</span></label>`;
-  const style = (id) => `<label for="style-${id}"><input type="radio" name="style" id="style-${id}"><span>${T(`style_${id}`)}<small>${T(`style_${id}_hint`)}</small></span></label>`;
+  const style = (id) => `<label for="style-${id}" class="stylecard"><input type="radio" name="style" id="style-${id}"><canvas class="thumb" data-style="${id}" width="108" height="192" aria-hidden="true"></canvas><span>${T(`style_${id}`)}<small>${T(`style_${id}_hint`)}</small></span></label>`;
   const body = `<main id="app">
 <header><h1>${T("title")}</h1><p class="muted">${T("help_intro")}</p></header>
 <div id="status" class="status" role="status" aria-live="polite" hidden></div>
@@ -155,7 +158,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div><label for="m-date">${T("m_date")}</label><input type="date" id="m-date" aria-describedby="manual-error"></div><div><label for="m-time">${T("m_time")}</label><input type="time" id="m-time" aria-describedby="m-time-hint manual-error"></div></div>
 <p id="m-time-hint" class="muted">${T("m_time_hint")}</p><p id="manual-error" class="warn" role="alert"></p></div></div></section>
 <section id="step-2" class="step" aria-labelledby="h-look" hidden><h2 id="h-look" tabindex="-1">${T("h_look")}</h2>
-<fieldset><legend>${T("style_label")}</legend><div class="cards">${style("neon")}${style("poster")}${style("countdown")}${style("minimal")}</div></fieldset>
+<fieldset><legend>${T("style_label")}</legend><div class="cards styles">${P.STYLES.map(style).join("")}</div><p id="style-note" class="muted" role="status" aria-live="polite" hidden></p></fieldset>
 <div class="field"><label for="text">${T("text_label")}</label><textarea id="text" maxlength="400" aria-describedby="text-help"></textarea><p id="text-help" class="muted"><span id="text-count"></span> · ${T("text_help")}</p></div>
 <label class="check tap" for="watermark"><input type="checkbox" id="watermark" aria-describedby="watermark-help"><span>${T("watermark_label")}</span></label><p id="watermark-help" class="muted" style="margin-top:0">${T("watermark_help")}</p>
 <details id="members-box" class="sub-d"><summary>${T("h_members")} <span id="members-count" class="muted"></span></summary><div class="inner" aria-labelledby="h-members"><p id="h-members" class="muted">${T("members_help")}</p>

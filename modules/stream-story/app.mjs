@@ -44,7 +44,7 @@ const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
   ev: { partners: [], items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -124,10 +124,38 @@ async function buildScene(nowMs = Date.now()) {
   if (mine !== S.building) return null;
   const avatars = Object.fromEntries(members.map((m, i) => [m.login, av[i]]));
   const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
+  S.thumbAssets = { logo, cover, avatars };   // les mêmes images servent aux miniatures du sélecteur de style
   return { scene, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
 let rebuildTimer = null;
-function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); }, 140); }
+function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); scheduleThumbs(); }, 140); }
+/* ───────────── Le sélecteur de style : une miniature vivante par style ───────────── */
+/** Chaque carte montre la vraie scène du style, à l'instant où tout est posé (`restTime`), avec le contenu et les images du moment : c'est peu coûteux (une image par style, en petit). */
+let thumbTimer = null, thumbDirty = true;
+function scheduleThumbs() { thumbDirty = true; clearTimeout(thumbTimer); if (S.step !== 2) return; thumbTimer = setTimeout(renderThumbs, 160); }
+function renderThumbs() {
+  if (!thumbDirty || !S.thumbAssets) return;
+  thumbDirty = false;
+  const stream = selectedStream(), fmt = P.formatOf(S.cfg.format);
+  for (const cv of document.querySelectorAll("canvas.thumb")) {
+    const st = cv.dataset.style; if (!P.STYLES.includes(st)) continue;
+    try {
+      const content = P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ });
+      const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, assets: S.thumbAssets, colors, font: C.font, measureContext: mctx });
+      cv.width = 108; cv.height = Math.round(108 * fmt.height / fmt.width); cv.style.aspectRatio = `${fmt.width} / ${fmt.height}`;
+      const ctx = cv.getContext("2d"); ctx.setTransform(cv.width / sc.width, 0, 0, cv.height / sc.height, 0, 0); sc.draw(ctx, sc.restTime);
+    } catch { /* une miniature qui échoue reste vide : le nom et la phrase suffisent */ }
+  }
+}
+/** Choisir un style. Le style « countdown » a besoin de l'élément compte à rebours : il est coché pour la personne, avec une phrase visible, et décoché si elle change de style sans y avoir touché. */
+function chooseStyle(st) {
+  const prev = S.cfg.style, need = P.STYLE_NEEDS[st];
+  S.cfg.style = st;
+  if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; $(`el-${need}`).checked = true; }
+  else if (S.autoTicked && !need && P.STYLE_NEEDS[prev] === S.autoTicked) { S.cfg.elements = S.cfg.elements.filter((e) => e !== S.autoTicked); $(`el-${S.autoTicked}`).checked = false; S.autoTicked = ""; }
+  renderStyleNote(); renderCoverWarn(); rebuild();
+}
+function renderStyleNote() { const n = $("style-note"); n.textContent = S.autoTicked && S.cfg.style === "countdown" ? L("style_countdown_on") : ""; n.hidden = !n.textContent; }
 function sizePreview() {
   const cv = $("preview"), s = S.scene; if (!s) return;
   const k = 0.5; cv.width = Math.round(s.width * k); cv.height = Math.round(s.height * k); cv.style.aspectRatio = `${s.width} / ${s.height}`;
@@ -527,7 +555,7 @@ function renderSteps() {
 function setStep(n, { focus = true } = {}) {
   if (S.job) return;
   S.step = Math.min(3, Math.max(1, n)); S.visited.add(S.step);
-  renderSteps();
+  renderSteps(); if (S.step === 2) scheduleThumbs();
   $("step-live").textContent = L("step_now", { n: S.step, name: stepName(S.step) });
   try { globalThis.scrollTo?.({ top: 0, behavior: REDUCED ? "auto" : "smooth" }); } catch { /* sans importance */ }
   if (focus) { try { $(["h-event", "h-look", "h-video"][S.step - 1]).focus?.(); } catch { /* sans importance */ } }
@@ -581,7 +609,7 @@ async function removeModel(m) {
 const ADV_KEY = "story-advanced";
 function advancedUsed() {
   const d = P.DEFAULT_CONFIG, c = S.cfg;
-  return c.elements.join() !== d.elements.join() || c.format !== d.format || c.duration !== d.duration || !!c.channelName || c.lang !== (C.lang === "en" ? "en" : "fr");
+  return c.elements.filter((e) => e !== S.autoTicked).join() !== d.elements.join() || c.format !== d.format || c.duration !== d.duration || !!c.channelName || c.lang !== (C.lang === "en" ? "en" : "fr");
 }
 function setAdvanced(on, { remember = false } = {}) {
   S.advanced = !!on; $("adv").checked = S.advanced; $("advanced").hidden = !S.advanced;
@@ -609,8 +637,8 @@ function updateInfo() {
 
 function bind() {
   const on = (id, ev, fn) => $(id).addEventListener(ev, fn);
-  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); renderCoverWarn(); rebuild(); });
-  for (const st of P.STYLES) on(`style-${st}`, "change", () => { S.cfg.style = st; rebuild(); });
+  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); if (e === S.autoTicked) S.autoTicked = ""; renderStyleNote(); renderCoverWarn(); rebuild(); });
+  for (const st of P.STYLES) on(`style-${st}`, "change", () => chooseStyle(st));
   for (const f of P.FORMATS) on(`format-${f.id}`, "change", () => { S.cfg.format = f.id; rebuild(); });
   on("duration", "input", () => { S.cfg.duration = Number($("duration").value) || 15; $("duration-out").textContent = L("seconds", { n: S.cfg.duration }); rebuild(); });
   on("text", "input", () => { S.cfg.text = P.freeText($("text").value, P.LIMITS.text); $("text-count").textContent = `${[...$("text").value].length}/${P.LIMITS.text}`; rebuild(); });

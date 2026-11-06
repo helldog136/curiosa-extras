@@ -15,7 +15,7 @@ export function fakeCanvasContext(log = []) {
       if (name === "log") return log;
       if (name === "state") return state;
       if (name in state) return state[name];
-      if (name === "fillText" || name === "strokeText") return (text, x, y) => { log.push([name, String(text), Math.round(x * 100) / 100, Math.round(y * 100) / 100, state.font, state.textAlign, state.globalAlpha]); };
+      if (name === "fillText" || name === "strokeText") return (text, x, y) => { log.push([name, String(text), Math.round(x * 100) / 100, Math.round(y * 100) / 100, state.font, state.textAlign, state.globalAlpha, state.textBaseline]); };
       return (...args) => { rec(String(name), ...args); };
     },
     set(_t, name, value) { state[name] = value; return true; },

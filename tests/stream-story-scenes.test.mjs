@@ -19,22 +19,25 @@ const stream = (over = {}) => ({ title: LONG_TITLE, startMs: Date.parse("2026-10
 const THEME = { accent: "#7c5cff", accent2: "#ff4d8d", bg: "#101018", fg: "#f2f2f2" };
 
 function scene({ style, format, n = 0, text = "", title = LONG_TITLE, cover = true, logo = true, config = {}, colors = THEME, withStream = true, duration = 15, streamOver = {} }) {
-  const content = P.buildContent({ ...P.DEFAULT_CONFIG, ...config, style, format, text, costreamers: members(n).map((m) => m.login) }, { stream: withStream ? stream({ title, ...streamOver }) : null, coStreamers: members(n), site: { name: "Emma Live, la chaîne" }, nowMs: NOW, tz: TZ });
+  const content = P.buildContent({ ...P.DEFAULT_CONFIG, elements: P.ELEMENTS, ...config, style, format, text, costreamers: members(n).map((m) => m.login) }, { stream: withStream ? stream({ title, ...streamOver }) : null, coStreamers: members(n), site: { name: "Emma Live, la chaîne" }, nowMs: NOW, tz: TZ });
   const assets = { logo: logo ? fakeImage(200, 200) : null, cover: cover ? fakeImage(600, 338) : null, avatars: Object.fromEntries(members(n).filter((_, i) => i % 2 === 0).map((m) => [m.login, fakeImage(300, 300)])) };
   return S.createScene({ style, format, duration, content, assets, colors, measureContext: fakeCanvasContext() });
 }
 const run = (sc, t) => { const ctx = fakeCanvasContext(); sc.draw(ctx, t); return ctx.log; };
 /** Les extrémités horizontales et verticales d'un texte noté (selon son alignement). */
 function extent(entry) {
-  const [, text, x, y, font, align] = entry, px = Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]), w = [...text].length * px * 0.55;
+  const [, text, x, y, font, align, , baseline] = entry, px = Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]), w = [...text].length * px * 0.55;
   const left = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
-  return { left, right: left + w, top: y - px * 0.6, bottom: y + px * 0.6, px };
+  // la hauteur dépend de la ligne de base du texte : « middle » (les quatre premiers styles) ±0,6 em ; « alphabetic » (les six autres) de 0,8 em au-dessus à 0,25 em au-dessous ; « top » de 0 à 0,8 em au-dessous
+  const [up, down] = baseline === "alphabetic" ? [0.8, 0.25] : baseline === "top" ? [0, 0.8] : [0.6, 0.6];
+  return { left, right: left + w, top: y - px * up, bottom: y + px * down, px };
 }
 const CASES = [];
 for (const style of P.STYLES) for (const format of P.FORMATS.map((f) => f.id)) for (const n of [0, 1, 2, 3, 4, 5, 6]) CASES.push({ style, format, n });
 
 test("zone sûre : pour chaque style × format × 0 à 6 co-streamers (titre et phrase longs), aucun élément essentiel ne sort de la zone sûre ni n'entre dans une zone cachée", () => {
-  assert.equal(CASES.length, 56);
+  assert.equal(CASES.length, P.STYLES.length * 2 * 7);
+  assert.equal(P.STYLES.length, 10, "les quatre styles d'origine et les six nouveaux");
   for (const c of CASES) for (const variant of [{ text: LONG_TEXT }, { text: "", cover: false, logo: false }, { text: "Court", title: "Oui" }]) {
     const sc = scene({ ...c, ...variant }), A = P.safeArea(c.format), f = P.formatOf(c.format), where = `${c.style}/${c.format}/${c.n} co-streamers/${JSON.stringify(variant).slice(0, 40)}`;
     assert.ok(sc.boxes.length >= 4, `${where} : des éléments sont posés`);
@@ -47,7 +50,7 @@ test("zone sûre : pour chaque style × format × 0 à 6 co-streamers (titre et 
     const sorted = [...sc.boxes].sort((a, b) => a.y - b.y);
     for (let i = 1; i < sorted.length; i++) assert.ok(sorted[i].y >= sorted[i - 1].y + sorted[i - 1].h - 0.5, `${where} : ${sorted[i - 1].id} et ${sorted[i].id} ne se chevauchent pas`);
     // tous les textes dessinés une fois l'animation posée (le néon peut « trembler » de quelques pixels pendant un parasite)
-    const tol = c.style === "neon" ? 80 : 2;
+    const tol = c.style === "neon" ? 80 : c.style === "cinema" ? 20 : 2;   // cinéma : la poussée lente grossit l'image de 4 % au plus (la zone de mise en page est réduite d'autant)
     for (const t of [sc.restTime, sc.duration]) for (const e of run(sc, t).filter((x) => x[0] === "fillText")) {
       const x = extent(e);
       assert.ok(x.left >= A.x - tol && x.right <= A.x + A.w + tol, `${where} t=${t} : « ${e[1].slice(0, 20)} » dans la largeur (${Math.round(x.left)}→${Math.round(x.right)})`);
@@ -78,8 +81,10 @@ test("dessin sûr : aucun nombre absurde (NaN, infini) dans les images, du débu
     const sc = scene({ ...c, text: LONG_TEXT });
     for (let t = 0; t <= 15; t += 0.5) for (const entry of run(sc, t)) for (const v of entry.slice(1)) if (typeof v === "number") assert.ok(Number.isFinite(v), `${c.style}/${c.format} t=${t} ${entry[0]} : ${v}`);
   }
-  const code = fs.readFileSync(`${DIR}/scenes.mjs`, "utf8").replace(/\/\/.*$/gm, "");
-  for (const forbidden of ["innerHTML", "document.", "insertAdjacentHTML", "eval(", "new Function"]) assert.ok(!code.includes(forbidden), `scenes.mjs ne doit pas employer « ${forbidden} »`);
+  for (const file of ["scenes.mjs", "scenes-extra.mjs"]) {
+    const code = fs.readFileSync(`${DIR}/${file}`, "utf8").replace(/\/\/.*$/gm, "");
+    for (const forbidden of ["innerHTML", "document.", "insertAdjacentHTML", "eval(", "new Function", "Date.now", "Math.random", "performance.now"]) assert.ok(!code.includes(forbidden), `${file} ne doit pas employer « ${forbidden} »`);
+  }
   // un texte piégé est dessiné tel quel, comme du texte
   const sc = scene({ style: "minimal", format: "vertical", text: "<img src=x onerror=alert(1)>", n: 1 });
   assert.ok(run(sc, sc.duration).some((e) => e[0] === "fillText" && e[1].includes("<img")), "le texte piégé est dessiné comme du texte");
@@ -149,9 +154,9 @@ test("durée : toujours entre 5 et 15 secondes ; le format et le style inconnus 
   assert.ok(ctx.log.filter((e) => e[0] === "fillText").every((e) => !String(e[4]).includes("evil")), "la police n'est jamais celle d'une valeur piégée");
 });
 
-test("vm vierge : pure.mjs + scenes.mjs concaténés (sans import ni export) dessinent la même chose, sans Node ni navigateur", () => {
+test("vm vierge : pure.mjs + scenes-extra.mjs + scenes.mjs concaténés (sans import ni export) dessinent la même chose, sans Node ni navigateur", () => {
   const strip = (f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/^import .*$/gm, "").replace(/^export /gm, "");
-  const code = `${strip("pure.mjs")}\n${strip("scenes.mjs")}`;
+  const code = `${strip("pure.mjs")}\n${strip("scenes-extra.mjs")}\n${strip("scenes.mjs")}`;
   const ctx = vm.createContext({ Intl, Date, Math, Number, String, Array, Object, Set, Map, JSON, RegExp, parseInt, isFinite, Boolean, fakeCanvasContext, fakeImage });
   const out = vm.runInContext(`${code}
     const mctx = fakeCanvasContext(), c = fakeCanvasContext();

@@ -13,8 +13,18 @@ export const FORMATS = [
   { id: "passeport", width: 1080, height: 1350, margins: { top: 60, bottom: 60, left: 64, right: 64 },
     zones: [{ id: "grid", x: 0, y: 0, w: 34, h: 1350 }, { id: "grid", x: 1046, y: 0, w: 34, h: 1350 }] },
 ];
-export const STYLES = ["neon", "poster", "countdown", "minimal"];
+/** Les styles d'animation : les quatre premiers depuis la 1.0, puis six styles de caractères très différents (2.7.0). L'ordre est celui du sélecteur de l'éditeur. */
+export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
+/** Ce que montre une NOUVELLE vidéo : tout, sauf le compte à rebours (une personne qui le veut le coche). Les modèles enregistrés gardent ce qu'ils ont gardé. */
+export const DEFAULT_ELEMENTS = Object.freeze(ELEMENTS.filter((e) => e !== "countdown"));
+/** L'élément dont un style a besoin pour être lui-même : le style « countdown » dessine de grands chiffres qui viennent de l'élément « compte à rebours ». */
+export const STYLE_NEEDS = Object.freeze({ countdown: "countdown" });
+/** La liste d'éléments à montrer pour ce style : celle donnée, plus l'élément dont le style a besoin (jamais rien retiré). */
+export function elementsForStyle(style, elements) {
+  const list = Array.isArray(elements) ? elements : DEFAULT_ELEMENTS, need = STYLE_NEEDS[style];
+  return need && !list.includes(need) ? ELEMENTS.filter((e) => e === need || list.includes(e)) : ELEMENTS.filter((e) => list.includes(e));
+}
 export const LANGS = ["fr", "en"];
 export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, savedCostreamers: 60, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
 
@@ -87,7 +97,7 @@ export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).
 /** L'identifiant d'un événement (donné par sa source, stable) et le type de sa source (« calendar », « youtube »…) : de courtes chaînes sûres, jamais une adresse. */
 export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,99}$/;
 export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
-export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true });
+export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: DEFAULT_ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true });
 
 /** La mention de marque, dessinée en bas de la vidéo quand la case est cochée. C'est un nom de marque : elle n'est JAMAIS traduite (donc absente des locales). */
 export const WATERMARK_LEAD = "Made with ", WATERMARK_NAME = "Curiosa", WATERMARK_TEXT = WATERMARK_LEAD + WATERMARK_NAME;
@@ -102,7 +112,7 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
   const format = FORMATS.some((f) => f.id === r.format) ? r.format : FORMATS.some((f) => f.id === d.format) ? d.format : DEFAULT_CONFIG.format;
   const dn = Number(r.duration);
   const duration = Number.isInteger(dn) && dn >= LIMITS.durationMin && dn <= LIMITS.durationMax ? dn : Number.isFinite(dn) && dn > 0 ? Math.min(LIMITS.durationMax, Math.max(LIMITS.durationMin, Math.round(dn))) : cleanConfigDuration(d.duration);
-  const elements = Array.isArray(r.elements) ? ELEMENTS.filter((e) => r.elements.includes(e)) : ELEMENTS.filter((e) => (Array.isArray(d.elements) ? d.elements : ELEMENTS).includes(e));
+  const elements = Array.isArray(r.elements) ? ELEMENTS.filter((e) => r.elements.includes(e)) : ELEMENTS.filter((e) => (Array.isArray(d.elements) ? d.elements : DEFAULT_ELEMENTS).includes(e));
   const members = [], seen = new Set();
   for (const x of Array.isArray(r.costreamers) ? r.costreamers : Array.isArray(d.costreamers) ? d.costreamers : []) {
     const m = cleanMember(x);

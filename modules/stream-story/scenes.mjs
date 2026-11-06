@@ -1,12 +1,13 @@
-// Les quatre animations de « Story d'annonce ». Chacune est une FONCTION DU TEMPS : `scene.draw(ctx, t)` dessine l'image qu'il faut à la seconde `t`, toujours la même
+// Les animations de « Story d'annonce » (neon, poster, countdown, minimal ici ; broadcast, kinetic, cinema, arcade, collage, geometric dans scenes-extra.mjs). Chacune est une FONCTION DU TEMPS : `scene.draw(ctx, t)` dessine l'image qu'il faut à la seconde `t`, toujours la même
 // pour le même `t` (aucun hasard non reproductible, aucune horloge) : c'est ce qui permet de fabriquer la vidéo image par image, aussi vite que l'ordinateur le peut.
 // Ce fichier ne connaît ni la page, ni le réseau : il reçoit un contexte de dessin 2D (canvas) et dessine avec `fillText` (jamais de HTML).
 import { formatOf, safeArea, STYLES, LIMITS, WATERMARK_TEXT, WATERMARK_LEAD, WATERMARK_NAME, WORDMARK, wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, clamp01, easeOutCubic, easeInOutCubic, easeOutBack, progress, seeded } from "./pure.mjs";
+import { EXTRA_STYLES, extraPalette, createExtraScene } from "./scenes-extra.mjs";
 
 const FAMILY = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const cleanFamily = (f) => (typeof f === "string" && /^[A-Za-z0-9 ,'"\-_.]{1,200}$/.test(f) ? f : FAMILY);
 /** Les petits mots écrits dans la vidéo elle-même (le reste vient de l'éditeur). */
-const WORDS = { fr: { with: "AVEC", days: "JOURS", hours: "HEURES", minutes: "MIN" }, en: { with: "WITH", days: "DAYS", hours: "HOURS", minutes: "MIN" } };
+const WORDS = { fr: { with: "AVEC", days: "JOURS", hours: "HEURES", minutes: "MIN" }, en: { with: "WITH", days: "DAYS", hours: "HOURS", minutes: "MIN" } };   // les mots propres aux six autres styles : EXTRA_WORDS (scenes-extra.mjs)
 const imgSize = (img) => (img ? { w: img.naturalWidth || img.width || 0, h: img.naturalHeight || img.height || 0 } : { w: 0, h: 0 });
 const usable = (img) => { const s = imgSize(img); return s.w > 0 && s.h > 0; };
 
@@ -52,6 +53,7 @@ function darkenUntil(color, against, ratio) {
   return c;
 }
 export function paletteFor(style, input = {}) {
+  if (EXTRA_STYLES.includes(style)) return extraPalette(style, input);
   const accent = /^#[0-9a-f]{6}$/i.test(input.accent ?? "") ? input.accent : "#7c5cff";
   const accent2 = /^#[0-9a-f]{6}$/i.test(input.accent2 ?? "") ? input.accent2 : accent;
   const bg = /^#[0-9a-f]{6}$/i.test(input.bg ?? "") ? input.bg : "#111111";
@@ -136,6 +138,13 @@ export function createScene(opts = {}) {
   const hasLogo = usable(assets.logo);
   const members = (content.costreamers ?? []).slice(0, LIMITS.costreamers);
   const digitsOn = style === "countdown" && !!content.parts && !!content.countdown;
+  const pack = (draw, boxes, u, blocks) => ({ width: W, height: H, duration, fps: LIMITS.fps, style, format: fmt.id, draw, boxes, scale: u, palette: pal, blocks: blocks.map((b) => ({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h })), restTime: duration * 0.78, watermark: watermark ? { text: watermark.text, x: watermark.x, y: watermark.y, w: watermark.w, h: watermark.h, color: watermark.color, parts: watermark.parts.map((q) => ({ ...q })), background: watermark.pill, contrast: watermark.ratio } : null });
+  if (EXTRA_STYLES.includes(style)) {
+    // les six styles de scenes-extra.mjs : même contrat, la mention est dessinée ici, par-dessus, quel que soit le style
+    const ex = createExtraScene({ style, W, H, A, duration, content, assets, lang, words, family, pal, members, hasLogo, mctx, tools: { usable } });
+    const drawExtra = (ctx, rawT) => { const t = Math.min(duration, Math.max(0, Number(rawT) || 0)); ctx.save(); ex.draw(ctx, t); if (watermark) drawWatermark(ctx); ctx.restore(); };
+    return pack(drawExtra, ex.boxes, ex.scale, ex.blocks);
+  }
   const has = {
     brand: !!(content.brand || hasLogo), title: !!content.title, when: !!(content.dayLine || content.timeLine),
     countdown: !digitsOn && !!content.countdown, digits: digitsOn, game: !!content.game, text: !!content.text, costreamers: members.length > 0,
@@ -376,7 +385,10 @@ export function createScene(opts = {}) {
         const a = clamp01(progress(t, startOf(blocks.indexOf(b)) + 0.15 * k, 0.5)) * fx.alpha, m = members[k];
         drawAvatar(ctx, cell, m, assets.avatars?.[m.login], pal, style === "minimal" ? fx.alpha : Math.max(a, 0));
         const px = Math.max(20, Math.min(34 * u, cell.d * 0.22));
-        ctx.save(); ctx.font = font(700, px); const label = m.more ? "" : ellipsize((s) => ctx.measureText(s).width, m.name, cell.labelW);
+        ctx.save(); ctx.font = font(700, px);
+        // un nom un peu long rétrécit (jusqu'à 20 px) avant d'être coupé par « … » : « Lune Douce » reste entier quand la place existe
+        if (!m.more) { const w0 = ctx.measureText(m.name).width; if (w0 > cell.labelW && w0 > 0) ctx.font = font(700, Math.max(20, (px * cell.labelW) / w0)); }
+        const label = m.more ? "" : ellipsize((s) => ctx.measureText(s).width, m.name, cell.labelW);
         ctx.globalAlpha = style === "minimal" ? fx.alpha : a; ctx.fillStyle = pal.text; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(label, cell.cx, cell.labelY); ctx.restore();
       });
     }
@@ -417,5 +429,5 @@ export function createScene(opts = {}) {
     ctx.restore();
   }
 
-  return { width: W, height: H, duration, fps: LIMITS.fps, style, format: fmt.id, draw, boxes, scale: u, palette: pal, blocks: blocks.map((b) => ({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h })), restTime: duration * 0.78, watermark: watermark ? { text: watermark.text, x: watermark.x, y: watermark.y, w: watermark.w, h: watermark.h, color: watermark.color, parts: watermark.parts.map((q) => ({ ...q })), background: watermark.pill, contrast: watermark.ratio } : null };
+  return pack(draw, boxes, u, blocks);
 }

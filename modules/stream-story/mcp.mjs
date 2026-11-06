@@ -49,6 +49,8 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     if (bad !== undefined) throw expose(`Unknown element '${P.oneLine(bad, 30)}'. Allowed: ${P.ELEMENTS.join(", ")}.`);
     next.elements = P.ELEMENTS.filter((e) => a.elements.includes(e));
   }
+  // Le style « countdown » dessine les grands chiffres du compte à rebours : sans liste d'éléments donnée, l'élément est ajouté (une liste donnée est respectée telle quelle).
+  if (a.elements === undefined && a.style === "countdown") next.elements = P.elementsForStyle("countdown", next.elements);
   if (a.text !== undefined) { if (typeof a.text !== "string" || [...a.text].length > P.LIMITS.text) throw expose(`'text' must be a text of at most ${P.LIMITS.text} characters.`); next.text = P.freeText(a.text, P.LIMITS.text); }
   if (a.channelName !== undefined) { if (typeof a.channelName !== "string" || [...a.channelName].length > P.LIMITS.channelName) throw expose(`'channelName' must be a text of at most ${P.LIMITS.channelName} characters.`); next.channelName = P.oneLine(a.channelName, P.LIMITS.channelName); }
   if (a.costreamers !== undefined) {
