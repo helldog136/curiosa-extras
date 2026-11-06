@@ -1,0 +1,75 @@
+{
+  "id": "directory",
+  "category": "community",
+  "tags": [
+    "members",
+    "creators",
+    "partners"
+  ],
+  "order": 100,
+  "title": {
+    "en": "Directory",
+    "fr": "Annuaire"
+  },
+  "summary": {
+    "en": "A public showcase of your members, creators or partners, and of your team. Visitors search, filter and open a profile.",
+    "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe. Les visiteurs cherchent, filtrent et ouvrent un profil."
+  },
+  "pitch": {
+    "en": "A public showcase of your members, creators or partners, and of your team. Visitors search, filter and open a profile.",
+    "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe. Les visiteurs cherchent, filtrent et ouvrent un profil."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "map",
+    "thanks-wall"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Directory admin page, with demo data",
+        "fr": "Page d'administration de Annuaire, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Directory admin page, filled with demo data.",
+        "fr": "La page d'administration de Annuaire, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Directory page of the demo site",
+        "fr": "Page Annuaire du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Directory page on a phone screen",
+        "fr": "Page Annuaire sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/directory/module.json",
+    "modules/directory/README.md"
+  ]
+}

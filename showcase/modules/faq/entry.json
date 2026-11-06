@@ -1,0 +1,69 @@
+{
+  "id": "faq",
+  "category": "content",
+  "tags": [
+    "questions",
+    "support",
+    "search"
+  ],
+  "order": 10,
+  "title": {
+    "en": "FAQ",
+    "fr": "Questions fréquentes"
+  },
+  "summary": {
+    "en": "A page of questions and answers, grouped by category, that open and close. Visitors can search and ask their own question.",
+    "fr": "Une page de questions et réponses, classées par catégorie, qui s'ouvrent et se ferment. Les visiteurs peuvent chercher et poser leur question."
+  },
+  "pitch": {
+    "en": "A page of questions and answers, grouped by category, that open and close. Visitors can search and ask their own question.",
+    "fr": "Une page de questions et réponses, classées par catégorie, qui s'ouvrent et se ferment. Les visiteurs peuvent chercher et poser leur question."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.3",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "FAQ admin page, with demo data",
+        "fr": "Page d'administration de Questions fréquentes, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The FAQ admin page, filled with demo data.",
+        "fr": "La page d'administration de Questions fréquentes, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "FAQ page of the demo site",
+        "fr": "Page Questions fréquentes du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "FAQ page on a phone screen",
+        "fr": "Page Questions fréquentes sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/faq/module.json",
+    "modules/faq/README.md"
+  ]
+}

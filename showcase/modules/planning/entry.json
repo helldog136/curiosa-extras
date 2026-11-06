@@ -1,0 +1,76 @@
+{
+  "id": "planning",
+  "category": "streaming",
+  "tags": [
+    "schedule",
+    "streams",
+    "calendar",
+    "obs"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Stream schedule",
+    "fr": "Planning des streams"
+  },
+  "summary": {
+    "en": "Show your upcoming streams in the look you choose. They come from your Google Calendar or from what you write by hand.",
+    "fr": "Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de votre Google Agenda ou de ce que vous écrivez à la main."
+  },
+  "pitch": {
+    "en": "Show your upcoming streams in the look you choose. They come from your Google Calendar or from what you write by hand.",
+    "fr": "Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de votre Google Agenda ou de ce que vous écrivez à la main."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.7.3",
+  "requires": [],
+  "worksWith": [
+    "calendar-ical",
+    "calendar-manual",
+    "game-covers",
+    "game-suggestions",
+    "contacts"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Stream schedule admin page, with demo data",
+        "fr": "Page d'administration de Planning des streams, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Stream schedule admin page, filled with demo data.",
+        "fr": "La page d'administration de Planning des streams, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Stream schedule page of the demo site",
+        "fr": "Page Planning des streams du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Stream schedule page on a phone screen",
+        "fr": "Page Planning des streams sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/planning/module.json",
+    "modules/planning/README.md"
+  ]
+}

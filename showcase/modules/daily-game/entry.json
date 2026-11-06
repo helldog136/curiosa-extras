@@ -1,0 +1,72 @@
+{
+  "id": "daily-game",
+  "category": "community",
+  "tags": [
+    "game",
+    "daily",
+    "quiz"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Daily game",
+    "fr": "Jeu du jour"
+  },
+  "summary": {
+    "en": "A small game once a day, to give people a reason to come back. One question, a few answers, an explanation.",
+    "fr": "Un petit jeu par jour, pour donner envie de revenir. Une question, quelques réponses, une explication."
+  },
+  "pitch": {
+    "en": "A small game once a day, to give people a reason to come back. One question, a few answers, an explanation.",
+    "fr": "Un petit jeu par jour, pour donner envie de revenir. Une question, quelques réponses, une explication."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.2",
+  "requires": [],
+  "worksWith": [
+    "audience",
+    "mascot"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Daily game admin page, with demo data",
+        "fr": "Page d'administration de Jeu du jour, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Daily game admin page, filled with demo data.",
+        "fr": "La page d'administration de Jeu du jour, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Daily game page of the demo site",
+        "fr": "Page Jeu du jour du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Daily game page on a phone screen",
+        "fr": "Page Jeu du jour sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/daily-game/module.json",
+    "modules/daily-game/README.md"
+  ]
+}

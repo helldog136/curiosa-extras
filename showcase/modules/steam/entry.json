@@ -1,0 +1,45 @@
+{
+  "id": "steam",
+  "category": "social",
+  "tags": [
+    "steam",
+    "button"
+  ],
+  "order": 160,
+  "title": {
+    "en": "Steam",
+    "fr": "Steam"
+  },
+  "summary": {
+    "en": "A Steam button in your site header, with your own link.",
+    "fr": "Un bouton Steam dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "pitch": {
+    "en": "A Steam button in your site header, with your own link.",
+    "fr": "Un bouton Steam dans l'en-tête de votre site, avec votre propre lien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "header-buttons.webp",
+      "kind": "public",
+      "shared": true,
+      "alt": {
+        "en": "Header of the demo site with the buttons of several social networks",
+        "fr": "En-tête du site de démonstration avec les boutons de plusieurs réseaux sociaux"
+      },
+      "caption": {
+        "en": "Your networks as buttons, in the header of your site.",
+        "fr": "Vos réseaux en boutons, dans l'en-tête de votre site."
+      }
+    }
+  ],
+  "sources": [
+    "modules/steam/module.json",
+    "modules/steam/README.md"
+  ]
+}

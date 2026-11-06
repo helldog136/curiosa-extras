@@ -1,0 +1,47 @@
+{
+  "id": "github",
+  "category": "social",
+  "tags": [
+    "github",
+    "button",
+    "statistics"
+  ],
+  "order": 50,
+  "title": {
+    "en": "GitHub",
+    "fr": "GitHub"
+  },
+  "summary": {
+    "en": "A GitHub button in your site header, plus your followers.",
+    "fr": "Un bouton GitHub dans l'en-tête de votre site, et vos abonnés."
+  },
+  "pitch": {
+    "en": "A GitHub button in your site header, plus your followers.",
+    "fr": "Un bouton GitHub dans l'en-tête de votre site, et vos abonnés."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "community-stats"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "GitHub admin page, with demo data",
+        "fr": "Page d'administration de GitHub, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The GitHub admin page, filled with demo data.",
+        "fr": "La page d'administration de GitHub, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/github/module.json",
+    "modules/github/README.md"
+  ]
+}

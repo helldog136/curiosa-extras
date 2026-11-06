@@ -1,0 +1,72 @@
+{
+  "id": "blog",
+  "category": "content",
+  "tags": [
+    "articles",
+    "news",
+    "writing"
+  ],
+  "order": 5,
+  "title": {
+    "en": "Blog",
+    "fr": "Blog"
+  },
+  "summary": {
+    "en": "Articles with an image, a summary and simply formatted content. You can add as many blogs as you want.",
+    "fr": "Des articles avec une image, un résumé et un contenu simplement mis en forme. Ajoutez autant de blogs que vous voulez."
+  },
+  "pitch": {
+    "en": "Articles with an image, a summary and simply formatted content. You can add as many blogs as you want.",
+    "fr": "Des articles avec une image, un résumé et un contenu simplement mis en forme. Ajoutez autant de blogs que vous voulez."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.1",
+  "requires": [],
+  "worksWith": [
+    "pages",
+    "links"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Blog admin page, with demo data",
+        "fr": "Page d'administration de Blog, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Blog admin page, filled with demo data.",
+        "fr": "La page d'administration de Blog, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Blog page of the demo site",
+        "fr": "Page Blog du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Blog page on a phone screen",
+        "fr": "Page Blog sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/blog/module.json",
+    "modules/blog/README.md"
+  ]
+}

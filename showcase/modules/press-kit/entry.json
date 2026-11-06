@@ -1,0 +1,72 @@
+{
+  "id": "press-kit",
+  "category": "content",
+  "tags": [
+    "press",
+    "brand",
+    "logos"
+  ],
+  "order": 110,
+  "title": {
+    "en": "Press kit",
+    "fr": "Kit presse"
+  },
+  "summary": {
+    "en": "A public page that presents your identity to press and partners. Presentation, facts, logos, colours, fonts, contact.",
+    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires. Présentation, faits, logos, couleurs, polices, contact."
+  },
+  "pitch": {
+    "en": "A public page that presents your identity to press and partners. Presentation, facts, logos, colours, fonts, contact.",
+    "fr": "Une page publique qui présente votre identité à la presse et aux partenaires. Présentation, faits, logos, couleurs, polices, contact."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "pages",
+    "legal-pages"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Press kit admin page, with demo data",
+        "fr": "Page d'administration de Kit presse, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Press kit admin page, filled with demo data.",
+        "fr": "La page d'administration de Kit presse, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Press kit page of the demo site",
+        "fr": "Page Kit presse du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Press kit page on a phone screen",
+        "fr": "Page Kit presse sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/press-kit/module.json",
+    "modules/press-kit/README.md"
+  ]
+}

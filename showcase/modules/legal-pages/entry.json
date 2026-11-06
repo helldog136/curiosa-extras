@@ -1,0 +1,71 @@
+{
+  "id": "legal-pages",
+  "category": "content",
+  "tags": [
+    "legal",
+    "privacy",
+    "cookies"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Legal pages",
+    "fr": "Mentions légales"
+  },
+  "summary": {
+    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page. They come in two languages.",
+    "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et celle des cookies. Elles existent en deux langues."
+  },
+  "pitch": {
+    "en": "Answer a few simple questions and get your legal notice, privacy page and cookies page. They come in two languages.",
+    "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et celle des cookies. Elles existent en deux langues."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Legal pages admin page, with demo data",
+        "fr": "Page d'administration de Mentions légales, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Legal pages admin page, filled with demo data.",
+        "fr": "La page d'administration de Mentions légales, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Legal pages page of the demo site",
+        "fr": "Page Mentions légales du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Legal pages page on a phone screen",
+        "fr": "Page Mentions légales sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/legal-pages/module.json",
+    "modules/legal-pages/README.md"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "id": "discord-announcer",
+  "category": "streaming",
+  "tags": [
+    "discord",
+    "announcements",
+    "live"
+  ],
+  "order": 80,
+  "title": {
+    "en": "Discord announcements",
+    "fr": "Annonces Discord"
+  },
+  "summary": {
+    "en": "Announces your new content on a Discord channel, with no bot or account to link. It also tells your server when you go live.",
+    "fr": "Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relier. Il prévient aussi votre serveur quand vous passez en direct."
+  },
+  "pitch": {
+    "en": "Announces your new content on a Discord channel, with no bot or account to link. It also tells your server when you go live.",
+    "fr": "Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relier. Il prévient aussi votre serveur quand vous passez en direct."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "discord",
+    "youtube-channel",
+    "twitch-channel"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Discord announcements admin page, with demo data",
+        "fr": "Page d'administration de Annonces Discord, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Discord announcements admin page, filled with demo data.",
+        "fr": "La page d'administration de Annonces Discord, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/discord-announcer/module.json",
+    "modules/discord-announcer/README.md"
+  ]
+}

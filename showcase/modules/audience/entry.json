@@ -1,0 +1,74 @@
+{
+  "id": "audience",
+  "category": "community",
+  "tags": [
+    "nicknames",
+    "remote",
+    "prize-draw",
+    "live"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Audience",
+    "fr": "Participation"
+  },
+  "summary": {
+    "en": "The base of your stream interactions: a nickname per person with no account, a phone remote and a prize draw.",
+    "fr": "La base de vos interactions de stream : un pseudo par personne sans compte, une télécommande et un tirage au sort."
+  },
+  "pitch": {
+    "en": "The base of your stream interactions: a nickname per person with no account, a phone remote and a prize draw.",
+    "fr": "La base de vos interactions de stream : un pseudo par personne sans compte, une télécommande et un tirage au sort."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.7.0",
+  "requires": [],
+  "worksWith": [
+    "polls",
+    "twitch-bot",
+    "daily-game"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Audience admin page, with demo data",
+        "fr": "Page d'administration de Participation, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Audience admin page, filled with demo data.",
+        "fr": "La page d'administration de Participation, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Audience page of the demo site",
+        "fr": "Page Participation du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Audience page on a phone screen",
+        "fr": "Page Participation sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/audience/module.json",
+    "modules/audience/README.md"
+  ]
+}

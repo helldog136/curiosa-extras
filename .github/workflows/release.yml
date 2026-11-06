@@ -29,3 +29,13 @@ jobs:
           tag="v${{ steps.v.outputs.version }}"
           if gh release view "$tag" >/dev/null 2>&1; then echo "$tag est déjà publiée : montez la version dans package.json pour publier."; exit 0; fi
           gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file "$RUNNER_TEMP/notes.md"
+      - name: Showcase bundle
+        # Never blocks the release (already published above). If it fails: Actions > Release > Re-run failed jobs, or run the two commands below by hand.
+        continue-on-error: true
+        # One more file on the release: the module showcase (texts, screenshots with sha256 and download address) for the website sync. The check runs inside the script.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.v.outputs.version }}"
+          node scripts/showcase-bundle.mjs "$v" --out "$RUNNER_TEMP"
+          gh release upload "v$v" "$RUNNER_TEMP/showcase-bundle-$v.json" --clobber

@@ -1,0 +1,49 @@
+{
+  "id": "mascot",
+  "category": "looks",
+  "tags": [
+    "mascot",
+    "character",
+    "tips"
+  ],
+  "order": 30,
+  "title": {
+    "en": "Mascot",
+    "fr": "Mascotte"
+  },
+  "summary": {
+    "en": "A small, discreet character in a corner of your site. It says hello, gives a tip or announces something new, then steps aside.",
+    "fr": "Un petit personnage discret dans un coin de votre site. Il dit bonjour, donne un conseil ou annonce une nouveauté, puis s'efface."
+  },
+  "pitch": {
+    "en": "A small, discreet character in a corner of your site. It says hello, gives a tip or announces something new, then steps aside.",
+    "fr": "Un petit personnage discret dans un coin de votre site. Il dit bonjour, donne un conseil ou annonce une nouveauté, puis s'efface."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "events",
+    "daily-game",
+    "twitch-channel"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Mascot admin page, with demo data",
+        "fr": "Page d'administration de Mascotte, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Mascot admin page, filled with demo data.",
+        "fr": "La page d'administration de Mascotte, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/mascot/module.json",
+    "modules/mascot/README.md"
+  ]
+}

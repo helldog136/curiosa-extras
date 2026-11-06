@@ -1,0 +1,60 @@
+{
+  "id": "hero",
+  "category": "looks",
+  "tags": [
+    "home",
+    "banner",
+    "title"
+  ],
+  "order": 20,
+  "title": {
+    "en": "Home banner",
+    "fr": "Bandeau d'accueil"
+  },
+  "summary": {
+    "en": "A big title and an intro for the top of your home page. You place its section where you want it.",
+    "fr": "Un grand titre et une introduction pour le haut de votre page d'accueil. Vous placez sa section où vous voulez."
+  },
+  "pitch": {
+    "en": "A big title and an intro for the top of your home page. You place its section where you want it.",
+    "fr": "Un grand titre et une introduction pour le haut de votre page d'accueil. Vous placez sa section où vous voulez."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "pages",
+    "blog"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Home banner admin page, with demo data",
+        "fr": "Page d'administration de Bandeau d'accueil, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Home banner admin page, filled with demo data.",
+        "fr": "La page d'administration de Bandeau d'accueil, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Home banner page of the demo site",
+        "fr": "Page Bandeau d'accueil du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    }
+  ],
+  "sources": [
+    "modules/hero/module.json",
+    "modules/hero/README.md"
+  ]
+}

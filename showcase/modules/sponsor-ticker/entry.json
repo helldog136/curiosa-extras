@@ -1,0 +1,60 @@
+{
+  "id": "sponsor-ticker",
+  "category": "looks",
+  "tags": [
+    "obs",
+    "sponsors",
+    "qr code"
+  ],
+  "order": 50,
+  "title": {
+    "en": "Sponsor ticker overlay (OBS)",
+    "fr": "Overlay sponsors (OBS)"
+  },
+  "summary": {
+    "en": "A lower-third banner for OBS. From time to time it shows one sponsor, with its promo code and a QR code.",
+    "fr": "Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponsor, avec son code promo et un code QR."
+  },
+  "pitch": {
+    "en": "A lower-third banner for OBS. From time to time it shows one sponsor, with its promo code and a QR code.",
+    "fr": "Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponsor, avec son code promo et un code QR."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "sponsors",
+    "codes"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Sponsor ticker overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay sponsors (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Sponsor ticker overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay sponsors (OBS), remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "overlay.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "Sponsor ticker overlay (OBS) overlay in OBS, on a dark background",
+        "fr": "Overlay Overlay sponsors (OBS) dans OBS, sur fond sombre"
+      },
+      "caption": {
+        "en": "What your audience sees in OBS.",
+        "fr": "Ce que voit votre public dans OBS."
+      }
+    }
+  ],
+  "sources": [
+    "modules/sponsor-ticker/module.json",
+    "modules/sponsor-ticker/README.md"
+  ]
+}

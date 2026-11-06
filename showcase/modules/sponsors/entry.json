@@ -1,0 +1,60 @@
+{
+  "id": "sponsors",
+  "category": "content",
+  "tags": [
+    "sponsors",
+    "promo codes",
+    "partnership notice"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Sponsors",
+    "fr": "Sponsors"
+  },
+  "summary": {
+    "en": "Shows your sponsors and their promo codes on your site, with the partnership notice that the rules ask for.",
+    "fr": "Affiche vos sponsors et leurs codes promo sur votre site, avec la mention de partenariat que la réglementation demande."
+  },
+  "pitch": {
+    "en": "Shows your sponsors and their promo codes on your site, with the partnership notice that the rules ask for.",
+    "fr": "Affiche vos sponsors et leurs codes promo sur votre site, avec la mention de partenariat que la réglementation demande."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "codes",
+    "sponsor-ticker"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Sponsors admin page, with demo data",
+        "fr": "Page d'administration de Sponsors, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Sponsors admin page, filled with demo data.",
+        "fr": "La page d'administration de Sponsors, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Sponsors page of the demo site",
+        "fr": "Page Sponsors du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    }
+  ],
+  "sources": [
+    "modules/sponsors/module.json",
+    "modules/sponsors/README.md"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "id": "collection",
+  "category": "content",
+  "tags": [
+    "custom",
+    "content",
+    "blank"
+  ],
+  "order": 80,
+  "title": {
+    "en": "Custom collection",
+    "fr": "Collection personnalisée"
+  },
+  "summary": {
+    "en": "A blank content module: you choose its display, its fields and its behaviour yourself.",
+    "fr": "Un module de contenu vierge : vous choisissez vous-même son affichage, ses champs et son comportement."
+  },
+  "pitch": {
+    "en": "A blank content module: you choose its display, its fields and its behaviour yourself.",
+    "fr": "Un module de contenu vierge : vous choisissez vous-même son affichage, ses champs et son comportement."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [],
+  "worksWith": [
+    "blog",
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Custom collection admin page, with demo data",
+        "fr": "Page d'administration de Collection personnalisée, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Custom collection admin page, filled with demo data.",
+        "fr": "La page d'administration de Collection personnalisée, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Custom collection page of the demo site",
+        "fr": "Page Collection personnalisée du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    }
+  ],
+  "sources": [
+    "modules/collection/module.json",
+    "modules/collection/README.md"
+  ]
+}

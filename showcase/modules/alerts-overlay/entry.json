@@ -1,0 +1,60 @@
+{
+  "id": "alerts-overlay",
+  "category": "looks",
+  "tags": [
+    "obs",
+    "alerts",
+    "overlay"
+  ],
+  "order": 10,
+  "title": {
+    "en": "Alerts overlay (OBS)",
+    "fr": "Overlay alertes (OBS)"
+  },
+  "summary": {
+    "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+  },
+  "pitch": {
+    "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.1",
+  "requires": [],
+  "worksWith": [
+    "twitch-channel",
+    "youtube-live-actions"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Alerts overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay alertes (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Alerts overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay alertes (OBS), remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "overlay.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "Alerts overlay (OBS) overlay in OBS, on a dark background",
+        "fr": "Overlay Overlay alertes (OBS) dans OBS, sur fond sombre"
+      },
+      "caption": {
+        "en": "What your audience sees in OBS.",
+        "fr": "Ce que voit votre public dans OBS."
+      }
+    }
+  ],
+  "sources": [
+    "modules/alerts-overlay/module.json",
+    "modules/alerts-overlay/README.md"
+  ]
+}

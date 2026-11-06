@@ -108,6 +108,9 @@ Il faut le dossier du cœur (avec `npm ci`), Playwright et Chromium (`PLAYWRIGHT
 
 **Règles de confidentialité (obligatoires).** Une capture ne montre **jamais** une donnée réelle : ni pseudo, ni nom, ni adresse électronique, ni adresse de site, ni jeton, ni photo d'une vraie personne, ni nom de votre communauté ou de vos partenaires. Utilisez des pseudos génériques, des adresses en `example.org` / `.test`, des illustrations dessinées (`art()` dans `tests/visual/previews/kit.mjs`) et un faux site (« Atelier Démo »). Le script **refuse** de produire une capture dont le texte contient une adresse hors `example.*`, `.test` ou une adresse électronique réelle, et chaque scène peut y ajouter ses propres interdits (`forbid`). Une capture d'écran de votre vrai site n'a pas sa place ici.
 
+## La vitrine : une entrée par module (obligatoire)
+Chaque module a une **entrée de vitrine** (`showcase/modules/<id>/` : `entry.json`, `entry.en.md`, `entry.fr.md` et des captures `shots/*.webp`) : c'est ce que le site de Curiosa publie dans son blog « Modules », mis à jour à chaque version. Un nouveau module n'est **pas terminé** sans son entrée : `node scripts/showcase-check.mjs` (et la CI) échoue si un module n'en a pas, si l'anglais et le français ne correspondent pas, si une capture dépasse 80 Ko, si un mot de jargon ou un point d'exclamation s'y glisse. Le pas à pas est dans [showcase/README.md](showcase/README.md), à la section « Adding the entry of a new module ».
+
 ## Soutenir le projet
 
 Ces modules sont gratuits. Si vous les aimez, un pourboire est possible sur [helldog136.be/tip-me](https://helldog136.be/tip-me) ; c'est entièrement volontaire, rien n'en dépend.

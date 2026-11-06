@@ -1,0 +1,49 @@
+{
+  "id": "youtube-connector",
+  "category": "streaming",
+  "tags": [
+    "youtube",
+    "setup",
+    "connection"
+  ],
+  "order": 6,
+  "title": {
+    "en": "YouTube connector",
+    "fr": "Connecteur YouTube"
+  },
+  "summary": {
+    "en": "Keeps your site's YouTube access in one place. It reads your channel counts and the chat of your live.",
+    "fr": "Garde l'accès YouTube de votre site à un seul endroit. Il lit les chiffres de votre chaîne et le chat de votre direct."
+  },
+  "pitch": {
+    "en": "Keeps your site's YouTube access in one place. It reads your channel counts and the chat of your live.",
+    "fr": "Garde l'accès YouTube de votre site à un seul endroit. Il lit les chiffres de votre chaîne et le chat de votre direct."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.3.2",
+  "requires": [],
+  "worksWith": [
+    "youtube-channel",
+    "youtube-live-actions",
+    "discord-announcer"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "YouTube connector admin page, with demo data",
+        "fr": "Page d'administration de Connecteur YouTube, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The YouTube connector admin page, filled with demo data.",
+        "fr": "La page d'administration de Connecteur YouTube, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/youtube-connector/module.json",
+    "modules/youtube-connector/README.md"
+  ]
+}

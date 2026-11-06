@@ -1,0 +1,50 @@
+{
+  "id": "contact-form",
+  "category": "community",
+  "tags": [
+    "contact",
+    "form",
+    "messages"
+  ],
+  "order": 80,
+  "title": {
+    "en": "Contact form",
+    "fr": "Formulaire de contact"
+  },
+  "summary": {
+    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+    "fr": "Ajoute un formulaire de contact sous une page de votre choix. Chaque message devient un contact à relire dans votre carnet d'adresses."
+  },
+  "pitch": {
+    "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",
+    "fr": "Ajoute un formulaire de contact sous une page de votre choix. Chaque message devient un contact à relire dans votre carnet d'adresses."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.4",
+  "requires": [
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "pages"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Contact form admin page, with demo data",
+        "fr": "Page d'administration de Formulaire de contact, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Contact form admin page, filled with demo data.",
+        "fr": "La page d'administration de Formulaire de contact, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/contact-form/module.json",
+    "modules/contact-form/README.md"
+  ]
+}

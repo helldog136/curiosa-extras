@@ -1,0 +1,51 @@
+{
+  "id": "partnerships",
+  "category": "tools",
+  "tags": [
+    "partners",
+    "brands",
+    "pipeline"
+  ],
+  "order": 40,
+  "title": {
+    "en": "Partnerships (internal)",
+    "fr": "Partenariats (interne)"
+  },
+  "summary": {
+    "en": "Your private partnership pipeline: the brands you approach, their status, follow-ups and a journal. It has no public page.",
+    "fr": "Votre suivi privé des partenariats : les marques que vous approchez, leur statut, les relances et un journal. Il n'a aucune page publique."
+  },
+  "pitch": {
+    "en": "Your private partnership pipeline: the brands you approach, their status, follow-ups and a journal. It has no public page.",
+    "fr": "Votre suivi privé des partenariats : les marques que vous approchez, leur statut, les relances et un journal. Il n'a aucune page publique."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.1.0",
+  "requires": [
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "twitch-raid",
+    "stream-story"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Partnerships (internal) admin page, with demo data",
+        "fr": "Page d'administration de Partenariats (interne), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Partnerships (internal) admin page, filled with demo data.",
+        "fr": "La page d'administration de Partenariats (interne), remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/partnerships/module.json",
+    "modules/partnerships/README.md"
+  ]
+}

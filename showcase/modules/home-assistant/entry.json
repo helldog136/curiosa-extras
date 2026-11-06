@@ -1,0 +1,48 @@
+{
+  "id": "home-assistant",
+  "category": "streaming",
+  "tags": [
+    "home",
+    "smart home",
+    "channel points"
+  ],
+  "order": 90,
+  "title": {
+    "en": "Home Assistant connector",
+    "fr": "Connecteur Home Assistant"
+  },
+  "summary": {
+    "en": "Links your channel points to your home: lights, a message read aloud, and actions you name. A big “Cut everything” button stops it all.",
+    "fr": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Un grand bouton « Tout couper » arrête tout."
+  },
+  "pitch": {
+    "en": "Links your channel points to your home: lights, a message read aloud, and actions you name. A big “Cut everything” button stops it all.",
+    "fr": "Relie vos points de chaîne à votre maison : lumières, message lu à voix haute, actions que vous nommez. Un grand bouton « Tout couper » arrête tout."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.0",
+  "requires": [],
+  "worksWith": [
+    "twitch-bot",
+    "youtube-live-actions"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Home Assistant connector admin page, with demo data",
+        "fr": "Page d'administration de Connecteur Home Assistant, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Home Assistant connector admin page, filled with demo data.",
+        "fr": "La page d'administration de Connecteur Home Assistant, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/home-assistant/module.json",
+    "modules/home-assistant/README.md"
+  ]
+}

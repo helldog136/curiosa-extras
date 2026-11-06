@@ -1,0 +1,74 @@
+{
+  "id": "thanks-wall",
+  "category": "community",
+  "tags": [
+    "thanks",
+    "supporters",
+    "people"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Thank-you wall",
+    "fr": "Mur des remerciements"
+  },
+  "summary": {
+    "en": "A thank-you page for your community: cards with photos, and one person in the spotlight each month. Names stay in Contacts.",
+    "fr": "Une page de remerciements pour votre communauté : des cartes avec photo, et une personne à l'honneur chaque mois. Les noms restent dans Contacts."
+  },
+  "pitch": {
+    "en": "A thank-you page for your community: cards with photos, and one person in the spotlight each month. Names stay in Contacts.",
+    "fr": "Une page de remerciements pour votre communauté : des cartes avec photo, et une personne à l'honneur chaque mois. Les noms restent dans Contacts."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.2",
+  "requires": [
+    "contacts"
+  ],
+  "worksWith": [
+    "contacts",
+    "supporters"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Thank-you wall admin page, with demo data",
+        "fr": "Page d'administration de Mur des remerciements, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Thank-you wall admin page, filled with demo data.",
+        "fr": "La page d'administration de Mur des remerciements, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Thank-you wall page of the demo site",
+        "fr": "Page Mur des remerciements du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Thank-you wall page on a phone screen",
+        "fr": "Page Mur des remerciements sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/thanks-wall/module.json",
+    "modules/thanks-wall/README.md"
+  ]
+}

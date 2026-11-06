@@ -1,0 +1,49 @@
+{
+  "id": "calendar-ical",
+  "category": "streaming",
+  "tags": [
+    "calendar",
+    "google",
+    "schedule"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Online calendar",
+    "fr": "Agenda en ligne"
+  },
+  "summary": {
+    "en": "Reads your Google Calendar, or any online calendar, so your site can show your streams without retyping anything.",
+    "fr": "Lit votre Google Agenda, ou tout autre agenda en ligne, pour que votre site montre vos streams sans rien retaper."
+  },
+  "pitch": {
+    "en": "Reads your Google Calendar, or any online calendar, so your site can show your streams without retyping anything.",
+    "fr": "Lit votre Google Agenda, ou tout autre agenda en ligne, pour que votre site montre vos streams sans rien retaper."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "planning",
+    "twitch-bot",
+    "calendar-manual"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Online calendar admin page, with demo data",
+        "fr": "Page d'administration de Agenda en ligne, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Online calendar admin page, filled with demo data.",
+        "fr": "La page d'administration de Agenda en ligne, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/calendar-ical/module.json",
+    "modules/calendar-ical/README.md"
+  ]
+}

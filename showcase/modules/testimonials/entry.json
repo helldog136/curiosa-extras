@@ -1,0 +1,69 @@
+{
+  "id": "testimonials",
+  "category": "community",
+  "tags": [
+    "reviews",
+    "trust",
+    "moderation"
+  ],
+  "order": 50,
+  "title": {
+    "en": "Testimonials",
+    "fr": "Témoignages"
+  },
+  "summary": {
+    "en": "Collect reviews from people who like what you do. Every review waits for your approval before it appears.",
+    "fr": "Récoltez les avis des personnes qui aiment ce que vous faites. Chaque avis attend votre accord avant d'apparaître."
+  },
+  "pitch": {
+    "en": "Collect reviews from people who like what you do. Every review waits for your approval before it appears.",
+    "fr": "Récoltez les avis des personnes qui aiment ce que vous faites. Chaque avis attend votre accord avant d'apparaître."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.3.0",
+  "requires": [],
+  "worksWith": [],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Testimonials admin page, with demo data",
+        "fr": "Page d'administration de Témoignages, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Testimonials admin page, filled with demo data.",
+        "fr": "La page d'administration de Témoignages, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Testimonials page of the demo site",
+        "fr": "Page Témoignages du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Testimonials page on a phone screen",
+        "fr": "Page Témoignages sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/testimonials/module.json",
+    "modules/testimonials/README.md"
+  ]
+}

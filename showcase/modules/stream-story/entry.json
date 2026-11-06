@@ -1,0 +1,50 @@
+{
+  "id": "stream-story",
+  "category": "streaming",
+  "tags": [
+    "video",
+    "story",
+    "announcement"
+  ],
+  "order": 110,
+  "title": {
+    "en": "Announcement story",
+    "fr": "Story d'annonce"
+  },
+  "summary": {
+    "en": "A short animated video that announces one of your upcoming events. It is ready for an Instagram story or a portrait post.",
+    "fr": "Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle est prête pour une story Instagram ou un post en portrait."
+  },
+  "pitch": {
+    "en": "A short animated video that announces one of your upcoming events. It is ready for an Instagram story or a portrait post.",
+    "fr": "Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle est prête pour une story Instagram ou un post en portrait."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.6.1",
+  "requires": [],
+  "worksWith": [
+    "events",
+    "game-covers",
+    "contacts",
+    "partnerships"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Announcement story admin page, with demo data",
+        "fr": "Page d'administration de Story d'annonce, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Announcement story admin page, filled with demo data.",
+        "fr": "La page d'administration de Story d'annonce, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/stream-story/module.json",
+    "modules/stream-story/README.md"
+  ]
+}

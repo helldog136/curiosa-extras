@@ -1,0 +1,51 @@
+{
+  "id": "youtube-channel",
+  "category": "streaming",
+  "tags": [
+    "youtube",
+    "channel",
+    "videos",
+    "statistics"
+  ],
+  "order": 35,
+  "title": {
+    "en": "YouTube channel",
+    "fr": "Chaîne YouTube"
+  },
+  "summary": {
+    "en": "Showcases your YouTube channel. Its most popular recent video, your videos in the site's feed, your counts.",
+    "fr": "Met en avant votre chaîne YouTube. Sa vidéo récente la plus populaire, vos vidéos dans le flux du site, vos chiffres."
+  },
+  "pitch": {
+    "en": "Showcases your YouTube channel. Its most popular recent video, your videos in the site's feed, your counts.",
+    "fr": "Met en avant votre chaîne YouTube. Sa vidéo récente la plus populaire, vos vidéos dans le flux du site, vos chiffres."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.4.2",
+  "requires": [],
+  "worksWith": [
+    "youtube-connector",
+    "videos",
+    "live-status",
+    "community-stats"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "YouTube channel admin page, with demo data",
+        "fr": "Page d'administration de Chaîne YouTube, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The YouTube channel admin page, filled with demo data.",
+        "fr": "La page d'administration de Chaîne YouTube, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/youtube-channel/module.json",
+    "modules/youtube-channel/README.md"
+  ]
+}

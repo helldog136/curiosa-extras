@@ -1,0 +1,61 @@
+{
+  "id": "ticker-overlay",
+  "category": "looks",
+  "tags": [
+    "obs",
+    "banner",
+    "cards"
+  ],
+  "order": 60,
+  "title": {
+    "en": "Ticker overlay (OBS)",
+    "fr": "Overlay défilant (OBS)"
+  },
+  "summary": {
+    "en": "A transparent browser source for OBS that rotates cards from your site, such as promo codes, articles and announcements.",
+    "fr": "Une source navigateur transparente pour OBS. Elle fait défiler des cartes de votre site : codes promo, articles, annonces."
+  },
+  "pitch": {
+    "en": "A transparent browser source for OBS that rotates cards from your site, such as promo codes, articles and announcements.",
+    "fr": "Une source navigateur transparente pour OBS. Elle fait défiler des cartes de votre site : codes promo, articles, annonces."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.1.0",
+  "requires": [],
+  "worksWith": [
+    "codes",
+    "blog",
+    "sponsor-ticker"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Ticker overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay défilant (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Ticker overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay défilant (OBS), remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "overlay.webp",
+      "kind": "overlay",
+      "alt": {
+        "en": "Ticker overlay (OBS) overlay in OBS, on a dark background",
+        "fr": "Overlay Overlay défilant (OBS) dans OBS, sur fond sombre"
+      },
+      "caption": {
+        "en": "What your audience sees in OBS.",
+        "fr": "Ce que voit votre public dans OBS."
+      }
+    }
+  ],
+  "sources": [
+    "modules/ticker-overlay/module.json",
+    "modules/ticker-overlay/README.md"
+  ]
+}

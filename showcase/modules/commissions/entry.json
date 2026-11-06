@@ -1,0 +1,71 @@
+{
+  "id": "commissions",
+  "category": "community",
+  "tags": [
+    "commissions",
+    "requests",
+    "queue"
+  ],
+  "order": 70,
+  "title": {
+    "en": "Commissions",
+    "fr": "Commandes"
+  },
+  "summary": {
+    "en": "A clear queue for anyone who creates on request: open, full or closed, with your packages and a short form.",
+    "fr": "Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec vos formules et un court formulaire."
+  },
+  "pitch": {
+    "en": "A clear queue for anyone who creates on request: open, full or closed, with your packages and a short form.",
+    "fr": "Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec vos formules et un court formulaire."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.2",
+  "requires": [],
+  "worksWith": [
+    "contacts"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Commissions admin page, with demo data",
+        "fr": "Page d'administration de Commandes, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Commissions admin page, filled with demo data.",
+        "fr": "La page d'administration de Commandes, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Commissions page of the demo site",
+        "fr": "Page Commandes du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Commissions page on a phone screen",
+        "fr": "Page Commandes sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/commissions/module.json",
+    "modules/commissions/README.md"
+  ]
+}

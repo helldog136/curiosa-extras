@@ -1,0 +1,71 @@
+{
+  "id": "idea-box",
+  "category": "community",
+  "tags": [
+    "ideas",
+    "feedback",
+    "votes"
+  ],
+  "order": 110,
+  "title": {
+    "en": "Idea box",
+    "fr": "Boîte à idées"
+  },
+  "summary": {
+    "en": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep, each with a support button.",
+    "fr": "Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une liste des idées que vous gardez, chacune avec un bouton de soutien."
+  },
+  "pitch": {
+    "en": "Let your audience send you ideas. One field, one button, then a list of the ideas you keep, each with a support button.",
+    "fr": "Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une liste des idées que vous gardez, chacune avec un bouton de soutien."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.1",
+  "requires": [],
+  "worksWith": [
+    "audience"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Idea box admin page, with demo data",
+        "fr": "Page d'administration de Boîte à idées, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Idea box admin page, filled with demo data.",
+        "fr": "La page d'administration de Boîte à idées, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Idea box page of the demo site",
+        "fr": "Page Boîte à idées du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Idea box page on a phone screen",
+        "fr": "Page Boîte à idées sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
+  "sources": [
+    "modules/idea-box/module.json",
+    "modules/idea-box/README.md"
+  ]
+}

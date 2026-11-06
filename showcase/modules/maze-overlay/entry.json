@@ -1,0 +1,49 @@
+{
+  "id": "maze-overlay",
+  "category": "looks",
+  "tags": [
+    "obs",
+    "3d",
+    "retro",
+    "overlay"
+  ],
+  "order": 40,
+  "title": {
+    "en": "3D maze overlay (OBS)",
+    "fr": "Overlay labyrinthe 3D (OBS)"
+  },
+  "summary": {
+    "en": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",
+    "fr": "Un labyrinthe 3D rétro pour OBS. Le marcheur parcourt les couloirs et s'arrête devant des affiches faites avec le contenu de votre site."
+  },
+  "pitch": {
+    "en": "A retro 3D maze for OBS. The walker wanders through the corridors and stops in front of posters made from your site's content.",
+    "fr": "Un labyrinthe 3D rétro pour OBS. Le marcheur parcourt les couloirs et s'arrête devant des affiches faites avec le contenu de votre site."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.2.0",
+  "requires": [],
+  "worksWith": [
+    "alerts-overlay",
+    "ticker-overlay"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "3D maze overlay (OBS) admin page, with demo data",
+        "fr": "Page d'administration de Overlay labyrinthe 3D (OBS), avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The 3D maze overlay (OBS) admin page, filled with demo data.",
+        "fr": "La page d'administration de Overlay labyrinthe 3D (OBS), remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/maze-overlay/module.json",
+    "modules/maze-overlay/README.md"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "id": "twitch-channel",
+  "category": "streaming",
+  "tags": [
+    "twitch",
+    "channel",
+    "statistics",
+    "clips"
+  ],
+  "order": 30,
+  "title": {
+    "en": "My Twitch channel",
+    "fr": "Ma Chaîne Twitch"
+  },
+  "summary": {
+    "en": "Showcases your Twitch channel: a header button, your live status and your latest clips. Once connected, it adds your followers.",
+    "fr": "Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos derniers clips. Une fois connectée, elle ajoute vos abonnés."
+  },
+  "pitch": {
+    "en": "Showcases your Twitch channel: a header button, your live status and your latest clips. Once connected, it adds your followers.",
+    "fr": "Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos derniers clips. Une fois connectée, elle ajoute vos abonnés."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "2.2.1",
+  "requires": [
+    "twitch-connector"
+  ],
+  "worksWith": [
+    "twitch-connector",
+    "twitch-bot",
+    "live-status",
+    "community-stats"
+  ],
+  "status": "stable",
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "My Twitch channel admin page, with demo data",
+        "fr": "Page d'administration de Ma Chaîne Twitch, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The My Twitch channel admin page, filled with demo data.",
+        "fr": "La page d'administration de Ma Chaîne Twitch, remplie de données de démonstration."
+      }
+    }
+  ],
+  "sources": [
+    "modules/twitch-channel/module.json",
+    "modules/twitch-channel/README.md"
+  ]
+}
