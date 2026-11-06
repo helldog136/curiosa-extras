@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.47.0 — 2026-11-06
+
+*En bref : une vitrine de tous les modules (une page par module, avec des captures d'écran) est désormais tenue à jour avec les modules, et chaque nouveau module devra arriver avec sa page de vitrine. Aucun module ne change : rien à régler, aucune nouvelle permission.*
+
+*In short: a showcase of every module (one page per module, with screenshots) is now maintained alongside the modules, and every new module must come with its showcase page. No module changes: nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Showcase: one page per module, with screenshots.** The 71 modules each have a short English and French page and their pictures (106 in all), kept in the `showcase/` folder. It feeds the modules presentation on the Curiosa site. No module is changed.
+- **Vitrine : une page par module, avec des captures d'écran.** Les 71 modules ont chacun une courte page en français et en anglais et leurs images (106 au total), rangées dans le dossier `showcase/`. Elle alimente la présentation des modules sur le site Curiosa. Aucun module n'est modifié.
+- **Showcase: required for every new module.** A new module is not accepted without its showcase page; a check in the tests catches a missing page, a missing picture, a text that differs between the two languages or a picture that is too heavy.
+- **Vitrine : obligatoire pour chaque nouveau module.** Un nouveau module n'est pas accepté sans sa page de vitrine ; une vérification dans les tests repère une page absente, une image manquante, un texte différent entre les deux langues ou une image trop lourde.
+
+### Pour les développeurs
+
+- **Showcase (repository tooling, no module version bumped)**: `showcase/` (`entry.json`, `entry.en.md`, `entry.fr.md`, `shots/*.webp` per module, categories, index, README), `scripts/showcase-check.mjs` (`tests/showcase-check.test.mjs`, plus a step in the CI), `scripts/showcase-bundle.mjs <version>` writing `showcase-bundle-<version>.json`, attached to each release by a new last step of `release.yml` (Showcase bundle, `continue-on-error`: a failure there does not fail the release). Screenshot generator `scripts/showcase-shots.mjs` and demo data under `scripts/showcase/`. Détail : `docs/changelog-parts/showcase.md`.
+- No migration, no new permission.
+
 ## 1.46.0 — 2026-11-05
 
 *En bref : dans le Bot Twitch, les commandes, les timers, les récompenses et vos actions se modifient dans une fenêtre au-dessus de la liste, avec une recherche et des interrupteurs marche/arrêt (l'aperçu en direct de la réponse et les boutons « Insérer » de l'ancien éditeur ne sont pas encore dans la fenêtre). Le dock des sondages gagne une durée libre et un champ pour la question. Les docks du Raid Twitch prennent l'apparence de l'administration. Rien à régler, et aucune nouvelle permission.*
