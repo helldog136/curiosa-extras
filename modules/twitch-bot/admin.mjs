@@ -69,7 +69,7 @@ function topBar(ctx, info, state) {
   const repair = !ok && ["revoked", "refused", "pending", "twitch_down", "twitch_busy"].includes(code);
   const check = repair ? K.actionButton({ label: t("relisten_btn"), act: "relisten", cls: "small", fail }) : K.actionButton({ label: t("check_short"), act: "check", cls: "small", fail });
   const stop = muted ? K.actionButton({ label: t("mute_off_btn"), act: "unmute", cls: "small primary", fail }) : K.actionButton({ label: t("mute_short"), act: "mute", cls: "small ck-danger", fail, title: t("mute_tip") });
-  const texts = muted ? [state.mutedAt ? t("mute_since", { date: fmt(state.mutedAt) }) : ""] : ok ? [state.lastMessageAt ? t("top_last", { when: fmt(state.lastMessageAt) }) : t("top_nomsg")] : [];
+  const texts = muted ? [state.mutedAt ? t(state.mutedBy === "remote" ? "mute_since_remote" : "mute_since", { date: fmt(state.mutedAt) }) : ""] : ok ? [state.lastMessageAt ? t("top_last", { when: fmt(state.lastMessageAt) }) : t("top_nomsg")] : [];
   return K.statusBar(ctx, { kind: muted ? "danger" : ok ? "ok" : "warn", pill: muted ? t("top_muted") : ok ? t("top_listening") : t("top_problem"), texts: texts.filter(Boolean), grey: ok && !muted ? t(s.onlyWhenLive ? "top_live_only" : "top_always") : "", buttons: `${check}${stop}` });
 }
 

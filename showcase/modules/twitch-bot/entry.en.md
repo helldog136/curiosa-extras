@@ -7,6 +7,7 @@ Your site answers the commands typed in your Twitch chat. It also runs timers, c
 - Create and change channel point rewards from your admin.
 - Cut everything with an emergency stop that your moderators can also trigger from the chat.
 - Answer only while you are live, if you prefer.
+- With Audience, pause the bot and add a command from the remote on your phone or in OBS.
 
 ## Why you will like it
 
@@ -35,4 +36,4 @@ Your site answers the commands typed in your Twitch chat. It also runs timers, c
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.12.0.
+Available since version 1.0.0. Current version: 1.13.0.

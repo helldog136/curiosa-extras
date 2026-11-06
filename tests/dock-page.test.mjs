@@ -80,9 +80,14 @@ test("theme: the page takes the look of the administration (--cur-* tokens from 
 });
 
 test("layout rules: a 100dvh grid that never scrolls, container queries and clamp(), targets of 44 px and more, visible focus, reduced motion", () => {
-  const css = SRC.slice(SRC.indexOf("const DOCK_CSS"), SRC.indexOf("/** The texts the script needs"));
+  const all = SRC.slice(SRC.indexOf("const DOCK_CSS"), SRC.indexOf("/** The texts the script needs"));
+  // The one place that may scroll, up and down only: the panel of a module without a live view (the Twitch bot: a switch, a form, undo buttons) when the dock is short.
+  const gen = all.slice(all.indexOf("/* Panel without a live view"), all.indexOf("/* Chat tab */"));
+  assert.match(gen, /\.view\.gen\{[^}]*overflow-x:hidden;overflow-y:auto/);
+  assert.equal((gen.match(/overflow(-y|-x)?:\s*(auto|scroll)/g) ?? []).length, 1, "only that one rule scrolls");
+  const css = all.replace(gen, "");
   assert.match(css, /\.app\{display:grid;grid-template-columns:minmax\(0,1fr\);grid-template-rows:auto minmax\(0,1fr\) auto;height:100dvh/);
-  assert.doesNotMatch(css, /overflow(-y|-x)?:\s*(auto|scroll)/, "nothing scrolls");
+  assert.doesNotMatch(css, /overflow(-y|-x)?:\s*(auto|scroll)/, "nothing else scrolls");
   assert.match(css, /container:stage\/size/); assert.match(css, /@container stage/); assert.match(css, /clamp\(/);
   assert.match(css, /:focus-visible\{outline:3px/); assert.match(css, /prefers-reduced-motion:reduce/); assert.match(css, /forced-colors/);
   const heights = [...css.matchAll(/min-height:(\d+)px/g)].map((m) => Number(m[1]));

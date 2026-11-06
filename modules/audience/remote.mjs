@@ -294,6 +294,33 @@ kbd{display:none;font:600 11px/1 ui-monospace,monospace;padding:2px 5px;border-r
 .sheet .rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 8px;align-content:start;min-height:0}
 .sheet .fld>label,.sheet .fld>.seglab{font-size:.8em;line-height:1.15;min-height:2.3em;display:flex;align-items:flex-end}
 
+/* Panel without a live view (the Twitch bot): a switch that shows its state, a small form, undo buttons. It may scroll up and down inside the stage when the dock is short, never sideways. */
+.view.gen{display:flex;flex-direction:column;align-items:stretch;gap:clamp(8px,1.6cqh,14px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.view.gen>*{flex:none;min-width:0}
+.gen .hd .sub{display:block;white-space:normal}
+.tgw{display:grid;gap:4px}
+.tg{position:relative;width:100%;min-height:68px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"l k" "s k";align-items:center;gap:1px 14px;padding:8px 14px;text-align:left;border-radius:var(--cur-radius);border:2px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-fg);cursor:pointer;touch-action:manipulation}
+.tg:disabled,.tg[aria-busy=true]{opacity:1;cursor:wait}
+.tg .tgl{grid-area:l;font-weight:800;font-size:1.05em;min-width:0;overflow-wrap:anywhere}
+.tg .tgs{grid-area:s;font-size:.92em;color:var(--cur-muted);min-width:0;overflow-wrap:anywhere}
+.tg .trk{grid-area:k;position:relative;width:60px;height:34px;border-radius:17px;background:color-mix(in srgb,var(--cur-fg) 24%,transparent);border:2px solid transparent;transition:background .15s}
+.tg .knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--cur-bg);transition:left .15s}
+.tg.on{border-color:var(--cur-ok)}
+.tg.on .trk{background:var(--cur-ok)}
+.tg.on .knob{left:29px}
+.tg.on .tgs{color:var(--cur-ok)}
+.tg.on .tgs::before{content:"● "}
+.tg.off{border-color:var(--cur-warn);background:color-mix(in srgb,var(--cur-warn) 14%,var(--cur-surface))}
+.tg.off .tgs{color:var(--cur-fg);font-weight:700}
+.tg.off .tgs::before{content:"";display:inline-block;width:11px;height:12px;margin-right:7px;vertical-align:-1px;border-left:4px solid currentColor;border-right:4px solid currentColor;box-sizing:border-box}
+.tg:hover:not(:disabled){border-color:var(--cur-fg)}
+.hint,.note{margin:0;color:var(--cur-muted);font-size:.86em}
+.gform{display:grid;gap:clamp(6px,1.2cqh,10px);min-width:0}
+.gform .form .in::placeholder{color:var(--cur-muted);opacity:.75}
+.ftl{margin:0;font-weight:800}
+.grp{margin:4px 0 0;font-weight:700;font-size:.88em;color:var(--cur-muted)}
+.tab.alert .tb{color:var(--cur-warn);font-weight:700}
+
 /* Chat tab */
 .chat{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:clamp(8px,2.4cqmin,16px)}
 .people{display:grid;gap:4px;align-content:start;min-height:0;overflow:hidden}
@@ -354,7 +381,7 @@ export function remoteConfig(ctx, key, { dock = false } = {}) {
   return {
     k: key, dock, state: `/m/${ctx.instance.key}/remote-state?k=${encodeURIComponent(key)}`, press: `/m/${ctx.instance.key}/remote-press`, lang: ctx.locale,
     t: {
-      done: t("remoteDone"), more: t("remoteMore"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
+      done: t("remoteDone"), busy: t("remoteBusy"), more: t("remoteMore"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
       person: t("person_one"), people: t("person_many"), anon: t("anon"), mutedTag: t("mutedTag"), mute: t("remoteMute"), unmute: t("remoteUnmute"), clear: t("remoteClear"), 
       connected: t("remoteConnected"), offline: t("remoteOffline"), denied: t("remoteDenied"), connecting: t("remoteConnecting"),
       e_net: t("remoteErrNet"), e_gone: t("remoteErrGone"), e_failed: t("remoteErrFailed"), e_invalid: t("remoteErrInvalid"), e_limit: t("remoteErrLimit"),

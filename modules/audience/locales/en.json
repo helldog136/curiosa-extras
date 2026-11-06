@@ -357,5 +357,9 @@
   "dockLeading": "Leading",
   "dockKeys": "Keyboard shortcut",
   "dockClearLoss": "Everyone leaves the room",
-  "drawNotHereLoss": "Person is dropped"
+  "drawNotHereLoss": "Person is dropped",
+  "what_panel_pause": "Twitch bot paused",
+  "what_panel_resume": "Twitch bot answering again",
+  "what_panel_addcom": "Chat command added",
+  "what_panel_undo": "Chat command deleted"
 }
