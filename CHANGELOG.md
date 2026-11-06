@@ -4,6 +4,26 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.49.0 — 2026-11-06
+
+*En bref : le module Story d'annonce passe en 2.8.0. Six nouveaux styles d'animation (dix au total), une création en trois étapes (l'événement, puis les informations, puis le style) et une ligne de compte à rebours décochée au départ. Rien à régler, aucune nouvelle permission.*
+
+*In short: the Announcement story module moves to 2.8.0. Six new animation styles (ten in all), a creation in three steps (the event, then the information, then the style) and a countdown line that is unticked by default. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Announcement story 2.7.0: six new styles of very different character.** TV channel, Kinetic type, Film title card, Arcade 8-bit, Paper collage and Geometric poster. Each one takes its colours from your site, keeps its text readable, fits any title and up to 6 guests, both formats and the "Made with Curiosa" mention, and stays perfectly still at the end of the video. The style picker shows a small live thumbnail of each.
+- **Story d'annonce 2.7.0 : six nouveaux styles aux caractères très différents.** Chaîne de télé, Texte cinétique, Générique de film, Arcade 8 bits, Collage papier et Affiche géométrique. Chacun reprend les couleurs de votre site, garde son texte lisible, s'adapte à tout titre et jusqu'à 6 invités, aux deux formats et à la mention « Made with Curiosa », et reste parfaitement immobile à la fin de la vidéo. Le sélecteur de style montre une petite miniature vivante de chacun.
+- **Announcement story 2.7.0: the countdown line is unticked in a new video.** Tick it in the options to show "Tonight at 7:30 PM". Models you saved keep what they stored. The "Animated countdown" style ticks it for you.
+- **Story d'annonce 2.7.0 : la ligne de compte à rebours est décochée dans une nouvelle vidéo.** Cochez-la dans les options pour afficher « Ce soir à 19 h 30 ». Les modèles enregistrés gardent ce qu'ils ont gardé. Le style « Compte à rebours animé » la coche pour vous.
+- **Announcement story 2.8.0: three steps in a new order.** 1 Event (or "No event, I write it myself"), 2 Information (correct any item, remove one with its "In the video" switch), 3 Style (ten cards, format, mention, then the "Generate the video" button). Steps 1 and 2 show a plain preview; "Generate now" keeps the style you see.
+- **Story d'annonce 2.8.0 : trois étapes, dans un nouvel ordre.** 1 Événement (ou « Aucun événement, j'écris moi-même »), 2 Informations (corrigez chacune, retirez-en une avec son interrupteur « Dans la vidéo »), 3 Style (dix cartes, format, mention, puis le bouton « Générer la vidéo »). Les étapes 1 et 2 montrent un aperçu simple ; « Générer maintenant » garde le style que vous voyez.
+
+### Pour les développeurs
+
+- **Announcement story 2.7.0 and 2.8.0**: ten style ids (`broadcast`, `kinetic`, `cinema`, `arcade`, `collage`, `geometric` added) in the new `scenes-extra.mjs`, countdown element off by default (`DEFAULT_ELEMENTS`, `STYLE_NEEDS`, `elementsForStyle`), three-step editor (`S.info`, `S.noEvent`, `S.styleChosen`, `EDIT_STYLE`). `minCore` unchanged, no data migration. Showcase entry, README and tests updated. Détail : `docs/changelog-parts/stream-story-styles.md`, `docs/changelog-parts/stream-story-steps.md`.
+- No migration, no new permission.
+
 ## 1.48.0 — 2026-11-06
 
 *En bref : le module Blog passe en 1.2.0 et demande Curiosa 0.6.18 ou plus. L'affichage « liste » d'un blog devient une suite de cartes pleine largeur, et un champ « Rechercher » peut filtrer la liste pendant que le public tape. Rien à régler, aucune nouvelle permission.*
