@@ -25,6 +25,7 @@ const actions = await import(`./actions.mjs${v}`);
 const rewards = await import(`./rewards.mjs${v}`);
 const kit = await import(`./adminkit.mjs${v}`);
 const { migrateTimers } = await import(`./timersMigrate.mjs${v}`);
+const remote = await import(`./remote.mjs${v}`);
 
 export default {
   routes: {
@@ -69,6 +70,9 @@ export default {
   // La commande d'un partenaire se règle dans SA fiche (section ajoutée à l'éditeur d'entrée de Sponsors par le cœur, seulement si le bot est installé).
   entryPanels: { "chat-command": entry.default },
   mcp: tools,
+
+  // The panel of the remote control (phone and OBS dock) of Audience, when it is installed: pause the bot, add a command. Audience checks its secret address before it calls us (see remote.mjs).
+  services: { "audience.remote": { describe: (ctx) => remote.describe(ctx), press: (ctx, a) => remote.press(ctx, a) } },
 
   // Données 2 : la chaîne tapée à la main (un pseudo) est notée, avec l'instance de Ma Chaîne Twitch qui l'a, pour le réglage devenu un choix (voir channel.mjs).
   // Données 3 : l'ancien réglage « Autres actions » et les actions déjà portées par des récompenses deviennent des actions nommées (le mot est le nom) ; rien ne change pour les récompenses.

@@ -74,11 +74,12 @@ export const clearJournal = (ctx) => st.serial(ctx, "redeem", async () => { for 
 
 async function notice(ctx, s, text) {
   if (!s.rewardsNotice) return;
+  if (await st.isMuted(ctx).catch(() => false)) return;   // paused (emergency stop): nothing is written in the chat, not even this notice
   try { const d = await diagnose(ctx, s, { declare: false }); if (d.code === "ready") await sendChat(ctx, d, text); } catch { /* le message est un plus */ }
 }
 
 /** Raisons de remboursement normales (maison coupée, pas en direct, trop de demandes, message refusé…) : elles restent dans le journal des échanges, pas dans l'Historique. */
-const BENIGN = new Set(["off", "not_live", "busy", "blocked", "no_text", "expired"]);
+const BENIGN = new Set(["off", "not_live", "busy", "blocked", "no_text", "expired", "muted"]);
 /** Journal du cœur (Historique) : un remboursement qui demande peut-être votre attention, ou un échange que Twitch n'a pas confirmé. Jamais le pseudo ni le message. Ne lève jamais. */
 const centralLog = (ctx, action, doc) => ctx.api.log?.write({ action, data: { title: clean(doc.title, 45), ...(action === "reward.refunded" ? { reason: ctx.t(`rw_reason_${doc.reason}`) } : {}) } });
 
@@ -132,6 +133,7 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
     const id = await ctx.api.store.add(COL, doc0, { key: red.id });
     let doc = { id, ...doc0 };
     if (waiting >= MAX_WAITING) doc = verdict(doc, "CANCELED", "busy");
+    else if (await st.isMuted(ctx)) doc = verdict(doc, "CANCELED", "muted");   // paused (emergency stop): no chat answer, no action at home; the points are given back
     else if (R.isHome(reward.action)) {
       const text = reward.action === "tts:lire" ? clean(red.input, 300) : undefined;
       if (reward.action === "tts:lire" && !text) doc = verdict(doc, "CANCELED", "no_text");
@@ -256,6 +258,7 @@ export async function simulate(ctx, s, rewardId, { text = "", now = Date.now(), 
   if (m.hour.length >= 30) return { ok: false, code: "too_many" };
   const reward = (await R.list(ctx)).find((x) => x.id === rewardId);
   if (!reward || reward.gone) return { ok: false, code: "unknown" };
+  if (R.isHome(reward.action) && (await st.isMuted(ctx))) return { ok: false, code: "refused", reason: "muted" };   // paused: not even a test sends anything to the home
   m.last = now; m.hour.push(now); sims.set(k, m);
   const ref = `test-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const doc0 = { rid: ref, test: true, rewardTid: reward.tid, title: reward.title, action: reward.action, user: "Test", name: "Test", at: now, status: "new", todo: null, reason: null, attempts: 0 };

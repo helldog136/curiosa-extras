@@ -223,6 +223,7 @@ export const REMOTE_JS = String.raw`(function () {
     if (t.chat) { if (t.people) { part("g", "👥"); part("", " " + t.people); } }
     else if (v && v.stage === "live") { part("g", "●"); if (v.until) part("", clock(v.until)); if (v.count !== null) part("c", (v.until ? " · " : " ") + v.count); }
     else if (v && v.stage === "done") { part("g", "✓"); if (v.count !== null) part("", " " + v.count); }
+    else if (t.panel && t.panel.badge) part("", t.panel.badge);
     node.replaceChildren.apply(node, kids);
   }
   function paintTabs() {
@@ -230,9 +231,10 @@ export const REMOTE_JS = String.raw`(function () {
     var frag = document.createDocumentFragment();
     tabs.forEach(function (t, i) {
       var on = t.id === sel, live = t.view && t.view.stage === "live";
-      var b = h("button", "tab" + (live ? " live" : ""));
+      var b = h("button", "tab" + (live ? " live" : "") + (t.panel && t.panel.alert ? " alert" : ""));
       b.type = "button"; b.id = "tab-" + i; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false"); b.setAttribute("tabindex", on ? "0" : "-1"); b.setAttribute("data-fk", "t:" + t.id); b.setAttribute("data-tab", t.id);
-      b.setAttribute("aria-label", t.label + (live ? ", " + T.live : t.view && t.view.stage === "done" ? ", " + T.finished : ""));
+      var spoken = live ? T.live : t.view && t.view.stage === "done" ? T.finished : t.panel && t.panel.badge;
+      b.setAttribute("aria-label", t.label + (spoken ? ", " + spoken : ""));
       b.appendChild(h("span", "tl", t.label));
       var bg = h("span", "tb"); fillBadge(bg, t); bg.setAttribute("aria-hidden", "true"); b.appendChild(bg);
       b.addEventListener("click", function () { pick(t.id); });
@@ -477,18 +479,49 @@ export const REMOTE_JS = String.raw`(function () {
     root.appendChild(acts);
     return root;
   }
-  /* A panel without a live view (a module that only gives buttons and forms): plain, but usable. */
-  function genericEl(t) {
-    var p = t.panel, root = h("div", "view"); root.appendChild(h("p", "ttl", p.title));
-    if (p.state) root.appendChild(h("p", "sub", p.state.text));
-    var bd = h("div", "bd"); root.appendChild(bd);
-    var acts = h("div", "acts");
-    (p.buttons || []).forEach(function (b) {
-      var d = { id: b.id, label: b.label, short: b.label, disabled: b.disabled, loss: b.confirm };
-      acts.appendChild(btn(d, b.tone === "primary" ? "primary" : b.tone === "danger" ? "danger" : "", function (bb, n) { if (b.confirm) arm("g:" + b.id, function () { press(t.pid, b.id, {}, null); }, b.confirm, t.id); else press(t.pid, b.id, {}, n); }));
+  /* A panel without a live view (a module that gives switches, buttons and forms, like the Twitch bot): plain, but usable on a phone and in a narrow dock. */
+  function toggleEl(t, tg) {
+    var wrap = h("div", "tgw"), err = ui.errors[t.pid + ":tg"];
+    var b = h("button", "tg " + (tg.on ? "on" : "off")); b.type = "button"; b.setAttribute("role", "switch"); b.setAttribute("aria-checked", tg.on ? "true" : "false");
+    b.setAttribute("data-fk", "tg:" + tg.id); b.setAttribute("data-in", t.pid + ":tg");
+    var lab = h("span", "tgl", tg.label), st = h("span", "tgs", tg.text), trk = h("span", "trk"); trk.setAttribute("aria-hidden", "true"); trk.appendChild(h("i", "knob"));
+    b.appendChild(lab); b.appendChild(st); b.appendChild(trk);
+    var hid = "tgh" + (++seq), eid = "tge" + seq, ids = [];
+    if (tg.hint) ids.push(hid); if (err) { ids.push(eid); b.setAttribute("aria-invalid", "true"); }
+    if (ids.length) b.setAttribute("aria-describedby", ids.join(" "));
+    b.addEventListener("click", function () {
+      if (b.disabled) return;
+      var before = st.textContent, done = false;
+      delete ui.errors[t.pid + ":tg"]; er.hidden = true; st.textContent = T.busy;   // visible at once: the answer takes a moment
+      press(t.pid, tg.id, tg.values, b, function () { done = true; }).then(function () { if (!done && document.body.contains(st) && st.textContent === T.busy) st.textContent = before; });
     });
-    (p.forms || []).forEach(function (f) { var fm = formBody(t, f); var go = h("button", "btn primary", f.submit); go.type = "button"; go.addEventListener("click", function () { ui.errors = {}; press(t.pid, f.id, submitValues(t.pid, f), go, function () { clearDrafts(t.pid, f); }); }); bd.appendChild(fm); acts.appendChild(go); });
-    root.appendChild(acts);
+    wrap.appendChild(b);
+    if (tg.hint) { var hn = h("p", "hint", tg.hint); hn.id = hid; wrap.appendChild(hn); }
+    var er = h("p", "err", err || ""); er.id = eid; er.hidden = !err; er.setAttribute("role", "alert"); wrap.appendChild(er);
+    return wrap;
+  }
+  function genericEl(t) {
+    var p = t.panel, root = h("div", "view gen"), hd = h("div", "hd");
+    hd.appendChild(h("p", "ttl", p.title));
+    if (p.state && p.state.text) hd.appendChild(h("p", "sub", p.state.text));
+    root.appendChild(hd);
+    (p.toggles || []).forEach(function (tg) { root.appendChild(toggleEl(t, tg)); });
+    (p.forms || []).forEach(function (f) {
+      var fm = h("form", "gform"); fm.noValidate = true;
+      fm.appendChild(h("p", "ftl", f.title)); fm.appendChild(formBody(t, f));
+      var go = h("button", "btn primary"); go.type = "submit"; go.setAttribute("data-fk", "f:" + f.id); go.appendChild(h("span", "lb l", f.submit)); go.appendChild(h("span", "lb s", f.submit));
+      fm.addEventListener("submit", function (ev) { ev.preventDefault(); if (go.disabled) return; ui.errors = {}; press(t.pid, f.id, submitValues(t.pid, f), go, function () { clearDrafts(t.pid, f); }); });
+      fm.appendChild(go); root.appendChild(fm);
+    });
+    var acts = h("div", "acts"), last = null;
+    (p.buttons || []).forEach(function (b) {
+      if (b.group && b.group !== last) acts.appendChild(h("p", "grp", b.group));
+      last = b.group;
+      var d = { id: b.id, label: b.label, short: b.label, disabled: b.disabled, loss: b.confirm, values: b.values };
+      acts.appendChild(btn(d, b.tone === "primary" ? "primary" : b.tone === "danger" ? "danger" : "", function (bb, n) { if (b.confirm) arm("g:" + b.id, function () { press(t.pid, b.id, b.values || {}, null); }, b.confirm, t.id); else press(t.pid, b.id, b.values || {}, n); }));
+    });
+    if (acts.children.length) root.appendChild(acts);
+    if (p.note) root.appendChild(h("p", "note", p.note));
     return root;
   }
   /* ───────── the chat tab: rooms and people, mute, clear ───────── */

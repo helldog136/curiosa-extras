@@ -86,7 +86,7 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.12.0");
+  assert.equal(manifest.version, "1.13.0");
   assert.equal(manifest.minCore, "0.6.7");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
@@ -921,4 +921,36 @@ test("fenêtres des récompenses : un succès ne redirige plus (la fenêtre se f
   await mk(en_, { title: "Red" });
   const eb = await RA.blocks(en_.ctx, await A.context(en_.ctx, { declare: false }), { rewardNew: "1" });
   assert.deepEqual([eb.find((x) => x.action === "rewardCreate").title, eb.find((x) => x.type === "links").items[0].label], ["New reward", "New reward"]);
+});
+
+/* ───────────── 1.13.0: the paused bot (emergency stop, also pressed from the remote control) ───────────── */
+
+test("paused bot: a reward writes nothing in the chat and starts nothing at home, the points are given back, even the refund notice stays silent; resumed, it works again", async () => {
+  const w = await setup({ settings: { rewardsNotice: true } });
+  const home = await mk(w), chat = await mk(w, { title: "Merci", action: "chat:repondre", reply: "Merci {utilisateur} !" });
+  let handed = 0;
+  const enqueue = w.ha.methods.enqueue;
+  w.ha.methods.enqueue = (...a) => { handed++; return enqueue(...a); };
+  await S.setMuted(w.ctx, true, "remote");
+  tick(); const a = await redeem(w, chat);
+  tick(); const b = await redeem(w, home);
+  assert.deepEqual(w.tw.chat, [], "no answer, no notice");
+  assert.equal(handed, 0, "nothing was handed to the home");
+  assert.deepEqual([w.tw.settled.get(a.id), w.tw.settled.get(b.id)], ["CANCELED", "CANCELED"], "the points are given back");
+  assert.deepEqual([(await byRid(w, a.id)).reason, (await byRid(w, b.id)).reason], ["muted", "muted"]);
+  assert.equal(fr.rw_reason_muted, "le bot est en pause"); assert.equal(en.rw_reason_muted, "the bot is paused");
+  // a refund because of the pause is an ordinary one: it goes to the exchange log, not to the site's journal of problems
+  assert.deepEqual(w.ctx.dumpLog().filter((l) => l.action === "reward.refunded"), []);
+  // not even a test: a home action is not simulated while paused
+  const sim = await J.simulate(w.ctx, (await import("../modules/twitch-bot/settings.mjs")).settingsOf(w.ctx), home.id, {});
+  assert.deepEqual([sim.ok, sim.code, sim.reason], [false, "refused", "muted"]);
+  assert.equal(handed, 0);
+  // resumed: both work again
+  await S.setMuted(w.ctx, false, "remote");
+  tick(); const c = await redeem(w, chat);
+  assert.deepEqual(w.tw.chat, ["Merci Viewer !"]);
+  assert.equal(w.tw.settled.get(c.id), "FULFILLED");
+  tick(); const d = await redeem(w, home);
+  assert.equal(handed, 1);
+  assert.notEqual((await byRid(w, d.id)).reason, "muted");
 });

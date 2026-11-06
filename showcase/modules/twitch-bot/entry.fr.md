@@ -7,6 +7,7 @@ Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi 
 - Créez et modifiez les récompenses de points de chaîne depuis votre administration.
 - Coupez tout avec un arrêt d'urgence que vos modérateurs peuvent aussi déclencher depuis le chat.
 - Ne répondez que pendant vos directs, si vous préférez.
+- Avec Participation, mettez le bot en pause et ajoutez une commande depuis la télécommande, sur votre téléphone ou dans OBS.
 
 ## Pourquoi vous allez l'aimer
 
@@ -35,4 +36,4 @@ Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.12.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.13.0.

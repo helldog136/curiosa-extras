@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.12.0",
+  "version": "1.13.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -35,6 +35,13 @@
       "service": "audience.draw",
       "min": 1,
       "optional": true
+    }
+  ],
+  "offers": [
+    {
+      "service": "audience.remote",
+      "version": 1,
+      "each": true
     }
   ],
   "dataVersion": 6,
@@ -1160,6 +1167,44 @@
         {
           "key": "created",
           "type": "number"
+        }
+      ]
+    },
+    {
+      "key": "bot.paused",
+      "label": {
+        "fr": "Bot mis en pause depuis la télécommande",
+        "en": "Bot paused from the remote control"
+      }
+    },
+    {
+      "key": "bot.resumed",
+      "label": {
+        "fr": "Bot réactivé depuis la télécommande",
+        "en": "Bot switched back on from the remote control"
+      }
+    },
+    {
+      "key": "command.quickadded",
+      "label": {
+        "fr": "Commande {name} ajoutée depuis la télécommande",
+        "en": "Command {name} added from the remote control"
+      },
+      "fields": [
+        {
+          "key": "name"
+        }
+      ]
+    },
+    {
+      "key": "command.quickremoved",
+      "label": {
+        "fr": "Commande {name} supprimée depuis la télécommande",
+        "en": "Command {name} deleted from the remote control"
+      },
+      "fields": [
+        {
+          "key": "name"
         }
       ]
     }

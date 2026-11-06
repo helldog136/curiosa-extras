@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.50.0 — 2026-11-06
+
+*En bref : la télécommande de votre direct (téléphone et dock OBS) gagne un onglet Bot. Le module Bot Twitch passe en 1.13.0 et Participation en 1.8.0. Rien à régler, aucune nouvelle permission.*
+
+*In short: the remote control of your live (phone and OBS dock) gets a Bot tab. The Twitch bot module moves to 1.13.0 and Audience to 1.8.0. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Twitch bot 1.13.0: one switch to pause the bot.** "Bot answers" shows the state ("On, answering your chat" / "Paused, silent in your chat") in a big target. While the bot is paused the tab says "Paused". It is the emergency stop you already have: the bot page shows it too ("Since …, from the remote control").
+- **Bot Twitch 1.13.0 : un interrupteur pour mettre le bot en pause.** « Réponses du bot » montre l'état (« Actif, répond dans votre chat » / « En pause, muet dans votre chat »), sur une grande cible. Pendant la pause, l'onglet affiche « En pause ». C'est l'arrêt d'urgence que vous avez déjà : la page du bot l'affiche aussi (« Depuis …, depuis la télécommande »).
+- **Twitch bot 1.13.0: pause now covers channel point rewards too.** No chat answer, no action at home, the points are given back, and the refund notice stays silent. Commands, repeating commands, `!addcom`, the giveaway and the replies to `!stop` / `!start` were already covered.
+- **Bot Twitch 1.13.0 : la pause couvre maintenant aussi les récompenses en points de chaîne.** Aucune réponse dans le chat, aucune action chez vous, les points sont rendus et le message de remboursement reste silencieux. Les commandes, les commandes répétées, `!addcom`, le tirage au sort et les réponses à `!stop` / `!start` l'étaient déjà.
+- **Twitch bot 1.13.0: quick add of a command from the remote.** Two fields (name, reply) and one button, "Add the command". The command is for everyone, enabled, with the usual delays; same checks as the administration, a refusal is said under the field with an example and what you typed stays. Text only: no website call, role, delay or action from here.
+- **Bot Twitch 1.13.0 : ajout rapide d'une commande depuis la télécommande.** Deux champs (nom, réponse) et un bouton, « Ajouter la commande ». La commande est pour tout le monde, activée, avec les attentes habituelles ; mêmes vérifications que l'administration, un refus est dit sous le champ avec un exemple et votre saisie reste. Du texte seulement : ni appel à un site, ni rôle, ni attente, ni action depuis ici.
+- **Twitch bot 1.13.0: undo.** The last three commands added this way are listed with a "Delete !name" button, until someone changes them in the administration.
+- **Bot Twitch 1.13.0 : annuler.** Les trois dernières commandes ajoutées ainsi sont listées avec un bouton « Supprimer !nom », tant que personne ne les modifie dans l'administration.
+- **Audience 1.8.0: same protection as the rest of the remote.** Secret address, 60 presses a minute, journal ("Remote control: Twitch bot paused"). No new route, right or permission.
+- **Participation 1.8.0 : même protection que le reste de la télécommande.** Adresse secrète, 60 appuis par minute, journal (« Télécommande : bot Twitch en pause »). Aucune nouvelle route, aucun nouveau droit, aucune nouvelle permission.
+
+### Pour les développeurs
+
+- **Twitch bot 1.13.0**: `remote.mjs` (service `audience.remote`, `describe` / `press`: `pause`, `resume`, `addcom`, `undo`), `offers` in `module.json` (`each: true`), four history events (`bot.paused`, `bot.resumed`, `command.quickadded`, `command.quickremoved`), `state.setMuted(ctx, muted, by)` keeps who pressed (`mutedBy`), `redeem.mjs` honours the pause (`muted` refund reason, no notice, no home simulation), `rc_*` texts in both languages. `minCore` unchanged, no data migration, no new route.
+- **Audience 1.8.0**: `sanitizePanel` accepts `toggles`, `values` and `group` on buttons, `badge`, `alert` and `note`; `client.mjs` draws them (switch, form submitted with Enter, undo list); journal words for the four gestures. The contract `audience.remote` stays version 1 and every field is optional. Détail : `docs/changelog-parts/remote-bot-control.md`.
+- No migration, no new permission.
+
 ## 1.49.0 — 2026-11-06
 
 *En bref : le module Story d'annonce passe en 2.8.0. Six nouveaux styles d'animation (dix au total), une création en trois étapes (l'événement, puis les informations, puis le style) et une ligne de compte à rebours décochée au départ. Rien à régler, aucune nouvelle permission.*

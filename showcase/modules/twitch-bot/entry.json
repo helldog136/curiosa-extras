@@ -22,7 +22,7 @@
     "fr": "Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi les minuteurs, les récompenses de points de chaîne et un arrêt d'urgence."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.12.0",
+  "moduleVersion": "1.13.0",
   "requires": [
     "twitch-connector",
     "twitch-channel"

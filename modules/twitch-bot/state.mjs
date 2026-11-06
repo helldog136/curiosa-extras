@@ -37,7 +37,11 @@ export async function ensureSecret(ctx, { renew = false } = {}) {
 /* ───────────── Arrêt d'urgence ───────────── */
 
 export const isMuted = async (ctx) => (await readState(ctx)).muted === true;
-export const setMuted = (ctx, muted) => updateState(ctx, (d) => { d.muted = muted; d.mutedAt = muted ? Date.now() : null; });
+/** `by`: where the switch was pressed ("admin" or "remote", the remote control of Audience); kept so the administration can say it. A repeated press changes nothing (the date of the pause stays). */
+export const setMuted = (ctx, muted, by = "admin") => updateState(ctx, (d) => {
+  if ((d.muted === true) === muted) return;
+  d.muted = muted; d.mutedAt = muted ? Date.now() : null; d.mutedBy = muted ? by : null;
+});
 
 /* ───────────── Journal ───────────── */
 

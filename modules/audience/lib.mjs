@@ -24,6 +24,7 @@ export const LIMITS = {
   audit: 500,              // lignes du journal
   panels: 8,               // modules branchés sur la télécommande
   buttons: 8,
+  toggles: 3,
   forms: 3,
   fields: 6,
   roomKey: 60,
@@ -211,11 +212,17 @@ export function sanitizePanel(raw) {
   const st = isObj(raw.state) ? raw.state : null;
   const until = st && typeof st.until === "string" && Number.isFinite(Date.parse(st.until)) ? new Date(Date.parse(st.until)).toISOString() : null;
   const state = st ? { text: clean(st.text, 200), tone: ["idle", "live", "done"].includes(st.tone) ? st.tone : "idle", until } : null;
+  // A button may carry the values it sends (an "undo" for one item) and a `group` heading shown above the first button of each group.
   const buttons = (Array.isArray(raw.buttons) ? raw.buttons : []).filter((b) => isObj(b) && ID_RE.test(String(b.id ?? "")) && clean(b.label, 40)).slice(0, LIMITS.buttons).map((b) => ({
-    id: String(b.id), label: clean(b.label, 40), tone: TONES.has(b.tone) ? b.tone : "plain", confirm: b.confirm ? clean(b.confirm, 120) : "", disabled: b.disabled === true,
+    id: String(b.id), label: clean(b.label, 40), tone: TONES.has(b.tone) ? b.tone : "plain", confirm: b.confirm ? clean(b.confirm, 120) : "", disabled: b.disabled === true, values: sanitizeValues(b.values), group: clean(b.group, 30),
+  }));
+  // A switch shows the CURRENT state (`on`, with its sentence `text`); pressing it sends the action `id` (the module gives the action that flips the state, so a double tap never undoes anything).
+  const toggles = (Array.isArray(raw.toggles) ? raw.toggles : []).filter((b) => isObj(b) && ID_RE.test(String(b.id ?? "")) && clean(b.label, 40)).slice(0, LIMITS.toggles).map((b) => ({
+    id: String(b.id), label: clean(b.label, 40), on: b.on === true, text: clean(b.text, 60), hint: clean(b.hint, 80), values: sanitizeValues(b.values),
   }));
   const forms = (Array.isArray(raw.forms) ? raw.forms : []).slice(0, LIMITS.forms).map(sanitizeForm).filter(Boolean);
-  return { title, tab: clean(raw.tab, 30), state, buttons, forms, view: sanitizeView(raw.view) };
+  // `badge`: a few words under the tab name (for example "Paused"); `alert` makes the tab stand out; `note`: one small line at the bottom of the panel.
+  return { title, tab: clean(raw.tab, 30), state, buttons, toggles, forms, badge: clean(raw.badge, 14), alert: raw.alert === true, note: clean(raw.note, 160), view: sanitizeView(raw.view) };
 }
 
 /** Les valeurs d'un formulaire de télécommande : texte seulement, bornées (le module qui reçoit valide à son tour). */

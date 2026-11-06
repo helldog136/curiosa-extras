@@ -5,6 +5,7 @@ The base of your stream interactions: a nickname per person with no account, a p
 - Give each person a nickname, without any account.
 - Run your live from your phone: start, stop or move to the next item.
 - Mute someone, clear a room and read the journal.
+- Pause your Twitch bot and add a chat command from the same remote.
 - Run a prize draw: open it, close it and pick winners.
 - Show the prize draw in OBS.
 
@@ -41,4 +42,4 @@ The base of your stream interactions: a nickname per person with no account, a p
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.7.0.
+Available since version 1.0.0. Current version: 1.8.0.
