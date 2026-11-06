@@ -13,6 +13,11 @@ Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos der
 - Vous voyez quels jeux font grandir votre chaîne.
 - Les visiteurs voient tout de suite si vous êtes en direct.
 
+## À quoi ça ressemble
+
+![Page d'administration de Ma Chaîne Twitch, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Ma Chaîne Twitch, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Connecteur Twitch](entry:twitch-connector)

@@ -12,6 +12,17 @@ A public page that presents your identity to press and partners. Presentation, f
 - Journalists and partners find everything in one place.
 - Fill it in yourself, or ask an assistant.
 
+## How it looks
+
+![Press kit admin page, with demo data](shot:admin.webp)
+*The Press kit admin page, filled with demo data.*
+
+![Press kit page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Press kit page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Pages](entry:pages)

@@ -14,6 +14,17 @@ Collect reviews from people who like what you do. Every review waits for your ap
 - Kind words are easy to collect and to show.
 - Stars and an average rating are optional.
 
+## How it looks
+
+![Testimonials admin page, with demo data](shot:admin.webp)
+*The Testimonials admin page, filled with demo data.*
+
+![Testimonials page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Testimonials page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Good to know
 
 - The e-mail address, if you ask for it, stays private and erases itself.

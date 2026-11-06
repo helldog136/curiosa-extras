@@ -32,7 +32,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "My Twitch channel admin page, with demo data",
+        "fr": "Page d'administration de Ma Chaîne Twitch, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The My Twitch channel admin page, filled with demo data.",
+        "fr": "La page d'administration de Ma Chaîne Twitch, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/twitch-channel/module.json",
     "modules/twitch-channel/README.md"

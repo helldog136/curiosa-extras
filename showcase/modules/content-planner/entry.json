@@ -27,7 +27,20 @@
     "blog"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Content notebook admin page, with demo data",
+        "fr": "Page d'administration de Cahier de contenu, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Content notebook admin page, filled with demo data.",
+        "fr": "La page d'administration de Cahier de contenu, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/content-planner/module.json",
     "modules/content-planner/README.md"

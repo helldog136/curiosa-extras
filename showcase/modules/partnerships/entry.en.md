@@ -13,6 +13,11 @@ Your private partnership pipeline: the brands you approach, their status, follow
 - You see where every deal stands.
 - Nothing is forgotten after the first message.
 
+## How it looks
+
+![Partnerships (internal) admin page, with demo data](shot:admin.webp)
+*The Partnerships (internal) admin page, filled with demo data.*
+
 ## Works well with
 
 - [Contacts](entry:contacts)

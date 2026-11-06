@@ -12,6 +12,11 @@ Trouve la jaquette de vos jeux vidéo, même quand une source est en panne : RAW
 - Votre planning et vos listes sont beaux sans effort.
 - Les visiteurs ne contactent jamais eux-mêmes RAWG, Twitch ni Steam.
 
+## À quoi ça ressemble
+
+![Page d'administration de Jaquettes de jeux, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Jaquettes de jeux, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Planning des streams](entry:planning)

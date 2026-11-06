@@ -14,6 +14,11 @@ Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi 
 - Une récompense peut déclencher une action chez vous avec Home Assistant.
 - Si vous l'autorisez, vos modérateurs gèrent les commandes depuis le chat.
 
+## À quoi ça ressemble
+
+![Page d'administration de Bot Twitch, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Bot Twitch, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Connecteur Home Assistant](entry:home-assistant)

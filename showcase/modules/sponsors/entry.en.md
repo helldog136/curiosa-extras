@@ -11,6 +11,14 @@ Shows your sponsors and their promo codes on your site, with the partnership not
 - The notice is built in, so it is not forgotten.
 - One page per sponsor, with a short link.
 
+## How it looks
+
+![Sponsors admin page, with demo data](shot:admin.webp)
+*The Sponsors admin page, filled with demo data.*
+
+![Sponsors page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
 ## Works well with
 
 - [Promo codes](entry:codes)

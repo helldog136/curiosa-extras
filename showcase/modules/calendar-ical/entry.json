@@ -28,7 +28,20 @@
     "calendar-manual"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Online calendar admin page, with demo data",
+        "fr": "Page d'administration de Agenda en ligne, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Online calendar admin page, filled with demo data.",
+        "fr": "La page d'administration de Agenda en ligne, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/calendar-ical/module.json",
     "modules/calendar-ical/README.md"

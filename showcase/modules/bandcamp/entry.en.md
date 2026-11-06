@@ -10,6 +10,11 @@ A Bandcamp button in your site header, with your own link.
 - Your audience finds your Bandcamp in one click.
 - One setting to fill in: there is nothing to connect.
 
+## How it looks
+
+![Header of the demo site with the buttons of several social networks](shot:header-buttons.webp)
+*Your networks as buttons, in the header of your site.*
+
 ## Good to know
 
 - Only a secure address from the right site is accepted.

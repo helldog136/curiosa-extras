@@ -12,6 +12,14 @@ Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement,
 - Vous choisissez l'apparence et la couleur d'accent.
 - Vous vérifiez le résultat avant de passer en direct.
 
+## À quoi ça ressemble
+
+![Page d'administration de Overlay alertes (OBS), avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Overlay alertes (OBS), remplie de données de démonstration.*
+
+![Overlay Overlay alertes (OBS) dans OBS, sur fond sombre](shot:overlay.webp)
+*Ce que voit votre public dans OBS.*
+
 ## Ça marche bien avec
 
 - [Ma Chaîne Twitch](entry:twitch-channel)

@@ -14,6 +14,17 @@ Une page de questions et réponses, classées par catégorie, qui s'ouvrent et s
 - Vous voyez quelles réponses aident.
 - Les visiteurs trouvent une réponse sans vous attendre.
 
+## À quoi ça ressemble
+
+![Page d'administration de Questions fréquentes, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Questions fréquentes, remplie de données de démonstration.*
+
+![Page Questions fréquentes du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Questions fréquentes sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Bon à savoir
 
 - Une question envoyée par un visiteur ne garde que son texte : ni nom, ni e-mail, ni adresse.

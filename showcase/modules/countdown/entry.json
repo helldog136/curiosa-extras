@@ -26,7 +26,44 @@
     "events"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Countdown admin page, with demo data",
+        "fr": "Page d'administration de Compte à rebours, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Countdown admin page, filled with demo data.",
+        "fr": "La page d'administration de Compte à rebours, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Countdown page of the demo site",
+        "fr": "Page Compte à rebours du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Countdown page on a phone screen",
+        "fr": "Page Compte à rebours sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
   "sources": [
     "modules/countdown/module.json",
     "modules/countdown/README.md"

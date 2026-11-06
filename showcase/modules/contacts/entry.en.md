@@ -13,6 +13,11 @@ Your private address book: people and organisations, their accounts on the netwo
 - You retype nothing when you thank, raid or partner with someone.
 - It stays private: only your team sees it.
 
+## How it looks
+
+![Contacts admin page, with demo data](shot:admin.webp)
+*The Contacts admin page, filled with demo data.*
+
 ## Works well with
 
 - [Partnerships (internal)](entry:partnerships)

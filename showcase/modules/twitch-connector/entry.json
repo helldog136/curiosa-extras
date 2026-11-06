@@ -28,7 +28,20 @@
     "twitch-raid"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Twitch connector admin page, with demo data",
+        "fr": "Page d'administration de Connecteur Twitch, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Twitch connector admin page, filled with demo data.",
+        "fr": "La page d'administration de Connecteur Twitch, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/twitch-connector/module.json",
     "modules/twitch-connector/README.md"

@@ -13,8 +13,8 @@ showcase/
     entry.json           the facts (see below)
     entry.en.md          the English text
     entry.fr.md          the French text (same structure, same images, same links)
-  shared/*.webp          pictures shared by several entries
-    shots/*.webp         the screenshots (the list may be empty until the pictures exist)
+    shots/*.webp         the screenshots (the list may be empty)
+  shared/*.webp          pictures several entries show (screenshots with "shared": true)
 ```
 
 ## entry.json

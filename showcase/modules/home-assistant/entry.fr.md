@@ -13,6 +13,11 @@ Relie vos points de chaîne à votre maison : lumières, message lu à voix haut
 - Votre public peut agir sur votre pièce, dans les limites que vous fixez.
 - Vous pouvez tout arrêter d'un coup.
 
+## À quoi ça ressemble
+
+![Page d'administration de Connecteur Home Assistant, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Connecteur Home Assistant, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Bot Twitch](entry:twitch-bot)

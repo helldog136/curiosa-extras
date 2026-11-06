@@ -11,6 +11,11 @@ Links your site to Twitch once, for everything that touches Twitch. A guided set
 - You connect once, not once per module.
 - The other Twitch modules just work after that.
 
+## How it looks
+
+![Twitch connector admin page, with demo data](shot:admin.webp)
+*The Twitch connector admin page, filled with demo data.*
+
 ## Works well with
 
 - [My Twitch channel](entry:twitch-channel)

@@ -13,6 +13,11 @@ Showcases your Twitch channel: a header button, your live status and your latest
 - You see which games help your channel grow.
 - Visitors see at once if you are live.
 
+## How it looks
+
+![My Twitch channel admin page, with demo data](shot:admin.webp)
+*The My Twitch channel admin page, filled with demo data.*
+
 ## Works well with
 
 - [Twitch connector](entry:twitch-connector)

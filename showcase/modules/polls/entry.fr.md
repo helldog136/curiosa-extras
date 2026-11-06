@@ -12,6 +12,17 @@ Posez une question à votre public et regardez les réponses arriver en barres. 
 - Les résultats se lisent facilement, pour vous comme pour votre public.
 - Vous choisissez la durée d'un sondage express.
 
+## À quoi ça ressemble
+
+![Page d'administration de Sondages, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Sondages, remplie de données de démonstration.*
+
+![Page Sondages du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Sondages sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Participation](entry:audience)

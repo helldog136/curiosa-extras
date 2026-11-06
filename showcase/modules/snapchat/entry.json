@@ -23,7 +23,21 @@
   "requires": [],
   "worksWith": [],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "header-buttons.webp",
+      "kind": "public",
+      "shared": true,
+      "alt": {
+        "en": "Header of the demo site with the buttons of several social networks",
+        "fr": "En-tête du site de démonstration avec les boutons de plusieurs réseaux sociaux"
+      },
+      "caption": {
+        "en": "Your networks as buttons, in the header of your site.",
+        "fr": "Vos réseaux en boutons, dans l'en-tête de votre site."
+      }
+    }
+  ],
   "sources": [
     "modules/snapchat/module.json",
     "modules/snapchat/README.md"

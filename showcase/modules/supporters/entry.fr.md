@@ -13,6 +13,17 @@ Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre
 - Personne n'apparaît sans accord.
 - Vous remerciez sans exposer de montants.
 
+## À quoi ça ressemble
+
+![Page d'administration de Soutiens, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Soutiens, remplie de données de démonstration.*
+
+![Page Soutiens du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Soutiens sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Mur des remerciements](entry:thanks-wall)

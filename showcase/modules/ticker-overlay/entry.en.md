@@ -11,6 +11,14 @@ A transparent browser source for OBS that rotates cards from your site, such as 
 - Your site's content works for you during the live.
 - The background is transparent, so it blends into your scene.
 
+## How it looks
+
+![Ticker overlay (OBS) admin page, with demo data](shot:admin.webp)
+*The Ticker overlay (OBS) admin page, filled with demo data.*
+
+![Ticker overlay (OBS) overlay in OBS, on a dark background](shot:overlay.webp)
+*What your audience sees in OBS.*
+
 ## Works well with
 
 - [Promo codes](entry:codes)

@@ -13,6 +13,11 @@ A Discord button in your site header, plus your members (an approximate number).
 - Your audience finds your Discord in one click.
 - The figures are public: there is nothing to connect.
 
+## How it looks
+
+![Discord admin page, with demo data](shot:admin.webp)
+*The Discord admin page, filled with demo data.*
+
 ## Works well with
 
 - [Community statistics](entry:community-stats)

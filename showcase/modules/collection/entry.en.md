@@ -11,6 +11,14 @@ A blank content module: you choose its display, its fields and its behaviour you
 - No need to wait for a module made for your idea.
 - You decide the behaviour yourself.
 
+## How it looks
+
+![Custom collection admin page, with demo data](shot:admin.webp)
+*The Custom collection admin page, filled with demo data.*
+
+![Custom collection page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
 ## Works well with
 
 - [Blog](entry:blog)

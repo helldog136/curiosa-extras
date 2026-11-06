@@ -85,7 +85,7 @@
         "news",
         "writing"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "faq",
@@ -104,7 +104,7 @@
         "support",
         "search"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "gallery",
@@ -123,7 +123,7 @@
         "albums",
         "portfolio"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "pages",
@@ -142,7 +142,7 @@
         "about",
         "free-form"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "events",
@@ -161,7 +161,7 @@
         "events",
         "calendar"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "countdown",
@@ -180,7 +180,7 @@
         "launch",
         "obs"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "videos",
@@ -199,7 +199,7 @@
         "youtube",
         "series"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "sponsors",
@@ -218,7 +218,7 @@
         "promo codes",
         "partnership notice"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "codes",
@@ -237,7 +237,7 @@
         "partners",
         "offers"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "collection",
@@ -256,7 +256,7 @@
         "content",
         "blank"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "legal-pages",
@@ -275,7 +275,7 @@
         "privacy",
         "cookies"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "links",
@@ -294,7 +294,7 @@
         "icons",
         "lists"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "map",
@@ -313,7 +313,7 @@
         "map",
         "openstreetmap"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "press-kit",
@@ -332,7 +332,7 @@
         "brand",
         "logos"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "twitch-connector",
@@ -351,7 +351,7 @@
         "setup",
         "connection"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "youtube-connector",
@@ -370,7 +370,7 @@
         "setup",
         "connection"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "planning",
@@ -390,7 +390,7 @@
         "calendar",
         "obs"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "twitch-bot",
@@ -411,7 +411,7 @@
         "rewards",
         "timers"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "twitch-channel",
@@ -431,7 +431,7 @@
         "statistics",
         "clips"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "youtube-channel",
@@ -451,7 +451,7 @@
         "videos",
         "statistics"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "game-suggestions",
@@ -470,7 +470,7 @@
         "suggestions",
         "votes"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "twitch-raid",
@@ -489,7 +489,7 @@
         "raid",
         "partners"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "game-covers",
@@ -508,7 +508,7 @@
         "covers",
         "images"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "calendar-ical",
@@ -527,7 +527,7 @@
         "google",
         "schedule"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "calendar-manual",
@@ -546,7 +546,7 @@
         "streams",
         "no account"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "discord-announcer",
@@ -565,7 +565,7 @@
         "announcements",
         "live"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "home-assistant",
@@ -584,7 +584,7 @@
         "smart home",
         "channel points"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "youtube-live-actions",
@@ -603,7 +603,7 @@
         "super chat",
         "actions"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "live-status",
@@ -622,7 +622,7 @@
         "player",
         "banner"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "stream-story",
@@ -641,7 +641,7 @@
         "story",
         "announcement"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "polls",
@@ -660,7 +660,7 @@
         "obs",
         "audience"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "audience",
@@ -680,7 +680,7 @@
         "prize-draw",
         "live"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "testimonials",
@@ -699,7 +699,7 @@
         "trust",
         "moderation"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "thanks-wall",
@@ -718,7 +718,7 @@
         "supporters",
         "people"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "commissions",
@@ -737,7 +737,7 @@
         "requests",
         "queue"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "contact-form",
@@ -756,7 +756,7 @@
         "form",
         "messages"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "daily-game",
@@ -775,7 +775,7 @@
         "daily",
         "quiz"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "directory",
@@ -794,7 +794,7 @@
         "creators",
         "partners"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "idea-box",
@@ -813,7 +813,7 @@
         "feedback",
         "votes"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "supporters",
@@ -832,7 +832,7 @@
         "supporters",
         "thanks"
       ],
-      "shots": 0
+      "shots": 3
     },
     {
       "id": "alerts-overlay",
@@ -851,7 +851,7 @@
         "alerts",
         "overlay"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "hero",
@@ -870,7 +870,7 @@
         "banner",
         "title"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "mascot",
@@ -889,7 +889,7 @@
         "character",
         "tips"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "maze-overlay",
@@ -909,7 +909,7 @@
         "retro",
         "overlay"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "sponsor-ticker",
@@ -928,7 +928,7 @@
         "sponsors",
         "qr code"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "ticker-overlay",
@@ -947,7 +947,7 @@
         "banner",
         "cards"
       ],
-      "shots": 0
+      "shots": 2
     },
     {
       "id": "platform-links",
@@ -966,7 +966,7 @@
         "platforms",
         "18+"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "bandcamp",
@@ -984,7 +984,7 @@
         "bandcamp",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "bluesky",
@@ -1003,7 +1003,7 @@
         "button",
         "statistics"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "discord",
@@ -1022,7 +1022,7 @@
         "button",
         "statistics"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "facebook",
@@ -1040,7 +1040,7 @@
         "facebook",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "github",
@@ -1059,7 +1059,7 @@
         "button",
         "statistics"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "instagram",
@@ -1077,7 +1077,7 @@
         "instagram",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "kick",
@@ -1095,7 +1095,7 @@
         "kick",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "kofi",
@@ -1113,7 +1113,7 @@
         "ko-fi",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "mastodon",
@@ -1132,7 +1132,7 @@
         "button",
         "statistics"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "patreon",
@@ -1150,7 +1150,7 @@
         "patreon",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "pinterest",
@@ -1168,7 +1168,7 @@
         "pinterest",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "reddit",
@@ -1187,7 +1187,7 @@
         "button",
         "statistics"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "snapchat",
@@ -1205,7 +1205,7 @@
         "snapchat",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "soundcloud",
@@ -1223,7 +1223,7 @@
         "soundcloud",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "spotify",
@@ -1241,7 +1241,7 @@
         "spotify",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "steam",
@@ -1259,7 +1259,7 @@
         "steam",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "telegram",
@@ -1277,7 +1277,7 @@
         "telegram",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "threads",
@@ -1295,7 +1295,7 @@
         "threads",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "tiktok",
@@ -1313,7 +1313,7 @@
         "tiktok",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "x-twitter",
@@ -1331,7 +1331,7 @@
         "x",
         "button"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "contacts",
@@ -1350,7 +1350,7 @@
         "people",
         "private"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "community-stats",
@@ -1369,7 +1369,7 @@
         "followers",
         "history"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "content-planner",
@@ -1388,7 +1388,7 @@
         "planning",
         "private"
       ],
-      "shots": 0
+      "shots": 1
     },
     {
       "id": "partnerships",
@@ -1407,7 +1407,7 @@
         "brands",
         "pipeline"
       ],
-      "shots": 0
+      "shots": 1
     }
   ]
 }

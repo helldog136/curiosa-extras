@@ -12,6 +12,11 @@ A retro 3D maze for OBS. The walker wanders through the corridors and stops in f
 - A playful, unusual background for a quiet moment on stream.
 - It shows your own content as posters.
 
+## How it looks
+
+![3D maze overlay (OBS) admin page, with demo data](shot:admin.webp)
+*The 3D maze overlay (OBS) admin page, filled with demo data.*
+
 ## Works well with
 
 - [Alerts overlay (OBS)](entry:alerts-overlay)

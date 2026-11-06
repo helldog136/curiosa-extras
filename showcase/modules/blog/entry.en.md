@@ -11,6 +11,17 @@ Articles with an image, a summary and simply formatted content. You can add as m
 - A place for your news that belongs to you.
 - Each blog can have its own theme and its own readers.
 
+## How it looks
+
+![Blog admin page, with demo data](shot:admin.webp)
+*The Blog admin page, filled with demo data.*
+
+![Blog page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Blog page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Pages](entry:pages)

@@ -13,6 +13,11 @@ Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Tw
 - Choisir qui raider prend quelques secondes.
 - Vos partenaires viennent de Contacts : rien à retaper.
 
+## À quoi ça ressemble
+
+![Page d'administration de Raid Twitch, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Raid Twitch, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Contacts](entry:contacts)

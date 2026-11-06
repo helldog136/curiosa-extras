@@ -13,6 +13,17 @@ Une page de vidéos YouTube sans rien héberger. Une grille, des catégories, un
 - Vous n'hébergez rien : les vidéos restent sur YouTube.
 - Les séries permettent de regarder dans le bon ordre.
 
+## À quoi ça ressemble
+
+![Page d'administration de Vidéothèque, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Vidéothèque, remplie de données de démonstration.*
+
+![Page Vidéothèque du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Vidéothèque sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Galeries photos](entry:gallery)

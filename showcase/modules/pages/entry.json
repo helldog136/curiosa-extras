@@ -28,7 +28,32 @@
     "legal-pages"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Pages admin page, with demo data",
+        "fr": "Page d'administration de Pages, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Pages admin page, filled with demo data.",
+        "fr": "La page d'administration de Pages, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Pages page of the demo site",
+        "fr": "Page Pages du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    }
+  ],
   "sources": [
     "modules/pages/module.json",
     "modules/pages/README.md"

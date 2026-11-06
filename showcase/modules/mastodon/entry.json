@@ -26,7 +26,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Mastodon admin page, with demo data",
+        "fr": "Page d'administration de Mastodon, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Mastodon admin page, filled with demo data.",
+        "fr": "La page d'administration de Mastodon, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/mastodon/module.json",
     "modules/mastodon/README.md"

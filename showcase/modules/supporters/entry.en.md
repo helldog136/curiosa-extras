@@ -13,6 +13,17 @@ Thank your supporters from a patronage platform. The public page shows only the 
 - Nobody appears without agreeing.
 - You thank people without exposing amounts.
 
+## How it looks
+
+![Supporters admin page, with demo data](shot:admin.webp)
+*The Supporters admin page, filled with demo data.*
+
+![Supporters page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Supporters page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Thank-you wall](entry:thanks-wall)

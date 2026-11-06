@@ -28,7 +28,20 @@
     "youtube-connector"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "YouTube live actions admin page, with demo data",
+        "fr": "Page d'administration de Actions du live YouTube, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The YouTube live actions admin page, filled with demo data.",
+        "fr": "La page d'administration de Actions du live YouTube, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/youtube-live-actions/module.json",
     "modules/youtube-live-actions/README.md"

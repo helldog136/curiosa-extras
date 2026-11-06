@@ -28,7 +28,20 @@
     "twitch-channel"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Discord announcements admin page, with demo data",
+        "fr": "Page d'administration de Annonces Discord, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Discord announcements admin page, filled with demo data.",
+        "fr": "La page d'administration de Annonces Discord, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/discord-announcer/module.json",
     "modules/discord-announcer/README.md"

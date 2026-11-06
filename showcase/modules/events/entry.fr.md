@@ -14,6 +14,17 @@ Un agenda de vos événements et formations : les prochaines dates, un calendrie
 - Un seul agenda pour vos conférences, formations, directs et rencontres.
 - Les événements passés restent disponibles pour un retour en arrière.
 
+## À quoi ça ressemble
+
+![Page d'administration de Événements, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Événements, remplie de données de démonstration.*
+
+![Page Événements du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Événements sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Galeries photos](entry:gallery)

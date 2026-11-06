@@ -27,7 +27,32 @@
     "pages"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Link list admin page, with demo data",
+        "fr": "Page d'administration de Liste de liens, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Link list admin page, filled with demo data.",
+        "fr": "La page d'administration de Liste de liens, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Link list page of the demo site",
+        "fr": "Page Liste de liens du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    }
+  ],
   "sources": [
     "modules/links/module.json",
     "modules/links/README.md"

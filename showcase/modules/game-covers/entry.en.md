@@ -12,6 +12,11 @@ Finds the cover of your video games, even when one source is down: RAWG first, t
 - Your schedule and your lists look good with no effort.
 - Visitors never contact RAWG, Twitch or Steam themselves.
 
+## How it looks
+
+![Game covers admin page, with demo data](shot:admin.webp)
+*The Game covers admin page, filled with demo data.*
+
 ## Works well with
 
 - [Stream schedule](entry:planning)

@@ -28,7 +28,44 @@
     "youtube-channel"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Video library admin page, with demo data",
+        "fr": "Page d'administration de Vidéothèque, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Video library admin page, filled with demo data.",
+        "fr": "La page d'administration de Vidéothèque, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Video library page of the demo site",
+        "fr": "Page Vidéothèque du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Video library page on a phone screen",
+        "fr": "Page Vidéothèque sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
   "sources": [
     "modules/videos/module.json",
     "modules/videos/README.md"

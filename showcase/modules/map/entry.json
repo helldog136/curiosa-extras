@@ -27,7 +27,44 @@
     "directory"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Map admin page, with demo data",
+        "fr": "Page d'administration de Carte, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Map admin page, filled with demo data.",
+        "fr": "La page d'administration de Carte, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Map page of the demo site",
+        "fr": "Page Carte du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Map page on a phone screen",
+        "fr": "Page Carte sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
   "sources": [
     "modules/map/module.json",
     "modules/map/README.md"

@@ -12,6 +12,17 @@ Let your audience send you ideas. One field, one button, then a list of the idea
 - You hear what people want without reading a long thread.
 - Duplicates are merged, so support adds up.
 
+## How it looks
+
+![Idea box admin page, with demo data](shot:admin.webp)
+*The Idea box admin page, filled with demo data.*
+
+![Idea box page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Idea box page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Audience](entry:audience)

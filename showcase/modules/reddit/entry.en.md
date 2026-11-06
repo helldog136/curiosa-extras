@@ -12,6 +12,11 @@ A Reddit button in your site header, plus your followers.
 - Your audience finds your Reddit in one click.
 - The figures are public: there is nothing to connect.
 
+## How it looks
+
+![Reddit admin page, with demo data](shot:admin.webp)
+*The Reddit admin page, filled with demo data.*
+
 ## Works well with
 
 - [Community statistics](entry:community-stats)

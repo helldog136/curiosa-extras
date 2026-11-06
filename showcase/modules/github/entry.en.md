@@ -12,6 +12,11 @@ A GitHub button in your site header, plus your followers.
 - Your audience finds your GitHub in one click.
 - The figures are public: there is nothing to connect.
 
+## How it looks
+
+![GitHub admin page, with demo data](shot:admin.webp)
+*The GitHub admin page, filled with demo data.*
+
 ## Works well with
 
 - [Community statistics](entry:community-stats)

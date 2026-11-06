@@ -12,6 +12,11 @@ Keeps the numbers of your networks, such as followers, paying followers, posts a
 - You see your growth over time.
 - Your AI assistant can answer “how many followers did I gain this month?”.
 
+## How it looks
+
+![Community statistics admin page, with demo data](shot:admin.webp)
+*The Community statistics admin page, filled with demo data.*
+
 ## Works well with
 
 - [Bluesky](entry:bluesky)

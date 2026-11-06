@@ -13,6 +13,17 @@ Une liste de lieux utiles, avec filtres par type, recherche et carte OpenStreetM
 - La liste fonctionne sans aucune carte extérieure.
 - Les visiteurs choisissent quand charger la carte.
 
+## À quoi ça ressemble
+
+![Page d'administration de Carte, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Carte, remplie de données de démonstration.*
+
+![Page Carte du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Carte sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Événements](entry:events)

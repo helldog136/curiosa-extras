@@ -13,6 +13,11 @@ Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur l
 - Vous ne retapez rien pour remercier, raider ou nouer un partenariat.
 - Il reste privé : seule votre équipe le voit.
 
+## À quoi ça ressemble
+
+![Page d'administration de Contacts, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Contacts, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Partenariats (interne)](entry:partnerships)

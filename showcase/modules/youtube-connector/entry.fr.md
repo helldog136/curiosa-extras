@@ -12,6 +12,11 @@ Garde l'accès YouTube de votre site à un seul endroit. Il lit les chiffres de 
 - Tous les modules YouTube partagent une seule connexion.
 - Vous restez dans une limite quotidienne que vous choisissez.
 
+## À quoi ça ressemble
+
+![Page d'administration de Connecteur YouTube, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Connecteur YouTube, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Chaîne YouTube](entry:youtube-channel)

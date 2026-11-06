@@ -12,6 +12,14 @@ Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponso
 - Les sponsors sont vus sans longue publicité.
 - Le code QR mène directement à l'offre.
 
+## À quoi ça ressemble
+
+![Page d'administration de Overlay sponsors (OBS), avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Overlay sponsors (OBS), remplie de données de démonstration.*
+
+![Overlay Overlay sponsors (OBS) dans OBS, sur fond sombre](shot:overlay.webp)
+*Ce que voit votre public dans OBS.*
+
 ## Ça marche bien avec
 
 - [Sponsors](entry:sponsors)

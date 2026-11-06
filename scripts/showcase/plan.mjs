@@ -43,7 +43,7 @@ export const PLAN = {
       await admin.waitForTimeout(500); await admin.close();
     },
   })],
-  "maze-overlay": [{ file: "admin.webp", kind: "admin" }, overlay({ wait: 12000 })],
+  "maze-overlay": adminOnly, // the 3D scene is dark and blurry once flattened: the editor is the better picture
   "sponsor-ticker": [{ file: "admin.webp", kind: "admin", tab: "settings" }, overlay()],
   "ticker-overlay": [{ file: "admin.webp", kind: "admin", tab: "settings" }, overlay()],
 };

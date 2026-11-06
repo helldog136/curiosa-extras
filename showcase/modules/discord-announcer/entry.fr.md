@@ -12,6 +12,11 @@ Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relie
 - Votre Discord l'apprend en premier.
 - Il n'y a aucun bot à installer ni à nourrir.
 
+## À quoi ça ressemble
+
+![Page d'administration de Annonces Discord, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Annonces Discord, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Discord](entry:discord)

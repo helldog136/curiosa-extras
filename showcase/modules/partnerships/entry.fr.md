@@ -13,6 +13,11 @@ Votre suivi privé des partenariats : les marques que vous approchez, leur statu
 - Vous voyez où en est chaque dossier.
 - Rien n'est oublié après le premier message.
 
+## À quoi ça ressemble
+
+![Page d'administration de Partenariats (interne), avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Partenariats (interne), remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Contacts](entry:contacts)

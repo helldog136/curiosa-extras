@@ -13,6 +13,11 @@ Links your channel points to your home: lights, a message read aloud, and action
 - Your audience can act on your room, within the limits you set.
 - You can stop everything at once.
 
+## How it looks
+
+![Home Assistant connector admin page, with demo data](shot:admin.webp)
+*The Home Assistant connector admin page, filled with demo data.*
+
 ## Works well with
 
 - [Twitch bot](entry:twitch-bot)

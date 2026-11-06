@@ -13,6 +13,11 @@ A short animated video that announces one of your upcoming events. It is ready f
 - An announcement ready to post in minutes.
 - The video uses your event's real details.
 
+## How it looks
+
+![Announcement story admin page, with demo data](shot:admin.webp)
+*The Announcement story admin page, filled with demo data.*
+
 ## Works well with
 
 - [Events](entry:events)

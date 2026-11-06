@@ -26,7 +26,44 @@
     "audience"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Polls admin page, with demo data",
+        "fr": "Page d'administration de Sondages, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Polls admin page, filled with demo data.",
+        "fr": "La page d'administration de Sondages, remplie de données de démonstration."
+      }
+    },
+    {
+      "file": "public.webp",
+      "kind": "public",
+      "alt": {
+        "en": "Polls page of the demo site",
+        "fr": "Page Sondages du site de démonstration"
+      },
+      "caption": {
+        "en": "What visitors see on your site.",
+        "fr": "Ce que voient vos visiteurs sur votre site."
+      }
+    },
+    {
+      "file": "mobile.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "Polls page on a phone screen",
+        "fr": "Page Sondages sur un écran de téléphone"
+      },
+      "caption": {
+        "en": "The same page on a phone.",
+        "fr": "La même page sur un téléphone."
+      }
+    }
+  ],
   "sources": [
     "modules/polls/module.json",
     "modules/polls/README.md"

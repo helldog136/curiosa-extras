@@ -13,6 +13,11 @@ Un petit personnage discret dans un coin de votre site. Il dit bonjour, donne un
 - Il apporte de la personnalité sans insister.
 - Vous réglez la fréquence de ses interventions.
 
+## À quoi ça ressemble
+
+![Page d'administration de Mascotte, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Mascotte, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Événements](entry:events)

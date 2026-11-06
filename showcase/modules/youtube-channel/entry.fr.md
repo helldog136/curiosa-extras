@@ -12,6 +12,11 @@ Met en avant votre chaîne YouTube. Sa vidéo récente la plus populaire, vos vi
 - Votre meilleure vidéo est sur votre accueil sans effort.
 - Les nouvelles vidéos arrivent seules dans le flux de votre site.
 
+## À quoi ça ressemble
+
+![Page d'administration de Chaîne YouTube, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Chaîne YouTube, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Connecteur YouTube](entry:youtube-connector)

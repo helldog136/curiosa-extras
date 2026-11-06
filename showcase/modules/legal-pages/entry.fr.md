@@ -13,6 +13,17 @@ Répondez à quelques questions simples et obtenez vos mentions légales, votre 
 - Vous ne partez pas d'une page blanche.
 - Les pages sont en deux langues.
 
+## À quoi ça ressemble
+
+![Page d'administration de Mentions légales, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Mentions légales, remplie de données de démonstration.*
+
+![Page Mentions légales du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Mentions légales sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Pages](entry:pages)

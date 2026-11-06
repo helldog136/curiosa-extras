@@ -14,6 +14,17 @@ Un petit jeu par jour, pour donner envie de revenir. Une question, quelques rép
 - Votre mascotte peut inviter à jouer.
 - Vous choisissez l'ordre des questions.
 
+## À quoi ça ressemble
+
+![Page d'administration de Jeu du jour, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Jeu du jour, remplie de données de démonstration.*
+
+![Page Jeu du jour du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Jeu du jour sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Participation](entry:audience)

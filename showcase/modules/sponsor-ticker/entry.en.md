@@ -12,6 +12,14 @@ A lower-third banner for OBS. From time to time it shows one sponsor, with its p
 - Sponsors get seen without a long ad.
 - The QR code leads viewers straight to the offer.
 
+## How it looks
+
+![Sponsor ticker overlay (OBS) admin page, with demo data](shot:admin.webp)
+*The Sponsor ticker overlay (OBS) admin page, filled with demo data.*
+
+![Sponsor ticker overlay (OBS) overlay in OBS, on a dark background](shot:overlay.webp)
+*What your audience sees in OBS.*
+
 ## Works well with
 
 - [Sponsors](entry:sponsors)

@@ -28,7 +28,20 @@
     "twitch-channel"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Mascot admin page, with demo data",
+        "fr": "Page d'administration de Mascotte, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Mascot admin page, filled with demo data.",
+        "fr": "La page d'administration de Mascotte, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/mascot/module.json",
     "modules/mascot/README.md"

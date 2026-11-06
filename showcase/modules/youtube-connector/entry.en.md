@@ -12,6 +12,11 @@ Keeps your site's YouTube access in one place. It reads your channel counts and 
 - Every YouTube module shares one connection.
 - You stay within a daily limit that you choose.
 
+## How it looks
+
+![YouTube connector admin page, with demo data](shot:admin.webp)
+*The YouTube connector admin page, filled with demo data.*
+
 ## Works well with
 
 - [YouTube channel](entry:youtube-channel)

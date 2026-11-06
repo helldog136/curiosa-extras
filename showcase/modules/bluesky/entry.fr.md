@@ -12,6 +12,11 @@ Un bouton Bluesky dans l'en-tête de votre site, et vos abonnés et publications
 - Votre public trouve votre Bluesky en un clic.
 - Les chiffres sont publics : il n'y a rien à connecter.
 
+## À quoi ça ressemble
+
+![Page d'administration de Bluesky, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Bluesky, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Statistiques de la communauté](entry:community-stats)

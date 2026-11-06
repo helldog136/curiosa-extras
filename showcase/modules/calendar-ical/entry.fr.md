@@ -12,6 +12,11 @@ Lit votre Google Agenda, ou tout autre agenda en ligne, pour que votre site mont
 - Vous continuez à planifier dans l'agenda que vous utilisez déjà.
 - Les changements de votre agenda arrivent seuls sur votre site.
 
+## À quoi ça ressemble
+
+![Page d'administration de Agenda en ligne, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Agenda en ligne, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Planning des streams](entry:planning)

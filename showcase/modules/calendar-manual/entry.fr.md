@@ -12,6 +12,11 @@
 - Rien à connecter : vous tapez, simplement.
 - Un bon départ si vous n'utilisez pas d'agenda en ligne.
 
+## À quoi ça ressemble
+
+![Page d'administration de Streams saisis à la main, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Streams saisis à la main, remplie de données de démonstration.*
+
 ## Ça marche bien avec
 
 - [Planning des streams](entry:planning)

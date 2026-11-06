@@ -13,6 +13,17 @@ Annoncez une sortie, un lancement, un anniversaire ou une convention. Les visite
 - Le même compte à rebours sert sur votre site et à l'écran.
 - Chaque visiteur voit la date dans son propre fuseau horaire.
 
+## À quoi ça ressemble
+
+![Page d'administration de Compte à rebours, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Compte à rebours, remplie de données de démonstration.*
+
+![Page Compte à rebours du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
+![Page Compte à rebours sur un écran de téléphone](shot:mobile.webp)
+*La même page sur un téléphone.*
+
 ## Ça marche bien avec
 
 - [Événements](entry:events)

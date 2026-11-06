@@ -14,6 +14,17 @@ The base of your stream interactions: a nickname per person with no account, a p
 - The remote fits in your pocket.
 - Other modules, such as Polls, share the same nicknames.
 
+## How it looks
+
+![Audience admin page, with demo data](shot:admin.webp)
+*The Audience admin page, filled with demo data.*
+
+![Audience page of the demo site](shot:public.webp)
+*What visitors see on your site.*
+
+![Audience page on a phone screen](shot:mobile.webp)
+*The same page on a phone.*
+
 ## Works well with
 
 - [Polls](entry:polls)

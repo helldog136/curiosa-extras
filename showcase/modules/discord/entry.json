@@ -26,7 +26,20 @@
     "community-stats"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Discord admin page, with demo data",
+        "fr": "Page d'administration de Discord, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The Discord admin page, filled with demo data.",
+        "fr": "La page d'administration de Discord, remplie de données de démonstration."
+      }
+    }
+  ],
   "sources": [
     "modules/discord/module.json",
     "modules/discord/README.md"

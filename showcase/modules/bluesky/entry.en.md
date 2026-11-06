@@ -12,6 +12,11 @@ A Bluesky button in your site header, plus your followers and posts.
 - Your audience finds your Bluesky in one click.
 - The figures are public: there is nothing to connect.
 
+## How it looks
+
+![Bluesky admin page, with demo data](shot:admin.webp)
+*The Bluesky admin page, filled with demo data.*
+
 ## Works well with
 
 - [Community statistics](entry:community-stats)

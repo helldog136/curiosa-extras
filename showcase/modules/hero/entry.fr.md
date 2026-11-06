@@ -12,6 +12,14 @@ Un grand titre et une introduction pour le haut de votre page d'accueil. Vous pl
 - Les visiteurs comprennent qui vous êtes dès la première seconde.
 - Un seul bloc, et votre accueil a une porte d'entrée.
 
+## À quoi ça ressemble
+
+![Page d'administration de Bandeau d'accueil, avec des données de démonstration](shot:admin.webp)
+*La page d'administration de Bandeau d'accueil, remplie de données de démonstration.*
+
+![Page Bandeau d'accueil du site de démonstration](shot:public.webp)
+*Ce que voient vos visiteurs sur votre site.*
+
 ## Ça marche bien avec
 
 - [Pages](entry:pages)

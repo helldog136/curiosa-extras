@@ -12,6 +12,11 @@ Reads your Google Calendar, or any online calendar, so your site can show your s
 - You keep planning in the calendar you already use.
 - Changes in your calendar reach your site by themselves.
 
+## How it looks
+
+![Online calendar admin page, with demo data](shot:admin.webp)
+*The Online calendar admin page, filled with demo data.*
+
 ## Works well with
 
 - [Stream schedule](entry:planning)
