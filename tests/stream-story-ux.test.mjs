@@ -1,6 +1,7 @@
-// Refonte ergonomique de l'éditeur (Story d'annonce 2.5.0), exécutée pour de vrai (app.mjs) dans un faux navigateur : l'assistant en 3 étapes (Événement, Look, Vidéo), le PROCHAIN événement
-// (toutes sources) choisi à l'ouverture, « Générer maintenant » dès l'étape 1, la liste courte et repliée, le travail jamais perdu en changeant d'étape ou d'événement, les options avancées cachées,
-// l'ouverture sur le récapitulatif quand un modèle ou un assistant remplit tout, les erreurs sous leur champ.
+// The editor of "Announcement story" (app.mjs) in three steps (event, information, style), run for real in a minimal fake browser and wired to the module's real routes:
+// the NEXT event (all sources) picked on opening, "Generate now" from the first steps, a short folded list, work never lost when changing step or event, the information step with
+// one removable item per thing the video can show, the plain preview of steps 1 and 2, the style as the last step, errors under their field, the opening on the last step for a model
+// or an assistant preparation.
 import test, { afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -35,7 +36,7 @@ class El {
   fire(type, ev = {}) { for (const fn of this.listeners[type] ?? []) fn({ key: "", preventDefault() {}, target: this, ...ev }); }
   click() { if (!this.isDisabled) this.fire("click"); }
   get isDisabled() { return this.disabled || "disabled" in this.attrs; }
-  focus() {}
+  focus() { El.focused = this.id; }
   getContext() { return (this.ctx ??= fakeCanvasContext()); }
   querySelectorAll() { return []; }
 }
@@ -153,111 +154,305 @@ test("changer d'événement ne perd rien : style, phrase, mention et co-streamer
   assert.ok(drawn(els).some((t) => /Stream 2/.test(t)) && drawn(els).some((t) => /Rendez-vous/.test(t)) && drawn(els).some((t) => /Mon ami/.test(t)), "l'aperçu montre le nouvel événement ET le travail en cours");
 });
 
-test("options avancées : cachées tant qu'on ne les demande pas (la mention reste visible) ; une préparation qui en change une les montre ; la case les ouvre", async () => {
+test("a preparation that sets a rare option (language, length) opens it; the plain tick boxes of the old advanced block are gone", async () => {
   const ctx = mk({ calendar: [slot(1, 5)] });
   const plain = current = await boot(ctx);
-  assert.equal(plain.els.get("advanced").hidden, true); assert.equal(plain.els.get("adv").checked, false);
-  plain.els.get("adv").checked = true; plain.els.get("adv").fire("change"); assert.equal(plain.els.get("advanced").hidden, false);
-  plain.els.get("adv").checked = false; plain.els.get("adv").fire("change"); assert.equal(plain.els.get("advanced").hidden, true);
+  assert.equal(plain.els.get("more-3").open, false, "\"More options\" starts folded"); assert.equal(plain.els.get("more-2").open, false);
+  assert.ok(!plain.els.has("adv") && !plain.els.has("advanced"), "no separate advanced block any more");
   plain.server.restore();
-  const out = await def.mcp.story_prepare(ctx, { durationSeconds: 8 });
+  const out = await def.mcp.story_prepare(ctx, { durationSeconds: 8, language: "en" });
   const b = current = await boot(ctx, { prep: new URL(out.link).searchParams.get("prep") });
-  assert.equal(b.els.get("advanced").hidden, false, "un réglage avancé déjà modifié n'est jamais caché"); assert.equal(b.els.get("duration").value, 8);
+  assert.equal(b.els.get("more-3").open, true, "a rare setting that was already changed is never left hidden"); assert.equal(b.els.get("duration").value, 8);
+  assert.equal(b.els.get("more-2").open, true); assert.equal(b.els.get("lang").value, "en");
 });
 
-test("erreurs sous le champ, avec un exemple : nom de modèle manquant ; états « en cours » sur les boutons", async () => {
+test("errors sit under their field, with an example: missing model name, a time without a day, a day that does not exist; busy states on the buttons", async () => {
   const ctx = mk({ calendar: [slot(1, 5)] });
   const { els } = current = await boot(ctx);
   els.get("model-save").click(); await wait(300);
   assert.equal(els.get("model-error").textContent, fr.ui_err_name); assert.match(fr.ui_err_name, /par exemple/); assert.equal(els.get("model-name").attrs["aria-invalid"], "true");
-  assert.equal(els.get("model-save").attrs["aria-busy"], "false", "le bouton n'est plus « en cours »"); assert.equal(els.get("model-save").isDisabled, false);
+  assert.equal(els.get("model-save").attrs["aria-busy"], "false", "the button is no longer busy"); assert.equal(els.get("model-save").isDisabled, false);
   els.get("a-login").value = ""; els.get("a-name").value = ""; els.get("adhoc-add").click(); await wait(300);
   assert.equal(els.get("a-error").textContent, fr.ui_err_empty); assert.match(fr.ui_err_empty, /par exemple/);
-  els.get("event-change").click(); els.get("event-manual-toggle").click();
-  els.get("m-title").value = ""; els.get("m-date").value = "2031-03-04"; els.get("m-date").fire("input");
-  assert.equal(els.get("manual-error").textContent, fr.ui_manual_title); assert.match(fr.ui_manual_title, /par exemple/);
+  els.get("event-none").click();
+  els.get("info-time").value = "19:30"; els.get("info-time").fire("input");
+  assert.equal(els.get("info-error").textContent, fr.ui_info_need_date); assert.match(fr.ui_info_need_date, /par exemple/); assert.equal(els.get("info-date").attrs["aria-invalid"], "true");
+  els.get("info-date").value = "2031-02-31"; els.get("info-date").fire("input");
+  assert.equal(els.get("info-error").textContent, fr.ui_manual_date); assert.match(fr.ui_manual_date, /par exemple/);
+  els.get("info-date").value = "2031-03-04"; els.get("info-date").fire("input");
+  assert.equal(els.get("info-error").textContent, ""); assert.equal(els.get("info-date").attrs["aria-invalid"], "false");
 });
 
-test("une phrase par réglage, en français comme en anglais : mêmes clés, mêmes {variables}, aucune clé de la page sans phrase", () => {
+test("one sentence per setting, in French and in English: same keys, same {variables}, no key of the page without a sentence, none left over", () => {
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
   const keys = (l) => Object.keys(l).filter((k) => k.startsWith("ui_")).sort();
   assert.deepEqual(keys(fr), keys(en));
   for (const k of keys(fr)) assert.equal(vars(fr[k]), vars(en[k]), k);
   for (const k of page.KEYS) { assert.ok(fr[`ui_${k}`], `fr ${k}`); assert.ok(en[`ui_${k}`], `en ${k}`); }
-  for (const k of ["event_next", "event_started", "event_change", "event_pick_title", "event_same", "adv_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "step_1", "step_2", "step_3", "prev", "next_look", "next_video", "gen_now", "h_video", "recap_intro", "recap_edit", "recap_edit_aria", "step_now"]) assert.ok(page.KEYS.includes(k), k);
+  for (const k of ["event_next", "event_started", "event_change", "event_pick_title", "event_same", "event_none_btn", "event_none_set", "event_pick", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "step_1", "step_2", "step_3", "prev", "next_info", "next_style", "gen_now", "h_info", "h_style", "in_video", "more_options", "pv_plain", "step_now"]) assert.ok(page.KEYS.includes(k), k);
+  for (const k of ["recap_intro", "recap_edit", "adv_label", "h_advanced", "next_look", "next_video", "event_manual", "h_video"]) assert.ok(!page.KEYS.includes(k), `${k} is gone with the old steps`);
 });
 
-test("la page : trois étapes, aperçu avant les réglages dans le code, étapes 2 et 3 et options avancées cachées, barre de navigation fixe sur téléphone, 44 px, mouvement réduit", async () => {
+test("ergonomics of the new texts (rules R9 to R13): labels and hints short, no colon at the end, no forbidden word, polite form, no exclamation mark, button verbs", () => {
+  const FORBIDDEN = /\b(cl[ée]s?|slug|instance|topic|token|jeton|webhook|route|service|identifiant|payload|api|json|cache|hash|sse|oauth)\b/i;
+  const labels = ["step_1", "step_2", "step_3", "next_info", "next_style", "generate", "gen_now", "event_none_btn", "event_pick", "event_change", "in_video", "f_title", "f_when", "f_date", "f_time", "f_game", "f_countdown", "text_label", "members_pick", "f_brand", "more_options", "g_event", "g_own", "h_info", "h_style"];
+  const hints = ["game_help", "countdown_need", "countdown_off", "channel_help", "text_help", "m_time_hint", "ph_title", "ph_game", "ph_text"];
+  for (const l of [fr, en]) {
+    for (const k of labels) { const t = l[`ui_${k}`]; assert.ok(t.length <= 60, `${k} (${t.length})`); assert.ok(!/:\s*$/.test(t), `${k}: ends with a colon`); assert.ok(!FORBIDDEN.test(t), k); }
+    for (const k of hints) { const t = l[`ui_${k}`]; assert.ok(t.length <= 60, `${k} (${t.length}): ${t}`); assert.ok(!FORBIDDEN.test(t), k); }
+    for (const k of [...labels, ...hints, "info_intro", "style_intro", "pv_plain", "event_none_chosen", "event_none_set", "info_need_date", "empty"]) {
+      const t = l[`ui_${k}`];
+      assert.ok(!/!/.test(t) && !/veuillez/i.test(t), `${k}: exclamation mark or "veuillez"`);
+      assert.ok(t.split(/[.?:;]\s/).every((sentence) => sentence.split(/\s+/).length <= 20), `${k}: sentence over 20 words`);
+    }
+  }
+  for (const k of ["f_title", "f_game", "text_label"]) assert.match(fr[`ui_ph_${{ f_title: "title", f_game: "game", text_label: "text" }[k]}`], /^Par exemple/, "a free field has a concrete example");
+  assert.doesNotMatch(fr.ui_next_info + fr.ui_next_style + fr.ui_generate, /\b(OK|Valider|Soumettre)\b/, "a precise verb on the main buttons");
+  assert.deepEqual([fr.ui_next_info, fr.ui_next_style, fr.ui_generate], ["Suivant : modifier les informations", "Suivant : choisir le style", "Générer la vidéo"]);
+  assert.deepEqual([en.ui_next_info, en.ui_next_style, en.ui_generate], ["Next: edit the information", "Next: choose the style", "Generate the video"]);
+});
+
+test("the page: three steps, the preview before the settings in the code, steps 2 and 3 hidden, one switch per item, the style last with the main button, a fixed bar on a phone, 44 px, reduced motion", async () => {
   const html = await (await page.studioPage(mk({}), { base: "/m/story", colors: {}, timezone: "", font: "", accent: "#4f46e5", accentFg: "#ffffff" })).text();
-  assert.equal((html.match(/class="stepbtn"/g) ?? []).length, 3, "un indicateur cliquable par étape");
+  assert.equal((html.match(/class="stepbtn"/g) ?? []).length, 3, "one clickable marker per step");
   assert.match(html, /<nav class="stepper" aria-label="Étapes">/);
-  assert.ok(html.indexOf('class="stepper"') < html.indexOf('id="preview"') && html.indexOf('id="preview"') < html.indexOf('id="step-1"'), "étapes, aperçu, puis réglages (dans le code, donc au clavier)");
-  assert.ok(html.indexOf('id="preview"') < html.indexOf('class="panels"') && !/<div class="panels">[\s\S]*id="preview"/.test(html), "l'aperçu n'est dans aucune étape : il reste là à chacune");
-  for (const id of ["step-2", "step-3", "advanced"]) assert.match(new RegExp(`<(?:section|div) id="${id}"[^>]*>`).exec(html)[0], /hidden/, id);
+  assert.ok(html.indexOf('class="stepper"') < html.indexOf('id="preview"') && html.indexOf('id="preview"') < html.indexOf('id="step-1"'), "steps, preview, then settings (in the code, so for the keyboard too)");
+  assert.ok(html.indexOf('id="preview"') < html.indexOf('class="panels"') && !/<div class="panels">[\s\S]*id="preview"/.test(html), "the preview is in no step: it stays there at each one");
+  for (const id of ["step-2", "step-3"]) assert.match(new RegExp(`<section id="${id}"[^>]*>`).exec(html)[0], /hidden/, id);
   assert.doesNotMatch(/<section id="step-1"[^>]*>/.exec(html)[0], /hidden/);
-  assert.match(/<button[^>]*id="generate"[^>]*>/.exec(html)[0], /hidden/, "« Générer la vidéo » est à l'étape 3 ; « Générer maintenant » sert avant");
-  assert.ok(html.includes('id="generate-now"') && html.includes('id="step-prev"') && html.includes('id="step-next"'));
-  assert.match(html, /\.navbar\{position:fixed;left:0;right:0;bottom:0/, "les boutons restent atteignables sur téléphone");
-  assert.match(html, /\.top\{display:block;position:sticky;top:0/, "étapes et aperçu réduit collés en haut sur téléphone");
-  assert.match(html, /button,a\.button\{min-height:44px\}/);
+  assert.match(/<button[^>]*id="generate"[^>]*>/.exec(html)[0], /hidden/, "\"Generate the video\" is on the last step; \"Generate now\" serves before it");
+  assert.ok(html.indexOf('id="step-3"') < html.indexOf('id="generate"'), "the main button comes after the style step");
+  // the information step: one item and one switch per thing the video can show, the switch being the tick of the element
+  for (const e of P.ELEMENTS) {
+    assert.match(html, new RegExp(`<div class="item" id="item-${e}">`), e);
+    assert.match(html, new RegExp(`<input type="checkbox" role="switch" id="el-${e}" aria-labelledby="lbl-${e} sw-${e}">`), `a switch with a name for ${e}`);
+  }
+  const groups = [...html.matchAll(/<fieldset class="group">([\s\S]*?)<\/fieldset>/g)].map((m) => (m[1].match(/class="item"/g) ?? []).length);
+  assert.ok(groups.length === 2 && groups.every((n) => n <= 5), `at most 5 items per group (${groups})`);
+  assert.ok(!html.includes('id="advanced"') && !html.includes('id="recap"') && !html.includes('id="m-title"'), "no advanced block, no recap, no second place to write the event");
+  // the style step holds the style, the format, the mark, then the rare options and the models
+  const order = ["style-neon", "format-vertical", "watermark", "more-3", "models-box"].map((id) => html.indexOf(`id="${id}"`));
+  assert.deepEqual(order, [...order].sort((x, y) => x - y)); assert.ok(order.every((i) => i > html.indexOf('id="step-3"')), "all on step 3");
+  assert.ok(html.indexOf('id="step-3"') > html.indexOf('id="more-2"'), "step 3 comes after step 2");
+  assert.match(html, /\.navbar\{position:fixed;left:0;right:0;bottom:0/, "the buttons stay reachable on a phone");
+  assert.match(html, /\.top\{display:block;position:sticky;top:0/, "steps and a small preview stick to the top on a phone");
+  assert.match(html, /button,a\.button\{min-height:44px\}/); assert.match(html, /\.sw\{[^}]*min-height:44px/, "the switches are 44 px high");
   assert.match(html, /prefers-reduced-motion:reduce/);
+  assert.match(html, /<h2 id="h-event" tabindex="-1">/); assert.match(html, /<h2 id="h-info" tabindex="-1">/); assert.match(html, /<h2 id="h-style" tabindex="-1">/);
 });
 
 const go = async (els, id) => { els.get(id).click(); await wait(80); };
 const shown = (els) => [1, 2, 3].filter((n) => !els.get(`step-${n}`).hidden);
+const styleOf = (els) => els.get("preview").dataset.style;
+const clearLog = (els) => { els.get("preview").getContext().log.length = 0; };
+const tick = (els, id, on) => { els.get(id).checked = on; els.get(id).fire("change"); };
 
-test("l'assistant : ouverture à l'étape 1 avec « Générer maintenant » ; Suivant/Précédent et l'indicateur cliquable ; le travail n'est jamais perdu en revenant en arrière ; l'aperçu suit à chaque étape", async () => {
-  const ctx = mk({ calendar: [slot(1, 5), slot(2, 30, { games: ["Zelda"] })] });
+test("the flow: event, then information, then style; Next/Back and the step markers; the work is never lost going back; the preview follows each step", async () => {
+  const ctx = mk({ calendar: [slot(1, 5, { games: ["Zelda"] }), slot(2, 30)] });
   const { els } = current = await boot(ctx);
   assert.deepEqual(shown(els), [1]); assert.equal(els.get("step-btn-1").attrs["aria-current"], "step"); assert.equal(els.get("step-btn-2").attrs["aria-current"], "false");
-  assert.equal(els.get("generate-now").hidden, false, "le raccourci est là dès l'étape 1"); assert.equal(els.get("generate-now").isDisabled, false); assert.equal(els.get("generate").hidden, true);
-  assert.equal(els.get("step-prev").hidden, true); assert.equal(els.get("step-next").textContent, fr.ui_next_look);
+  assert.equal(els.get("step-prev").hidden, true); assert.equal(els.get("step-next").hidden, false); assert.equal(els.get("generate").hidden, true);
+  assert.equal(els.get("generate-now").hidden, false, "the quick way is there from step 1");
   await go(els, "step-next");
-  assert.deepEqual(shown(els), [2]); assert.equal(els.get("step-prev").hidden, false); assert.equal(els.get("step-next").textContent, fr.ui_next_video); assert.equal(els.get("generate-now").hidden, false);
-  assert.equal(els.get("step-live").textContent, "Étape 2 sur 3 : Look");
-  els.get("text").value = "À ce soir !"; els.get("text").fire("input"); els.get("style-minimal").checked = true; els.get("style-minimal").fire("change"); await wait(500);
-  assert.ok(drawn(els).some((t) => /soir/.test(t)), "l'aperçu se met à jour à l'étape 2");
+  assert.deepEqual(shown(els), [2]); assert.equal(els.get("step-prev").hidden, false); assert.equal(els.get("generate-now").hidden, false);
+  assert.equal(els.get("step-live").textContent, "Étape 2 sur 3 : Informations"); assert.equal(El.focused, "h-info", "the focus moves to the title of the step");
+  assert.equal(els.get("step-btn-2").attrs["aria-current"], "step"); assert.equal(els.get("step-btn-1").attrs["aria-current"], "false");
+  els.get("text").value = "À ce soir"; els.get("text").fire("input"); await wait(400);
+  assert.ok(drawn(els).some((t) => /soir/.test(t)), "the preview follows step 2");
   await go(els, "step-next");
-  assert.deepEqual(shown(els), [3]); assert.equal(els.get("generate").hidden, false); assert.equal(els.get("generate-now").hidden, true); assert.equal(els.get("step-next").hidden, true);
-  const recap = els.get("recap").children.map((li) => li.textContent).join(" | ");
-  assert.match(recap, /Stream 1/); assert.match(recap, /Minimal/); assert.match(recap, /À ce soir !/); assert.match(recap, /Mention « Made with Curiosa »non/);
-  await go(els, "step-btn-1");   // retour direct à l'étape 1 par l'indicateur
+  assert.deepEqual(shown(els), [3]); assert.equal(El.focused, "h-style");
+  assert.equal(els.get("generate").hidden, false); assert.equal(els.get("generate-now").hidden, true); assert.equal(els.get("step-next").hidden, true);
+  await go(els, "step-btn-1");   // straight back to step 1 with the marker
   els.get("event-change").click(); rowsOf(els.get("event-list"))[1].click(); await wait(700);
   await go(els, "step-btn-2");
-  assert.equal(els.get("text").value, "À ce soir !"); assert.equal(els.get("style-minimal").checked, true, "rien n'est perdu en revenant en arrière");
-  await go(els, "step-prev"); assert.deepEqual(shown(els), [1]); assert.match(els.get("event-chosen").textContent, /Stream 2/);
+  assert.equal(els.get("text").value, "À ce soir", "nothing is lost going back"); assert.equal(els.get("info-title").value, "Stream 2", "the information follows the new event");
+  await go(els, "step-prev"); assert.deepEqual(shown(els), [1]); assert.match(els.get("event-chosen").textContent, /Stream 2/); assert.equal(El.focused, "h-event");
   await go(els, "step-btn-3");
-  assert.match(els.get("recap").children[0].textContent, /Stream 2/, "le récapitulatif suit l'événement changé");
-  assert.ok(drawn(els).some((t) => /Stream 2/.test(t)), "l'aperçu est toujours là à l'étape 3");
+  assert.ok(drawn(els).some((t) => /Stream 2/.test(t)), "the preview is still there on step 3");
 });
 
-test("« Générer maintenant » depuis l'étape 1 : on arrive à l'étape 3 et la création démarre (ici sans encodeur : la phrase le dit) ; « Modifier » ramène à l'étape du réglage", async () => {
+test("steps 1 and 2 preview in the plain default style, the chosen style appears on step 3 and is kept when going back; the default is not a choice", async () => {
   const ctx = mk({ calendar: [slot(1, 5)] });
   const { els } = current = await boot(ctx);
-  await go(els, "generate-now"); await wait(300);
-  assert.deepEqual(shown(els), [3], "la progression et le résultat sont à l'étape 3");
-  assert.equal(els.get("status").hidden, false); assert.equal(els.get("status").textContent, fr.ui_err_unsupported, "la création a bien été lancée (ce faux navigateur ne sait pas encoder)");
-  const edit = buttons(els.get("recap")).find((b) => b.attrs["aria-label"] === "Modifier : Style");
-  edit.click(); assert.deepEqual(shown(els), [2]);
-  const evt = els.get("recap").children[0]; assert.equal(buttons(evt)[0].attrs["aria-label"], "Modifier : Événement");
-  await go(els, "step-btn-3"); buttons(els.get("recap").children[0])[0].click(); assert.deepEqual(shown(els), [1]);
+  assert.equal(P.EDIT_STYLE, "minimal");
+  assert.equal(styleOf(els), "minimal", "step 1: the plain style"); assert.equal(els.get("pv-note").hidden, false, "the preview says it is a plain one");
+  await go(els, "step-next"); await wait(200);
+  assert.equal(styleOf(els), "minimal", "step 2: still the plain style");
+  assert.equal(els.get("style-neon").checked, true, "the card of the default style is selected, but nothing was chosen");
+  await go(els, "step-next"); await wait(300);
+  assert.equal(styleOf(els), P.DEFAULT_CONFIG.style, "step 3: the style of the cards"); assert.equal(els.get("pv-note").hidden, true);
+  els.get("style-poster").checked = true; els.get("style-poster").fire("change"); await wait(300);
+  assert.equal(styleOf(els), "poster", "choosing a card changes the preview at once");
+  els.get("style-kinetic").checked = true; els.get("style-kinetic").fire("change"); await wait(300);
+  assert.equal(styleOf(els), "kinetic");
+  await go(els, "step-prev"); await wait(300);
+  assert.equal(styleOf(els), "kinetic", "a style that was chosen is kept in the preview when going back");
+  assert.equal(els.get("pv-note").hidden, true);
+  const unchosen = current = (current.server.restore(), await boot(ctx));
+  await go(unchosen.els, "step-btn-3"); await go(unchosen.els, "step-btn-1"); await wait(300);
+  assert.equal(styleOf(unchosen.els), "minimal", "looking at step 3 without choosing does not make the default a choice");
 });
 
-test("un modèle ou une préparation de l'assistant remplit tout : l'éditeur s'ouvre (ou arrive) sur l'étape 3, avec « Modifier » pour chaque réglage", async () => {
+test("each item can be corrected, and removed in one gesture (its switch, the old tick of the element): the preview and the scene lose it", async () => {
+  const ctx = mk({ calendar: [slot(1, 5, { games: ["Zelda"] })] });
+  const { els } = current = await boot(ctx);
+  await go(els, "step-next");
+  const ev = P.infoFromStream(P.upcomingStreams([slot(1, 5, { games: ["Zelda"] })], Date.now(), "Europe/Paris")[0], "Europe/Paris");
+  assert.deepEqual([els.get("info-title").value, els.get("info-date").value, els.get("info-time").value, els.get("info-game").value], [ev.title, ev.date, ev.time, ev.game], "prefilled from the event");
+  for (const e of ["title", "when", "game", "brand", "text", "costreamers"]) assert.equal(els.get(`el-${e}`).checked, true, `${e} is shown`);
+  assert.equal(els.get("el-countdown").checked, false, "the countdown is off by default");
+  assert.equal(els.get("item-title").className, "item"); assert.equal(els.get("item-countdown").className, "item off", "an item that is off is dimmed");
+  await wait(300);
+  assert.ok(drawn(els).some((t) => /Stream 1/.test(t)) && drawn(els).some((t) => /Zelda/.test(t)));
+  // correcting the title changes the preview
+  els.get("info-title").value = "Soirée découverte"; els.get("info-title").fire("input"); await wait(300);
+  assert.ok(drawn(els).some((t) => /Soirée/.test(t)));
+  // removing: the title, the game, the day, in one click each
+  clearLog(els); tick(els, "el-title", false); tick(els, "el-game", false); await wait(300);
+  const after = drawn(els);
+  assert.ok(after.length > 0 && !after.some((t) => /Soirée|Zelda/.test(t)), "title and game are gone from the preview");
+  assert.equal(els.get("item-title").className, "item off");
+  assert.equal(els.get("info-title").value, "Soirée découverte", "what was typed stays: switching on again brings it back");
+  clearLog(els); tick(els, "el-title", true); await wait(300);
+  assert.ok(drawn(els).some((t) => /Soirée/.test(t)), "switched on again");
+  // the sentence and the channel name
+  els.get("text").value = "Rendez-vous ce soir"; els.get("text").fire("input"); els.get("channel").value = "etoile_nord"; els.get("channel").fire("input"); await wait(300);
+  assert.ok(drawn(els).some((t) => /Rendez-vous/.test(t)) && drawn(els).some((t) => /etoile_nord/.test(t)));
+  clearLog(els); tick(els, "el-text", false); tick(els, "el-brand", false); await wait(300);
+  assert.ok(!drawn(els).some((t) => /Rendez-vous|etoile_nord/.test(t)), "sentence and channel name removed");
+  // a guest streamer, then the whole guest list removed
+  els.get("adhoc-box").open = true; els.get("a-login").value = "lune_douce"; els.get("a-name").value = "Camille"; els.get("adhoc-add").click(); await wait(500);
+  assert.match(els.get("members-sum").textContent, /Camille/); assert.ok(drawn(els).some((t) => /Camille/.test(t)));
+  clearLog(els); tick(els, "el-costreamers", false); await wait(300);
+  assert.ok(!drawn(els).some((t) => /Camille/.test(t)), "guests removed with their switch"); assert.equal(els.get("item-costreamers").className, "item off");
+  // the countdown, turned on, says what it will say; it needs a day
+  tick(els, "el-countdown", true);
+  assert.match(els.get("countdown-note").textContent, /La vidéo dira/);
+  els.get("info-date").value = ""; els.get("info-date").fire("input"); els.get("info-time").value = ""; els.get("info-time").fire("input");
+  assert.equal(els.get("countdown-note").textContent, fr.ui_countdown_need, "no day, no countdown");
+});
+
+test("\"No event\": the fields of step 2 start empty, the preview shows nothing of the event, and writing the information by hand works end to end", async () => {
+  const ctx = mk({ calendar: [slot(1, 5, { games: ["Zelda"] })] });
+  const { els } = current = await boot(ctx);
+  await go(els, "step-next"); els.get("text").value = "Ma phrase"; els.get("text").fire("input"); els.get("channel").value = "etoile_nord"; els.get("channel").fire("input");
+  await go(els, "step-prev");
+  clearLog(els); els.get("event-none").click(); await wait(300);
+  await go(els, "step-next");
+  for (const id of ["info-title", "info-date", "info-time", "info-game"]) assert.equal(els.get(id).value, "", `${id} starts empty`);
+  assert.equal(els.get("text").value, "Ma phrase", "the person's own sentence stays"); assert.equal(els.get("channel").value, "etoile_nord");
+  for (const e of ["title", "when", "game", "brand", "text", "costreamers"]) assert.equal(els.get(`el-${e}`).checked, true, "the switches keep their value");
+  const shownNow = drawn(els);
+  assert.ok(!shownNow.some((t) => /Stream 1|Zelda/.test(t)), "nothing of the event is drawn"); assert.ok(shownNow.some((t) => /Ma phrase/.test(t)) && shownNow.some((t) => /etoile_nord/.test(t)), "what remains is drawn");
+  assert.equal(els.get("empty").hidden, true);
+  els.get("info-title").value = "Soirée découverte"; els.get("info-title").fire("input");
+  els.get("info-date").value = "2031-03-04"; els.get("info-date").fire("input"); els.get("info-time").value = "19:30"; els.get("info-time").fire("input");
+  els.get("info-game").value = "Hades"; els.get("info-game").fire("input"); await wait(900);
+  const t = drawn(els);
+  assert.ok(t.some((x) => /Soirée/.test(x)) && t.some((x) => /4 mars/.test(x)) && t.some((x) => /19 h 30/.test(x)) && t.some((x) => /Hades/.test(x)), "title, day, time and game written by hand");
+  assert.ok(els.get("generate-now").isDisabled === false);
+  // with nothing at all, the preview says there is nothing to show
+  for (const e of ["title", "when", "game", "brand", "text", "costreamers"]) tick(els, `el-${e}`, false);
+  await wait(400); assert.equal(els.get("empty").hidden, false, "everything removed: nothing to show");
+  assert.equal(els.get("generate-now").isDisabled, true); assert.equal(els.get("generate").isDisabled, true);
+});
+
+test("a day that is not valid stops the way forward from step 2 (field told, focus on it, typing kept); going back is always allowed", async () => {
   const ctx = mk({ calendar: [slot(1, 5)] });
-  const out = await def.mcp.story_prepare(ctx, { style: "poster", text: "Prêt !", durationSeconds: 9 });
+  const { els } = current = await boot(ctx);
+  await go(els, "step-next");
+  els.get("info-time").value = "19:30"; els.get("info-time").fire("input"); els.get("info-date").value = ""; els.get("info-date").fire("input");
+  await go(els, "step-next");
+  assert.deepEqual(shown(els), [2], "still on step 2"); assert.equal(El.focused, "info-date", "the first field in error takes the focus"); assert.equal(els.get("info-time").value, "19:30", "the typing is kept");
+  await go(els, "step-btn-3"); assert.deepEqual(shown(els), [2], "the step marker does not go around the check");
+  await go(els, "generate-now"); assert.deepEqual(shown(els), [2], "neither does \"Generate now\"");
+  await go(els, "step-prev"); assert.deepEqual(shown(els), [1], "back is free");
+  await go(els, "step-next"); els.get("info-date").value = "2031-03-04"; els.get("info-date").fire("input");
+  await go(els, "step-next"); assert.deepEqual(shown(els), [3]);
+});
+
+test("\"Generate now\": generates in the style the preview shows (the plain default until a style is chosen), names it on the button, and the last step then shows that style selected", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  const { els } = current = await boot(ctx);
+  assert.equal(els.get("generate-now").textContent, "Générer maintenant, style Minimal / texte seul", "the style is named near the button");
+  await go(els, "generate-now"); await wait(300);
+  assert.deepEqual(shown(els), [3], "progress and result are on the last step");
+  assert.equal(els.get("style-minimal").checked, true, "the style that was seen is the one selected"); assert.equal(styleOf(els), "minimal");
+  assert.equal(els.get("status").textContent, fr.ui_err_unsupported, "the creation started (this fake browser cannot encode)");
+  // after choosing a style, going back and generating now keeps that style
+  els.get("style-poster").checked = true; els.get("style-poster").fire("change"); await wait(200);
+  await go(els, "step-btn-2");
+  assert.equal(styleOf(els), "poster"); assert.match(els.get("generate-now").textContent, /Affiche qui glisse/);
+  await go(els, "generate-now"); await wait(300);
+  assert.equal(els.get("style-poster").checked, true); assert.equal(styleOf(els), "poster");
+  const en2 = current = (current.server.restore(), await boot(mk({ locale: "en", calendar: [slot(1, 5)] })));
+  assert.equal(en2.els.get("generate-now").textContent, "Generate now, Minimal / text only style");
+});
+
+test("a model or an assistant preparation opens on the last step (the style), with its own style; a hand-written event of the assistant is not replaced by the next event", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  const out = await def.mcp.story_prepare(ctx, { style: "poster", text: "Prêt", durationSeconds: 9 });
   const { els, server } = current = await boot(ctx, { prep: new URL(out.link).searchParams.get("prep") });
-  assert.deepEqual(shown(els), [3], "ouverture sur le récapitulatif"); assert.equal(els.get("prep-note").hidden, false);
-  const recap = els.get("recap").children.map((li) => li.textContent).join(" | ");
-  assert.match(recap, /Stream 1/); assert.match(recap, /Affiche qui glisse/); assert.match(recap, /Prêt !/); assert.match(recap, /9 s/);
-  assert.equal(els.get("advanced").hidden, false, "la durée (avancée) a changé : l'étape 2 la montre");
+  assert.deepEqual(shown(els), [3], "opens on the style step"); assert.equal(els.get("prep-note").hidden, false);
+  assert.equal(els.get("style-poster").checked, true); assert.equal(styleOf(els), "poster", "the style of the preparation is applied at once");
+  assert.equal(els.get("text").value, "Prêt"); assert.equal(els.get("duration").value, 9);
+  await go(els, "step-btn-2"); assert.equal(els.get("info-title").value, "Stream 1", "the information is there to check"); assert.equal(styleOf(els), "poster");
   server.restore();
+  // a preparation without a style: the default card is selected, nothing else changes
+  const plain = await def.mcp.story_prepare(ctx, { text: "Sans style" });
+  const p2 = current = await boot(ctx, { prep: new URL(plain.link).searchParams.get("prep") });
+  assert.deepEqual(shown(p2.els), [3]); assert.equal(styleOf(p2.els), P.DEFAULT_CONFIG.style); p2.server.restore();
+  // an event written by the assistant stays, even though an event exists
+  const hand = await def.mcp.story_prepare(ctx, { streamTitle: "Soirée découverte", streamDate: "2031-03-04", streamTime: "19:30" });
+  const p3 = current = await boot(ctx, { prep: new URL(hand.link).searchParams.get("prep") });
+  await go(p3.els, "step-btn-2");
+  assert.equal(p3.els.get("info-title").value, "Soirée découverte"); assert.equal(p3.els.get("info-date").value, "2031-03-04"); assert.equal(p3.els.get("info-time").value, "19:30");
+  assert.equal(p3.els.get("event-none").attrs["aria-pressed"], "true"); p3.server.restore();
+  // no preparation: step 1; a model is loaded from the style step and brings its style
   const b = current = await boot(ctx);
-  assert.deepEqual(shown(b.els), [1], "sans préparation : étape 1");
-  await go(b.els, "step-btn-2");
+  assert.deepEqual(shown(b.els), [1], "without a preparation: step 1");
+  await go(b.els, "step-btn-3");
   b.els.get("model-name").value = "Mon modèle"; b.els.get("models-box").open = true; b.els.get("model-save").click(); await wait(500);
   b.els.get("style-poster").checked = true; b.els.get("style-poster").fire("change");
-  const load = buttons(b.els.get("model-list")).find((x) => x.textContent === fr.ui_load); load.click(); await wait(500);
-  assert.deepEqual(shown(b.els), [3], "charger un modèle ouvre le récapitulatif");
-  assert.match(b.els.get("status").textContent, /Modèle « Mon modèle » chargé/);
+  b.els.get("style-cinema").checked = true; b.els.get("style-cinema").fire("change");
+  await go(b.els, "step-btn-1"); await wait(300);
+  assert.equal(styleOf(b.els), "cinema", "a chosen style is kept in the preview of the first steps");
+  b.server.restore();
+  const c = current = await boot(ctx);
+  await go(c.els, "step-btn-3");
+  const load = buttons(c.els.get("model-list")).find((x) => x.textContent === fr.ui_load); load.click(); await wait(500);
+  assert.deepEqual(shown(c.els), [3], "loading a model keeps the style step"); assert.match(c.els.get("status").textContent, /Modèle « Mon modèle » chargé/);
+  assert.equal(c.els.get("style-neon").checked, true, "the model saved with the default style brings it back");
+  await go(c.els, "step-btn-1"); assert.equal(styleOf(c.els), P.DEFAULT_CONFIG.style, "a loaded model counts as a chosen style");
+});
+
+test("older data stays readable: a stored model or preparation with a style of any of the ten, or with no style at all, opens; unknown values fall back", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  for (const style of ["neon", "minimal", "geometric", undefined, "no-such-style"]) {
+    const cfg = P.cleanConfig({ style, elements: ["title", "when"], format: "passeport" });
+    const prep = await data.savePrep(ctx, { config: cfg, manual: null });
+    const { els, server } = current = await boot(ctx, { prep: prep.pid });
+    assert.deepEqual(shown(els), [3], String(style)); assert.equal(styleOf(els), P.STYLES.includes(style) ? style : P.DEFAULT_CONFIG.style, String(style));
+    assert.equal(els.get("el-costreamers").checked, false, "the stored elements are respected"); assert.equal(els.get("item-costreamers").className, "item off");
+    server.restore();
+  }
+});
+
+test("keyboard and screen reader: every field has a name, the markers carry aria-current, Enter on Next and Back works as a click, Escape closes the list of events", async () => {
+  const ctx = mk({ calendar: [slot(1, 5), slot(2, 30)] });
+  const { els, html } = current = await boot(ctx);
+  for (const id of ["info-title", "info-date", "info-time", "info-game", "text", "channel", "lang", "duration", "watermark", "safe", "model-name", "event-q"]) assert.match(html, new RegExp(`<label[^>]* for="${id}"`), `${id} has a connected label`);
+  for (const e of P.ELEMENTS) assert.match(html, new RegExp(`<[a-z]+ id="lbl-${e}"`), `${e}: a name for its switch`);
+  assert.match(html, /<input type="radio" name="style" id="style-neon">/); assert.match(html, /<label for="style-neon" class="stylecard">/);
+  assert.match(html, /<canvas class="thumb"[^>]*aria-hidden="true">/, "the thumbnails are decorative: the name and the hint carry the meaning");
+  assert.match(html, /<span id="brand-logo" aria-hidden="true">/);
+  assert.match(html, /id="info-error"[^>]*role="alert"/);
+  // tab order = document order: stepper, preview controls, then the step, then the bar
+  const order = ["step-btn-1", "play", "event-change", "step-prev", "step-next", "generate"].map((id) => html.indexOf(`id="${id}"`));
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "the order of the code is the order of the keyboard");
+  els.get("step-next").fire("keydown", { key: "Enter" }); els.get("step-next").click(); await wait(80);   // Enter on a native button fires a click
+  assert.deepEqual(shown(els), [2]); assert.equal(els.get("step-btn-2").attrs["aria-current"], "step");
+  els.get("step-prev").click(); await wait(80); assert.deepEqual(shown(els), [1]);
+  els.get("event-change").click(); assert.equal(els.get("event-picker").hidden, false);
+  els.get("event-picker").fire("keydown", { key: "Escape" }); assert.equal(els.get("event-picker").hidden, true); assert.equal(El.focused, "event-change", "the focus goes back to the button");
 });

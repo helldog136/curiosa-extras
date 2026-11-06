@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.7.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.8.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -80,8 +80,8 @@ test("textes : français et anglais alignés ; chaque phrase de la page est dans
   const app = read("app.mjs"), used = new Set([...app.matchAll(/\bL\("([a-z0-9_]+)"/g)].map((m) => m[1]));
   for (const m of app.matchAll(/\bL\([^)"`]*\?\s*"([a-z0-9_]+)"\s*:\s*"([a-z0-9_]+)"/g)) { used.add(m[1]); used.add(m[2]); }
   for (const k of used) assert.ok(page.KEYS.includes(k), `l'éditeur emploie « ${k} » : absent de la liste de la page`);
-  for (const k of ["err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic", "manual_title", "manual_date", "manual_time"]) assert.ok(page.KEYS.includes(k) || k.startsWith("manual_"), k);
-  for (const k of ["manual_title", "manual_date", "manual_time"]) assert.ok(k in Object.fromEntries(Object.keys(fr).map((x) => [x.replace(/^ui_/, ""), 1])));
+  for (const k of ["err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic", "manual_date", "manual_time"]) assert.ok(page.KEYS.includes(k) || k.startsWith("manual_"), k);
+  for (const k of ["manual_date", "manual_time", "info_need_date"]) assert.ok(k in Object.fromEntries(Object.keys(fr).map((x) => [x.replace(/^ui_/, ""), 1])));
   for (const t of Object.values(fr).concat(Object.values(en))) assert.ok(!/\b(api|json|jeton|token|http|mcp|webcodecs|canvas)\b/i.test(t), `jargon dans « ${t.slice(0, 50)} »`);
   assert.match(fr.ui_webm_notice, /Instagram préfère le MP4 : essayez Chrome ou Safari récent/);
 });

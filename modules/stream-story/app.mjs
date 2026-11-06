@@ -42,17 +42,24 @@ const errText = (e) => L(`err_${["auth", "network", "empty", "invalid", "full", 
 /* ───────────── The state ───────────── */
 const S = {
   cfg: P.cleanConfig({ ...P.DEFAULT_CONFIG, lang: C.lang === "en" ? "en" : "fr" }),
-  ev: { partners: [], items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false, coverState: "", coverAmbiguous: false, coverTitle: "", coverFound: "" }, manual: { title: "", date: "", time: "" }, useManual: false,
+  ev: { partners: [], items: [], next: null, total: 0, totalAll: 0, sources: [], state: "loading", q: "", source: "", seq: 0, selected: null, busy: false },
+  // The editable information (step 2): copied from the event that is picked, or empty for "no event". `cov`: the cover of the game written in `info.game`.
+  info: { title: "", date: "", time: "", game: "" }, noEvent: false, cov: { game: "", url: "", state: "", ambiguous: false, title: "", found: "" },
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", advanced: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
 
-const selectedStream = () => {
-  if (S.useManual) { const m = P.manualStream(S.manual, TZ); return m.error ? null : m; }
-  return S.ev.selected;
+/** The stream the video is made from: the picked event (or nothing) with the information of step 2 on top of it. `error`: "date" or "time" when the day written is not valid. */
+const streamNow = () => {
+  const r = P.streamFromInfo(S.info, { base: S.noEvent ? null : S.ev.selected, tz: TZ });
+  if (r.stream && r.stream.games[0] && S.cov.game === r.stream.games[0]) r.stream.cover = S.cov.url;
+  return r;
 };
+const selectedStream = () => streamNow().stream;
+/** The style drawn in the preview: the default editing style until a style is chosen (steps 1 and 2); on the last step, the style of the cards. */
+const previewStyle = () => (S.step === 3 || S.styleChosen ? S.cfg.style : P.EDIT_STYLE);
 /* The guest streamers of the video: each entry is { id } (a Contacts card, read when needed) or a "for this video only" entry. `key`: what tells them apart. */
 const keyOf = P.memberKey;
 const viewOf = (entry) => (entry.id
@@ -61,7 +68,7 @@ const viewOf = (entry) => (entry.id
 // The guest streamers of the video: the ones the person chose, then the ones the schedule lists for this stream (no duplicates, same handle = same person).
 const chosenMembers = () => {
   const mine = S.cfg.costreamers.map(viewOf).filter((m) => m.state === "ok").map((m) => ({ login: m.key, name: m.name, image: m.image }));
-  if (S.cfg.schedulePeople === false || S.useManual) return mine;
+  if (S.cfg.schedulePeople === false || S.noEvent) return mine;
   const seen = new Set(S.cfg.costreamers.map(viewOf).flatMap((m) => [m.login, m.name].filter(Boolean).map((x) => String(x).toLowerCase())));
   return [...mine, ...S.ev.partners.filter((p) => !seen.has(p.login))];
 };
@@ -111,28 +118,28 @@ function contentNow() {
   const stream = selectedStream();
   return { stream, content: P.buildContent(S.cfg, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ }) };
 }
-async function buildScene(nowMs = Date.now()) {
+async function buildScene(nowMs = Date.now(), style = previewStyle()) {
   const mine = ++S.building;
   S.nowMs = nowMs;
   const wordmarkOk = S.cfg.watermark === true && (await loadWordmarkFont());
   const { stream, content } = contentNow();
   const members = chosenMembers();
   const [logo, cover, ...av] = await Promise.all([
-    S.cfg.elements.includes("brand") ? loadImage(S.brand.logo) : null, S.cfg.elements.includes("game") && stream?.games?.[0] ? loadImage(stream.cover) : null,
+    S.cfg.elements.includes("brand") ? loadImage(S.brand.logo) : null, S.cfg.elements.includes("game") && stream?.games?.[0] && stream.cover ? loadImage(stream.cover) : null,
     ...members.map((m) => (S.cfg.elements.includes("costreamers") ? loadImage(m.image) : null)),
   ]);
   if (mine !== S.building) return null;
   const avatars = Object.fromEntries(members.map((m, i) => [m.login, av[i]]));
-  const scene = createScene({ style: S.cfg.style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
+  const scene = createScene({ style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
   S.thumbAssets = { logo, cover, avatars };   // the same images serve the thumbnails of the style picker
-  return { scene, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
+  return { scene, style, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
 let rebuildTimer = null;
-function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); scheduleThumbs(); }, 140); }
+function rebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(async () => { const r = await buildScene(); if (!r) return; S.scene = r.scene; S.empty = r.empty; $("preview").dataset.style = r.style; sizePreview(); S.t = Math.min(S.t, r.scene.duration); if (!S.playing) S.t = Math.min(r.scene.restTime, r.scene.duration); updateInfo(); drawPreview(); scheduleThumbs(); }, 140); }
 /* ───────────── The style picker: one live thumbnail per style ───────────── */
 /** Each card shows the real scene of the style, at the instant when everything is in place (`restTime`), with the current content and images: it is cheap (one small image per style). */
 let thumbTimer = null, thumbDirty = true;
-function scheduleThumbs() { thumbDirty = true; clearTimeout(thumbTimer); if (S.step !== 2) return; thumbTimer = setTimeout(renderThumbs, 160); }
+function scheduleThumbs() { thumbDirty = true; clearTimeout(thumbTimer); if (S.step !== 3) return; thumbTimer = setTimeout(renderThumbs, 160); }
 function renderThumbs() {
   if (!thumbDirty || !S.thumbAssets) return;
   thumbDirty = false;
@@ -147,13 +154,14 @@ function renderThumbs() {
     } catch { /* a thumbnail that fails stays empty: the name and the sentence are enough */ }
   }
 }
-/** Choosing a style. The "countdown" style needs the countdown element: it is ticked for the person, with a visible sentence, and unticked if they change style without having touched it. */
+/** Choosing a style (the cards of the last step, or "Generate now" which keeps the style of the preview). The "countdown" style needs the countdown element: it is ticked for the person, with a visible sentence, and unticked if they change style without having touched it. */
 function chooseStyle(st) {
   const prev = S.cfg.style, need = P.STYLE_NEEDS[st];
-  S.cfg.style = st;
+  S.cfg.style = st; S.styleChosen = true;
+  for (const s of P.STYLES) $(`style-${s}`).checked = s === st;
   if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; $(`el-${need}`).checked = true; }
   else if (S.autoTicked && !need && P.STYLE_NEEDS[prev] === S.autoTicked) { S.cfg.elements = S.cfg.elements.filter((e) => e !== S.autoTicked); $(`el-${S.autoTicked}`).checked = false; S.autoTicked = ""; }
-  renderStyleNote(); renderCoverWarn(); rebuild();
+  renderItems(); renderStyleNote(); renderCoverWarn(); renderSteps(); rebuild();
 }
 function renderStyleNote() { const n = $("style-note"); n.textContent = S.autoTicked && S.cfg.style === "countdown" ? L("style_countdown_on") : ""; n.hidden = !n.textContent; }
 function sizePreview() {
@@ -209,10 +217,9 @@ function whenText(e) {
 function pill(kind, label) { return h("span", { class: `src src-${kindOf(kind)}`, text: label }); }
 
 function renderEventChosen() {
-  const box = $("event-chosen"), e = selectedStream(), same = $("event-same");
+  const box = $("event-chosen"), e = S.noEvent ? null : S.ev.selected, same = $("event-same");
   same.hidden = true;
-  if (S.useManual) { const m = P.manualStream(S.manual, TZ); box.replaceChildren(...(m.error ? [h("span", { text: L("event_none_chosen") })] : [h("span", { class: "lead", text: L("event_chosen") }), h("span", { class: "ttl2", text: m.title }), h("span", { class: "when", text: `${whenText(m)} (${L("event_manual_tag")})` })])); return; }
-  if (!e) { box.textContent = L("event_none_chosen"); return; }
+  if (!e) { box.replaceChildren(h("span", { class: S.noEvent ? "ttl2" : "", text: L(S.noEvent ? "event_none_chosen" : "event_loading") })); return; }
   const isNext = e.id === S.defaultId && P.isUpcoming(e, Date.now(), TZ), started = !P.isUpcoming(e, Date.now(), TZ);
   box.replaceChildren(h("span", { class: "lead" }, L("event_chosen"), " ", isNext ? h("span", { class: "badge", text: L("event_next") }) : null, started ? h("span", { class: "tag", text: L("event_started") }) : null),
     h("span", { class: "ttl2", text: e.title || L("untitled") }),
@@ -231,7 +238,7 @@ function renderFilter() {
 }
 
 function renderEventList() {
-  const list = $("event-list"), E = S.ev, picked = !S.useManual && E.selected ? E.selected.id : "";
+  const list = $("event-list"), E = S.ev, picked = !S.noEvent && E.selected ? E.selected.id : "";
   list.replaceChildren(...E.items.map((e) => {
     const also = e.alsoIn.length ? h("span", { class: "more", text: L("event_also", { sources: e.alsoIn.map((x) => x.label).join(", ") }) }) : null;
     const on = e.id === picked || (picked && e.ids?.includes?.(picked));
@@ -247,7 +254,7 @@ function renderEventList() {
 
 function renderNotes() {
   const E = S.ev, box = $("event-sources"), alert = $("event-alert"), note = $("event-note");
-  note.textContent = "";
+  note.textContent = ""; $("event-match").textContent = "";
   box.replaceChildren(); alert.replaceChildren();
   const retry = $("event-retry");
   if (E.state === "loading") { note.textContent = L("event_loading"); retry.hidden = true; return; }
@@ -255,33 +262,25 @@ function renderNotes() {
   retry.hidden = !down.length;
   if (E.state === "slow") alert.append(h("p", { class: "warn", text: L("event_all_down") }));
   else if (!E.total && !E.q && !E.source) note.textContent = L("event_none");
-  else if (!E.total) note.textContent = L("event_no_match");
+  else if (!E.total) $("event-match").textContent = L("event_no_match");
   for (const x of E.sources) {
     if (x.state === "down" && E.state !== "slow") alert.append(h("p", { class: "warn", text: L(x.stale ? "ev_down_stale" : "ev_down", { source: x.label }) }));
     else if (x.state === "setup" && x.message) box.append(h("p", { class: "warn", text: L("ev_setup", { source: x.label, message: x.message }) }));
     else if (x.state === "ok" && x.note) box.append(h("p", { class: "muted", text: L("ev_note", { source: x.label, note: x.note }) }));
   }
-  if (E.coverState === "no_key" && E.selected?.games?.length && S.cfg.elements.includes("game")) box.append(h("p", { class: "muted", text: L("cover_no_key") }));
-  else if (E.coverState === "down" && E.selected?.games?.length && !E.selected.cover && S.cfg.elements.includes("game")) box.append(h("p", { class: "muted", text: L("cover_down") }));
   box.append(h("p", { class: "muted", text: L("event_zone", { zone: TZ }) }));
 }
 
 function renderEvents() {
   renderCoverWarn();
   renderEventChosen(); renderFilter(); renderEventList(); renderNotes();
-  const open = S.pickerOpen || S.useManual;
+  const bare = S.ev.state !== "loading" && !S.ev.totalAll && !S.ev.q && !S.ev.source;   // nothing to choose from: no list, no "pick another event"
+  const open = S.pickerOpen && !bare;
   $("event-picker").hidden = !open;
-  $("event-change").textContent = L(open ? "event_change_close" : "event_change");
+  $("event-change").textContent = L(open ? "event_change_close" : S.noEvent ? "event_pick" : "event_change");
   $("event-change").setAttribute("aria-expanded", open ? "true" : "false");
-  $("event-change").hidden = S.useManual;
-  const bare = S.ev.state !== "loading" && !S.ev.totalAll && !S.ev.q && !S.ev.source;   // nothing to choose: go straight to the form, with no list title and no "back to the list"
-  $("h-pick").hidden = bare; $("event-list").hidden = bare; $("event-count").hidden = bare; $("event-manual-toggle").hidden = bare && S.useManual;
-  $("manual").hidden = !S.useManual;
-  $("event-manual-toggle").textContent = L(S.useManual ? "event_manual_close" : "event_manual");
-  $("event-manual-toggle").setAttribute("aria-expanded", S.useManual ? "true" : "false");
-  const { error } = S.useManual ? P.manualStream(S.manual, TZ) : {};
-  $("manual-error").textContent = S.useManual && error && (S.manual.title || S.manual.date) ? L(`manual_${error}`) : "";
-  for (const f of ["title", "date", "time"]) $(`m-${f}`).setAttribute("aria-invalid", S.useManual && error && (S.manual.title || S.manual.date) && error === f ? "true" : "false");
+  $("event-change").hidden = bare;
+  $("event-none").setAttribute("aria-pressed", S.noEvent ? "true" : "false");
 }
 function togglePicker(on) {
   S.pickerOpen = on ?? !S.pickerOpen;
@@ -290,50 +289,69 @@ function togglePicker(on) {
 }
 const renderStreamPicker = renderEvents;
 
-/** Chooses an event from the list: the video fills itself in, and the choice (identifier + source) is kept in the settings of the request. */
+/** Chooses an event from the list: the information of step 2 fills itself in from it, and the choice (identifier + source) is kept in the settings of the request. */
 function pickEvent(e, { quiet = false, auto = false } = {}) {
-  S.useManual = false;
-  S.ev.selected = { ...e, cover: "" };
+  S.noEvent = false;
+  S.ev.selected = { ...e };
+  S.info = P.infoFromStream(e, TZ);
   if (auto) S.defaultId = e.id;
   S.cfg.eventId = e.id; S.cfg.eventSource = kindOf(e.source); S.cfg.streamKey = e.legacyKey || "";
-  S.ev.coverState = ""; S.ev.coverAmbiguous = false; S.ev.partners = [];
+  S.ev.partners = [];
   const wasOpen = S.pickerOpen; S.pickerOpen = false;
-  renderEvents(); rebuild();
+  renderEvents(); renderInfo(); syncCover({ now: true }); rebuild();
   if (!quiet) {
     say(L("event_ready", { title: e.title || L("untitled") }), "ok");
-    try { if (wasOpen) $("event-change").focus?.(); } catch { /* not important */ }   // the work in progress (style, sentence, guest streamers…) is not touched: only the event changes
+    try { if (wasOpen) $("event-change").focus?.(); } catch { /* not important */ }   // the work in progress (style, sentence, guest streamers…) is not touched: only the event, and what comes from it, changes
   }
-  if (e.games?.[0]) loadCover(e);
   if (e.partners?.length) loadPartners(e);
+}
+/** "No event": the information of step 2 starts empty (the sentence, the channel name and the guest streamers you chose are yours, they stay). */
+function chooseNoEvent({ quiet = false } = {}) {
+  S.noEvent = true; S.ev.selected = null; S.ev.partners = [];
+  S.info = P.infoFromStream(null);
+  S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = "";
+  S.pickerOpen = false;
+  renderEvents(); renderInfo(); syncCover({ now: true }); renderMembers(); rebuild();
+  if (!quiet) say(L("event_none_set"), "ok");
 }
 /** The people of the schedule for this event (name + photo of a displayable Contacts card); with no answer, the video is made without them. */
 async function loadPartners(e) {
   const r = await api(`partners?logins=${encodeURIComponent(e.partners.join(","))}`, { ms: 15000 });
   if (!r.ok || S.ev.selected?.id !== e.id) return;
   S.ev.partners = (Array.isArray(r.items) ? r.items : []).map((p) => ({ login: String(p.login), name: String(p.name || p.login), image: String(p.image || "") }));
-  if (S.ev.partners.length) { renderRecap(); rebuild(); }
+  if (S.ev.partners.length) { renderMembers(); rebuild(); }
 }
-async function loadCover(e, retry = true) {
-  const r = await api(`cover?game=${encodeURIComponent(e.games[0])}`, { ms: 12000 });
-  if (!r.ok || S.ev.selected?.id !== e.id) return;
+/** The cover of the game written in step 2 (found by the site; the game of the event, or whatever the person types). A short delay while typing; a single new try if the site's copy is not ready yet. */
+let coverTimer = null;
+const blankCover = () => ({ game: "", url: "", state: "", ambiguous: false, title: "", found: "" });
+function syncCover({ now = false } = {}) {
+  const game = P.oneLine(S.info.game, 80);
+  if (game === S.cov.game) return;   // the cover of this game is already asked for (or known)
+  clearTimeout(coverTimer);
+  S.cov = { ...blankCover(), game };
+  renderCoverWarn(); renderInfo();
+  if (game) coverTimer = setTimeout(() => loadCover(game), now ? 0 : 600);
+}
+async function loadCover(game, retry = true) {
+  const r = await api(`cover?game=${encodeURIComponent(game)}`, { ms: 12000 });
+  if (!r.ok || S.cov.game !== game) return;
   // the site's copy of the cover may not be ready at the very first request: a single new try, a little later
-  if (!r.cover && r.coverState === "down" && retry) { await new Promise((ok) => setTimeout(ok, 2500)); if (S.ev.selected?.id === e.id) return loadCover(e, false); return; }
-  S.ev.coverState = r.coverState || "";
-  S.ev.coverAmbiguous = r.ambiguous === true && !!r.cover; S.ev.coverTitle = String(r.title || ""); S.ev.coverFound = String(r.found || "");
-  if (r.cover) { S.ev.selected.cover = r.cover; rebuild(); }
-  renderNotes(); renderCoverWarn();
+  if (!r.cover && r.coverState === "down" && retry) { await new Promise((ok) => setTimeout(ok, 2500)); if (S.cov.game === game) return loadCover(game, false); return; }
+  S.cov = { game, url: r.cover || "", state: r.coverState || "", ambiguous: r.ambiguous === true && !!r.cover, title: String(r.title || ""), found: String(r.found || "") };
+  if (r.cover) rebuild();
+  renderInfo(); renderCoverWarn();
 }
 /** The core's stable link to the screen that lets you choose the right game (the title is encoded). */
 const wrongCoverHref = (title) => `/admin/settings/rawg-covers?titre=${encodeURIComponent(title)}`;
 /** Before making the video: if the cover may be the one of another game, say so, with the link. Never blocks the video. */
 function renderCoverWarn() {
-  const E = S.ev, boxes = [$("cover-warn"), $("cover-warn-3")];
-  const show = !S.useManual && E.coverAmbiguous && E.coverTitle && E.selected?.games?.length && S.cfg.elements.includes("game");
+  const c = S.cov, boxes = [$("cover-warn"), $("cover-warn-3")];
+  const show = c.ambiguous && c.title && c.game && S.cfg.elements.includes("game");
   for (const box of boxes) {
     box.replaceChildren(); box.hidden = !show;
     if (!show) continue;
-    box.append(h("span", { text: `${L(E.coverFound ? "cover_ambiguous_named" : "cover_ambiguous", { game: E.coverTitle, found: E.coverFound })} ` }),
-      h("a", { href: wrongCoverHref(E.coverTitle), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
+    box.append(h("span", { text: `${L(c.found ? "cover_ambiguous_named" : "cover_ambiguous", { game: c.title, found: c.found })} ` }),
+      h("a", { href: wrongCoverHref(c.title), target: "_blank", rel: "noopener", text: L("cover_wrong") }));
   }
 }
 
@@ -422,8 +440,7 @@ function renderSaved() {
 }
 function renderMembers() {
   $("book-box").hidden = S.contacts !== "ok"; $("book-absent").hidden = S.contacts !== "absent";
-  renderChosen(); renderResults(); renderCategory(); renderSaved();
-  if (S.step === 3) renderRecap();
+  renderChosen(); renderResults(); renderCategory(); renderSaved(); renderInfo();
 }
 
 /** Re-reads the Contacts cards named by the video (loaded model, AI preparation): name, handle, photo. A merged card is followed, a deleted card is reported. */
@@ -523,22 +540,16 @@ async function removeSaved(m) {
   S.adhoc = S.adhoc.filter((x) => x.id !== m.id); renderSaved();
 }
 
-/* ───────────── The three steps ───────────── */
+/* ───────────── The three steps: event, information, style ───────────── */
 const STEPS = [1, 2, 3];
 const stepName = (n) => L(`step_${n}`);
-/** Summary of step 3: each row has its "Edit" button that leads back to the step where it is set (nothing is lost: the steps keep their state). */
-function renderRecap() {
-  const e = selectedStream(), who = chosenMembers().map((m) => m.name || m.login).filter(Boolean), people = who.length;
-  const fmt = P.formatOf(S.cfg.format), rows = [
-    [1, L("recap_event"), e ? `${e.title || L("untitled")} · ${whenText(e)}` : L("event_none_chosen")],
-    [2, L("recap_style"), L(`style_${S.cfg.style}`)],
-    [2, L("recap_format"), `${L(`format_${fmt.id}`)} · ${L("seconds", { n: S.cfg.duration })}`],
-    [2, L("recap_text"), S.cfg.text ? S.cfg.text : L("recap_none_f")],
-    [2, L("recap_mark"), L(S.cfg.watermark === true ? "recap_yes" : "recap_no")],
-    [2, L("recap_people"), people ? who.join(", ") : L("recap_none")],
-  ];
-  $("recap").replaceChildren(...rows.map(([n, what, value]) => h("li", {}, h("span", { class: "what" }, h("small", { text: what }), h("span", { text: value })),
-    h("button", { type: "button", text: L("recap_edit"), "aria-label": L("recap_edit_aria", { what }), onclick: () => setStep(n) }))));
+/** The information of step 2 refuses to go on while the day written is not valid: the field is told, it takes the focus, and what was typed stays. */
+function infoBlocked() {
+  const { error } = streamNow();
+  if (!error || !(S.info.date || S.info.time)) return false;
+  renderInfo();
+  try { $(error === "time" ? "info-time" : "info-date").focus?.(); } catch { /* not important */ }
+  return true;
 }
 function renderSteps() {
   for (const n of STEPS) {
@@ -549,16 +560,27 @@ function renderSteps() {
   }
   const last = S.step === 3;
   $("step-prev").hidden = S.step === 1; $("step-next").hidden = last; $("generate").hidden = !last; $("generate-now").hidden = last;
-  $("step-next").textContent = L(S.step === 1 ? "next_look" : "next_video");
-  if (last) renderRecap();
+  $("step-next").textContent = L(S.step === 1 ? "next_info" : "next_style");
+  // The quick way out keeps the style of the preview: the person has seen it. Its name is on the button.
+  $("generate-now").textContent = L("gen_now", { style: L(`style_${previewStyle()}`) });
+  $("pv-note").hidden = last || S.styleChosen;
 }
 function setStep(n, { focus = true } = {}) {
   if (S.job) return;
-  S.step = Math.min(3, Math.max(1, n)); S.visited.add(S.step);
-  renderSteps(); if (S.step === 2) scheduleThumbs();
+  const to = Math.min(3, Math.max(1, n));
+  if (S.step === 2 && to > 2 && infoBlocked()) return;
+  S.step = to; S.visited.add(S.step);
+  renderSteps(); rebuild(); if (S.step === 3) scheduleThumbs();   // the preview follows: the editing style on steps 1 and 2, the chosen style on step 3
+  setPlaying(!REDUCED && (S.step === 3 || S.styleChosen));   // while editing, the preview rests on its finished image (readable); the style step brings the animation back
   $("step-live").textContent = L("step_now", { n: S.step, name: stepName(S.step) });
   try { globalThis.scrollTo?.({ top: 0, behavior: REDUCED ? "auto" : "smooth" }); } catch { /* not important */ }
-  if (focus) { try { $(["h-event", "h-look", "h-video"][S.step - 1]).focus?.(); } catch { /* not important */ } }
+  if (focus) { try { $(["h-event", "h-info", "h-style"][S.step - 1]).focus?.(); } catch { /* not important */ } }
+}
+/** "Generate now": the video is made in the style of the preview, which becomes the chosen style (the last step shows it selected, with the download). */
+function generateNow() {
+  if (S.job || (S.step === 2 && infoBlocked())) return;
+  chooseStyle(previewStyle());
+  setStep(3, { focus: false }); generate();
 }
 
 /* ───────────── The models ───────────── */
@@ -577,7 +599,8 @@ function renderModels() {
 function loadModel(m) {
   const keep = { streamKey: S.cfg.streamKey, eventId: S.cfg.eventId, eventSource: S.cfg.eventSource, watermark: S.cfg.watermark };
   S.cfg = P.cleanConfig({ ...m.config, ...keep });
-  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);   // the model fills everything: we land on the summary, with "Edit" for each setting
+  S.styleChosen = true; S.autoTicked = "";   // a model carries its style: it is shown at once, on the style step
+  syncControls(); refreshMembers(); say(L("model_loaded", { name: m.name }), "ok"); setStep(3);
 }
 const modelError = (text) => { $("model-error").textContent = text || ""; $("model-name").setAttribute("aria-invalid", text ? "true" : "false"); };
 async function withBusy(id, key, work) {
@@ -606,14 +629,27 @@ async function removeModel(m) {
 }
 
 /* ───────────── The visible settings ───────────── */
-const ADV_KEY = "story-advanced";
-function advancedUsed() {
-  const d = P.DEFAULT_CONFIG, c = S.cfg;
-  return c.elements.filter((e) => e !== S.autoTicked).join() !== d.elements.join() || c.format !== d.format || c.duration !== d.duration || !!c.channelName || c.lang !== (C.lang === "en" ? "en" : "fr");
+/** Each item of step 2 is dimmed when its switch is off (the same tick as the element: nothing is removed from the field, so switching it on again brings it back). */
+function renderItems() {
+  for (const e of ELEMENT_KEYS) { const box = $(`item-${e}`); if (box) box.className = `item${S.cfg.elements.includes(e) ? "" : " off"}`; }
 }
-function setAdvanced(on, { remember = false } = {}) {
-  S.advanced = !!on; $("adv").checked = S.advanced; $("advanced").hidden = !S.advanced;
-  if (remember) { try { localStorage.setItem(ADV_KEY, S.advanced ? "1" : "0"); } catch { /* not important */ } }
+let brandKey = null;
+/** The fields of step 2 follow `S.info`, the list of guests and the site. */
+function renderInfo() {
+  const { stream, error } = streamNow(), i = S.info;
+  for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) if ($(id).value !== i[key]) $(id).value = i[key];
+  const bad = error && (i.date || i.time) ? error : "";
+  $("info-error").textContent = bad ? L(bad === "date" && !i.date ? "info_need_date" : `manual_${bad}`) : "";
+  $("info-date").setAttribute("aria-invalid", bad === "date" ? "true" : "false"); $("info-time").setAttribute("aria-invalid", bad === "time" ? "true" : "false");
+  const c = S.cov, gameNote = !c.game ? "" : c.state === "no_key" ? L("cover_no_key") : c.state === "down" && !c.url ? L("cover_down") : "";
+  $("game-help").textContent = gameNote || L("game_help");
+  const who = chosenMembers().map((m) => m.name || m.login).filter(Boolean);
+  $("members-sum").textContent = who.length ? who.join(", ") : L("members_none");
+  $("channel").setAttribute("placeholder", S.brand.name || "");
+  const bk = `${S.brand.logo}|${S.brand.name}`;
+  if (bk !== brandKey) { brandKey = bk; $("brand-logo").replaceChildren(thumb(S.brand.logo, S.brand.name || "")); }
+  const dated = Number.isFinite(stream?.startMs);
+  $("countdown-note").textContent = !S.cfg.elements.includes("countdown") ? L("countdown_off") : dated ? L("countdown_is", { text: contentNow().content.countdown }) : L("countdown_need");
 }
 function syncControls() {
   for (const e of ELEMENT_KEYS) $(`el-${e}`).checked = S.cfg.elements.includes(e);
@@ -623,45 +659,46 @@ function syncControls() {
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
   $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang; $("watermark").checked = S.cfg.watermark === true;
   $("schedule-people").checked = S.cfg.schedulePeople !== false;
-  if (advancedUsed() && !S.advanced) setAdvanced(true);   // an advanced setting that was already changed (model, assistant) is never left hidden
+  if (S.cfg.lang !== (C.lang === "en" ? "en" : "fr")) $("more-2").open = true;   // a setting that was already changed (model, assistant) is never left hidden
+  if (S.cfg.duration !== P.DEFAULT_CONFIG.duration) $("more-3").open = true;
+  renderItems(); renderInfo(); renderStyleNote(); renderSteps();
   renderStreamPicker();
 }
 function updateInfo() {
-  const { stream, content } = contentNow(), s = S.scene;
+  const s = S.scene;
   $("empty").hidden = !S.empty;
   $("generate").disabled = !!S.job || !s || S.empty; $("generate-now").disabled = $("generate").disabled;
   $("fmt-note").textContent = L(S.cfg.format === "vertical" ? "format_help_vertical" : "format_help_passeport");
-  $("countdown-note").textContent = content.countdown && S.cfg.elements.includes("countdown") ? L("countdown_is", { text: content.countdown }) : "";
-  $("nostream").hidden = !!stream || !S.cfg.elements.some((e) => ["title", "when", "countdown", "game"].includes(e));
+  renderInfo();
 }
 
 function bind() {
   const on = (id, ev, fn) => $(id).addEventListener(ev, fn);
-  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); if (e === S.autoTicked) S.autoTicked = ""; renderStyleNote(); renderCoverWarn(); rebuild(); });
+  for (const e of ELEMENT_KEYS) on(`el-${e}`, "change", () => { S.cfg.elements = ELEMENT_KEYS.filter((k) => $(`el-${k}`).checked); if (e === S.autoTicked) S.autoTicked = ""; renderItems(); renderStyleNote(); renderCoverWarn(); renderInfo(); rebuild(); });
   for (const st of P.STYLES) on(`style-${st}`, "change", () => chooseStyle(st));
   for (const f of P.FORMATS) on(`format-${f.id}`, "change", () => { S.cfg.format = f.id; rebuild(); });
   on("duration", "input", () => { S.cfg.duration = Number($("duration").value) || 15; $("duration-out").textContent = L("seconds", { n: S.cfg.duration }); rebuild(); });
   on("text", "input", () => { S.cfg.text = P.freeText($("text").value, P.LIMITS.text); $("text-count").textContent = `${[...$("text").value].length}/${P.LIMITS.text}`; rebuild(); });
   on("channel", "input", () => { S.cfg.channelName = P.oneLine($("channel").value, P.LIMITS.channelName); rebuild(); });
   on("lang", "change", () => { S.cfg.lang = $("lang").value === "en" ? "en" : "fr"; renderStreamPicker(); rebuild(); });
+  // The information of step 2: what is typed replaces what came from the event; the preview follows.
+  for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) on(id, "input", () => { S.info[key] = $(id).value; if (key === "game") syncCover(); renderInfo(); rebuild(); });
   // The "Made with Curiosa" mention: the preview follows at once; the choice is remembered for the next videos (a failure does not prevent making this one).
-  on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; rebuild(); });
+  on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; renderInfo(); rebuild(); });
   on("watermark", "change", async () => {
     S.cfg.watermark = $("watermark").checked; rebuild();
     const r = await api("act", { method: "POST", body: { op: "prefs.watermark", watermark: S.cfg.watermark } });
     if (!r.ok) say(errText(r.error), "error");
   });
-  on("adv", "change", () => setAdvanced($("adv").checked, { remember: true }));
   for (const n of STEPS) on(`step-btn-${n}`, "click", () => setStep(n));
   on("step-prev", "click", () => setStep(S.step - 1)); on("step-next", "click", () => setStep(S.step + 1));
-  on("generate-now", "click", () => { setStep(3, { focus: false }); generate(); });
+  on("generate-now", "click", generateNow);
   on("event-q", "input", onEventSearch);
   on("event-more", "click", () => loadEvents(true));
-  on("event-retry", "click", async () => { const b = $("event-retry"); b.disabled = true; b.textContent = L("busy_reading"); b.setAttribute("aria-busy", "true"); await loadEvents(false, { fresh: true }); b.disabled = false; b.textContent = L("event_retry"); b.setAttribute("aria-busy", "false"); const r = S.ev; if (!S.ev.selected && !S.useManual) { const n = P.nextEvent(r.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); } });
+  on("event-retry", "click", async () => { const b = $("event-retry"); b.disabled = true; b.textContent = L("busy_reading"); b.setAttribute("aria-busy", "true"); await loadEvents(false, { fresh: true }); b.disabled = false; b.textContent = L("event_retry"); b.setAttribute("aria-busy", "false"); const r = S.ev; if (!S.ev.selected && !S.noEvent) { const n = P.nextEvent(r.items, Date.now(), TZ); if (n) pickEvent(n, { quiet: true, auto: true }); } });
   on("event-change", "click", () => togglePicker());
-  on("event-picker", "keydown", (e) => { if (e.key === "Escape" && S.pickerOpen && !S.useManual) { e.preventDefault?.(); togglePicker(false); } });
-  on("event-manual-toggle", "click", () => { S.useManual = !S.useManual; if (S.useManual) { S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; } renderEvents(); rebuild(); });
-  for (const f of ["title", "date", "time"]) on(`m-${f}`, "input", () => { S.manual[f] = $(`m-${f}`).value; renderStreamPicker(); rebuild(); });
+  on("event-picker", "keydown", (e) => { if (e.key === "Escape" && S.pickerOpen) { e.preventDefault?.(); togglePicker(false); } });
+  on("event-none", "click", () => { if (!S.noEvent) chooseNoEvent(); });
   on("play", "click", () => setPlaying(!S.playing));
   on("replay", "click", () => { S.t = 0; setPlaying(true); });
   on("safe", "change", () => { S.showSafe = $("safe").checked; drawPreview(); });
@@ -715,12 +752,16 @@ async function generate() {
 /* ───────────── Start-up ───────────── */
 function applyPrep(prep) {
   S.cfg = P.cleanConfig(prep.config);
-  if (prep.manual && prep.manual.title) { S.manual = { title: prep.manual.title, date: prep.manual.date, time: prep.manual.time }; S.useManual = true; for (const f of ["title", "date", "time"]) $(`m-${f}`).value = S.manual[f]; }
+  S.styleChosen = true;   // an assistant preparation carries its style
+  if (prep.manual && prep.manual.title) {
+    // an event written by the assistant: no event picked, the information is already there
+    S.noEvent = true; S.info = { title: prep.manual.title, date: prep.manual.date || "", time: prep.manual.time || "", game: "" };
+    S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = "";
+  }
   $("prep-note").hidden = false;
 }
 async function start() {
   if (!TOKEN) { $("app").hidden = true; $("noaccess").hidden = false; return; }
-  try { if (localStorage.getItem(ADV_KEY) === "1") setAdvanced(true); } catch { /* not important */ }
   bind(); syncControls(); renderMembers(); renderModels();
   const [data, prep] = await Promise.all([api("data"), PREP ? api(`prep?id=${encodeURIComponent(PREP)}`) : null]);
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
@@ -730,22 +771,25 @@ async function start() {
     if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
   else say(errText(data.error), "error");
-  if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // an assistant preparation fills everything: we open on the summary
+  if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // an assistant preparation fills everything: we open on the last step, the style
   syncControls();
   // The events of all sources. The event already chosen (by a preparation) is found again even if it is not in the first page.
   const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
+  const handWritten = S.noEvent && PREP;   // an event written by the assistant stays as it is
   const ev = await loadEvents(false, { id: wantId, key: wantKey });
   if (ev?.error === "auth") return;
   const first = P.nextEvent(S.ev.items, Date.now(), TZ);   // the NEXT upcoming one (not an event that has already started), all sources together
-  if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true, auto: ev.selected.id === first?.id });
+  if (handWritten) renderEvents();
+  else if (ev?.ok && ev.selected) pickEvent(ev.selected, { quiet: true, auto: ev.selected.id === first?.id });
   else {
     if (wantId || wantKey) { if (first) $("prep-stream-gone").hidden = false; }
-    if (first) pickEvent(first, { quiet: true, auto: true }); else { S.useManual = true; S.cfg.eventId = ""; S.cfg.eventSource = ""; S.cfg.streamKey = ""; renderEvents(); }
+    if (first) pickEvent(first, { quiet: true, auto: true }); else chooseNoEvent({ quiet: true });
   }
-  syncControls(); renderMembers(); renderModels();
+  syncControls(); renderMembers(); renderModels(); syncCover({ now: true });
+  S.playing = !REDUCED && (S.step === 3 || S.styleChosen);   // editing steps: the preview rests on its finished image
   const r = await buildScene();
-  if (r) { S.scene = r.scene; S.empty = r.empty; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }
-  setPlaying(S.playing); renderSteps();
+  if (r) { S.scene = r.scene; S.empty = r.empty; $("preview").dataset.style = r.style; sizePreview(); if (!S.playing) S.t = r.scene.restTime; updateInfo(); drawPreview(); }
+  setPlaying(S.playing); renderSteps(); if (S.step === 3) scheduleThumbs();
   refreshMembers(); // the Contacts cards named by a model or a preparation: name, handle and photo arrive afterwards, without delaying the preview
   $("reduced").hidden = !REDUCED;
   requestAnimationFrame(loop);
