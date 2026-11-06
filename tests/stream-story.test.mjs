@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.6.1");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.8.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -49,7 +49,7 @@ test("manifeste : un module à lui, une instance, aucune page publique, 4 permis
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);
   assert.ok(manifest.privacy.fr && manifest.privacy.en && !/visiteur/.test("") );
   assert.match(manifest.privacy.fr, /Rien n'est collecté sur votre public/); assert.match(manifest.privacy.fr, /Aucune vidéo n'est gardée/); assert.match(manifest.privacy.fr, /restent dans Contacts/);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes.mjs", "members", "partners", "people", "prep", "streams", "studio", "wordmark"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes-extra.mjs", "lib/scenes.mjs", "members", "partners", "people", "prep", "streams", "studio", "wordmark"]);
 });
 
 test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ de la mention, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
@@ -80,8 +80,8 @@ test("textes : français et anglais alignés ; chaque phrase de la page est dans
   const app = read("app.mjs"), used = new Set([...app.matchAll(/\bL\("([a-z0-9_]+)"/g)].map((m) => m[1]));
   for (const m of app.matchAll(/\bL\([^)"`]*\?\s*"([a-z0-9_]+)"\s*:\s*"([a-z0-9_]+)"/g)) { used.add(m[1]); used.add(m[2]); }
   for (const k of used) assert.ok(page.KEYS.includes(k), `l'éditeur emploie « ${k} » : absent de la liste de la page`);
-  for (const k of ["err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic", "manual_title", "manual_date", "manual_time"]) assert.ok(page.KEYS.includes(k) || k.startsWith("manual_"), k);
-  for (const k of ["manual_title", "manual_date", "manual_time"]) assert.ok(k in Object.fromEntries(Object.keys(fr).map((x) => [x.replace(/^ui_/, ""), 1])));
+  for (const k of ["err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic", "manual_date", "manual_time"]) assert.ok(page.KEYS.includes(k) || k.startsWith("manual_"), k);
+  for (const k of ["manual_date", "manual_time", "info_need_date"]) assert.ok(k in Object.fromEntries(Object.keys(fr).map((x) => [x.replace(/^ui_/, ""), 1])));
   for (const t of Object.values(fr).concat(Object.values(en))) assert.ok(!/\b(api|json|jeton|token|http|mcp|webcodecs|canvas)\b/i.test(t), `jargon dans « ${t.slice(0, 50)} »`);
   assert.match(fr.ui_webm_notice, /Instagram préfère le MP4 : essayez Chrome ou Safari récent/);
 });
@@ -108,7 +108,7 @@ test("accès : le jeton est signé et dure 12 h ; falsifié, périmé, d'une aut
   // pages ouvertes
   assert.equal((await call(ctx, "studio")).status, 200);
   for (const f of page.LIB) { const r = await call(ctx, `lib/${f}`); assert.equal(r.status, 200); assert.match(r.headers.get("content-type"), /javascript/); assert.equal(await r.text(), read(f)); }
-  assert.equal(page.LIB.length, 5); assert.equal(await page.libSource("../index.mjs"), null); assert.equal(await page.libSource("module.json"), null, "liste fermée");
+  assert.equal(page.LIB.length, 6); assert.equal(await page.libSource("../index.mjs"), null); assert.equal(await page.libSource("module.json"), null, "liste fermée");
 });
 
 test("accès : la clé de signature est créée une seule fois (même en simultané) et n'apparaît dans aucune réponse ; les routes de lecture refusent POST, celle d'écriture refuse GET", async () => {
@@ -244,7 +244,7 @@ test("MCP : story_prepare enregistre une préparation et rend un LIEN vers la pa
   assert.equal((await ctx.api.store.list("story_preps")).length, 1);
   const other = await prepare(ctx, {});
   assert.notEqual(other.link, r.link, "un autre identifiant à chaque préparation");
-  assert.deepEqual(other.prepared.elements, P.ELEMENTS); assert.equal(other.prepared.durationSeconds, 15);
+  assert.deepEqual(other.prepared.elements, P.DEFAULT_ELEMENTS, "par défaut, sans le compte à rebours"); assert.equal(other.prepared.durationSeconds, 15);
 });
 
 test("MCP : un stream de l'agenda par sa clé, ou saisi à la main ; les deux ensemble sont refusés ; chaque entrée est vérifiée (liste, longueurs, style, format, durée, pseudos, dates)", async () => {
@@ -279,7 +279,7 @@ test("MCP : lectures — modèles (sans identifiants internes) et prochains stre
   assert.deepEqual(await def.mcp.story_models(ctx), { models: [] });
   await act(ctx, token, { op: "model.save", name: "Un", config: { style: "minimal", format: "passeport", duration: 9, text: "Hello", costreamers: ["alice_tv"] } });
   const { models } = await def.mcp.story_models(ctx);
-  assert.deepEqual(models[0], { name: "Un", style: "minimal", format: "passeport", durationSeconds: 9, elements: P.ELEMENTS, text: "Hello", channelName: "", costreamers: ["alice_tv"], language: "fr" });
+  assert.deepEqual(models[0], { name: "Un", style: "minimal", format: "passeport", durationSeconds: 9, elements: P.DEFAULT_ELEMENTS, text: "Hello", channelName: "", costreamers: ["alice_tv"], language: "fr" });
   const n = await def.mcp.story_next_streams(ctx);
   assert.equal(n.state, "ok"); assert.deepEqual(n.streams.map((s) => [s.title, s.games, s.timezone, s.allDay]), [["Découverte", ["Hades"], TZ, false], ["Soirée", ["Zelda"], TZ, false]]);
   assert.ok(n.streams.every((s) => s.key && Date.parse(s.start)));
@@ -411,4 +411,28 @@ test("sauvegarde lisible : les modèles (références de fiche), les ponctuels e
   assert.ok(!files.map((f) => f.content).join("").match(/secret|prep|token/i));
   const bare = await def.backup.readable(mk());
   assert.deepEqual(bare.map((f) => f.path), ["models.json"], "rien à dire : pas de fichier vide");
+});
+
+test("2.7.0 MCP: the six new styles are accepted and described; the countdown style adds the countdown element unless a list is given; a model keeps what it stored", async () => {
+  const ctx = mk(), token = await data.mintToken(ctx);
+  const tool = manifest.mcp.find((t) => t.name === "story_prepare"), enumOf = tool.input.properties.style.enum;
+  assert.deepEqual(enumOf, P.STYLES, "the manifest lists the styles of pure.mjs, in the same order");
+  assert.ok(tool.input.properties.style.description.length <= 500);
+  for (const id of ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"]) {
+    assert.ok(tool.input.properties.style.description.includes(id), `${id} is described`);
+    const r = await prepare(ctx, { style: id });
+    assert.equal(r.prepared.style, id);
+    assert.deepEqual(r.prepared.elements, P.DEFAULT_ELEMENTS, `${id}: no countdown by default`);
+  }
+  assert.deepEqual((await prepare(ctx, {})).prepared.elements, P.DEFAULT_ELEMENTS);
+  assert.deepEqual((await prepare(ctx, { style: "countdown" })).prepared.elements, P.ELEMENTS, "the countdown style needs its element: added when no list is given");
+  assert.deepEqual((await prepare(ctx, { style: "countdown", elements: ["title", "when"] })).prepared.elements, ["title", "when"], "an explicit list is respected as given");
+  assert.match(tool.input.properties.elements.description, /except countdown/);
+  // a model saved with every element (as before 2.7.0) keeps its countdown
+  await act(ctx, token, { op: "model.save", name: "Ancien", config: { style: "neon", elements: P.ELEMENTS } });
+  assert.deepEqual((await prepare(ctx, { model: "ancien" })).prepared.elements, P.ELEMENTS);
+  await act(ctx, token, { op: "model.save", name: "Neuf", config: { style: "collage" } });
+  assert.deepEqual((await prepare(ctx, { model: "neuf" })).prepared.elements, P.DEFAULT_ELEMENTS);
+  assert.deepEqual((await prepare(ctx, { model: "neuf", style: "countdown" })).prepared.elements, P.ELEMENTS, "a model + the countdown style: the element is added");
+  await refuse(ctx, { style: "disco" }, /broadcast, kinetic, cinema, arcade, collage, geometric/);
 });

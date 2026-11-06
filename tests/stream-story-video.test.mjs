@@ -229,7 +229,7 @@ test("repli (enregistreur du navigateur) : le fichier est celui de l'enregistreu
 
 test("aucune bibliothèque tierce ni chargement depuis un CDN : tout le code navigateur est dans le module, sans adresse externe", () => {
   const dir = new URL("../modules/stream-story", import.meta.url).pathname;
-  for (const f of ["pure.mjs", "scenes.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]) {
+  for (const f of ["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]) {
     const code = fs.readFileSync(`${dir}/${f}`, "utf8");
     assert.ok(!/https?:\/\//.test(code.replace(/\/\/.*$/gm, "")), `${f} ne contient aucune adresse http(s) (hors commentaires)`);
     assert.ok(!/\bimport\s*\(|from\s+["'](?!\.\/)/.test(code), `${f} n'importe que des fichiers du module`);

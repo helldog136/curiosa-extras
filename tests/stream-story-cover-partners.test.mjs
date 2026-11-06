@@ -148,18 +148,29 @@ test("réglage « personnes du planning » : oui par défaut, y compris pour un 
   assert.equal(P.cleanConfig({}, { ...P.DEFAULT_CONFIG, schedulePeople: false }).schedulePeople, false);
 });
 
+/** Les textes dessinés, en mots : les lettres isolées qui se suivent sur la même ligne (texte espacé, dessiné lettre par lettre) sont recollées. */
+function runs(log) {
+  const out = []; let prev = null;
+  for (const e of log.filter((x) => x[0] === "fillText")) {
+    const single = [...e[1]].length === 1;
+    const px = Number(/(\d+(?:\.\d+)?)px/.exec(e[4])?.[1] ?? 20);
+    if (single && prev && prev.single && prev.y === e[3] && prev.font === e[4] && e[2] >= prev.x && e[2] - prev.x <= px * 1.4) out[out.length - 1] += e[1]; else out.push(e[1]);
+    prev = { single, y: e[3], x: e[2], font: e[4] };
+  }
+  return out;
+}
 const THEME = { accent: "#7c5cff", accent2: "#ff4d8d", bg: "#101018", fg: "#f2f2f2" };
 test("quatre styles × deux formats × 0, 1, 3, 8 personnes, avec ou sans jaquette : la scène se dessine, les noms longs sont coupés, « +N » est dessiné, le jeu reste écrit sans jaquette", () => {
   for (const style of P.STYLES) for (const format of ["vertical", "passeport"]) for (const n of [0, 1, 3, 8]) for (const cover of [true, false]) {
     const c = content(n, { style, format });
     const sc = S.createScene({ style, format, duration: 15, content: c, assets: { logo: null, cover: cover ? fakeImage(600, 338) : null, avatars: { ami_0: fakeImage(300, 300) } }, colors: THEME, measureContext: fakeCanvasContext() });
     const ctx = fakeCanvasContext(); sc.draw(ctx, sc.restTime);
-    const texts = ctx.log.filter((e) => e[0] === "fillText").map((e) => e[1]);
+    const texts = runs(ctx.log), low = texts.map((x) => x.toLowerCase());   // les styles espacés dessinent lettre par lettre, certains en capitales : on relit les mots
     const where = `${style}/${format}/${n}/${cover}`;
     assert.equal(sc.blocks.some((b) => b.id === "costreamers"), n > 0, where);
     if (n === 8) assert.ok(texts.includes("+3"), `${where} : pastille +N`);
-    if (n > 0) assert.ok(texts.includes("Lune Douce"), `${where} : le nom`);
-    assert.ok(texts.some((t) => t.includes("Etoile")), `${where} : le jeu reste écrit`);
+    if (n > 0) assert.ok(low.some((x) => x.includes("lune douce")), `${where} : le nom`);
+    assert.ok(low.some((x) => x.includes("etoile")), `${where} : le jeu reste écrit`);
   }
 });
 

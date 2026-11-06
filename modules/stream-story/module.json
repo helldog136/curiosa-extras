@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.6.1",
+  "version": "2.8.0",
   "platform": "instagram",
   "description": {
     "en": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post.",
@@ -289,9 +289,15 @@
               "neon",
               "poster",
               "countdown",
-              "minimal"
+              "minimal",
+              "broadcast",
+              "kinetic",
+              "cinema",
+              "arcade",
+              "collage",
+              "geometric"
             ],
-            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers; minimal = plain background, letters typed one by one."
+            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers (adds the countdown element when 'elements' is not given); minimal = letters typed one by one; broadcast = TV channel bars, lower-thirds and ticker; kinetic = huge type slamming in; cinema = film title card with credits; arcade = 8-bit pixel panels; collage = cut-paper zine with an ink stamp; geometric = flat shapes landing on a beat."
           },
           "format": {
             "type": "string",
@@ -312,7 +318,7 @@
             "items": {
               "type": "string"
             },
-            "description": "What to show, taken from: title, when, countdown, game, brand, text, costreamers. Default: all of them."
+            "description": "What to show, taken from: title, when, countdown, game, brand, text, costreamers. Default: all of them except countdown (add it to show the big countdown text)."
           },
           "text": {
             "type": "string",

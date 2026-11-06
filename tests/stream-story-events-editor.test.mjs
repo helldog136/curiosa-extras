@@ -117,7 +117,7 @@ test("la liste : toutes les sources, triées, avec la pastille de chacune, la da
   assert.deepEqual(chips, ["Tout", "Planning (30)", "Twitch (1)", "YouTube (1)"]); assert.equal(els.get("event-filter").hidden, false);
   assert.match(els.get("event-sources").textContent, /YouTube : Seuls les directs et premières publics sont visibles/, "ce que YouTube ne montre pas est dit");
   assert.match(els.get("event-sources").textContent, /Les heures sont affichées pour : Europe\/Paris/);
-  assert.equal(els.get("manual").hidden, true);
+  assert.equal(els.get("event-none").attrs["aria-pressed"], "false", "an event is picked: \"No event\" is not");
   assert.ok(server.log.some(([, r]) => r === "events?limit=5"));
   assert.ok(!server.log.some(([, r]) => r.startsWith("streams")), "l'ancienne liste de streams n'est plus demandée");
   await wait(300);
@@ -161,7 +161,7 @@ test("recherche et filtre par source : la liste est redemandée avec les mots ta
   assert.deepEqual(rowsOf(els.get("event-list")).map((r) => /Première du clip/.exec(r.textContent)?.[0]), ["Première du clip"]);
   assert.match(els.get("event-count").textContent, /1 sur 1 événements/);
   await type(els.get("event-q"), "zzzzzz");
-  assert.equal(rowsOf(els.get("event-list")).length, 0); assert.equal(els.get("event-note").textContent, fr.ui_event_no_match);
+  assert.equal(rowsOf(els.get("event-list")).length, 0); assert.equal(els.get("event-match").textContent, fr.ui_event_no_match);
   await type(els.get("event-q"), "");
   buttons(els.get("event-filter")).find((b) => b.textContent.startsWith("Twitch")).click(); await wait(500);
   assert.ok(server.log.some(([, r]) => r.includes("source=twitch")));
@@ -188,7 +188,7 @@ test("une source en panne : message poli sous la liste, jamais d'erreur bloquant
   assert.equal(again.els.get("event-retry").hidden, true, "rien à réessayer : c'est à régler");
 });
 
-test("rien ne répond et rien n'est planifié : la phrase le dit, l'écriture à la main s'ouvre toute seule et marche", async () => {
+test("nothing answers and nothing is planned: the sentence says so, \"No event\" is chosen by itself and the information can be written in step 2", async () => {
   const never = () => new Promise(() => {});
   const keep = setInterval(() => {}, 100);
   try {
@@ -196,30 +196,38 @@ test("rien ne répond et rien n'est planifié : la phrase le dit, l'écriture à
     const { els } = current = await boot(ctx);
     assert.equal(rowsOf(els.get("event-list")).length, 0);
     assert.match(els.get("event-alert").textContent, new RegExp(fr.ui_event_all_down.slice(0, 30)));
-    assert.equal(els.get("manual").hidden, false, "la saisie à la main est ouverte");
-    els.get("m-title").value = "Mon événement"; els.get("m-title").fire("input");
-    els.get("m-date").value = "2031-03-04"; els.get("m-date").fire("input"); await wait(500);
-    assert.match(els.get("event-chosen").textContent, /Story pour :.*Mon événement.*4 mars.*à la main/);
-    assert.ok(drawn(els).some((t) => /Mon/.test(t)));
+    assert.equal(els.get("event-none").attrs["aria-pressed"], "true", "no event to pick: the hand-written path is chosen");
+    assert.equal(els.get("event-change").hidden, true, "nothing to pick from: no \"pick another event\" button");
+    assert.equal(els.get("event-chosen").textContent, fr.ui_event_none_chosen);
+    els.get("step-next").click(); await wait(80);
+    els.get("info-title").value = "Mon événement"; els.get("info-title").fire("input");
+    els.get("info-date").value = "2031-03-04"; els.get("info-date").fire("input"); await wait(500);
+    assert.ok(drawn(els).some((t) => /Mon/.test(t)), "the preview shows what was written");
+    assert.ok(drawn(els).some((t) => /4 mars/.test(t)));
     const empty = mk({});
     current.server.restore();
     const e2 = current = await boot(empty);
-    assert.equal(els.get("event-list").children.length, 0); assert.equal(e2.els.get("event-note").textContent, fr.ui_event_none);
-    assert.equal(e2.els.get("manual").hidden, false);
+    assert.equal(e2.els.get("event-note").textContent, fr.ui_event_none);
+    assert.equal(e2.els.get("event-none").attrs["aria-pressed"], "true");
   } finally { clearInterval(keep); }
 });
 
-test("écrire soi-même : le bouton ouvre et ferme la saisie, la liste reste ; revenir à la liste garde les événements", async () => {
-  const ctx = mk({ calendar: [slot(1, 6), slot(2, 30)] });
-  const { els } = current = await boot(ctx);
-  assert.equal(els.get("event-manual-toggle").textContent, fr.ui_event_manual); assert.equal(els.get("event-manual-toggle").attrs["aria-expanded"], "false");
-  els.get("event-manual-toggle").click();
-  assert.equal(els.get("manual").hidden, false); assert.equal(els.get("event-manual-toggle").textContent, fr.ui_event_manual_close); assert.equal(els.get("event-manual-toggle").attrs["aria-expanded"], "true");
-  assert.match(els.get("event-chosen").textContent, /Aucun événement choisi/);
-  els.get("event-manual-toggle").click();
-  assert.equal(els.get("manual").hidden, true); assert.equal(rowsOf(els.get("event-list")).length, 2);
-  rowsOf(els.get("event-list"))[1].click(); await wait(200);
+test("\"No event, I write it myself\": one click, the fields of step 2 start empty, the list stays and picking an event again fills them", async () => {
+  const ctx = mk({ calendar: [slot(1, 6, { games: ["Zelda"] }), slot(2, 30)] });
+  const { els, html } = current = await boot(ctx);
+  assert.ok(html.includes(`id="event-none" class="wide" aria-pressed="false">${fr.ui_event_none_btn.replace("'", "&#39;")}</button>`), "the button is written in the page");
+  assert.equal(els.get("event-none").attrs["aria-pressed"], "false");
+  assert.equal(els.get("info-title").value, "Stream 1", "the next event fills the information");
+  els.get("preview").getContext().log.length = 0;   // only what is drawn from now on
+  els.get("event-none").click(); await wait(300);
+  assert.equal(els.get("event-none").attrs["aria-pressed"], "true"); assert.equal(els.get("event-chosen").textContent, fr.ui_event_none_chosen);
+  for (const id of ["info-title", "info-date", "info-time", "info-game"]) assert.equal(els.get(id).value, "", id);
+  assert.equal(els.get("status").textContent, fr.ui_event_none_set);
+  assert.equal(els.get("event-change").textContent, fr.ui_event_pick); assert.equal(rowsOf(els.get("event-list")).length, 2, "the list is still there");
+  assert.ok(!drawn(els).some((t) => /Stream 1/.test(t)), "the preview no longer shows the event");
+  rowsOf(els.get("event-list"))[1].click(); await wait(300);
   assert.match(els.get("event-chosen").textContent, /Story pour :.*Stream 2/);
+  assert.equal(els.get("info-title").value, "Stream 2"); assert.equal(els.get("event-none").attrs["aria-pressed"], "false");
 });
 
 test("la demande d'un assistant : l'événement choisi (identifiant + source) est retrouvé, même loin dans la liste ; un événement disparu est dit et remplacé par le prochain", async () => {
@@ -253,7 +261,7 @@ test("en anglais : titre, boutons et messages sont traduits", async () => {
   assert.match(html, /For which event\?/);
   assert.match(els.get("event-chosen").textContent, /Story for:.*Stream 1/);
   assert.match(els.get("event-alert").textContent, /Ma chaîne is not answering right now/);
-  assert.equal(els.get("event-manual-toggle").textContent, en.ui_event_manual);
+  assert.ok(html.includes(`>${en.ui_event_none_btn}</button>`), "the \"No event\" button is translated");
   assert.match(rowsOf(els.get("event-list"))[0].textContent, /Schedule/, "la pastille de l'agenda est traduite");
 });
 
