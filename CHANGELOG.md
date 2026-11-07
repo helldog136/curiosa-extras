@@ -4,6 +4,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.51.0 — 2026-11-07
+
+*En bref : vingt-huit modules disent eux-mêmes dans quelle rubrique du menu ils se rangent (Contenu, Communauté, Outils ou Connexions) ; trois modules n'embarquent plus le code des conversions de données de leurs premières versions et Statut du live arrête une tâche horaire inutile. Rien à régler, aucune nouvelle permission. Les rubriques demandent Curiosa 0.7.0.*
+
+*In short: twenty-eight modules now say themselves which section of the menu they belong in (Content, Community, Tools or Connections); three modules no longer carry the code that converted data from their first versions, and Live status stops running a useless hourly task. Nothing to set up, no new permission. The sections need Curiosa 0.7.0.*
+
+### Nouveautés
+
+- **Rubriques du menu : 28 modules se rangent d'eux-mêmes.** Contenu : Compte à rebours, Annuaire, Événements, Pages légales, Mascotte, Liens de plateformes, Dossier de presse, Bandeau d'accueil. Outils : Calendrier manuel, Planificateur de contenu, Statut du live, Planning, Story d'annonce, Raid Twitch. Communauté : Soutiens, Participation, Commandes, Statistiques de la communauté, Formulaire de contact, Contacts, Jeu du jour, Suggestions de jeux, Boîte à idées, Partenariats, Sondages, Témoignages, Mur de remerciements. Connexions : Annonces Discord. Avec un Curiosa plus ancien que 0.7.0, les modules se rangent comme avant.
+- **Menu sections: 28 modules place themselves.** Content: Countdown, Directory, Events, Legal pages, Mascot, Platform links, Press kit, Home banner. Tools: Manual calendar, Content planner, Live status, Planning, Announcement story, Twitch raid. Community: Supporters, Audience, Commissions, Community stats, Contact form, Contacts, Daily game, Game suggestions, Idea box, Partnerships, Polls, Testimonials, Thanks wall. Connections: Discord announcer. On a Curiosa older than 0.7.0, the modules are listed as before.
+- **Anciennes conversions retirées de trois modules.** Contacts, Partenariats et Story d'annonce n'embarquent plus le code qui convertissait les données de leurs premières versions. Rien ne change sur un site à jour ; un site plus ancien passe tout seul par la dernière version qui les convertissait encore (étiquette `v1.50.0`), une version après l'autre. Les anciennes copies sont montrées sur la page Entretien, jamais perdues.
+- **Old conversions removed from three modules.** Contacts, Partnerships and Announcement story no longer carry the code that converted data from their first versions. Nothing changes on a site that is up to date; an older site is carried through the last version that still converted them (tag `v1.50.0`), one version after the other. Old copies are shown on the Upkeep page, never lost.
+- **Statut du live ne lance plus de tâche toutes les heures.** Les anciens réglages Twitch sont repris par Ma Chaîne Twitch à la mise à jour du module, et de nouveau chaque fois que vous ouvrez la page de Statut du live.
+- **Live status no longer runs a task every hour.** The old Twitch settings are handed over to My Twitch channel when the module updates, and again whenever you open the Live status page.
+
+### Pour les développeurs
+
+- **`menuGroup`** (`content`, `community`, `tools` or `connections`) added to the `module.json` of 28 modules: new optional key of core 0.7.0, no `minCore` change (an older core ignores it). Patch bump of each module, no code change; `VERSION` of Events and Mascot follow their manifest. Détail : `docs/changelog-parts/menu-group.md`.
+- **Data floors**: Contacts 2.5.1, Partnerships 2.2.1 and Announcement story 2.9.1 declare `dataFloor` 2 with the bridge tag `v1.50.0`; Live status 1.4.5. The rule is in `docs/MIGRATIONS.md`. Détail : `docs/changelog-parts/remove-stale-migrations.md`.
+- No migration, no new permission.
+
 ## 1.50.0 — 2026-11-06
 
 *En bref : la télécommande de votre direct (téléphone et dock OBS) gagne un onglet Bot. Le module Bot Twitch passe en 1.13.0 et Participation en 1.8.0. Rien à régler, aucune nouvelle permission.*
