@@ -26,7 +26,7 @@ test("press-kit : manifeste valide, page publique /press-kit, widget à instance
   assert.deepEqual(m.permissions, ["pages"]);
   assert.deepEqual(m.sections, []);
   assert.deepEqual(settingsDefaults(m), { tagline: "site:tagline", brandSource: "site", showTypography: true, showContact: true });
-  assert.equal(m.version, "1.1.0");
+  assert.equal(m.version, "1.1.1");
   assert.equal(m.minCore, "0.6.0");
   assert.deepEqual(m.settings.filter((s) => s.advanced).map((s) => s.key), ["showTypography", "showContact"], "the two historical options stay advanced");
   assert.deepEqual(Object.keys(def).sort(), ["page"], "rien d'autre que la page : ni routes, ni stockage, ni admin");

@@ -29,4 +29,4 @@
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.2.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.2.1.

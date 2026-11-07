@@ -37,4 +37,4 @@ A short animated video that announces one of your upcoming events. It is ready f
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.8.0.
+Available since version 1.0.0. Current version: 2.9.1.

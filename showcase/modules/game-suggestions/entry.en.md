@@ -39,4 +39,4 @@ Let your audience suggest what to play. A public list shows each game with its s
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.9.0.
+Available since version 1.0.0. Current version: 1.9.1.

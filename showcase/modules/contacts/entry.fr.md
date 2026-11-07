@@ -35,4 +35,4 @@ Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur l
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.4.1.
+Disponible depuis la version 1.0.0. Version actuelle : 2.5.1.

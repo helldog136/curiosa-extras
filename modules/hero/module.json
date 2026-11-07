@@ -5,7 +5,8 @@
     "en": "Home banner",
     "fr": "Bandeau d'accueil"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
+  "menuGroup": "content",
   "main": "index.mjs",
   "description": {
     "en": "Big title and intro for the top of the home page. Place its section where you want it.",

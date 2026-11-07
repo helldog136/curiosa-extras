@@ -35,4 +35,4 @@ Announce a release, a launch, a birthday or a convention. Visitors see the time 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.1.
+Available since version 1.0.0. Current version: 1.2.2.

@@ -434,8 +434,8 @@ function renderSaved() {
   $("saved-box").hidden = !S.adhoc.length;
   $("saved-list").replaceChildren(...S.adhoc.map((m) => {
     const entry = { login: m.login, name: m.name, image: m.image }, label = m.name || m.login;
-    return personRow({ name: label, login: m.login, image: m.image, accounts: [], tag: m.legacy ? L("legacy_tag") : "" }, addButton(entry, label),
-      m.legacy ? null : h("button", { type: "button", text: L("remove"), "aria-label": `${L("remove")} ${label}`, onclick: () => removeSaved(m) }));
+    return personRow({ name: label, login: m.login, image: m.image, accounts: [] }, addButton(entry, label),
+      h("button", { type: "button", text: L("remove"), "aria-label": `${L("remove")} ${label}`, onclick: () => removeSaved(m) }));
   }));
 }
 function renderMembers() {
@@ -768,7 +768,6 @@ async function start() {
   if (data.ok) {
     if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // the remembered box; an AI preparation already says its own
     S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
-    if (data.migrated) { $("migrated").textContent = L("migrated_note", data.migrated); $("migrated").hidden = false; }
   }
   else say(errText(data.error), "error");
   if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // an assistant preparation fills everything: we open on the last step, the style

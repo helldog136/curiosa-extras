@@ -6,7 +6,8 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.8.0",
+  "version": "2.9.1",
+  "menuGroup": "tools",
   "platform": "instagram",
   "description": {
     "en": "A short animated video that announces one of your upcoming events, ready for an Instagram story or a portrait post.",
@@ -378,5 +379,12 @@
       }
     }
   ],
-  "dataVersion": 2
+  "dataVersion": 2,
+  "dataFloor": 2,
+  "legacyCollections": [
+    "story_costreamers"
+  ],
+  "inertLegacyCollections": [
+    "story_costreamers"
+  ]
 }

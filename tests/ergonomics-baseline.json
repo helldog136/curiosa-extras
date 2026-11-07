@@ -518,7 +518,6 @@
       "R10 locale:fr:ui_event_chosen #702cb3",
       "R13 locale:en:admin_intro #e0bf9b",
       "R13 locale:en:ui_cover_ambiguous_named #5b3a6c",
-      "R13 locale:en:ui_migrated_note #cb93d8",
       "R13 locale:en:ui_no_access_hint #19a6c9",
       "R13 locale:en:ui_prep_stream_gone #095042",
       "R13 locale:en:ui_saved_help #abdcbf",
@@ -526,7 +525,6 @@
       "R13 locale:fr:ui_cover_ambiguous_named #dfd9a7",
       "R13 locale:fr:ui_cover_no_key #ee35d0",
       "R13 locale:fr:ui_members_help #8c2c2d",
-      "R13 locale:fr:ui_migrated_note #bb9e1c",
       "R13 locale:fr:ui_prep_stream_gone #4c5941",
       "R13 locale:fr:ui_saved_help #84ae56"
     ],

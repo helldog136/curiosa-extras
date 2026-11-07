@@ -97,7 +97,6 @@ test("éditeur avec Contacts : chercher, ajouter (6 au plus), catégorie, saisie
   const { els, server } = await boot(ctx, "contacts");
   assert.equal(els.get("book-box").hidden, false); assert.equal(els.get("book-absent").hidden, true, "Contacts répond : pas de message de repli");
   assert.match(els.get("chosen").textContent, /Personne pour le moment/);
-  assert.equal(els.get("migrated").hidden, true);
 
   // 1. la recherche à la saisie (agnostique du réseau), pastilles de comptes
   await type(els.get("q"), "ali");
@@ -164,22 +163,21 @@ test("éditeur avec Contacts : chercher, ajouter (6 au plus), catégorie, saisie
   again.server.restore();
 });
 
-test("éditeur sans Contacts : le repli est dit, la saisie ponctuelle marche, et la liste d'avant est proposée comme ponctuels", async () => {
+test("éditeur sans Contacts : le repli est dit, la saisie ponctuelle marche, et les ponctuels déjà gardés sont proposés", async () => {
   images.resetImages();
   const ctx = mk(null);
-  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "Alice", image: "" }] });
+  await data.addAdhoc(ctx, [{ login: "alice_tv", name: "Alice", image: "" }]);
   const { els, server } = await boot(ctx, "absent");
   assert.equal(els.get("book-box").hidden, true); assert.equal(els.get("book-absent").hidden, false);
   assert.equal(els.get("saved-box").hidden, false);
   const saved = rows(els.get("saved-list"));
-  assert.equal(saved.length, 1); assert.match(saved[0].textContent, /Alice/); assert.match(saved[0].textContent, /liste d'avant/);
-  assert.equal(buttons(saved[0]).map((b) => b.textContent).join("|"), "Ajouter", "pas de bouton pour retirer un élément de la liste d'avant : la migration s'en charge");
+  assert.equal(saved.length, 1); assert.match(saved[0].textContent, /Alice/); assert.doesNotMatch(saved[0].textContent, /liste d'avant/);
+  assert.equal(buttons(saved[0]).map((b) => b.textContent).join("|"), "Ajouter|Retirer", "a kept person can be added to the video or removed from the list");
   btn(saved[0], "Ajouter").click(); await wait(200);
   assert.match(els.get("chosen").textContent, /Alice/);
   els.get("a-name").value = "Zoé"; els.get("adhoc-add").click(); await wait(300);
   assert.equal(rows(els.get("chosen")).length, 2);
   assert.ok(!server.log.some(([, r]) => /^(people|category|categories|members)/.test(r)), "Contacts absent : aucune recherche n'est tentée");
-  await ctx.api.store.list("story_costreamers").then((r) => assert.equal(r.length, 1, "la liste d'avant n'a pas bougé"));
   server.restore();
 });
 

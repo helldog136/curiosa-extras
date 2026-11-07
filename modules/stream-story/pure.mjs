@@ -32,7 +32,7 @@ export function elementsForStyle(style, elements) {
   return need && !list.includes(need) ? ELEMENTS.filter((e) => e === need || list.includes(e)) : ELEMENTS.filter((e) => list.includes(e));
 }
 export const LANGS = ["fr", "en"];
-export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, savedCostreamers: 60, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
+export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
 
 export const formatOf = (id) => FORMATS.find((f) => f.id === id) ?? FORMATS[0];
 /** The area where essential content can be placed: { x, y, w, h }. */
@@ -83,7 +83,7 @@ export function safeImageUrl(v) {
  *   { id }                          a REFERENCE to a Contacts card (opaque identifier: nothing is assumed about its shape). Name, handle and photo stay in Contacts;
  *   { login, name, image }          a guest streamer "for this video only": typed by hand, never a card. `login` is a free handle, `name` a name, `image` an https address
  *                                   (the server only relays it if the host is allowed); at least one of the two, handle or name.
- * A version 1 model kept a simple list of Twitch handles ("alice_tv"): it is read as "for this video only" entries (then the migration replaces them with references). */
+ * A version 1 model kept a simple list of Twitch handles ("alice_tv"): it is read as "for this video only" entries (they are kept as such: the conversion into references was removed in 2.9.0). */
 const MEMBER_ID = /^[^\s\u0000-\u001f\u007f]{1,80}$/;
 export const NETWORKS = ["twitch", "youtube", "tiktok", "instagram", "discord", "x", "bluesky", "mastodon", "web", "other"];
 const httpsImage = (v) => { const u = safeImageUrl(v); return /^https:\/\//.test(u) ? u : ""; };

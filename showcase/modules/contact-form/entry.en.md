@@ -30,4 +30,4 @@ Adds a contact form under a page of your choice. Each message becomes a contact 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.4.
+Available since version 1.0.0. Current version: 1.0.5.

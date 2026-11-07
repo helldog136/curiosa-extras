@@ -6,7 +6,8 @@
     "en": "Supporters",
     "fr": "Soutiens"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
+  "menuGroup": "community",
   "description": {
     "en": "Thank your supporters from a patronage platform. The public page only shows the nicknames they accepted.",
     "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos acceptés."

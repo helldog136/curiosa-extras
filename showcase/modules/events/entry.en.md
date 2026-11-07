@@ -41,4 +41,4 @@ An agenda of your events and trainings: upcoming dates, a monthly calendar and a
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.1.
+Available since version 1.0.0. Current version: 1.2.2.

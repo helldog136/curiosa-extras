@@ -32,4 +32,4 @@ A big title and an intro for the top of your home page. You place its section wh
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.2.
+Available since version 1.0.0. Current version: 1.0.3.

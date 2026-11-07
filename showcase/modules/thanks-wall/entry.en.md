@@ -38,4 +38,4 @@ A thank-you page for your community: cards with photos, and one person in the sp
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.2.
+Available since version 1.0.0. Current version: 1.2.3.

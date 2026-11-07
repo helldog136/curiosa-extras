@@ -34,4 +34,4 @@ Un petit personnage discret dans un coin de votre site. Il dit bonjour, donne un
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.1.1.

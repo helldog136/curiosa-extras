@@ -146,8 +146,6 @@
   "ui_a_image": "Picture (optional)",
   "ui_a_image_help": "Paste the address of a Twitch, YouTube or Bluesky profile picture (right-click the picture, \"Copy image address\"). Without a picture, the video shows initials.",
   "ui_saved_help": "People without a card in Contacts, kept here (for example guest streamers from your earlier list that Contacts could not take in). Add them to the video in one click.",
-  "ui_legacy_tag": "earlier list",
-  "ui_migrated_note": "The guest streamers of your earlier list are now in Contacts: {created} new card(s), {existing} already known, {kept} kept here as one-off people.",
   "ui_net_web": "Web",
   "ui_net_other": "Other",
   "src_calendar": "Schedule",

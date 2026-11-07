@@ -20,7 +20,7 @@
     "fr": "Remerciez vos soutiens d'une plateforme de mécénat. La page publique ne montre que les pseudos qu'ils ont acceptés."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.1.0",
+  "moduleVersion": "1.1.1",
   "requires": [],
   "worksWith": [
     "thanks-wall",

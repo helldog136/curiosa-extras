@@ -33,4 +33,4 @@ Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Tw
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.3.0.
+Disponible depuis la version 1.0.0. Version actuelle : 2.3.1.

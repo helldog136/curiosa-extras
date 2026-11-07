@@ -20,7 +20,7 @@
     "fr": "Ajoute un formulaire de contact sous une page de votre choix. Chaque message devient un contact à relire dans votre carnet d'adresses."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.4",
+  "moduleVersion": "1.0.5",
   "requires": [
     "contacts"
   ],

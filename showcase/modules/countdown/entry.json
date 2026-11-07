@@ -20,7 +20,7 @@
     "fr": "Annoncez une sortie, un lancement, un anniversaire ou une convention. Les visiteurs voient le temps restant, et l'heure chez eux."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.1",
+  "moduleVersion": "1.2.2",
   "requires": [],
   "worksWith": [
     "events"

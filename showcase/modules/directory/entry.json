@@ -20,7 +20,7 @@
     "fr": "Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équipe. Les visiteurs cherchent, filtrent et ouvrent un profil."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.1.0",
+  "moduleVersion": "1.1.1",
   "requires": [
     "contacts"
   ],

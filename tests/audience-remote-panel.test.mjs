@@ -51,7 +51,7 @@ test("the page carries the word for 'working' in both languages, and the journal
   const { fr, en } = await import("./helpers/audienceHarness.mjs");
   for (const d of [fr, en]) for (const k of ["remoteBusy", "what_panel_pause", "what_panel_resume", "what_panel_addcom", "what_panel_undo"]) assert.ok(d[k], k);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.equal(manifest.version, "1.8.0");
+  assert.equal(manifest.version, "1.8.1");
   assert.deepEqual(manifest.offers.map((o) => o.service), ["audience.session", "audience.draw"], "the contract of the services Audience offers is not changed");
   assert.deepEqual(manifest.requires, [{ service: "audience.remote", optional: true }], "the remote is still optional for plugged-in modules, and nothing else is required");
 });

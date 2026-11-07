@@ -5,7 +5,8 @@
     "en": "Game suggestions",
     "fr": "Suggestions de jeux"
   },
-  "version": "1.9.0",
+  "version": "1.9.1",
+  "menuGroup": "community",
   "minCore": "0.6.0",
   "description": {
     "en": "Let your audience suggest what to play. A public list with statuses (proposed, planned, played…), a suggestion form and \"play it again\" votes. You can add games yourself, one by one or a whole list. Covers are found automatically.",

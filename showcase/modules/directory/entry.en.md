@@ -40,4 +40,4 @@ A public showcase of your members, creators or partners, and of your team. Visit
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.0.
+Available since version 1.0.0. Current version: 1.1.1.

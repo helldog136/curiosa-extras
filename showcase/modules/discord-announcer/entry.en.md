@@ -30,4 +30,4 @@ Announces your new content on a Discord channel, with no bot or account to link.
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.1.
+Available since version 1.0.0. Current version: 1.2.2.

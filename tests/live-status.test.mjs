@@ -47,7 +47,7 @@ const player = (ctx) => def.sections.player(ctx);
 
 test("live-status : manifeste valide, deux sources FACULTATIVES (twitch.live, youtube.live), n'en offre aucun, identifiants Twitch d'avant seulement en legacySettings (jamais affichés)", async () => {
   const m = await assertValidManifest(manifest);
-  assert.equal(m.version, "1.4.3");
+  assert.equal(m.version, "1.4.5");
   assert.equal(m.id, "live-status", "l'identifiant ne change pas : les sites existants gardent leur instance");
   assert.equal(m.platform, "twitch", "la plateforme déclarée ne change pas (regroupement visuel seulement)");
   assert.equal(m.minCore, "0.2.2");
@@ -288,7 +288,7 @@ test("migration 2 : Chaîne Twitch indisponible ou qui plante → rien n'est eff
   const broken = fakeCtx({ legacy: legacyOwn, services: { "twitch.live": { adopt: () => { throw new Error("boom"); }, channel: () => { throw new Error("boom"); } } } });
   await assert.doesNotReject(() => def.migrations[2](broken));
   assert.deepEqual(broken.calls.legacyCleared, []);
-  // plus tard, la Chaîne Twitch répond : la tâche reprend
+  // plus tard, la Chaîne Twitch répond : la reprise recommence à l'ouverture de la page d'administration (plus de tâche horaire)
   const w = wire({ provider: {}, legacy: legacyOwn });
   const real = w.ctx.api.services.call;
   let up = false;
@@ -296,8 +296,8 @@ test("migration 2 : Chaîne Twitch indisponible ou qui plante → rien n'est eff
   await migrate(w);
   assert.deepEqual(w.ctx.calls.legacyCleared, []);
   up = true;
-  assert.equal(typeof def.tasks.adopt.run, "function");
-  await def.tasks.adopt.run(w.ctx);
+  assert.equal(def.tasks, undefined, "no hourly task any more");
+  await def.adminPanel(w.ctx);
   assert.equal(w.ctx.calls.legacyCleared.length, 3);
   assert.equal((await svc.channel(w.pctx)).ready, true);
 });
@@ -307,6 +307,9 @@ test("migration 2 : rien à reprendre (valeurs vides, absentes) ou cœur sans ct
     const w = wire({ provider: {}, legacy });
     await migrate(w);
     assert.deepEqual([w.ctx.calls.legacyCleared, w.ctx.calls.services], [[], []], JSON.stringify(legacy));
+    assert.equal(await w.pctx.api.store.count("adopted"), 0);
+    await def.adminPanel(w.ctx);   // opening the page tries the hand-over again: with nothing left it changes and calls nothing for it
+    assert.deepEqual(w.ctx.calls.legacyCleared, [], JSON.stringify(legacy));
     assert.equal(await w.pctx.api.store.count("adopted"), 0);
   }
   const plain = wire({ provider: {} });
