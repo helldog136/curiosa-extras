@@ -40,4 +40,4 @@ Une vitrine publique de vos membres, créateurs ou partenaires, et de votre équ
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.1.1.

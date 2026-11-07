@@ -20,7 +20,7 @@
     "fr": "Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une liste des idées que vous gardez, chacune avec un bouton de soutien."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.1",
+  "moduleVersion": "1.0.2",
   "requires": [],
   "worksWith": [
     "audience"

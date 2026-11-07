@@ -38,4 +38,4 @@ Un petit jeu par jour, pour donner envie de revenir. Une question, quelques rép
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.2.
+Disponible depuis la version 1.0.0. Version actuelle : 1.1.3.

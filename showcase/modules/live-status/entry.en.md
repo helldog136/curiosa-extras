@@ -30,4 +30,4 @@ Shows a “live now” banner and your player on your home page while you are li
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.4.4.
+Available since version 1.0.0. Current version: 1.4.5.

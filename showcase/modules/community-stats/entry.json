@@ -20,7 +20,7 @@
     "fr": "Garde les chiffres de vos réseaux, comme les abonnés, les abonnés payants, les publications et les vues, et leur évolution."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.0",
+  "moduleVersion": "1.2.1",
   "requires": [],
   "worksWith": [
     "bluesky",

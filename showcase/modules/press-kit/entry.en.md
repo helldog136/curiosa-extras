@@ -35,4 +35,4 @@ A public page that presents your identity to press and partners. Presentation, f
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.0.
+Available since version 1.0.0. Current version: 1.1.1.

@@ -20,7 +20,7 @@
     "fr": "Posez une question à votre public et regardez les réponses arriver en barres. Un vote par personne, sans compte à créer."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.7.0",
+  "moduleVersion": "1.7.1",
   "requires": [],
   "worksWith": [
     "audience"

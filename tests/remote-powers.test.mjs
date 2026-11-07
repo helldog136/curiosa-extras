@@ -270,7 +270,7 @@ test("manifests: versions bumped, new journal events declared in French and Engl
   const fs = await import("node:fs");
   for (const id of ["polls", "audience"]) {
     const m = JSON.parse(fs.readFileSync(new URL(`../modules/${id}/module.json`, import.meta.url), "utf8"));
-    assert.equal(m.version, id === "audience" ? "1.8.0" : "1.7.0");
+    assert.equal(m.version, id === "audience" ? "1.8.1" : "1.7.1");
     assert.ok(m.logEvents.some((e) => e.key === "panic.stopped" && e.label.fr && e.label.en));
   }
   const m = JSON.parse(fs.readFileSync(new URL("../modules/polls/module.json", import.meta.url), "utf8"));

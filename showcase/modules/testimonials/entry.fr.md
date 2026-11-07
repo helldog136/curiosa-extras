@@ -33,4 +33,4 @@ Récoltez les avis des personnes qui aiment ce que vous faites. Chaque avis atte
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.3.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.3.1.

@@ -5,7 +5,8 @@
     "en": "Contact form",
     "fr": "Formulaire de contact"
   },
-  "version": "1.0.4",
+  "version": "1.0.5",
+  "menuGroup": "community",
   "main": "index.mjs",
   "description": {
     "en": "Adds a contact form under a page of your choice. Each message becomes a contact to review in your address book.",

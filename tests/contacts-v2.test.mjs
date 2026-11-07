@@ -369,7 +369,7 @@ test("MCP : outils de lecture paginés (maximum 100 déclaré + curseur), parcou
 });
 
 test("manifeste 2.1 : version, minCore 0.2.2, dataVersion 2, besoins facultatifs (privacy.subject, connecteurs), droits du module", async () => {
-  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.5.0", "0.2.2", 2, 2]);
+  assert.deepEqual([manifest.version, manifest.minCore, manifest.dataVersion, manifest.dataFloor], ["2.5.1", "0.2.2", 2, 2]);
   assert.deepEqual(manifest.requires, [{ service: "privacy.subject", optional: true }, { service: "twitch.api", min: 3, optional: true }, { service: "youtube.api", optional: true }]);
   for (const r of manifest.rights) { assert.ok(r.label.fr && r.label.en); assert.ok(!r.id.includes(":"), "le cœur ajoute le préfixe du module"); }
   // The 1.x → 2.0 conversion is gone (dataFloor 2, bridge tag v1.50.0): what is left is an empty marker that never touches the data.

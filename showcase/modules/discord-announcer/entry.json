@@ -20,7 +20,7 @@
     "fr": "Annonce votre nouveau contenu dans un salon Discord, sans bot ni compte à relier. Il prévient aussi votre serveur quand vous passez en direct."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.1",
+  "moduleVersion": "1.2.2",
   "requires": [],
   "worksWith": [
     "discord",

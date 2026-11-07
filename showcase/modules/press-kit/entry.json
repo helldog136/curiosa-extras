@@ -20,7 +20,7 @@
     "fr": "Une page publique qui présente votre identité à la presse et aux partenaires. Présentation, faits, logos, couleurs, polices, contact."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.1.0",
+  "moduleVersion": "1.1.1",
   "requires": [],
   "worksWith": [
     "pages",

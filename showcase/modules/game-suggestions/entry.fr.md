@@ -39,4 +39,4 @@ Laissez votre public suggérer à quoi jouer. Une liste publique montre chaque j
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.9.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.9.1.

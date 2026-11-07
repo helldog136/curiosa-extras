@@ -32,4 +32,4 @@ Un grand titre et une introduction pour le haut de votre page d'accueil. Vous pl
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.0.2.
+Disponible depuis la version 1.0.0. Version actuelle : 1.0.3.

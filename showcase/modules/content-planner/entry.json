@@ -20,7 +20,7 @@
     "fr": "Votre carnet privé pour vos vidéos, articles et publications. Idées, travaux en cours, publiés : avec des étapes à cocher."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.1",
+  "moduleVersion": "1.0.2",
   "requires": [],
   "worksWith": [
     "planning",
