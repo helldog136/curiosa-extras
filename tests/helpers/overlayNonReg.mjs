@@ -14,7 +14,7 @@ const load = (root, mod, file = "index.mjs") => import(`${path.join(root, "modul
 
 /** Le manifeste sans ce que les éléments d'overlay ajoutent (version, minCore, clé overlayElements, droit « routes » des statistiques). */
 const manifestRest = (m, extraPermission) => {
-  const { version, minCore, overlayElements, previews, ...rest } = m;
+  const { version, minCore, overlayElements, previews, menuGroup, ...rest } = m;
   if (rest.id === "planning") {   // 2.6.0 : les partenaires (« Avec… ») sont un ajout ; tout le reste du manifeste est celui de la 1.25.0
     rest.consumes = rest.consumes.map((c) => (c.topic === "planning.slot" ? { ...c, schema: c.schema.filter((f) => f.key !== "partners") } : c));
     rest.settings = rest.settings.filter((x) => !["hide", "addPlayedGames", "showPartnerPhotos"].includes(x.key));   // 2.7.0 : deux réglages de plus (jeux joués, photos des partenaires)
