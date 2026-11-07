@@ -14,7 +14,6 @@ const data = await import("../modules/stream-story/data.mjs");
 const src = await import("../modules/stream-story/sources.mjs");
 const images = await import("../modules/stream-story/images.mjs");
 const book = await import("../modules/stream-story/contacts.mjs");
-const migrate = await import("../modules/stream-story/migrate.mjs");
 import { fakeContactBook } from "./helpers/fakeContactBook.mjs";
 
 const HUNG = Symbol("hung"), SITE = "https://site.example.test", NOW_ISO = new Date(Date.now() + 86_400_000).toISOString();
@@ -28,7 +27,7 @@ const mk = (extra = {}) => fakeCtx({ key: "story", moduleId: "stream-story", loc
 const call = (ctx, route, token, search = "") => def.routes[route](new Request(`${SITE}/m/story/${route}${search}`, { headers: { "x-story-token": token } }), ctx);
 const timing0 = { ...src.timing }, img0 = { ...images.timing };
 const realFetch = globalThis.fetch;
-beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 150, coverMs: 150, bookMs: 150, providersMs: 150, migrateMs: 400, brandMs: 150, authMs: 150, routeMs: 400 }); Object.assign(images.timing, img0, { fetchMs: 100, totalMs: 160 }); images.resetImages(); });
+beforeEach(() => { Object.assign(src.timing, timing0, { collectMs: 150, coverMs: 150, bookMs: 150, providersMs: 150, brandMs: 150, authMs: 150, routeMs: 400 }); Object.assign(images.timing, img0, { fetchMs: 100, totalMs: 160 }); images.resetImages(); });
 afterEach(() => { globalThis.fetch = realFetch; Object.assign(src.timing, timing0); Object.assign(images.timing, img0); });
 
 test("agenda qui ne répond jamais : la route des streams répond « slow » dans le délai, la page d'administration s'ouvre quand même, l'outil de l'IA répond ; la demande suivante repart de zéro", async () => {
@@ -58,18 +57,17 @@ test("RAWG qui ne répond jamais : les streams sont rendus quand même, sans jaq
   assert.equal((await r2.json()).coverState, "no_key");
 });
 
-test("Contacts, site (identité) qui ne répondent jamais : les données de l'éditeur arrivent quand même (modèles et anciens co-streamers lus en repli), la recherche, les fiches et les catégories répondent « slow » dans le délai", async () => {
+test("Contacts, site (identité) qui ne répondent jamais : les données de l'éditeur arrivent quand même (modèles et ponctuels lus dans le stockage), la recherche, les fiches et les catégories répondent « slow » dans le délai", async () => {
   const cb = fakeContactBook();
   const ctx = mk({ services: cb.services }); ctx.api.brand = blackHole;
   for (const m of ["search", "resolve", "categories", "accounts", "upsertByAccount"]) cb.faults.hang.add(m);
   const token = await data.mintToken(ctx);
-  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "Alice", image: "" }] });
+  await data.addAdhoc(ctx, [{ login: "alice_tv", name: "Alice", image: "" }]);
   const t0 = Date.now();
   const r = await within(call(ctx, "data", token)); assert.notEqual(r, HUNG);
   const body = await r.json();
-  assert.deepEqual([body.ok, body.brand, body.contacts, body.adhoc.map((c) => [c.login, c.legacy]), body.migrated], [true, { name: "", logo: "" }, "ok", [["alice_tv", true]], null], "l'ancienne liste reste lue en repli ; rien n'est perdu");
+  assert.deepEqual([body.ok, body.brand, body.contacts, body.adhoc.map((c) => c.login)], [true, { name: "", logo: "" }, "ok", ["alice_tv"]], "les ponctuels sont lus sans attendre Contacts");
   assert.ok(Date.now() - t0 < 1500);
-  assert.equal(await ctx.api.store.count("story_costreamers"), 1, "l'ancienne liste est intacte");
   for (const [route, search] of [["people", "?q=alice"], ["members", "?id=c0001"], ["categories", ""], ["category", "?id=k1"]]) {
     const x = await within(call(ctx, route, token, search)); assert.notEqual(x, HUNG, route);
     const j = await x.json(); assert.deepEqual([j.ok, j.state, j.items ?? j.members], [true, "slow", j.items ?? []], route);
@@ -78,22 +76,9 @@ test("Contacts, site (identité) qui ne répondent jamais : les données de l'é
   const models = await within(def.mcp.story_models(ctx)); assert.notEqual(models, HUNG);
 });
 
-test("Contacts qui ne répond jamais pendant la migration : rien n'est touché, l'ancienne liste reste, et la migration repart dès que Contacts répond", async () => {
-  const cb = fakeContactBook();
-  const ctx = mk({ services: cb.services });
-  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "Alice", image: "" }, { login: "bob_x", name: "", image: "" }] });
-  cb.faults.hang.add("upsertByAccount");
-  const t0 = Date.now(), r = await within(migrate.migrateCostreamers(ctx)); assert.notEqual(r, HUNG, "la migration est bornée");
-  assert.equal(r.state, "waiting"); assert.ok(Date.now() - t0 < 1500);
-  assert.equal(await ctx.api.store.count("story_costreamers"), 1); assert.equal(cb.dump().contacts.length, 0);
-  cb.faults.hang.delete("upsertByAccount");
-  const again = await within(migrate.ensureMigrated(ctx)); assert.equal(again.state, "done");
-  assert.equal(await ctx.api.store.count("story_costreamers"), 0); assert.equal(cb.dump().contacts.length, 2);
-});
-
 test("la route entière est bornée : même si le stockage ne répond jamais, la route rend « network » (504) au plus tard à `timing.routeMs`", async () => {
   const ctx = mk(), token = await data.mintToken(ctx);
-  const real = ctx.api.store.list; ctx.api.store.list = async (c, o) => (c === "story_costreamers" ? blackHole() : real(c, o));
+  const real = ctx.api.store.list; ctx.api.store.list = async (c, o) => (c === "story_models" ? blackHole() : real(c, o));
   const t0 = Date.now(), r = await within(call(ctx, "data", token)); assert.notEqual(r, HUNG);
   const body = await r.json(); assert.equal(body.ok, false); assert.equal(r.status, 504); assert.ok(Date.now() - t0 < 1500);
   const dead = mk(); dead.api.store.list = blackHole;
@@ -124,7 +109,7 @@ test("serveur d'images qui ne répond jamais (même en ignorant le signal d'aban
 });
 
 test("aucun appel sans plafond : pas de boucle d'attente sans fin dans le code du module, et le relais d'images coupe chaque téléchargement par un signal d'abandon", () => {
-  const code = ["index.mjs", "sources.mjs", "images.mjs", "admin.mjs", "data.mjs", "mcp.mjs", "contacts.mjs", "migrate.mjs"].map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\/.*$/gm, "")).join("\n");
+  const code = ["index.mjs", "sources.mjs", "images.mjs", "admin.mjs", "data.mjs", "mcp.mjs", "contacts.mjs"].map((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\/.*$/gm, "")).join("\n");
   assert.ok(!/while\s*\(\s*true\s*\)/.test(code));
   assert.match(fs.readFileSync(`${DIR}/images.mjs`, "utf8"), /AbortController/);
   assert.ok(!/setInterval/.test(code), "aucun minuteur qui tourne en arrière-plan");

@@ -20,7 +20,7 @@
     "fr": "Montre une bannière « en direct » et votre lecteur sur votre accueil pendant vos directs."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.4.3",
+  "moduleVersion": "1.4.4",
   "requires": [],
   "worksWith": [
     "twitch-channel",

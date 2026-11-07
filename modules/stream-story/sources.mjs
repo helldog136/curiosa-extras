@@ -9,7 +9,7 @@ const E = await import(`./events.mjs${v}`);
 /** Les délais (en millisecondes), dans un objet pour que les tests puissent les raccourcir. */
 // sourceMs : un appel à UNE source d'événements (les autres ne l'attendent pas au-delà) ; eventsMs : toute la liste des événements ; freshMs : la liste est gardée aussi longtemps avant de
 // redemander aux sources ; staleMs : une source qui ne répond plus est remplacée par sa dernière liste connue, pendant ce temps seulement.
-export const timing = { collectMs: 6000, coverMs: 5000, bookMs: 5000, providersMs: 2000, migrateMs: 45_000, brandMs: 2000, authMs: 4000, routeMs: 20_000, sourceMs: 8000, eventsMs: 12_000, freshMs: 45_000, minRefreshMs: 5000, staleMs: 15 * 60_000 };
+export const timing = { collectMs: 6000, coverMs: 5000, bookMs: 5000, providersMs: 2000, brandMs: 2000, authMs: 4000, routeMs: 20_000, sourceMs: 8000, eventsMs: 12_000, freshMs: 45_000, minRefreshMs: 5000, staleMs: 15 * 60_000 };
 const HOUR = 3_600_000, DAY = 86_400_000;
 
 /** Attend `p` au plus `ms` ; passé ce délai, rend `fallback` (et le résultat tardif n'est jamais utilisé). Le minuteur ne retient pas le processus. */

@@ -394,9 +394,9 @@ test("MCP partner_delete : supprime la fiche et son journal, jamais une personne
   assert.equal(await ctx.api.store.count("contacts"), 2);
 });
 
-test("stockage : les collections utilisées sont partners / journal, plus contacts / legacyContacts / meta (reprise unique, à retirer en phase 3)", async () => {
+test("stockage : les collections utilisées sont partners / journal seulement (les restes contacts / legacyContacts / meta ne sont plus ni lus ni écrits)", async () => {
   const used = new Set([...source.matchAll(/(?:store\.(?:add|list)|[aA]ll\(ctx,)\s*\(?\s*"([A-Za-z]+)"/g)].map((m) => m[1]));
-  assert.deepEqual([...used].sort(), ["contacts", "journal", "legacyContacts", "meta", "partners"]);
+  assert.deepEqual([...used].sort(), ["journal", "partners"]);
 });
 
 test("le texte saisi n'est jamais interprété : transmis tel quel (échappement par le rendu du cœur), pas d'appel réseau", async () => {

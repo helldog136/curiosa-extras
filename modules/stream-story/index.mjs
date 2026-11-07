@@ -22,7 +22,6 @@ const data = await import(`./data.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const E = await import(`./events.mjs${v}`);
 const book = await import(`./contacts.mjs${v}`);
-const migrate = await import(`./migrate.mjs${v}`);
 const images = await import(`./images.mjs${v}`);
 const page = await import(`./page.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
@@ -84,12 +83,9 @@ const routes = {
     return page.studioPage(ctx, { base: `/m/${ctx.instance.key}`, colors: videoColors(ctx), timezone: zoneSetting(ctx), font: typeof th.font === "string" ? th.font.slice(0, 200) : "", accent: hex(th.accent, "#4f46e5"), accentFg: hex(th.accentFg, "#ffffff") });
   },
   data: guarded("GET", async (request, ctx) => {
-    // L'ancienne liste de co-streamers est confiée à Contacts dès que Contacts répond (l'éditeur ouvert par une personne est le seul moment : jamais en arrière-plan).
-    const moved = await migrate.ensureMigrated(ctx, { waitMs: Math.floor(src.timing.routeMs * 0.6) });
-    const [models, adhoc, hasBook, brand, watermark] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readPickable(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false)]);
+    const [models, adhoc, hasBook, brand, watermark] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readAdhoc(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false)]);
     return json({
       ok: true, models, adhoc, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true },
-      migrated: moved.state === "done" && (moved.created || moved.existing || moved.kept) ? { created: moved.created, existing: moved.existing, kept: moved.kept } : null,
     });
   }),
   people: guarded("GET", async (request, ctx) => {
@@ -182,9 +178,10 @@ export default {
     },
   },
 
-  // Version 2.0.0 : les co-streamers deviennent des références à des fiches de Contacts (migration « à retirer en phase 3 », voir migrate.mjs). Sans Contacts : rien n'est touché,
-  // et l'éditeur rejoue la migration dès que Contacts répond.
-  migrations: { 2: async (ctx) => { await migrate.migrateCostreamers(ctx); } },
+  // Empty marker. The 2.0.0 conversion (the version 1 co-streamer list into Contacts cards) was removed in 2.9.0: `dataFloor` is 2, so data still in version 1 is set aside
+  // instead of being marked up to date; the bridge is the tag v1.50.0 (Announcement story 2.8.0). See docs/MIGRATIONS.md. The kit rule `data.version` wants one entry per
+  // `dataVersion` above 1; this one never runs on data that is already in version 2.
+  migrations: { 2: async () => {} },
 
   mcp: {
     /** Lecture seule : les modèles enregistrés. */
@@ -231,15 +228,13 @@ export default {
   },
 
   backup: {
-    // Les modèles (avec, pour chaque co-streamer, l'identifiant de sa fiche : les fiches elles-mêmes sont sauvegardées par Contacts), les ponctuels et, tant qu'elle n'est pas
-    // confiée à Contacts, l'ancienne liste. Lisibles sans Curiosa.
+    // Les modèles (avec, pour chaque co-streamer, l'identifiant de sa fiche : les fiches elles-mêmes sont sauvegardées par Contacts) et les ponctuels. Lisibles sans Curiosa.
     async readable(ctx) {
       const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
       const csv = (rows) => ["login,name,image", ...rows.map((m) => [m.login, m.name, m.image].map(cell).join(","))].join("\r\n");
-      const [adhoc, legacy, models] = await Promise.all([data.readAdhoc(ctx), data.readLegacy(ctx), data.readModels(ctx)]);
+      const [adhoc, models] = await Promise.all([data.readAdhoc(ctx), data.readModels(ctx)]);
       return [
         ...(adhoc.length ? [{ path: "adhoc-costreamers.csv", content: csv(adhoc) }] : []),
-        ...(legacy.items.length ? [{ path: "costreamers.csv", content: csv(legacy.items) }] : []),
         { path: "models.json", content: JSON.stringify(models.map(tools.backupModel), null, 2) },
       ];
     },

@@ -18,7 +18,7 @@ export const KEYS = [
   "err_encoder", "err_auth", "err_network", "err_empty", "err_invalid", "err_full", "err_missing", "err_name", "err_exists", "err_image", "err_generic", "members_chosen", "member_missing", "member_unreadable",
   "member_loading", "search_label", "search_placeholder", "search_hint", "search_busy", "search_none", "search_slow", "search_refine", "show_more", "add", "already", "cat_title", "cat_label", "cat_choose",
   "cat_none", "cat_empty", "cat_gone", "cat_more", "cat_add_first", "cat_added", "cat_full", "book_absent", "adhoc_title", "a_login", "a_name", "a_image", "a_image_help", "saved_help",
-  "legacy_tag", "migrated_note", "net_web", "net_other", "h_event", "event_chosen", "event_none_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match",
+  "net_web", "net_other", "h_event", "event_chosen", "event_none_chosen", "event_search", "event_search_ph", "event_sources", "event_all", "event_loading", "event_none", "event_no_match",
   "event_count", "event_more", "event_capped", "event_zone", "event_local", "event_also", "event_picked", "event_row", "event_retry", "event_all_down", "event_busy", "event_ready", "ev_down", "ev_down_stale",
   "ev_setup", "ev_note", "type_stream", "type_live", "type_premiere", "type_video", "type_event", "type_other", "watermark_label", "watermark_help", "event_next", "event_started", "event_change", "event_pick_title",
   "event_same", "progress_label", "busy_generate", "busy_saving", "busy_reading", "busy_adding", "event_change_close", "steps_label", "step_1", "step_2", "step_3", "prev", "gen_now", "step_now",
@@ -178,7 +178,6 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div class="item" id="item-text">${head("text", "text", "text_label")}<textarea id="text" maxlength="400" placeholder="${T("ph_text")}" aria-describedby="text-help"></textarea><p id="text-help" class="muted"><span id="text-count"></span> · ${T("text_help")}</p></div>
 <div class="item" id="item-costreamers">${plain("costreamers", "h_members")}<p id="members-sum" class="muted"></p>
 <details id="members-box" class="sub-d"><summary>${T("members_pick")} <span id="members-count" class="muted"></span></summary><div class="inner" aria-labelledby="h-members"><p id="h-members" class="muted">${T("members_help")}</p>
-<p id="migrated" class="banner" hidden></p>
 <label class="check tap" for="schedule-people"><input type="checkbox" id="schedule-people" aria-describedby="schedule-people-help"><span>${T("schedule_people_label")}</span></label><p id="schedule-people-help" class="muted" style="margin-top:0">${T("schedule_people_help")}</p>
 <p class="sub">${T("members_chosen")}</p><ul class="list" id="chosen"></ul><p id="members-note" class="muted" role="status"></p>
 <div id="book-box" hidden><label for="q">${T("search_label")}</label><input type="search" id="q" maxlength="100" autocomplete="off" placeholder="${T("search_placeholder")}" aria-describedby="q-note"><p id="q-note" class="muted" role="status" aria-live="polite">${T("search_hint")}</p>

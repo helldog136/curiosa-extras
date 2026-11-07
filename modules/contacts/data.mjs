@@ -212,8 +212,6 @@ async function writeStamp(ctx, idx) {
   idx.stampId = id;
   idx.stamp = v;
 }
-/** Change le tampon sans index (fin de migration) : toute copie du module relira le carnet. */
-export async function touchStamp(ctx) { await writeStamp(ctx, {}); forgetIndex(ctx); }
 
 /**
  * Verrou d'écriture par instance (les règles « un compte = une fiche », « même e-mail = même fiche » se vérifient puis s'écrivent sans
@@ -248,7 +246,6 @@ export async function withLock(ctx, fn) {
 //    au prix d'un parcours (jamais utilisé avec le vrai cœur 0.2.x). ──────────────────────────────────────────────────────────────────────────
 const KEY_OF = { contacts: (d) => (d?.email ? emailKey(d.email) : null), orgs: (d) => (d?.email ? emailKey(d.email) : null), notes: (d) => (idOk(d?.contactId) ? d.contactId : null), moved: (d) => (idOk(d?.from) ? d.from : null), meta: (d) => (typeof d?.k === "string" ? d.k : null) };
 const keyed = (ctx) => typeof ctx.api.store.getByKey === "function" && typeof ctx.api.store.listByKey === "function";
-export const storeHasKeys = keyed;
 export async function getByKey(ctx, collection, key) {
   if (keyed(ctx)) return ctx.api.store.getByKey(collection, key);
   let cursor = null, pages = 0;

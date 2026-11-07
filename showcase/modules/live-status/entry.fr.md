@@ -30,4 +30,4 @@ Montre une bannière « en direct » et votre lecteur sur votre accueil pendant 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.4.3.
+Disponible depuis la version 1.0.0. Version actuelle : 1.4.4.

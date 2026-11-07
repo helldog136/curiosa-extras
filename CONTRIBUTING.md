@@ -4,6 +4,12 @@ The language of the repository is **English**: documentation, code comments, ide
 
 Admin pages follow [docs/ERGONOMIE-ADMIN.md](docs/ERGONOMIE-ADMIN.md); a pull request that touches one contains an "Ergonomics" section.
 
+## Removing an old data conversion
+
+A module keeps its own data and converts it when its shape changes; the core has a support floor for itself, not for module data. Before you delete a `migrations` entry,
+a hand-over of a secret or any compatibility code of a module, read [docs/MIGRATIONS.md](docs/MIGRATIONS.md): when it may go, the `dataFloor` and the bridge tag the removal release must declare,
+and why a secret hand-over is removed in two releases.
+
 ## Adding a language
 
 Anyone can, **with files only**. English and French are official and always complete; every other language is a community language and may be partial (empty texts are shown in English). The full guide, with the glossary and the tone, is [TRANSLATING.md in the core](https://github.com/helldog136/Curiosa/blob/dev/docs/TRANSLATING.md).

@@ -67,6 +67,9 @@ export default ({
         },
     },
     async adminPanel(ctx) {
+        // The hand-over of the old Twitch settings runs at the data update; if the Twitch channel did not answer then, it is tried again here, when the page is opened
+        // (it never throws, and with nothing left to hand over it only reads three empty values). No hourly task any more.
+        await adoptLegacy(ctx);
         const blocks = [];
         // Sans application Twitch (Connecteur Twitch) ou sans chaîne (Ma Chaîne Twitch), le lecteur ne peut jamais s'afficher (sauf réglage « toujours ») :
         // on le dit en clair, avec le lien vers l'endroit où cela se règle.
@@ -92,8 +95,7 @@ export default ({
         }
         return blocks;
     },
-    // Reprise automatique des anciens identifiants Twitch (voir adopt.mjs) : à la mise à jour des données, puis réessayée chaque heure tant qu'il en reste
-    // (Chaîne Twitch momentanément indisponible). Une fois tout repris, la tâche ne lit plus rien d'autre que « vide » et s'arrête là.
+    // Reprise automatique des anciens identifiants Twitch (voir adopt.mjs) : à la mise à jour des données, puis réessayée à l'ouverture de cette page tant qu'il en reste
+    // (Chaîne Twitch momentanément indisponible). Plus de tâche horaire (1.4.4). Étape 2 de la suppression : une prochaine version retire cette reprise (docs/MIGRATIONS.md).
     migrations: { 2: async (ctx) => { await adoptLegacy(ctx); } },
-    tasks: { adopt: { everyMinutes: 60, run: async (ctx) => { await adoptLegacy(ctx); } } },
 });

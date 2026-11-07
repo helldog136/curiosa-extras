@@ -1,19 +1,18 @@
-// Contacts — module communautaire de Curiosa : LE carnet d'adresses privé du site (personnes ET organisations, comptes sur les réseaux,
-// catégories, notes, photo), fournisseur des services « contact.store » (formulaire de contact) et « contact.book » v2 (les autres modules).
+// Contacts: community module of Curiosa, THE private address book of the site (people AND organisations, accounts on the networks, categories, notes, photo),
+// provider of the services "contact.store" (contact form) and "contact.book" v2 (the other modules).
 //
-// UN SEUL PROPRIÉTAIRE : une personne n'existe qu'une fois, ici. Les autres modules (Partenariats, Raid, Story…) ne gardent que des identifiants
-// de fiche et lisent nom, pseudo et photo par le service ; ils offrent « privacy.subject » pour qu'une fusion ou un effacement les prévienne.
+// ONE OWNER: a person exists once, here. The other modules (Raid, Story...) only keep card identifiers and read name, handle and photo through
+// the service; they offer "privacy.subject" so that a merge or an erasure warns them.
 //
-// Fichiers : networks.mjs (réseaux, normalisation, photo), data.mjs (stockage + index mémoire borné), book.mjs (règles), subjects.mjs (appel des
-// « privacy.subject »), service.mjs (services), admin.mjs + ui.mjs (administration), tools.mjs (MCP), migrate.mjs (données 1 → 2).
-// Lot K2 : csv.mjs + import.mjs + import-admin.mjs (import CSV avec aperçu, par lots), export.mjs + downloads.mjs (export complet en flux), dedupe.mjs +
-// dedupe-admin.mjs (doublons et fusion), privacy.mjs + privacy-admin.mjs (export et effacement d'une personne), photos.mjs (rafraîchir la photo, seulement
-// quand une personne ouvre la fiche ou clique), nav.mjs + messages.mjs (sections et phrases d'erreur).
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
+// Files: networks.mjs (networks, normalisation, photo), data.mjs (storage + bounded in-memory index), book.mjs (rules), subjects.mjs (calls to
+// "privacy.subject"), service.mjs (services), admin.mjs + ui.mjs (administration), tools.mjs (MCP). No conversion code any more (see docs/MIGRATIONS.md).
+// Batch K2: csv.mjs + import.mjs + import-admin.mjs (CSV import with a preview, in batches), export.mjs + downloads.mjs (full streamed export), dedupe.mjs +
+// dedupe-admin.mjs (duplicates and merge), privacy.mjs + privacy-admin.mjs (export and erasure of one person), photos.mjs (refresh the photo, only
+// when a person opens the card or clicks), nav.mjs + messages.mjs (sections and error sentences).
+const v = new URL(import.meta.url).search; // the module version is passed on to the neighbouring files (otherwise the old code would stay cached after an update)
 const { default: service } = await import(`./service.mjs${v}`);
 const { default: admin } = await import(`./admin.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
-const { migrateTo2 } = await import(`./migrate.mjs${v}`);
 const { getIndex, readMany, card } = await import(`./book.mjs${v}`);
 const { default: downloads } = await import(`./downloads.mjs${v}`);
 
@@ -25,8 +24,10 @@ export default {
   ...tools, // mcp
   adminDownloads: downloads, // « contacts » (tout le carnet), « template », « importReport », « person » : servis par le cœur, droit « exporter le carnet »
   migrations: {
-    // 1.x → 2.0 : organisations en fiches, notes rangées par fiche (clé), identifiants conservés. À retirer en phase 3.
-    2: async (ctx) => { await migrateTo2(ctx); },
+    // Empty marker. The 1.x → 2.0 conversion (organisations as cards, notes keyed by card) was removed in 2.5.0: `dataFloor` is 2, so data still in
+    // version 1 is set aside instead of being marked up to date; the bridge is the tag v1.50.0 (Contacts 2.4.1). See docs/MIGRATIONS.md. The kit rule
+    // `data.version` wants one entry per `dataVersion` above 1; this one never runs on data that is already in version 2.
+    2: async () => {},
   },
   backup: {
     // Sauvegarde lisible : contacts.csv (fiches) et notes.csv (notes, avec l'id de leur fiche). Lu par pages ; 100 000 fiches au plus.

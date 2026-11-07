@@ -20,7 +20,7 @@
     "fr": "Votre carnet d'adresses privé : personnes et organisations, leurs comptes sur les réseaux, des catégories, des notes et une photo."
   },
   "since": "1.0.0",
-  "moduleVersion": "2.4.1",
+  "moduleVersion": "2.5.0",
   "requires": [],
   "worksWith": [
     "partnerships",

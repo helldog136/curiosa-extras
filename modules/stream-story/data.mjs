@@ -4,9 +4,9 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const P = await import(`./pure.mjs${v}`);
 const images = await import(`./images.mjs${v}`);
-const { LIMITS, oneLine, normalizeLogin, cleanConfig, safeImageUrl } = P;
+const { LIMITS, oneLine, cleanConfig } = P;
 
-const CO = "story_costreamers", ADHOC = "story_adhoc", MODELS = "story_models", PREFS = "story_prefs", PREPS = "story_preps", KEY = "story_key";
+const ADHOC = "story_adhoc", MODELS = "story_models", PREFS = "story_prefs", PREPS = "story_preps", KEY = "story_key";
 export const PREP_TTL_MS = 7 * 24 * 3600 * 1000, TOKEN_TTL_MS = 12 * 3600 * 1000, MAX_PREPS = 30;
 
 async function readList(ctx, collection) {
@@ -20,25 +20,10 @@ async function writeList(ctx, collection, items) {
 
 /* ───────────── Co-streamers ───────────── */
 // Les co-streamers viennent de Contacts : un modèle (ou une préparation) ne garde que l'IDENTIFIANT de la fiche. Ce que Story garde lui-même, c'est :
-//   - `story_adhoc` : une petite liste de « ponctuels » (20 au plus) : les personnes sans équivalent dans Contacts (reprises de l'ancienne liste quand Contacts ne pouvait pas les
-//     accueillir). Jamais une fiche ;
-//   - `story_costreamers` : l'ANCIENNE liste de la version 1, laissée telle quelle tant que la migration n'a pas pu la confier à Contacts (lue en repli, puis effacée à la fin).
-// Migration « à retirer en phase 3 » : voir migrate.mjs.
-
-/** Les adresses d'image gardées : seulement https (c'est le serveur qui les relit, via la liste blanche de images.mjs). */
-const imageOf = (x) => { const u = safeImageUrl(x); return /^https:\/\//.test(u) ? u : ""; };
-const cleanOld = (x) => {
-  const n = normalizeLogin(x?.login);
-  return n.login ? { login: n.login, name: oneLine(x?.name, LIMITS.displayName), image: imageOf(x?.image) } : null;
-};
-/** L'ancienne liste (version 1) : { docs, items }. Les doublons et les entrées mal formées sont écartés. */
-export async function readLegacy(ctx) {
-  const docs = await ctx.api.store.list(CO, { limit: 5 });
-  const seen = new Set(), items = [];
-  for (const doc of docs) for (const x of Array.isArray(doc?.data?.items) ? doc.data.items : []) { const m = cleanOld(x); if (m && !seen.has(m.login)) { seen.add(m.login); items.push(m); } }
-  return { docs, items: items.slice(0, LIMITS.savedCostreamers) };
-}
-export async function removeLegacy(ctx) { for (const doc of await ctx.api.store.list(CO, { limit: 5 })) await ctx.api.store.remove(doc.id); }
+//   - `story_adhoc` : une petite liste de « ponctuels » (20 au plus) : les personnes sans équivalent dans Contacts. Jamais une fiche.
+//
+// `story_costreamers` (the version 1 list) is no longer read or written (2.9.0, data floor 2, bridge tag v1.50.0, see docs/MIGRATIONS.md): a copy that was never moved stays
+// in the store, declared in `legacyCollections` so that the Upkeep page of the core shows it.
 
 const cleanAdhoc = (x) => {
   const m = P.cleanMember({ login: x?.login, name: x?.name, image: x?.image });
@@ -68,16 +53,6 @@ export async function removeAdhoc(ctx, id) {
   await writeList(ctx, ADHOC, rest);
   return { ok: true, items: rest };
 }
-/**
- * Les ponctuels proposés dans l'éditeur : ceux de la petite liste, puis (en repli, tant que la migration n'a pas eu lieu) ceux de l'ancienne liste.
- * [{ id, login, name, image, legacy }] ; `id` vide pour un ancien (il ne s'efface pas : la migration s'en charge).
- */
-export async function readPickable(ctx) {
-  const adhoc = await readAdhoc(ctx), have = new Set(adhoc.map((m) => P.memberKey(m)));
-  const legacy = (await readLegacy(ctx)).items.filter((m) => !have.has(P.memberKey(m))).map((m) => ({ id: "", ...m, legacy: true }));
-  return [...adhoc.map((m) => ({ ...m, legacy: false })), ...legacy].slice(0, LIMITS.adhoc + LIMITS.savedCostreamers);
-}
-
 /** Remet une saisie « pour cette vidéo seulement » en ordre : { ok, entry } ou { error: "empty" | "image" }. L'image doit pouvoir être relayée (liste blanche), sinon elle est refusée. */
 export function adhocEntry(input) {
   const m = P.cleanMember({ login: input?.login, name: input?.name, image: input?.image });
