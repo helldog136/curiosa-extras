@@ -5,7 +5,8 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.2.1",
+  "version": "1.2.2",
+  "menuGroup": "content",
   "minCore": "0.6.0",
   "description": {
     "fr": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",

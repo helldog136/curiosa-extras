@@ -29,4 +29,4 @@ Write your streams here, with day, time, games and weekly repeats. Your site sho
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.0.
+Available since version 1.0.0. Current version: 1.2.1.

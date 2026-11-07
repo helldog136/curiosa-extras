@@ -6,7 +6,8 @@
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.3.0",
+  "version": "2.3.1",
+  "menuGroup": "tools",
   "platform": "twitch",
   "description": {
     "fr": "Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Twitch, pour choisir qui raider.",

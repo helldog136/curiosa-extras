@@ -6,7 +6,8 @@
     "en": "Thank-you wall",
     "fr": "Mur des remerciements"
   },
-  "version": "1.2.2",
+  "version": "1.2.3",
+  "menuGroup": "community",
   "description": {
     "en": "A thank-you page for your community: cards with photos, one person in the spotlight each month. Names stay in Contacts.",
     "fr": "Une page de remerciements pour votre communauté : cartes avec photos, une personne à l'honneur chaque mois. Les noms restent dans Contacts."

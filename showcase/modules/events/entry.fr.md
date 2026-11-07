@@ -41,4 +41,4 @@ Un agenda de vos événements et formations : les prochaines dates, un calendrie
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.2.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.2.2.

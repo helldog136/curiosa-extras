@@ -40,4 +40,4 @@ Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de v
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.7.3.
+Disponible depuis la version 1.0.0. Version actuelle : 2.7.4.

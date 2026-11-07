@@ -38,4 +38,4 @@ A clear queue for anyone who creates on request: open, full or closed, with your
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.2.
+Available since version 1.0.0. Current version: 1.0.3.

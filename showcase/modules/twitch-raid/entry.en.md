@@ -33,4 +33,4 @@ A panel for OBS that shows which partners are live on Twitch, so you can choose 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.3.0.
+Available since version 1.0.0. Current version: 2.3.1.

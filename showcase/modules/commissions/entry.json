@@ -20,7 +20,7 @@
     "fr": "Une file claire pour qui crée sur demande : ouverte, complète ou fermée, avec vos formules et un court formulaire."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.2",
+  "moduleVersion": "1.0.3",
   "requires": [],
   "worksWith": [
     "contacts"

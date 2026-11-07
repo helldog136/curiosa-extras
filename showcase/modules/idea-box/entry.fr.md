@@ -36,4 +36,4 @@ Laissez votre public vous envoyer des idées. Un champ, un bouton, puis une list
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.0.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.0.2.

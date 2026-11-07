@@ -20,7 +20,7 @@
     "fr": "Votre suivi privé des partenariats : les marques que vous approchez, leur statut, les relances et un journal. Il n'a aucune page publique."
   },
   "since": "1.0.0",
-  "moduleVersion": "2.2.0",
+  "moduleVersion": "2.2.1",
   "requires": [
     "contacts"
   ],

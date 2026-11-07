@@ -5,7 +5,8 @@
     "en": "Polls",
     "fr": "Sondages"
   },
-  "version": "1.7.0",
+  "version": "1.7.1",
+  "menuGroup": "community",
   "minCore": "0.5.0",
   "description": {
     "en": "Ask your audience a question. One vote per person with no account, results as bars, a live view for OBS.",

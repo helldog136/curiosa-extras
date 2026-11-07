@@ -36,4 +36,4 @@ Ask your audience a question and watch the answers come in as bars. One vote per
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.7.0.
+Available since version 1.0.0. Current version: 1.7.1.

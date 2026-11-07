@@ -30,4 +30,4 @@ Your private notebook for videos, articles and posts. Ideas, work in progress, p
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.1.
+Available since version 1.0.0. Current version: 1.0.2.

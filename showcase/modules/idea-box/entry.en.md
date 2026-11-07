@@ -36,4 +36,4 @@ Let your audience send you ideas. One field, one button, then a list of the idea
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.1.
+Available since version 1.0.0. Current version: 1.0.2.

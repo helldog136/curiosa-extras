@@ -20,7 +20,7 @@
     "fr": "Répondez à quelques questions simples et obtenez vos mentions légales, votre page de confidentialité et celle des cookies. Elles existent en deux langues."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.2",
+  "moduleVersion": "1.0.3",
   "requires": [],
   "worksWith": [
     "pages"

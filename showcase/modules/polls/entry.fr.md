@@ -36,4 +36,4 @@ Posez une question à votre public et regardez les réponses arriver en barres. 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.7.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.7.1.

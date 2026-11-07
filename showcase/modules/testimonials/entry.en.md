@@ -33,4 +33,4 @@ Collect reviews from people who like what you do. Every review waits for your ap
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.3.0.
+Available since version 1.0.0. Current version: 1.3.1.

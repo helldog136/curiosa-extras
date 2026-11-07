@@ -36,4 +36,4 @@ Answer a few simple questions and get your legal notice, privacy page and cookie
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.2.
+Available since version 1.0.0. Current version: 1.0.3.

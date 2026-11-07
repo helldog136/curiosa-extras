@@ -5,7 +5,8 @@
     "en": "Press kit",
     "fr": "Kit presse"
   },
-  "version": "1.1.0",
+  "version": "1.1.1",
+  "menuGroup": "content",
   "main": "index.mjs",
   "description": {
     "en": "A public page presenting your identity to press and partners: presentation, main facts, logos, colors, fonts, contact. It uses your site by default. Fill in your own values in its “Settings” tab, or ask an assistant.",

@@ -5,7 +5,8 @@
     "fr": "Témoignages",
     "en": "Testimonials"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
+  "menuGroup": "community",
   "minCore": "0.6.0",
   "description": {
     "fr": "Collectez des avis : un lien « Laissez un avis » à partager, chaque avis arrive en attente et ne paraît qu'après votre accord, avec étoiles facultatives, grille ou défilement lent, favoris et trois avis sur l'accueil.",

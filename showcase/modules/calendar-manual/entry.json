@@ -20,7 +20,7 @@
     "fr": "Écrivez vos streams ici, avec le jour, l'heure, les jeux et les répétitions chaque semaine. Votre site les montre, sans compte Google à régler."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.0",
+  "moduleVersion": "1.2.1",
   "requires": [],
   "worksWith": [
     "planning",

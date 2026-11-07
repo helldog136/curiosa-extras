@@ -30,4 +30,4 @@ Ajoute un formulaire de contact sous une page de votre choix. Chaque message dev
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.0.4.
+Disponible depuis la version 1.0.0. Version actuelle : 1.0.5.

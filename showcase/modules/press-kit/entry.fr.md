@@ -35,4 +35,4 @@ Une page publique qui présente votre identité à la presse et aux partenaires.
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.1.1.

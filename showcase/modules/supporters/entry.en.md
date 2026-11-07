@@ -39,4 +39,4 @@ Thank your supporters from a patronage platform. The public page shows only the 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.0.
+Available since version 1.0.0. Current version: 1.1.1.

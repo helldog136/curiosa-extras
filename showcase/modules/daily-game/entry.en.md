@@ -38,4 +38,4 @@ A small game once a day, to give people a reason to come back. One question, a f
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.2.
+Available since version 1.0.0. Current version: 1.1.3.
