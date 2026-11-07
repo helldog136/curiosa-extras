@@ -37,4 +37,4 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.9.1.
+Disponible depuis la version 1.0.0. Version actuelle : 2.9.2.
