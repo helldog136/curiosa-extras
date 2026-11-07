@@ -6,7 +6,7 @@
     "en": "Live status",
     "fr": "Statut du live"
   },
-  "version": "1.4.3",
+  "version": "1.4.4",
   "platform": "twitch",
   "main": "index.mjs",
   "description": {

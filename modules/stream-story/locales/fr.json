@@ -146,8 +146,6 @@
   "ui_a_image": "Photo (facultatif)",
   "ui_a_image_help": "Collez l'adresse d'une photo de profil Twitch, YouTube ou Bluesky (clic droit sur la photo, « Copier l'adresse de l'image »). Sans photo, la vidéo montre les initiales.",
   "ui_saved_help": "Des personnes sans fiche dans Contacts, gardées ici (par exemple des co-streamers de votre liste d'avant que Contacts n'a pas pu accueillir). Ajoutez-les à la vidéo d'un clic.",
-  "ui_legacy_tag": "liste d'avant",
-  "ui_migrated_note": "Les co-streamers de votre liste d'avant sont maintenant dans Contacts : {created} nouvelle(s) fiche(s), {existing} déjà connue(s), {kept} gardé(s) ici comme ponctuels.",
   "ui_net_web": "Web",
   "ui_net_other": "Autre",
   "src_calendar": "Planning",

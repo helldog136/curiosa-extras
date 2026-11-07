@@ -35,4 +35,4 @@ Your private address book: people and organisations, their accounts on the netwo
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.4.1.
+Available since version 1.0.0. Current version: 2.5.0.

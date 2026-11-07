@@ -16,7 +16,6 @@ const data = await import("../modules/stream-story/data.mjs");
 const src = await import("../modules/stream-story/sources.mjs");
 const images = await import("../modules/stream-story/images.mjs");
 const book = await import("../modules/stream-story/contacts.mjs");
-const migrate = await import("../modules/stream-story/migrate.mjs");
 
 const SITE = "https://site.example.test";
 const TW = "https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_image-300x300.png";
@@ -38,9 +37,9 @@ const act = async (ctx, token, body) => json(await call(ctx, "act", { method: "P
 const q = (o) => `?${new URLSearchParams(o)}`;
 const timing0 = { ...src.timing }, img0 = { ...images.timing };
 const realFetch = globalThis.fetch;
-beforeEach(() => { Object.assign(src.timing, timing0, { bookMs: 120, providersMs: 120, migrateMs: 400, routeMs: 800 }); Object.assign(images.timing, img0); images.resetImages(); });
+beforeEach(() => { Object.assign(src.timing, timing0, { bookMs: 120, providersMs: 120, routeMs: 800 }); Object.assign(images.timing, img0); images.resetImages(); });
 afterEach(() => { globalThis.fetch = realFetch; Object.assign(src.timing, timing0); Object.assign(images.timing, img0); });
-const storeDump = async (ctx) => JSON.stringify(await Promise.all(["story_models", "story_adhoc", "story_preps", "story_costreamers", "story_key"].map((c) => ctx.api.store.list(c, { limit: 200 }))));
+const storeDump = async (ctx) => JSON.stringify(await Promise.all(["story_models", "story_adhoc", "story_preps", "story_key"].map((c) => ctx.api.store.list(c, { limit: 200 }))));
 
 /* ───────────── Référencement ───────────── */
 
@@ -96,7 +95,7 @@ test("Contacts en panne (exception) : la recherche répond « failed », sans ca
 
 test("Contacts absent : Story marche (saisie « pour cette vidéo seulement », modèles, IA), l'éditeur le dit, et le panneau propose d'installer un module qui offre le SERVICE contact.book (jamais un module nommé)", async () => {
   const ctx = mk(), token = await data.mintToken(ctx);
-  const d = await get(ctx, token, "data"); assert.deepEqual([d.ok, d.contacts, d.adhoc, d.migrated], [true, "absent", [], null]);
+  const d = await get(ctx, token, "data"); assert.deepEqual([d.ok, d.contacts, d.adhoc], [true, "absent", []]);
   for (const [route, search] of [["people", q({ q: "alice" })], ["members", "?id=c1"], ["categories", ""], ["category", "?id=k1"]]) {
     const r = await get(ctx, token, route, search); assert.deepEqual([r.ok, r.state], [true, "absent"], route);
   }
@@ -262,113 +261,26 @@ test("ajouter depuis une catégorie : comptes Twitch par pages de 20, une person
   assert.equal((await get(ctx, token, "category", q({ id: "x".repeat(200) }))).error, "invalid"); assert.equal((await get(ctx, token, "category")).error, "invalid"); assert.equal(cb.calls.length, n);
 });
 
-/* ───────────── Migration ───────────── */
+/* ───────────── The version 1 list is gone (data floor 2, bridge tag v1.50.0, see docs/MIGRATIONS.md) ───────────── */
 
-const legacyList = (ctx, items) => ctx.api.store.add("story_costreamers", { items });
-const accountsOf = (cb) => cb.dump().contacts.flatMap((c) => c.accounts.map((a) => [c.name, a.network, a.handle]));
-async function seedV1(ctx) {
-  await legacyList(ctx, [{ login: "alice_tv", name: "Alice", image: TW }, { login: "bob_x", name: "", image: "" }, { login: "carl_99", name: "Carl", image: EVIL }]);
-  await ctx.api.store.add("story_models", { items: [
-    { id: "aaaaaa11", name: "Soirée", config: { style: "poster", costreamers: ["alice_tv", "zoe_live", "bob_x"] } },
-    { id: "bbbbbb22", name: "Vide", config: { style: "minimal", costreamers: [] } },
-  ] });
-  await ctx.api.store.add("story_preps", { pid: "p".repeat(22), config: { style: "neon", costreamers: ["carl_99"] }, createdAt: Date.now(), expiresAt: Date.now() + 86_400_000 });
-}
-
-test("migration : chaque ancien co-streamer devient une fiche (upsertByAccount twitch, source stream-story), les modèles et préparations gardent l'identifiant, les saisies hors liste restent ponctuelles, l'ancienne liste est effacée à la fin", async () => {
-  assert.equal(manifest.dataVersion, 2); assert.equal(typeof def.migrations[2], "function");
+test("the 2.0.0 conversion is gone: an empty marker that writes nothing, a data floor, and the old list is neither read, written nor exported but declared as a leftover", async () => {
+  assert.deepEqual([manifest.dataVersion, manifest.dataFloor], [2, 2]);
+  assert.deepEqual(manifest.legacyCollections, ["story_costreamers"]); assert.deepEqual(manifest.inertLegacyCollections, ["story_costreamers"]);
+  assert.equal(typeof def.migrations[2], "function");
+  assert.ok(!fs.existsSync(new URL("../modules/stream-story/migrate.mjs", import.meta.url)), "the conversion code is gone");
   const cb = fakeContactBook(), ctx = mk(cb, { migration: true });
-  const existing = cb.seedContact({ name: "Alice Martin (déjà là)", accounts: [{ network: "twitch", handle: "Alice_TV" }] });
-  await seedV1(ctx);
+  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "Alice", image: TW }, { login: "bob_x", name: "", image: "" }] });
+  await ctx.api.store.add("story_models", { items: [{ id: "aaaaaa11", name: "Soirée", config: { style: "poster", costreamers: ["alice_tv", "zoe_live"] } }] });
+  const before = JSON.stringify([await ctx.api.store.list("story_costreamers"), await ctx.api.store.list("story_models")]);
   await def.migrations[2](ctx);
-  const ups = cb.calls.filter((c) => c[1] === "upsertByAccount").map((c) => c[2]);
-  assert.deepEqual(ups, [
-    { network: "twitch", handle: "alice_tv", kind: "person", name: "Alice", source: "stream-story" }, { network: "twitch", handle: "bob_x", kind: "person", source: "stream-story" }, { network: "twitch", handle: "carl_99", kind: "person", name: "Carl", source: "stream-story" },
-  ]);
-  const d = cb.dump().contacts;
-  assert.equal(d.length, 3, "Alice existait déjà : elle n'est pas dupliquée");
-  assert.equal(d.find((c) => c.id === existing.id).name, "Alice Martin (déjà là)", "le nom d'une fiche existante n'est jamais écrasé");
-  const idOf = (handle) => d.find((c) => c.accounts.some((a) => a.handle === handle)).id;
-  const models = await data.readModels(ctx);
-  assert.deepEqual(models[0].config.costreamers, [{ id: existing.id }, { login: "zoe_live", name: "", image: "" }, { id: idOf("bob_x") }], "références par identifiant ; une saisie sans équivalent reste pour cette vidéo seulement");
-  const prep = (await ctx.api.store.list("story_preps"))[0].data.config.costreamers;
-  assert.deepEqual(prep, [{ id: idOf("carl_99") }]);
-  assert.equal(await ctx.api.store.count("story_costreamers"), 0, "l'ancienne liste est remplacée");
-  assert.deepEqual(accountsOf(cb).map((a) => a[1]), ["twitch", "twitch", "twitch"]);
-  const dump = await storeDump(ctx);
-  for (const copy of ["Alice", "Carl", "bob_x", "alice_tv", "carl_99", "jtv_user_pictures"]) assert.ok(!dump.includes(copy), `« ${copy} » ne reste dans Story qu'en référence`);
-});
-
-test("migration : rejouable deux fois (et plus), aucun doublon ni de fiche, ni de ponctuel, ni de référence ; la photo saisie est confiée à Contacts (jamais gardée par Story)", async () => {
-  const cb = fakeContactBook(), ctx = mk(cb, { migration: true });
-  await seedV1(ctx);
-  const first = await migrate.migrateCostreamers(ctx);
-  assert.deepEqual([first.state, first.created, first.existing, first.kept, first.models], ["done", 3, 0, 0, 2]);
-  const snapshot = JSON.stringify([cb.dump().contacts.map((c) => [c.id, c.name, c.accounts.length]), await ctx.api.store.list("story_models"), await ctx.api.store.list("story_adhoc")]);
-  for (let i = 0; i < 3; i++) { await def.migrations[2](ctx); assert.equal((await migrate.migrateCostreamers(ctx)).state, "none"); assert.equal((await migrate.ensureMigrated(ctx)).state, "none"); }
-  assert.equal(JSON.stringify([cb.dump().contacts.map((c) => [c.id, c.name, c.accounts.length]), await ctx.api.store.list("story_models"), await ctx.api.store.list("story_adhoc")]), snapshot);
-  const profile = cb.calls.filter((c) => c[1] === "setAccountProfile");
-  assert.equal(profile.length, 1, "une seule photo sur un hôte relayable (Alice) ; celle d'un hôte inconnu n'est pas confiée");
-  assert.deepEqual([profile[0][2].avatar, profile[0][2].source], [TW, "stream-story"]);
-  const alice = cb.dump().contacts.find((c) => c.accounts.some((a) => a.handle === "alice_tv"));
-  assert.equal(alice.accounts[0].avatar, TW);
-  // rejeu APRÈS une interruption : la liste n'est pas effacée tant que tout n'est pas confié, le rejeu ne duplique rien
-  const cb2 = fakeContactBook(), ctx2 = mk(cb2);
-  await seedV1(ctx2);
-  const real = cb2.services["contact.book"].upsertByAccount; let n = 0;
-  cb2.services["contact.book"].upsertByAccount = async (a) => { if (++n === 2) return new Promise(() => {}); return real(a); };
-  const cut = await migrate.migrateCostreamers(ctx2);
-  assert.equal(cut.state, "waiting"); assert.equal(cb2.dump().contacts.length, 1, "une fiche est créée avant l'interruption");
-  assert.equal(await ctx2.api.store.count("story_costreamers"), 1, "rien n'est effacé");
-  assert.deepEqual((await data.readModels(ctx2))[0].config.costreamers.map((m) => m.login), ["alice_tv", "zoe_live", "bob_x"], "les modèles ne sont pas encore changés");
-  cb2.services["contact.book"].upsertByAccount = real;
-  const done = await migrate.migrateCostreamers(ctx2);
-  assert.deepEqual([done.state, done.created, done.existing], ["done", 2, 1]);
-  assert.equal(cb2.dump().contacts.length, 3);
-});
-
-test("migration sans Contacts (ou Contacts v2 muet) : rien n'est perdu, l'ancienne liste est gardée telle quelle et lue en repli, et la migration se rejoue quand Contacts est installé", async () => {
-  const ctx = mk(null, { migration: true });
-  await seedV1(ctx);
-  await def.migrations[2](ctx);
-  assert.equal(await ctx.api.store.count("story_costreamers"), 1, "ancienne liste intacte");
-  assert.deepEqual((await data.readModels(ctx))[0].config.costreamers.map((m) => m.login), ["alice_tv", "zoe_live", "bob_x"], "les modèles se lisent encore (pseudos pour cette vidéo seulement)");
   const token = await data.mintToken(ctx);
   const d = await get(ctx, token, "data");
-  assert.deepEqual(d.adhoc.map((m) => [m.login, m.name, m.legacy]), [["alice_tv", "Alice", true], ["bob_x", "", true], ["carl_99", "Carl", true]], "repli : l'ancienne liste est proposée comme ponctuels");
-  assert.equal(d.contacts, "absent"); assert.equal(d.migrated, null);
-  // Contacts arrive plus tard : l'éditeur rejoue la migration
-  const cb = fakeContactBook(); ctx.api.services.providers = async () => [{ id: "p" }]; ctx.api.services.call = (s, m, a) => cb.services[s][m](a).then((value) => ({ ok: true, value }));
-  const later = await get(ctx, token, "data");
-  assert.deepEqual(later.migrated, { created: 3, existing: 0, kept: 0 }, "la personne en est informée");
-  assert.equal(later.contacts, "ok"); assert.deepEqual(later.adhoc, []);
-  assert.equal(await ctx.api.store.count("story_costreamers"), 0);
-  assert.equal(cb.dump().contacts.length, 3);
-  assert.equal((await get(ctx, token, "data")).migrated, null, "ne s'annonce qu'une fois");
-});
-
-test("migration : une personne que Contacts refuse (carnet plein) reste dans les ponctuels de Story, avec son nom et sa photo ; une erreur passagère n'en fait pas un ponctuel", async () => {
-  const cb = fakeContactBook({ maxContacts: 2 }), ctx = mk(cb);
-  await seedV1(ctx);
-  const r = await migrate.migrateCostreamers(ctx);
-  assert.deepEqual([r.state, r.created, r.kept], ["done", 2, 1]);
-  assert.deepEqual((await data.readAdhoc(ctx)).map(({ login, name, image }) => ({ login, name, image })), [{ login: "carl_99", name: "Carl", image: EVIL }]);
-  assert.equal(await ctx.api.store.count("story_costreamers"), 0);
-  assert.deepEqual((await data.readModels(ctx))[0].config.costreamers.map((m) => m.id ? "ref" : m.login), ["ref", "zoe_live", "ref"]);
-  const flaky = fakeContactBook(), ctx2 = mk(flaky); await seedV1(ctx2); flaky.faults.throw.add("upsertByAccount");
-  const w = await migrate.migrateCostreamers(ctx2);
-  assert.equal(w.state, "waiting"); assert.equal((await data.readAdhoc(ctx2)).length, 0); assert.equal(await ctx2.api.store.count("story_costreamers"), 1);
-});
-
-test("migration à grande échelle : 60 anciens co-streamers (le plafond de la version 1) et 30 modèles de 6 co-streamers ; un seul passage borné, puis plus rien à faire", async () => {
-  const cb = fakeContactBook(), ctx = mk(cb);
-  const old = Array.from({ length: 60 }, (_, i) => ({ login: `chaine_${String(i).padStart(3, "0")}`, name: `Nom ${i}`, image: "" }));
-  await legacyList(ctx, old);
-  await ctx.api.store.add("story_models", { items: Array.from({ length: 30 }, (_, k) => ({ id: `m${String(k).padStart(7, "0")}`, name: `Modèle ${k}`, config: { costreamers: old.slice(k, k + 6).map((x) => x.login) } })) });
-  const t0 = Date.now(), r = await migrate.migrateCostreamers(ctx);
-  assert.deepEqual([r.state, r.created, r.models], ["done", 60, 30]); assert.ok(Date.now() - t0 < 5000);
-  assert.ok((await data.readModels(ctx)).every((m) => m.config.costreamers.length === 6 && m.config.costreamers.every((e) => e.id && Object.keys(e).length === 1)));
-  assert.equal(cb.dump().contacts.length, 60);
+  assert.deepEqual([d.ok, d.adhoc, "migrated" in d], [true, [], false], "the old list is not offered as people to add, and nothing is announced");
+  assert.equal(JSON.stringify([await ctx.api.store.list("story_costreamers"), await ctx.api.store.list("story_models")]), before, "nothing is rewritten");
+  assert.deepEqual(cb.calls.filter((c) => c[1] === "upsertByAccount"), [], "no card is created in Contacts");
+  assert.deepEqual((await data.readModels(ctx))[0].config.costreamers.map((m) => m.login), ["alice_tv", "zoe_live"], "a model with handles still reads as 'for this video only' entries");
+  const files = (await def.backup.readable(ctx)).map((f) => f.path);
+  assert.ok(!files.includes("costreamers.csv"), "the old list is no longer exported");
 });
 
 /* ───────────── Les outils pour l'IA avec Contacts ───────────── */

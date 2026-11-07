@@ -1,9 +1,7 @@
-// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés). (La reprise des contacts d'avant la 2.0, temporaire, est dans migrate.mjs.)
+// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés).
 const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
 const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
 const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, healLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
-// MIGRATION À RETIRER EN PHASE 3 : la reprise unique des contacts d'avant la 2.0 (voir migrate.mjs).
-const { migrationNotices } = await import(`./migrate.mjs${v}`);
 
 export default {
   // ── Tableau de bord du cœur : « n partenaires à relancer » ─────────────────────────────────────────────────
@@ -51,10 +49,9 @@ export default {
       ],
     });
 
-    // Bandeaux : module Contacts absent, reprise des contacts en attente (ou à vérifier).
+    // Bandeau : module Contacts absent.
     const notices = [];
     if (!hasBook) notices.push({ type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` });
-    notices.push(...(await migrationNotices(ctx))); // MIGRATION À RETIRER EN PHASE 3
 
     // Modification d'une fiche
     const editing = query.edit && partners.find((p) => p.id === query.edit);

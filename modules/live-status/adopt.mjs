@@ -1,7 +1,7 @@
 // Reprise automatique des identifiants Twitch que ce module gardait dans ses anciens réglages (`legacySettings`, jamais affichés) : ils sont copiés UNE fois dans la Chaîne
 // Twitch par le service `twitch.live` (méthode `adopt`), puis effacés d'ici. Un module n'écrit jamais dans les réglages d'un autre : la copie passe par le service, qui ne
 // remplit que ses champs vides (une valeur déjà présente n'est jamais écrasée). Les valeurs ne transitent qu'en mémoire : jamais affichées, journalisées ni renvoyées.
-// Appelée par la migration des données (version 2) ; rejouée par la tâche `adopt` tant qu'il reste quelque chose (Chaîne Twitch momentanément indisponible).
+// Appelée par la migration des données (version 2) ; rejouée à l'ouverture de la page d'administration tant qu'il reste quelque chose (Chaîne Twitch momentanément indisponible).
 // Même « version » que ce fichier (voir index.mjs) : un `import … from "./source.mjs"` sans elle garderait l'ANCIEN source.mjs en mémoire après une mise à jour.
 const { SERVICE, CHANNEL_RE } = await import(new URL(`./source.mjs${new URL(import.meta.url).search}`, import.meta.url).href);
 

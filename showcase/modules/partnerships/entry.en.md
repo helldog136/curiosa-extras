@@ -33,4 +33,4 @@ Your private partnership pipeline: the brands you approach, their status, follow
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.1.0.
+Available since version 1.0.0. Current version: 2.2.0.

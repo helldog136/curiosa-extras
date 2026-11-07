@@ -1,4 +1,4 @@
-// Mise à jour de Story d'annonce DANS UN SITE QUI TOURNE (2.1.0 chargée, puis la version courante) : le cœur importe `index.mjs?v=<commit>` ; Node garde en mémoire chaque adresse déjà importée,
+// Mise à jour de Story d'annonce DANS UN SITE QUI TOURNE (2.4.0 chargée, puis la version courante) : le cœur importe `index.mjs?v=<commit>` ; Node garde en mémoire chaque adresse déjà importée,
 // donc un `import … from "./x.mjs"` SANS cette version reprendrait l'ANCIEN fichier (sans les exports ajoutés en 2.2.0, ex. WATERMARK_TEXT de pure.mjs) et le module deviendrait « non chargeable ».
 // Les autres tests chargent le module dans un processus neuf : ils ne voient pas ce piège (voir tests/live-status-update.test.mjs, 1.16.1). Celui-ci rejoue l'ordre réel des choses dans UN processus.
 import test from "node:test";
@@ -15,13 +15,14 @@ const load = (dir, v) => import(`${pathToFileURL(path.join(dir, "index.mjs")).hr
 // Fichiers chargés par le SERVEUR (les autres, listés dans page.mjs, ne sont servis qu'au navigateur : « Cache-Control: no-cache »).
 const BROWSER = new Set(["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]);
 
-test("mise à jour 2.1.0 → version courante dans le même processus : le module se recharge et expose les nouveautés", async () => {
+test("mise à jour 2.4.0 → version courante dans le même processus : le module se recharge, la conversion de la liste de la version 1 a disparu (plancher 2)", async () => {
   const dir = makeTempDir("story-update-");
   try {
-    copy(path.join(here, "fixtures/stream-story-2.1.0"), dir);
+    copy(path.join(here, "fixtures/stream-story-2.4.0"), dir);
     const before = (await load(dir, "ancien")).default;
     assert.ok(before.routes && typeof before.routes.studio === "function", "l'ancienne version se charge");
-    assert.equal(before.routes.wordmark, undefined, "2.1.0 n'a pas la route wordmark");
+    assert.ok(fs.existsSync(path.join(dir, "migrate.mjs")), "2.4.0 porte encore la conversion");
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8")).dataFloor, undefined, "2.4.0 n'a pas de plancher de données");
 
     // Le cœur remplace les fichiers du dossier (même adresse), puis importe avec la nouvelle version.
     copy(path.join(here, "../modules/stream-story"), dir);
@@ -29,6 +30,9 @@ test("mise à jour 2.1.0 → version courante dans le même processus : le modul
     assert.equal(typeof after.routes.wordmark, "function", "la version courante expose la route wordmark");
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
     assert.ok(manifest.version.startsWith("2."), "manifeste de la version courante");
+    assert.equal(manifest.dataFloor, 2, "un site dont les données sont encore en version 1 passe par l'étiquette v1.50.0");
+    assert.ok(!fs.existsSync(path.join(dir, "migrate.mjs")), "le dossier est remplacé : plus de fichier de conversion");
+    assert.equal(await after.migrations[2]({ api: { store: new Proxy({}, { get: () => { throw new Error("the marker must not touch the store"); } }) } }), undefined, "le marqueur ne touche à rien");
 
     // Les fichiers voisins viennent bien de la NOUVELLE version (pure.mjs porte WATERMARK_TEXT ; DEFAULT_CONFIG.watermark existe).
     const pure = await import(`${pathToFileURL(path.join(dir, "pure.mjs")).href}?v=nouveau`);
@@ -44,8 +48,8 @@ test("mise à jour 2.1.0 → version courante dans le même processus : le modul
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-// Les deux départs réels : 2.3.0 (avant les jaquettes de jeux) et 2.4.0 (jaquettes via le service `game.cover`, tête de master avant la refonte). La fixture 2.4.0 est le dossier du module tel que publié en 2.4.0.
-for (const from of ["2.3.0", "2.4.0"]) {
+// Le départ réel conservé : 2.4.0 (jaquettes via le service `game.cover`, tête de master avant la refonte). La fixture 2.4.0 est le dossier du module tel que publié en 2.4.0 (les fixtures 2.1.0 et 2.3.0 ont été retirées avec la conversion qu'elles portaient).
+for (const from of ["2.4.0"]) {
   test(`mise à jour ${from} → 2.5.0 (éditeur en 3 étapes) dans le même processus : la page sert la nouvelle interface, les nouvelles fonctions de pure.mjs existent, les réglages, outils et le service game.cover sont conservés`, async () => {
     const dir = makeTempDir("story-update-");
     try {
@@ -65,7 +69,7 @@ for (const from of ["2.3.0", "2.4.0"]) {
       assert.ok(html.includes('id="step-btn-3"') && html.includes('id="generate-now"') && html.includes('id="event-change"'), "2.5.0 : l'assistant en 3 étapes est servi");
       assert.ok(html.includes("Changer d&#39;événement") || html.includes("Changer d'événement"));
       const manifest = JSON.parse(fs.readFileSync(path.join(dir, "module.json"), "utf8"));
-      assert.equal(manifest.version, "2.8.0"); assert.equal(manifest.dataVersion, 2, "aucune migration de données");
+      assert.equal(manifest.version, "2.9.0"); assert.deepEqual([manifest.dataVersion, manifest.dataFloor], [2, 2], "aucune donnée à convertir : plancher 2");
       for (const tool of ["story_models", "story_next_streams", "story_events", "story_prepare"]) assert.ok(manifest.mcp.some((t) => t.name === tool) && typeof after.mcp[tool] === "function", tool);
       for (const route of ["studio", "events", "cover", "data", "prep", "act", "people", "members", "categories", "category", "streams", "img", "wordmark"]) assert.equal(typeof after.routes[route], "function", route);
       const keys = manifest.settings.map((x) => x.key);

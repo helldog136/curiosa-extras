@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.8.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.9.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -162,7 +162,7 @@ test("données de l'éditeur : modèles, ponctuels, état de Contacts, logo du s
   const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} } });
   const token = await data.mintToken(ctx);
   const r = await json(await call(ctx, "data", { token }));
-  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.migrated, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", null, { lang: "fr", watermark: false }], "sans Contacts : « absent »");
+  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", watermark: false }], "sans Contacts : « absent »");
   assert.ok(!("costreamers" in r) && !("partners" in r), "plus de liste « à moi » ni de partenaires du Raid");
   const ext = mk({ brand: { name: "X", logos: [{ kind: "square", src: "https://cdn.evil/logo.png" }], logo: "https://cdn.evil/l.png", colors: [], font: {} } });
   assert.equal((await json(await call(ext, "data", { token: await data.mintToken(ext) }))).brand.logo, "", "un logo venu d'ailleurs n'est pas relayé");
@@ -315,7 +315,7 @@ test("administration : un cadre vers l'éditeur avec l'accès dans la partie « 
 
 test("page de l'éditeur : politique de sécurité stricte (aucun script en ligne, rien d'extérieur), aucune donnée dans le HTML, phrases échappées, langue de la personne ; compatible avec un cadre du même site seulement", async () => {
   const ctx = mk({ messages: { ...fr, ui_title: "</script><script>alert(1)</script>\"'&", ui_empty: "<b>x</b>" } });
-  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "<img src=x onerror=alert(1)>" }] });
+  await data.addAdhoc(ctx, [{ login: "alice_tv", name: "<img src=x onerror=alert(1)>" }]);
   const r = await call(ctx, "studio", { search: "?lang=en" });
   const html = await r.text(), csp = r.headers.get("content-security-policy");
   for (const part of ["default-src 'none'", "script-src 'self'", "connect-src 'self'", "frame-ancestors 'self'", "base-uri 'none'", "form-action 'none'", "img-src 'self' blob: data:"]) assert.ok(csp.includes(part), part);
@@ -396,17 +396,18 @@ test("relais d'images : type vérifié sur les premiers octets, taille bornée (
 
 /* ───────────── Sauvegarde et vie privée ───────────── */
 
-test("sauvegarde lisible : les modèles (références de fiche), les ponctuels et l'ancienne liste (CSV sans formule dangereuse) ; aucune clé ni préparation", async () => {
+test("sauvegarde lisible : les modèles (références de fiche) et les ponctuels (CSV sans formule dangereuse) ; ni l'ancienne liste de la version 1, ni clé, ni préparation", async () => {
   const ctx = mk(), token = await data.mintToken(ctx);
-  await ctx.api.store.add("story_costreamers", { items: [{ login: "alice_tv", name: "=HYPERLINK(\"http://evil\")", image: PICTURE }] });
-  await data.addAdhoc(ctx, [{ login: "zoe_live", name: "Zoé", image: "" }]);
+  await ctx.api.store.add("story_costreamers", { items: [{ login: "old_tv", name: "Old", image: "" }] });   // a leftover of the version 1 list: not exported any more
+  await data.addAdhoc(ctx, [{ login: "alice_tv", name: "=HYPERLINK(\"http://evil\")", image: PICTURE }, { login: "zoe_live", name: "Zoé", image: "" }]);
   await act(ctx, token, { op: "model.save", name: "M1", config: { style: "minimal", costreamers: [{ id: "c0001" }, { login: "bob_x", name: "Bob", image: "" }] } });
   await data.savePrep(ctx, { config: {} });
   const files = await def.backup.readable(ctx);
-  assert.deepEqual(files.map((f) => f.path), ["adhoc-costreamers.csv", "costreamers.csv", "models.json"]);
-  assert.match(files[1].content, /^login,name,image\r\n"alice_tv","'=HYPERLINK\(""http:\/\/evil""\)","https:\/\/static-cdn/);
+  assert.deepEqual(files.map((f) => f.path), ["adhoc-costreamers.csv", "models.json"]);
+  assert.match(files[0].content, /^login,name,image\r\n"alice_tv","'=HYPERLINK\(""http:\/\/evil""\)","https:\/\/static-cdn/);
   assert.match(files[0].content, /"zoe_live","Zoé",""/);
-  const model = JSON.parse(files[2].content)[0];
+  assert.ok(!files[0].content.includes("old_tv"));
+  const model = JSON.parse(files[1].content)[0];
   assert.equal(model.name, "M1"); assert.deepEqual(model.costreamers, [{ contactId: "c0001" }, { login: "bob_x", name: "Bob", image: "" }]);
   assert.ok(!files.map((f) => f.content).join("").match(/secret|prep|token/i));
   const bare = await def.backup.readable(mk());
