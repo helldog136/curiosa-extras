@@ -94,8 +94,10 @@ const STYLE_PARAMS = {
 export function createScene(opts = {}) {
   const fmt = formatOf(opts.format), W = fmt.width, H = fmt.height, safe = safeArea(fmt);
   // The "Made with Curiosa" mention (only if the box is ticked: an explicit `true`). It takes the bottom of the safe area; the content is laid out above it.
-  const wmOn = opts.watermark === true, WM = { px: 30, h: 54, padX: 26, gap: 28, alpha: 0.6 };
-  const A = wmOn ? { ...safe, h: safe.h - WM.h - WM.gap } : safe;
+  // The mention sits at the very bottom of the frame (60 px from the edge, like the passport margins), even below the safe area; the content only gives up room if they would meet.
+  const wmOn = opts.watermark === true, WM = { px: 30, h: 54, padX: 26, gap: 28, alpha: 0.6, edge: 60 };
+  const wmY = H - WM.edge - WM.h;
+  const A = wmOn ? { ...safe, h: Math.min(safe.h, wmY - WM.gap - safe.y) } : safe;
   const style = STYLES.includes(opts.style) ? opts.style : "neon";
   const duration = Math.min(LIMITS.durationMax, Math.max(LIMITS.durationMin, Number(opts.duration) || LIMITS.durationDefault));
   const content = opts.content ?? {}, assets = opts.assets ?? {}, lang = content.lang === "en" ? "en" : "fr", words = WORDS[lang];
@@ -103,8 +105,7 @@ export function createScene(opts = {}) {
   const mctx = opts.measureContext;
   const font = (weight, px, italic) => `${italic ? "italic " : ""}${weight} ${Math.max(6, Math.round(px))}px ${family}`;
   const measureWith = (f) => { mctx.font = f; return (s) => mctx.measureText(s).width; };
-  /* The mention: placed in the centre, just above the area that Instagram's interface covers (the bottom of the safe area: 340 px in vertical, more cautious than the usual ~250 px,
-     the reply bar and the account name vary from one phone to another), so always visible. Same font as the rest of the video, medium bold, 30 px at 1080 wide.
+  /* The mention: placed in the centre, at the very bottom of the video (60 px from the edge). In vertical that is inside the zone Instagram's interface covers, by the owner's choice. Same font as the rest of the video, medium bold, 30 px at 1080 wide.
      The colours come from the background of the model: the text is the white or the near-black that contrasts best with the colours of the BOTTOM background (start, end of the gradient and average), on a
      semi-transparent pill of the background colour. No motion: the same image at every instant, from the first to the last frame. */
   const watermark = (() => {
@@ -114,7 +115,7 @@ export function createScene(opts = {}) {
     const fam = typeof opts.wordmarkFont === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(opts.wordmarkFont) ? `"${opts.wordmarkFont}", ${WORDMARK.fallback}` : WORDMARK.fallback;
     const f1 = font(600, WM.px), f2 = `italic ${WORDMARK.weight} ${Math.round(WM.px * WORDMARK.scale * 10) / 10}px ${fam}`;
     const w1 = measureWith(f1)(WATERMARK_LEAD), w2 = measureWith(f2)(WATERMARK_NAME), tw = Math.ceil(w1 + w2), w = Math.ceil((tw + WM.padX * 2) / 2) * 2;   // even width: centred on a whole pixel
-    const left = Math.round((W - tw) / 2), base = Math.round(safe.y + safe.h - WM.h / 2 + WM.px * 0.35);
+    const left = Math.round((W - tw) / 2), base = Math.round(wmY + WM.h / 2 + WM.px * 0.35);
     const parts = [{ text: WATERMARK_LEAD, font: f1, x: left, y: base }, { text: WATERMARK_NAME, font: f2, x: left + Math.round(w1), y: base }];
     const bgs = [...new Set([pal.base, pal.bg0, pal.bg1])];
     const worst = (c, pill = null) => Math.min(...bgs.map((b) => contrast(c, pill ? mix(b, pill, WM.alpha) : b)));
@@ -123,7 +124,7 @@ export function createScene(opts = {}) {
     const toward = color === "#ffffff" ? "#000000" : "#ffffff";
     let pill = pal.base;
     for (let k = 1; k <= 10 && worst(color, pill) < 4.5; k++) pill = mix(pal.base, toward, k / 10);
-    return { text: WATERMARK_TEXT, parts, color, pill, ratio: worst(color, pill), x: Math.round((W - w) / 2), y: Math.round(safe.y + safe.h - WM.h), w, h: WM.h };
+    return { text: WATERMARK_TEXT, parts, color, pill, ratio: worst(color, pill), x: Math.round((W - w) / 2), y: wmY, w, h: WM.h };
   })();
   function drawWatermark(ctx) {
     const m = watermark;

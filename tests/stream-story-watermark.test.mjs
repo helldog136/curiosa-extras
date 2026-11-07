@@ -33,7 +33,7 @@ const prepOf = async (ctx, r) => data.readPrep(ctx, /prep=([A-Za-z0-9_-]{22})/.e
 /* ───────────── Le manifeste, les textes, la case ───────────── */
 
 test("manifeste : version 2.5.0, réglage « watermark » (oui/non, NON par défaut, mode avancé : rien de visible en mode simple), paramètre MCP facultatif décrit ; la mention n'est pas un élément", () => {
-  assert.equal(manifest.version, "2.9.1");
+  assert.equal(manifest.version, "2.9.2");
   const s = manifest.settings.find((x) => x.key === "watermark");
   assert.deepEqual([s.type, s.default, s.advanced], ["boolean", false, true]);
   assert.ok(s.label.fr && s.label.en && s.help.fr && s.help.en);
@@ -153,7 +153,7 @@ test("la mention est demandée au moteur de rendu sur TOUTES les images (du prem
   }
 });
 
-test("la place : centrée, en bas de la zone sûre (au-dessus de la zone qu'Instagram recouvre), dans les marges, sans toucher le contenu ni une zone cachée, 28 à 32 px, police de la vidéo", () => {
+test("la place : centrée, tout en bas de l'image (à 60 px du bord), dans les marges, sans toucher le contenu ni une zone cachée, 28 à 32 px, police de la vidéo", () => {
   for (const style of P.STYLES) for (const format of ["vertical", "passeport"]) for (const n of [0, 3, 6]) for (const text of ["", "Une phrase de trois lignes pour remplir au maximum la zone sûre de la vidéo, vraiment !"]) {
     const sc = scene({ style, format, n, text, watermark: true, font: "Inter, sans-serif" }), f = P.formatOf(format), A = P.safeArea(f), w = sc.watermark, where = `${style}/${format}/${n}/${text.length}`;
     const [lead, name] = marks(frame(sc, 3))[0], font = lead[4], x = lead[2], [p1, p2] = w.parts;
@@ -163,11 +163,10 @@ test("la place : centrée, en bas de la zone sûre (au-dessus de la zone qu'Inst
     assert.ok(Math.abs(name[2] - (x + w1)) <= 1, "« Curiosa » suit « Made with » sans trou");
     assert.match(name[4], /^italic 600 34\.5px "CuriosaWordmark", Georgia, serif$/, "Fraunces italique 600, 1,15 fois plus grand");
     assert.ok(p1.x === x && p2.x === name[2]);
-    assert.ok(w.x >= A.x && w.x + w.w <= A.x + A.w && w.y >= A.y && w.y + w.h <= A.y + A.h + 0.5, `${where} : dans la zone sûre`);
+    assert.ok(w.x >= A.x && w.x + w.w <= A.x + A.w && w.y >= A.y && w.y + w.h <= f.height, `${where} : dans les marges latérales et dans l'image`);
     assert.ok(Math.abs(w.x + w.w / 2 - f.width / 2) <= 1);
-    assert.ok(A.y + A.h - (w.y + w.h) < 1, `${where} : tout en bas de la zone sûre, donc juste au-dessus de la barre de réponse d'Instagram`);
-    if (format === "vertical") assert.ok(w.y + w.h <= 1920 - 250 && w.y + w.h <= 1580, `${where} : au-dessus des 250 px (et des 340 px) recouverts par Instagram`);
-    for (const z of f.zones) assert.ok(w.x + w.w <= z.x || w.x >= z.x + z.w || w.y + w.h <= z.y || w.y >= z.y + z.h, `${where} : hors de la zone « ${z.id} »`);
+    assert.equal(f.height - (w.y + w.h), 60, `${where} : tout en bas de l'image, à 60 px du bord`);
+    for (const z of f.zones.filter((q) => q.id !== "ui")) assert.ok(w.x + w.w <= z.x || w.x >= z.x + z.w || w.y + w.h <= z.y || w.y >= z.y + z.h, `${where} : hors de la zone « ${z.id} »`);
     for (const b of sc.boxes) assert.ok(b.y + b.h <= w.y, `${where} : ${b.id} reste au-dessus de la mention`);
     assert.ok(px(font) >= 28 && px(font) <= 32, `${where} : ${font}`);
     assert.match(font, /Inter, sans-serif$/, "« Made with » : la police du reste de la vidéo");
