@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.51.1 — 2026-11-07
+
+*En bref : dans Story d'annonce (2.9.2), la mention « Made with Curiosa » passe tout en bas de la vidéo. Rien à régler, aucune nouvelle permission.*
+
+*In short: in Announcement story (2.9.2), the "Made with Curiosa" mention moves to the very bottom of the video. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Story d'annonce 2.9.2 : la mention « Made with Curiosa » est tout en bas de l'image,** à 60 px du bord et centrée, au lieu d'être juste au-dessus de la zone que Instagram recouvre. Cela concerne les vidéos faites avec la mention cochée. Le format 4:5 y était déjà et reste identique.
+- **Announcement story 2.9.2: the "Made with Curiosa" mention sits at the very bottom of the picture,** 60 px from the edge, centred, instead of just above the zone that Instagram covers. This applies to videos made with the mention ticked. The 4:5 format was already there and looks the same.
+
+### Pour les développeurs
+
+- `scenes.mjs`: position of the mention; `tests/stream-story-watermark.test.mjs` follows. Patch bump of the module, no `minCore` change, no migration. Détail : `docs/changelog-parts/story-mention-bottom.md`.
+
 ## 1.51.0 — 2026-11-07
 
 *En bref : vingt-huit modules disent eux-mêmes dans quelle rubrique du menu ils se rangent (Contenu, Communauté, Outils ou Connexions) ; trois modules n'embarquent plus le code des conversions de données de leurs premières versions et Statut du live arrête une tâche horaire inutile. Rien à régler, aucune nouvelle permission. Les rubriques demandent Curiosa 0.7.0.*
