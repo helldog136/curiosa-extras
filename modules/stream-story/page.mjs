@@ -8,6 +8,7 @@ const LINE_SEPARATORS = new RegExp(`[${String.fromCharCode(0x2028, 0x2029)}]`, "
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** The sentences of the page (`ui_…` keys of the locales, without the prefix). */
 export const KEYS = [
+  "default_use", "default_is", "default_now", "default_saved",
   "title", "no_access", "no_access_hint", "prep_note", "prep_expired", "prep_stream_gone", "help_intro", "cover_no_key", "cover_ambiguous", "cover_ambiguous_named", "cover_wrong", "untitled", "m_time_hint", "manual_date",
   "manual_time", "countdown_is", "text_label", "text_help", "channel_help", "lang_label", "lang_fr", "lang_en", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown",
   "style_countdown_hint", "style_minimal", "style_minimal_hint", "style_broadcast", "style_broadcast_hint", "style_kinetic", "style_kinetic_hint", "style_cinema", "style_cinema_hint", "style_arcade", "style_arcade_hint", "style_collage", "style_collage_hint", "style_geometric",
@@ -198,6 +199,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <div id="result" hidden></div>
 <p class="muted">${T("style_intro")}</p>
 <fieldset><legend class="sr">${T("style_label")}</legend><div class="cards styles">${P.STYLES.map(style).join("")}</div><p id="style-note" class="muted" role="status" aria-live="polite" hidden></p></fieldset>
+<div class="bar"><button type="button" id="default-style">${T("default_use")}</button></div><p id="default-note" class="muted" role="status" aria-live="polite" style="margin-top:0" hidden></p>
 <fieldset style="margin-top:12px"><legend>${T("format_label")}</legend><div class="cards">
 <label for="format-vertical"><input type="radio" name="format" id="format-vertical"><span>${T("format_vertical")}</span></label>
 <label for="format-passeport"><input type="radio" name="format" id="format-passeport"><span>${T("format_passeport")}</span></label></div><p id="fmt-note" class="muted"></p></fieldset>

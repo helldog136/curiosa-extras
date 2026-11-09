@@ -167,9 +167,26 @@ export async function watermarkDefault(ctx) {
   try { pref = await readWatermarkPref(ctx); } catch { pref = null; }
   return pref ?? ctx.setting("watermark") === true;
 }
+/** The style the person chose as their default ("Use as my default style"): one of the ten styles, or null if they never chose one. Same document as the mention box. */
+export async function readStylePref(ctx) {
+  const doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
+  return P.defaultStyleOf(doc?.data?.defaultStyle);
+}
+export async function styleDefault(ctx) {
+  try { return await readStylePref(ctx); } catch { return null; }
+}
+export async function setStylePref(ctx, style) {
+  const value = P.defaultStyleOf(style);
+  if (!value) return { error: "invalid" };
+  const doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
+  if (doc) await ctx.api.store.update(doc.id, { ...doc.data, defaultStyle: value });  // `update` replaces the document: keep the other preferences
+  else await ctx.api.store.add(PREFS, { defaultStyle: value });
+  return { defaultStyle: value };
+}
 export async function setWatermarkPref(ctx, on) {
   const value = on === true, doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
-  if (doc) await ctx.api.store.update(doc.id, { watermark: value }); else await ctx.api.store.add(PREFS, { watermark: value });
+  if (doc) await ctx.api.store.update(doc.id, { ...doc.data, watermark: value });  // `update` replaces the document: keep the other preferences
+  else await ctx.api.store.add(PREFS, { watermark: value });
   return value;
 }
 

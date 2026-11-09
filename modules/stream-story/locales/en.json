@@ -232,5 +232,9 @@
   "ui_info_need_date": "Pick a day too, for example October 24.",
   "ui_h_style": "Choose the style",
   "ui_style_intro": "Click a card: the preview shows that style at once.",
-  "ui_pv_plain": "Plain preview while you edit. You pick the style last."
+  "ui_pv_plain": "Plain preview while you edit. You pick the style last.",
+  "ui_default_use": "Use as my default style",
+  "ui_default_is": "This is your default style",
+  "ui_default_now": "Your default style is {style}.",
+  "ui_default_saved": "Saved. New videos and the preview start in {style}."
 }
