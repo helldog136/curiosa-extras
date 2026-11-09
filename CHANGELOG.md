@@ -4,6 +4,23 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.52.0 — 2026-11-09
+
+*En bref : Story d'annonce (2.10.0) retient votre style par défaut. Un bouton à la dernière étape, et ce style sert aux nouvelles vidéos et à l'aperçu des deux premières étapes. Rien à régler, aucune nouvelle permission.*
+
+*In short: Announcement story (2.10.0) remembers your default style. One button on the last step, and that style is used by new videos and by the preview of the first two steps. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Story d'annonce 2.10.0 : « Utiliser comme style par défaut » à la dernière étape.** Choisissez une carte de style, cliquez sur le bouton, c'est tout. Les nouvelles vidéos démarrent avec ce style, et l'aperçu des deux premières étapes (l'événement, les informations) le montre au lieu du style simple. La dernière étape permet toujours de changer le style de la vidéo en cours.
+- **Announcement story 2.10.0: "Use as my default style" on the last step.** Pick a style card, click the button, done. New videos start in that style, and the preview of the first two steps (event, information) shows it instead of the plain one. The last step still lets you change the style for the video you are making.
+- **Story d'annonce 2.10.0 : rien ne change tant que vous n'utilisez pas le bouton.** Les modèles enregistrés gardent leur style. L'assistant prépare les vidéos dans votre style par défaut, sauf s'il en demande un autre ou s'il utilise un modèle.
+- **Announcement story 2.10.0: nothing changes until you use the button.** Saved models keep the style they stored. The assistant prepares videos in your default style unless it asks for another one or uses a model.
+
+### Pour les développeurs
+
+- `prefs.style` action (same `story_prefs` document as the mention box, key `defaultStyle`, validated against `STYLES`), `defaultStyle` in the `/data` defaults, `pure.defaultStyleOf` / `previewStyleFor`, `strictPrepare(…, { styleDefault })`. `store.update` replaces the document: both preference writers now keep the other keys. No setting added, no `minCore` change, no migration. Détail : `docs/changelog-parts/story-default-style.md`.
+
 ## 1.51.1 — 2026-11-07
 
 *En bref : dans Story d'annonce (2.9.2), la mention « Made with Curiosa » passe tout en bas de la vidéo. Rien à régler, aucune nouvelle permission.*

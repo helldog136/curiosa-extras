@@ -456,3 +456,38 @@ test("keyboard and screen reader: every field has a name, the markers carry aria
   els.get("event-change").click(); assert.equal(els.get("event-picker").hidden, false);
   els.get("event-picker").fire("keydown", { key: "Escape" }); assert.equal(els.get("event-picker").hidden, true); assert.equal(El.focused, "event-change", "the focus goes back to the button");
 });
+
+test("default style: kept on step 3 with one button, then the preview of steps 1-2 and a new video start in it; nothing changes before it is chosen", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  const first = current = await boot(ctx);
+  let els = first.els;
+  assert.equal(await data.styleDefault(ctx), null, "nothing remembered at first");
+  await go(els, "step-next"); await go(els, "step-next"); await wait(300);
+  assert.equal(els.get("default-style").disabled, true === (P.DEFAULT_CONFIG.style === null), "the button is offered for the shown style");
+  assert.equal(els.get("default-style").textContent, fr.ui_default_use);
+  els.get("style-cinema").checked = true; els.get("style-cinema").fire("change"); await wait(200);
+  await go(els, "default-style"); await wait(200);
+  assert.equal(await data.styleDefault(ctx), "cinema", "remembered on the server");
+  assert.equal(els.get("default-style").disabled, true); assert.equal(els.get("default-style").textContent, fr.ui_default_is);
+  assert.equal(els.get("default-note").hidden, false);
+  els.get("style-poster").checked = true; els.get("style-poster").fire("change"); await wait(100);
+  assert.equal(els.get("default-style").disabled, false, "another style can become the default");
+  first.server.restore(); current = null;
+  // a new session: the preview of steps 1 and 2 and the style of a new video are the default style
+  current = await boot(ctx); els = current.els;
+  assert.equal(styleOf(els), "cinema", "step 1 preview"); assert.equal(els.get("pv-note").hidden, true, "no 'plain preview' note: it is not plain");
+  await go(els, "step-next"); await wait(200); assert.equal(styleOf(els), "cinema", "step 2 preview");
+  await go(els, "step-next"); await wait(300);
+  assert.equal(els.get("style-cinema").checked, true, "step 3 starts on the default style");
+  els.get("style-kinetic").checked = true; els.get("style-kinetic").fire("change"); await wait(200);
+  assert.equal(styleOf(els), "kinetic", "this video can still use another style");
+});
+
+test("default style: the Countdown style as default also ticks the countdown line; a bad value is refused", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  assert.deepEqual(await data.setStylePref(ctx, "nope"), { error: "invalid" });
+  assert.equal(await data.styleDefault(ctx), null);
+  await data.setStylePref(ctx, "countdown");
+  current = await boot(ctx);
+  assert.equal(current.els.get("el-countdown").checked, true);
+});

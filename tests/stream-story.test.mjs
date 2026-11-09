@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.9.2");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.10.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -162,7 +162,7 @@ test("données de l'éditeur : modèles, ponctuels, état de Contacts, logo du s
   const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} } });
   const token = await data.mintToken(ctx);
   const r = await json(await call(ctx, "data", { token }));
-  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", watermark: false }], "sans Contacts : « absent »");
+  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", watermark: false, defaultStyle: null }], "sans Contacts : « absent »");
   assert.ok(!("costreamers" in r) && !("partners" in r), "plus de liste « à moi » ni de partenaires du Raid");
   const ext = mk({ brand: { name: "X", logos: [{ kind: "square", src: "https://cdn.evil/logo.png" }], logo: "https://cdn.evil/l.png", colors: [], font: {} } });
   assert.equal((await json(await call(ext, "data", { token: await data.mintToken(ext) }))).brand.logo, "", "un logo venu d'ailleurs n'est pas relayé");
