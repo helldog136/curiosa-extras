@@ -23,9 +23,10 @@ export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.co
  * Checks what the AI asks and draws { config, manual } from it (complete settings and the hand-written stream, if any); throws a clear error (visible to the AI) otherwise.
  * `models`: the saved models. A model is the starting point; the other values complete or replace it.
  * `watermarkDefault`: the value of the person's "Made with Curiosa" box, used when the AI says nothing.
+ * `styleDefault`: the style the person remembered as their default (null if none): the style when the AI and the model say nothing.
  * `events`: the upcoming events of all sources (for `event`); `sourcesDown`: all sources went silent (the message says so).
  */
-export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false }) {
+export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false, styleDefault = null }) {
   const a = args && typeof args === "object" ? args : {};
   let base = P.DEFAULT_CONFIG;
   if (a.model !== undefined) {
@@ -34,7 +35,8 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     if (!m) throw expose(`No saved model named '${P.oneLine(a.model, 60)}'. Call story_models to list them.`);
     base = m.config;
   }
-  const next = { ...base, watermark: watermarkDefault === true };   // the mention: the person's setting, unless the AI says otherwise (never a model)
+  const next = { ...base, watermark: watermarkDefault === true };
+  if (a.model === undefined && P.defaultStyleOf(styleDefault)) next.style = styleDefault;   // no model: the person's default style (a model keeps its own)   // the mention: the person's setting, unless the AI says otherwise (never a model)
   if (a.watermark !== undefined) { if (typeof a.watermark !== "boolean") throw expose("'watermark' must be true or false."); next.watermark = a.watermark; }
   if (a.style !== undefined) { if (!P.STYLES.includes(a.style)) throw expose(`'style' must be one of: ${P.STYLES.join(", ")}.`); next.style = a.style; }
   if (a.format !== undefined) { if (!P.FORMATS.some((f) => f.id === a.format)) throw expose(`'format' must be one of: ${P.FORMATS.map((f) => f.id).join(", ")}.`); next.format = a.format; }

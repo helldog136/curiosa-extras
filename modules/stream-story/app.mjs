@@ -46,7 +46,7 @@ const S = {
   // The editable information (step 2): copied from the event that is picked, or empty for "no event". `cov`: the cover of the game written in `info.game`.
   info: { title: "", date: "", time: "", game: "" }, noEvent: false, cov: { game: "", url: "", state: "", ambiguous: false, title: "", found: "" },
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", defaultStyle: null, styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -58,8 +58,8 @@ const streamNow = () => {
   return r;
 };
 const selectedStream = () => streamNow().stream;
-/** The style drawn in the preview: the default editing style until a style is chosen (steps 1 and 2); on the last step, the style of the cards. */
-const previewStyle = () => (S.step === 3 || S.styleChosen ? S.cfg.style : P.EDIT_STYLE);
+/** The style drawn in the preview: the person's default style (else the plain editing style) until a style is chosen (steps 1 and 2); on the last step, the style of the cards. */
+const previewStyle = () => P.previewStyleFor({ step: S.step, styleChosen: S.styleChosen, style: S.cfg.style, defaultStyle: S.defaultStyle });
 /* The guest streamers of the video: each entry is { id } (a Contacts card, read when needed) or a "for this video only" entry. `key`: what tells them apart. */
 const keyOf = P.memberKey;
 const viewOf = (entry) => (entry.id
@@ -162,6 +162,14 @@ function chooseStyle(st) {
   if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; $(`el-${need}`).checked = true; }
   else if (S.autoTicked && !need && P.STYLE_NEEDS[prev] === S.autoTicked) { S.cfg.elements = S.cfg.elements.filter((e) => e !== S.autoTicked); $(`el-${S.autoTicked}`).checked = false; S.autoTicked = ""; }
   renderItems(); renderStyleNote(); renderCoverWarn(); renderSteps(); rebuild();
+}
+/** The "Use as my default style" button of the last step: it names what it does, and says so when the shown style already is the default. */
+function renderDefaultStyle() {
+  const b = $("default-style"); if (!b) return;
+  const same = S.defaultStyle === S.cfg.style;
+  b.disabled = same; b.textContent = L(same ? "default_is" : "default_use");
+  $("default-note").hidden = !S.defaultStyle;
+  $("default-note").textContent = S.defaultStyle ? L("default_now", { style: L(`style_${S.defaultStyle}`) }) : "";
 }
 function renderStyleNote() { const n = $("style-note"); n.textContent = S.autoTicked && S.cfg.style === "countdown" ? L("style_countdown_on") : ""; n.hidden = !n.textContent; }
 function sizePreview() {
@@ -563,7 +571,8 @@ function renderSteps() {
   $("step-next").textContent = L(S.step === 1 ? "next_info" : "next_style");
   // The quick way out keeps the style of the preview: the person has seen it. Its name is on the button.
   $("generate-now").textContent = L("gen_now", { style: L(`style_${previewStyle()}`) });
-  $("pv-note").hidden = last || S.styleChosen;
+  $("pv-note").hidden = last || S.styleChosen || !!S.defaultStyle;
+  renderDefaultStyle();
 }
 function setStep(n, { focus = true } = {}) {
   if (S.job) return;
@@ -685,6 +694,12 @@ function bind() {
   for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) on(id, "input", () => { S.info[key] = $(id).value; if (key === "game") syncCover(); renderInfo(); rebuild(); });
   // The "Made with Curiosa" mention: the preview follows at once; the choice is remembered for the next videos (a failure does not prevent making this one).
   on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; renderInfo(); rebuild(); });
+  on("default-style", "click", async () => {
+    const st = S.cfg.style, b = $("default-style"); b.disabled = true;
+    const r = await api("act", { method: "POST", body: { op: "prefs.style", style: st } });
+    if (r.ok && r.defaultStyle === st) { S.defaultStyle = st; say(L("default_saved", { style: L(`style_${st}`) })); } else say(errText(r.error), "error");
+    renderDefaultStyle();
+  });
   on("watermark", "change", async () => {
     S.cfg.watermark = $("watermark").checked; rebuild();
     const r = await api("act", { method: "POST", body: { op: "prefs.watermark", watermark: S.cfg.watermark } });
@@ -760,6 +775,12 @@ function applyPrep(prep) {
   }
   $("prep-note").hidden = false;
 }
+/** A new video starts in the person\'s default style (the "countdown" style also ticks the countdown line it needs, as when the cards are used). */
+function setDefaultStyleOnNewVideo() {
+  const st = S.defaultStyle; S.cfg.style = st;
+  const need = P.STYLE_NEEDS[st];
+  if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; }
+}
 async function start() {
   if (!TOKEN) { $("app").hidden = true; $("noaccess").hidden = false; return; }
   bind(); syncControls(); renderMembers(); renderModels();
@@ -767,6 +788,8 @@ async function start() {
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
   if (data.ok) {
     if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // the remembered box; an AI preparation already says its own
+    S.defaultStyle = P.defaultStyleOf(data.defaults?.defaultStyle);
+    if (!PREP && S.defaultStyle) setDefaultStyleOnNewVideo();
     S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
   }
   else say(errText(data.error), "error");

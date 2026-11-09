@@ -318,3 +318,13 @@ test("buildContent: a stream with no day yet shows its title and game but no day
   assert.deepEqual([c.dayLine, c.timeLine, c.countdown, c.parts, c.startMs], ["", "", "", null, null]);
   assert.ok(!JSON.stringify(c).includes("NaN") && !JSON.stringify(c).includes("Invalid"));
 });
+
+test("default style: only a real style counts; the preview of steps 1-2 uses it, else the plain editing style; the last step shows the cards' style", () => {
+  assert.equal(P.defaultStyleOf("cinema"), "cinema"); for (const bad of ["", "nope", null, undefined, 3, ["neon"]]) assert.equal(P.defaultStyleOf(bad), null);
+  const at = (o) => P.previewStyleFor({ step: 1, styleChosen: false, style: "neon", defaultStyle: null, ...o });
+  assert.equal(at({}), P.EDIT_STYLE, "nothing remembered: the plain style, as before");
+  assert.equal(at({ defaultStyle: "arcade" }), "arcade"); assert.equal(at({ step: 2, defaultStyle: "arcade" }), "arcade");
+  assert.equal(at({ defaultStyle: "nope" }), P.EDIT_STYLE);
+  assert.equal(at({ step: 3, defaultStyle: "arcade", style: "poster" }), "poster", "the last step shows the cards' style");
+  assert.equal(at({ styleChosen: true, defaultStyle: "arcade", style: "poster" }), "poster", "a chosen style (model, assistant) wins");
+});

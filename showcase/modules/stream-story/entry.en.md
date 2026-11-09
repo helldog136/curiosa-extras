@@ -7,6 +7,7 @@ A short animated video that announces one of your upcoming events. It is ready f
 - Make the video in a portrait format.
 - Choose the colours of the video.
 - Pick one of ten animation styles, such as a film title card or a paper collage.
+- Keep your favourite style as the default: new videos and the preview of the first steps start in it.
 - Save models, with guest streamers from your address book.
 - Add a small “Made with Curiosa” mark, if you wish.
 
@@ -37,4 +38,4 @@ A short animated video that announces one of your upcoming events. It is ready f
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.9.2.
+Available since version 1.0.0. Current version: 2.10.0.

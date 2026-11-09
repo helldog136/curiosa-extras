@@ -22,6 +22,10 @@ export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", 
  * until a style is chosen, so a video is never made in a style that the person has not seen in the preview.
  */
 export const EDIT_STYLE = "minimal";
+/** The style a person remembered as their default, or null (never chosen, or a value that is no longer a style). */
+export const defaultStyleOf = (v) => (typeof v === "string" && STYLES.includes(v) ? v : null);
+/** The style drawn in the preview: on the last step, or once a style is chosen, the style of the cards; before that, the person's default style, else the plain editing style. */
+export const previewStyleFor = ({ step, styleChosen, style, defaultStyle }) => (step === 3 || styleChosen ? style : defaultStyleOf(defaultStyle) ?? EDIT_STYLE);
 /** What a NEW video shows: everything but the countdown (a person who wants it ticks it). Saved models keep what they stored. */
 export const DEFAULT_ELEMENTS = Object.freeze(ELEMENTS.filter((e) => e !== "countdown"));
 /** The element a style needs to be itself: the "countdown" style draws big numbers that come from the "countdown" element. */

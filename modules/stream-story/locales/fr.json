@@ -232,5 +232,9 @@
   "ui_info_need_date": "Choisissez aussi un jour, par exemple le 24 octobre.",
   "ui_h_style": "Choisissez le style",
   "ui_style_intro": "Cliquez sur une carte : l'aperçu montre ce style tout de suite.",
-  "ui_pv_plain": "Aperçu simple pendant les modifications. Le style se choisit en dernier."
+  "ui_pv_plain": "Aperçu simple pendant les modifications. Le style se choisit en dernier.",
+  "ui_default_use": "Utiliser comme style par défaut",
+  "ui_default_is": "C'est votre style par défaut",
+  "ui_default_now": "Votre style par défaut est {style}.",
+  "ui_default_saved": "Enregistré. Les nouvelles vidéos et l'aperçu démarrent en {style}."
 }

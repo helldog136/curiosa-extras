@@ -33,7 +33,7 @@ const prepOf = async (ctx, r) => data.readPrep(ctx, /prep=([A-Za-z0-9_-]{22})/.e
 /* ───────────── Le manifeste, les textes, la case ───────────── */
 
 test("manifeste : version 2.5.0, réglage « watermark » (oui/non, NON par défaut, mode avancé : rien de visible en mode simple), paramètre MCP facultatif décrit ; la mention n'est pas un élément", () => {
-  assert.equal(manifest.version, "2.9.2");
+  assert.equal(manifest.version, "2.10.0");
   const s = manifest.settings.find((x) => x.key === "watermark");
   assert.deepEqual([s.type, s.default, s.advanced], ["boolean", false, true]);
   assert.ok(s.label.fr && s.label.en && s.help.fr && s.help.en);
@@ -403,4 +403,23 @@ test("éditeur : police trop lente (délai de 3 s) → repli, rien ne reste bloq
   const ctx = mkCtx(); await data.setWatermarkPref(ctx, true);
   const { els, server } = await bootStudio(ctx, "j");
   try { await manualEvent(els); await wait(300); assert.ok(namesDrawn(els).every((f) => f === "italic 600 34.5px Georgia, serif") && namesDrawn(els).length > 0); } finally { server.restore(); }
+});
+
+test("default style: stored with the mention box without disturbing it, sent by /data, used by the AI preparation unless a model or the AI says otherwise", async () => {
+  const ctx = mkCtx();
+  const token = await data.mintToken(ctx);
+  assert.equal((await json(await call(ctx, "data", { token }))).defaults.defaultStyle, null);
+  await act(ctx, token, { op: "prefs.watermark", watermark: true });
+  let r = await act(ctx, token, { op: "prefs.style", style: "arcade" });
+  assert.equal(r.defaultStyle, "arcade");
+  assert.equal(await data.watermarkDefault(ctx), true, "the mention choice is untouched");
+  assert.equal(await data.styleDefault(ctx), "arcade");
+  for (const bad of ["nope", "", null, 3]) assert.equal((await act(ctx, token, { op: "prefs.style", style: bad })).status, 400);
+  assert.equal((await act(ctx, "", { op: "prefs.style", style: "neon" })).status, 401);
+  assert.equal(await data.styleDefault(ctx), "arcade");
+  const model = { name: "Mine", config: { ...P.DEFAULT_CONFIG, style: "collage" } };
+  assert.equal(tools.strictPrepare({}, { models: [], tz: "UTC", styleDefault: "arcade" }).config.style, "arcade");
+  assert.equal(tools.strictPrepare({}, { models: [], tz: "UTC" }).config.style, P.DEFAULT_CONFIG.style, "nothing remembered: as before");
+  assert.equal(tools.strictPrepare({ style: "poster" }, { models: [], tz: "UTC", styleDefault: "arcade" }).config.style, "poster", "the AI wins");
+  assert.equal(tools.strictPrepare({ model: "Mine" }, { models: [{ id: "m", ...model }], tz: "UTC", styleDefault: "arcade" }).config.style, "collage", "a model keeps its own style");
 });

@@ -70,6 +70,7 @@ async function act(request, ctx) {
     case "adhoc.check": return reply(data.adhocEntry({ login: body.login, name: body.name, image: body.image }));
     case "adhoc.remove": return reply(await data.removeAdhoc(ctx, String(body.id ?? "")));
     case "prefs.watermark": return typeof body.watermark === "boolean" ? reply({ watermark: await data.setWatermarkPref(ctx, body.watermark) }) : json({ ok: false, error: "invalid" }, 400);
+    case "prefs.style": return P.defaultStyleOf(body.style) ? reply(await data.setStylePref(ctx, body.style)) : json({ ok: false, error: "invalid" }, 400);
     case "model.save": return reply(await data.saveModel(ctx, { name: body.name, config: body.config, replaceId: typeof body.replaceId === "string" ? body.replaceId : undefined }));
     case "model.remove": return reply(await data.removeModel(ctx, String(body.id ?? "")));
     default: return json({ ok: false, error: "invalid" }, 400);
@@ -83,9 +84,9 @@ const routes = {
     return page.studioPage(ctx, { base: `/m/${ctx.instance.key}`, colors: videoColors(ctx), timezone: zoneSetting(ctx), font: typeof th.font === "string" ? th.font.slice(0, 200) : "", accent: hex(th.accent, "#4f46e5"), accentFg: hex(th.accentFg, "#ffffff") });
   },
   data: guarded("GET", async (request, ctx) => {
-    const [models, adhoc, hasBook, brand, watermark] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readAdhoc(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false)]);
+    const [models, adhoc, hasBook, brand, watermark, defaultStyle] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readAdhoc(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false), src.within(data.styleDefault(ctx), 3000, null)]);
     return json({
-      ok: true, models, adhoc, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true },
+      ok: true, models, adhoc, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true, defaultStyle: P.defaultStyleOf(defaultStyle) },
     });
   }),
   people: guarded("GET", async (request, ctx) => {
@@ -211,7 +212,7 @@ export default {
     async story_prepare(ctx, args) {
       const wantsEvent = args && typeof args === "object" && args.event !== undefined;
       const all = wantsEvent ? await src.loadEvents(ctx, { zone: zoneSetting(ctx) }) : null;
-      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false) });
+      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false), styleDefault: await src.within(data.styleDefault(ctx), 3000, null) });
       const { manual } = prepared;
       const linked = await src.within(linkLogins(ctx, prepared.config), src.timing.bookMs * 2, { config: prepared.config, known: new Map() });
       const config = linked.config;
