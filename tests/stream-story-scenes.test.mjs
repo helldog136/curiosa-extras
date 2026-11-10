@@ -27,7 +27,7 @@ function scene({ style, format, n = 0, text = "", title = LONG_TITLE, cover = tr
 const run = (sc, t) => { const ctx = fakeCanvasContext(); sc.draw(ctx, t); return ctx.log; };
 /** Les extrémités horizontales et verticales d'un texte noté (selon son alignement). */
 function extent(entry) {
-  const [, text, x, y, font, align, , baseline] = entry, px = Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]), w = [...text].length * px * 0.55;
+  const [, text, x0, y, font, align, , baseline, sx = 1, tx = 0] = entry, px = Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]), w = [...text].length * px * 0.55 * sx, x = tx + sx * x0;   // sx, tx: a squeezed text (the Arena style) is measured where it really lands
   const left = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
   // la hauteur dépend de la ligne de base du texte : « middle » (les quatre premiers styles) ±0,6 em ; « alphabetic » (les six autres) de 0,8 em au-dessus à 0,25 em au-dessous ; « top » de 0 à 0,8 em au-dessous
   const [up, down] = baseline === "alphabetic" ? [0.8, 0.25] : baseline === "top" ? [0, 0.8] : [0.6, 0.6];
@@ -38,7 +38,7 @@ for (const style of P.STYLES) for (const format of P.FORMATS.map((f) => f.id)) f
 
 test("zone sûre : pour chaque style × format × 0 à 6 co-streamers (titre et phrase longs), aucun élément essentiel ne sort de la zone sûre ni n'entre dans une zone cachée", () => {
   assert.equal(CASES.length, P.STYLES.length * 2 * 7);
-  assert.equal(P.STYLES.length, 10, "les quatre styles d'origine et les six nouveaux");
+  assert.equal(P.STYLES.length, 12, "les quatre styles d'origine et les huit nouveaux");
   for (const c of CASES) for (const variant of [{ text: LONG_TEXT }, { text: "", cover: false, logo: false }, { text: "Court", title: "Oui" }]) {
     const sc = scene({ ...c, ...variant }), A = P.safeArea(c.format), f = P.formatOf(c.format), where = `${c.style}/${c.format}/${c.n} co-streamers/${JSON.stringify(variant).slice(0, 40)}`;
     assert.ok(sc.boxes.length >= 4, `${where} : des éléments sont posés`);
@@ -173,12 +173,12 @@ test("vm vierge : pure.mjs + scenes-extra.mjs + scenes.mjs concaténés (sans im
 });
 
 /* ───────────── 2.7.0: the six new styles ───────────── */
-const NEW_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"];
+const NEW_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"];
 const textsAt = (sc, t) => run(sc, t).filter((e) => e[0] === "fillText").map((e) => [e[1], e[2], e[3], e[4], e[5]]);   // text, x, y, font, align (not the alpha)
 
-test("six new styles: ids, order and the four first styles untouched", () => {
+test("eight new styles: ids, order and the four first styles untouched", () => {
   assert.deepEqual(P.STYLES, ["neon", "poster", "countdown", "minimal", ...NEW_STYLES]);
-  assert.deepEqual(X.EXTRA_STYLES, NEW_STYLES, "scenes-extra.mjs draws exactly the six new ones");
+  assert.deepEqual(X.EXTRA_STYLES, NEW_STYLES, "scenes-extra.mjs draws exactly the eight new ones");
 });
 
 test("hold: from restTime to the end every text is at exactly the same place (the composition is still), and all of them are drawn well before", () => {
@@ -256,7 +256,7 @@ test("palettes of the new styles: the site colours, text at 4.5:1 or more on the
 });
 
 test("hold, whole drawing: for the styles without grain, EVERY drawing call (shapes, masks, transforms, not only the texts) is the same from just after restTime to the end", () => {
-  for (const style of ["broadcast", "kinetic", "arcade", "geometric", "collage"]) for (const duration of [5, 15]) {
+  for (const style of ["broadcast", "kinetic", "arcade", "geometric", "collage", "epic", "arena"]) for (const duration of [5, 15]) {
     const sc = scene({ style, format: "vertical", n: 3, text: LONG_TEXT, duration });
     const a = run(sc, duration * 0.8), b = run(sc, duration * 0.9), c = run(sc, duration);
     assert.deepEqual(b, a, `${style}/${duration} s: still at 80 % and 90 %`); assert.deepEqual(c, a, `${style}/${duration} s: still at the end`);
@@ -264,4 +264,46 @@ test("hold, whole drawing: for the styles without grain, EVERY drawing call (sha
   // cinema: only the film grain (small rectangles) and the weave move; no text
   const sc = scene({ style: "cinema", format: "vertical", n: 3, text: LONG_TEXT });
   assert.deepEqual(textsAt(sc, 12), textsAt(sc, 15));
+});
+
+
+/* ───────────── 2.11.0: Epic fantasy and Hero arena ───────────── */
+test("epic and arena: drawn only from lines, fills and text (no picture of their own), no brand or game name anywhere in the module, the locales or the showcase entry", () => {
+  const words = [["war", "craft"], ["azer", "oth"], ["over", "watch"], ["bliz", "zard"], ["wo", "w"]].map((p) => p.join(""));
+  const files = [];
+  const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = `${d}/${f.name}`; if (f.isDirectory()) { if (f.name !== "shots") walk(p); } else if (/\.(mjs|json|md)$/.test(f.name)) files.push(p); } };
+  walk(DIR); walk(new URL("../showcase/modules/stream-story", import.meta.url).pathname);
+  for (const f of files) { const text = fs.readFileSync(f, "utf8").toLowerCase(); for (const w of words) assert.ok(!new RegExp(`\\b${w}\\b`).test(text), `${f.split("/").slice(-2).join("/")} does not mention « ${w} »`); }
+  for (const style of ["epic", "arena"]) for (const format of ["vertical", "passeport"]) {
+    const log = run(scene({ style, format, n: 3, text: "Court", config: {} }), 15);
+    assert.ok(!log.some((e) => e[0] === "drawImage" && e[1] !== "[objet]"), `${style}: only the editor's own images are drawn`);
+    assert.ok(log.some((e) => e[0] === "fillText"), `${style}: text is drawn with fillText`);
+  }
+});
+
+test("epic and arena: the words are in both languages, the names in the picker are neutral, and the style is listed in the MCP description", () => {
+  for (const id of ["epic", "arena"]) for (const dict of [JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8")), JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8"))]) {
+    assert.ok(dict[`ui_style_${id}`] && dict[`ui_style_${id}_hint`], id);
+    assert.ok(dict[`ui_style_${id}_hint`].length <= 70 && !/[!]/.test(dict[`ui_style_${id}_hint`]), `${id}: short hint, no exclamation`);
+  }
+  const en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8")), fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8"));
+  assert.deepEqual([en.ui_style_epic, en.ui_style_arena, fr.ui_style_epic, fr.ui_style_arena], ["Epic fantasy", "Hero arena", "Épique", "Héros"]);
+});
+
+test("epic and arena: panel and ribbon fills carry their text (4.5:1 or more) whatever the site colours, and the hot and cool colours stay apart", () => {
+  const themes = [THEME, { accent: "#ffe27a", accent2: "#ffd1e8", bg: "#ffffff", fg: "#222222" }, { accent: "#12172b", accent2: "#12172b", bg: "#0b0b10", fg: "#eeeeee" }, { accent: "#ff0000", accent2: "#ff0000", bg: "#101018", fg: "#ffffff" }, { accent: "#808080", accent2: "#808080", bg: "#777777", fg: "#000000" }];
+  for (const style of ["epic", "arena"]) for (const th of themes) {
+    const pal = S.paletteFor(style, th);
+    for (const k of ["fill", "fill2"]) assert.ok(P.contrast(P.readableOn(pal[k]), pal[k]) >= 4.5, `${style} ${JSON.stringify(th.accent)} ${k} carries its ink: ${P.contrast(P.readableOn(pal[k]), pal[k]).toFixed(2)}`);
+    for (const k of ["text", "accent", "accent2", "soft"]) assert.ok(P.contrast(pal[k], pal.base) >= 4.5 - 0.01, `${style} ${k} on the base`);
+  }
+});
+
+test("epic and arena: very long title, game and text, one-word guests, 0 to 6 guests, in both formats and both languages: the layout never fails and keeps its boxes in the safe area", () => {
+  const huge = "Mégasoirée".repeat(12);
+  for (const style of ["epic", "arena"]) for (const format of ["vertical", "passeport"]) for (const lang of ["fr", "en"]) for (const n of [0, 6]) {
+    const sc = scene({ style, format, n, title: huge, text: huge, config: { lang }, streamOver: { games: [huge] } }), A = P.safeArea(format);
+    for (const b of sc.boxes) assert.ok(b.x >= A.x - 0.5 && b.x + b.w <= A.x + A.w + 0.5 && b.y >= A.y - 0.5 && b.y + b.h <= A.y + A.h + 0.5, `${style}/${format}/${lang}/${n}: ${b.id}`);
+    assert.doesNotThrow(() => { for (const t of [0, 1, 4, 9, 12, 15]) run(sc, t); });
+  }
 });
