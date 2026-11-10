@@ -6,9 +6,10 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 - Trois étapes : l'événement (ou aucun), les informations à corriger ou retirer, puis le style.
 - Fabriquez la vidéo au format portrait.
 - Choisissez les couleurs de la vidéo.
-- Choisissez parmi douze styles d'animation, du générique de film au collage papier.
+- Choisissez parmi treize styles d'animation, du générique de film au collage papier.
 - Épique : un cadre doré, une bannière suspendue et des braises qui montent.
 - Héros : de grands panneaux inclinés, des hexagones et une barre qui se remplit.
+- Abysse : un terminal vert glacé avec balayage radar, lumière qui vacille et bandes de danger.
 - Enregistrez vos propres styles en mode avancé : la même animation avec d'autres couleurs, par exemple un style sur trois fonds. Un assistant peut aussi en créer.
 - Gardez votre style préféré par défaut : les nouvelles vidéos et l'aperçu des premières étapes démarrent avec lui.
 - Enregistrez des modèles, avec les invités de votre carnet d'adresses.
@@ -41,4 +42,4 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.12.0.
+Disponible depuis la version 1.0.0. Version actuelle : 2.13.0.

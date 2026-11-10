@@ -51,6 +51,8 @@
   "ui_style_epic_hint": "Cadre doré, bannière suspendue, runes et braises qui montent.",
   "ui_style_arena": "Héros",
   "ui_style_arena_hint": "Panneaux inclinés, hexagones et une barre qui se remplit.",
+  "ui_style_abyss": "Abysse",
+  "ui_style_abyss_hint": "Écrans verts glacés, balayage radar et lumière défaillante.",
   "ui_style_countdown_on": "Le compte à rebours est activé, ce style l'affiche.",
   "ui_format_label": "Format",
   "ui_format_vertical": "Vertical (story, 9:16)",
@@ -286,5 +288,6 @@
   "vr_ex_c": "Géométrique forêt",
   "vr_example_done": "{n} styles ajoutés.",
   "ui_variants_title": "Mes styles",
-  "ui_variant_hint": "D'après {style}"
+  "ui_variant_hint": "D'après {style}",
+  "ui_show_day_label": "Afficher le jour avec l'heure"
 }

@@ -181,12 +181,12 @@ test("éditeur sans Contacts : le repli est dit, la saisie ponctuelle marche, et
   server.restore();
 });
 
-test("2.7.0 editor: twelve style cards with a live thumbnail each; the countdown is unticked in a new video; the countdown style ticks it with a visible note and unticks it again if you leave without touching it", async () => {
+test("2.7.0 editor: thirteen style cards with a live thumbnail each; the countdown is unticked in a new video; the countdown style ticks it with a visible note and unticks it again if you leave without touching it", async () => {
   const ctx = mk(null);
   const html = await (await def.routes.studio(new Request(`${SITE}/m/story/studio`), ctx)).text();
   const ids = [...html.matchAll(/<input type="radio" name="style" id="style-([a-z]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(ids, ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"]);
-  assert.equal([...html.matchAll(/<canvas class="thumb" data-style="([a-z]+)"[^>]*aria-hidden="true">/g)].length, 12, "one decorative thumbnail per card (the name and hint carry the meaning)");
+  assert.deepEqual(ids, ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss"]);
+  assert.equal([...html.matchAll(/<canvas class="thumb" data-style="([a-z]+)"[^>]*aria-hidden="true">/g)].length, 13, "one decorative thumbnail per card (the name and hint carry the meaning)");
   for (const id of ids) { assert.match(html, new RegExp(`<label for="style-${id}" class="stylecard">`)); assert.ok(fr[`ui_style_${id}`] && fr[`ui_style_${id}_hint`], id); }
   assert.match(html, /id="style-note"[^>]*role="status"[^>]*hidden/);
 

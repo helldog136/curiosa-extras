@@ -529,3 +529,24 @@ test("My styles: the saved variants are more cards after the twelve (none: no gr
   assert.equal(els.get("style-cinema").checked, true, "the base card is checked: a clean fallback");
   assert.equal(els.get("variant-box").hidden, false); assert.equal(els.get("variant-cards").children.filter((c) => c.tagName === "label").length, 1);
 });
+
+test("show the day: a tick box on step 2 (ticked = as before), unticking shows the time alone in the preview, the module setting is its starting value, a saved model remembers it", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  current = await boot(ctx); let els = current.els;
+  assert.equal(els.get("show-day").checked, true, "default: the day and the time, as before");
+  const day = (e) => drawn(e).some((t) => new RegExp(fr.ui_style_neon && "(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)", "i").test(t));
+  assert.equal(day(els), true);
+  els.get("preview").getContext().log.length = 0;   // the log keeps every drawing since the start: begin a new one
+  els.get("show-day").checked = false; els.get("show-day").fire("change"); await wait(400);
+  assert.equal(day(els), false, "the day is gone from the preview"); assert.ok(drawn(els).some((t) => /\d[ :h]\d\d|\d{1,2}:\d\d|\d h \d\d/.test(t)), "the time stays");
+  await go(els, "step-next"); await go(els, "step-next"); await wait(200);
+  els.get("model-name").value = "Same day"; els.get("model-name").fire("input"); await go(els, "model-save"); await wait(300);
+  assert.equal((await data.readModels(ctx))[0].config.showDay, false, "the model remembers it");
+  current.server.restore(); current = null;
+  const off = mk({ calendar: [slot(1, 5)], settings: { showDay: false } });
+  current = await boot(off); els = current.els;
+  assert.equal(els.get("show-day").checked, false, "the module setting is the starting value");
+  els.get("preview").getContext().log.length = 0;
+  els.get("show-day").checked = true; els.get("show-day").fire("change"); await wait(400);
+  assert.equal(day(els), true, "this video asks for the day: it wins over the setting");
+});

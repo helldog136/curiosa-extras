@@ -87,7 +87,7 @@ const routes = {
   data: guarded("GET", async (request, ctx) => {
     const [models, adhoc, hasBook, brand, watermark, defaultStyle, savedVariants, defaultVariant] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readAdhoc(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false), src.within(data.styleDefault(ctx), 3000, null), src.within(data.readVariants(ctx), 5000, []), src.within(data.readVariantPref(ctx), 3000, "")]);
     return json({
-      ok: true, models, adhoc, variants: savedVariants, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true, defaultStyle: P.defaultStyleOf(defaultStyle), defaultVariant },
+      ok: true, models, adhoc, variants: savedVariants, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", showDay: ctx.setting("showDay") !== false, watermark: watermark === true, defaultStyle: P.defaultStyleOf(defaultStyle), defaultVariant },
     });
   }),
   people: guarded("GET", async (request, ctx) => {
@@ -234,7 +234,7 @@ export default {
       const path = typeof mine?.adminPath === "string" && /^\/admin\//.test(mine.adminPath) ? mine.adminPath : `/admin/instances/${ctx.instance.id}`;
       return {
         ok: true, link: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}${path}?prep=${pid}`, expiresAt: new Date(expiresAt).toISOString(),
-        prepared: { style: config.style, ...(config.variant ? { variant: knownVariants.find((x) => x.id === config.variant)?.name } : {}), format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
+        prepared: { style: config.style, ...(typeof config.showDay === "boolean" ? { showDay: config.showDay } : {}), ...(config.variant ? { variant: knownVariants.find((x) => x.id === config.variant)?.name } : {}), format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
         note: "Nothing has been generated or published. The owner opens this link while signed in to the admin, checks the preview, then clicks 'Generate the video' and saves the file.",
       };
     },

@@ -6,9 +6,10 @@ A short animated video that announces one of your upcoming events. It is ready f
 - Three steps: the event (or none), the information you can correct or remove, then the style.
 - Make the video in a portrait format.
 - Choose the colours of the video.
-- Pick one of twelve animation styles, from a film title card to a paper collage.
+- Pick one of thirteen animation styles, from a film title card to a paper collage.
 - Epic fantasy: a gilded frame, a hanging banner and rising embers.
 - Hero arena: bold slanted panels, hexagons and a bar that fills up.
+- Deep space dread: a cold green terminal with a radar sweep, a flickering light and hazard stripes.
 - Save your own styles in advanced mode: the same animation with other colours, such as one style on three backgrounds. An assistant can create them too.
 - Keep your favourite style as the default: new videos and the preview of the first steps start in it.
 - Save models, with guest streamers from your address book.
@@ -41,4 +42,4 @@ A short animated video that announces one of your upcoming events. It is ready f
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.12.0.
+Available since version 1.0.0. Current version: 2.13.0.

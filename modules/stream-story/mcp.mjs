@@ -47,6 +47,7 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     if (a.style !== undefined && a.style !== found.base) throw expose(`The variant '${found.name}' is based on the style '${found.base}': leave 'style' out, or choose another variant.`);
     next.style = found.base; next.variant = found.id;
   }
+  if (a.showDay !== undefined) { if (typeof a.showDay !== "boolean") throw expose("'showDay' must be true or false."); next.showDay = a.showDay; }
   if (a.style !== undefined && a.variant === undefined) { if (!P.STYLES.includes(a.style)) throw expose(`'style' must be one of: ${P.STYLES.join(", ")}.`); next.style = a.style; next.variant = ""; }
   if (a.format !== undefined) { if (!P.FORMATS.some((f) => f.id === a.format)) throw expose(`'format' must be one of: ${P.FORMATS.map((f) => f.id).join(", ")}.`); next.format = a.format; }
   if (a.language !== undefined) { if (!P.LANGS.includes(a.language)) throw expose(`'language' must be one of: ${P.LANGS.join(", ")}.`); next.lang = a.language; }
