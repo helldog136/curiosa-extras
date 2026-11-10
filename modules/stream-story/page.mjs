@@ -8,11 +8,11 @@ const LINE_SEPARATORS = new RegExp(`[${String.fromCharCode(0x2028, 0x2029)}]`, "
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** The sentences of the page (`ui_…` keys of the locales, without the prefix). */
 export const KEYS = [
-  "default_use", "default_is", "default_now", "default_saved", "variants_title", "variant_hint",
+  "show_day_label", "default_use", "default_is", "default_now", "default_saved", "variants_title", "variant_hint",
   "title", "no_access", "no_access_hint", "prep_note", "prep_expired", "prep_stream_gone", "help_intro", "cover_no_key", "cover_ambiguous", "cover_ambiguous_named", "cover_wrong", "untitled", "m_time_hint", "manual_date",
   "manual_time", "countdown_is", "text_label", "text_help", "channel_help", "lang_label", "lang_fr", "lang_en", "style_label", "style_neon", "style_neon_hint", "style_poster", "style_poster_hint", "style_countdown",
   "style_countdown_hint", "style_minimal", "style_minimal_hint", "style_broadcast", "style_broadcast_hint", "style_kinetic", "style_kinetic_hint", "style_cinema", "style_cinema_hint", "style_arcade", "style_arcade_hint", "style_collage", "style_collage_hint", "style_geometric",
-  "style_geometric_hint", "style_epic", "style_epic_hint", "style_arena", "style_arena_hint", "style_countdown_on", "format_label", "format_vertical", "format_passeport", "format_help_vertical", "format_help_passeport", "duration_label", "duration_help", "seconds", "h_members", "members_help", "members_none", "members_max",
+  "style_geometric_hint", "style_epic", "style_epic_hint", "style_arena", "style_arena_hint", "style_abyss", "style_abyss_hint", "style_countdown_on", "format_label", "format_vertical", "format_passeport", "format_help_vertical", "format_help_passeport", "duration_label", "duration_help", "seconds", "h_members", "members_help", "members_none", "members_max",
   "only_this_video", "adhoc_help", "saved_title", "remove", "h_models", "models_help", "model_name", "model_save", "models_none", "load", "replace", "cancel", "model_exists", "model_saved",
   "model_loaded", "model_replaced", "model_removed", "confirm_replace_model", "confirm_remove_model", "h_preview", "preview_label", "play", "pause", "replay", "safe_label", "safe_help", "zone_ui", "zone_grid",
   "reduced", "empty", "silent_note", "generate", "progress_start", "progress", "progress_finish", "cancelled", "cancel_video", "done", "download_again", "webm_notice", "recorder_notice", "err_unsupported",
@@ -172,7 +172,7 @@ export function studioPage(ctx, { base, colors, timezone, font, accent, accentFg
 <fieldset class="group"><legend>${T("g_event")}</legend>
 <div class="item" id="item-title">${head("title", "info-title", "f_title")}<input type="text" id="info-title" maxlength="${P.LIMITS.title}" autocomplete="off" placeholder="${T("ph_title")}"></div>
 <div class="item" id="item-when">${plain("when", "f_when")}<div class="pair"><div><label for="info-date">${T("f_date")}</label><input type="date" id="info-date" aria-describedby="info-time-hint info-error"></div><div><label for="info-time">${T("f_time")}</label><input type="time" id="info-time" aria-describedby="info-time-hint info-error"></div></div>
-<p id="info-time-hint" class="muted">${T("m_time_hint")}</p><p id="info-error" class="warn" role="alert"></p></div>
+<p id="info-time-hint" class="muted">${T("m_time_hint")}</p><label class="check tap" for="show-day"><input type="checkbox" id="show-day"><span>${T("show_day_label")}</span></label><p id="info-error" class="warn" role="alert"></p></div>
 <div class="item" id="item-game">${head("game", "info-game", "f_game")}<input type="text" id="info-game" maxlength="80" autocomplete="off" placeholder="${T("ph_game")}" aria-describedby="game-help"><p id="game-help" class="muted">${T("game_help")}</p><p id="cover-warn" class="warn" hidden></p></div>
 <div class="item" id="item-countdown">${plain("countdown", "f_countdown")}<p id="countdown-note" class="muted"></p></div></fieldset>
 <fieldset class="group"><legend>${T("g_own")}</legend>

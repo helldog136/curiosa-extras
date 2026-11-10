@@ -51,6 +51,8 @@
   "ui_style_epic_hint": "Gilded frame, a hanging banner, runes and rising embers.",
   "ui_style_arena": "Hero arena",
   "ui_style_arena_hint": "Slanted colour panels, hexagons and a bar that fills up.",
+  "ui_style_abyss": "Deep space dread",
+  "ui_style_abyss_hint": "Cold green screens, a radar sweep and a failing light.",
   "ui_style_countdown_on": "The countdown is now on, this style shows it.",
   "ui_format_label": "Format",
   "ui_format_vertical": "Vertical (story, 9:16)",
@@ -286,5 +288,6 @@
   "vr_ex_c": "Geometric forest",
   "vr_example_done": "{n} styles added.",
   "ui_variants_title": "My styles",
-  "ui_variant_hint": "Based on {style}"
+  "ui_variant_hint": "Based on {style}",
+  "ui_show_day_label": "Show the day with the time"
 }

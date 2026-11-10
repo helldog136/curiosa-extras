@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.12.0",
+  "version": "2.13.0",
   "menuGroup": "tools",
   "platform": "instagram",
   "description": {
@@ -50,6 +50,19 @@
     }
   ],
   "settings": [
+    {
+      "key": "showDay",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Show the day with the time",
+        "fr": "Afficher le jour avec l'heure"
+      },
+      "help": {
+        "en": "Starting value of the tick box of each video.",
+        "fr": "Valeur de départ de la case de chaque vidéo."
+      }
+    },
     {
       "key": "colorAccent",
       "type": "color",
@@ -297,7 +310,7 @@
     {
       "name": "style_variants_list",
       "readOnly": true,
-      "description": "The owner's saved style variants (\"My styles\"): a name, a base style among the twelve, optional colours (accent, accent2, background, text as #rrggbb) and a font (site, sans, serif, mono). Use it before style_variant_create to avoid a name that exists, or to pick one for story_prepare. Read only.",
+      "description": "The owner's saved style variants (\"My styles\"): a name, a base style among the thirteen, optional colours (accent, accent2, background, text as #rrggbb) and a font (site, sans, serif, mono). Use it before style_variant_create to avoid a name that exists, or to pick one for story_prepare. Read only.",
       "input": {
         "type": "object",
         "properties": {}
@@ -329,9 +342,10 @@
               "collage",
               "geometric",
               "epic",
-              "arena"
+              "arena",
+              "abyss"
             ],
-            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers (adds the countdown element when 'elements' is not given); minimal = typed letters; broadcast = TV bars and ticker; kinetic = huge slamming type; cinema = film title card; arcade = 8-bit panels; collage = cut-paper zine; geometric = flat shapes on a beat; epic = gilded fantasy frame and banner; arena = slanted team-shooter panels."
+            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers (adds the countdown element when 'elements' is not given); minimal = typed letters; broadcast = TV bars and ticker; kinetic = huge slamming type; cinema = film title card; arcade = 8-bit panels; collage = cut-paper zine; geometric = flat shapes on a beat; epic = gilded fantasy frame and banner; arena = slanted team-shooter panels; abyss = cold green space-horror terminal."
           },
           "format": {
             "type": "string",
@@ -412,6 +426,10 @@
             "type": "string",
             "maxLength": 40,
             "description": "Optional: the name (or identifier) of a saved style variant from style_variants_list. Its base style becomes the style of the video, with its colours and font; leave 'style' out or give the same base style."
+          },
+          "showDay": {
+            "type": "boolean",
+            "description": "Optional: false shows only the time, without the day (useful for a story the same day); true shows the day too. An all-day event keeps its day. Without it, the video starts with the owner's setting 'Show the day with the time' (on by default)."
           }
         }
       }
@@ -419,7 +437,7 @@
     {
       "name": "style_variant_create",
       "default": false,
-      "description": "Create a style variant: the same animation as one of the twelve styles, with its own colours and font, saved under a name so it shows as a card in the style step of the announcement story. 'style' is the base style. Colours must be #rrggbb or #rgb; a colour that would be hard to read is adjusted automatically and listed in 'adjusted'. At most 30 variants; names must be different. The owner can change or delete it in the administration (My styles tab). It cannot delete anything and cannot make a video.",
+      "description": "Create a style variant: the same animation as one of the thirteen styles, with its own colours and font, saved under a name so it shows as a card in the style step of the announcement story. 'style' is the base style. Colours must be #rrggbb or #rgb; a colour that would be hard to read is adjusted automatically and listed in 'adjusted'. At most 30 variants; names must be different. The owner can change or delete it in the administration (My styles tab). It cannot delete anything and cannot make a video.",
       "input": {
         "type": "object",
         "required": [
@@ -446,7 +464,8 @@
               "collage",
               "geometric",
               "epic",
-              "arena"
+              "arena",
+              "abyss"
             ],
             "description": "The base style."
           },
@@ -517,7 +536,8 @@
               "collage",
               "geometric",
               "epic",
-              "arena"
+              "arena",
+              "abyss"
             ],
             "description": "New base style."
           },
@@ -565,8 +585,8 @@
   ],
   "i18n": {
     "fr": {
-      "mcp.style_variants_list": "Les variantes de style enregistrées par la personne (« Mes styles ») : un nom, un style de départ parmi les douze, des couleurs facultatives (principale, secondaire, fond, texte en #rrggbb) et des lettres (site, simple, serif, mono). À lire avant style_variant_create pour éviter un nom déjà pris, ou pour en choisir une pour story_prepare. Lecture seule.",
-      "mcp.style_variant_create": "Crée une variante de style : la même animation qu'un des douze styles, avec ses propres couleurs et ses propres lettres, gardée sous un nom pour apparaître comme une carte à l'étape du style de la story d'annonce. « style » est le style de départ. Les couleurs s'écrivent #rrggbb ou #rgb ; une couleur difficile à lire est ajustée automatiquement et listée dans « adjusted ». 30 variantes au plus, aux noms différents. La personne peut la modifier ou la supprimer dans l'administration (onglet Mes styles). Ne supprime rien et ne fabrique aucune vidéo.",
+      "mcp.style_variants_list": "Les variantes de style enregistrées par la personne (« Mes styles ») : un nom, un style de départ parmi les treize, des couleurs facultatives (principale, secondaire, fond, texte en #rrggbb) et des lettres (site, simple, serif, mono). À lire avant style_variant_create pour éviter un nom déjà pris, ou pour en choisir une pour story_prepare. Lecture seule.",
+      "mcp.style_variant_create": "Crée une variante de style : la même animation qu'un des treize styles, avec ses propres couleurs et ses propres lettres, gardée sous un nom pour apparaître comme une carte à l'étape du style de la story d'annonce. « style » est le style de départ. Les couleurs s'écrivent #rrggbb ou #rgb ; une couleur difficile à lire est ajustée automatiquement et listée dans « adjusted ». 30 variantes au plus, aux noms différents. La personne peut la modifier ou la supprimer dans l'administration (onglet Mes styles). Ne supprime rien et ne fabrique aucune vidéo.",
       "mcp.style_variant_update": "Modifie une variante de style enregistrée, retrouvée par son nom ou son identifiant (voir style_variants_list). Seuls les champs donnés changent ; un texte vide retire la couleur. Mêmes règles qu'à la création (couleurs, ajustement, noms uniques). Les vidéos et modèles qui utilisent la variante continuent de marcher. Ne supprime rien."
     }
   }

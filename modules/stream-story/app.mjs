@@ -46,7 +46,7 @@ const S = {
   // The editable information (step 2): copied from the event that is picked, or empty for "no event". `cov`: the cover of the game written in `info.game`.
   info: { title: "", date: "", time: "", game: "" }, noEvent: false, cov: { game: "", url: "", state: "", ambiguous: false, title: "", found: "" },
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", defaultStyle: null, defaultVariant: "", variants: [], styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", defaultStyle: null, defaultVariant: "", showDay: true, variants: [], styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -121,7 +121,7 @@ function loadWordmarkFont() {
 /* ───────────── The scene and the preview ───────────── */
 function contentNow() {
   const stream = selectedStream();
-  return { stream, content: P.buildContent(S.cfg, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ }) };
+  return { stream, content: P.buildContent(S.cfg, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ, showDayDefault: S.showDay }) };
 }
 async function buildScene(nowMs = Date.now(), style = previewStyle()) {
   const mine = ++S.building;
@@ -154,7 +154,7 @@ function renderThumbs() {
     const variant = cv.dataset.variant ? S.variants.find((x) => x.id === cv.dataset.variant) ?? null : null, st = variant ? variant.base : cv.dataset.style;
     if (!P.STYLES.includes(st)) continue;
     try {
-      const content = P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ });
+      const content = P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ, showDayDefault: S.showDay });
       const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, assets: S.thumbAssets, colors: P.mergeColors(colors, variant), font: P.fontFamilyOf(variant?.font, C.font), measureContext: mctx });
       cv.width = 108; cv.height = Math.round(108 * fmt.height / fmt.width); cv.style.aspectRatio = `${fmt.width} / ${fmt.height}`;
       const ctx = cv.getContext("2d"); ctx.setTransform(cv.width / sc.width, 0, 0, cv.height / sc.height, 0, 0); sc.draw(ctx, sc.restTime);
@@ -691,7 +691,7 @@ function syncControls() {
   $("duration").value = S.cfg.duration; $("duration-out").textContent = L("seconds", { n: S.cfg.duration });
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
   $("channel").value = S.cfg.channelName; $("lang").value = S.cfg.lang; $("watermark").checked = S.cfg.watermark === true;
-  $("schedule-people").checked = S.cfg.schedulePeople !== false;
+  $("schedule-people").checked = S.cfg.schedulePeople !== false; $("show-day").checked = (S.cfg.showDay ?? S.showDay) !== false;
   if (S.cfg.lang !== (C.lang === "en" ? "en" : "fr")) $("more-2").open = true;   // a setting that was already changed (model, assistant) is never left hidden
   if (S.cfg.duration !== P.DEFAULT_CONFIG.duration) $("more-3").open = true;
   renderItems(); renderInfo(); renderStyleNote(); renderSteps();
@@ -717,6 +717,7 @@ function bind() {
   // The information of step 2: what is typed replaces what came from the event; the preview follows.
   for (const [id, key] of [["info-title", "title"], ["info-date", "date"], ["info-time", "time"], ["info-game", "game"]]) on(id, "input", () => { S.info[key] = $(id).value; if (key === "game") syncCover(); renderInfo(); rebuild(); });
   // The "Made with Curiosa" mention: the preview follows at once; the choice is remembered for the next videos (a failure does not prevent making this one).
+  on("show-day", "change", () => { S.cfg.showDay = $("show-day").checked; renderInfo(); rebuild(); });   // this video only: an explicit true/false, remembered by a saved model
   on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; renderInfo(); rebuild(); });
   on("default-style", "click", async () => {
     const st = S.cfg.style, b = $("default-style"); b.disabled = true;
@@ -812,6 +813,7 @@ async function start() {
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
   if (data.ok) {
     if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // the remembered box; an AI preparation already says its own
+    S.showDay = data.defaults?.showDay !== false;
     S.variants = Array.isArray(data.variants) ? data.variants : []; S.defaultVariant = typeof data.defaults?.defaultVariant === "string" ? data.defaults.defaultVariant : "";
     S.defaultStyle = P.defaultStyleOf(data.defaults?.defaultStyle);
     if (!PREP && S.defaultStyle) setDefaultStyleOnNewVideo();
