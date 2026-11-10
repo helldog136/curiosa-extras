@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.55.0 — 2026-11-10
+
+*En bref : Story d'annonce (2.13.0) gagne un 13e style, « Abysse » (terminal d'un vaisseau à la dérive), une date plus grande dans « Épique » et une case « Afficher le jour avec l'heure » pour chaque vidéo. Rien à régler, aucune nouvelle permission.*
+
+*In short: Announcement story (2.13.0) gets a 13th style, "Deep space dread" (the terminal of a derelict ship), a bigger date in "Epic fantasy" and a "Show the day with the time" tick box for each video. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Story d'annonce 2.13.0 : le style « Abysse ».** Fond vert quasi noir avec lignes de balayage, radar discret dont le balayage ralentit puis s'arrête pendant que des points s'allument, lumière de secours qui vacille puis se calme, bandes de danger ambre et noir, capitales à chasse fixe et titre façon pochoir. Lisible en 9:16 et en 4:5, image fixe sur les 22 % finaux, mention « Made with Curiosa » toujours en bas. Il peut servir de base à « Mes styles ». Création originale : rien n'est repris d'un film ou d'un jeu.
+- **Announcement story 2.13.0: the "Deep space dread" style.** Near-black green field with scanlines, a faint radar whose sweep slows down and stops while blips light up, an emergency light that flickers then settles, amber and black hazard stripes, monospaced capitals and a stencil-like title. Readable in 9:16 and 4:5, a still image for the last 22 %, the "Made with Curiosa" mention always at the bottom. It can be the base of "My styles". An original design: nothing is taken from any film or game.
+- **Story d'annonce 2.13.0 : « Épique », le jour est nettement plus grand.** Le jour et la date sur la bannière (« JEUDI 12 NOVEMBRE ») sont environ 50 % plus grands ; la bannière s'agrandit et tout reste dans les zones sûres.
+- **Announcement story 2.13.0: "Epic fantasy", the day is much bigger.** The day and date on the banner ("THURSDAY 12 NOVEMBER") are about 50 % larger; the banner grows and everything stays inside the safe zones.
+- **Story d'annonce 2.13.0 : « Afficher le jour avec l'heure », pour chaque vidéo.** Une case à l'étape 2, sous le jour et l'heure (cochée : rien ne change). Décochez-la, par exemple pour une story du jour même, et chaque style montre seulement l'heure, recentrée et agrandie sans trou. L'aperçu, la vidéo, les modèles enregistrés et votre IA (`showDay` de `story_prepare`) la suivent. Un réglage du module du même nom donne la valeur de départ. Un événement sur toute la journée garde son jour.
+- **Announcement story 2.13.0: "Show the day with the time", for each video.** A tick box on step 2, under the day and the time (ticked: nothing changes). Untick it, for example for a story the same day, and every style shows only the time, re-centred and enlarged with no empty gap. The preview, the video, saved models and your AI (`showDay` of `story_prepare`) all follow it. A module setting of the same name gives the starting value. An all-day event keeps its day.
+
+### Pour les développeurs
+
+- `STYLES` has thirteen ids (`abyss`); `styleAbyss` in `scenes-extra.mjs`; Epic day line 30 to 46 px; setting `showDay` (simple, default true) and config key `showDay` (explicit true/false only), `buildContent(…, { showDayDefault })`, `showDay` in `story_prepare`. No `minCore` change (stays 0.6.7), no migration. Detail: `docs/changelog-parts/story-abyss.md`.
+
 ## 1.54.0 — 2026-11-10
 
 *En bref : Story d'annonce (2.12.0) gagne « Mes styles » : des variantes enregistrées d'un style (la même animation avec d'autres couleurs), créées en mode avancé dans l'administration ou par votre assistant IA. **Demande Curiosa 0.6.7 ou plus.** Aucune nouvelle permission.*
