@@ -6,7 +6,7 @@
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.10.0",
+  "version": "2.11.0",
   "menuGroup": "tools",
   "platform": "instagram",
   "description": {
@@ -296,9 +296,11 @@
               "cinema",
               "arcade",
               "collage",
-              "geometric"
+              "geometric",
+              "epic",
+              "arena"
             ],
-            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers (adds the countdown element when 'elements' is not given); minimal = letters typed one by one; broadcast = TV channel bars, lower-thirds and ticker; kinetic = huge type slamming in; cinema = film title card with credits; arcade = 8-bit pixel panels; collage = cut-paper zine with an ink stamp; geometric = flat shapes landing on a beat."
+            "description": "neon = glitching neon text; poster = film-poster slide-in; countdown = big rolling numbers (adds the countdown element when 'elements' is not given); minimal = typed letters; broadcast = TV bars and ticker; kinetic = huge slamming type; cinema = film title card; arcade = 8-bit panels; collage = cut-paper zine; geometric = flat shapes on a beat; epic = gilded fantasy frame and banner; arena = slanted team-shooter panels."
           },
           "format": {
             "type": "string",

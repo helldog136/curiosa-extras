@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.10.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.11.0");
   assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -414,12 +414,12 @@ test("sauvegarde lisible : les modèles (références de fiche) et les ponctuels
   assert.deepEqual(bare.map((f) => f.path), ["models.json"], "rien à dire : pas de fichier vide");
 });
 
-test("2.7.0 MCP: the six new styles are accepted and described; the countdown style adds the countdown element unless a list is given; a model keeps what it stored", async () => {
+test("2.7.0 MCP: the eight new styles are accepted and described; the countdown style adds the countdown element unless a list is given; a model keeps what it stored", async () => {
   const ctx = mk(), token = await data.mintToken(ctx);
   const tool = manifest.mcp.find((t) => t.name === "story_prepare"), enumOf = tool.input.properties.style.enum;
   assert.deepEqual(enumOf, P.STYLES, "the manifest lists the styles of pure.mjs, in the same order");
   assert.ok(tool.input.properties.style.description.length <= 500);
-  for (const id of ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"]) {
+  for (const id of ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"]) {
     assert.ok(tool.input.properties.style.description.includes(id), `${id} is described`);
     const r = await prepare(ctx, { style: id });
     assert.equal(r.prepared.style, id);
@@ -435,5 +435,5 @@ test("2.7.0 MCP: the six new styles are accepted and described; the countdown st
   await act(ctx, token, { op: "model.save", name: "Neuf", config: { style: "collage" } });
   assert.deepEqual((await prepare(ctx, { model: "neuf" })).prepared.elements, P.DEFAULT_ELEMENTS);
   assert.deepEqual((await prepare(ctx, { model: "neuf", style: "countdown" })).prepared.elements, P.ELEMENTS, "a model + the countdown style: the element is added");
-  await refuse(ctx, { style: "disco" }, /broadcast, kinetic, cinema, arcade, collage, geometric/);
+  await refuse(ctx, { style: "disco" }, /broadcast, kinetic, cinema, arcade, collage, geometric, epic, arena/);
 });
