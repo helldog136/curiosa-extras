@@ -6,7 +6,7 @@ const P = await import(`./pure.mjs${v}`);
 const images = await import(`./images.mjs${v}`);
 const { LIMITS, oneLine, cleanConfig } = P;
 
-const ADHOC = "story_adhoc", MODELS = "story_models", PREFS = "story_prefs", PREPS = "story_preps", KEY = "story_key";
+const ADHOC = "story_adhoc", MODELS = "story_models", PREFS = "story_prefs", PREPS = "story_preps", KEY = "story_key", VARIANTS = "story_variants";
 export const PREP_TTL_MS = 7 * 24 * 3600 * 1000, TOKEN_TTL_MS = 12 * 3600 * 1000, MAX_PREPS = 30;
 
 async function readList(ctx, collection) {
@@ -172,16 +172,49 @@ export async function readStylePref(ctx) {
   const doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
   return P.defaultStyleOf(doc?.data?.defaultStyle);
 }
+/** The saved variant chosen as the default together with the style: its identifier if it still exists and still sits on that style, else "". */
+export async function readVariantPref(ctx) {
+  const doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0], style = P.defaultStyleOf(doc?.data?.defaultStyle), id = String(doc?.data?.defaultVariant ?? "");
+  if (!style || !P.VARIANT_ID.test(id)) return "";
+  return (await readVariants(ctx)).some((v) => v.id === id && v.base === style) ? id : "";
+}
 export async function styleDefault(ctx) {
   try { return await readStylePref(ctx); } catch { return null; }
 }
-export async function setStylePref(ctx, style) {
+export async function setStylePref(ctx, style, variant = "") {
   const value = P.defaultStyleOf(style);
   if (!value) return { error: "invalid" };
+  const variantId = P.VARIANT_ID.test(String(variant)) && (await readVariants(ctx)).some((v) => v.id === variant && v.base === value) ? String(variant) : "";
   const doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];
-  if (doc) await ctx.api.store.update(doc.id, { ...doc.data, defaultStyle: value });  // `update` replaces the document: keep the other preferences
-  else await ctx.api.store.add(PREFS, { defaultStyle: value });
-  return { defaultStyle: value };
+  if (doc) await ctx.api.store.update(doc.id, { ...doc.data, defaultStyle: value, defaultVariant: variantId });  // `update` replaces the document: keep the other preferences
+  else await ctx.api.store.add(PREFS, { defaultStyle: value, defaultVariant: variantId });
+  return { defaultStyle: value, defaultVariant: variantId };
+}
+
+/* ───────────── "My styles": saved variants of a style (a name, a base style, optional colours and font) ───────────── */
+export async function readVariants(ctx) { return P.cleanVariants((await readList(ctx, VARIANTS)).items); }
+/**
+ * Creates (no `id`) or changes (`id`) a variant; `raw` goes through P.checkVariant, so a change only touches the keys present. Same function for the administration and the AI tools.
+ * Returns { ok, item, items } or { errors: { field: code } } or { error: "missing" | "full" }.
+ */
+export async function saveVariant(ctx, raw, id = "") {
+  const items = await readVariants(ctx), at = id ? items.findIndex((x) => x.id === id) : -1;
+  if (id && at < 0) return { error: "missing" };
+  const c = P.checkVariant(raw, at >= 0 ? items[at] : null);
+  if (!c.ok) return { errors: c.errors };
+  if (items.some((x, i) => i !== at && x.name.toLowerCase() === c.value.name.toLowerCase())) return { errors: { name: "exists" } };
+  if (at < 0 && items.length >= LIMITS.variants) return { error: "full" };
+  const item = { id: at >= 0 ? items[at].id : randomBytes(8).toString("hex"), ...c.value };
+  if (at >= 0) items[at] = item; else items.push(item);
+  await writeList(ctx, VARIANTS, items);
+  return { ok: true, item, items };
+}
+/** Deleting a variant never touches the models or the default that point to it: they simply do not find it any more and use the base style. */
+export async function removeVariant(ctx, id) {
+  const items = await readVariants(ctx), rest = items.filter((x) => x.id !== String(id));
+  if (rest.length === items.length) return { error: "missing" };
+  await writeList(ctx, VARIANTS, rest);
+  return { ok: true, items: rest };
 }
 export async function setWatermarkPref(ctx, on) {
   const value = on === true, doc = (await ctx.api.store.list(PREFS, { limit: 1 }))[0];

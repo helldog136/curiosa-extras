@@ -232,6 +232,8 @@ test("aucune bibliothèque tierce ni chargement depuis un CDN : tout le code nav
   for (const f of ["pure.mjs", "scenes.mjs", "scenes-extra.mjs", "mp4.mjs", "encode.mjs", "app.mjs"]) {
     const code = fs.readFileSync(`${dir}/${f}`, "utf8");
     assert.ok(!/https?:\/\//.test(code.replace(/\/\/.*$/gm, "")), `${f} ne contient aucune adresse http(s) (hors commentaires)`);
-    assert.ok(!/\bimport\s*\(|from\s+["'](?!\.\/)/.test(code), `${f} n'importe que des fichiers du module`);
+    const dynamic = code.match(/\bimport\s*\(.*?\)/g) ?? [];   // the only dynamic imports allowed: a file of the module with the versioned address (hot update), never anything else
+    assert.ok(dynamic.every((x) => /^import\(`\.\/[a-z-]+\.mjs\$\{v\}`\)$/.test(x)), `${f} n'importe que des fichiers du module`);
+    assert.ok(!/from\s+["'](?!\.\/)/.test(code), `${f} n'importe que des fichiers du module`);
   }
 });

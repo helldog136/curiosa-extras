@@ -24,9 +24,10 @@ export const backupModel = (m) => ({ ...publicModel(m), costreamers: m.config.co
  * `models`: the saved models. A model is the starting point; the other values complete or replace it.
  * `watermarkDefault`: the value of the person's "Made with Curiosa" box, used when the AI says nothing.
  * `styleDefault`: the style the person remembered as their default (null if none): the style when the AI and the model say nothing.
+ * `variants`: the saved style variants ("My styles"): `variant` (a name or an identifier) picks one; its base style is the style of the video.
  * `events`: the upcoming events of all sources (for `event`); `sourcesDown`: all sources went silent (the message says so).
  */
-export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false, styleDefault = null }) {
+export function strictPrepare(args, { models, tz, events = [], sourcesDown = false, watermarkDefault = false, styleDefault = null, variantDefault = "", variants = [] }) {
   const a = args && typeof args === "object" ? args : {};
   let base = P.DEFAULT_CONFIG;
   if (a.model !== undefined) {
@@ -36,9 +37,17 @@ export function strictPrepare(args, { models, tz, events = [], sourcesDown = fal
     base = m.config;
   }
   const next = { ...base, watermark: watermarkDefault === true };
-  if (a.model === undefined && P.defaultStyleOf(styleDefault)) next.style = styleDefault;   // no model: the person's default style (a model keeps its own)   // the mention: the person's setting, unless the AI says otherwise (never a model)
+  if (a.model === undefined && P.defaultStyleOf(styleDefault)) next.style = styleDefault;   // no model: the person's default style (a model keeps its own)
+  if (a.model === undefined && variants.some((x) => x.id === variantDefault && x.base === next.style)) next.variant = variantDefault;   // and its saved variant, when the default has one   // the mention: the person's setting, unless the AI says otherwise (never a model)
   if (a.watermark !== undefined) { if (typeof a.watermark !== "boolean") throw expose("'watermark' must be true or false."); next.watermark = a.watermark; }
-  if (a.style !== undefined) { if (!P.STYLES.includes(a.style)) throw expose(`'style' must be one of: ${P.STYLES.join(", ")}.`); next.style = a.style; }
+  if (a.variant !== undefined) {
+    if (typeof a.variant !== "string" || a.variant.length > P.LIMITS.variantName) throw expose("'variant' must be the name of a saved style variant (see style_variants_list).");
+    const ref = a.variant.trim().toLowerCase(), found = variants.find((x) => x.id === ref || x.name.toLowerCase() === ref);
+    if (!found) throw expose(`No style variant named '${P.oneLine(a.variant, 60)}'. Call style_variants_list to list them.`);
+    if (a.style !== undefined && a.style !== found.base) throw expose(`The variant '${found.name}' is based on the style '${found.base}': leave 'style' out, or choose another variant.`);
+    next.style = found.base; next.variant = found.id;
+  }
+  if (a.style !== undefined && a.variant === undefined) { if (!P.STYLES.includes(a.style)) throw expose(`'style' must be one of: ${P.STYLES.join(", ")}.`); next.style = a.style; next.variant = ""; }
   if (a.format !== undefined) { if (!P.FORMATS.some((f) => f.id === a.format)) throw expose(`'format' must be one of: ${P.FORMATS.map((f) => f.id).join(", ")}.`); next.format = a.format; }
   if (a.language !== undefined) { if (!P.LANGS.includes(a.language)) throw expose(`'language' must be one of: ${P.LANGS.join(", ")}.`); next.lang = a.language; }
   if (a.durationSeconds !== undefined) {

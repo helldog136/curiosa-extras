@@ -2252,13 +2252,13 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/stream-story",
       "ref": "v1.53.0",
-      "version": "2.11.0",
+      "version": "2.12.0",
       "platform": "instagram",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "📱",
       "requires": {
-        "core": "0.2.10"
+        "core": "0.6.7"
       },
       "offers": [
         {

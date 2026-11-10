@@ -1,8 +1,10 @@
 // The animations of "Announcement story" (neon, poster, countdown, minimal here; broadcast, kinetic, cinema, arcade, collage, geometric in scenes-extra.mjs). Each one is a FUNCTION OF TIME: `scene.draw(ctx, t)` draws the image needed at second `t`, always the same
 // for the same `t` (no hazard that cannot be reproduced, no clock): this is what lets the video be made image by image, as fast as the computer can.
 // This file knows neither the page nor the network: it receives a 2D drawing context (canvas) and draws with `fillText` (never HTML).
-import { formatOf, safeArea, STYLES, LIMITS, WATERMARK_TEXT, WATERMARK_LEAD, WATERMARK_NAME, WORDMARK, wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, clamp01, easeOutCubic, easeInOutCubic, easeOutBack, progress, seeded } from "./pure.mjs";
-import { EXTRA_STYLES, extraPalette, createExtraScene } from "./scenes-extra.mjs";
+// The module version spreads to the neighbouring files (otherwise the old code would stay in cache after a hot update); in the browser the address has no version and this is a plain import.
+const v = new URL(import.meta.url).search;
+const { colorsOf, mergeColors, formatOf, safeArea, STYLES, LIMITS, WATERMARK_TEXT, WATERMARK_LEAD, WATERMARK_NAME, WORDMARK, wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, clamp01, easeOutCubic, easeInOutCubic, easeOutBack, progress, seeded } = await import(`./pure.mjs${v}`);
+const { EXTRA_STYLES, extraPalette, createExtraScene } = await import(`./scenes-extra.mjs${v}`);
 
 const FAMILY = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const cleanFamily = (f) => (typeof f === "string" && /^[A-Za-z0-9 ,'"\-_.]{1,200}$/.test(f) ? f : FAMILY);
@@ -73,6 +75,20 @@ export function paletteFor(style, input = {}) {
   }
   const text = ensureContrast(fg, bg, 7), a = ensureContrast(accent, bg, 4.5);
   return { base: bg, bg0: bg, bg1: bg, text, accent: a, accent2: a, soft: ensureContrast(mix(text, bg, 0.35), bg, 4.5), ring: a };
+}
+
+/**
+ * The colours of a variant that the palette had to change to stay readable (4.5:1): the drawing is ALWAYS safe (every palette corrects itself), this only tells the person.
+ * `site`: the site colours; `variant`: { base, colors }. A colour counts when it is asked for, read by the base style, and the palette gives back a different one
+ * because the asked one would not carry text on the style's own ground. Styles whose palette turns the colour into something else on purpose (a field, a gold, a gradient) report nothing.
+ */
+export function adjustedColors(site, variant) {
+  const base = variant?.base, asked = colorsOf(base).filter((k) => variant?.colors?.[k]);
+  if (!asked.length) return [];
+  const pal = paletteFor(base, mergeColors(site, variant)), same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+  const read = { accent: pal.accent, accent2: pal.accent2, fg: pal.text };
+  if (["kinetic", "countdown", "epic"].includes(base)) return [];
+  return asked.filter((k) => read[k] && !same(read[k], variant.colors[k]) && contrast(variant.colors[k], pal.base) < 4.5);
 }
 
 /* ───────────── The layout (the same logic for the four first styles) ───────────── */
