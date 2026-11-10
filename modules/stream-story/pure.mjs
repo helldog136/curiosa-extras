@@ -14,7 +14,7 @@ export const FORMATS = [
     zones: [{ id: "grid", x: 0, y: 0, w: 34, h: 1350 }, { id: "grid", x: 1046, y: 0, w: 34, h: 1350 }] },
 ];
 /** The animation styles: the first four since 1.0, then six styles of very different character (2.7.0). The order is the one of the editor's picker. */
-export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"];
+export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
 /**
  * The style of the preview while the person edits the event and the information (steps 1 and 2), before any style is chosen. Minimal: a plain background, left-aligned blocks
@@ -182,6 +182,8 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
   }
   return {
     style, format, duration, elements,
+    // Show the day with the time: only an explicit true/false is kept (a video, a model, an assistant); nothing means "follow the module setting".
+    ...(typeof r.showDay === "boolean" ? { showDay: r.showDay } : r.showDay === undefined && typeof d.showDay === "boolean" ? { showDay: d.showDay } : {}),
     text: freeText(r.text ?? d.text, LIMITS.text),
     channelName: oneLine(r.channelName ?? d.channelName, LIMITS.channelName),
     costreamers: members,
@@ -426,14 +428,15 @@ export function streamFromInfo(info, { base = null, tz = "UTC" } = {}) {
  * Everything the video writes, ready to draw: an element is present only if it is chosen AND has something to show.
  * `stream`: a stream (see above) or null; `coStreamers`: [{ login, name }] already chosen; `site`: { name }; `nowMs`: the instant of the generation.
  */
-export function buildContent(config, { stream, coStreamers = [], site = {}, nowMs, tz }) {
+export function buildContent(config, { stream, coStreamers = [], site = {}, nowMs, tz, showDayDefault = true }) {
   const c = cleanConfig(config), has = (e) => c.elements.includes(e);
+  const showDay = typeof c.showDay === "boolean" ? c.showDay : showDayDefault !== false;   // the video's own choice wins; else the module setting
   const zone = validZone(stream?.timezone) ? stream.timezone : validZone(tz) ? tz : "UTC";
   const out = { lang: c.lang, title: "", dayLine: "", timeLine: "", countdown: "", parts: null, game: "", brand: "", text: "", costreamers: [], zone, startMs: stream?.startMs ?? null };
   if (stream) {
     if (has("title")) out.title = oneLine(stream.title, LIMITS.title);
     const dated = Number.isFinite(stream.startMs);   // an event written by hand may have no day yet
-    if (has("when") && dated) { out.dayLine = formatDay(stream.startMs, zone, c.lang); out.timeLine = stream.allDay ? "" : formatTime(stream.startMs, zone, c.lang); }
+    if (has("when") && dated) { out.timeLine = stream.allDay ? "" : formatTime(stream.startMs, zone, c.lang); out.dayLine = showDay || !out.timeLine ? formatDay(stream.startMs, zone, c.lang) : ""; }   // without a time (all-day event) the day is all there is: it stays
     if (has("countdown") && dated) { out.countdown = countdownText({ startMs: stream.startMs, nowMs, tz: zone, lang: c.lang, allDay: stream.allDay }); out.parts = stream.allDay ? null : countdownParts(stream.startMs, nowMs); }
     if (has("game") && stream.games?.[0]) out.game = oneLine(stream.games[0], 80);
   }

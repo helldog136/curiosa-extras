@@ -39,7 +39,7 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.12.0");
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.13.0");
   assert.equal(manifest.minCore, "0.6.7", "the \"My styles\" tab uses the rich administration blocks (core 0.6.0 and after) and the French text of the tools (0.6.7)"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
@@ -53,8 +53,8 @@ test("manifeste : un module à lui, une instance, aucune page publique, 4 permis
 });
 
 test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ de la mention, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
-  assert.deepEqual(manifest.settings.map((s) => s.key), ["colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone", "watermark", "showVariants"]);
-  assert.ok(manifest.settings.every((s) => s.advanced === true), "rien en mode simple : zéro configuration");
+  assert.deepEqual(manifest.settings.map((s) => s.key), ["showDay", "colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone", "watermark", "showVariants"]);
+  assert.deepEqual(manifest.settings.filter((s) => s.advanced !== true).map((s) => s.key), ["showDay"], "one simple setting, \"Show the day with the time\" (on by default: nothing changes); all the others are advanced");
   assert.deepEqual(manifest.settings.filter((s) => s.type === "color").map((s) => s.default), ["theme:accent", "theme:accent2", "theme:bg", "theme:fg"]);
   assert.equal(manifest.settings.find((s) => s.key === "timezone").optional, true);
 });
@@ -162,7 +162,7 @@ test("données de l'éditeur : modèles, ponctuels, état de Contacts, logo du s
   const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} } });
   const token = await data.mintToken(ctx);
   const r = await json(await call(ctx, "data", { token }));
-  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", watermark: false, defaultStyle: null, defaultVariant: "" }], "sans Contacts : « absent »");
+  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", showDay: true, watermark: false, defaultStyle: null, defaultVariant: "" }], "sans Contacts : « absent »");
   assert.ok(!("costreamers" in r) && !("partners" in r), "plus de liste « à moi » ni de partenaires du Raid");
   const ext = mk({ brand: { name: "X", logos: [{ kind: "square", src: "https://cdn.evil/logo.png" }], logo: "https://cdn.evil/l.png", colors: [], font: {} } });
   assert.equal((await json(await call(ext, "data", { token: await data.mintToken(ext) }))).brand.logo, "", "un logo venu d'ailleurs n'est pas relayé");
@@ -419,7 +419,7 @@ test("2.7.0 MCP: the eight new styles are accepted and described; the countdown 
   const tool = manifest.mcp.find((t) => t.name === "story_prepare"), enumOf = tool.input.properties.style.enum;
   assert.deepEqual(enumOf, P.STYLES, "the manifest lists the styles of pure.mjs, in the same order");
   assert.ok(tool.input.properties.style.description.length <= 500);
-  for (const id of ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"]) {
+  for (const id of ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss"]) {
     assert.ok(tool.input.properties.style.description.includes(id), `${id} is described`);
     const r = await prepare(ctx, { style: id });
     assert.equal(r.prepared.style, id);
@@ -435,5 +435,5 @@ test("2.7.0 MCP: the eight new styles are accepted and described; the countdown 
   await act(ctx, token, { op: "model.save", name: "Neuf", config: { style: "collage" } });
   assert.deepEqual((await prepare(ctx, { model: "neuf" })).prepared.elements, P.DEFAULT_ELEMENTS);
   assert.deepEqual((await prepare(ctx, { model: "neuf", style: "countdown" })).prepared.elements, P.ELEMENTS, "a model + the countdown style: the element is added");
-  await refuse(ctx, { style: "disco" }, /broadcast, kinetic, cinema, arcade, collage, geometric, epic, arena/);
+  await refuse(ctx, { style: "disco" }, /broadcast, kinetic, cinema, arcade, collage, geometric, epic, arena, abyss/);
 });

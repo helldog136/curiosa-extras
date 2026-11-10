@@ -138,7 +138,7 @@ test("administration: hidden until turned on (advanced setting) or a variant exi
   assert.equal(dlg.cancelHref, "?tab=styles"); assert.equal(dlg.submitLabel, fr.vr_save);
   const visible = dlg.fields.filter((f) => f.kind !== "hidden" && !f.folded); assert.deepEqual(visible.map((f) => f.name), ["name", "base"], "two fields on the short path");
   assert.deepEqual(dlg.fields.filter((f) => f.folded).map((f) => f.name), ["accent", "accent2", "bg", "fg", "font"], "colours and font are under « More options »");
-  assert.equal(dlg.fields.find((f) => f.name === "base").options.length, 12);
+  assert.equal(dlg.fields.find((f) => f.name === "base").options.length, 13);
   assert.ok(dlg.fields.filter((f) => f.kind === "text").every((f) => f.example), "every free field has an example");
   assert.deepEqual(dlg.fields.find((f) => f.name === "font").options.map((o) => o.value), P.FONTS);
   const fresh = (await def.adminPanel(on, { query: { newvar: "1" } })).find((b) => b.type === "adminForm" && b.presentation === "dialog");
@@ -254,4 +254,44 @@ test("backup: the variants are in the readable backup; the privacy text and the 
   const files = await def.backup.readable(ctx), f = files.find((x) => x.path === "style-variants.json");
   assert.ok(f); assert.equal(JSON.parse(f.content)[0].name, "Night");
   assert.match(read("README.md"), /My styles/); assert.match(manifest.privacy.en, /style variants/); assert.match(manifest.privacy.fr, /variantes de style/);
+});
+
+/* ───────────── "Show the day with the time" (2.13.0) ───────────── */
+test("show the day: the setting is the default, a video's own true/false wins, an all-day event keeps its day, every style x 2 formats renders the time alone inside the safe area", () => {
+  const stream = { title: "Soirée", startMs: Date.parse("2026-10-22T17:30:00Z"), allDay: false, games: [], timezone: "Europe/Brussels" };
+  const cfg = { ...P.DEFAULT_CONFIG, elements: P.ELEMENTS };
+  const build = (config, over = {}, s = stream) => P.buildContent(config, { stream: s, site: {}, nowMs: Date.parse("2026-10-22T10:00:00Z"), tz: "Europe/Brussels", ...over });
+  assert.ok(build(cfg).dayLine && build(cfg).timeLine, "default: the day and the time, as before");
+  assert.deepEqual([build(cfg, { showDayDefault: false }).dayLine, !!build(cfg, { showDayDefault: false }).timeLine], ["", true], "the setting off: the time alone");
+  assert.ok(build({ ...cfg, showDay: true }, { showDayDefault: false }).dayLine, "a video that says true wins over the setting");
+  assert.equal(build({ ...cfg, showDay: false }, { showDayDefault: true }).dayLine, "", "a video that says false wins over the setting");
+  const allDay = { ...stream, allDay: true }; assert.ok(build(cfg, { showDayDefault: false }, allDay).dayLine, "an all-day event has no time: its day stays, never an empty block");
+  assert.deepEqual(Object.keys(P.cleanConfig({})).includes("showDay"), false, "nothing stored means follow the setting"); assert.equal(P.cleanConfig({ showDay: false }).showDay, false); assert.equal(P.cleanConfig({ showDay: "no" }).showDay, undefined);
+  for (const style of P.STYLES) for (const format of ["vertical", "passeport"]) {
+    const A = P.safeArea(format), mkScene = (showDayDefault) => S.createScene({ style, format, duration: 15, content: build({ ...cfg, style, format, text: "Venez !" }, { showDayDefault }), assets: { logo: null, cover: null, avatars: {} }, colors: SITE_COLORS, measureContext: fakeCanvasContext() });
+    const on = mkScene(true), off = mkScene(false), texts = (sc) => [run(sc, sc.restTime).filter((e) => e[0] === "fillText").map((e) => String(e[1]).toLowerCase()).join("")];   // several styles draw glyph by glyph: the whole text is joined
+    assert.ok(texts(on).some((x) => /jeudi/.test(x)), `${style}: the day is drawn by default`);
+    assert.ok(!texts(off).some((x) => /jeudi|octobre/.test(x)), `${style}/${format}: no day when off`);
+    assert.ok(texts(off).some((x) => /19 ?h ?30|19:30/.test(x)), `${style}/${format}: the time is still there`);
+    for (const b of off.boxes) assert.ok(b.x >= A.x - 0.5 && b.x + b.w <= A.x + A.w + 0.5 && b.y >= A.y - 0.5 && b.y + b.h <= A.y + A.h + 0.5, `${style}/${format}: ${b.id} in the safe area`);
+    assert.ok(off.boxes.length >= 1);
+    assert.doesNotThrow(() => { for (const t of [0, 3, 9, 15]) run(off, t); });
+  }
+});
+
+test("show the day: the studio data carries the setting, story_prepare passes an explicit value (never invents one), the manifest declares one simple setting with FR/EN texts", async () => {
+  const off = mk({ settings: { showDay: false } }), token = await data.mintToken(off);
+  const r = await def.routes.data(new Request(`${SITE}/m/story/data`, { headers: { "x-story-token": token } }), off).then((x) => x.json());
+  assert.equal(r.defaults.showDay, false); const on = mk(), r2 = await def.routes.data(new Request(`${SITE}/m/story/data`, { headers: { "x-story-token": await data.mintToken(on) } }), on).then((x) => x.json()); assert.equal(r2.defaults.showDay, true);
+  const prep = async (args) => { const res = await def.mcp.story_prepare(off, args); return { res, p: await data.readPrep(off, /prep=([A-Za-z0-9_-]{22})/.exec(res.link)[1]) }; };
+  let x = await prep({}); assert.deepEqual([x.p.config.showDay, "showDay" in x.res.prepared], [undefined, false], "nothing said: the setting applies later, nothing is invented");
+  x = await prep({ showDay: false }); assert.deepEqual([x.p.config.showDay, x.res.prepared.showDay], [false, false]);
+  x = await prep({ showDay: true }); assert.equal(x.p.config.showDay, true);
+  await assert.rejects(def.mcp.story_prepare(off, { showDay: "no" }), /'showDay' must be true or false/);
+  await data.saveModel(off, { name: "T", config: { ...P.DEFAULT_CONFIG, showDay: false } }); assert.equal((await data.readModels(off))[0].config.showDay, false, "a model remembers its own choice");
+  const s = manifest.settings.find((x) => x.key === "showDay");
+  assert.deepEqual([s.type, s.default, s.advanced], ["boolean", true, undefined]);
+  assert.ok(s.label.en.length <= 60 && s.label.fr.length <= 60 && s.help.en.length <= 60 && s.help.fr.length <= 60 && !/:$/.test(s.label.en));
+  assert.equal(manifest.mcp.find((t) => t.name === "story_prepare").input.properties.showDay.type, "boolean");
+  assert.match(read("README.md"), /Show the day with the time/);
 });

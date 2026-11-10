@@ -1,4 +1,4 @@
-// Eight more styles for « Story d'annonce »: broadcast, kinetic, cinema, arcade, collage, geometric (2.7.0), epic and arena (2.11.0).
+// Nine more styles for « Story d'annonce »: broadcast, kinetic, cinema, arcade, collage, geometric (2.7.0), epic and arena (2.11.0), abyss (2.13.0).
 // Same contract as scenes.mjs: every image is a PURE FUNCTION OF TIME (same t, same pixels: grain, paper, jitter and weave are seeded by the time or by a constant, never by a clock),
 // text is drawn with fillText only, nothing here knows the page, the network or the browser. `createScene` (scenes.mjs) hands over a `kit` (sizes, content, fonts, small drawing tools)
 // and gets back the layout and a `draw(ctx, t)`; it adds the "Made with Curiosa" mention itself, so the watermark never depends on a style.
@@ -8,7 +8,7 @@
 const v = new URL(import.meta.url).search;
 const { wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, parseHex, toHex, clamp01, easeOutCubic, easeInOutCubic, progress, seeded } = await import(`./pure.mjs${v}`);
 
-export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"];
+export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss"];
 /** The few words these styles write themselves (the rest comes from the editor). Neutral, and given for both languages. */
 export const EXTRA_WORDS = { fr: { next: "À SUIVRE", start: "START" }, en: { next: "UP NEXT", start: "START" } };
 
@@ -87,6 +87,10 @@ export function extraPalette(style, input = {}) {
   if (style === "epic") {
     const base = mix("#120d09", accent, 0.05), gold = mix("#d4af37", accent, 0.1), text = "#f4ead4", gem = xBoost(partner, base, 4.5), ribbon = xFill(mix(accent, "#5a0f12", 0.4));
     return done({ base, text, accent: ensureContrast(mix(gold, "#ffffff", 0.12), base, 4.5), accent2: gem, soft: ensureContrast(mix(text, base, 0.36), base, 4.5), gold, goldHi: mix(gold, "#ffffff", 0.5), goldLo: mix(gold, "#2a1808", 0.55), fill: ribbon, fill2: xFill(gem) });
+  }
+  if (style === "abyss") {
+    const base = mix("#050806", accent, 0.04), phos = xBoost(mix("#3ddc84", accent, 0.2), base, 4.5), alert = xBoost(mix("#e8a317", partner, 0.25), base, 4.5), text = "#dcf5e6";
+    return done({ base, text, accent: phos, accent2: alert, soft: ensureContrast(mix(text, base, 0.4), base, 4.5), fill: xFill(alert), fill2: xFill(phos) });
   }
   if (style === "arena") {
     const base = mix("#080b13", accent, 0.07), hot = xBoost(accent, base, 4.5), cool = xBoost(partner, base, 4.5), text = "#f5f8ff";
@@ -1061,7 +1065,7 @@ function styleEpic(K) {
     }
     if (id === "when") {
       const padX = 40 * u, padY = 20 * u, tail = 34 * u, inner = IW - padX * 2 - tail * 2;
-      const day = content.dayLine ? xFitLine(K, content.dayLine, { fam: XSERIF, weight: 700, px: (content.timeLine ? 30 : 60) * u, upper: true, track: 0.16, width: inner, minFrac: 0.5 }) : null;
+      const day = content.dayLine ? xFitLine(K, content.dayLine, { fam: XSERIF, weight: 700, px: (content.timeLine ? 46 : 72) * u, upper: true, track: 0.12, width: inner, minFrac: 0.5 }) : null;
       const time = content.timeLine ? xFitLine(K, content.timeLine, { fam: XSERIF, weight: 700, px: 104 * u, width: inner, minFrac: 0.4 }) : null;
       const dh = day ? day.px * 1.55 : 0, th = time ? time.px * 1.12 : 0, bw = Math.min(IW, Math.max(day?.w ?? 0, time?.w ?? 0) + (padX + tail) * 2);
       return { id, day, time, dh, th, padY, tail, h: padY * 2 + dh + th, tw: bw };
@@ -1380,5 +1384,154 @@ function styleArena(K) {
   return spec;
 }
 
+/* ═════════════════════════ 13. ABYSS ═════════════════════════
+ * Cold space horror: a derelict ship's terminal. Near-black green field, CRT scanlines (fixed), a faint radar whose sweep slows down and stops at `restTime` while blips light up as it
+ * passes, an emergency light that flickers (a seeded value per 1/12 s) and settles to a steady dim glow, hazard stripes along the top and bottom of the safe area, monospaced capitals,
+ * a stencil-like title (thin bridges cut through the letters), a split-colour glitch that dies out as each line arrives. Everything is lines and fills; nothing moves in the last 22 %. */
+function styleAbyss(K) {
+  const { pal, content, assets, members, D, has, W, H } = K, A0 = K.A, L = Math.min(0.75, Math.max(0.4, D * 0.05)), rest = D * 0.78, IW = A0.w;
+  const order = ["brand", "title", "when", "countdown", "game", "text", "costreamers"].filter((id) => has[id]);
+  const starts = xStarts(D, order.length, L * 1.4, 0.08, 0.66), at = (id) => starts[order.indexOf(id)];
+  const BAND = 26, spec = { gap: 30, maxScale: 1.4, stretch: 1.25, reserveTop: BAND + 44, reserveBottom: BAND + 44 };
+  const rng = seeded(1313), blips = Array.from({ length: 5 }, () => ({ a: rng() * Math.PI * 2, r: 0.25 + rng() * 0.7 }));
+  const cx0 = A0.x + A0.w / 2, cy0 = A0.y + A0.h / 2, R = Math.min(A0.w, A0.h) * 0.62;
+  const SWEEP = Math.PI * 2 * 1.75, START = -Math.PI / 2;
+  const ang = (t) => START + SWEEP * xOutQuart(progress(t, 0, rest));
+
+  spec.build = (u) => order.map((id) => {
+    if (id === "brand") {
+      const px = 24 * u, logo = K.hasLogo ? 52 * u : 0, gap = logo ? 18 * u : 0, f = xFont(K, 700, px, false, XMONO), m0 = xMeasure(K, f), tr = px * 0.12;
+      const name = content.brand ? ellipsize((s) => xTW(m0, s, tr), `// ${content.brand.toLocaleUpperCase(K.lang)}`, IW - logo - gap) : "";
+      return { id, h: Math.max(logo, px * 1.5), logo, gap, name, px, tr, tw: logo + gap + (name ? xTW(m0, name, tr) : 0), gapAfter: 1.1 };
+    }
+    if (id === "title") {
+      const fit = xFit(K, content.title, { weight: 800, px: 104 * u, lhr: 1.04, track: 0.03, width: IW - 30 * u, maxLines: 4, okLines: 3, minFrac: 0.4, upper: true });
+      return { id, fit, h: fit.lines.length * fit.lh + 24 * u, gapAfter: 1 };
+    }
+    if (id === "when") {
+      const pad = 22 * u, day = content.dayLine ? xFitLine(K, content.dayLine, { fam: XMONO, weight: 700, px: 30 * u, upper: true, track: 0.1, width: IW - pad * 2 - 40 * u, minFrac: 0.5 }) : null;
+      const time = content.timeLine ? xFitLine(K, content.timeLine, { fam: XMONO, weight: 800, px: 170 * u, track: -0.02, width: IW - pad * 2, minFrac: 0.3 }) : null;
+      const dh = day ? day.px * 1.7 : 0, th = time ? time.px * 0.95 : 0, bw = Math.min(IW, Math.max(day ? day.w + 40 * u : 0, time ? time.w + pad * 2 + 24 * u : 0));
+      return { id, day, time, pad, dh, th, h: dh + th + (time ? pad : 0) + (day && !time ? 0 : 0), tw: bw };
+    }
+    if (id === "countdown") {
+      const line = xFitLine(K, `> ${content.countdown}`, { fam: XMONO, weight: 700, px: 38 * u, upper: true, track: 0.06, width: IW, minFrac: 0.5 });
+      return { id, line, h: line.px * 1.5, tw: line.w + line.px * 0.9 };
+    }
+    if (id === "game") {
+      const cover = K.tools.usable(assets.cover), cw = cover ? 200 * u : 0, ch = cover ? 150 * u : 0, gap = cover ? 28 * u : 0;
+      const fit = xFit(K, content.game, { fam: XMONO, weight: 700, px: 40 * u, lhr: 1.2, upper: true, track: 0.04, width: IW - cw - gap, maxLines: 3, okLines: 2, minFrac: 0.55 });
+      return { id, cover, cw, ch, gap, fit, h: Math.max(ch, fit.lines.length * fit.lh), tw: IW };
+    }
+    if (id === "text") {
+      const fit = xFit(K, content.text, { fam: XMONO, weight: 600, px: 36 * u, lhr: 1.3, width: IW - 48 * u, maxLines: 3, shrink: false });
+      return { id, fit, h: fit.lines.length * fit.lh, tw: IW };
+    }
+    const rows = members.length <= 3 ? 1 : 2, d = 140 * u, labelH = Math.max(38 * u, 32), head = 46 * u;
+    return { id, rows, d, labelH, head, h: head + rows * (d + labelH + 12) + (rows - 1) * Math.min(22 * u, 16), tw: IW };
+  });
+  spec.place = (blocks) => blocks.forEach((b) => { b.bx = b.x; b.bw = Math.min(b.w, b.tw ?? b.w); });
+
+  const hazard = (ctx, x, y, w, h, p) => {   // diagonal amber stripes on black, wiped in from the left
+    xWipe(ctx, x, y, w, h, p, "r", () => {
+      ctx.fillStyle = "#000000"; ctx.fillRect(x, y, w, h); ctx.fillStyle = pal.fill; ctx.beginPath();
+      for (let k = -h; k < w + h; k += 44) { ctx.moveTo(x + k, y + h); ctx.lineTo(x + k + 22, y + h); ctx.lineTo(x + k + 22 + h, y); ctx.lineTo(x + k + h, y); ctx.closePath(); }
+      ctx.fill();
+    });
+  };
+  spec.bg = (ctx, t) => {
+    ctx.fillStyle = pal.base; ctx.fillRect(0, 0, W, H);
+    // the radar: rings, cross-hair, a sweep wedge that slows to a stop, blips that light up as it passes
+    ctx.save(); ctx.strokeStyle = rgba(pal.accent, 0.16); ctx.lineWidth = 3;
+    for (const k of [0.33, 0.66, 1]) { ctx.beginPath(); ctx.arc(cx0, cy0, R * k, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(cx0 - R, cy0); ctx.lineTo(cx0 + R, cy0); ctx.moveTo(cx0, cy0 - R); ctx.lineTo(cx0, cy0 + R); ctx.stroke();
+    const a = ang(t), wedge = ctx.createLinearGradient(cx0, cy0, cx0 + Math.cos(a) * R, cy0 + Math.sin(a) * R); wedge.addColorStop(0, rgba(pal.accent, 0)); wedge.addColorStop(1, rgba(pal.accent, 0.3));
+    ctx.fillStyle = wedge; ctx.beginPath(); ctx.moveTo(cx0, cy0); ctx.arc(cx0, cy0, R, a - 0.55, a); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = rgba(pal.accent, 0.5); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx0, cy0); ctx.lineTo(cx0 + Math.cos(a) * R, cy0 + Math.sin(a) * R); ctx.stroke();
+    for (const b of blips) {
+      const swept = ((a - START) - ((b.a - START + Math.PI * 4) % (Math.PI * 2)) + Math.PI * 8) % (Math.PI * 2), seen = (a - START) >= ((b.a - START + Math.PI * 4) % (Math.PI * 2));
+      if (!seen) continue;
+      const glow = Math.max(0.55, 1 - swept / (Math.PI * 1.6)); ctx.fillStyle = rgba(pal.accent2, 0.85 * glow); ctx.beginPath(); ctx.arc(cx0 + Math.cos(b.a) * R * b.r, cy0 + Math.sin(b.a) * R * b.r, 11, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  };
+  const glitch = (t, s, k) => { const q = xSeg(t, s + k * 0.12 * L, L * 1.1, xOutQuart); return q >= 1 ? 0 : (1 - q) * (Math.floor(t * 18 + k) % 2 ? 1 : -1) * 26; };
+  spec.block = (ctx, b, t) => {
+    const s = at(b.id), p = xSeg(t, s, L, xOutQuart), x = b.x;
+    ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+    if (p <= 0) return;
+    const fade = (fn, dy = 0) => { ctx.save(); ctx.globalAlpha *= clamp01(p * 1.6); ctx.translate(0, (1 - p) * dy); fn(); ctx.restore(); };
+    if (b.id === "brand") {
+      fade(() => {
+        if (b.logo) { xCover(ctx, assets.logo, x, b.y + (b.h - b.logo) / 2, b.logo, b.logo); ctx.strokeStyle = pal.accent; ctx.lineWidth = 3; ctx.strokeRect(x, b.y + (b.h - b.logo) / 2, b.logo, b.logo); }
+        if (b.name) { ctx.font = xFont(K, 700, b.px, false, XMONO); ctx.fillStyle = pal.accent; xDrawTracked(ctx, b.name, x + b.logo + b.gap, xBase(b.y, b.h, b.px), b.tr); }
+      });
+    } else if (b.id === "title") {
+      const f = b.fit;
+      f.lines.forEach((line, k) => {
+        const q = xSeg(t, s + k * 0.12 * L, L * 1.2, xOutQuart), top = b.y + k * f.lh, base = xBase(top, f.lh, f.px) - f.px * 0.04, g = glitch(t, s, k);
+        if (q <= 0) return;
+        xClip(ctx, x - 40, top, (b.w + 80) * q, f.lh + 4, () => {
+          ctx.font = f.font; ctx.textAlign = "left";
+          if (g) { ctx.fillStyle = rgba(pal.accent2, 0.7); xDrawTracked(ctx, line, x + g, base, f.tr); ctx.fillStyle = rgba(pal.accent, 0.7); xDrawTracked(ctx, line, x - g, base, f.tr); }
+          ctx.fillStyle = pal.text; xDrawTracked(ctx, line, x, base, f.tr);
+          ctx.fillStyle = pal.base; for (const fr of [0.36, 0.62]) ctx.fillRect(x - 4, top + f.lh * fr, f.tw + 8, Math.max(3, f.px * 0.035));   // the stencil bridges
+        });
+      });
+      ctx.fillStyle = pal.accent; ctx.fillRect(x, b.y + f.lines.length * f.lh + 6, b.w * xSeg(t, s + L * 0.5, L * 1.2, xInOutQuart), 5);
+    } else if (b.id === "when") {
+      fade(() => {
+        if (b.day) { const h = b.dh * 0.9; ctx.fillStyle = pal.fill; ctx.fillRect(x, b.y, b.day.w + 40 * K.u, h); ctx.font = b.day.font; ctx.fillStyle = readableOn(pal.fill); xDrawTracked(ctx, b.day.text, x + 20 * K.u, xBase(b.y, h, b.day.px), b.day.tr); }
+        if (b.time) {
+          const ty = b.y + b.dh;
+          ctx.strokeStyle = pal.accent; ctx.lineWidth = 4; ctx.strokeRect(x + 2, ty + 2, b.bw - 4, b.th + b.pad - 4);
+          ctx.save(); ctx.shadowColor = rgba(pal.accent, 0.8); ctx.shadowBlur = 22; ctx.font = b.time.font; ctx.fillStyle = pal.accent; ctx.fillText(b.time.text, x + b.pad, ty + b.pad * 0.5 + b.time.px * 0.78); ctx.restore();
+          ctx.font = b.time.font; ctx.fillStyle = pal.accent; ctx.fillText(b.time.text, x + b.pad, ty + b.pad * 0.5 + b.time.px * 0.78);
+        }
+      }, 24);
+    } else if (b.id === "countdown") {
+      fade(() => { ctx.font = b.line.font; ctx.fillStyle = pal.text; xDrawTracked(ctx, b.line.text, x, xBase(b.y, b.h, b.line.px), b.line.tr); ctx.fillStyle = pal.accent; ctx.fillRect(x + b.line.w + b.line.px * 0.3, b.y + b.h * 0.2, b.line.px * 0.5, b.h * 0.6); });
+    } else if (b.id === "game") {
+      fade(() => {
+        if (b.cover) {
+          xCover(ctx, assets.cover, x, b.y, b.cw, b.ch); ctx.fillStyle = rgba(pal.accent, 0.2); ctx.fillRect(x, b.y, b.cw, b.ch);
+          ctx.fillStyle = "rgba(0,0,0,0.28)"; for (let yy = b.y; yy < b.y + b.ch; yy += 5) ctx.fillRect(x, yy, b.cw, 2);
+          ctx.strokeStyle = pal.accent; ctx.lineWidth = 3; ctx.strokeRect(x, b.y, b.cw, b.ch);
+        }
+        const tx = x + b.cw + b.gap, f = b.fit, top = b.y + (b.h - f.lines.length * f.lh) / 2;
+        ctx.font = f.font; ctx.fillStyle = pal.text; f.lines.forEach((line, k) => xDrawTracked(ctx, line, tx, xBase(top + k * f.lh, f.lh, f.px), f.tr));
+      }, 16);
+    } else if (b.id === "text") {
+      const f = b.fit, typed = Math.floor(xSeg(t, s, L * 1.6, easeOutCubic) * 400);
+      ctx.fillStyle = pal.accent; ctx.fillRect(x, b.y + 4, 5, b.h - 8);
+      ctx.font = f.font; ctx.fillStyle = pal.soft; let left = typed;
+      f.lines.forEach((line, k) => { const part = [...line].slice(0, Math.max(0, left)).join(""); left -= [...line].length; if (part) ctx.fillText(part, x + 26 * K.u, xBase(b.y + k * f.lh, f.lh, f.px) - f.px * 0.04); });
+    } else if (b.id === "costreamers") {
+      const lpx = Math.max(22, b.head * 0.55);
+      fade(() => { ctx.font = xFont(K, 700, lpx, false, XMONO); ctx.fillStyle = pal.accent; xDrawTracked(ctx, `[ ${K.words.with} ]`, x, xBase(b.y, b.head, lpx), lpx * 0.12); });
+      const cols = b.rows === 1 ? members.length : Math.ceil(members.length / 2), gap = 30 * K.u, bw = Math.min(b.w, cols * (b.d + gap + 30));
+      const cells = layoutCostreamers(members.length, { x, y: b.y + b.head, w: bw, h: b.h - b.head }, { maxD: b.d, gap, labelH: b.labelH }), sh = x + 6 * K.u - Math.min(...cells.map((c) => c.cx - c.d / 2));
+      cells.forEach((cell, k) => {
+        const m = members[k], q = xSeg(t, s + (0.15 + k * 0.1) * L * 1.4, L, xOutQuart); cell.cx += sh;
+        ctx.save(); ctx.globalAlpha *= clamp01(q * 1.5);
+        xAvatar(ctx, K, cell, m, assets.avatars?.[m.login], { shape: "square", ring: pal.accent, ringW: 4 }); ctx.fillStyle = rgba(pal.accent, 0.18); ctx.fillRect(cell.cx - cell.d / 2, cell.cy - cell.d / 2, cell.d, cell.d);
+        ctx.fillStyle = pal.text; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(m.more ? "" : xNameFit(ctx, K, 700, Math.min(26 * K.u, cell.d * 0.2), m.name.toLocaleUpperCase(K.lang), Math.min(cell.labelW, 2 * (cell.cx - x)), XMONO), cell.cx, cell.labelY + 4);
+        ctx.restore();
+      });
+    }
+  };
+  spec.fg = (ctx, t) => {
+    // hazard stripes along the top and the bottom of the safe area
+    hazard(ctx, A0.x, A0.y, A0.w, BAND, xSeg(t, 0, L * 1.6, xInOutQuart)); hazard(ctx, A0.x, A0.y + A0.h - BAND, A0.w, BAND, xSeg(t, L * 0.3, L * 1.6, xInOutQuart));
+    // the emergency light: flickers (seeded value per 1/12 s), then a steady dim glow from the hold on
+    const settle = xSeg(t, rest - 1.4, 1.4, xInOutSine), step = Math.floor(t * 12), r = seeded(9001 + step), flick = r() < 0.18 ? 0.15 : 0.55 + r() * 0.45, level = flick * (1 - settle) + 0.45 * settle;
+    const g = ctx.createRadialGradient(cx0, A0.y, 10, cx0, A0.y, A0.h * 0.8); g.addColorStop(0, rgba(pal.accent2, 0.3 * level)); g.addColorStop(1, rgba(pal.accent2, 0)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // CRT scanlines (fixed) and a vignette
+    ctx.fillStyle = "rgba(0,0,0,0.16)"; for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1.5);
+    const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.4, W / 2, H / 2, Math.max(W, H) * 0.8); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.55)"); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  };
+  return spec;
+}
+
 /* ───────────── The styles, by id (declared last: the functions above are hoisted) ───────────── */
-const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric, epic: styleEpic, arena: styleArena };
+const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric, epic: styleEpic, arena: styleArena, abyss: styleAbyss };
