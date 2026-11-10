@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.53.0 — 2026-11-10
+
+*En bref : Story d'annonce (2.11.0) passe à douze styles avec deux nouveaux, « Épique » (cadre doré, bannière, runes, braises) et « Héros » (panneaux inclinés, hexagones, barre qui se remplit). Rien à régler, aucune nouvelle permission.*
+
+*In short: Announcement story (2.11.0) now has twelve styles, with two new ones, "Epic fantasy" (gilded frame, banner, runes, embers) and "Hero arena" (slanted panels, hexagons, a bar that fills up). Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Story d'annonce 2.11.0 : le style « Épique ».** Cuir sombre, cadre doré avec des gemmes aux coins, bannière pour la date, traits façon runes, capitales dorées gravées qui s'illuminent une fois en apparaissant, et des braises qui montent puis s'éteignent avant l'image finale.
+- **Announcement story 2.11.0: the "Epic fantasy" style.** Dark leather, a gilded frame with gems in the corners, a banner for the date, rune-like strokes, engraved golden capitals that glow once as they appear, and embers that rise then fade out before the final hold.
+- **Story d'annonce 2.11.0 : le style « Héros ».** De grands panneaux inclinés dans votre couleur principale et une couleur contrastée, des images en hexagone, des capitales italiques condensées, des chevrons qui ralentissent jusqu'à l'arrêt, et une barre qui se remplit pour le compte à rebours.
+- **Announcement story 2.11.0: the "Hero arena" style.** Big slanted panels in your main colour and a contrasting one, hexagon pictures, condensed italic capitals, chevrons that slow down to a stop, and a bar that fills up for the countdown.
+- **Story d'annonce 2.11.0 : le même soin que les autres styles.** Lisibles en 9:16 et en 4:5, tout dans la zone sûre, la mention « Made with Curiosa » reste en bas, une image fixe sur les 22 % finaux. Ce sont deux créations originales : rien n'est repris d'un jeu.
+- **Announcement story 2.11.0: the same care as the other styles.** Readable in 9:16 and 4:5, everything inside the safe area, the "Made with Curiosa" mention stays at the bottom, a still image for the last 22 %. Both are original designs: nothing is taken from any game.
+
+### Pour les développeurs
+
+- `STYLES` has twelve ids (`epic`, `arena` added), `styleEpic` / `styleArena` in `scenes-extra.mjs`; the MCP `style` enum lists them; `tests/helpers/fakeCanvas.mjs` notes the horizontal scale of a text. No `minCore` change, no migration. Détail : `docs/changelog-parts/story-two-styles.md`.
+
 ## 1.52.0 — 2026-11-09
 
 *En bref : Story d'annonce (2.10.0) retient votre style par défaut. Un bouton à la dernière étape, et ce style sert aux nouvelles vidéos et à l'aperçu des deux premières étapes. Rien à régler, aucune nouvelle permission.*
