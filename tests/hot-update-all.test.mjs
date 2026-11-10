@@ -32,8 +32,6 @@ const ALLOWED_STATIC = {
 const BROWSER_ONLY = {
   "faq/client.mjs": "texte recopié dans scripts/faq.js (script de confort envoyé au navigateur) ; le serveur ne l'importe pas",
   "stream-story/app.mjs": "envoyé au navigateur (liste LIB de page.mjs) ; le serveur ne l'importe pas",
-  "stream-story/scenes.mjs": "envoyé au navigateur (liste LIB de page.mjs) ; le serveur ne l'importe pas",
-  "stream-story/scenes-extra.mjs": "envoyé au navigateur (liste LIB de page.mjs) ; le serveur ne l'importe pas",
   "stream-story/encode.mjs": "envoyé au navigateur (liste LIB de page.mjs) ; le serveur ne l'importe pas",
 };
 

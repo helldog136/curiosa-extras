@@ -54,7 +54,7 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
     // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
-    const expected = dir === "modules/twitch-bot" ? "0.6.7" : CORE_060.includes(dir) || NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    const expected = dir === "modules/twitch-bot" || dir === "modules/stream-story" ? "0.6.7" : CORE_060.includes(dir) || NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
     assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }

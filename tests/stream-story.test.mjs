@@ -39,8 +39,8 @@ afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 /* ───────────── Manifeste et textes ───────────── */
 
 test("manifeste : un module à lui, une instance, aucune page publique, 4 permissions + rawg ; minCore le plus bas (0.1.22) ; icône ; famille « Réseaux et connexions » (plateforme) ; vie privée déclarée", () => {
-  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.11.0");
-  assert.equal(manifest.minCore, "0.2.10"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
+  assert.equal(manifest.id, "stream-story"); assert.equal(manifest.version, "2.12.0");
+  assert.equal(manifest.minCore, "0.6.7", "the \"My styles\" tab uses the rich administration blocks (core 0.6.0 and after) and the French text of the tools (0.6.7)"); assert.equal(manifest.dataVersion, 2); assert.equal(manifest.instances, "single"); assert.equal(manifest.page, false);
   assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "rawg", "routes", "storage", "topics"]);
   assert.equal(manifest.icon, "📱"); assert.equal(manifest.platform, "instagram"); assert.equal(manifest.type, "utility");
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, true], ["event.source", 1, true], ["game.cover", undefined, true]], "Contacts (v2), les sources d'événements et les jaquettes : des besoins FACULTATIFS, jamais durs");
@@ -49,11 +49,11 @@ test("manifeste : un module à lui, une instance, aucune page publique, 4 permis
   for (const k of ["page", "slots", "sections", "filters", "overlay", "tasks", "hooks", "exports"]) assert.ok(!(k in def), `pas de « ${k} »`);
   assert.ok(manifest.privacy.fr && manifest.privacy.en && !/visiteur/.test("") );
   assert.match(manifest.privacy.fr, /Rien n'est collecté sur votre public/); assert.match(manifest.privacy.fr, /Aucune vidéo n'est gardée/); assert.match(manifest.privacy.fr, /restent dans Contacts/);
-  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes-extra.mjs", "lib/scenes.mjs", "members", "partners", "people", "prep", "streams", "studio", "wordmark"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["act", "categories", "category", "cover", "data", "events", "img", "lib/app.mjs", "lib/encode.mjs", "lib/mp4.mjs", "lib/pure.mjs", "lib/scenes-extra.mjs", "lib/scenes.mjs", "members", "partners", "people", "prep", "streams", "studio", "variant-thumb", "wordmark"]);
 });
 
 test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ de la mention, tous en mode avancé ; le fuseau est facultatif ; couleurs qui suivent le thème du site par défaut", () => {
-  assert.deepEqual(manifest.settings.map((s) => s.key), ["colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone", "watermark"]);
+  assert.deepEqual(manifest.settings.map((s) => s.key), ["colorAccent", "colorAccent2", "colorBackground", "colorText", "timezone", "watermark", "showVariants"]);
   assert.ok(manifest.settings.every((s) => s.advanced === true), "rien en mode simple : zéro configuration");
   assert.deepEqual(manifest.settings.filter((s) => s.type === "color").map((s) => s.default), ["theme:accent", "theme:accent2", "theme:bg", "theme:fg"]);
   assert.equal(manifest.settings.find((s) => s.key === "timezone").optional, true);
@@ -61,9 +61,9 @@ test("réglages : les couleurs de la vidéo, le fuseau et la valeur de départ d
 
 test("outils pour l'IA : trois lectures accordées d'office, la préparation JAMAIS d'office ; noms ≤ 31 ; la préparation n'est ni lecture seule ni destructrice ; décrits", () => {
   const byName = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
-  assert.deepEqual(Object.keys(byName), ["story_models", "story_next_streams", "story_events", "story_prepare"]);
-  for (const n of ["story_models", "story_next_streams", "story_events"]) { assert.equal(byName[n].readOnly, true); assert.ok(byName[n].default !== false, "lecture : accordée par défaut"); }
-  assert.equal(byName.story_prepare.default, false); assert.ok(!byName.story_prepare.readOnly && !byName.story_prepare.destructive);
+  assert.deepEqual(Object.keys(byName), ["story_models", "story_next_streams", "story_events", "style_variants_list", "story_prepare", "style_variant_create", "style_variant_update"]);
+  for (const n of ["story_models", "story_next_streams", "story_events", "style_variants_list"]) { assert.equal(byName[n].readOnly, true); assert.ok(byName[n].default !== false, "lecture : accordée par défaut"); }
+  for (const n of ["story_prepare", "style_variant_create", "style_variant_update"]) { assert.equal(byName[n].default, false, `${n} is never granted by default`); assert.ok(!byName[n].readOnly && !byName[n].destructive, `${n} writes, never deletes`); }
   assert.ok(manifest.mcp.every((t) => t.name.length <= 31 && t.description.length > 40));
   assert.deepEqual(Object.keys(def.mcp).sort(), Object.keys(byName).sort());
   const p = byName.story_prepare.input.properties;
@@ -162,7 +162,7 @@ test("données de l'éditeur : modèles, ponctuels, état de Contacts, logo du s
   const ctx = mk({ brand: { name: "Emma Live", logos: [{ kind: "wide", src: "https://cdn.evil/logo.png" }, { kind: "square", src: "/uploads/logo.png" }], logo: "/uploads/x.png", colors: [], font: {} } });
   const token = await data.mintToken(ctx);
   const r = await json(await call(ctx, "data", { token }));
-  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", watermark: false, defaultStyle: null }], "sans Contacts : « absent »");
+  assert.deepEqual([r.ok, r.brand, r.adhoc, r.models, r.contacts, r.defaults], [true, { name: "Emma Live", logo: "/uploads/logo.png" }, [], [], "absent", { lang: "fr", watermark: false, defaultStyle: null, defaultVariant: "" }], "sans Contacts : « absent »");
   assert.ok(!("costreamers" in r) && !("partners" in r), "plus de liste « à moi » ni de partenaires du Raid");
   const ext = mk({ brand: { name: "X", logos: [{ kind: "square", src: "https://cdn.evil/logo.png" }], logo: "https://cdn.evil/l.png", colors: [], font: {} } });
   assert.equal((await json(await call(ext, "data", { token: await data.mintToken(ext) }))).brand.logo, "", "un logo venu d'ailleurs n'est pas relayé");
@@ -310,7 +310,7 @@ test("administration : un cadre vers l'éditeur avec l'accès dans la partie « 
   }
   const en2 = mk({ locale: "en", messages: { ...en } }), b3 = await def.adminPanel(en2, { query: {} });
   assert.match(b3.find((b) => b.type === "html").html, /studio\?lang=en#t=/); assert.equal(b3.find((b) => b.type === "markdown").text, en.admin_intro);
-  assert.equal(def.adminActions, undefined, "aucun bouton de formulaire : tout passe par la page de l'éditeur");
+  assert.deepEqual(Object.keys(def.adminActions).sort(), ["addExampleVariants", "removeVariant", "saveVariant"], "the only form actions are those of the \"My styles\" tab; the studio itself goes through its own page");
 });
 
 test("page de l'éditeur : politique de sécurité stricte (aucun script en ligne, rien d'extérieur), aucune donnée dans le HTML, phrases échappées, langue de la personne ; compatible avec un cadre du même site seulement", async () => {

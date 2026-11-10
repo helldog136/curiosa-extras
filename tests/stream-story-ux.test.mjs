@@ -31,7 +31,7 @@ class El {
   set textContent(v) { this.children = []; this._text = String(v); }
   append(...kids) { for (const k of kids) this.children.push(k); }
   replaceChildren(...kids) { this.children = []; this._text = ""; this.append(...kids); }
-  setAttribute(k, v) { this.attrs[k] = v; if (k === "id") this.id = v; }
+  setAttribute(k, v) { this.attrs[k] = v; if (k === "id") { this.id = v; this.onId?.(v); } }
   addEventListener(type, fn) { (this.listeners[type] ??= []).push(fn); }
   fire(type, ev = {}) { for (const fn of this.listeners[type] ?? []) fn({ key: "", preventDefault() {}, target: this, ...ev }); }
   click() { if (!this.isDisabled) this.fire("click"); }
@@ -54,7 +54,7 @@ function installDom(html, hash) {
   }
   els.get("story-config").textContent = /<script type="application\/json" id="story-config">(.*?)<\/script>/s.exec(html)[1];
   const body = new El("body"); body.classList = { toggle() {} };
-  const document = { getElementById: (id) => els.get(id) ?? null, createElement: (t) => new El(t), createTextNode: (t) => new Text(t), querySelectorAll: () => [], body };
+  const document = { getElementById: (id) => els.get(id) ?? null, createElement: (t) => { const e = new El(t); e.onId = (id) => els.set(id, e); return e; }, createTextNode: (t) => new Text(t), querySelectorAll: () => [], body };
   Object.assign(globalThis, {
     document, Image: class { set src(v) { this._src = v; setTimeout(() => this.onload?.(), 0); } get src() { return this._src; } width = 100; height = 100; naturalWidth = 100; naturalHeight = 100; },
     location: { hash, pathname: "/m/story/studio", search: "" }, history: { replaceState() {} }, matchMedia: () => ({ matches: true }), requestAnimationFrame: () => 0,
@@ -490,4 +490,42 @@ test("default style: the Countdown style as default also ticks the countdown lin
   await data.setStylePref(ctx, "countdown");
   current = await boot(ctx);
   assert.equal(current.els.get("el-countdown").checked, true);
+});
+
+
+test("My styles: the saved variants are more cards after the twelve (none: no group), choosing one previews its base style, it can be the default (with the style), and a deleted one falls back to the base style without any error", async () => {
+  const ctx = mk({ calendar: [slot(1, 5)] });
+  let first = current = await boot(ctx), els = first.els;
+  assert.equal(els.get("variant-box").hidden, true, "no variant: no group");
+  first.server.restore(); current = null;
+  const a = (await data.saveVariant(ctx, { name: "Night", base: "cinema", accent: "#ffb000" })).item, b = (await data.saveVariant(ctx, { name: "Paper day", base: "geometric", bg: "#f5efe3" })).item;
+  first = current = await boot(ctx); els = first.els;
+  assert.equal(els.get("variant-box").hidden, false);
+  const cards = els.get("variant-cards").children.filter((c) => c.tagName === "label");
+  assert.deepEqual(cards.map((c) => c.textContent), [`Night${fr.ui_variant_hint.replace("{style}", fr.ui_style_cinema)}`, `Paper day${fr.ui_variant_hint.replace("{style}", fr.ui_style_geometric)}`], "a name and its base style, like the other cards");
+  assert.deepEqual(cards.map((c) => c.attrs.for), [`variant-${a.id}`, `variant-${b.id}`]);
+  await go(els, "step-next"); await go(els, "step-next"); await wait(300);
+  assert.equal(els.get("default-style").disabled, false);
+  els.get(`variant-${a.id}`).checked = true; els.get(`variant-${a.id}`).fire("change"); await wait(300);
+  assert.equal(styleOf(els), "cinema", "the preview draws the base style (in the colours of the variant)");
+  assert.equal(els.get("style-cinema").checked, false, "the base card is not also checked: one choice"); assert.equal(els.get(`variant-${a.id}`).checked, true);
+  await go(els, "default-style"); await wait(300);
+  assert.equal(await data.readVariantPref(ctx), a.id); assert.equal(await data.styleDefault(ctx), "cinema");
+  assert.equal(els.get("default-style").disabled, true, "this variant is now the default");
+  els.get("style-cinema").checked = true; els.get("style-cinema").fire("change"); await wait(200);
+  assert.equal(els.get("default-style").disabled, false, "the base style alone is not the default: the variant is");
+  first.server.restore(); current = null;
+  // a new session: the default variant is the one of a new video and of the preview of steps 1 and 2
+  current = await boot(ctx); els = current.els;
+  assert.equal(styleOf(els), "cinema", "step 1 preview in the default style");
+  await go(els, "step-next"); await go(els, "step-next"); await wait(300);
+  assert.equal(els.get(`variant-${a.id}`).checked, true, "a new video starts on the default variant"); assert.equal(els.get("style-cinema").checked, false);
+  current.server.restore(); current = null;
+  // deleted since: the default is its base style, nothing breaks
+  await data.removeVariant(ctx, a.id);
+  current = await boot(ctx); els = current.els;
+  assert.equal(styleOf(els), "cinema", "the base style is still the default");
+  await go(els, "step-next"); await go(els, "step-next"); await wait(300);
+  assert.equal(els.get("style-cinema").checked, true, "the base card is checked: a clean fallback");
+  assert.equal(els.get("variant-box").hidden, false); assert.equal(els.get("variant-cards").children.filter((c) => c.tagName === "label").length, 1);
 });

@@ -4,7 +4,9 @@
 // and gets back the layout and a `draw(ctx, t)`; it adds the "Made with Curiosa" mention itself, so the watermark never depends on a style.
 // Craft rules shared by the six: real easing (ease-out in, ease-in-out for moves, restrained overshoot), staggered entrances that all END before `restTime` (78 % of the video),
 // then a deliberate hold: the composition is still and readable for the last 22 %. Every duration below is a fraction of the video length, so 5 s and 15 s both read well.
-import { wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, parseHex, toHex, clamp01, easeOutCubic, easeInOutCubic, progress, seeded } from "./pure.mjs";
+// The module version spreads to the neighbouring files (otherwise the old code would stay in cache after a hot update); in the browser the address has no version and this is a plain import.
+const v = new URL(import.meta.url).search;
+const { wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, parseHex, toHex, clamp01, easeOutCubic, easeInOutCubic, progress, seeded } = await import(`./pure.mjs${v}`);
 
 export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"];
 /** The few words these styles write themselves (the rest comes from the editor). Neutral, and given for both languages. */

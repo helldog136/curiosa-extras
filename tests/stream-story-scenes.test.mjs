@@ -156,7 +156,7 @@ test("durée : toujours entre 5 et 15 secondes ; le format et le style inconnus 
 });
 
 test("vm vierge : pure.mjs + scenes-extra.mjs + scenes.mjs concaténés (sans import ni export) dessinent la même chose, sans Node ni navigateur", () => {
-  const strip = (f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/^import .*$/gm, "").replace(/^export /gm, "");
+  const strip = (f) => fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/^import .*$/gm, "").replace(/^const \{[^}]*\} = await import\(.*$/gm, "").replace(/^const v = new URL\(import\.meta\.url\)\.search;$/gm, "").replace(/^export /gm, "");   // the versioned imports of scenes.mjs / scenes-extra.mjs: here the three files are one text
   const code = `${strip("pure.mjs")}\n${strip("scenes-extra.mjs")}\n${strip("scenes.mjs")}`;
   const ctx = vm.createContext({ Intl, Date, Math, Number, String, Array, Object, Set, Map, JSON, RegExp, parseInt, isFinite, Boolean, fakeCanvasContext, fakeImage });
   const out = vm.runInContext(`${code}

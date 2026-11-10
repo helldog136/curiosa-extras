@@ -36,7 +36,7 @@ export function elementsForStyle(style, elements) {
   return need && !list.includes(need) ? ELEMENTS.filter((e) => e === need || list.includes(e)) : ELEMENTS.filter((e) => list.includes(e));
 }
 export const LANGS = ["fr", "en"];
-export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, adhoc: 20, handle: 40, memberId: 80, models: 30, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
+export const LIMITS = { title: 80, text: 140, channelName: 40, modelName: 60, displayName: 40, costreamers: 6, partners: 5, adhoc: 20, handle: 40, memberId: 80, models: 30, variants: 30, variantName: 40, durationMin: 5, durationMax: 15, durationDefault: 15, fps: 30, streams: 12 };
 
 export const formatOf = (id) => FORMATS.find((f) => f.id === id) ?? FORMATS[0];
 /** The area where essential content can be placed: { x, y, w, h }. */
@@ -107,12 +107,64 @@ export const memberKey = (m) => (m.id ? `id:${m.id}` : `x:${(m.login || m.name).
 /** The identifier of an event (given by its source, stable) and the type of its source ("calendar", "youtube"…): short safe strings, never an address. */
 export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,99}$/;
 export const SOURCE_KIND = /^[a-z][a-z0-9-]{0,19}$/;
-export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: DEFAULT_ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true });
+export const DEFAULT_CONFIG = Object.freeze({ style: "neon", format: "vertical", duration: LIMITS.durationDefault, elements: DEFAULT_ELEMENTS.slice(), text: "", channelName: "", costreamers: [], streamKey: "", eventId: "", eventSource: "", lang: "fr", watermark: false, schedulePeople: true, variant: "" });
 
 /** The brand mention, drawn at the bottom of the video when the box is ticked. It is a brand name: it is NEVER translated (so it is absent from the locales). */
 export const WATERMARK_LEAD = "Made with ", WATERMARK_NAME = "Curiosa", WATERMARK_TEXT = WATERMARK_LEAD + WATERMARK_NAME;
 /** The name "Curiosa" follows the logo's style: Fraunces italic 600 (module file, SIL OFL licence), at 1.15 times the size of the neighbouring text as in the site's footer. */
 export const WORDMARK = { family: "CuriosaWordmark", weight: 600, scale: 1.15, fallback: "Georgia, serif" };
+
+/* ───────────── Saved style variants ("My styles"): a base style, optional colours and a font from a short safe list ───────────── */
+export const VARIANT_ID = /^[a-f0-9]{16}$/;
+export const COLOR_KEYS = ["accent", "accent2", "bg", "fg"];
+/** The colours each style really reads (the others are ignored by its palette): the second colour is a partner of the first, the background and text only matter to the styles that draw on the site's own ground. */
+export const STYLE_COLORS = Object.freeze({ minimal: ["accent", "bg", "fg"], geometric: ["accent", "accent2", "bg"] });
+export const colorsOf = (style) => STYLE_COLORS[style] ?? ["accent", "accent2"];
+/** Font choices: only these four words ever reach the drawing code, never a free string. "site" keeps the site's own font. Styles with letters of their own (film, arcade, paper, epic) keep them. */
+export const FONTS = ["site", "sans", "serif", "mono"];
+export const FONT_STACKS = Object.freeze({
+  site: "",
+  sans: 'system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  serif: 'Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif',
+  mono: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace',
+});
+export const fontFamilyOf = (id, siteFont) => FONT_STACKS[FONTS.includes(id) ? id : "site"] || siteFont;
+/** "#F80", "f80", "#ff8800" → "#ff8800"; anything else → "". */
+export function cleanHex(v) {
+  const s = String(v ?? "").trim().replace(/^#/, "").toLowerCase();
+  if (/^[0-9a-f]{3}$/.test(s)) return `#${[...s].map((c) => c + c).join("")}`;
+  return /^[0-9a-f]{6}$/.test(s) ? `#${s}` : "";
+}
+/**
+ * The ONE validation of a variant, shared by the administration and the AI tools. `raw`: { name, base, accent, accent2, bg, fg, font } (every key optional when `current` is given:
+ * only the keys present change; an empty colour removes the override). Returns { ok, value, errors } where `errors` maps a field to a code ("name", "base", "hex", "font").
+ */
+export function checkVariant(raw, current = null) {
+  const r = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}, errors = {};
+  const out = { name: current?.name ?? "", base: current?.base ?? "", colors: { ...(current?.colors ?? {}) }, font: FONTS.includes(current?.font) ? current.font : "site" };
+  if (r.name !== undefined || !out.name) { const n = oneLine(r.name, LIMITS.variantName); if (n) out.name = n; else errors.name = "name"; }
+  if (r.base !== undefined || !out.base) { if (STYLES.includes(r.base)) out.base = r.base; else errors.base = "base"; }
+  for (const k of COLOR_KEYS) {
+    if (r[k] === undefined || r[k] === null) continue;
+    if (String(r[k]).trim() === "") { delete out.colors[k]; continue; }
+    const h = cleanHex(r[k]);
+    if (h) out.colors[k] = h; else errors[k] = "hex";
+  }
+  if (r.font !== undefined && r.font !== null) { if (r.font === "") out.font = "site"; else if (FONTS.includes(r.font)) out.font = r.font; else errors.font = "font"; }
+  return { ok: Object.keys(errors).length === 0, value: out, errors };
+}
+/** The variants as stored, made safe again when read: bad items dropped, at most LIMITS.variants, unique identifiers. */
+export function cleanVariants(items) {
+  const out = [], seen = new Set();
+  for (const x of Array.isArray(items) ? items : []) {
+    if (!x || typeof x !== "object" || !VARIANT_ID.test(String(x.id)) || seen.has(x.id) || out.length >= LIMITS.variants) continue;
+    const c = checkVariant({ name: x.name, base: x.base, font: x.font, ...Object.fromEntries(COLOR_KEYS.map((k) => [k, x.colors?.[k]])) });
+    if (c.ok) { seen.add(x.id); out.push({ id: x.id, ...c.value }); }
+  }
+  return out;
+}
+/** The colours a variant asks for, on top of the site's: only the keys its base style reads. */
+export const mergeColors = (site, variant) => ({ ...site, ...Object.fromEntries(colorsOf(variant?.base).filter((k) => variant?.colors?.[k]).map((k) => [k, variant.colors[k]])) });
 
 /** Puts any input (saved model, AI, browser) in the right format: unknown values dropped, durations and lengths bounded. Never throws. */
 export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
@@ -141,6 +193,8 @@ export function cleanConfig(raw, fallback = DEFAULT_CONFIG) {
     watermark: typeof r.watermark === "boolean" ? r.watermark : r.watermark === undefined && d.watermark === true,
     // The people the schedule lists for this stream ("With …"): YES by default; only an explicit `false` removes them (a model saved before this option shows them too).
     schedulePeople: r.schedulePeople === false ? false : r.schedulePeople === undefined ? d.schedulePeople !== false : true,
+    // The saved style variant ("My styles") the video uses: its identifier, or nothing. A variant that has been deleted since is simply not found later: the video falls back to its base style.
+    variant: VARIANT_ID.test(String(r.variant ?? "")) ? String(r.variant) : r.variant === undefined && VARIANT_ID.test(String(d.variant ?? "")) ? String(d.variant) : "",
   };
 }
 function pickEvent(r, d) {
@@ -502,7 +556,11 @@ export function luminance(hex) {
 }
 export const contrast = (a, b) => { const la = luminance(a), lb = luminance(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
 /** The text (white or near-black) that reads best on this background. */
-export const readableOn = (bg) => (contrast(bg, "#ffffff") >= contrast(bg, "#111111") ? "#ffffff" : "#111111");
+export const readableOn = (bg) => {
+  const w = contrast(bg, "#ffffff"), d = contrast(bg, "#111111");
+  if (Math.max(w, d) < 4.5 && contrast(bg, "#000000") >= 4.5) return "#000000";   // a middle grey: only pure black still reaches 4.5:1
+  return w >= d ? "#ffffff" : "#111111";
+};
 /** Lightens or darkens a colour until it is readable (≥ `ratio`) on `bg`; otherwise returns the readable white or black. */
 export function ensureContrast(color, bg, ratio = 4.5) {
   if (!parseHex(color)) return readableOn(bg);
