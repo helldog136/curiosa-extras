@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.54.0 — 2026-11-10
+
+*En bref : Story d'annonce (2.12.0) gagne « Mes styles » : des variantes enregistrées d'un style (la même animation avec d'autres couleurs), créées en mode avancé dans l'administration ou par votre assistant IA. **Demande Curiosa 0.6.7 ou plus.** Aucune nouvelle permission.*
+
+*In short: Announcement story (2.12.0) gets "My styles": saved variants of a style (the same animation with other colours), made in advanced mode in the administration or by your AI assistant. **Needs Curiosa 0.6.7 or later.** No new permission.*
+
+### Nouveautés
+
+- **Story d'annonce 2.12.0 : un onglet « Mes styles » (mode avancé).** Activez-le dans les options avancées. Une liste avec recherche en direct et une petite image des couleurs de chaque style ; « Modifier » ouvre une fenêtre ; « Supprimer le style » dit ce qui sera perdu ; « Ajouter l'exemple » crée un style sur trois fonds en un clic. Un style = un nom, un style de départ parmi les douze, et au choix couleur principale, couleur secondaire, fond, texte et lettres. Une couleur difficile à lire est ajustée toute seule et la page le dit.
+- **Announcement story 2.12.0: a "My styles" tab (advanced mode).** Turn it on in the advanced options. A list with live search and a small picture of each style's colours; "Edit" opens a window; "Delete the style" says what is lost; "Add the example" creates one style on three backgrounds in one click. A style = a name, a base style among the twelve, and optionally a main colour, a second colour, a background, a text colour and letters. A colour that is hard to read is adjusted automatically and the page says so.
+- **Story d'annonce 2.12.0 : vos styles sont des cartes de plus à l'étape du style.** Après les douze, avec leur aperçu. Ils peuvent être le style par défaut et le style de l'aperçu des deux premières étapes, et les modèles enregistrés s'en souviennent. Si vous en supprimez un, les modèles et le style par défaut reprennent le style de départ, sans erreur.
+- **Announcement story 2.12.0: your styles are more cards in the style step.** After the twelve, with their preview. They can be the default style and the style of the preview of the first two steps, and saved models remember them. If you delete one, models and the default use the base style, with no error.
+- **Story d'annonce 2.12.0 : votre assistant IA peut les lister, les créer et les modifier** (`style_variants_list`, `style_variant_create`, `style_variant_update`) et préparer une vidéo avec l'un d'eux. **Les deux outils qui écrivent ne sont pas accordés d'office : vous les accordez dans les réglages des assistants.** Ils ne suppriment jamais rien. 30 styles au plus.
+- **Announcement story 2.12.0: your AI assistant can list, create and change them** (`style_variants_list`, `style_variant_create`, `style_variant_update`) and prepare a video with one. **The two writing tools are not granted by default: you grant them in the assistants' settings.** They never delete anything. At most 30 styles.
+
+### Pour les développeurs
+
+- **`minCore` of stream-story: 0.2.10 -> 0.6.7** (kit rule `compat.minCore`: rich administration blocks; French texts of the tools). A site on an older core stays on the previous version. New: `variants.mjs`, collection `story_variants`, setting `showVariants`, tab `styles`, route `variant-thumb`, config key `variant`; one validation for the administration and the tools (`checkVariant`). `scenes.mjs` and `scenes-extra.mjs` are loaded by the server too (versioned imports). Detail: `docs/changelog-parts/story-my-styles.md`.
+
 ## 1.53.0 — 2026-11-10
 
 *En bref : Story d'annonce (2.11.0) passe à douze styles avec deux nouveaux, « Épique » (cadre doré, bannière, runes, braises) et « Héros » (panneaux inclinés, hexagones, barre qui se remplit). Rien à régler, aucune nouvelle permission.*
