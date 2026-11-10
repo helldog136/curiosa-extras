@@ -26,6 +26,7 @@ const images = await import(`./images.mjs${v}`);
 const page = await import(`./page.mjs${v}`);
 const admin = await import(`./admin.mjs${v}`);
 const tools = await import(`./mcp.mjs${v}`);
+const variants = await import(`./variants.mjs${v}`);
 
 const NO_STORE = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", ...NO_STORE } });
@@ -70,7 +71,7 @@ async function act(request, ctx) {
     case "adhoc.check": return reply(data.adhocEntry({ login: body.login, name: body.name, image: body.image }));
     case "adhoc.remove": return reply(await data.removeAdhoc(ctx, String(body.id ?? "")));
     case "prefs.watermark": return typeof body.watermark === "boolean" ? reply({ watermark: await data.setWatermarkPref(ctx, body.watermark) }) : json({ ok: false, error: "invalid" }, 400);
-    case "prefs.style": return P.defaultStyleOf(body.style) ? reply(await data.setStylePref(ctx, body.style)) : json({ ok: false, error: "invalid" }, 400);
+    case "prefs.style": return P.defaultStyleOf(body.style) ? reply(await data.setStylePref(ctx, body.style, typeof body.variant === "string" ? body.variant : "")) : json({ ok: false, error: "invalid" }, 400);
     case "model.save": return reply(await data.saveModel(ctx, { name: body.name, config: body.config, replaceId: typeof body.replaceId === "string" ? body.replaceId : undefined }));
     case "model.remove": return reply(await data.removeModel(ctx, String(body.id ?? "")));
     default: return json({ ok: false, error: "invalid" }, 400);
@@ -84,9 +85,9 @@ const routes = {
     return page.studioPage(ctx, { base: `/m/${ctx.instance.key}`, colors: videoColors(ctx), timezone: zoneSetting(ctx), font: typeof th.font === "string" ? th.font.slice(0, 200) : "", accent: hex(th.accent, "#4f46e5"), accentFg: hex(th.accentFg, "#ffffff") });
   },
   data: guarded("GET", async (request, ctx) => {
-    const [models, adhoc, hasBook, brand, watermark, defaultStyle] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readAdhoc(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false), src.within(data.styleDefault(ctx), 3000, null)]);
+    const [models, adhoc, hasBook, brand, watermark, defaultStyle, savedVariants, defaultVariant] = await Promise.all([src.within(data.readModels(ctx), 5000, []), src.within(data.readAdhoc(ctx), 5000, []), book.hasBook(ctx), src.brandOf(ctx), src.within(data.watermarkDefault(ctx), 3000, false), src.within(data.styleDefault(ctx), 3000, null), src.within(data.readVariants(ctx), 5000, []), src.within(data.readVariantPref(ctx), 3000, "")]);
     return json({
-      ok: true, models, adhoc, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true, defaultStyle: P.defaultStyleOf(defaultStyle) },
+      ok: true, models, adhoc, variants: savedVariants, contacts: hasBook ? "ok" : "absent", brand, defaults: { lang: ctx.locale === "en" ? "en" : "fr", watermark: watermark === true, defaultStyle: P.defaultStyleOf(defaultStyle), defaultVariant },
     });
   }),
   people: guarded("GET", async (request, ctx) => {
@@ -137,6 +138,14 @@ const routes = {
   }),
 };
 // La police du nom « Curiosa » pour la mention : un petit fichier fixe (rien de personnel, aucun jeton).
+/** The little picture of a variant in the administration list: its colours as an image (no script, no text from the person). The identifier is 64 random bits. */
+routes["variant-thumb"] = async (request, ctx) => {
+  const no = only(request, "GET"); if (no) return no;
+  const id = new URL(request.url).searchParams.get("id") ?? "";
+  const item = P.VARIANT_ID.test(id) ? (await src.within(data.readVariants(ctx), 4000, [])).find((x) => x.id === id) : null;
+  if (!item) return new Response("", { status: 404 });
+  return new Response(variants.thumbSvg(item, videoColors(ctx)), { headers: { "Content-Type": "image/svg+xml; charset=utf-8", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "Cache-Control": "private, max-age=60" } });
+};
 routes.wordmark = async (request) => {
   const no = only(request, "GET"); if (no) return no;
   return new Response(await page.wordmarkFont(), { headers: { "Content-Type": "font/woff2", "Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff" } });
@@ -168,7 +177,8 @@ async function linkLogins(ctx, config) {
 
 export default {
   routes,
-  adminPanel: admin.panel,
+  adminPanel: async (ctx, request) => [...(await admin.panel(ctx, request)), ...(await variants.blocks(ctx, request?.query ?? {}))],
+  adminActions: variants.actions(videoColors),
 
   // Les références à des fiches de Contacts : Contacts demande à Story ce qu'elle sait d'une personne (export), de l'oublier (erase) ou de suivre une fusion (remap). Jamais d'exception.
   services: {
@@ -185,6 +195,7 @@ export default {
   migrations: { 2: async () => {} },
 
   mcp: {
+    ...variants.tools(videoColors),
     /** Lecture seule : les modèles enregistrés. */
     async story_models(ctx) {
       const models = await src.within(data.readModels(ctx), 5000, []);
@@ -212,7 +223,8 @@ export default {
     async story_prepare(ctx, args) {
       const wantsEvent = args && typeof args === "object" && args.event !== undefined;
       const all = wantsEvent ? await src.loadEvents(ctx, { zone: zoneSetting(ctx) }) : null;
-      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false), styleDefault: await src.within(data.styleDefault(ctx), 3000, null) });
+      const knownVariants = await src.within(data.readVariants(ctx), 5000, []);
+      const prepared = tools.strictPrepare(args, { models: await src.within(data.readModels(ctx), 5000, []), tz: zoneSetting(ctx), events: all?.events ?? [], sourcesDown: !!all && all.sources.length > 0 && all.sources.every((s) => s.state === "down"), watermarkDefault: await src.within(data.watermarkDefault(ctx), 3000, false), styleDefault: await src.within(data.styleDefault(ctx), 3000, null), variantDefault: await src.within(data.readVariantPref(ctx), 3000, ""), variants: knownVariants });
       const { manual } = prepared;
       const linked = await src.within(linkLogins(ctx, prepared.config), src.timing.bookMs * 2, { config: prepared.config, known: new Map() });
       const config = linked.config;
@@ -222,7 +234,7 @@ export default {
       const path = typeof mine?.adminPath === "string" && /^\/admin\//.test(mine.adminPath) ? mine.adminPath : `/admin/instances/${ctx.instance.id}`;
       return {
         ok: true, link: `${String(ctx.api.siteUrl ?? "").replace(/\/+$/, "")}${path}?prep=${pid}`, expiresAt: new Date(expiresAt).toISOString(),
-        prepared: { style: config.style, format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
+        prepared: { style: config.style, ...(config.variant ? { variant: knownVariants.find((x) => x.id === config.variant)?.name } : {}), format: config.format, durationSeconds: config.duration, watermark: config.watermark, elements: config.elements, text: config.text, costreamers: config.costreamers.map((e) => (e.id ? names.get(e.id) : e.login || e.name)).filter(Boolean), stream: manual ? "hand-written" : prepared.event ? "event" : config.streamKey || "next", ...(prepared.event ? { event: { id: prepared.event.id, title: prepared.event.title, source: prepared.event.sourceLabel } } : {}) },
         note: "Nothing has been generated or published. The owner opens this link while signed in to the admin, checks the preview, then clicks 'Generate the video' and saves the file.",
       };
     },
@@ -233,10 +245,11 @@ export default {
     async readable(ctx) {
       const cell = (x) => { let s = String(x ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
       const csv = (rows) => ["login,name,image", ...rows.map((m) => [m.login, m.name, m.image].map(cell).join(","))].join("\r\n");
-      const [adhoc, models] = await Promise.all([data.readAdhoc(ctx), data.readModels(ctx)]);
+      const [adhoc, models, variantList] = await Promise.all([data.readAdhoc(ctx), data.readModels(ctx), data.readVariants(ctx)]);
       return [
         ...(adhoc.length ? [{ path: "adhoc-costreamers.csv", content: csv(adhoc) }] : []),
         { path: "models.json", content: JSON.stringify(models.map(tools.backupModel), null, 2) },
+        ...(variantList.length ? [{ path: "style-variants.json", content: JSON.stringify(variantList, null, 2) }] : []),
       ];
     },
   },

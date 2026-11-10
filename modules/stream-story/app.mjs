@@ -46,7 +46,7 @@ const S = {
   // The editable information (step 2): copied from the event that is picked, or empty for "no event". `cov`: the cover of the game written in `info.game`.
   info: { title: "", date: "", time: "", game: "" }, noEvent: false, cov: { game: "", url: "", state: "", ambiguous: false, title: "", found: "" },
   known: new Map(), adhoc: [], contacts: "loading", search: { items: [], shown: 10 }, searchSeq: 0, cat: { id: "", items: [], next: null }, catList: { items: [], next: null, loaded: false }, catSeq: 0, models: [], brand: { name: "", logo: "" },
-  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", defaultStyle: null, styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
+  images: new Map(), autoTicked: "", thumbAssets: null, step: 1, visited: new Set([1]), pickerOpen: false, defaultId: "", defaultStyle: null, defaultVariant: "", variants: [], styleChosen: false, scene: null, nowMs: Date.now(), t: 0, playing: !REDUCED, last: 0, showSafe: false, building: 0, job: null, confirm: null, editing: null,
 };
 const mctx = document.createElement("canvas").getContext("2d");
 const colors = C.colors;
@@ -60,6 +60,11 @@ const streamNow = () => {
 const selectedStream = () => streamNow().stream;
 /** The style drawn in the preview: the person's default style (else the plain editing style) until a style is chosen (steps 1 and 2); on the last step, the style of the cards. */
 const previewStyle = () => P.previewStyleFor({ step: S.step, styleChosen: S.styleChosen, style: S.cfg.style, defaultStyle: S.defaultStyle });
+/** The saved variant ("My styles") in use for a style, or null: a variant deleted since, or sitting on another base style, is simply not found and the base style is used. */
+const findVariant = (id, st) => (id ? S.variants.find((x) => x.id === id && x.base === st) ?? null : null);
+/** The variant of the preview: the chosen one on the last step or once a style is chosen; before that, the default one when the preview shows the default style. */
+const previewVariant = () => findVariant(S.step === 3 || S.styleChosen ? S.cfg.variant : S.defaultVariant, previewStyle());
+const styleName = (st, variant) => (variant ? variant.name : L(`style_${st}`));
 /* The guest streamers of the video: each entry is { id } (a Contacts card, read when needed) or a "for this video only" entry. `key`: what tells them apart. */
 const keyOf = P.memberKey;
 const viewOf = (entry) => (entry.id
@@ -130,7 +135,8 @@ async function buildScene(nowMs = Date.now(), style = previewStyle()) {
   ]);
   if (mine !== S.building) return null;
   const avatars = Object.fromEntries(members.map((m, i) => [m.login, av[i]]));
-  const scene = createScene({ style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors, font: C.font, measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
+  const variant = style === previewStyle() ? previewVariant() : null;
+  const scene = createScene({ style, format: S.cfg.format, duration: S.cfg.duration, content, assets: { logo, cover, avatars }, colors: P.mergeColors(colors, variant), font: P.fontFamilyOf(variant?.font, C.font), measureContext: mctx, watermark: S.cfg.watermark === true, wordmarkFont: wordmarkOk ? P.WORDMARK.family : "" });
   S.thumbAssets = { logo, cover, avatars };   // the same images serve the thumbnails of the style picker
   return { scene, style, empty: !(content.title || content.dayLine || content.timeLine || content.countdown || content.game || content.brand || content.text || content.costreamers.length) };
 }
@@ -145,31 +151,49 @@ function renderThumbs() {
   thumbDirty = false;
   const stream = selectedStream(), fmt = P.formatOf(S.cfg.format);
   for (const cv of document.querySelectorAll("canvas.thumb")) {
-    const st = cv.dataset.style; if (!P.STYLES.includes(st)) continue;
+    const variant = cv.dataset.variant ? S.variants.find((x) => x.id === cv.dataset.variant) ?? null : null, st = variant ? variant.base : cv.dataset.style;
+    if (!P.STYLES.includes(st)) continue;
     try {
       const content = P.buildContent({ ...S.cfg, style: st, elements: P.elementsForStyle(st, S.cfg.elements) }, { stream, coStreamers: chosenMembers(), site: { name: S.brand.name }, nowMs: S.nowMs, tz: TZ });
-      const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, assets: S.thumbAssets, colors, font: C.font, measureContext: mctx });
+      const sc = createScene({ style: st, format: S.cfg.format, duration: S.cfg.duration, content, assets: S.thumbAssets, colors: P.mergeColors(colors, variant), font: P.fontFamilyOf(variant?.font, C.font), measureContext: mctx });
       cv.width = 108; cv.height = Math.round(108 * fmt.height / fmt.width); cv.style.aspectRatio = `${fmt.width} / ${fmt.height}`;
       const ctx = cv.getContext("2d"); ctx.setTransform(cv.width / sc.width, 0, 0, cv.height / sc.height, 0, 0); sc.draw(ctx, sc.restTime);
     } catch { /* a thumbnail that fails stays empty: the name and the sentence are enough */ }
   }
 }
 /** Choosing a style (the cards of the last step, or "Generate now" which keeps the style of the preview). The "countdown" style needs the countdown element: it is ticked for the person, with a visible sentence, and unticked if they change style without having touched it. */
-function chooseStyle(st) {
+function chooseStyle(st, variantId = "") {
   const prev = S.cfg.style, need = P.STYLE_NEEDS[st];
-  S.cfg.style = st; S.styleChosen = true;
-  for (const s of P.STYLES) $(`style-${s}`).checked = s === st;
+  S.cfg.style = st; S.styleChosen = true; S.cfg.variant = findVariant(variantId, st) ? variantId : "";
+  syncStyleRadios();
   if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; $(`el-${need}`).checked = true; }
   else if (S.autoTicked && !need && P.STYLE_NEEDS[prev] === S.autoTicked) { S.cfg.elements = S.cfg.elements.filter((e) => e !== S.autoTicked); $(`el-${S.autoTicked}`).checked = false; S.autoTicked = ""; }
   renderItems(); renderStyleNote(); renderCoverWarn(); renderSteps(); rebuild();
 }
+/** The radios of the style cards: the twelve base styles, then the saved variants ("My styles"); exactly one is checked. */
+function syncStyleRadios() {
+  if (S.cfg.variant && !findVariant(S.cfg.variant, S.cfg.style)) S.cfg.variant = "";
+  for (const s of P.STYLES) $(`style-${s}`).checked = s === S.cfg.style && !S.cfg.variant;
+  for (const v of S.variants) { const r = $(`variant-${v.id}`); if (r) r.checked = S.cfg.variant === v.id; }
+}
+/** The cards of the saved variants, after the twelve styles: only when there are some. Same card as the others (live thumbnail, name, base style). */
+function renderVariantCards() {
+  const box = $("variant-cards");
+  box.replaceChildren(...S.variants.map((v) => {
+    const radio = h("input", { type: "radio", name: "style", id: `variant-${v.id}` });
+    radio.addEventListener("change", () => chooseStyle(v.base, v.id));
+    return h("label", { for: `variant-${v.id}`, class: "stylecard" }, radio, h("canvas", { class: "thumb", "data-variant": v.id, width: 108, height: 192, "aria-hidden": "true" }), h("span", {}, v.name, h("small", { text: L("variant_hint", { style: L(`style_${v.base}`) }) })));
+  }));
+  $("variant-box").hidden = !S.variants.length;
+  syncStyleRadios(); scheduleThumbs();
+}
 /** The "Use as my default style" button of the last step: it names what it does, and says so when the shown style already is the default. */
 function renderDefaultStyle() {
   const b = $("default-style"); if (!b) return;
-  const same = S.defaultStyle === S.cfg.style;
+  const same = S.defaultStyle === S.cfg.style && findVariant(S.defaultVariant, S.defaultStyle) === findVariant(S.cfg.variant, S.cfg.style);
   b.disabled = same; b.textContent = L(same ? "default_is" : "default_use");
   $("default-note").hidden = !S.defaultStyle;
-  $("default-note").textContent = S.defaultStyle ? L("default_now", { style: L(`style_${S.defaultStyle}`) }) : "";
+  $("default-note").textContent = S.defaultStyle ? L("default_now", { style: styleName(S.defaultStyle, findVariant(S.defaultVariant, S.defaultStyle)) }) : "";
 }
 function renderStyleNote() { const n = $("style-note"); n.textContent = S.autoTicked && S.cfg.style === "countdown" ? L("style_countdown_on") : ""; n.hidden = !n.textContent; }
 function sizePreview() {
@@ -570,7 +594,7 @@ function renderSteps() {
   $("step-prev").hidden = S.step === 1; $("step-next").hidden = last; $("generate").hidden = !last; $("generate-now").hidden = last;
   $("step-next").textContent = L(S.step === 1 ? "next_info" : "next_style");
   // The quick way out keeps the style of the preview: the person has seen it. Its name is on the button.
-  $("generate-now").textContent = L("gen_now", { style: L(`style_${previewStyle()}`) });
+  $("generate-now").textContent = L("gen_now", { style: styleName(previewStyle(), previewVariant()) });
   $("pv-note").hidden = last || S.styleChosen || !!S.defaultStyle;
   renderDefaultStyle();
 }
@@ -588,7 +612,7 @@ function setStep(n, { focus = true } = {}) {
 /** "Generate now": the video is made in the style of the preview, which becomes the chosen style (the last step shows it selected, with the download). */
 function generateNow() {
   if (S.job || (S.step === 2 && infoBlocked())) return;
-  chooseStyle(previewStyle());
+  chooseStyle(previewStyle(), previewVariant()?.id ?? "");
   setStep(3, { focus: false }); generate();
 }
 
@@ -662,7 +686,7 @@ function renderInfo() {
 }
 function syncControls() {
   for (const e of ELEMENT_KEYS) $(`el-${e}`).checked = S.cfg.elements.includes(e);
-  for (const st of P.STYLES) $(`style-${st}`).checked = S.cfg.style === st;
+  syncStyleRadios();
   for (const f of P.FORMATS) $(`format-${f.id}`).checked = S.cfg.format === f.id;
   $("duration").value = S.cfg.duration; $("duration-out").textContent = L("seconds", { n: S.cfg.duration });
   $("text").value = S.cfg.text; $("text-count").textContent = `${[...S.cfg.text].length}/${P.LIMITS.text}`;
@@ -696,8 +720,8 @@ function bind() {
   on("schedule-people", "change", () => { S.cfg.schedulePeople = $("schedule-people").checked; renderInfo(); rebuild(); });
   on("default-style", "click", async () => {
     const st = S.cfg.style, b = $("default-style"); b.disabled = true;
-    const r = await api("act", { method: "POST", body: { op: "prefs.style", style: st } });
-    if (r.ok && r.defaultStyle === st) { S.defaultStyle = st; say(L("default_saved", { style: L(`style_${st}`) })); } else say(errText(r.error), "error");
+    const r = await api("act", { method: "POST", body: { op: "prefs.style", style: st, variant: S.cfg.variant } });
+    if (r.ok && r.defaultStyle === st) { S.defaultStyle = st; S.defaultVariant = r.defaultVariant ?? ""; say(L("default_saved", { style: styleName(st, findVariant(S.defaultVariant, st)) })); } else say(errText(r.error), "error");
     renderDefaultStyle();
   });
   on("watermark", "change", async () => {
@@ -777,7 +801,7 @@ function applyPrep(prep) {
 }
 /** A new video starts in the person\'s default style (the "countdown" style also ticks the countdown line it needs, as when the cards are used). */
 function setDefaultStyleOnNewVideo() {
-  const st = S.defaultStyle; S.cfg.style = st;
+  const st = S.defaultStyle; S.cfg.style = st; S.cfg.variant = findVariant(S.defaultVariant, st) ? S.defaultVariant : "";
   const need = P.STYLE_NEEDS[st];
   if (need && !S.cfg.elements.includes(need)) { S.cfg.elements = P.elementsForStyle(st, S.cfg.elements); S.autoTicked = need; }
 }
@@ -788,13 +812,14 @@ async function start() {
   if (data.error === "auth") { $("app").hidden = true; $("noaccess").hidden = false; return; }
   if (data.ok) {
     if (!PREP && typeof data.defaults?.watermark === "boolean") S.cfg.watermark = data.defaults.watermark;   // the remembered box; an AI preparation already says its own
+    S.variants = Array.isArray(data.variants) ? data.variants : []; S.defaultVariant = typeof data.defaults?.defaultVariant === "string" ? data.defaults.defaultVariant : "";
     S.defaultStyle = P.defaultStyleOf(data.defaults?.defaultStyle);
     if (!PREP && S.defaultStyle) setDefaultStyleOnNewVideo();
     S.models = data.models; S.adhoc = data.adhoc; S.contacts = data.contacts === "ok" ? "ok" : "absent"; S.brand = data.brand;
   }
   else say(errText(data.error), "error");
   if (PREP) { if (prep?.ok && prep.prep) { applyPrep(prep.prep); S.step = 3; S.visited.add(3); } else { $("prep-expired").hidden = false; } }   // an assistant preparation fills everything: we open on the last step, the style
-  syncControls();
+  renderVariantCards(); syncControls();
   // The events of all sources. The event already chosen (by a preparation) is found again even if it is not in the first page.
   const wantId = prep?.ok ? prep.prep?.config?.eventId ?? "" : "", wantKey = prep?.ok ? prep.prep?.config?.streamKey ?? "" : "";
   const handWritten = S.noEvent && PREP;   // an event written by the assistant stays as it is

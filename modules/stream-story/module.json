@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.10",
+  "minCore": "0.6.7",
   "id": "stream-story",
   "name": {
     "en": "Announcement story",
     "fr": "Story d'annonce"
   },
-  "version": "2.11.0",
+  "version": "2.12.0",
   "menuGroup": "tools",
   "platform": "instagram",
   "description": {
@@ -29,8 +29,8 @@
     "rawg"
   ],
   "privacy": {
-    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared (with the chosen event's identifier). Upcoming events and the people they list are read live and kept in memory under a minute. Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
-    "fr": "Rien n'est collecté sur votre public, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir et les personnes qu'ils citent sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
+    "en": "Nothing is collected about your visitors, and there is no public page. The module keeps your saved models (only the Contacts card number of each guest streamer), your style variants, a short list of one-off people, a yes/no for the “Made with Curiosa” mark and, for 7 days at most, what an assistant prepared. Upcoming events and the people they list are read live (kept under a minute). Names and pictures stay in Contacts. No video is kept: it is made in your browser.",
+    "fr": "Rien n'est collecté sur votre public, et il n'y a pas de page publique. Le module garde vos modèles (pour chaque co-streamer, seulement le numéro de sa fiche dans Contacts), vos variantes de style, une courte liste de ponctuels, un oui/non pour la mention « Made with Curiosa » et, 7 jours au plus, ce qu'un assistant a préparé. Les événements à venir et les personnes qu'ils citent sont lus en direct (gardés moins d'une minute). Les noms et photos restent dans Contacts. Aucune vidéo n'est gardée."
   },
   "tabs": [
     {
@@ -39,6 +39,14 @@
         "fr": "Fabriquer la vidéo",
         "en": "Make the video"
       }
+    },
+    {
+      "id": "styles",
+      "label": {
+        "fr": "Mes styles",
+        "en": "My styles"
+      },
+      "panel": true
     }
   ],
   "settings": [
@@ -128,6 +136,20 @@
       "help": {
         "en": "Starting value of the tick box on the story screen (off unless you choose otherwise). Once you tick or untick that box, your last choice is remembered and used for the next stories.",
         "fr": "Valeur de départ de la case de l'écran de création (décochée sauf choix contraire). Dès que vous cochez ou décochez cette case, votre dernier choix est retenu pour les prochaines stories."
+      }
+    },
+    {
+      "key": "showVariants",
+      "type": "boolean",
+      "default": false,
+      "advanced": true,
+      "label": {
+        "en": "Show the “My styles” tab",
+        "fr": "Afficher l'onglet « Mes styles »"
+      },
+      "help": {
+        "en": "Saved variants of a style (the same animation with other colours). The tab also shows as soon as one exists.",
+        "fr": "Des variantes enregistrées d'un style (la même animation avec d'autres couleurs). L'onglet s'affiche dès qu'il y en a une."
       }
     }
   ],
@@ -273,9 +295,18 @@
       }
     },
     {
+      "name": "style_variants_list",
+      "readOnly": true,
+      "description": "The owner's saved style variants (\"My styles\"): a name, a base style among the twelve, optional colours (accent, accent2, background, text as #rrggbb) and a font (site, sans, serif, mono). Use it before style_variant_create to avoid a name that exists, or to pick one for story_prepare. Read only.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "story_prepare",
       "default": false,
-      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The event is chosen with 'event' (an id from story_events, any source), or the stream with 'stream' ('next' by default, or a key from story_next_streams), or hand-written (streamTitle + streamDate [+ streamTime]); give only one of the three. Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation.",
+      "description": "Prepares an announcement story video for the owner and returns a LINK to the admin page with everything already filled in. Nothing is generated or published: the owner opens the link while signed in, checks the animated preview, clicks 'Generate the video' and saves the file (the video can only be made in a browser). Start from a saved model (story_models) and/or give settings. The event is chosen with 'event' (an id from story_events, any source), or the stream with 'stream' ('next' by default, or a key from story_next_streams), or hand-written (streamTitle + streamDate [+ streamTime]); give only one of the three. Writes only a preparation that expires after 7 days. All values are checked; an invalid one is refused with an explanation. 'variant' picks one of the owner's saved style variants.",
       "input": {
         "type": "object",
         "properties": {
@@ -376,6 +407,149 @@
           "watermark": {
             "type": "boolean",
             "description": "Optional. true = add a small 'Made with Curiosa' mark at the bottom of the video; false = none. Default: the owner's own choice (off unless they chose otherwise). Never add it unless the owner asked for it."
+          },
+          "variant": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Optional: the name (or identifier) of a saved style variant from style_variants_list. Its base style becomes the style of the video, with its colours and font; leave 'style' out or give the same base style."
+          }
+        }
+      }
+    },
+    {
+      "name": "style_variant_create",
+      "default": false,
+      "description": "Create a style variant: the same animation as one of the twelve styles, with its own colours and font, saved under a name so it shows as a card in the style step of the announcement story. 'style' is the base style. Colours must be #rrggbb or #rgb; a colour that would be hard to read is adjusted automatically and listed in 'adjusted'. At most 30 variants; names must be different. The owner can change or delete it in the administration (My styles tab). It cannot delete anything and cannot make a video.",
+      "input": {
+        "type": "object",
+        "required": [
+          "name",
+          "style"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A short name, for example 'Geometric night'."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "neon",
+              "poster",
+              "countdown",
+              "minimal",
+              "broadcast",
+              "kinetic",
+              "cinema",
+              "arcade",
+              "collage",
+              "geometric",
+              "epic",
+              "arena"
+            ],
+            "description": "The base style."
+          },
+          "accent": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Main colour, #rrggbb or #rgb. An empty text removes it (the site colour is used)."
+          },
+          "accent2": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Second colour, same form."
+          },
+          "background": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Background colour, same form. Only some styles read it (minimal, geometric)."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Text colour, same form. Only the minimal style reads it."
+          },
+          "font": {
+            "type": "string",
+            "enum": [
+              "site",
+              "sans",
+              "serif",
+              "mono"
+            ],
+            "description": "Letters: the site's own, a plain sans, a serif or a monospace. Styles with letters of their own (film, arcade, paper, epic) keep them."
+          }
+        }
+      }
+    },
+    {
+      "name": "style_variant_update",
+      "default": false,
+      "description": "Change a saved style variant, found by its name or identifier (see style_variants_list). Only the fields you give change; an empty text for a colour removes that colour. Same rules as for creation (colours, adjustment, unique names). Videos and models that use the variant keep working. It cannot delete anything.",
+      "input": {
+        "type": "object",
+        "required": [
+          "variant"
+        ],
+        "properties": {
+          "variant": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Current name or identifier."
+          },
+          "newName": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "New name."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "neon",
+              "poster",
+              "countdown",
+              "minimal",
+              "broadcast",
+              "kinetic",
+              "cinema",
+              "arcade",
+              "collage",
+              "geometric",
+              "epic",
+              "arena"
+            ],
+            "description": "New base style."
+          },
+          "accent": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Main colour, #rrggbb or #rgb. An empty text removes it (the site colour is used)."
+          },
+          "accent2": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Second colour, same form."
+          },
+          "background": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Background colour, same form. Only some styles read it (minimal, geometric)."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 7,
+            "description": "Text colour, same form. Only the minimal style reads it."
+          },
+          "font": {
+            "type": "string",
+            "enum": [
+              "site",
+              "sans",
+              "serif",
+              "mono"
+            ],
+            "description": "Letters: the site's own, a plain sans, a serif or a monospace. Styles with letters of their own (film, arcade, paper, epic) keep them."
           }
         }
       }
@@ -388,5 +562,12 @@
   ],
   "inertLegacyCollections": [
     "story_costreamers"
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.style_variants_list": "Les variantes de style enregistrées par la personne (« Mes styles ») : un nom, un style de départ parmi les douze, des couleurs facultatives (principale, secondaire, fond, texte en #rrggbb) et des lettres (site, simple, serif, mono). À lire avant style_variant_create pour éviter un nom déjà pris, ou pour en choisir une pour story_prepare. Lecture seule.",
+      "mcp.style_variant_create": "Crée une variante de style : la même animation qu'un des douze styles, avec ses propres couleurs et ses propres lettres, gardée sous un nom pour apparaître comme une carte à l'étape du style de la story d'annonce. « style » est le style de départ. Les couleurs s'écrivent #rrggbb ou #rgb ; une couleur difficile à lire est ajustée automatiquement et listée dans « adjusted ». 30 variantes au plus, aux noms différents. La personne peut la modifier ou la supprimer dans l'administration (onglet Mes styles). Ne supprime rien et ne fabrique aucune vidéo.",
+      "mcp.style_variant_update": "Modifie une variante de style enregistrée, retrouvée par son nom ou son identifiant (voir style_variants_list). Seuls les champs donnés changent ; un texte vide retire la couleur. Mêmes règles qu'à la création (couleurs, ajustement, noms uniques). Les vidéos et modèles qui utilisent la variante continuent de marcher. Ne supprime rien."
+    }
+  }
 }

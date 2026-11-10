@@ -9,6 +9,7 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 - Choisissez parmi douze styles d'animation, du générique de film au collage papier.
 - Épique : un cadre doré, une bannière suspendue et des braises qui montent.
 - Héros : de grands panneaux inclinés, des hexagones et une barre qui se remplit.
+- Enregistrez vos propres styles en mode avancé : la même animation avec d'autres couleurs, par exemple un style sur trois fonds. Un assistant peut aussi en créer.
 - Gardez votre style préféré par défaut : les nouvelles vidéos et l'aperçu des premières étapes démarrent avec lui.
 - Enregistrez des modèles, avec les invités de votre carnet d'adresses.
 - Ajoutez une petite marque « Fait avec Curiosa », si vous le souhaitez.
@@ -40,4 +41,4 @@ Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle e
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.11.0.
+Disponible depuis la version 1.0.0. Version actuelle : 2.12.0.
