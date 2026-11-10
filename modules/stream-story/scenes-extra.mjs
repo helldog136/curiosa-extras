@@ -1,4 +1,4 @@
-// Six more styles for « Story d'annonce » (2.7.0): broadcast, kinetic, cinema, arcade, collage, geometric.
+// Eight more styles for « Story d'annonce »: broadcast, kinetic, cinema, arcade, collage, geometric (2.7.0), epic and arena (2.11.0).
 // Same contract as scenes.mjs: every image is a PURE FUNCTION OF TIME (same t, same pixels: grain, paper, jitter and weave are seeded by the time or by a constant, never by a clock),
 // text is drawn with fillText only, nothing here knows the page, the network or the browser. `createScene` (scenes.mjs) hands over a `kit` (sizes, content, fonts, small drawing tools)
 // and gets back the layout and a `draw(ctx, t)`; it adds the "Made with Curiosa" mention itself, so the watermark never depends on a style.
@@ -6,7 +6,7 @@
 // then a deliberate hold: the composition is still and readable for the last 22 %. Every duration below is a fraction of the video length, so 5 s and 15 s both read well.
 import { wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, parseHex, toHex, clamp01, easeOutCubic, easeInOutCubic, progress, seeded } from "./pure.mjs";
 
-export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric"];
+export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena"];
 /** The few words these styles write themselves (the rest comes from the editor). Neutral, and given for both languages. */
 export const EXTRA_WORDS = { fr: { next: "À SUIVRE", start: "START" }, en: { next: "UP NEXT", start: "START" } };
 
@@ -81,6 +81,14 @@ export function extraPalette(style, input = {}) {
   if (style === "collage") {
     const paper = mix("#efe6d2", bg, 0.08), ink = "#1b1814", accentC = xFill(accent), b = xFill(partner);
     return done({ base: paper, text: ensureContrast(ink, paper, 7), accent: ensureContrast(accent, paper, 4.5), accent2: ensureContrast(partner, paper, 4.5), soft: ensureContrast(mix(ink, paper, 0.38), paper, 4.5), paper, ink, cream: "#f8f3e6", kraft: mix("#c8a878", accent, 0.1), s1: accentC, s2: b });
+  }
+  if (style === "epic") {
+    const base = mix("#120d09", accent, 0.05), gold = mix("#d4af37", accent, 0.1), text = "#f4ead4", gem = xBoost(partner, base, 4.5), ribbon = xFill(mix(accent, "#5a0f12", 0.4));
+    return done({ base, text, accent: ensureContrast(mix(gold, "#ffffff", 0.12), base, 4.5), accent2: gem, soft: ensureContrast(mix(text, base, 0.36), base, 4.5), gold, goldHi: mix(gold, "#ffffff", 0.5), goldLo: mix(gold, "#2a1808", 0.55), fill: ribbon, fill2: xFill(gem) });
+  }
+  if (style === "arena") {
+    const base = mix("#080b13", accent, 0.07), hot = xBoost(accent, base, 4.5), cool = xBoost(partner, base, 4.5), text = "#f5f8ff";
+    return done({ base, text, accent: hot, accent2: cool, soft: ensureContrast(mix(text, base, 0.3), base, 4.5), panel: mix(base, "#ffffff", 0.1), line: mix(base, "#ffffff", 0.26), fill: xFill(hot), fill2: xFill(cool) });
   }
   // geometric
   const dark = luminance(bg) < 0.3, field = dark ? mix(bg, "#000000", 0.3) : mix(bg, "#ffffff", 0.55), ink = readableOn(field);
@@ -1013,5 +1021,362 @@ function styleGeometric(K) {
   return spec;
 }
 
+/* ═════════════════════════ 11. EPIC ═════════════════════════
+ * High-fantasy: dark leather, a gilded frame with corner gems, a hanging banner for the date, a row of strokes that read as runes, embers rising in the first three quarters.
+ * Everything is drawn from lines and fills (no picture, no font file of any game): serif capitals with a metal gradient, an engraved shadow and a golden glow that flares once as
+ * each line is revealed from its centre, then settles. The embers fade out before `restTime`, so the hold is a still, readable plate. */
+const XRUNES = [   // a few angular glyphs on a -0.5..0.5 grid, drawn as strokes
+  [[[-0.3, -0.5], [-0.3, 0.5]], [[-0.3, -0.2], [0.25, -0.5]], [[-0.3, 0.1], [0.25, -0.2]]],
+  [[[-0.3, 0.5], [-0.3, -0.5], [0.3, -0.2], [0.3, 0.5]]],
+  [[[0, -0.5], [0.3, 0], [0, 0.5], [-0.3, 0], [0, -0.5]]],
+  [[[-0.3, -0.5], [-0.3, 0.5]], [[-0.3, -0.3], [0.3, 0], [-0.3, 0.3]]],
+  [[[-0.3, -0.5], [-0.3, 0.5]], [[-0.3, -0.5], [0.3, -0.2], [-0.3, 0.1]], [[-0.3, 0.1], [0.3, 0.5]]],
+  [[[0.25, -0.4], [-0.25, 0], [0.25, 0.4]]],
+  [[[-0.3, -0.5], [-0.3, 0.5]], [[-0.3, -0.5], [0.3, -0.2]], [[-0.3, -0.1], [0.3, 0.2]]],
+];
+function xDiamond(ctx, cx, cy, r, fill, stroke) {
+  ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r * 0.75, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r * 0.75, cy); ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = Math.max(1.5, r * 0.18); ctx.stroke(); }
+}
+function styleEpic(K) {
+  const { pal, content, assets, members, D, has, W, H } = K, A0 = K.A, L = Math.min(1.1, Math.max(0.6, D * 0.07)), rest = D * 0.78;
+  const order = ["brand", "title", "when", "countdown", "game", "text", "costreamers"].filter((id) => has[id]);
+  const starts = xStarts(D, order.length, L * 1.25, 0.1, 0.66), at = (id) => starts[order.indexOf(id)];
+  const PADX = 70, PADT = 96, PADB = 84, IW = A0.w - PADX * 2;
+  const spec = { gap: 30, maxScale: 1.4, stretch: 1.25, reserveTop: PADT, reserveBottom: PADB };
+  const gold = (ctx, y0, y1) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, pal.goldHi); g.addColorStop(0.5, pal.gold); g.addColorStop(1, pal.goldLo); return g; };
+
+  spec.build = (u) => order.map((id) => {
+    if (id === "brand") {
+      const px = 24 * u, logo = K.hasLogo ? 56 * u : 0, gap = logo ? 18 * u : 0, f = xFont(K, 700, px, false, XSERIF), m0 = xMeasure(K, f), tr = px * 0.3;
+      const name = content.brand ? ellipsize((s) => xTW(m0, s, tr), content.brand.toLocaleUpperCase(K.lang), IW - logo - gap) : "";
+      return { id, h: Math.max(logo, px * 1.5), logo, gap, name, px, tr, tw: logo + gap + (name ? xTW(m0, name, tr) : 0), gapAfter: 1.1 };
+    }
+    if (id === "title") {
+      const fit = xFit(K, content.title, { fam: XSERIF, weight: 700, px: 92 * u, lhr: 1.14, track: 0.03, width: IW, maxLines: 4, okLines: 3, minFrac: 0.42, balance: true, upper: true }), divH = 54 * u;
+      return { id, fit, divH, h: fit.lines.length * fit.lh + divH, tw: IW, gapAfter: 1.05 };
+    }
+    if (id === "when") {
+      const padX = 40 * u, padY = 20 * u, tail = 34 * u, inner = IW - padX * 2 - tail * 2;
+      const day = content.dayLine ? xFitLine(K, content.dayLine, { fam: XSERIF, weight: 700, px: (content.timeLine ? 30 : 60) * u, upper: true, track: 0.16, width: inner, minFrac: 0.5 }) : null;
+      const time = content.timeLine ? xFitLine(K, content.timeLine, { fam: XSERIF, weight: 700, px: 104 * u, width: inner, minFrac: 0.4 }) : null;
+      const dh = day ? day.px * 1.55 : 0, th = time ? time.px * 1.12 : 0, bw = Math.min(IW, Math.max(day?.w ?? 0, time?.w ?? 0) + (padX + tail) * 2);
+      return { id, day, time, dh, th, padY, tail, h: padY * 2 + dh + th, tw: bw };
+    }
+    if (id === "countdown") {
+      const line = xFitLine(K, content.countdown, { fam: XSERIF, weight: 400, italic: true, px: 44 * u, width: IW - 150 * u, minFrac: 0.55 });
+      return { id, line, h: line.px * 1.5, tw: line.w + 130 * u };
+    }
+    if (id === "game") {
+      const cover = K.tools.usable(assets.cover), cw = cover ? 176 * u : 0, ch = cover ? 246 * u : 0, pad = cover ? 10 * u : 0;
+      const fit = xFit(K, content.game, { fam: XSERIF, weight: 700, px: 34 * u, upper: true, track: 0.16, lhr: 1.4, width: IW, maxLines: 2, okLines: 2, minFrac: 0.6 });
+      return { id, cover, cw, ch, pad, fit, gapIn: cover ? 22 * u : 0, h: ch + pad * 2 + (cover ? 22 * u : 0) + fit.lines.length * fit.lh, tw: Math.max(cw + pad * 2, fit.tw) };
+    }
+    if (id === "text") {
+      const fit = xFit(K, content.text, { fam: XSERIF, weight: 400, italic: true, px: 42 * u, lhr: 1.32, width: IW * 0.9, maxLines: 3, shrink: false, balance: true }), top = 34 * u;
+      return { id, fit, top, h: top + fit.lines.length * fit.lh, tw: Math.max(fit.tw, 200 * u) };
+    }
+    const n = members.length, rows = n <= 3 ? 1 : 2, d = 150 * u, labelH = Math.max(40 * u, 34), head = 82 * u;
+    return { id, rows, d, labelH, head, h: head + rows * (d + labelH + 10) + (rows - 1) * Math.min(24 * u, 18), tw: IW };
+  });
+  spec.place = (blocks) => blocks.forEach((b) => { b.bw = Math.min(IW, b.tw ?? IW); b.bx = b.x + PADX + (IW - b.bw) / 2; b.x += PADX; b.w = IW; });
+
+  const cx0 = A0.x + A0.w / 2, rng = seeded(4242);
+  const embers = Array.from({ length: 30 }, () => ({ x: A0.x + rng() * A0.w, v: 0.05 + rng() * 0.07, ph: rng(), r: 2 + rng() * 3.4, sway: 14 + rng() * 40, f: 0.8 + rng() * 1.6, s: rng() * 6 }));
+  spec.bg = (ctx) => {
+    ctx.fillStyle = pal.base; ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(W / 2, H * 0.42, 40, W / 2, H * 0.42, H * 0.62); g.addColorStop(0, rgba(pal.gold, 0.2)); g.addColorStop(0.55, rgba(pal.gold, 0.06)); g.addColorStop(1, rgba(pal.gold, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const r = seeded(31337);   // the leather: fixed specks, the same in every frame
+    for (let i = 0; i < 700; i++) { const x = r() * W, y = r() * H, z = 1.5 + r() * 2.5; ctx.fillStyle = r() < 0.5 ? `rgba(255,226,180,${0.012 + r() * 0.025})` : `rgba(0,0,0,${0.06 + r() * 0.1})`; ctx.fillRect(x, y, z, z * (0.6 + r() * 0.8)); }
+    const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.4, W / 2, H / 2, Math.max(W, H) * 0.78); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.5)");
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  };
+  const frame = (ctx, t) => {
+    const p = xSeg(t, 0.02 * D, L * 1.5, xInOutQuart), { x, y, w, h } = A0, e = 9;
+    ctx.save(); ctx.globalAlpha *= p; const sc = 0.985 + 0.015 * p; ctx.translate(cx0, A0.y + h / 2); ctx.scale(sc, sc); ctx.translate(-cx0, -(A0.y + h / 2));
+    ctx.lineJoin = "miter"; ctx.strokeStyle = pal.goldLo; ctx.lineWidth = 7; ctx.strokeRect(x + e, y + e, w - e * 2, h - e * 2);
+    ctx.strokeStyle = gold(ctx, y, y + h); ctx.lineWidth = 3; ctx.strokeRect(x + e + 11, y + e + 11, w - (e + 11) * 2, h - (e + 11) * 2);
+    for (const [sx, sy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {   // the corners: a bracket and a gem
+      const px = sx ? x + w - e : x + e, py = sy ? y + h - e : y + e, dx = sx ? -1 : 1, dy = sy ? -1 : 1;
+      ctx.strokeStyle = pal.gold; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(px, py + dy * 84); ctx.lineTo(px, py); ctx.lineTo(px + dx * 84, py); ctx.stroke();
+      xDiamond(ctx, px + dx * 8, py + dy * 8, 22, pal.goldLo); xDiamond(ctx, px + dx * 8, py + dy * 8, 17, gold(ctx, py - 20, py + 20)); xDiamond(ctx, px + dx * 8, py + dy * 8, 9, pal.accent2);
+    }
+    for (const sy of [0, 1]) { const py = sy ? y + h - e : y + e; ctx.fillStyle = pal.goldLo; ctx.fillRect(cx0 - 120, py - 4, 240, 8); xDiamond(ctx, cx0, py, 17, gold(ctx, py - 18, py + 18)); xDiamond(ctx, cx0, py, 8, pal.accent2); }
+    // one slow glint along the top edge, over before the hold
+    const gl = xSeg(t, 0.3 * D, 0.28 * D, xInOutSine);
+    if (gl > 0 && gl < 1) { const gx = x + w * gl, g2 = ctx.createLinearGradient(gx - 160, 0, gx + 160, 0); g2.addColorStop(0, rgba("#ffffff", 0)); g2.addColorStop(0.5, rgba("#ffffff", 0.5)); g2.addColorStop(1, rgba("#ffffff", 0)); ctx.fillStyle = g2; ctx.fillRect(gx - 160, y + e - 3, 320, 12); }
+    ctx.restore();
+  };
+  const runes = (ctx, cx, cy, size, t, s, gap = size * 1.5) => {
+    const seq = [0, 1, 4, 2, 3, 6, 5].slice(0, 5).concat([]), n = 5;
+    ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (let i = 0; i < n; i++) {
+      const p = xSeg(t, s + i * 0.09 * L, L * 0.8, xOutQuart), flare = Math.sin(Math.PI * p), mid = (n - 1) / 2, x = cx + (i - mid) * gap;
+      if (i === 2) { xDiamond(ctx, x, cy, size * 0.62, rgba(pal.accent2, p)); xDiamond(ctx, x, cy, size * 0.3, rgba("#ffffff", 0.5 * p)); continue; }
+      ctx.save(); ctx.globalAlpha *= p; ctx.shadowColor = rgba(pal.goldHi, 0.8 * flare); ctx.shadowBlur = 18 * flare; ctx.strokeStyle = pal.gold; ctx.lineWidth = Math.max(3, size * 0.12);
+      for (const poly of XRUNES[seq[i]]) { ctx.beginPath(); poly.forEach(([px, py], k) => (k ? ctx.lineTo(x + px * size, cy + py * size) : ctx.moveTo(x + px * size, cy + py * size))); ctx.stroke(); }
+      ctx.restore();
+    }
+    const lp = xSeg(t, s, L * 1.2, xInOutQuart), half = gap * 2 + size * 1.4;
+    ctx.fillStyle = pal.goldLo; ctx.fillRect(cx - half - 150 * lp, cy - 1.5, 150 * lp, 3); ctx.fillRect(cx + half, cy - 1.5, 150 * lp, 3);
+    ctx.restore();
+  };
+  spec.block = (ctx, b, t) => {
+    const s = at(b.id), p = xSeg(t, s, L, xOutQuart), cx = b.x + b.w / 2;
+    ctx.textBaseline = "alphabetic";
+    const rise = (q, fn, dy = 22) => { ctx.save(); ctx.globalAlpha *= clamp01(q); ctx.translate(0, (1 - clamp01(q)) * dy); fn(); ctx.restore(); };
+    if (b.id === "brand") {
+      rise(p, () => {
+        const x0 = cx - b.tw / 2;
+        if (b.logo) { xCover(ctx, assets.logo, x0, b.y + (b.h - b.logo) / 2, b.logo, b.logo); ctx.strokeStyle = pal.gold; ctx.lineWidth = 2.5; ctx.strokeRect(x0, b.y + (b.h - b.logo) / 2, b.logo, b.logo); }
+        if (b.name) { ctx.font = xFont(K, 700, b.px, false, XSERIF); ctx.fillStyle = pal.soft; xDrawTracked(ctx, b.name, x0 + b.logo + b.gap, xBase(b.y, b.h, b.px), b.tr); }
+      }, 10);
+    } else if (b.id === "title") {
+      const f = b.fit, glowAt = (q) => 0.3 + 0.7 * Math.sin(Math.PI * clamp01(q));
+      f.lines.forEach((line, k) => {
+        const q = xSeg(t, s + k * 0.2 * L, L * 1.4, xOutQuart), top = b.y + k * f.lh, base = xBase(top, f.lh, f.px) - f.px * 0.05;
+        if (q <= 0) return;
+        const half = (f.m(line) / 2 + 24) * q;
+        xClip(ctx, cx - half, top - f.px * 0.2, half * 2, f.lh + f.px * 0.4, () => {
+          ctx.font = f.font; ctx.textAlign = "left"; const w = xTW(xMeasure(K, f.font), line, f.tr);
+          ctx.fillStyle = "rgba(0,0,0,0.65)"; xDrawTracked(ctx, line, cx, base + 4, f.tr, "center");   // engraved: the dark edge under the letters
+          ctx.save(); ctx.shadowColor = rgba(pal.goldHi, 0.85 * glowAt(q)); ctx.shadowBlur = 30 * glowAt(q) + 6; ctx.fillStyle = gold(ctx, top, top + f.lh); xDrawTracked(ctx, line, cx, base, f.tr, "center"); ctx.restore();
+          ctx.fillStyle = gold(ctx, top + f.px * 0.1, top + f.lh * 0.96); xDrawTracked(ctx, line, cx, base, f.tr, "center");
+          void w;
+        });
+      });
+      runes(ctx, cx, b.y + f.lines.length * f.lh + b.divH * 0.42, 17 * K.u + 6, t, s + (f.lines.length * 0.2 + 0.4) * L);
+    } else if (b.id === "when") {
+      const x0 = cx - b.tw / 2, x1 = cx + b.tw / 2, y0 = b.y, y1 = b.y + b.h, ym = (y0 + y1) / 2, tl = b.tail, q = xSeg(t, s, L * 1.3, xOutQuart);
+      const sway = 0.012 * (1 - q) * Math.cos(q * 10);
+      ctx.save(); ctx.translate(cx, y0); ctx.rotate(sway); ctx.translate(-cx, -y0);
+      xWipe(ctx, x0 - 6, y0 - 6, b.tw + 12, b.h + 12, q, "d", () => {
+        xPoly(ctx, [[x0 + 8, y0 + 10], [x1 + 8, y0 + 10], [x1 - tl + 8, ym + 10], [x1 + 8, y1 + 10], [x0 + 8, y1 + 10], [x0 + tl + 8, ym + 10]]); ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fill();
+        xPoly(ctx, [[x0, y0], [x1, y0], [x1 - tl, ym], [x1, y1], [x0, y1], [x0 + tl, ym]]); ctx.fillStyle = pal.fill; ctx.fill();
+        const sh = ctx.createLinearGradient(0, y0, 0, y1); sh.addColorStop(0, "rgba(255,255,255,0.14)"); sh.addColorStop(0.5, "rgba(255,255,255,0)"); sh.addColorStop(1, "rgba(0,0,0,0.25)"); ctx.fillStyle = sh; ctx.fill();
+        ctx.strokeStyle = gold(ctx, y0, y1); ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x0, y0 + 2.5); ctx.lineTo(x1, y0 + 2.5); ctx.moveTo(x0, y1 - 2.5); ctx.lineTo(x1, y1 - 2.5); ctx.stroke();
+        ctx.strokeStyle = rgba(pal.goldHi, 0.6); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + tl * 0.5, y0 + 12); ctx.lineTo(x1 - tl * 0.5, y0 + 12); ctx.moveTo(x0 + tl * 0.5, y1 - 12); ctx.lineTo(x1 - tl * 0.5, y1 - 12); ctx.stroke();
+        const ink = readableOn(pal.fill), tp = xSeg(t, s + 0.3 * L, L, xOutQuart);
+        ctx.save(); ctx.globalAlpha *= tp; ctx.fillStyle = ink; ctx.textAlign = "center";
+        if (b.day) { ctx.font = b.day.font; xDrawTracked(ctx, b.day.text, cx, xBase(y0 + b.padY, b.dh, b.day.px), b.day.tr, "center"); }
+        if (b.time) { ctx.font = b.time.font; ctx.textAlign = "center"; ctx.fillText(b.time.text, cx, xBase(y0 + b.padY + b.dh, b.th, b.time.px) - b.time.px * 0.04); }
+        ctx.restore();
+      });
+      ctx.restore();
+    } else if (b.id === "countdown") {
+      rise(p, () => {
+        ctx.font = b.line.font; ctx.fillStyle = pal.soft; ctx.textAlign = "center"; ctx.fillText(b.line.text, cx, xBase(b.y, b.h, b.line.px));
+        const gx = b.line.w / 2 + 40 * K.u; for (const sgn of [-1, 1]) { xDiamond(ctx, cx + sgn * gx, b.y + b.h / 2, 8 * K.u + 2, pal.gold); ctx.fillStyle = pal.goldLo; ctx.fillRect(cx + sgn * (gx + 16 * K.u) - (sgn < 0 ? 40 * K.u : 0), b.y + b.h / 2 - 1.2, 40 * K.u, 2.4); }
+      }, 14);
+    } else if (b.id === "game") {
+      rise(p, () => {
+        if (b.cover) {
+          const x = cx - (b.cw + b.pad * 2) / 2, y = b.y;
+          ctx.fillStyle = gold(ctx, y, y + b.ch + b.pad * 2); ctx.fillRect(x, y, b.cw + b.pad * 2, b.ch + b.pad * 2);
+          xCover(ctx, assets.cover, x + b.pad, y + b.pad, b.cw, b.ch); ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 3; ctx.strokeRect(x + b.pad, y + b.pad, b.cw, b.ch);
+          for (const [gx, gy] of [[x, y], [x + b.cw + b.pad * 2, y], [x, y + b.ch + b.pad * 2], [x + b.cw + b.pad * 2, y + b.ch + b.pad * 2]]) xDiamond(ctx, gx, gy, 9 * K.u + 3, pal.accent2, pal.goldLo);
+        }
+        ctx.font = b.fit.font; ctx.fillStyle = pal.soft;
+        b.fit.lines.forEach((line, k) => xDrawTracked(ctx, line, cx, xBase(b.y + b.ch + b.pad * 2 + b.gapIn + k * b.fit.lh, b.fit.lh, b.fit.px), b.fit.tr, "center"));
+      }, 16);
+    } else if (b.id === "text") {
+      rise(p, () => {
+        ctx.fillStyle = pal.goldLo; ctx.fillRect(cx - 90 * K.u, b.y + 8, 180 * K.u, 2.4); xDiamond(ctx, cx, b.y + 9, 7 * K.u + 2, pal.gold);
+        ctx.font = b.fit.font; ctx.fillStyle = pal.text; ctx.textAlign = "center"; b.fit.lines.forEach((line, k) => ctx.fillText(line, cx, xBase(b.y + b.top + k * b.fit.lh, b.fit.lh, b.fit.px) - b.fit.px * 0.05));
+      }, 14);
+    } else if (b.id === "costreamers") {
+      const lpx = Math.max(22, b.head * 0.55);
+      rise(p, () => {
+        ctx.font = xFont(K, 700, lpx, false, XSERIF); ctx.fillStyle = pal.gold; const w = xDrawTracked(ctx, K.words.with, cx, xBase(b.y, b.head, lpx), lpx * 0.3, "center");
+        ctx.fillStyle = pal.goldLo; for (const sgn of [-1, 1]) ctx.fillRect(cx + sgn * (w / 2 + 24 * K.u) - (sgn < 0 ? 70 * K.u : 0), b.y + b.head / 2 - 1.2, 70 * K.u, 2.4);
+      }, 10);
+      const cols = b.rows === 1 ? members.length : Math.ceil(members.length / 2), gap = 26 * K.u, box = { x: b.x, y: b.y + b.head, w: b.w, h: b.h - b.head };
+      layoutCostreamers(members.length, { ...box, w: Math.min(b.w, cols * (b.d + gap + 30)), x: cx - Math.min(b.w, cols * (b.d + gap + 30)) / 2 }, { maxD: b.d, gap, labelH: b.labelH }).forEach((cell, k) => {
+        const m = members[k], q = xSeg(t, s + (0.2 + k * 0.12) * L, L, xOutBack);
+        ctx.save(); ctx.globalAlpha *= clamp01(q); ctx.translate(cell.cx, cell.cy); ctx.scale(0.86 + 0.14 * q, 0.86 + 0.14 * q); ctx.translate(-cell.cx, -cell.cy);
+        xAvatar(ctx, K, cell, m, assets.avatars?.[m.login], { ring: pal.gold, ringW: 6 }); xDiamond(ctx, cell.cx, cell.cy - cell.d / 2 - 4, 11 * K.u + 3, pal.accent2, pal.goldLo);
+        ctx.fillStyle = pal.text; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(m.more ? "" : xNameFit(ctx, K, 700, Math.min(28 * K.u, cell.d * 0.2), m.name, cell.labelW, XSERIF), cell.cx, cell.labelY + 6);
+        ctx.restore();
+      });
+    }
+  };
+  spec.fg = (ctx, t) => {
+    frame(ctx, t);
+    const fade = 1 - xSeg(t, rest - 1.6, 1.4, xInOutSine);   // the embers die out before the hold
+    if (fade <= 0) return;
+    ctx.save(); ctx.globalAlpha *= fade * xSeg(t, 0, 0.8);
+    for (const e of embers) {
+      const life = (t * e.v + e.ph) % 1, y = A0.y + A0.h + 30 - life * (A0.h + 60), x = e.x + Math.sin(t * e.f + e.s) * e.sway, a = Math.sin(Math.PI * life) * (0.55 + 0.45 * Math.sin(t * 5 + e.s));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, e.r * 4); g.addColorStop(0, rgba(pal.goldHi, 0.9 * a)); g.addColorStop(0.35, rgba(pal.accent2, 0.35 * a)); g.addColorStop(1, rgba(pal.accent2, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - e.r * 4, y - e.r * 4, e.r * 8, e.r * 8);
+    }
+    ctx.restore();
+  };
+  return spec;
+}
+
+/* ═════════════════════════ 12. ARENA ═════════════════════════
+ * A team-shooter menu: big flat slanted panels in a hot colour and a cool colour on a near-black field, hexagons, chevrons, condensed italic capitals (a normal heavy sans squeezed
+ * to 84 % of its width, so no font file is needed), and a segmented "capture bar" that fills up for the countdown. Panels slam in from alternating sides with a fast ease-out
+ * and a light sweep at the landing; the chevrons slide and slow down to a stop exactly at `restTime`. Nothing moves in the last 22 %. */
+const XSKEW = 0.2, XCOND = 0.84;
+/** A parallelogram leaning right: x..x+w is the whole extent, the slant eats `k * h` on each side. */
+function xSlab(ctx, x, y, w, h, k = XSKEW) { const s = k * h; ctx.beginPath(); ctx.moveTo(x + s, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w - s, y + h); ctx.lineTo(x, y + h); ctx.closePath(); }
+function xHexPath(ctx, cx, cy, r) { ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = (Math.PI / 3) * i - Math.PI / 2, x = cx + r * Math.cos(a), y = cy + r * Math.sin(a); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); }
+/** Draws `fn` with the x axis squeezed around `ax` (condensed type). */
+function xCondense(ctx, ax, fn, k = XCOND) { ctx.save(); ctx.translate(ax, 0); ctx.scale(k, 1); ctx.translate(-ax, 0); fn(); ctx.restore(); }
+/** The picture of a co-streamer in a hexagon (or the initials on a colour when there is none). */
+function xHexAvatar(ctx, K, cell, m, img, { ring, ringW = 6, fg = "#ffffff" } = {}) {
+  const r = cell.d / 2 / 0.93;   // the hexagon is as high as the cell is wide
+  ctx.save(); xHexPath(ctx, cell.cx, cell.cy, r + ringW); ctx.fillStyle = ring; ctx.fill();
+  ctx.save(); xHexPath(ctx, cell.cx, cell.cy, r); ctx.clip();
+  const x = cell.cx - r, y = cell.cy - r, d = r * 2;
+  if (m.more) { ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(x, y, d, d); }
+  else if (img && xImg(img).w > 0) { const s = xImg(img), k = Math.max(d / s.w, d / s.h); ctx.drawImage(img, cell.cx - (s.w * k) / 2, cell.cy - (s.h * k) / 2, s.w * k, s.h * k); }
+  else { const hue = [...m.login].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7); ctx.fillStyle = `hsl(${hue},45%,30%)`; ctx.fillRect(x, y, d, d); }
+  ctx.restore();
+  if (m.more || !(img && xImg(img).w > 0)) { ctx.fillStyle = fg; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = xFont(K, 800, Math.max(20, cell.d * (m.more ? 0.34 : 0.4)), true); ctx.fillText(m.more ? m.name : initials(m.name || m.login), cell.cx, cell.cy + cell.d * 0.02); }
+  ctx.restore();
+}
+function styleArena(K) {
+  const { pal, content, assets, members, D, has, W, H } = K, A0 = K.A, L = Math.min(0.55, Math.max(0.3, D * 0.035)), rest = D * 0.78, IW = A0.w;
+  const order = ["brand", "title", "when", "countdown", "game", "text", "costreamers"].filter((id) => has[id]);
+  const starts = xStarts(D, order.length, L * 1.6, 0.06, 0.64), at = (id) => starts[order.indexOf(id)];
+  const spec = { gap: 30, maxScale: 1.4, stretch: 1.3, reserveTop: 40 };
+  const SEGS = 12;
+  const ital = (px, w = 800) => xFont(K, w, px, true);
+
+  spec.build = (u) => order.map((id) => {
+    if (id === "brand") {
+      const px = 28 * u, logo = K.hasLogo ? 58 * u : 0, gap = logo ? 20 * u : 0, f = ital(px, 800), m0 = xMeasure(K, f), tr = px * 0.1;
+      const name = content.brand ? ellipsize((s) => xTW(m0, s, tr) * XCOND, content.brand.toLocaleUpperCase(K.lang), IW - logo - gap) : "";
+      return { id, h: Math.max(logo, px * 1.5), logo, gap, name, px, tr, tw: logo + gap + (name ? xTW(m0, name, tr) * XCOND : 0), gapAfter: 1.1 };
+    }
+    if (id === "title") {
+      const padX = 40 * u, padY = 28 * u, fit = xFit(K, content.title, { weight: 800, italic: true, px: 112 * u, lhr: 1.0, track: -0.01, width: (IW - padX * 2 - 24 * u) / XCOND, maxLines: 4, okLines: 3, minFrac: 0.4, upper: true });
+      return { id, fit, padX, padY, h: fit.lines.length * fit.lh + padY * 2, gapAfter: 0.8 };
+    }
+    if (id === "when") {
+      const padX = 36 * u, padY = 12 * u;
+      const day = content.dayLine && content.timeLine ? xFitLine(K, content.dayLine, { weight: 800, italic: true, px: 38 * u, upper: true, track: 0.06, width: (IW - 80 * u) / XCOND, minFrac: 0.55 }) : null;
+      const main = xFitLine(K, content.timeLine || content.dayLine, { weight: 800, italic: true, px: (content.timeLine ? 210 : 100) * u, track: -0.02, width: (IW - padX * 2 - 30 * u) / XCOND, minFrac: 0.3 });
+      const dayH = day ? day.px * 1.6 : 0, th = main.px * 0.86 + padY * 2;
+      return { id, day, main, padX, padY, dayH, th, dayW: day ? day.w * XCOND + 70 * u : 0, mainW: main.w * XCOND + padX * 2 + 30 * u, h: dayH + th, tw: Math.max(day ? day.w * XCOND + 70 * u : 0, main.w * XCOND + padX * 2 + 30 * u) };
+    }
+    if (id === "countdown") {
+      const px = 36 * u, line = xFitLine(K, content.countdown, { weight: 800, italic: true, px, upper: true, track: 0.05, width: (IW - 20 * u) / XCOND, minFrac: 0.55 }), barH = 30 * u, gap = 12 * u;
+      return { id, line, barH, gap, h: line.px * 1.3 + gap + barH };
+    }
+    if (id === "game") {
+      const cover = K.tools.usable(assets.cover), r = cover ? 118 * u : 0, gap = cover ? 36 * u : 0;
+      const fit = xFit(K, content.game, { weight: 800, italic: true, px: 62 * u, lhr: 1.06, upper: true, width: (IW - r * 2 - gap) / XCOND, maxLines: 3, okLines: 2, minFrac: 0.5 });
+      return { id, cover, r, gap, fit, h: Math.max(r * 2 + 12 * u, fit.lines.length * fit.lh + 24 * u), tw: IW };
+    }
+    if (id === "text") {
+      const padX = 34 * u, padY = 20 * u, fit = xFit(K, content.text, { weight: 700, italic: true, px: 42 * u, lhr: 1.24, width: (IW - padX * 2 - 24 * u) / XCOND, maxLines: 3, shrink: false });
+      return { id, fit, padX, padY, h: fit.lines.length * fit.lh + padY * 2 };
+    }
+    const rows = members.length <= 3 ? 1 : 2, d = 150 * u, labelH = Math.max(40 * u, 34), head = 74 * u;
+    return { id, rows, d, labelH, head, h: head + rows * (d + labelH + 14) + (rows - 1) * Math.min(24 * u, 18) };
+  });
+  spec.place = (blocks) => blocks.forEach((b) => { b.bx = b.x; b.bw = Math.min(b.w, b.tw ?? b.w); });
+
+  const sweepRng = seeded(777);
+  const hexes = Array.from({ length: 22 }, () => ({ x: A0.x + sweepRng() * A0.w, y: A0.y + A0.h * (0.35 + sweepRng() * 0.65), r: 40 + sweepRng() * 70 }));
+  spec.bg = (ctx, t) => {
+    ctx.fillStyle = pal.base; ctx.fillRect(0, 0, W, H);
+    const s1 = xSeg(t, 0, L * 2.2, xOutExpo), s2 = xSeg(t, L * 0.4, L * 2.2, xOutExpo);   // two huge slanted shapes slide in behind everything, and stay
+    ctx.save(); ctx.fillStyle = rgba(pal.accent, 0.13); xSlab(ctx, -W * 0.3 - (1 - s1) * W, H * 0.12, W * 1.1, H * 0.34, 0.5); ctx.fill();
+    ctx.fillStyle = rgba(pal.accent2, 0.12); xSlab(ctx, W * 0.25 + (1 - s2) * W, H * 0.5, W * 1.1, H * 0.3, 0.5); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = rgba(pal.text, 0.06); ctx.lineWidth = 3;   // a field of hexagons, drawn once, never moving
+    for (const h of hexes) { xHexPath(ctx, h.x, h.y, h.r); ctx.stroke(); }
+    const v = ctx.createLinearGradient(0, 0, 0, H); v.addColorStop(0, "rgba(0,0,0,0.35)"); v.addColorStop(0.3, "rgba(0,0,0,0)"); v.addColorStop(0.75, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.45)"); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  };
+  /** The entrance of a block: slides in from a side with a fast ease-out; returns the progress and the offset. */
+  const slam = (t, s, dir) => { const p = xSeg(t, s, L * 1.2, xOutExpo); return { p, dx: (1 - p) * dir * (A0.w * 0.9) }; };
+  const flash = (ctx, x, y, w, h, p) => {   // the light sweep as a panel lands
+    const q = (p - 0.55) / 0.45; if (q <= 0 || q >= 1) return;
+    const cx = x - h + (w + h * 2) * xInOutSine(q); ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); ctx.fillStyle = rgba("#ffffff", 0.32 * Math.sin(Math.PI * q)); xSlab(ctx, cx - 40, y, 80, h, XSKEW * 2); ctx.fill(); ctx.restore();
+  };
+  spec.block = (ctx, b, t, i) => {
+    const s = at(b.id), dir = i % 2 ? 1 : -1, { p, dx } = slam(t, s, dir), x = b.x;
+    ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+    if (p <= 0) return;
+    const ink = (c) => readableOn(c);
+    if (b.id === "brand") {
+      ctx.save(); ctx.translate(dx * 0.4, 0); ctx.globalAlpha *= clamp01(p * 1.5);
+      if (b.logo) { xCover(ctx, assets.logo, x, b.y + (b.h - b.logo) / 2, b.logo, b.logo); ctx.fillStyle = pal.accent; ctx.fillRect(x, b.y + (b.h - b.logo) / 2 + b.logo + 3, b.logo, 5); }
+      if (b.name) xCondense(ctx, x + b.logo + b.gap, () => { ctx.font = ital(b.px); ctx.fillStyle = pal.soft; xDrawTracked(ctx, b.name, x + b.logo + b.gap, xBase(b.y, b.h, b.px), b.tr); });
+      ctx.restore();
+    } else if (b.id === "title") {
+      const f = b.fit; ctx.save(); ctx.translate(dx, 0);
+      ctx.fillStyle = pal.accent2; xSlab(ctx, x - 0, b.y + 10 * K.u, 22 * K.u, b.h, XSKEW); ctx.fill();   // the cool tab behind the left edge
+      xSlab(ctx, x + 14 * K.u, b.y, b.w - 14 * K.u, b.h); ctx.fillStyle = pal.fill; ctx.fill(); flash(ctx, x, b.y, b.w, b.h, p);
+      const tp = xSeg(t, s + L * 0.35, L * 1.1, xOutQuart);
+      xClip(ctx, x + 14 * K.u, b.y, b.w, b.h, () => { ctx.fillStyle = ink(pal.fill); f.lines.forEach((line, k) => { const top = b.y + b.padY + k * f.lh, ox = (1 - xSeg(t, s + L * (0.3 + k * 0.12), L * 1.1, xOutQuart)) * 140; xCondense(ctx, x + b.padX + 36 * K.u, () => { ctx.font = f.font; ctx.textAlign = "left"; xDrawTracked(ctx, line, x + b.padX + 36 * K.u - ox, xBase(top, f.lh, f.px) - f.px * 0.04, f.tr); }); }); });
+      void tp; ctx.restore();
+    } else if (b.id === "when") {
+      ctx.save(); ctx.translate(dx, 0);
+      if (b.day) { const h = b.dayH * 0.86; xSlab(ctx, x, b.y, b.dayW, h); ctx.fillStyle = pal.panel; ctx.fill(); ctx.fillStyle = pal.accent; xSlab(ctx, x, b.y, 14 * K.u, h, XSKEW); ctx.fill();
+        xCondense(ctx, x + 40 * K.u, () => { ctx.font = b.day.font; ctx.fillStyle = pal.text; ctx.textAlign = "left"; xDrawTracked(ctx, b.day.text, x + 40 * K.u, xBase(b.y, h, b.day.px), b.day.tr); }); }
+      const ty = b.y + b.dayH; xSlab(ctx, x, ty, b.mainW, b.th); ctx.fillStyle = pal.fill2; ctx.fill(); flash(ctx, x, ty, b.mainW, b.th, p);
+      xCondense(ctx, x + b.padX + 8 * K.u, () => { ctx.font = b.main.font; ctx.fillStyle = ink(pal.fill2); ctx.textAlign = "left"; ctx.fillText(b.main.text, x + b.padX + 8 * K.u, ty + b.padY + b.main.px * 0.74); });
+      ctx.restore();
+    } else if (b.id === "countdown") {
+      ctx.save(); ctx.translate(dx, 0);
+      xCondense(ctx, x, () => { ctx.font = b.line.font; ctx.fillStyle = pal.text; ctx.textAlign = "left"; xDrawTracked(ctx, b.line.text, x, xBase(b.y, b.line.px * 1.3, b.line.px), b.line.tr); });
+      const by = b.y + b.line.px * 1.3 + b.gap, segW = (b.w - 24 * K.u) / SEGS, fillN = SEGS * xSeg(t, s + L * 0.6, Math.max(0.5, 0.62 * D - s - L * 0.6), xInOutQuart);
+      for (let k = 0; k < SEGS; k++) {
+        const sx = x + k * segW, on = clamp01(fillN - k);
+        xSlab(ctx, sx, by, segW - 6 * K.u, b.barH, 0.35); ctx.fillStyle = pal.line; ctx.globalAlpha *= 0.55; ctx.fill(); ctx.globalAlpha /= 0.55;
+        if (on > 0) { ctx.save(); xSlab(ctx, sx, by, segW - 6 * K.u, b.barH, 0.35); ctx.clip(); ctx.fillStyle = k >= SEGS - 2 ? pal.accent2 : pal.accent; ctx.fillRect(sx, by, (segW - 6 * K.u) * on, b.barH); ctx.restore(); }
+      }
+      ctx.restore();
+    } else if (b.id === "game") {
+      ctx.save(); ctx.translate(dx, 0);
+      const cy = b.y + b.h / 2;
+      if (b.cover) { const cx = x + b.r + 6 * K.u; xHexPath(ctx, cx, cy, b.r + 8 * K.u); ctx.fillStyle = pal.accent; ctx.fill(); ctx.save(); xHexPath(ctx, cx, cy, b.r); ctx.clip(); xCover(ctx, assets.cover, cx - b.r, cy - b.r, b.r * 2, b.r * 2); ctx.restore(); }
+      const tx = x + (b.cover ? b.r * 2 + b.gap + 12 * K.u : 0), f = b.fit, top = cy - (f.lines.length * f.lh) / 2;
+      ctx.fillStyle = pal.accent2; xSlab(ctx, tx - 22 * K.u, top, 12 * K.u, f.lines.length * f.lh, XSKEW); ctx.fill();
+      xCondense(ctx, tx, () => { ctx.font = f.font; ctx.fillStyle = pal.text; ctx.textAlign = "left"; f.lines.forEach((line, k) => xDrawTracked(ctx, line, tx, xBase(top + k * f.lh, f.lh, f.px) - f.px * 0.03, f.tr)); });
+      ctx.restore();
+    } else if (b.id === "text") {
+      ctx.save(); ctx.translate(dx, 0); const f = b.fit;
+      xSlab(ctx, x, b.y, b.w, b.h); ctx.fillStyle = pal.panel; ctx.fill(); ctx.fillStyle = pal.accent; xSlab(ctx, x, b.y, 14 * K.u, b.h, XSKEW); ctx.fill();
+      xCondense(ctx, x + b.padX + 20 * K.u, () => { ctx.font = f.font; ctx.fillStyle = pal.text; ctx.textAlign = "left"; f.lines.forEach((line, k) => ctx.fillText(line, x + b.padX + 20 * K.u, xBase(b.y + b.padY + k * f.lh, f.lh, f.px) - f.px * 0.04)); });
+      ctx.restore();
+    } else if (b.id === "costreamers") {
+      ctx.save(); ctx.globalAlpha *= clamp01(p * 2); ctx.translate(dx * 0.3, 0);
+      const lpx = Math.max(24, b.head * 0.62);
+      xCondense(ctx, x, () => { ctx.font = xFont(K, 800, lpx, true); ctx.fillStyle = pal.accent; ctx.textAlign = "left"; const w = xDrawTracked(ctx, K.words.with, x + lpx * 2.2, xBase(b.y, b.head * 0.8, lpx), lpx * 0.1); void w; });
+      ctx.fillStyle = pal.accent2; for (let k = 0; k < 3; k++) { xSlab(ctx, x + k * lpx * 0.62, b.y + b.head * 0.1, lpx * 0.36, b.head * 0.56, 0.5); ctx.globalAlpha *= 1; ctx.fill(); }
+      const cols = b.rows === 1 ? members.length : Math.ceil(members.length / 2), gap = 34 * K.u, bw = Math.min(b.w, cols * (b.d + gap + 30));
+      (() => { const cs = layoutCostreamers(members.length, { x, y: b.y + b.head, w: bw, h: b.h - b.head }, { maxD: b.d, gap, labelH: b.labelH }), sh = x + 8 * K.u - Math.min(...cs.map((c) => c.cx - c.d / 2)); cs.forEach((c) => { c.cx += sh; }); return cs; })().forEach((cell, k) => {
+        const m = members[k], q = xSeg(t, s + (0.15 + k * 0.1) * L * 2, L * 1.4, xOutExpo), col = k % 2 ? pal.accent2 : pal.accent;
+        ctx.save(); ctx.globalAlpha *= clamp01(q); ctx.translate(0, (1 - q) * 40);
+        xHexAvatar(ctx, K, cell, m, assets.avatars?.[m.login], { ring: col, ringW: 6 });
+        ctx.fillStyle = pal.text; ctx.textBaseline = "top"; ctx.textAlign = "center";
+        xCondense(ctx, cell.cx, () => { ctx.fillText(m.more ? "" : xNameFit(ctx, K, 800, Math.min(28 * K.u, cell.d * 0.2), m.name.toLocaleUpperCase(K.lang), Math.min(cell.labelW, 2 * (cell.cx - x)) / XCOND).replace(/^/, ""), cell.cx, cell.labelY + 4); });
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+  };
+  spec.fg = (ctx, t) => {
+    // chevrons along the top edge of the safe area: they slide and slow down to a stop at restTime
+    const off = (1 - xOutQuart(progress(t, 0, rest))) * 260, y = A0.y + 4, n = 9, step = 46;
+    ctx.save(); ctx.beginPath(); ctx.rect(A0.x, y - 4, A0.w, 30); ctx.clip();
+    for (let k = -6; k < n + 8; k++) { const x = A0.x + k * step + (off % step); ctx.fillStyle = k % 3 === 0 ? pal.accent2 : rgba(pal.text, 0.5); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 14, y); ctx.lineTo(x + 28, y + 11); ctx.lineTo(x + 14, y + 22); ctx.lineTo(x, y + 22); ctx.lineTo(x + 14, y + 11); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+    const a = xSeg(t, 0, L * 2, xOutQuart);   // corner brackets of the HUD
+    ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = rgba(pal.text, 0.28); ctx.lineWidth = 4;
+    for (const [sx, sy] of [[0, 1], [1, 1]]) { const px = sx ? A0.x + A0.w + 26 : A0.x - 26, py = sy ? A0.y + A0.h + 26 : A0.y - 26, dx = sx ? -1 : 1; ctx.beginPath(); ctx.moveTo(px, py - 46); ctx.lineTo(px, py); ctx.lineTo(px + dx * 46, py); ctx.stroke(); }
+    ctx.restore();
+  };
+  return spec;
+}
+
 /* ───────────── The styles, by id (declared last: the functions above are hoisted) ───────────── */
-const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric };
+const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric, epic: styleEpic, arena: styleArena };
