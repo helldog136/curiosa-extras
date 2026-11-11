@@ -7,6 +7,7 @@ Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos der
 - Mesurez vos directs : spectateurs moyens et maximum, heures diffusées et regardées.
 - Voyez les abonnés gagnés par jeu.
 - Affichez les abonnés et une pastille « En direct » dans OBS.
+- Changez tout seul le skin d'OBS selon le jeu.
 
 ## Pourquoi vous allez l'aimer
 
@@ -33,4 +34,4 @@ Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos der
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.2.1.
+Disponible depuis la version 1.0.0. Version actuelle : 2.3.0.

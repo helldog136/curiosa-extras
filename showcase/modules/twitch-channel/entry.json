@@ -21,7 +21,7 @@
     "fr": "Met en avant votre chaîne Twitch : un bouton, votre statut en direct et vos derniers clips. Une fois connectée, elle ajoute vos abonnés."
   },
   "since": "1.0.0",
-  "moduleVersion": "2.2.1",
+  "moduleVersion": "2.3.0",
   "requires": [
     "twitch-connector"
   ],
