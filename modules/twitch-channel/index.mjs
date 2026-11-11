@@ -15,6 +15,8 @@ const events = await import(new URL(`./events.mjs${v}`, import.meta.url).href);
 const ov = await import(new URL(`./overlay.mjs${v}`, import.meta.url).href);
 const { LOGIN, valid, liveStatus, recentClips } = helix;
 export const { currentStream } = helix;
+/** The overlay context value of a live stream: the game on air, or nothing (offline, no game chosen on Twitch yet). */
+export const gameValue = (s) => (s && s.gameId ? { id: String(s.gameId), name: s.game ?? String(s.gameId) } : null);
 export { recentClips };
 
 const text = (v2) => String(v2 ?? "").trim();
@@ -167,6 +169,34 @@ export default {
   overlayElements: {
     stats: (ctx, request) => elementAddress(ctx, "stats", request),
     live: (ctx, request) => elementAddress(ctx, "live", request),
+  },
+  /**
+   * Contexte d'overlay « jeu en cours » (cœur 0.8.0) : le cœur s'en sert pour changer le skin d'une page d'overlay selon le jeu. Contrat générique, le cœur ne nomme pas ce module.
+   * `current` : le jeu du direct en cours (rien hors direct, sans connexion ou si Twitch ne répond pas : le skin par défaut s'applique). `values` : les jeux déjà vus
+   * (directs mesurés, plus le jeu en cours), pour la liste de choix ; jamais un identifiant à taper.
+   */
+  overlayContexts: {
+    game: {
+      current: async (ctx) => {
+        const c = await credentials(ctx, { wait: false });
+        const s = await currentStream(c);
+        return gameValue(s);
+      },
+      values: async (ctx, { search, limit }) => {
+        const seen = new Map();
+        try {
+          const { sessions } = await live.listSessions(ctx, { since: 0, limit: 400 });
+          for (const g of live.gamesOf(sessions).sort((a, b) => b.streams - a.streams)) if (g.gameId && g.game) seen.set(g.gameId, g.game);
+        } catch { /* pas de mesures : seul le jeu en cours est proposé */ }
+        try {
+          const s = await currentStream(await credentials(ctx, { wait: false }));
+          if (s?.gameId && s.game) seen.set(s.gameId, s.game);
+        } catch { /* hors ligne */ }
+        const fold = (x) => String(x).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const words = fold(search ?? "").split(/\s+/).filter(Boolean);
+        return [...seen].map(([id, name]) => ({ id, name })).filter((v) => words.every((w) => fold(v.name).includes(w))).slice(0, limit);
+      },
+    },
   },
   /** L'enregistreur de directs : repasse chaque minute, mais ne mesure qu'à son rythme (2 minutes en direct, 4 hors direct) ; rien du tout si « Suivre mes statistiques » est décoché. */
   tasks: {

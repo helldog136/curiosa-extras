@@ -7,6 +7,7 @@ Showcases your Twitch channel: a header button, your live status and your latest
 - Measure your lives: average and peak viewers, hours streamed and watched.
 - See followers gained per game.
 - Show followers and a “Live” badge in OBS.
+- Change the OBS skin by itself for each game.
 
 ## Why you will like it
 
@@ -33,4 +34,4 @@ Showcases your Twitch channel: a header button, your live status and your latest
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.2.1.
+Available since version 1.0.0. Current version: 2.3.0.
