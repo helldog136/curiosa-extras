@@ -14,7 +14,7 @@ export const FORMATS = [
     zones: [{ id: "grid", x: 0, y: 0, w: 34, h: 1350 }, { id: "grid", x: 1046, y: 0, w: 34, h: 1350 }] },
 ];
 /** The animation styles: the first four since 1.0, then six styles of very different character (2.7.0). The order is the one of the editor's picker. */
-export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss"];
+export const STYLES = ["neon", "poster", "countdown", "minimal", "broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss", "haunt"];
 export const ELEMENTS = ["title", "when", "countdown", "game", "brand", "text", "costreamers"];
 /**
  * The style of the preview while the person edits the event and the information (steps 1 and 2), before any style is chosen. Minimal: a plain background, left-aligned blocks

@@ -20,7 +20,7 @@
     "fr": "Une courte vidéo animée qui annonce l'un de vos prochains événements. Elle est prête pour une story Instagram ou un post en portrait."
   },
   "since": "1.0.0",
-  "moduleVersion": "2.13.0",
+  "moduleVersion": "2.14.0",
   "requires": [],
   "worksWith": [
     "events",

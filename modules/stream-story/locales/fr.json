@@ -53,6 +53,8 @@
   "ui_style_arena_hint": "Panneaux inclinés, hexagones et une barre qui se remplit.",
   "ui_style_abyss": "Abysse",
   "ui_style_abyss_hint": "Écrans verts glacés, balayage radar et lumière défaillante.",
+  "ui_style_haunt": "Hantise",
+  "ui_style_haunt_hint": "Lampe dans le noir, étiquette de preuve, orbes qui dérivent.",
   "ui_style_countdown_on": "Le compte à rebours est activé, ce style l'affiche.",
   "ui_format_label": "Format",
   "ui_format_vertical": "Vertical (story, 9:16)",

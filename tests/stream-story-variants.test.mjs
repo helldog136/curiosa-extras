@@ -138,7 +138,7 @@ test("administration: hidden until turned on (advanced setting) or a variant exi
   assert.equal(dlg.cancelHref, "?tab=styles"); assert.equal(dlg.submitLabel, fr.vr_save);
   const visible = dlg.fields.filter((f) => f.kind !== "hidden" && !f.folded); assert.deepEqual(visible.map((f) => f.name), ["name", "base"], "two fields on the short path");
   assert.deepEqual(dlg.fields.filter((f) => f.folded).map((f) => f.name), ["accent", "accent2", "bg", "fg", "font"], "colours and font are under « More options »");
-  assert.equal(dlg.fields.find((f) => f.name === "base").options.length, 13);
+  assert.equal(dlg.fields.find((f) => f.name === "base").options.length, 14);
   assert.ok(dlg.fields.filter((f) => f.kind === "text").every((f) => f.example), "every free field has an example");
   assert.deepEqual(dlg.fields.find((f) => f.name === "font").options.map((o) => o.value), P.FONTS);
   const fresh = (await def.adminPanel(on, { query: { newvar: "1" } })).find((b) => b.type === "adminForm" && b.presentation === "dialog");
