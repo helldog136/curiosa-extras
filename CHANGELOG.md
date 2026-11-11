@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.56.0 — 2026-11-11
+
+*En bref : Story d'annonce (2.14.0) gagne un 14e style, « Hantise » : une enquête de nuit dans une maison sombre. Rien à régler, aucune nouvelle permission.*
+
+*In short: Announcement story (2.14.0) gets a 14th style, "Haunted": a night investigation in a dark house. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Story d'annonce 2.14.0 : le style « Hantise ».** Brume froide bleu-gris, faisceau de lampe de poche jaune pâle qui balaie puis se fixe pendant que la lumière vacille, orbes pâles qui dérivent puis s'effacent, étiquette de preuve pour le jour et l'heure, titre façon écriture à la main, quelques voyants pour le compte à rebours, photos à bord blanc pour le jeu et page de carnet pour votre phrase. Lisible en 9:16 et en 4:5, image fixe sur les 22 % finaux, mention « Made with Curiosa » toujours en bas. Fonctionne avec « Afficher le jour avec l'heure » et avec « Mes styles ». Création originale : rien n'est repris d'un jeu.
+- **Announcement story 2.14.0: the "Haunted" style.** Cold blue-grey fog, a flashlight cone in pale lamp yellow that sweeps and settles while the light flickers, faint orbs that drift and fade out, an evidence tag for the day and time, a handwritten-style title, a few LEDs for the countdown, snapshots with a white border for the game and a notebook page for your sentence. Readable in 9:16 and 4:5, a still image for the last 22 %, the "Made with Curiosa" mention always at the bottom. Works with "Show the day with the time" and with "My styles". An original design: nothing is taken from any game.
+
+### Pour les développeurs
+
+- `STYLES` has fourteen ids (`haunt`); `styleHaunt` in `scenes-extra.mjs`; the MCP `style` enums and the variants white list follow `STYLES`. No `minCore` change (stays 0.6.7), no migration. Detail: `docs/changelog-parts/story-haunt.md`.
+
 ## 1.55.0 — 2026-11-10
 
 *En bref : Story d'annonce (2.13.0) gagne un 13e style, « Abysse » (terminal d'un vaisseau à la dérive), une date plus grande dans « Épique » et une case « Afficher le jour avec l'heure » pour chaque vidéo. Rien à régler, aucune nouvelle permission.*
