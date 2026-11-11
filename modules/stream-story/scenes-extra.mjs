@@ -1,4 +1,4 @@
-// Nine more styles for « Story d'annonce »: broadcast, kinetic, cinema, arcade, collage, geometric (2.7.0), epic and arena (2.11.0), abyss (2.13.0).
+// Ten more styles for « Story d'annonce »: broadcast, kinetic, cinema, arcade, collage, geometric (2.7.0), epic and arena (2.11.0), abyss (2.13.0), haunt (2.14.0).
 // Same contract as scenes.mjs: every image is a PURE FUNCTION OF TIME (same t, same pixels: grain, paper, jitter and weave are seeded by the time or by a constant, never by a clock),
 // text is drawn with fillText only, nothing here knows the page, the network or the browser. `createScene` (scenes.mjs) hands over a `kit` (sizes, content, fonts, small drawing tools)
 // and gets back the layout and a `draw(ctx, t)`; it adds the "Made with Curiosa" mention itself, so the watermark never depends on a style.
@@ -8,7 +8,7 @@
 const v = new URL(import.meta.url).search;
 const { wrapText, ellipsize, solveScale, layoutCostreamers, initials, mix, rgba, readableOn, ensureContrast, contrast, luminance, parseHex, toHex, clamp01, easeOutCubic, easeInOutCubic, progress, seeded } = await import(`./pure.mjs${v}`);
 
-export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss"];
+export const EXTRA_STYLES = ["broadcast", "kinetic", "cinema", "arcade", "collage", "geometric", "epic", "arena", "abyss", "haunt"];
 /** The few words these styles write themselves (the rest comes from the editor). Neutral, and given for both languages. */
 export const EXTRA_WORDS = { fr: { next: "À SUIVRE", start: "START" }, en: { next: "UP NEXT", start: "START" } };
 
@@ -87,6 +87,10 @@ export function extraPalette(style, input = {}) {
   if (style === "epic") {
     const base = mix("#120d09", accent, 0.05), gold = mix("#d4af37", accent, 0.1), text = "#f4ead4", gem = xBoost(partner, base, 4.5), ribbon = xFill(mix(accent, "#5a0f12", 0.4));
     return done({ base, text, accent: ensureContrast(mix(gold, "#ffffff", 0.12), base, 4.5), accent2: gem, soft: ensureContrast(mix(text, base, 0.36), base, 4.5), gold, goldHi: mix(gold, "#ffffff", 0.5), goldLo: mix(gold, "#2a1808", 0.55), fill: ribbon, fill2: xFill(gem) });
+  }
+  if (style === "haunt") {
+    const base = mix("#080b11", accent, 0.04), lamp = xBoost(mix("#f1d78c", accent, 0.12), base, 4.5), cold = xBoost(mix("#7f9bb8", partner, 0.2), base, 4.5), text = "#dfe8f0", paper = mix("#e8dfc8", bg, 0.05);
+    return done({ base, text, accent: lamp, accent2: cold, soft: ensureContrast(mix(text, base, 0.4), base, 4.5), fill: xFill(paper), fill2: xFill(lamp) });
   }
   if (style === "abyss") {
     const base = mix("#050806", accent, 0.04), phos = xBoost(mix("#3ddc84", accent, 0.2), base, 4.5), alert = xBoost(mix("#e8a317", partner, 0.25), base, 4.5), text = "#dcf5e6";
@@ -1533,5 +1537,151 @@ function styleAbyss(K) {
   return spec;
 }
 
+/* ═════════════════════════ 14. HAUNT ═════════════════════════
+ * An investigation at night in a dark house: a cold blue-grey field, fog bands, a flashlight cone (pale warm lamp yellow) that sweeps and settles, faint orbs that drift and fade out before the
+ * hold, an evidence tag for the date and time, a handwritten title, a notebook page for the sentence, a row of LEDs like a field meter for the countdown, snapshots with a white border for the
+ * game and the guests. The lamp flickers (a seeded value per 1/10 s) and is steady from the hold on. Everything is lines and fills; nothing moves in the last 22 %. */
+function styleHaunt(K) {
+  const { pal, content, assets, members, D, has, W, H } = K, A0 = K.A, L = Math.min(0.9, Math.max(0.45, D * 0.055)), rest = D * 0.78, IW = A0.w - 40;
+  const order = ["brand", "title", "when", "countdown", "game", "text", "costreamers"].filter((id) => has[id]);
+  const starts = xStarts(D, order.length, L * 1.3, 0.1, 0.66), at = (id) => starts[order.indexOf(id)];
+  const spec = { gap: 32, maxScale: 1.4, stretch: 1.25, reserveTop: 40, reserveBottom: 40 };
+  const rng = seeded(2121), orbs = Array.from({ length: 7 }, () => ({ x: A0.x + rng() * A0.w, y: A0.y + A0.h * (0.1 + rng() * 0.8), r: 40 + rng() * 70, v: 0.02 + rng() * 0.03, f: 0.5 + rng(), s: rng() * 6 }));
+  const fogs = Array.from({ length: 5 }, (_, i) => ({ y: H * (0.15 + i * 0.17), h: 160 + rng() * 140, ph: rng() * 6, a: 0.05 + rng() * 0.05 }));
+  const ox = A0.x - 10, oy = A0.y + A0.h + 80;   // the flashlight is held at the bottom left, outside the safe area
+  const ang = (t) => -1.0 + 0.5 * xInOutSine(progress(t, 0, rest));
+  const lampLevel = (t) => { const r = seeded(4001 + Math.floor(t * 10)), settle = xSeg(t, rest - 1.4, 1.4, xInOutSine), f = r() < 0.2 ? 0.25 : 0.7 + r() * 0.3; return f * (1 - settle) + 0.85 * settle; };
+  const tilt = (ctx, cx, cy, a, fn) => { ctx.save(); ctx.translate(cx, cy); ctx.rotate(a); ctx.translate(-cx, -cy); fn(); ctx.restore(); };
+
+  spec.build = (u) => order.map((id) => {
+    if (id === "brand") {
+      const px = 22 * u, logo = K.hasLogo ? 50 * u : 0, gap = logo ? 18 * u : 0, f = xFont(K, 600, px), m0 = xMeasure(K, f), tr = px * 0.3;
+      const name = content.brand ? ellipsize((s) => xTW(m0, s, tr), `FILE · ${content.brand.toLocaleUpperCase(K.lang)}`, IW - logo - gap) : "";
+      return { id, h: Math.max(logo, px * 1.6), logo, gap, name, px, tr, tw: logo + gap + (name ? xTW(m0, name, tr) : 0), gapAfter: 1.1 };
+    }
+    if (id === "title") {
+      const fit = xFit(K, content.title, { fam: XHAND, weight: 700, px: 112 * u, lhr: 1.08, width: IW - 20 * u, maxLines: 4, okLines: 3, minFrac: 0.4 });
+      return { id, fit, h: fit.lines.length * fit.lh + 30 * u, gapAfter: 1 };
+    }
+    if (id === "when") {
+      const padX = 34 * u, padY = 22 * u, hole = 46 * u, inner = IW - padX * 2 - hole - 30 * u;
+      const day = content.dayLine ? xFitLine(K, content.dayLine, { weight: 700, px: 34 * u, upper: true, track: 0.14, width: inner, minFrac: 0.5 }) : null;
+      const time = content.timeLine ? xFitLine(K, content.timeLine, { fam: XHAND, weight: 700, px: 150 * u, width: inner, minFrac: 0.3 }) : null;
+      const dh = day ? day.px * 1.7 : 0, th = time ? time.px * 1.0 : 0, tw = Math.max(day?.w ?? 0, time?.w ?? 0) + padX * 2 + hole;
+      return { id, day, time, padX, padY, hole, dh, th, h: padY * 2 + dh + th, tw: Math.min(IW, tw) };
+    }
+    if (id === "countdown") {
+      const px = 34 * u, line = xFitLine(K, content.countdown, { weight: 600, px, upper: true, track: 0.16, width: IW * 0.62, minFrac: 0.5 }), led = 34 * u;
+      return { id, line, led, h: Math.max(led, line.px * 1.5), tw: Math.min(IW, line.w + 30 * u + 5 * (led + 8 * u)) };
+    }
+    if (id === "game") {
+      const cover = K.tools.usable(assets.cover), cw = cover ? 190 * u : 0, ch = cover ? 150 * u : 0, pad = cover ? 10 * u : 0, gap = cover ? 36 * u : 0;
+      const fit = xFit(K, content.game, { fam: XHAND, weight: 700, px: 52 * u, lhr: 1.12, width: IW - cw - pad * 2 - gap, maxLines: 3, okLines: 2, minFrac: 0.55 });
+      return { id, cover, cw, ch, pad, gap, fit, h: Math.max(ch + pad * 3, fit.lines.length * fit.lh), tw: IW };
+    }
+    if (id === "text") {
+      const padX = 30 * u, padY = 20 * u, fit = xFit(K, content.text, { fam: XHAND, weight: 600, px: 42 * u, lhr: 1.34, width: IW - padX * 2, maxLines: 3, shrink: false });
+      return { id, fit, padX, padY, h: fit.lines.length * fit.lh + padY * 2, tw: IW };
+    }
+    const rows = members.length <= 3 ? 1 : 2, d = 140 * u, labelH = Math.max(40 * u, 34), head = 50 * u;
+    return { id, rows, d, labelH, head, h: head + rows * (d + labelH + 12) + (rows - 1) * Math.min(22 * u, 16), tw: IW };
+  });
+  spec.place = (blocks) => blocks.forEach((b) => { b.bx = b.x; b.bw = Math.min(b.w, b.tw ?? b.w); });
+
+  spec.bg = (ctx, t) => {
+    ctx.fillStyle = pal.base; ctx.fillRect(0, 0, W, H);
+    // fog: wide soft bands that drift sideways early and stop at the hold
+    const drift = xOutQuart(progress(t, 0, rest));
+    for (const f of fogs) { const x = -300 + Math.sin(f.ph) * 200 + drift * 260, g = ctx.createLinearGradient(0, f.y - f.h / 2, 0, f.y + f.h / 2); g.addColorStop(0, rgba(pal.accent2, 0)); g.addColorStop(0.5, rgba(pal.accent2, f.a)); g.addColorStop(1, rgba(pal.accent2, 0)); ctx.fillStyle = g; ctx.fillRect(x, f.y - f.h / 2, W + 600, f.h); }
+    // the flashlight cone
+    const a = ang(t), lvl = lampLevel(t), len = Math.hypot(W, H) * 0.95, g = ctx.createRadialGradient(ox, oy, 20, ox, oy, len);
+    g.addColorStop(0, rgba(pal.accent, 0.12 * lvl)); g.addColorStop(0.6, rgba(pal.accent, 0.04 * lvl)); g.addColorStop(1, rgba(pal.accent, 0));
+    ctx.fillStyle = g;
+    for (const half of [0.07, 0.11, 0.15, 0.2, 0.26]) { ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(a - half) * len, oy + Math.sin(a - half) * len); ctx.lineTo(ox + Math.cos(a + half) * len, oy + Math.sin(a + half) * len); ctx.closePath(); ctx.fill(); }   // nested cones: a soft edge
+  };
+  const reveal = (ctx, x, y, w, h, p, fn) => xWipe(ctx, x - 20, y - 10, w + 40, h + 20, p, "r", fn);
+  spec.block = (ctx, b, t, i) => {
+    const s = at(b.id), p = xSeg(t, s, L, xOutQuart), x = b.x, tiltA = (i % 2 ? 1 : -1) * 0.014;
+    ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+    if (p <= 0) return;
+    const flick = (tt) => (tt < s + L * 1.3 ? (Math.floor(tt * 14) % 3 === 0 ? 0.55 : 1) : 1);
+    if (b.id === "brand") {
+      ctx.save(); ctx.globalAlpha *= clamp01(p * 1.5);
+      if (b.logo) { xCover(ctx, assets.logo, x, b.y + (b.h - b.logo) / 2, b.logo, b.logo); ctx.strokeStyle = pal.accent2; ctx.lineWidth = 3; ctx.strokeRect(x, b.y + (b.h - b.logo) / 2, b.logo, b.logo); }
+      if (b.name) { ctx.font = xFont(K, 600, b.px); ctx.fillStyle = pal.accent2; xDrawTracked(ctx, b.name, x + b.logo + b.gap, xBase(b.y, b.h, b.px), b.tr); }
+      ctx.restore();
+    } else if (b.id === "title") {
+      const f = b.fit;
+      f.lines.forEach((line, k) => {
+        const q = xSeg(t, s + k * 0.15 * L, L * 1.4, xInOutQuart), top = b.y + k * f.lh, base = xBase(top, f.lh, f.px) - f.px * 0.06;
+        if (q <= 0) return;
+        reveal(ctx, x, top, b.w, f.lh, q, () => {
+          ctx.font = f.font; ctx.textAlign = "left"; ctx.save(); ctx.globalAlpha *= flick(t);
+          ctx.shadowColor = rgba(pal.accent, 0.55); ctx.shadowBlur = 24; ctx.fillStyle = pal.accent; ctx.fillText(line, x, base); ctx.restore();
+          ctx.fillStyle = pal.accent; ctx.fillText(line, x, base);
+        });
+      });
+      const uy = b.y + f.lines.length * f.lh + 6 * K.u, uq = xSeg(t, s + L * 0.7, L * 1.3, xInOutQuart);   // a hand-drawn underline
+      reveal(ctx, x, uy - 14, b.w * 0.7, 28, uq, () => { ctx.strokeStyle = rgba(pal.accent, 0.8); ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x, uy); for (let k = 1; k <= 12; k++) ctx.lineTo(x + (b.w * 0.7 * k) / 12, uy + (k % 2 ? -5 : 5)); ctx.stroke(); });
+    } else if (b.id === "when") {
+      const w = b.bw, y0 = b.y, cx = x + w / 2, cy = y0 + b.h / 2;
+      ctx.save(); ctx.translate(0, (1 - p) * -40); ctx.globalAlpha *= clamp01(p * 1.5);
+      tilt(ctx, cx, cy, tiltA, () => {
+        ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(x + 8, y0 + 10, w, b.h);
+        ctx.beginPath(); ctx.moveTo(x + b.hole * 0.9, y0); ctx.lineTo(x + w, y0); ctx.lineTo(x + w, y0 + b.h); ctx.lineTo(x + b.hole * 0.9, y0 + b.h); ctx.lineTo(x, y0 + b.h / 2); ctx.closePath(); ctx.fillStyle = pal.fill; ctx.fill();   // a tag with a cut corner
+        ctx.strokeStyle = rgba(pal.base, 0.5); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x + b.hole * 0.75, cy, 9 * K.u + 2, 0, Math.PI * 2); ctx.stroke();   // the hole and the string
+        ctx.strokeStyle = pal.accent2; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + b.hole * 0.75, cy); ctx.bezierCurveTo(x - 60, cy - 30, x - 120, cy + 60, x - 220, cy - 10); ctx.stroke();
+        const ink = readableOn(pal.fill), tx = x + b.hole + b.padX * 0.6; ctx.fillStyle = ink;
+        if (b.day) { ctx.font = b.day.font; xDrawTracked(ctx, b.day.text, tx, xBase(y0 + b.padY, b.dh, b.day.px), b.day.tr); }
+        if (b.time) { ctx.font = b.time.font; ctx.fillText(b.time.text, tx, y0 + b.padY + b.dh + b.time.px * 0.82); }
+      });
+      ctx.restore();
+    } else if (b.id === "countdown") {
+      ctx.save(); ctx.globalAlpha *= clamp01(p * 1.5);
+      ctx.font = b.line.font; ctx.fillStyle = pal.text; xDrawTracked(ctx, b.line.text, x, xBase(b.y, b.h, b.line.px), b.line.tr);
+      const lx = x + b.line.w + 30 * K.u, lit = Math.round(4 * xSeg(t, s + L * 0.4, L * 1.6, xInOutQuart));   // five LEDs, four lit like a field meter
+      for (let k = 0; k < 5; k++) { const on = k < lit, c = k < 2 ? pal.accent2 : k < 4 ? pal.accent : pal.text; ctx.fillStyle = on ? c : rgba(pal.accent2, 0.18); ctx.fillRect(lx + k * (b.led + 8 * K.u), b.y + (b.h - b.led) / 2, b.led, b.led); }
+      ctx.restore();
+    } else if (b.id === "game") {
+      ctx.save(); ctx.translate((1 - p) * -60, 0); ctx.globalAlpha *= clamp01(p * 1.5);
+      if (b.cover) { const px = x + 6 * K.u, py = b.y + 4 * K.u; tilt(ctx, px + b.cw / 2, py + b.ch / 2, -0.03, () => { ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(px + 6, py + 8, b.cw + b.pad * 2, b.ch + b.pad * 3); ctx.fillStyle = "#ece6d6"; ctx.fillRect(px, py, b.cw + b.pad * 2, b.ch + b.pad * 3); xCover(ctx, assets.cover, px + b.pad, py + b.pad, b.cw, b.ch); }); }
+      const f = b.fit, tx = x + (b.cover ? b.cw + b.pad * 2 + b.gap : 0), top = b.y + (b.h - f.lines.length * f.lh) / 2;
+      ctx.font = f.font; ctx.fillStyle = pal.text; f.lines.forEach((line, k) => ctx.fillText(line, tx, xBase(top + k * f.lh, f.lh, f.px) - f.px * 0.06));
+      ctx.restore();
+    } else if (b.id === "text") {
+      const f = b.fit; ctx.save(); ctx.globalAlpha *= clamp01(p * 1.4);
+      tilt(ctx, x + b.bw / 2, b.y + b.h / 2, 0.012, () => {
+        ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(x + 6, b.y + 8, b.bw, b.h); ctx.fillStyle = "#dfe6ec"; ctx.fillRect(x, b.y, b.bw, b.h);
+        ctx.strokeStyle = "rgba(90,120,160,0.35)"; ctx.lineWidth = 2; for (let k = 1; k <= f.lines.length; k++) { const ly = b.y + b.padY + k * f.lh - f.lh * 0.12; ctx.beginPath(); ctx.moveTo(x + 14, ly); ctx.lineTo(x + b.bw - 14, ly); ctx.stroke(); }
+        ctx.fillStyle = "#1d2127"; ctx.font = f.font; f.lines.forEach((line, k) => ctx.fillText(line, x + b.padX, xBase(b.y + b.padY + k * f.lh, f.lh, f.px) - f.px * 0.06));
+      });
+      ctx.restore();
+    } else if (b.id === "costreamers") {
+      const lpx = Math.max(22, b.head * 0.5);
+      ctx.save(); ctx.globalAlpha *= clamp01(p * 1.5); ctx.font = xFont(K, 600, lpx); ctx.fillStyle = pal.accent2; xDrawTracked(ctx, K.words.with, x, xBase(b.y, b.head, lpx), lpx * 0.3); ctx.restore();
+      const cols = b.rows === 1 ? members.length : Math.ceil(members.length / 2), gap = 34 * K.u, bw = Math.min(b.w, cols * (b.d + gap + 30));
+      const cells = layoutCostreamers(members.length, { x, y: b.y + b.head, w: bw, h: b.h - b.head }, { maxD: b.d, gap, labelH: b.labelH }), sh = x + 8 * K.u - Math.min(...cells.map((c) => c.cx - c.d / 2));
+      cells.forEach((cell, k) => {
+        const m = members[k], q = xSeg(t, s + (0.15 + k * 0.12) * L * 1.3, L, xOutQuart); cell.cx += sh;
+        ctx.save(); ctx.globalAlpha *= clamp01(q * 1.5);
+        const g = ctx.createRadialGradient(cell.cx, cell.cy, cell.d * 0.4, cell.cx, cell.cy, cell.d * 0.85); g.addColorStop(0, rgba(pal.accent, 0.35)); g.addColorStop(1, rgba(pal.accent, 0)); ctx.fillStyle = g; ctx.fillRect(cell.cx - cell.d, cell.cy - cell.d, cell.d * 2, cell.d * 2);
+        xAvatar(ctx, K, cell, m, assets.avatars?.[m.login], { ring: "#ece6d6", ringW: 5 });
+        ctx.fillStyle = pal.text; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(m.more ? "" : xNameFit(ctx, K, 700, Math.min(28 * K.u, cell.d * 0.2), m.name, Math.min(cell.labelW, 2 * (cell.cx - x)), XHAND), cell.cx, cell.labelY + 4);
+        ctx.restore();
+      });
+    }
+  };
+  spec.fg = (ctx, t) => {
+    // orbs: soft pale discs drifting upward, gone before the hold
+    const fade = 1 - xSeg(t, rest - 1.8, 1.6, xInOutSine);
+    if (fade > 0) for (const o of orbs) {
+      const x = o.x + Math.sin(t * o.f + o.s) * 40, y = o.y - ((t * o.v * H) % (A0.h * 0.4)), a = 0.35 + 0.25 * Math.sin(t * 1.7 + o.s), g = ctx.createRadialGradient(x, y, 0, x, y, o.r);
+      g.addColorStop(0, rgba("#ffffff", 0.22 * a * fade)); g.addColorStop(1, rgba("#ffffff", 0)); ctx.fillStyle = g; ctx.fillRect(x - o.r, y - o.r, o.r * 2, o.r * 2);
+    }
+    const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.8); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.6)"); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  };
+  return spec;
+}
+
 /* ───────────── The styles, by id (declared last: the functions above are hoisted) ───────────── */
-const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric, epic: styleEpic, arena: styleArena, abyss: styleAbyss };
+const STYLE_IMPL = { broadcast: styleBroadcast, kinetic: styleKinetic, cinema: styleCinema, arcade: styleArcade, collage: styleCollage, geometric: styleGeometric, epic: styleEpic, arena: styleArena, abyss: styleAbyss, haunt: styleHaunt };
