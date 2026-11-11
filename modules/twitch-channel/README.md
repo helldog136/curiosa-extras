@@ -51,6 +51,9 @@ Ma Chaîne Twitch n'a pas d'overlay à elle ; depuis la 2.2, elle propose deux *
 - **Pastille « En direct »** : une pastille quand votre chaîne diffuse, et rien quand elle ne diffuse pas. Options : montrer le jeu, écrire « Hors ligne » quand vous ne diffusez pas. Si Twitch ne répond pas, rien ne s'affiche (le module n'affirme pas que vous êtes hors ligne).
 Les deux éléments s'adaptent à la taille du cadre, suivent le style commun de la page (texte clair ou sombre, fond transparent ou doux, angles arrondis ou droits) et affichent des chiffres d'exemple en mode test. Plusieurs pages peuvent les afficher en même temps sans demander plus de choses à Twitch (un appel partagé par chiffre, les mêmes délais que d'habitude). Chaque chaîne (instance) a ses éléments.
 
+### Un skin par jeu (Curiosa 0.8.0)
+Depuis la 2.3, Ma Chaîne Twitch dit au cœur **quel jeu est en cours** (contexte d'overlay « Jeu »). Dans une page d'overlay, onglet **Skin**, l'interrupteur **« Un skin par jeu »** apparaît : activé, un tableau vous laisse choisir un skin pour chaque jeu, **dans la liste des jeux déjà vus pendant vos directs mesurés** (rien à taper). Le skin change tout seul quand vous changez de jeu, après deux contrôles de suite (environ 10 secondes), avec un fondu. Hors direct, sans connexion ou si Twitch ne répond pas, la page garde son skin par défaut. Pour que la liste se remplisse, « Suivre mes statistiques » doit être activé (le jeu en cours est toujours proposé quand vous diffusez).
+
 ## Pour qui développe
 
 Identifiant technique **conservé** : `twitch-channel` (sauvegardes, adresses de retour déjà enregistrées chez Twitch, catalogue). Nom affiché : « Ma Chaîne Twitch ». Version 2.0.0, `minCore` 0.2.0, données en version 2.

@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.5.0",
+  "minCore": "0.8.0",
   "id": "twitch-channel",
   "name": {
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.2.1",
+  "version": "2.3.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -193,6 +193,23 @@
           "default": false
         }
       ]
+    }
+  ],
+  "overlayContexts": [
+    {
+      "id": "game",
+      "label": {
+        "fr": "Jeu",
+        "en": "Game"
+      },
+      "switchLabel": {
+        "fr": "Un skin par jeu",
+        "en": "Skin per game"
+      },
+      "example": {
+        "fr": "un jeu de course",
+        "en": "a racing game"
+      }
     }
   ],
   "settings": [
