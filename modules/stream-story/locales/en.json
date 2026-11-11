@@ -53,6 +53,8 @@
   "ui_style_arena_hint": "Slanted colour panels, hexagons and a bar that fills up.",
   "ui_style_abyss": "Deep space dread",
   "ui_style_abyss_hint": "Cold green screens, a radar sweep and a failing light.",
+  "ui_style_haunt": "Haunted",
+  "ui_style_haunt_hint": "A flashlight in the dark, an evidence tag and drifting orbs.",
   "ui_style_countdown_on": "The countdown is now on, this style shows it.",
   "ui_format_label": "Format",
   "ui_format_vertical": "Vertical (story, 9:16)",
