@@ -1,12 +1,12 @@
-// Partenariats — l'interface d'administration : vue d'ensemble, fiche (journal, contacts liés).
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
+// Partnerships: the admin interface: overview, partner page (journal, linked contacts), and the windows to add, edit and delete.
+const v = new URL(import.meta.url).search; // the module version propagates to the neighbouring files (otherwise the old code would stay cached after an update)
+const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt, deletePartnerRecord, deletionPreview } = await import(`./data.mjs${v}`);
 const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, healLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
 
 export default {
-  // ── Tableau de bord du cœur : « n partenaires à relancer » ─────────────────────────────────────────────────
-  // Même calcul que le ⏰ du tableau d'administration (`followUpDue` : message envoyé, sans nouvelle depuis « relance après n jours »). Lecture du stockage seulement,
-  // comme l'administration (1 000 fiches et 1 000 lignes de journal au plus), jamais de réseau ni de lecture du carnet de contacts ; le journal n'est lu que s'il y a un message envoyé.
+  // ── Core dashboard: "n partners to follow up" ─────────────────────────────────────────────────
+  // Same computation as the ⏰ of the overview (`followUpDue`: message sent, no news for "follow up after n days"). Storage reads only,
+  // like the admin (1,000 files and 1,000 journal lines at most), never the network nor the address book; the journal is read only if a message was sent.
   dashboard: {
     tasks: {
       async "follow-up"(ctx) {
@@ -18,75 +18,126 @@ export default {
     },
   },
 
-  // ── Panneau d'admin ───────────────────────────────────────────────────────────
+  // ── Admin panel ───────────────────────────────────────────────────────────────
+  // Forms (new partner, edit, delete, journal entry) open in a WINDOW above the page (`presentation: "dialog"`, core 0.6.7): the module tabs stay what they are, tabs of the
+  // whole module, and the list keeps its search, filter and place. The window is returned only when the address asks for it (`?new=1`, `?edit=<id>`, `?delete=<id>`,
+  // `?partner=<id>&log=1`); the action answers `{ ok }` and the core closes the window.
   async adminPanel(ctx, { query }) {
     const t = ctx.t;
     const [partners, journal, hasBook] = await Promise.all([all(ctx, "partners"), all(ctx, "journal"), bookAvailable(ctx)]);
     const statusOptions = STATUSES.map((s) => ({ value: s, label: t(`s_${s}`) }));
     const blocks = [{ type: "markdown", text: `*${t("private")}*` }];
+    const byId = (id) => (typeof id === "string" && id ? partners.find((p) => p.id === id) : undefined);
+    const open = byId(query.partner);
+    const back = open ? `?partner=${open.id}` : "?"; // where a window returns when it closes
 
+    // The edit window: four fields in sight, the rare ones under "More options" (the core summarises what is already filled in there).
     const partnerForm = (p) => ({
       type: "adminForm",
+      presentation: "dialog",
       action: "savePartner",
       title: p ? `${t("edit")} — ${p.data.brand}` : t("add"),
-      submitLabel: t("save"),
-      cancelHref: p ? `?partner=${p.id}` : undefined,
+      submitLabel: t(p ? "saveSubmit" : "addSubmit"),
+      cancelHref: back,
       fields: [
         { name: "id", kind: "hidden", value: p?.id ?? "" },
-        { name: "brand", label: t("brand"), required: true, value: p?.data.brand ?? "" },
+        { name: "brand", label: t("brand"), required: true, example: t("exBrand"), value: p?.data.brand ?? "" },
         { name: "status", label: t("status"), kind: "select", options: statusOptions, value: p?.data.status ?? "a_contacter" },
-        { name: "chances", label: t("chances"), kind: "number", value: String(p?.data.chances ?? "") },
-        { name: "url", label: t("url"), kind: "url", value: p?.data.url ?? "" },
-        { name: "sector", label: t("sector"), value: p?.data.sector ?? "" },
-        { name: "country", label: t("country"), value: p?.data.country ?? "" },
-        { name: "contact", label: t("contact"), help: t("contactHelp"), value: p?.data.contact ?? "" },
-        { name: "logo", label: t("logo"), kind: "image", value: p?.data.logo ?? "" },
-        { name: "products", label: t("products"), kind: "textarea", value: p?.data.products ?? "" },
-        { name: "benefits", label: t("benefits"), kind: "textarea", value: p?.data.benefits ?? "" },
-        { name: "brief", label: t("brief"), kind: "textarea", value: p?.data.brief ?? "" },
-        { name: "mail", label: t("mail"), kind: "textarea", value: p?.data.mail ?? "" },
-        { name: "source", label: t("source"), value: p?.data.source ?? "" },
+        { name: "chances", label: t("chances"), kind: "number", min: 0, max: 100, step: 1, unit: "%", value: String(p?.data.chances ?? "") },
+        { name: "url", label: t("url"), kind: "url", example: t("exUrl"), value: p?.data.url ?? "" },
+        { name: "sector", label: t("sector"), folded: true, example: t("exSector"), value: p?.data.sector ?? "" },
+        { name: "country", label: t("country"), folded: true, example: t("exCountry"), value: p?.data.country ?? "" },
+        { name: "contact", label: t("contact"), folded: true, help: t("contactHelp"), example: t("exContact"), value: p?.data.contact ?? "" },
+        { name: "logo", label: t("logo"), kind: "image", folded: true, value: p?.data.logo ?? "" },
+        { name: "products", label: t("products"), kind: "textarea", folded: true, example: t("exProducts"), value: p?.data.products ?? "" },
+        { name: "benefits", label: t("benefits"), kind: "textarea", folded: true, example: t("exBenefits"), value: p?.data.benefits ?? "" },
+        { name: "brief", label: t("brief"), kind: "textarea", folded: true, example: t("exBrief"), value: p?.data.brief ?? "" },
+        { name: "mail", label: t("mail"), kind: "textarea", folded: true, value: p?.data.mail ?? "" },
+        { name: "source", label: t("source"), folded: true, example: t("exSource"), value: p?.data.source ?? "" },
       ],
     });
 
-    // Bandeau : module Contacts absent.
+    // The deletion window: says what is lost (counts) and what is not (the people in Contacts), and asks for a tick: nothing is deleted by opening it.
+    const deleteForm = async (p) => {
+      const { journal: n, contacts: k } = await deletionPreview(ctx, p);
+      return {
+        type: "adminForm",
+        presentation: "dialog",
+        action: "deletePartner",
+        title: t("deleteTitle", { brand: p.data.brand }),
+        submitLabel: t("deleteSubmit"),
+        cancelHref: back,
+        fields: [
+          { name: "id", kind: "hidden", value: p.id },
+          { name: "confirm", kind: "checkbox", required: true, label: t(`deleteConfirm${count(n)}`, { n }), help: t(`deleteKeep${count(k)}`, { n: k }) },
+        ],
+      };
+    };
+
+    const journalForm = (p) => ({
+      type: "adminForm",
+      presentation: "dialog",
+      action: "addJournal",
+      title: `${t("journalAdd")} — ${p.data.brand}`,
+      submitLabel: t("journalAdd"),
+      cancelHref: back,
+      fields: [{ name: "partnerId", kind: "hidden", value: p.id }, { name: "date", label: t("date"), kind: "date", value: today() }, { name: "text", label: t("text"), kind: "textarea", required: true, example: t("exNote") }, { name: "link", label: t("link"), kind: "url", example: t("exLink") }],
+    });
+
+    // The window the address asks for, if any.
+    const dialogs = [];
+    if (query.new) dialogs.push(partnerForm(null));
+    else if (byId(query.edit)) dialogs.push(partnerForm(byId(query.edit)));
+    else if (byId(query.delete)) dialogs.push(await deleteForm(byId(query.delete)));
+    else if (open && query.log) dialogs.push(journalForm(open));
+    blocks.push(...dialogs);
+
+    // Banner: Contacts module absent.
     const notices = [];
     if (!hasBook) notices.push({ type: "markdown", text: `**⚠ ${t("noBookTitle")}** ${t("noBookText")}` });
 
-    // Modification d'une fiche
-    const editing = query.edit && partners.find((p) => p.id === query.edit);
-    if (editing) return [...blocks, partnerForm(editing)];
-
-    // Fiche détaillée : journal + contacts liés
-    const open = query.partner && partners.find((p) => p.id === query.partner);
+    // Partner page: details, journal, linked contacts, deletion
     if (open) {
       const d = open.data;
       const mine = journal.filter((j) => j.data.partnerId === open.id).sort((a, b) => String(b.data.date).localeCompare(String(a.data.date)));
-      const lines = [d.status && `**${t("status")}** : ${t(`s_${d.status}`)}${followUpDue(ctx, open, journal) ? ` ⏰ ${t("followUp")}` : ""}`, d.chances != null && `**${t("chances")}** : ${d.chances}`, d.url && `**${t("url")}** : ${d.url}`, d.sector && `**${t("sector")}** : ${d.sector}`, d.country && `**${t("country")}** : ${d.country}`, d.contact && `**${t("contact")}** : ${d.contact}`, d.products && `**${t("products")}** : ${d.products}`, d.benefits && `**${t("benefits")}** : ${d.benefits}`, d.brief && `**${t("brief")}** :\n\n${d.brief}`].filter(Boolean);
+      const lines = [d.status && `**${t("status")}** : ${t(`s_${d.status}`)}${followUpDue(ctx, open, journal) ? ` ⏰ ${t("followUp")}` : ""}`, d.chances != null && `**${t("chances")}** : ${d.chances} %`, d.url && `**${t("url")}** : ${d.url}`, d.sector && `**${t("sector")}** : ${d.sector}`, d.country && `**${t("country")}** : ${d.country}`, d.contact && `**${t("contact")}** : ${d.contact}`, d.products && `**${t("products")}** : ${d.products}`, d.benefits && `**${t("benefits")}** : ${d.benefits}`, d.brief && `**${t("brief")}** :\n\n${d.brief}`].filter(Boolean);
       return [
         ...blocks,
         ...notices,
         { type: "markdown", text: `[${t("back")}](?)` },
         { type: "heading", text: d.brand },
         { type: "markdown", text: lines.join("\n\n") },
-        { type: "table", columns: [t("edit")], rows: [[d.brand]], rowIds: [open.id], rowActions: [{ label: t("edit"), href: "?edit={id}" }, { label: t("delete"), action: "deletePartner", confirm: t("confirm"), danger: true }] },
+        { type: "links", items: [{ label: t("editPartner"), href: `?partner=${open.id}&edit=${open.id}`, presentation: "dialog" }] },
         { type: "heading", text: t("journal") },
-        { type: "table", columns: [t("date"), t("author"), t("text")], rows: mine.map((j) => [j.data.date, j.data.author, j.data.text + (j.data.link ? `\n${j.data.link}` : "")]), rowIds: mine.map((j) => j.id), rowActions: [{ label: t("delete"), action: "deleteJournal", confirm: t("confirm"), danger: true }] },
-        { type: "adminForm", action: "addJournal", title: t("journalAdd"), submitLabel: t("journalAdd"), fields: [{ name: "partnerId", kind: "hidden", value: open.id }, { name: "date", label: t("date"), kind: "date", value: today() }, { name: "text", label: t("text"), kind: "textarea", required: true }, { name: "link", label: t("link"), kind: "url" }] },
+        { type: "links", items: [{ label: t("journalNew"), href: `?partner=${open.id}&log=1`, presentation: "dialog" }] },
+        { type: "table", columns: [t("date"), t("author"), t("text")], rows: mine.map((j) => [j.data.date, j.data.author, j.data.text + (j.data.link ? `\n${j.data.link}` : "")]), rowIds: mine.map((j) => j.id), searchable: true, truncate: [2], rowActions: [{ label: t("delete"), action: "deleteJournal", confirm: t("confirmJournal"), danger: true }] },
         ...(await contactsSection(ctx, open, hasBook)),
+        // Apart, last, and named: what is lost and what stays (R3, R24).
+        { type: "heading", text: t("dangerTitle") },
+        { type: "markdown", text: t("dangerText") },
+        { type: "links", items: [{ label: t("deleteBtn"), href: `?partner=${open.id}&delete=${open.id}`, presentation: "dialog" }] },
       ];
     }
 
-    // Vue d'ensemble : triée par urgence (discussion > accepté > envoyé > à contacter > publié > clos)
+    // Overview: sorted by urgency (discussion > accepted > sent > to contact > published > closed)
     const rank = (s) => ({ discussion: 0, accepte: 1, envoye: 2, a_contacter: 3, publie: 4 })[s] ?? 5;
     const sorted = [...partners].sort((a, b) => rank(a.data.status) - rank(b.data.status) || String(a.data.brand).localeCompare(String(b.data.brand)));
     blocks.push(
       ...notices,
       { type: "heading", text: `${t("overview")} (${partners.filter((p) => !CLOSED.has(p.data.status)).length})` },
+      { type: "links", items: [{ label: t("addBtn"), href: "?new=1", presentation: "dialog" }] },
       sorted.length
-        ? { type: "table", columns: [t("brand"), t("status"), t("chances"), t("lastActivity")], rows: sorted.map((p) => [p.data.brand, `${t(`s_${p.data.status}`)}${followUpDue(ctx, p, journal) ? " ⏰" : ""}`, p.data.chances != null ? `${p.data.chances} %` : "", fmt(lastActivity(p, journal))]), rowIds: sorted.map((p) => p.id), rowActions: [{ label: t("open"), href: "?partner={id}" }, { label: t("edit"), href: "?edit={id}" }] }
+        ? {
+            type: "table",
+            columns: [t("brand"), t("status"), t("chances"), t("lastActivity"), t("followUpHead")],
+            rows: sorted.map((p) => [p.data.brand, t(`s_${p.data.status}`), p.data.chances != null ? `${p.data.chances} %` : "", fmt(lastActivity(p, journal)), followUpDue(ctx, p, journal) ? `⏰ ${t("followUp")}` : ""]),
+            rowIds: sorted.map((p) => p.id),
+            searchable: true,
+            filters: [{ column: 1 }],
+            truncate: [0],
+            rowActions: [{ label: t("open"), href: "?partner={id}" }, { label: t("edit"), href: "?edit={id}", presentation: "dialog" }, { label: t("deleteBtn"), href: "?delete={id}", presentation: "dialog", danger: true, inMenu: true }],
+          }
         : { type: "markdown", text: t("none") },
-      partnerForm(null),
       { type: "adminForm", action: "importPartners", title: t("importTitle"), submitLabel: t("importSubmit"), fields: [{ name: "csv", label: t("importCsv"), kind: "textarea", required: true }] },
       { type: "markdown", text: t("importHelp") },
     );
@@ -100,21 +151,22 @@ export default {
         const row = await ctx.api.store.get(v.id);
         if (!row) return { error: ctx.t("notFound") };
         await ctx.api.store.update(v.id, { ...cleanPartner(v, row.data), updatedBy: "admin" });
-        return { ok: ctx.t("saved"), redirect: `?partner=${v.id}` };
+        return { ok: ctx.t("saved") };
       }
-      const id = await ctx.api.store.add("partners", { ...cleanPartner({ ...v, status: v.status || "a_contacter" }), updatedBy: "admin" });
-      return { ok: ctx.t("saved"), redirect: `?partner=${id}` };
+      await ctx.api.store.add("partners", { ...cleanPartner({ ...v, status: v.status || "a_contacter" }), updatedBy: "admin" });
+      return { ok: ctx.t("saved") };
     },
     async importPartners(ctx, v) {
       const r = await importPartners(ctx, v.csv);
       if (r.error) return { error: ctx.t(r.error === "noBrand" ? "importNoBrand" : "importEmpty") };
       return { ok: ctx.t("importDone", { created: r.created, completed: r.completed, skipped: r.skipped }) };
     },
-    // Supprime la fiche et son journal — JAMAIS une personne du module Contacts : seule la référence disparaît.
+    // Deletes the file and its journal: NEVER a person of the Contacts module, only the reference goes away. Needs the tick of the confirmation window.
     async deletePartner(ctx, v) {
-      for (const r of await all(ctx, "journal")) if (r.data.partnerId === v.id) await ctx.api.store.remove(r.id);
-      await ctx.api.store.remove(v.id);
-      return { ok: ctx.t("deleted"), redirect: "?" };
+      if (v.confirm !== "on") return { error: ctx.t("deleteTick") };
+      const r = await deletePartnerRecord(ctx, v.id);
+      if (!r) return { error: ctx.t("notFound") };
+      return { ok: ctx.t("deletedPartner", { brand: r.brand }), redirect: "?" };
     },
     async addJournal(ctx, v) {
       if (!(await ctx.api.store.get(v.partnerId)) || !clip(v.text, 5000)) return { error: ctx.t("notFound") };
@@ -126,7 +178,7 @@ export default {
       return { ok: ctx.t("deleted") };
     },
 
-    // LIER un contact existant du module Contacts (choisi dans la liste, ou trouvé par nom / e-mail).
+    // LINK an existing contact of the Contacts module (picked in the list, or found by name / email).
     async linkContact(ctx, v) {
       const partner = idOk(v.partnerId) ? await ctx.api.store.get(v.partnerId) : null;
       if (!partner || partner.data.brand === undefined) return { error: ctx.t("notFound") };
@@ -150,7 +202,7 @@ export default {
       await setLinks(ctx, partner, [...ids, target], "admin");
       return { ok: ctx.t("linkDone", { name: got.contacts[0].name }) };
     },
-    // CRÉER une personne dans Contacts (via le service, sans doublon) puis la lier.
+    // CREATE a person in Contacts (through the service, no duplicate) then link them.
     async createContact(ctx, v) {
       const partner = idOk(v.partnerId) ? await ctx.api.store.get(v.partnerId) : null;
       if (!partner || partner.data.brand === undefined) return { error: ctx.t("notFound") };
@@ -166,7 +218,7 @@ export default {
       }
       return { ok: ctx.t(res.created ? "contactCreated" : "contactExisting", { name: res.contact.name }) };
     },
-    // DÉLIER : la personne reste dans le carnet. L'identifiant de ligne est « fiche~contact ».
+    // UNLINK: the person stays in the address book. The row id is "partner~contact".
     async unlinkContact(ctx, v) {
       const [partnerId, contactId] = String(v.id ?? "").split("~");
       const partner = idOk(partnerId) ? await ctx.api.store.get(partnerId) : null;
@@ -177,13 +229,13 @@ export default {
   }
 };
 
-// ── Morceaux de page ──────────────────────────────────────────────────────────────────────────────────────
-/** Section « Contacts » d'une fiche : personnes liées (résolues par le service), lier / créer / délier. */
+// ── Page pieces ──────────────────────────────────────────────────────────────────────────────────────
+/** "Contacts" section of a partner page: linked people (resolved by the service), link / create / unlink. */
 async function contactsSection(ctx, partner, hasBook) {
   const t = ctx.t;
   let ids = linksOf(partner);
   const links = await resolveLinks(ctx, ids);
-  if (Object.keys(links.moved).length) { await healLinks(ctx, partner, links.moved); ids = linksOf(partner); } // une personne fusionnée dans une autre : le lien suit
+  if (Object.keys(links.moved).length) { await healLinks(ctx, partner, links.moved); ids = linksOf(partner); } // a person merged into another: the link follows
   const out = [{ type: "heading", text: t("contacts") }];
   const rows = [], rowIds = [];
   if (!links.available) for (const id of ids) { rows.push([t("unavailableName"), "", `(${id})`, ""]); rowIds.push(`${partner.id}~${id}`); }
@@ -195,7 +247,7 @@ async function contactsSection(ctx, partner, hasBook) {
   if (rows.length) {
     out.push({ type: "table", columns: [t("name"), t("role"), t("email"), t("phone")], rows, rowIds, rowActions: [{ label: t("unlink"), action: "unlinkContact" }] });
     const open = links.cards.map((c) => `[${esc(c.name)}](${c.adminPath})`);
-    if (open.length) out.push({ type: "markdown", text: `${t("openInContacts")} ${open.join(" · ")}` });
+    if (open.length) out.push({ type: "markdown", text: `${t("openInContacts")} → ${open.join(" · ")}` });
   } else out.push({ type: "markdown", text: t("noLinkedContacts") });
 
   if (hasBook) {
@@ -203,9 +255,12 @@ async function contactsSection(ctx, partner, hasBook) {
     const found = await book(ctx, "find", { limit: 200 });
     const options = found.ok ? found.contacts.filter((c) => !linked.has(c.id)).sort((a, b) => String(a.name).localeCompare(String(b.name))).map((c) => ({ value: c.id, label: `${c.name}${c.organisation ? ` — ${c.organisation}` : ""}${c.email ? ` (${c.email})` : ""}` })) : [];
     out.push(
-      { type: "adminForm", action: "linkContact", title: t("linkTitle"), submitLabel: t("linkSubmit"), fields: [{ name: "partnerId", kind: "hidden", value: partner.id }, { name: "contactId", label: t("linkPick"), kind: "select", options: [{ value: "", label: t("linkPickNone") }, ...options] }, { name: "search", label: t("linkSearch"), help: t("linkSearchHelp") }] },
+      { type: "adminForm", action: "linkContact", title: t("linkTitle"), submitLabel: t("linkSubmit"), fields: [{ name: "partnerId", kind: "hidden", value: partner.id }, { name: "contactId", label: t("linkPick"), kind: "select", options: [{ value: "", label: t("linkPickNone") }, ...options] }, { name: "search", label: t("linkSearch"), help: t("linkSearchHelp"), example: t("exSearch") }] },
       { type: "adminForm", action: "createContact", title: t("contactAdd"), submitLabel: t("contactAdd"), fields: [{ name: "partnerId", kind: "hidden", value: partner.id }, { name: "name", label: t("name"), required: true }, { name: "role", label: t("role") }, { name: "organisation", label: t("organization") }, { name: "email", label: t("email"), kind: "email", help: t("contactAddHelp") }, { name: "phone", label: t("phone") }] },
     );
   }
   return out;
 }
+
+/** Picks the text variant for a count: none, one, several (the language files have `…0`, `…1` and `…N`). */
+const count = (n) => (n === 0 ? "0" : n === 1 ? "1" : "N");

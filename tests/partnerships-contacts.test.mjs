@@ -45,8 +45,8 @@ test("fiche : contacts liés résolus par le service (nom, fonction, e-mail, lie
   assert.deepEqual(people.rowIds, [`${p}~${c1}`]);
   assert.deepEqual(people.rowActions.map((a) => a.action), ["unlinkContact"]);
   assert.match(blocks.find((b) => b.type === "markdown" && /Open in Contacts/.test(b.text)).text, new RegExp(`\\[Ada\\]\\(/admin/instances/id-contacts\\?contact=${c1}\\)`));
-  assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), ["addJournal", "linkContact", "createContact"]);
-  const pick = find(blocks, "adminForm")[1].fields.find((f) => f.name === "contactId");
+  assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), ["linkContact", "createContact"]);
+  const pick = find(blocks, "adminForm")[0].fields.find((f) => f.name === "contactId");
   assert.deepEqual(pick.options.map((o) => o.value), ["", c2], "la liste ne propose pas les personnes déjà liées");
 });
 
@@ -95,7 +95,7 @@ test("délier : la fiche perd la référence, la personne reste dans Contacts ; 
   assert.deepEqual((await ctx.api.store.get(p)).data.contactIds, [c2]);
   assert.ok(await bookCtx.api.store.get(c1), "la personne est toujours dans le carnet");
   assert.deepEqual(await def.adminActions.unlinkContact(ctx, { id: "nope~x" }), { error: "Not found." });
-  await def.adminActions.deletePartner(ctx, { id: p });
+  await def.adminActions.deletePartner(ctx, { id: p, confirm: "on" });
   assert.equal(await ctx.api.store.get(p), null);
   assert.equal(await bookCtx.api.store.count("contacts"), 2);
 });
@@ -117,7 +117,7 @@ test("module Contacts ABSENT : la fiche s'affiche (liens conservés, noms indisp
   const people = find(blocks, "table").find((t) => t.columns[0] === "Name");
   assert.deepEqual(people.rows.map((r) => r[0]), ["Contact unavailable", "Contact unavailable"]);
   assert.match(panelText(blocks), /2 contact\(s\) linked to this file/);
-  assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), ["addJournal"]);
+  assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), []);
   await def.adminPanel(ctx, { query: {} });
   assert.match((await def.adminActions.linkContact(ctx, { partnerId: p, contactId: "c9" })).error, /Enable it/);
   assert.match((await def.adminActions.createContact(ctx, { partnerId: p, name: "Ada" })).error, /Enable it/);
