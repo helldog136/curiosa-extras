@@ -40,7 +40,7 @@ export const PLAN = {
       const admin = await page.context().newPage();
       await admin.goto(`${base}/admin/instances/${i.id}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1500);
-      await admin.getByRole("button", { name: "Send", exact: true }).first().click();
+      await admin.getByRole("button", { name: "Send the test alert", exact: true }).first().click();
       await admin.waitForTimeout(500); await admin.close();
     },
   })],

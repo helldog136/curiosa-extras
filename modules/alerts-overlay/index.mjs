@@ -16,11 +16,15 @@ const { ovTransition, transitionConfig } = await import(new URL(`./transition.mj
 const bus = (globalThis.__curiosaAlertsBus ??= Object.assign(new EventEmitter(), {}));
 bus.setMaxListeners(100);
 
+const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
+const adminTw = await import(new URL(`./twitch-admin.mjs${v}`, import.meta.url).href);
 const KINDS = ["follow", "sub", "raid", "test", "alert"];
 /** Les alertes venues du sujet `live.event` (leurs titres ne sont pas acceptés par `push`). */
 const LIVE_KINDS = ["superchat", "supersticker", "member", "gift"];
 /** Modules dont la présence active la lecture du sujet `live.event` par la page de l'overlay. */
 const LIVE_PROVIDERS = ["youtube-live-actions"];
+/** The module whose presence makes the overlay page read the topic `twitch.event` (the topic is read on demand, like `live.event`). */
+const TWITCH_PROVIDERS = ["twitch-events"];
 export const LIMITS = { queue: 50, seen: 400, maxAgeMs: 120_000, throttleMs: 2000, name: 40, message: 200, detail: 140, perPull: 20 };
 const clean = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 /** Le texte venu d'ailleurs (sujet `live.event`) : normalisé, sans caractère de contrôle ni de sens d'écriture, espaces réduits, borné. */
@@ -120,6 +124,9 @@ export async function pullLive(ctx, now = Date.now()) {
   try { return await run; } finally { st.flight = null; }
 }
 
+/** How the Twitch engine writes and filters: the language, the default duration, the viewers' texts, the ignore list, the burst window. */
+export const twitchEnv = (ctx, now = Date.now()) => ({ t: ctx.t, locale: ctx.locale, seconds: 0, showText: ctx.setting("twitchText") === true, ignore: tw.ignoreOf(ctx.setting("ignoreNames")), groupMs: Math.min(tw.LIMITS.groupMs.max, Math.max(0, Math.trunc(Number(ctx.setting("groupSeconds") ?? 5)) * 1000 || 0)), now });
+
 async function collectLive(ctx, st, now) {
   const key = ctx.instance.key;
   let items = [];
@@ -139,7 +146,8 @@ async function collectLive(ctx, st, now) {
   fresh.sort((a, b) => a.at - b.at);
   const out = fresh.slice(-LIMITS.perPull);
   for (const f of out) emit(key, f.alert);
-  return { sent: out.length };
+  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), twitchEnv(ctx, now)).catch(() => 0);
+  return { sent: out.length + sentTwitch };
 }
 export const listeners = (key) => bus.listenerCount(key);
 
@@ -154,7 +162,7 @@ async function youtubeBlocks(ctx) {
   return [
     { type: "heading", text: ctx.t("ytTitle") },
     { type: "markdown", text: ctx.t("ytHelp") },
-    { type: "adminForm", action: "testYoutube", title: ctx.t("ytTestTitle"), submitLabel: ctx.t("testSubmit"), fields: [] },
+    { type: "adminForm", action: "testYoutube", title: ctx.t("ytTestTitle"), submitLabel: ctx.t("ytTestSubmit"), fields: [] },
   ];
 }
 
@@ -208,7 +216,7 @@ export default {
       if (!message) return new Response("Bad request", { status: 400 });
       const kind = KINDS.includes(body?.kind) ? body.kind : "alert";
       const username = clean(body?.username, 60);
-      emit(ctx.instance.key, { kind, message, ...(username ? { username } : {}) });
+      emit(ctx.instance.key, { kind, message, ...(username ? { username } : {}), ...(body?.queue === false ? { queued: false } : {}) });
       return Response.json({ ok: true, listeners: listeners(ctx.instance.key) });
     },
   },
@@ -225,6 +233,11 @@ export default {
     // La page ne va chercher les alertes YouTube que si « Actions du live YouTube » est installé sur le site.
     let pull = false;
     try { pull = (await Promise.all(LIVE_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.length > 0); } catch { pull = false; }
+    // Twitch activity installed: the page also reads the topic `twitch.event`, queues every alert, and honours a title, a duration, a pause between alerts and "empty the queue".
+    // Without it the page is byte for byte the page of before (see the non-regression test).
+    let tx = false;
+    try { tx = (await Promise.all(TWITCH_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.some((i) => TWITCH_PROVIDERS.includes(i?.module))); } catch { tx = false; }
+    if (tx) pull = true;
     const duration = Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6));
     const kinds = ov && Object.hasOwn(OV_ONLY, q.get("opt-kinds") ?? "") ? q.get("opt-kinds") : "all";
     // Entrée / sortie : l'option de l'élément (si elle n'est pas « comme le module »), sinon le réglage. Tout en « auto » : le script d'avant, à l'identique (animation `alPop`).
@@ -235,10 +248,11 @@ export default {
       ...(ov ? {} : { eventsUrl: `/m/${ctx.instance.key}/events` }),
       duration,
       neon: ctx.setting("visual") !== "plain",
-      labels: Object.fromEntries((pull ? [...KINDS, ...LIVE_KINDS] : KINDS).map((k) => [k, ctx.t(`kind_${k}`)])),
+      labels: Object.fromEntries([...KINDS, ...(tx ? tw.TWITCH_KINDS.filter((k) => !KINDS.includes(k)) : []), ...(pull ? LIVE_KINDS : [])].map((k) => [k, ctx.t(`kind_${k}`)])),
+      ...(tx ? { between: Math.min(tw.LIMITS.gapMs.max, Math.max(0, Math.trunc(Number(ctx.setting("minGapSeconds") ?? 1)) * 1000 || 0)) } : {}),
       ...(pull && !ov ? { pullUrl: `/m/${ctx.instance.key}/pull`, pullMs: 5000, queueMax: LIMITS.queue } : {}),
       // Élément : chaque page lit le flux avec SON repère (route `feed`), jamais une file partagée.
-      ...(ov ? { feedUrl: `/m/${ctx.instance.key}/feed`, feedMs: 1500, feedPull: pull, queueMax: LIMITS.queue, only: OV_ONLY[kinds] } : {}),
+      ...(ov ? { feedUrl: `/m/${ctx.instance.key}/feed`, feedMs: 1500, feedPull: pull, queueMax: LIMITS.queue, only: kinds === "channel" && tx ? [...KINDS, ...tw.TWITCH_KINDS] : OV_ONLY[kinds] } : {}),
     };
     const accent = color(ctx.setting("accentColor"), ctx.theme.accent);
     const t = ctx.theme;
@@ -249,7 +263,7 @@ export default {
     // Avec une entrée ou une sortie choisie, la carte n'a plus l'animation unique `alPop` : elle entre, reste, puis sort (« auto » = le zoom léger d'avant).
     const fxScript = fx ? `${ovTransition.toString()}
         var fx=function(card,phase){var m=c.tr[phase==="in"?"in":"out"];return ovTransition(card,phase,m==="auto"?"pop":m,{ms:c.tr.ms,pop:.85,side:"bottom"})};
-        function hold(card,fin){clearTimeout(timer);var lead=Math.round(c.tr.ms*(c.tr.out==="jiggle"?1.3:1));timer=setTimeout(function(){fx(card,"out").then(fin)},Math.max(c.tr.ms,c.duration*1000-lead))}` : "";
+        function hold(card,fin${tx ? ",secs" : ""}){clearTimeout(timer);var lead=Math.round(c.tr.ms*(c.tr.out==="jiggle"?1.3:1));timer=setTimeout(function(){fx(card,"out").then(fin)},Math.max(c.tr.ms,${tx ? "(secs||c.duration)" : "c.duration"}*1000-lead))}` : "";
     const withDetail = pull || ov;
     const queued = pull || ov;
     // Un élément en mode test (`ov-demo=1`) montre une alerte d'exemple, fixe, jusqu'à la première vraie alerte.
@@ -274,14 +288,14 @@ ${withDetail ? `        ${S.detail}{font-size:1rem;color:${ov ? "var(--ov-fg,var
       script: queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
         stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}
         function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}
-          ${node("k", "kind", "al-kind")}k.textContent=c.labels[e.kind]||c.labels.alert;
+          ${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}
-          stage.replaceChildren(card);${fx ? "fx(card,\"in\");hold(card,done)" : "clearTimeout(timer);timer=setTimeout(done,c.duration*1000)"}}
-        function done(){stage.replaceChildren();busy=false;next()}
+          ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
+        ${tx ? "function done(){stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}" : "function done(){stage.replaceChildren();busy=false;next()}"}
         function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}
-        function show(e){if(e.queued){if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
-${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":""),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;d.events.forEach(function(e){if(!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
+        ${tx ? "function show(e){if(e.control===\"clear\"){q=[];clearTimeout(timer);stage.replaceChildren();busy=false;return}if(e.queued!==false){" : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
+${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":""),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
         poll()})();` : `        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}};
         var gap=c.pullMs;function pull(){fetch(c.pullUrl,{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000},function(){gap=30000}).then(function(){setTimeout(pull,gap)})}
         setTimeout(pull,1000)})();`}` : `(function(){var c=${json},stage=document.getElementById("al-stage"),timer;
@@ -294,7 +308,7 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
     };
   },
 
-  async adminPanel(ctx) {
+  async adminPanel(ctx, { query } = {}) {
     const base = `${ctx.api.siteUrl}/m/${ctx.instance.key}/push`;
     const hasToken = !!String(ctx.setting("pushToken") ?? "").trim();
     return [
@@ -304,10 +318,23 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       ...(hasToken ? [] : [{ type: "markdown", text: ctx.t("noToken") }]),
       { type: "adminForm", action: "test", title: ctx.t("testTitle"), submitLabel: ctx.t("testSubmit"), fields: [] },
       ...(await youtubeBlocks(ctx)),
+      ...(await adminTw.panel(ctx, { query: query ?? {} })),
     ];
   },
 
+  // The queue of this overlay, for the other modules that offer a remote (the dock of Twitch activity): where it stands, pause (held, nothing is lost), resume, empty.
+  services: {
+    "alerts.queue": {
+      state: (ctx) => tw.queueState(ctx),
+      pause: (ctx) => tw.pause(ctx),
+      resume: (ctx) => tw.resume(ctx, (a) => emit(ctx.instance.key, a)),
+      clear: (ctx) => tw.clearQueue(ctx, (a) => emit(ctx.instance.key, a)),
+    },
+  },
+  mcp: adminTw.tools(),
+
   adminActions: {
+    ...adminTw.actions(emit),
     // Un faux Super Chat, mis en forme comme un vrai (montant dans la monnaie du site, texte seulement si le réglage est coché).
     async testYoutube(ctx) {
       const alert = liveAlert({ kind: "superchat", who: ctx.t("ytTestWho"), amount: 5, currency: ctx.locale === "fr" ? "EUR" : "USD", text: ctx.t("ytTestText") }, { withText: ctx.setting("youtubeText") === true, locale: ctx.locale });
