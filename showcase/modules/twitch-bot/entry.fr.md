@@ -8,6 +8,7 @@ Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi 
 - Coupez tout avec un arrêt d'urgence que vos modérateurs peuvent aussi déclencher depuis le chat.
 - Ne répondez que pendant vos directs, si vous préférez.
 - Avec Participation, mettez le bot en pause et ajoutez une commande depuis la télécommande, sur votre téléphone ou dans OBS.
+- Activez le mode collaboration quand vous streamez à plusieurs : le bot parle moins tout seul.
 
 ## Pourquoi vous allez l'aimer
 
@@ -36,4 +37,4 @@ Votre site répond aux commandes tapées dans votre chat Twitch. Il gère aussi 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.13.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.14.0.

@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.13.0",
+  "version": "1.14.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -563,7 +563,7 @@
       "name": "bot_commands_list",
       "readOnly": true,
       "default": false,
-      "description": "List the chat commands of the Twitch bot of this site: custom ones, ready-made ones (planning, game, title, followers, uptime), partner commands and social network commands, plus the command prefix and whether the emergency switch has muted the bot. For each command: kind, name, aliases, reply text (with {variables}), enabled, who may use it (everyone, subscribers, mods, owner), state (on, off, hidden when something is missing, missing when the source is gone) and the delays in seconds (null = the default). Use it to answer 'what commands does my bot have?' before changing anything. Commands with an automatic repeat also give repeatEveryMinutes, repeatMinChatLines, repeatWhen and repeatEnabled; a command only for the timer has timerOnly true and a title.",
+      "description": "List the chat commands of the Twitch bot of this site: custom ones, ready-made ones (planning, game, title, followers, uptime), partner commands and social network commands, plus the command prefix and whether the emergency switch has muted the bot. For each command: kind, name, aliases, reply text (with {variables}), enabled, who may use it (everyone, subscribers, mods, owner), state (on, off, hidden when something is missing, missing when the source is gone) and the delays in seconds (null = the default). Use it to answer 'what commands does my bot have?' before changing anything. Commands with an automatic repeat also give repeatEveryMinutes, repeatMinChatLines, repeatWhen and repeatEnabled; a command only for the timer has timerOnly true and a title. Also gives collaborationMode.",
       "input": {
         "type": "object",
         "properties": {
@@ -1077,6 +1077,53 @@
           }
         }
       }
+    },
+    {
+      "name": "collaboration_mode_set",
+      "default": false,
+      "description": "Switch the collaboration mode of the Twitch bot on or off, for when the owner streams with other people in a shared chat and the bot should talk less on its own. While it is on, the chat timers are paused or thinned out (1 due message out of 2 or 3 is sent) and, if asked, command delays are longer and other automatic messages are muted. Commands typed by viewers still answer. 'enabled' is required; the other fields change the saved choices. It sends no message. The change is written in the site history as made by the assistant. The state is in bot_commands_list (collaborationMode).",
+      "input": {
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "true = collaboration mode on, false = off."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "thin",
+              "pause"
+            ],
+            "description": "Timers: 'thin' (default, 1 out of ratio is sent) or 'pause'."
+          },
+          "ratio": {
+            "type": "integer",
+            "description": "With 'thin': one timer message out of this many is sent (default 3).",
+            "minimum": 2,
+            "maximum": 3
+          },
+          "commandDelayFactor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Command delays are multiplied by this while the mode is on (1 = unchanged)."
+          },
+          "muteOtherAutomaticMessages": {
+            "type": "boolean",
+            "description": "true = no notice when points are given back; a reward that makes the bot answer in chat is refunded instead."
+          },
+          "autoEndHours": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 24,
+            "description": "The mode ends by itself after this many hours (0 = never, default 6)."
+          }
+        }
+      }
     }
   ],
   "previews": [
@@ -1207,6 +1254,35 @@
           "key": "name"
         }
       ]
+    },
+    {
+      "key": "collab.on",
+      "label": {
+        "fr": "Mode collaboration activé ({by})",
+        "en": "Collaboration mode switched on ({by})"
+      },
+      "fields": [
+        {
+          "key": "by"
+        }
+      ]
+    },
+    {
+      "key": "collab.off",
+      "label": {
+        "fr": "Mode collaboration désactivé ({by})",
+        "en": "Collaboration mode switched off ({by})"
+      },
+      "fields": [
+        {
+          "key": "by"
+        }
+      ]
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.collaboration_mode_set": "Active ou désactive le mode collaboration du bot Twitch, pour quand la personne diffuse avec d'autres dans un chat partagé et que le bot doit parler moins tout seul. Activé, les timers du chat sont mis en pause ou espacés (1 message dû sur 2 ou 3 part) et, si demandé, les attentes des commandes sont plus longues et les autres messages automatiques coupés. Les commandes tapées par le public répondent toujours. « enabled » est obligatoire ; les autres champs changent les choix enregistrés. L'outil n'envoie aucun message. Le changement est écrit dans l'historique du site comme fait par l'assistant. L'état se lit dans bot_commands_list (collaborationMode)."
+    }
+  }
 }

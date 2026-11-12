@@ -173,3 +173,21 @@ With **Audience** installed, the remote control of your live (the secret address
 - **Undo.** The last three commands added this way are listed under "Just added", each with a "Delete !name" button. It deletes that command (and its counter) in one tap, only while nobody changed it in the administration since; after that the button disappears and the command is yours to delete there. Commands made in the administration or from the chat can never be deleted from the remote.
 - **Who can press.** Only whoever holds the secret address of the remote control. The bot adds no route, no right and no permission: Audience checks the address, limits the number of presses (60 a minute, and a slower limit for wrong addresses) and writes who did what in its journal ("Remote control: Twitch bot paused", "Chat command added"…). The site's history also gets "Bot paused from the remote control", "Bot switched back on from the remote control", "Command … added / deleted from the remote control" (the name of the command only, never a message from the chat).
 - **Assistants (MCP).** No tool was added: pausing the bot is the owner's gesture. `bot_commands_list` already tells whether the bot is paused.
+
+## Collaboration mode (1.14.0)
+
+When you stream with other people in a **shared chat**, the bot should not fill the chat on its own. The collaboration mode is one switch that makes it talk less. It is **off** until you switch it on, and it stays as you left it after a restart or an update.
+
+- **Where it is.** On the bot page, right under the status line: "Collaboration mode off / on", since when it is on, what it does, when it ends, and one button, "Start collaboration mode" / "Stop collaboration mode" (one click, it uses the saved choices). With Audience, the **Bot** tab of the remote control (phone, OBS dock) has the same switch. An assistant can use `collaboration_mode_set` and read the state in `bot_commands_list` (`collaborationMode`).
+- **Two choices, right under the line.** "Timers during collaboration": **Thin out** (default) or **Pause**. With thinning, "Timers still sent": **1 in 3** (default) or **1 in 2**.
+  - *Thin out* is counted **per timer** and written down: when a timer is due, it is counted; the 3rd (or 2nd) time it goes out, and the counter starts again. The other times the timer simply waits for its next turn, so each timer keeps its own rhythm and none is forgotten. (A timer has no priority flag in this module, so all are treated alike.)
+  - *Pause* sends no timer; when the mode ends, the timers start their wait again and nothing goes out in a burst.
+- **Under "More options"** (all optional):
+  - **Longer wait between answers**: the delays of the commands are multiplied (1 to 5 times, default 1 = unchanged). A command still answers; it just answers less often to the same person.
+  - **Mute other automatic messages** (default off): the notice that points were given back is not written, and a reward that makes the bot answer in the chat is **refunded** instead of answered (no answer, no points lost). These are the only automatic messages of this module besides timers: it has no thank-you for follows, raids or subscriptions, and no automatic message about the game or the title.
+  - **Stop by itself after** (default 6 hours, 0 = never): a safety net so that the mode is not left on by mistake. The page says when it will end.
+- **What is never muted.** The answer to a command a viewer typed (and to `!addcom`, `!stop`, `!start`), and "Send now" from the timers tab. The emergency stop still wins over everything.
+- **Shared chat.** The mode does not change how the bot reads the chat: messages that come from another channel's side of a shared chat are still ignored, as before.
+- **History.** Each change is written in the site's history ("Collaboration mode switched on (admin)", with `admin`, `remote`, `assistant` or `auto` for the end by the clock) and the page and the remote say where the last change came from.
+- **Who can use it.** Whoever opens the administration, the secret address of the remote control, or an assistant to which you gave the `collaboration_mode_set` tool (a write tool, off by default).
+- **Data.** Nothing to migrate: the switch and the choices are two small entries in the state of the bot; the thinning counters are in the timers state. `minCore` unchanged.

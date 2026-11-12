@@ -19,7 +19,7 @@ test("onglets : textes FR et EN à parité exacte (mêmes clés, mêmes variable
   for (const k of ["remoteTabs", "remoteTabRooms", "remoteTabLive", "remoteMore", "drawRemoteFKeyword", "drawRemoteFTitle"]) assert.ok(fr[k] && en[k] && !fr[k].endsWith(":"), k);
   for (const k of ["drawRemoteFKeywordEx", "drawRemoteFTitleEx", "drawRemoteErrWord"]) assert.ok(fr[k].length <= 60 && en[k].length <= 60 && !/!$/.test(fr[k]), k);
   assert.deepEqual(Object.keys(def.routes).sort(), ["draw-enter", "draw-me", "remote", "remote-press", "remote-state", "screen"].filter((k) => k in def.routes).concat(Object.keys(def.routes).filter((k) => !["draw-enter", "draw-me", "remote", "remote-press", "remote-state", "screen"].includes(k))).sort(), "aucune route ajoutée");
-  assert.equal(manifest.version, "1.8.2");
+  assert.equal(manifest.version, "1.8.3");
   assert.ok(!fs.readFileSync(new URL("../modules/audience/module.json", import.meta.url), "utf8").includes(":slug") || true);
 });
 

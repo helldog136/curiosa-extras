@@ -359,5 +359,7 @@
   "what_panel_pause": "Bot Twitch mis en pause",
   "what_panel_resume": "Bot Twitch de nouveau actif",
   "what_panel_addcom": "Commande de chat ajoutée",
-  "what_panel_undo": "Commande de chat supprimée"
+  "what_panel_undo": "Commande de chat supprimée",
+  "what_panel_collabon": "Mode collaboration activé",
+  "what_panel_collaboff": "Mode collaboration désactivé"
 }

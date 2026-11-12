@@ -11,6 +11,7 @@ const { settingsOf } = await import(`./settings.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
 const A = await import(`./actions.mjs${v}`);
 const PER = await import(`./period.mjs${v}`);
+const CO = await import(`./collab.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 const pad = (n) => String(n).padStart(2, "0");
@@ -54,6 +55,10 @@ function repeatChanges(a) {
   if (a.timerOnly !== undefined) f.timerOnly = a.timerOnly === true;
   return f;
 }
+
+/** The collaboration mode as an assistant reads it (see collab.mjs). */
+const iso = (at) => (Number.isFinite(at) ? new Date(at).toISOString() : null);
+const collabView = (e) => ({ enabled: e.on, ...(e.on ? { since: iso(e.since), endsAt: iso(e.until), changedFrom: e.by } : {}), timers: e.mode === "pause" ? "paused" : `thinned out: 1 in ${e.ratio} is sent`, commandDelayFactor: e.factor, muteOtherAutomaticMessages: e.quiet, autoEndHours: e.hours });
 
 const rewardView = (r, names) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, actionName: names.get(r.action) ?? null, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
 const fieldsOf = (a, cur = {}) => ({ title: a.name ?? cur.title, cost: a.costPoints ?? cur.cost, cooldown: a.delaySeconds ?? cur.cooldown ?? 0, prompt: a.helpText ?? cur.prompt ?? "", needsInput: a.viewerWritesMessage ?? cur.needsInput ?? false, action: a.action ?? cur.action, reply: a.chatReply ?? cur.reply ?? "" });
@@ -110,10 +115,20 @@ export default {
     }
     return { updated: true, name: title ?? cur.title ?? f.name ?? cur.name };
   },
+  async collaboration_mode_set(ctx, args) {
+    const before = CO.choicesOf(await st.readState(ctx));
+    if (["mode", "ratio", "commandDelayFactor", "muteOtherAutomaticMessages", "autoEndHours"].some((k) => args[k] !== undefined)) {
+      const r = CO.check({ mode: args.mode, ratio: args.ratio, factor: args.commandDelayFactor, hours: args.autoEndHours, quiet: args.muteOtherAutomaticMessages === undefined ? undefined : args.muteOtherAutomaticMessages === true }, before);
+      if (!r.ok) throw expose(Object.values(r.errors).map((code) => ctx.t(`co_e_${code}`)).join(" "));
+      await CO.saveChoices(ctx, r.value);
+    }
+    await CO.setOn(ctx, args.enabled === true, "assistant");
+    return { updated: true, collaborationMode: collabView(await CO.current(ctx)) };
+  },
   async bot_commands_list(ctx, args) {
     const info = await context(ctx, { declare: false });
     const list = info.list.filter((c) => !args.kind || c.kind === args.kind);
-    return { prefix: info.s.prefix, muted: await st.isMuted(ctx), commands: list.map(view) };
+    return { prefix: info.s.prefix, muted: await st.isMuted(ctx), collaborationMode: collabView(await CO.current(ctx)), commands: list.map(view) };
   },
   async bot_command_create(ctx, args) {
     const info = await context(ctx, { declare: false });
