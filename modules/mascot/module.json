@@ -5,9 +5,9 @@
     "fr": "Mascotte",
     "en": "Mascot"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "menuGroup": "content",
-  "minCore": "0.6.5",
+  "minCore": "0.10.0",
   "description": {
     "fr": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
     "en": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy."
@@ -183,18 +183,18 @@
   "settings": [
     {
       "key": "voiceFile",
-      "type": "video",
+      "type": "audio",
       "optional": true,
-      "rare": true,
       "tab": "voice",
       "label": {
-        "fr": "Votre propre son",
-        "en": "Your own sound"
+        "fr": "Ancien fichier son",
+        "en": "Older sound file"
       },
       "help": {
-        "fr": "Une courte vidéo MP4 ou WebM ; seul le son est joué.",
-        "en": "A short MP4 or WebM file; only its sound is played."
-      }
+        "fr": "Se règle plus haut. Encore lu sans autre son.",
+        "en": "Now sent above. Still read when no other sound is set."
+      },
+      "advanced": true
     },
     {
       "key": "where",

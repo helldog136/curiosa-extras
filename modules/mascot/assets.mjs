@@ -10,7 +10,7 @@ const Y = await import(new URL(`./style.mjs${v}`, import.meta.url).href);
 const P = await import(new URL(`./play.mjs${v}`, import.meta.url).href);
 
 /** Must stay equal to `version` of module.json (a test checks it): it is part of the address of the style sheet. */
-export const VERSION = "1.3.0";
+export const VERSION = "1.4.0";
 export const CSS = Y.CSS;
 export const cssHash = M.hash(`${VERSION}|${Y.CSS}`);
 /** The style sheet with the animation rules (`mascot.css?a=1`): asked for only when an animation is set, so the address of the plain one never changes. */

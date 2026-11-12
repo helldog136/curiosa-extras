@@ -195,7 +195,7 @@ const GOLDEN = {
     }
   },
   "mascot": {
-    "manifest": "7cb2cacf9ee302ce",
+    "manifest": "cd8edff18a626325",
     "keys": [
       "adminActions",
       "adminPanel",
@@ -220,7 +220,7 @@ const GOLDEN = {
         "lines": "a9868ed5f3d02f91",
         "js": "82346ba7741261ce",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "d61d90579f36dec9",
+        "admin": "7ff4235fd85830b4",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       },
@@ -233,7 +233,7 @@ const GOLDEN = {
         "lines": "fd2e39c77a231d53",
         "js": "2cb5bd46390d87c1",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "956c9312cbc43959",
+        "admin": "2d4f5233306278e3",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       }

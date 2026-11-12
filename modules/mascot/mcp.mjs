@@ -31,7 +31,7 @@ export const mcp = {
   async mascot_animation_get(ctx) {
     const c = await S.loadConfig(ctx);
     const anim = (a) => ({ mode: a.mode, pictures: a.frames.length, maxPictures: M.ANIM.frames, hasAnimatedPicture: Boolean(a.gif), picturesPerSecond: a.fps || M.ANIM.fps[2], playOnce: a.once, bytes: M.animBytes(a), maxBytes: M.ANIM.bytes });
-    const sound = M.uploadSound(ctx.setting("voiceFile"));
+    const sound = M.soundOf(c.voice, ctx.setting("voiceFile"));
     return {
       idle: anim(c.anim.idle), talking: anim(c.anim.talk),
       reading: { ...c.reading, charactersPerSecond: M.SPEEDS[c.reading.speed], examples: [20, 60, 140].map((n) => ({ characters: n, seconds: M.talkDuration("x".repeat(n), c.reading) })) },
@@ -54,11 +54,11 @@ export const mcp = {
     if (a.idlePlayOnce !== undefined) anim.idle.once = a.idlePlayOnce === true;
     if (a.voiceMode !== undefined) {
       if (!M.VOICE_MODES.includes(a.voiceMode)) bad("voiceMode", `one of ${M.VOICE_MODES.join(", ")}`);
-      if (a.voiceMode === "custom" && !M.uploadSound(ctx.setting("voiceFile"))) bad("voiceMode", "no sound file is chosen yet: send one in the administration (tab Voice, More options)");
+      if (a.voiceMode === "custom" && !M.soundOf(voice, ctx.setting("voiceFile"))) bad("voiceMode", "no sound file is chosen yet: send one in the administration (tab Voice)");
       voice.mode = a.voiceMode;
     }
     if (a.volume !== undefined) voice.volume = whole("volume", a.volume, M.VOLUME);
-    if (a.blipsPreset !== undefined) { if (!M.BLIP_CHOICES.includes(a.blipsPreset)) bad("blipsPreset", `one of ${M.BLIP_CHOICES.join(", ")}`); if (a.blipsPreset === "custom" && !M.uploadSound(ctx.setting("voiceFile"))) bad("blipsPreset", "no sound file is chosen yet: send one in the administration (tab Voice, More options)"); voice.blips.preset = a.blipsPreset; }
+    if (a.blipsPreset !== undefined) { if (!M.BLIP_CHOICES.includes(a.blipsPreset)) bad("blipsPreset", `one of ${M.BLIP_CHOICES.join(", ")}`); if (a.blipsPreset === "custom" && !M.soundOf(voice, ctx.setting("voiceFile"))) bad("blipsPreset", "no sound file is chosen yet: send one in the administration (tab Voice)"); voice.blips.preset = a.blipsPreset; }
     if (a.blipsPitch !== undefined) voice.blips.pitch = oneOf("blipsPitch", M.PITCHES, a.blipsPitch);
     if (a.blipsSpeed !== undefined) voice.blips.rate = oneOf("blipsSpeed", M.BLIP_RATES, a.blipsSpeed);
     if (a.blipsVariation !== undefined) voice.blips.vary = oneOf("blipsVariation", M.VARIATIONS, a.blipsVariation);

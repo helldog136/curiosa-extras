@@ -192,6 +192,9 @@ async function saveReading(ctx, values) {
 const seg = (ctx, prefix, table, name, label, value) => ({ name, kind: "segmented", label, value, options: Object.keys(table).map((k) => ({ value: k, label: ctx.t(`${prefix}_${k}`) })) });
 const volumeField = (ctx, voice) => ({ name: "volume", kind: "number", label: ctx.t("voVolumeLabel"), value: voice.volume === M.VOLUME[2] ? "" : voice.volume, min: M.VOLUME[0], max: M.VOLUME[1], step: 1, placeholder: String(M.VOLUME[2]), unit: "%", example: String(M.VOLUME[2]) });
 
+/** The sound file (core 0.10.0, `kind: "audio"`): shown only where it is used (your own sound, or the blips set to your own sound). */
+const soundField = (ctx, voice) => ({ name: "sound", kind: "audio", label: ctx.t("voSoundLabel"), value: voice.file, help: ctx.t("voSoundHelp") });
+
 function voiceForm(ctx, config) {
   const vo = config.voice, mode = vo.mode;
   const hidden = { name: "mode", kind: "hidden", label: "mode", value: mode };
@@ -202,6 +205,7 @@ function voiceForm(ctx, config) {
       seg(ctx, "voPitch", M.PITCHES, "pitch", ctx.t("voPitchLabel"), vo.blips.pitch),
       seg(ctx, "voRate", M.BLIP_RATES, "rate", ctx.t("voRateLabel"), vo.blips.rate),
       volumeField(ctx, vo),
+      ...(vo.blips.preset === "custom" ? [soundField(ctx, vo)] : []),
       { ...seg(ctx, "voVary", M.VARIATIONS, "vary", ctx.t("voVaryLabel"), vo.blips.vary), folded: true },
     ];
   } else if (mode === "speech") {
@@ -212,7 +216,7 @@ function voiceForm(ctx, config) {
       volumeField(ctx, vo),
       { name: "vname", kind: "text", label: ctx.t("voNameLabel"), value: vo.speech.name, help: ctx.t("voNameHelp"), example: ctx.t("voNameExample"), folded: true },
     ];
-  } else if (mode === "custom") fields = [volumeField(ctx, vo)];
+  } else if (mode === "custom") fields = [soundField(ctx, vo), volumeField(ctx, vo)];
   if (!fields) return null;
   return { type: "adminForm", action: "saveVoice", tab: "voice", title: ctx.t(`vo_${mode}`), submitLabel: ctx.t("voSave"), fields: [hidden, ...fields] };
 }
@@ -229,7 +233,7 @@ export function voiceBlocks(ctx, config, canEdit) {
   });
   const form = voiceForm(ctx, config);
   if (form) out.push(form);
-  if (mode === "custom" || (mode === "blips" && config.voice.blips.preset === "custom")) out.push({ type: "markdown", text: ctx.t(M.uploadSound(ctx.setting("voiceFile")) ? "voCustomReady" : "voCustomMissing"), tab: "voice" });
+  if (mode === "custom" || (mode === "blips" && config.voice.blips.preset === "custom")) out.push({ type: "markdown", text: ctx.t(M.soundOf(config.voice, ctx.setting("voiceFile")) ? "voCustomReady" : "voCustomMissing"), tab: "voice" });
   return out;
 }
 
@@ -262,8 +266,20 @@ async function saveVoice(ctx, values) {
     if ([...name].length > 80) errors.vname = ctx.t("errVoName", { max: 80, example: ctx.t("voNameExample") });
     next.speech = { lang: lang && ctx.locales.includes(lang) ? lang : "", name: name.slice(0, 80), rate: pick(M.SPEECH_RATES, values.srate, vo.speech.rate), pitch: pick(M.SPEECH_PITCHES, values.spitch, vo.speech.pitch) };
   }
+  const typed = String(values.sound ?? "").trim();
+  if (values.sound !== undefined && typed !== (vo.file ?? "")) {
+    if (!typed) { next.file = ""; next.fileBytes = 0; }
+    else if (!M.uploadAudio(typed)) errors.sound = ctx.t("errVoSound");
+    else {
+      const k = await keep(ctx, typed);
+      if (k.error) errors.sound = k.error;
+      else if (k.bytes > M.SOUND_BYTES) errors.sound = ctx.t("errVoHeavy", { size: kb(k.bytes), max: kb(M.SOUND_BYTES) });
+      else { next.file = typed; next.fileBytes = k.bytes; }
+    }
+  } else { next.file = vo.file; next.fileBytes = vo.fileBytes; }
   if (Object.keys(errors).length) return { errors };
-  await S.saveConfig(ctx, { voice: next });
+  const saved = await S.saveConfig(ctx, { voice: next });
+  if (vo.file && vo.file !== saved.voice.file) await release(ctx, vo.file);
   return { ok: ctx.t("voSaved") };
 }
 

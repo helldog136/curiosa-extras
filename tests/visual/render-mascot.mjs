@@ -80,7 +80,8 @@ await write("9-use-anim", "Mascot: My mascot (animation set)", await mk({ anim }
 await write("4-voice-none", "Mascot: Voice (none)", await mk({ anim }), "voice");
 await write("5-voice-blips", "Mascot: Voice (blips)", await mk({ anim, voice: { mode: "blips", volume: 40 } }), "voice", { voiceFrame: true });
 await write("6-voice-speech", "Mascot: Voice (voice of the computer)", await mk({ anim, voice: { mode: "speech", volume: 40 } }), "voice", { voiceFrame: true });
-await write("7-voice-custom", "Mascot: Voice (your own sound)", await mk({ anim, voice: { mode: "custom", volume: 40 } }, { voiceFile: `/uploads/${UUID(900)}.mp4` }), "voice");
+await write("7-voice-custom", "Mascot: Voice (your own sound)", await mk({ anim, voice: { mode: "custom", volume: 40, file: `/uploads/${UUID(900)}.ogg`, fileBytes: 61_000 } }), "voice");
+await write("10-voice-blips-own", "Mascot: Voice (blips with your own sound)", await mk({ anim, voice: { mode: "blips", volume: 40, file: `/uploads/${UUID(901)}.ogg`, fileBytes: 18_000, blips: { preset: "custom", pitch: "high", vary: "some", rate: "normal" } } }), "voice");
 {
   const ctx = await mk({ anim, voice: { mode: "blips", volume: 40 } });
   const err = await K.def.adminActions.saveVoice.run(ctx, { volume: "500" });
