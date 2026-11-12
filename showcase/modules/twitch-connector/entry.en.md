@@ -28,4 +28,4 @@ Links your site to Twitch once, for everything that touches Twitch. A guided set
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.3.0.
+Available since version 1.0.0. Current version: 1.4.0.

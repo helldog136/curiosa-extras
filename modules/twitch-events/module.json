@@ -1,0 +1,202 @@
+{
+  "apiVersion": 2,
+  "minCore": "0.6.0",
+  "id": "twitch-events",
+  "name": {
+    "en": "Twitch activity",
+    "fr": "Activité Twitch"
+  },
+  "version": "1.0.0",
+  "platform": "twitch",
+  "description": {
+    "en": "Receives the follows, subs, bits, raids and hype trains of your channel and keeps them in a journal.",
+    "fr": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et les garde dans un journal."
+  },
+  "author": "Helldog136",
+  "license": "MIT",
+  "icon": "📣",
+  "main": "index.mjs",
+  "type": "integration",
+  "instances": "single",
+  "permissions": [
+    "storage",
+    "admin",
+    "routes",
+    "topics",
+    "mcp"
+  ],
+  "requires": [
+    {
+      "service": "twitch.api",
+      "min": 3
+    },
+    {
+      "service": "twitch.live"
+    }
+  ],
+  "provides": [
+    {
+      "topic": "twitch.event",
+      "label": {
+        "en": "What happens on your Twitch channel: follows, subs, gifts, bits, raids, stream start and end, hype trains",
+        "fr": "Ce qui se passe sur votre chaîne Twitch : follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains d'enthousiasme"
+      }
+    }
+  ],
+  "tabs": [
+    {
+      "id": "use",
+      "label": {
+        "en": "Events",
+        "fr": "Événements"
+      }
+    },
+    {
+      "id": "types",
+      "label": {
+        "en": "Event types",
+        "fr": "Types"
+      },
+      "panel": true
+    }
+  ],
+  "settings": [
+    {
+      "key": "retentionDays",
+      "type": "number",
+      "default": 30,
+      "min": 1,
+      "max": 365,
+      "unit": {
+        "en": "days",
+        "fr": "jours"
+      },
+      "label": {
+        "en": "Keep the journal for",
+        "fr": "Garder le journal pendant"
+      },
+      "help": {
+        "en": "Older lines are removed. Between 1 and 365 days.",
+        "fr": "Les lignes plus anciennes sont retirées. Entre 1 et 365 jours."
+      }
+    },
+    {
+      "key": "channel",
+      "type": "choice",
+      "source": {
+        "kind": "providers",
+        "service": "twitch.live"
+      },
+      "refersTo": "channel",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "en": "Twitch channel to follow",
+        "fr": "Chaîne Twitch à suivre"
+      },
+      "help": {
+        "en": "Only asked when your site has several Twitch channels. Leave empty to use the first one.",
+        "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch. Laissez vide pour utiliser la première."
+      }
+    }
+  ],
+  "privacy": {
+    "en": "The journal keeps, for each event, the public display name of the person (who follows, subscribes, gifts, cheers or raids), the amount, tier or count, and the public message that went with a resub or cheer. Nothing else about them: no e-mail, no account details. Lines are removed after the retention you choose (30 days by default); test lines after one day. Only your administration team reads it.",
+    "fr": "Le journal garde, pour chaque événement, le pseudo public de la personne (qui suit, offre un abonnement, envoie des bits ou raide), le montant, le niveau ou le nombre, et le message public joint à un réabonnement ou à des bits. Rien d'autre sur elle : ni e-mail, ni données de compte. Les lignes sont retirées après la durée que vous choisissez (30 jours par défaut) ; les lignes de test après un jour. Seule votre équipe d'administration le lit."
+  },
+  "mcp": [
+    {
+      "name": "twitch_events_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the latest events of the Twitch channel from the journal, newest first: follow, sub, resub, gift, cheer (bits), raid, online, offline, hype_begin, hype_progress, hype_end, redeem. Each has id, type, at (ISO date), name, and when relevant tier, months, count, amount (bits), viewers, text (the viewer's public message), level. Use it to answer 'who followed or subscribed lately?'. Test lines are left out unless includeTests is true.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype_begin",
+              "hype_progress",
+              "hype_end",
+              "redeem"
+            ],
+            "description": "Only this kind of event."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many lines (20 by default)."
+          },
+          "sinceMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 525600,
+            "description": "Only events from the last N minutes."
+          },
+          "includeTests": {
+            "type": "boolean",
+            "description": "Also return test and replay lines."
+          }
+        }
+      }
+    },
+    {
+      "name": "twitch_events_status",
+      "readOnly": true,
+      "default": false,
+      "description": "Tell whether the site is really listening to Twitch: the overall state (listening, pending, need_more = a Twitch permission to give again, need_reconnect, site_private, ...), the Twitch permissions still missing, the state and last event of each type, the number of journal lines, the retention, and whether the alerts overlay is installed. Use it first when the owner says 'my alerts did not show'.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "twitch_event_replay",
+      "default": false,
+      "description": "Show an alert again or test one. Give 'id' (a line of the journal, see twitch_events_list) to replay it with the same data, flagged as a replay; or 'testType' (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) to send a realistic sample with an invented name. Works even if the type is switched off. At most 10 replays and 20 tests a minute; replaying the same line twice within 3 seconds sends it once. It writes only a flagged line of the journal; nothing is deleted.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Id of the journal line to replay."
+          },
+          "testType": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype",
+              "redeem"
+            ],
+            "description": "Type of sample to send."
+          }
+        }
+      }
+    }
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.twitch_events_list": "Liste les derniers événements de la chaîne Twitch (follows, abonnements, cadeaux, bits, raids…), du plus récent au plus ancien.",
+      "mcp.twitch_events_status": "Dit si le site écoute vraiment Twitch : état, autorisations manquantes, dernier événement de chaque type.",
+      "mcp.twitch_event_replay": "Rejoue une alerte du journal avec les mêmes données, ou envoie un exemple de test d'un type. Borné, ne supprime rien."
+    }
+  }
+}
