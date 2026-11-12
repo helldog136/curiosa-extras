@@ -63,11 +63,17 @@ export async function exchangeCode(net, { clientId, secret, code, redirectUri })
   return tokens ? { tokens } : { error: "network" };
 }
 
-/** Renouvelle : { tokens } ou { error: "invalid" (refus définitif : il faut reconnecter) | "rate" | "network" }. */
+/**
+ * Refresh: { tokens } or { error: "invalid" (Twitch refuses this refresh token for good: the account must be authorized again)
+ * | "app" (Twitch refuses the application ID or secret, the token itself may be fine) | "rate" | "network" }.
+ * Only a 400 is a definitive refusal of the token; a 401/403 is the application; anything else (408, 429, 5xx...) is temporary.
+ */
 export async function refreshTokens(net, { clientId, secret, refresh }) {
   const r = await post(net, "token", { client_id: clientId, client_secret: secret, grant_type: "refresh_token", refresh_token: refresh });
   if (!r.ok) return { error: netError(r) };
-  if (r.status >= 500) return { error: "network" };
+  if (r.status === 429) return { error: "rate" };
+  if (r.status === 401 || r.status === 403) return { error: "app" };
+  if (r.status >= 500 || (r.status !== 200 && r.status !== 400)) return { error: "network" };
   if (r.status !== 200) return { error: "invalid" };
   const tokens = tokensOf(jsonOf(r));
   return tokens ? { tokens } : { error: "network" };   // réponse coupée : on réessaiera, ce n'est pas un refus

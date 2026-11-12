@@ -21,8 +21,8 @@
   "conn_why": "Pour compter vos followers et vos abonnements payants, Twitch doit d'abord vous demander votre accord. Cela prend une minute, une seule fois.",
   "connect": "Connecter ma chaîne Twitch",
   "connected": "Connectée en tant que {login} depuis le {date}.",
-  "reconnect": "Twitch demande de nouveau votre autorisation : cliquez sur « Connecter ma chaîne Twitch ».",
-  "morePermission": "Vous avez ajouté un chiffre à suivre : cliquez sur « Connecter ma chaîne Twitch » pour que Twitch l'autorise.",
+  "reconnect": "Twitch n'accepte plus votre autorisation : cliquez sur « Autoriser de nouveau avec Twitch ».",
+  "morePermission": "Il manque une autorisation Twitch : cliquez sur « Autoriser de nouveau avec Twitch ».",
   "disconnect": "Déconnecter",
   "disconnected": "Chaîne déconnectée : Twitch ne peut plus être lu avec cette autorisation.",
   "disconnectedOffline": "Chaîne déconnectée ici, mais Twitch n'a pas pu être prévenu. Pour en être sûr, retirez l'accès dans Twitch (Paramètres, puis Connexions).",
@@ -98,5 +98,10 @@
   "events_setup_channel": "Renseignez le nom de votre chaîne dans les réglages de la chaîne Twitch pour voir votre planning Twitch.",
   "events_setup_connector": "Pour voir votre planning Twitch, il faut que l'application Twitch du site soit réglée : suivez les étapes de la page de la chaîne Twitch.",
   "events_setup_refused": "Twitch refuse l'application du site : vérifiez ses codes sur la page du connecteur Twitch.",
-  "events_setup_update": "Pour voir votre planning Twitch, le connecteur Twitch du site doit être mis à jour (Extensions, Chercher une mise à jour)."
+  "events_setup_update": "Pour voir votre planning Twitch, le connecteur Twitch du site doit être mis à jour (Extensions, Chercher une mise à jour).",
+  "err_auth_renew": "Twitch n'accepte plus votre autorisation : cliquez sur « Autoriser de nouveau avec Twitch ».",
+  "err_auth_scope": "Il manque une autorisation Twitch : cliquez sur « Autoriser de nouveau avec Twitch ».",
+  "err_auth_denied": "Twitch a refusé cette demande : cliquez sur « Autoriser de nouveau avec Twitch ».",
+  "frozen": "Certains chiffres sont figés car Twitch refuse l'autorisation actuelle.",
+  "authorizeAgain": "Autoriser de nouveau avec Twitch"
 }

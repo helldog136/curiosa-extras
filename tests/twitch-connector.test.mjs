@@ -56,7 +56,7 @@ test("manifeste : valide, une seule instance, twitch.api v3 NON each, minCore 0.
   assert.equal(manifest.type, "integration");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.version, o.each ?? false]), [["twitch.api", 3, false]]);
   assert.ok(!manifest.requires, "le fournisseur ne dépend de personne");
-  assert.deepEqual(manifest.settings.map((s) => [s.key, s.type, s.optional]), [["appClientId", "text", true], ["appSecret", "secret", true]]);
+  assert.deepEqual(manifest.settings.map((s) => [s.key, s.type, s.optional]), [["appClientId", "text", true], ["appSecret", "secret", true], ["healthMail", "boolean", undefined]]);
   assert.ok(!manifest.settings.some((s) => /token|jeton|access|refresh/i.test(s.key)));
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
 });

@@ -22,7 +22,7 @@ async function describe(ctx, stat, now) {
     value: stat.lastValue ?? null, unit: UNITS[stat.metric] ?? null,
     origin: stat.source === "manual" ? "manual" : "automatic",
     status: statusOf(stat),
-    ...(stat.state === "error" ? { problem: stat.error } : {}),
+    ...(stat.state === "error" ? { problem: stat.error, ...(stat.error === "auth" && stat.platform === "twitch" ? { fix: "The Twitch authorization is refused or lacks a permission, so this figure is frozen at its last value. Only the owner can fix it: admin > Twitch connector > 'Authorize again with Twitch' (connector_twitch_status tells the exact state)." } : {}) } : {}),
     lastValueAt: iso(stat.lastAt),
     ageHours: stat.lastAt == null ? null : Math.max(0, Math.round((now - stat.lastAt) / 360_000) / 10),
     change7d: change(week), change30d: change(month),
