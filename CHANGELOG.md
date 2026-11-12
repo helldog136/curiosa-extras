@@ -4,6 +4,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.73.0 — 2026-11-12
+
+*En bref : dans l'onglet Bot de la télécommande, la carte du mode collaboration dit son état en mots, et vous choisissez là ce que font les timers : en pause, ou 1 fois sur 2, 3 ou 5. Bot Twitch (1.15.0) et Participation (1.9.0). Rien à régler, aucune nouvelle permission.*
+
+*In short: on the Bot tab of the remote control, the collaboration card says its state in words, and you pick what the timers do right there: paused, or 1 in 2, 3 or 5. Twitch bot (1.15.0) and Audience (1.9.0). Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **La carte dit seulement son état.** « Désactivé — le bot parle comme d'habitude », « Activé — timers 1 sur 3 — s'arrête dans 5 h 20 ». Désactivé est neutre (un rond), activé prend la couleur d'accent avec une coche. Ce que fait le mode est dans la bulle « ? ».
+- **Choisissez les timers sur la carte.** Pause, 1 sur 2, 1 sur 3 (comme avant) ou 1 sur 5. Quand le mode est activé, le choix s'applique tout de suite. Sous « Plus d'options » : arrêt automatique après 2 h, 4 h, 6 h ou jamais.
+- **Moins de texte sous l'arrêt d'urgence.** Son explication passe elle aussi dans une bulle « ? ».
+- **Un seul choix dans la page du bot** (quatre boutons) au lieu de deux champs. Votre assistant IA (outil toujours désactivé tant que vous ne l'autorisez pas) accepte les mêmes choix.
+- **The card says only its state.** "Off — the bot talks as usual", "On — timers 1 in 3 — stops in 5 h 20". Off is neutral (a circle), on uses the accent colour with a check mark. What the mode does is in the "?" bubble.
+- **Choose the timers on the card.** Pause, 1 in 2, 1 in 3 (as before) or 1 in 5. While the mode is on, the choice applies at once. Under "More options": stop by itself after 2 h, 4 h, 6 h or never.
+- **Less text under the emergency stop.** Its explanation also moves into a "?" bubble.
+- **One single choice on the bot page** (four buttons) instead of two fields. Your AI assistant (tool still off until you allow it) takes the same choices.
+
+### Pour les développeurs
+
+- Twitch bot 1.15.0: `collab.mjs`, `collabUi.mjs` (one segmented field), remote press `collabset`, MCP `collaboration_mode_set` with `timers` / `n` / `autoStopHours` (older names still work). Audience 1.9.0: panel toggle fields `calm`, `more`, `foldLabel`, `choices`. No data migration. See `docs/changelog-parts/bot-collab-ux.md`. Tests: `twitch-bot-collab`, `twitch-bot-remote`, `twitch-bot-remote-browser`, `audience-remote-panel`; captures `docs/captures/ergonomie-collab-ux/`.
+
 ## 1.72.0 — 2026-11-12
 
 *En bref : l'élément « Prochain stream » des pages d'overlay (Planning 2.7.6) n'a plus qu'un seul cadre, remplit la zone que vous lui donnez et s'écrit à la taille d'une télé.*
