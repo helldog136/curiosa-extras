@@ -66,7 +66,7 @@ export async function callback(request, ctx, channelOf) {
 /* ───────────── Panneau : état, bouton ───────────── */
 
 const sameDay = (iso, ctx) => { try { return new Date(iso).toLocaleDateString(ctx.locale, { dateStyle: "long" }); } catch { return String(iso).slice(0, 10); } };
-const statMessage = (ctx, r) => (r.error === "config" ? ctx.t(r.reason === "affiliate" ? "err_config_affiliate" : "err_config_credentials") : ctx.t(`err_${r.error}`));
+const statMessage = (ctx, r) => (r.error === "config" ? ctx.t(r.reason === "affiliate" ? "err_config_affiliate" : "err_config_credentials") : r.error === "auth" && ["renew", "scope", "denied"].includes(r.reason) ? ctx.t(`err_auth_${r.reason}`) : ctx.t(`err_${r.error}`));
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** Le bouton « Connecter ma chaîne Twitch » : un lien (adresse donnée par le Connecteur, vérifiée : toujours id.twitch.tv en https) habillé aux couleurs de l'administration. */
 const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
@@ -98,6 +98,12 @@ export async function panel(ctx, channel, getStats) {
     out.push({ type: "banner", tone: "success", text: ctx.t("connected", { login: acc.login ?? channel, date: sameDay(acc.connectedAt ?? new Date().toISOString(), ctx) }) });
     if (extras.length) out.push({ type: "markdown", text: ctx.t("extras_note") });
     if (stats.length) out.push({ type: "table", columns: [ctx.t("col_stat"), ctx.t("col_value")], rows: stats.map(({ metric, result: x }) => [ctx.t(`stat_${metric}`), x.error ? statMessage(ctx, x) : x.value.toLocaleString(ctx.locale)]) });
+    // Twitch refuses what the connector believed fine (a permission lost, an authorization withdrawn): the way out is right here, not "somewhere else".
+    if (stats.some(({ result: x }) => x.error === "auth")) {
+      out.push({ type: "banner", tone: "warning", text: ctx.t("frozen") });
+      const again = await call(ctx, "connectLink", { channel, slot: "main", force: true, returnTo: adminPage(ctx) });
+      if (twitchLink(again.ok ? again.value?.url : null)) out.push(button(ctx.t("authorizeAgain"), again.value.url));
+    }
     out.push({ type: "adminForm", action: "disconnect", submitLabel: ctx.t("disconnect"), fields: [] });
     return out;
   }
@@ -107,7 +113,7 @@ export async function panel(ctx, channel, getStats) {
   if (extras.length && st !== "none") out.push({ type: "markdown", text: ctx.t("extras_note") });
   const link = await call(ctx, "connectLink", { channel, slot: "main", returnTo: adminPage(ctx) });
   const v = link.ok ? link.value ?? {} : {};
-  if (twitchLink(v.url)) out.push(button(ctx.t("connect"), v.url));
+  if (twitchLink(v.url)) out.push(button(ctx.t(st === "none" ? "connect" : "authorizeAgain"), v.url));
   else if (v.reason === "https") out.push({ type: "banner", tone: "warning", text: ctx.t("needHttps") });
   else if (v.reason === "not_ready") out.push({ type: "banner", tone: "warning", text: ctx.t("notReadyConnector"), ...(RETURN_TO.test(acc.adminPath ?? "") ? { href: acc.adminPath } : {}) });
   else if (v.reason === "nothing") out.push({ type: "banner", tone: "warning", text: ctx.t("chooseOne") });

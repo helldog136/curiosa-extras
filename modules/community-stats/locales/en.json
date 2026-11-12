@@ -49,7 +49,7 @@
   "evoNone": "Not enough history to compare yet.",
   "percentSuffix": "%",
   "reason_auth": "{platform} needs your permission: open your {platform} module and reconnect your account.",
-  "reason_auth_twitch": "Twitch needs your permission: click “Connect my channel”.",
+  "reason_auth_twitch": "The Twitch authorization must be renewed: open the Twitch connector and click “Authorize again with Twitch”.",
   "reason_rate": "{platform} asks you to wait a little. Nothing to do: the number will come back by itself.",
   "reason_network": "{platform} is not answering right now. Nothing to do: the number will come back by itself.",
   "reason_hidden": "{platform} hides this number: make it public in your {platform} account.",

@@ -57,7 +57,7 @@ beforeEach(() => { mock.timers.setTime(NOW); overlay.resetOverlayCache(); });
 
 test("manifeste : valide, 1.2.1, minCore 0.5.0, un élément « Compteurs » fluide, taille minimale, style suivi, deux options minimales, droit « routes » seul ajouté", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.2.2"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.2.3"); assert.equal(manifest.minCore, "0.5.0");
   const [e] = manifest.overlayElements;
   assert.equal(manifest.overlayElements.length, 1);
   assert.equal(e.id, "counters"); assert.equal(e.fit, "fluid"); assert.equal(e.followsStyle, true); assert.equal(e.demo, true);

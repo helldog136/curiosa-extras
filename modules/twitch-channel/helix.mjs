@@ -139,11 +139,15 @@ const STAT_PATH = { followers: "channels/followers", paying: "subscriptions" };
 async function fetchUserStat(c, metric) {
   const acc = await c.account();
   if (acc.error) return { error: acc.error };
-  if (!["ok", "more"].includes(acc.status) || !acc.userId || !Array.isArray(acc.scopes) || !acc.scopes.includes(SCOPES[metric])) return { error: "auth" };
+  // Not connected, or the connector knows the authorization is refused: nothing to ask Twitch. `reason` lets the page say what to do.
+  if (acc.status === "none" || acc.status === "reconnect" || !acc.userId) return { error: "auth", reason: acc.status === "reconnect" ? "renew" : "connect" };
+  // The permission is NOT checked here any more: the connector checks it on the call and records a missing one (so its page shows it and asks for it).
   const r = await c.call({ as: "user", slot: "main", method: "GET", path: STAT_PATH[metric], query: { broadcaster_id: [acc.userId], first: ["1"] } });
-  if (r.error) return { error: ["rate", "network", "config"].includes(r.error) ? r.error : "auth" };
+  if (r.error === "scope") return { error: "auth", reason: "scope" };
+  if (r.error === "auth") return { error: "auth", reason: "renew" };
+  if (r.error) return { error: ["rate", "network", "config"].includes(r.error) ? r.error : "auth", ...(r.error === "config" ? { reason: "credentials" } : {}) };
   if (metric === "paying" && (r.status === 403 || r.status === 400)) return { error: "config", reason: "affiliate" };   // pas affilié ni partenaire
-  if (r.status === 403) return { error: "auth" };
+  if (r.status === 403) { await c.report?.({ problem: "denied" }); return { error: "auth", reason: "denied" }; }   // the connector checks with Twitch and records the truth
   if (r.status !== 200) return { error: "network" };
   const total = r.json?.total;
   return Number.isInteger(total) && total >= 0 ? { value: total } : { error: "network" };
@@ -160,7 +164,7 @@ export async function userStat(c, metric, { maxAge } = {}) {
   // un refus « auth » gardé en cache ne survit pas à une connexion faite depuis (par exemple sur la page du Connecteur) : on demande l'état, sans réseau
   if (hit && hit.until > Date.now() && hit.value.error === "auth") {
     const acc = await c.account();
-    if (acc.status === "ok" && Date.parse(acc.connectedAt ?? "") >= hit.value.at - 1000) { state.stats.delete(k); hit = null; }
+    if (["ok", "more"].includes(acc.status) && Date.parse(acc.connectedAt ?? "") >= hit.value.at - 1000) { state.stats.delete(k); hit = null; }
   }
   if (hit && hit.until > Date.now() && (maxAge == null || Date.now() - hit.value.at <= maxAge)) return hit.value;   // maxAge : l'enregistreur de directs veut un chiffre récent
   return share(`stat|${k}`, () => fetchUserStat(c, metric), NETWORK, (found) => {

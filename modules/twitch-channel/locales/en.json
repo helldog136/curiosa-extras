@@ -21,8 +21,8 @@
   "conn_why": "To count your followers and paying subscribers, Twitch first has to ask for your consent. It takes a minute, once.",
   "connect": "Connect my Twitch channel",
   "connected": "Connected as {login} since {date}.",
-  "reconnect": "Twitch is asking for your permission again: click “Connect my Twitch channel”.",
-  "morePermission": "You added a number to follow: click “Connect my Twitch channel” so Twitch allows it.",
+  "reconnect": "Twitch no longer accepts your authorization: click “Authorize again with Twitch”.",
+  "morePermission": "A Twitch permission is missing: click “Authorize again with Twitch” so Twitch allows it.",
   "disconnect": "Disconnect",
   "disconnected": "Channel disconnected: Twitch can no longer be read with this permission.",
   "disconnectedOffline": "Channel disconnected here, but Twitch could not be told. To be sure, remove the access in Twitch (Settings, then Connections).",
@@ -98,5 +98,10 @@
   "events_setup_channel": "Enter your channel name in the Twitch channel settings to see your Twitch schedule.",
   "events_setup_connector": "To see your Twitch schedule, the site's Twitch application must be set up: follow the steps on the Twitch channel page.",
   "events_setup_refused": "Twitch refuses the site's application: check its credentials on the Twitch connector page.",
-  "events_setup_update": "To see your Twitch schedule, the site's Twitch connector must be updated (Extensions, Check for updates)."
+  "events_setup_update": "To see your Twitch schedule, the site's Twitch connector must be updated (Extensions, Check for updates).",
+  "err_auth_renew": "Twitch no longer accepts your authorization: click “Authorize again with Twitch”.",
+  "err_auth_scope": "A Twitch permission is missing: click “Authorize again with Twitch”.",
+  "err_auth_denied": "Twitch refused this request: click “Authorize again with Twitch”.",
+  "frozen": "Some numbers are frozen because Twitch refuses the current authorization.",
+  "authorizeAgain": "Authorize again with Twitch"
 }

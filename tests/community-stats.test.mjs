@@ -28,9 +28,9 @@ function make({ items = [], settings = {}, locale = "fr", messages } = {}) {
 const statOf = async (ctx, id) => (await loadStats(ctx)).find((s) => s.id === id);
 const pointsOf = async (ctx, id) => readPoints(ctx, await statOf(ctx, id), 0);
 
-test("manifeste : valide, 1.2.1, minCore 0.5.0, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
+test("manifeste : valide, 1.2.3, minCore 0.5.0, instance unique, plateforme neutre, consomme social.stat avec datetime, réglages avancés avec défauts sûrs", () => {
   const r = parseManifest(manifestJson); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.2.2"); assert.equal(manifestJson.minCore, "0.5.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
+  assert.equal(manifestJson.version, "1.2.3"); assert.equal(manifestJson.minCore, "0.5.0"); assert.equal(manifestJson.instances, "single"); assert.equal(manifestJson.icon, "📊");
   assert.ok(!("platform" in manifestJson), "plateforme neutre");
   const c = manifestJson.consumes.find((x) => x.topic === "social.stat");
   assert.deepEqual(Object.fromEntries(c.schema.map((f) => [f.key, f.type])), { id: "string", platform: "string", account: "string", accountKey: "string", metric: "string", label: "string", value: "number", asOf: "datetime", url: "url", error: "string" });
@@ -242,7 +242,7 @@ test("explications des chiffres manquants : une raison humaine ET une action, pr
   const { ctx } = make();
   const s = (error, platform) => ({ state: "error", error, platform });
   assert.match(reasonText(ctx, s("hidden", "youtube")), /YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio/);
-  assert.match(reasonText(ctx, s("auth", "twitch")), /Twitch demande votre autorisation : cliquez sur « Connecter ma chaîne »/);
+  assert.match(reasonText(ctx, s("auth", "twitch")), /L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch »/);
   assert.match(reasonText(ctx, s("auth", "bluesky")), /Bluesky demande votre autorisation.*reconnectez/);
   assert.match(reasonText(ctx, s("rate", "github")), /GitHub demande de patienter.*Rien à faire/);
   assert.match(reasonText(ctx, s("network", "reddit")), /Reddit ne répond pas.*Rien à faire/);
@@ -425,7 +425,7 @@ test("admin : cartes lisibles (compte, chiffre, évolution en phrase, origine, m
   const cards = tables[0].rows.map((r) => r.join(" | ")).join("\n");
   assert.match(cards, /Twitch · emma_live\nFollowers : 1\s120\nGardé pour vous/);
   assert.match(cards, /\+84 followers cette semaine \(\+8,1 %\)/);
-  assert.match(cards, /Twitch demande votre autorisation : cliquez sur « Connecter ma chaîne »/);
+  assert.match(cards, /L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch »/);
   assert.match(cards, /Dernier chiffre connu/);
   assert.match(cards, /YouTube cache votre nombre de followers : rendez-le public dans YouTube Studio/);
   assert.match(cards, /Instagram · @emma\nFollowers : 4\s200/);

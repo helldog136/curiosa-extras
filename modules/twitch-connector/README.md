@@ -58,3 +58,7 @@ Sur-ensemble de la version 2 offerte par « Chaîne Twitch » 1.7 : les appels d
 
 ### Sécurité
 `state` : 256 bits, usage unique (consommé avant tout appel à Twitch), 10 minutes, lié à l'adresse de retour exacte et à la chaîne ; le compte autorisé doit être celui de la chaîne (emplacement `main`), sinon refus et jetons révoqués. Au-delà de 20 retours invalides en 10 minutes : 429. Après le retour, la redirection va vers une page `/admin/instances/…` vérifiée, jamais vers une adresse de la requête. Les jetons ne quittent jamais le stockage de l'instance (ni réglage, ni bloc, ni réponse de service, ni journal).
+
+## Health of the connections (1.5.0)
+
+"Connected" means that Twitch accepts the authorization **now**: the connector asks Twitch (validate, then refresh when needed) when its page opens, every 10 minutes from a task, and at once when a module is refused. A connection is `ok`, `renew` (revoked, expired, password changed, other application), `scopes` (a permission a module needs is missing; listed in plain words) or `app` (Twitch refuses the application ID or secret). The page shows one banner and one button "Authorize again with Twitch"; the menu shows a red dot; the site log gets one line per change; the owner gets one e-mail per problem after 10 minutes and one when all is back (setting "E-mail me when Twitch needs a new authorization"). The service `twitch.api` offers `health` (read only) and `report` for modules; the MCP tool `connector_twitch_status` tells an assistant the same.
