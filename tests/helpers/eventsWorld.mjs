@@ -11,6 +11,9 @@ export const S = await import("../../modules/twitch-events/state.mjs");
 export const W = await import("../../modules/twitch-events/webhook.mjs");
 export const L = await import("../../modules/twitch-events/listen.mjs");
 export const P = await import("../../modules/twitch-events/publish.mjs");
+export const D = await import("../../modules/twitch-events/dockapi.mjs");
+export const DK = await import("../../modules/twitch-events/dock.mjs");
+export const DP = await import("../../modules/twitch-events/dockpure.mjs");
 export const A = await import("../../modules/twitch-events/admin.mjs");
 export const mod = (await import("../../modules/twitch-events/index.mjs")).default;
 
@@ -22,6 +25,7 @@ const ALL = ["moderator:read:followers", "channel:read:subscriptions", "bits:rea
 export function world(o = {}) {
   S.resetMemory(); P.forgetCache();
   const tw = { status: "ok", scopes: [...ALL], subs: [], calls: [], wants: [], createStatus: 202, listDown: false, seq: 0, ...o.tw };
+  const queue = { paused: false, held: 0, calls: [], ...o.queue };
   const ctx = fakeCtx({
     key: "ev", moduleId: "twitch-events", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: (o.locale ?? "fr") === "en" ? en : fr,
     settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions,
@@ -47,10 +51,16 @@ export function world(o = {}) {
         },
       } }],
       "twitch.live": [{ instance: "emma", name: "emma", methods: { channel: () => ({ channel: "emma_test", ready: true }) } }],
+      ...(o.alerts ? { "alerts.queue": [{ instance: "alerts", name: "Alerts", methods: {
+        state: () => ({ paused: queue.paused, held: queue.held, staged: 0 }),
+        pause: () => { queue.calls.push("pause"); queue.paused = true; return { paused: true, held: queue.held }; },
+        resume: () => { queue.calls.push("resume"); const released = queue.held; queue.paused = false; queue.held = 0; return { paused: false, released }; },
+        clear: () => { queue.calls.push("clear"); const dropped = queue.held; queue.held = 0; return { cleared: true, dropped }; },
+      } }] } : {}),
     },
     instances: o.alerts ? [{ id: "i1", key: "alerts", module: "alerts-overlay", name: "Alerts", adminPath: "/admin/instances/alerts" }] : [],
   });
-  return { ctx, tw };
+  return { ctx, tw, queue };
 }
 
 /** A delivery from the fake Twitch, signed with the secret the module gave it. */
