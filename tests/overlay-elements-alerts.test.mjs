@@ -41,8 +41,8 @@ const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 test("manifeste : valide au sens du cœur 0.5.0, un élément « alertes » (garde ses proportions), libellés et descriptions en français et en anglais", () => {
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.6.0");
-  assert.equal(manifestJson.minCore, "0.6.0");
+  assert.equal(manifestJson.version, "1.7.0");
+  assert.equal(manifestJson.minCore, "0.10.0");
   const [el, ...others] = manifestJson.overlayElements;
   assert.equal(others.length, 0);
   assert.equal(el.id, "alerts");

@@ -7,7 +7,7 @@ export default async function (h) {
     const r = rows.find((x) => x.data?.name === name);
     if (r) await ctx.api.store.update(r.id, { name, ...data }); else await ctx.api.store.add("twitchAlerts", { name, ...data });
   };
-  await put("config", { types: { resub: { viewer: true, tts: "both" }, cheer: { viewer: true, tts: "sentence" }, raid: { tts: "sentence" } }, tts: { on: true, voice: "", lang: "en", rate: 1, pitch: 1, volume: 80, max: 140, readName: true }, moderation: { wordsText: "", hold: false, links: true, caps: true, repeats: true } });
+  await put("config", { types: { resub: { viewer: true, tts: "both" }, cheer: { viewer: true, tts: "sentence", audio: "/uploads/0123456789abcdef0123456789abcdef0123.mp3" }, raid: { tts: "sentence" } }, tts: { on: true, voice: "", lang: "en", rate: 1, pitch: 1, volume: 80, max: 140, readName: true }, moderation: { wordsText: "", hold: false, links: true, caps: true, repeats: true } });
   await put("report", { supported: true, voices: [{ n: "Voice A", l: "en-US" }, { n: "Voice B", l: "en-GB" }, { n: "Voice C", l: "fr-FR" }], at: now });
   await put("state", { seen: [], paused: false, held: [], ttsMuted: false, stop: 0, skip: 0, texts: [
     { id: "demo-11", at: now - 10 * 60_000, reason: "link", type: "cheer", name: "lune_douce", text: "Cheer500 see www.example.com for more", hold: false, with: {} },

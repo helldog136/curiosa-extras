@@ -87,3 +87,13 @@ Honest limits, **not verified on a live OBS** (the tests use a fake `speechSynth
 **For assistants** (off by default): `voice_moderation_get`, `voice_moderation_update` and `held_text_decide`. Nothing is deleted.
 
 Tests: `tests/alerts-twitch-voice.test.mjs` (moderation, media, texts, voice, controls, the real page with a fake `speechSynthesis`, the administration with the ergonomics kit, the tools).
+
+## Sound files (version 1.7.0, core 0.10.0)
+
+Core 0.10.0 accepts sounds as uploads (MP3, Ogg, WAV, M4A, AAC; 10 MB at most, checked on the bytes). Under "More options" of the edit window of each type, the field **Sound file** (an `audio` field of the form, with a native listening control) keeps one sound of your site for that type. The module keeps it (`files.claim`; the previous file is let go) and the action checks the address again (`/uploads/<uuid>.(mp3|ogg|wav|m4a|aac)`, never an outside address). No slots, no new setting: the field is in the window.
+
+- The file **replaces** the synthesised sound of the type. It plays once per alert, at the volume of the sounds, and stops with the card (skip, next alert). It needs "Play a sound with each alert" to be on, like the synthesised sounds; a page where no type has a file carries no code for it.
+- A video with its own sound (1.6.0) keeps working; it does not need this field.
+- Browsers refuse sound before a first interaction (autoplay). The overlay iframe of the core carries `allow="autoplay"`; in a plain OBS browser source it usually plays. If nothing is heard, check the OBS source option for audio. Not verified on a live OBS.
+- Assistants can see that a type has a sound file (`hasSoundFile`), never its address, and cannot send sounds (the upload tool stays images only).
+- Needs Curiosa 0.10.0.

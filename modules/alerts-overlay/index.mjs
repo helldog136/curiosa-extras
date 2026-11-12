@@ -30,6 +30,11 @@ const MEDIA_SCRIPT = (ov) => `var mc=null;
           if(e.video&&${UPLOAD("mp4|webm")}.test(e.video)){mc=document.createElement("video");mc.src=e.video;mc.muted=!e.videoSound;mc.autoplay=true;mc.playsInline=true;mc.setAttribute("aria-label",e.message);if(mc.play){var pp=mc.play();if(pp&&pp.catch)pp.catch(function(){mc.muted=true;try{mc.play()}catch(x){}})}}
           else if(e.image&&${UPLOAD("png|jpg|webp|gif")}.test(e.image)){mc=document.createElement("img");mc.src=e.image;mc.alt=e.message}
           if(mc){${ov ? 'mc.setAttribute("data-ov-part","media");card.setAttribute("data-ov-media","1");' : 'mc.className="al-media";card.className+=" al-media-card";'}card.append(mc)}`;
+/** A sound file of the site, played once per alert at the volume of the sounds; it stops with the card (skip, next alert). Same condition as the synthesised sounds. */
+const AUDIO_SCRIPT = `
+        var fileSnd=null;
+        function stopFile(){try{if(fileSnd){fileSnd.pause();fileSnd=null}}catch(x){}}
+        function playFile(e){stopFile();if(!e.audio||!c.volume||!${UPLOAD("mp3|ogg|wav|m4a|aac")}.test(e.audio))return;try{var a=new Audio(e.audio);a.volume=c.volume/100;fileSnd=a;var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(x){}}`;
 const PICTURE_SCRIPT = (ov) => `if(e.image&&${UPLOAD("png|jpg|webp|gif")}.test(e.image)){var im=document.createElement("img");${ov ? 'im.setAttribute("data-ov-part","image");' : 'im.className="al-img";'}im.src=e.image;im.alt="";card.append(im)}`;
 /**
  * The voice: the browser's own speech synthesis (Web Speech API), no service, no key. What is read comes from the server (`e.say`, already moderated); whether it is read, and how, comes from
@@ -39,7 +44,7 @@ const PICTURE_SCRIPT = (ov) => `if(e.image&&${UPLOAD("png|jpg|webp|gif")}.test(e
 const VOICE_SCRIPT = `
         var shownCard=null,ctlv={stop:null,skip:null,tts:{on:false,muted:false}},syn=window.speechSynthesis,canSay=!!(syn&&typeof SpeechSynthesisUtterance!=="undefined");
         function hush(){try{if(canSay)syn.cancel()}catch(x){}}
-        function skipNow(){if(!busy)return;clearTimeout(timer);done()}
+        function skipNow(){if(!busy)return;if(typeof stopFile==="function")stopFile();clearTimeout(timer);done()}
         function applyCtl(x){if(!x)return;var first=ctlv.stop===null;if(!first){if(x.stop!==ctlv.stop)hush();if(x.skip!==ctlv.skip)skipNow()}ctlv.stop=x.stop;ctlv.skip=x.skip;ctlv.tts=x.tts||ctlv.tts;if(!ctlv.tts.on||ctlv.tts.muted)hush()}
         function speak(e){var t=ctlv.tts;if(!e.say||!canSay||!t||!t.on||t.muted)return;try{var u=new SpeechSynthesisUtterance(e.say),vs=syn.getVoices(),v=null,i,want=(t.lang||c.lang||"").toLowerCase();
           if(t.voice)for(i=0;i<vs.length;i++)if(vs[i].name===t.voice){v=vs[i];break}
@@ -291,6 +296,7 @@ export default {
     const twcfg = tx ? await tw.loadConfig(ctx).catch(() => null) : null;
     const anyAnim = !!twcfg && Object.values(twcfg.types).some((x) => x.anim);
     const sounds = tx && ctx.setting("twitchSounds") === true;
+    const audioOn = sounds && !!twcfg && Object.values(twcfg.types).some((x) => x.audio);   // a sound file is only worth its code if a type has one
     const fx = tr.in !== "auto" || tr.out !== "auto" || anyAnim;
     const cfg = {
       ...(fx ? { tr } : {}),
@@ -338,13 +344,13 @@ ${withDetail ? `        ${S.detail}{font-size:1rem;color:${ov ? "var(--ov-fg,var
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
       script: queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
-        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds ? SOUND_SCRIPT : ""}${tx ? VOICE_SCRIPT : ""}
-        function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? ANIM_SCRIPT(fx) : ""}${sounds ? "if(e.sound)beep(e.sound);" : ""}${tx ? "speak(e);" : ""}
+        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds ? SOUND_SCRIPT : ""}${audioOn ? AUDIO_SCRIPT : ""}${tx ? VOICE_SCRIPT : ""}
+        function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? ANIM_SCRIPT(fx) : ""}${sounds ? "if(e.sound)beep(e.sound);" : ""}${audioOn ? "playFile(e);" : ""}${tx ? "speak(e);" : ""}
           ${tx ? `if(e.present==="media"&&(e.video||e.image)){${MEDIA_SCRIPT(ov)}}else{${PICTURE_SCRIPT(ov)}` : ""}${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}${tx ? "}" : ""}
           ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
-        ${tx ? "function done(){shownCard=null;stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}" : "function done(){stage.replaceChildren();busy=false;next()}"}
+        ${tx ? "function done(){if(typeof stopFile==='function')stopFile();shownCard=null;stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}" : "function done(){stage.replaceChildren();busy=false;next()}"}
         function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}
         ${tx ? "function show(e){if(e.control===\"clear\"){q=[];clearTimeout(timer);stage.replaceChildren();busy=false;return}if(e.queued!==false){" : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
 ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":"")${tx ? '+"&ctl=1"' : ""},{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;${tx ? "applyCtl(d.ctl);" : ""}d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
