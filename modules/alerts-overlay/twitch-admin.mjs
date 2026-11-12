@@ -21,9 +21,11 @@ export async function panel(ctx, { query = {} } = {}) {
   const t = ctx.t, cfg = await tw.loadConfig(ctx), q = await tw.queueState(ctx);
   const here = await hasProvider(ctx);
   const edit = tw.TYPES.includes(query.edit) ? query.edit : null;
+  const shown = Object.fromEntries(await Promise.all(tw.TYPES.map(async (id) => [id, (await sampleAlert(ctx, id))?.message ?? ""])));
   const rows = tw.TYPES.map((id) => {
     const c = cfg.types[id];
-    return [{ text: typeName(ctx, id), badge: BADGE[id] }, { text: c.template || t(`tw_text_${id}`), title: c.template ? "" : t("tw_default_note") }, c.seconds ? t("tw_seconds", { n: c.seconds }) : "", minText(ctx, id, c.min),
+    // what the alert would say with a sample (never the raw `{name}` words); the tooltip gives the text as written
+    return [{ text: typeName(ctx, id), badge: BADGE[id] }, { text: shown[id] || c.template || t(`tw_text_${id}`), title: c.template || t("tw_default_note") }, c.seconds ? t("tw_seconds", { n: c.seconds }) : "", minText(ctx, id, c.min),
       { text: c.on ? t("tw_on") : t("tw_off"), switch: { on: c.on, action: "setType", label: t("tw_switch_label", { type: typeName(ctx, id) }), onText: t("tw_on"), offText: t("tw_off") } }];
   });
   const fields = edit ? [
@@ -38,7 +40,7 @@ export async function panel(ctx, { query = {} } = {}) {
     { type: "adminForm", tab: "twitch", action: "applyPreset", title: t("tw_preset_title"), submitLabel: t("tw_preset_btn"), fields: [{ name: "preset", kind: "segmented", label: t("tw_preset"), value: cfg.preset || "simple", options: tw.PRESETS.map((p) => ({ value: p, label: t(`tw_preset_${p}`) })) }] },
     ...(edit ? [{ type: "adminForm", tab: "twitch", presentation: "dialog", action: "saveType", cancelHref: "?tab=twitch", title: t("tw_edit_title", { type: typeName(ctx, edit) }), submitLabel: t("tw_save_btn"), fields }] : []),
     { type: "table", tab: "twitch", columns: [t("tw_col_type"), t("tw_col_text"), t("tw_col_duration"), t("tw_col_min"), t("tw_col_on")], rows, rowIds: tw.TYPES.slice(), truncate: [1], pageSize: 0, searchable: true, searchPlaceholder: t("tw_search"),
-      rowActions: [{ label: t("tw_edit_btn"), href: "?tab=twitch&edit={id}", presentation: "dialog" }, { label: t("tw_test_btn"), action: "testType" }] },
+      rowActions: [{ label: t("tw_edit_btn"), href: "?tab=twitch&edit={id}", presentation: "dialog" }, { label: t("tw_test_btn"), action: "testType", inMenu: true }] },
     // the queue, at the top of the first tab
     { type: "banner", tone: q.paused ? "warning" : "info", text: q.paused ? t("q_paused", { n: q.held }) : t("q_running", { n: q.staged }) },
     { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },

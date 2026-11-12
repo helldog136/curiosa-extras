@@ -865,15 +865,15 @@
         "fr": "Overlay alertes (OBS)"
       },
       "pitch": {
-        "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
-        "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+        "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
+        "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
       },
       "tags": [
         "obs",
         "alerts",
         "overlay"
       ],
-      "shots": 2
+      "shots": 3
     },
     {
       "id": "hero",

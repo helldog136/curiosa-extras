@@ -754,15 +754,15 @@
     }
   ],
   "privacy": {
-    "en": "The overlay keeps, for a few minutes at most, the display name and amount of the Twitch events it is about to show, and the identifiers of the last alerts shown, so that nothing is shown twice after a restart. Alerts held during a pause are kept until you resume or empty the queue. Nothing else, and nothing about people beyond their public display name.",
-    "fr": "L'overlay garde, quelques minutes au plus, le pseudo public et le montant des événements Twitch qu'il va afficher, et les références des dernières alertes montrées, pour que rien ne s'affiche deux fois après un redémarrage. Les alertes retenues pendant une pause sont gardées jusqu'à la reprise ou jusqu'au vidage de la file. Rien d'autre, et rien sur les personnes au-delà de leur pseudo public."
+    "en": "The overlay keeps, for a few minutes at most, the display name and amount of the Twitch events it is about to show, and the identifiers of the last alerts shown, so that nothing is shown twice after a restart. Alerts held during a pause are kept until you resume or empty the queue. Nothing else, and nothing about people beyond their public display name. It collects nothing from the people who visit your site.",
+    "fr": "L'overlay garde, quelques minutes au plus, le pseudo public et le montant des événements Twitch qu'il va afficher, et les références des dernières alertes montrées, pour que rien ne s'affiche deux fois après un redémarrage. Les alertes retenues pendant une pause sont gardées jusqu'à la reprise ou jusqu'au vidage de la file. Rien d'autre, et rien sur les personnes au-delà de leur pseudo public. Il ne collecte rien chez les personnes qui visitent votre site."
   },
   "mcp": [
     {
       "name": "alert_templates_get",
       "readOnly": true,
       "default": false,
-      "description": "Read how the Twitch alerts of the overlay are written: for each type (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) whether it is on, its text template (null = the default sentence), its duration in seconds (null = the module default) and its minimum (bits, gifted subs, viewers or points; null = none), the words a template may use ({name}, {count}, {amount}, {tier}, {months}, {viewers}, {level}, {title}, {text}, {total}), and the state of the queue (paused, held alerts).",
+      "description": "Read how the Twitch alerts of the overlay are written. For each type (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) whether it is on, its text template (null = the default sentence), its duration in seconds (null = the module default) and its minimum (bits, gifted subs, viewers or points; null = none), the words a template may use (name, count, amount, tier, months, viewers, level, title, text, total, each written between braces in a text), and the state of the queue (paused, held alerts).",
       "input": {
         "type": "object",
         "properties": {}
@@ -771,7 +771,7 @@
     {
       "name": "alert_template_update",
       "default": false,
-      "description": "Change one type of Twitch alert: switch it on or off (enabled), set its text (text: plain words with the words between braces listed by alert_templates_get; an empty text restores the default sentence), its duration (durationSeconds 2 to 60, 0 = default) or its minimum (minimum: bits, gifted subs, viewers or points, 0 = none; only for cheer, gift, raid, redeem). Unknown words in a text are refused with an explanation. Nothing is deleted and nothing is sent to the screen.",
+      "description": "Change one type of Twitch alert. You can switch it on or off (enabled), set its text (text: plain words with the words between braces listed by alert_templates_get; an empty text restores the default sentence), its duration (durationSeconds 2 to 60, 0 = default) or its minimum (minimum: bits, gifted subs, viewers or points, 0 = none; only for cheer, gift, raid, redeem). Unknown words in a text are refused with an explanation. Nothing is deleted and nothing is sent to the screen.",
       "input": {
         "type": "object",
         "required": [

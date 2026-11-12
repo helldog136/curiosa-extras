@@ -37,7 +37,7 @@ test("manifeste : version mineure, consomme live.event (schéma), permission top
   assert.ok(!manifest.requires, "aucune dépendance forte");
   const s = manifest.settings.find((x) => x.key === "youtubeText");
   assert.equal(s.type, "boolean"); assert.equal(s.default, false); assert.ok(!s.advanced);
-  assert.deepEqual(manifest.settings.map((x) => x.key), ["pushToken", "youtubeText", "visual", "accentColor", "durationSeconds", "transitionIn", "transitionOut", "transitionSeconds", "minGapSeconds", "ignoreNames", "twitchText", "groupSeconds"]);
+  assert.deepEqual(manifest.settings.map((x) => x.key), ["pushToken", "youtubeText", "visual", "accentColor", "durationSeconds", "minGapSeconds", "ignoreNames", "twitchText", "groupSeconds", "transitionIn", "transitionOut", "transitionSeconds"]);
   const fr = readJson("locales/fr.json"), en = readJson("locales/en.json");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const src = fs.readFileSync(`${DIR}/index.mjs`, "utf8");

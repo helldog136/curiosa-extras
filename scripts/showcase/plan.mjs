@@ -33,7 +33,7 @@ export const PLAN = {
   "twitch-raid": adminOnly,
   "twitch-events": [{ file: "admin.webp", kind: "admin", prep: async (page) => { await page.getByPlaceholder("Search the events").first().evaluate((e) => e.scrollIntoView({ block: "start" })); await page.waitForTimeout(300); } }, { file: "types.webp", kind: "admin", tab: "types" }, ...(process.env.SHOT_EXTRA === "1" ? [{ file: "admin-mobile.webp", kind: "admin", view: "mobile", prep: async (page) => { await page.getByPlaceholder("Search the events").first().evaluate((e) => e.scrollIntoView({ block: "start" })); await page.waitForTimeout(300); } }, { file: "types-mobile.webp", kind: "admin", tab: "types", view: "mobile" }] : [])],
   "twitch-bot": [{ file: "admin.webp", kind: "admin", prep: async (page) => { await page.getByText("All your commands").first().evaluate((e) => e.scrollIntoView({ block: "start" })); await page.waitForTimeout(300); } }],
-  "alerts-overlay": [{ file: "admin.webp", kind: "admin" }, overlay({
+  "alerts-overlay": [{ file: "admin.webp", kind: "admin" }, { file: "twitch.webp", kind: "admin", tab: "twitch" }, ...(process.env.SHOT_EXTRA === "1" ? [{ file: "admin-mobile.webp", kind: "admin", view: "mobile" }, { file: "twitch-mobile.webp", kind: "admin", tab: "twitch", view: "mobile" }] : []), overlay({
     wait: 2500,
     prep: async (page, { base, instances }) => {
       const i = instances.find((x) => x.moduleId === "alerts-overlay");

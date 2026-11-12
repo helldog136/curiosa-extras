@@ -4,27 +4,33 @@
     {
       "id": "alerts-overlay",
       "name": "Alerts overlay (OBS)",
-      "description": "A pop-up for OBS that shows your alerts (new follower, sub, raid…), sent by your stream tools or by YouTube.",
+      "description": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
       "i18n": {
         "en": {
           "name": "Alerts overlay (OBS)",
-          "description": "A pop-up for OBS that shows your alerts (new follower, sub, raid…), sent by your stream tools or by YouTube."
+          "description": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains."
         },
         "fr": {
           "name": "Overlay alertes (OBS)",
-          "description": "Une fenêtre pour OBS qui affiche vos alertes (follow, sub, raid…), envoyées par vos outils de stream ou YouTube."
+          "description": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.61.0",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔",
       "requires": {
         "core": "0.6.0"
-      }
+      },
+      "offers": [
+        {
+          "service": "alerts.queue",
+          "each": true
+        }
+      ]
     },
     {
       "id": "audience",

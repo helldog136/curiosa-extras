@@ -1,10 +1,13 @@
 ## What it does
 
-A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.
+A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.
 
 - Add the overlay address as a browser source in OBS.
 - Send a test alert with one button.
 - Choose the accent colour and how many seconds an alert stays.
+- Show your Twitch events with Twitch activity: one text, duration and minimum for each type.
+- Alerts wait their turn, and gifts or follows in a burst become one alert.
+- Pause the alerts during a quiet moment: nothing is lost.
 - Show the text of YouTube messages, if you want.
 - Choose how the alert enters and leaves: slide from a side, fade, jiggle or pop.
 
@@ -12,6 +15,7 @@ A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid.
 
 - You choose the look and the accent colour.
 - You can check the result before going live.
+- Nothing is shown twice, even after a restart.
 
 ## How it looks
 
@@ -21,9 +25,13 @@ A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid.
 ![Alerts overlay (OBS) overlay in OBS, on a dark background](shot:overlay.webp)
 *What your audience sees in OBS.*
 
+![Alerts overlay, the Twitch events tab, with demo data](shot:twitch.webp)
+*One row per type: text, duration, minimum and a switch.*
+
 ## Works well with
 
 - [My Twitch channel](entry:twitch-channel)
+- [Twitch activity](entry:twitch-events)
 - [YouTube live actions](entry:youtube-live-actions)
 
 ## Good to know
@@ -33,4 +41,4 @@ A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid.
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.3.0.
+Available since version 1.0.0. Current version: 1.4.0.
