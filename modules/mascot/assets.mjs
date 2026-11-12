@@ -7,11 +7,15 @@ const S = await import(new URL(`./store.mjs${v}`, import.meta.url).href);
 const F = await import(new URL(`./face.mjs${v}`, import.meta.url).href);
 const K = await import(new URL(`./client.mjs${v}`, import.meta.url).href);
 const Y = await import(new URL(`./style.mjs${v}`, import.meta.url).href);
+const P = await import(new URL(`./play.mjs${v}`, import.meta.url).href);
 
 /** Must stay equal to `version` of module.json (a test checks it): it is part of the address of the style sheet. */
-export const VERSION = "1.2.0";
+export const VERSION = "1.4.0";
 export const CSS = Y.CSS;
 export const cssHash = M.hash(`${VERSION}|${Y.CSS}`);
+/** The style sheet with the animation rules (`mascot.css?a=1`): asked for only when an animation is set, so the address of the plain one never changes. */
+export const ANIM_CSS = Y.ANIM_CSS;
+export const animCssHash = M.hash(`${VERSION}|${Y.CSS}|${Y.ANIM_CSS}`);
 
 /** The settings of the core, read and bounded. */
 export function readSettings(ctx) {
@@ -40,13 +44,19 @@ export async function buildClient(ctx) {
   const alt = S.altFor(ctx, config);
   const image = config.look === "image" && config.image && alt ? config.image : "";
   const key = ctx.instance.key;
+  // 1.3.0: the same animations as the overlay element (one set, uploaded once). Nothing set: the code, the configuration and the style sheet address are exactly those of before.
+  const idle = M.animForPage(config.anim.idle), talk = M.animForPage(config.anim.talk), moving = Boolean(idle || talk);
   const cfg = {
-    k: key, l: ctx.locale, b: `/m/${key}`, c: `/m/${key}/mascot.css?v=${cssHash}`,
+    k: key, l: ctx.locale, b: `/m/${key}`, c: moving ? `/m/${key}/mascot.css?v=${animCssHash}&a=1` : `/m/${key}/mascot.css?v=${cssHash}`,
     p: set.corner, w: set.where, g: set.pages, d: set.delay, s: set.show, m: set.max, n: name,
     i: image ? { s: image, a: alt, r: config.crop !== "square" } : null,
     u: { x: ctx.t("uiClose"), p: ctx.t("uiReduce"), u: ctx.t("uiNormal"), m: ctx.t("uiMute"), g: ctx.t("uiGo"), o: ctx.t("uiOpen", { name }) },
   };
-  const code = `(${K.mascotClient.toString()})(${JSON.stringify(cfg)},${F.drawFace.toString()},${M.pathMatches.toString()});\n`;
+  let code = `(${K.mascotClient.toString()})(${JSON.stringify(cfg)},${F.drawFace.toString()},${M.pathMatches.toString()});\n`;
+  if (moving) {
+    const r = M.readingOf(config.reading);
+    code += `(${P.mascotSiteAnim.toString()})(${JSON.stringify({ idle, talk, cps: M.SPEEDS[r.speed], min: r.min, max: r.max })},${M.talkSeconds.toString()},${P.mascotPlayer.toString()});\n`;
+  }
   const hash = M.hash(`${VERSION}|${code}`);
   return { cfg, hash, code, src: `/m/${key}/mascot.js?lang=${encodeURIComponent(ctx.locale)}&v=${hash}` };
 }

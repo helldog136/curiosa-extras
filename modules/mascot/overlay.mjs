@@ -76,7 +76,7 @@ export const resetOverlayCache = () => cache.clear();
 /** What moves and speaks (1.2.0): the two animations, the reading time and the voice, as the page needs them. Nothing configured gives the plain page of before. */
 export function effects(ctx, config, name) {
   const idle = M.animForPage(config.anim.idle), talk = M.animForPage(config.anim.talk);
-  const voice = M.voiceForPage(config.voice, ctx.setting("voiceFile"), ctx.locale);
+  const voice = M.voiceForPage(config.voice, M.soundOf(config.voice, ctx.setting("voiceFile")), ctx.locale);
   return { idle, talk, voice, reading: config.reading, alt: S.altFor(ctx, config) || name };
 }
 

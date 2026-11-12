@@ -25,7 +25,7 @@ const get = (url) => new Request(`https://example.test${url}`);
 const MODULES = [
   { name: "Overlay défilant", dir: "ticker-overlay", def: tk, id: "banner", fit: "scale", version: "1.2.0", minCore: "0.6.0" },
   { name: "Témoignages", dir: "testimonials", def: T.def, id: "reviews", fit: "fluid", version: "1.3.1", minCore: "0.6.0" },
-  { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.2.0", minCore: "0.6.5" },
+  { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.4.0", minCore: "0.10.0" },
 ];
 /** Ce que le cœur ajoute à l'adresse de l'élément : taille du cadre, style commun, options. */
 const frame = (extra = "", w = 640, h = 140, fit = "scale") => new URLSearchParams(`ov-w=${w}&ov-h=${h}&ov-fit=${fit}&ov-lang=fr&ov-text=light&ov-surface=transparent&ov-corners=round${extra ? `&${extra}` : ""}`);

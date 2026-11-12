@@ -4,6 +4,32 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.69.0 — 2026-11-12
+
+*En bref : la Mascotte (1.4.0) anime aussi la mascotte du coin de votre site, avec les mêmes animations que sur l'overlay (rien de plus à régler, aucun son, rien de téléchargé avant qu'elle se montre), et votre propre son devient un vrai fichier son (MP3, OGG, WAV, M4A ou AAC) envoyé dans l'onglet « Voix ». Elle demande maintenant Curiosa 0.10.0. Ce que vous aviez déjà réglé continue de marcher, et sans animation la mascotte du coin est exactement ce qu'elle était.*
+
+*In short: the Mascot (1.4.0) also animates the mascot in the corner of your site, with the same animations as on the overlay (nothing more to set, no sound, nothing downloaded before it shows), and your own sound becomes a real sound file (MP3, OGG, WAV, M4A or AAC) sent in the "Voice" tab. It now needs Curiosa 0.10.0. What you already set keeps working, and without an animation the corner mascot is exactly what it was.*
+
+### Nouveautés
+
+- **La mascotte du coin de votre site bouge aussi.** L'animation d'attente joue sur son avatar, et quand une bulle s'ouvre l'animation de parole joue le temps de lire la phrase, puis celle d'attente revient. Les mêmes images que sur l'overlay : vous les envoyez une fois, dans l'onglet « Animation ». Rien ne bouge dans la page : l'image se pose sur l'avatar, qui garde sa taille.
+- **Silencieuse et légère.** Aucun son sur les pages de votre site. Rien n'est téléchargé avant que la mascotte se montre. Un onglet caché arrête les images ; avec « mouvement réduit », seule la première image est montrée.
+- **Limites, en toute honnêteté.** Une page ne peut pas figer un GIF animé : avec « mouvement réduit », le dessin reste. Un onglet caché ne peut pas arrêter un GIF (le navigateur le ralentit). Vérifié dans un vrai navigateur (Chrome) ; pas sur tous les appareils.
+- **Votre propre son est un vrai fichier son** (MP3, OGG, WAV, M4A ou AAC), envoyé dans l'onglet « Voix », là où il sert, avec un lecteur pour l'écouter. Le champ n'apparaît qu'avec « Votre propre son » et avec les petits sons réglés sur « Votre propre son ». OGG ou WAV sont les meilleurs pour les petits sons (MP3 et AAC commencent par un petit silence). 4 Mo au plus ; le fichier que vous remplacez ou retirez est supprimé de votre site.
+- **Rien à convertir.** Un court son MP4 ou WebM choisi avec la version précédente continue de marcher (l'ancien réglage est maintenant sous « Fichier son d'avant », avancé) ; un son envoyé dans le formulaire passe avant.
+- **L'administration le montre.** L'aperçu de l'onglet « Ma mascotte » montre la première image de l'animation d'attente, et l'onglet « Animation » a un lien pour la voir sur votre site.
+- **The mascot in the corner of your site moves too.** The idle animation plays over its avatar, and when a bubble opens the talking animation plays for the time the sentence takes to read, then the idle one comes back. Same pictures as on the overlay: you send them once, in the "Animation" tab. Nothing moves on the page: the picture lies over the avatar, which keeps its size.
+- **Silent and light.** No sound on the pages of your site. Nothing is downloaded before the mascot shows. A hidden tab stops the pictures; with reduced motion only the first picture shows.
+- **Honest limits.** A page cannot freeze an animated GIF: with reduced motion the plain drawing stays. A hidden tab cannot stop a GIF (the browser slows it down). Checked in a real browser (Chrome); not on every device.
+- **Your own sound is a real sound file** (MP3, OGG, WAV, M4A or AAC), sent in the "Voice" tab, right where it is used, with a player to listen to it. The field shows with "Your own sound" and with the blips set to "Your own sound". OGG or WAV are best for the blips (MP3 and AAC begin with a tiny silence). 4 MB at most; the file you replace or remove is deleted from your site.
+- **Nothing to convert.** A short MP4 or WebM sound chosen with the previous version keeps working (the old setting is now under "Older sound file", advanced); a sound sent in the form wins over it.
+- **The admin shows it.** The preview of the tab "My mascot" shows the first picture of the idle animation, and the "Animation" tab has a link to see it on your site.
+
+### Pour les développeurs
+
+- Mascot 1.4.0 (1.3.0 and 1.4.0 ship together): `mascotSiteAnim` (`play.mjs`) is appended to the visitor script only when an animation is set (`MutationObserver` on the mascot, its bubble and its avatar; `client.mjs` untouched: with nothing set, `code`, `cfg` and the style sheet address are byte for byte those of 1.2.0); `ANIM_CSS` served by `mascot.css?a=1`. Audio: `AUDIO_EXTS`, `SOUND_EXTS` (audio + `mp4|webm`), `uploadAudio`, `soundOf`; `kind: "audio"` field in the Voice form; `voiceFile` is `type: "audio"` (advanced); `minCore` 0.10.0. Détail : `docs/changelog-parts/mascot-site-animation.md`, `docs/changelog-parts/mascot-audio.md`.
+- Tests: `tests/mascot-site-anim.test.mjs` (the visitor script in the fake browser with a `MutationObserver`), three audio tests in `tests/mascot-motion.test.mjs` (core 0.10.0); real Chrome checks in `tests/visual/render-site-mascot.mjs` and `shoot-site-mascot.cjs`.
+
 ## 1.68.0 — 2026-11-12
 
 *En bref : l'Overlay alertes (1.7.0) peut jouer votre propre fichier son pour chaque type d'alerte (MP3, Ogg, WAV, M4A ou AAC). Demande Curiosa 0.10.0. Rien à régler : aucun fichier son tant que vous n'en ajoutez pas.*
