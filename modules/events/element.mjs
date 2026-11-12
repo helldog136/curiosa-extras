@@ -23,6 +23,11 @@ export function tokens(params) {
   return `:root{--ov-fg:${light ? "#ffffff" : "#111111"};--ov-surface:${soft ? (light ? "rgba(0,0,0,.55)" : "rgba(255,255,255,.7)") : "transparent"};--ov-radius:${square ? "0px" : "12px"};--ov-border:${soft ? (light ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)") : "transparent"}}`;
 }
 
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `:root{--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv))}`;
+
 /** Le délai écrit pour la page : « En cours », « Aujourd'hui », « Demain », « Dans 3 jours » (jours comptés dans le fuseau de l'événement). */
 function delayText(ctx, ev, now) {
   if (ev.startMs <= now) return ctx.t("ovNow");
@@ -54,13 +59,13 @@ export async function dataFor(ctx, params, now = Date.now()) {
 }
 
 const CSS = `html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-family:system-ui,sans-serif}
-[data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.6em .8em;overflow:hidden;font-size:var(--ev-fs,20px);line-height:1.2;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
+[data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.6em .8em;overflow:hidden;font-size:var(--ov-text-sm,28px);line-height:1.2;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
 [data-ov-part="panel"][hidden]{display:none}
 .ev-body{margin:auto 0;width:100%;min-width:0;display:flex;flex-direction:column;gap:.3em}
-[data-ov-part="title"]{margin:0;font-size:.75em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
-[data-ov-part="name"]{font-size:1.5em;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
-[data-ov-part="text"]{font-size:.95em;font-weight:500;overflow-wrap:anywhere}
-[data-ov-part="badge"]{align-self:flex-start;margin-top:.2em;padding:.2em .7em;border-radius:999px;border:.1em solid currentColor;font-size:.8em;font-weight:700;white-space:nowrap}`;
+[data-ov-part="title"]{margin:0;font-size:var(--ov-text-xs,24px);font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+[data-ov-part="name"]{font-size:var(--ov-text-lg,40px);font-weight:800;line-height:1.1;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-ov-part="text"]{font-size:var(--ov-text-sm,28px);font-weight:500;overflow-wrap:anywhere;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-ov-part="badge"]{align-self:flex-start;margin-top:.2em;padding:.2em .7em;border-radius:999px;border:.1em solid currentColor;font-size:var(--ov-text-xs,24px);font-weight:700;white-space:nowrap}`;
 
 const JS = String.raw`(function () {
   "use strict";
@@ -70,22 +75,21 @@ const JS = String.raw`(function () {
     var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     return w > 0 && h > 0 && body.offsetHeight <= h + 1 && body.scrollWidth <= w + 1;
   }
-  function fit() {
-    if (!body) return;
-    var lo = 8, hi = 64;
-    for (var i = 0; i < 9; i++) { var mid = (lo + hi) / 2; p.style.setProperty("--ev-fs", mid + "px"); if (fits()) lo = mid; else hi = mid; }
-    p.style.setProperty("--ev-fs", lo + "px");
-  }
   function render(d) {
     last = d; body = null; p.textContent = ""; p.hidden = true;
     if (!d || d.state !== "ok" || !d.event) return;   // rien à venir (ou état inconnu) : RIEN n'est dessiné, pas même le cadre
-    var e = d.event; body = el("div"); body.className = "ev-body";
-    if (c.opts.title) body.appendChild(el("h2", "title", c.t.title));
-    body.appendChild(el("div", "name", e.title));
-    body.appendChild(el("div", "text", e.when));
-    if (e.place) body.appendChild(el("div", "text", e.place));
-    if (e.delay) body.appendChild(el("div", "badge", e.delay));
-    p.appendChild(body); p.hidden = false; fit();
+    var e = d.event;
+    // TV type scale: the text keeps its size, so the least useful lines are left out (the label, then the place, then the delay) until the rest fits.
+    for (var skip = 0; skip < 5; skip++) {
+      body = el("div"); body.className = "ev-body";
+      if (c.opts.title && skip < 1) body.appendChild(el("h2", "title", c.t.title));
+      var nm = el("div", "name", e.title); nm.title = e.title; if (skip > 3) nm.style.webkitLineClamp = "1"; body.appendChild(nm);
+      body.appendChild(el("div", "text", e.when));
+      if (e.place && skip < 2) { var pl = el("div", "text", e.place); pl.title = e.place; body.appendChild(pl); }
+      if (e.delay && skip < 3) body.appendChild(el("div", "badge", e.delay));
+      p.textContent = ""; p.appendChild(body); p.hidden = false;
+      if (fits()) break;
+    }
   }
   function tick() {
     if (c.demo) return;
@@ -104,7 +108,7 @@ const JS = String.raw`(function () {
 /** La page de l'élément. `first` : ce que le serveur a lu à l'instant ; ensuite le script redemande à `data` (mêmes paramètres que la page). */
 export function page(params, { lang, first, data, labels, demo = false }) {
   const config = JSON.stringify({ lang, first, data, t: labels, demo, opts: readOptions(params), base: 120_000, max: 300_000 }).replace(/</g, "\\u003c");
-  return `<!doctype html><html lang="${X.safeLang(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Events</title><style>${tokens(params)}\n${CSS}</style></head><body><div id="ev" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__EV=${config};${JS}</script></body></html>`;
+  return `<!doctype html><html lang="${X.safeLang(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Events</title><style>${tvTokens(tvOf(params))}${tokens(params)}\n${CSS}</style></head><body><div id="ev" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__EV=${config};${JS}</script></body></html>`;
 }
 
 /** En-têtes : sa propre politique de sécurité (aucun chargement tiers, seulement le site pour relire l'agenda), jamais de cache. */

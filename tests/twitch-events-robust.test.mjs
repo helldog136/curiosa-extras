@@ -10,7 +10,7 @@ const lines = (ctx) => S.recent(ctx, 1000);
 /** Brings the world to "everything works" at `at`. */
 async function up(w, at = NOW) {
   w.tw.autoEnable = true;
-  await L.ensureListening(w.ctx, S0);               // creates the subscriptions (pending)
+  await L.ensureListening(w.ctx, S0, { now: at });  // creates the subscriptions (pending), at the same simulated time (it used the real clock: the test then depended on the minute of the hour)
   return C.check(w.ctx, S0, { now: at });           // Twitch verified them: listening
 }
 const fol = (login, at, id = login) => ({ user_id: id, user_login: login, user_name: login, followed_at: new Date(at).toISOString() });

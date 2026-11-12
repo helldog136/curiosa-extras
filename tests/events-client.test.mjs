@@ -20,7 +20,7 @@ test("le script est un vrai fichier du dossier scripts/ (32 Ko au plus), sans ev
   assert.ok(Buffer.byteLength(code) <= 32 * 1024);
   assert.ok(!/\beval\s*\(|new Function|fetch\s*\(|XMLHttpRequest|setInterval|setTimeout|localStorage|document\.cookie/.test(code));
   assert.ok(!/formation|masterclass|association/i.test(code));
-  assert.equal(manifest.minCore, "0.6.0");
+  assert.equal(manifest.minCore, "0.11.0");
 });
 
 test("visiteur dans un autre fuseau : phrase en toutes lettres en français et en anglais", () => {

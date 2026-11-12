@@ -5,9 +5,9 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.7.6",
+  "version": "2.8.0",
   "menuGroup": "tools",
-  "minCore": "0.5.0",
+  "minCore": "0.11.0",
   "description": {
     "fr": "Affiche vos prochains streams dans l'apparence de votre choix : liste, alternance, semaine, timeline, affiches… Les streams viennent de votre Google Agenda ou de ce que vous écrivez à la main.",
     "en": "Shows your upcoming streams in the look you choose: list, zigzag, week, timeline, posters… Streams come from your Google Calendar or from what you write by hand."
@@ -767,6 +767,7 @@
         "height": 280
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {
@@ -878,6 +879,7 @@
         "height": 160
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {

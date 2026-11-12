@@ -29,7 +29,7 @@ for (const [id, exp] of Object.entries(EXPECTED)) {
     for (const k of exp.rare) { assert.equal(byKey.get(k).rare, true, `${k} est rare`); assert.ok(!byKey.get(k).advanced, `${k} : pas rare ET avancé`); }
     for (const k of exp.advanced) assert.equal(byKey.get(k).advanced, true, `${k} est avancé`);
     for (const [k, v] of Object.entries(exp.defaults)) assert.deepEqual(byKey.get(k).default, v, `le défaut de « ${k} » ne change pas`);
-    assert.equal(m.minCore, "0.6.0", "`rare` demande le cœur 0.6.0");
+    assert.ok(["0.6.0", "0.11.0"].includes(m.minCore), "`rare` demande le cœur 0.6.0 (0.11.0 pour les éléments à l'échelle TV)");
     const perTab = new Map();
     for (const s of m.settings) if (!s.advanced && !s.rare) { const k = `${s.tab ?? "settings"}${s.group === "appearance" ? "/apparence" : ""}`; perTab.set(k, (perTab.get(k) ?? 0) + 1); }
     for (const [tab, n] of perTab) assert.ok(n <= 7, `${tab} : ${n} réglages simples`);

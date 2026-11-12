@@ -185,21 +185,25 @@ export const OVERLAY_JS = String.raw`(function () {
     for (var i = 0; i < ends.length; i++) ends[i].textContent = clock(Date.parse(ends[i].getAttribute("data-end")) - now());
     schedClock();
   }
-  // Dans une page d'overlay : la police s'ajuste à la taille réelle du cadre, de façon que rien ne déborde (recherche entre 10 et 48 px).
+  // Dans une page d'overlay, échelle TV du cœur : le texte garde sa taille (jamais sous 24 px), donc ce qui ne tient pas est laissé de côté :
+  // le pied, l'état, les dernières personnes tirées (une au moins), puis les titres sont coupés par « … ».
   function fit() {
     if (!c.el) return;
     var p = box.firstElementChild, b = p && p.firstElementChild;
     if (!b) return;
-    var lo = 10, hi = 48;
-    for (var i = 0; i < 7; i++) {
-      var mid = (lo + hi) / 2;
-      box.style.setProperty("--dw-fs", mid + "px");
+    box.removeAttribute("data-tv"); box.removeAttribute("data-q");
+    function ok() {
       var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      if (b.offsetHeight <= h + 1 && b.scrollWidth <= w + 1) lo = mid; else hi = mid;
+      return b.offsetHeight <= h + 1 && b.scrollWidth <= w + 1;
     }
-    box.style.setProperty("--dw-fs", lo + "px");
+    var n = 0;
+    while (!ok() && n < 2) { n++; box.setAttribute("data-tv", String(n)); }
+    var li = b.querySelectorAll('[data-ov-part="winner"]');
+    while (!ok() && li.length > 1) { li[li.length - 1].remove(); li = b.querySelectorAll('[data-ov-part="winner"]'); }
+    if (!ok()) box.setAttribute("data-q", "2");
+    if (!ok()) box.setAttribute("data-q", "1");
   }
-  if (c.el) addEventListener("resize", function () { fit(); });
+  if (c.el) addEventListener("resize", function () { if (cur) render(cur); });
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(tick, ms); }
   function tick() {
     if (document.hidden) { schedule(c.base * 4); return; }
@@ -226,6 +230,11 @@ export const OVERLAY_JS = String.raw`(function () {
 })();
 `;
 
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (query) => { const t = Number(query.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
+
 /** La feuille de style : jetons --ov-* de la page d'overlay (avec repli sur les couleurs du site pour l'overlay seul), morceaux décrits par data-ov-part, jamais le skin du site. */
 export function overlayCss(query, { accent, fg, card, font, el }) {
   const given = query.has("ov-text"), dark = query.get("ov-text") === "dark", soft = query.get("ov-surface") === "soft", square = query.get("ov-corners") === "square";
@@ -241,11 +250,17 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:${font || 
 [data-ov-part="how"]{margin:0;font-weight:600}
 [data-ov-part="foot"]{margin:0;font-size:.8em;opacity:.85;overflow-wrap:anywhere}`;
   if (el) {
-    return `${base}
-[data-ov-region="element"]{position:fixed;inset:0;overflow:hidden;font-size:var(--dw-fs,18px);line-height:1.25;color:var(--ov-fg,${fg});${shadow}--dw-accent:${accent}}
+    return `:root{${tvTokens(tvOf(query))}}${base}
+[data-ov-region="element"]{position:fixed;inset:0;overflow:hidden;font-size:var(--ov-text-md,32px);line-height:1.25;color:var(--ov-fg,${fg});${shadow}--dw-accent:${accent}}
 [data-ov-part="panel"]{box-sizing:border-box;height:100%;display:flex;flex-direction:column;padding:.6em .8em;background:var(--ov-surface,${card});border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,.9em);overflow:hidden}
 [data-ov-part="body"]{margin:auto 0;display:flex;flex-direction:column;gap:.5em;min-width:0}
-[data-ov-part="title"]{font-size:1.3em}[data-ov-part="winner"]{font-size:1.5em}
+[data-ov-part="title"]{font-size:var(--ov-text-lg,40px)}[data-ov-part="winner"]{font-size:var(--ov-text-xl,56px)}
+[data-ov-region="element"] [data-ov-part="status"],[data-ov-region="element"] [data-ov-part="foot"]{font-size:var(--ov-text-xs,24px)}
+[data-ov-region="element"] [data-ov-part="how"]{font-size:var(--ov-text-sm,28px)}
+#dw-box[data-tv="1"] [data-ov-part="foot"],#dw-box[data-tv="2"] [data-ov-part="foot"]{display:none}
+#dw-box[data-tv="2"] [data-ov-part="status"]{display:none}
+#dw-box[data-q] [data-ov-part="title"],#dw-box[data-q] [data-ov-part="winner"],#dw-box[data-q] [data-ov-part="how"]{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:2}
+#dw-box[data-q="1"] [data-ov-part="title"],#dw-box[data-q="1"] [data-ov-part="winner"],#dw-box[data-q="1"] [data-ov-part="how"]{-webkit-line-clamp:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`;
   }
   return `${base}

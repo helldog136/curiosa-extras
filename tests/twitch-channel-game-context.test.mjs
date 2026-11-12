@@ -28,7 +28,7 @@ const session = (id, games, at = 1) => ({
 test("manifest : le contexte « jeu » est déclaré (libellé, interrupteur, exemple en FR et EN) et exige le cœur 0.8.0", () => {
   const parsed = parseManifest(manifest);
   assert.equal(parsed.ok, true, JSON.stringify(parsed.issues ?? parsed.error));
-  assert.equal(manifest.minCore, "0.8.0");
+  assert.equal(manifest.minCore, "0.11.0");
   const [c] = manifest.overlayContexts;
   assert.deepEqual([c.id, c.label.en, c.switchLabel.en, c.switchLabel.fr], ["game", "Game", "Skin per game", "Un skin par jeu"]);
   assert.ok(c.example.fr && c.example.en);

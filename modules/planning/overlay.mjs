@@ -25,7 +25,7 @@ const flag = (v, def) => (v === "1" || v === "true" ? true : v === "0" || v === 
 export function readParams(id, params) {
   const get = (k) => params.get(k) ?? undefined;
   const style = params.has("ov-text") ? { text: get("ov-text") === "dark" ? "dark" : "light", surface: get("ov-surface") === "soft" ? "soft" : "transparent", corners: get("ov-corners") === "square" ? "square" : "round" } : null;
-  const out = { id, width: int(get("ov-w"), 16, 7680, 1000), height: int(get("ov-h"), 16, 7680, 600), style, demo: get("ov-demo") === "1", covers: flag(get("opt-covers"), true) };
+  const out = { id, tv: tvOf(params), width: int(get("ov-w"), 16, 7680, 1000), height: int(get("ov-h"), 16, 7680, 600), style, demo: get("ov-demo") === "1", covers: flag(get("opt-covers"), true) };
   if (id === "week") {
     const look = get("opt-look");
     out.look = LOOKS.includes(look) ? look : "auto";
@@ -35,6 +35,15 @@ export function readParams(id, params) {
   }
   return out;
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
+/** The "Week schedule" element: the layouts size their text in rem, so the root size is set so that their smallest text (.62rem) is exactly the smallest token (24 px of canvas). */
+export const WEEK_ROOT = 24 / 0.62;
+/** The week layouts were drawn for a 16 px root: their rows and breakpoints grow by this factor. */
+export const WEEK_GROW = WEEK_ROOT / 16;
 
 /** Style commun -> jetons --ov-* (valeurs de docs/OVERLAY-ELEMENTS.md). Sans style (adresse ouverte à la main), une valeur sûre : texte clair, fond transparent. */
 export function tokensCss(style) {
@@ -85,17 +94,18 @@ const SURFACE = "overlay";
 export function lookFor(p) {
   if (p.id === "next") return "hero";
   if (p.look !== "auto") return p.look;
-  return p.width >= 704 && p.height >= 260 ? "week" : "classic";
+  const k = WEEK_GROW * (p.tv ?? 1);   // the text is TV-sized: the 7-column grid needs the room its text now takes
+  return p.width >= 704 * k && p.height >= 260 * k ? "week" : "classic";
 }
 
 /** Combien de streams tiennent dans la hauteur (rangées de 64 px environ, 120 pour les affiches) : borne le rendu avant même de le dessiner. */
 function fitCount(p, look) {
   const row = look === "posters" ? 150 : look === "timeline" ? 84 : 66;
-  return Math.max(1, Math.min(20, Math.floor((p.height - 24) / row)));
+  return Math.max(1, Math.min(20, Math.floor((p.height - 24) / (row * WEEK_GROW * 1.4 * (p.tv ?? 1)))));
 }
 
 /** Combien de lignes « à suivre » tiennent sous le prochain stream, textes à 24 px au moins. */
-const upNext = (p) => Math.min(p.more ?? 0, Math.max(0, Math.floor((p.height - 270) / (NEXT_SIZES.listRow * NEXT_SIZES.minPx))));
+const upNext = (p) => Math.min(p.more ?? 0, Math.max(0, Math.floor((p.height - 270 * (p.tv ?? 1)) / (NEXT_SIZES.listRow * NEXT_SIZES.minPx * (p.tv ?? 1)))));
 
 /** Les réglages d'apparence du module, adaptés au cadre : lus tels que la personne les a réglés (heures, jaquettes, jours…), sauf ce qui dépend de la taille. */
 function optionsFor(ctx, p, look) {
@@ -112,11 +122,11 @@ function optionsFor(ctx, p, look) {
  * venir des jetons de taille de texte du cœur (--ov-text-*) : il suffira de changer UNE ligne (`--uBase`).
  */
 export const NEXT_SIZES = { minPx: 24, maxPx: 96, rows: { full: 8.2, noGames: 6.7, compact: 4.1 }, listHead: 1.7, listRow: 3.3, pad: "max(16px,min(4cqh,2.5cqw))" };
-export const NEXT_CSS = minify(`
+export const nextCss = (tv = 1) => minify(`
 .pa.pa-fill{box-sizing:border-box;container-type:size;height:100%;width:100%;display:flex;flex-direction:column;justify-content:center;
-  --pad:${NEXT_SIZES.pad};--R:${NEXT_SIZES.rows.full};--Rx:0;--Ra:0;--umin:${NEXT_SIZES.minPx}px;--Wd:26;
+  --pad:${NEXT_SIZES.pad};--R:${NEXT_SIZES.rows.full};--Rx:0;--Ra:0;--umin:var(--ov-text-xs,${NEXT_SIZES.minPx}px);--Wd:26;
   --uBase:calc((100cqh - 2*var(--pad))/(var(--R) + var(--Rx) + var(--Ra)));
-  --u:clamp(var(--umin),min(var(--uBase),calc((100cqw - 2*var(--pad))/var(--Wd))),${NEXT_SIZES.maxPx}px);
+  --u:clamp(var(--umin),min(var(--uBase),calc((100cqw - 2*var(--pad))/var(--Wd))),calc(${NEXT_SIZES.maxPx}px*var(--ov-tv,1)));
   --pa-pad:0px;padding:var(--pad);font-size:var(--u);line-height:1.2;overflow:hidden}
 .pa-fill .pa-hr{flex:0 1 auto;flex-direction:row;align-items:center;justify-content:center;gap:calc(var(--u)*.9);padding:0;background:none;border:0;border-radius:0;overflow:visible;min-width:0}
 .pa-fill .pa-hr::before{display:none}
@@ -141,13 +151,14 @@ export const NEXT_CSS = minify(`
 .pa-fill .pa-hr-date b{font-size:calc(var(--u)*1.2)}
 .pa-fill .pa-hr-row .pa-title{font-size:calc(var(--u)*1.05);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pa-fill .pa-hr-meta{font-size:var(--u);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@container (max-height:${Math.round(NEXT_SIZES.rows.full * NEXT_SIZES.minPx + 44)}px){.pa-fill{--R:${NEXT_SIZES.rows.noGames}}.pa-fill .pa-games{display:none}}
-@container (max-height:${Math.round(NEXT_SIZES.rows.noGames * NEXT_SIZES.minPx + 40)}px){.pa-fill{--R:${NEXT_SIZES.rows.compact}}.pa-fill .pa-hr-eyebrow,.pa-fill .pa-hr-chips{display:none}}
-@container (max-height:${Math.round(NEXT_SIZES.rows.compact * NEXT_SIZES.minPx + 32)}px){.pa-fill{--umin:0px}}
-@container (max-width:${Math.round(26 * NEXT_SIZES.minPx + 32)}px){.pa-fill{--Wd:17}.pa-fill .pa-hr-art{display:none}}
-@container (max-width:${Math.round(17 * NEXT_SIZES.minPx + 32)}px){.pa-fill{--Wd:8}.pa-fill .pa-hr-day{display:none}}
+@container (max-height:${Math.round((NEXT_SIZES.rows.full * NEXT_SIZES.minPx + 44) * tv)}px){.pa-fill{--R:${NEXT_SIZES.rows.noGames}}.pa-fill .pa-games{display:none}}
+@container (max-height:${Math.round((NEXT_SIZES.rows.noGames * NEXT_SIZES.minPx + 40) * tv)}px){.pa-fill{--R:${NEXT_SIZES.rows.compact}}.pa-fill .pa-hr-eyebrow,.pa-fill .pa-hr-chips{display:none}}
+@container (max-height:${Math.round((NEXT_SIZES.rows.compact * NEXT_SIZES.minPx + 32) * tv)}px){.pa-fill{--umin:0px}}
+@container (max-width:${Math.round((26 * NEXT_SIZES.minPx + 32) * tv)}px){.pa-fill{--Wd:17}.pa-fill .pa-hr-art{display:none}}
+@container (max-width:${Math.round((17 * NEXT_SIZES.minPx + 32) * tv)}px){.pa-fill{--Wd:8}.pa-fill .pa-hr-day{display:none}}
 @container (aspect-ratio<1/1){.pa-fill{--Wd:15}.pa-fill .pa-hr-day{display:inline}.pa-fill .pa-hr{flex-direction:column;text-align:center}.pa-fill{--Ra:5}.pa-fill .pa-hr-art{display:block;--pa-cw:min(calc(var(--u)*3.75),60cqw)}.pa-fill .pa-hr-body{justify-items:center;grid-template-columns:minmax(0,1fr)}.pa-fill .pa-hr-eyebrow,.pa-fill .pa-hr-chips{grid-column:1}.pa-fill{--Ra:6.5}.pa-fill .pa-hr-when{justify-content:center;flex-wrap:wrap}}
 `);
+export const NEXT_CSS = nextCss(1);
 
 /** Le contenu de l'élément (HTML + style des apparences), pur : même entrée, même sortie. */
 export function renderContent(ctx, p, data, now = new Date()) {
@@ -169,7 +180,7 @@ export function renderContent(ctx, p, data, now = new Date()) {
     // « Prochain stream » : UNE seule enveloppe (le panneau de la page, jetons --ov-*). La carte de l'apparence ne peint donc ni fond ni bordure, et remplit le cadre.
     const extra = Math.min(upNext(p), Math.max(0, model.days.reduce((n, d) => n + d.slots.length, 0) - 1));
     const rx = extra ? NEXT_SIZES.listHead + extra * NEXT_SIZES.listRow : 0;
-    return `<div class="pa pa-${esc(frag.id)} pa-fill" data-density="${esc(opts.density)}" data-ov-part="planning" style="--Rx:${rx}"><style>${BASE_CSS}${minify(frag.css)}${NEXT_CSS}</style>${frag.html}</div>`;
+    return `<div class="pa pa-${esc(frag.id)} pa-fill" data-density="${esc(opts.density)}" data-ov-part="planning" style="--Rx:${rx}"><style>${BASE_CSS}${minify(frag.css)}${nextCss(p.tv)}</style>${frag.html}</div>`;
   }
   return `<div class="pa pa-${esc(frag.id)}" data-density="${esc(opts.density)}" data-ov-part="planning"><style>${BASE_CSS}${minify(frag.css)}</style>${frag.html}</div>`;
 }
@@ -200,7 +211,7 @@ body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 `;
 
 const SCRIPT = `(function(){
-var P=document.getElementById('p'),R=document.getElementById('r'),MIN=.55;
+var P=document.getElementById('p'),R=document.getElementById('r'),MIN=1;
 function fit(){if(P.className==='fill')return;R.style.zoom='';R.classList.remove('cut');var avail=P.clientHeight-24,s=1;
 for(var i=0;i<4;i++){var h=R.getBoundingClientRect().height;if(h<=avail+1||h===0)break;s=Math.max(MIN,s*avail/h);R.style.zoom=s;if(s<=MIN)break}
 if(R.getBoundingClientRect().height>avail+1)R.classList.add('cut')}
@@ -233,7 +244,7 @@ export async function elementResponse(request, ctx, deps) {
   if (url.searchParams.get("frag") === "1") return Response.json({ v, html: content }, { headers });
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const light = p.style?.text !== "dark";
-  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("title"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("title"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}}${BASE}${slug === "week" ? `html{font-size:calc(${WEEK_ROOT}px*var(--ov-tv,1))}body{font-size:1rem}` : ""}</style></head>` +
     `<body${light && p.style?.surface !== "soft" ? ' class="ov-shadow"' : ""}><div id="p"${slug === "next" ? ' class="fill"' : ""} data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(v)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }

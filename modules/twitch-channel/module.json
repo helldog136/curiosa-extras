@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.8.0",
+  "minCore": "0.11.0",
   "id": "twitch-channel",
   "name": {
     "en": "My Twitch channel",
     "fr": "Ma Chaîne Twitch"
   },
-  "version": "2.3.2",
+  "version": "2.4.0",
   "platform": "twitch",
   "description": {
     "en": "Makes your Twitch channel easier to showcase: header button, live status, latest clips and, once your channel is connected, your followers and paying subscribers. Also measures your lives (average and peak viewers, hours streamed and watched, followers per game) and the views of your videos.",
@@ -122,6 +122,7 @@
         "max": 10
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {
@@ -172,6 +173,7 @@
         "max": 10
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {

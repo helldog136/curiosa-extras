@@ -27,9 +27,14 @@ export function readParams(params) {
   return {
     width: int(get("ov-w"), 16, 7680, 1000), height: int(get("ov-h"), 16, 7680, 600),
     style: params.has("ov-text") ? { text: get("ov-text") === "dark" ? "dark" : "light", surface: get("ov-surface") === "soft" ? "soft" : "transparent", corners: get("ov-corners") === "square" ? "square" : "round" } : null,
-    demo: get("ov-demo") === "1", show: SHOWS.includes(show) ? show : "all", change: CHANGES.includes(change) ? change : "week",
+    tv: tvOf(params), demo: get("ov-demo") === "1", show: SHOWS.includes(show) ? show : "all", change: CHANGES.includes(change) ? change : "week",
   };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Style commun -> jetons --ov-* (valeurs de docs/OVERLAY-ELEMENTS.md). Sans style (adresse ouverte à la main) : texte clair, fond transparent. */
 export function tokensCss(style) {
@@ -84,6 +89,10 @@ export function gridFor(n, w, h) {
   }
   return { cols: best.cols, rows: best.rows };
 }
+/** The size of one tile of a grid (px of this window). */
+const tileOf = (g, w, h) => ({ tw: (w - 24 - (g.cols - 1) * 12) / g.cols, th: (h - 24 - (g.rows - 1) * 12) / g.rows });
+/** Smallest tile that keeps the TV minimum (a label under a number), in px of this window. */
+export const MIN_TILE = (tv) => ({ w: 150 * tv, h: 96 * tv });
 
 /** « ▲ +120 cette semaine » : l'évolution d'un compteur, ou rien quand on n'a pas assez d'historique (jamais un chiffre inventé). */
 function changeText(ctx, c, which) {
@@ -97,7 +106,11 @@ export function renderContent(ctx, p, summary) {
   const t = ctx.t;
   const chosen = (summary ?? []).filter((s) => p.show === "all" || s.metric === p.show).slice(0, MAX_TILES);
   if (!chosen.length) return p.demo ? `<p data-ov-part="empty" class="sc-empty">${esc(t("ovEmptyHint"))}</p>` : "";
-  const { cols, rows } = gridFor(chosen.length, p.width, p.height);
+  // On a TV the text never goes under 24 px of canvas: when the tiles would be smaller than that, the last counters are left out instead of shrinking the text.
+  const min = MIN_TILE(p.tv ?? 1);
+  let grid = gridFor(chosen.length, p.width, p.height), tile = tileOf(grid, p.width, p.height);
+  while (chosen.length > 1 && (tile.tw < min.w || tile.th < min.h)) { chosen.pop(); grid = gridFor(chosen.length, p.width, p.height); tile = tileOf(grid, p.width, p.height); }
+  const { cols, rows } = grid;
   const dup = (s) => chosen.filter((o) => o.platform === s.platform && o.metric === s.metric).length > 1;
   const tiles = chosen.map((s) => {
     const value = formatValue(ctx, s.value);
@@ -105,10 +118,10 @@ export function renderContent(ctx, p, summary) {
     return `<div data-ov-part="counter" class="sc-tile" data-metric="${esc(s.metric)}"><span data-ov-part="source" class="sc-src">${esc(dup(s) ? `${s.platformName} · ${s.account}` : s.platformName)}</span>` +
       `<span data-ov-part="value" class="sc-val" style="--n:${value.length}">${esc(value)}</span><span data-ov-part="label" class="sc-lab">${esc(t(`metric_${s.metric}`))}</span>${ch ? `<span data-ov-part="change" class="sc-chg">${esc(ch)}</span>` : ""}</div>`;
   }).join("");
-  return `<div data-ov-part="counters" class="sc-grid" style="--cols:${cols};--rows:${rows}">${tiles}</div>`;
+  return `<div data-ov-part="counters" class="sc-grid" style="--cols:${cols};--rows:${rows};--tc:${Math.round(tile.th)}">${tiles}</div>`;
 }
 
-const BASE = `
+const BASE = (tv) => `
 html,body{margin:0;height:100%;overflow:hidden;background:transparent}
 body{font:600 16px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ov-fg,#fff)}
 body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
@@ -117,13 +130,13 @@ body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 .sc-grid{box-sizing:border-box;height:100%;display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));grid-template-rows:repeat(var(--rows,1),minmax(0,1fr));gap:12px}
 .sc-tile{container-type:size;box-sizing:border-box;min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15em;padding:4px 8px;text-align:center;
  background:color-mix(in srgb,var(--ov-fg,#fff) 9%,transparent);border:1px solid color-mix(in srgb,var(--ov-fg,#fff) 22%,transparent);border-radius:var(--ov-radius,0)}
-.sc-src{font-size:clamp(10px,min(9cqh,5.5cqw),26px);color:color-mix(in srgb,var(--ov-fg,#fff) 72%,transparent);text-transform:uppercase;letter-spacing:.06em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sc-val{font-size:clamp(14px,min(34cqh,calc(92cqw / (var(--n,5) * .62))),200px);font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
-.sc-lab{font-size:clamp(11px,min(11cqh,6.5cqw),30px);color:var(--ov-fg,#fff)}
-.sc-chg{font-size:clamp(10px,min(9cqh,5cqw),24px);color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap}
-@container (max-height:120px){.sc-chg{display:none}}
-@container (max-height:80px){.sc-src{display:none}}
-.sc-empty{margin:0;padding:12px;font-weight:600;color:color-mix(in srgb,var(--ov-fg,#fff) 80%,transparent)}
+.sc-src{font-size:clamp(var(--ov-text-xs,24px),min(9cqh,5.5cqw),calc(26px*var(--ov-tv,1)));color:color-mix(in srgb,var(--ov-fg,#fff) 72%,transparent);text-transform:uppercase;letter-spacing:.06em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-val{font-size:clamp(var(--ov-text-lg,40px),min(34cqh,calc(92cqw / (var(--n,5) * .62))),calc(200px*var(--ov-tv,1)));font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sc-lab{font-size:clamp(var(--ov-text-xs,24px),min(11cqh,6.5cqw),calc(30px*var(--ov-tv,1)));color:var(--ov-fg,#fff)}
+.sc-chg{font-size:var(--ov-text-xs,24px);color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap}
+@container (max-height:${Math.round(150 * tv)}px){.sc-chg{display:none}}
+@container (max-height:${Math.round(118 * tv)}px){.sc-src{display:none}}
+.sc-empty{margin:0;padding:12px;font-size:var(--ov-text-sm,28px);font-weight:600;color:color-mix(in srgb,var(--ov-fg,#fff) 80%,transparent)}
 `;
 
 const SCRIPT = `(function(){var R=document.getElementById('r'),u=location.pathname+location.search+(location.search?'&':'?')+'frag=1',v=R.getAttribute('data-v'),n=0,wait=120000;
@@ -146,7 +159,7 @@ export async function elementResponse(request, ctx) {
   if (url.searchParams.get("frag") === "1") return Response.json({ v: vv, html: content }, { headers });
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const shadow = p.style?.text !== "dark" && p.style?.surface !== "soft";
-  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}}${BASE(p.tv)}</style></head>` +
     `<body${shadow ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(vv)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }

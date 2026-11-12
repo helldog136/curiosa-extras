@@ -33,7 +33,7 @@ const direct = async (c, key, rev = "") => (await def.routes.direct(req(directUr
 
 test("manifeste : un élément « draw », fluide, plage de ratios et taille minimale, suit le style, contenu d'exemple, une option « garder à l'écran » ; minCore 0.5.0 ; permission overlay", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.minCore, "0.5.0"); assert.ok(manifest.permissions.includes("overlay"));
+  assert.equal(manifest.minCore, "0.11.0"); assert.ok(manifest.permissions.includes("overlay"));
   assert.equal(manifest.overlayElements.length, 1);
   assert.deepEqual([decl.id, decl.fit, decl.followsStyle, decl.demo], ["draw", "fluid", true, true]);
   assert.deepEqual(decl.minSize, { width: 280, height: 160 });

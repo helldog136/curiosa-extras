@@ -46,43 +46,48 @@ export function tokens(params) {
   return `:root{--ov-fg:${light ? "#ffffff" : "#111111"};--ov-surface:${soft ? (light ? "rgba(0,0,0,.55)" : "rgba(255,255,255,.7)") : "transparent"};--ov-radius:${square ? "0px" : "12px"};--ov-border:${soft ? (light ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)") : "transparent"}}`;
 }
 
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `:root{--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv))}`;
+
 const CSS = `html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-family:system-ui,sans-serif}
-[data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.5em .7em;overflow:hidden;font-size:var(--tw-fs,20px);line-height:1.15;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
+[data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.5em .7em;overflow:hidden;font-size:var(--ov-text-md,32px);line-height:1.15;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
 [data-ov-part="body"]{margin:auto;display:flex;flex-direction:column;align-items:center;gap:.6em;max-width:100%;text-align:center}
 [data-ov-part="stat"]{display:flex;flex-direction:column;align-items:center;min-width:0}
-[data-ov-part="value"]{font-size:2.2em;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
-[data-ov-part="label"]{font-size:.8em;font-weight:600;opacity:.9;overflow-wrap:anywhere}
-[data-ov-part="badge"]{display:inline-flex;align-items:center;gap:.45em;padding:.3em .8em;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+[data-ov-part="value"]{font-size:var(--ov-text-xl,56px);font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
+[data-ov-part="label"]{font-size:var(--ov-text-xs,24px);font-weight:600;opacity:.9;overflow-wrap:anywhere}
+[data-ov-part="badge"]{font-size:var(--ov-text-sm,28px);display:inline-flex;align-items:center;gap:.45em;padding:.3em .8em;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 [data-ov-part="badge"][data-state="live"]{background:#c62828;color:#fff}
 [data-ov-part="badge"][data-state="offline"]{border:.12em solid currentColor;opacity:.85}
 [data-ov-part="dot"]{width:.6em;height:.6em;border-radius:50%;background:currentColor}
 [data-ov-part="badge"][data-state="live"] [data-ov-part="dot"]{animation:tw-pulse 1.6s ease-in-out infinite}
-[data-ov-part="game"]{font-size:.85em;font-weight:600;max-width:100%;overflow-wrap:anywhere}
+[data-ov-part="game"]{font-size:var(--ov-text-sm,28px);font-weight:600;max-width:100%;overflow-wrap:anywhere}
 [data-ov-part="panel"][hidden]{display:none}
 @keyframes tw-pulse{50%{opacity:.35}}
 @media (min-aspect-ratio:9/5){[data-ov-part="body"]{flex-direction:row;flex-wrap:wrap;justify-content:center;column-gap:1.6em}}
 @media (prefers-reduced-motion:reduce){[data-ov-part="dot"]{animation:none!important}}`;
 
-/** Le script de l'élément : dessine ce que le serveur a donné, le remet à jour doucement (intervalle qui s'allonge si rien ne change ou en cas d'erreur), ajuste la police à la taille du cadre. */
+/** Le script de l'élément : dessine ce que le serveur a donné, le remet à jour doucement (intervalle qui s'allonge si rien ne change ou en cas d'erreur), laisse de côté ce qui ne tient pas (le texte garde sa taille). */
 const JS = String.raw`(function () {
   "use strict";
-  var c = window.__TW, p = document.getElementById("tw"), body = null, rev = "", delay = c.base, errors = 0;
+  var c = window.__TW, p = document.getElementById("tw"), body = null, rev = "", delay = c.base, errors = 0, last = null;
   function el(tag, part, text) { var n = document.createElement(tag); n.setAttribute("data-ov-part", part); if (text !== undefined) n.textContent = text; return n; }
   function fmt(n) { try { return new Intl.NumberFormat(c.lang).format(n); } catch (e) { return String(n); } }
+  // TV type scale: the text keeps its size, so what does not fit is left out (the last figures, or the game) instead of shrinking the text.
+  function fits() {
+    var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    return w > 0 && h > 0 && body.offsetHeight <= h + 1 && body.scrollWidth <= w + 1;
+  }
   function fit() {
     if (!body) return;
-    var lo = 9, hi = 120;
-    for (var i = 0; i < 8; i++) {
-      var mid = (lo + hi) / 2;
-      p.style.setProperty("--tw-fs", mid + "px");
-      // l'espace disponible est relu à CHAQUE essai : les marges sont en « em », elles changent avec la taille de la police
-      var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      if (w > 0 && h > 0 && body.offsetHeight <= h + 1 && body.scrollWidth <= w + 1) lo = mid; else hi = mid;
-    }
-    p.style.setProperty("--tw-fs", lo + "px");
+    var stats = body.querySelectorAll('[data-ov-part="stat"]');
+    for (var i = stats.length - 1; i > 0 && !fits(); i--) stats[i].remove();
+    var g = body.querySelector('[data-ov-part="game"]');
+    if (g && !fits()) g.remove();
   }
   function render(d) {
-    p.textContent = ""; body = null;
+    last = d; p.textContent = ""; body = null;
     if (!d) return;
     if (c.kind === "stats" && d.rows && d.rows.length) {
       body = el("div", "body");
@@ -103,7 +108,7 @@ const JS = String.raw`(function () {
       .catch(function () { errors++; delay = Math.min(300000, Math.max(delay, c.base) * 2); })
       .then(function () { setTimeout(tick, document.hidden ? Math.max(delay, c.max) : delay); });
   }
-  addEventListener("resize", fit);
+  addEventListener("resize", function () { render(last); });
   rev = JSON.stringify(c.first); render(c.first);
   setTimeout(tick, delay);
 })();
@@ -115,7 +120,7 @@ const JS = String.raw`(function () {
  */
 export function page(kind, params, { lang, first, data, labels, demo = false }) {
   const config = JSON.stringify({ kind, lang, first, data, t: labels, demo, base: kind === "live" ? 30_000 : 120_000, max: kind === "live" ? 120_000 : 300_000 }).replace(/</g, "\\u003c");
-  return `<!doctype html><html lang="${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Twitch</title><style>${tokens(params)}\n${CSS}</style></head><body><div id="tw" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__TW=${config};${JS}</script></body></html>`;
+  return `<!doctype html><html lang="${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Twitch</title><style>${tvTokens(tvOf(params))}${tokens(params)}\n${CSS}</style></head><body><div id="tw" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__TW=${config};${JS}</script></body></html>`;
 }
 
 /** En-têtes de la page : sa propre politique de sécurité (aucun chargement tiers, seulement le site pour redemander les chiffres), jamais de cache, l'adresse secrète ne fuit pas par « Referer ». */

@@ -379,7 +379,7 @@ test("outils : Contacts muet → une phrase claire, jamais d'écriture à l'aveu
 /* ───────────── Le manifeste ───────────── */
 
 test("manifeste : Contacts v2 obligatoire, vie privée offerte, groupes et catégorie cachée en « choix parmi » (jamais un nom à taper), cœur 0.5.0 (éléments d'overlay depuis la 1.2.0)", () => {
-  assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.minCore, "0.11.0");
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min, r.optional]), [["contact.book", 2, undefined]]);
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]]);
   for (const key of ["category", "category2", "category3", "category4", "category5", "category6", "hide"]) {

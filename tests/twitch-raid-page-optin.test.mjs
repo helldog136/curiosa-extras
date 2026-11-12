@@ -107,7 +107,7 @@ test("textes par défaut NEUTRES en FR et EN : aucun « membres », « communaut
 });
 
 test("manifeste 2.2.2 : pageSetting désigne le réglage booléen publicPage (défaut faux), page: true, cœur 0.5.0", () => {
-  assert.equal(manifest.pageSetting, "publicPage"); assert.equal(manifest.page, true); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.pageSetting, "publicPage"); assert.equal(manifest.page, true); assert.equal(manifest.minCore, "0.11.0");
   const s = manifest.settings.find((x) => x.key === "publicPage");
   assert.equal(s.type, "boolean"); assert.strictEqual(s.default, false);
   assert.ok(!/le plan du site (?:peut|que lisent)/.test(fs.readFileSync(`${DIR}/README.md`, "utf8")), "README sans l'ancienne limite");
@@ -140,7 +140,7 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
 });
 
 test("mise à jour à chaud : version 2.2.3, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.4.0");
+  assert.equal(manifest.version, "2.5.0");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));
