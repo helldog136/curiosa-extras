@@ -12,7 +12,7 @@ class PEl extends El {
  * @param {{ html: string, script: string }} page ce que renvoie `overlay(ctx, { query })`
  * @param {{ dispatch: (url: string) => Promise<Response>, base?: string, onShow?: (parts: Record<string,string>) => void }} o `dispatch` répond comme le serveur
  */
-export function runOverlayPage(page, { dispatch, base = "https://x.test" }) {
+export function runOverlayPage(page, { dispatch, base = "https://x.test", globals = {} }) {
   const doc = { active: null };
   doc.body = new PEl("body", doc);
   const stage = new PEl("div", doc);
@@ -37,6 +37,7 @@ export function runOverlayPage(page, { dispatch, base = "https://x.test" }) {
     clearTimeout: (id) => { const i = timers.findIndex((t) => t.id === id); if (i >= 0) timers.splice(i, 1); },
     fetch: async (url) => { calls++; return dispatch(new URL(url, base).href); },
   };
+  Object.assign(win, globals);
   win.window = win;
   vm.runInContext(page.script, vm.createContext(win));
   const flush = async () => { for (let i = 0; i < 20; i++) await new Promise((r) => setImmediate(r)); };

@@ -206,8 +206,8 @@ test("admin tab: types table with switches, search, edit window with errors unde
     assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pause") && blocks.some((b) => b.action === "clearQueue"));
     assert.equal(blocks.find((b) => b.type === "links" && b.tab === "twitch").items[0].href, "/admin/instances/te");
     const dlg = (await def.adminPanel(w.ctx, { query: { edit: "cheer" } })).find((b) => b.presentation === "dialog");
-    assert.equal(dlg.fields.filter((f) => f.kind !== "hidden").length, 3); assert.equal(dlg.cancelHref, "?tab=twitch");
-    assert.equal((await def.adminPanel(w.ctx, { query: { edit: "follow" } })).find((b) => b.presentation === "dialog").fields.length, 3, "no minimum for a follow");
+    assert.equal(dlg.fields.filter((f) => f.kind !== "hidden" && !f.folded).length, 3, "text, time, minimum: the rest is folded under More options"); assert.equal(dlg.fields.filter((f) => f.folded).length, 3); assert.equal(dlg.cancelHref, "?tab=twitch");
+    assert.equal((await def.adminPanel(w.ctx, { query: { edit: "follow" } })).find((b) => b.presentation === "dialog").fields.filter((f) => f.kind !== "hidden" && !f.folded).length, 2, "no minimum for a follow");
     const errors = [];
     errors.push(...Object.values((await def.adminActions.saveType(w.ctx, { id: "follow", template: "{name} {nope}", seconds: "", min: "" })).errors));
     errors.push(...Object.values((await def.adminActions.saveType(w.ctx, { id: "follow", template: "x", seconds: "1", min: "" })).errors));
@@ -227,7 +227,7 @@ test("admin actions: switch says the wanted state, save, preset, test goes throu
   assert.ok((await A.setType(w.ctx, { id: "follow", enabled: "1" })).ok);
   assert.ok((await A.saveType(w.ctx, { id: "cheer", template: "Thanks {name}: {amount}", seconds: "8", min: "100" })).ok);
   const cfg = await tw.loadConfig(w.ctx, NOW + 40_000);
-  assert.deepEqual(cfg.types.cheer, { on: true, template: "Thanks {name}: {amount}", seconds: 8, min: 100 });
+  assert.deepEqual(cfg.types.cheer, { on: true, template: "Thanks {name}: {amount}", seconds: 8, min: 100, sound: "none", anim: "", image: "" });
   const got = []; globalThis.__curiosaAlertsBus.on(w.key, (e) => got.push(e));
   assert.ok((await A.testType(w.ctx, { id: "cheer" })).ok);
   assert.equal(got[0].message, "Thanks etoile_nord: 500"); assert.equal(got[0].duration, 8); assert.equal(got[0].queued, true);
@@ -251,7 +251,7 @@ test("service alerts.queue and the tools for assistants", async () => {
   const get = await def.mcp.alert_templates_get(w.ctx);
   assert.equal(get.types.length, 10); assert.ok(get.words.includes("name"));
   const up = await def.mcp.alert_template_update(w.ctx, { type: "gift", text: "{name} offers {count}", minimum: 3, durationSeconds: 7, enabled: true });
-  assert.deepEqual(up, { type: "gift", enabled: true, text: "{name} offers {count}", durationSeconds: 7, minimum: 3 });
+  assert.deepEqual(up, { type: "gift", enabled: true, text: "{name} offers {count}", durationSeconds: 7, minimum: 3, sound: "none", animation: "default", hasPicture: false });
   await assert.rejects(def.mcp.alert_template_update(w.ctx, { type: "gift", text: "{secret}" }), (e) => e.expose === true);
   await assert.rejects(def.mcp.alert_template_update(w.ctx, { type: "nope" }), (e) => e.expose === true);
   await assert.rejects(def.mcp.alert_template_update(w.ctx, { type: "gift" }), (e) => e.expose === true);
@@ -260,13 +260,13 @@ test("service alerts.queue and the tools for assistants", async () => {
 });
 
 test("manifest: version, tab, four more settings (one advanced), the topic and its schema, FR and EN texts", () => {
-  assert.equal(manifest.version, "1.4.1");
+  assert.equal(manifest.version, "1.5.0");
   const t = manifest.consumes.find((c) => c.topic === "twitch.event");
   assert.ok(t.schema.find((f) => f.key === "id" && f.required) && t.schema.find((f) => f.key === "at" && f.type === "datetime"));
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
   for (const id of tw.TYPES) for (const k of [`tw_type_${id}`, `tw_text_${id}`, `tw_preset_short_${id}`, `tw_preset_thanks_${id}`]) assert.ok(en[k] && fr[k], k);
   for (const k of tw.TWITCH_KINDS.filter((x) => x.startsWith("tw_"))) assert.ok(en[`kind_${k}`] && fr[`kind_${k}`], k);
-  assert.ok(manifest.settings.filter((s) => s.tab === "twitch").length === 4);
+  assert.ok(manifest.settings.filter((s) => s.tab === "twitch").length === 6);
   for (const p of tw.PRESETS.filter((x) => x !== "simple")) for (const id of tw.TYPES) assert.deepEqual(tw.unknownWords(en[`tw_preset_${p}_${id}`]), [], `${p} ${id}`);
 });
