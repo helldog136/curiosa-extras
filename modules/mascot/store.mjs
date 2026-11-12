@@ -1,19 +1,19 @@
-// Mascotte — les données (le seul fichier qui touche au stockage). Deux collections :
-//   « config »  : un seul document (l'apparence et l'état publié / brouillon) ;
-//   « phrases » : une ligne par phrase (100 au plus).
-// Les lectures sont gardées quelques secondes en mémoire (la mascotte est lue à chaque page vue) ; toute écriture faite ici vide la mémoire tout de suite.
+// Mascot — the data (the only file that touches storage). Two collections:
+//   "config"  : one single document (the look, the animation, the voice and the published / draft state);
+//   "phrases" : one row per sentence (100 at most).
+// Reads are kept in memory for a few seconds (the mascot is read on every page view); any write made here empties the memory at once.
 const v = new URL(import.meta.url).search;
 const M = await import(new URL(`./model.mjs${v}`, import.meta.url).href);
 
 export const COLLECTIONS = { config: "config", phrases: "phrases" };
 export const timing = { keepMs: 15_000 };
-const memo = new Map(); // clé d'instance → { at, config, phrases }
+const memo = new Map(); // instance key → { at, config, phrases }
 const forget = (ctx) => memo.delete(ctx.instance.key);
 export const resetStore = () => memo.clear();
 
 const text = (x, max) => M.oneLine(x, max);
 
-/** Une valeur par langue (objet { langue: texte }) → nettoyée et bornée. */
+/** One value per language (object { language: text }) → cleaned and bounded. */
 function perLang(raw, max) {
   const out = {};
   if (raw && typeof raw === "object" && !Array.isArray(raw)) for (const [k, val] of Object.entries(raw).slice(0, 12)) if (/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(k) && text(val, max)) out[k] = text(val, max);
@@ -30,6 +30,9 @@ export function normalizeConfig(raw) {
     crop: r.crop === "square" ? "square" : "round",
     names: perLang(r.names, M.LIMITS.name),
     alts: perLang(r.alts, M.LIMITS.alt),
+    anim: { idle: M.normalizeAnim(r.anim?.idle), talk: M.normalizeAnim(r.anim?.talk) },
+    reading: M.readingOf(r.reading),
+    voice: M.normalizeVoice(r.voice),
   };
 }
 
@@ -58,7 +61,7 @@ async function load(ctx) {
 export const loadConfig = async (ctx) => (await load(ctx)).config;
 export const loadPhrases = async (ctx) => (await load(ctx)).phrases;
 
-/** Change l'apparence ou l'état (fusionne les champs donnés). */
+/** Changes the look, the animation, the voice or the state (merges the given fields). */
 export async function saveConfig(ctx, patch) {
   const { config, configId } = await load(ctx);
   const next = normalizeConfig({ ...config, ...patch });
@@ -68,7 +71,7 @@ export async function saveConfig(ctx, patch) {
   return next;
 }
 
-/** Ajoute une phrase déjà vérifiée (`checkPhrase`). Refuse au-delà de 100. → { id } ou { full: true }. */
+/** Adds a sentence already checked (`checkPhrase`). Refuses beyond 100. → { id } or { full: true }. */
 export async function addPhrase(ctx, value) {
   const count = (await loadPhrases(ctx)).length;
   if (count >= M.LIMITS.phrases) return { full: true };
@@ -77,7 +80,7 @@ export async function addPhrase(ctx, value) {
   return { id };
 }
 
-/** Une phrase par son identifiant, relue sans passer par la mémoire (un identifiant venu d'un formulaire ne doit jamais viser autre chose qu'une phrase). */
+/** A sentence by its id, read again without going through the memory (an id that comes from a form must never point at anything but a sentence). */
 async function known(ctx, id) {
   forget(ctx);
   return (await loadPhrases(ctx)).find((p) => p.id === String(id ?? ""));
@@ -100,7 +103,7 @@ export async function removePhrase(ctx, id) {
   return true;
 }
 
-/** Remplace toutes les phrases par une liste (gabarit). */
+/** Replaces all the sentences with a list (template). */
 export async function replacePhrases(ctx, list) {
   forget(ctx);
   const rows = await ctx.api.store.list(COLLECTIONS.phrases, { limit: M.LIMITS.phrases + 20 });
@@ -111,7 +114,7 @@ export async function replacePhrases(ctx, list) {
   forget(ctx);
 }
 
-/** Le nom à afficher dans la langue demandée (puis la langue par défaut, puis n'importe laquelle, puis le nom par défaut du module). */
+/** The name to show in the requested language (then the default language, then any, then the default name of the module). */
 export function nameFor(ctx, config) {
   return config.names[ctx.locale] || config.names[ctx.defaultLocale] || Object.values(config.names)[0] || ctx.t("defaultName");
 }

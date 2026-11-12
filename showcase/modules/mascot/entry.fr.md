@@ -7,6 +7,7 @@ Un petit personnage discret dans un coin de votre site. Il dit bonjour, donne un
 - Choisissez les pages et le coin où il apparaît.
 - Laissez-le annoncer les nouveautés d'autres modules.
 - Affichez-le dans OBS.
+- Donnez-lui des images animées et une voix, sur votre overlay.
 
 ## Pourquoi vous allez l'aimer
 

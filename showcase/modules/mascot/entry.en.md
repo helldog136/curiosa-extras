@@ -7,6 +7,7 @@ A small, discreet character in a corner of your site. It says hello, gives a tip
 - Choose the pages and the corner where it appears.
 - Let it announce news from other modules.
 - Show it in OBS.
+- Give it moving pictures and a voice, on your overlay.
 
 ## Why you will like it
 

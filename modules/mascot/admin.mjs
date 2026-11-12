@@ -1,28 +1,29 @@
-// Mascotte — l'administration : trois onglets. « Ma mascotte » (état, aperçu, apparence), « Phrases » (gabarits, liste, ajout / modification), « Quand et où » (réglages du cœur).
-// Chaque erreur s'affiche SOUS son champ, avec un exemple. Rien n'est jamais publié sans un clic sur « Publier ».
+// Mascot — the administration: five tabs. "My mascot" (state, preview, look), "Animation" and "Voice" (admin-anim.mjs), "Sentences" (templates, list, add / edit), "When and where" (core settings).
+// Every error shows UNDER its field, with an example. Nothing is ever published without a click on "Publish".
 const v = new URL(import.meta.url).search;
 const M = await import(new URL(`./model.mjs${v}`, import.meta.url).href);
 const S = await import(new URL(`./store.mjs${v}`, import.meta.url).href);
 const A = await import(new URL(`./assets.mjs${v}`, import.meta.url).href);
 const F = await import(new URL(`./face.mjs${v}`, import.meta.url).href);
 const T = await import(new URL(`./starters.mjs${v}`, import.meta.url).href);
+const AN = await import(new URL(`./admin-anim.mjs${v}`, import.meta.url).href);
 
 export const RIGHTS = { edit: "edit", publish: "publish" };
-/** `ctx.can` n'existe pas sur un cœur ancien (et reste faux hors de l'administration) : l'absence vaut un refus. */
+/** `ctx.can` does not exist on an old core (and stays false outside the administration): its absence counts as a refusal. */
 export const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 const PER_PAGE = 50;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const short = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 const query = (o) => { const p = new URLSearchParams(); for (const [k, val] of Object.entries(o)) if (val !== undefined && val !== null && val !== "") p.set(k, String(val)); return `?${p.toString()}`; };
 
-/** Le nom d'une langue, dans la langue de la personne (le code si le navigateur ne sait pas). */
+/** The name of a language, in the language of the person (the code when the browser does not know). */
 export function langLabel(ctx, code) {
   if (!code) return ctx.t("langAll");
   try { return new Intl.DisplayNames([ctx.locale], { type: "language" }).of(code) || code; } catch { return code; }
 }
 const t = (ctx, error) => (Array.isArray(error) ? ctx.t(error[0], error[1]) : String(error));
 
-/** Les phrases de départ sont posées UNE fois (à la création, ou à la première ouverture si le crochet n'a pas tourné) ; supprimer toutes ses phrases ne les ramène pas. */
+/** The starter sentences are put ONCE (on creation, or on first opening if the hook did not run); deleting all the sentences does not bring them back. */
 export async function ensureSeeded(ctx) {
   const config = await S.loadConfig(ctx);
   if (config.seeded) return;
@@ -31,7 +32,7 @@ export async function ensureSeeded(ctx) {
   await S.saveConfig(ctx, { seeded: true });
 }
 
-// ── L'aperçu : ce que verront les visiteurs, avec les couleurs de ce site ───────────────────────────────────────────
+// ── The preview: what visitors will see, with the colours of this site ───────────────────────────────────────────
 const HEX = /^#[0-9a-f]{6}$/i;
 function themeVars(theme) {
   const t0 = theme ?? {};
@@ -64,7 +65,7 @@ ${image && !alt ? `<p style="margin:12px 0 0;color:var(--v-fg)"><strong>${esc(ct
   };
 }
 
-// ── Le panneau ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// ── The panel ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 function statusBlocks(ctx, config, phrases, set, canPublish) {
   const live = phrases.filter((p) => p.state === "published").length;
   const out = [];
@@ -89,7 +90,7 @@ function lookForm(ctx, config) {
     ...locales.map((l) => ({ name: `name_${l}`, kind: "text", label: many ? ctx.t("nameLabelLang", { lang: langLabel(ctx, l) }) : ctx.t("nameLabel"), value: config.names[l] ?? "", help: l === locales[0] ? ctx.t("nameHelp", { max: M.LIMITS.name }) : undefined })),
     ...locales.map((l) => ({ name: `alt_${l}`, kind: "text", label: many ? ctx.t("altLabelLang", { lang: langLabel(ctx, l) }) : ctx.t("altLabel"), value: config.alts[l] ?? "", help: l === locales[0] ? ctx.t("altHelp", { max: M.LIMITS.alt }) : undefined })),
   ];
-  // `cancelHref` : un formulaire de modification garde ses valeurs après l'enregistrement (au lieu de se vider) et propose « annuler ».
+  // `cancelHref`: an edit form keeps its values after saving (instead of emptying) and offers "cancel".
   return { type: "adminForm", action: "saveLook", submitLabel: ctx.t("saveLook"), title: ctx.t("lookTitle"), cancelHref: "?", fields };
 }
 
@@ -158,12 +159,13 @@ export async function adminPanel(ctx, { query: q0 } = {}) {
     previewHtml(ctx, config, filled),
   ];
   if (canEdit) blocks.push(lookForm(ctx, config));
+  blocks.push(...AN.animationBlocks(ctx, config, canEdit), ...AN.voiceBlocks(ctx, config, canEdit));
   blocks.push(...phraseBlocks(ctx, phrases, q, canEdit));
   blocks.push({ type: "markdown", text: ctx.t("settingsHelp"), tab: "settings" }, { type: "copy", text: `${ctx.api.siteUrl}/?mascot=voir`, label: ctx.t("copyReview"), tab: "settings" });
   return blocks;
 }
 
-// ── Les actions ─────────────────────────────────────────────────────────────────────────────────────────────────────
+// ── The actions ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function saveLook(ctx, values) {
   const errors = {};
   const look = values.look === "image" ? "image" : "builtin";
@@ -177,7 +179,7 @@ async function saveLook(ctx, values) {
     if (alt) alts[l] = alt;
   }
   if (look === "image") {
-    // L'erreur de l'image va sous « Quel visage » (le champ image du cœur n'affiche pas de message sous lui) : c'est le champ juste au-dessus.
+    // The error of the picture goes under "Which face" (the image field of the core shows no message under itself): it is the field just above.
     if (String(values.image ?? "").trim() && !image) errors.look = ctx.t("errImage");
     else if (!image) errors.look = ctx.t("errImageEmpty");
     if (!alts[ctx.defaultLocale] && !errors[`alt_${ctx.defaultLocale}`]) errors[`alt_${ctx.defaultLocale}`] = ctx.t("errAltEmpty");
@@ -234,4 +236,5 @@ export const adminActions = {
   applyTemplate: { right: RIGHTS.edit, run: applyTemplate },
   publish: { right: RIGHTS.publish, run: (ctx) => setPublished(ctx, true) },
   unpublish: { right: RIGHTS.publish, run: (ctx) => setPublished(ctx, false) },
+  ...AN.animActions,
 };
