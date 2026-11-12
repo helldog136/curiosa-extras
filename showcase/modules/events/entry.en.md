@@ -7,6 +7,7 @@ An agenda of your events and trainings: upcoming dates, a monthly calendar and a
 - Give each date its own page: time in the visitor's time zone, programme, speakers, sign-up and video.
 - Let visitors add a date to their calendar and look back at past events.
 - Show the next dates on your home page.
+- Show the next event in OBS.
 
 ## Why you will like it
 
@@ -41,4 +42,4 @@ An agenda of your events and trainings: upcoming dates, a monthly calendar and a
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.2.
+Available since version 1.0.0. Current version: 1.3.0.

@@ -318,5 +318,12 @@
   "err_untilBefore": "The last day must come after the date of this item.",
   "err_fileEmpty": "Choose a (.csv) file that contains dates.",
   "err_fileColumns": "I cannot find the “title” and “date” columns on the first line of the file.",
-  "err_starterBad": "Pick a template from the list."
+  "err_starterBad": "Pick a template from the list.",
+  "ovTitle": "Coming up",
+  "ovNow": "Happening now",
+  "ovToday": "Today",
+  "ovTomorrow": "Tomorrow",
+  "ovInDays": "In {n} days",
+  "ovDemoTitle": "Discovery workshop",
+  "ovDemoPlace": "Star room"
 }

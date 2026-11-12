@@ -23,6 +23,7 @@ const channel = await import(`./channel.mjs${v}`);
 const moment = await import(`./moment.mjs${v}`);
 const featured = await import(`./featured-dock.mjs${v}`);
 const pub = await import(`./public.mjs${v}`);
+const element = await import(`./element.mjs${v}`);
 
 const onlyGet = (request) => (request.method === "GET" || request.method === "HEAD" ? null : new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }));
 const keyOf = (request) => new URL(request.url).searchParams.get("k") ?? "";
@@ -32,8 +33,32 @@ async function raidList(ctx) {
   return src.state === "ok" ? { partners: src.partners } : { problem: { state: "not_ready", reason: src.problem } };
 }
 
+/** 2.4 : l'adresse d'un élément pour le cœur (côté serveur) : la page de l'élément avec la clé secrète du dock et la langue. */
+async function elementAddress(ctx, id, request) {
+  const lang = typeof request?.lang === "string" && /^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request.lang) ? `&lang=${request.lang}` : "";
+  return { url: `/m/${ctx.instance.key}/element/${id}?k=${encodeURIComponent(await data.dockSecret(ctx))}${lang}` };
+}
+/** La page (`asData` faux) ou ses données (JSON) d'un élément. Sans la bonne clé, ou pour un élément inconnu : comme si la route n'existait pas. Rien n'est lu avant d'avoir vérifié la clé. */
+async function elementRoute(request, ctx, asData) {
+  const no = onlyGet(request); if (no) return no;
+  const kind = ctx.params?.slug, params = new URL(request.url).searchParams;
+  if (!element.ELEMENTS.includes(kind) || !(await data.secretMatches(ctx, params.get("k") ?? ""))) return new Response("Not found", { status: 404 });
+  const first = await element.dataFor(ctx, kind, params);
+  if (asData) return Response.json(first, { headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" } });
+  const labels = { title: ctx.t(kind === "featured" ? "ov_featured_title" : "ov_live_title"), viewers_one: ctx.t("dock_viewers_one"), viewers_other: ctx.t("dock_viewers_other"), more: ctx.t("ov_more") };
+  return new Response(element.page(kind, params, { lang: ctx.locale, first, data: `/m/${ctx.instance.key}/element-data/${kind}`, labels, demo: params.get("ov-demo") === "1" }), { headers: element.PAGE_HEADERS });
+}
+
 export default {
+  // 2.4 : deux éléments pour les pages d'overlay (cœur 0.5.0) : la sélection du moment et les partenaires en direct. Voir element.mjs.
+  overlayElements: {
+    featured: (ctx, request) => elementAddress(ctx, "featured", request),
+    live: (ctx, request) => elementAddress(ctx, "live", request),
+  },
   routes: {
+    "element/:slug": (request, ctx) => elementRoute(request, ctx, false),
+    "element-data/:slug": (request, ctx) => elementRoute(request, ctx, true),
+
     // La page du dock.
     async dock(request, ctx) {
       const no = onlyGet(request); if (no) return no;
