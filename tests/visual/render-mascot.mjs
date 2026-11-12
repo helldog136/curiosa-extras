@@ -50,7 +50,7 @@ const page = (title, body, theme) => `<!doctype html><html lang="en" data-admin-
 <body class="min-h-screen bg-bg text-fg antialiased"><main class="mx-auto max-w-5xl space-y-6 p-4 md:p-6"><h1 class="text-2xl font-semibold">${title}</h1>${body}</main></body></html>`;
 
 async function write(name, title, ctx, tab, { errors = {}, voiceFrame = false } = {}) {
-  const blocks = (await K.def.adminPanel(ctx, { query: {} })).filter((b) => b.tab === tab);
+  const blocks = (await K.def.adminPanel(ctx, { query: {} })).filter((b) => (tab === "use" ? !b.tab : b.tab === tab));
   let body = blocks.map((b) => renderBlock(b, "en")).join("\n");
   // The page of the element in the frame: the real one, written next to the page (the preview address of the administration points to the site).
   const r = await K.def.routes["element/:slug"](K.get(`/m/${ctx.instance.key}/element/mascot?lang=en&ov-demo=1&ov-test=1&ov-text=light&ov-surface=soft&ov-corners=round&opt-seconds=20`), Object.assign(ctx, { params: { slug: "mascot" } }));
@@ -76,10 +76,12 @@ await write("2-anim-frames", "Mascot: Animation (pictures added)", await mk({ an
   const err = await K.def.adminActions.saveAnim.run(ctx, { which: "idle", mode: "gif", gif: "https://elsewhere.example.org/wave.gif" });
   await write("3-anim-error", "Mascot: Animation (an error)", ctx, "animation", { errors: err.errors });
 }
+await write("9-use-anim", "Mascot: My mascot (animation set)", await mk({ anim }), "use");
 await write("4-voice-none", "Mascot: Voice (none)", await mk({ anim }), "voice");
 await write("5-voice-blips", "Mascot: Voice (blips)", await mk({ anim, voice: { mode: "blips", volume: 40 } }), "voice", { voiceFrame: true });
 await write("6-voice-speech", "Mascot: Voice (voice of the computer)", await mk({ anim, voice: { mode: "speech", volume: 40 } }), "voice", { voiceFrame: true });
-await write("7-voice-custom", "Mascot: Voice (your own sound)", await mk({ anim, voice: { mode: "custom", volume: 40 } }, { voiceFile: `/uploads/${UUID(900)}.mp4` }), "voice");
+await write("7-voice-custom", "Mascot: Voice (your own sound)", await mk({ anim, voice: { mode: "custom", volume: 40, file: `/uploads/${UUID(900)}.ogg`, fileBytes: 61_000 } }), "voice");
+await write("10-voice-blips-own", "Mascot: Voice (blips with your own sound)", await mk({ anim, voice: { mode: "blips", volume: 40, file: `/uploads/${UUID(901)}.ogg`, fileBytes: 18_000, blips: { preset: "custom", pitch: "high", vary: "some", rate: "normal" } } }), "voice");
 {
   const ctx = await mk({ anim, voice: { mode: "blips", volume: 40 } });
   const err = await K.def.adminActions.saveVoice.run(ctx, { volume: "500" });

@@ -1,6 +1,6 @@
-// Mascotte — la feuille de style envoyée aux visiteurs (route « mascot.css », chargée seulement au moment où la mascotte va se montrer).
-// Toutes les couleurs, la police et les traits viennent des jetons du thème du site (--v-*) ; les valeurs après la virgule ne sont qu'un repli
-// si un jeton manquait. Aucune animation sous « mouvement réduit ». Tout est préfixé « mc- » pour ne jamais heurter le style du site.
+// Mascot — the style sheet sent to visitors (route "mascot.css", loaded only when the mascot is about to show).
+// All the colours, the font and the strokes come from the tokens of the theme of the site (--v-*); the values after the comma are only a fallback
+// if a token were missing. No animation under "reduced motion". Everything is prefixed "mc-" so as never to clash with the style of the site.
 
 export const CSS = `
 .mc{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;gap:8px;width:max-content;max-width:min(330px,calc(100vw - 32px));pointer-events:none;font:15px/1.4 var(--v-font,system-ui,sans-serif);color:var(--v-fg,#1f2430)}
@@ -49,3 +49,14 @@ export const CSS = `
 @keyframes mc-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
 @media print{.mc{display:none}}
 `.trim();
+
+/** Only served when an animation is set (`mascot.css?a=1`): the plain style sheet, and so its address and its fingerprint, stay what they were for everyone else. The animated picture lies over
+ *  the avatar (same box: no layout shift), the drawing stays underneath and is only hidden while the picture plays. */
+export const ANIM_CSS = `
+.mc-av{position:relative}
+.mc-an{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.mc-an[hidden]{display:none}
+.mc-pill .mc-an{inset:4px;width:calc(100% - 8px);height:calc(100% - 8px)}
+.mc-anim .mc-av>.mc-svg,.mc-anim .mc-av>.mc-i{visibility:hidden}
+`.trim();
+
