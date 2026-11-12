@@ -11,6 +11,7 @@ const helix = await import(new URL(`./helix.mjs${version}`, import.meta.url).hre
 const conn = await import(new URL(`./connections.mjs${version}`, import.meta.url).href);
 const service = await import(new URL(`./service.mjs${version}`, import.meta.url).href);
 const panel = await import(new URL(`./panel.mjs${version}`, import.meta.url).href);
+const hl = await import(new URL(`./health.mjs${version}`, import.meta.url).href);
 
 /* ───────────── Retour de Twitch : /m/<clé>/oauth/callback ───────────── */
 const bad = new Map();   // clé d'instance → { n, until } : au plus 20 retours invalides par tranche de 10 minutes
@@ -40,4 +41,19 @@ export default {
   routes: { [conn.CALLBACK]: callback },
   adminPanel: (ctx) => panel.render(ctx),
   adminActions: panel.actions,
+  // Every 5 minutes: ask Twitch whether each authorization still works (an account is checked at most every 10 minutes), mail the owner when it is time.
+  tasks: { check: { everyMinutes: 5, run: async (ctx) => { await hl.sweep(ctx, { userToken: helix.userToken }); } } },
+  // The red dot of the menu: authorizations that need the owner.
+  async adminBadge(ctx) { return (await hl.problems(ctx)).length; },
+  mcp: {
+    async connector_twitch_status(ctx) {
+      const out = [];
+      for (const c of await service.methods.connections(ctx)) {
+        out.push({ account: c.login, role: c.slot === "bot" ? "chat bot account" : "channel", state: c.health.state, since: c.health.since ? new Date(c.health.since).toISOString() : null,
+          missingPermissions: c.health.missing, lastCheck: c.health.checkedAt ? new Date(c.health.checkedAt).toISOString() : null, ...(c.health.state === "ok" ? {} : { whatToDo: "Only the owner can fix this: open the Twitch connector page in the admin and click 'Authorize again with Twitch'. Until then every module that reads the Twitch account (followers, paying subscribers, lives, chat) gets no data." }) });
+      }
+      const creds = await store.credsOf(ctx);
+      return { applicationReady: store.hasCreds(creds), count: out.length, connections: out, states: "ok = works; renew = Twitch no longer accepts the authorization; scopes = works but lacks a permission a module needs; app = Twitch refuses the application ID or secret" };
+    },
+  },
 };

@@ -6,7 +6,7 @@
     "en": "Twitch connector",
     "fr": "Connecteur Twitch"
   },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "platform": "twitch",
   "description": {
     "en": "Links your site to Twitch once for everything that touches Twitch. Guided setup in 5 minutes, with a “Copy” button.",
@@ -33,14 +33,17 @@
         "request",
         "connections",
         "status",
-        "exchangeCode"
+        "exchangeCode",
+        "health"
       ]
     }
   ],
   "permissions": [
     "storage",
     "admin",
-    "routes"
+    "routes",
+    "mail",
+    "mcp"
   ],
   "tabs": [
     {
@@ -75,6 +78,69 @@
         "en": "Never shown again once saved. Leave empty if your site already filled it in for you.",
         "fr": "Jamais réaffiché une fois enregistré. Laissez vide s'il a été repris tout seul."
       }
+    },
+    {
+      "key": "healthMail",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "E-mail me when Twitch needs a new authorization",
+        "fr": "Me prévenir par e-mail si Twitch refuse l'accès"
+      },
+      "help": {
+        "en": "One e-mail per problem, one when it is fixed.",
+        "fr": "Un e-mail par problème, un au retour."
+      }
     }
-  ]
+  ],
+  "logEvents": [
+    {
+      "key": "connection.problem",
+      "label": {
+        "en": "Twitch authorization needs attention ({state})",
+        "fr": "L'autorisation Twitch demande de l'attention ({state})"
+      },
+      "level": "warn",
+      "fields": [
+        {
+          "key": "state"
+        },
+        {
+          "key": "missing"
+        }
+      ]
+    },
+    {
+      "key": "connection.back",
+      "label": {
+        "en": "Twitch authorization works again (was {was})",
+        "fr": "L'autorisation Twitch fonctionne de nouveau (était {was})"
+      },
+      "fields": [
+        {
+          "key": "state"
+        },
+        {
+          "key": "was"
+        }
+      ]
+    }
+  ],
+  "mcp": [
+    {
+      "name": "connector_twitch_status",
+      "readOnly": true,
+      "default": false,
+      "description": "Tell whether the Twitch accounts connected to the site really work: for each (channel or chat bot account) the state (ok, renew = Twitch no longer accepts the authorization, scopes = a permission is missing, app = the Twitch application ID or secret is refused), since when, the missing permissions and the last check. Use it first when a Twitch figure (followers, paying subscribers, lives, chat) is frozen or missing. Only the owner can renew an authorization.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.connector_twitch_status": "Dit si les comptes Twitch reliés au site fonctionnent vraiment, depuis quand, et quelles autorisations manquent."
+    }
+  }
 }

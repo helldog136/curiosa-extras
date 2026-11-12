@@ -9,6 +9,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 const version = new URL(import.meta.url).search;
 const oauth = await import(new URL(`./oauth.mjs${version}`, import.meta.url).href);
 const store = await import(new URL(`./store.mjs${version}`, import.meta.url).href);
+const hl = await import(new URL(`./health.mjs${version}`, import.meta.url).href);
 const { COL, slotOf, loginOf, text, plain } = store;
 
 export const STATE_MS = 10 * 60_000;
@@ -24,7 +25,7 @@ export const adminPage = (ctx) => `/admin/instances/${ctx.instance.id}`;
 /** "none" | "ok" | "reconnect" (Twitch ne reconnaît plus l'autorisation, ou l'application a changé) | "more" (il manque une autorisation demandée). */
 export function statusOf(doc, creds, scopes) {
   if (!doc?.access) return "none";
-  if (doc.status === "reconnect" || doc.clientId !== creds.clientId) return "reconnect";
+  if (doc.status === "reconnect" || doc.health?.state === "renew" || doc.clientId !== creds.clientId) return "reconnect";
   return scopes.every((s) => (doc.scopes ?? []).includes(s)) ? "ok" : "more";
 }
 
@@ -83,7 +84,11 @@ export async function exchange(ctx, { code, state, redirectUri, error }) {
   const doc = { slot, channel: owner, login: who.login, userId: who.userId, access: got.tokens.access, refresh: got.tokens.refresh, expiresAt: got.tokens.expiresAt, scopes: who.scopes, clientId: creds.clientId, status: "ok", connectedAt: new Date().toISOString() };
   const old = await store.connOf(ctx, slot, owner);
   if (!old && (await store.conns(ctx)).length >= store.LIMITS.conns) { await dropTokens(ctx, creds.clientId, got.tokens); return fail("refused", "denied"); }
-  if (old) await ctx.api.store.update(old.id, doc); else await ctx.api.store.add(COL.conns, doc);
+  // A new authorization ends the previous problem: keep its health, so the change is recorded (log line, "all is back" e-mail) and not lost with the old document.
+  if (old?.data?.health && hl.isProblem(hl.viewOf(old.data).state) || old?.data?.status === "reconnect") doc.health = { ...(old.data.health ?? {}), state: old.data.health?.state ?? "renew", since: old.data.health?.since ?? Date.now() };
+  let savedId;
+  if (old) { await ctx.api.store.update(old.id, doc); savedId = old.id; } else savedId = await ctx.api.store.add(COL.conns, doc);
+  if (doc.health) await hl.record(ctx, savedId, { state: "ok", need: (old.data.health?.need ?? []).filter((s) => !who.scopes.includes(s)), scopes: who.scopes });
   if (old?.data?.refresh && old.data.refresh !== doc.refresh) await dropTokens(ctx, old.data.clientId, old.data);   // une connexion par compte : l'ancienne est révoquée
   if (slot === "main") await store.remember(ctx, owner);
   await store.clearResult(ctx, channel, slot);

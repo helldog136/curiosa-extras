@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.70.0 — 2026-11-12
+
+*En bref : le Connecteur Twitch (1.5.0) sait maintenant si Twitch accepte encore votre autorisation. Quand elle est refusée ou qu'il manque une permission, la page le dit en mots simples avec un seul bouton « Autoriser de nouveau avec Twitch », le menu a une pastille rouge, le journal du site garde une ligne et vous recevez un e-mail (que vous pouvez couper). « Ma Chaîne Twitch » (2.3.2) ne laisse plus d'impasse quand les followers sont figés. Après la mise à jour, cliquez une fois sur le bouton si la page vous le demande.*
+
+*In short: the Twitch connector (1.5.0) now knows whether Twitch still accepts your authorization. When it is refused or a permission is missing, the page says so in plain words with one button "Authorize again with Twitch", the menu shows a red dot, the site log keeps a line and you get an e-mail (you can turn it off). "My Twitch channel" (2.3.2) no longer leaves a dead end when followers are frozen. After the update, click the button once if the page asks you to.*
+
+### Nouveautés
+
+- **La page du connecteur dit la vérité.** « Connecté » seulement quand Twitch accepte vraiment l'autorisation. Sinon « À renouveler » ou « Autorisations manquantes » (en mots simples : « voir vos followers »), avec un seul bouton en haut. Le « Twitch répond normalement » vert dit seulement que Twitch lui-même fonctionne.
+- **Il s'en aperçoit en quelques minutes.** Tout de suite quand un module est refusé, sinon une vérification toutes les 10 minutes. Pastille rouge dans le menu, une ligne dans le journal du site (une fois par changement, jamais à chaque vérification).
+- **Un e-mail par problème** au bout de 10 minutes, un quand tout est revenu, aucun si vous coupez « Me prévenir par e-mail si Twitch refuse l'accès ». Le connecteur demande pour cela le droit d'envoyer un e-mail.
+- **Plus d'impasse.** « Ma Chaîne Twitch » montre « Autoriser de nouveau avec Twitch » quand les followers ou les abonnements payants sont figés, même si le connecteur croyait que tout allait bien. « Statistiques de la communauté » dit quoi faire, et les outils de l'assistant disent pourquoi un chiffre est figé.
+- **Non vérifié sur le vrai Twitch** : les tests utilisent un faux Twitch (jeton révoqué, renouvellement refusé, autorisation perdue).
+- **The connector page tells the truth.** "Connected" only when Twitch really accepts the authorization. Otherwise "To renew" or "Missing permissions" (in plain words: "see your followers"), with one button at the top. The green "Twitch answers normally" only says that Twitch itself is up.
+- **It notices within minutes.** At once when a module is refused, otherwise a check every 10 minutes. Red dot in the menu, one line in the site log (once per change, never per check).
+- **One e-mail per problem** after 10 minutes, one when all is back, none if you turn off "E-mail me when Twitch needs a new authorization". The connector asks for the right to send an e-mail for this.
+- **No more dead end.** "My Twitch channel" shows "Authorize again with Twitch" when followers or paying subscribers are frozen, even if the connector believed all was fine. "Community statistics" says what to do, and the assistant tools say why a figure is frozen.
+- **Not verified on the real Twitch**: the tests use a fake Twitch (revoked token, refused refresh, lost permission).
+
+### Pour les développeurs
+
+- Twitch connector 1.5.0: `health.mjs` (`verify`, `record`, `noteScope`, `mailStep`, `sweep`), `health` on each connection document, service `twitch.api` v3 gains `health` (read only) and `report`, `connectLink({ force })`, refresh classification (400 renew, 401/403 application, 429 rate, other temporary with backoff), task `check`, `adminBadge`, `logEvents`, permission `mail`, setting `healthMail`, MCP `connector_twitch_status`. My Twitch channel 2.3.2 and Community statistics 1.2.3: see `docs/changelog-parts/twitch-auth-health.md`.
+- Tests: `tests/twitch-connector-health.test.mjs`, `tests/twitch-channel-auth.test.mjs`; captures `docs/captures/ergonomie-twitch-auth/`.
+
 ## 1.69.0 — 2026-11-12
 
 *En bref : la Mascotte (1.4.0) anime aussi la mascotte du coin de votre site, avec les mêmes animations que sur l'overlay (rien de plus à régler, aucun son, rien de téléchargé avant qu'elle se montre), et votre propre son devient un vrai fichier son (MP3, OGG, WAV, M4A ou AAC) envoyé dans l'onglet « Voix ». Elle demande maintenant Curiosa 0.10.0. Ce que vous aviez déjà réglé continue de marcher, et sans animation la mascotte du coin est exactement ce qu'elle était.*

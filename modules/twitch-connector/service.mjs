@@ -7,6 +7,7 @@ const store = await import(new URL(`./store.mjs${version}`, import.meta.url).hre
 const helix = await import(new URL(`./helix.mjs${version}`, import.meta.url).href);
 const conn = await import(new URL(`./connections.mjs${version}`, import.meta.url).href);
 const oauth = await import(new URL(`./oauth.mjs${version}`, import.meta.url).href);
+const hl = await import(new URL(`./health.mjs${version}`, import.meta.url).href);
 const { LOGIN, slotOf, loginOf, plain } = store;
 
 const HOSTS = [helix.API_HOST, oauth.ID_HOST];
@@ -36,6 +37,7 @@ export const methods = {
       ok: true, channel: LOGIN.test(channel) ? channel : null, ready: LOGIN.test(channel) && store.hasCreds(creds), https: conn.secure(redirect),
       status: conn.statusOf(doc, creds, wanted), login: doc?.login ?? null, userId: doc?.userId ?? null, scopes: doc?.scopes ?? [], wanted,
       ...(doc?.connectedAt ? { connectedAt: doc.connectedAt } : {}),
+      ...(doc ? { health: hl.viewOf(doc) } : {}),
       ...(result ? { result: { code: result.code, ...(result.login ? { login: result.login } : {}) } } : {}),
       adminPath: conn.adminPage(ctx),
     };
@@ -58,9 +60,11 @@ export const methods = {
     const channel = await store.channelFor(ctx, args?.channel);
     const creds = await store.credsOf(ctx);
     if (!channel) return { ok: true, url: null, reason: "not_ready" };
-    const wanted = await wantedFor(ctx, channel, slot, Array.isArray(args?.scopes) ? args.scopes : []);
+    let wanted = await wantedFor(ctx, channel, slot, Array.isArray(args?.scopes) ? args.scopes : []);
     const doc = (await store.connOf(ctx, slot, channel))?.data ?? null;
-    if (conn.statusOf(doc, creds, wanted) === "ok") return { ok: true, url: null, reason: "connected" };
+    // `force`: authorize again although all looks fine (a module found the authorization unusable). Nothing wanted: ask again for what is granted today.
+    if (conn.statusOf(doc, creds, wanted) === "ok" && args?.force !== true) return { ok: true, url: null, reason: "connected" };
+    if (!wanted.length && doc?.scopes?.length) wanted = [...doc.scopes].sort();
     const redirectUri = await store.redirectFor(ctx, channel, conn.ownRedirect(ctx));
     if (!conn.secure(redirectUri)) return { ok: true, url: null, reason: "https" };
     if (!store.hasCreds(creds)) return { ok: true, url: null, reason: "not_ready" };
@@ -105,9 +109,44 @@ export const methods = {
     for (const d of await store.conns(ctx)) {
       const wanted = await store.wantedScopes(ctx, d.data.channel, d.data.slot);
       const st = conn.statusOf(d.data, creds, wanted);
-      out.push({ id: d.id, login: d.data.login, displayName: d.data.login, slot: d.data.slot, channel: d.data.channel, scopes: [...(d.data.scopes ?? [])], status: st === "ok" ? "ok" : st === "more" ? "missing_scopes" : "expired" });
+      const h = hl.viewOf(d.data);
+      out.push({ id: d.id, login: d.data.login, displayName: d.data.login, slot: d.data.slot, channel: d.data.channel, scopes: [...(d.data.scopes ?? [])], status: st === "ok" ? "ok" : st === "more" ? "missing_scopes" : "expired", health: h.state === "ok" && st === "more" ? { ...h, state: "scopes", missing: wanted.filter((x) => !(d.data.scopes ?? []).includes(x)) } : h });
     }
     return out;
+  },
+
+  /**
+   * Does the authorization of a channel really work? { ok, state: "none" | "ok" | "renew" | "scopes" | "app", channel, slot, login, missing: [permissions], since, checkedAt, reason, adminPath }.
+   * `check: true` asks Twitch now (one validate call, reused for a minute); without it the last known state is returned, with no network at all. No token.
+   */
+  async health(ctx, args) {
+    const slot = slotOf(args?.slot);
+    const channel = await store.channelFor(ctx, args?.channel);
+    const entry = channel ? await store.connOf(ctx, slot, channel) : null;
+    const base = { ok: true, channel: LOGIN.test(channel) ? channel : null, slot, adminPath: conn.adminPage(ctx) };
+    if (!entry) return { ...base, state: "none", login: null, missing: [], since: null, checkedAt: null, reason: null };
+    const creds = await store.credsOf(ctx);
+    let h = hl.viewOf(entry.data);
+    if (args?.check === true && store.hasCreds(creds)) { const r = await store.serial(ctx, () => hl.verify(ctx, creds, entry, { userToken: helix.userToken, maxAge: args?.maxAge === "report" ? hl.timing.reportMs : hl.timing.cacheMs }), oauth.timing.sharedMs * 2).catch(() => null); if (r) h = { state: r.state, since: r.since ?? null, checkedAt: r.checkedAt ?? null, missing: r.missing ?? [], reason: r.reason ?? null }; }
+    const wanted = await store.wantedScopes(ctx, channel, slot);
+    const fresh = (await store.connOf(ctx, slot, channel))?.data ?? entry.data;
+    const lacking = wanted.filter((x) => !(fresh.scopes ?? []).includes(x));
+    if (h.state === "ok" && lacking.length) h = { ...h, state: "scopes", missing: lacking };
+    return { ...base, state: h.state, login: fresh.login ?? null, missing: h.missing, since: h.since, checkedAt: h.checkedAt, reason: h.reason };
+  },
+
+  /**
+   * A module saw something the connector cannot see (for example Twitch answered 403): { channel?, slot?, consumer, problem: "auth" | "scope" | "denied", scopes? }.
+   * The report is never believed blindly: it makes the connector check with Twitch (at most once a minute) and the answer is the state. Returns the same as `health`.
+   */
+  async report(ctx, args) {
+    if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(String(args?.consumer ?? ""))) return { ok: false, error: "invalid" };
+    const slot = slotOf(args?.slot);
+    const channel = await store.channelFor(ctx, args?.channel);
+    const entry = channel ? await store.connOf(ctx, slot, channel) : null;
+    const scopes = (Array.isArray(args?.scopes) ? args.scopes : []).filter((x) => store.EXTRA_SCOPES.includes(x));
+    if (entry && scopes.length) await store.serial(ctx, () => hl.noteScope(ctx, entry.id, scopes.filter((x) => !(entry.data.scopes ?? []).includes(x))));
+    return methods.health(ctx, { channel, slot, check: true, maxAge: "report" });
   },
 
   /**

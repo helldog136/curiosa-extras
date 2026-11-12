@@ -60,6 +60,11 @@ async function credentials(ctx, { wait = true } = {}) {
       const x = r.value && typeof r.value === "object" ? r.value : {};
       return x.ok ? { status: x.status, json: x.json } : { error: ["config", "auth", "rate", "network", "scope", "forbidden"].includes(x.error) ? x.error : "network" };
     },
+    /** Tells the connector that Twitch refused something it cannot see itself (never believed blindly: it checks with Twitch). */
+    async report(args) {
+      const r = await connect.call(ctx, "report", { channel, slot: "main", consumer: ctx.instance.key, ...args });
+      return r.ok && r.value?.ok ? r.value : null;
+    },
     async account() {
       const r = await connect.call(ctx, "account", { channel, slot: "main" });
       return r.ok && r.value?.ok ? r.value : { error: !r.ok && connect.missingConnector(r) ? "config" : "network" };
@@ -76,11 +81,21 @@ async function connectorState(ctx) {
   return { present: true, ready: r.value?.ready === true, missing };
 }
 
+/** Tells the connector which permissions this channel needs, once per setting change (the page does it too, but nobody has to open it). */
+const declared = new Map();
+async function declareOnce(ctx, channel) {
+  const sig = `${channel}|${connect.wantedScopes(ctx).join(" ")}`;
+  if (declared.get(ctx.instance.id) === sig) return;
+  const r = await connect.declare(ctx, channel).catch(() => null);
+  if (r?.ok && r.value?.ok) { declared.set(ctx.instance.id, sig); if (declared.size > 200) declared.delete(declared.keys().next().value); }
+}
+
 /** { creds, results: [{ metric, result }] } pour cette instance, ou null quand il n'y a rien à suivre (interrupteur éteint, chaîne non réglée). Les réponses viennent du cache de helix.mjs. */
 async function statsOf(ctx) {
   if (ctx.setting("trackStats") !== true) return null;
   const creds = await credentials(ctx);
   if (!LOGIN.test(creds.channel)) return null;
+  await declareOnce(ctx, creds.channel);   // the connector must know the permissions we need even if nobody opens our page
   return { creds, results: await Promise.all(connect.wantedMetrics(ctx).map(async (metric) => ({ metric, result: await helix.userStat(creds, metric) }))) };
 }
 

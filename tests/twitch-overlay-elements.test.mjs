@@ -58,7 +58,7 @@ const dataOf = async (ctx, slug, extra) => (await call(ctx, slug, { extra })).js
 
 test("manifeste : valide ; 2.2.0, minCore 0.5.0 ; deux éléments fluides (stats, live) qui suivent le style, avec contenu d'exemple ; options minimales ; chaque élément a sa fonction", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.3.1"); assert.equal(manifest.minCore, "0.8.0");
+  assert.equal(manifest.version, "2.3.2"); assert.equal(manifest.minCore, "0.8.0");
   assert.deepEqual(manifest.overlayElements.map((e) => [e.id, e.fit]), [["stats", "fluid"], ["live", "fluid"]]);
   assert.deepEqual(Object.keys(def.overlayElements), manifest.overlayElements.map((e) => e.id));
   for (const e of manifest.overlayElements) {
