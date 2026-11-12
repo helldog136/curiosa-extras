@@ -20,7 +20,7 @@
     "fr": "Relie votre site à Twitch une seule fois, pour tout ce qui touche Twitch. Un assistant guidé prend environ cinq minutes."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.3.0",
+  "moduleVersion": "1.4.0",
   "requires": [],
   "worksWith": [
     "twitch-channel",

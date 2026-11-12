@@ -4,6 +4,32 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.61.0 — 2026-11-12
+
+*En bref : un nouveau module, Activité Twitch (1.0.0), reçoit ce qui se passe sur votre chaîne (follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains d'enthousiasme) et le garde dans un journal que vous pouvez chercher, tester et rejouer. Le Connecteur Twitch (1.4.0) peut demander trois accords de plus : après la mise à jour, autorisez de nouveau chez Twitch, une seule fois. Les alertes à l'écran arrivent dans la version suivante.*
+
+*In short: a new module, Twitch activity (1.0.0), receives what happens on your channel (follows, subscriptions, gifts, bits, raids, stream start and end, hype trains) and keeps it in a journal you can search, test and replay. The Twitch connector (1.4.0) can ask for three more permissions: after the update, allow again at Twitch, once. The alerts on screen come in the next version.*
+
+### Nouveautés
+
+- **Votre site reçoit ce qui se passe sur votre chaîne Twitch.** Follows, abonnements, réabonnements, abonnements offerts, bits, raids reçus, début et fin de direct, trains d'enthousiasme (et, si vous le voulez, récompenses en points de chaîne). Chaque événement est gardé une seule fois dans un journal, même si Twitch l'envoie deux fois ou si votre site redémarre.
+- **Une page pour lire, chercher, tester et rejouer.** Recherche en direct, filtre par type, un interrupteur et un bouton « Envoyer un test » par type (exemples réalistes). Une ligne d'état dit tout de suite si le site a cessé d'écouter et ce qu'il faut faire.
+- **Autorisez de nouveau chez Twitch, une fois.** Les bits et les trains d'enthousiasme demandent deux accords de plus ; la page dit lesquels et montre le bouton. Les autres types fonctionnent en attendant. Votre site doit avoir une adresse publique sécurisée (https).
+- **Seulement des données publiques, gardées 30 jours par défaut** (pseudos, montants, message public d'un réabonnement ou de bits). Vous choisissez la durée, de 1 à 365 jours.
+- **Les événements sont partagés avec vos autres modules** (sujet `twitch.event`). Votre assistant IA peut lire le journal, vérifier l'écoute et rejouer une alerte.
+- **Your site receives what happens on your Twitch channel.** Follows, subscriptions, resubs, gifted subs, bits, incoming raids, stream start and end, hype trains (and, if you want, channel point rewards). Each event is kept once in a journal, even if Twitch sends it twice or your site restarts.
+- **A page to read, search, test and replay.** Live search, a filter by type, a switch and a "Send a test" button for each type (realistic samples). A status line tells you at once if the site stopped listening and what to do.
+- **Allow again at Twitch, once.** Bits and hype trains need two more permissions; the page says which ones and shows the button. The other types work meanwhile. Your site needs a public secure address (https).
+- **Only public data, kept 30 days by default** (display names, amounts, the public message of a resub or of bits). You choose the duration, from 1 to 365 days.
+- **The events are shared with your other modules** (topic `twitch.event`). Your AI assistant can read the journal, check the listening and replay an alert.
+
+### Pour les développeurs
+
+- New module `twitch-events` 1.0.0 (`minCore` 0.6.0; requires `twitch.api` v3 and `twitch.live`). Signed EventSub webhook `/m/<key>/webhook` (own secret, constant-time HMAC, 10 minute window, 100 KB, rate limits), chosen over the WebSocket (README). Journal keyed by the Twitch message id, hourly purge, topic `twitch.event` (`docs/TOPICS.md`), MCP `twitch_events_list`, `twitch_events_status`, `twitch_event_replay`. Détail : `docs/changelog-parts/twitch-events.md`.
+- Twitch connector 1.4.0: `EXTRA_SCOPES` gains `bits:read`, `channel:read:hype_train`, `channel:read:redemptions`; no call added.
+- Tests: `tests/twitch-events.test.mjs` (fake Twitch that signs like the real one); `tests/srp-guard.test.mjs` lets `twitch_event(s)_*` tools through.
+- Not verified against a live Twitch: application token behaviour for these subscriptions, failures before revocation, reward redemption type (README of the module).
+
 ## 1.60.0 — 2026-11-12
 
 *En bref : un nouveau « mode collaboration » pour le Bot Twitch (1.14.0) : quand vous streamez avec d'autres personnes dans un chat partagé, un interrupteur fait parler le bot moins tout seul. Désactivé par défaut. Participation (1.8.3) ajoute le même interrupteur à la télécommande. Rien à régler, aucune nouvelle permission.*

@@ -38,7 +38,7 @@ Sur-ensemble de la version 2 offerte par « Chaîne Twitch » 1.7 : les appels d
 |---|---|
 | `request` | `{ as: "app" \| "user", slot?, method, path, query?, body?, channel?, priority? }` → `{ ok: true, status, json }` ou `{ ok: false, error: "forbidden" \| "invalid" \| "config" \| "auth" \| "rate" \| "network" \| "scope" }`. `channel` choisit le compte connecté pour un appel `user` (sans lui : la première chaîne connue). |
 | `account` | `{ channel?, slot? }` → `{ ok, channel, ready, https, status: "none" \| "ok" \| "reconnect" \| "more", login, userId, scopes, wanted, connectedAt?, result?, adminPath }` — jamais un jeton. |
-| `wantScopes` | `{ channel?, consumer, slot, scopes, returnTo? }` → `{ ok, scopes }` (liste fermée : `user:read:chat`, `user:write:chat`, `user:bot`, `channel:bot`, `moderator:read:followers`, `channel:read:subscriptions`, `channel:manage:redemptions`). |
+| `wantScopes` | `{ channel?, consumer, slot, scopes, returnTo? }` → `{ ok, scopes }` (liste fermée : `user:read:chat`, `user:write:chat`, `user:bot`, `channel:bot`, `moderator:read:followers`, `channel:read:subscriptions`, `channel:manage:redemptions`, and since 1.4.0 `bits:read`, `channel:read:hype_train`, `channel:read:redemptions`). |
 | `connectLink` | `{ channel?, slot, scopes?, returnTo? }` → `{ ok, url }` ou `{ ok, url: null, reason: "connected" \| "not_ready" \| "https" \| "nothing" }`. |
 | `disconnect` | `{ channel?, slot: "main" \| "bot" }` (emplacement explicite) → `{ ok, reached }`. |
 | `connections` | → `[{ id, login, displayName, slot, channel, scopes, status: "ok" \| "expired" \| "missing_scopes" }]`. |
