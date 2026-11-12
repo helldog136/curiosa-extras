@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.65.0 — 2026-11-12
+
+*En bref : l'Overlay alertes (1.5.0) peut donner à chaque type d'alerte Twitch une image, un son et sa façon d'arriver, et montre un aperçu et une soirée type à l'écran avant le direct. Les sons sont fabriqués par la page elle-même (rien à envoyer) et éteints par défaut. Nouvelle permission : fichiers (il garde les images que vous envoyez). Activité Twitch (1.2.1) allège sa vérification de chaque minute. Rien à régler.*
+
+*In short: the Alerts overlay (1.5.0) can give each type of Twitch alert a picture, a sound and its own way of entering, and shows a preview and a sample evening on screen before you go live. Sounds are made by the page itself (nothing to upload) and are off by default. New permission: files (it keeps the pictures you send). Twitch activity (1.2.1) lightens its check every minute. Nothing to set up.*
+
+### Nouveautés
+
+- **Une image pour chaque type d'alerte**, montrée au-dessus du texte. Envoyez-la dans la fenêtre du type, sous « Plus d'options ». L'image reste sur votre site ; rien n'est chargé d'ailleurs.
+- **Un son pour chaque type** (carillon, cloche, pop, fanfare), fabriqué par la page elle-même, donc rien à envoyer. Éteint tant que vous ne cochez pas « Jouer un son avec chaque alerte » ; le volume est un réglage avancé.
+- **Choisissez comment chaque type arrive et repart** (glissement depuis un côté, fondu, rebond, zoom, instantané), ou gardez le réglage du module.
+- **Voyez le résultat avant de passer en direct** : des cartes d'exemple, une vignette et la phrase de chaque type, et un bouton « Montrer une soirée type à l'écran » qui envoie cinq alertes d'exemple l'une après l'autre.
+- **Les fichiers de son personnels ne sont pas encore possibles** : le site n'accepte que des images et des vidéos à l'envoi. Votre assistant IA peut régler le son et la façon d'arriver, pas l'image.
+- **A picture for each type of alert**, shown above the text. Send it in the window of the type, under "More options". The picture stays on your site; nothing is loaded from elsewhere.
+- **A sound for each type** (chime, bell, pop, fanfare), made by the page itself, so nothing to upload. Off until you tick "Play a sound with each alert"; the volume is an advanced setting.
+- **Choose how each type enters and leaves** (slide from a side, fade, jiggle, pop, instant), or keep the module setting.
+- **See it before going live**: sample cards, a thumbnail and the sentence of each type, and a button "Show a sample evening on screen" that sends five sample alerts one after the other.
+- **Custom sound files are not possible yet**: the site only accepts images and videos as uploads. Your AI assistant can set the sound and the way of entering, not the picture.
+
+### Pour les développeurs
+
+- Alerts overlay 1.5.0: per-type `sound` (closed list), `anim` (the modes of `transition.mjs`) and `image` (`IMAGE_RE`, `/uploads/<uuid>.(png|jpg|webp|gif)`), carried by each alert (groups keep them); `files.claim` / `files.remove` on save; thumbnails, an escaped `html` preview and the action `simulate`. The page code for pictures, sounds and per-type transitions exists only when Twitch activity is installed (sounds: only when switched on). Permission `files`; settings `twitchSounds` and `soundVolume` (advanced). Détail : `docs/changelog-parts/alerts-look.md`.
+- Twitch activity 1.2.1: the one-minute check no longer asks the connector twice and no longer rewrites the permission request every minute.
+- Tests: `tests/alerts-twitch-look.test.mjs` (the real page with a fake `AudioContext`); `tests/helpers/overlayPageDom.mjs` accepts `globals`.
+
 ## 1.64.0 — 2026-11-12
 
 *En bref : Activité Twitch (1.2.0) et Overlay alertes (1.4.1) deviennent plus robustes. Après une coupure (redémarrage, mise à jour, panne, connexion expirée), les follows et abonnements manqués sont recherchés et marqués « peut-être manqué ». L'écoute est vérifiée chaque minute, et vous êtes prévenu par e-mail quand elle s'arrête. Nouvelle permission pour Activité Twitch : e-mail. Rien à régler.*
