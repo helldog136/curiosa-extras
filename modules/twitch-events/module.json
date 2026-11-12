@@ -9,8 +9,8 @@
   "version": "1.1.0",
   "platform": "twitch",
   "description": {
-    "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives you an OBS dock.",
-    "fr": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne, tient un journal et vous donne un dock OBS."
+    "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",
+    "fr": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme, tient un journal et donne un dock OBS."
   },
   "author": "Helldog136",
   "license": "MIT",

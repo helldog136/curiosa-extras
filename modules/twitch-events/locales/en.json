@@ -126,7 +126,7 @@
   "dock_renew_title": "New address",
   "dock_renew_help": "The address is a secret. Make a new one if it was shared by mistake.",
   "dock_renew_btn": "Make a new address",
-  "dock_renew_confirm": "The old dock stops working at once. Reload the dock in OBS with the new address.",
+  "dock_renew_confirm": "The dock in use stops working at once. Reload the dock in OBS with the new address.",
   "dock_renewed": "New address made. Paste it in the dock of OBS.",
   "dock_denied": "This address is not the right one. Copy the current address from the page of your site.",
   "dock_title": "Events",
