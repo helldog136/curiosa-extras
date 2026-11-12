@@ -27,6 +27,12 @@ test("a normal minute does nothing more than one check; the first listening lear
   assert.equal(w.tw.calls.slice(calls).filter((c) => c.path === "eventsub/subscriptions" && c.method === "GET").length, 1, "one list call a minute");
   assert.equal(w.tw.calls.slice(calls).filter((c) => c.path === "channels/followers" || c.path === "subscriptions").length, 0, "no catch-up without a gap");
   assert.equal(manifest.tabs.length > 0 && mod.tasks.listen.everyMinutes, 1);
+  const wants = w.tw.wants.length;
+  assert.equal(wants >= 1, true);
+  await C.check(w.ctx, S0, { now: NOW + 2 * MIN });
+  assert.equal(w.tw.wants.length, wants, "the permission request to the connector is not repeated every minute");
+  await C.check(w.ctx, S0, { now: NOW + 40 * MIN });
+  assert.equal(w.tw.wants.length, wants + 1, "…but it is renewed every 30 minutes");
 });
 
 test("catch-up after the site was away: new followers with their real date, new subscribers once, flagged missed, nothing twice", async () => {
@@ -186,7 +192,7 @@ async function signed(ctx, id) {
 }
 
 test("manifest: permission mail, two settings (one advanced), one-minute watch, FR and EN texts", async () => {
-  assert.equal(manifest.version, "1.2.0");
+  assert.equal(manifest.version, "1.2.1");
   assert.ok(manifest.permissions.includes("mail"));
   assert.deepEqual(manifest.settings.map((s) => s.key), ["retentionDays", "channel", "healthMail", "silentHours"]);
   assert.equal(manifest.settings.find((s) => s.key === "silentHours").advanced, true);

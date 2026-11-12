@@ -20,7 +20,7 @@
     "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.4.1",
+  "moduleVersion": "1.5.0",
   "requires": [],
   "worksWith": [
     "twitch-channel",

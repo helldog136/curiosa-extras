@@ -31,13 +31,13 @@ afterEach(() => {});
 
 test("manifeste : version mineure, consomme live.event (schéma), permission topics, réglage « texte des messages » éteint par défaut, parité fr/en", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.4.1");
+  assert.equal(manifest.version, "1.5.0");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["live.event", "twitch.event"]);
   assert.ok(manifest.permissions.includes("topics"));
   assert.ok(!manifest.requires, "aucune dépendance forte");
   const s = manifest.settings.find((x) => x.key === "youtubeText");
   assert.equal(s.type, "boolean"); assert.equal(s.default, false); assert.ok(!s.advanced);
-  assert.deepEqual(manifest.settings.map((x) => x.key), ["pushToken", "youtubeText", "visual", "accentColor", "durationSeconds", "minGapSeconds", "ignoreNames", "twitchText", "groupSeconds", "transitionIn", "transitionOut", "transitionSeconds"]);
+  assert.deepEqual(manifest.settings.map((x) => x.key), ["pushToken", "youtubeText", "visual", "accentColor", "durationSeconds", "minGapSeconds", "ignoreNames", "twitchText", "groupSeconds", "twitchSounds", "soundVolume", "transitionIn", "transitionOut", "transitionSeconds"]);
   const fr = readJson("locales/fr.json"), en = readJson("locales/en.json");
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
   const src = fs.readFileSync(`${DIR}/index.mjs`, "utf8");
