@@ -8,6 +8,7 @@ A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, 
 - Show your Twitch events with Twitch activity: one text, duration and minimum for each type.
 - Alerts wait their turn, and gifts or follows in a burst become one alert.
 - Give each type a picture, a sound and its own way of entering, and preview them before going live.
+- Give each type your own sound file.
 - Show the message of your viewers, read alerts aloud and filter what is shown with a basic moderation.
 - Pause the alerts during a quiet moment: nothing is lost.
 - Show the text of YouTube messages, if you want.
@@ -43,4 +44,4 @@ A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.6.0.
+Available since version 1.0.0. Current version: 1.7.0.

@@ -28,6 +28,8 @@ export const PRESENT = ["text", "gif", "video"];
 /** A video is an upload of the site (mp4 or webm, sent in the "Videos" tab): never an address from elsewhere. Six slots, each type picks one. */
 export const VIDEO_RE = /^\/uploads\/[0-9a-f-]{36}\.(mp4|webm)$/;
 export const VIDEO_SLOTS = 6;
+/** A sound file of the site (core 0.10.0): only an upload of the site itself, never an outside address. */
+export const AUDIO_RE = /^\/uploads\/[0-9a-f-]{36}\.(mp3|ogg|wav|m4a|aac)$/;
 /** What is read aloud: nothing, the sentence of the alert, the text written by the viewer, or both. */
 export const TTS_MODES = ["off", "sentence", "text", "both"];
 /** The types that can carry a text written by the viewer (Twitch gives one for these only: a resub message, a cheer message, the text of a reward). */
@@ -80,6 +82,7 @@ export function normaliseConfig(raw) {
       sound: SOUNDS.includes(r.sound) ? r.sound : "none",
       anim: ANIMS.includes(r.anim) ? r.anim : "",
       image: typeof r.image === "string" && IMAGE_RE.test(r.image) ? r.image : "",
+      audio: typeof r.audio === "string" && AUDIO_RE.test(r.audio) ? r.audio : "",
       present: PRESENT.includes(r.present) ? r.present : "text",
       video: Number.isInteger(r.video) && r.video >= 1 && r.video <= VIDEO_SLOTS ? r.video : Number.isInteger(Number(r.video)) && Number(r.video) >= 1 && Number(r.video) <= VIDEO_SLOTS ? Number(r.video) : 0,
       videoSound: r.videoSound === true,
@@ -106,7 +109,7 @@ const look = (cfg, env = {}) => {
   // a video alone replaces the picture; a picture alone (a GIF) hides the text; otherwise the text, with its optional picture
   const video = cfg.present === "video" && cfg.video ? env.videos?.[cfg.video - 1] : null;
   const media = video && VIDEO_RE.test(video) ? { present: "media", video, ...(cfg.videoSound ? { videoSound: true } : {}) } : cfg.present === "gif" && cfg.image ? { present: "media" } : null;
-  return { ...(cfg.image && !(media && media.video) ? { image: cfg.image } : {}), ...(media ?? {}), ...(cfg.sound && cfg.sound !== "none" ? { sound: cfg.sound } : {}), ...(cfg.anim ? { anim: cfg.anim } : {}) };
+  return { ...(cfg.image && !(media && media.video) ? { image: cfg.image } : {}), ...(media ?? {}), ...(cfg.audio ? { audio: cfg.audio } : cfg.sound && cfg.sound !== "none" ? { sound: cfg.sound } : {}), ...(cfg.anim ? { anim: cfg.anim } : {}) };
 };
 const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** What is read aloud for an alert (empty = nothing): the sentence and/or the viewer text, as the type asks, the name replaced when "read the name" is off, cut at the maximum. */

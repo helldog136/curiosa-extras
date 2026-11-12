@@ -5,8 +5,8 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.6.0",
-  "minCore": "0.6.0",
+  "version": "1.7.0",
+  "minCore": "0.10.0",
   "description": {
     "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
     "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."

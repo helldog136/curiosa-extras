@@ -195,7 +195,7 @@ const GOLDEN = {
     }
   },
   "mascot": {
-    "manifest": "cd8edff18a626325",
+    "manifest": "0c295dd021625567",
     "keys": [
       "adminActions",
       "adminPanel",
