@@ -39,13 +39,21 @@ function themeVars(theme) {
   const pairs = [["accent", t0.accent], ["accent2", t0.accent2 || t0.accent], ["surface", t0.surface], ["fg", t0.fg], ["muted", t0.muted], ["line", t0.line], ["bg", t0.bg]];
   return pairs.filter(([, c]) => HEX.test(String(c ?? ""))).map(([k, c]) => `--v-${k}:${c}`).join(";");
 }
+/** 1.3.0: when an idle animation is set, the corner of the site shows it: its first picture is in the preview (the moving one is on the Animation tab and on the site). Nothing set: nothing added. */
+function animFigure(ctx, config) {
+  const spec = M.animForPage(config.anim.idle);
+  if (!spec) return "";
+  const src = spec.kind === "gif" ? spec.src : spec.frames[0];
+  return `<figure class="mcp-fig"><div class="mc-av" aria-hidden="true"><img class="mc-i mc-sq" src="${esc(src)}" alt="" style="object-fit:contain"></div><figcaption>${esc(ctx.t("previewAnim"))}</figcaption></figure>`;
+}
 export function previewHtml(ctx, config, sample) {
   const name = S.nameFor(ctx, config);
   const alt = S.altFor(ctx, config);
   const image = config.look === "image" && config.image;
   const avatar = (mood, pill) => `<div class="mc-av${pill ? " mcp-pill" : ""}" aria-hidden="true">${image ? `<img class="mc-i ${config.crop === "square" ? "mc-sq" : "mc-rd"}" src="${esc(config.image)}" alt="">` : F.drawFace(mood)}</div>`;
   const figures = (image ? [["happy", ctx.t("previewImage"), false], ["happy", ctx.t("previewPill"), true]] : [["happy", ctx.t("moodHappy"), false], ["curious", ctx.t("moodCurious"), false], ["sleepy", ctx.t("moodSleepy"), true]])
-    .map(([mood, label, pill]) => `<figure class="mcp-fig">${avatar(mood, pill)}<figcaption>${esc(label)}</figcaption></figure>`).join("");
+    .map(([mood, label, pill]) => `<figure class="mcp-fig">${avatar(mood, pill)}<figcaption>${esc(label)}</figcaption></figure>`).join("")
+    + animFigure(ctx, config);
   return {
     type: "html",
     html: `<style>${A.CSS}

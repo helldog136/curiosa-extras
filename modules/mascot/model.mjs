@@ -239,10 +239,16 @@ export function blipPlan(text, seconds, p) {
 const UPLOAD_IMAGE = /^\/uploads\/[0-9a-f-]{36}\.(?:png|jpe?g|webp|gif)(?:\?c=[0-9a-z._-]{1,60}(?:&s=1)?)?$/;
 /** A picture of THIS site (an upload of the core), never an outside address. Empty when it does not fit. */
 export const uploadImage = (value) => { const s = String(value ?? "").trim(); return UPLOAD_IMAGE.test(s) ? s : ""; };
-/** The kinds of file accepted for "Your own sound". Today the core takes no audio file: a short MP4 or WebM video is the supported route. When the core accepts audio, add "mp3|ogg|wav|m4a" here and switch the setting `voiceFile` to type "audio". */
-export const SOUND_EXTS = "mp4|webm";
+/** The files accepted for "Your own sound". Since core 0.10.0 the core takes audio files (`AUDIO_EXTS`, what the Voice form and the `audio` setting store). Short MP4 / WebM files sent
+ *  before (1.2.x, as a video) are still read, so no existing configuration needs a conversion: `SOUND_EXTS` = both. */
+export const AUDIO_EXTS = "mp3|ogg|wav|m4a|aac";
+export const SOUND_EXTS = `${AUDIO_EXTS}|mp4|webm`;
 const UPLOAD_SOUND = new RegExp(`^/uploads/[0-9a-f-]{36}\\.(?:${SOUND_EXTS})$`);
-/** A sound made of a short video file of THIS site (the core takes no audio files). Empty when it does not fit. */
+const UPLOAD_AUDIO = new RegExp(`^/uploads/[0-9a-f-]{36}\\.(?:${AUDIO_EXTS})$`);
+/** A sound file the Voice form may store: an audio upload of the core, nothing else (the action checks it again, a browser is never trusted). */
+export const uploadAudio = (value) => { const s = String(value ?? "").trim(); return UPLOAD_AUDIO.test(s) ? s : ""; };
+/** Weight limit of the sound of the mascot (the core takes 10 MB): it is played for every sentence, and as a blip it must be short. */
+export const SOUND_BYTES = 4 * 1024 * 1024;
 export const uploadSound = (value) => { const s = String(value ?? "").trim(); return UPLOAD_SOUND.test(s) ? s : ""; };
 
 const bytes = (n) => Math.min(ANIM.bytes * 4, Math.max(0, Math.round(Number(n)) || 0));
@@ -263,6 +269,9 @@ export function animForPage(a) {
   return null;
 }
 
+/** The sound file in use: the one sent in the Voice form, else the one of the older setting (1.2.x) so that nothing has to be converted. */
+export const soundOf = (voice, setting) => uploadSound(voice?.file) || uploadSound(setting);
+
 /** The voice as stored. Every number is one of the friendly choices above (or a bounded percentage). */
 export function normalizeVoice(raw) {
   const r = raw && typeof raw === "object" ? raw : {};
@@ -271,6 +280,7 @@ export function normalizeVoice(raw) {
   return {
     mode: VOICE_MODES.includes(r.mode) ? r.mode : "none",
     volume: num(r.volume, VOLUME),
+    file: uploadSound(r.file), fileBytes: uploadSound(r.file) ? bytes(r.fileBytes) : 0,
     blips: { preset: BLIP_CHOICES.includes(b.preset) ? b.preset : "soft", pitch: pick(PITCHES, b.pitch, "normal"), vary: pick(VARIATIONS, b.vary, "some"), rate: pick(BLIP_RATES, b.rate, "normal") },
     speech: { lang: /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(String(s.lang ?? "")) ? s.lang : "", name: oneLine(s.name, 80), rate: pick(SPEECH_RATES, s.rate, "normal"), pitch: pick(SPEECH_PITCHES, s.pitch, "normal") },
   };

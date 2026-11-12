@@ -67,7 +67,7 @@ test("animation settings: only uploads of the site, bounded, a mode without cont
   assert.equal(M.animForPage(M.normalizeAnim({ mode: "frames", frames: [] })), null);
   assert.deepEqual(M.animForPage(M.normalizeAnim({ mode: "gif", gif: PIC(5, "gif") })), { kind: "gif", src: PIC(5, "gif"), fps: 0, once: false });
   assert.equal(M.animForPage(M.normalizeAnim({ mode: "frames", frames: frames(2) })).fps, 8, "default speed");
-  assert.equal(M.uploadSound(SOUND), SOUND); assert.equal(M.uploadSound(`/uploads/${UUID(1)}.mp3`), "", "no audio file today");
+  assert.equal(M.uploadSound(SOUND), SOUND, "a short video sent with 1.2.x is still read"); assert.equal(M.uploadSound(`/uploads/${UUID(1)}.mp3`), `/uploads/${UUID(1)}.mp3`, "audio files since core 0.10.0"); assert.equal(M.uploadAudio(SOUND), "", "the Voice form stores audio files only"); assert.equal(M.uploadSound(`/uploads/${UUID(1)}.png`), "");
   assert.deepEqual(M.voiceForPage({ mode: "custom" }, "", "en"), { mode: "none" }, "your own sound without a file is silent");
   assert.equal(M.voiceForPage({ mode: "blips", blips: { preset: "custom" } }, SOUND, "en").blips.sample, SOUND);
   assert.equal(M.voiceForPage({ mode: "blips", blips: { preset: "custom" } }, "", "en").blips.sample, undefined, "no file: the soft preset instead");
@@ -328,7 +328,7 @@ test("admin: each voice mode shows only its own settings", async () => {
   const names = async (mode) => { await S.saveConfig(ctx, { voice: { mode } }); return form(await def.adminPanel(ctx, { query: {} }), "saveVoice")?.fields.filter((f) => f.kind !== "hidden").map((f) => f.name); };
   assert.deepEqual(await names("blips"), ["preset", "pitch", "rate", "volume", "vary"]);
   assert.deepEqual(await names("speech"), ["lang", "srate", "spitch", "volume", "vname"]);
-  assert.deepEqual(await names("custom"), ["volume"]);
+  assert.deepEqual(await names("custom"), ["sound", "volume"]);
   assert.equal(await names("none"), undefined);
   const blocks = await def.adminPanel(ctx, { query: {} });
   assert.equal(form(blocks, "saveVoiceMode").fields[0].options.length, 4, "four big choices");
@@ -431,4 +431,58 @@ test("assistants: read the animation settings; change speed and voice (never pic
   assert.equal(m.find((t) => t.name === "mascot_animation_get").readOnly, true);
   assert.ok(!m.find((t) => t.name === "mascot_animation_update").readOnly, "the write tool is not read-only, so the core keeps it off until granted");
   assert.ok(K.manifest.i18n.fr["mcp.mascot_animation_update"] && K.manifest.i18n.fr["mcp.mascot_animation_get"]);
+});
+
+/* ───────────── core 0.10.0: audio files ───────────── */
+
+const SND = (n, ext = "mp3") => `/uploads/${UUID(800 + n)}.${ext}`;
+
+test("audio: the sound is sent in the Voice form (kind audio), kept with its size, only audio files, 4 MB at most; replacing or removing lets the old file go", async () => {
+  const ctx = await adminWorld({ uploads: [{ url: SND(1), by: "u1", bytes: 80_000 }, { url: SND(2, "ogg"), by: "u1", bytes: 60_000 }, { url: SND(3), by: "u1", bytes: 6_000_000 }, { url: SND(4, "mp4"), by: "u1", bytes: 1000 }] });
+  await def.adminActions.saveVoiceMode.run(ctx, { mode: "custom" });
+  const field = () => def.adminPanel(ctx, { query: {} }).then((b) => b.find((x) => x.action === "saveVoice").fields.find((f) => f.name === "sound"));
+  assert.equal((await field()).kind, "audio", "native audio control of the core");
+  const run = (v) => def.adminActions.saveVoice.run(ctx, { volume: "", ...v });
+  assert.equal((await run({ sound: "https://elsewhere.example.org/a.mp3" })).errors.sound, ctx.t("errVoSound"));
+  assert.equal((await run({ sound: SND(4, "mp4") })).errors.sound, ctx.t("errVoSound"), "a video is not what the form stores");
+  assert.equal((await run({ sound: `/uploads/${UUID(1)}.png` })).errors.sound, ctx.t("errVoSound"));
+  assert.match((await run({ sound: SND(3) })).errors.sound, /5\.7 MB.*4\.0 MB/);
+  assert.equal((await run({ sound: SND(9) })).errors.sound, ctx.t("anClaim_unknown"));
+  assert.equal((await S.loadConfig(ctx)).voice.file, "", "nothing saved on an error");
+  assert.ok((await run({ sound: SND(1) })).ok);
+  assert.deepEqual([(await S.loadConfig(ctx)).voice.file, (await S.loadConfig(ctx)).voice.fileBytes], [SND(1), 80_000]);
+  assert.ok((await run({ sound: SND(2, "ogg") })).ok);
+  assert.ok(ctx.calls.files.some((c) => c.op === "remove" && c.url === SND(1)), "the replaced file is deleted from the site");
+  assert.ok((await run({ sound: "" })).ok);
+  assert.ok(ctx.calls.files.some((c) => c.op === "remove" && c.url === SND(2, "ogg")));
+  assert.equal((await S.loadConfig(ctx)).voice.file, "");
+});
+
+test("audio: the page plays the file of the Voice form (whole, or as the pitched blip); the older setting is still read; the form field shows only where it is used", async () => {
+  const whole = await world({ voice: { mode: "custom", volume: 30, file: SND(1) } });
+  const w = linesOf((await page(whole)).html);
+  assert.equal(w.x.voice.custom, SND(1));
+  const blip = await world({ voice: { mode: "blips", volume: 30, file: SND(2, "ogg"), blips: { preset: "custom", pitch: "normal", vary: "some", rate: "normal" } } });
+  assert.equal(linesOf((await page(blip)).html).x.voice.blips.sample, SND(2, "ogg"));
+  const legacy = await world({ voice: { mode: "custom", volume: 30 }, settings: { voiceFile: SOUND } });
+  assert.equal(linesOf((await page(legacy)).html).x.voice.custom, SOUND, "a 1.2.x configuration keeps working with no conversion");
+  const both = await world({ voice: { mode: "custom", volume: 30, file: SND(1) }, settings: { voiceFile: SOUND } });
+  assert.equal(linesOf((await page(both)).html).x.voice.custom, SND(1), "the new one wins");
+  const names = async (c) => (await def.adminPanel(c, { query: {} })).find((b) => b.action === "saveVoice").fields.filter((f) => f.kind !== "hidden").map((f) => f.name);
+  assert.ok((await names(blip)).includes("sound"), "blips set to your own sound: the file is asked for here");
+  const soft = await world({ voice: { mode: "blips", volume: 30, blips: { preset: "soft", pitch: "normal", vary: "some", rate: "normal" } } });
+  assert.ok(!(await names(soft)).includes("sound"), "with a built-in blip the file is not asked for");
+  const vis = (f) => f.fields.filter((x) => x.kind !== "hidden" && !x.folded).length;
+  assert.ok(vis((await def.adminPanel(blip, { query: {} })).find((b) => b.action === "saveVoice")) <= 5);
+  assert.ok(vis((await def.adminPanel(whole, { query: {} })).find((b) => b.action === "saveVoice")) <= 5);
+});
+
+test("audio: assistants see the file in use and can pick your own sound only when one was sent", async () => {
+  const ctx = await K.publishedCtx({}, { permissions: [...K.manifest.permissions] });
+  await assert.rejects(def.mcp.mascot_animation_update(ctx, { voiceMode: "custom" }), (e) => /Voice/.test(e.message) && !/More options/.test(e.message));
+  await S.saveConfig(ctx, { voice: { mode: "none", file: SND(1), fileBytes: 10 } });
+  assert.equal((await def.mcp.mascot_animation_get(ctx)).voice.ownSoundChosen, true);
+  assert.deepEqual(await def.mcp.mascot_animation_update(ctx, { voiceMode: "custom", blipsPreset: "custom" }), { ok: true });
+  assert.equal(K.manifest.settings.find((s) => s.key === "voiceFile").type, "audio");
+  assert.equal(K.manifest.minCore, "0.10.0");
 });

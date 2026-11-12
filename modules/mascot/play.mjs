@@ -162,3 +162,71 @@ export function mascotVoice(w, v, plan) {
     },
   };
 }
+
+/**
+ * The animation of the mascot in the CORNER OF THE SITE (1.3.0). It is appended to the visitor script only when an animation is set, and it does not touch the visitor script:
+ * it watches the page. When the mascot is put in the page (`.mc`) it lays an animated picture over its avatar (the drawing stays underneath, so the size never changes: no layout shift),
+ * plays the idle animation, and when a bubble (`.mc-bub`) comes in it plays the talking animation for the reading time of the sentence (`secs` is `talkSeconds`), then idle again.
+ *   S  { idle, talk, cps, min, max } as the overlay page needs them (see `animForPage`).   makePlayer  `mascotPlayer`.
+ * Silent, whatever the voice chosen for the overlay. Less motion: the first picture only (a GIF cannot be frozen: the drawing stays). A hidden tab stops the pictures. SELF-CONTAINED.
+ */
+export function mascotSiteAnim(S, secs, makePlayer) {
+  var w = window, D = document;
+  if (!w.MutationObserver || (!S.idle && !S.talk)) return;
+  var calm = !!(w.matchMedia && w.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var root = null, av = null, img = null, pl = null, bubble = null, timer = 0, spec = null, rootObs = null, avObs = null;
+  function has(n, c) { return (" " + n.className + " ").indexOf(" " + c + " ") > -1; }
+  function add(n, c) { if (!has(n, c)) n.className += " " + c; }
+  function drop(n, c) { n.className = (" " + n.className + " ").replace(" " + c + " ", " ").replace(/^\s+|\s+$/g, ""); }
+  function play(next, restart) {
+    spec = next;
+    if (!pl) return;
+    var ok = next ? pl.play(next, restart) : false;
+    if (ok) add(root, "mc-anim"); else { drop(root, "mc-anim"); img.hidden = true; }
+  }
+  function endTalk() { clearTimeout(timer); timer = 0; if (S.talk && root) play(S.idle, false); }
+  function talk(text) {
+    if (calm || !S.talk) return;
+    clearTimeout(timer);
+    play(S.talk, true);
+    timer = setTimeout(endTalk, secs(text, S.cps, S.min, S.max) * 1000);
+  }
+  function look() {
+    var b = root && root.querySelector(".mc-bub");
+    if (b && b !== bubble) { bubble = b; var p = b.querySelector(".mc-p"); talk(p ? p.textContent : ""); }
+    else if (!b && bubble) { bubble = null; endTalk(); }
+  }
+  function leave() {
+    clearTimeout(timer); timer = 0;
+    if (rootObs) rootObs.disconnect();
+    if (avObs) avObs.disconnect();
+    if (pl) pl.stop();
+    root = av = img = pl = bubble = rootObs = avObs = null;
+  }
+  function attach(r) {
+    var a = r.querySelector(".mc-av");
+    if (!a) return;
+    root = r; av = a;
+    img = D.createElement("img"); img.className = "mc-an"; img.setAttribute("alt", ""); img.setAttribute("aria-hidden", "true"); img.hidden = true;
+    av.appendChild(img);
+    pl = makePlayer(img, calm);
+    pl.preload(S.idle);
+    setTimeout(function () { if (pl) pl.preload(S.talk); }, 0);
+    // The avatar is rewritten when the mood changes (`innerHTML`): the animated picture is put back, never restarted.
+    avObs = new w.MutationObserver(function () { if (img && img.parentNode !== av) av.appendChild(img); });
+    avObs.observe(av, { childList: true });
+    rootObs = new w.MutationObserver(look);
+    rootObs.observe(root, { childList: true });
+    play(S.idle, false);
+    look();
+  }
+  new w.MutationObserver(function () {
+    var r = (D.body || D.documentElement).querySelector(".mc");
+    if (root && (!r || r !== root)) leave();
+    if (r && !root) attach(r);
+  }).observe(D.body || D.documentElement, { childList: true });
+  D.addEventListener("visibilitychange", function () {
+    if (!pl) return;
+    if (D.hidden) pl.stop(); else if (spec) { var s = spec; spec = null; play(s, false); }
+  });
+}
