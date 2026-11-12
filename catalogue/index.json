@@ -2780,7 +2780,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-events",
       "ref": "v1.64.0",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",

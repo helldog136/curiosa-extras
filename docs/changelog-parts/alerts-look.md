@@ -1,7 +1,7 @@
 ## Alerts overlay 1.5.0: pictures, sounds and ways of entering for your Twitch alerts / Overlay alertes 1.5.0 : images, sons et façons d'arriver pour vos alertes Twitch
 
-*EN: module touched: Alerts overlay 1.5.0. New permission: files (it keeps the pictures you send). Nothing to set up: sounds are off and pictures empty until you choose.*
-*FR : module touché : Overlay alertes 1.5.0. Nouvelle permission : fichiers (il garde les images que vous envoyez). Rien à régler : les sons sont éteints et les images vides tant que vous ne choisissez rien.*
+*EN: modules touched: Alerts overlay 1.5.0 and Twitch activity 1.2.1 (a lighter check every minute). New permission: files (it keeps the pictures you send). Nothing to set up: sounds are off and pictures empty until you choose.*
+*FR : modules touchés : Overlay alertes 1.5.0 et Activité Twitch 1.2.1 (une vérification plus légère chaque minute). Nouvelle permission : fichiers (il garde les images que vous envoyez). Rien à régler : les sons sont éteints et les images vides tant que vous ne choisissez rien.*
 
 ### What changes for you / Ce qui change pour vous
 
@@ -21,3 +21,4 @@
 - `twitch.mjs`: per-type `sound` (closed list), `anim` (the modes of `transition.mjs`) and `image` (`IMAGE_RE`: `/uploads/<uuid>.(png|jpg|webp|gif)`), carried by each alert (groups keep them). `twitch-admin.mjs`: three folded fields in the dialog, `files.claim` / `files.remove` on save, thumbnails in the table, an `html` preview (escaped, site pictures only), action `simulate`. `index.mjs`: the page code for pictures, sounds and per-type transitions exists only when Twitch activity is installed and, for sounds, when they are switched on; `card._anim` carries the per-type mode into `fx`.
 - Permission `files` added; settings `twitchSounds` (simple) and `soundVolume` (advanced) on the tab `twitch`; MCP `alert_template_update` takes `sound` and `animation`.
 - Tests: `tests/alerts-twitch-look.test.mjs` (the real page with a fake `AudioContext`: sounds once per alert at the chosen volume, none when off; pictures refused unless the site's own; per-type transitions; thumbnails, preview and the sample evening). `tests/helpers/overlayPageDom.mjs` accepts `globals`.
+- Twitch activity 1.2.1: the one-minute check no longer asks the connector for the account twice and no longer rewrites the permission request every minute (renewed every 30 minutes or when the wish changes); `diagnose` and `ensureListening` take `now`.
