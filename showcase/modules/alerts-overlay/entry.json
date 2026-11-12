@@ -12,18 +12,19 @@
     "fr": "Overlay alertes (OBS)"
   },
   "summary": {
-    "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
-    "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+    "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
   },
   "pitch": {
-    "en": "A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid. Your stream tools or YouTube send them.",
-    "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
+    "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.3.0",
+  "moduleVersion": "1.4.0",
   "requires": [],
   "worksWith": [
     "twitch-channel",
+    "twitch-events",
     "youtube-live-actions"
   ],
   "status": "stable",
@@ -50,6 +51,18 @@
       "caption": {
         "en": "What your audience sees in OBS.",
         "fr": "Ce que voit votre public dans OBS."
+      }
+    },
+    {
+      "file": "twitch.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Alerts overlay, the Twitch events tab, with demo data",
+        "fr": "Overlay alertes, l'onglet Événements Twitch, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "One row per type: text, duration, minimum and a switch.",
+        "fr": "Une ligne par type : texte, durée, minimum et un interrupteur."
       }
     }
   ],
