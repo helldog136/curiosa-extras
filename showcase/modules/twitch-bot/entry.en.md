@@ -8,6 +8,7 @@ Your site answers the commands typed in your Twitch chat. It also runs timers, c
 - Cut everything with an emergency stop that your moderators can also trigger from the chat.
 - Answer only while you are live, if you prefer.
 - With Audience, pause the bot and add a command from the remote on your phone or in OBS.
+- Switch on the collaboration mode when you stream with others: the bot talks less on its own.
 
 ## Why you will like it
 
@@ -36,4 +37,4 @@ Your site answers the commands typed in your Twitch chat. It also runs timers, c
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.13.0.
+Available since version 1.0.0. Current version: 1.14.0.

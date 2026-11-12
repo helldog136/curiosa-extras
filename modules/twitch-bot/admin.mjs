@@ -16,6 +16,8 @@ const CU = await import(`./commandsUi.mjs${v}`);
 const FU = await import(`./formsUi.mjs${v}`);
 const RA = await import(`./rewardsAdmin.mjs${v}`);
 const TA = await import(`./timersAdmin.mjs${v}`);
+const CO = await import(`./collab.mjs${v}`);
+const COU = await import(`./collabUi.mjs${v}`);
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (v, n) => { const s = String(v ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
@@ -168,7 +170,7 @@ export async function panel(ctx, { query }) {
     await ensureListening(ctx, info.s, { settle: true }).catch(() => {});
     state = await st.readState(ctx);
   }
-  const blocks = [K.bootstrap(ctx), topBar(ctx, info, state), ...(await listenBlocks(ctx, info, state)), ...botAccountBlocks(ctx, info)];
+  const blocks = [K.bootstrap(ctx), topBar(ctx, info, state), ...COU.blocks(ctx, info.s, await CO.current(ctx)), ...(await listenBlocks(ctx, info, state)), ...botAccountBlocks(ctx, info)];
   // La fenêtre « Modifier » ou « Nouvelle commande » : le formulaire n'est renvoyé que quand l'adresse le demande (`?edit=…`, `?new=1`) ; la liste est toujours là, dessous.
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
@@ -224,6 +226,15 @@ const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled 
 export const actions = {
   async mute(ctx) { await st.setMuted(ctx, true); return { ok: ctx.t("muted_done") }; },
   async unmute(ctx) { await st.setMuted(ctx, false); return { ok: ctx.t("unmuted_done") }; },
+  /** Collaboration mode: one press switches it on or off with the saved choices (a repeated press changes nothing). */
+  async collabOn(ctx) { await CO.setOn(ctx, true, "admin"); return { ok: ctx.t("co_on_done") }; },
+  async collabOff(ctx) { await CO.setOn(ctx, false, "admin"); return { ok: ctx.t("co_off_done") }; },
+  async collabSave(ctx, v) {
+    const r = CO.check({ mode: v.collabMode, ratio: v.collabRatio, factor: v.collabFactor, hours: v.collabHours, quiet: v.collabQuiet === "on" ? "on" : "off" }, CO.DEFAULTS);
+    if (!r.ok) return { errors: COU.errors(ctx, r.errors) };
+    await CO.saveChoices(ctx, r.value);
+    return { ok: ctx.t("co_saved") };
+  },
   async check(ctx) {
     const r = await ensureListening(ctx, settingsOf(ctx), { settle: true });
     await ensureRedeemListening(ctx, settingsOf(ctx), { settle: true }).catch(() => {});

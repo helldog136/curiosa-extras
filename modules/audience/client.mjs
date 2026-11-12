@@ -480,10 +480,10 @@ export const REMOTE_JS = String.raw`(function () {
     return root;
   }
   /* A panel without a live view (a module that gives switches, buttons and forms, like the Twitch bot): plain, but usable on a phone and in a narrow dock. */
-  function toggleEl(t, tg) {
-    var wrap = h("div", "tgw"), err = ui.errors[t.pid + ":tg"];
+  function toggleEl(t, tg, i) {
+    var key = t.pid + ":tg" + (i ? i : ""), wrap = h("div", "tgw"), err = ui.errors[key];   // the first switch keeps the field name "tg"; the next ones are "tg1", "tg2" (an error is said under its own switch)
     var b = h("button", "tg " + (tg.on ? "on" : "off")); b.type = "button"; b.setAttribute("role", "switch"); b.setAttribute("aria-checked", tg.on ? "true" : "false");
-    b.setAttribute("data-fk", "tg:" + tg.id); b.setAttribute("data-in", t.pid + ":tg");
+    b.setAttribute("data-fk", "tg:" + tg.id); b.setAttribute("data-in", key);
     var lab = h("span", "tgl", tg.label), st = h("span", "tgs", tg.text), trk = h("span", "trk"); trk.setAttribute("aria-hidden", "true"); trk.appendChild(h("i", "knob"));
     b.appendChild(lab); b.appendChild(st); b.appendChild(trk);
     var hid = "tgh" + (++seq), eid = "tge" + seq, ids = [];
@@ -492,7 +492,7 @@ export const REMOTE_JS = String.raw`(function () {
     b.addEventListener("click", function () {
       if (b.disabled) return;
       var before = st.textContent, done = false;
-      delete ui.errors[t.pid + ":tg"]; er.hidden = true; st.textContent = T.busy;   // visible at once: the answer takes a moment
+      delete ui.errors[key]; er.hidden = true; st.textContent = T.busy;   // visible at once: the answer takes a moment
       press(t.pid, tg.id, tg.values, b, function () { done = true; }).then(function () { if (!done && document.body.contains(st) && st.textContent === T.busy) st.textContent = before; });
     });
     wrap.appendChild(b);
@@ -505,7 +505,7 @@ export const REMOTE_JS = String.raw`(function () {
     hd.appendChild(h("p", "ttl", p.title));
     if (p.state && p.state.text) hd.appendChild(h("p", "sub", p.state.text));
     root.appendChild(hd);
-    (p.toggles || []).forEach(function (tg) { root.appendChild(toggleEl(t, tg)); });
+    (p.toggles || []).forEach(function (tg, i) { root.appendChild(toggleEl(t, tg, i)); });
     (p.forms || []).forEach(function (f) {
       var fm = h("form", "gform"); fm.noValidate = true;
       fm.appendChild(h("p", "ftl", f.title)); fm.appendChild(formBody(t, f));
