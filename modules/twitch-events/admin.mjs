@@ -5,7 +5,8 @@ const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const pub = await import(`./publish.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { diagnose, ensureListening, declareScopes } = await import(`./listen.mjs${v}`);
+const { diagnose, declareScopes } = await import(`./listen.mjs${v}`);
+const cycle = await import(`./cycle.mjs${v}`);
 const { API } = await import(`./channel.mjs${v}`);
 const dockapi = await import(`./dockapi.mjs${v}`);
 const { TONE, detail, who } = await import(`./describe.mjs${v}`);
@@ -54,6 +55,10 @@ async function statusBlocks(ctx, d, state) {
     else if (code === "creds_missing" && d.main?.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) });
     else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
   }
+  if (state.health?.code === "silent") out.push({ type: "banner", tone: "warning", text: t("health_silent", { n: settingsOf(ctx).silentHours }) });
+  const c = state.catchup;
+  if (c && Date.now() - c.at < 86_400_000 && c.follows + c.subs > 0) out.push({ type: "markdown", text: t("catchup_note", { n: c.follows + c.subs, when: fmtDate(ctx, c.at) }) });
+  if (state.health?.mail === "off") out.push({ type: "markdown", text: t("health_mail_off") });
   if (state.revoked && Date.now() - state.revoked.at < 86_400_000) out.push({ type: "banner", tone: "warning", text: t("revoked_note", { when: fmtDate(ctx, state.revoked.at) }) });
   // The "Check now" button is only worth its space when something is wrong (the Types tab has one too).
   if (code !== "listening") out.push({ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] });
@@ -102,7 +107,7 @@ export async function panel(ctx, { query } = {}) {
 const fail = (ctx, key, vars) => ({ error: ctx.t(key, vars) });
 export const actions = {
   async check(ctx) {
-    const r = await ensureListening(ctx, settingsOf(ctx), { settle: true });
+    const r = await cycle.check(ctx, settingsOf(ctx), { settle: true });
     return r.code === "listening" ? { ok: ctx.t("check_ok") } : { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };
   },
   /** The switch of a type: SAYS the wanted state (never inverts). Declares the permissions that become needed, then brings the subscriptions in line. */
@@ -112,7 +117,7 @@ export const actions = {
     const on = values.enabled === "1";
     const state = await st.updateState(ctx, (x) => { x.enabled = { ...st.enabledOf(x), [id]: on }; });
     const s = settingsOf(ctx), d = await diagnose(ctx, s, { declare: true });
-    const r = await ensureListening(ctx, s).catch(() => null);
+    const r = await cycle.check(ctx, s).catch(() => null);
     if (on && d.code === "ready" && r && r.code === "need_more") return { ok: ctx.t("switch_need_more", { type: ctx.t(`type_${id}`) }) };
     return { ok: ctx.t(on ? "switch_on" : "switch_off", { type: ctx.t(`type_${id}`) }) };
   },

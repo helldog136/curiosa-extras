@@ -6,7 +6,7 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "platform": "twitch",
   "description": {
     "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",
@@ -23,7 +23,8 @@
     "admin",
     "routes",
     "topics",
-    "mcp"
+    "mcp",
+    "mail"
   ],
   "requires": [
     {
@@ -110,11 +111,44 @@
         "en": "Only asked when your site has several Twitch channels. Leave empty to use the first one.",
         "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch. Laissez vide pour utiliser la première."
       }
+    },
+    {
+      "key": "healthMail",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "E-mail me when listening stops",
+        "fr": "Me prévenir par e-mail si l'écoute s'arrête"
+      },
+      "help": {
+        "en": "One e-mail to the owner per problem, and one when all is back.",
+        "fr": "Un e-mail à la personne propriétaire par problème, et un au retour."
+      }
+    },
+    {
+      "key": "silentHours",
+      "type": "number",
+      "default": 3,
+      "min": 0,
+      "max": 48,
+      "unit": {
+        "en": "hours",
+        "fr": "heures"
+      },
+      "advanced": true,
+      "label": {
+        "en": "Warn when live without any event for",
+        "fr": "Prévenir si direct sans événement depuis"
+      },
+      "help": {
+        "en": "A quiet stream is normal; this only asks you to check. 0 = never.",
+        "fr": "Un direct calme est normal ; on vous demande juste de vérifier. 0 = jamais."
+      }
     }
   ],
   "privacy": {
-    "en": "The journal keeps, for each event, the public display name of the person (who follows, subscribes, gifts, cheers or raids), the amount, tier or count, and the public message that went with a resub or cheer. Nothing else about them: no e-mail, no account details. Lines are removed after the retention you choose (30 days by default); test lines after one day. Only your administration team reads it.",
-    "fr": "Le journal garde, pour chaque événement, le pseudo public de la personne (qui suit, offre un abonnement, envoie des bits ou raide), le montant, le niveau ou le nombre, et le message public joint à un réabonnement ou à des bits. Rien d'autre sur elle : ni e-mail, ni données de compte. Les lignes sont retirées après la durée que vous choisissez (30 jours par défaut) ; les lignes de test après un jour. Seule votre équipe d'administration le lit."
+    "en": "The journal keeps, for each event, the public display name (who follows, subscribes, gifts, cheers or raids), the amount, tier or count, and the public message of a resub or bits. Nothing else about people. Lines go after the retention you choose (30 days by default), test lines after a day. Only your team reads it. If listening stops, one e-mail goes to the site owner, with no viewer data.",
+    "fr": "Le journal garde, pour chaque événement, le pseudo public (qui suit, offre un abonnement, envoie des bits ou raide), le montant, le niveau ou le nombre, et le message public d'un réabonnement ou de bits. Rien d'autre sur les personnes. Les lignes partent après la durée choisie (30 jours par défaut), les tests après un jour. Seule votre équipe le lit. Si l'écoute s'arrête, un e-mail part à la personne propriétaire, sans donnée de public."
   },
   "mcp": [
     {
@@ -166,7 +200,7 @@
       "name": "twitch_events_status",
       "readOnly": true,
       "default": false,
-      "description": "Tell whether the site is really listening to Twitch: the overall state (listening, pending, need_more = a Twitch permission to give again, need_reconnect, site_private, ...), the Twitch permissions still missing, the state and last event of each type, the number of journal lines, the retention, and whether the alerts overlay is installed. Use it first when the owner says 'my alerts did not show'.",
+      "description": "Tell whether the site is really listening to Twitch: the overall state (listening, pending, need_more = a Twitch permission to give again, need_reconnect, site_private, ...), the Twitch permissions still missing, the state and last event of each type, the number of journal lines, the retention, whether the alerts overlay is installed, the health (a problem, since when, whether the owner was warned by e-mail) and the last catch-up after a gap. Use it first when the owner says 'my alerts did not show'.",
       "input": {
         "type": "object",
         "properties": {}

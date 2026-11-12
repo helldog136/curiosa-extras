@@ -9,7 +9,8 @@ const admin = await import(`./admin.mjs${v}`);
 const pub = await import(`./publish.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
-const { ensureListening, stopListening } = await import(`./listen.mjs${v}`);
+const { stopListening } = await import(`./listen.mjs${v}`);
+const cycle = await import(`./cycle.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const dockapi = await import(`./dockapi.mjs${v}`);
 const dock = await import(`./dock.mjs${v}`);
@@ -48,13 +49,14 @@ export default {
     },
   },
   tasks: {
-    // Twitch cuts a subscription whose site did not answer often enough: check that ours exist and work, recreate them otherwise.
-    listen: { everyMinutes: 5, run: async (ctx) => { await ensureListening(ctx, settingsOf(ctx)); } },
+    // Every minute: check that our subscriptions exist and work (Twitch cuts a subscription whose site did not answer often enough), recreate them otherwise, catch up on what a gap
+    // made us miss, and take the health of the listening (the owner is warned by e-mail when it is time). One list call to Twitch a minute when all is well.
+    listen: { everyMinutes: 1, run: async (ctx) => { await cycle.check(ctx, settingsOf(ctx)); } },
     // Old lines go (retention, tests, size cap).
     purge: { everyMinutes: 60, run: async (ctx) => { await st.purge(ctx, { retentionDays: settingsOf(ctx).retentionDays }); } },
   },
   exports: { [pub.TOPIC]: (ctx, opts) => pub.topicItems(ctx, opts) },
-  async adminBadge(ctx) { const c = (await st.readState(ctx)).listen?.code; return c && !["listening", "pending", "nothing_on"].includes(c) ? 1 : 0; },
+  async adminBadge(ctx) { const state = await st.readState(ctx); const c = state.listen?.code; return (c && !["listening", "pending", "nothing_on"].includes(c)) || state.health?.code === "silent" ? 1 : 0; },
   adminPanel: admin.panel,
   adminActions: admin.actions,
   mcp: tools,

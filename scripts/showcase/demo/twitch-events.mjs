@@ -3,7 +3,9 @@ export default async function (h) {
   const { ctx } = await h.ctxOf("twitch-events");
   // a fixed, made-up address for the OBS dock picture (the demo site is throw-away)
   const row = (await ctx.api.store.list("state", { limit: 1 }))[0];
-  const state = { ...(row?.data ?? {}), dockSecret: "demo-dock-address-0123456789abcdef" };
+  const now = h.NOW.getTime();
+  // a made-up state for the pictures: live for hours without any event, and a catch-up after a gap
+  const state = { ...(row?.data ?? {}), dockSecret: "demo-dock-address-0123456789abcdef", liveSince: now - 5 * 3_600_000, lastEventAt: now - 4 * 3_600_000, health: { code: "silent", since: now - 3_600_000 }, catchup: { at: now - 600_000, since: now - 3_600_000, follows: 2, subs: 1, skipped: [] }, okAt: now };
   if (row) await ctx.api.store.update(row.id, state); else await ctx.api.store.add("state", state);
   const t0 = h.NOW.getTime();
   const lines = [
