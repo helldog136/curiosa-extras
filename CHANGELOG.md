@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.64.0 — 2026-11-12
+
+*En bref : Activité Twitch (1.2.0) et Overlay alertes (1.4.1) deviennent plus robustes. Après une coupure (redémarrage, mise à jour, panne, connexion expirée), les follows et abonnements manqués sont recherchés et marqués « peut-être manqué ». L'écoute est vérifiée chaque minute, et vous êtes prévenu par e-mail quand elle s'arrête. Nouvelle permission pour Activité Twitch : e-mail. Rien à régler.*
+
+*In short: Twitch activity (1.2.0) and the Alerts overlay (1.4.1) become more robust. After a gap (restart, update, outage, expired connection) the follows and subs you missed are looked up and marked "possibly missed". The listening is checked every minute and you are warned by e-mail when it stops. New permission for Twitch activity: e-mail. Nothing to set up.*
+
+### Nouveautés
+
+- **Après une coupure, les follows et abonnements manqués sont recherchés** et ajoutés au journal, marqués « peut-être manqué » ; l'overlay alertes les montre encore dans l'heure. Les cadeaux, bits, raids et trains d'enthousiasme ne peuvent pas être relus après coup : ils sont perdus s'ils sont manqués.
+- **L'écoute est vérifiée chaque minute**, et non toutes les cinq.
+- **Vous êtes prévenu par e-mail quand l'écoute s'arrête** (connexion à renouveler, abonnement retiré, site injoignable, Twitch en panne depuis 30 minutes) : un e-mail par problème, et un au retour. Jamais pour une installation neuve. Vous pouvez le couper.
+- **Un avertissement quand vous êtes en direct depuis des heures sans aucun événement** (3 heures par défaut, réglage avancé). Un direct calme est normal : on vous demande seulement de vérifier.
+- **Pendant une mise à jour du site**, Twitch est invité à réessayer un peu plus tard : rien n'est perdu et rien n'est compté deux fois.
+- **After a gap, the follows and subs you missed are looked up** and added to the journal, marked "possibly missed"; the alerts overlay still shows them within the hour. Gifts, bits, raids and hype trains cannot be read afterwards: they are lost if missed.
+- **The listening is checked every minute**, not every five.
+- **You are warned by e-mail when listening stops** (connection to renew, subscription revoked, site not reachable, Twitch down for 30 minutes): one e-mail per problem, and one when all is back. Never for a fresh install. You can switch it off.
+- **A warning when you are live for hours without any event** (3 hours by default, advanced setting). A quiet stream is normal: it only asks you to check.
+- **During a site update**, Twitch is asked to try again a little later: nothing is lost and nothing is counted twice.
+
+### Pour les développeurs
+
+- Twitch activity 1.2.0: `cycle.mjs` (one pass: subscriptions, gap detection from `okAt` / `checkedAt` / `gapSince`, catch-up, health), `catchup.mjs` (followers by date, subscribers against the baseline `subLogins`, stable keys, 50 lines a gap), `health.mjs` (assessment, grace delays, one mail per problem, again after 24 h, one when back), webhook `503` + `Retry-After` on a storage failure, task `listen` every minute, permission `mail`, settings `healthMail` and `silentHours`. The topic cache is invalidated by every new line. Détail : `docs/changelog-parts/events-robust.md`.
+- Alerts overlay 1.4.1: a `missed` line is kept up to an hour; the topic is read with the largest limit (200).
+- Tests: `tests/twitch-events-robust.test.mjs` and the end-to-end `tests/twitch-alerts-e2e.test.mjs` (both modules, a fake Twitch that signs like the real one).
+
 ## 1.63.0 — 2026-11-12
 
 *En bref : Activité Twitch (1.1.0) a maintenant un dock pour OBS : votre journal d'événements en direct, avec un bouton « Rejouer » sur chaque ligne, une pause des alertes, « Vider la file » et un test. Il suffit de copier l'adresse de l'onglet « Dock OBS » dans OBS (Docks > Docks de navigateur personnalisés). Rien d'autre à régler, aucune nouvelle permission. Rejouer et mettre en pause demandent l'Overlay alertes 1.4.0.*

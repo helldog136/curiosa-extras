@@ -26,6 +26,8 @@ export default {
       missingTwitchPermissions: d.missing ?? [],
       lastEventAt: state.lastEventAt ? new Date(state.lastEventAt).toISOString() : null,
       types: es.TYPES.map((t) => ({ type: t.id, enabled: enabled[t.id] === true, state: enabled[t.id] ? state.types?.[t.id]?.code ?? "unknown" : "off", lastEventAt: Math.max(0, ...t.kinds.map((k) => state.last?.[k] ?? 0)) || null })).map((x) => ({ ...x, lastEventAt: x.lastEventAt ? new Date(x.lastEventAt).toISOString() : null })),
+      health: { state: state.health?.code ?? "ok", since: state.health?.since ? new Date(state.health.since).toISOString() : null, warnedByMail: !!state.health?.notified, mailServer: state.health?.mail === "off" ? "not set up" : "ok or not needed" },
+      lastCatchUp: state.catchup ? { at: new Date(state.catchup.at).toISOString(), addedFollows: state.catchup.follows, addedSubs: state.catchup.subs, skipped: state.catchup.skipped } : null,
       journalLines: await st.count(ctx), retentionDays: s.retentionDays, alertsOverlayInstalled: alerts.length > 0,
     };
   },

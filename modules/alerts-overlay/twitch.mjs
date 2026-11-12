@@ -15,7 +15,7 @@ export const VARS = ["name", "count", "amount", "tier", "months", "viewers", "le
 /** The type whose alerts have a minimum, and the field it applies to. */
 export const MINIMUM = { cheer: "amount", gift: "count", raid: "viewers", redeem: "amount" };
 export const PRESETS = ["simple", "short", "thanks"];
-export const LIMITS = { template: 120, seconds: { min: 2, max: 60 }, min: 1_000_000, maxAgeMs: 5 * 60_000, seenKeep: 400, held: 50, ignore: 50, groupFollows: 3, gapMs: { min: 0, max: 30_000 }, groupMs: { min: 0, max: 30_000 } };
+export const LIMITS = { template: 120, seconds: { min: 2, max: 60 }, min: 1_000_000, maxAgeMs: 5 * 60_000, maxAgeMissedMs: 60 * 60_000, seenKeep: 400, held: 50, ignore: 50, groupFollows: 3, gapMs: { min: 0, max: 30_000 }, groupMs: { min: 0, max: 30_000 } };
 
 /** The type (switch) of an item of the topic; null for something we do not know. */
 export function typeOf(item) {
@@ -76,7 +76,8 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
   if (!type) return { skip: "unknown" };
   const forced = item.test === true || item.replay === true, cfg = config.types[type];
   const at = Date.parse(item.at ?? "");
-  if (!forced && (!Number.isFinite(at) || now - at > LIMITS.maxAgeMs || at - now > 60_000)) return { skip: "old" };
+  // a line Twitch activity found after a gap (`missed`) may be older: it is still worth saying "thank you" within the hour
+  if (!forced && (!Number.isFinite(at) || now - at > (item.missed === true ? LIMITS.maxAgeMissedMs : LIMITS.maxAgeMs) || at - now > 60_000)) return { skip: "old" };
   if (!forced && !cfg.on) return { skip: "off" };
   if (item.type === "hype_progress" && !forced && false) return { skip: "off" };
   if (type === "sub" && item.gifted === true && !forced) return { skip: "gifted" };   // the gift line announces them
@@ -218,7 +219,7 @@ export async function pullTwitch(ctx, emit, env) {
   const s = await loadState(ctx);
   const now = env.now ?? Date.now();
   let items = [];
-  try { const r = await ctx.api.topics.collect(TOPIC, { limit: 100 }); items = Array.isArray(r) ? r : []; } catch { items = []; }
+  try { const r = await ctx.api.topics.collect(TOPIC, { limit: 200 }); /* the most the topic gives: a burst of up to 200 lines between two reads is not lost */ items = Array.isArray(r) ? r : []; } catch { items = []; }
   const config = await loadConfig(ctx, now);
   const t = env.t, text = (id) => t(`tw_text_${id}`), title = (phase) => t(`tw_title_${phase}`);
   const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, now };

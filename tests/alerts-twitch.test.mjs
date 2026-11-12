@@ -84,6 +84,8 @@ test("alertFor: switches, minimums, ignore list, gifted subs, age; a test or a r
   assert.equal(f(item("sub", { name: "a", at: new Date(NOW - 6 * 60_000).toISOString() })).skip, "old");
   assert.equal(f(item("sub", { name: "a", at: new Date(NOW + 5 * 60_000).toISOString() })).skip, "old", "an event dated in the future is not trusted");
   assert.ok(f(item("sub", { name: "a", replay: true, at: new Date(NOW - 3600_000).toISOString() })).alert);
+  assert.ok(f(item("sub", { name: "a", missed: true, at: new Date(NOW - 40 * 60_000).toISOString() })).alert, "a line found after a gap is kept up to an hour");
+  assert.equal(f(item("sub", { name: "a", missed: true, at: new Date(NOW - 70 * 60_000).toISOString() })).skip, "old");
 });
 
 test("groupBurst: gifts by the same person become one alert with the total; three follows become one; fewer stay as they are", () => {
@@ -258,7 +260,7 @@ test("service alerts.queue and the tools for assistants", async () => {
 });
 
 test("manifest: version, tab, four more settings (one advanced), the topic and its schema, FR and EN texts", () => {
-  assert.equal(manifest.version, "1.4.0");
+  assert.equal(manifest.version, "1.4.1");
   const t = manifest.consumes.find((c) => c.topic === "twitch.event");
   assert.ok(t.schema.find((f) => f.key === "id" && f.required) && t.schema.find((f) => f.key === "at" && f.type === "datetime"));
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
