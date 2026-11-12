@@ -440,10 +440,6 @@
       "R13 setting:devMode.help[fr] #9a95eb",
       "R9 locale:fr:mapCustom #19f673"
     ],
-    "partnerships": [
-      "R10 locale:en:openInContacts #4b186e",
-      "R10 locale:fr:openInContacts #5292cf"
-    ],
     "planning": [
       "R10 locale:en:alsoToday #41b66c",
       "R10 locale:en:coversAmbiguous #715887",

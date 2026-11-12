@@ -1,13 +1,13 @@
-// Partenariats — les outils MCP : fiches, journal, et liens vers des contacts (jamais d'écriture dans le carnet : c'est le rôle de Contacts).
-const v = new URL(import.meta.url).search; // la version du module se propage aux fichiers voisins (sinon l'ancien code resterait en cache après une mise à jour)
-const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt } = await import(`./data.mjs${v}`);
+// Partnerships: the MCP tools: files, journal, and links to contacts (never a write in the address book: that is the role of Contacts).
+const v = new URL(import.meta.url).search; // the module version propagates to the neighbouring files (otherwise the old code would stay cached after an update)
+const { STATUSES, CLOSED, DAY, fail, clip, today, validDate, safeUrl, cleanPartner, parseCsv, importPartners, all, lastActivity, followUpDue, fmt, deletePartnerRecord } = await import(`./data.mjs${v}`);
 const { CONTACTS, MAX_LINKS, ID_MAX, esc, idOk, linksOf, person, book, bookAvailable, resolveLinks, healLinks, setLinks } = await import(`./contacts-link.mjs${v}`);
 
 export default {
-  // ── Actions MCP (déclarées dans module.json) ────────────────────────────────────
-  // Les PERSONNES sont dans le module Contacts : ici on ne fait que rattacher / détacher (partner_link_contact, partner_unlink_contact).
-  // `partner_delete` est IMPLÉMENTÉE mais déclarée `default: false` : un jeton ne l'a que si un administrateur la lui accorde dans l'admin
-  // (API & MCP → Accès du jeton). Elle ne supprime jamais une personne du carnet.
+  // ── MCP actions (declared in module.json) ────────────────────────────────────
+  // PEOPLE live in the Contacts module: here we only attach / detach (partner_link_contact, partner_unlink_contact).
+  // `partner_delete` is declared `default: false` and destructive: a token has it only if an administrator grants it in the admin
+  // (API & MCP → token access). It never deletes a person of the address book.
   mcp: {
     async partners_list(ctx, a) {
       const [partners, journal] = await Promise.all([all(ctx, "partners"), all(ctx, "journal")]);
@@ -53,7 +53,7 @@ export default {
       const entry = await ctx.api.store.add("journal", { partnerId: a.id, date: validDate(a.date), author: `agent:${actor.name}`, text: clip(a.text, 5000), link: safeUrl(a.link) });
       return { id: entry };
     },
-    // Rattacher une personne DÉJÀ dans le carnet Contacts à une fiche (idempotent). Pour une nouvelle personne : la créer dans Contacts d'abord.
+    // Attach a person ALREADY in the Contacts address book to a file (idempotent). For a new person: create them in Contacts first.
     async partner_link_contact(ctx, a) {
       const p = idOk(a.id) ? await ctx.api.store.get(a.id) : null;
       if (!p || p.data.brand === undefined) throw fail("partnership not found");
@@ -69,7 +69,7 @@ export default {
       }
       return { id: p.id, linked: !already, contact: person(got.contacts[0]), contactIds: already ? ids : [...ids, a.contact_id] };
     },
-    // Détacher : la fiche n'y fait plus référence ; la personne reste dans le carnet Contacts (jamais supprimée ici).
+    // Detach: the file no longer refers to them; the person stays in the Contacts address book (never deleted here).
     async partner_unlink_contact(ctx, a) {
       const p = idOk(a.id) ? await ctx.api.store.get(a.id) : null;
       if (!p || p.data.brand === undefined) throw fail("partnership not found");
@@ -79,11 +79,11 @@ export default {
       await setLinks(ctx, p, next, "agent");
       return { id: p.id, unlinked: true, contactIds: next };
     },
+    // Permanent, and off by default. Same function as the admin window: the file and its journal go; people in Contacts are never touched.
     async partner_delete(ctx, a) {
-      if (!(await ctx.api.store.get(a.id))) throw fail("partnership not found");
-      for (const r of await all(ctx, "journal")) if (r.data.partnerId === a.id) await ctx.api.store.remove(r.id);
-      await ctx.api.store.remove(a.id);
-      return { deleted: a.id };
+      const r = await deletePartnerRecord(ctx, a.id);
+      if (!r) throw fail("partnership not found");
+      return { deleted: a.id, journalEntries: r.journal, contactLinks: r.contacts };
     },
   },
 };

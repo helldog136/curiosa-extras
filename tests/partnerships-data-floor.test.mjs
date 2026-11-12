@@ -14,10 +14,10 @@ const manifestJson = readJson(`${PDIR}/module.json`);
 const en = readJson(`${PDIR}/locales/en.json`);
 const def = (await import("../modules/partnerships/index.mjs")).default;
 
-test("manifest 2.2.1: data version 2 with floor 2, leftovers declared (one of them inert), privacy.subject offered, valid", () => {
+test("manifest 2.3.0: data version 2 with floor 2, leftovers declared (one of them inert), privacy.subject offered, valid", () => {
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifestJson.version, manifestJson.dataVersion, manifestJson.dataFloor, manifestJson.minCore], ["2.2.1", 2, 2, "0.2.2"]);
+  assert.deepEqual([manifestJson.version, manifestJson.dataVersion, manifestJson.dataFloor, manifestJson.minCore], ["2.3.0", 2, 2, "0.6.7"]);
   assert.deepEqual(manifestJson.legacyCollections, ["contacts", "legacyContacts", "meta"]);
   assert.deepEqual(manifestJson.inertLegacyCollections, ["legacyContacts"], "only the safety copy is promised inert");
   assert.deepEqual(manifestJson.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]]);
