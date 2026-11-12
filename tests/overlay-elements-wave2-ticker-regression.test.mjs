@@ -105,7 +105,7 @@ async function mascotSnapshot() {
 
 const GOLDEN = {
   "ticker": {
-    "manifest": "9b9adf74ab91d338",
+    "manifest": "41e7e581b479e14a",
     "keys": [
       "overlay",
       "routes"
@@ -114,10 +114,10 @@ const GOLDEN = {
       "items"
     ],
     "overlays": {
-      "default": "419bdd45bea2bdf8.76684f100a44a90e.0a87084bcdfea2d8.fbd8089027f8f0db",
-      "right": "419bdd45bea2bdf8.76684f100a44a90e.315f6e7b3a9433b1.c80ffe2abdcf6ee3",
-      "en": "eb72e1683b81c924.76684f100a44a90e.bb4faa819e6d7258.c095333c89788a23",
-      "hostile": "dc9eebcf0e01a348.76684f100a44a90e.0a87084bcdfea2d8.1cc4f42e404a0eca"
+      "default": "419bdd45bea2bdf8.76684f100a44a90e.4c4f4fc293fd11d5.0e1e0b7ae1859f11",
+      "right": "419bdd45bea2bdf8.76684f100a44a90e.3905e1b43df84fe8.81810c6162a9134c",
+      "en": "eb72e1683b81c924.76684f100a44a90e.1216f9a021bb5c45.81e1ab39789e4be3",
+      "hostile": "dc9eebcf0e01a348.76684f100a44a90e.4c4f4fc293fd11d5.1134aac0d8a12a6b"
     },
     "items": {
       "all": "200.no-store.8f4ffaed71e1d2f1",
@@ -252,7 +252,7 @@ for (const [name, fn] of [["ticker", tickerSnapshot], ["testimonials", testimoni
 
 test("non-régression : réglages, type, instances et permissions de ces trois modules n'ont pas changé", () => {
   const keys = (m) => read(m, "module.json").settings.map((s) => s.key);
-  assert.deepEqual(keys("ticker-overlay"), ["interval", "textColor", "cardColor", "position"]);
+  assert.deepEqual(keys("ticker-overlay"), ["interval", "textColor", "cardColor", "position", "transitionIn", "transitionOut", "transitionSeconds"]);
   assert.deepEqual(keys("testimonials"), ["title", "intro", "display", "order", "ratingMode", "showAverage", "askEmail", "notify", "perPage", "maxLength", "rateLimit", "emailDays", "structuredData", "aboutName", "aboutType"]);
   assert.deepEqual(keys("mascot"), ["where", "pages", "corner", "announce", "footerLink", "delay", "show", "max"]);
   const info = (m) => { const j = read(m, "module.json"); return [j.type, j.instances, j.page ?? null, j.basePath ?? null, [...j.permissions].sort()]; };

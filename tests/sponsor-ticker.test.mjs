@@ -70,7 +70,7 @@ test("manifeste : overlay avec route, sujets consommés (sponsor.card, core.entr
   assert.deepEqual(manifestJson.consumes.map((c) => c.topic).sort(), ["core.entry", "sponsor.card"]);
   assert.deepEqual(manifestJson.permissions.sort(), ["overlay", "routes", "topics"]);
   const keys = manifestJson.settings.map((s) => s.key).sort();
-  assert.deepEqual(keys, ["accentColor", "devMode", "holdSeconds", "periodSeconds", "showQr", "visual"]);
+  assert.deepEqual(keys, ["accentColor", "devMode", "holdSeconds", "periodSeconds", "showQr", "transitionIn", "transitionOut", "transitionSeconds", "visual"]);
   const used = [...source.matchAll(/ctx\.setting\("([A-Za-z0-9_]+)"\)/g)].map((m) => m[1]);
   for (const k of keys) assert.ok(used.includes(k), `réglage ${k} déclaré mais jamais lu`);
   assert.equal(manifestJson.settings.find((s) => s.key === "devMode").default, false);
@@ -80,7 +80,7 @@ test("manifeste : overlay avec route, sujets consommés (sponsor.card, core.entr
 test("overlay : configuration par défaut", () => {
   const { out } = overlayOf();
   const c = cfgOf(out);
-  assert.deepEqual(c, { itemsUrl: "/m/ticker/items?lang=en", period: 90, hold: 10, startDelay: 5, visual: "neon", showQr: true, seed: null, badge: "Sponsor", isNew: "New" });
+  assert.deepEqual(c, { itemsUrl: "/m/ticker/items?lang=en", period: 90, hold: 10, startDelay: 5, visual: "neon", showQr: true, seed: null, badge: "Sponsor", isNew: "New", tr: { in: "auto", out: "auto", ms: 600 } });
   assert.equal(out.title, "Mon ticker");
   assert.match(out.html, /id="tk-stage"/);
   assert.match(out.html, /--ticker-accent:#e8a23b/);
@@ -287,7 +287,7 @@ test("carte à l'échelle : le conteneur ne rétrécit pas, la mise à l'échell
   assert.match(rule(css, ".ticker-slider.on"), /transform:translateX\(0\) scale\(var\(--tk-s,1\)\)/);
   assert.match(overlayOf().out.script, /function fit\(card\)/);
   assert.match(overlayOf().out.script, /addEventListener\("resize"/);
-  assert.match(overlayOf().out.script, /fit\(cur\);slider\.classList\.add\("on"\)/, "mesurée avant d'apparaître");
+  assert.match(overlayOf().out.script, /fit\(cur\);go\("in"\)/, "mesurée avant d'apparaître");
   assert.match(css, /overflow:hidden;font-family/, "aucune barre de défilement dans la source navigateur");
 });
 

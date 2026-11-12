@@ -6,6 +6,7 @@ Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement,
 - Envoyez une alerte de test d'un seul bouton.
 - Choisissez la couleur d'accent et la durée d'affichage d'une alerte.
 - Affichez le texte des messages YouTube, si vous le souhaitez.
+- Choisissez comment l'alerte arrive et repart : glissement depuis un côté, fondu, rebond ou zoom.
 
 ## Pourquoi vous allez l'aimer
 
@@ -32,4 +33,4 @@ Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement,
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.2.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.3.0.

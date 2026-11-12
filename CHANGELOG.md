@@ -4,6 +4,28 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.59.0 — 2026-11-12
+
+*En bref : vous choisissez maintenant comment le bandeau sponsors (1.2.0), le bandeau défilant (1.2.0) et les alertes (1.3.0) arrivent et repartent : depuis la gauche, la droite, le haut ou le bas, en fondu, en rebond, en zoom. Ces trois modules demandent maintenant Curiosa 0.6.0. Rien à régler : sans changement de votre part, tout reste comme avant. Aucune nouvelle permission.*
+
+*In short: you now choose how the sponsor banner (1.2.0), the scrolling banner (1.2.0) and alerts (1.3.0) enter and leave: from the left, right, top or bottom, with a fade, a jiggle or a pop. These three modules now need Curiosa 0.6.0. Nothing to set up: unless you change something, everything stays as before. No new permission.*
+
+### Nouveautés
+
+- **Comment il arrive, comment il part.** Le bandeau sponsors glissait toujours depuis la droite de son cadre. Pour l'arrivée comme pour le départ, vous pouvez choisir : glisser depuis la **gauche**, la **droite**, le **haut** ou le **bas**, depuis le bord le plus proche, **fondu**, **rebond** (une arrivée qui rebondit ; au départ, il se secoue puis s'efface), **zoom** ou **instantané**. « Par défaut » garde le style d'avant ; « Comme l'arrivée » (le choix par défaut pour le départ) joue l'arrivée à l'envers.
+- **Où le régler.** Dans les réglages du module, sous « Plus d'options » (pour l'overlay seul), et dans deux options de l'élément d'overlay (« Comme dans les réglages du module » par défaut) : deux éléments dans une même page peuvent donc bouger différemment. Mêmes choix pour le **bandeau défilant** et pour les **alertes**.
+- **Durée du mouvement**, de 0,2 à 2 secondes.
+- **Moins de mouvement.** Pour les personnes dont l'appareil demande moins d'animations, tout mouvement devient un court fondu.
+- **You choose how it enters and how it leaves.** The sponsor banner always slid in from the right of its frame. For the entrance and the exit you can now pick: slide from the **left**, **right**, **top** or **bottom**, from the nearest edge, **fade**, **jiggle** (a bouncy entrance; on the way out, a wobble then a fade), **pop** (zoom) or **instant**. "Default" keeps the previous look; "Same as how it enters" (the default for leaving) plays the entrance backwards.
+- **Where.** In the module settings under "More options" (for the standalone overlay) and as two options of the overlay element ("Like the module settings" by default), so two elements in one page can move differently. The same choices exist for the **scrolling banner** and for **alerts**.
+- **Length of the movement**, from 0.2 to 2 seconds.
+- **Less motion.** For people whose device asks for less motion, any movement becomes a short fade.
+
+### Pour les développeurs
+
+- The code is written once in `scripts/overlay-transition.mjs` (server: `transitionConfig`; client: `ovTransition`, Web Animations API) and copied to `modules/<id>/transition.mjs` by `node scripts/gen-transition.mjs` (checked in `tests/overlay-transition.test.mjs`). The setting texts are written once in `scripts/overlay-transition-labels.mjs`. Keys: `transitionIn`, `transitionOut`, `transitionSeconds`; element options `transitionIn`, `transitionOut`.
+- With every choice on "Default" the alerts page is byte for byte the previous one; the sponsor and scrolling banner pages only gained CSS variable fallbacks and the shared function. Skins (`data-ov-part`, tokens, `--ov-anim`) are untouched.
+
 ## 1.58.1 — 2026-11-12
 
 *En bref : un élément d'overlay qui n'a rien à dire n'affiche plus rien. Le « Tirage au sort » (Participation 1.8.2) n'apparaît plus une fois les inscriptions fermées. Rien à régler, aucune nouvelle permission.*

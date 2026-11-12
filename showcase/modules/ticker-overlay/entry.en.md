@@ -5,6 +5,7 @@ A transparent browser source for OBS that rotates cards from your site, such as 
 - Add the overlay as a browser source in OBS.
 - Choose how many seconds each card stays.
 - Choose the text colour, the card colour and the position.
+- Choose how the card enters and leaves: slide from a side, fade, jiggle or pop.
 
 ## Why you will like it
 
@@ -32,4 +33,4 @@ A transparent browser source for OBS that rotates cards from your site, such as 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.0.
+Available since version 1.0.0. Current version: 1.2.0.

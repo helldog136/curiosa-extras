@@ -4,7 +4,7 @@ import vm from "node:vm";
 
 class FEl {
   constructor(id, hidden = false) { this.id = id; this.textContent = ""; this.hidden = hidden; this._c = new Set(); this.attrs = {}; this.style = {}; this.src = ""; this.clientWidth = 400; this.clientHeight = 300; this.scrollHeight = 100; this.offsetWidth = 1; }
-  get classList() { const s = this._c; return { add: (c) => s.add(c), remove: (c) => s.delete(c), contains: (c) => s.has(c) }; }
+  get classList() { const s = this._c; return { add: (c) => s.add(c), remove: (c) => s.delete(c), contains: (c) => s.has(c), toggle: (c, on) => { if (on === undefined ? !s.has(c) : on) s.add(c); else s.delete(c); return s.has(c); } }; }
   setAttribute(k, v) { this.attrs[k] = String(v); }
   getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
   removeAttribute(k) { delete this.attrs[k]; }

@@ -20,7 +20,7 @@
     "fr": "Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponsor, avec son code promo et un code QR."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.1.0",
+  "moduleVersion": "1.2.0",
   "requires": [],
   "worksWith": [
     "sponsors",
