@@ -101,7 +101,7 @@ const login = async (ctx) => {
   await ctx.addCookies([{ name: "curiosa_cookies", value: "no", url: base, expires: Math.floor(Date.now() / 1000) + 86400 * 20 }]); // the cookie banner is answered
 };
 async function newContext(view, shim) {
-  const ctx = await browser.newContext({ viewport: view, deviceScaleFactor: 1, locale: "en-GB", timezoneId: "Europe/Paris", colorScheme: process.env.SHOT_SCHEME === "dark" ? "dark" : "light", reducedMotion: "reduce" });
+  const ctx = await browser.newContext({ bypassCSP: true, viewport: view, deviceScaleFactor: 1, locale: "en-GB", timezoneId: "Europe/Paris", colorScheme: process.env.SHOT_SCHEME === "dark" ? "dark" : "light", reducedMotion: "reduce" });
   if (shim) await ctx.addInitScript(SHIM);
   await ctx.route("**/*", (route) => {
     const u = route.request().url();
