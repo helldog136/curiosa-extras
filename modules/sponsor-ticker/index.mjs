@@ -4,6 +4,9 @@
 // Il ne connaît aucun module : il digère le sujet « sponsor.card » (fourni par le module Sponsors)
 // ou « core.entry » (n'importe quelle liste de codes promo / d'articles). Les QR codes sont générés par
 // le cœur (ctx.api.qr).
+// Neighbour file: dynamic, versioned import (docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { ovTransition, transitionConfig } = await import(new URL(`./transition.mjs${v}`, import.meta.url).href);
 const color = (v, def) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : def);
 const num = (v, def, min, max) => Math.min(max, Math.max(min, Number(v) || def));
 const safeImage = (v) => (typeof v === "string" && /^(https?:\/\/|\/uploads\/)/.test(v) ? v : null);
@@ -48,7 +51,7 @@ export function onAccent(hex) {
 /** Ce que la page reçoit quand elle sert un ÉLÉMENT de page d'overlay : `ov-w`, `ov-h`, `ov-demo` et l'option `opt-qr` (réservés au cœur), revalidés ici. Sinon null : l'overlay habituel. */
 export function elementRequest(query) {
   if (!query?.has?.("ov-w")) return null;
-  return { demo: query.get("ov-demo") === "1", qr: query.get("opt-qr") !== "0" };
+  return { demo: query.get("ov-demo") === "1", qr: query.get("opt-qr") !== "0", transitionIn: query.get("opt-transitionIn"), transitionOut: query.get("opt-transitionOut") };
 }
 
 /** Jetons --ov-* du style commun (valeurs de docs/OVERLAY-ELEMENTS.md), avec repli ; jamais le thème ni le skin du site. */
@@ -94,6 +97,8 @@ export default {
       startDelay: element?.demo ? 0.4 : dev?.fast ? 0.5 : 5,
       visual: ["neon", "cine", "broadcast"].includes(ctx.setting("visual")) ? ctx.setting("visual") : "neon",
       showQr: ctx.setting("showQr") !== false && (!element || element.qr),
+      // Entrée / sortie : l'option de l'élément (si elle n'est pas « comme le module »), sinon le réglage ; « auto » = le glissement depuis la droite d'avant.
+      tr: transitionConfig({ inOpt: element?.transitionIn, inSetting: ctx.setting("transitionIn"), outOpt: element?.transitionOut, outSetting: ctx.setting("transitionOut"), seconds: ctx.setting("transitionSeconds") }, 600),
       seed: dev?.seed ?? null,
       badge: ctx.t("badge"),
       isNew: ctx.t("new"),
@@ -124,7 +129,7 @@ export default {
       css: `
         html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
         #tk-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2vh 2vw;box-sizing:border-box}
-        .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform .58s cubic-bezier(.2,.9,.32,1.15),opacity .45s ease;will-change:transform}
+        .ticker-slider{position:relative;flex:none;transform:translateX(135%) scale(var(--tk-s,1));opacity:0;transition:transform var(--tr-ms,.58s) cubic-bezier(.2,.9,.32,1.15),opacity var(--tr-fade,.45s) ease;will-change:transform}
         .ticker-slider.on{transform:translateX(0) scale(var(--tk-s,1));opacity:1}
         .ticker-card{position:relative;display:flex;align-items:center;overflow:hidden;min-height:96px;padding-right:26px;clip-path:polygon(3.5% 0,100% 0,96.5% 100%,0 100%);box-shadow:0 14px 34px rgba(0,0,0,.55)}
         .ticker-card--cine{background:linear-gradient(100deg,color-mix(in srgb,var(--tk-bg) 96%,#000),color-mix(in srgb,var(--tk-bg) 88%,#fff));backdrop-filter:blur(10px);animation:tickerFloat 4.6s ease-in-out infinite}
@@ -163,6 +168,9 @@ export default {
         ${fitTitle.toString()}
         ${fitScale.toString()}
         ${shortDomain.toString()}
+        ${ovTransition.toString()}
+        if(c.tr.ms!==600){slider.style.setProperty("--tr-ms",c.tr.ms+"ms");slider.style.setProperty("--tr-fade",Math.round(c.tr.ms*.78)+"ms")}
+        function go(phase){return ovTransition(slider,phase,phase==="in"?c.tr.in:c.tr.out,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"})}
         function load(){return fetch(c.itemsUrl,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){if(Array.isArray(d.items))items=d.items}).catch(function(){})}
         function pick(){if(!items.length)return null;if(items.length===1)return items[0];var s=items[Math.floor(rnd()*items.length)],g=0;while(s.id===last&&g++<8)s=items[Math.floor(rnd()*items.length)];return s}
         function build(s){
@@ -183,7 +191,7 @@ export default {
           [430,330,250].forEach(function(w){if(best&&best.s>=1)return;var r=apply(w);r.score=r.t.size*r.s;if(!best||r.score>best.score*1.03)best=r});
           apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")}
         window.addEventListener("resize",function(){if(cur)fit(cur)});
-        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);slider.classList.add("on");clearTimeout(hold);hold=setTimeout(function(){slider.classList.remove("on")},c.hold*1000)}
+        function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}
         load().then(function(){setTimeout(cycle,c.startDelay*1000)})})();${elementScript}`,
     };

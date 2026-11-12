@@ -20,7 +20,7 @@
     "fr": "Une source navigateur transparente pour OBS. Elle fait défiler des cartes de votre site : codes promo, articles, annonces."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.1.0",
+  "moduleVersion": "1.2.0",
   "requires": [],
   "worksWith": [
     "codes",

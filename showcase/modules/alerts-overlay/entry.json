@@ -20,7 +20,7 @@
     "fr": "Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.1",
+  "moduleVersion": "1.3.0",
   "requires": [],
   "worksWith": [
     "twitch-channel",

@@ -6,6 +6,7 @@ Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponso
 - Choisissez les secondes entre deux apparitions et les secondes à l'écran.
 - Montrez ou masquez le code QR.
 - Choisissez l'apparence et la couleur d'accent.
+- Choisissez comment le bandeau arrive et repart : depuis un côté, en fondu, en rebond ou en zoom.
 
 ## Pourquoi vous allez l'aimer
 
@@ -32,4 +33,4 @@ Une bannière en bas d'écran pour OBS. De temps en temps, elle montre un sponso
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.2.0.

@@ -5,6 +5,7 @@ Une source navigateur transparente pour OBS. Elle fait défiler des cartes de vo
 - Ajoutez l'overlay comme source navigateur dans OBS.
 - Choisissez combien de secondes chaque carte reste.
 - Choisissez la couleur du texte, celle des cartes et la position.
+- Choisissez comment la carte arrive et repart : glissement depuis un côté, fondu, rebond ou zoom.
 
 ## Pourquoi vous allez l'aimer
 
@@ -32,4 +33,4 @@ Une source navigateur transparente pour OBS. Elle fait défiler des cartes de vo
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.2.0.

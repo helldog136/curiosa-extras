@@ -6,6 +6,7 @@ A lower-third banner for OBS. From time to time it shows one sponsor, with its p
 - Choose the seconds between two appearances and the seconds on screen.
 - Show or hide the QR code.
 - Pick the look and the accent colour.
+- Pick how the banner enters and leaves: from any side, fading, jiggling or popping.
 
 ## Why you will like it
 
@@ -32,4 +33,4 @@ A lower-third banner for OBS. From time to time it shows one sponsor, with its p
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.0.
+Available since version 1.0.0. Current version: 1.2.0.
