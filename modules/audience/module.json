@@ -5,7 +5,7 @@
     "fr": "Participation",
     "en": "Audience"
   },
-  "version": "1.8.1",
+  "version": "1.8.2",
   "menuGroup": "community",
   "minCore": "0.5.0",
   "description": {
@@ -145,8 +145,8 @@
         "en": "Prize draw"
       },
       "description": {
-        "fr": "Le tirage en cours (titre, mot à taper dans le chat, nombre de personnes inscrites), puis la ou les personnes tirées au sort. Le contenu s'adapte à la taille du cadre.",
-        "en": "The draw in progress (title, word to type in the chat, number of people signed up), then the person or people drawn. The content adapts to the size of the frame."
+        "fr": "Montre le tirage pendant les inscriptions (titre, mot à taper, nombre d'inscrits). Puis la ou les personnes tirées. Vide le reste du temps. S'adapte à la taille du cadre.",
+        "en": "Shows the draw while sign-ups are open (title, word to type, people signed up). Then the people drawn. Empty the rest of the time. Adapts to the frame size."
       },
       "fit": "fluid",
       "minSize": {
@@ -168,8 +168,8 @@
             "en": "Keep the people drawn on screen"
           },
           "help": {
-            "fr": "Désactivé : elles s'affichent 20 secondes, puis le cadre redevient celui du tirage. Activé : elles restent affichées jusqu'au prochain tirage.",
-            "en": "Off: they show for 20 seconds, then the frame goes back to the draw. On: they stay on screen until the next draw."
+            "fr": "Désactivé : elles s'affichent 20 secondes, puis le cadre se vide. Activé : elles restent affichées jusqu'au prochain tirage.",
+            "en": "Off: they show for 20 seconds, then the frame empties. On: they stay on screen until the next draw."
           },
           "default": false
         }

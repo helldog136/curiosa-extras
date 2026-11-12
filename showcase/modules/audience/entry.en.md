@@ -42,4 +42,4 @@ The base of your stream interactions: a nickname per person with no account, a p
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.8.1.
+Available since version 1.0.0. Current version: 1.8.2.

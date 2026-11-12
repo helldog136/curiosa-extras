@@ -21,7 +21,7 @@
     "fr": "Montrez vos prochains streams dans l'apparence de votre choix. Ils viennent de votre Google Agenda ou de ce que vous écrivez à la main."
   },
   "since": "1.0.0",
-  "moduleVersion": "2.7.4",
+  "moduleVersion": "2.7.5",
   "requires": [],
   "worksWith": [
     "calendar-ical",

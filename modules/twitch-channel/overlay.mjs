@@ -58,6 +58,7 @@ const CSS = `html,body{margin:0;height:100%;overflow:hidden;background:transpare
 [data-ov-part="dot"]{width:.6em;height:.6em;border-radius:50%;background:currentColor}
 [data-ov-part="badge"][data-state="live"] [data-ov-part="dot"]{animation:tw-pulse 1.6s ease-in-out infinite}
 [data-ov-part="game"]{font-size:.85em;font-weight:600;max-width:100%;overflow-wrap:anywhere}
+[data-ov-part="panel"][hidden]{display:none}
 @keyframes tw-pulse{50%{opacity:.35}}
 @media (min-aspect-ratio:9/5){[data-ov-part="body"]{flex-direction:row;flex-wrap:wrap;justify-content:center;column-gap:1.6em}}
 @media (prefers-reduced-motion:reduce){[data-ov-part="dot"]{animation:none!important}}`;
@@ -91,6 +92,7 @@ const JS = String.raw`(function () {
       var b = el("div", "badge"); b.setAttribute("data-state", d.state); b.appendChild(el("span", "dot")); b.appendChild(el("span", "badge-text", d.state === "live" ? c.t.live : c.t.offline)); body.appendChild(b);
       if (d.game) body.appendChild(el("div", "game", d.game));
     }
+    p.hidden = !body;   // rien à dire (hors ligne sans l'option, aucun chiffre autorisé) : le cadre disparaît, fond et bordure compris
     if (body) { p.appendChild(body); fit(); }
   }
   function tick() {
@@ -113,7 +115,7 @@ const JS = String.raw`(function () {
  */
 export function page(kind, params, { lang, first, data, labels, demo = false }) {
   const config = JSON.stringify({ kind, lang, first, data, t: labels, demo, base: kind === "live" ? 30_000 : 120_000, max: kind === "live" ? 120_000 : 300_000 }).replace(/</g, "\\u003c");
-  return `<!doctype html><html lang="${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Twitch</title><style>${tokens(params)}\n${CSS}</style></head><body><div id="tw" data-ov-part="panel" role="status" aria-live="polite"></div><script>window.__TW=${config};${JS}</script></body></html>`;
+  return `<!doctype html><html lang="${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Twitch</title><style>${tokens(params)}\n${CSS}</style></head><body><div id="tw" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__TW=${config};${JS}</script></body></html>`;
 }
 
 /** En-têtes de la page : sa propre politique de sécurité (aucun chargement tiers, seulement le site pour redemander les chiffres), jamais de cache, l'adresse secrète ne fuit pas par « Referer ». */

@@ -269,8 +269,6 @@
   "drawOvWinner": "Personne tirée au sort",
   "drawOvWinners": "Personnes tirées au sort",
   "drawOvOpen": "Inscriptions ouvertes",
-  "drawOvClosed": "Inscriptions fermées",
-  "drawOvDone": "Tirage terminé",
   "drawOvBoth": "Tapez {keyword} dans le chat ou inscrivez-vous sur le site",
   "drawOvChat": "Tapez {keyword} dans le chat",
   "drawOvSiteOnly": "Inscrivez-vous sur le site",
