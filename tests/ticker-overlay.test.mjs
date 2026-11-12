@@ -30,7 +30,7 @@ test("ticker-overlay : sujets consommés valides, schéma overlay.item avec titr
 });
 
 test("ticker-overlay : défauts — 8 s, couleurs qui suivent le thème du site, bas gauche", () => {
-  assert.deepEqual(defaults, { interval: 8, textColor: "theme:fg", cardColor: "theme:surface", position: "bottom-left" });
+  assert.deepEqual(defaults, { interval: 8, textColor: "theme:fg", cardColor: "theme:surface", position: "bottom-left", transitionIn: "auto", transitionOut: "same", transitionSeconds: 0.5 });
 });
 
 test("items : fusionne les entrées du cœur et les overlay.item", async () => {

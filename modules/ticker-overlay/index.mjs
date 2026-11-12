@@ -6,6 +6,9 @@
  * `overlay.item`, un format simple que n'importe quel module peut fournir) et
  * l'admin choisit quelles instances l'alimentent.
  */
+// Neighbour file: dynamic, versioned import (docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { ovTransition, transitionConfig } = await import(new URL(`./transition.mjs${v}`, import.meta.url).href);
 const safeImage = (v) => typeof v === "string" && /^(https?:\/\/|\/uploads\/)/.test(v) ? v : undefined;
 const fromEntry = (e) => ({
     title: String(e.title),
@@ -31,7 +34,7 @@ const SHOWN = ["all", "codes", "news"];
 export function elementRequest(query) {
     if (!query?.has?.("ov-w")) return null;
     const show = query.get("opt-show");
-    return { demo: query.get("ov-demo") === "1", show: SHOWN.includes(show) ? show : "all", image: query.get("opt-image") !== "0" };
+    return { demo: query.get("ov-demo") === "1", show: SHOWN.includes(show) ? show : "all", image: query.get("opt-image") !== "0", transitionIn: query.get("opt-transitionIn"), transitionOut: query.get("opt-transitionOut") };
 }
 
 /** Jetons --ov-* du style commun (valeurs de docs/OVERLAY-ELEMENTS.md), avec repli ; jamais le thème ni le skin du site. */
@@ -72,9 +75,18 @@ async function elementItems(request, ctx) {
 
 const color = (v, fallback) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback);
 
+/** Entrée / sortie de la carte : l'option de l'élément (si elle n'est pas « comme le module »), sinon le réglage ; « auto » = le fondu avec un léger décalage d'avant. */
+const transitionOf = (ctx, element) => transitionConfig({ inOpt: element?.transitionIn, inSetting: ctx.setting("transitionIn"), outOpt: element?.transitionOut, outSetting: ctx.setting("transitionOut"), seconds: ctx.setting("transitionSeconds") }, 500);
+/** Le script commun aux deux pages : `go(phase)` joue la transition, `leave()` retire la carte puis rend la main (avec « auto », après le délai d'avant). */
+const transitionScript = (tr, side, alwaysWait) => `${ovTransition.toString()}
+        var tr=${JSON.stringify(tr)};if(tr.ms!==500)card.style.setProperty("--tr-ms",tr.ms+"ms");
+        function go(phase){return ovTransition(card,phase,phase==="in"?tr.in:tr.out,{ms:tr.ms,side:${JSON.stringify(side)}})}
+        function leave(){var on=card.classList.contains("on");if(tr.out!=="auto")return on?go("out"):Promise.resolve();go("out");return on||${alwaysWait?"true":"false"}?new Promise(function(r){setTimeout(r,tr.ms)}):Promise.resolve()}`;
+
 /** La page de l'ÉLÉMENT : la carte remplit tout le cadre, style par les jetons --ov-* et les attributs data-ov-part (jamais le thème du site, jamais la place ni la couleur réglées pour l'overlay). */
 function elementOverlay(ctx, query, element) {
     const interval = Math.min(120, Math.max(2, Number(ctx.setting("interval")) || 8));   // la durée par carte reste celle du module
+    const tr = transitionOf(ctx, element);
     const config = JSON.stringify({ url: `/m/${ctx.instance.key}/items?lang=${encodeURIComponent(ctx.locale)}&el=1&show=${element.show}${element.image ? "" : "&image=0"}${element.demo ? "&demo=1" : ""}`, ms: interval * 1000 }).replace(/</g, "\\u003c");
     return {
         title: ctx.instance.name,
@@ -85,7 +97,7 @@ function elementOverlay(ctx, query, element) {
         #vt-stage{position:fixed;inset:0}
         [data-ov-part="panel"]{position:absolute;inset:0;box-sizing:border-box;display:flex;gap:18px;align-items:center;padding:14px 22px;overflow:hidden;
           border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px);background:var(--ov-surface,transparent);color:var(--ov-fg,#fff);
-          text-shadow:${query.get("ov-text") === "dark" ? "none" : "0 1px 3px rgba(0,0,0,.35)"};opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+          text-shadow:${query.get("ov-text") === "dark" ? "none" : "0 1px 3px rgba(0,0,0,.35)"};opacity:0;transform:translateY(8px);transition:opacity var(--tr-ms,.5s),transform var(--tr-ms,.5s)}
         [data-ov-part="panel"].on{opacity:1;transform:none}
         [data-ov-part="image"]{flex:none;width:92px;height:92px;object-fit:cover;border-radius:min(var(--ov-radius,12px),12px)}
         [data-ov-part="text"]{min-width:0;flex:1}
@@ -95,10 +107,11 @@ function elementOverlay(ctx, query, element) {
         @media (prefers-reduced-motion:reduce){[data-ov-part="panel"]{transition:none;transform:none}}`,
         // Le repère est l'HEURE : la carte du moment est `liste[créneau % taille]`, la même pour toutes les pages ; aucun état gardé, rien de consommé.
         script: `(function(){var c=${config},card=document.getElementById("vt-card"),img=document.getElementById("vt-img"),t=document.getElementById("vt-title"),s=document.getElementById("vt-sub"),items=[],shown=null;
+        ${transitionScript(tr, "bottom", false)}
         function fill(it){t.textContent=it.title;s.textContent=it.subtitle||"";s.setAttribute("data-kind",it.kind||"");if(it.image){img.src=it.image;img.hidden=false}else{img.removeAttribute("src");img.hidden=true}}
         function show(){if(!items.length){card.classList.remove("on");shown=null;return}
           var it=items[Math.floor(Date.now()/c.ms)%items.length],id=JSON.stringify(it);if(id===shown&&card.classList.contains("on"))return;
-          shown=id;card.classList.remove("on");setTimeout(function(){fill(it);card.classList.add("on")},card.classList.contains("on")?500:0)}
+          shown=id;leave().then(function(){fill(it);go("in")})}
         function load(){fetch(c.url).then(function(r){return r.json()}).then(function(d){items=d.items||[];show()}).catch(function(){})}
         function next(){setTimeout(function(){show();next()},c.ms-(Date.now()%c.ms)+30)}
         load();setInterval(load,60000);next()})();`,
@@ -126,6 +139,7 @@ export default ({
         const vert = pos.startsWith("top") ? "top" : "bottom";
         const text = color(ctx.setting("textColor"), ctx.theme.fg);
         const bg = color(ctx.setting("cardColor"), ctx.theme.surface);
+        const tr = transitionOf(ctx, null);
         const config = JSON.stringify({ url: `/m/${ctx.instance.key}/items?lang=${ctx.locale}`, ms: interval * 1000 }).replace(/</g, "\\u003c"); // jamais de « </script » dans le script en ligne
         return {
             title: ctx.instance.name,
@@ -133,18 +147,18 @@ export default ({
             css: `
         html,body{margin:0;background:transparent;overflow:hidden;font-family:system-ui,sans-serif}
         #vt-card{position:fixed;${side}:32px;${vert}:32px;display:flex;gap:16px;align-items:center;max-width:520px;padding:16px 20px;
-          border-radius:16px;background:${bg};color:${text};box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transform:translateY(12px);transition:opacity .5s,transform .5s}
+          border-radius:16px;background:${bg};color:${text};box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transform:translateY(12px);transition:opacity var(--tr-ms,.5s),transform var(--tr-ms,.5s)}
         #vt-card.on{opacity:1;transform:none}
         #vt-img{width:72px;height:72px;object-fit:cover;border-radius:12px}
         #vt-title{display:block;font-size:26px;line-height:1.2}
         #vt-sub{display:block;margin-top:4px;font-size:18px;opacity:.8}`,
             script: `(function(){var c=${config},card=document.getElementById("vt-card"),img=document.getElementById("vt-img"),t=document.getElementById("vt-title"),s=document.getElementById("vt-sub"),items=[],i=0;
+        ${transitionScript(tr, side, true)}
         function load(){fetch(c.url).then(function(r){return r.json()}).then(function(d){items=d.items||[]}).catch(function(){})}
         function show(){if(!items.length){card.classList.remove("on");return}
-          card.classList.remove("on");
-          setTimeout(function(){var it=items[i++%items.length];t.textContent=it.title;s.textContent=it.subtitle||"";
+          leave().then(function(){var it=items[i++%items.length];t.textContent=it.title;s.textContent=it.subtitle||"";
             if(it.image){img.src=it.image;img.hidden=false}else{img.hidden=true}
-            card.classList.add("on")},500)}
+            go("in")})}
         load();setInterval(load,60000);setInterval(show,c.ms);setTimeout(show,800)})();`,
         };
     },

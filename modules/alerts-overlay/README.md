@@ -1,37 +1,39 @@
-# Overlay alertes (OBS) — module communautaire de Curiosa
+# Alerts overlay (OBS) — Curiosa community module
 
-Une source navigateur pour OBS (`https://votre-site/overlays/<clé>`) qui affiche une alerte (follow, sub, raid…) **dès qu'on la pousse**, en direct (SSE).
+A browser source for OBS (`https://your-site/overlays/<key>`) that shows an alert (follow, sub, raid…) **as soon as it is pushed**, live (SSE).
 
-Pour pousser une alerte depuis n'importe quel outil (Streamer.bot, relais de webhook, script) :
+To push an alert from any tool (Streamer.bot, webhook relay, script):
 
 ```
-POST https://votre-site/m/<clé>/push
-Authorization: Bearer <jeton d'envoi>
+POST https://your-site/m/<key>/push
+Authorization: Bearer <sending token>
 { "kind": "follow", "message": "Alex", "username": "alex" }
 ```
 
-`kind` : `follow`, `sub`, `raid`, `alert` (le texte est affiché tel quel, jamais interprété comme du HTML). Sans jeton défini, rien ne peut pousser ; le panneau d'admin a un bouton de **test**.
-Le flux vit en mémoire dans le processus du serveur (un seul serveur, comme l'installation standard).
+`kind`: `follow`, `sub`, `raid`, `alert` (the text is shown as is, never interpreted as HTML). With no token set, nothing can push; the admin panel has a **test** button.
+The stream lives in memory in the server process (a single server, like the standard installation).
 
+## YouTube alerts (version 1.1.0)
 
-## Alertes YouTube (version 1.1.0)
+If the **YouTube live actions** module is installed, the **Super Chats, Super Stickers, new memberships and gifted memberships** of your YouTube live also appear, one after the other (a queue of 50 at most). Nothing to connect: the overlay reads the `live.event` topic that module publishes ("Data sources" tab of the overlay if you want to choose which ones).
 
-Si le module **Actions du live YouTube** est installé, les **Super Chats, Super Stickers, nouvelles adhésions et adhésions offertes** de votre direct YouTube s'affichent aussi, l'un après l'autre (une file de 50 au plus). Rien à brancher : l'overlay lit le sujet `live.event` que ce module publie (onglet « Sources de données » de l'overlay si vous voulez choisir lesquelles).
+- **Amount**: written in the currency of the gift ("€5.00"), never converted, never without a currency.
+- **Message text**: **hidden by default** (setting "Show the text of YouTube messages"). A Super Chat message can contain anything; when ticked, it is cut at 140 characters and always plain text (never interpreted as HTML).
+- **Keep the "Live" page of YouTube live actions open** during the live: it is what reads the chat. Without it, no YouTube alert arrives (the overlay never triggers that reading). Without Home Assistant, tick "Read the chat even without Home Assistant" in YouTube live actions.
+- **No background timer**: the overlay page (open in OBS) fetches news every 5 seconds (at most one read every 2 seconds per overlay); with the overlay closed, nothing runs. An alert is never shown twice, and an alert older than 2 minutes (OBS reopened, server restarted) is not replayed.
+- A **Send a fake Super Chat** button shows the rendering without asking YouTube anything.
+- **Without YouTube live actions, nothing changes**: the overlay page is exactly the previous one and asks for nothing more. Pushed alerts (`push`) stay immediate and replace the alert on screen, as before.
 
-- **Montant** : écrit dans la devise du don (« 5,00 € »), jamais converti, jamais sans devise.
-- **Texte des messages** : **masqué par défaut** (réglage « Afficher le texte des messages YouTube »). Un message de Super Chat peut contenir n'importe quoi ; coché, il s'affiche coupé à 140 caractères, toujours en texte brut (jamais interprété comme du HTML).
-- **Il faut garder la page « En direct » d'Actions du live YouTube ouverte** pendant le direct : c'est elle qui lit le chat. Sans elle, aucune alerte YouTube n'arrive (l'overlay ne déclenche jamais cette lecture). Sans Home Assistant, cochez « Lire le chat même sans Home Assistant » dans Actions du live YouTube.
-- **Aucun minuteur de fond** : la page de l'overlay (ouverte dans OBS) vient chercher les nouveautés toutes les 5 secondes (au plus une lecture toutes les 2 secondes par overlay) ; overlay fermé, rien ne tourne. Une alerte n'est jamais affichée deux fois, et une alerte de plus de 2 minutes (OBS rouvert, serveur redémarré) n'est pas rejouée.
-- Un bouton **Envoyer un faux Super Chat** montre le rendu sans rien demander à YouTube.
-- **Sans Actions du live YouTube, rien ne change** : la page de l'overlay est exactement celle d'avant et ne demande rien de plus. Les alertes poussées (`push`) restent immédiates et remplacent l'alerte à l'écran, comme avant.
+## Element for overlay pages (version 1.2.0, core 0.5.0)
 
-## Élément pour les pages d'overlay (version 1.2.0, cœur 0.5.0)
+The module offers the **Alerts** element ("keeps its proportions", 640 × 260) in the **Overlays** section of the administration: place it wherever you want in an overlay page, with the other elements, and paste a single address in OBS. It follows the page's **common style** (text colour, background, corners); the accent colour, the neon or plain look and the display time stay the module's.
 
-Le module propose l'élément **Alertes** (« garde ses proportions », 640 × 260) à la section **Overlays** de l'administration : vous le placez où vous voulez dans une page d'overlay, avec les autres éléments, et vous ne collez qu'une adresse dans OBS. Il suit le **style commun** de la page (couleur du texte, fond, arrondis) ; la couleur d'accent, le style néon ou sobre et la durée d'affichage restent ceux du module.
+- **One option**: "Alerts shown" (all, the channel's, or the live gifts and memberships). Two elements, one of each, show them in two places.
+- **Several overlay pages can show the alerts at the same time** (or the same element twice): each page keeps its own marker in the stream, none empties the queue of the others. The module keeps the last 100 alerts in memory for this. A page opened later does not replay old ones.
+- **Test mode**: the element shows a fixed sample alert.
+- Position and size settings do not exist here: the element fills the frame given by the overlay page.
+- **Nothing changes for the current overlay**: same address, same page, same settings. The limit of one read of the `live.event` topic every 2 seconds applies per overlay, however many pages show it.
 
-- **Une option** : « Alertes affichées » (toutes, celles de la chaîne, ou les dons et adhésions du direct). Deux éléments, un de chaque, permettent de les montrer à deux endroits.
-- **Plusieurs pages d'overlay peuvent afficher les alertes en même temps** (ou deux fois le même élément) : chaque page garde son propre repère dans le flux, aucune ne vide la file des autres. Le module garde les 100 dernières alertes en mémoire pour cela. Une page ouverte plus tard ne rejoue pas les anciennes.
-- **Mode test** : l'élément montre une alerte d'exemple fixe.
-- Les réglages de place et de taille n'existent pas ici : l'élément remplit le cadre donné par la page d'overlay.
-- **Rien ne change pour l'overlay actuel** : même adresse, même page, mêmes réglages. La limite d'une lecture du sujet `live.event` toutes les 2 secondes vaut par overlay, quel que soit le nombre de pages qui l'affichent.
+## How it enters and leaves (version 1.3.0, core 0.6.0)
 
+Under "More options": by default an alert zooms in lightly and fades out, exactly as before. Pick another way for each direction: slide from the left, right, top or bottom, fade, jiggle or pop, or none; "Same as how it enters" (the default for leaving) plays the entrance backwards. The length of the movement goes from 0.2 to 2 seconds; the alert stays on screen for the display time in between. The choices exist as module settings and as options of the element (default: like the module settings). With reduced motion on the device, any movement becomes a short fade. With every choice on "Default", the page is exactly the previous one. The shared code is `scripts/overlay-transition.mjs`, copied to `transition.mjs` by `node scripts/gen-transition.mjs`.
