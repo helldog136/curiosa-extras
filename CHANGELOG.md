@@ -4,6 +4,22 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.68.0 — 2026-11-12
+
+*En bref : l'Overlay alertes (1.7.0) peut jouer votre propre fichier son pour chaque type d'alerte (MP3, Ogg, WAV, M4A ou AAC). Demande Curiosa 0.10.0. Rien à régler : aucun fichier son tant que vous n'en ajoutez pas.*
+
+*In short: the Alerts overlay (1.7.0) can play your own sound file for each type of alert (MP3, Ogg, WAV, M4A or AAC). Needs Curiosa 0.10.0. Nothing to set up: no sound file until you add one.*
+
+### Nouveautés
+
+- **Un fichier son pour chaque type d'alerte**, envoyé dans la fenêtre du type sous « Plus d'options ». Il joue à la place du son intégré, une fois par alerte, et s'arrête quand l'alerte part. Il reste sur votre site. Cochez « Jouer un son avec chaque alerte » pour qu'il joue. Non vérifié sur un OBS en direct.
+- **A sound file for each type of alert**, sent in the window of the type under "More options". It plays instead of the built-in sound, once per alert, and stops when the alert goes. It stays on your site. Tick "Play a sound with each alert" for it to play. Not verified on a live OBS.
+
+### Pour les développeurs
+
+- Alerts overlay 1.7.0: `AUDIO_RE` and per-type `audio`, `kind: "audio"` field in the edit window (validated again, kept with `files.claim` / `remove`), `AUDIO_SCRIPT` in the page only when sounds are on and a type has a file; `minCore` 0.10.0; MCP `hasSoundFile`. Détail : `docs/changelog-parts/alerts-sound-file.md`.
+- Test: `tests/alerts-twitch-sound-file.test.mjs`.
+
 ## 1.67.0 — 2026-11-12
 
 *En bref : la Mascotte (1.2.0) peut bouger et parler sur votre overlay. Une animation d'attente et une animation de parole (une image animée ou plusieurs images), qui durent le temps de lire la phrase ; une voix au choix (petits sons, voix de l'ordinateur ou votre propre son) ; et un réglage pour ne la montrer que quand elle parle. Un aperçu en direct avec un bouton pour tester. Nouvelle permission : fichiers (elle garde les images que vous envoyez). Elle demande maintenant Curiosa 0.6.5. Rien à régler : sans animation, sans voix et avec « Toujours », l'overlay est exactement ce qu'il était.*
