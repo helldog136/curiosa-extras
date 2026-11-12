@@ -31,6 +31,7 @@ export const PLAN = {
   sponsors: [entries("sponsors"), { file: "public.webp", kind: "public", path: "/en/sponsors" }],
   hero: [{ file: "admin.webp", kind: "admin" }, { file: "public.webp", kind: "public", path: "/en" }],
   "twitch-raid": adminOnly,
+  "twitch-events": [{ file: "admin.webp", kind: "admin" }, { file: "types.webp", kind: "admin", tab: "types" }],
   "twitch-bot": [{ file: "admin.webp", kind: "admin", prep: async (page) => { await page.getByText("All your commands").first().evaluate((e) => e.scrollIntoView({ block: "start" })); await page.waitForTimeout(300); } }],
   "alerts-overlay": [{ file: "admin.webp", kind: "admin" }, overlay({
     wait: 2500,

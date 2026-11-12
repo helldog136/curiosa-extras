@@ -414,6 +414,28 @@
       "shots": 1
     },
     {
+      "id": "twitch-events",
+      "category": "streaming",
+      "order": 25,
+      "title": {
+        "en": "Twitch activity",
+        "fr": "Activité Twitch"
+      },
+      "pitch": {
+        "en": "Your site receives the follows, subs, bits, raids and hype trains of your channel and keeps a journal.",
+        "fr": "Votre site reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et tient un journal."
+      },
+      "tags": [
+        "twitch",
+        "alerts",
+        "follows",
+        "subs",
+        "raids",
+        "bits"
+      ],
+      "shots": 0
+    },
+    {
       "id": "twitch-channel",
       "category": "streaming",
       "order": 30,

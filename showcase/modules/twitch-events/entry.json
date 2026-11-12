@@ -1,0 +1,41 @@
+{
+  "id": "twitch-events",
+  "category": "streaming",
+  "tags": [
+    "twitch",
+    "alerts",
+    "follows",
+    "subs",
+    "raids",
+    "bits"
+  ],
+  "order": 25,
+  "title": {
+    "en": "Twitch activity",
+    "fr": "Activité Twitch"
+  },
+  "summary": {
+    "en": "Your site receives the follows, subs, bits, raids and hype trains of your channel and keeps a journal.",
+    "fr": "Votre site reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et tient un journal."
+  },
+  "pitch": {
+    "en": "Your site receives the follows, subs, bits, raids and hype trains of your channel and keeps a journal.",
+    "fr": "Votre site reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et tient un journal."
+  },
+  "since": "1.0.0",
+  "moduleVersion": "1.0.0",
+  "requires": [
+    "twitch-connector",
+    "twitch-channel"
+  ],
+  "worksWith": [
+    "alerts-overlay",
+    "twitch-bot"
+  ],
+  "status": "stable",
+  "screenshots": [],
+  "sources": [
+    "modules/twitch-events/module.json",
+    "modules/twitch-events/README.md"
+  ]
+}

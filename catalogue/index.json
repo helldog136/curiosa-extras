@@ -2742,7 +2742,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-connector",
       "ref": "v1.60.0",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2755,6 +2755,42 @@
           "service": "twitch.api",
           "version": 3
         }
+      ]
+    },
+    {
+      "id": "twitch-events",
+      "name": "Twitch activity",
+      "description": "Receives the follows, subs, bits, raids and hype trains of your channel and keeps them in a journal.",
+      "i18n": {
+        "en": {
+          "name": "Twitch activity",
+          "description": "Receives the follows, subs, bits, raids and hype trains of your channel and keeps them in a journal."
+        },
+        "fr": {
+          "name": "Activité Twitch",
+          "description": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et les garde dans un journal."
+        }
+      },
+      "repo": "https://github.com/helldog136/curiosa-extras",
+      "subdir": "modules/twitch-events",
+      "ref": "v1.60.0",
+      "version": "1.0.0",
+      "platform": "twitch",
+      "apiVersion": 2,
+      "author": "Helldog136",
+      "icon": "📣",
+      "provides": [
+        "twitch.event"
+      ],
+      "requires": {
+        "core": "0.6.0"
+      },
+      "needs": [
+        {
+          "service": "twitch.api",
+          "min": 3
+        },
+        "twitch.live"
       ]
     },
     {
