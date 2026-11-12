@@ -439,7 +439,7 @@ test("remote card: values outside the short lists are refused under the switch w
   await w.press("collabon"); assert.equal((await CO.current(w.bot)).until, (await CO.current(w.bot)).since + 8 * H);
   // the first switch and the quick add are exactly as before
   const p = (await w.panels()).find((x) => x.id === "id-bot");
-  assert.deepEqual(Object.keys(p.toggles[0]).sort(), ["hint", "id", "label", "on", "text", "values"]);
+  assert.deepEqual(Object.keys(p.toggles[0]).sort(), ["hint", "id", "label", "more", "on", "text", "values"]);
   assert.deepEqual(p.forms.map((f) => f.id), ["addcom"]);
 });
 

@@ -43,7 +43,7 @@ test("without Audience there is no panel and nothing else changes; with Audience
   assert.ok(p, "the panel appears with both installed");
   assert.deepEqual([p.title, p.tab, p.badge, p.alert], ["Twitch bot", "Bot", "", false]);
   assert.equal(p.toggles.length, 2, "the emergency switch, then the collaboration mode");
-  assert.deepEqual(p.toggles[0], { id: "pause", label: "Bot answers", on: true, text: "On, answering your chat", hint: "Paused: no replies, timers or reward reactions.", values: {} });
+  assert.deepEqual(p.toggles[0], { id: "pause", label: "Bot answers", on: true, text: "On, answering your chat", hint: "", more: "Paused: no replies, timers or reward reactions.", values: {} });
   assert.equal(p.forms.length, 1); assert.equal(p.forms[0].id, "addcom");
   assert.deepEqual(p.forms[0].fields.map((f) => [f.name, f.required, f.type, f.example]), [["name", true, "text", "hello"], ["text", true, "text", "Welcome, make yourself at home"]], "two fields, each with an example");
   assert.equal(p.forms[0].submit, "Add the command");

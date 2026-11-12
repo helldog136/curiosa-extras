@@ -170,6 +170,7 @@ test("in French the same panel says the same things with 'vous', and the words o
 
 const CARD = '.tg[data-in$=":tg1"]';
 const openCard = async (opts = {}) => { const h = await open(opts); await h.page.waitForSelector(CARD); return h; };
+const own = (h) => h.page.locator(".tgw", { has: h.page.locator(CARD) });   // the collaboration card (the emergency switch has its own ? bubble)
 const seg = (h, label) => h.page.locator(`.sgb`, { hasText: new RegExp(`^${label}$`) });
 const cardText = (h) => h.page.locator(CARD).innerText();
 const pseudo = async (h, sel, which) => h.page.evaluate(([s, w]) => getComputedStyle(document.querySelector(s), w).content, [sel, which]);
@@ -182,7 +183,7 @@ for (const [name, opts] of [["dock 280 px dark", { viewport: [280, 420], dock: t
       const off = await cardText(h);
       assert.match(off, /Collaboration mode[\s\S]*Off — the bot talks as usual/);
       assert.doesNotMatch(await h.page.locator(".tgw", { has: h.page.locator(CARD) }).innerText(), /Commands still answer|Sharing a chat/, "no sentence of help under the switch: it is in the ? bubble");
-      const q = h.page.locator(".qm").first(); const qb = await q.boundingBox();
+      const q = own(h).locator(".qm"); const qb = await q.boundingBox();
       assert.ok(qb.width >= 44 && qb.height >= 44 && qb.x + qb.width <= opts.viewport[0] + 0.5, "the ? bubble is a 44 px target inside the width");
       assert.equal(await q.getAttribute("aria-expanded"), "false"); assert.match(await q.getAttribute("title"), /Commands typed by your viewers still get their answer/);
       assert.equal(await pseudo(h, CARD + " .tgs", "::before"), '"○ "', "off: an icon next to the words");
@@ -233,13 +234,13 @@ test("collaboration card: choose the timers before and while on; the state line 
     await h.page.locator('.sgb:text-is("Never")').click();
     await h.page.waitForSelector('.sgb[aria-checked="true"]:text-is("Never")');
     assert.match(await cardText(h), /On — timers paused — no automatic stop/);
-    assert.equal(await h.page.locator(".mop:visible").count(), 0, "the explanation is closed");
-    await h.page.locator(".qm").click();
-    assert.match(await h.page.locator(".mop:visible").innerText(), /Commands typed by your viewers still get their answer/);
-    assert.equal(await h.page.locator(".qm").getAttribute("aria-expanded"), "true");
+    assert.equal(await own(h).locator(".mop:visible").count(), 0, "the explanation is closed");
+    await own(h).locator(".qm").click();
+    assert.match(await own(h).locator(".mop:visible").innerText(), /Commands typed by your viewers still get their answer/);
+    assert.equal(await own(h).locator(".qm").getAttribute("aria-expanded"), "true");
     await seg(h, "1 in 2").click(); await h.page.waitForSelector('.sgb[aria-checked="true"]:text-is("1 in 2")');
-    assert.equal(await h.page.locator(".mop:visible").count(), 1, "the bubble stays open when the panel is drawn again");
-    await h.page.locator(".qm").click(); assert.equal(await h.page.locator(".mop:visible").count(), 0);
+    assert.equal(await own(h).locator(".mop:visible").count(), 1, "the bubble stays open when the panel is drawn again");
+    await own(h).locator(".qm").click(); assert.equal(await own(h).locator(".mop:visible").count(), 0);
     assert.equal(await flat(h), true);
     // the tab says it, and the bot really behaves: a timer does not go out, a command still answers
     assert.match(await h.page.locator('[data-tab^="p:id-bot"]').innerText(), /Collab/);
