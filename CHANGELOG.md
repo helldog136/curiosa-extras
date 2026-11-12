@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.71.0 — 2026-11-12
+
+*En bref : Partenariats (2.3.0) ouvre l'ajout et la modification d'un partenaire dans une fenêtre au-dessus de la page, et permet enfin de supprimer un partenaire. Les onglets du module (Réglages, Général, Historique) ne ressemblent plus à ceux du partenaire. Pour Curiosa 0.6.7 ou plus.*
+
+*In short: Partnerships (2.3.0) opens adding and editing a partner in a window above the page, and finally lets you delete a partner. The module tabs (Settings, General, History) no longer look like the partner's. For Curiosa 0.6.7 or later.*
+
+### Nouveautés
+
+- **Modifier dans une fenêtre.** « Modifier » ouvre « Modifier — <marque> » avec ses propres boutons « Enregistrer le partenaire » et « Annuler ». Marque, statut, chances de succès et site web se voient ; le reste est sous « Plus d'options ». Ajouter un partenaire et ajouter une entrée au journal s'ouvrent aussi dans une fenêtre.
+- **Supprimer un partenaire.** « Supprimer le partenaire » est dans le menu « ⋯ » de la ligne et en bas de la fiche. La fenêtre dit ce qui part (« Supprimer ce partenaire et ses 12 entrées de journal »), précise que les contacts liés restent dans votre carnet d'adresses, et demande de cocher une case. Pas d'annulation possible ensuite.
+- **Une liste plus pratique.** Recherche en direct, filtre par statut, relance dans sa propre colonne.
+- **Edit in a window.** "Edit" opens "Edit — <brand>" with its own "Save the partner" and "Cancel" buttons. Brand, status, chance of success and website are in sight; the rest is under "More options". Adding a partner and adding a journal entry open in a window too.
+- **Delete a partner.** "Delete the partner" is in the row's "⋯" menu and at the bottom of the partner page. The window says what goes ("Delete this partner and its 12 journal entries"), that linked contacts stay in your address book, and asks for a tick. There is no undo afterwards.
+- **A handier list.** Live search, status filter, follow-up in its own column.
+
+### Pour les développeurs
+
+- Partnerships 2.3.0: `minCore` 0.6.7, no data change. See `docs/changelog-parts/partners-dialogs.md`. Tests: `tests/partnerships-dialogs.test.mjs`; captures `docs/captures/ergonomie-partners-dialogs/`.
+
 ## 1.70.0 — 2026-11-12
 
 *En bref : le Connecteur Twitch (1.5.0) sait maintenant si Twitch accepte encore votre autorisation. Quand elle est refusée ou qu'il manque une permission, la page le dit en mots simples avec un seul bouton « Autoriser de nouveau avec Twitch », le menu a une pastille rouge, le journal du site garde une ligne et vous recevez un e-mail (que vous pouvez couper). « Ma Chaîne Twitch » (2.3.2) ne laisse plus d'impasse quand les followers sont figés. Après la mise à jour, cliquez une fois sur le bouton si la page vous le demande.*
