@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.60.0 — 2026-11-12
+
+*En bref : un nouveau « mode collaboration » pour le Bot Twitch (1.14.0) : quand vous streamez avec d'autres personnes dans un chat partagé, un interrupteur fait parler le bot moins tout seul. Désactivé par défaut. Participation (1.8.3) ajoute le même interrupteur à la télécommande. Rien à régler, aucune nouvelle permission.*
+
+*In short: a new "collaboration mode" for the Twitch bot (1.14.0): when you stream with other people in a shared chat, one switch makes the bot talk less on its own. Off by default. Audience (1.8.3) puts the same switch on the remote control. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Un interrupteur « Mode collaboration » sur la page du bot**, juste sous la ligne d'état : son état, depuis quand, ce qu'il fait, quand il s'arrête, et un bouton (« Activer le mode collaboration » / « Arrêter le mode collaboration »). Il reste comme vous l'avez laissé après un redémarrage ou une mise à jour. Dans l'onglet **Bot** de la télécommande (téléphone, dock OBS), un second interrupteur fait la même chose, et votre assistant IA peut l'utiliser (outil `collaboration_mode_set`, désactivé tant que vous ne l'autorisez pas).
+- **Les timers sont espacés ou mis en pause.** Deux choix : « Espacer » (par défaut) ou « Mettre en pause » ; en mode espacé, « 1 sur 3 » (par défaut) ou « 1 sur 2 ». Le compte est fait timer par timer et conservé : chaque timer garde son rythme, aucun n'est oublié. En pause, rien ne part, et à la fin les timers repartent de zéro, sans rafale.
+- **Les commandes répondent toujours.** La réponse à une commande tapée par une personne du chat n'est jamais coupée.
+- **Sous « Plus d'options »** : des attentes plus longues entre deux réponses (1 à 5 fois), couper les autres messages automatiques (l'avis de remboursement ; une récompense qui fait répondre le bot est remboursée au lieu d'être jouée), et une fin automatique après 6 heures par défaut (0 = jamais), pour ne pas laisser le mode activé par oubli. La page dit quand il s'arrêtera.
+- **Historique.** Chaque changement est noté dans l'historique du site, avec son origine (page du bot, télécommande, assistant, fin automatique).
+- **A "Collaboration mode" switch on the bot page**, right under the status line: its state, since when, what it does, when it ends, and one button ("Start collaboration mode" / "Stop collaboration mode"). It stays as you left it after a restart or an update. On the **Bot** tab of the remote control (phone, OBS dock) a second switch does the same, and your AI assistant can use it (tool `collaboration_mode_set`, off until you allow it).
+- **Timers are thinned out or paused.** Two choices: "Thin out" (default) or "Pause"; when thinning, "1 in 3" (default) or "1 in 2". The count is kept timer by timer, so each timer keeps its rhythm and none is forgotten. When paused nothing goes out, and at the end the timers start from zero, with no burst.
+- **Commands still answer.** The reply to a command typed by a viewer is never muted.
+- **Under "More options"**: longer waits between answers (1 to 5 times), mute the other automatic messages (the refund notice; a reward that makes the bot answer is refunded instead of played), and an automatic end after 6 hours by default (0 = never), so the mode is not left on by mistake. The page says when it will end.
+- **History.** Each change is written in the site history with its origin (bot page, remote control, assistant, automatic end).
+
+### Pour les développeurs
+
+- Twitch bot 1.14.0: `collab.mjs` (state `collab` and `collabCfg` in the state document, pure `effective`, `setOn`, `check`), `collabUi.mjs` (bar and form with folded options), thinning in `timers.mjs` (`thin` and `thinSince` per timer in `botTimers`), delays stretched in `engine.mjs`, quiet mode in `redeem.mjs` (refund reason `collab`), remote switch (`collabon` / `collaboff`), MCP `collaboration_mode_set` (write, default off) and `collaborationMode` in `bot_commands_list`, history events `collab.on` / `collab.off`, automatic end settled by the one-minute task. No migration, `minCore` unchanged.
+- Audience 1.8.3: journal words for the two gestures; an error of a switch of a module panel is shown under its own switch (field `tg`, `tg1`, ...).
+- Tests: `tests/twitch-bot-collab.test.mjs`; the remote layout test accepts one short scroll for the quick-add button in the smallest dock (300 x 420), now that the panel has two switches.
+
 ## 1.59.0 — 2026-11-12
 
 *En bref : vous choisissez maintenant comment le bandeau sponsors (1.2.0), le bandeau défilant (1.2.0) et les alertes (1.3.0) arrivent et repartent : depuis la gauche, la droite, le haut ou le bas, en fondu, en rebond, en zoom. Ces trois modules demandent maintenant Curiosa 0.6.0. Rien à régler : sans changement de votre part, tout reste comme avant. Aucune nouvelle permission.*
