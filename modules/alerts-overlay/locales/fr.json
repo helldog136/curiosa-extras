@@ -240,5 +240,8 @@
   "mod_err_unknown": "Ce texte n'attend plus.",
   "vw_head": "Textes du public et voix",
   "tw_f_viewer_max_default": "Vide : 140",
-  "mod_reason_held": "{reason}, alerte retenue"
+  "mod_reason_held": "{reason}, alerte retenue",
+  "tw_f_audio": "Fichier son",
+  "tw_f_audio_help": "Joué à la place du son choisi. Demande les sons activés.",
+  "tw_err_audio": "Envoyez un son du site, par exemple un fichier MP3."
 }

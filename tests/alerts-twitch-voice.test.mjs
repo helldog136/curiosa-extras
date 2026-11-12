@@ -278,8 +278,8 @@ test("tools for assistants: read the voice and moderation, change them (bounded)
   assert.deepEqual(manifest.mcp.map((m) => m.name), Object.keys(def.mcp));
 });
 
-test("manifest: 1.6.0, optional journal, video settings (six, own tab), viewers tab, FR and EN texts in parity", () => {
-  assert.equal(manifest.version, "1.6.0");
+test("manifest: 1.7.0, optional journal, video settings (six, own tab), viewers tab, FR and EN texts in parity", () => {
+  assert.equal(manifest.version, "1.7.0");
   assert.deepEqual(manifest.requires, [{ service: "twitch.journal", optional: true }]);
   assert.equal(manifest.settings.filter((s) => s.type === "video" && s.tab === "media").length, 6);
   assert.deepEqual(manifest.tabs.map((t) => t.id), ["twitch", "viewers", "media"]);
