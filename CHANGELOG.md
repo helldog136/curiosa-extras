@@ -4,6 +4,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.58.0 — 2026-11-12
+
+*En bref : Raid Twitch (2.4.0) ajoute deux éléments pour vos pages d'overlay (partenaires à la une, partenaires en direct) et Événements (1.3.0) en ajoute un (prochain événement). Raid Twitch demande maintenant Curiosa 0.5.0. Rien à régler, aucune nouvelle permission.*
+
+*In short: Twitch raid (2.4.0) adds two elements for your overlay pages (featured partners, partners live now) and Events (1.3.0) adds one (next event). Twitch raid now needs Curiosa 0.5.0. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Raid Twitch 2.4.0 : « Partenaires à la une » et « Partenaires en direct ».** Le premier montre les chaînes de votre sélection du moment, avec leur jeu et leur audience. Le second montre tous les partenaires en direct, les moins regardés d'abord (de 1 à 10 chaînes, « et 3 autres en direct » au-delà). Jamais une personne rangée dans « Ne pas montrer », jamais un titre de direct ni une commande de raid. Quand personne n'est en direct, rien ne s'affiche.
+- **Événements 1.3.0 : « Prochain événement ».** Il montre le prochain événement publié de votre agenda : titre, jour et heure dans la langue de la page, « Dans 3 jours » et, si vous le souhaitez, le lieu. Rien ne s'affiche quand rien n'est à venir.
+- **Raid Twitch : « Nouvelle adresse » change aussi l'adresse de ses éléments d'overlay.** Rechargez ensuite vos pages d'overlay dans OBS.
+- **Raid Twitch 2.4.0: "Featured partners" and "Partners live now".** The first shows the channels of your featured picks, with their game and viewers. The second shows every partner who is live, the least watched first (1 to 10 channels, "and 3 more live" beyond). Never a person filed under "Do not show", never a stream title or a raid command. When nobody is live, nothing is drawn.
+- **Events 1.3.0: "Next event".** It shows the next published event of your agenda: title, day and time in the language of the page, "In 3 days" and, if you want, the place. Nothing is drawn when nothing is coming up.
+- **Twitch raid: "New address" also changes the address of its overlay elements.** Reload your overlay pages in OBS afterwards.
+
+### Pour les développeurs
+
+- `twitch-raid/element.mjs`: `featured` (reads `moment.momentNow`, which never rerolls) and `live` (`source.targets` + `live.liveNow` + `consent.allowedContacts` + the "Never draw" list; up to 500 channels, above that an empty state). Only name, game and viewers leave the module. The address carries the dock secret, added server side; routes `element/:slug` and `element-data/:slug` answer 404 without it. `minCore` is now 0.5.0.
+- `events/element.mjs`: `next` (first published, not cancelled, not postponed event whose end is in the future). Public data, no secret; routes `element` and `element-data` (120 requests per minute per visitor).
+- Both pages render nothing (the panel stays `hidden`) when there is nothing to show, follow the `--ov-*` tokens and the shared `data-ov-part` names, and show invented names in test mode.
+
 ## 1.57.0 — 2026-11-11
 
 *En bref : Ma Chaîne Twitch (2.3.0) dit à votre site quel jeu est en cours, pour qu'une page d'overlay change de skin selon le jeu. Demande Curiosa 0.8.0. Rien à régler, aucune nouvelle permission.*
