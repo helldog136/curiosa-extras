@@ -5,11 +5,11 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "minCore": "0.6.0",
   "description": {
-    "en": "A pop-up for OBS that shows your alerts (new follower, sub, raid…), sent by your stream tools or by YouTube.",
-    "fr": "Une fenêtre pour OBS qui affiche vos alertes (follow, sub, raid…), envoyées par vos outils de stream ou YouTube."
+    "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -21,7 +21,9 @@
     "overlay",
     "routes",
     "topics",
-    "admin"
+    "admin",
+    "mcp",
+    "storage"
   ],
   "settings": [
     {
@@ -93,6 +95,76 @@
       "label": {
         "en": "Seconds on screen",
         "fr": "Secondes à l'écran"
+      }
+    },
+    {
+      "key": "minGapSeconds",
+      "type": "number",
+      "default": 1,
+      "min": 0,
+      "max": 30,
+      "unit": {
+        "en": "seconds",
+        "fr": "secondes"
+      },
+      "tab": "twitch",
+      "label": {
+        "en": "Pause between two alerts",
+        "fr": "Pause entre deux alertes"
+      },
+      "help": {
+        "en": "Between 0 and 30 seconds.",
+        "fr": "Entre 0 et 30 secondes."
+      }
+    },
+    {
+      "key": "ignoreNames",
+      "type": "text",
+      "optional": true,
+      "example": "etoile_nord, lune_douce",
+      "tab": "twitch",
+      "label": {
+        "en": "Names to ignore",
+        "fr": "Pseudos à ignorer"
+      },
+      "help": {
+        "en": "No alert for these Twitch names. Separate them with commas.",
+        "fr": "Pas d'alerte pour ces pseudos Twitch, séparés par des virgules."
+      }
+    },
+    {
+      "key": "twitchText",
+      "type": "boolean",
+      "default": false,
+      "tab": "twitch",
+      "label": {
+        "en": "Show the messages that come with an alert",
+        "fr": "Afficher les messages joints aux alertes"
+      },
+      "help": {
+        "en": "A resub or bits can come with a message written by your viewers. Unticked, only the name and the amount are shown. Ticked, the message is shown too, cut to 140 characters, always as plain text.",
+        "fr": "Un réabonnement ou des bits peuvent venir avec un message écrit par votre public. Décoché, seuls le pseudo et le montant s'affichent. Coché, le message s'affiche aussi, coupé à 140 caractères, toujours en texte brut."
+      }
+    },
+    {
+      "key": "groupSeconds",
+      "type": "number",
+      "default": 5,
+      "min": 0,
+      "max": 30,
+      "unit": {
+        "en": "seconds",
+        "fr": "secondes"
+      },
+      "advanced": true,
+      "tab": "twitch",
+      "label": {
+        "en": "Wait to group bursts",
+        "fr": "Attente pour grouper les rafales"
+      },
+      "help": {
+        "en": "Gifts from the same person and many follows in a row become one alert. 0 = never group.",
+        "fr": "Les cadeaux d'une même personne et les nombreux follows d'affilée deviennent une seule alerte. 0 = ne jamais grouper."
       }
     },
     {
@@ -333,6 +405,94 @@
           "type": "string"
         }
       ]
+    },
+    {
+      "topic": "twitch.event",
+      "label": {
+        "en": "Your Twitch events: follows, subs, gifts, bits, raids, hype trains (from Twitch activity, if installed)",
+        "fr": "Vos événements Twitch : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme (fournis par Activité Twitch, s'il est installé)"
+      },
+      "schema": [
+        {
+          "key": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "at",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "key": "test",
+          "type": "boolean"
+        },
+        {
+          "key": "replay",
+          "type": "boolean"
+        },
+        {
+          "key": "missed",
+          "type": "boolean"
+        },
+        {
+          "key": "name",
+          "type": "string"
+        },
+        {
+          "key": "login",
+          "type": "string"
+        },
+        {
+          "key": "anonymous",
+          "type": "boolean"
+        },
+        {
+          "key": "tier",
+          "type": "string"
+        },
+        {
+          "key": "gifted",
+          "type": "boolean"
+        },
+        {
+          "key": "months",
+          "type": "number"
+        },
+        {
+          "key": "count",
+          "type": "number"
+        },
+        {
+          "key": "amount",
+          "type": "number"
+        },
+        {
+          "key": "viewers",
+          "type": "number"
+        },
+        {
+          "key": "text",
+          "type": "string"
+        },
+        {
+          "key": "title",
+          "type": "string"
+        },
+        {
+          "key": "level",
+          "type": "number"
+        },
+        {
+          "key": "total",
+          "type": "number"
+        }
+      ]
     }
   ],
   "overlayElements": [
@@ -568,5 +728,96 @@
         }
       ]
     }
-  ]
+  ],
+  "tabs": [
+    {
+      "id": "twitch",
+      "label": {
+        "en": "Twitch events",
+        "fr": "Événements Twitch"
+      },
+      "panel": true
+    }
+  ],
+  "offers": [
+    {
+      "service": "alerts.queue",
+      "version": 1,
+      "each": true,
+      "readOnly": [
+        "state"
+      ],
+      "label": {
+        "en": "The queue of the alerts on screen (pause, resume, empty)",
+        "fr": "La file des alertes à l'écran (pause, reprise, vidage)"
+      }
+    }
+  ],
+  "privacy": {
+    "en": "The overlay keeps, for a few minutes at most, the display name and amount of the Twitch events it is about to show, and the identifiers of the last alerts shown, so that nothing is shown twice after a restart. Alerts held during a pause are kept until you resume or empty the queue. Nothing else, and nothing about people beyond their public display name. It collects nothing from the people who visit your site.",
+    "fr": "L'overlay garde, quelques minutes au plus, le pseudo public et le montant des événements Twitch qu'il va afficher, et les références des dernières alertes montrées, pour que rien ne s'affiche deux fois après un redémarrage. Les alertes retenues pendant une pause sont gardées jusqu'à la reprise ou jusqu'au vidage de la file. Rien d'autre, et rien sur les personnes au-delà de leur pseudo public. Il ne collecte rien chez les personnes qui visitent votre site."
+  },
+  "mcp": [
+    {
+      "name": "alert_templates_get",
+      "readOnly": true,
+      "default": false,
+      "description": "Read how the Twitch alerts of the overlay are written. For each type (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) whether it is on, its text template (null = the default sentence), its duration in seconds (null = the module default) and its minimum (bits, gifted subs, viewers or points; null = none), the words a template may use (name, count, amount, tier, months, viewers, level, title, text, total, each written between braces in a text), and the state of the queue (paused, held alerts).",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "alert_template_update",
+      "default": false,
+      "description": "Change one type of Twitch alert. You can switch it on or off (enabled), set its text (text: plain words with the words between braces listed by alert_templates_get; an empty text restores the default sentence), its duration (durationSeconds 2 to 60, 0 = default) or its minimum (minimum: bits, gifted subs, viewers or points, 0 = none; only for cheer, gift, raid, redeem). Unknown words in a text are refused with an explanation. Nothing is deleted and nothing is sent to the screen.",
+      "input": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype",
+              "redeem"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "minimum": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        }
+      }
+    }
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.alert_templates_get": "Lit les textes, durées et minimums des alertes Twitch de l'overlay, et l'état de la file.",
+      "mcp.alert_template_update": "Change un type d'alerte Twitch : allumé ou éteint, texte, durée ou minimum. Ne supprime rien."
+    }
+  }
 }

@@ -1,10 +1,13 @@
 ## Ce que ça fait
 
-Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement, un raid. Vos outils de stream ou YouTube les envoient.
+Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme.
 
 - Ajoutez l'adresse de l'overlay comme source navigateur dans OBS.
 - Envoyez une alerte de test d'un seul bouton.
 - Choisissez la couleur d'accent et la durée d'affichage d'une alerte.
+- Montrez vos événements Twitch avec Activité Twitch : un texte, une durée et un minimum par type.
+- Les alertes attendent leur tour, et les cadeaux ou follows en rafale deviennent une seule alerte.
+- Mettez les alertes en pause pendant un moment calme : rien n'est perdu.
 - Affichez le texte des messages YouTube, si vous le souhaitez.
 - Choisissez comment l'alerte arrive et repart : glissement depuis un côté, fondu, rebond ou zoom.
 
@@ -12,6 +15,7 @@ Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement,
 
 - Vous choisissez l'apparence et la couleur d'accent.
 - Vous vérifiez le résultat avant de passer en direct.
+- Rien ne s'affiche deux fois, même après un redémarrage.
 
 ## À quoi ça ressemble
 
@@ -21,9 +25,13 @@ Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement,
 ![Overlay Overlay alertes (OBS) dans OBS, sur fond sombre](shot:overlay.webp)
 *Ce que voit votre public dans OBS.*
 
+![Overlay alertes, l'onglet Événements Twitch, avec des données de démonstration](shot:twitch.webp)
+*Une ligne par type : texte, durée, minimum et un interrupteur.*
+
 ## Ça marche bien avec
 
 - [Ma Chaîne Twitch](entry:twitch-channel)
+- [Activité Twitch](entry:twitch-events)
 - [Actions du live YouTube](entry:youtube-live-actions)
 
 ## Bon à savoir
@@ -33,4 +41,4 @@ Une fenêtre pour OBS qui montre vos alertes : un nouvel abonné, un abonnement,
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.3.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.4.0.
