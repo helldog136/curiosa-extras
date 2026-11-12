@@ -44,7 +44,7 @@ beforeEach(() => { mock.timers.setTime(Date.parse("2026-10-14T10:00:00Z")); over
 
 test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec taille minimale, plage de ratios, style suivi, options minimales", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.7.5"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "2.7.6"); assert.equal(manifest.minCore, "0.5.0");
   assert.deepEqual(manifest.overlayElements.map((e) => e.id), ["week", "next"]);
   for (const e of manifest.overlayElements) {
     assert.equal(e.fit, "fluid", e.id); assert.equal(e.followsStyle, true, e.id); assert.equal(e.demo, true, e.id);
@@ -288,4 +288,41 @@ test("rien ne change pour l'existant : page, accueil, image, admin, MCP, réglag
   assert.deepEqual(now.imageTree, golden.imageTree);
   assert.equal(now.imageError, golden.imageError);
   assert.ok(Object.keys(golden.scenes).length === 7 && golden.scenes.original.page.blocks.length > 3, "le scénario de référence n'est pas vide");
+});
+
+/* ───────────────────────────── « Prochain stream » : un seul cadre, lisible sur une télé ───────────────────────────── */
+
+test("« Prochain stream » : un seul cadre (le panneau de la page), la carte ne peint ni fond ni bordure et remplit le cadre", async () => {
+  for (const [w, h] of [[490, 120], [1000, 300], [3440, 360], [400, 800]]) {
+    const { html } = await page("next", query(w, h, { surface: "soft" }));
+    assert.match(html, /<div id="p" class="fill" data-ov-part="panel"/, `${w}×${h} : le panneau remplit le cadre`);
+    assert.match(html, /#p\.fill\{padding:0\}/);
+    assert.match(html, /#p\.fill #r\{height:100%\}/);
+    assert.match(html, /class="pa pa-hero pa-fill"/);
+    assert.match(html, /\.pa-fill \.pa-hr\{[^}]*padding:0;background:none;border:0;border-radius:0/, "carte sans fond ni bordure : le panneau du cœur est seul à encadrer");
+    assert.match(html, /\.pa-fill \.pa-hr::before\{display:none\}/, "pas de liseré de carte non plus");
+    assert.match(html, /\.pa\.pa-fill\{[^}]*container-type:size;height:100%;width:100%;display:flex;flex-direction:column;justify-content:center/, "remplit et centre le contenu");
+    assert.ok(!/[{;]((min|max)-)?width:\d+px/.test(overlay.NEXT_CSS), "aucune largeur en pixels fixes");
+  }
+  const week = (await page("week", query(1000, 600))).html;
+  assert.ok(!/pa-fill/.test(week) && !/class="fill"/.test(week), "l'élément semaine ne change pas");
+});
+
+test("« Prochain stream » : texte de taille télé (légende >= 24 px à 1080p, autres textes en multiples), tout vient d'une unité unique", () => {
+  const css = overlay.NEXT_CSS;
+  assert.ok(overlay.NEXT_SIZES.minPx >= 24);
+  assert.match(css, new RegExp(`--umin:${overlay.NEXT_SIZES.minPx}px`));
+  const sizes = [...css.matchAll(/font-size:(var\(--u\)|calc\(var\(--u\)\*([\d.]+)\))/g)].map((m) => (m[2] ? Number(m[2]) : 1));
+  assert.ok(sizes.length >= 10 && sizes.every((k) => k >= 1), `aucun texte sous 1 u : ${sizes}`);
+  // La plus petite légende vaut 1 u ; à 1080 px de haut (cadre pleine hauteur), u est au moins 24 px et au plus maxPx.
+  const u = (H, W) => Math.min(Math.max(overlay.NEXT_SIZES.minPx, Math.min((H - 2 * Math.max(16, Math.min(0.04 * H, 0.025 * W))) / overlay.NEXT_SIZES.rows.full, (W - 32) / 26)), overlay.NEXT_SIZES.maxPx);
+  for (const [W, H] of [[1920, 1080], [1280, 720], [3440, 1440], [1000, 300]]) assert.ok(u(H, W) >= 24, `${W}×${H}`);
+  assert.ok(!/font-size:[\d.]+(px|rem)/.test(css.replace(/\.pa-fill \.pa-ph\{font-size:var\(--u\)\}/, "")), "aucune taille de texte fixe");
+});
+
+test("« Prochain stream » : la jaquette garde ses proportions, et sans jaquette l'élément reste dessiné", async () => {
+  assert.match(overlay.NEXT_CSS, /\.pa-fill \.pa-covers img,\.pa-fill \.pa-ph\{width:var\(--pa-cw\);/);
+  const { html } = await page("next", query(1000, 300, {}, { covers: "0" }));
+  assert.match(html, /pa-hr-title[^>]*>Premier</);
+  assert.ok(!/class="pa-covers|class="pa-ph/.test(html.replace(/<style>[\s\S]*?<\/style>/g, "")));
 });

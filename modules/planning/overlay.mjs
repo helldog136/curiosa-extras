@@ -94,14 +94,60 @@ function fitCount(p, look) {
   return Math.max(1, Math.min(20, Math.floor((p.height - 24) / row)));
 }
 
+/** Combien de lignes « à suivre » tiennent sous le prochain stream, textes à 24 px au moins. */
+const upNext = (p) => Math.min(p.more ?? 0, Math.max(0, Math.floor((p.height - 270) / (NEXT_SIZES.listRow * NEXT_SIZES.minPx))));
+
 /** Les réglages d'apparence du module, adaptés au cadre : lus tels que la personne les a réglés (heures, jaquettes, jours…), sauf ce qui dépend de la taille. */
 function optionsFor(ctx, p, look) {
   const compact = p.height < 420 || p.width < 520;
-  const forced = { weekMode: "rolling", classicHideEmpty: true, heroUpNext: Math.min(p.more ?? 0, Math.max(0, Math.floor((p.height - 190) / 70))), showTimezone: false };
+  const forced = { weekMode: "rolling", classicHideEmpty: true, heroUpNext: upNext(p), showTimezone: false };
   if (!p.covers || (look === "week" && p.height < 380)) forced.showCovers = false;   // une grille trop basse n'a pas la place des jaquettes
   if (compact) forced.density = "compact";
   return normalizeOptions((k) => (k in forced ? forced[k] : ctx.setting(k)), look);
 }
+
+/**
+ * Tailles de l'élément « Prochain stream », LES SEULES à régler (lisibles sur une télé). Tout part d'une unité `--u` (px) tirée de la taille du cadre :
+ * la plus petite légende vaut 1 u, avec u >= 24 px (sauf cadre minuscule). Les autres textes sont des multiples de u. Plus tard, `--u` pourra
+ * venir des jetons de taille de texte du cœur (--ov-text-*) : il suffira de changer UNE ligne (`--uBase`).
+ */
+export const NEXT_SIZES = { minPx: 24, maxPx: 96, rows: { full: 8.2, noGames: 6.7, compact: 4.1 }, listHead: 1.7, listRow: 3.3, pad: "max(16px,min(4cqh,2.5cqw))" };
+export const NEXT_CSS = minify(`
+.pa.pa-fill{box-sizing:border-box;container-type:size;height:100%;width:100%;display:flex;flex-direction:column;justify-content:center;
+  --pad:${NEXT_SIZES.pad};--R:${NEXT_SIZES.rows.full};--Rx:0;--Ra:0;--umin:${NEXT_SIZES.minPx}px;--Wd:26;
+  --uBase:calc((100cqh - 2*var(--pad))/(var(--R) + var(--Rx) + var(--Ra)));
+  --u:clamp(var(--umin),min(var(--uBase),calc((100cqw - 2*var(--pad))/var(--Wd))),${NEXT_SIZES.maxPx}px);
+  --pa-pad:0px;padding:var(--pad);font-size:var(--u);line-height:1.2;overflow:hidden}
+.pa-fill .pa-hr{flex:0 1 auto;flex-direction:row;align-items:center;justify-content:center;gap:calc(var(--u)*.9);padding:0;background:none;border:0;border-radius:0;overflow:visible;min-width:0}
+.pa-fill .pa-hr::before{display:none}
+.pa-fill .pa-hr-art{--pa-cw:min(calc(var(--u)*(var(--R) - .5)*.75),28cqw);align-self:center}
+.pa-fill .pa-covers img,.pa-fill .pa-ph{width:var(--pa-cw);border-radius:calc(var(--u)*.2)}
+.pa-fill .pa-ph{font-size:var(--u)}
+.pa-fill .pa-hr-body{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;justify-items:start;gap:calc(var(--u)*.25) calc(var(--u)*.6);min-width:0;flex:0 1 auto}
+.pa-fill .pa-hr-body>*{grid-column:1/-1;min-width:0;max-width:100%}
+.pa-fill .pa-hr-eyebrow{grid-column:1;font-size:var(--u);letter-spacing:.08em}
+.pa-fill .pa-hr-chips{grid-column:2}
+.pa-fill .pa-chip{font-size:var(--u);padding:.05em .6em}
+.pa-fill .pa-hr-title{font-size:calc(var(--u)*1.35);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pa-fill .pa-hr-when{gap:0 calc(var(--u)*.7);flex-wrap:nowrap;min-width:0}
+.pa-fill .pa-hr-day{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pa-fill .pa-hr-hour{font-size:calc(var(--u)*2.2);line-height:1.05}
+.pa-fill .pa-hr-day{font-size:calc(var(--u)*1.15)}
+.pa-fill .pa-games{font-size:var(--u);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pa-fill .pa-hr-sub{margin:calc(var(--u)*.6) 0 0;font-size:var(--u)}
+.pa-fill .pa-hr-list{min-width:0}
+.pa-fill .pa-hr-row{gap:calc(var(--u)*.7);padding:calc(var(--u)*.3) 0;--pa-cw:calc(var(--u)*1.8)}
+.pa-fill .pa-hr-date{flex-basis:calc(var(--u)*3.2);font-size:var(--u)}
+.pa-fill .pa-hr-date b{font-size:calc(var(--u)*1.2)}
+.pa-fill .pa-hr-row .pa-title{font-size:calc(var(--u)*1.05);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pa-fill .pa-hr-meta{font-size:var(--u);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@container (max-height:${Math.round(NEXT_SIZES.rows.full * NEXT_SIZES.minPx + 44)}px){.pa-fill{--R:${NEXT_SIZES.rows.noGames}}.pa-fill .pa-games{display:none}}
+@container (max-height:${Math.round(NEXT_SIZES.rows.noGames * NEXT_SIZES.minPx + 40)}px){.pa-fill{--R:${NEXT_SIZES.rows.compact}}.pa-fill .pa-hr-eyebrow,.pa-fill .pa-hr-chips{display:none}}
+@container (max-height:${Math.round(NEXT_SIZES.rows.compact * NEXT_SIZES.minPx + 32)}px){.pa-fill{--umin:0px}}
+@container (max-width:${Math.round(26 * NEXT_SIZES.minPx + 32)}px){.pa-fill{--Wd:17}.pa-fill .pa-hr-art{display:none}}
+@container (max-width:${Math.round(17 * NEXT_SIZES.minPx + 32)}px){.pa-fill{--Wd:8}.pa-fill .pa-hr-day{display:none}}
+@container (aspect-ratio<1/1){.pa-fill{--Wd:15}.pa-fill .pa-hr-day{display:inline}.pa-fill .pa-hr{flex-direction:column;text-align:center}.pa-fill{--Ra:5}.pa-fill .pa-hr-art{display:block;--pa-cw:min(calc(var(--u)*3.75),60cqw)}.pa-fill .pa-hr-body{justify-items:center;grid-template-columns:minmax(0,1fr)}.pa-fill .pa-hr-eyebrow,.pa-fill .pa-hr-chips{grid-column:1}.pa-fill{--Ra:6.5}.pa-fill .pa-hr-when{justify-content:center;flex-wrap:wrap}}
+`);
 
 /** Le contenu de l'élément (HTML + style des apparences), pur : même entrée, même sortie. */
 export function renderContent(ctx, p, data, now = new Date()) {
@@ -119,6 +165,12 @@ export function renderContent(ctx, p, data, now = new Date()) {
   // Rien de prévu : rien à l'écran (pas de carte « aucun stream », pas de cadre). Le mode test montre toujours un exemple, pour placer l'élément.
   if (!p.demo && (model.empty || (p.id === "next" && !model.next))) return "";
   const frag = renderFragment(look, model, ctx);
+  if (p.id === "next") {
+    // « Prochain stream » : UNE seule enveloppe (le panneau de la page, jetons --ov-*). La carte de l'apparence ne peint donc ni fond ni bordure, et remplit le cadre.
+    const extra = Math.min(upNext(p), Math.max(0, model.days.reduce((n, d) => n + d.slots.length, 0) - 1));
+    const rx = extra ? NEXT_SIZES.listHead + extra * NEXT_SIZES.listRow : 0;
+    return `<div class="pa pa-${esc(frag.id)} pa-fill" data-density="${esc(opts.density)}" data-ov-part="planning" style="--Rx:${rx}"><style>${BASE_CSS}${minify(frag.css)}${NEXT_CSS}</style>${frag.html}</div>`;
+  }
   return `<div class="pa pa-${esc(frag.id)}" data-density="${esc(opts.density)}" data-ov-part="planning"><style>${BASE_CSS}${minify(frag.css)}</style>${frag.html}</div>`;
 }
 
@@ -136,6 +188,8 @@ body{font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ov-
 body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 #p{box-sizing:border-box;height:100%;overflow:hidden;padding:12px;background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,0)}
 #r{width:100%}
+#p.fill{padding:0}
+#p.fill #r{height:100%}
 #r :where(img){height:auto}
 #r.cut{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent)}
 /* Jetons du Planning (--v-*, lus par les apparences) déduits des jetons communs --ov-* : le skin du site n'est jamais chargé. */
@@ -147,7 +201,7 @@ body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 
 const SCRIPT = `(function(){
 var P=document.getElementById('p'),R=document.getElementById('r'),MIN=.55;
-function fit(){R.style.zoom='';R.classList.remove('cut');var avail=P.clientHeight-24,s=1;
+function fit(){if(P.className==='fill')return;R.style.zoom='';R.classList.remove('cut');var avail=P.clientHeight-24,s=1;
 for(var i=0;i<4;i++){var h=R.getBoundingClientRect().height;if(h<=avail+1||h===0)break;s=Math.max(MIN,s*avail/h);R.style.zoom=s;if(s<=MIN)break}
 if(R.getBoundingClientRect().height>avail+1)R.classList.add('cut')}
 fit();window.addEventListener('resize',fit);
@@ -180,7 +234,7 @@ export async function elementResponse(request, ctx, deps) {
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const light = p.style?.text !== "dark";
   const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("title"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
-    `<body${light && p.style?.surface !== "soft" ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(v)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
+    `<body${light && p.style?.surface !== "soft" ? ' class="ov-shadow"' : ""}><div id="p"${slug === "next" ? ' class="fill"' : ""} data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(v)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }
 

@@ -5,7 +5,7 @@
     "en": "Stream schedule",
     "fr": "Planning des streams"
   },
-  "version": "2.7.5",
+  "version": "2.7.6",
   "menuGroup": "tools",
   "minCore": "0.5.0",
   "description": {
