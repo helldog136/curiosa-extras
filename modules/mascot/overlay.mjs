@@ -36,12 +36,17 @@ export function readParams(params) {
   const get = (k) => params.get(k) ?? undefined;
   const style = params.has("ov-text") ? { text: get("ov-text") === "dark" ? "dark" : "light", surface: get("ov-surface") === "soft" ? "soft" : "transparent", corners: get("ov-corners") === "square" ? "square" : "round" } : null;
   return {
-    style, demo: get("ov-demo") === "1", seconds: int(get("opt-seconds"), SECONDS),
+    style, tv: tvOf(params), demo: get("ov-demo") === "1", seconds: int(get("opt-seconds"), SECONDS),
     // 1.2.0: "always" (the default, as before) or "speaking" (hidden between two sentences); `test` is the panel of the administration preview, never used on stream.
     visibility: get("opt-visibility") === "speaking" ? "speaking" : "always", test: get("ov-test") === "1" && get("ov-demo") === "1",
     transitionIn: get("opt-transitionIn"), transitionOut: get("opt-transitionOut"),
   };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Common style -> --ov-* tokens (values of docs/OVERLAY-ELEMENTS.md). Without style (address opened by hand): light text, transparent background. */
 export function tokensCss(style) {
@@ -132,8 +137,8 @@ body{font:16px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ov
 [data-ov-part="bubble"].on{opacity:1}
 [data-ov-part="bubble-tail"]{flex:none;width:0;height:0;margin:0 0 0 44px;border-left:10px solid transparent;border-right:10px solid transparent;border-top:12px solid var(--mc-bubble);opacity:0;transition:opacity .45s}
 [data-ov-part="bubble-tail"].on{opacity:1}
-[data-ov-part="name"]{margin:0 0 3px;font-size:15px;font-weight:700;opacity:.8}
-[data-ov-part="text"]{margin:0;font-size:24px;line-height:1.3;overflow-wrap:anywhere}
+[data-ov-part="name"]{margin:0 0 3px;font-size:var(--ov-text-xs,24px);font-weight:700;opacity:.8}
+[data-ov-part="text"]{margin:0;font-size:var(--ov-text-md,32px);line-height:1.3;overflow-wrap:anywhere}
 [data-ov-part="avatar"]{flex:none;position:relative;width:116px;height:116px;margin:4px 0 0 12px}
 [data-ov-part="avatar"] svg,[data-ov-part="avatar"] img{display:block;width:100%;height:100%}
 [data-ov-part="avatar"] img{object-fit:cover}
@@ -155,10 +160,11 @@ body{font:16px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ov
 // The sentence of the moment is worked out from the time; the size of the text fits the frame; soft update, bounded (slower and slower when nothing changes, 300 times at most).
 const SCRIPT = `(function(){
 var d=JSON.parse(document.getElementById('d').textContent),B=document.getElementById('b'),T=document.getElementById('t'),N=document.getElementById('n'),Y=document.getElementById('y'),A=document.getElementById('a'),shown=null;
-function fit(){var size=24;T.style.fontSize=size+'px';var k=0;while(k++<40&&size>11&&B.scrollHeight>B.clientHeight+1){size-=1;T.style.fontSize=size+'px'}}
+function fit(){var tv=d.tv||1,size=32*tv,min=24*tv,k=0;T.style.cssText='font-size:'+size+'px';while(k++<40&&size>min&&B.scrollHeight>B.clientHeight+1){size=Math.max(min,size-1);T.style.fontSize=size+'px'}
+if(B.scrollHeight>B.clientHeight+1){var cs=getComputedStyle(B),room=B.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-(N.hidden?0:N.offsetHeight+3),lines=Math.max(1,Math.floor(room/(size*1.3)));T.style.cssText='font-size:'+size+'px;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:'+lines}}
 function show(){var l=d.lines;if(!l.length){B.classList.remove('on');Y.classList.remove('on');A.hidden=true;shown=null;return}A.hidden=false;
 var ms=d.seconds*1000,r=l[Math.floor(Date.now()/ms)%l.length],id=JSON.stringify(r);if(id===shown&&B.classList.contains('on'))return;
-var swap=function(){T.textContent=r.text;N.textContent=d.name;N.hidden=!d.name;A.setAttribute('data-mood',r.kind==='hello'?'happy':'curious');
+var swap=function(){T.textContent=r.text;T.title=r.text;N.textContent=d.name;N.hidden=!d.name;A.setAttribute('data-mood',r.kind==='hello'?'happy':'curious');
 B.classList.add('on');Y.classList.add('on');fit();A.classList.remove('bob');void A.offsetWidth;A.classList.add('bob')};
 shown=id;if(B.classList.contains('on')){B.classList.remove('on');Y.classList.remove('on');setTimeout(swap,450)}else swap()}
 function next(){var ms=d.seconds*1000;setTimeout(function(){show();next()},ms-(Date.now()%ms)+30)}
@@ -178,7 +184,7 @@ const X_CSS = `
 [data-ov-part="avatar"] img.an{object-fit:contain}
 [data-ov-part="avatar"] img[hidden]{display:none}
 [data-ov-part="avatar"].anim [data-mood]{display:none}
-[data-ov-part="foot"]{position:absolute;bottom:8px;right:8px;max-width:52%;display:flex;flex-direction:column;gap:6px;align-items:stretch;padding:8px;border-radius:10px;font:13px/1.35 system-ui,sans-serif;background:rgba(255,255,255,.92);color:#1f2430;border:1px solid rgba(0,0,0,.2)}
+[data-ov-part="foot"]{position:absolute;bottom:8px;right:8px;max-width:52%;display:flex;flex-direction:column;gap:6px;align-items:stretch;padding:8px;border-radius:10px;font:var(--ov-text-xs,24px)/1.35 system-ui,sans-serif;background:rgba(255,255,255,.92);color:#1f2430;border:1px solid rgba(0,0,0,.2)}
 [data-ov-part="foot"] button{min-height:44px;padding:6px 10px;font:inherit;font-weight:600;cursor:pointer;border-radius:8px;border:1px solid #3b4cca;background:#3b4cca;color:#fff}
 [data-ov-part="foot"] button+button{background:#fff;color:#3b4cca}
 [data-ov-part="foot"] button:focus-visible{outline:3px solid #f5a623;outline-offset:2px}
@@ -194,7 +200,8 @@ var d=JSON.parse(document.getElementById('d').textContent),X=d.x,B=document.getE
 calm=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches),shown=null,cur='',token=0,endT=0,speaking=X.vis==='speaking',
 Pl=mascotPlayer(AI,calm),V=X.voice.mode==='none'?null:mascotVoice(window,X.voice,blipPlan);
 Pl.preload(X.idle);Pl.preload(X.talk);
-function fit(){var size=24;T.style.fontSize=size+'px';var k=0;while(k++<40&&size>11&&B.scrollHeight>B.clientHeight+1){size-=1;T.style.fontSize=size+'px'}}
+function fit(){var tv=d.tv||1,size=32*tv,min=24*tv,k=0;T.style.cssText='font-size:'+size+'px';while(k++<40&&size>min&&B.scrollHeight>B.clientHeight+1){size=Math.max(min,size-1);T.style.fontSize=size+'px'}
+if(B.scrollHeight>B.clientHeight+1){var cs=getComputedStyle(B),room=B.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-(N.hidden?0:N.offsetHeight+3),lines=Math.max(1,Math.floor(room/(size*1.3)));T.style.cssText='font-size:'+size+'px;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:'+lines}}
 function anim(kind,restart){var key=kind==='talk'&&X.talk?'talk':'idle',s=key==='talk'?X.talk:X.idle;if(key===cur&&!(restart&&key==='talk'))return A.classList.contains('anim');cur=key;var ok=s?Pl.play(s,restart&&key==='talk'):false;A.classList.toggle('anim',ok);if(!ok)AI.hidden=true;return ok}
 function secs(r){return Math.min(talkSeconds(r.text,X.cps,X.min,X.max),Math.max(1,d.seconds-0.6))}
 function leave(){var t=++token;if(W.hidden)return;ovTransition(W,'out',X.tr.out,{ms:X.tr.ms,cls:'on',side:'bottom'}).then(function(){if(t===token)W.hidden=true})}
@@ -203,7 +210,7 @@ function endTalk(){clearTimeout(endT);if(V)V.stop();A.classList.remove('talk');a
 function startTalk(r,elapsed,withVoice){var left=secs(r)-elapsed;clearTimeout(endT);if(left<=0){endTalk();return 0}
 A.classList.add('talk');anim('talk',true);if(!X.talk){A.classList.remove('bob');void A.offsetWidth;A.classList.add('bob')}
 if(V&&withVoice)V.say(r.text,left);endT=setTimeout(endTalk,left*1000);return left}
-function fill(r){T.textContent=r.text;N.textContent=d.name;N.hidden=!d.name;A.setAttribute('data-mood',r.kind==='hello'?'happy':'curious');B.classList.add('on');Y.classList.add('on');fit()}
+function fill(r){T.textContent=r.text;T.title=r.text;N.textContent=d.name;N.hidden=!d.name;A.setAttribute('data-mood',r.kind==='hello'?'happy':'curious');B.classList.add('on');Y.classList.add('on');fit()}
 function show(){var l=d.lines;if(!l.length){B.classList.remove('on');Y.classList.remove('on');A.hidden=true;shown=null;if(speaking)W.hidden=true;return}
 A.hidden=false;var ms=d.seconds*1000,now=Date.now(),idx=Math.floor(now/ms),r=l[idx%l.length],id=idx+JSON.stringify(r),el=(now-idx*ms)/1000;
 if(id===shown)return;shown=id;
@@ -248,10 +255,10 @@ export async function elementResponse(request, ctx) {
   try { content = await contentFor(ctx, p); } catch { /* cadre vide */ }
   if (url.searchParams.get("data") === "1") return Response.json({ name: content.name, lines: content.lines }, { headers: HEADERS });
   if (content.lines.length && needsMotion(p, content.fx)) return motionPage(request, ctx, p, content);
-  const data = JSON.stringify({ name: content.name, lines: content.lines, seconds: p.seconds }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
+  const data = JSON.stringify({ name: content.name, lines: content.lines, tv: p.tv, seconds: p.seconds }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const cls = p.style?.surface === "soft" ? "soft" : p.style?.text === "dark" ? "dark" : "";
-  const html = `<!doctype html><html lang="${esc(lang)}" class="${cls}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" class="${cls}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}}${BASE}</style></head>` +
     `<body><div id="stage"><div id="b" data-ov-part="bubble" role="status" aria-live="polite"><p id="n" data-ov-part="name" hidden></p><p id="t" data-ov-part="text"></p></div>` +
     `<div id="y" data-ov-part="bubble-tail" aria-hidden="true"></div>` +
     `<div id="a" data-ov-part="avatar" data-mood="happy"${content.lines.length ? "" : " hidden"}>${avatarHtml(content)}</div></div>` +
@@ -269,13 +276,13 @@ function motionPage(request, ctx, p, content) {
   const tr = transitionConfig({ inOpt: p.transitionIn, inSetting: ctx.setting("transitionIn"), outOpt: p.transitionOut, outSetting: ctx.setting("transitionOut"), seconds: ctx.setting("transitionSeconds") }, 500);
   const x = { vis: p.visibility, tr, cps: M.SPEEDS[r.speed], min: r.min, max: r.max, idle: fx.idle, talk: fx.talk, voice: fx.voice, test: p.test };
   if (p.test) x.t = Object.fromEntries(["click", "sNone", "sBlips", "sSpeech", "sNospeech", "sCustom", "sBlocked", "sSilent", "sRead"].map((k) => [k, ctx.t(`test_${k}`)]));
-  const data = JSON.stringify({ name: content.name, lines: content.lines, seconds: p.seconds, x }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
+  const data = JSON.stringify({ name: content.name, lines: content.lines, tv: p.tv, seconds: p.seconds, x }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const cls = p.style?.surface === "soft" ? "soft" : p.style?.text === "dark" ? "dark" : "";
   const hidden = p.visibility === "speaking";
   const avatar = `${avatarHtml(content)}<img id="ai" class="an" alt="${esc(fx.alt)}" hidden>`;
   const panel = p.test ? `<div data-ov-part="foot"><button type="button" id="tp">${esc(ctx.t("testPlay"))}</button><button type="button" id="tv">${esc(ctx.t("testVoice"))}</button><p id="tn" role="status" aria-live="polite"></p></div>` : "";
-  const html = `<!doctype html><html lang="${esc(lang)}" class="${cls}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}--tr-ms:${tr.ms}ms}${BASE}${X_CSS}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" class="${cls}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}--tr-ms:${tr.ms}ms}${BASE}${X_CSS}</style></head>` +
     `<body><div id="stage"><div id="w"${hidden ? " hidden" : ' class="on"'}><div id="b" data-ov-part="bubble" role="status" aria-live="polite"><p id="n" data-ov-part="name" hidden></p><p id="t" data-ov-part="text"></p></div>` +
     `<div id="y" data-ov-part="bubble-tail" aria-hidden="true"></div>` +
     `<div id="a" data-ov-part="avatar" data-mood="happy">${avatar}</div></div>${panel}</div>` +

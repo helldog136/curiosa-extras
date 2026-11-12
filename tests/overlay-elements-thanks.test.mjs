@@ -53,7 +53,7 @@ const addMessage = (ctx, contactId, texts) => ctx.api.store.add("messages", { co
 
 test("manifeste : valide, 1.2.0, minCore 0.5.0, un élément « Remerciements » fluide, style suivi, demo, quatre options minimales, droit « routes » seul ajouté", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.2.4"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "1.3.0"); assert.equal(manifest.minCore, "0.11.0");
   assert.equal(manifest.overlayElements.length, 1);
   const [e] = manifest.overlayElements;
   assert.equal(e.id, "thanks"); assert.equal(e.fit, "fluid"); assert.equal(e.followsStyle, true); assert.equal(e.demo, true);
@@ -174,7 +174,7 @@ test("trois cadres : colonne, carré, bandeau ; fond transparent, jetons --ov-*,
     assert.match(html, /html,body\{margin:0;height:100%;overflow:hidden;background:transparent\}/);
     assert.ok(!/--sk-|data-skin|<link |\/skins\/|@import|<img|<a[ >]|href=/i.test(html));
     assert.match(res.headers.get("content-security-policy"), /default-src 'none'.*img-src 'none'/);
-    assert.match(html, /--u:\d+px/);
+    assert.match(html, /--u:var\(--ov-text-md,32px\)/);
   }
   assert.deepEqual(seen, { "360x640": "v", "800x520": "v", "1600x200": "h" }, "bandeau : défilement horizontal ; sinon vertical");
   const dark = await page(query(800, 520, { text: "dark", surface: "soft", corners: "square" }), ctx);

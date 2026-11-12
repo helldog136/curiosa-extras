@@ -51,8 +51,13 @@ export function onAccent(hex) {
 /** Ce que la page reçoit quand elle sert un ÉLÉMENT de page d'overlay : `ov-w`, `ov-h`, `ov-demo` et l'option `opt-qr` (réservés au cœur), revalidés ici. Sinon null : l'overlay habituel. */
 export function elementRequest(query) {
   if (!query?.has?.("ov-w")) return null;
-  return { demo: query.get("ov-demo") === "1", qr: query.get("opt-qr") !== "0", transitionIn: query.get("opt-transitionIn"), transitionOut: query.get("opt-transitionOut") };
+  return { tv: tvOf(query), demo: query.get("ov-demo") === "1", qr: query.get("opt-qr") !== "0", transitionIn: query.get("opt-transitionIn"), transitionOut: query.get("opt-transitionOut") };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (query) => { const t = Number(query.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Jetons --ov-* du style commun (valeurs de docs/OVERLAY-ELEMENTS.md), avec repli ; jamais le thème ni le skin du site. */
 function elementTokens(query) {
@@ -100,6 +105,7 @@ export default {
       // Entrée / sortie : l'option de l'élément (si elle n'est pas « comme le module »), sinon le réglage ; « auto » = le glissement depuis la droite d'avant.
       tr: transitionConfig({ inOpt: element?.transitionIn, inSetting: ctx.setting("transitionIn"), outOpt: element?.transitionOut, outSetting: ctx.setting("transitionOut"), seconds: ctx.setting("transitionSeconds") }, 600),
       seed: dev?.seed ?? null,
+      ...(element ? { tv: true } : {}),
       badge: ctx.t("badge"),
       isNew: ctx.t("new"),
     };
@@ -114,7 +120,19 @@ export default {
       ? `--ticker-accent:${accent};--tk-bg:var(--ov-surface,transparent);--tk-fg:var(--ov-fg,#fff);--tk-muted:color-mix(in srgb,var(--ov-fg,#fff) 72%,transparent);--tk-on-accent:${/^#[0-9a-fA-F]{6}$/.test(accent) ? onAccent(accent) : "#111111"}`
       : `--ticker-accent:${accent};--tk-bg:${t.surface};--tk-fg:${t.fg};--tk-muted:${t.muted};--tk-on-accent:${custom ? onAccent(custom) : t.accentFg}`;
     const elementCss = element ? `
-        :root{${elementTokens(query)}}
+        :root{${elementTokens(query)};${tvTokens(element.tv)}}
+        /* TV type scale: the card fills the window, the text sizes are tokens, nothing is scaled down (the page script drops the least useful lines instead). */
+        .ticker-slider{width:100%}
+        .ticker-card{box-sizing:border-box;width:100%}
+        .ticker-text-col{flex:1 1 auto;min-width:0;max-width:none}
+        .ticker-badge{font-size:var(--ov-text-xs,24px);letter-spacing:.1em}
+        .ticker-new{font-size:var(--ov-text-xs,24px);padding:0 8px}
+        .ticker-name{font-size:var(--ov-text-lg,40px)}
+        .ticker-code{font-size:var(--ov-text-sm,28px)}
+        .ticker-blurb{font-size:var(--ov-text-xs,24px)}
+        .ticker-domain{font-size:var(--ov-text-xs,24px);max-width:calc(150px*var(--ov-tv,1))}
+        .tv-a .ticker-blurb,.tv-c .ticker-eyebrow{display:none}
+        .tv-b .ticker-name{-webkit-line-clamp:1}
         [data-ov-part="logo"],[data-ov-part="qr"]{border-radius:min(var(--ov-radius,8px),8px)}
         [data-ov-part="panel"]{border:1px solid var(--ov-border,transparent)}
         [data-ov-part="title"],[data-ov-part="text"],[data-ov-part="code"],[data-ov-part="label"]{text-shadow:0 1px 3px rgba(0,0,0,.35)}` : "";
@@ -186,7 +204,8 @@ export default {
           card.append(el("div","ticker-shine"));return card}
         // La carte doit toujours tenir dans la source navigateur : on essaie 3 largeurs de texte et on garde celle qui laisse le titre le plus lisible une fois mise à l'échelle.
         var cur=null;
-        function fit(card){var col=card.querySelector(".ticker-text-col"),nm=card.querySelector(".ticker-name"),best=null,vw=window.innerWidth,vh=window.innerHeight;
+        ${element ? `function fitTv(card){var lim=window.innerHeight*.96,i=0,st=["tv-a","tv-b","tv-c"];card.classList.remove.apply(card.classList,st);while(i<st.length&&card.offsetHeight>lim)card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1")}
+        ` : ""}function fit(card){${element ? "if(c.tv)return fitTv(card);" : ""}var col=card.querySelector(".ticker-text-col"),nm=card.querySelector(".ticker-name"),best=null,vw=window.innerWidth,vh=window.innerHeight;
           function apply(w){col.style.maxWidth=w+"px";nm.style.cssText="white-space:nowrap;font-size:22px";var t=fitTitle(nm.scrollWidth,w);nm.style.cssText=t.size===22?"":"font-size:"+t.size+"px";return {w:w,t:t,s:fitScale(card.offsetWidth,card.offsetHeight,vw,vh)}}
           [430,330,250].forEach(function(w){if(best&&best.s>=1)return;var r=apply(w);r.score=r.t.size*r.s;if(!best||r.score>best.score*1.03)best=r});
           apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")}

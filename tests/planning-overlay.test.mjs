@@ -26,7 +26,8 @@ const { checkModule } = await import(path.join(process.env.CURIOSA_DIR ?? proces
 const hours = (n) => new Date(Date.now() + n * 3_600_000);
 let feed = "";
 const serve = (body) => { feed = body; };
-const three = [[1000, 600], [600, 900], [1600, 300]];
+// With the TV type scale (core 0.11.0) the week grid needs a large frame: 7 columns of text that is never under 24 px of canvas.
+const three = [[2000, 900], [600, 900], [1600, 300]];
 const ctxWith = (slug, settings = {}, over = {}) => fakeCtx({ key: "planning", params: { slug }, settings: { days: 7, timezone: "UTC", ...settings }, topics: feedTopics(() => feed), messages: fr, locale: "fr", rawgConfigured: false, ...over });
 const query = (w, h, { text = "light", surface = "transparent", corners = "round" } = {}, opts = {}, extra = {}) => new URLSearchParams({ lang: "fr", "ov-w": w, "ov-h": h, "ov-fit": "fluid", "ov-lang": "fr", "ov-text": text, "ov-surface": surface, "ov-corners": corners, ...Object.fromEntries(Object.entries(opts).map(([k, v]) => [`opt-${k}`, v])), ...extra });
 const get = (slug, q, ctx = ctxWith(slug)) => def.routes["element/:slug"](new Request(`https://site.test/m/planning/element/${slug}?${q}`), ctx);
@@ -44,7 +45,7 @@ beforeEach(() => { mock.timers.setTime(Date.parse("2026-10-14T10:00:00Z")); over
 
 test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec taille minimale, plage de ratios, style suivi, options minimales", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.7.6"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "2.8.0"); assert.equal(manifest.minCore, "0.11.0");
   assert.deepEqual(manifest.overlayElements.map((e) => e.id), ["week", "next"]);
   for (const e of manifest.overlayElements) {
     assert.equal(e.fit, "fluid", e.id); assert.equal(e.followsStyle, true, e.id); assert.equal(e.demo, true, e.id);
@@ -99,7 +100,7 @@ test("trois cadres : la page se réorganise selon la taille réelle (grille larg
     assert.match(html, /data-ov-part="panel"/);
     assert.match(html, /--ov-fg:#ffffff;--ov-surface:transparent;--ov-radius:12px/);
     assert.match(html, /html,body\{margin:0;height:100%;overflow:hidden;background:transparent\}/);
-    assert.match(html, /Premier/); assert.match(html, /Deuxième/);
+    assert.match(html, /Premier/); if (h >= 600) assert.match(html, /Deuxième/);   // a short frame keeps the rows its TV-sized text fits
     assert.ok(!/--sk-|data-skin|<link |\/skins\/|@import/i.test(html), "ni skin du site, ni feuille externe");
     assert.ok(!/<a[ >]|href=/i.test(html), "dans OBS, rien ne se clique : ni lien ni bouton");
     assert.ok(!/(src|href)="https?:\/\/(?!media)/i.test(html), "aucun chargement tiers");
@@ -107,11 +108,10 @@ test("trois cadres : la page se réorganise selon la taille réelle (grille larg
     const csp = res.headers.get("content-security-policy");
     assert.match(csp, /default-src 'none'/); assert.match(csp, /frame-ancestors 'self'/); assert.ok(!/unsafe-eval/.test(csp));
   }
-  assert.match(out["1000x600"], /pa-wk-grid/, "assez large et haut : la grille de la semaine");
-  assert.match(out["1600x300"], /pa-wk-grid/, "bandeau large : la grille aussi");
+  assert.match(out["2000x900"], /pa-wk-grid/, "assez large et haut : la grille de la semaine");
+  assert.ok(!/pa-wk-grid/.test(out["1600x300"]), "bandeau bas : le texte à la taille d'une télé n'y tient pas en grille, une liste");
   assert.match(out["600x900"], /class="pa-cl"/, "cadre étroit : une liste");
   assert.ok(!/pa-wk-grid/.test(out["600x900"]));
-  assert.ok(!/<img/.test(out["1600x300"]), "grille trop basse : sans jaquettes (la place manque)");
 });
 
 test("« Prochain stream » aux trois cadres : le prochain en grand, jamais de bouton ni de lien vers la chaîne", async () => {
@@ -147,8 +147,8 @@ test("options : apparence au choix, nombre de jours, jaquettes, streams suivants
   assert.match(await ask({ look: "timeline" }), /class="pa-tl"/);
   assert.match(await ask({ look: "alternating" }), /class="pa-alt"/);
   assert.match(await ask({ look: "posters" }), /pa-po-grid/);
-  assert.match(await ask({ look: "classic", days: 14 }), /Neuvième jour/);
-  assert.ok(!/Neuvième jour/.test(await ask({ look: "classic", days: 7 })));
+  assert.match(await ask({ look: "classic", days: 14 }, "week", 1000, 4000), /Neuvième jour/);
+  assert.ok(!/Neuvième jour/.test(await ask({ look: "classic", days: 7 }, "week", 1000, 4000)));
   assert.ok(!/Quatrième/.test(await ask({ look: "classic", days: 2 })), "2 jours : le stream du 4e jour est hors fenêtre");
   assert.match(await ask({ look: "classic", days: 2 }), /Premier/);
   overlay.resetOverlayCache();
@@ -237,7 +237,7 @@ test("plusieurs lecteurs (assertMultiReaders) : chaque page d'overlay a son prop
     publish, readers: 4,
     open: async () => {
       const seen = new Set();
-      const look = async () => { const j = await (await get("week", query(600, 900, {}, { look: "classic" }).toString() + "&frag=1", ctxWith("week"))).json(); return seenIn(j.html); };
+      const look = async () => { const j = await (await get("week", query(600, 6000, {}, { look: "classic" }).toString() + "&frag=1", ctxWith("week"))).json(); return seenIn(j.html); };
       for (const e of await look()) seen.add(e);   // « maintenant » : ce qui est déjà là
       return { read: async () => { const fresh = (await look()).filter((e) => !seen.has(e)); fresh.forEach((e) => seen.add(e)); return fresh; } };
     },
@@ -311,7 +311,7 @@ test("« Prochain stream » : un seul cadre (le panneau de la page), la carte ne
 test("« Prochain stream » : texte de taille télé (légende >= 24 px à 1080p, autres textes en multiples), tout vient d'une unité unique", () => {
   const css = overlay.NEXT_CSS;
   assert.ok(overlay.NEXT_SIZES.minPx >= 24);
-  assert.match(css, new RegExp(`--umin:${overlay.NEXT_SIZES.minPx}px`));
+  assert.match(css, new RegExp(`--umin:var\\(--ov-text-xs,${overlay.NEXT_SIZES.minPx}px\\)`));
   const sizes = [...css.matchAll(/font-size:(var\(--u\)|calc\(var\(--u\)\*([\d.]+)\))/g)].map((m) => (m[2] ? Number(m[2]) : 1));
   assert.ok(sizes.length >= 10 && sizes.every((k) => k >= 1), `aucun texte sous 1 u : ${sizes}`);
   // La plus petite légende vaut 1 u ; à 1080 px de haut (cadre pleine hauteur), u est au moins 24 px et au plus maxPx.

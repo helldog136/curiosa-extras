@@ -34,7 +34,7 @@ const site = (o = {}) => world({ partners: logins(o.partners ?? 12), live: o.liv
 
 test("manifeste : valide, 2.4.0, minCore 0.5.0 ; deux éléments fluides qui suivent le style, avec exemple ; options minimales ; une fonction par élément", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.4.0"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "2.5.0"); assert.equal(manifest.minCore, "0.11.0");
   assert.deepEqual(manifest.overlayElements.map((e) => [e.id, e.fit, e.followsStyle, e.demo]), [["featured", "fluid", true, true], ["live", "fluid", true, true]]);
   assert.deepEqual(Object.keys(def.overlayElements), manifest.overlayElements.map((e) => e.id));
   for (const e of manifest.overlayElements) {

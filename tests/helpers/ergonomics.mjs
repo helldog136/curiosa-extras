@@ -424,6 +424,13 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
       const name = b.title ? `« ${b.title} »` : `(action « ${b.action} »)`;
       if (shown.length > FORM_FIELDS_MAX) add("R4", `le formulaire ${name} montre ${shown.length} champs (${FORM_FIELDS_MAX} au plus) : replier ou découper`);
       if (WEAK_BUTTONS.test(b.submitLabel ?? "")) add("R3", `le formulaire ${name} a un bouton « ${b.submitLabel} » : écrire un verbe précis (« Ajouter la personne »)`);
+      // (core 0.12.0) The destructive button of the dialog footer: a precise verb + object, and a confirmation that says what is lost (R3, R24).
+      if (b.secondaryAction !== undefined) {
+        const sa = b.secondaryAction ?? {};
+        if (!inDialog) add("R24", `the form ${name} has a \`secondaryAction\` but no \`presentation: "dialog"\`: the destructive button only exists in the window footer`);
+        if (WEAK_BUTTONS.test(sa.label ?? "")) add("R3", `the destructive button « ${sa.label} » of the form ${name}: write a precise verb and object (« Delete the partner »)`);
+        if (typeof sa.confirm !== "string" || sa.confirm.trim() === "") add("R24", `the destructive button « ${sa.label ?? sa.action} » of the form ${name} has no \`confirm\` text: say what will be lost`);
+      }
       if (TOGGLE_RE.test(b.submitLabel ?? "")) add("R17", `le bouton « ${b.submitLabel} » : un interrupteur montre l'état`);
       for (const f of shown) {
         for (const p of labelProblems(f.label ?? "")) add("R10", `champ « ${f.name} » : ${p}`);

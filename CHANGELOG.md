@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.74.0 — 2026-11-12
+
+*En bref : les éléments des pages d'overlay suivent l'échelle de texte TV de Curiosa (0.11.0) : aucun texte sous 24 px à l'écran, quel que soit le cadre, et la taille de texte que vous choisissez s'applique exactement. Les fenêtres de modification des partenaires ont leur bouton « Supprimer le partenaire » (Curiosa 0.12.0). Compteurs, remerciements, jeux proposés, sponsors, raids, compte à rebours, prochain événement, sondage, chiffres de la chaîne, avis, tirage au sort, mascotte et planning ; Partenariats 2.4.0.*
+
+*In short: overlay page elements follow Curiosa's TV text scale (0.11.0): no text under 24 px on screen, whatever the frame, and the text size you choose applies exactly. The partner edit window has its "Delete the partner" button (Curiosa 0.12.0). Counters, thanks, suggested games, sponsors, raids, countdown, next event, poll, channel figures, reviews, draw, mascot and planning; Partnerships 2.4.0.*
+
+### Nouveautés
+
+- **Lisible sur une télé.** Treize extensions règlent leur texte sur l'échelle TV : le plus petit texte fait 24 px du canevas, les titres et les chiffres sont plus grands, et la taille de texte choisie pour la page ou l'élément s'applique à la lettre. Il faut Curiosa 0.11.0.
+- **Le texte garde sa taille, la mise en page s'adapte.** Dans un cadre petit, un élément laisse de côté ses lignes les moins utiles ou ses dernières rangées, ou coupe un long texte par « … », au lieu de rapetisser le texte. Les cadres déjà placés ne bougent pas.
+- **Supprimer un partenaire depuis sa fenêtre de modification.** Le bouton est au début du pied de la fenêtre, demande confirmation et dit ce qui est perdu. Le menu de la ligne le garde aussi.
+- **Readable on a TV.** Thirteen extensions size their text with the TV scale: the smallest text is 24 px of the canvas, titles and figures are bigger, and the text size chosen for the page or the element applies exactly. Needs Curiosa 0.11.0.
+- **The text keeps its size, the layout gives way.** In a small frame an element leaves out its least useful lines or its last rows, or cuts a long text with "…", instead of shrinking the text. Frames already placed do not move.
+- **Delete a partner from its edit window.** The button sits at the start of the window footer, asks first and says what is lost. The row menu keeps it too.
+
+### Pour les développeurs
+
+- Community stats 1.3.0, Thanks wall 1.3.0, Game suggestions 1.10.0, Sponsors overlay 1.3.0, Twitch raid 2.5.0, Countdown 1.3.0, Events 1.4.0, Polls 1.8.0, Twitch channel 2.4.0, Testimonials 1.4.0, Participation 1.10.0, Mascot 1.5.0, Planning 2.8.0: `"tvScale": true`, `minCore` 0.11.0, tokens `--ov-text-xs` to `--ov-text-2xl` from `ov-tv`. Partnerships 2.4.0: `adminForm.secondaryAction` and the action `removePartner` (`minCore` unchanged, older cores ignore the key). Alerts overlay, Ticker overlay and the maze are unchanged. No data migration. See `docs/changelog-parts/tv-scale.md`. Tests: `tests/helpers/tvLegibility.mjs` and `tests/tv-*.test.mjs`, `partnerships-dialogs`; captures `docs/captures/ergonomie-partners-delete-action/`.
+
 ## 1.73.0 — 2026-11-12
 
 *En bref : dans l'onglet Bot de la télécommande, la carte du mode collaboration dit son état en mots, et vous choisissez là ce que font les timers : en pause, ou 1 fois sur 2, 3 ou 5. Bot Twitch (1.15.0) et Participation (1.9.0). Rien à régler, aucune nouvelle permission.*

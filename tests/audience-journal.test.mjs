@@ -17,7 +17,7 @@ const enter = (c, name) => def.services["audience.draw"].enter(c, { pseudo: name
 
 test("manifeste : événements déclarés, valides, minCore inchangé (le journal du cœur est facultatif)", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.minCore, "0.11.0");
   assert.ok(manifest.logEvents.length <= 30);
   assert.ok(Object.keys(fr).every((k) => k in en) && Object.keys(en).every((k) => k in fr));
 });

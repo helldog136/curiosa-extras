@@ -5,9 +5,9 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "menuGroup": "content",
-  "minCore": "0.6.0",
+  "minCore": "0.11.0",
   "description": {
     "fr": "Un agenda d'événements et de formations : les prochains rendez-vous avec filtre par type et recherche, un calendrier du mois, une fiche détaillée (heure chez la personne qui visite, programme, personnes invitées, inscription, vidéo, ajout à son agenda) et la rétrospective des événements passés.",
     "en": "An agenda of events and trainings: upcoming dates with a filter by type and search, a monthly calendar, a detailed page (time where the visitor lives, programme, speakers, sign-up, video, add to one's calendar) and a look back at past events."
@@ -1041,6 +1041,7 @@
         "max": 10
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {
