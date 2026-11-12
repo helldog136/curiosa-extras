@@ -33,4 +33,4 @@ Keeps the numbers of your networks, such as followers, paying followers, posts a
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.1.
+Available since version 1.0.0. Current version: 1.2.2.

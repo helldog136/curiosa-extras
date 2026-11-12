@@ -70,6 +70,8 @@ Dans le stockage privé de ce module (rien ne sort du serveur ; aucun secret) :
 Au plus **un point par statistique et par période** : un deuxième passage dans la même période ne crée rien (le bouton « Mettre à jour maintenant » remplace le point du jour). Volume : environ 20 octets par point. Par défaut (un par jour, 2 ans), 730 points ≈ 15 Ko par statistique, soit environ 300 Ko pour 20 statistiques. Pire cas réglable (toutes les heures, 5 ans) : 43 800 points ≈ 900 Ko par statistique. Au plus 300 statistiques suivies (les suivantes sont ignorées). La rétention est appliquée à chaque passage, sans jamais retirer le dernier chiffre connu d'un compte.
 
 ## Compteurs dans les pages d'overlay (version 1.2.0, Curiosa 0.5.0)
+Sans aucun chiffre à montrer, l'élément n'affiche rien : cadre vide, sans fond ni bordure (depuis la 1.2.2). Le mode test montre un exemple.
+
 Le module propose un élément **« Compteurs »** aux pages d'overlay de la section **Overlays** de l'administration : vos followers, abonnements payants, publications et vues, en grand, avec leur évolution.
 
 - **Rien n'est montré sans votre accord.** L'élément ne montre que les chiffres pour lesquels vous avez choisi **« Montrer sur mon site »**, et jamais plus : ses options ne font que **choisir parmi eux**. Un chiffre gardé pour vous n'apparaît nulle part (ni dans la page, ni dans sa mise à jour, ni en mode test). Un chiffre que le réseau cache ou ne partage plus n'est jamais montré périmé. Retirez votre accord : le compteur disparaît.
