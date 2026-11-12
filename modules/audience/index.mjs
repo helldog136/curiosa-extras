@@ -256,7 +256,7 @@ const WHO = ["remote", "admin", "assistant", "system"];
 const WHAT = ["mute", "unmute", "clearRoom", "removePerson", "remote.regenerate", "round.start", "round.stop", "round.decision", "poll.quick", "poll.close", "poll.cancel", "poll.delete", "poll.reopen", "poll.extend", "poll.show", "poll.hide", "poll.archive", "poll.panic", "panic", "draw.new", "draw.close", "draw.reopen", "draw.pick", "draw.redraw", "draw.remove", "draw.clear", "draw.key"];
 const whoText = (ctx, w) => (WHO.includes(w) ? ctx.t(`who_${w}`) : w);
 // A gesture on a plugged-in module's panel is written "<module>.<action>": the actions we know by name (the Twitch bot panel) get words, the others stay as written.
-const PANEL_WHAT = new Set(["pause", "resume", "addcom", "undo", "collabon", "collaboff"]);
+const PANEL_WHAT = new Set(["pause", "resume", "addcom", "undo", "collabon", "collaboff", "collabset"]);
 const whatText = (ctx, w) => {
   if (WHAT.includes(w)) return ctx.t(`what_${w.replace(".", "_")}`);
   const m = /^[\w-]+\.([a-z]+)$/.exec(String(w));

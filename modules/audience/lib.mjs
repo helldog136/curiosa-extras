@@ -25,6 +25,8 @@ export const LIMITS = {
   panels: 8,               // modules branchés sur la télécommande
   buttons: 8,
   toggles: 3,
+  choiceGroups: 3,         // groups of choices (segmented buttons) under a switch
+  choiceOptions: 5,
   forms: 3,
   fields: 6,
   roomKey: 60,
@@ -219,10 +221,22 @@ export function sanitizePanel(raw) {
   // A switch shows the CURRENT state (`on`, with its sentence `text`); pressing it sends the action `id` (the module gives the action that flips the state, so a double tap never undoes anything).
   const toggles = (Array.isArray(raw.toggles) ? raw.toggles : []).filter((b) => isObj(b) && ID_RE.test(String(b.id ?? "")) && clean(b.label, 40)).slice(0, LIMITS.toggles).map((b) => ({
     id: String(b.id), label: clean(b.label, 40), on: b.on === true, text: clean(b.text, 60), hint: clean(b.hint, 80), values: sanitizeValues(b.values),
+    // Optional, since 1.9.0: `calm` (the "off" state is the normal one: drawn neutral, not as a warning), `more` (a longer explanation behind a "What does it do?" fold),
+    // and `choices`: groups of segmented buttons under the switch. Each group sends its own action with { [name]: value }; `folded` groups wait under one "more options" fold (`foldLabel`).
+    ...(b.calm === true ? { calm: true } : {}), ...(clean(b.more, 400) ? { more: clean(b.more, 400) } : {}), ...(clean(b.foldLabel, 30) ? { foldLabel: clean(b.foldLabel, 30) } : {}),
+    ...(sanitizeChoices(b.choices).length ? { choices: sanitizeChoices(b.choices) } : {}),   // a switch without these fields comes out exactly as before 1.9.0
   }));
   const forms = (Array.isArray(raw.forms) ? raw.forms : []).slice(0, LIMITS.forms).map(sanitizeForm).filter(Boolean);
   // `badge`: a few words under the tab name (for example "Paused"); `alert` makes the tab stand out; `note`: one small line at the bottom of the panel.
   return { title, tab: clean(raw.tab, 30), state, buttons, toggles, forms, badge: clean(raw.badge, 14), alert: raw.alert === true, note: clean(raw.note, 160), view: sanitizeView(raw.view) };
+}
+
+/** Groups of segmented choices under a switch: a few options each, one selected, the action to send. Everything else is dropped. */
+export function sanitizeChoices(raw) {
+  return (Array.isArray(raw) ? raw : []).filter((g) => isObj(g) && ID_RE.test(String(g.id ?? "")) && /^[a-z][a-z0-9_]{0,19}$/.test(String(g.name ?? "")) && clean(g.label, 30)).map((g) => ({
+    id: String(g.id), name: String(g.name), label: clean(g.label, 30), hint: clean(g.hint, 80), folded: g.folded === true,
+    options: (Array.isArray(g.options) ? g.options : []).filter((o) => isObj(o) && (typeof o.value === "string" || typeof o.value === "number") && clean(o.label, 14)).slice(0, LIMITS.choiceOptions).map((o) => ({ value: clean(String(o.value), 20), label: clean(o.label, 14), on: o.on === true })),
+  })).filter((g) => g.options.length >= 2).slice(0, LIMITS.choiceGroups);
 }
 
 /** Les valeurs d'un formulaire de télécommande : texte seulement, bornées (le module qui reçoit valide à son tour). */
