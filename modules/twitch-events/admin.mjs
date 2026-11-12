@@ -9,7 +9,7 @@ const { diagnose, ensureListening, declareScopes } = await import(`./listen.mjs$
 const { API } = await import(`./channel.mjs${v}`);
 
 /** Colour of the badge of each kind (always written next to it: the colour alone never carries the meaning). */
-export const TONE = { follow: "ok", sub: "accent", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype_begin: "danger", hype_progress: "danger", hype_end: "neutral", redeem: "neutral" };
+export const TONE = { follow: "ok", sub: "accent", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype_begin: "warn", hype_progress: "warn", hype_end: "neutral", redeem: "neutral" };
 export const SCOPE_KEY = { "moderator:read:followers": "scope_follow", "channel:read:subscriptions": "scope_subs", "bits:read": "scope_bits", "channel:read:hype_train": "scope_hype", "channel:read:redemptions": "scope_redeem" };
 
 const fmtDate = (ctx, at) => new Date(at).toLocaleString(ctx.locale, { dateStyle: "short", timeStyle: "short", timeZone: ctx.timezone });
@@ -47,7 +47,7 @@ async function alertsLink(ctx) {
   let list = [];
   try { list = await ctx.api.instances.list({ module: "alerts-overlay" }); } catch { list = []; }
   const a = Array.isArray(list) ? list[0] : null;
-  return a ? { type: "links", items: [{ label: ctx.t("alerts_link", { name: a.name }), href: a.adminPath }] } : { type: "markdown", text: ctx.t("alerts_absent") };
+  return a ? { type: "links", items: [{ label: ctx.t("alerts_link"), href: a.adminPath }] } : { type: "markdown", text: ctx.t("alerts_absent") };
 }
 
 /** Why it does not listen yet, in a sentence, and what to do. */
@@ -75,7 +75,8 @@ async function statusBlocks(ctx, d, state) {
     else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
   }
   if (state.revoked && Date.now() - state.revoked.at < 86_400_000) out.push({ type: "banner", tone: "warning", text: t("revoked_note", { when: fmtDate(ctx, state.revoked.at) }) });
-  out.push({ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] });
+  // The "Check now" button is only worth its space when something is wrong (the Types tab has one too).
+  if (code !== "listening") out.push({ type: "adminForm", action: "check", submitLabel: t("check_btn"), fields: [] });
   return out;
 }
 
@@ -107,7 +108,8 @@ export async function panel(ctx, { query } = {}) {
     { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
       rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
     { type: "markdown", tab: "types", text: t("types_intro") },
-    { type: "table", tab: "types", columns: [t("col_type"), t("col_what"), t("col_permission"), t("col_state"), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), truncate: [1], pageSize: 0,
+    { type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), fields: [] },
+    { type: "table", tab: "types", columns: [t("col_type"), t("col_what"), t("col_permission"), t("col_state"), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0,
       rowActions: [{ label: t("test_btn"), action: "test" }] },
   ];
 }

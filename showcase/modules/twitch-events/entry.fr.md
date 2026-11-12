@@ -16,7 +16,11 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 
 ## À quoi ça ressemble
 
-La page d'administration montre d'abord le journal, avec une ligne d'état et un bouton Vérifier maintenant.
+![Journal d'Activité Twitch, avec des données de démonstration](shot:admin.webp)
+*Le journal : recherche en direct, filtre par type, rejeu sur chaque ligne.*
+
+![Types d'événements d'Activité Twitch, avec leurs interrupteurs](shot:types.webp)
+*Les types d'événements : un interrupteur et un bouton de test pour chacun.*
 
 ## Ça marche bien avec
 

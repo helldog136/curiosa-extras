@@ -16,7 +16,11 @@ Your site receives what happens on your channel. It keeps a journal you can read
 
 ## How it looks
 
-The admin page shows the journal first, with a status line and a Check now button.
+![Twitch activity journal, with demo data](shot:admin.webp)
+*The journal: live search, filter by type, replay on each line.*
+
+![Twitch activity event types, with switches](shot:types.webp)
+*The event types: a switch and a test button for each.*
 
 ## Works well with
 

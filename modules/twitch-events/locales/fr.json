@@ -92,7 +92,7 @@
   "col_what": "Ce que ça couvre",
   "col_permission": "Accord de Twitch",
   "col_state": "État",
-  "col_on": "Interrupteur",
+  "col_on": "Réception",
   "search": "Rechercher dans les événements",
   "filter_all": "Tous",
   "empty": "Aucun événement pour l'instant. Envoyez un test depuis l'onglet Types pour voir à quoi ça ressemble.",
@@ -119,6 +119,6 @@
   "err_unknown_type": "Ce type n'existe pas. Rechargez la page, par exemple avec F5, puis réessayez.",
   "err_unknown_line": "Cette ligne n'existe plus. Rechargez la page, par exemple avec F5.",
   "err_rate": "Trop d'essais en une minute. Attendez dix secondes par exemple, puis réessayez.",
-  "alerts_link": "Alertes à l'écran : {name} est relié. Ouvrir ses réglages",
+  "alerts_link": "Alertes à l'écran : ouvrir les réglages",
   "alerts_absent": "Pour afficher ces événements en alertes dans OBS, installez le module Overlay alertes."
 }

@@ -33,7 +33,32 @@
     "twitch-bot"
   ],
   "status": "stable",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "file": "admin.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Twitch activity journal, with demo data",
+        "fr": "Journal d'Activité Twitch, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The journal: live search, filter by type, replay on each line.",
+        "fr": "Le journal : recherche en direct, filtre par type, rejeu sur chaque ligne."
+      }
+    },
+    {
+      "file": "types.webp",
+      "kind": "admin",
+      "alt": {
+        "en": "Twitch activity event types, with switches",
+        "fr": "Types d'événements d'Activité Twitch, avec leurs interrupteurs"
+      },
+      "caption": {
+        "en": "The event types: a switch and a test button for each.",
+        "fr": "Les types d'événements : un interrupteur et un bouton de test pour chacun."
+      }
+    }
+  ],
   "sources": [
     "modules/twitch-events/module.json",
     "modules/twitch-events/README.md"

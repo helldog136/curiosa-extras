@@ -92,7 +92,7 @@
   "col_what": "What it covers",
   "col_permission": "Twitch permission",
   "col_state": "State",
-  "col_on": "Switch",
+  "col_on": "Receive",
   "search": "Search the events",
   "filter_all": "All",
   "empty": "No event yet. Send a test from the tab Event types to see what it looks like.",
@@ -119,6 +119,6 @@
   "err_unknown_type": "This type does not exist. Reload the page, for example with F5, then try again.",
   "err_unknown_line": "This line no longer exists. Reload the page, for example with F5.",
   "err_rate": "Too many tries in a minute. Wait ten seconds, for example, then try again.",
-  "alerts_link": "Alerts on screen: {name} is linked. Open its settings",
+  "alerts_link": "Alerts on screen: open the settings",
   "alerts_absent": "To show these events as alerts in OBS, install the module Alerts overlay."
 }
