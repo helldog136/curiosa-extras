@@ -240,5 +240,8 @@
   "mod_err_unknown": "This text is not waiting any more.",
   "vw_head": "Viewer texts and voice",
   "tw_f_viewer_max_default": "Empty: 140",
-  "mod_reason_held": "{reason}, alert held"
+  "mod_reason_held": "{reason}, alert held",
+  "tw_f_audio": "Sound file",
+  "tw_f_audio_help": "Plays instead of the chosen sound. Needs sounds switched on.",
+  "tw_err_audio": "Send a sound of the site, for example an MP3 file."
 }

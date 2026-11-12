@@ -50,6 +50,7 @@ export async function panel(ctx, { query = {} } = {}) {
     help: t("tw_f_sound_help") },
     { name: "anim", kind: "select", folded: true, label: t("tw_f_anim"), value: cfg.types[edit].anim, options: tw.ANIMS.map((x) => ({ value: x, label: t(`tw_anim_${x || "module"}`) })) },
     { name: "image", kind: "image", folded: true, label: t("tw_f_image"), value: cfg.types[edit].image, help: t("tw_f_image_help") },
+    { name: "audio", kind: "audio", folded: true, label: t("tw_f_audio"), value: cfg.types[edit].audio, help: t("tw_f_audio_help") },
     { name: "present", kind: "select", folded: true, label: t("tw_f_present"), value: cfg.types[edit].present === "text" ? "" : cfg.types[edit].present, options: tw.PRESENT.map((x) => ({ value: x === "text" ? "" : x, label: t(`tw_present_${x}`) })) }   // the usual choice is the empty one: the folded panel stays shut until something else is chosen
     ,
     { name: "video", kind: "select", folded: true, label: t("tw_f_video"), value: cfg.types[edit].video ? String(cfg.types[edit].video) : "", options: [{ value: "", label: t("tw_video_none") }, ...videos.map((u, i) => ({ value: String(i + 1), label: t("tw_video_slot", { n: i + 1 }) })).filter((_, i) => videos[i])], help: t("tw_f_video_help") },
@@ -192,6 +193,20 @@ export async function changeType(ctx, id, ch) {
       next.image = url;
     }
   }
+  if (ch.audio !== undefined) {
+    const url = String(ch.audio ?? "").trim().replace(/\?.*$/, "");
+    if (url === "") {
+      if (cur.audio) await ctx.api.files?.remove?.(cur.audio);
+      next.audio = "";
+    } else if (url !== cur.audio) {
+      // The sound must be one the site holds: uploaded by this person a moment ago, then KEPT by this module (and the previous one is let go).
+      if (!tw.AUDIO_RE.test(url)) return { errors: { audio: ctx.t("tw_err_audio") } };
+      const claim = typeof ctx.api.files?.claim === "function" ? await ctx.api.files.claim(url) : { ok: false };
+      if (!claim.ok) return { errors: { audio: ctx.t("tw_err_audio") } };
+      if (cur.audio) await ctx.api.files.remove(cur.audio);
+      next.audio = url;
+    }
+  }
   if (ch.present !== undefined) {
     if (!tw.PRESENT.includes(ch.present)) return { errors: { present: ctx.t("tw_err_choice") } };
     next.present = ch.present;
@@ -231,7 +246,7 @@ export async function sampleAlert(ctx, id, now = Date.now()) {
 export function actions(emit) {
   return {
     async setType(ctx, values) { return changeType(ctx, String(values.id ?? ""), { on: values.enabled === "1" }); },
-    async saveType(ctx, values) { return changeType(ctx, String(values.id ?? ""), { template: values.template ?? "", seconds: values.seconds ?? "", min: values.min ?? "", sound: values.sound || "none", anim: values.anim ?? "", image: values.image ?? "", present: values.present === undefined ? undefined : values.present || "text", video: values.video ?? undefined, videoSound: values.videoSound === undefined ? undefined : values.videoSound === "on", tts: values.tts === undefined ? undefined : values.tts || "off", viewer: values.viewer === undefined ? undefined : values.viewer === "on", viewerMax: values.viewerMax ?? undefined }); },
+    async saveType(ctx, values) { return changeType(ctx, String(values.id ?? ""), { template: values.template ?? "", seconds: values.seconds ?? "", min: values.min ?? "", sound: values.sound || "none", anim: values.anim ?? "", image: values.image ?? "", audio: values.audio ?? undefined, present: values.present === undefined ? undefined : values.present || "text", video: values.video ?? undefined, videoSound: values.videoSound === undefined ? undefined : values.videoSound === "on", tts: values.tts === undefined ? undefined : values.tts || "off", viewer: values.viewer === undefined ? undefined : values.viewer === "on", viewerMax: values.viewerMax ?? undefined }); },
     async saveVoice(ctx, values) { return changeVoice(ctx, { on: values.on === "on", voice: values.voice, rate: values.rate, volume: values.volume, pitch: values.pitch, lang: values.lang, max: values.max, readName: values.readName === "on" }); },
     async saveModeration(ctx, values) { return changeModeration(ctx, { hold: values.hold === "hold", links: values.links === "on", caps: values.caps === "on", repeats: values.repeats === "on", words: values.words ?? "" }); },
     /** A sample sentence goes through the real path: the page reads it if the voice is on and a voice exists. */
@@ -272,7 +287,7 @@ export function actions(emit) {
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 /** Tools for assistants: read the texts of the alerts, change one type. Never a deletion. */
 export function tools(emit) {
-  const view = (cfg, id) => ({ type: id, enabled: cfg.types[id].on, text: cfg.types[id].template || null, durationSeconds: cfg.types[id].seconds || null, minimum: tw.MINIMUM[id] ? cfg.types[id].min || null : undefined, sound: cfg.types[id].sound, animation: cfg.types[id].anim || "default", hasPicture: !!cfg.types[id].image });
+  const view = (cfg, id) => ({ type: id, enabled: cfg.types[id].on, text: cfg.types[id].template || null, durationSeconds: cfg.types[id].seconds || null, minimum: tw.MINIMUM[id] ? cfg.types[id].min || null : undefined, sound: cfg.types[id].sound, animation: cfg.types[id].anim || "default", hasPicture: !!cfg.types[id].image, hasSoundFile: !!cfg.types[id].audio });
   const self = {
     async alert_templates_get(ctx) {
       const cfg = await tw.loadConfig(ctx), q = await tw.queueState(ctx);
