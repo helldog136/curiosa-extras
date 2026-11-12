@@ -181,7 +181,7 @@ function runScreen(page, c) {
   };
 }
 
-test("écran (élément) : le tirage en cours (titre, mot à taper, nombre), puis les personnes tirées pendant 20 secondes, puis le tirage terminé ; l'option « garder à l'écran » les laisse", async () => {
+test("écran (élément) : le tirage en cours (titre, mot à taper, nombre), puis les personnes tirées pendant 20 secondes, puis plus rien ; l'option « garder à l'écran » les laisse", async () => {
   for (const keep of [false, true]) {
     const c = audienceCtx(); await open(c); await chat(c, "Lune"); await chat(c, "Soleil");
     resetThrottle();
@@ -192,15 +192,51 @@ test("écran (élément) : le tirage en cours (titre, mot à taper, nombre), pui
     await chat(c, "Etoile"); await page.advance(5000);
     assert.deepEqual(page.part("foot"), ["3 personnes inscrites"], "le nombre se met à jour tout seul, doucement");
     await D.close(c, { now: page.now }); await page.advance(10_000);
-    assert.deepEqual(page.part("status"), [fr.drawOvClosed]);
+    assert.deepEqual(page.text(), [], "fermé sans résultat : rien à l'écran"); assert.equal(page.box.hidden, true);
     const w = await D.pick(c, { now: page.now });
     await page.advance(10_000);
     assert.deepEqual(page.part("status"), [fr.drawOvWinner]); assert.deepEqual(page.part("winner"), w.winners, "la personne tirée s'affiche");
     await page.advance(25_000);
     if (keep) assert.deepEqual(page.part("winner"), w.winners, "gardée à l'écran");
-    else { assert.deepEqual(page.part("winner"), [], "après 20 secondes, elle disparaît"); assert.deepEqual(page.part("status"), [fr.drawOvDone]); }
+    else { assert.deepEqual(page.text(), [], "après 20 secondes, tout disparaît (pas de « tirage terminé »)"); assert.equal(page.box.hidden, true); }
     assert.ok(page.fetches < 30, `mise à jour douce (${page.fetches} lectures)`);
   }
+});
+
+test("écran (élément) : états absent / ouvert / fermé / tiré — l'élément ne montre que l'ouvert et les personnes tirées ; sinon aucun texte, aucun nœud, cadre caché et transparent", async () => {
+  const empty = (page, why) => { assert.deepEqual(page.text(), [], why); assert.equal(page.box.children.length, 0, `${why} : rien dans la page`); assert.equal(page.box.hidden, true, `${why} : cadre caché`); };
+  const c = audienceCtx();
+  // aucun tirage (ou secret valable mais rien d'ouvert)
+  resetThrottle(); const page = runScreen(await def.overlay(c, { query: await elementQuery(c) }), c);
+  await page.advance(100); empty(page, "aucun tirage");
+  // ouvert : visible
+  await D.openNew(c, FORM, { now: page.now }); await chat(c, "Lune");
+  await page.advance(10_000); assert.deepEqual(page.part("status"), [fr.drawOvOpen]); assert.equal(page.box.hidden, false);
+  // fermé sans résultat : vide, même avec des inscrits
+  await D.close(c, { now: page.now }); await page.advance(10_000);
+  empty(page, "fermé sans résultat");
+  assert.ok(!page.text().some((x) => /Tirage au sort|inscrit|fermées/i.test(x)));
+  // rouvert : visible de nouveau, puis tiré : les personnes, puis plus rien
+  const r = await D.reopen(c, { now: page.now }); assert.ok(r.ok);
+  await page.advance(10_000); assert.deepEqual(page.part("status"), [fr.drawOvOpen]);
+  await D.close(c, { now: page.now }); const w = await D.pick(c, { now: page.now });
+  await page.advance(10_000); assert.deepEqual(page.part("winner"), w.winners);
+  await page.advance(25_000); empty(page, "tiré, après l'affichage des personnes");
+  // un nouveau tirage ouvert réapparaît
+  await D.openNew(c, { ...FORM, title: "Suivant" }, { now: page.now });
+  await page.advance(10_000); assert.deepEqual(page.part("title"), ["Suivant"]);
+  // l'échéance passe : l'écran se vide sans attendre une lecture
+  const c2 = audienceCtx(); resetThrottle();
+  const p2 = runScreen(await def.overlay(c2, { query: await elementQuery(c2) }), c2);
+  await D.openNew(c2, { ...FORM, minutes: 1 }, { now: p2.now }); await p2.advance(5000); assert.ok(p2.part("status")[0].startsWith(fr.drawOvOpen) && p2.part("clock").length === 1);
+  await p2.advance(70_000); empty(p2, "échéance dépassée");
+  // overlay seul : jamais autre chose que les personnes tirées
+  const c3 = audienceCtx(); await open(c3); resetThrottle();
+  const p3 = runScreen(await def.overlay(c3, { query: new URLSearchParams({ k: await D.screenKey(c3) }) }), c3);
+  await p3.advance(100); empty(p3, "overlay seul, tirage ouvert");
+  // la page elle-même : cadre caché au départ, aucun texte de tirage dans le HTML
+  const html = (await def.overlay(c, { query: await elementQuery(c) })).html;
+  assert.ok(/id="dw-box"[^>]*\bhidden\b/.test(html) && !/Tirage|inscri/i.test(html));
 });
 
 test("écran (overlay seul) : rien à l'écran tant que personne n'est tiré ; les personnes tirées s'affichent 20 secondes puis disparaissent", async () => {
@@ -259,10 +295,10 @@ test("mise à jour douce : l'écart conseillé reste borné et s'allonge avec le
 
 test("textes de l'écran : parité FR/EN, mêmes variables, neutres, une seule forme de « Vous participez ! »", () => {
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  for (const k of ["drawOvWinner", "drawOvWinners", "drawOvOpen", "drawOvClosed", "drawOvDone", "drawOvBoth", "drawOvChat", "drawOvSiteOnly", "drawDemoTitle", "drawCountOne", "drawCountMany", "drawScreenIncomplete"]) assert.ok(fr[k] && en[k], k);
+  for (const k of ["drawOvWinner", "drawOvWinners", "drawOvOpen", "drawOvBoth", "drawOvChat", "drawOvSiteOnly", "drawDemoTitle", "drawCountOne", "drawCountMany", "drawScreenIncomplete"]) assert.ok(fr[k] && en[k], k);
   assert.ok(fr.drawOvBoth.includes("{keyword}") && en.drawOvBoth.includes("{keyword}") && fr.drawOvChat.includes("{keyword}"));
   assert.equal(fr.drawStateIn, "Vous participez !");
-  const mine = [fr.drawOvWinner, fr.drawOvWinners, fr.drawOvOpen, fr.drawOvClosed, fr.drawOvDone, fr.drawOvBoth, fr.drawOvChat, fr.drawOvSiteOnly].join(" ");
+  const mine = [fr.drawOvWinner, fr.drawOvWinners, fr.drawOvOpen, fr.drawOvBoth, fr.drawOvChat, fr.drawOvSiteOnly].join(" ");
   assert.ok(!/gagnant|participant|\btu\b/i.test(mine));
   assert.ok(P.DRAW.showMs === 20_000);
 });

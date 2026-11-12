@@ -27,8 +27,6 @@
       "R13 locale:fr:drawStateIn #f4da66",
       "R13 locale:fr:limitsText #c233c3",
       "R13 locale:fr:liveIntro #1a30ea",
-      "R13 overlayElement:draw.description[en] #ee6bda",
-      "R13 overlayElement:draw.description[fr] #778927",
       "R13 right:draw.manage.label[en] #6cf375",
       "R13 right:draw.manage.label[fr] #2316d3"
     ],

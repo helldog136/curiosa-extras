@@ -40,4 +40,4 @@ Show your upcoming streams in the look you choose. They come from your Google Ca
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.7.4.
+Available since version 1.0.0. Current version: 2.7.5.

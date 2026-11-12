@@ -44,7 +44,7 @@ beforeEach(() => { mock.timers.setTime(Date.parse("2026-10-14T10:00:00Z")); over
 
 test("manifeste : valide, 2.5.0, minCore 0.5.0, deux éléments fluides avec taille minimale, plage de ratios, style suivi, options minimales", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "2.7.4"); assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.version, "2.7.5"); assert.equal(manifest.minCore, "0.5.0");
   assert.deepEqual(manifest.overlayElements.map((e) => e.id), ["week", "next"]);
   for (const e of manifest.overlayElements) {
     assert.equal(e.fit, "fluid", e.id); assert.equal(e.followsStyle, true, e.id); assert.equal(e.demo, true, e.id);
@@ -175,7 +175,20 @@ test("réglages du module respectés : format de l'heure (12 h) et fuseau lus ch
 
 test("sans stream, ou calendrier en panne : un état vide ou un cadre vide, jamais de message d'erreur ni d'exception", async () => {
   serve(calendar());
-  assert.match((await page("week", query(1000, 600))).html, /noStream|Pas de stream planifié/);
+  for (const slug of ["week", "next"]) {
+    const idle = (await page(slug, query(1000, 600, { surface: "soft" }))).html;
+    assert.ok(/<div id="p"[^>]*\bhidden\b/.test(idle) && /<div id="r"[^>]*><\/div>/.test(idle), `${slug} : sans stream, un cadre caché et vide`);
+    assert.ok(!/noStream|Pas de stream planifié|pa-empty"/.test(idle.replace(/<style>[\s\S]*?<\/style>/g, "")), `${slug} : aucun texte « aucun stream » à l'écran`);
+    assert.deepEqual(await (await get(slug, new URLSearchParams([...query(1000, 600), ["frag", "1"]]))).json().then((j) => j.html), "", `${slug} : la mise à jour douce renvoie un contenu vide`);
+    const demo = (await page(slug, query(1000, 600, {}, {}, { "ov-demo": "1" }))).html;
+    assert.ok(!/<div id="p"[^>]*\bhidden\b/.test(demo) && /class="pa /.test(demo), `${slug} : le mode test montre un exemple`);
+  }
+  // seulement des streams passés : « Prochain stream » n'a rien à dire
+  serve(calendar(vevent("old", hours(-30), hours(-29), "Hier")));
+  overlay.resetOverlayCache();
+  assert.ok(/<div id="p"[^>]*\bhidden\b/.test((await page("next", query(600, 300))).html), "next : rien de à venir, rien à l'écran");
+  serve(calendar(vevent("soon", hours(3), hours(4), "Bientôt"))); overlay.resetOverlayCache();
+  for (const slug of ["week", "next"]) assert.ok(!/<div id="p"[^>]*\bhidden\b/.test((await page(slug, query(1000, 600))).html), `${slug} : avec un stream à venir, visible`);
   serve("<html>erreur</html>");
   overlay.resetOverlayCache();
   assert.equal((await get("next", query(600, 300))).status, 200);

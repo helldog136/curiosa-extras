@@ -34,4 +34,4 @@ Showcases your Twitch channel: a header button, your live status and your latest
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.3.0.
+Available since version 1.0.0. Current version: 2.3.1.

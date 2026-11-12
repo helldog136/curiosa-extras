@@ -269,8 +269,6 @@
   "drawOvWinner": "Person drawn",
   "drawOvWinners": "People drawn",
   "drawOvOpen": "Sign-ups open",
-  "drawOvClosed": "Sign-ups closed",
-  "drawOvDone": "Draw finished",
   "drawOvBoth": "Type {keyword} in the chat or sign up on the site",
   "drawOvChat": "Type {keyword} in the chat",
   "drawOvSiteOnly": "Sign up on the site",
