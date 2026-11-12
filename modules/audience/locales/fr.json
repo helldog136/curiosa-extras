@@ -99,6 +99,7 @@
   "remoteLoading": "Chargement de la télécommande…",
   "remoteFoot": "Adresse secrète : ne la partagez pas.",
   "remoteBusy": "En cours…",
+  "remoteExplain": "À quoi ça sert ?",
   "remoteDone": "C'est fait.",
   "remoteAgain": "touchez encore pour confirmer",
   "remoteNoPanels": "Rien à piloter pour le moment. Installez un module d'animation, comme Sondages.",
@@ -361,5 +362,6 @@
   "what_panel_addcom": "Commande de chat ajoutée",
   "what_panel_undo": "Commande de chat supprimée",
   "what_panel_collabon": "Mode collaboration activé",
-  "what_panel_collaboff": "Mode collaboration désactivé"
+  "what_panel_collaboff": "Mode collaboration désactivé",
+  "what_panel_collabset": "Choix du mode collaboration enregistrés"
 }

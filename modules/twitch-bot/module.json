@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.14.0",
+  "version": "1.15.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -1081,7 +1081,7 @@
     {
       "name": "collaboration_mode_set",
       "default": false,
-      "description": "Switch the collaboration mode of the Twitch bot on or off, for when the owner streams with other people in a shared chat and the bot should talk less on its own. While it is on, the chat timers are paused or thinned out (1 due message out of 2 or 3 is sent) and, if asked, command delays are longer and other automatic messages are muted. Commands typed by viewers still answer. 'enabled' is required; the other fields change the saved choices. It sends no message. The change is written in the site history as made by the assistant. The state is in bot_commands_list (collaborationMode).",
+      "description": "Switch the collaboration mode of the Twitch bot on or off, for when the owner streams with other people in a shared chat and the bot should talk less on its own. While it is on, the chat timers are paused or sent one time out of 2, 3 or 5 (counted per timer) and, if asked, command delays are longer and other automatic messages are muted. Commands typed by viewers still answer. 'enabled' is required; the other fields change the saved choices (the same ones as on the bot page and the remote control). It sends no message. The change is written in the site history as made by the assistant. The state is in bot_commands_list (collaborationMode).",
       "input": {
         "type": "object",
         "required": [
@@ -1092,19 +1092,25 @@
             "type": "boolean",
             "description": "true = collaboration mode on, false = off."
           },
-          "mode": {
+          "timers": {
             "type": "string",
             "enum": [
-              "thin",
-              "pause"
+              "pause",
+              "every_n"
             ],
-            "description": "Timers: 'thin' (default, 1 out of ratio is sent) or 'pause'."
+            "description": "What the timers do while the mode is on: 'pause' (nothing goes out) or 'every_n' (one due message out of n goes out, see n)."
           },
-          "ratio": {
+          "n": {
             "type": "integer",
-            "description": "With 'thin': one timer message out of this many is sent (default 3).",
+            "description": "With timers 'every_n': one timer message out of this many goes out (2, 3 or 5; default: the saved choice, 3 at first).",
             "minimum": 2,
-            "maximum": 3
+            "maximum": 5
+          },
+          "autoStopHours": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 24,
+            "description": "The mode stops by itself after this many hours (0 = never, default 6; the remote control offers 2, 4, 6 or never)."
           },
           "commandDelayFactor": {
             "type": "integer",
@@ -1116,11 +1122,25 @@
             "type": "boolean",
             "description": "true = no notice when points are given back; a reward that makes the bot answer in chat is refunded instead."
           },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "thin",
+              "pause"
+            ],
+            "description": "Older name of 'timers': 'thin' (= every_n, uses ratio) or 'pause'."
+          },
+          "ratio": {
+            "type": "integer",
+            "description": "Older name of 'n' (2, 3 or 5): with mode 'thin', one timer message out of this many is sent (default 3).",
+            "minimum": 2,
+            "maximum": 5
+          },
           "autoEndHours": {
             "type": "integer",
             "minimum": 0,
             "maximum": 24,
-            "description": "The mode ends by itself after this many hours (0 = never, default 6)."
+            "description": "Older name of 'autoStopHours'."
           }
         }
       }
@@ -1282,7 +1302,7 @@
   ],
   "i18n": {
     "fr": {
-      "mcp.collaboration_mode_set": "Active ou désactive le mode collaboration du bot Twitch, pour quand la personne diffuse avec d'autres dans un chat partagé et que le bot doit parler moins tout seul. Activé, les timers du chat sont mis en pause ou espacés (1 message dû sur 2 ou 3 part) et, si demandé, les attentes des commandes sont plus longues et les autres messages automatiques coupés. Les commandes tapées par le public répondent toujours. « enabled » est obligatoire ; les autres champs changent les choix enregistrés. L'outil n'envoie aucun message. Le changement est écrit dans l'historique du site comme fait par l'assistant. L'état se lit dans bot_commands_list (collaborationMode)."
+      "mcp.collaboration_mode_set": "Active ou désactive le mode collaboration du bot Twitch, pour quand la personne diffuse avec d'autres dans un chat partagé et que le bot doit parler moins tout seul. Activé, les timers du chat sont mis en pause ou partent une fois sur 2, 3 ou 5 (compte fait par timer) et, si demandé, les attentes des commandes sont plus longues et les autres messages automatiques coupés. Les commandes tapées par le public répondent toujours. « enabled » est obligatoire ; les autres champs changent les choix enregistrés (les mêmes que sur la page du bot et la télécommande). L'outil n'envoie aucun message. Le changement est écrit dans l'historique du site comme fait par l'assistant. L'état se lit dans bot_commands_list (collaborationMode)."
     }
   }
 }

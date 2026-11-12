@@ -230,7 +230,7 @@ export const actions = {
   async collabOn(ctx) { await CO.setOn(ctx, true, "admin"); return { ok: ctx.t("co_on_done") }; },
   async collabOff(ctx) { await CO.setOn(ctx, false, "admin"); return { ok: ctx.t("co_off_done") }; },
   async collabSave(ctx, v) {
-    const r = CO.check({ mode: v.collabMode, ratio: v.collabRatio, factor: v.collabFactor, hours: v.collabHours, quiet: v.collabQuiet === "on" ? "on" : "off" }, CO.DEFAULTS);
+    const r = CO.check({ ...(v.collabTimers !== undefined ? { timers: v.collabTimers } : { mode: v.collabMode, ratio: v.collabRatio }), factor: v.collabFactor, hours: v.collabHours, quiet: v.collabQuiet === "on" ? "on" : "off" }, CO.choicesOf(await st.readState(ctx)));
     if (!r.ok) return { errors: COU.errors(ctx, r.errors) };
     await CO.saveChoices(ctx, r.value);
     return { ok: ctx.t("co_saved") };

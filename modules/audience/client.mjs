@@ -495,10 +495,49 @@ export const REMOTE_JS = String.raw`(function () {
       delete ui.errors[key]; er.hidden = true; st.textContent = T.busy;   // visible at once: the answer takes a moment
       press(t.pid, tg.id, tg.values, b, function () { done = true; }).then(function () { if (!done && document.body.contains(st) && st.textContent === T.busy) st.textContent = before; });
     });
+    if (tg.calm) b.className += " calm";
     wrap.appendChild(b);
     if (tg.hint) { var hn = h("p", "hint", tg.hint); hn.id = hid; wrap.appendChild(hn); }
+    var groups = tg.choices || [], shown = groups.filter(function (g) { return !g.folded; }), tucked = groups.filter(function (g) { return g.folded; });
+    shown.forEach(function (g, gi) { wrap.appendChild(choiceEl(t, g, key, gi === 0 ? tg.more : "")); });
+    if (!shown.length && tg.more) wrap.appendChild(helpEl(tg.more, key));
+    if (tucked.length) {   // the rare choices: one fold that remembers its state across redraws
+      var fk = key + ":more", mo = h("details", "mo"); if (ui.fold && ui.fold[fk]) mo.open = true;
+      mo.addEventListener("toggle", function () { ui.fold = ui.fold || {}; ui.fold[fk] = mo.open; });
+      mo.appendChild(h("summary", "", tg.foldLabel || T.more));
+      tucked.forEach(function (g) { mo.appendChild(choiceEl(t, g, key, "")); });
+      wrap.appendChild(mo);
+    }
     var er = h("p", "err", err || ""); er.id = eid; er.hidden = !err; er.setAttribute("role", "alert"); wrap.appendChild(er);
     return wrap;
+  }
+  /* Segmented buttons under a switch (2 to 5 options, one selected): a tap sends the group's action with its value, the state line above says the result. */
+  /* A "?" bubble: a 44 px button that opens the explanation under it (tap or keyboard); the text is also its tooltip. It remembers its state across redraws. */
+  function helpEl(text, key) {
+    var box = h("div", "qh"), fk = key + ":why", open = !!(ui.fold && ui.fold[fk]);
+    var q = h("button", "qm", "?"); q.type = "button"; q.title = text; q.setAttribute("aria-label", T.explain); q.setAttribute("aria-expanded", open ? "true" : "false"); q.setAttribute("data-fk", "q:" + key);
+    var bub = h("p", "mop", text); bub.id = "qb" + (++seq); bub.setAttribute("role", "note"); bub.hidden = !open; q.setAttribute("aria-describedby", bub.id);
+    q.addEventListener("click", function () { bub.hidden = !bub.hidden; ui.fold = ui.fold || {}; ui.fold[fk] = !bub.hidden; q.setAttribute("aria-expanded", bub.hidden ? "false" : "true"); });
+    box.appendChild(q); box.appendChild(bub); return box;
+  }
+  function choiceEl(t, g, key, help) {
+    var fs = h("div", "tgc"); fs.setAttribute("role", "radiogroup"); fs.setAttribute("aria-label", g.label);
+    var hd = h("div", "tgh"); hd.appendChild(h("span", "seglab", g.label));
+    var hb = help ? helpEl(help, key) : null; if (hb) { hd.appendChild(hb.firstChild); }
+    fs.appendChild(hd); if (hb) fs.appendChild(hb.lastChild);
+    var row = h("div", "sgs"); row.setAttribute("data-n", String(g.options.length));
+    g.options.forEach(function (o) {
+      var ob = h("button", "sgb", o.label); ob.type = "button"; ob.setAttribute("role", "radio"); ob.setAttribute("aria-checked", o.on ? "true" : "false"); ob.setAttribute("data-fk", "ch:" + g.id + ":" + g.name + ":" + o.value);
+      var busy = false;   // not disabled while it works: a disabled button loses the keyboard focus, and the choice must keep it when the panel is drawn again
+      ob.addEventListener("click", function () {
+        if (busy || o.on) return;
+        var v = {}; v[g.name] = o.value; delete ui.errors[key]; busy = true; ob.setAttribute("aria-busy", "true");
+        press(t.pid, g.id, v, null).then(function () { busy = false; ob.removeAttribute("aria-busy"); });
+      });
+      row.appendChild(ob);
+    });
+    fs.appendChild(row);
+    return fs;
   }
   function genericEl(t) {
     var p = t.panel, root = h("div", "view gen"), hd = h("div", "hd");
