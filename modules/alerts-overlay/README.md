@@ -54,3 +54,15 @@ The overlay reads the topic `twitch.event` (declared in `consumes`; nothing is r
 - New permission: `storage` (the configuration of the types, the pause and the ids already shown); `mcp` for the two tools.
 
 Not done yet (next versions): sounds and images per type, animation choice per type, the preview of the alert in the administration.
+
+## The look of Twitch alerts (version 1.5.0)
+
+Under "More options" of the edit window of each type (the three of them are folded, so the window keeps its three visible fields):
+
+- **Picture** (a field "Picture"): an image of your site (PNG, JPG, WebP or GIF, sent in the administration) shown above the text, 96 px square, as the part `image` of the card. The module **keeps** the file (permission `files`: it is claimed when you save, and let go when you replace or remove the picture), the page only accepts an address of the form `/uploads/<id>.<png|jpg|webp|gif>` (checked when saving, when reading the configuration, and again in the page): nothing is ever loaded from another site. Not available to assistants (a picture needs an upload).
+- **Sound**: none (default), chime, bell, pop or fanfare. **The page makes them itself** (a few synthesised notes with Web Audio): nothing is uploaded, nothing is downloaded, so no third-party load and no file to validate. Off unless you tick "Play a sound with each alert" (tab Twitch events); the volume is an advanced setting (50 % by default). When sounds are off the page contains no audio code at all. **Custom sound files are not offered**: the core only accepts images and videos as uploads, so an audio upload would need a change of the core, which was left for the owner to decide (see the report).
+- **How it enters and leaves**: per type, the modes of the shared transition helper (slide from an edge, fade, jiggle, pop, instant), or "like the module settings". A page where no type asks for a mode is exactly as before (it keeps its own animation).
+- **Preview and "what the stream sees"**: the tab shows three sample cards as the overlay draws them (with their picture), the table shows a thumbnail and the sentence each type would say, and the button "Show a sample evening on screen" sends five sample alerts (follow, sub, gift, bits, raid) through the real path: texts, pictures, sounds, durations, queue.
+- **Skins**: the picture is `[data-ov-part="image"]` in an overlay page element and `.al-img` in the module's own overlay; colours still come from the `--ov-*` tokens. A skin that does not know the part `image` simply leaves it at its default look.
+- Tools for assistants: `alert_template_update` also takes `sound` and `animation`.
+- Not done: custom sound files (core), text-to-speech and a rich animation engine (out of scope, stay external).

@@ -7,6 +7,7 @@ Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements,
 - Choisissez la couleur d'accent et la durée d'affichage d'une alerte.
 - Montrez vos événements Twitch avec Activité Twitch : un texte, une durée et un minimum par type.
 - Les alertes attendent leur tour, et les cadeaux ou follows en rafale deviennent une seule alerte.
+- Donnez à chaque type une image, un son et sa façon d'arriver, et voyez le résultat avant le direct.
 - Mettez les alertes en pause pendant un moment calme : rien n'est perdu.
 - Affichez le texte des messages YouTube, si vous le souhaitez.
 - Choisissez comment l'alerte arrive et repart : glissement depuis un côté, fondu, rebond ou zoom.
@@ -41,4 +42,4 @@ Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements,
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.4.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.5.0.

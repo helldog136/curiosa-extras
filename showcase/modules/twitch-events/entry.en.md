@@ -42,4 +42,4 @@ Your site receives what happens on your channel. It keeps a journal you can read
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.0.
+Available since version 1.0.0. Current version: 1.2.1.

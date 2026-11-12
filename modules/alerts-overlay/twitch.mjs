@@ -15,6 +15,12 @@ export const VARS = ["name", "count", "amount", "tier", "months", "viewers", "le
 /** The type whose alerts have a minimum, and the field it applies to. */
 export const MINIMUM = { cheer: "amount", gift: "count", raid: "viewers", redeem: "amount" };
 export const PRESETS = ["simple", "short", "thanks"];
+/** Sounds are made by the page itself (small synthesised notes): nothing is loaded, nothing is uploaded. `none` is the default. */
+export const SOUNDS = ["none", "chime", "bell", "pop", "fanfare"];
+/** How an alert of this type enters and leaves; empty = the module setting (the shared transition helper's modes, except `auto`). */
+export const ANIMS = ["", "slide", "slideLeft", "slideRight", "slideTop", "slideBottom", "fade", "jiggle", "pop", "none"];
+/** A picture is one that the site itself holds (uploaded in the administration, then kept by this module): never an address from elsewhere. */
+export const IMAGE_RE = /^\/uploads\/[0-9a-f-]{36}\.(png|jpg|webp|gif)$/;
 export const LIMITS = { template: 120, seconds: { min: 2, max: 60 }, min: 1_000_000, maxAgeMs: 5 * 60_000, maxAgeMissedMs: 60 * 60_000, seenKeep: 400, held: 50, ignore: 50, groupFollows: 3, gapMs: { min: 0, max: 30_000 }, groupMs: { min: 0, max: 30_000 } };
 
 /** The type (switch) of an item of the topic; null for something we do not know. */
@@ -59,12 +65,18 @@ export function normaliseConfig(raw) {
       template: clean(r.template, LIMITS.template),
       seconds: Number.isFinite(sec) && sec >= LIMITS.seconds.min ? Math.min(LIMITS.seconds.max, sec) : 0,
       min: MINIMUM[id] && Number.isFinite(min) && min > 0 ? Math.min(LIMITS.min, min) : 0,
+      sound: SOUNDS.includes(r.sound) ? r.sound : "none",
+      anim: ANIMS.includes(r.anim) ? r.anim : "",
+      image: typeof r.image === "string" && IMAGE_RE.test(r.image) ? r.image : "",
     };
   }
   return out;
 }
 /** Names to ignore, from the setting: separated by commas, spaces or new lines, without @, lower case, 50 at most. */
 export const ignoreOf = (text) => new Set(String(text ?? "").toLowerCase().split(/[\s,;]+/).map((s) => s.replace(/^@/, "")).filter((s) => /^[a-z0-9_]{2,25}$/.test(s)).slice(0, LIMITS.ignore));
+
+/** The look of a type: its picture, its sound and its way of entering (each only when chosen). */
+const look = (cfg) => ({ ...(cfg.image ? { image: cfg.image } : {}), ...(cfg.sound && cfg.sound !== "none" ? { sound: cfg.sound } : {}), ...(cfg.anim ? { anim: cfg.anim } : {}) });
 
 /**
  * One item of the topic → what to do with it: { alert } (to show now or to stage), or { skip: reason }.
@@ -92,7 +104,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
   if (!message) return { skip: "empty" };
   const detail = showText && ["resub", "cheer", "redeem"].includes(type) ? clean(item.text, 140) : "";
   const secs = cfg.seconds || seconds || 0;
-  return { alert: { kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), queued: true, id: String(item.id ?? "") }, type, group: type === "gift" || type === "follow" };
+  return { alert: { kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg), queued: true, id: String(item.id ?? "") }, type, group: type === "gift" || type === "follow" };
 }
 
 /**
@@ -119,13 +131,13 @@ export function groupBurst(staged, { config, locale = "en", text, title, seconds
     if (o.alert || o.message) return o;
     if (o.n !== undefined) {
       const cfg = config.types.follow;
-      return { kind: KIND.follow, message: fillTemplate(text("follow_many"), { name: clean(o.first.name, 60), count: num(o.n, locale) }), ...(cfg.seconds || seconds ? { duration: cfg.seconds || seconds } : {}), queued: true, id: `group-${o.first.id}` };
+      return { kind: KIND.follow, message: fillTemplate(text("follow_many"), { name: clean(o.first.name, 60), count: num(o.n, locale) }), ...(cfg.seconds || seconds ? { duration: cfg.seconds || seconds } : {}), ...look(cfg), queued: true, id: `group-${o.first.id}` };
     }
     // a (merged) gift: the alert is rebuilt with the total
     const cfg = config.types.gift, item = o.item;
     const vars = varsOf({ ...item, count: o.count }, locale);
     if (item.anonymous === true) vars.name = text("anonymous");
-    return { kind: KIND.gift, message: fillTemplate(cfg.template || text("gift"), vars), ...(cfg.seconds || seconds ? { duration: cfg.seconds || seconds } : {}), queued: true, id: `gift-${item.id}` };
+    return { kind: KIND.gift, message: fillTemplate(cfg.template || text("gift"), vars), ...(cfg.seconds || seconds ? { duration: cfg.seconds || seconds } : {}), ...look(cfg), queued: true, id: `gift-${item.id}` };
   });
 }
 
