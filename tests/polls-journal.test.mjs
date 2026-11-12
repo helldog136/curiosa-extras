@@ -21,7 +21,7 @@ const log = (c) => c.dumpLog();
 
 test("manifeste : événements valides, minCore inchangé, deux langues", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.minCore, "0.5.0");
+  assert.equal(manifest.minCore, "0.11.0");
   assert.deepEqual(Object.keys(pollsFr).sort(), Object.keys(pollsEn).sort());
   assert.equal(manifest.logEvents.find((e) => e.key === "round.decided").frequent, true);
 });

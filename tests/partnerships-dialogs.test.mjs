@@ -236,3 +236,37 @@ test("every wording variant of the deletion exists in both languages", () => {
   assert.match(messages.en.deleteConfirmN, /\{n\}/);
   assert.match(messages.fr.deleteKeepN, /\{n\}/);
 });
+
+test("edit window (core 0.12.0): the delete button is a secondaryAction with a precise label and a confirm that says what is lost; the new window and the row menu are unchanged", async () => {
+  const { ctx, addContact } = setup();
+  const c1 = await addContact({ name: "etoile_nord" }), c2 = await addContact({ name: "lune_douce" });
+  const a = await partner(ctx, "Moonlight Games", { entries: 12, contactIds: [c1, c2] });
+  const edit = dialogOf(await panel(ctx, { edit: a }));
+  assert.equal(edit.presentation, "dialog");
+  assert.deepEqual(edit.secondaryAction, { label: "Delete the partner", action: "removePartner", confirm: "Delete this partner and its 12 journal entries? The 2 linked contacts stay in your address book." });
+  assert.ok(def.adminActions[edit.secondaryAction.action], "the action exists");
+  assert.equal(edit.submitLabel, "Save the partner", "the main button is still the save");
+  assert.equal(dialogOf(await panel(ctx, { new: "1" })).secondaryAction, undefined, "nothing to delete in the new window");
+  const none = dialogOf(await panel(ctx, { edit: await partner(ctx, "A") })).secondaryAction.confirm;
+  assert.equal(none, "Delete this partner? It has no journal entry. Your address book is not changed.");
+  const table = find(await panel(ctx, {}), "table")[0];
+  assert.deepEqual(table.rowActions.at(-1).label, "Delete the partner", "the row menu keeps its deletion for cores older than 0.12.0");
+  const { ctx: fr } = setup({ locale: "fr" });
+  const p = await partner(fr, "Jeux Clair de Lune", { entries: 1 });
+  const sa = dialogOf(await panel(fr, { edit: p })).secondaryAction;
+  assert.equal(sa.label, "Supprimer le partenaire");
+  assert.match(sa.confirm, /^Supprimer ce partenaire et son entrée de journal \?/);
+});
+
+test("removePartner: the core's confirmation box replaces the tick; it deletes the file and ITS journal only, never a person of Contacts, and an unknown id changes nothing", async () => {
+  const { ctx, bookCtx, addContact } = setup();
+  const c1 = await addContact({ name: "etoile_nord" });
+  const a = await partner(ctx, "Moonlight Games", { entries: 3, contactIds: [c1] });
+  await partner(ctx, "Other Brand", { entries: 2 });
+  assert.deepEqual(await def.adminActions.removePartner(ctx, { id: "nope" }), { error: "Not found." });
+  assert.equal(await ctx.api.store.count("partners"), 2);
+  assert.deepEqual(await def.adminActions.removePartner(ctx, { id: a }), { ok: "Moonlight Games was deleted. Its contacts stay in your address book.", redirect: "?" });
+  assert.equal(await ctx.api.store.get(a), null);
+  assert.equal(await ctx.api.store.count("journal"), 2);
+  assert.ok((await book.get(bookCtx, { id: c1 })), "the person stays in the address book");
+});

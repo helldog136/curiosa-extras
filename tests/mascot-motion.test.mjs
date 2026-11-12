@@ -83,8 +83,8 @@ test("non-regression: with no animation, no voice and 'always visible', the page
   const sum = crypto.createHash("sha256").update(html.replace(/mc\d+/g, "")).digest("hex").slice(0, 16);
   assert.equal(sum, GOLDEN_PLAIN, "the plain page changed");
 });
-// Hash of the page produced by the code of 1.1.1 (checked once against origin/master at 1.1.1: identical).
-const GOLDEN_PLAIN = "7099e0abc60c859f";
+// Hash of the plain page. It was the page of 1.1.1 byte for byte until 1.5.0, which gives the sentence the TV type scale (core 0.11.0: tokens, 32 px sentence, 24 px name); nothing else moved.
+const GOLDEN_PLAIN = "f3906df414232353";
 
 /* ───────────── the real page ───────────── */
 
@@ -484,5 +484,5 @@ test("audio: assistants see the file in use and can pick your own sound only whe
   assert.equal((await def.mcp.mascot_animation_get(ctx)).voice.ownSoundChosen, true);
   assert.deepEqual(await def.mcp.mascot_animation_update(ctx, { voiceMode: "custom", blipsPreset: "custom" }), { ok: true });
   assert.equal(K.manifest.settings.find((s) => s.key === "voiceFile").type, "audio");
-  assert.equal(K.manifest.minCore, "0.10.0");
+  assert.equal(K.manifest.minCore, "0.11.0");
 });

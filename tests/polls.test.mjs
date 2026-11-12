@@ -47,8 +47,8 @@ test("manifeste valide ; clés de traduction utilisées présentes et en parité
   for (const a of manifestJson.mcp) assert.equal(typeof def.mcp[a.name], "function", a.name);
   for (const a of manifestJson.mcp) assert.ok(a.name.length <= 31);
   assert.deepEqual(manifestJson.rights.map((x) => x.id).sort(), ["manage", "obs.view"]);
-  assert.equal(manifestJson.minCore, "0.5.0");
-  assert.equal(manifestJson.version, "1.7.1");
+  assert.equal(manifestJson.minCore, "0.11.0");
+  assert.equal(manifestJson.version, "1.8.0");
 });
 
 test("ni appel réseau direct, ni minuteur, ni tâche de fond côté serveur ; les deux scripts du navigateur se compilent, sans boucle serrée", () => {

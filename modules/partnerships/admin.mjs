@@ -32,13 +32,15 @@ export default {
     const back = open ? `?partner=${open.id}` : "?"; // where a window returns when it closes
 
     // The edit window: four fields in sight, the rare ones under "More options" (the core summarises what is already filled in there).
-    const partnerForm = (p) => ({
+    const partnerForm = async (p) => ({
       type: "adminForm",
       presentation: "dialog",
       action: "savePartner",
       title: p ? `${t("edit")} — ${p.data.brand}` : t("add"),
       submitLabel: t(p ? "saveSubmit" : "addSubmit"),
       cancelHref: back,
+      // Core 0.12.0: the destructive button sits at the start of the window footer and asks first, saying what is lost. Older cores ignore the key; the row menu keeps its own "Delete the partner".
+      ...(p ? await (async () => { const { journal: n, contacts: k } = await deletionPreview(ctx, p); return { secondaryAction: { label: t("deleteBtn"), action: "removePartner", confirm: `${t(`deleteAsk${count(n)}`, { n })} ${t(`deleteKeep${count(k)}`, { n: k })}` } }; })() : {}),
       fields: [
         { name: "id", kind: "hidden", value: p?.id ?? "" },
         { name: "brand", label: t("brand"), required: true, example: t("exBrand"), value: p?.data.brand ?? "" },
@@ -86,8 +88,8 @@ export default {
 
     // The window the address asks for, if any.
     const dialogs = [];
-    if (query.new) dialogs.push(partnerForm(null));
-    else if (byId(query.edit)) dialogs.push(partnerForm(byId(query.edit)));
+    if (query.new) dialogs.push(await partnerForm(null));
+    else if (byId(query.edit)) dialogs.push(await partnerForm(byId(query.edit)));
     else if (byId(query.delete)) dialogs.push(await deleteForm(byId(query.delete)));
     else if (open && query.log) dialogs.push(journalForm(open));
     blocks.push(...dialogs);
@@ -164,6 +166,12 @@ export default {
     // Deletes the file and its journal: NEVER a person of the Contacts module, only the reference goes away. Needs the tick of the confirmation window.
     async deletePartner(ctx, v) {
       if (v.confirm !== "on") return { error: ctx.t("deleteTick") };
+      const r = await deletePartnerRecord(ctx, v.id);
+      if (!r) return { error: ctx.t("notFound") };
+      return { ok: ctx.t("deletedPartner", { brand: r.brand }), redirect: "?" };
+    },
+    // Same deletion from the edit window: the core's own confirmation box (which says what is lost) replaces the tick of the deletion window.
+    async removePartner(ctx, v) {
       const r = await deletePartnerRecord(ctx, v.id);
       if (!r) return { error: ctx.t("notFound") };
       return { ok: ctx.t("deletedPartner", { brand: r.brand }), redirect: "?" };

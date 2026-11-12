@@ -28,10 +28,15 @@ export function readParams(params) {
   return {
     width: int(get("ov-w"), 16, 7680, 500), height: int(get("ov-h"), 16, 7680, 600),
     style: params.has("ov-text") ? { text: get("ov-text") === "dark" ? "dark" : "light", surface: get("ov-surface") === "soft" ? "soft" : "transparent", corners: get("ov-corners") === "square" ? "square" : "round" } : null,
-    demo: get("ov-demo") === "1", group: GROUPS.includes(group) ? group : "all", count: int(get("opt-count"), 1, MAX_PEOPLE, 10),
+    tv: tvOf(params), demo: get("ov-demo") === "1", group: GROUPS.includes(group) ? group : "all", count: int(get("opt-count"), 1, MAX_PEOPLE, 10),
     scroll: bool(get("opt-scroll"), true), messages: bool(get("opt-messages"), true),
   };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Style commun -> jetons --ov-* (valeurs de docs/OVERLAY-ELEMENTS.md). Sans style (adresse ouverte à la main) : texte clair, fond transparent. */
 export function tokensCss(style) {
@@ -104,15 +109,13 @@ export function renderContent(ctx, p, groups) {
     title = "";
   }
   const horizontal = p.width >= p.height * 2.5;
-  const head = !horizontal && p.height >= 160 ? `<p data-ov-part="title" class="tw-head">${esc(title || ctx.t("ovHeading"))}</p>` : "";
-  const headPx = head ? 44 : 0;
-  // L'unité de taille : le texte suit le cadre (une rangée de ~6 personnes en hauteur, ou ~11 « lettres » de large), entre 14 et 44 pixels.
-  const u = Math.max(14, Math.min(44, Math.floor(Math.min(horizontal ? (p.height - 24) / 2.6 : (p.height - headPx - 24) / (p.messages ? 5 : 6), (p.width - 24) / (horizontal ? 8 : 11)))));
+  const head = !horizontal && p.height >= 160 * (p.tv ?? 1) ? `<p data-ov-part="title" class="tw-head">${esc(title || ctx.t("ovHeading"))}</p>` : "";
+  // TV type scale: the unit is the body size (md), the same in every frame; the list scrolls when it does not fit, so nothing has to shrink.
   const items = people.map((x) => {
     const msg = p.messages ? P.clean(P.pickText(x.texts, ctx.locale, ctx.defaultLocale), P.LIMITS.message) : "";
     return `<li data-ov-part="person" class="tw-item"><span data-ov-part="avatar" class="tw-av" aria-hidden="true">${esc(P.initials(x.shown))}</span><span class="tw-txt"><span data-ov-part="name" class="tw-name">${esc(x.shown)}</span>${msg ? `<span data-ov-part="message" class="tw-msg">${esc(msg)}</span>` : ""}</span></li>`;
   }).join("");
-  return `${head}<div class="tw-view" data-ov-part="view"><div class="tw-track" data-ov-part="track" data-dir="${horizontal ? "h" : "v"}" data-scroll="${p.scroll ? "1" : "0"}" style="--u:${u}px"><ul class="tw-list" data-ov-part="list">${items}</ul></div></div>`;
+  return `${head}<div class="tw-view" data-ov-part="view"><div class="tw-track" data-ov-part="track" data-dir="${horizontal ? "h" : "v"}" data-scroll="${p.scroll ? "1" : "0"}" style="--u:var(--ov-text-md,32px)"><ul class="tw-list" data-ov-part="list">${items}</ul></div></div>`;
 }
 
 const BASE = `
@@ -121,19 +124,19 @@ body{font:600 16px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(
 body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 #p{box-sizing:border-box;height:100%;overflow:hidden;padding:12px;background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,0)}
 #r{height:100%;display:flex;flex-direction:column;gap:8px}
-.tw-head{margin:0;flex:0 0 auto;font-size:clamp(14px,4.2vmin,30px);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tw-head{margin:0;flex:0 0 auto;font-size:var(--ov-text-xs,24px);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tw-view{flex:1 1 0;min-height:0;min-width:0;overflow:hidden}
 .tw-track{display:flex;flex-direction:column;will-change:transform}
 .tw-track[data-dir="h"]{flex-direction:row;height:100%;align-items:center;width:max-content}
 .tw-list{flex:0 0 auto;margin:0;padding:0 0 calc(var(--u) * .5);list-style:none;display:flex;flex-direction:column;gap:calc(var(--u) * .5)}
 .tw-track[data-dir="h"] .tw-list{flex-direction:row;padding:0 calc(var(--u) * .5) 0 0;gap:calc(var(--u) * .9);align-items:center}
 .tw-item{display:flex;align-items:center;gap:calc(var(--u) * .5);min-width:0;font-size:var(--u);line-height:1.15}
-.tw-av{flex:0 0 auto;box-sizing:border-box;width:calc(var(--u) * 1.9);height:calc(var(--u) * 1.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--u) * .8);font-weight:800;
+.tw-av{flex:0 0 auto;box-sizing:border-box;width:calc(var(--u) * 1.9);height:calc(var(--u) * 1.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--ov-text-xs,24px);font-weight:800;
  background:color-mix(in srgb,var(--ov-fg,#fff) 14%,transparent);border:1px solid color-mix(in srgb,var(--ov-fg,#fff) 30%,transparent)}
 .tw-txt{display:flex;flex-direction:column;min-width:0}
 .tw-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tw-msg{font-size:.62em;font-weight:600;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-.tw-track[data-dir="h"] .tw-name,.tw-track[data-dir="h"] .tw-msg{white-space:nowrap;max-width:16em;display:block;overflow:hidden;text-overflow:ellipsis}
+.tw-msg{font-size:var(--ov-text-xs,24px);font-weight:600;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.tw-track[data-dir="h"] .tw-name,.tw-track[data-dir="h"] .tw-msg{white-space:nowrap;max-width:calc(var(--u) * 12);display:block;overflow:hidden;text-overflow:ellipsis}
 @keyframes tw-y{from{transform:translateY(0)}to{transform:translateY(calc(var(--len) * -1))}}
 @keyframes tw-x{from{transform:translateX(0)}to{transform:translateX(calc(var(--len) * -1))}}
 `;
@@ -162,7 +165,7 @@ export async function elementResponse(request, ctx) {
   if (url.searchParams.get("frag") === "1") return Response.json({ v: vv, html: content }, { headers });
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const shadow = p.style?.text !== "dark" && p.style?.surface !== "soft";
-  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}}${BASE}</style></head>` +
     `<body${shadow ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(vv)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }

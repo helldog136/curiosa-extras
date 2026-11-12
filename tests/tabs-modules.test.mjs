@@ -45,6 +45,7 @@ const CORE_060 = ["bluesky", "discord", "github", "mastodon", "reddit", "discord
   "directory", "map", "gallery", "supporters", "countdown", "home-assistant", "videos", "events", "testimonials",
   // Un champ rare replié (« Avec ces pseudos Twitch ») et son exemple : briques du cœur 0.6.0 :
   "calendar-manual"].map((d) => `modules/${d}`);
+const TV_SCALE = ["community-stats", "thanks-wall", "game-suggestions", "sponsor-ticker", "twitch-raid", "countdown", "events", "polls", "twitch-channel", "testimonials", "audience", "mascot", "planning"].map((d) => `modules/${d}`);   // overlay elements with the TV type scale: core 0.11.0
 const HIDDEN = ["modules/twitch-connector", "modules/youtube-connector", "modules/live-status"];
 const LOOK = ["modules/planning", "modules/maze-overlay"];
 
@@ -54,7 +55,7 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
     // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
-    const expected = dir === "modules/twitch-channel" ? "0.8.0" : dir === "modules/twitch-bot" || dir === "modules/stream-story" || dir === "modules/partnerships" ? "0.6.7" : CORE_060.includes(dir) || NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    const expected = TV_SCALE.includes(dir) ? "0.11.0" : dir === "modules/twitch-channel" ? "0.8.0" : dir === "modules/twitch-bot" || dir === "modules/stream-story" || dir === "modules/partnerships" ? "0.6.7" : CORE_060.includes(dir) || NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
     assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }
@@ -96,7 +97,7 @@ test("onglets : un module qui place un bloc du panneau dans un onglet demande le
   for (const dir of BLOCKS_IN_TABS) {
     const m = read(dir);
     assert.ok(parseManifest(m).ok, dir);
-    assert.equal(m.minCore, dir === "modules/twitch-bot" ? "0.6.7" : NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
+    assert.equal(m.minCore, TV_SCALE.includes(dir) ? "0.11.0" : dir === "modules/twitch-bot" ? "0.6.7" : NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
     const code = fs.readdirSync(new URL(`../${dir}/`, import.meta.url), { recursive: true }).filter((f) => /\.mjs$/.test(f))
       .map((f) => fs.readFileSync(new URL(`../${dir}/${f}`, import.meta.url), "utf8")).join("\n");
     const known = new Set(["settings", "sources", "general", ...(m.tabs ?? []).map((t) => t.id)]);

@@ -205,7 +205,8 @@ export const OVERLAY_JS = String.raw`(function () {
     if (d.endsAt && d.state === "open") { var clk = el("span", "vo-clock", clock(Date.parse(d.endsAt) - now()), "clock"); clk.setAttribute("data-end", d.endsAt); head.appendChild(clk); }
     side.appendChild(head);
     if (d.decision) side.appendChild(decisionNode(d.decision));
-    side.appendChild(el("h1", "vo-q", d.question, "question"));
+    var qn = el("h1", "vo-q", d.question, "question"); if (c.el) qn.title = d.question;
+    side.appendChild(qn);
     var ol = el("ol", "vo-list", undefined, "choices"); if (c.el && d.rows.length > 4) { ol.setAttribute("data-many", "1"); body.setAttribute("data-many", "1"); }
     for (var i = 0; i < d.rows.length; i++) {
       var r = d.rows[i];
@@ -246,22 +247,28 @@ export const OVERLAY_JS = String.raw`(function () {
     }
     schedClock();
   }
-  // Dans une page d'overlay (élément « fluide ») : la police s'ajuste à la taille réelle du cadre, de façon que rien ne déborde (recherche entre 9 et 44 px).
+  // Dans une page d'overlay (élément « fluide »), échelle TV du cœur : le texte garde sa taille (jamais sous 24 px), donc ce qui ne tient pas est laissé de côté,
+  // dans cet ordre : le pied, l'étiquette « en tête », l'état, puis les derniers choix (deux au moins).
   function fit() {
     if (!c.el) return;
     var p = box.firstElementChild, b = p && p.firstElementChild;
     if (!b) return;
-    var lo = 10, hi = 44;
-    for (var i = 0; i < 7; i++) {
-      var mid = (lo + hi) / 2;
-      box.style.setProperty("--vo-fs", mid + "px");
-      // l'espace disponible est relu à CHAQUE essai : les marges de la carte sont en « em », elles changent avec la taille de la police
+    box.removeAttribute("data-tv"); box.removeAttribute("data-q");
+    function ok() {
       var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      if (b.offsetHeight <= h + 1 && b.scrollWidth <= w + 1) lo = mid; else hi = mid;
+      return b.offsetHeight <= h + 1 && b.scrollWidth <= w + 1;
     }
-    box.style.setProperty("--vo-fs", lo + "px");
+    var n = 0;
+    while (!ok() && n < 3) { n++; box.setAttribute("data-tv", String(n)); }
+    var rows = b.querySelectorAll('[data-ov-part="choice"]');
+    function trim(min) { while (!ok() && rows.length > min) { rows[rows.length - 1].remove(); rows = b.querySelectorAll('[data-ov-part="choice"]'); } }
+    if (!ok()) box.setAttribute("data-q", "2");
+    trim(3);
+    trim(2);
+    if (!ok()) box.setAttribute("data-q", "1");
+    trim(1);
   }
-  if (c.el) addEventListener("resize", function () { fit(); });
+  if (c.el) addEventListener("resize", function () { if (cur) render(cur); });
   function schedule(ms) { clearTimeout(timer); timer = setTimeout(tick, ms); }
   function tick() {
     if (document.hidden) { schedule(c.base * 4); return; }

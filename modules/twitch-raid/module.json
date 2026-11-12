@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.5.0",
+  "minCore": "0.11.0",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.4.0",
+  "version": "2.5.0",
   "menuGroup": "tools",
   "platform": "twitch",
   "description": {
@@ -374,6 +374,7 @@
         "max": 10
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {
@@ -416,6 +417,7 @@
         "max": 10
       },
       "followsStyle": true,
+      "tvScale": true,
       "demo": true,
       "options": [
         {
