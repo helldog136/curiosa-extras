@@ -1,56 +1,95 @@
-# Mascotte
+# Mascot
 
-Un petit personnage discret dans un coin de votre site. Il fait une petite apparition, dit bonjour dans une bulle, donne une astuce ou annonce une nouveauté (le prochain événement, un direct en cours, le jeu du jour), puis se range. Il donne de la vie au site sans jamais le gêner.
+A small, discreet character in a corner of your site. It makes a short appearance, says hello in a bubble, gives a tip or announces something new (the next event, a live stream, the daily game), then steps aside. It adds life to the site without ever getting in the way.
 
-Il s'adapte à n'importe quelle identité : le dessin inclus prend tout seul les couleurs de votre thème (clair ou sombre), ou vous montrez votre propre image. Les phrases sont les vôtres.
+It fits any identity: the included drawing takes the colours of your theme (light or dark) by itself, or you show your own picture. The sentences are yours.
 
-## Ce que voit la personne qui visite
+## What a visitor sees
 
-- Une seule apparition par visite, après quelques secondes de calme (8 par défaut). Jamais deux fois la même phrase de suite, jamais plus de 3 messages par jour (réglable), jamais de son.
-- Une bulle courte : une salutation, puis une annonce ou une astuce. Un bouton « Voir » quand la phrase a un lien.
-- Il peut la **fermer** (croix de 44 px), la **réduire en pastille** (elle reste alors discrètement dans le coin) ou la **couper pour toujours**. Ce choix est gardé dans son navigateur, sans cookie, sans rien envoyer.
-- Sur un petit écran, elle ne s'ouvre jamais toute seule : une pastille avec un point apparaît, la bulle s'ouvre si on la touche.
-- Elle ne cache jamais le contenu : elle reste dans son coin, avec des marges, sous les fenêtres et le bandeau des cookies du site. Elle n'est pas imprimée.
-- « Mouvement réduit » : aucune animation. La bulle ne se ferme jamais pendant qu'on la survole ou qu'on la lit au clavier (Échap pour la fermer).
+- One appearance per visit, after a few quiet seconds (8 by default). Never the same sentence twice in a row, never more than 3 messages a day (adjustable), never any sound.
+- A short bubble: a greeting, then an announcement or a tip. A "See" button when the sentence has a link.
+- The visitor can **close** it (44 px cross), **reduce it to a small badge** (it then stays discreetly in the corner) or **switch it off for good**. The choice is kept in the browser, without a cookie, and nothing is sent.
+- On a small screen it never opens by itself: a badge with a dot appears, and the bubble opens when touched.
+- It never hides the content: it stays in its corner, with margins, under the windows and the cookie banner of the site. It is not printed.
+- "Reduced motion": no animation. The bubble never closes while hovered or read with the keyboard (Escape closes it).
 
-## Ce que fait la personne qui gère le site
+## What the person who runs the site does
 
-1. Installer le module : des phrases de départ (français et anglais, neutres) sont déjà là, la mascotte est en **brouillon** (personne ne la voit).
-2. Onglet **Ma mascotte** : regarder l'aperçu, choisir le dessin inclus (trois humeurs : contente, curieuse, endormie) ou **sa propre image** (rond ou carré, description de l'image obligatoire), donner un **nom**. Cliquer sur **Publier**.
-3. Onglet **Phrases** : ajouter, modifier, mettre en brouillon ou supprimer des phrases (140 caractères, 100 au plus). Choisir la langue et, si on veut, les pages où une phrase est dite. Deux **gabarits** : « Bienvenue discrète » et « Vide ».
-4. Onglet **Quand et où** : toutes les pages, seulement l'accueil ou certaines pages ; en bas à droite ou à gauche ; options avancées (attente, durée des bulles, messages par jour).
-5. Pour la revoir tout de suite : ouvrir `votre-site/?mascot=voir` (cela oublie aussi ce que le navigateur avait retenu).
+1. Install the module: starter sentences (French and English, neutral) are already there, and the mascot is a **draft** (nobody sees it).
+2. Tab **My mascot**: look at the preview, choose the included drawing (three moods: happy, curious, sleepy) or **your own picture** (round or square, picture description required), give it a **name**. Click **Publish**.
+3. Tab **Animation**: give it a moving face (see below). Tab **Voice**: give it a voice (see below).
+4. Tab **Sentences**: add, edit, set to draft or delete sentences (140 characters, 100 at most). Choose the language and, if you want, the pages where a sentence is said. Two **templates**: "Discreet welcome" and "Empty".
+5. Tab **When and where**: all pages, only the home page or some pages; bottom right or left; advanced options (wait, bubble duration, messages a day).
+6. To see it again right away: open `your-site/?mascot=voir` (this also forgets what the browser had kept).
 
-### Les informations du site dans une phrase
+### Information of the site in a sentence
 
-Écrivez `{nom_du_site}`, `{nom}` (le nom de la mascotte), `{prochain_evenement}`, `{date_evenement}`, `{en_direct}`, `{titre_direct}`, `{derniere_nouveaute}` (les noms anglais `{site_name}`, `{name}`, `{next_event}`, `{event_date}`, `{live_now}`, `{live_title}`, `{latest_news}` marchent aussi). **Si l'information n'existe pas, la phrase n'est simplement pas dite** : pas d'erreur, pas de trou. La date est écrite dans la langue et l'heure de la personne qui visite.
+Write `{site_name}`, `{name}` (the name of the mascot), `{next_event}`, `{event_date}`, `{live_now}`, `{live_title}`, `{latest_news}` (the French names `{nom_du_site}`, `{nom}`, `{prochain_evenement}`, `{date_evenement}`, `{en_direct}`, `{titre_direct}`, `{derniere_nouveaute}` work too). **If the information does not exist, the sentence is simply not said**: no error, no hole. The date is written in the language and time of the visitor.
 
-## Fonctionne seule, s'enrichit avec les autres modules (tout est facultatif)
+## Works alone, gets richer with other modules (everything is optional)
 
-- Un module qui propose vos **événements à venir** → les phrases avec `{prochain_evenement}` s'activent.
-- Votre chaîne **Twitch** ou **YouTube** → les phrases avec `{en_direct}` s'activent quand vous êtes en direct.
-- Vos articles et vidéos publiés → `{derniere_nouveaute}`.
-- Tout module peut confier une nouveauté à la mascotte (par exemple le jeu du jour) ; elle la dit comme une annonce. Option « Annoncer aussi les nouveautés des autres modules » pour couper cela.
+- A module that offers your **upcoming events** turns on the sentences with `{next_event}`.
+- Your **Twitch** or **YouTube** channel turns on the sentences with `{live_now}` while you are live.
+- Your published articles and videos give `{latest_news}`.
+- Any module can hand a piece of news to the mascot (for example the daily game); it says it as an announcement. The option "Also announce news from other modules" switches that off.
 
-## Ce qu'elle ne fait pas
+## What it does not do
 
-- Pas de son, pas de suivi, pas de compte, pas de cookie, rien d'envoyé à un service extérieur.
-- Une seule mascotte par site.
-- Elle ne se montre pas si le navigateur refuse tout stockage (on ne pourrait pas respecter « une fois par visite »).
-- Elle n'est pas un chat en direct : elle ne répond pas aux questions du public.
+- No tracking, no account, no cookie, nothing sent to an outside service. **No sound on the pages of your site.**
+- Only one mascot per site.
+- It does not show when the browser refuses all storage (it could not respect "once per visit").
+- It is not a live chat: it does not answer questions.
 
-## Pour un assistant IA
+## For an AI assistant
 
-Deux outils : lister les phrases (lecture seule) et en proposer une (toujours enregistrée en brouillon, jamais publiée ; non accordé d'office).
+Four tools. Read the sentences (read only) and propose one (always saved as a draft, never published; not granted by default). Read how the mascot moves and speaks (`mascot_animation_get`, read only) and change the talking time, the speed of the animations and the voice (`mascot_animation_update`, not granted by default). The assistant cannot upload pictures or sounds, and cannot make a draft public.
 
-## Vie privée
+## Privacy
 
-Le navigateur de la personne qui visite retient ses choix (fermée, pastille, coupée), le nombre de messages du jour et les dernières phrases dites. Rien ne part vers le site ni vers un tiers. Le module le déclare dans la politique de confidentialité du site.
+The browser of the visitor keeps its choices (closed, badge, off), the number of messages today and the last sentences said. Nothing goes to the site or to a third party. The module declares it in the privacy policy of the site.
 
-## Dans une page d'overlay
+## In an overlay page
 
-Depuis la 1.1.0 (Curiosa 0.5.0 ou plus), « Ajouter un élément » propose **Mascotte** dans la section « Overlays ». C'est une **version réduite** : un cadre d'overlay n'est pas une page de site, donc l'élément ne reprend rien de ce qui tient à l'affichage d'une page (coin de la page, pages concernées, « une fois par visite », délai, messages par jour, fermer / réduire / couper, mémoire du navigateur). Il montre le dessin inclus (ou votre image, avec sa description) et le **nom** choisis dans le module, avec une bulle qui dit ses phrases à tour de rôle (option **Secondes par phrase**).
+Since 1.1.0 (Curiosa 0.5.0 or later), "Add an element" offers **Mascot** in the "Overlays" section. It is a **reduced version**: an overlay frame is not a page of the site, so the element takes nothing of what belongs to a page (corner, pages concerned, "once per visit", delay, messages a day, close / reduce / switch off, browser memory). It shows the included drawing (or your picture, with its description) and the **name** chosen in the module, with a bubble that says its sentences in turn (option **Seconds per sentence**).
 
-**Pour un écran de stream, les phrases viennent uniquement de ce que vous avez écrit pour la mascotte** : vos phrases publiées (jamais un brouillon), dans la langue demandée, avec seulement `{nom_du_site}` et `{nom}`. Une phrase qui emploie une autre information (prochain événement, direct en cours, dernière nouveauté) n'est pas dite, et les nouveautés confiées par d'autres modules ne sont jamais montrées : ces informations viennent d'ailleurs. Une phrase réservée à certaines pages de votre site n'est pas dite non plus. Mascotte en brouillon : le cadre reste vide.
+**For a stream screen, the sentences come only from what you wrote for the mascot**: your published sentences (never a draft), in the requested language, with only `{site_name}` and `{name}`. A sentence that uses other information (next event, live, latest news) is not said, and news handed over by other modules is never shown: that information comes from elsewhere. A sentence reserved for some pages of your site is not said either. Mascot in draft: the frame stays empty.
 
-Le dessin inclus prend ici des couleurs fixes (pas celles de votre thème : un cadre d'overlay ne charge jamais le style du site) ; le texte suit le style commun de la page. Toutes les pages d'overlay qui montrent l'élément disent la même phrase au même instant ; rien n'est consommé. En mode test, une phrase d'exemple s'affiche s'il n'y a rien à dire. Sur votre site, rien ne change.
+The included drawing takes fixed colours here (not those of your theme: an overlay frame never loads the style of the site); the text follows the common style of the page. All the overlay pages showing the element say the same sentence at the same moment; nothing is consumed. In test mode an example sentence shows if there is nothing to say. On your site, nothing changes.
+
+### Animation, reading time, voice and visibility (1.2.0, overlay element)
+
+Nothing changes until you set something: with no animation, no voice and "Always" (the default), the page of the element is **byte for byte** the page of 1.1.1.
+
+**When it shows** (option of the element, "Always" by default). "Always" is what the element always did: the mascot is on screen whenever it has sentences, and the sentence changes every N seconds. "Only while it speaks": the mascot (picture and bubble) comes in with each sentence, speaks for the time the sentence takes to read, leaves, and stays hidden until the next sentence. How it comes in and leaves uses the shared movements of the other overlay elements (module settings "How it enters" / "How it leaves", under More options). A mascot with nothing to say shows nothing in both modes.
+
+**Animation** (tab *Animation*). Two animations, both optional:
+
+- **while waiting** (idle), played all the time the mascot is not speaking, in a loop (or once, under More options);
+- **while speaking** (talking), played from the start of each sentence, for the time the sentence takes to read, then the idle animation comes back (or the mascot leaves, in the "only while it speaks" mode). Without a talking animation, the idle one just goes on and the drawing makes a small bounce.
+
+Each is made either of **one animated picture** (GIF, animated WebP or PNG) or of **several pictures** shown one after the other (stop motion), 1 to 24 pictures per second (8 by default). Pictures are added **one at a time**, in the order wanted, and moved up or down with buttons (no drag and drop needed). Pictures can only be pictures **sent to your site**; nothing is ever loaded from elsewhere.
+
+Limits (checked when you save, with a plain message under the field): at most 24 pictures per animation; at most 3 MB per animation (the sum of its pictures, or the size of the GIF); the module keeps the files it is given (permission "files") and deletes a file from the site when you remove its picture. Small pictures (about 256 px) are best: the whole animation is fetched by the page before it starts.
+
+**How long it speaks** (tab *Animation*). The talking animation, the voice and (in the "only while it speaks" mode) the time on screen last as long as the sentence takes to read: its number of characters over a reading speed (slow 10, normal 15, fast 22 characters a second), plus half a second to start, never below the shortest time (2 s) nor above the longest (12 s), and never longer than the time given to one sentence. The tab shows the result for 20, 60 and 140 characters. The calculation is the function `talkSeconds` (`model.mjs`), the same in the page and in the tests.
+
+**Voice** (tab *Voice*), one of four, only the settings of the chosen one are shown:
+
+- **None** (default).
+- **Blips**: short sounds made by the page itself, one per letter while it speaks (spaces and punctuation are pauses). Presets Soft, Squeaky, Deep, Robotic, Bubbly, or **Your own sound**; pitch (low, normal, high), speed, variety (under More options) and volume. The same letter always gives the same note, so a sentence sounds like a voice.
+- **Voice of your computer**: the speech voice of the browser that shows the page. Language, speed, pitch, volume and, under More options, a part of the name of a voice. **If the computer has no voice** (this happens in some OBS versions), blips are used instead, and the test panel says so in plain words.
+- **Your own sound**: a short sound played once for each sentence.
+
+*Your own sound* is a setting of the tab (under More options). **The core does not accept audio files today**: a short **MP4 or WebM video file** is the supported route and only its sound is used. Used as a blip, the file is decoded once, then the first 0.2 s are played for each letter, faster or slower according to the letter (playback rate kept between 0.5 and 2.5, at most 6 sounds at the same time). When the core accepts audio, only the accepted extensions (`SOUND_EXTS` in `model.mjs`) and the setting type change.
+
+The administration shows the **real element page** in a frame, with two buttons: *Play talking animation* and *Test the voice*, and a line that says what happens ("Click a button to enable sound", "No voice found on this computer: short sounds are used instead", "Voice of your computer: ..."). In a normal browser, sound starts only after a click (browser rule); OBS browser sources do not wait for one.
+
+### Honest limits
+
+- **The animation, the voice and the visibility setting are for the overlay element.** The corner mascot on the pages of your site keeps its drawing or picture and stays silent (a site must not make sound by itself).
+- **A GIF cannot be paused or rewound by a page.** An idle GIF just loops. To start a talking GIF with the sentence, the page loads it under a new address (`?mc=n`); this works but is "best effort": the file may be fetched again each time, and the start may be off by a fraction of a second. For an exact start, use **several pictures**. With "reduced motion", a GIF cannot be frozen: the plain drawing is shown instead (several pictures show their first picture).
+- The reading time is an estimate (characters over a speed), not the length of a recorded voice. The voice of the computer follows its own speed: a long sentence may be cut at the end of the estimated time (the voice stops with the bubble).
+- Picture sizes are not read: only the weight is checked. Very large pictures are slow to fetch.
+- Sound in OBS depends on its browser (CEF); the voice of the computer and some MP4 sound tracks may be missing there. Not verified on every OBS version.
+- Pictures removed from an animation are deleted from the site; the module cannot delete files it did not keep (sent more than 30 minutes before being added: send them again).
+- The *Look* and *Add a sentence* forms of earlier versions still have more fields than the ergonomics budget (a known gap, listed in the baseline).

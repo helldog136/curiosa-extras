@@ -1,6 +1,6 @@
-// Mascotte — ce qui part vers les visiteurs : le script (code + configuration de CE site, dans la langue de la page) et la feuille de style.
-// Le script est servi à une adresse qui porte l'empreinte de son contenu (`?v=`) : changer un réglage change l'adresse, donc le navigateur peut le garder « pour toujours » sans jamais montrer
-// une ancienne version. Il n'est annoncé dans les pages (emplacement `layout.head`) que si la mascotte est publiée ET a de quoi parler.
+// Mascot — what goes to the visitors: the script (code + configuration of THIS site, in the language of the page) and the style sheet.
+// The script is served at an address that carries the fingerprint of its content (`?v=`): changing a setting changes the address, so the browser can keep it "forever" without ever showing
+// an old version. It is announced in the pages (slot `layout.head`) only when the mascot is published AND has something to say.
 const v = new URL(import.meta.url).search;
 const M = await import(new URL(`./model.mjs${v}`, import.meta.url).href);
 const S = await import(new URL(`./store.mjs${v}`, import.meta.url).href);
@@ -8,12 +8,12 @@ const F = await import(new URL(`./face.mjs${v}`, import.meta.url).href);
 const K = await import(new URL(`./client.mjs${v}`, import.meta.url).href);
 const Y = await import(new URL(`./style.mjs${v}`, import.meta.url).href);
 
-/** Doit rester égale à `version` de module.json (un test le vérifie) : elle fait partie de l'adresse de la feuille de style. */
-export const VERSION = "1.1.1";
+/** Must stay equal to `version` of module.json (a test checks it): it is part of the address of the style sheet. */
+export const VERSION = "1.2.0";
 export const CSS = Y.CSS;
 export const cssHash = M.hash(`${VERSION}|${Y.CSS}`);
 
-/** Les réglages du cœur, lus et bornés. */
+/** The settings of the core, read and bounded. */
 export function readSettings(ctx) {
   const where = ["all", "home", "some"].includes(ctx.setting("where")) ? ctx.setting("where") : "all";
   return {
@@ -29,8 +29,8 @@ export function readSettings(ctx) {
 }
 
 /**
- * Tout ce dont les pages ont besoin, ou null quand la mascotte ne doit pas se montrer (brouillon, aucune phrase publiée, « certaines pages » sans page).
- * → { cfg, hash, code, src } ; `src` est l'adresse du script (relative au site).
+ * Everything the pages need, or null when the mascot must not show (draft, no published sentence, "some pages" with no page).
+ * → { cfg, hash, code, src }; `src` is the address of the script (relative to the site).
  */
 export async function buildClient(ctx) {
   const [config, phrases] = [await S.loadConfig(ctx), await S.loadPhrases(ctx)];
