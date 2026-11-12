@@ -54,6 +54,32 @@ export async function queue(ctx, call = "state") {
   return { linked: true, reachable: ok.length > 0, paused: ok.some((a) => a.value.paused === true), held: ok.reduce((n, a) => n + (Number(a.value.held) || 0), 0), dropped: ok.reduce((n, a) => n + (Number(a.value.dropped) || 0), 0), released: ok.reduce((n, a) => n + (Number(a.value.released) || 0), 0) };
 }
 
+/** The values answered by the queue services of the alerts overlays for one call (voice, texts, mute…), or `null` when no overlay is linked. Older overlays that do not know the call answer nothing. */
+async function ask(ctx, call, args = {}) {
+  let list = [];
+  try { list = await ctx.api.instances.list({ module: "alerts-overlay" }); } catch { list = []; }
+  if (!(Array.isArray(list) && list.some((i) => i?.module === "alerts-overlay"))) return null;
+  let answers = [];
+  try { answers = await ctx.api.services.callAll(SERVICE, call, args); } catch { answers = []; }
+  return (Array.isArray(answers) ? answers : []).filter((a) => a?.ok && a.value && typeof a.value === "object").map((a) => a.value);
+}
+/** The voice of the overlays: { available, on, muted } (not available = no overlay, or an overlay of before the voice). */
+export async function voice(ctx) {
+  const vals = await ask(ctx, "voice");
+  if (!vals || !vals.length) return { available: false, on: false, muted: false };
+  return { available: true, on: vals.some((x) => x.on === true), muted: vals.some((x) => x.muted === true) };
+}
+/** The viewer texts that the moderation hid or held, newest first, in words: [{ id, type, label, name, reason, why, text, held }]. */
+export async function heldTexts(ctx, limit = 20) {
+  const vals = await ask(ctx, "texts");
+  const t = ctx.t, out = [];
+  for (const v of vals ?? []) for (const x of Array.isArray(v) ? v : Object.values(v)) {
+    if (!x || typeof x.id !== "string") continue;
+    out.push({ id: x.id.slice(0, 100), type: String(x.type ?? ""), label: t(`kind_${x.type}`), name: String(x.name ?? "").slice(0, 60), reason: String(x.reason ?? ""), why: t(`flag_reason_${x.reason}`), text: String(x.text ?? "").slice(0, 250), held: x.hold === true, at: Number(x.at) || 0 });
+  }
+  return out.sort((a, b) => b.at - a.at).slice(0, limit);
+}
+
 /* ───────────── What the page reads ───────────── */
 /** `scope`: "stream" (since the stream started, when we know it), "day" (24 h) or "all" (what the journal keeps). */
 export async function payload(ctx, { scope = "day", now = Date.now() } = {}) {
@@ -63,10 +89,12 @@ export async function payload(ctx, { scope = "day", now = Date.now() } = {}) {
   const cut = sc === "stream" ? (live ? state.liveSince : now - day) : sc === "day" ? now - day : 0;
   const lines = (await st.recent(ctx, 400)).filter((l) => l.at >= cut).slice(0, LIMITS.events);
   const q = await queue(ctx);
+  const vc = q.linked ? await voice(ctx) : { available: false, on: false, muted: false };
+  const texts = q.linked && vc.available ? await heldTexts(ctx) : [];
   return {
     now, scope: sc, live, liveSince: live ? state.liveSince : null, listening: state.listen?.code === "listening",
     events: lines.map((l) => ({ id: l.id, kind: l.kind, label: t(`kind_${l.kind}`), tone: admin.TONE[l.kind] ?? "neutral", name: admin.who(ctx, l), detail: admin.detail(ctx, l), at: l.at, test: l.source === "test", replay: l.source === "replay" })),
-    alerts: { linked: q.linked, paused: q.paused, held: q.held },
+    alerts: { linked: q.linked, paused: q.paused, held: q.held, voice: vc, texts },
     types: es.TYPES.map((x) => ({ id: x.id, name: t(`type_${x.id}`) })),
   };
 }
@@ -92,6 +120,14 @@ export async function act(ctx, body, { now = Date.now() } = {}) {
     const q = await queue(ctx, a);
     if (!q.linked) return { ok: false, code: "no_alerts" };
     return { ok: true, paused: a === "pause" ? true : a === "resume" ? false : q.paused, held: q.held, released: q.released, dropped: q.dropped };
+  }
+  if (["voiceOn", "mute", "stopSpeech", "skip", "decide"].includes(a)) {
+    const args = a === "voiceOn" ? { on: body?.on === true } : a === "mute" ? { muted: body?.muted === true } : a === "decide" ? { id: String(body?.id ?? "").slice(0, 100), action: body?.choice === "accept" ? "accept" : "dismiss" } : {};
+    const vals = await ask(ctx, a, args);
+    if (vals === null) return { ok: false, code: "no_alerts" };
+    if (!vals.length) return { ok: false, code: "no_voice" };
+    if (a === "decide" && !vals.some((x) => x.ok === true)) return { ok: false, code: "unknown" };
+    return { ok: true, ...(a === "mute" ? { muted: vals.some((x) => x.muted === true) } : {}), ...(a === "voiceOn" ? { on: vals.some((x) => x.on === true) } : {}) };
   }
   return { ok: false, code: "bad" };
 }

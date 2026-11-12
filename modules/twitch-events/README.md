@@ -91,3 +91,9 @@ A compact page for **OBS > Docks > Custom browser docks**, with the same secret 
 - **During a site update or restart**: the webhook answers `503` with `Retry-After: 30` when it cannot store (never a lost event: the message is stored once whenever it comes, a retry is not mistaken for a duplicate), the pages read their state on demand and keep nothing in memory that matters (the journal, the pause and the ids already shown are in storage).
 - Tests: `tests/twitch-events-robust.test.mjs` and the end-to-end `tests/twitch-alerts-e2e.test.mjs`, with a fake Twitch that signs like the real one: follow, sub, resub, a gift bomb (the gift and its 25 gifted subs), raid, bits, hype train, a message delivered twice, a restart in the middle, an expired token, a revoked subscription, a burst of 150 follows.
 - Not verified against a live Twitch: the exact fields of the two catch-up answers (read in the reference), and how Twitch behaves when its answer comes late.
+
+## Moderation marks and voice controls (version 1.3.0)
+
+- **Service `twitch.journal`** (method `flag`): the alerts overlay (1.6.0+) tells the journal when it hid or held a viewer's text (reason: word, link, caps, repeat) and when you accepted or dismissed it. The line then reads, for example, "500 bits · text hidden (link)". Only the reason and the state are stored, not another copy of the text. Without this module the overlay simply does not mark anything.
+- **Dock**: three switches that show their state in words (Alerts, Voice, Mute voice), "Stop speech", "Skip alert" and, when the moderation holds something, the texts waiting with "Accept anyway" and "Dismiss" (buttons of 44 px, equal rows). They need the alerts overlay 1.6.0; with an older one the voice controls are disabled and say so.
+- Read more about the voice and the moderation (basic filter, not Twitch AutoMod) in the README of the alerts overlay.

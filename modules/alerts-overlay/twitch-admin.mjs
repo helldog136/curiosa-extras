@@ -23,6 +23,8 @@ function previewHtml(ctx, cfg, shown) {
 }
 const hasProvider = async (ctx) => { try { return (await ctx.api.instances.list({ module: "twitch-events" }))?.[0] ?? null; } catch { return null; } };
 
+/** Whether the viewer text shows for a type: its own choice, or (when never chosen) the older setting. */
+const viewerOn = (c, ctx) => (c.viewer === null ? ctx.setting("twitchText") === true : c.viewer);
 const typeName = (ctx, id) => ctx.t(`tw_type_${id}`);
 /** What a person sees as the minimum of a type: "500 bits", "3 subs", "20 viewers", or nothing. */
 const minText = (ctx, id, n) => (!tw.MINIMUM[id] || !n ? "" : ctx.t(`tw_min_${id}`, { n }));
@@ -31,6 +33,7 @@ const minText = (ctx, id, n) => (!tw.MINIMUM[id] || !n ? "" : ctx.t(`tw_min_${id
 export async function panel(ctx, { query = {} } = {}) {
   const t = ctx.t, cfg = await tw.loadConfig(ctx), q = await tw.queueState(ctx);
   const here = await hasProvider(ctx);
+  const videos = tw.videosOf(ctx.setting);
   const edit = tw.TYPES.includes(query.edit) ? query.edit : null;
   const shown = Object.fromEntries(await Promise.all(tw.TYPES.map(async (id) => [id, (await sampleAlert(ctx, id))?.message ?? ""])));
   const rows = tw.TYPES.map((id) => {
@@ -47,6 +50,15 @@ export async function panel(ctx, { query = {} } = {}) {
     help: t("tw_f_sound_help") },
     { name: "anim", kind: "select", folded: true, label: t("tw_f_anim"), value: cfg.types[edit].anim, options: tw.ANIMS.map((x) => ({ value: x, label: t(`tw_anim_${x || "module"}`) })) },
     { name: "image", kind: "image", folded: true, label: t("tw_f_image"), value: cfg.types[edit].image, help: t("tw_f_image_help") },
+    { name: "present", kind: "select", folded: true, label: t("tw_f_present"), value: cfg.types[edit].present === "text" ? "" : cfg.types[edit].present, options: tw.PRESENT.map((x) => ({ value: x === "text" ? "" : x, label: t(`tw_present_${x}`) })) }   // the usual choice is the empty one: the folded panel stays shut until something else is chosen
+    ,
+    { name: "video", kind: "select", folded: true, label: t("tw_f_video"), value: cfg.types[edit].video ? String(cfg.types[edit].video) : "", options: [{ value: "", label: t("tw_video_none") }, ...videos.map((u, i) => ({ value: String(i + 1), label: t("tw_video_slot", { n: i + 1 }) })).filter((_, i) => videos[i])], help: t("tw_f_video_help") },
+    { name: "videoSound", kind: "switch", folded: true, label: t("tw_f_video_sound"), value: cfg.types[edit].videoSound ? "on" : "" },
+    { name: "tts", kind: "select", folded: true, label: t("tw_f_tts"), value: cfg.types[edit].tts === "off" ? "" : cfg.types[edit].tts, options: tw.TTS_MODES.map((x) => ({ value: x === "off" ? "" : x, label: t(`tw_tts_${x}`) })), help: t("tw_f_tts_help") },
+    ...(tw.VIEWER_TYPES.includes(edit) ? [
+      { name: "viewer", kind: "switch", folded: true, label: t("tw_f_viewer"), value: viewerOn(cfg.types[edit], ctx) ? "on" : "", help: t("tw_f_viewer_help") },
+      { name: "viewerMax", kind: "number", folded: true, label: t("tw_f_viewer_max"), min: tw.TTS_LIMITS.viewerMax[0], max: tw.TTS_LIMITS.viewerMax[1], step: 1, unit: t("tw_unit_chars"), value: cfg.types[edit].viewerMax === 140 ? "" : cfg.types[edit].viewerMax, placeholder: t("tw_f_viewer_max_default") },
+    ] : []),
     ...(tw.MINIMUM[edit] ? [{ name: "min", kind: "number", label: t(`tw_f_min_${edit}`), min: 1, max: tw.LIMITS.min, step: 1, value: cfg.types[edit].min || "", placeholder: t("tw_f_min_default"), help: t("tw_f_min_help") }] : []),
   ] : [];
   return [
@@ -62,12 +74,79 @@ export async function panel(ctx, { query = {} } = {}) {
     { type: "banner", tone: q.paused ? "warning" : "info", text: q.paused ? t("q_paused", { n: q.held }) : t("q_running", { n: q.staged }) },
     { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
     { type: "adminForm", action: "clearQueue", submitLabel: t("q_clear_btn"), fields: [] },
+    ...(await viewersBlocks(ctx, cfg)),
+    { type: "markdown", tab: "media", text: t("md_intro") },
+    { type: "markdown", tab: "media", text: t("md_limits") },
+  ];
+}
+
+/** The tab "Viewers' texts and voice": the state of the voice, the voice form, the moderation form and the texts that were hidden or held. */
+async function viewersBlocks(ctx, cfg) {
+  const t = ctx.t, tab = "viewers";
+  const rep = await tw.loadReport(ctx), vs = await tw.voiceState(ctx), list = await tw.textsList(ctx);
+  const voices = rep?.voices ?? [];
+  const state = !cfg.tts.on ? ["info", t("tts_state_off")] : !rep ? ["warning", t("tts_state_unknown")] : !rep.supported ? ["warning", t("tts_state_nosupport")] : !voices.length ? ["warning", t("tts_state_novoice")] : vs.muted ? ["info", t("tts_state_muted")] : ["info", t("tts_state_ok", { n: voices.length })];
+  const voiceOptions = [{ value: "", label: t("tts_voice_auto") }, ...voices.map((x) => ({ value: x.n, label: `${x.n} (${x.l})` })), ...(cfg.tts.voice && !voices.some((x) => x.n === cfg.tts.voice) ? [{ value: cfg.tts.voice, label: cfg.tts.voice }] : [])];
+  // the state is said only when it is the unusual one (R14): a held alert; a hidden text is the usual case and is not repeated on every line
+  const rows = list.map((x) => [{ text: typeName(ctx, x.type), badge: BADGE[x.type] ?? "neutral" }, x.name, { text: x.text, title: x.text }, { text: x.hold ? t("mod_reason_held", { reason: t(`mod_reason_${x.reason}`) }) : t(`mod_reason_${x.reason}`), badge: x.hold ? "warn" : "neutral" }]);
+  return [
+    { type: "heading", tab, text: t("vw_head") },
+    { type: "markdown", tab, text: t("vw_intro") },
+    { type: "banner", tab, tone: state[0], text: state[1] },
+    { type: "heading", tab, text: t("tts_title") },
+    { type: "adminForm", tab, action: "saveVoice", submitLabel: t("tts_save_btn"), fields: [
+      { name: "on", kind: "switch", label: t("tts_f_on"), value: cfg.tts.on ? "on" : "", help: t("tts_f_on_help") },
+      { name: "voice", kind: "select", label: t("tts_f_voice"), value: cfg.tts.voice, options: voiceOptions, help: t("tts_f_voice_help") },
+      { name: "rate", kind: "number", label: t("tts_f_rate"), min: tw.TTS_LIMITS.rate[0], max: tw.TTS_LIMITS.rate[1], step: 0.1, value: cfg.tts.rate },
+      { name: "volume", kind: "number", label: t("tts_f_volume"), min: 0, max: 100, step: 5, unit: "%", value: cfg.tts.volume },
+      { name: "pitch", kind: "number", folded: true, label: t("tts_f_pitch"), min: tw.TTS_LIMITS.pitch[0], max: tw.TTS_LIMITS.pitch[1], step: 0.1, value: cfg.tts.pitch },
+      { name: "lang", kind: "text", folded: true, label: t("tts_f_lang"), value: cfg.tts.lang, example: t("tts_f_lang_example"), help: t("tts_f_lang_help") },
+      { name: "max", kind: "number", folded: true, label: t("tts_f_max"), min: tw.TTS_LIMITS.max[0], max: tw.TTS_LIMITS.max[1], step: 10, unit: t("tw_unit_chars"), value: cfg.tts.max },
+      { name: "readName", kind: "switch", folded: true, label: t("tts_f_name"), value: cfg.tts.readName ? "on" : "" },
+    ] },
+    { type: "adminForm", tab, action: "testVoice", submitLabel: t("tts_test_btn"), fields: [] },
+    { type: "heading", tab, text: t("mod_title") },
+    { type: "adminForm", tab, action: "saveModeration", submitLabel: t("mod_save_btn"), fields: [
+      { name: "hold", kind: "segmented", label: t("mod_f_hold"), value: cfg.moderation.hold ? "hold" : "hide", options: [{ value: "hide", label: t("mod_hold_hide") }, { value: "hold", label: t("mod_hold_hold") }], help: t("mod_f_hold_help") },
+      { name: "links", kind: "switch", label: t("mod_f_links"), value: cfg.moderation.links ? "on" : "" },
+      { name: "caps", kind: "switch", label: t("mod_f_caps"), value: cfg.moderation.caps ? "on" : "" },
+      { name: "repeats", kind: "switch", label: t("mod_f_repeats"), value: cfg.moderation.repeats ? "on" : "" },
+      { name: "words", kind: "textarea", folded: true, label: t("mod_f_words"), value: cfg.moderation.wordsText, example: t("mod_f_words_example"), help: t("mod_f_words_help") },
+    ] },
+    { type: "markdown", tab, text: t("mod_limits") },
+    rows.length
+      ? { type: "table", tab, columns: [t("tw_col_type"), t("mod_col_name"), t("mod_col_text"), t("mod_col_reason")], rows, rowIds: list.map((x) => x.id), truncate: [2], pageSize: 0, searchable: true, searchPlaceholder: t("tw_search"),
+        rowActions: [{ label: t("mod_accept_btn"), action: "acceptText" }, { label: t("mod_dismiss_btn"), action: "dismissText" }] }
+      : { type: "markdown", tab, text: t("mod_empty") },
   ];
 }
 
 const fail = (ctx, key, vars) => ({ error: ctx.t(key, vars) });
 const unknownError = (ctx, words) => ({ errors: { template: ctx.t("tw_err_template", { words: words.map((w) => `{${w}}`).join(", "), vars: tw.VARS.map((w) => `{${w}}`).join(" ") }) } });
 const toNumber = (x) => { const n = Math.trunc(Number(String(x ?? "").trim())); return String(x ?? "").trim() === "" ? 0 : n; };
+
+/** Changes the voice. Validates each number against its bounds; returns { ok } or { errors }. */
+export async function changeVoice(ctx, ch) {
+  const cfg = await tw.loadConfig(ctx), cur = cfg.tts, next = { ...cur }, errors = {};
+  const num = (key, label, [lo, hi]) => { if (ch[key] === undefined) return; const n = Number(String(ch[key]).trim()); if (String(ch[key]).trim() === "" || !Number.isFinite(n) || n < lo || n > hi) errors[key] = ctx.t("tts_err_range", { min: lo, max: hi }); else next[key] = n; };
+  if (ch.on !== undefined) next.on = ch.on === true;
+  if (ch.readName !== undefined) next.readName = ch.readName === true;
+  num("rate", "rate", tw.TTS_LIMITS.rate); num("pitch", "pitch", tw.TTS_LIMITS.pitch); num("volume", "volume", tw.TTS_LIMITS.volume); num("max", "max", tw.TTS_LIMITS.max);
+  if (ch.voice !== undefined) next.voice = String(ch.voice).slice(0, 120);
+  if (ch.lang !== undefined) { const l = String(ch.lang).trim(); if (l && !/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(l)) errors.lang = ctx.t("tts_err_lang"); else next.lang = l; }
+  if (Object.keys(errors).length) return { errors };
+  await tw.saveConfig(ctx, { ...cfg, tts: next });
+  return { ok: ctx.t("tts_saved") };
+}
+/** Changes the moderation: the choice (hide the text / hold the alert), the three structural rules and the list of blocked words. */
+export async function changeModeration(ctx, ch) {
+  const cfg = await tw.loadConfig(ctx), next = { ...cfg.moderation };
+  if (ch.hold !== undefined) next.hold = ch.hold === true;
+  for (const k of ["links", "caps", "repeats"]) if (ch[k] !== undefined) next[k] = ch[k] === true;
+  if (ch.words !== undefined) { const w = String(ch.words); if (w.length > 4000) return { errors: { words: ctx.t("mod_err_words") } }; next.wordsText = w; }
+  await tw.saveConfig(ctx, { ...cfg, moderation: next });
+  return { ok: ctx.t("mod_saved") };
+}
 
 /** Changes one type: { on?, template?, seconds?, min? }. Validates; returns { ok } or { error / errors }. */
 export async function changeType(ctx, id, ch) {
@@ -113,6 +192,28 @@ export async function changeType(ctx, id, ch) {
       next.image = url;
     }
   }
+  if (ch.present !== undefined) {
+    if (!tw.PRESENT.includes(ch.present)) return { errors: { present: ctx.t("tw_err_choice") } };
+    next.present = ch.present;
+  }
+  if (ch.video !== undefined) {
+    const n = toNumber(ch.video);
+    if (n !== 0 && !(n >= 1 && n <= tw.VIDEO_SLOTS && tw.videosOf(ctx.setting)[n - 1])) return { errors: { video: ctx.t("tw_err_video") } };
+    next.video = n;
+  }
+  if (ch.videoSound !== undefined) next.videoSound = ch.videoSound === true;
+  if (ch.tts !== undefined) {
+    if (!tw.TTS_MODES.includes(ch.tts)) return { errors: { tts: ctx.t("tw_err_choice") } };
+    next.tts = ch.tts;
+  }
+  if (ch.viewer !== undefined && tw.VIEWER_TYPES.includes(id)) next.viewer = ch.viewer === true;
+  if (ch.viewerMax !== undefined && tw.VIEWER_TYPES.includes(id)) {
+    const n = toNumber(ch.viewerMax) || 140, [lo, hi] = tw.TTS_LIMITS.viewerMax;
+    if (n < lo || n > hi) return { errors: { viewerMax: ctx.t("tw_err_viewer_max", { min: lo, max: hi }) } };
+    next.viewerMax = n;
+  }
+  if (next.present === "video" && !next.video) return { errors: { video: ctx.t("tw_err_video") } };
+  if (next.present === "gif" && !next.image) return { errors: { image: ctx.t("tw_err_gif") } };
   await tw.saveConfig(ctx, { ...cfg, preset: ch.template !== undefined ? "" : cfg.preset, types: { ...cfg.types, [id]: next } });
   return { ok: ctx.t("tw_saved", { type: typeName(ctx, id) }) };
 }
@@ -130,7 +231,18 @@ export async function sampleAlert(ctx, id, now = Date.now()) {
 export function actions(emit) {
   return {
     async setType(ctx, values) { return changeType(ctx, String(values.id ?? ""), { on: values.enabled === "1" }); },
-    async saveType(ctx, values) { return changeType(ctx, String(values.id ?? ""), { template: values.template ?? "", seconds: values.seconds ?? "", min: values.min ?? "", sound: values.sound || "none", anim: values.anim ?? "", image: values.image ?? "" }); },
+    async saveType(ctx, values) { return changeType(ctx, String(values.id ?? ""), { template: values.template ?? "", seconds: values.seconds ?? "", min: values.min ?? "", sound: values.sound || "none", anim: values.anim ?? "", image: values.image ?? "", present: values.present === undefined ? undefined : values.present || "text", video: values.video ?? undefined, videoSound: values.videoSound === undefined ? undefined : values.videoSound === "on", tts: values.tts === undefined ? undefined : values.tts || "off", viewer: values.viewer === undefined ? undefined : values.viewer === "on", viewerMax: values.viewerMax ?? undefined }); },
+    async saveVoice(ctx, values) { return changeVoice(ctx, { on: values.on === "on", voice: values.voice, rate: values.rate, volume: values.volume, pitch: values.pitch, lang: values.lang, max: values.max, readName: values.readName === "on" }); },
+    async saveModeration(ctx, values) { return changeModeration(ctx, { hold: values.hold === "hold", links: values.links === "on", caps: values.caps === "on", repeats: values.repeats === "on", words: values.words ?? "" }); },
+    /** A sample sentence goes through the real path: the page reads it if the voice is on and a voice exists. */
+    async testVoice(ctx) {
+      const cfg = await tw.loadConfig(ctx);
+      if (!cfg.tts.on) return fail(ctx, "tts_err_off");
+      emit(ctx.instance.key, { kind: "test", message: ctx.t("tts_test_message"), say: ctx.t("tts_test_message"), seconds: 6 });
+      return { ok: ctx.t("tts_test_ok") };
+    },
+    async acceptText(ctx, values) { const r = await tw.decideText(ctx, String(values.id ?? ""), "accept", (a) => emit(ctx.instance.key, a)); return r.ok ? { ok: ctx.t("mod_accepted") } : fail(ctx, "mod_err_unknown"); },
+    async dismissText(ctx, values) { const r = await tw.decideText(ctx, String(values.id ?? ""), "dismiss", (a) => emit(ctx.instance.key, a)); return r.ok ? { ok: ctx.t("mod_dismissed") } : fail(ctx, "mod_err_unknown"); },
     /** "What the stream sees": a short sample evening goes through the real path (texts, pictures, sounds, durations, queue), one alert after the other. */
     async simulate(ctx) {
       let n = 0;
@@ -159,12 +271,35 @@ export function actions(emit) {
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 /** Tools for assistants: read the texts of the alerts, change one type. Never a deletion. */
-export function tools() {
+export function tools(emit) {
   const view = (cfg, id) => ({ type: id, enabled: cfg.types[id].on, text: cfg.types[id].template || null, durationSeconds: cfg.types[id].seconds || null, minimum: tw.MINIMUM[id] ? cfg.types[id].min || null : undefined, sound: cfg.types[id].sound, animation: cfg.types[id].anim || "default", hasPicture: !!cfg.types[id].image });
-  return {
+  const self = {
     async alert_templates_get(ctx) {
       const cfg = await tw.loadConfig(ctx), q = await tw.queueState(ctx);
       return { words: tw.VARS, types: tw.TYPES.map((id) => view(cfg, id)), preset: cfg.preset || null, queue: q };
+    },
+    async voice_moderation_get(ctx) {
+      const cfg = await tw.loadConfig(ctx), v = await tw.voiceState(ctx), rep = await tw.loadReport(ctx), list = await tw.textsList(ctx);
+      return {
+        voice: { on: cfg.tts.on, muted: v.muted, voice: cfg.tts.voice || null, language: cfg.tts.lang || null, rate: cfg.tts.rate, pitch: cfg.tts.pitch, volume: cfg.tts.volume, maxCharacters: cfg.tts.max, readName: cfg.tts.readName, pageReport: rep ? { supported: rep.supported, voices: rep.voices.length } : null },
+        perType: tw.TYPES.map((id) => ({ type: id, presentation: cfg.types[id].present, speak: cfg.types[id].tts, viewerText: tw.VIEWER_TYPES.includes(id) ? cfg.types[id].viewer : undefined })),
+        moderation: { holdWholeAlert: cfg.moderation.hold, blockLinks: cfg.moderation.links, blockCaps: cfg.moderation.caps, blockRepeats: cfg.moderation.repeats, blockedWordsCount: cfg.moderation.rules.words.length },
+        flagged: list.map((x) => ({ id: x.id, type: x.type, name: x.name, reason: x.reason, held: x.hold, text: x.text })),
+      };
+    },
+    async voice_moderation_update(ctx, a) {
+      const voice = {}, mod = {};
+      for (const [k, to] of [["on", "on"], ["voice", "voice"], ["language", "lang"], ["rate", "rate"], ["pitch", "pitch"], ["volume", "volume"], ["maxCharacters", "max"], ["readName", "readName"]]) if (a[k] !== undefined) voice[to] = a[k];
+      for (const [k, to] of [["holdWholeAlert", "hold"], ["blockLinks", "links"], ["blockCaps", "caps"], ["blockRepeats", "repeats"], ["blockedWords", "words"]]) if (a[k] !== undefined) mod[to] = k === "blockedWords" ? (Array.isArray(a[k]) ? a[k].join("\n") : String(a[k])) : a[k];
+      if (!Object.keys(voice).length && !Object.keys(mod).length) throw expose("Give at least one setting to change.");
+      if (Object.keys(voice).length) { const r = await changeVoice(ctx, voice); if (r.errors) throw expose(Object.values(r.errors).join(" ")); }
+      if (Object.keys(mod).length) { const r = await changeModeration(ctx, mod); if (r.errors) throw expose(Object.values(r.errors).join(" ")); }
+      return self.voice_moderation_get(ctx);
+    },
+    async held_text_decide(ctx, a) {
+      const r = await tw.decideText(ctx, String(a.id ?? ""), a.action === "accept" ? "accept" : "dismiss", (x) => emit(ctx.instance.key, x));
+      if (!r.ok) throw expose("Unknown id. Read voice_moderation_get for the ids of the texts waiting.");
+      return { done: true, action: r.action, type: r.type };
     },
     async alert_template_update(ctx, a) {
       if (!tw.TYPES.includes(a.type)) throw expose("Unknown type. Use one of: " + tw.TYPES.join(", "));
@@ -182,4 +317,5 @@ export function tools() {
       return view(await tw.loadConfig(ctx), a.type);
     },
   };
+  return self;
 }

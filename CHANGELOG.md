@@ -4,6 +4,33 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.66.0 — 2026-11-12
+
+*En bref : l'Overlay alertes (1.6.0) peut montrer le message de votre public, lire les alertes à voix haute (éteint par défaut), montrer un GIF ou une vidéo seuls, et filtrer ce qui s'affiche avec une modération simple. Activité Twitch (1.3.0) ajoute au dock d'OBS des interrupteurs pour les alertes, la voix et la coupure, et les textes en attente. Rien à régler : la voix est éteinte, la liste de mots bloqués est vide. Mettez les deux modules à jour ensemble.*
+
+*In short: the Alerts overlay (1.6.0) can show your viewers' messages, read alerts aloud (off by default), show a GIF or a video alone, and filter what is shown with a basic moderation. Twitch activity (1.3.0) adds to the OBS dock switches for alerts, voice and mute, and the texts waiting. Nothing to set up: the voice is off, the blocked-word list is empty. Update both modules together.*
+
+### Nouveautés
+
+- **Choisissez ce que montre chaque type** : le texte, une image (GIF) seule, ou une vidéo seule, avec son propre son si vous le voulez. Jusqu'à six vidéos dans le nouvel onglet « Vidéos ».
+- **Montrez le message de votre public** (réabonnements, bits, récompenses), coupé à la longueur choisie.
+- **Lisez les alertes à voix haute** avec la voix de votre ordinateur (éteint par défaut). Vous choisissez ce qui est lu par type ; la page dit si elle ne voit aucune voix.
+- **Une modération simple avant tout affichage ou lecture** : liens, majuscules, répétitions et votre liste de mots bloqués (vide au départ). Un texte refusé montre l'alerte sans lui, ou retient toute l'alerte pour vous. C'est un filtre simple, pas un remplaçant d'AutoMod de Twitch.
+- **Dans le dock d'OBS** : interrupteurs pour les alertes, la voix et la coupure, boutons pour arrêter la lecture et passer l'alerte, textes en attente avec « Accepter quand même » ou « Écarter ». Le journal marque les lignes dont le texte a été masqué.
+- **Non vérifié sur un OBS en direct** : les voix dépendent de votre ordinateur et d'OBS. Les fichiers de son personnels restent impossibles pour l'instant (images et vidéos seulement).
+- **Choose what each type shows**: the text, a picture (GIF) alone, or a video alone, with its own sound if you want. Up to six videos in the new "Videos" tab.
+- **Show your viewers' messages** (resubs, bits, rewards), cut at the length you choose.
+- **Read alerts aloud** with the voice of your computer (off by default). You choose what is read per type; the page says if it sees no voice.
+- **A basic moderation before anything is shown or read**: links, capital letters, repeats and your list of blocked words (empty at first). A refused text shows the alert without it, or holds the whole alert for you. It is a simple filter, not a replacement for Twitch AutoMod.
+- **In the OBS dock**: switches for alerts, voice and mute, buttons to stop the speech and skip the alert, texts waiting with "Accept anyway" or "Dismiss". The journal marks the lines whose text was hidden.
+- **Not verified on a live OBS**: voices depend on your computer and on OBS. Custom sound files are not possible yet (images and videos only).
+
+### Pour les développeurs
+
+- Alerts overlay 1.6.0: `moderation.mjs` (pure), per-type `present/video/videoSound/viewer/viewerMax/tts`, `config.tts`, `config.moderation`, controls and voice report in `twitch.mjs`, tabs `viewers` and `media` (six settings of type video), service `alerts.queue` version 2, optional service `twitch.journal`, MCP `voice_moderation_get`, `voice_moderation_update`, `held_text_decide`. Détail : `docs/changelog-parts/alerts-voice.md`.
+- Twitch activity 1.3.0: service `twitch.journal.flag`, dock switches and texts waiting.
+- Tests: `tests/alerts-twitch-voice.test.mjs`, `tests/twitch-events-voice-dock.test.mjs`, one more end-to-end case.
+
 ## 1.65.0 — 2026-11-12
 
 *En bref : l'Overlay alertes (1.5.0) peut donner à chaque type d'alerte Twitch une image, un son et sa façon d'arriver, et montre un aperçu et une soirée type à l'écran avant le direct. Les sons sont fabriqués par la page elle-même (rien à envoyer) et éteints par défaut. Nouvelle permission : fichiers (il garde les images que vous envoyez). Activité Twitch (1.2.1) allège sa vérification de chaque minute. Rien à régler.*

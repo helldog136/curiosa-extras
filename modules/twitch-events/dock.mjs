@@ -11,6 +11,8 @@ export const KEYS = [
   "title", "scope_stream", "scope_day", "scope_all", "scope_label", "all_types", "search", "search_none", "empty", "empty_hint", "loading", "pause", "resume", "clear", "test", "test_label", "test_none",
   "replay", "replayed", "replay_label", "waiting", "state_live", "state_retry", "state_off", "no_alerts", "paused_note", "held", "cleared", "paused_ok", "resumed_ok", "tested", "err_rate", "err_unknown",
   "err_site", "denied", "clear_confirm", "listening_off", "types_label", "updated",
+  "sw_alerts", "sw_voice", "sw_mute", "sw_on", "sw_off", "sw_paused", "stop_speech", "skip", "no_voice", "voice_on_ok", "voice_off_ok", "muted_ok", "unmuted_ok", "stopped", "skipped",
+  "texts_title", "text_held", "text_hidden", "accept", "dismiss", "accept_label", "dismiss_label", "accepted", "dismissed",
 ];
 export const labelsOf = (ctx) => Object.fromEntries(KEYS.map((k) => [k, ctx.t(`dock_${k}`)]));
 
@@ -23,7 +25,7 @@ const CLIENT = `
   __SHARED__
   var $ = function (id) { return document.getElementById(id); };
   var fmt = function (s, vars) { return String(s).replace(/\\{(\\w+)\\}/g, function (m, k) { return vars && vars[k] !== undefined ? vars[k] : m; }); };
-  var st = { events: [], scope: C.scope, type: "", q: "", fails: 0, ok: false, ready: false, linked: false, paused: false, held: 0, live: false, types: [], busy: {}, timer: null, last: 0, toastTimer: null, listening: true };
+  var st = { events: [], scope: C.scope, type: "", q: "", fails: 0, ok: false, ready: false, linked: false, paused: false, held: 0, live: false, types: [], busy: {}, timer: null, last: 0, toastTimer: null, listening: true, voice: { available: false, on: false, muted: false }, texts: [] };
   try { var saved = localStorage.getItem("events-dock-scope"); if (saved && C.scopes.indexOf(saved) >= 0) st.scope = saved; var savedT = localStorage.getItem("events-dock-type"); if (savedT !== null) st.type = savedT; } catch (e) { /* the memory of the browser may be unavailable: no matter */ }
 
   function toast(text, kind) {
@@ -65,7 +67,12 @@ const CLIENT = `
       var main = el("p", "msg-main", !st.ready ? L.loading : st.events.length ? L.search_none : L.empty); msg.appendChild(main);
       if (st.ready && !st.events.length) msg.appendChild(el("p", "msg-hint", L.empty_hint));
     } else msg.hidden = true;
-    var pb = $("pause"); pb.textContent = st.paused ? L.resume : L.pause; pb.disabled = !st.linked; pb.setAttribute("aria-pressed", st.paused ? "true" : "false"); pb.title = st.linked ? "" : L.no_alerts;
+    sw("pause", L.sw_alerts, !st.paused, st.paused ? L.sw_paused : L.sw_on, !st.linked, st.linked ? "" : L.no_alerts);
+    var vo = st.voice, vOk = st.linked && vo.available;
+    sw("voice", L.sw_voice, vo.on, vo.on ? L.sw_on : L.sw_off, !vOk, vOk ? "" : (st.linked ? L.no_voice : L.no_alerts));
+    sw("mute", L.sw_mute, vo.muted, vo.muted ? L.sw_on : L.sw_off, !vOk, vOk ? "" : (st.linked ? L.no_voice : L.no_alerts));
+    $("stopspeech").disabled = !vOk; $("skip").disabled = !st.linked;
+    held();
     $("clear").disabled = !st.linked; $("test").disabled = !st.linked || !$("testtype").value; $("testtype").disabled = !st.linked;
     var b = $("banner");
     if (!st.linked) { b.hidden = false; b.textContent = L.no_alerts; }
@@ -77,6 +84,31 @@ const CLIENT = `
     var sc = $("scopes").children;
     for (var k = 0; k < sc.length; k++) sc[k].setAttribute("aria-checked", sc[k].getAttribute("data-scope") === st.scope ? "true" : "false");
     strip();
+  }
+
+  /** A switch shows the state it is in (the words, not only the position): label, then "On" / "Off" / "Paused". */
+  function sw(id, label, on, stateText, off, why) {
+    var b = $(id); b.className = "sw" + (id === "pause" && !on ? " warn" : ""); b.disabled = !!off; b.title = why || ""; b.setAttribute("aria-checked", on ? "true" : "false");
+    b.replaceChildren(el("span", "swl", label), el("span", "sws", stateText));
+  }
+  function held() {
+    var box = $("held"), list = $("heldlist"); list.replaceChildren();
+    box.hidden = !st.texts.length;
+    $("heldtitle").textContent = fmt(L.texts_title, { n: st.texts.length });
+    for (var i = 0; i < st.texts.length; i++) list.appendChild(heldRow(st.texts[i]));
+  }
+  function heldRow(x) {
+    var li = el("li", "held-row");
+    var top = el("span", "held-top"); top.append(el("span", "badge", x.label), el("span", "who", x.name), el("span", "why", x.why + " · " + (x.held ? L.text_held : L.text_hidden)));
+    var txt = el("span", "held-text", x.text); txt.title = x.text;
+    var main = el("span", "main"); main.append(top, txt);
+    var a = el("button", "decide", L.accept); a.type = "button"; a.setAttribute("aria-label", fmt(L.accept_label, { name: x.name }));
+    var d = el("button", "decide", L.dismiss); d.type = "button"; d.setAttribute("aria-label", fmt(L.dismiss_label, { name: x.name }));
+    var go = function (action) { if (st.busy["t" + x.id]) return; st.busy["t" + x.id] = true; a.disabled = true; d.disabled = true;
+      post("decide", { id: x.id, choice: action }).then(function (r) { delete st.busy["t" + x.id]; if (r.ok) toast(action === "accept" ? L.accepted : L.dismissed, "ok"); else toast(why(r.code), "warn"); refresh(); }); };
+    a.addEventListener("click", function () { go("accept"); }); d.addEventListener("click", function () { go("dismiss"); });
+    li.append(main, a, d);
+    return li;
   }
 
   function types() {
@@ -93,7 +125,7 @@ const CLIENT = `
     return fetch(C.actUrl, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: action }, extra || {})), signal: ctl.signal })
       .then(function (r) { return r.json().catch(function () { return { ok: false, code: "err_site" }; }); }).catch(function () { return { ok: false, code: "err_site" }; }).then(function (x) { clearTimeout(t); return x; });
   }
-  function why(code) { return code === "rate" ? L.err_rate : code === "no_alerts" ? L.no_alerts : code === "unknown" ? L.err_unknown : L.err_site; }
+  function why(code) { return code === "rate" ? L.err_rate : code === "no_alerts" ? L.no_alerts : code === "no_voice" ? L.no_voice : code === "unknown" ? L.err_unknown : L.err_site; }
 
   function replay(e, btn) {
     if (st.busy[e.id]) return;                                  // a double click never sends twice
@@ -110,7 +142,7 @@ const CLIENT = `
     clearTimeout(st.timer);
     var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, C.fetchMs);
     fetch(url(), { cache: "no-store", signal: ctl.signal }).then(function (r) { if (r.status === 403) { st.denied = true; throw new Error("denied"); } if (!r.ok) throw new Error("http"); return r.json(); }).then(function (d) {
-      clearTimeout(t); st.fails = 0; st.ok = true; st.ready = true; st.events = d.events || []; st.linked = !!(d.alerts && d.alerts.linked); st.paused = !!(d.alerts && d.alerts.paused); st.held = (d.alerts && d.alerts.held) || 0; st.live = !!d.live; st.listening = d.listening !== false;
+      clearTimeout(t); st.fails = 0; st.ok = true; st.ready = true; st.events = d.events || []; st.linked = !!(d.alerts && d.alerts.linked); st.paused = !!(d.alerts && d.alerts.paused); st.held = (d.alerts && d.alerts.held) || 0; st.live = !!d.live; st.listening = d.listening !== false; st.voice = (d.alerts && d.alerts.voice) || st.voice; st.texts = (d.alerts && d.alerts.texts) || [];
       if (!st.types.length && d.types) { st.types = d.types; types(); }
       if (d.scope && d.scope !== st.scope) st.scope = d.scope;
       render();
@@ -126,6 +158,22 @@ const CLIENT = `
   $("pause").addEventListener("click", function () {
     var b = $("pause"); if (b.disabled) return; b.disabled = true; var action = st.paused ? "resume" : "pause";
     post(action).then(function (r) { if (r.ok) { toast(action === "pause" ? L.paused_ok : fmt(L.resumed_ok, { n: r.released || 0 }), "ok"); } else toast(why(r.code), "warn"); refresh(); });
+  });
+  $("voice").addEventListener("click", function () {
+    var b = $("voice"); if (b.disabled) return; b.disabled = true; var on = !st.voice.on;
+    post("voiceOn", { on: on }).then(function (r) { if (r.ok) toast(on ? L.voice_on_ok : L.voice_off_ok, "ok"); else toast(why(r.code), "warn"); refresh(); });
+  });
+  $("mute").addEventListener("click", function () {
+    var b = $("mute"); if (b.disabled) return; b.disabled = true; var muted = !st.voice.muted;
+    post("mute", { muted: muted }).then(function (r) { if (r.ok) toast(muted ? L.muted_ok : L.unmuted_ok, "ok"); else toast(why(r.code), "warn"); refresh(); });
+  });
+  $("stopspeech").addEventListener("click", function () {
+    var b = $("stopspeech"); if (b.disabled) return; b.disabled = true; setTimeout(function () { render(); }, 1200);
+    post("stopSpeech").then(function (r) { toast(r.ok ? L.stopped : why(r.code), r.ok ? "ok" : "warn"); });
+  });
+  $("skip").addEventListener("click", function () {
+    var b = $("skip"); if (b.disabled) return; b.disabled = true; setTimeout(function () { render(); }, 1200);
+    post("skip").then(function (r) { toast(r.ok ? L.skipped : why(r.code), r.ok ? "ok" : "warn"); });
   });
   $("clear").addEventListener("click", function () {
     var b = $("clear"); if (b.disabled) return;
@@ -169,7 +217,24 @@ button,select,input{font:inherit;color:inherit}
 .testbox{display:flex;gap:6px;flex:1 1 200px;min-width:0}
 .testbox select{flex:1 1 auto;min-width:0}
 .ctl button:disabled,.ctl select:disabled,.replay:disabled{opacity:.55;cursor:default}
-.ctl button[aria-pressed="true"]{border-color:var(--cur-warn);background:var(--cur-warn);color:var(--cur-warn-fg);font-weight:700}
+.ctl .sw{display:inline-flex;align-items:center;gap:8px;flex:1 1 130px;min-width:0;justify-content:space-between}
+.swl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sws{flex:none;padding:2px 8px;border-radius:999px;border:1px solid var(--cur-line);font-size:12px;font-weight:700}
+.sw[aria-checked="true"]{border-color:var(--cur-ok)}
+.sw[aria-checked="true"] .sws{border-color:var(--cur-ok);color:var(--cur-ok)}
+.sw.warn{border-color:var(--cur-warn)}
+.sw.warn .sws{border-color:var(--cur-warn);color:var(--cur-warn)}
+.held{margin:0 0 8px}
+.held h2{margin:4px 0;font-size:13px;color:var(--cur-muted)}
+.held-row{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--cur-warn);border-radius:var(--cur-radius);background:var(--cur-surface);min-width:0}
+.held-row .main{grid-column:1/-1}
+.held-top{display:flex;gap:6px;align-items:center;min-width:0}
+.held-top .badge{flex:none}
+.held-top .who{flex:0 1 auto;min-width:0}
+.why{flex:1 1 0;min-width:0;color:var(--cur-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.held-text{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.decide{min-width:44px;min-height:44px;padding:0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--cur-line);border-radius:var(--cur-radius);background:var(--cur-bg);cursor:pointer;touch-action:manipulation}
+
 .banner{margin:2px 10px;padding:6px 10px;border-radius:var(--cur-radius);background:color-mix(in srgb,var(--cur-warn) 14%,var(--cur-surface));border:1px solid var(--cur-warn);font-size:13px;overflow-wrap:anywhere}
 .stage{min-height:0;overflow:auto;padding:4px 10px;overscroll-behavior:contain}
 .msg{margin:16px 4px;text-align:center}
@@ -212,9 +277,9 @@ export function dockPage(ctx, { dataUrl, actUrl, scheme = null, scope = "day" })
 <div class="bar"><div class="seg" id="scopes" role="radiogroup" aria-label="${esc(L.scope_label)}"><button type="button" role="radio" data-scope="stream" aria-checked="false">${esc(L.scope_stream)}</button><button type="button" role="radio" data-scope="day" aria-checked="false">${esc(L.scope_day)}</button><button type="button" role="radio" data-scope="all" aria-checked="false">${esc(L.scope_all)}</button></div>
 <label class="sr" for="q">${esc(L.search)}</label><input class="find" id="q" type="search" placeholder="${esc(L.search)}" autocomplete="off"></div>
 <div class="chips" id="chips" role="group" aria-label="${esc(L.types_label)}"></div>
-<div class="bar ctl"><button type="button" id="pause" aria-pressed="false">${esc(L.pause)}</button><button type="button" id="clear">${esc(L.clear)}</button><div class="testbox"><label class="sr" for="testtype">${esc(L.test_label)}</label><select id="testtype"></select><button type="button" id="test">${esc(L.test)}</button></div></div>
+<div class="bar ctl"><button type="button" class="sw" role="switch" id="pause" aria-checked="true"><span class="swl">${esc(L.sw_alerts)}</span><span class="sws">${esc(L.sw_on)}</span></button><button type="button" class="sw" role="switch" id="voice" aria-checked="false"><span class="swl">${esc(L.sw_voice)}</span><span class="sws">${esc(L.sw_off)}</span></button><button type="button" class="sw" role="switch" id="mute" aria-checked="false"><span class="swl">${esc(L.sw_mute)}</span><span class="sws">${esc(L.sw_off)}</span></button><button type="button" id="stopspeech">${esc(L.stop_speech)}</button><button type="button" id="skip">${esc(L.skip)}</button><button type="button" id="clear">${esc(L.clear)}</button><div class="testbox"><label class="sr" for="testtype">${esc(L.test_label)}</label><select id="testtype"></select><button type="button" id="test">${esc(L.test)}</button></div></div>
 <div class="banner" id="banner" role="status" hidden></div>
-<main class="stage" id="stage"><div class="msg" id="msg" role="status">${esc(L.loading)}</div><ul class="list" id="list" aria-live="off"></ul></main>
+<main class="stage" id="stage"><section class="held" id="held" hidden aria-labelledby="heldtitle"><h2 id="heldtitle"></h2><ul class="list" id="heldlist"></ul></section><div class="msg" id="msg" role="status">${esc(L.loading)}</div><ul class="list" id="list" aria-live="off"></ul></main>
 <footer class="strip" id="strip"><span id="updated">${esc(L.loading)}</span></footer>
 </div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script nonce="${nonce}">${script}</script></body></html>`;

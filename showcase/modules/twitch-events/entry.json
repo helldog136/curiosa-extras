@@ -23,7 +23,7 @@
     "fr": "Votre site reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et tient un journal."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.1",
+  "moduleVersion": "1.3.0",
   "requires": [
     "twitch-connector",
     "twitch-channel"
