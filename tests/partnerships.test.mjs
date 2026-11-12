@@ -114,12 +114,12 @@ test("sujet partnership.partner : ne fuit aucune donnée privée (contact, brief
 });
 
 // ── actions d'admin ───────────────────────────────────────────────────────────
-test("admin savePartner : création, nettoyage des champs et redirection vers la fiche", async () => {
+test("admin savePartner : création, nettoyage des champs ; la fenêtre se ferme (pas de redirection)", async () => {
   const ctx = ctxFor("fr");
   const r = await def.adminActions.savePartner(ctx, { id: "", brand: "  Marque  ", url: "https://m.test", sector: "Jeux", chances: "42", evil: "<script>", status: "" });
   assert.equal(r.ok, ctx.t("saved"));
   const [row] = await ctx.api.store.list("partners");
-  assert.equal(r.redirect, `?partner=${row.id}`);
+  assert.equal(r.redirect, undefined, "the dialog closes by itself on { ok }");
   assert.equal(row.data.brand, "Marque");
   assert.equal(row.data.status, "a_contacter");
   assert.equal(row.data.chances, 42);
@@ -161,7 +161,7 @@ test("admin savePartner : modification conserve les champs non fournis, id incon
   const ctx = ctxFor();
   const id = await ctx.api.store.add("partners", { brand: "Old", status: "envoye", sector: "Tech", chances: 10 });
   const r = await def.adminActions.savePartner(ctx, { id, brand: "New", status: "bogus" });
-  assert.equal(r.redirect, `?partner=${id}`);
+  assert.equal(r.redirect, undefined);
   const d = (await ctx.api.store.get(id)).data;
   assert.equal(d.brand, "New"); assert.equal(d.sector, "Tech"); assert.equal(d.chances, 10);
   assert.equal(d.status, "envoye", "statut invalide ignoré, ancien conservé");
@@ -177,8 +177,8 @@ test("admin deletePartner : supprime la fiche et son journal, pas ceux des autre
   await ctx.api.store.add("journal", { partnerId: b, date: "2026-01-01", text: "y" });
   await ctx.api.store.add("contacts", { partnerId: a, name: "n" });
   await ctx.api.store.add("contacts", { partnerId: b, name: "m" });
-  const r = await def.adminActions.deletePartner(ctx, { id: a });
-  assert.deepEqual(r, { ok: "Deleted.", redirect: "?" });
+  const r = await def.adminActions.deletePartner(ctx, { id: a, confirm: "on" });
+  assert.deepEqual(r, { ok: "A was deleted. Its contacts stay in your address book.", redirect: "?" });
   assert.equal(await ctx.api.store.get(a), null);
   assert.equal(await ctx.api.store.count("journal"), 1);
   assert.equal(await ctx.api.store.count("contacts"), 2, "l'ancien carnet n'est plus lu ni nettoyé ici : la reprise s'en charge");
@@ -207,8 +207,11 @@ test("adminPanel : vue d'ensemble vide → message, mention privée et formulair
   const blocks = await def.adminPanel(ctxFor("en"), { query: {} });
   assert.equal(blocks[0].type, "markdown");
   assert.match(blocks[0].text, /Private/);
-  assert.ok(blocks.some((b) => b.type === "markdown" && b.text === "No partnership yet."));
-  const form = find(blocks, "adminForm")[0];
+  assert.ok(blocks.some((b) => b.type === "markdown" && /^No partner yet/.test(b.text)));
+  assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), ["importPartners"], "no inline form: adding opens a window");
+  const link = find(blocks, "links")[0].items[0];
+  assert.deepEqual([link.href, link.presentation], ["?new=1", "dialog"]);
+  const form = find(await def.adminPanel(ctxFor("en"), { query: { new: "1" } }), "adminForm")[0];
   assert.equal(form.action, "savePartner");
   assert.equal(form.fields.find((f) => f.name === "brand").required, true);
   assert.deepEqual(form.fields.find((f) => f.name === "status").options.map((o) => o.value), STATUSES);
@@ -224,11 +227,12 @@ test("adminPanel : tri par urgence, compteur des fiches ouvertes, relance due si
   const blocks = await def.adminPanel(ctx, { query: {} });
   const table = find(blocks, "table")[0];
   assert.deepEqual(table.rows.map((r) => r[0]), ["Alpha", "Gamma", "Delta", "Beta", "Zeta"]);
-  assert.match(table.rows[2][1], /⏰/);
-  assert.ok(!table.rows[0][1].includes("⏰"));
+  assert.match(table.rows[2][4], /⏰/);
+  assert.equal(table.rows[0][4], "");
   assert.equal(table.rowIds.length, 5);
   assert.ok(blocks.some((b) => b.type === "heading" && b.text === "Overview (4)"), "4 fiches non closes");
   assert.equal(table.rows[2][3], isoDaysAgo(30));
+  assert.equal(table.searchable, true, "live search from the start (R15)");
 });
 
 test("adminPanel : fiche détaillée (journal trié, contacts liés (voir contacts-link.test), actions de suppression dangereuses)", async () => {
@@ -240,29 +244,29 @@ test("adminPanel : fiche détaillée (journal trié, contacts liés (voir contac
   const blocks = await def.adminPanel(ctx, { query: { partner: p } });
   assert.ok(blocks.some((b) => b.type === "heading" && b.text === "Acme"));
   const md = blocks.find((b) => b.type === "markdown" && b.text.includes("Status")).text;
-  assert.match(md, /In discussion/); assert.match(md, /\*\*Chances \(0-100\)\*\* : 0/, "0 % affiché (pas masqué)");
+  assert.match(md, /In discussion/); assert.match(md, /\*\*Chance of success\*\* : 0 %/, "0 % affiché (pas masqué)");
   const tables = find(blocks, "table");
   const journal = tables.find((t) => t.columns[0] === "Date");
   assert.deepEqual(journal.rows.map((r) => r[2]), ["Second\nhttps://l.test", "Premier"], "plus récent d'abord, sans l'entrée d'un autre partenaire");
   assert.ok(journal.rowActions[0].danger && journal.rowActions[0].confirm);
-  const top = tables[0];
-  const del = top.rowActions.find((a) => a.action === "deletePartner");
-  assert.ok(del.danger && del.confirm, "suppression de fiche confirmée et dangereuse");
-  const actions = find(blocks, "adminForm").map((f) => f.action);
-  assert.deepEqual(actions, ["addJournal"], "sans module Contacts : pas de formulaire de liaison");
-  for (const f of find(blocks, "adminForm")) assert.equal(f.fields.find((x) => x.name === "partnerId").value, p);
+  const links = find(blocks, "links").flatMap((l) => l.items);
+  const del = links.find((l) => l.href === `?partner=${p}&delete=${p}`);
+  assert.equal(del.presentation, "dialog", "deleting opens the confirmation window, never deletes by itself");
+  assert.equal(blocks.at(-1).items[0], del, "the destructive entry is last, apart under its own heading");
+  assert.deepEqual(find(blocks, "adminForm").map((f) => f.action), [], "no inline form without Contacts: the journal form is a window");
 });
 
 test("adminPanel : modification d'une fiche (formulaire prérempli) ; id inconnu → vue d'ensemble", async () => {
   const ctx = ctxFor("en");
   const p = await ctx.api.store.add("partners", { brand: "Acme", status: "envoye", sector: "Tech" });
   const blocks = await def.adminPanel(ctx, { query: { edit: p } });
-  assert.equal(blocks.length, 2);
-  const form = blocks[1];
+  const form = find(blocks, "adminForm")[0];
+  assert.equal(form.presentation, "dialog");
   assert.equal(form.fields.find((f) => f.name === "id").value, p);
   assert.equal(form.fields.find((f) => f.name === "brand").value, "Acme");
   assert.equal(form.fields.find((f) => f.name === "status").value, "envoye");
-  assert.equal(form.cancelHref, `?partner=${p}`);
+  assert.equal(form.cancelHref, "?");
+  assert.equal(form.title, "Edit — Acme");
   const unknown = await def.adminPanel(ctx, { query: { edit: "nope", partner: "nope" } });
   assert.equal(find(unknown, "table").length, 1, "retombe sur la liste");
 });
@@ -389,7 +393,7 @@ test("MCP partner_delete : supprime la fiche et son journal, jamais une personne
   await ctx.api.store.add("contacts", { partnerId: b, name: "m" });
   await assert.rejects(() => def.mcp.partner_delete(ctx, { id: "nope" }), (e) => e.expose);
   assert.equal(await ctx.api.store.count("partners"), 2);
-  assert.deepEqual(await def.mcp.partner_delete(ctx, { id: a }), { deleted: a });
+  assert.deepEqual(await def.mcp.partner_delete(ctx, { id: a }), { deleted: a, journalEntries: 1, contactLinks: 1 });
   assert.equal(await ctx.api.store.count("journal"), 0);
   assert.equal(await ctx.api.store.count("contacts"), 2);
 });

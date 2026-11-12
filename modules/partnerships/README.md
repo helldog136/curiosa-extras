@@ -27,8 +27,13 @@ Partnerships **offers** the `privacy.subject` service (one answer per instance) 
 
 All three answer `0` for an unknown file, never throw, and can be replayed. A person **deleted** from Contacts is still flagged ("Deleted from the address book"), and a person **merged** without `remap` having been received is followed by `resolve(...).moved`: the link corrects itself.
 
+## Windows and deletion (2.3.0)
+
+New partner, edit, delete and "add a journal entry" open in a **window above the page** (core 0.6.7), so the module tabs are never taken for tabs of the partner. Only brand, status, chance and website are in sight; the other fields are under "More options".
+**Delete the partner** is in the row menu and at the bottom of the partner page. The window counts what goes (the file and its journal entries), says that linked contacts stay in the address book, and asks for a tick; opening it deletes nothing. The deletion writes one core log line with counts only. There is no undo: the confirmation is the safety net.
+
 ## MCP
 
-`partners_list`, `partner_get` (also returns the linked contacts: id, name, role, e-mail), `partner_create` (status "to contact" or "in discussion" only), `partner_update`, `partner_log`, **`partner_link_contact`** and **`partner_unlink_contact`**. The tools that write (`partner_create`, `partner_update`, `partner_log`, `partner_link_contact`, `partner_unlink_contact`) are **granted only explicitly** by your AI access; only reading is granted by default. The tools that create, change or delete people are those of *Contacts*. `partner_delete` exists but is **off by default** (it only deletes the file and its journal). The changes made by an assistant are attributed to its token (`agent:<token>`).
+`partners_list`, `partner_get` (also returns the linked contacts: id, name, role, e-mail), `partner_create` (status "to contact" or "in discussion" only), `partner_update`, `partner_log`, **`partner_link_contact`** and **`partner_unlink_contact`**. The tools that write (`partner_create`, `partner_update`, `partner_log`, `partner_link_contact`, `partner_unlink_contact`) are **granted only explicitly** by your AI access; only reading is granted by default. The tools that create, change or delete people are those of *Contacts*. `partner_delete` exists but is **off by default** (it only deletes the file and its journal, and returns the counts). The changes made by an assistant are attributed to its token (`agent:<token>`).
 
 The `partnership.partner` topic is still provided (the *Sponsors* module uses it). **Advanced setting**: days without news before a follow-up (14). One copy per site.
