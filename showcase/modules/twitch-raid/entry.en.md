@@ -7,6 +7,7 @@ A panel for OBS that shows which partners are live on Twitch, so you can choose 
 - Feature picks for a limited time.
 - Favour small channels, and never draw some names.
 - Show a public page of partners who are live, if you wish.
+- Show featured partners, or all partners live now, in OBS.
 
 ## Why you will like it
 
@@ -33,4 +34,4 @@ A panel for OBS that shows which partners are live on Twitch, so you can choose 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 2.3.1.
+Available since version 1.0.0. Current version: 2.4.0.

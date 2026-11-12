@@ -7,6 +7,7 @@ Un agenda de vos événements et formations : les prochaines dates, un calendrie
 - Donnez à chaque date sa page : heure dans le fuseau du visiteur, programme, intervenants, inscription et vidéo.
 - Laissez les visiteurs ajouter une date à leur agenda et revoir les événements passés.
 - Montrez les prochaines dates sur votre accueil.
+- Montrez le prochain événement dans OBS.
 
 ## Pourquoi vous allez l'aimer
 
@@ -41,4 +42,4 @@ Un agenda de vos événements et formations : les prochaines dates, un calendrie
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.2.2.
+Disponible depuis la version 1.0.0. Version actuelle : 1.3.0.

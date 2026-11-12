@@ -7,6 +7,7 @@ Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Tw
 - Mettez des choix à la une pour un temps limité.
 - Favorisez les petites chaînes, et n'en tirez jamais certaines.
 - Montrez une page publique des partenaires en direct, si vous le souhaitez.
+- Montrez les partenaires à la une, ou tous ceux en direct, dans OBS.
 
 ## Pourquoi vous allez l'aimer
 
@@ -33,4 +34,4 @@ Un panneau pour OBS qui montre lesquels de vos partenaires sont en direct sur Tw
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 2.3.1.
+Disponible depuis la version 1.0.0. Version actuelle : 2.4.0.

@@ -36,6 +36,13 @@ Vous pouvez installer le module plusieurs fois : par exemple un agenda public et
 - **Carte** : les rendez-vous qui ont des coordonnées sont proposés à une carte.
 - **Galerie photo** et **vidéos** : si vous en avez, vous choisissez l'album ou la vidéo d'un rendez-vous passé dans une liste ; sinon vous collez un lien. Si ces éléments ne répondent pas, la page reste correcte.
 
+## Overlay element: next event (since 1.3.0, Curiosa 0.5.0 or later)
+In an overlay page (administration, Overlays, "Add an element"), the **Next event** element shows your viewers the next date of the agenda: its title, its day and time written in the language of the page, how far away it is ("Today", "Tomorrow", "In 3 days", "Happening now") and, if you want, the place.
+- **Public data only**: the element shows nothing the public agenda does not show. Drafts, cancelled and postponed events are skipped, and so are sign-up links, speakers and exact coordinates. It needs no secret address.
+- **Nothing to show, nothing drawn**: when no event is coming up, the frame is completely empty (not even the heading).
+- Options: show the heading ("Coming up"), show the countdown, show the place. In test mode it shows an invented event three days from now.
+- It follows the common style of the overlay page and the overlay skins, and adapts to the size of the frame. With two agendas (public and trainings), add one element per agenda: each reads its own.
+
 ## Votre assistant IA
 
 Il peut lister vos rendez-vous, voir vos types, **préparer des brouillons** et modifier un rendez-vous. Il ne publie jamais et ne supprime rien. Ces écritures ne lui sont pas accordées d'office.

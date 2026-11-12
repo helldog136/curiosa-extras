@@ -36,7 +36,7 @@ const VISITOR_API = ["modules/game-suggestions", "examples/guestbook", "modules/
 // Modules dont l'administration utilise les briques natives du cœur 0.6.0 (tableau enrichi, champs repliés, boutons côte à côte).
 const NATIVE_ADMIN = ["modules/game-suggestions", "modules/daily-game"];
 // Modules qui proposent des éléments aux pages d'overlay (clé overlayElements) : cœur 0.5.0.
-const OVERLAY_ELEMENTS = ["alerts-overlay", "community-stats", "countdown", "game-suggestions", "mascot", "maze-overlay", "planning", "polls", "sponsor-ticker", "testimonials", "thanks-wall", "ticker-overlay", "twitch-channel"].map((d) => `modules/${d}`);
+const OVERLAY_ELEMENTS = ["alerts-overlay", "community-stats", "countdown", "game-suggestions", "mascot", "maze-overlay", "planning", "polls", "sponsor-ticker", "testimonials", "thanks-wall", "ticker-overlay", "twitch-channel", "twitch-raid"].map((d) => `modules/${d}`);
 // Modules qui lisent `ambiguous` de ctx.api.rawg.cover (lien « Ce n'est pas le bon jeu ? », cœur 0.2.10).
 const RAWG_AMBIGUOUS = ["modules/planning", "modules/game-suggestions", "modules/stream-story"];
 // Réseaux au gabarit « adresse de votre profil » et Annonces Discord : exemple sous le champ et options rares repliées (cœur 0.6.0).

@@ -239,5 +239,9 @@
   "dock_offline": "Offline. Trying again shortly.",
   "dock_confirm": "Confirm",
   "dock_undo": "Undo",
-  "fd_again_loss": "Replaces the picks for everyone"
+  "fd_again_loss": "Replaces the picks for everyone",
+  "ov_featured_title": "Featured",
+  "ov_live_title": "Live now",
+  "ov_more": "and {n} more live",
+  "ov_demoGame": "Adventure game"
 }

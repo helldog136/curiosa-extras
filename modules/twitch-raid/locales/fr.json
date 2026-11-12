@@ -239,5 +239,9 @@
   "dock_offline": "Hors ligne. Nouvel essai dans un instant.",
   "dock_confirm": "Confirmer",
   "dock_undo": "Annuler",
-  "fd_again_loss": "Remplace la sélection pour tout le monde"
+  "fd_again_loss": "Remplace la sélection pour tout le monde",
+  "ov_featured_title": "À la une",
+  "ov_live_title": "En direct",
+  "ov_more": "et {n} autres en direct",
+  "ov_demoGame": "Jeu d'aventure"
 }

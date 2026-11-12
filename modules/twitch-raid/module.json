@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.2.12",
+  "minCore": "0.5.0",
   "id": "twitch-raid",
   "name": {
     "en": "Twitch raid",
     "fr": "Raid Twitch"
   },
-  "version": "2.3.1",
+  "version": "2.4.0",
   "menuGroup": "tools",
   "platform": "twitch",
   "description": {
@@ -66,8 +66,8 @@
     "mcp"
   ],
   "privacy": {
-    "fr": "Ne collecte rien sur le public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock se souvient une minute de qui est en direct ; le tirage de la sélection reste en mémoire. La page publique facultative montre nom, jeu, titre et audience des chaînes tirées (jamais celles « Ne pas montrer »), sans cookie ; Twitch n'est contacté qu'après un clic.",
-    "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live; the draw of the picks stays in memory. The optional public page shows name, game, title and viewers of the channels drawn (never those filed “Do not show”), with no cookie; Twitch is contacted only if the visitor clicks."
+    "fr": "Ne collecte rien sur le public. La liste est lue dans Contacts, jamais copiée. Gardés ici : l'adresse secrète du dock, 30 minutes au plus les pseudos d'un envoi en gros en attente, une copie de l'ancienne liste 1.x. Le dock retient une minute qui est en direct. La page publique montre nom, jeu, titre et audience des chaînes tirées, les éléments d'overlay nom, jeu et audience, jamais celles « Ne pas montrer ». Sans cookie ; Twitch n'est contacté qu'après un clic.",
+    "en": "Collects nothing about your visitors. The list is read in Contacts, never copied. Kept here: the dock's secret address, for 30 minutes at most the names of a bulk paste waiting to be confirmed, a copy of the old 1.x list. The dock remembers for one minute who was live. The public page shows name, game, title and viewers of the channels drawn, the overlay elements name, game and viewers, never those filed “Do not show”. No cookie; Twitch is contacted only if the visitor clicks."
   },
   "tabs": [
     {
@@ -351,6 +351,109 @@
         "type": "object",
         "properties": {}
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "featured",
+      "label": {
+        "fr": "Partenaires à la une",
+        "en": "Featured partners"
+      },
+      "description": {
+        "fr": "Les chaînes de la sélection du moment, avec leur jeu et leur audience. Rien ne s'affiche si personne n'est en direct. Le nombre de chaînes se règle dans l'onglet « Sélection du moment ».",
+        "en": "The channels of the featured picks, with their game and viewers. Nothing is shown when nobody is live. The number of channels is set in the \"Featured picks\" tab."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 220,
+        "height": 100
+      },
+      "ratios": {
+        "min": 0.3,
+        "max": 10
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "title",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer l'en-tête",
+            "en": "Show the heading"
+          },
+          "default": true
+        },
+        {
+          "id": "game",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer le jeu",
+            "en": "Show the game"
+          },
+          "default": true
+        }
+      ]
+    },
+    {
+      "id": "live",
+      "label": {
+        "fr": "Partenaires en direct",
+        "en": "Partners live now"
+      },
+      "description": {
+        "fr": "Vos partenaires en direct en ce moment, les moins regardés d'abord. Les personnes rangées dans « Ne pas montrer » n'apparaissent jamais. Rien ne s'affiche si personne n'est en direct.",
+        "en": "Your partners who are live right now, the least watched first. People filed under \"Do not show\" never appear. Nothing is shown when nobody is live."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 220,
+        "height": 100
+      },
+      "ratios": {
+        "min": 0.3,
+        "max": 10
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "max",
+          "type": "number",
+          "label": {
+            "fr": "Chaînes montrées",
+            "en": "Channels shown"
+          },
+          "help": {
+            "fr": "De 1 à 10.",
+            "en": "From 1 to 10."
+          },
+          "min": 1,
+          "max": 10,
+          "integer": true,
+          "example": "5",
+          "default": 5
+        },
+        {
+          "id": "title",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer l'en-tête",
+            "en": "Show the heading"
+          },
+          "default": true
+        },
+        {
+          "id": "game",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer le jeu",
+            "en": "Show the game"
+          },
+          "default": true
+        }
+      ]
     }
   ]
 }
