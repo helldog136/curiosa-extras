@@ -15,6 +15,9 @@ export const D = await import("../../modules/twitch-events/dockapi.mjs");
 export const DK = await import("../../modules/twitch-events/dock.mjs");
 export const DP = await import("../../modules/twitch-events/dockpure.mjs");
 export const A = await import("../../modules/twitch-events/admin.mjs");
+export const C = await import("../../modules/twitch-events/cycle.mjs");
+export const CU = await import("../../modules/twitch-events/catchup.mjs");
+export const HE = await import("../../modules/twitch-events/health.mjs");
 export const mod = (await import("../../modules/twitch-events/index.mjs")).default;
 
 export const NOW = Date.parse("2026-11-12T20:00:00Z");
@@ -28,7 +31,7 @@ export function world(o = {}) {
   const queue = { paused: false, held: 0, calls: [], ...o.queue };
   const ctx = fakeCtx({
     key: "ev", moduleId: "twitch-events", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: (o.locale ?? "fr") === "en" ? en : fr,
-    settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions,
+    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions,
     serviceInstances: {
       "twitch.api": [{ instance: "emma", name: "emma", methods: {
         account: (a) => (a?.channel && a.channel !== "emma_test" ? { ok: false, error: "other_channel" } : { ok: true, channel: "emma_test", ready: true, https: true, status: tw.status, login: "emma_test", userId: B, scopes: tw.scopes, adminPath: "/admin/instances/connector" }),
@@ -38,6 +41,8 @@ export function world(o = {}) {
         request: (a) => {
           if (a.channel && a.channel !== "emma_test") return { ok: false, error: "other_channel" };
           tw.calls.push(a);
+          if (a.path === "channels/followers") return tw.helixDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.followers ?? [], pagination: {} } };
+          if (a.path === "subscriptions") return tw.helixDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.subscribers ?? [], pagination: {}, total: (tw.subscribers ?? []).length } };
           if (a.path !== "eventsub/subscriptions") return { ok: false, error: "forbidden" };
           if (a.method === "GET") return tw.listDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.subs } };
           if (a.method === "DELETE") { const id = [].concat(a.query.id)[0]; tw.subs = tw.subs.filter((s) => s.id !== id); return { ok: true, status: 204, json: null }; }

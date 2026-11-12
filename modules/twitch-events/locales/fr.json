@@ -166,5 +166,12 @@
   "dock_err_unknown": "Cette ligne n'existe plus.",
   "dock_err_site": "Le site ne répond pas. Nouvel essai.",
   "dock_clear_confirm": "Vider les alertes en attente et l'écran ?",
-  "dock_listening_off": "Votre site n'écoute pas Twitch en ce moment. Ouvrez la page du module."
+  "dock_listening_off": "Votre site n'écoute pas Twitch en ce moment. Ouvrez la page du module.",
+  "health_silent": "Aucun événement depuis {n} heures pendant votre direct. Un direct calme est normal : cliquez sur Vérifier maintenant pour en être sûr.",
+  "catchup_note": "Après une coupure, {n} lignes ont été ajoutées depuis Twitch ({when}) et sont marquées peut-être manquées.",
+  "health_mail_off": "Pour être prévenu par e-mail quand l'écoute s'arrête, réglez d'abord l'e-mail de votre site.",
+  "mail_subject_problem": "Votre site ne reçoit plus vos événements Twitch",
+  "mail_body_problem": "Ce qui se passe : {what}\nDepuis : {since}\nQue faire : ouvrez la page du module, puis suivez la phrase en haut.\n{link}\nRien n'est perdu côté Twitch, mais les follows et abonnements manqués sont recherchés quand l'écoute revient.",
+  "mail_subject_back": "Votre site reçoit de nouveau vos événements Twitch",
+  "mail_body_back": "Tout est revenu depuis {since}. Rien à faire.\n{link}"
 }

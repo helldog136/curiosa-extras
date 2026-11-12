@@ -97,13 +97,13 @@ test("webhook: rate limit answers 429 and refused requests are counted", async (
   assert.equal(later.status, 204);
 });
 
-test("a storage failure answers 500 and the message is NOT taken for a duplicate when Twitch retries", async () => {
+test("a storage failure answers 503 with Retry-After and the message is NOT taken for a duplicate when Twitch retries", async () => {
   const { ctx } = world();
   await S.ensureSecret(ctx);
   const add = ctx.api.store.add;
   ctx.api.store.add = async (c, ...r) => { if (c === "events") throw new Error("disk full"); return add(c, ...r); };
   const bad = await deliver(ctx, TYPES.follow, EV.follow, { id: "retry-1" });
-  assert.equal(bad.status, 500);
+  assert.equal(bad.status, 503);
   ctx.api.store.add = add;
   const good = await deliver(ctx, TYPES.follow, EV.follow, { id: "retry-1" });
   assert.equal(good.status, 204);

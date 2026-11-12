@@ -30,7 +30,7 @@ Checks on each request: HMAC-SHA256 over `id + timestamp + raw body`, compared i
 the route is rate-limited (600 requests a minute, 30 refused requests a minute, then 429). Delivery is "at least once": the message id is the key of the journal, so a duplicate (or a delivery after a restart) is stored once.
 The event is stored **before** the answer to Twitch (a local write), then `204`.
 
-Subscriptions (checked every 5 minutes, recreated when Twitch cut them): `channel.follow` v2, `channel.subscribe`, `channel.subscription.message`, `channel.subscription.gift`, `channel.cheer`,
+Subscriptions (checked every minute, recreated when Twitch cut them): `channel.follow` v2, `channel.subscribe`, `channel.subscription.message`, `channel.subscription.gift`, `channel.cheer`,
 `channel.raid` (`to_broadcaster_user_id`), `stream.online`, `stream.offline`, `channel.hype_train.begin|progress|end` (v2), and `channel.channel_points_custom_reward_redemption.add` (off by default).
 `channel.chat.notification` is **not** used: the dedicated types carry the same data without needing chat permissions, and using both would deliver everything twice.
 
@@ -63,7 +63,7 @@ Only public data from the events: display names, amounts, tiers, counts, the pub
 
 No live Twitch was available when this was written. Event fields were read in the official reference (see the header of `eventsub.mjs`); **not verified**: the behaviour of an application token for these subscriptions on a real channel,
 how many failures make Twitch revoke a subscription, the redelivery schedule, and the reward redemption type. The tests use a fake Twitch that signs like the real one.
-A missed delivery (site down for a long time) is not recovered in this version; see the next versions of the module.
+See "Robustness" below for what is recovered after a gap and what cannot be.
 
 ## The OBS dock (version 1.1.0)
 
@@ -76,3 +76,18 @@ A compact page for **OBS > Docks > Custom browser docks**, with the same secret 
 - **Pause alerts / Resume**: **holds** the alerts of the alerts overlay (they are kept in order and come out when you resume; nothing is lost), **Empty the queue** (asks first) and **Test** (a menu of types), through the service `alerts.queue` of the alerts overlay (optional: without it these buttons are disabled).
 - **Privacy**: only display names, amounts and counts leave the module; never a token, a secret or an e-mail (a test checks the whole answer). Wrong keys are counted: 30 a minute, then 429 before any comparison; the data route answers 90 reads a minute, the actions 40.
 - Code: `dock.mjs` (page, one script, nonce policy, nothing from another site), `dockapi.mjs` (address, data, actions), `dockpure.mjs` (functions run by the page AND by the tests), `dockkit.mjs` (copy of the look helpers of `twitch-raid/dock.mjs`; a test fails if the tokens drift), `describe.mjs` (how a line is written, shared with the admin page).
+
+## Robustness (version 1.2.0)
+
+- **A check every minute** (`cycle.mjs`): one list call to Twitch when all is well; a cut or missing subscription is recreated, stale ones are removed, the others' (for example the Twitch bot's) are never touched.
+- **Catch-up after a gap** (`catchup.mjs`): the passes did not run for 7 minutes (restart, update, outage), or the listening was in trouble (expired token, revoked, Twitch down, site not reachable). When it is back, from the last time all was fine:
+  - **followers** are read again with their real date (`GET channels/followers`, newest first, 3 pages of 100 at most) and added once, flagged `missed` ("possibly missed" in the journal, `missed: true` in the topic), unless the journal already has that login within 10 seconds;
+  - **subscribers** are compared with the names we know (every sub received is added to a baseline; the first pass only learns it and invents nothing): a new name is a sub we did not see, dated when we noticed it (Twitch gives no date there). Skipped above 1000 subscribers;
+  - 50 lines a gap at most; the outcome is in the state (`catchup`), the page and `twitch_events_status`. A retry cannot add the same line twice (stable keys).
+  - **Cannot be recovered** (Twitch gives nothing to read afterwards): gifts, bits, raids, hype trains, stream start and end, reward redemptions. They are lost for good if missed. Said here, not hidden.
+  - The alerts overlay keeps a `missed` line up to an hour (a normal line only 5 minutes).
+- **Silence while live**: live (a `stream.online` received) with no event for N hours (advanced setting, 3 by default, 0 = never): the page warns (a quiet stream is normal: it asks to check) and the badge shows 1.
+- **Active warning**: when something that worked stops (token to renew, subscription revoked, site not reachable by Twitch, Twitch down for 30 minutes, silence while live; a missing permission only after a day), **one e-mail to the owner of the site** (site e-mail, `ctx.api.mail`, nothing rebuilt), after a grace delay of 10 minutes, again after 24 hours if it is still there, and once when everything is back. None for a fresh install that never worked, none if the setting is off, and the page says when the site has no e-mail set up. Also: the badge of the administration, `twitch_events_status` (health, since when, warned by e-mail or not, last catch-up). No viewer data in the mail.
+- **During a site update or restart**: the webhook answers `503` with `Retry-After: 30` when it cannot store (never a lost event: the message is stored once whenever it comes, a retry is not mistaken for a duplicate), the pages read their state on demand and keep nothing in memory that matters (the journal, the pause and the ids already shown are in storage).
+- Tests: `tests/twitch-events-robust.test.mjs` and the end-to-end `tests/twitch-alerts-e2e.test.mjs`, with a fake Twitch that signs like the real one: follow, sub, resub, a gift bomb (the gift and its 25 gifted subs), raid, bits, hype train, a message delivered twice, a restart in the middle, an expired token, a revoked subscription, a burst of 150 follows.
+- Not verified against a live Twitch: the exact fields of the two catch-up answers (read in the reference), and how Twitch behaves when its answer comes late.

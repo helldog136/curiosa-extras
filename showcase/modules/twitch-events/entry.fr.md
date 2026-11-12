@@ -12,7 +12,8 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 ## Pourquoi vous allez l'aimer
 
 - Rien n'est perdu quand votre site redémarre : chaque événement est gardé une seule fois, même si Twitch l'envoie deux fois.
-- Vous voyez tout de suite si votre site a cessé d'écouter, et ce qu'il faut faire.
+- Vous voyez tout de suite si votre site a cessé d'écouter, et ce qu'il faut faire. Un e-mail vous prévient aussi.
+- Après une coupure, les follows et abonnements manqués sont recherchés et marqués.
 - Seuls les pseudos publics et les montants sont gardés, 30 jours par défaut.
 
 ## À quoi ça ressemble
@@ -41,4 +42,4 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.2.0.

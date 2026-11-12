@@ -60,6 +60,7 @@ export function record(ctx, id, ev, opts = {}) {
   return serial(ctx, "journal", async () => {
     if (await ctx.api.store.getByKey(COL, key)) return { stored: false, duplicate: true };
     await ctx.api.store.add(COL, toDoc(key, ev, opts), { key });
+    memoryOf(ctx).rev = (memoryOf(ctx).rev ?? 0) + 1;   // the topic cache (publish.mjs) is only good until the next line
     return { stored: true, id: key };
   });
 }

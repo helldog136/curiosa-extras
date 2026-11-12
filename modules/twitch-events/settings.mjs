@@ -4,6 +4,8 @@ export const RETENTION = { min: 1, max: 365, def: 30 };
 export function settingsOf(ctx) {
   return {
     channel: String(ctx.setting("channel") ?? "").trim().slice(0, 200),   // the id of an instance of My Twitch channel (see channel.mjs)
+    silentHours: int(ctx.setting("silentHours"), 0, 48, 3),   // live this long without any event: the owner is told (0 = never)
+    healthMail: ctx.setting("healthMail") !== false,
     retentionDays: int(ctx.setting("retentionDays"), RETENTION.min, RETENTION.max, RETENTION.def),
   };
 }
