@@ -318,5 +318,12 @@
   "err_untilBefore": "Le dernier jour doit venir après la date de ce rendez-vous.",
   "err_fileEmpty": "Choisissez un fichier (.csv) qui contient des rendez-vous.",
   "err_fileColumns": "Je ne trouve pas les colonnes « titre » et « date » sur la première ligne du fichier.",
-  "err_starterBad": "Choisissez un modèle dans la liste."
+  "err_starterBad": "Choisissez un modèle dans la liste.",
+  "ovTitle": "À venir",
+  "ovNow": "En cours",
+  "ovToday": "Aujourd'hui",
+  "ovTomorrow": "Demain",
+  "ovInDays": "Dans {n} jours",
+  "ovDemoTitle": "Atelier découverte",
+  "ovDemoPlace": "Salle des étoiles"
 }

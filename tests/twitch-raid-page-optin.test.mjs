@@ -55,10 +55,10 @@ test("page éteinte : aucune entrée de plan du site, aucun lien, aucun script a
   assert.equal(def.slots, undefined); assert.equal(def.sections, undefined); assert.equal(def.exports, undefined); assert.equal(def.filters, undefined);
   assert.ok(!manifest.sections?.length && !manifest.provides?.length, "rien de public déclaré dans le manifeste");
   const routes = Object.keys(def.routes).sort();
-  assert.deepEqual(routes, ["dock", "featured", "featured-again", "featured-data", "live", "members", "pick"]);
+  assert.deepEqual(routes, ["dock", "element-data/:slug", "element/:slug", "featured", "featured-again", "featured-data", "live", "members", "pick"]);
   // Éteinte : toutes les routes publiques-sans-clé sont closes ; les autres exigent le secret.
   const w = site({ publicPage: false });
-  for (const name of routes.filter((n) => n !== "members")) {
+  for (const name of routes.filter((n) => n !== "members" && !n.startsWith("element"))) {
     const r = await route(w, name, { method: name === "pick" || name === "featured-again" ? "POST" : "GET" });
     assert.ok([403, 200].includes(r.status), name);
     if (r.status === 200) assert.ok(!/live-members|\/members/.test(await r.text()), `${name} ne parle pas de la page publique`);
@@ -106,8 +106,8 @@ test("textes par défaut NEUTRES en FR et EN : aucun « membres », « communaut
   }
 });
 
-test("manifeste 2.2.2 : pageSetting désigne le réglage booléen publicPage (défaut faux), page: true, cœur 0.2.12", () => {
-  assert.equal(manifest.pageSetting, "publicPage"); assert.equal(manifest.page, true); assert.equal(manifest.minCore, "0.2.12");
+test("manifeste 2.2.2 : pageSetting désigne le réglage booléen publicPage (défaut faux), page: true, cœur 0.5.0", () => {
+  assert.equal(manifest.pageSetting, "publicPage"); assert.equal(manifest.page, true); assert.equal(manifest.minCore, "0.5.0");
   const s = manifest.settings.find((x) => x.key === "publicPage");
   assert.equal(s.type, "boolean"); assert.strictEqual(s.default, false);
   assert.ok(!/le plan du site (?:peut|que lisent)/.test(fs.readFileSync(`${DIR}/README.md`, "utf8")), "README sans l'ancienne limite");
@@ -140,7 +140,7 @@ test("un titre, une phrase, un texte vide et un bouton saisis par la propriétai
 });
 
 test("mise à jour à chaud : version 2.2.3, index.mjs et public.mjs importent leurs voisins avec la version, deux versions se chargent côte à côte", async () => {
-  assert.equal(manifest.version, "2.3.1");
+  assert.equal(manifest.version, "2.4.0");
   for (const f of ["index.mjs", "public.mjs", "moment-admin.mjs"]) {
     const code = fs.readFileSync(`${DIR}/${f}`, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     const imports = [...code.matchAll(/await import\(([^)]*)\)/g)].filter((m) => /["'`]\.\//.test(m[1]));

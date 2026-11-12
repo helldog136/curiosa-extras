@@ -23,9 +23,10 @@ const A = await import(`./admin.mjs${q}`);
 const { mcp } = await import(`./mcp.mjs${q}`);
 const MM = await import(`./model.mjs${q}`);
 const L = await import(`./links.mjs${q}`);
+const EL = await import(`./element.mjs${q}`);
 
 /** Doit rester égale à `version` de module.json (vérifié par les tests). */
-export const VERSION = "1.2.2";
+export const VERSION = "1.3.0";
 
 const notFound = { notFound: true, blocks: [] };
 const readOnly = (request) => request.method === "GET" || request.method === "HEAD";
@@ -39,7 +40,23 @@ const infoFor = (ctx, data) => (ev) => ({
   description: ICS.describe(ev),
 });
 
+/** 1.3 : la page de l'élément « Prochain événement » (`asData` faux) ou ses données (JSON). Données publiques seulement : pas de clé secrète. */
+async function elementRoute(request, ctx, asData) {
+  if (!readOnly(request)) return notAllowed();
+  if (D.limited(`${ctx.instance.key}|element|${D.visitor(request, ctx, "element")}`, 120, 60_000)) return tooMany();
+  const params = new URL(request.url).searchParams;
+  const first = await EL.dataFor(ctx, params);
+  if (asData) return Response.json(first, { headers: { ...NO_STORE, "x-content-type-options": "nosniff" } });
+  const labels = { title: ctx.t("ovTitle") };
+  return new Response(EL.page(params, { lang: ctx.locale, first, data: `/m/${ctx.instance.key}/element-data`, labels, demo: params.get("ov-demo") === "1" }), { headers: EL.PAGE_HEADERS });
+}
+
 export default {
+  // 1.3 : un élément pour les pages d'overlay (cœur 0.5.0) : le prochain événement. Voir element.mjs.
+  overlayElements: {
+    next: (ctx, request) => ({ url: `/m/${ctx.instance.key}/element${typeof request?.lang === "string" && /^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request.lang) ? `?lang=${request.lang}` : ""}` }),
+  },
+
   // PAGE PUBLIQUE : /<chemin> (les prochains), /<chemin>/cal/2026-11, /<chemin>/past, /<chemin>/e/<nom-court>, avec /t/<type> /q/<mots> /p/<page> (voir query.mjs).
   async page(ctx, { segments }) {
     const req = Q.parsePath(segments);
@@ -69,6 +86,9 @@ export default {
   },
 
   routes: {
+    element: (request, ctx) => elementRoute(request, ctx, false),
+    "element-data": (request, ctx) => elementRoute(request, ctx, true),
+
     // GET /m/<clé>/find?q=…&t=…&v=list|past|cal&m=2026-11 : la recherche et les filtres de la page, SANS JavaScript. Répond par un renvoi vers la page, dont l'adresse est construite ici.
     async find(request, ctx) {
       if (!readOnly(request)) return notAllowed();

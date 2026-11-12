@@ -5,7 +5,7 @@
     "fr": "Événements",
     "en": "Events"
   },
-  "version": "1.2.2",
+  "version": "1.3.0",
   "menuGroup": "content",
   "minCore": "0.6.0",
   "description": {
@@ -1018,6 +1018,59 @@
         "fr": "Fiche détaillée d'un atelier avec l'heure, le lieu, le programme de l'après-midi, deux personnes invitées et un bouton d'inscription.",
         "en": "Detailed page of a workshop with time, place, the afternoon programme, two speakers and a sign-up button."
       }
+    }
+  ],
+  "overlayElements": [
+    {
+      "id": "next",
+      "label": {
+        "fr": "Prochain événement",
+        "en": "Next event"
+      },
+      "description": {
+        "fr": "Le prochain rendez-vous de votre agenda : son titre, son jour et son heure. Rien ne s'affiche s'il n'y a rien à venir. Seuls les événements publiés sont montrés.",
+        "en": "The next date of your agenda: its title, day and time. Nothing is shown when nothing is coming up. Only published events are shown."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 220,
+        "height": 100
+      },
+      "ratios": {
+        "min": 0.3,
+        "max": 10
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "title",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer l'en-tête",
+            "en": "Show the heading"
+          },
+          "default": true
+        },
+        {
+          "id": "delay",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer le délai",
+            "en": "Show the countdown"
+          },
+          "default": true
+        },
+        {
+          "id": "place",
+          "type": "boolean",
+          "label": {
+            "fr": "Montrer le lieu",
+            "en": "Show the place"
+          },
+          "default": true
+        }
+      ]
     }
   ]
 }

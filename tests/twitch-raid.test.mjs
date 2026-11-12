@@ -64,7 +64,7 @@ const P = (...l) => l.map((login) => ({ login, name: "", note: "" }));
 /* ───────────── Manifeste ───────────── */
 
 test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un réglage « Liste de raid » (choix d'une catégorie, création à la volée), vie privée offerte, MCP inchangé", () => {
-  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.3.1"); assert.equal(manifest.minCore, "0.2.12"); assert.equal(manifest.pageSetting, "publicPage");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
+  assert.equal(manifest.id, "twitch-raid"); assert.equal(manifest.version, "2.4.0"); assert.equal(manifest.minCore, "0.5.0"); assert.equal(manifest.pageSetting, "publicPage");   // 2.2 : la page publique a son propre script (cœur 0.2.6)
   assert.equal(manifest.dataVersion, 3);
   assert.deepEqual(manifest.requires.map((r) => [r.service, r.min ?? 1, !!r.optional]), [["twitch.api", 3, false], ["twitch.live", 1, false], ["contact.book", 2, false], ["contact.curate", 1, false]], "sans Contacts, Raid n'a plus de liste : besoin dur ; son extension sert à ajouter et retirer");
   assert.deepEqual(manifest.offers.map((o) => [o.service, o.each]), [["privacy.subject", true]], "qui lit contact.book offre privacy.subject");
@@ -82,7 +82,7 @@ test("manifeste 2.0 : la liste vient de Contacts (contact.book v2, dur), un rég
   assert.deepEqual(manifest.mcp.map((t) => t.name), ["raid_partners_live", "raid_featured_now"]);   // 2.2 : l'outil d'origine, inchangé, puis la sélection du moment
   assert.ok(manifest.privacy.fr && manifest.privacy.en);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "featured", "featured-again", "featured-data", "live", "members", "pick"]);
+  assert.deepEqual(Object.keys(def.routes).sort(), ["dock", "element-data/:slug", "element/:slug", "featured", "featured-again", "featured-data", "live", "members", "pick"]);
   assert.equal(def.backup, undefined, "plus de liste à sauvegarder ici : elle est dans Contacts (qui a son export)");
   // Raid n'appelle createCategory qu'à UN endroit (source.mjs, ensureCategory), toujours avec { asCaller: true } : les droits sont ceux de la personne qui a cliqué, vérifiés par Contacts.
   const uses = fs.readdirSync(DIR).filter((f) => f.endsWith(".mjs")).flatMap((f) => fs.readFileSync(`${DIR}/${f}`, "utf8").split("\n").filter((l) => /createCategory/.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l)).map((l) => `${f}: ${l.trim()}`));

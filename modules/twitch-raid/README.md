@@ -84,6 +84,15 @@ Une seule personne tient la liste, sur **un seul site**. Les personnes de la lis
 
 Le site central **n'interroge Twitch que lorsqu'une personne regarde ou clique**, et le nombre de demandes **ne dépend pas du nombre de chaînes** : tout le monde partage les mêmes réponses (30 secondes pour la liste complète, une minute pour le mode « au hasard »). Rien n'est écrit sur le disque : si le site redémarre, les réponses gardées sont simplement oubliées.
 
+## Overlay elements (since 2.4.0, Curiosa 0.5.0 or later)
+Two read-only elements for the overlay pages (administration, Overlays, "Add an element"). They show your viewers what the docks show you, and nothing else:
+- **Featured partners**: the channels of the featured picks (the same ones as the selection dock and the public page), with their game and viewers. Options: show the heading, show the game. The number of channels and how long they stay are set in the "Featured picks" tab.
+- **Partners live now**: every partner who is live right now, the least watched first (like the ordinary dock). Options: how many channels are shown (1 to 10, 5 by default; "and 3 more live" says how many do not fit), show the heading, show the game. Above 500 channels the full list does not exist: use "Featured partners" instead (the element stays empty).
+- **Privacy**: name, game and viewers only. Never the Twitch name of a person filed under "Do not show", never a card still "to review", never a name of the "Never draw" list, never the stream title, a picture or a raid command. If Contacts cannot say who refuses to be shown, nothing is shown.
+- **When nothing is live, or when Twitch or Contacts do not answer, nothing is drawn at all** (not even the frame). In test mode both elements show invented names.
+- Both follow the common style of the overlay page and the overlay skins, adapt to the size of the frame, and ask the site at most every 45 to 60 seconds (shared with the docks: ten pages cost one request).
+- **The address**: an element uses the same secret as the dock. "New address" therefore also changes the address of the elements; the overlay pages pick the new one when they are reloaded in OBS (until then the frame stays empty). Nothing changes for overlay pages when you do not use this button.
+
 ## Son adresse reste secrète
 L'adresse du dock contient un code secret, créé pour vous : sans lui, la page ne montre rien. **Pour votre seul usage, gardez-la pour vous. Pour la partager, donnez-la aux personnes concernées** : toutes les personnes concernées voient le même dock, qui n'affiche que ce que Twitch montre déjà à tout le monde (nom, jeu, titre, audience), **jamais vos notes**. Si elle a été partagée par erreur, ou si une personne ne doit plus y avoir accès, « Nouvelle adresse » en crée une autre (avec une confirmation) : **l'ancienne cesse de marcher aussitôt pour tout le monde**, et chaque personne doit coller la nouvelle dans OBS. Il n'y a pas d'adresse par personne pour l'instant : une même adresse pour tout le monde.
 
