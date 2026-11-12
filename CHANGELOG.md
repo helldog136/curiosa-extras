@@ -4,6 +4,24 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.58.1 — 2026-11-12
+
+*En bref : un élément d'overlay qui n'a rien à dire n'affiche plus rien. Le « Tirage au sort » (Participation 1.8.2) n'apparaît plus une fois les inscriptions fermées. Rien à régler, aucune nouvelle permission.*
+
+*In short: an overlay element with nothing to say now shows nothing. The "Prize draw" (Audience 1.8.2) no longer appears once sign-ups are closed. Nothing to set up, no new permission.*
+
+### Corrections
+
+- **Tirage au sort (Participation 1.8.2) : plus rien à l'écran une fois les inscriptions fermées.** L'élément montre le tirage pendant les inscriptions, puis les personnes tirées (20 secondes, ou jusqu'au prochain tirage avec l'option « Garder les personnes tirées au sort à l'écran »). Aucun tirage, inscriptions fermées sans personne tirée, personnes déjà affichées : le cadre est vide et transparent, sans titre ni libellé. Il se vide aussi tout seul quand l'heure de fin passe.
+- **Les autres éléments suivent la même règle.** Planning 2.7.5 (plus de carte « aucun stream »), Statistiques de la communauté 1.2.2, Suggestions de jeux 1.9.2, Mur de remerciements 1.2.4 et Ma Chaîne Twitch 2.3.1 : sans rien à montrer, le cadre est vide, sans fond ni bordure. Le mode test montre toujours un exemple pour placer l'élément.
+- **The prize draw element shows nothing once sign-ups are closed.** It shows the draw while sign-ups are open, then the people drawn (20 seconds, or until the next draw with "Keep the people drawn on screen"). No draw, sign-ups closed with nobody drawn, or people already shown: the frame is empty and transparent, with no title or label. It also empties by itself when the end time passes.
+- **Other elements follow the same rule.** Planning 2.7.5 (no more "no stream" card), Community statistics 1.2.2, Game suggestions 1.9.2, Thanks wall 1.2.4 and My Twitch channel 2.3.1: with nothing to show, the frame is empty, with no background or border. Test mode still shows a sample so you can place the element.
+
+### Pour les développeurs
+
+- New `tests/overlay-idle.test.mjs`: walks over every overlay element declared in `modules/*/module.json` (19 today), renders it idle and checks that nothing visible is produced and that the test-mode sample still shows. A new element goes to `IDLE` or to `EXEMPT` with a written reason, or the coverage test fails. Exempt: alerts (event-driven), countdown (hides itself after its end message), polls (final results are content), maze (always-moving scene).
+- Audience: texts `drawOvClosed` and `drawOvDone` removed (unused).
+
 ## 1.58.0 — 2026-11-12
 
 *En bref : Raid Twitch (2.4.0) ajoute deux éléments pour vos pages d'overlay (partenaires à la une, partenaires en direct) et Événements (1.3.0) en ajoute un (prochain événement). Raid Twitch demande maintenant Curiosa 0.5.0. Rien à régler, aucune nouvelle permission.*
