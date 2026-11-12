@@ -64,6 +64,12 @@ const IDLE = {
   },
   "twitch-channel/stats": () => twitch("stats", { rows: [] }),
   "twitch-channel/live": () => twitch("live", { state: "unknown" }),
+  "twitch-raid/featured": () => raid("featured", { state: "ok", rows: [] }),
+  "twitch-raid/live": () => raid("live", { state: "ok", rows: [] }),
+  "events/next": async () => {
+    const ov = await import("../modules/events/element.mjs");
+    return { idle: runPanel(ov.page(q(), { lang: "fr", first: { state: "none" }, data: "/x", labels: { title: "Next" } }), "events next") };
+  },
   "audience/draw": async () => {
     // the runtime states (none / open / closed / drawn) are checked in audience-draw-overlay.test.mjs ; here the page skeleton
     const { audienceCtx } = await import("./helpers/audienceHarness.mjs");
@@ -94,19 +100,26 @@ async function planning(slug) {
   return { idle: await get({}), demo: await get({ "ov-demo": "1" }), panel: "p" };
 }
 
+/** Runs the real script of a page whose panel starts hidden, against a tiny fake document: with nothing to show, the panel must stay (or become) hidden and empty. */
+function runPanel(html, what) {
+  const doc = { hidden: false, body: null };
+  const p = new El("div", doc); p.style = { setProperty() {}, getPropertyValue: () => "20" }; doc.body = p; doc.getElementById = () => p; doc.createElement = (t) => new El(t, doc);
+  const win = { document: doc, JSON, Math, Number, String, Intl, Promise, Object, Array, AbortSignal, parseFloat, setTimeout() { return 1; }, addEventListener() {}, getComputedStyle: () => ({ paddingLeft: "0", paddingRight: "0", paddingTop: "0", paddingBottom: "0" }), fetch: async () => ({ ok: false }) };
+  win.window = win;
+  vm.runInContext(/<script>([\s\S]*)<\/script>/.exec(html)[1], vm.createContext(win));
+  assert.equal(p.hidden, true, `${what}: the panel is hidden when there is nothing to show`);
+  assert.equal(p.children.length, 0, `${what}: nothing inside`);
+  return html.replace(/<script>[\s\S]*<\/script>/, "");
+}
+
 async function twitch(kind, first) {
   const ov = await import("../modules/twitch-channel/overlay.mjs");
-  const html = ov.page(kind, q(), { lang: "fr", first, data: "/x", labels: { live: "Live", offline: "Offline" } });
-  // run the real script of the page against a tiny fake document
-  const doc = { hidden: false, body: null };
-  const p = new El("div", doc); p.style = { setProperty() {} }; doc.body = p; doc.getElementById = () => p; doc.createElement = (t) => new El(t, doc);
-  const win = { document: doc, JSON, Math, Number, String, Intl, Promise, Object, Array, AbortSignal, setTimeout() { return 1; }, addEventListener() {}, getComputedStyle: () => ({ paddingLeft: "0", paddingRight: "0", paddingTop: "0", paddingBottom: "0" }), fetch: async () => ({ ok: false }) };
-  win.window = win;
-  const script = /<script>([\s\S]*)<\/script>/.exec(html)[1];
-  vm.runInContext(script, vm.createContext(win));
-  assert.equal(p.hidden, true, `${kind}: the panel is hidden when there is nothing to show`);
-  assert.equal(p.children.length, 0);
-  return { idle: html.replace(/<script>[\s\S]*<\/script>/, "") };
+  return { idle: runPanel(ov.page(kind, q(), { lang: "fr", first, data: "/x", labels: { live: "Live", offline: "Offline" } }), `twitch ${kind}`) };
+}
+
+async function raid(kind, first) {
+  const ov = await import("../modules/twitch-raid/element.mjs");
+  return { idle: runPanel(ov.page(kind, q(), { lang: "fr", first, data: "/x", labels: { title: "T", viewers_one: "{n} viewer", viewers_other: "{n} viewers", more: "+{n}" } }), `raid ${kind}`) };
 }
 
 test("coverage: every overlay element declared in the repository is either checked idle or exempt with a reason", () => {
@@ -116,7 +129,7 @@ test("coverage: every overlay element declared in the repository is either check
     if (!fs.existsSync(f)) continue;
     for (const e of readJson(f).overlayElements ?? []) declared.push(`${m}/${e.id}`);
   }
-  assert.ok(declared.length >= 16, `found ${declared.length} elements`);
+  assert.ok(declared.length >= 19, `found ${declared.length} elements`);
   for (const k of declared) assert.ok(k in IDLE || k in EXEMPT, `${k}: add an idle check to IDLE or a reason to EXEMPT (an overlay with nothing to say shows nothing)`);
   for (const k of [...Object.keys(IDLE), ...Object.keys(EXEMPT)]) assert.ok(declared.includes(k), `${k} is not a declared element any more`);
   for (const [k, why] of Object.entries(EXEMPT)) assert.ok(why.length > 30, `${k}: say why`);
