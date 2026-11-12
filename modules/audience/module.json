@@ -145,8 +145,8 @@
         "en": "Prize draw"
       },
       "description": {
-        "fr": "Le tirage pendant les inscriptions (titre, mot à taper dans le chat, nombre de personnes inscrites), puis la ou les personnes tirées au sort. Le reste du temps, le cadre est vide. Le contenu s'adapte à la taille du cadre.",
-        "en": "The draw while sign-ups are open (title, word to type in the chat, number of people signed up), then the person or people drawn. The rest of the time the frame is empty. The content adapts to the size of the frame."
+        "fr": "Montre le tirage pendant les inscriptions (titre, mot à taper, nombre d'inscrits). Puis la ou les personnes tirées. Vide le reste du temps. S'adapte à la taille du cadre.",
+        "en": "Shows the draw while sign-ups are open (title, word to type, people signed up). Then the people drawn. Empty the rest of the time. Adapts to the frame size."
       },
       "fit": "fluid",
       "minSize": {
