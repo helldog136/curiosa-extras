@@ -84,9 +84,20 @@ Limits (checked when you save, with a plain message under the field): at most 24
 
 The administration shows the **real element page** in a frame, with two buttons: *Play talking animation* and *Test the voice*, and a line that says what happens ("Click a button to enable sound", "No voice found on this computer: short sounds are used instead", "Voice of your computer: ..."). In a normal browser, sound starts only after a click (browser rule); OBS browser sources do not wait for one.
 
+### The animation in the corner of your site (1.3.0)
+
+The mascot in the corner of the pages of your site uses **the same two animations** as the overlay element: you send them once (tab *Animation*) and there is nothing more to set. When an animation is set:
+
+- **Idle**: the animated picture lies over the avatar (same box, so nothing moves on the page) and plays while the mascot is there, also in its small badge.
+- **Talking**: when a bubble opens, the talking animation plays for the reading time of the sentence (same speed and times as the overlay), then the idle one comes back. The bubble keeps its own duration: the animation never closes it.
+- **Silent, and light**: no sound at all. Nothing is fetched before the mascot shows (once per visit, after its wait): the pages that never see it download no picture. A hidden tab stops the pictures. "Reduced motion": the first picture only; an animated GIF cannot be frozen, so the plain drawing stays.
+- **Nothing set**: the script, its settings and the address of its style sheet are exactly those of 1.2.0 (tests compare them). With an animation, the script gets a small extra part and the style sheet address a `&a=1`; the extra part watches the page and never touches the existing script.
+- The animated picture is a picture added over the drawing; a skin of the site that restyles the mascot keeps working (the drawing is only hidden while the picture plays).
+
 ### Honest limits
 
-- **The animation, the voice and the visibility setting are for the overlay element.** The corner mascot on the pages of your site keeps its drawing or picture and stays silent (a site must not make sound by itself).
+- **The voice and the visibility setting are for the overlay element only.** The corner mascot on the pages of your site never makes a sound (a site must not make sound by itself) and is not hidden by a setting: it already appears once per visit and steps aside. The animation is shared (see the next section).
+- On the site the talking animation follows the bubble, not a clock shared with other pages; it ends with the estimated reading time even if the visitor keeps the bubble open. A hidden tab stops several pictures but a GIF cannot be stopped by a page (the browser slows it down).
 - **A GIF cannot be paused or rewound by a page.** An idle GIF just loops. To start a talking GIF with the sentence, the page loads it under a new address (`?mc=n`); this works but is "best effort": the file may be fetched again each time, and the start may be off by a fraction of a second. For an exact start, use **several pictures**. With "reduced motion", a GIF cannot be frozen: the plain drawing is shown instead (several pictures show their first picture).
 - The reading time is an estimate (characters over a speed), not the length of a recorded voice. The voice of the computer follows its own speed: a long sentence may be cut at the end of the estimated time (the voice stops with the bubble).
 - Picture sizes are not read: only the weight is checked. Very large pictures are slow to fetch.

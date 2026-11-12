@@ -124,7 +124,7 @@
   "test_sRead": "{n} characters, read in {s} seconds.",
   "previewFrameTitle": "Live preview of the mascot",
   "animTitle": "Animation",
-  "animIntro": "Give your mascot a moving face: one animation while it waits, one while it speaks.",
+  "animIntro": "Give your mascot a moving face, on your overlay and in the corner of your site: one animation while it waits, one while it speaks.",
   "an_idle": "Animation while waiting",
   "an_talk": "Animation while speaking",
   "anModeLabel": "How it is made",
@@ -243,5 +243,6 @@
   "errVoName": "Use {max} characters at most, for example {example}.",
   "voModeSaved": "Voice chosen.",
   "voSaved": "Voice saved.",
-  "voPreset_custom": "Your own sound"
+  "voPreset_custom": "Your own sound",
+  "previewAnim": "Animation (first picture)"
 }

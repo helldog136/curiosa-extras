@@ -220,7 +220,7 @@ const GOLDEN = {
         "lines": "a9868ed5f3d02f91",
         "js": "82346ba7741261ce",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "b44a35c3f20b0717",
+        "admin": "d61d90579f36dec9",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       },
@@ -233,7 +233,7 @@ const GOLDEN = {
         "lines": "fd2e39c77a231d53",
         "js": "2cb5bd46390d87c1",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "ce77e1535e9c1378",
+        "admin": "956c9312cbc43959",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       }

@@ -124,7 +124,7 @@
   "test_sRead": "{n} caractères, lus en {s} secondes.",
   "previewFrameTitle": "Aperçu en direct de la mascotte",
   "animTitle": "Animation",
-  "animIntro": "Donnez un visage animé à votre mascotte : une animation quand elle attend, une quand elle parle.",
+  "animIntro": "Donnez un visage animé à votre mascotte, sur votre overlay et dans le coin de votre site : une animation quand elle attend, une quand elle parle.",
   "an_idle": "Animation d'attente",
   "an_talk": "Animation de parole",
   "anModeLabel": "Comment elle est faite",
@@ -243,5 +243,6 @@
   "errVoName": "Utilisez {max} caractères au plus, par exemple {example}.",
   "voModeSaved": "Voix choisie.",
   "voSaved": "Voix enregistrée.",
-  "voPreset_custom": "Votre propre son"
+  "voPreset_custom": "Votre propre son",
+  "previewAnim": "Animation (première image)"
 }

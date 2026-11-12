@@ -69,6 +69,7 @@ export const readingExample = (ctx, config) => [20, 60, 140].map((n) => ctx.t("r
 
 export function animationBlocks(ctx, config, canEdit) {
   const out = [{ type: "heading", text: ctx.t("animTitle"), tab: "animation" }, { type: "markdown", text: ctx.t("animIntro"), tab: "animation" }, previewFrame(ctx, "animation")];
+  if (config.published && (M.animForPage(config.anim.idle) || M.animForPage(config.anim.talk))) out.push({ type: "links", tab: "animation", items: [{ label: ctx.t("seeOnSite"), href: "/?mascot=voir" }] });
   if (!canEdit) return out;
   for (const which of WHICH) out.push(animForm(ctx, config, which), ...framesBlocks(ctx, config, which));
   out.push({ type: "markdown", text: ctx.t("rdExampleLine", { example: readingExample(ctx, config) }), tab: "animation" }, readingForm(ctx, config));

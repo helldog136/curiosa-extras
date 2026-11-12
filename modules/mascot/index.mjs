@@ -1,12 +1,12 @@
-// Mascotte — module de Curiosa.
+// Mascot — module of Curiosa.
 //
-// Un petit personnage discret, dans un coin des pages publiques : il apparaît une fois par visite (après un délai), dit bonjour et une astuce ou une annonce (prochain événement,
-// direct en cours, nouveauté confiée par un autre module), puis se range. Le visiteur peut le fermer, le réduire en pastille ou le couper pour toujours (dans son navigateur, sans cookie).
-// Le dessin inclus prend ses couleurs sur le thème du site ; on peut aussi montrer sa propre image. Une seule mascotte par site.
+// A small, discreet character in a corner of the public pages: it appears once per visit (after a delay), says hello and a tip or an announcement (next event,
+// live stream going on, news handed over by another module), then steps aside. The visitor can close it, reduce it to a badge or switch it off for good (in the browser, no cookie).
+// The included drawing takes its colours from the theme of the site; its own picture or its own animation (idle and talking) can be shown instead. One mascot per site.
 //
-// Pourquoi du code et pas un module « contenu » : il faut un script léger chez le visiteur, des phrases remplies avec des informations d'autres modules, et un panneau d'aperçu.
-// Fichiers : model.mjs (règles pures) · store.mjs (données) · lines.mjs (ce qu'elle peut dire) · assets.mjs (script et style envoyés) · client.mjs, face.mjs, style.mjs (ce qui part chez le visiteur)
-//           admin.mjs · mcp.mjs · starters.mjs (phrases de départ, gabarits). Les fichiers voisins sont chargés avec la même « version » que celui-ci : jamais d'ancien code resté en mémoire.
+// Why code and not a "content" module: it needs a light script on the visitor's side, sentences filled with information from other modules, and a preview panel.
+// Files: model.mjs (pure rules) · store.mjs (data) · lines.mjs (what it can say) · assets.mjs (script and style sent) · client.mjs, face.mjs, style.mjs, play.mjs (what goes to the visitor and to the overlay)
+//        admin.mjs, admin-anim.mjs · mcp.mjs · overlay.mjs (the overlay element) · starters.mjs (starter sentences, templates). The neighbouring files are loaded with the same "version" as this one: never old code left in memory.
 const v = new URL(import.meta.url).search;
 const M = await import(new URL(`./model.mjs${v}`, import.meta.url).href);
 const S = await import(new URL(`./store.mjs${v}`, import.meta.url).href);
@@ -22,18 +22,18 @@ const readOnly = (request) => request.method === "GET" || request.method === "HE
 const notAllowed = () => new Response("Method not allowed", { status: 405, headers: { allow: "GET, HEAD" } });
 
 export default {
-  // ÉLÉMENT DE PAGE D'OVERLAY (cœur 0.5.0) : « Mascotte », une version réduite pour un cadre d'overlay (voir overlay.mjs : seulement les phrases écrites par la personne, rien du coin de page, du navigateur ni des autres modules).
+  // OVERLAY PAGE ELEMENT (core 0.5.0): "Mascot", a reduced version for an overlay frame (see overlay.mjs: only the sentences written by the person, nothing of the corner, the browser or the other modules).
   overlayElements: {
     mascot: (ctx, request) => O.elementAddress(ctx, "mascot", request),
   },
 
   slots: {
-    // Le script n'est annoncé que si la mascotte est publiée ET a de quoi parler : sinon les pages ne chargent rien du tout.
+    // The script is announced only when the mascot is published AND has something to say: otherwise the pages load nothing at all.
     async "layout.head"(ctx) {
       const built = await A.buildClient(ctx);
       return built ? [{ type: "head", tags: [{ tag: "script", src: built.src, defer: true }] }] : null;
     },
-    // Un petit lien facultatif pour la faire revenir après l'avoir coupée (désactivé par défaut).
+    // A small optional link to bring it back after it was switched off (off by default).
     async "layout.footer"(ctx) {
       if (!A.readSettings(ctx).footerLink || !(await A.buildClient(ctx))) return null;
       return [{ type: "links", items: [{ label: ctx.t("footerLink"), href: "/?mascot=voir" }] }];
@@ -41,10 +41,10 @@ export default {
   },
 
   routes: {
-    // La page de l'élément d'overlay (`mascot`) ; avec ?data=1, seulement les phrases pour la mise à jour douce.
+    // The page of the overlay element (`mascot`); with ?data=1, only the sentences for the soft update.
     "element/:slug": (request, ctx) => O.elementResponse(request, ctx),
 
-    // Le script des visiteurs (code + réglages de ce site). Gardé « pour toujours » quand l'empreinte de l'adresse est la bonne.
+    // The visitor script (code + settings of this site). Kept "forever" when the fingerprint of the address is the right one.
     "mascot.js": async (request, ctx) => {
       if (!readOnly(request)) return notAllowed();
       const built = await A.buildClient(ctx);
@@ -54,10 +54,14 @@ export default {
     },
     "mascot.css": async (request, ctx) => {
       if (!readOnly(request)) return notAllowed();
-      const fresh = new URL(request.url).searchParams.get("v") === A.cssHash;
-      return new Response(request.method === "HEAD" ? null : A.CSS, { headers: { ...HEADERS, "content-type": "text/css; charset=utf-8", "cache-control": fresh ? FOREVER : "no-cache" } });
+      const q = new URL(request.url).searchParams;
+      // `?a=1` (animation set, 1.3.0): the same style sheet with the animation rules; without it, the sheet and its address are what they always were.
+      const moving = q.get("a") === "1";
+      const fresh = q.get("v") === (moving ? A.animCssHash : A.cssHash);
+      const css = moving ? `${A.CSS}\n${A.ANIM_CSS}` : A.CSS;
+      return new Response(request.method === "HEAD" ? null : css, { headers: { ...HEADERS, "content-type": "text/css; charset=utf-8", "cache-control": fresh ? FOREVER : "no-cache" } });
     },
-    // Les phrases du moment pour une page : appelée une seule fois, quand la mascotte est sur le point de se montrer.
+    // The sentences of the moment for a page: called only once, when the mascot is about to show.
     lines: async (request, ctx) => {
       if (!readOnly(request)) return notAllowed();
       const json = (body, cache = "no-store") => new Response(request.method === "HEAD" ? null : JSON.stringify(body), { headers: { ...HEADERS, "content-type": "application/json; charset=utf-8", "cache-control": cache } });
@@ -74,7 +78,7 @@ export default {
   adminActions: Admin.adminActions,
   mcp,
 
-  // Les phrases de départ sont posées à la création ; sinon à la première ouverture de l'administration (voir ensureSeeded).
+  // The starter sentences are put on creation; otherwise on the first opening of the administration (see ensureSeeded).
   hooks: { onInstanceCreate: async (ctx) => { await Admin.ensureSeeded(ctx); } },
 
   backup: {
