@@ -359,5 +359,7 @@
   "what_panel_pause": "Twitch bot paused",
   "what_panel_resume": "Twitch bot answering again",
   "what_panel_addcom": "Chat command added",
-  "what_panel_undo": "Chat command deleted"
+  "what_panel_undo": "Chat command deleted",
+  "what_panel_collabon": "Collaboration mode switched on",
+  "what_panel_collaboff": "Collaboration mode switched off"
 }

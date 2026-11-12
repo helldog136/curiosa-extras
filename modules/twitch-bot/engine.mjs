@@ -14,6 +14,7 @@ const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { diagnoseFast, sendChat } = await import(`./listen.mjs${v}`);
 const { handleKill } = await import(`./kill.mjs${v}`);
+const collab = await import(`./collab.mjs${v}`);
 
 /* ───────────── Les valeurs des variables ───────────── */
 
@@ -161,8 +162,9 @@ export async function processChat(ctx, chat, { now = Date.now(), state = null, d
   const diag = diagnoseFast(ctx, s);
   const channelP = diag.then((d) => d.channel ?? null);
   const gathering = src.gather(ctx, channelP, [...need]);
-  const mutedP = state ? Promise.resolve(state.muted === true) : st.isMuted(ctx);
-  for (const p of [diag, channelP, gathering, mutedP]) p.catch(() => {});   // a failure is picked up by the `await` below; no promise is left without a listener
+  const stateP = state ? Promise.resolve(state) : st.readState(ctx);
+  const mutedP = stateP.then((x) => x.muted === true);
+  for (const p of [diag, channelP, gathering, stateP, mutedP]) p.catch(() => {});   // a failure is picked up by the `await` below; no promise is left without a listener
   const d = await diag;
   const channel = d.channel ?? null;
   // The text talks about the live ({jeu}…): the fresh reading starts right now, during the checks below.
@@ -190,7 +192,9 @@ export async function processChat(ctx, chat, { now = Date.now(), state = null, d
     if (!live.live) return log("refused", "offline");
   }
   if (levelOf(chat) < ROLE_LEVEL[cmd.role]) return log("refused", "role");
-  const delays = { command: cmd.key, user: chat.chatterId, globalSec: cmd.cdGlobal ?? s.cdGlobal, userSec: cmd.cdUser ?? s.cdUser, now };
+  // Collaboration mode: the delays are longer (a command still answers, only less often); a reply to a command is never muted.
+  const cs = collab.effective(await stateP, now);
+  const delays = { command: cmd.key, user: chat.chatterId, globalSec: collab.stretch(cmd.cdGlobal ?? s.cdGlobal, cs), userSec: collab.stretch(cmd.cdUser ?? s.cdUser, cs), now };
   const wait = st.checkCooldown(ctx, { ...delays, reserve: false });
   if (wait) return log("refused", "cooldown", { seconds: wait });
   if (!st.takeSendSlot(ctx, { max: s.maxPerWindow, windowMs: 30_000, now })) return log("refused", "rate");
