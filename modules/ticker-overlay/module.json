@@ -5,8 +5,8 @@
     "en": "Ticker overlay (OBS)",
     "fr": "Overlay défilant (OBS)"
   },
-  "version": "1.1.0",
-  "minCore": "0.5.0",
+  "version": "1.2.0",
+  "minCore": "0.6.0",
   "main": "index.mjs",
   "description": {
     "en": "A transparent browser source for OBS that rotates cards from your site (promo codes, articles, announcements…).",
@@ -129,6 +129,195 @@
           }
         }
       ]
+    },
+    {
+      "key": "transitionIn",
+      "type": "select",
+      "default": "auto",
+      "rare": true,
+      "label": {
+        "fr": "Comment il arrive",
+        "en": "How it enters"
+      },
+      "help": {
+        "fr": "« Par défaut » garde le style actuel.",
+        "en": "\"Default\" keeps the current look."
+      },
+      "options": [
+        {
+          "value": "auto",
+          "label": {
+            "fr": "Par défaut",
+            "en": "Default"
+          }
+        },
+        {
+          "value": "slide",
+          "label": {
+            "fr": "Glisse depuis le bord le plus proche",
+            "en": "Slide in from the nearest edge"
+          }
+        },
+        {
+          "value": "slideLeft",
+          "label": {
+            "fr": "Glisse depuis la gauche",
+            "en": "Slide in from the left"
+          }
+        },
+        {
+          "value": "slideRight",
+          "label": {
+            "fr": "Glisse depuis la droite",
+            "en": "Slide in from the right"
+          }
+        },
+        {
+          "value": "slideTop",
+          "label": {
+            "fr": "Glisse depuis le haut",
+            "en": "Slide in from the top"
+          }
+        },
+        {
+          "value": "slideBottom",
+          "label": {
+            "fr": "Glisse depuis le bas",
+            "en": "Slide in from the bottom"
+          }
+        },
+        {
+          "value": "fade",
+          "label": {
+            "fr": "Apparaît en fondu",
+            "en": "Fade in"
+          }
+        },
+        {
+          "value": "jiggle",
+          "label": {
+            "fr": "Arrive avec un rebond",
+            "en": "Jiggle in"
+          }
+        },
+        {
+          "value": "pop",
+          "label": {
+            "fr": "Surgit en zoom",
+            "en": "Pop in"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Instantané",
+            "en": "Instant"
+          }
+        }
+      ]
+    },
+    {
+      "key": "transitionOut",
+      "type": "select",
+      "default": "same",
+      "rare": true,
+      "label": {
+        "fr": "Comment il part",
+        "en": "How it leaves"
+      },
+      "help": {
+        "fr": "« Comme l'arrivée » la joue à l'envers.",
+        "en": "\"Same\" plays the entrance backwards."
+      },
+      "options": [
+        {
+          "value": "same",
+          "label": {
+            "fr": "Comme l'arrivée",
+            "en": "Same as how it enters"
+          }
+        },
+        {
+          "value": "slide",
+          "label": {
+            "fr": "Glisse vers le bord le plus proche",
+            "en": "Slide out to the nearest edge"
+          }
+        },
+        {
+          "value": "slideLeft",
+          "label": {
+            "fr": "Glisse vers la gauche",
+            "en": "Slide out to the left"
+          }
+        },
+        {
+          "value": "slideRight",
+          "label": {
+            "fr": "Glisse vers la droite",
+            "en": "Slide out to the right"
+          }
+        },
+        {
+          "value": "slideTop",
+          "label": {
+            "fr": "Glisse vers le haut",
+            "en": "Slide out to the top"
+          }
+        },
+        {
+          "value": "slideBottom",
+          "label": {
+            "fr": "Glisse vers le bas",
+            "en": "Slide out to the bottom"
+          }
+        },
+        {
+          "value": "fade",
+          "label": {
+            "fr": "Disparaît en fondu",
+            "en": "Fade out"
+          }
+        },
+        {
+          "value": "jiggle",
+          "label": {
+            "fr": "Rebondit, puis s'efface",
+            "en": "Jiggle, then fade"
+          }
+        },
+        {
+          "value": "pop",
+          "label": {
+            "fr": "Disparaît en zoom",
+            "en": "Pop out"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Instantané",
+            "en": "Instant"
+          }
+        }
+      ]
+    },
+    {
+      "key": "transitionSeconds",
+      "type": "number",
+      "default": 0.5,
+      "rare": true,
+      "min": 0.2,
+      "max": 2,
+      "step": 0.1,
+      "unit": {
+        "fr": "secondes",
+        "en": "seconds"
+      },
+      "label": {
+        "fr": "Durée du mouvement",
+        "en": "Length of the movement"
+      }
     }
   ],
   "overlayElements": [
@@ -198,6 +387,182 @@
             "en": "The picture of each card, when it has one."
           },
           "default": true
+        },
+        {
+          "id": "transitionIn",
+          "type": "choice",
+          "label": {
+            "fr": "Comment il arrive",
+            "en": "How it enters"
+          },
+          "choices": [
+            {
+              "value": "module",
+              "label": {
+                "fr": "Comme dans les réglages du module",
+                "en": "Like the module settings"
+              }
+            },
+            {
+              "value": "auto",
+              "label": {
+                "fr": "Par défaut",
+                "en": "Default"
+              }
+            },
+            {
+              "value": "slide",
+              "label": {
+                "fr": "Glisse depuis le bord le plus proche",
+                "en": "Slide in from the nearest edge"
+              }
+            },
+            {
+              "value": "slideLeft",
+              "label": {
+                "fr": "Glisse depuis la gauche",
+                "en": "Slide in from the left"
+              }
+            },
+            {
+              "value": "slideRight",
+              "label": {
+                "fr": "Glisse depuis la droite",
+                "en": "Slide in from the right"
+              }
+            },
+            {
+              "value": "slideTop",
+              "label": {
+                "fr": "Glisse depuis le haut",
+                "en": "Slide in from the top"
+              }
+            },
+            {
+              "value": "slideBottom",
+              "label": {
+                "fr": "Glisse depuis le bas",
+                "en": "Slide in from the bottom"
+              }
+            },
+            {
+              "value": "fade",
+              "label": {
+                "fr": "Apparaît en fondu",
+                "en": "Fade in"
+              }
+            },
+            {
+              "value": "jiggle",
+              "label": {
+                "fr": "Arrive avec un rebond",
+                "en": "Jiggle in"
+              }
+            },
+            {
+              "value": "pop",
+              "label": {
+                "fr": "Surgit en zoom",
+                "en": "Pop in"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "fr": "Instantané",
+                "en": "Instant"
+              }
+            }
+          ],
+          "default": "module"
+        },
+        {
+          "id": "transitionOut",
+          "type": "choice",
+          "label": {
+            "fr": "Comment il part",
+            "en": "How it leaves"
+          },
+          "choices": [
+            {
+              "value": "module",
+              "label": {
+                "fr": "Comme dans les réglages du module",
+                "en": "Like the module settings"
+              }
+            },
+            {
+              "value": "same",
+              "label": {
+                "fr": "Comme l'arrivée",
+                "en": "Same as how it enters"
+              }
+            },
+            {
+              "value": "slide",
+              "label": {
+                "fr": "Glisse vers le bord le plus proche",
+                "en": "Slide out to the nearest edge"
+              }
+            },
+            {
+              "value": "slideLeft",
+              "label": {
+                "fr": "Glisse vers la gauche",
+                "en": "Slide out to the left"
+              }
+            },
+            {
+              "value": "slideRight",
+              "label": {
+                "fr": "Glisse vers la droite",
+                "en": "Slide out to the right"
+              }
+            },
+            {
+              "value": "slideTop",
+              "label": {
+                "fr": "Glisse vers le haut",
+                "en": "Slide out to the top"
+              }
+            },
+            {
+              "value": "slideBottom",
+              "label": {
+                "fr": "Glisse vers le bas",
+                "en": "Slide out to the bottom"
+              }
+            },
+            {
+              "value": "fade",
+              "label": {
+                "fr": "Disparaît en fondu",
+                "en": "Fade out"
+              }
+            },
+            {
+              "value": "jiggle",
+              "label": {
+                "fr": "Rebondit, puis s'efface",
+                "en": "Jiggle, then fade"
+              }
+            },
+            {
+              "value": "pop",
+              "label": {
+                "fr": "Disparaît en zoom",
+                "en": "Pop out"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "fr": "Instantané",
+                "en": "Instant"
+              }
+            }
+          ],
+          "default": "module"
         }
       ]
     }

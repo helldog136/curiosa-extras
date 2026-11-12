@@ -9,6 +9,9 @@
 // ne tourne. Sans « Actions du live YouTube » sur le site, la page ne demande rien : l'overlay se comporte exactement comme avant.
 import { EventEmitter } from "node:events";
 import { timingSafeEqual } from "node:crypto";
+// Neighbour file: dynamic, versioned import (docs/HOT-UPDATE.md).
+const v = new URL(import.meta.url).search;
+const { ovTransition, transitionConfig } = await import(new URL(`./transition.mjs${v}`, import.meta.url).href);
 
 const bus = (globalThis.__curiosaAlertsBus ??= Object.assign(new EventEmitter(), {}));
 bus.setMaxListeners(100);
@@ -224,7 +227,11 @@ export default {
     try { pull = (await Promise.all(LIVE_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.length > 0); } catch { pull = false; }
     const duration = Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6));
     const kinds = ov && Object.hasOwn(OV_ONLY, q.get("opt-kinds") ?? "") ? q.get("opt-kinds") : "all";
+    // Entrée / sortie : l'option de l'élément (si elle n'est pas « comme le module »), sinon le réglage. Tout en « auto » : le script d'avant, à l'identique (animation `alPop`).
+    const tr = transitionConfig({ inOpt: ov ? q.get("opt-transitionIn") : null, inSetting: ctx.setting("transitionIn"), outOpt: ov ? q.get("opt-transitionOut") : null, outSetting: ctx.setting("transitionOut"), seconds: ctx.setting("transitionSeconds") }, 500);
+    const fx = tr.in !== "auto" || tr.out !== "auto";
     const cfg = {
+      ...(fx ? { tr } : {}),
       ...(ov ? {} : { eventsUrl: `/m/${ctx.instance.key}/events` }),
       duration,
       neon: ctx.setting("visual") !== "plain",
@@ -239,6 +246,10 @@ export default {
     // Sélecteurs : l'overlay du module garde ses classes ; l'élément se style par `data-ov-part` et les jetons `--ov-*` (avec repli sur les couleurs du module).
     const S = ov ? { card: '[data-ov-part="card"]', kind: '[data-ov-part="kind"]', msg: '[data-ov-part="message"]', detail: '[data-ov-part="detail"]' } : { card: ".al-card", kind: ".al-kind", msg: ".al-msg", detail: ".al-detail" };
     const accentBorder = "color-mix(in srgb,var(--al-accent) 40%,transparent)", surface = "color-mix(in srgb,var(--al-bg) 90%,transparent)";
+    // Avec une entrée ou une sortie choisie, la carte n'a plus l'animation unique `alPop` : elle entre, reste, puis sort (« auto » = le zoom léger d'avant).
+    const fxScript = fx ? `${ovTransition.toString()}
+        var fx=function(card,phase){var m=c.tr[phase==="in"?"in":"out"];return ovTransition(card,phase,m==="auto"?"pop":m,{ms:c.tr.ms,pop:.85,side:"bottom"})};
+        function hold(card,fin){clearTimeout(timer);var lead=Math.round(c.tr.ms*(c.tr.out==="jiggle"?1.3:1));timer=setTimeout(function(){fx(card,"out").then(fin)},Math.max(c.tr.ms,c.duration*1000-lead))}` : "";
     const withDetail = pull || ov;
     const queued = pull || ov;
     // Un élément en mode test (`ov-demo=1`) montre une alerte d'exemple, fixe, jusqu'à la première vraie alerte.
@@ -251,7 +262,7 @@ export default {
       css: `
         html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
         #al-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-        ${S.card}{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:2rem 3rem;border-radius:${ov ? "var(--ov-radius,1.5rem)" : "1.5rem"};border:1px solid ${ov ? `var(--ov-border,${accentBorder})` : accentBorder};background:${ov ? `var(--ov-surface,${surface})` : surface};${ov ? "" : "backdrop-filter:blur(6px);"}text-align:center;animation:alPop var(--al-dur) ease-in-out forwards}
+        ${S.card}{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:2rem 3rem;border-radius:${ov ? "var(--ov-radius,1.5rem)" : "1.5rem"};border:1px solid ${ov ? `var(--ov-border,${accentBorder})` : accentBorder};background:${ov ? `var(--ov-surface,${surface})` : surface};${ov ? "" : "backdrop-filter:blur(6px);"}text-align:center;${fx ? "" : "animation:alPop var(--al-dur) ease-in-out forwards"}}
 ${!ov || cfg.neon ? `        ${ov ? S.card : ".al-card.neon"}{box-shadow:0 0 28px color-mix(in srgb,var(--al-accent) 45%,transparent)}
 ` : ""}        ${S.kind}{font-size:1.6rem;font-weight:700;color:var(--al-accent)}
 ${!ov || cfg.neon ? `        ${ov ? `${S.card} ${S.kind}` : ".al-card.neon .al-kind"}{text-shadow:0 0 12px var(--al-accent)}
@@ -261,12 +272,12 @@ ${withDetail ? `        ${S.detail}{font-size:1rem;color:${ov ? "var(--ov-fg,var
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
       script: queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
-        stage.style.setProperty("--al-dur",c.duration+"s");
+        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}
         function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}
           ${node("k", "kind", "al-kind")}k.textContent=c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}
-          stage.replaceChildren(card);clearTimeout(timer);timer=setTimeout(done,c.duration*1000)}
+          stage.replaceChildren(card);${fx ? "fx(card,\"in\");hold(card,done)" : "clearTimeout(timer);timer=setTimeout(done,c.duration*1000)"}}
         function done(){stage.replaceChildren();busy=false;next()}
         function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}
         function show(e){if(e.queued){if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
@@ -274,11 +285,11 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
         poll()})();` : `        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}};
         var gap=c.pullMs;function pull(){fetch(c.pullUrl,{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000},function(){gap=30000}).then(function(){setTimeout(pull,gap)})}
         setTimeout(pull,1000)})();`}` : `(function(){var c=${json},stage=document.getElementById("al-stage"),timer;
-        stage.style.setProperty("--al-dur",c.duration+"s");
+        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}
         function show(e){var card=document.createElement("div");card.className="al-card"+(c.neon?" neon":"");
           var k=document.createElement("div");k.className="al-kind";k.textContent=c.labels[e.kind]||c.labels.alert;
           var m=document.createElement("div");m.className="al-msg";m.textContent=e.message;card.append(k,m);
-          stage.replaceChildren(card);clearTimeout(timer);timer=setTimeout(function(){stage.replaceChildren()},c.duration*1000)}
+          stage.replaceChildren(card);${fx ? "fx(card,\"in\");hold(card,function(){stage.replaceChildren()})" : "clearTimeout(timer);timer=setTimeout(function(){stage.replaceChildren()},c.duration*1000)"}}
         var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}}})();`,
     };
   },

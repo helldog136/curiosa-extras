@@ -6,6 +6,7 @@ A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid.
 - Send a test alert with one button.
 - Choose the accent colour and how many seconds an alert stays.
 - Show the text of YouTube messages, if you want.
+- Choose how the alert enters and leaves: slide from a side, fade, jiggle or pop.
 
 ## Why you will like it
 
@@ -32,4 +33,4 @@ A pop-up for OBS that shows your alerts: a new follower, a subscription, a raid.
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.2.1.
+Available since version 1.0.0. Current version: 1.3.0.

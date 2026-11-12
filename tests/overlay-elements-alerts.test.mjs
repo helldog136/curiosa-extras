@@ -41,8 +41,8 @@ const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 test("manifeste : valide au sens du cœur 0.5.0, un élément « alertes » (garde ses proportions), libellés et descriptions en français et en anglais", () => {
   const r = parseManifest(manifestJson);
   assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifestJson.version, "1.2.1");
-  assert.equal(manifestJson.minCore, "0.5.0");
+  assert.equal(manifestJson.version, "1.3.0");
+  assert.equal(manifestJson.minCore, "0.6.0");
   const [el, ...others] = manifestJson.overlayElements;
   assert.equal(others.length, 0);
   assert.equal(el.id, "alerts");
@@ -53,7 +53,7 @@ test("manifeste : valide au sens du cœur 0.5.0, un élément « alertes » (gar
   for (const k of ["label", "description"]) assert.ok(el[k].fr && el[k].en, k);
   assert.deepEqual(Object.keys(def.overlayElements), manifestJson.overlayElements.map((e) => e.id), "autant de fonctions que d'éléments déclarés");
   // Jeu d'options minimal : une seule, un choix dans une liste, avec un défaut qui existe.
-  assert.equal(el.options.length, 1);
+  assert.equal(el.options.length, 3, "kinds + the two transition options");
   const opt = el.options[0];
   assert.equal(opt.type, "choice");
   assert.ok(opt.choices.some((c) => c.value === opt.default));
