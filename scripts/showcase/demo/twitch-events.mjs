@@ -1,6 +1,10 @@
 // Twitch activity: a journal of events with invented names (written straight into the module's storage, as the webhook would).
 export default async function (h) {
   const { ctx } = await h.ctxOf("twitch-events");
+  // a fixed, made-up address for the OBS dock picture (the demo site is throw-away)
+  const row = (await ctx.api.store.list("state", { limit: 1 }))[0];
+  const state = { ...(row?.data ?? {}), dockSecret: "demo-dock-address-0123456789abcdef" };
+  if (row) await ctx.api.store.update(row.id, state); else await ctx.api.store.add("state", state);
   const t0 = h.NOW.getTime();
   const lines = [
     [2, { kind: "follow", name: "Camille", login: "camille" }], [6, { kind: "sub", name: "etoile_nord", login: "etoile_nord", tier: "1" }],

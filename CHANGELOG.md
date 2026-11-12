@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.63.0 — 2026-11-12
+
+*En bref : Activité Twitch (1.1.0) a maintenant un dock pour OBS : votre journal d'événements en direct, avec un bouton « Rejouer » sur chaque ligne, une pause des alertes, « Vider la file » et un test. Il suffit de copier l'adresse de l'onglet « Dock OBS » dans OBS (Docks > Docks de navigateur personnalisés). Rien d'autre à régler, aucune nouvelle permission. Rejouer et mettre en pause demandent l'Overlay alertes 1.4.0.*
+
+*In short: Twitch activity (1.1.0) now has an OBS dock: your live event journal, with a "Replay" button on each line, a pause for the alerts, "Empty the queue" and a test. Copy the address of the "OBS dock" tab into OBS (Docks > Custom browser docks). Nothing else to set up, no new permission. Replaying and pausing need the Alerts overlay 1.4.0.*
+
+### Nouveautés
+
+- **Un dock pour OBS montre vos événements en direct**, du plus récent au plus ancien : une pastille colorée et écrite, le pseudo, le montant, l'heure (« il y a 2 min ») et un bouton **Rejouer** sur chaque ligne. Il tient dans un panneau étroit (environ 280 px) comme dans un large, sombre par défaut.
+- **« Ce direct », « 24 h » ou « Tout »**, un filtre par type et une recherche. « Ce direct » est le choix par défaut pendant votre direct.
+- **Rejouer montre de nouveau l'alerte avec les mêmes données**, même si ce type est éteint. Un double clic n'envoie qu'une alerte ; le bouton dit « Rejoué ✓ ».
+- **Trois boutons de plus pour un direct** : Pause des alertes / Reprendre (les alertes sont retenues, rien n'est perdu), Vider la file et Tester (un menu de types).
+- **Si le site redémarre, le dock dit « Reconnexion… » et revient tout seul.** L'adresse est secrète ; « Créer une nouvelle adresse » arrête tout de suite l'ancien dock (rechargez le dock dans OBS).
+- **An OBS dock shows your events live**, newest first: a coloured and written badge, the name, the amount, the time ("2 min ago") and a **Replay** button on each line. It fits a narrow panel (about 280 px) as well as a wide one, dark by default.
+- **"This stream", "24 h" or "All kept"**, a filter by type and a search field. "This stream" is the default while you are live.
+- **Replay shows the alert again with the same data**, even if that type is switched off. A double click sends one alert; the button says "Replayed ✓".
+- **Three more buttons for a live**: Pause alerts / Resume (the alerts are held, nothing is lost), Empty the queue and Test (a menu of types).
+- **If the site restarts, the dock says "Reconnecting…" and comes back by itself.** The address is secret; "Make a new address" stops the old dock at once (reload the dock in OBS).
+
+### Pour les développeurs
+
+- Twitch activity 1.1.0: `dock.mjs` (page: one script, nonce policy, no colour or font written, `--cur-*` tokens), `dockapi.mjs` (secret `dockSecret`, constant-time compare, 30 wrong keys a minute then 429, routes `dock`, `dock-data` (90 a minute), `dock-act` (40 a minute)), `dockpure.mjs` (the same source runs in the page and in the tests), `dockkit.mjs` (copy of the look helpers of `twitch-raid/dock.mjs`, a test fails on drift), `describe.mjs` (shared with the admin page). Optional need `alerts.queue`. Détail : `docs/changelog-parts/events-dock.md`.
+- Tests: `tests/twitch-events-dock.test.mjs` (including the whole page script run in a fake browser).
+
 ## 1.62.0 — 2026-11-12
 
 *En bref : l'Overlay alertes (1.4.0) affiche maintenant vos alertes Twitch, l'une après l'autre : follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains d'enthousiasme. Un onglet « Événements Twitch » règle chaque type (texte, durée, minimum), les rafales sont groupées et une pause retient les alertes sans en perdre. Il faut pour cela le module Activité Twitch (1.61.0) ; sans lui, rien ne change. Nouvelle permission : stockage.*
