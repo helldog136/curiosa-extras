@@ -23,7 +23,7 @@
     "fr": "Votre site reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et tient un journal."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.0.0",
+  "moduleVersion": "1.1.0",
   "requires": [
     "twitch-connector",
     "twitch-channel"
@@ -56,6 +56,18 @@
       "caption": {
         "en": "The event types: a switch and a test button for each.",
         "fr": "Les types d'événements : un interrupteur et un bouton de test pour chacun."
+      }
+    },
+    {
+      "file": "dock.webp",
+      "kind": "mobile",
+      "alt": {
+        "en": "The OBS dock of Twitch activity, dark, with demo data",
+        "fr": "Le dock OBS d'Activité Twitch, sombre, avec des données de démonstration"
+      },
+      "caption": {
+        "en": "The OBS dock: live journal, Replay on each line, pause and test.",
+        "fr": "Le dock OBS : journal en direct, Rejouer sur chaque ligne, pause et test."
       }
     }
   ],

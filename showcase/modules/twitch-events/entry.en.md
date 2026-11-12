@@ -7,6 +7,7 @@ Your site receives what happens on your channel. It keeps a journal you can read
 - A list with a search, a filter by type, and a test button for each type.
 - Switch each type on or off. The page tells you when Twitch's permission is needed.
 - The journal is shared with your other modules, such as the alerts in OBS.
+- An OBS dock shows the journal live, with a Replay button, a pause for the alerts and a test.
 
 ## Why you will like it
 
@@ -21,6 +22,9 @@ Your site receives what happens on your channel. It keeps a journal you can read
 
 ![Twitch activity event types, with switches](shot:types.webp)
 *The event types: a switch and a test button for each.*
+
+![The OBS dock of Twitch activity, dark, with demo data](shot:dock.webp)
+*The OBS dock: live journal, Replay on each line, pause and test.*
 
 ## Works well with
 
@@ -37,4 +41,4 @@ Your site receives what happens on your channel. It keeps a journal you can read
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.0.0.
+Available since version 1.0.0. Current version: 1.1.0.

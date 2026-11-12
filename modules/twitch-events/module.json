@@ -6,11 +6,11 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.0.0",
+  "version": "1.1.0",
   "platform": "twitch",
   "description": {
-    "en": "Receives the follows, subs, bits, raids and hype trains of your channel and keeps them in a journal.",
-    "fr": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme de votre chaîne et les garde dans un journal."
+    "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",
+    "fr": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme, tient un journal et donne un dock OBS."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -32,6 +32,10 @@
     },
     {
       "service": "twitch.live"
+    },
+    {
+      "service": "alerts.queue",
+      "optional": true
     }
   ],
   "provides": [
@@ -56,6 +60,14 @@
       "label": {
         "en": "Event types",
         "fr": "Types"
+      },
+      "panel": true
+    },
+    {
+      "id": "dock",
+      "label": {
+        "en": "OBS dock",
+        "fr": "Dock OBS"
       },
       "panel": true
     }

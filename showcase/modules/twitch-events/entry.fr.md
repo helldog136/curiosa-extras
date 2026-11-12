@@ -7,6 +7,7 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 - Une liste avec une recherche, un filtre par type et un bouton de test pour chaque type.
 - Allumez ou éteignez chaque type. La page vous dit quand l'accord de Twitch est nécessaire.
 - Le journal est partagé avec vos autres modules, comme les alertes dans OBS.
+- Un dock OBS montre le journal en direct, avec un bouton Rejouer, une pause des alertes et un test.
 
 ## Pourquoi vous allez l'aimer
 
@@ -21,6 +22,9 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 
 ![Types d'événements d'Activité Twitch, avec leurs interrupteurs](shot:types.webp)
 *Les types d'événements : un interrupteur et un bouton de test pour chacun.*
+
+![Le dock OBS d'Activité Twitch, sombre, avec des données de démonstration](shot:dock.webp)
+*Le dock OBS : journal en direct, Rejouer sur chaque ligne, pause et test.*
 
 ## Ça marche bien avec
 
@@ -37,4 +41,4 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.0.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.1.0.
