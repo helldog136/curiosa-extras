@@ -195,7 +195,7 @@ const GOLDEN = {
     }
   },
   "mascot": {
-    "manifest": "0a6b2ef83eb5ab64",
+    "manifest": "7cb2cacf9ee302ce",
     "keys": [
       "adminActions",
       "adminPanel",
@@ -220,7 +220,7 @@ const GOLDEN = {
         "lines": "a9868ed5f3d02f91",
         "js": "82346ba7741261ce",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "77d69429f26c7698",
+        "admin": "b44a35c3f20b0717",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       },
@@ -233,7 +233,7 @@ const GOLDEN = {
         "lines": "fd2e39c77a231d53",
         "js": "2cb5bd46390d87c1",
         "cssRoute": "e9fac6e255e3d5db",
-        "admin": "140e42eb3abe9711",
+        "admin": "ce77e1535e9c1378",
         "phrases": "73c3a8055b0f7c1e",
         "mcp": "5a457d7924ceecdc"
       }
@@ -254,9 +254,9 @@ test("non-régression : réglages, type, instances et permissions de ces trois m
   const keys = (m) => read(m, "module.json").settings.map((s) => s.key);
   assert.deepEqual(keys("ticker-overlay"), ["interval", "textColor", "cardColor", "position", "transitionIn", "transitionOut", "transitionSeconds"]);
   assert.deepEqual(keys("testimonials"), ["title", "intro", "display", "order", "ratingMode", "showAverage", "askEmail", "notify", "perPage", "maxLength", "rateLimit", "emailDays", "structuredData", "aboutName", "aboutType"]);
-  assert.deepEqual(keys("mascot"), ["where", "pages", "corner", "announce", "footerLink", "delay", "show", "max"]);
+  assert.deepEqual(keys("mascot"), ["voiceFile", "where", "pages", "corner", "announce", "footerLink", "delay", "show", "max", "transitionIn", "transitionOut", "transitionSeconds"]);
   const info = (m) => { const j = read(m, "module.json"); return [j.type, j.instances, j.page ?? null, j.basePath ?? null, [...j.permissions].sort()]; };
   assert.deepEqual(info("ticker-overlay"), ["overlay", "multiple", null, null, ["overlay", "routes", "topics"]]);
   assert.deepEqual(info("testimonials"), ["widget", "single", true, "avis", ["admin", "mail", "mcp", "pages", "routes", "sections", "storage", "topics"]]);
-  assert.deepEqual(info("mascot"), ["widget", "single", false, null, ["admin", "mcp", "routes", "slots", "storage", "topics"]]);
+  assert.deepEqual(info("mascot"), ["widget", "single", false, null, ["admin", "files", "mcp", "routes", "slots", "storage", "topics"]]);
 });

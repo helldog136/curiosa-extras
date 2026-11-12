@@ -1,17 +1,17 @@
-// Mascotte — les règles pures : bornes, phrases, variables, pages. Aucun accès au stockage ni au réseau (testable seul).
+// Mascot — the pure rules: limits, sentences, variables, pages, and (1.2.0) animation, reading time and voice. No access to storage or to the network (testable alone).
 
-/** Les bornes dures du module (tout ce qui arrive de plus est refusé ou ignoré). */
+/** The hard limits of the module (anything beyond is refused or ignored). */
 export const LIMITS = { phrases: 100, text: 140, name: 40, alt: 125, pages: 20, path: 100, link: 300, line: 260, hints: 10, items: 30 };
-/** Réglages à valeur bornée : [minimum, maximum, défaut]. */
+/** Settings with a bounded value: [minimum, maximum, default]. */
 export const RANGES = { delay: [3, 60, 8], show: [4, 20, 8], max: [1, 10, 3] };
 export const KINDS = ["hello", "tip", "news"];
 export const STATES = ["published", "draft"];
 
 /**
- * Les variables d'une phrase. Chaque variable a un nom français ET un nom anglais (les deux marchent dans toutes les langues) ; elle n'existe
- * que si sa source répond : une phrase qui en emploie une qui manque n'est simplement pas dite (jamais d'erreur, jamais de trou dans la phrase).
- *   site = nom du site · name = nom de la mascotte · event / date = prochain événement et sa date · live / liveTitle = direct en cours
- *   news = la dernière nouveauté publiée (article, vidéo… proposés au flux du site, moins de 3 semaines)
+ * The variables of a sentence. Each variable has a French AND an English name (both work in every language); it only exists
+ * when its source answers: a sentence that uses a missing one is simply not said (never an error, never a hole in the sentence).
+ *   site = name of the site · name = name of the mascot · event / date = next event and its date · live / liveTitle = live stream going on
+ *   news = the latest published news (article, video… offered to the feed of the site, less than 3 weeks old)
  */
 export const VARIABLES = [
   { key: "site", names: ["nom_du_site", "site_name"] },
@@ -22,21 +22,21 @@ export const VARIABLES = [
   { key: "liveTitle", names: ["titre_direct", "live_title"] },
   { key: "news", names: ["derniere_nouveaute", "latest_news"] },
 ];
-/** Le nom d'une variable dans la langue de la personne (français pour « fr », anglais sinon), entre accolades : pour les exemples des textes d'aide. */
+/** The name of a variable in the language of the person (French for "fr", English otherwise), in braces: for the examples of the help texts. */
 export const example = (locale, key) => `{${VARIABLES.find((x) => x.key === key).names[locale === "fr" ? 0 : 1]}}`;
 const BY_NAME = new Map(VARIABLES.flatMap((v) => v.names.map((n) => [n, v.key])));
-/** Quelle source il faut interroger pour répondre à chaque variable (les autres sont toujours connues). */
+/** Which source to ask to answer each variable (the others are always known). */
 export const SOURCE_OF = { event: "event", date: "event", live: "live", liveTitle: "live", news: "latest" };
 
 const CONTROL = new RegExp("[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]", "g");
-/** Une ligne de texte sans caractère de contrôle, espaces réduits, longueur bornée. */
+/** One line of text with no control character, spaces squeezed, length bounded. */
 export function oneLine(value, max) {
   return String(value ?? "").replace(CONTROL, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
-/** Un texte venu d'ailleurs (titre d'un événement…) : une ligne, sans accolades (elles sont réservées aux variables). */
+/** A text that comes from elsewhere (title of an event…): one line, no braces (they are reserved for variables). */
 export const outside = (value, max) => oneLine(String(value ?? "").replace(/[{}]/g, ""), max);
 
-/** Variables employées par un texte : { keys: [clés connues], unknown: [noms inconnus], stray: accolade isolée ? }. */
+/** Variables used by a text: { keys: [known keys], unknown: [unknown names], stray: a lone brace? }. */
 export function variablesIn(text) {
   const keys = [], unknown = [];
   const rest = String(text ?? "").replace(/\{([^{}]{0,40})\}/g, (all, name) => {
@@ -47,7 +47,7 @@ export function variablesIn(text) {
   return { keys, unknown, stray: /[{}]/.test(rest) };
 }
 
-/** Remplit les variables d'une phrase avec `facts` ({ site, name, event, date, live, liveTitle, news }). Renvoie null si une variable employée n'a pas de valeur. */
+/** Fills the variables of a sentence with `facts` ({ site, name, event, date, live, liveTitle, news }). Returns null when a variable used has no value. */
 export function fillText(text, facts) {
   let missing = false;
   const out = String(text ?? "").replace(/\{([^{}]{0,40})\}/g, (all, name) => {
@@ -59,7 +59,7 @@ export function fillText(text, facts) {
   return missing ? null : oneLine(out, LIMITS.line + 40);
 }
 
-/** Pages : « /faq » (cette page), « /blog/* » (le blog et tout ce qu'il contient), « /jeu* » (tout ce qui commence par /jeu). Minuscules. */
+/** Pages: "/faq" (this page), "/blog/*" (the blog and everything in it), "/game*" (everything that starts with /game). Lower case. */
 const PAGE_RE = /^\/[a-z0-9_\-.~%/]{0,96}\*?$/;
 export function parsePages(raw) {
   const parts = String(raw ?? "").split(/[\n,;]+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -74,8 +74,8 @@ export function parsePages(raw) {
 }
 
 /**
- * Cette adresse (sans la langue, sans « ? » ni « # ») est-elle dans la liste ?
- * AUTONOME : sa source est aussi envoyée au navigateur, qui s'en sert pour décider sans rien demander au serveur.
+ * Is this address (without the language, without "?" or "#") in the list?
+ * SELF-CONTAINED: its source is also sent to the browser, which uses it to decide without asking the server anything.
  */
 export function pathMatches(list, path) {
   var p = String(path || "/").toLowerCase();
@@ -88,7 +88,7 @@ export function pathMatches(list, path) {
   return false;
 }
 
-/** L'adresse reçue du navigateur → un chemin propre (« /blog/article »), ou « / ». Jamais d'adresse complète, jamais plus de 200 caractères. */
+/** The address received from the browser → a clean path ("/blog/article"), or "/". Never a full address, never more than 200 characters. */
 export function cleanPath(raw) {
   let p = String(raw ?? "").slice(0, 200).split(/[?#]/)[0];
   if (!p.startsWith("/") || p.startsWith("//")) return "/";
@@ -97,7 +97,7 @@ export function cleanPath(raw) {
   return p || "/";
 }
 
-/** La mascotte doit-elle se montrer sur cette page ? where = all | home | some. */
+/** Must the mascot show on this page? where = all | home | some. */
 export function placeAllows(where, pages, path) {
   if (where === "home") return path === "/";
   if (where === "some") return pathMatches(pages, path);
@@ -110,14 +110,14 @@ export const num = (value, [min, max, fallback]) => {
 };
 
 const BAD_LINK = new RegExp("[\\u0000-\\u0020\"'<>\\\\`]");
-/** Une adresse de lien pour une phrase : https, ou une page du site (« /agenda »). Vide si elle ne convient pas. */
+/** A link address for a sentence: https, or a page of the site ("/events"). Empty when it does not fit. */
 export function safeLink(value) {
   const s = String(value ?? "").trim();
   if (!s || s.length > LIMITS.link || BAD_LINK.test(s)) return "";
   if (s.startsWith("/") && !s.startsWith("//")) return s;
   try { const u = new URL(s); return u.protocol === "https:" && !u.username && !u.password ? u.href : ""; } catch { return ""; }
 }
-/** Une image de mascotte : un fichier envoyé sur le site (avec son éventuel cadrage) ou une adresse https. */
+/** A picture of the mascot: a file sent to the site (with its possible crop) or an https address. */
 export function safeImage(value) {
   const s = String(value ?? "").trim();
   if (/^\/uploads\/[0-9a-f-]{36}\.(?:png|jpe?g|webp|gif)(?:\?c=[0-9a-z._-]{1,60}(?:&s=1)?)?$/.test(s)) return s;
@@ -125,8 +125,8 @@ export function safeImage(value) {
 }
 
 /**
- * Vérifie une phrase écrite par la personne. → { value } ou { errors: { champ: [clé de message, variables] } }.
- * `locales` : les langues du site. Rien n'est jamais « corrigé en silence » : on dit quoi changer.
+ * Checks a sentence written by the person. → { value } or { errors: { field: [message key, variables] } }.
+ * `locales`: the languages of the site. Nothing is ever "fixed in silence": we say what to change.
  */
 export function checkPhrase(raw, { locales = [], locale = "en" } = {}) {
   const errors = {};
@@ -151,16 +151,142 @@ export function checkPhrase(raw, { locales = [], locale = "en" } = {}) {
   return { value: { kind, lang, text, pages: pages.list, link, state: raw?.state === "draft" ? "draft" : "published" } };
 }
 
-/** Une petite empreinte de texte (FNV-1a, 8 caractères) : change quand le texte change ; ne protège rien. */
+/** A small fingerprint of a text (FNV-1a, 8 characters): changes when the text changes; protects nothing. */
 export function hash(text) {
   let h = 0x811c9dc5;
   for (const ch of String(text)) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, "0");
 }
 
-/** Cellule de tableur sûre (guillemets doublés, formules neutralisées). */
+/** A safe spreadsheet cell (quotes doubled, formulas neutralised). */
 export const cell = (value) => {
   let s = String(value ?? "");
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return `"${s.replace(/"/g, '""')}"`;
 };
+
+
+/* ───────────────────────────── Animation, reading time and voice (1.2.0) ───────────────────────────── */
+
+/** Hard caps of one animation. Frames are uploaded pictures of the site; the byte budget is checked when a file is claimed (the core tells its size). */
+export const ANIM = { frames: 24, bytes: 3 * 1024 * 1024, fps: [1, 24, 8] };
+export const ANIM_MODES = ["none", "gif", "frames"];
+/** Reading speed, in characters per second (a bubble is read, not studied: about 180 to 260 words per minute for the three speeds). */
+export const SPEEDS = { slow: 10, normal: 15, fast: 22 };
+/** Shortest and longest time (seconds) the mascot "talks", whatever the length of the sentence: [min, max, default]. */
+export const TALK = { min: [1, 10, 2], max: [2, 30, 12] };
+/** "custom" = the blip is the sound file of the site ("Your own sound"), played once per letter and pitched. */
+export const BLIP_CHOICES = [...Object.keys({ soft: 0, squeaky: 0, deep: 0, robotic: 0, bubbly: 0 }), "custom"];
+/** Longest part of a sound file used as one blip (seconds), and the keys of the pitch range in semitones: a voice is never pushed beyond what a sample can bear. */
+export const SAMPLE = { len: 0.2, minRate: 0.5, maxRate: 2.5, voices: 6 };
+export const VOICE_MODES = ["none", "blips", "speech", "custom"];
+/** Blip presets: the page makes the sounds itself (no file). `base` Hz, `wave` the shape, `glide` the pitch slide during one blip (ratio), `len` seconds. */
+export const BLIP_PRESETS = {
+  soft: { wave: "sine", base: 420, glide: 1, len: 0.07 },
+  squeaky: { wave: "triangle", base: 880, glide: 1.12, len: 0.05 },
+  deep: { wave: "sawtooth", base: 150, glide: 0.95, len: 0.09 },
+  robotic: { wave: "square", base: 300, glide: 1, len: 0.06 },
+  bubbly: { wave: "sine", base: 520, glide: 1.35, len: 0.08 },
+};
+/** The friendly choices of the voice forms and the numbers behind them. */
+export const PITCHES = { low: -5, normal: 0, high: 5 };           // semitones, for the blips
+export const VARIATIONS = { none: 0, some: 0.35, lots: 0.8 };
+export const BLIP_RATES = { slow: 8, normal: 12, fast: 18 };      // blips per second
+export const SPEECH_RATES = { slow: 0.85, normal: 1, fast: 1.25 };
+export const SPEECH_PITCHES = { low: 0.8, normal: 1, high: 1.3 };
+export const VOLUME = [1, 100, 40];
+
+/**
+ * How long the mascot "talks" for a sentence: its length in characters (letters, digits, marks; spaces squeezed) over a reading speed (`cps`, characters per second), plus half a second
+ * to start, kept between `min` and `max` seconds, to a tenth of a second. An empty sentence gives `min`. SELF-CONTAINED: the page runs the very same source.
+ */
+export function talkSeconds(text, cps, min, max) {
+  var chars = Array.from(String(text === null || text === undefined ? "" : text).replace(/\s+/g, " ").trim()).length;
+  var s = chars / (cps > 0 ? cps : 15) + 0.5;
+  s = Math.min(max, Math.max(min, s));
+  return Math.round(s * 10) / 10;
+}
+/** The same, from the settings of the module: `{ speed: "slow"|"normal"|"fast", min, max }` (anything else falls back to the defaults; `min` never goes above `max`). */
+export function talkDuration(text, reading) {
+  const r = readingOf(reading);
+  return talkSeconds(text, SPEEDS[r.speed], r.min, r.max);
+}
+export function readingOf(raw) {
+  const speed = Object.hasOwn(SPEEDS, raw?.speed) ? raw.speed : "normal";
+  const min = num(raw?.min, TALK.min);
+  const max = Math.max(min, num(raw?.max, TALK.max));
+  return { speed, min, max };
+}
+
+/**
+ * The blips of one sentence: one per letter or digit (spaces and marks are silent pauses), spread over at most `seconds`, never faster than `rate` per second.
+ * → [{ t, f, s, len }]: start (seconds from the beginning), frequency (Hz), the same as semitones from the natural pitch (for a sound file: playbackRate = 2^(s/12)) and length. The pitch of a blip depends on its letter (always the same letter, the same note), so a sentence sounds
+ * like a voice and not like a metronome. SELF-CONTAINED: the page runs the very same source.
+ */
+export function blipPlan(text, seconds, p) {
+  var chars = Array.from(String(text === null || text === undefined ? "" : text)), out = [], step = 1 / (p.rate > 0 ? p.rate : 12), t = 0, shift = Math.pow(2, (p.pitch || 0) / 12);
+  for (var i = 0; i < chars.length && t < seconds - p.len; i++) {
+    var c = chars[i], code = c.toLowerCase().codePointAt(0);
+    if (/[\s.,;:!?…\-–—()"'«»]/.test(c)) { t += step * (/[.!?…]/.test(c) ? 2.2 : /[,;:]/.test(c) ? 1.4 : 0.8); continue; }
+    var wobble = (((code * 7 + i) % 9) - 4) / 4;                       // -1 .. 1, fixed for a given letter at a given place
+    var st = (p.pitch || 0) + wobble * (p.vary || 0) * 7;               // semitones from the natural pitch of the sound
+    out.push({ t: Math.round(t * 1000) / 1000, f: Math.round(p.base * shift * Math.pow(2, (wobble * (p.vary || 0) * 7) / 12)), s: Math.round(st * 100) / 100, len: p.len });
+    t += step;
+  }
+  return out;
+}
+
+const UPLOAD_IMAGE = /^\/uploads\/[0-9a-f-]{36}\.(?:png|jpe?g|webp|gif)(?:\?c=[0-9a-z._-]{1,60}(?:&s=1)?)?$/;
+/** A picture of THIS site (an upload of the core), never an outside address. Empty when it does not fit. */
+export const uploadImage = (value) => { const s = String(value ?? "").trim(); return UPLOAD_IMAGE.test(s) ? s : ""; };
+/** The kinds of file accepted for "Your own sound". Today the core takes no audio file: a short MP4 or WebM video is the supported route. When the core accepts audio, add "mp3|ogg|wav|m4a" here and switch the setting `voiceFile` to type "audio". */
+export const SOUND_EXTS = "mp4|webm";
+const UPLOAD_SOUND = new RegExp(`^/uploads/[0-9a-f-]{36}\\.(?:${SOUND_EXTS})$`);
+/** A sound made of a short video file of THIS site (the core takes no audio files). Empty when it does not fit. */
+export const uploadSound = (value) => { const s = String(value ?? "").trim(); return UPLOAD_SOUND.test(s) ? s : ""; };
+
+const bytes = (n) => Math.min(ANIM.bytes * 4, Math.max(0, Math.round(Number(n)) || 0));
+/** One animation as stored: { mode, gif, gifBytes, frames: [{ src, bytes }], fps (0 = default), once }. A mode without its content plays nothing (see `animForPage`). */
+export function normalizeAnim(raw) {
+  const r = raw && typeof raw === "object" ? raw : {};
+  const gif = uploadImage(r.gif);
+  const frames = (Array.isArray(r.frames) ? r.frames : []).map((f) => ({ src: uploadImage(f?.src ?? f), bytes: bytes(f?.bytes) })).filter((f) => f.src).slice(0, ANIM.frames);
+  const mode = ANIM_MODES.includes(r.mode) ? r.mode : "none";
+  const fps = Number(r.fps) >= ANIM.fps[0] ? Math.min(ANIM.fps[1], Math.round(Number(r.fps))) : 0;
+  return { mode, gif, gifBytes: gif ? bytes(r.gifBytes) : 0, frames, fps, once: r.once === true };
+}
+export const animBytes = (a) => (a.mode === "gif" ? a.gifBytes : a.frames.reduce((n, f) => n + f.bytes, 0));
+/** What the page needs to play it: null when there is nothing to play. */
+export function animForPage(a) {
+  if (a.mode === "gif" && a.gif) return { kind: "gif", src: a.gif, fps: 0, once: a.once };
+  if (a.mode === "frames" && a.frames.length) return { kind: "frames", frames: a.frames.map((f) => f.src), fps: a.fps || ANIM.fps[2], once: a.once };
+  return null;
+}
+
+/** The voice as stored. Every number is one of the friendly choices above (or a bounded percentage). */
+export function normalizeVoice(raw) {
+  const r = raw && typeof raw === "object" ? raw : {};
+  const pick = (table, v, fallback) => (Object.hasOwn(table, v) ? v : fallback);
+  const b = r.blips && typeof r.blips === "object" ? r.blips : {}, s = r.speech && typeof r.speech === "object" ? r.speech : {};
+  return {
+    mode: VOICE_MODES.includes(r.mode) ? r.mode : "none",
+    volume: num(r.volume, VOLUME),
+    blips: { preset: BLIP_CHOICES.includes(b.preset) ? b.preset : "soft", pitch: pick(PITCHES, b.pitch, "normal"), vary: pick(VARIATIONS, b.vary, "some"), rate: pick(BLIP_RATES, b.rate, "normal") },
+    speech: { lang: /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(String(s.lang ?? "")) ? s.lang : "", name: oneLine(s.name, 80), rate: pick(SPEECH_RATES, s.rate, "normal"), pitch: pick(SPEECH_PITCHES, s.pitch, "normal") },
+  };
+}
+
+/** The voice as the page of an overlay element needs it, or `{ mode: "none" }`. `soundFile` is the setting "Your own sound" (a short video of the site); without a valid file that mode is silent. */
+export function voiceForPage(voice, soundFile, locale) {
+  const v = normalizeVoice(voice), volume = v.volume / 100;
+  if (v.mode === "blips") {
+    const sample = v.blips.preset === "custom" ? uploadSound(soundFile) : "";
+    const preset = BLIP_PRESETS[sample ? "soft" : BLIP_PRESETS[v.blips.preset] ? v.blips.preset : "soft"];
+    const blips = { wave: preset.wave, base: preset.base, glide: preset.glide, len: preset.len, pitch: PITCHES[v.blips.pitch], vary: VARIATIONS[v.blips.vary], rate: BLIP_RATES[v.blips.rate] };
+    if (sample) Object.assign(blips, { sample, len: SAMPLE.len, glide: 1 });
+    return { mode: "blips", volume, blips };
+  }
+  if (v.mode === "speech") return { mode: "speech", volume, lang: String(locale ?? "").slice(0, 5), blips: voiceForPage({ mode: "blips", volume: v.volume }, "", locale).blips, speech: { lang: v.speech.lang, name: v.speech.name, rate: SPEECH_RATES[v.speech.rate], pitch: SPEECH_PITCHES[v.speech.pitch] } };
+  if (v.mode === "custom" && uploadSound(soundFile)) return { mode: "custom", volume, custom: uploadSound(soundFile) };
+  return { mode: "none" };
+}

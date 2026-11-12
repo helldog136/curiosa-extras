@@ -18,7 +18,7 @@ const cfgOf = (script) => JSON.parse(script.match(/"tr":(\{[^}]*\})/)[1]);
 test("the copies in the modules are the shared file, and the manifests carry the shared texts", () => {
   const r = spawnSync(process.execPath, [`${root}scripts/gen-transition.mjs`, "--check"], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(Object.keys(TRANSITION_MODULES).sort(), ["alerts-overlay", "sponsor-ticker", "ticker-overlay"]);
+  assert.deepEqual(Object.keys(TRANSITION_MODULES).sort(), ["alerts-overlay", "mascot", "sponsor-ticker", "ticker-overlay"]);
 });
 
 test("transitionConfig: defaults are 'auto' in and 'same' out, so nothing changes unless chosen", () => {
@@ -48,7 +48,7 @@ test("choices: slide from every side, fade, jiggle, pop, none; exit adds 'same'"
 for (const [id, spec] of Object.entries(TRANSITION_MODULES)) {
   test(`${id}: three folded settings and two element options, from the shared texts, FR and EN`, () => {
     const m = manifest(id);
-    assert.equal(m.minCore, "0.6.0");
+    assert.ok(m.minCore.split(".").map(Number).reduce((a, n, i) => a || (n - [0, 6, 0][i]), 0) >= 0, "needs at least core 0.6.0");
     const mine = m.settings.filter((s) => s.key.startsWith("transition"));
     assert.deepEqual(mine.map((s) => s.key), ["transitionIn", "transitionOut", "transitionSeconds"]);
     assert.deepEqual(mine, settingsBlock(spec.seconds));
