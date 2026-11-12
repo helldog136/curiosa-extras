@@ -28,4 +28,4 @@ Relie votre site à Twitch une seule fois, pour tout ce qui touche Twitch. Un as
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.3.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.4.0.
