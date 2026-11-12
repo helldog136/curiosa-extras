@@ -42,4 +42,4 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.2.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.3.0.

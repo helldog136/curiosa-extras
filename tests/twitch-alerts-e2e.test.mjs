@@ -23,6 +23,7 @@ async function site() {
   const shown = [];
   const actx = fakeCtx({
     key, locale: "en", messages: aEn, settings: { groupSeconds: 5, minGapSeconds: 0 }, instances: [{ id: "te", key: "ev", module: "twitch-events", basePath: "", name: "Twitch activity", adminPath: "/admin/instances/te" }], permissions: aManifest.permissions,
+    services: { "twitch.journal": { flag: (a) => eventsMod.services["twitch.journal"].flag(w.ctx, a) } },
     topics: { "twitch.event": async () => (await P.topicItems(w.ctx, { limit: 200 }, Date.now())).map((i) => ({ ...i, source: { instance: "ev" } })) },
   });
   const pull = (now) => tw.pullTwitch(actx, (a) => shown.push(a), alertsMod.twitchEnv(actx, now));
@@ -125,4 +126,27 @@ test("a burst of 150 follows and a raid at the same time: one alert for the foll
   assert.equal(await w.pull(NOW + 30_000), 1, "after the window: ONE alert for the 150 follows");
   assert.equal(w.shown[1].message, "150 new followers, including fan_0");
   assert.equal(await w.pull(NOW + 60_000), 0);
+});
+
+test("moderation end to end: a signed cheer with a link in its message shows without the text and nothing of it is read, the journal marks the line, and Accept anyway shows it once", async (t) => {
+  const w = await site();
+  t.mock.method(Date, "now", () => NOW + 30_000);
+  await tw.saveConfig(w.actx, { tts: { on: true }, types: { cheer: { viewer: true, tts: "both" } } });
+  await send(w, TYPES.cheer, { ...EV.cheer, message: "Cheer500 visit www.example.com now" }, { t: 1000, id: "bits-link" });
+  await send(w, TYPES.cheer, { ...EV.cheer, message: "Cheer500 well played" }, { t: 2000, id: "bits-fine" });
+  await w.pull(NOW + 30_000);
+  const [flagged, fine] = w.shown;
+  assert.ok(!("detail" in flagged) && flagged.flag === "link" && !/example/.test(flagged.say), "no text, nothing of it read");
+  assert.match(fine.detail, /well played/); assert.match(fine.say, /well played/);
+  await new Promise((r) => setImmediate(r));
+  const line = await S.byId(w.ctx, "bits-link");
+  assert.deepEqual([line.flag.reason, line.flag.state], ["link", "hidden"], "the journal marks the line");
+  assert.equal((await S.byId(w.ctx, "bits-fine")).flag, undefined);
+  const waiting = await tw.textsList(w.actx);
+  assert.deepEqual(waiting.map((x) => [x.id, x.reason, x.hold]), [["bits-link", "link", false]]);
+  const again = [];
+  assert.equal((await tw.decideText(w.actx, "bits-link", "accept", (a) => again.push(a))).ok, true);
+  await new Promise((r) => setImmediate(r));
+  assert.match(again[0].detail, /example\.com/); assert.equal((await S.byId(w.ctx, "bits-link")).flag.state, "accepted");
+  assert.equal((await tw.decideText(w.actx, "bits-link", "accept", () => {})).ok, false, "once");
 });

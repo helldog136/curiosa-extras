@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.5.0",
+  "version": "1.6.0",
   "minCore": "0.6.0",
   "description": {
     "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
@@ -201,6 +201,84 @@
       "help": {
         "en": "Between 0 and 100.",
         "fr": "Entre 0 et 100."
+      }
+    },
+    {
+      "key": "video1",
+      "type": "video",
+      "tab": "media",
+      "label": {
+        "en": "Video 1",
+        "fr": "Vidéo 1"
+      },
+      "help": {
+        "en": "MP4 or WebM. Short and light.",
+        "fr": "MP4 ou WebM. Courte et légère."
+      }
+    },
+    {
+      "key": "video2",
+      "type": "video",
+      "tab": "media",
+      "label": {
+        "en": "Video 2",
+        "fr": "Vidéo 2"
+      },
+      "help": {
+        "en": "MP4 or WebM. Short and light.",
+        "fr": "MP4 ou WebM. Courte et légère."
+      }
+    },
+    {
+      "key": "video3",
+      "type": "video",
+      "tab": "media",
+      "label": {
+        "en": "Video 3",
+        "fr": "Vidéo 3"
+      },
+      "help": {
+        "en": "MP4 or WebM. Short and light.",
+        "fr": "MP4 ou WebM. Courte et légère."
+      }
+    },
+    {
+      "key": "video4",
+      "type": "video",
+      "tab": "media",
+      "label": {
+        "en": "Video 4",
+        "fr": "Vidéo 4"
+      },
+      "help": {
+        "en": "MP4 or WebM. Short and light.",
+        "fr": "MP4 ou WebM. Courte et légère."
+      }
+    },
+    {
+      "key": "video5",
+      "type": "video",
+      "tab": "media",
+      "label": {
+        "en": "Video 5",
+        "fr": "Vidéo 5"
+      },
+      "help": {
+        "en": "MP4 or WebM. Short and light.",
+        "fr": "MP4 ou WebM. Courte et légère."
+      }
+    },
+    {
+      "key": "video6",
+      "type": "video",
+      "tab": "media",
+      "label": {
+        "en": "Video 6",
+        "fr": "Vidéo 6"
+      },
+      "help": {
+        "en": "MP4 or WebM. Short and light.",
+        "fr": "MP4 ou WebM. Courte et légère."
       }
     },
     {
@@ -773,25 +851,43 @@
         "fr": "Événements Twitch"
       },
       "panel": true
+    },
+    {
+      "id": "viewers",
+      "label": {
+        "en": "Viewer texts and voice",
+        "fr": "Textes du public et voix"
+      },
+      "panel": true
+    },
+    {
+      "id": "media",
+      "label": {
+        "en": "Videos",
+        "fr": "Vidéos"
+      },
+      "panel": true
     }
   ],
   "offers": [
     {
       "service": "alerts.queue",
-      "version": 1,
+      "version": 2,
       "each": true,
       "readOnly": [
-        "state"
+        "state",
+        "voice",
+        "texts"
       ],
       "label": {
-        "en": "The queue of the alerts on screen (pause, resume, empty)",
-        "fr": "La file des alertes à l'écran (pause, reprise, vidage)"
+        "en": "The queue of the alerts on screen (pause, resume, empty, voice, skip, texts held)",
+        "fr": "La file des alertes à l'écran (pause, reprise, vidage, voix, passer, textes retenus)"
       }
     }
   ],
   "privacy": {
-    "en": "For a few minutes at most, the overlay keeps the public display name and amount of the Twitch events it is about to show, and the ids of the last alerts shown, so nothing is shown twice after a restart. Alerts held during a pause are kept until you resume or empty the queue. Pictures you upload for a type stay on your site. It collects nothing from the people who visit your site.",
-    "fr": "Quelques minutes au plus, l'overlay garde le pseudo public et le montant des événements Twitch qu'il va afficher, et les références des dernières alertes, pour que rien ne s'affiche deux fois après un redémarrage. Les alertes retenues pendant une pause sont gardées jusqu'à la reprise ou au vidage de la file. Les images envoyées pour un type restent sur votre site. Il ne collecte rien chez les personnes qui visitent votre site."
+    "en": "For a few minutes, the overlay keeps the public name and amount of the Twitch events it is about to show, and the ids of the last alerts, so nothing shows twice. Alerts held during a pause are kept until you resume. Viewer texts that moderation hides or holds are kept (50 at most) until you decide. Uploaded pictures and videos stay on your site. It collects nothing from visitors.",
+    "fr": "Quelques minutes, l'overlay garde le pseudo public et le montant des événements Twitch à afficher, et les références des dernières alertes, pour que rien ne s'affiche deux fois. Les alertes retenues en pause sont gardées jusqu'à la reprise. Les textes du public que la modération cache ou retient sont gardés (50 au plus) jusqu'à votre choix. Images et vidéos envoyées restent sur votre site. Il ne collecte rien sur les personnes qui visitent le site."
   },
   "mcp": [
     {
@@ -802,6 +898,105 @@
       "input": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "voice_moderation_get",
+      "readOnly": true,
+      "default": false,
+      "description": "Read the voice (text to speech) and moderation settings of the Twitch alerts: whether the voice is on or muted, its voice, language, rate, pitch, volume, maximum length and whether the name is read; what each type shows and reads; the moderation choices (hold the whole alert or only hide the text, links, capital letters, repeats, number of blocked words); and the texts waiting for a decision, with their id, type, name, reason and text. The voice is the browser's: pageReport says whether the overlay page reported support and how many voices it sees.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "voice_moderation_update",
+      "default": false,
+      "description": "Change the voice and the basic moderation of the Twitch alerts. Voice: on, voice (name of a voice), language (for example en or fr), rate 0.5 to 2, pitch 0 to 2, volume 0 to 100, maxCharacters 20 to 300, readName. Moderation: holdWholeAlert (true = an alert with a refused text waits for a decision, false = it shows without the text), blockLinks, blockCaps, blockRepeats, blockedWords (list of words, any case or accent). The word list is empty by default. This is basic moderation, not a replacement for Twitch AutoMod. Nothing is sent to the screen.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "on": {
+            "type": "boolean"
+          },
+          "voice": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 12
+          },
+          "rate": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 2
+          },
+          "pitch": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "volume": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "maxCharacters": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 300
+          },
+          "readName": {
+            "type": "boolean"
+          },
+          "holdWholeAlert": {
+            "type": "boolean"
+          },
+          "blockLinks": {
+            "type": "boolean"
+          },
+          "blockCaps": {
+            "type": "boolean"
+          },
+          "blockRepeats": {
+            "type": "boolean"
+          },
+          "blockedWords": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "maxItems": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "held_text_decide",
+      "default": false,
+      "description": "Decide on a viewer text that the moderation hid or held: accept (the alert is shown again with its text, and read if the voice is on) or dismiss (the text stays hidden; a held alert then shows without it). Use an id from voice_moderation_get. Nothing is deleted.",
+      "input": {
+        "type": "object",
+        "required": [
+          "id",
+          "action"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "dismiss"
+            ]
+          }
+        }
       }
     },
     {
@@ -878,7 +1073,16 @@
   "i18n": {
     "fr": {
       "mcp.alert_templates_get": "Lit les textes, durées et minimums des alertes Twitch de l'overlay, et l'état de la file.",
-      "mcp.alert_template_update": "Change un type d'alerte Twitch : allumé ou éteint, texte, durée ou minimum. Ne supprime rien."
+      "mcp.alert_template_update": "Change un type d'alerte Twitch : allumé ou éteint, texte, durée ou minimum. Ne supprime rien.",
+      "mcp.voice_moderation_get": "Lit la voix et la modération basique des alertes Twitch, et les textes en attente de décision.",
+      "mcp.voice_moderation_update": "Change la voix (lecture à voix haute) et la modération basique des alertes Twitch. N'envoie rien à l'écran.",
+      "mcp.held_text_decide": "Accepte ou écarte un texte du public que la modération a caché ou retenu. Ne supprime rien."
     }
-  }
+  },
+  "requires": [
+    {
+      "service": "twitch.journal",
+      "optional": true
+    }
+  ]
 }

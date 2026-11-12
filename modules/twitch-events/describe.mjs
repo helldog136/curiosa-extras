@@ -22,6 +22,7 @@ export function detail(ctx, d) {
   if (d.source === "test") p.push(t("d_test"));
   if (d.source === "replay") p.push(t("d_replay"));
   if (d.missed) p.push(t("d_missed"));
+  if (d.flag && typeof d.flag === "object") p.push(t(`d_flag_${d.flag.state}`, { reason: t(`flag_reason_${d.flag.reason}`) }));
   return p.filter(Boolean).join(" · ");
 }
 export const who = (ctx, d) => (d.anonymous ? ctx.t("anonymous") : d.name || "");

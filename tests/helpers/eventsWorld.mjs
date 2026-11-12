@@ -28,7 +28,7 @@ const ALL = ["moderator:read:followers", "channel:read:subscriptions", "bits:rea
 export function world(o = {}) {
   S.resetMemory(); P.forgetCache();
   const tw = { status: "ok", scopes: [...ALL], subs: [], calls: [], wants: [], createStatus: 202, listDown: false, seq: 0, ...o.tw };
-  const queue = { paused: false, held: 0, calls: [], ...o.queue };
+  const queue = { paused: false, held: 0, calls: [], voice: { on: false, muted: false }, texts: [], ...o.queue };
   const ctx = fakeCtx({
     key: "ev", moduleId: "twitch-events", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: (o.locale ?? "fr") === "en" ? en : fr,
     mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions,
@@ -61,6 +61,16 @@ export function world(o = {}) {
         pause: () => { queue.calls.push("pause"); queue.paused = true; return { paused: true, held: queue.held }; },
         resume: () => { queue.calls.push("resume"); const released = queue.held; queue.paused = false; queue.held = 0; return { paused: false, released }; },
         clear: () => { queue.calls.push("clear"); const dropped = queue.held; queue.held = 0; return { cleared: true, dropped }; },
+        // the voice and the texts of viewers exist only in an overlay of version 2 (`o.voice`)
+        ...(o.voice ? {
+          voice: () => ({ ...queue.voice, pending: queue.texts.length }),
+          mute: (a) => { queue.calls.push(`mute:${a.muted}`); queue.voice.muted = a.muted === true; return { ...queue.voice }; },
+          voiceOn: (a) => { queue.calls.push(`voiceOn:${a.on}`); queue.voice.on = a.on === true; return { ...queue.voice }; },
+          stopSpeech: () => { queue.calls.push("stopSpeech"); return { stopped: true }; },
+          skip: () => { queue.calls.push("skip"); return { skipped: true }; },
+          texts: () => queue.texts.slice(),
+          decide: (a) => { queue.calls.push(`decide:${a.action}:${a.id}`); const i = queue.texts.findIndex((x) => x.id === a.id); if (i < 0) return { ok: false, code: "unknown" }; queue.texts.splice(i, 1); return { ok: true, action: a.action }; },
+        } : {}),
       } }] } : {}),
     },
     instances: o.alerts ? [{ id: "i1", key: "alerts", module: "alerts-overlay", name: "Alerts", adminPath: "/admin/instances/alerts" }] : [],
