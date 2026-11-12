@@ -18,6 +18,12 @@ bus.setMaxListeners(100);
 
 const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const adminTw = await import(new URL(`./twitch-admin.mjs${v}`, import.meta.url).href);
+/** Sounds: small synthesised notes (the page makes them, nothing is loaded). [frequency Hz, start s, length s]. Played only when the person switched sounds on. */
+const SOUND_SCRIPT = `
+        var ac=null,SND={chime:[[880,0,.18],[1320,.12,.32]],bell:[[1046,0,.7]],pop:[[420,0,.09]],fanfare:[[523,0,.14],[659,.14,.14],[784,.28,.14],[1046,.42,.42]]};
+        function beep(name){try{var A=window.AudioContext||window.webkitAudioContext;if(!A||!SND[name]||!c.volume)return;ac=ac||new A();var t=ac.currentTime,v=c.volume/100*.25;SND[name].forEach(function(n){var o=ac.createOscillator(),g=ac.createGain();o.type=name==="pop"?"square":"sine";o.frequency.value=n[0];g.gain.setValueAtTime(.0001,t+n[1]);g.gain.exponentialRampToValueAtTime(v,t+n[1]+.02);g.gain.exponentialRampToValueAtTime(.0001,t+n[1]+n[2]);o.connect(g);g.connect(ac.destination);o.start(t+n[1]);o.stop(t+n[1]+n[2]+.05)})}catch(e){}}`;
+/** The picture of a type, only an address of the site itself (checked here as well as on the server); the way of entering is remembered on the card for the transition. */
+const IMAGE_SCRIPT = (ov, fx) => `${fx ? "card._anim=e.anim||\"\";" : ""}if(e.image&&/^\\/uploads\\/[0-9a-f-]{36}\\.(png|jpg|webp|gif)$/.test(e.image)){var im=document.createElement("img");${ov ? 'im.setAttribute("data-ov-part","image");' : 'im.className="al-img";'}im.src=e.image;im.alt="";card.append(im)}`;
 const KINDS = ["follow", "sub", "raid", "test", "alert"];
 /** Les alertes venues du sujet `live.event` (leurs titres ne sont pas acceptés par `push`). */
 const LIVE_KINDS = ["superchat", "supersticker", "member", "gift"];
@@ -242,13 +248,18 @@ export default {
     const kinds = ov && Object.hasOwn(OV_ONLY, q.get("opt-kinds") ?? "") ? q.get("opt-kinds") : "all";
     // Entrée / sortie : l'option de l'élément (si elle n'est pas « comme le module »), sinon le réglage. Tout en « auto » : le script d'avant, à l'identique (animation `alPop`).
     const tr = transitionConfig({ inOpt: ov ? q.get("opt-transitionIn") : null, inSetting: ctx.setting("transitionIn"), outOpt: ov ? q.get("opt-transitionOut") : null, outSetting: ctx.setting("transitionOut"), seconds: ctx.setting("transitionSeconds") }, 500);
-    const fx = tr.in !== "auto" || tr.out !== "auto";
+    // Twitch activity: the look of each type (picture, sound, way of entering) comes from the configuration; sounds only if the person switched them on.
+    const twcfg = tx ? await tw.loadConfig(ctx).catch(() => null) : null;
+    const anyAnim = !!twcfg && Object.values(twcfg.types).some((x) => x.anim);
+    const sounds = tx && ctx.setting("twitchSounds") === true;
+    const fx = tr.in !== "auto" || tr.out !== "auto" || anyAnim;
     const cfg = {
       ...(fx ? { tr } : {}),
       ...(ov ? {} : { eventsUrl: `/m/${ctx.instance.key}/events` }),
       duration,
       neon: ctx.setting("visual") !== "plain",
       labels: Object.fromEntries([...KINDS, ...(tx ? tw.TWITCH_KINDS.filter((k) => !KINDS.includes(k)) : []), ...(pull ? LIVE_KINDS : [])].map((k) => [k, ctx.t(`kind_${k}`)])),
+      ...(sounds ? { volume: Math.min(100, Math.max(0, Math.trunc(Number(ctx.setting("soundVolume") ?? 50)) || 0)) } : {}),
       ...(tx ? { between: Math.min(tw.LIMITS.gapMs.max, Math.max(0, Math.trunc(Number(ctx.setting("minGapSeconds") ?? 1)) * 1000 || 0)) } : {}),
       ...(pull && !ov ? { pullUrl: `/m/${ctx.instance.key}/pull`, pullMs: 5000, queueMax: LIMITS.queue } : {}),
       // Élément : chaque page lit le flux avec SON repère (route `feed`), jamais une file partagée.
@@ -262,7 +273,7 @@ export default {
     const accentBorder = "color-mix(in srgb,var(--al-accent) 40%,transparent)", surface = "color-mix(in srgb,var(--al-bg) 90%,transparent)";
     // Avec une entrée ou une sortie choisie, la carte n'a plus l'animation unique `alPop` : elle entre, reste, puis sort (« auto » = le zoom léger d'avant).
     const fxScript = fx ? `${ovTransition.toString()}
-        var fx=function(card,phase){var m=c.tr[phase==="in"?"in":"out"];return ovTransition(card,phase,m==="auto"?"pop":m,{ms:c.tr.ms,pop:.85,side:"bottom"})};
+        var fx=function(card,phase){var m=${tx ? "card._anim||" : ""}c.tr[phase==="in"?"in":"out"];return ovTransition(card,phase,m==="auto"?"pop":m,{ms:c.tr.ms,pop:.85,side:"bottom"})};
         function hold(card,fin${tx ? ",secs" : ""}){clearTimeout(timer);var lead=Math.round(c.tr.ms*(c.tr.out==="jiggle"?1.3:1));timer=setTimeout(function(){fx(card,"out").then(fin)},Math.max(c.tr.ms,${tx ? "(secs||c.duration)" : "c.duration"}*1000-lead))}` : "";
     const withDetail = pull || ov;
     const queued = pull || ov;
@@ -282,12 +293,13 @@ ${!ov || cfg.neon ? `        ${ov ? S.card : ".al-card.neon"}{box-shadow:0 0 28p
 ${!ov || cfg.neon ? `        ${ov ? `${S.card} ${S.kind}` : ".al-card.neon .al-kind"}{text-shadow:0 0 12px var(--al-accent)}
 ` : ""}        ${S.msg}{font-size:1.15rem;color:${ov ? "var(--ov-fg,var(--al-fg))" : "var(--al-fg)"}}
 ${withDetail ? `        ${S.detail}{font-size:1rem;color:${ov ? "var(--ov-fg,var(--al-fg))" : "var(--al-fg)"};opacity:.85;max-width:32rem;overflow-wrap:anywhere}
+` : ""}${tx ? `        ${ov ? '[data-ov-part="image"]' : ".al-img"}{width:96px;height:96px;object-fit:cover;border-radius:${ov ? "var(--ov-radius,12px)" : "12px"}}
 ` : ""}        @keyframes alPop{0%{opacity:0;transform:scale(.85)}10%{opacity:1;transform:scale(1)}90%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.95)}}`,
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
       script: queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
-        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}
-        function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}
+        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds ? SOUND_SCRIPT : ""}
+        function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? IMAGE_SCRIPT(ov, fx) : ""}${sounds ? "if(e.sound)beep(e.sound);" : ""}
           ${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}

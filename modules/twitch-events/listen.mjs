@@ -27,8 +27,12 @@ export async function twitch(ctx, channel, req) {
 }
 
 /** Tells the connector which permissions the ENABLED types need for this channel (it adds them to its authorisations) — idempotent. */
-export async function declareScopes(ctx, channel, enabled) {
+export async function declareScopes(ctx, channel, enabled, { now = Date.now() } = {}) {
   const scopes = es.scopesFor(enabled);
+  // The request is idempotent but it is a write at the connector: repeated only when the wish changed or every 30 minutes (the check runs every minute).
+  const m = st.memoryOf(ctx), key = `${channel}|${scopes.join(",")}`;
+  if (m.declared && m.declared.key === key && now - m.declared.at < 30 * 60_000) return;
+  m.declared = { key, at: now };
   await ctx.api.services.callAll(API, "wantScopes", { channel, consumer: ctx.instance.key, slot: "main", scopes, returnTo: `/admin/instances/${ctx.instance.id}` });
 }
 const lacks = (acc, scopes) => scopes.filter((x) => !(acc?.scopes ?? []).includes(x));
@@ -39,14 +43,14 @@ const lacks = (acc, scopes) => scopes.filter((x) => !(acc?.scopes ?? []).include
  * Ready: { code: "ready", channel, main, broadcasterId, enabled, need: [permissions of the enabled types], missing: [those not granted yet], blocked: [type ids that cannot start yet] }.
  * `declare`: also tell the connector what is needed (the admin page does; the webhook never does).
  */
-export async function diagnose(ctx, s, { declare = true } = {}) {
+export async function diagnose(ctx, s, { declare = true, now = Date.now() } = {}) {
   const picked = await resolveChannel(ctx, s.channel);
   if (picked.problem === "setup") return { code: "creds_missing", main: picked.account };
   if (picked.problem) return { code: picked.problem === "slow" ? "slow" : picked.problem };
   let main = await firstAccount(ctx, { channel: picked.channel });
   if (!main) return { code: "no_channel" };
   const state = await st.readState(ctx), enabled = st.enabledOf(state), need = es.scopesFor(enabled);
-  if (declare && main.channel) { await declareScopes(ctx, main.channel, enabled); main = (await firstAccount(ctx, { channel: picked.channel })) ?? main; }
+  if (declare && main.channel) { await declareScopes(ctx, main.channel, enabled, { now }); main = (await firstAccount(ctx, { channel: picked.channel })) ?? main; }
   const base = { channel: main.channel, main, enabled, need };
   if (!main.channel || !main.ready) return { code: "creds_missing", ...base };
   if (main.status === "none" || !main.userId) return { code: "need_connect", ...base };
@@ -76,8 +80,8 @@ const allCode = (code) => Object.fromEntries(es.TYPE_IDS.map((id) => [id, code])
  * Checks that the subscriptions exist and work; creates or recreates them as needed. Returns the noted state { code, types }.
  * Safe to call often (the scheduled task, the "Check" button). `renew`: starts again (deletes ours and changes the secret). `settle`: waits a few seconds for Twitch to verify the address.
  */
-export async function ensureListening(ctx, s, { renew = false, settle = false } = {}) {
-  const d = await diagnose(ctx, s);
+export async function ensureListening(ctx, s, { renew = false, settle = false, now = Date.now() } = {}) {
+  const d = await diagnose(ctx, s, { now });
   if (d.code !== "ready") { await note(ctx, d.code, d.code === "creds_missing" || d.code === "need_connect" ? allCode(d.code) : {}); return { code: d.code }; }
   const callback = callbackOf(ctx);
   const secret = await st.ensureSecret(ctx, { renew });
