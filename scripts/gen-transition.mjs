@@ -10,7 +10,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 import { optionsBlock, settingsBlock } from "./overlay-transition-labels.mjs";
 
 /** module id → its default length (seconds) and the overlay element that gets the two options. */
-export const TRANSITION_MODULES = { "sponsor-ticker": { seconds: 0.6, element: "sponsors" }, "ticker-overlay": { seconds: 0.5, element: "banner" }, "alerts-overlay": { seconds: 0.5, element: "alerts" } };
+export const TRANSITION_MODULES = { "sponsor-ticker": { seconds: 0.6, element: "sponsors" }, "ticker-overlay": { seconds: 0.5, element: "banner" }, "alerts-overlay": { seconds: 0.5, element: "alerts" }, mascot: { seconds: 0.5, element: "mascot" } };
 
 /** The manifest of `id` with the transition settings and element options (re-applied in place, so running twice changes nothing). */
 export function withTransitions(manifest, { seconds, element }) {
