@@ -4,6 +4,16 @@ The language of the repository is **English**: documentation, code comments, ide
 
 Admin pages follow [docs/ERGONOMIE-ADMIN.md](docs/ERGONOMIE-ADMIN.md); a pull request that touches one contains an "Ergonomics" section.
 
+## Overlay elements: TV legibility
+
+An overlay element is read from a distance, on a television or a phone. Every element declares `"tvScale": true` (with `"minCore": "0.11.0"`) and follows the TV type scale of the core ([OVERLAY-ELEMENTS.md, "Text size and TV legibility"](https://github.com/helldog136/Curiosa/blob/main/docs/OVERLAY-ELEMENTS.md)):
+
+- Read `ov-tv` (a number above 0 and below 20, else 1) and define `--ov-tv` and `--ov-text-xs` to `--ov-text-2xl` (24, 28, 32, 40, 56 and 72 px of the 1080 canvas) on the root. Size every text with a token: `font-size: var(--ov-text-xs, 24px)`. Never multiply by the frame ratio or the text size again.
+- **Nothing under 24 px on screen** (`xs`: captions and labels; `sm`: secondary text; `md`: body; `lg`: names and titles; `xl`, `2xl`: figures). Keep the visual hierarchy with the tokens, not with smaller text.
+- The text keeps its size and the layout gives way: leave out the least useful lines or the last rows, cut a long text with an ellipsis (the full text in `title`), never shrink it. An element with nothing to show still shows nothing.
+- Paint the panel with `var(--ov-surface, ...)` so the opaque background chosen by the person applies by itself.
+- One test per element, using the shared helper `tests/helpers/tvLegibility.mjs` (`tvSuite`): the real page in Chromium at `ov-tv` 1 and 2, with invented data; it fails on a visible text under 24 px, a horizontal overflow or a clipped text. Set `TV_SHOTS=<folder>` to write the screenshots, and look at them.
+
 ## Removing an old data conversion
 
 A module keeps its own data and converts it when its shape changes; the core has a support floor for itself, not for module data. Before you delete a `migrations` entry,

@@ -34,6 +34,11 @@ export function tokens(params) {
   return `:root{--ov-fg:${light ? "#ffffff" : "#111111"};--ov-surface:${soft ? (light ? "rgba(0,0,0,.55)" : "rgba(255,255,255,.7)") : "transparent"};--ov-radius:${square ? "0px" : "12px"};--ov-border:${soft ? (light ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)") : "transparent"}}`;
 }
 
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `:root{--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv))}`;
+
 const row = (name, game, viewers) => ({ name: oneLine(name, 60), game: oneLine(game, 100), viewers: Number.isFinite(viewers) && viewers >= 0 ? Math.floor(viewers) : 0 });
 const unknown = () => ({ state: "unknown", rows: [], more: 0 });
 const idle = () => ({ state: "ok", rows: [], more: 0 });
@@ -84,21 +89,21 @@ export async function dataFor(ctx, kind, params) {
 }
 
 const CSS = `html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-family:system-ui,sans-serif}
-[data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.5em .7em;overflow:hidden;font-size:var(--rd-fs,20px);line-height:1.2;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
+[data-ov-part="panel"]{box-sizing:border-box;position:fixed;inset:0;display:flex;padding:.5em .7em;overflow:hidden;font-size:var(--ov-text-md,32px);line-height:1.2;color:var(--ov-fg,#fff);background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,12px)}
 [data-ov-part="panel"][hidden]{display:none}
 .rd-body{margin:auto 0;width:100%;min-width:0;display:flex;flex-direction:column;gap:.45em}
-[data-ov-part="title"]{margin:0;font-size:1.05em;font-weight:800;letter-spacing:.02em;overflow-wrap:anywhere}
-.rd-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(12em,1fr));gap:.4em .9em}
+[data-ov-part="title"]{margin:0;font-size:var(--ov-text-lg,40px);font-weight:800;letter-spacing:.02em;overflow-wrap:anywhere}
+.rd-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12em),1fr));gap:.4em .9em}
 [data-ov-part="card"]{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:.5em;align-items:center;min-width:0}
 [data-ov-part="dot"]{width:.6em;height:.6em;border-radius:50%;background:currentColor;grid-row:1 / span 2;animation:rd-pulse 1.8s ease-in-out infinite}
 [data-ov-part="name"]{grid-column:2 / span 2;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-ov-part="text"]{grid-column:2;grid-row:2;font-size:.8em;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-ov-part="value"]{grid-column:3;grid-row:2;justify-self:end;font-size:.85em;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.95}
-[data-ov-part="foot"]{font-size:.8em;opacity:.8}
+[data-ov-part="text"]{grid-column:2;grid-row:2;font-size:var(--ov-text-xs,24px);opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-ov-part="value"]{grid-column:3;grid-row:2;justify-self:end;font-size:var(--ov-text-sm,28px);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.95}
+[data-ov-part="foot"]{font-size:var(--ov-text-xs,24px);opacity:.8}
 @keyframes rd-pulse{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){[data-ov-part="dot"]{animation:none!important}}`;
 
-/** Le script de l'élément : dessine ce que le serveur a donné, le remet à jour doucement (l'intervalle s'allonge si rien ne change ou en cas d'erreur), ajuste la police au cadre. */
+/** Le script de l'élément : dessine ce que le serveur a donné, le remet à jour doucement (l'intervalle s'allonge si rien ne change ou en cas d'erreur), laisse de côté ce qui ne tient pas (le texte garde sa taille). */
 const JS = String.raw`(function () {
   "use strict";
   var c = window.__RD, p = document.getElementById("rd"), body = null, rev = "", delay = c.base, last = null;
@@ -107,16 +112,6 @@ const JS = String.raw`(function () {
   function fits() {
     var cs = getComputedStyle(p), w = p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     return w > 0 && h > 0 && body.offsetHeight <= h + 1 && body.scrollWidth <= w + 1;
-  }
-  function fit() {
-    if (!body) return;
-    var lo = 9, hi = 40;
-    for (var i = 0; i < 8; i++) {
-      var mid = (lo + hi) / 2;
-      p.style.setProperty("--rd-fs", mid + "px");
-      if (fits()) lo = mid; else hi = mid;
-    }
-    p.style.setProperty("--rd-fs", lo + "px");
   }
   function build(rows, more) {
     body = el("div"); body.className = "rd-body";
@@ -139,8 +134,10 @@ const JS = String.raw`(function () {
     if (!d || d.state !== "ok" || !d.rows || !d.rows.length) return;   // au repos (personne en direct, ou état inconnu) : RIEN n'est dessiné, pas même le cadre
     p.hidden = false;
     var rows = d.rows.slice(), more = d.more || 0;
-    build(rows, more); fit();
-    while (rows.length > 1 && parseFloat(p.style.getPropertyValue("--rd-fs")) < 12) { rows.pop(); more++; build(rows, more); fit(); }
+    // TV type scale: the text keeps its size, so what does not fit is left out (counted in the "and n more" line) instead of shrinking the text.
+    build(rows, more);
+    while (rows.length > 1 && !fits()) { rows.pop(); more++; build(rows, more); }
+    if (c.opts.title && !fits()) { var h = p.querySelector('[data-ov-part="title"]'); if (h) h.remove(); }
   }
   function tick() {
     if (c.demo) return;
@@ -162,7 +159,7 @@ const JS = String.raw`(function () {
  */
 export function page(kind, params, { lang, first, data, labels, demo = false }) {
   const config = JSON.stringify({ kind, lang, first, data, t: labels, demo, opts: readOptions(params), base: kind === "live" ? 45_000 : 60_000, max: 300_000 }).replace(/</g, "\\u003c");
-  return `<!doctype html><html lang="${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Twitch</title><style>${tokens(params)}\n${CSS}</style></head><body><div id="rd" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__RD=${config};${JS}</script></body></html>`;
+  return `<!doctype html><html lang="${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(lang) ? lang : "en"}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Twitch</title><style>${tvTokens(tvOf(params))}${tokens(params)}\n${CSS}</style></head><body><div id="rd" data-ov-part="panel" role="status" aria-live="polite" hidden></div><script>window.__RD=${config};${JS}</script></body></html>`;
 }
 
 /** En-têtes de la page : sa propre politique de sécurité (aucun chargement tiers, seulement le site pour redemander les chaînes), jamais de cache, l'adresse secrète ne fuit pas par « Referer ». */

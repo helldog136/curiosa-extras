@@ -20,8 +20,13 @@ const int = (raw, [min, max, def]) => { const n = Math.trunc(Number(raw)); retur
 export function readParams(params) {
   const get = (k) => params.get(k) ?? undefined;
   const style = params.has("ov-text") ? { text: get("ov-text") === "dark" ? "dark" : "light", surface: get("ov-surface") === "soft" ? "soft" : "transparent", corners: get("ov-corners") === "square" ? "square" : "round" } : null;
-  return { style, demo: get("ov-demo") === "1", seconds: int(get("opt-seconds"), LIMITS.seconds), count: int(get("opt-count"), LIMITS.count) };
+  return { style, tv: tvOf(params), demo: get("ov-demo") === "1", seconds: int(get("opt-seconds"), LIMITS.seconds), count: int(get("opt-count"), LIMITS.count) };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Style commun -> jetons --ov-* (valeurs de docs/OVERLAY-ELEMENTS.md). Sans style (adresse ouverte à la main) : texte clair, fond transparent. */
 export function tokensCss(style) {
@@ -83,21 +88,24 @@ body.soft [data-ov-part="panel"],body.dark [data-ov-part="panel"]{text-shadow:no
 [data-ov-part="quote"]{margin:0;overflow-wrap:anywhere;font-weight:500;line-height:1.3}
 [data-ov-part="quote"]::before{content:"\\201C"}
 [data-ov-part="quote"]::after{content:"\\201D"}
-[data-ov-part="footer"]{display:flex;align-items:center;gap:1.8vmin;min-width:0;font-size:max(15px,min(6.2vmin,26px))}
+[data-ov-part="footer"]{display:flex;align-items:center;gap:1.8vmin;min-width:0;font-size:var(--ov-text-xs,24px)}
 [data-ov-part="avatar"]{flex:none;display:grid;place-items:center;width:2.4em;height:2.4em;border-radius:50%;background:var(--ov-accent,#9146ff);color:#fff;font-weight:700;text-shadow:none}
 [data-ov-part="author"]{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 [data-ov-part="stars"]{flex:none;color:var(--ov-star,#f5b301);letter-spacing:.12em;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){[data-ov-part="panel"]{transition:none}}
 `;
 
-// Le script : l'avis du moment se déduit de l'heure ; la taille du texte s'ajuste au cadre (grand si le cadre est grand, réduite jusqu'à ce que tout tienne) ; mise à jour douce et bornée.
+// Le script : l'avis du moment se déduit de l'heure ; la taille du texte suit l'échelle TV du cœur (jamais sous 32 px : un avis trop long est coupé par « … », entier dans l'infobulle) ; mise à jour douce et bornée.
 const SCRIPT = `(function(){
 var d=JSON.parse(document.getElementById('d').textContent),P=document.getElementById('p'),Q=document.getElementById('q'),A=document.getElementById('a'),I=document.getElementById('i'),S=document.getElementById('s'),F=document.getElementById('f'),shown=null;
-function fit(){var w=P.clientWidth,h=P.clientHeight,size=Math.max(14,Math.min(h/3.1,w/9,54));Q.style.fontSize=size+'px';var n=0;
-while(n++<60&&size>12&&P.scrollHeight>P.clientHeight+1){size-=Math.max(1,size*.06);Q.style.fontSize=size+'px'}}
+function fit(){var tv=d.tv||1,min=32*tv,max=56*tv,w=P.clientWidth,h=P.clientHeight,size=Math.max(min,Math.min(h/3.1,w/9,max)),cs=window.getComputedStyle?getComputedStyle(P):{};Q.style.cssText='font-size:'+size+'px';
+function other(){return (parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+(parseFloat(cs.rowGap)||0)+(F?F.offsetHeight:0)}
+function over(){return Q.offsetHeight+other()>h+1}
+var n=0;while(n++<60&&size>min&&over()){size=Math.max(min,size-Math.max(1,size*.06));Q.style.fontSize=size+'px'}
+if(over()){var lines=Math.max(1,Math.floor((h-other())/(size*1.3)));Q.style.cssText='font-size:'+size+'px;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:'+lines}}
 function show(){var l=d.reviews;if(!l.length){P.classList.remove('on');shown=null;return}
 var r=l[Math.floor(Date.now()/(d.seconds*1000))%l.length],id=JSON.stringify(r);if(id===shown&&P.classList.contains('on'))return;
-var swap=function(){Q.textContent=r.text;A.textContent=r.name;I.textContent=Array.from(r.name)[0]||'';S.textContent=r.rating?'\\u2605'.repeat(r.rating)+'\\u2606'.repeat(5-r.rating):'';
+var swap=function(){Q.textContent=r.text;Q.title=r.text;A.textContent=r.name;I.textContent=Array.from(r.name)[0]||'';S.textContent=r.rating?'\\u2605'.repeat(r.rating)+'\\u2606'.repeat(5-r.rating):'';
 S.setAttribute('aria-label',r.rating?d.starsLabel.replace('{n}',r.rating):'');S.hidden=!r.rating;P.classList.add('on');fit()};
 shown=id;if(P.classList.contains('on')){P.classList.remove('on');setTimeout(swap,500)}else swap()}
 function next(){setTimeout(function(){show();next()},d.seconds*1000-(Date.now()%(d.seconds*1000))+30)}
@@ -130,12 +138,12 @@ export async function elementResponse(request, ctx) {
   let reviews = [];
   try { reviews = await reviewsFor(ctx, p); } catch { reviews = []; }
   if (url.searchParams.get("data") === "1") return Response.json({ reviews }, { headers: HEADERS });
-  const data = JSON.stringify({ reviews, seconds: p.seconds, starsLabel: ctx.t("starsLabel", { n: "{n}" }) }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
+  const data = JSON.stringify({ reviews, tv: p.tv, seconds: p.seconds, starsLabel: ctx.t("starsLabel", { n: "{n}" }) }).replace(/</g, "\\u003c").replace(/[\u2028\u2029]/g, " ");
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const bodyClass = [p.style?.surface === "soft" ? "soft" : "", p.style?.text === "dark" ? "dark" : ""].filter(Boolean).join(" ");
-  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("elementTitle"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}}${BASE}</style></head>` +
     `<body${bodyClass ? ` class="${bodyClass}"` : ""}><div id="stage"><figure id="p" data-ov-part="panel" role="status" aria-live="polite"><blockquote id="q" data-ov-part="quote"></blockquote>` +
-    `<figcaption data-ov-part="footer"><span id="i" data-ov-part="avatar" aria-hidden="true"></span><span id="a" data-ov-part="author"></span><span id="s" data-ov-part="stars" role="img" hidden></span></figcaption></figure></div>` +
+    `<figcaption id="f" data-ov-part="footer"><span id="i" data-ov-part="avatar" aria-hidden="true"></span><span id="a" data-ov-part="author"></span><span id="s" data-ov-part="stars" role="img" hidden></span></figcaption></figure></div>` +
     `<script type="application/json" id="d">${data}</script><script>${SCRIPT}</script></body></html>`;
   return new Response(request.method === "HEAD" ? null : html, { headers: { ...HEADERS, "content-type": "text/html; charset=utf-8" } });
 }

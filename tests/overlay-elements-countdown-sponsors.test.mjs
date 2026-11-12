@@ -32,7 +32,7 @@ const initialOf = (out) => JSON.parse(out.script.match(/bootOverlay\(window,docu
 const get = (url) => new Request(`https://example.test${url}`);
 
 // ── Déclaration ─────────────────────────────────────────────────────────────────────────────────────────────────────
-for (const [name, manifest, def, id, minCore, version] of [["Compte à rebours", cdManifest, cd, "countdown", "0.6.0", "1.2.2"], ["Overlay sponsors", tkManifest, tk, "sponsors", "0.6.0", "1.2.0"]]) {
+for (const [name, manifest, def, id, minCore, version] of [["Compte à rebours", cdManifest, cd, "countdown", "0.11.0", "1.3.0"], ["Overlay sponsors", tkManifest, tk, "sponsors", "0.11.0", "1.3.0"]]) {
   test(`${name} : manifeste valide, minCore ${minCore}, un élément « ${id} » qui garde ses proportions`, () => {
     const r = parseManifest(manifest);
     assert.ok(r.ok, r.ok ? "" : r.error);
@@ -71,12 +71,12 @@ test("Compte à rebours : l'élément remplit son cadre, suit le style commun (-
   const out = await cd.overlay(ctx, { query: frame() });
   assert.match(out.html, /data-ov-region="element"/);
   for (const p of ["panel", "title", "tiles", "tile", "number", "unit", "message"]) assert.match(out.html, new RegExp(`data-ov-part="${p}"`), p);
-  assert.match(out.css, /:root\{--ov-fg:#ffffff;--ov-surface:transparent;--ov-radius:12px;--ov-border:transparent\}/);
+  assert.match(out.css, /:root\{--ov-fg:#ffffff;--ov-surface:transparent;--ov-radius:12px;--ov-border:transparent;--ov-tv:1;/);
   assert.match(out.css, /var\(--ov-fg,#fff\)/);
   assert.match(out.css, /var\(--ov-radius/);
   assert.match(out.css, /\.vco\{position:fixed;inset:0;/, "remplit le cadre");
   assert.ok(!/bottom:2\.5vmin|font-size:32px|vco--light/.test(out.css + out.html), "la place, la taille et le style propres à l'overlay sont ignorés");
-  assert.match(out.css, /font-size:25px/, "police d'après le cadre 600×200");
+  assert.match(out.css, /font-size:var\(--ov-text-md,32px\)/, "texte à l'échelle TV du cœur (jetons), plus de police d'après le cadre");
   assert.ok(!/--sk-|data-skin|var\(--v-|<link|@import|https?:\/\//.test(out.css + out.html), "aucun skin ni thème du site, aucun chargement tiers");
   assert.equal(initialOf(out).initial.event.title, "Sortie");
 });
@@ -84,7 +84,7 @@ test("Compte à rebours : l'élément remplit son cadre, suit le style commun (-
 test("Compte à rebours : le style commun (texte sombre, fond doux, angles droits) devient les jetons", async () => {
   const out = await cd.overlay(cdCtx(), { query: new URLSearchParams("ov-w=300&ov-h=100&ov-text=dark&ov-surface=soft&ov-corners=square") });
   assert.match(out.css, /--ov-fg:#111111;--ov-surface:rgba\(255,255,255,\.7\);--ov-radius:0px;--ov-border:rgba\(0,0,0,\.18\)/);
-  assert.match(out.css, /font-size:12px/, "police d'après le cadre 300×100");
+  assert.match(out.css, /font-size:var\(--ov-text-md,32px\)/, "texte à l'échelle TV du cœur (jetons), plus de police d'après le cadre");
 });
 
 test("Compte à rebours : option « Événement » — à la une par défaut, un événement précis, repli sur la une si le nom est inconnu ou supprimé", async () => {
@@ -139,7 +139,7 @@ test("Overlay sponsors : l'élément suit le style commun (--ov-*), marque ses m
   assert.match(out.html, /id="tk-stage" data-ov-region="element"/);
   assert.match(out.html, /--tk-bg:var\(--ov-surface,transparent\);--tk-fg:var\(--ov-fg,#fff\)/);
   assert.match(out.html, /--ticker-accent:#12abEF/);
-  assert.match(out.css, /:root\{--ov-fg:#ffffff;--ov-surface:transparent;--ov-radius:12px;--ov-border:transparent\}/);
+  assert.match(out.css, /:root\{--ov-fg:#ffffff;--ov-surface:transparent;--ov-radius:12px;--ov-border:transparent;--ov-tv:1;/);
   assert.match(out.css, /\[data-ov-part="panel"\]/);
   assert.match(out.script, /"ticker-card":"panel".*"ticker-qr":"qr"/s, "chaque morceau reçoit son data-ov-part");
   assert.ok(!/--sk-|data-skin|var\(--v-|<link|@import/.test(out.css + out.html + out.script), "aucun skin ni thème du site");

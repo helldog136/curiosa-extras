@@ -21,9 +21,14 @@ export function readParams(params) {
   return {
     width: int(get("ov-w"), 16, 7680, 600), height: int(get("ov-h"), 16, 7680, 400),
     style: params.has("ov-text") ? { text: get("ov-text") === "dark" ? "dark" : "light", surface: get("ov-surface") === "soft" ? "soft" : "transparent", corners: get("ov-corners") === "square" ? "square" : "round" } : null,
-    demo: get("ov-demo") === "1", status: STATUSES.includes(status) ? status : "proposed", count: int(get("opt-count"), 1, MAX_ENTRIES, 3),
+    tv: tvOf(params), demo: get("ov-demo") === "1", status: STATUSES.includes(status) ? status : "proposed", count: int(get("opt-count"), 1, MAX_ENTRIES, 3),
   };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (params) => { const t = Number(params.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Style commun -> jetons --ov-* (valeurs de docs/OVERLAY-ELEMENTS.md). Sans style (adresse ouverte à la main) : texte clair, fond transparent. */
 export function tokensCss(style) {
@@ -111,12 +116,18 @@ export function renderContent(ctx, p, ranking) {
     if (!p.demo) return "";   // en direct : un cadre vide et silencieux
     entries = Array.from({ length: p.count }, (_, i) => ({ title: t("ovDemoGame", { n: i + 1 }), times: Math.max(1, 4 - i), votes: SAMPLE_VOTES[i] }));
   }
-  const head = p.height >= 150 ? `<p data-ov-part="title" class="gs-head">${esc(t(`ovHeading_${p.status}`))}</p>` : "";
-  const headPx = head ? 44 : 0;
-  const { cols, rows } = layoutFor(entries.length, p.width, p.height - headPx);
+  const tv = p.tv ?? 1;
+  const head = p.height >= 150 * tv ? `<p data-ov-part="title" class="gs-head">${esc(t(`ovHeading_${p.status}`))}</p>` : "";
+  const headPx = head ? 40 * tv : 0;
+  // TV type scale: a row holds the body size (md), so a row is never shorter than 56 canvas px; when the rows would be, the last games are left out instead of shrinking the text.
+  const minRow = 56 * tv;
+  const fitRows = (list) => { const l = layoutFor(list.length, p.width, p.height - headPx); return { ...l, avail: Math.floor((p.height - headPx - 24 - (l.rows - 1) * 8) / l.rows) }; };
+  let lay = fitRows(entries);
+  while (entries.length > 1 && lay.avail < minRow) { entries = entries.slice(0, -1); lay = fitRows(entries); }
+  const { cols, rows } = lay;
   // Hauteur d'une ligne : elle partage la place, sans jamais devenir une grande boîte à petit texte (au plus un quart de sa largeur) ; la liste reste en haut du cadre.
   const colW = (p.width - 24 - (cols - 1) * 16) / cols;
-  const rowH = Math.max(28, Math.min(Math.floor((p.height - headPx - 24 - (rows - 1) * 8) / rows), Math.floor(colW / 4), 140));
+  const rowH = Math.max(minRow, Math.min(lay.avail, Math.floor(colW / 4), Math.round(140 * tv)));
   const items = entries.map((e, i) => {
     const score = scoreText(ctx, p.status, e);
     return `<li data-ov-part="game" class="gs-row"><div class="gs-in"><span data-ov-part="rank" class="gs-rank">${i + 1}</span><span data-ov-part="name" class="gs-name">${esc(e.title)}</span>${score ? `<span data-ov-part="score" class="gs-score">${esc(score)}</span>` : ""}</div></li>`;
@@ -124,21 +135,21 @@ export function renderContent(ctx, p, ranking) {
   return `${head}<ol data-ov-part="list" class="gs-list" style="--cols:${cols};--rows:${rows};--rh:${rowH}px">${items}</ol>`;
 }
 
-const BASE = `
+const BASE = (tv) => `
 html,body{margin:0;height:100%;overflow:hidden;background:transparent}
 body{font:600 16px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ov-fg,#fff)}
 body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 #p{box-sizing:border-box;height:100%;overflow:hidden;padding:12px;background:var(--ov-surface,transparent);border:1px solid var(--ov-border,transparent);border-radius:var(--ov-radius,0)}
 #r{height:100%;display:flex;flex-direction:column;gap:8px}
-.gs-head{margin:0;flex:0 0 auto;font-size:clamp(14px,4.2vmin,30px);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-head{margin:0;flex:0 0 auto;font-size:var(--ov-text-xs,24px);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gs-list{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-auto-flow:column;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));grid-template-rows:repeat(var(--rows,1),var(--rh,48px));align-content:start;gap:8px 16px}
 .gs-row{container-type:size;box-sizing:border-box;min-width:0;min-height:0;overflow:hidden;
  background:color-mix(in srgb,var(--ov-fg,#fff) 9%,transparent);border:1px solid color-mix(in srgb,var(--ov-fg,#fff) 22%,transparent);border-radius:var(--ov-radius,0)}
-.gs-in{box-sizing:border-box;height:100%;display:flex;align-items:center;gap:.55em;padding:0 .6em;font-size:clamp(12px,min(40cqh,6cqw),64px)}
+.gs-in{box-sizing:border-box;height:100%;display:flex;align-items:center;gap:.55em;padding:0 .6em;font-size:var(--ov-text-md,32px)}
 .gs-rank{flex:0 0 auto;min-width:1.1em;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--ov-fg,#fff) 70%,transparent)}
 .gs-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
-.gs-score{flex:0 0 auto;font-size:.62em;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent)}
-@container (max-width:240px){.gs-score{display:none}}
+.gs-score{flex:0 0 auto;font-size:var(--ov-text-xs,24px);font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent)}
+@container (max-width:${Math.round(560 * tv)}px){.gs-score{display:none}}
 `;
 
 const SCRIPT = `(function(){var R=document.getElementById('r'),u=location.pathname+location.search+(location.search?'&':'?')+'frag=1',v=R.getAttribute('data-v'),n=0,wait=120000;
@@ -161,7 +172,7 @@ export async function elementResponse(request, ctx, read) {
   if (url.searchParams.get("frag") === "1") return Response.json({ v: vv, html: content }, { headers });
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const shadow = p.style?.text !== "dark" && p.style?.surface !== "soft";
-  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
+  const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}${tvTokens(p.tv)}}${BASE(p.tv)}</style></head>` +
     `<body${shadow ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(vv)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }

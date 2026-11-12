@@ -152,11 +152,16 @@ export function elementRequest(query) {
   return {
     width: size("ov-w", 600), height: size("ov-h", 200), text: query.get("ov-text") === "dark" ? "dark" : "light",
     soft: query.get("ov-surface") === "soft", square: query.get("ov-corners") === "square",
-    demo: query.get("ov-demo") === "1",
+    demo: query.get("ov-demo") === "1", tv: tvOf(query),
     event: M.isSlug(asked) ? asked : "", // vide ou inconnu : l'événement à la une
     seconds: query.get("opt-seconds") !== "0",
   };
 }
+
+/** The TV factor `ov-tv` of the core (px of the 1080 canvas -> px of this window): a number above 0 and below 20, else 1. */
+export const tvOf = (query) => { const t = Number(query.get("ov-tv")); return t > 0 && t < 20 ? t : 1; };
+/** The TV type scale (core 0.11.0): the px are px of the 1080 canvas, `--ov-tv` brings them to this window. Nothing on screen goes under `xs`. */
+export const tvTokens = (tv) => `--ov-tv:${tv};--ov-text-xs:calc(24px*var(--ov-tv));--ov-text-sm:calc(28px*var(--ov-tv));--ov-text-md:calc(32px*var(--ov-tv));--ov-text-lg:calc(40px*var(--ov-tv));--ov-text-xl:calc(56px*var(--ov-tv));--ov-text-2xl:calc(72px*var(--ov-tv));`;
 
 /** Événement d'exemple du mode test : toujours « dans quelques jours », jamais d'événement réel. */
 export function demoEvent(ctx, now, endMs) {
@@ -173,8 +178,8 @@ function elementTokens(e) {
 export function overlayParts(ctx, { initial, stateUrl, endMs, element = null }) {
   const look = ["dark", "light", "bare"].includes(String(ctx.setting("overlayLook"))) ? String(ctx.setting("overlayLook")) : "dark";
   const position = OVERLAY_POSITIONS[String(ctx.setting("overlayPosition"))] ?? OVERLAY_POSITIONS["top-center"];
-  // Dans une page d'overlay, la place et la taille propres à l'overlay sont ignorées : l'élément remplit son cadre (police calculée d'après le cadre).
-  const size = element ? Math.max(8, Math.floor(Math.min(element.width / 17.5, element.height / 7.9))) : (OVERLAY_SIZES[String(ctx.setting("overlaySize"))] ?? OVERLAY_SIZES.m);
+  // Dans une page d'overlay, la place et la taille propres à l'overlay sont ignorées : l'élément remplit son cadre ; son texte suit l'échelle TV du cœur (jetons --ov-text-*, jamais sous 24 px).
+  const size = element ? 0 : (OVERLAY_SIZES[String(ctx.setting("overlaySize"))] ?? OVERLAY_SIZES.m);
   const accent = safeColor(ctx.setting("overlayAccent")) ?? safeColor(ctx.theme.accent) ?? "#e8a23b";
   const L = labels(ctx);
   const secs = ctx.setting("showSeconds") !== false && (!element || element.seconds);
@@ -189,9 +194,9 @@ html,body{margin:0;background:transparent!important;overflow:hidden}
 .vco[hidden],.vco [hidden]{display:none!important}`;
   // Élément : couleurs, fond et arrondis viennent des jetons du style commun ; l'accent reste celui du module.
   const elementHead = `
-:root{${elementTokens(element ?? {})}}
+:root{${elementTokens(element ?? {})};${tvTokens(element?.tv ?? 1)}}
 html,body{margin:0;background:transparent!important;overflow:hidden}
-.vco{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,"Segoe UI",sans-serif;font-size:${size}px;--vco-fg:var(--ov-fg,#fff);--vco-bg:var(--ov-surface,transparent);--vco-muted:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);--vco-accent:${accent}}
+.vco{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,"Segoe UI",sans-serif;font-size:var(--ov-text-md,32px);--vco-fg:var(--ov-fg,#fff);--vco-bg:var(--ov-surface,transparent);--vco-muted:color-mix(in srgb,var(--ov-fg,#fff) 78%,transparent);--vco-accent:${accent}}
 .vco[hidden],.vco [hidden]{display:none!important}`;
   const rules = `
 .vco-box{box-sizing:border-box;padding:.7em 1.1em .8em;border-radius:.8em;border-bottom:.2em solid var(--vco-accent);background:var(--vco-bg);color:var(--vco-fg);text-align:center}
@@ -207,7 +212,12 @@ html,body{margin:0;background:transparent!important;overflow:hidden}
 @media (prefers-reduced-motion:reduce){.vco *{animation:none!important;transition:none!important}}`;
   const elementRules = `
 .vco-box{max-width:100%;max-height:100%;overflow:hidden;border-radius:var(--ov-radius,.8em);border:1px solid var(--ov-border,transparent);border-bottom:.2em solid var(--vco-accent);text-shadow:0 1px 3px rgba(0,0,0,.35)}
-.vco-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}`;
+.vco-title{display:-webkit-box;-webkit-line-clamp:${element && element.height < 260 * (element.tv ?? 1) ? 1 : 2};-webkit-box-orient:vertical;overflow:hidden}
+.vco-title{font-size:1em}
+.vco-tiles{flex-wrap:wrap}
+.vco-n{font-size:var(--ov-text-xl,56px)}
+.vco-l{font-size:var(--ov-text-xs,24px)}
+.vco-msg{font-size:var(--ov-text-xl,56px)}`;
   const css = ((element ? elementHead : legacyHead) + rules + (element ? elementRules : "")).trim();
   const cfg = { stateUrl, lang: ctx.locale, L, secs, poll: 30_000, initial, endMs };
   const json = JSON.stringify(cfg).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");

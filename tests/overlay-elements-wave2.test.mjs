@@ -24,8 +24,8 @@ const get = (url) => new Request(`https://example.test${url}`);
 
 const MODULES = [
   { name: "Overlay défilant", dir: "ticker-overlay", def: tk, id: "banner", fit: "scale", version: "1.2.0", minCore: "0.6.0" },
-  { name: "Témoignages", dir: "testimonials", def: T.def, id: "reviews", fit: "fluid", version: "1.3.1", minCore: "0.6.0" },
-  { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.4.0", minCore: "0.10.0" },
+  { name: "Témoignages", dir: "testimonials", def: T.def, id: "reviews", fit: "fluid", version: "1.4.0", minCore: "0.11.0" },
+  { name: "Mascotte", dir: "mascot", def: K.def, id: "mascot", fit: "scale", version: "1.5.0", minCore: "0.11.0" },
 ];
 /** Ce que le cœur ajoute à l'adresse de l'élément : taille du cadre, style commun, options. */
 const frame = (extra = "", w = 640, h = 140, fit = "scale") => new URLSearchParams(`ov-w=${w}&ov-h=${h}&ov-fit=${fit}&ov-lang=fr&ov-text=light&ov-surface=transparent&ov-corners=round${extra ? `&${extra}` : ""}`);
@@ -298,7 +298,7 @@ test("Avis de la communauté : la page remplit le cadre, suit le style commun (-
   const doc = await res.text();
   assert.match(doc, /<html lang="fr" data-ov-region="element">/);
   for (const p of ["panel", "quote", "footer", "avatar", "author", "stars"]) assert.match(doc, new RegExp(`data-ov-part="${p}"`), p);
-  assert.match(doc, /:root\{--ov-fg:#111111;--ov-surface:rgba\(255,255,255,\.7\);--ov-radius:0px;--ov-border:rgba\(0,0,0,\.18\);\}/);
+  assert.match(doc, /:root\{--ov-fg:#111111;--ov-surface:rgba\(255,255,255,\.7\);--ov-radius:0px;--ov-border:rgba\(0,0,0,\.18\);--ov-tv:1;/);
   assert.match(doc, /position:absolute;inset:0/);
   assert.match(doc, /var\(--ov-fg,#fff\)/);
   assert.ok(!/--sk-|data-skin|var\(--v-|<link|@import|https?:\/\/|localStorage|document\.cookie/.test(doc), "aucun skin ni thème du site, aucun chargement tiers, aucun stockage du navigateur");
@@ -489,7 +489,7 @@ test("Mascotte (cadre d'overlay) : suit le style commun, ne reprend ni le script
   const res = await mcElement(ctx, "ov-w=440&ov-h=320&ov-text=dark&ov-surface=soft&ov-corners=square");
   const doc = await res.text();
   assert.match(doc, /<html lang="fr" class="soft" data-ov-region="element">/);
-  assert.match(doc, /:root\{--ov-fg:#111111;--ov-surface:rgba\(255,255,255,\.7\);--ov-radius:0px;--ov-border:rgba\(0,0,0,\.18\);\}/);
+  assert.match(doc, /:root\{--ov-fg:#111111;--ov-surface:rgba\(255,255,255,\.7\);--ov-radius:0px;--ov-border:rgba\(0,0,0,\.18\);--ov-tv:1;/);
   for (const p of ["bubble", "bubble-tail", "name", "text", "avatar"]) assert.match(doc, new RegExp(`data-ov-part="${p}"`), p);
   assert.ok(!/localStorage|sessionStorage|document\.cookie|mascot\.js|mascot\.css|mc-r\b|mc-w\b|position:fixed;bottom|--sk-|data-skin|var\(--v-|<link|@import|https?:\/\//.test(doc), "aucun reste de la mascotte du site");
   assert.match(res.headers.get("content-security-policy"), /default-src 'none'.*frame-ancestors 'self'/);
