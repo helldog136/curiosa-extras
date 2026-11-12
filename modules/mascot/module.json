@@ -5,9 +5,9 @@
     "fr": "Mascotte",
     "en": "Mascot"
   },
-  "version": "1.1.1",
+  "version": "1.2.0",
   "menuGroup": "content",
-  "minCore": "0.5.0",
+  "minCore": "0.6.5",
   "description": {
     "fr": "Un petit personnage discret dans un coin du site : il dit bonjour, donne une astuce ou annonce une nouveauté, puis se range. Votre dessin ou le sien, vos phrases, jamais envahissant.",
     "en": "A small, discreet character in a corner of the site: it says hello, gives a tip or announces something new, then steps aside. Its own drawing or yours, your sentences, never pushy."
@@ -28,6 +28,7 @@
     "routes",
     "storage",
     "topics",
+    "files",
     "mcp",
     "admin"
   ],
@@ -37,6 +38,21 @@
       "label": {
         "fr": "Ma mascotte",
         "en": "My mascot"
+      }
+    },
+    {
+      "id": "animation",
+      "label": {
+        "fr": "Animation",
+        "en": "Animation"
+      },
+      "panel": true
+    },
+    {
+      "id": "voice",
+      "label": {
+        "fr": "Voix",
+        "en": "Voice"
       }
     },
     {
@@ -165,6 +181,21 @@
     }
   ],
   "settings": [
+    {
+      "key": "voiceFile",
+      "type": "video",
+      "optional": true,
+      "rare": true,
+      "tab": "voice",
+      "label": {
+        "fr": "Votre propre son",
+        "en": "Your own sound"
+      },
+      "help": {
+        "fr": "Une courte vidéo MP4 ou WebM ; seul le son est joué.",
+        "en": "A short MP4 or WebM file; only its sound is played."
+      }
+    },
     {
       "key": "where",
       "type": "select",
@@ -314,6 +345,195 @@
         "fr": "Compté dans le navigateur de la personne qui visite. Une apparition par visite, quoi qu'il arrive.",
         "en": "Counted in the visitor's browser. One appearance per visit, whatever happens."
       }
+    },
+    {
+      "key": "transitionIn",
+      "type": "select",
+      "default": "auto",
+      "rare": true,
+      "label": {
+        "fr": "Comment il arrive",
+        "en": "How it enters"
+      },
+      "help": {
+        "fr": "« Par défaut » garde le style actuel.",
+        "en": "\"Default\" keeps the current look."
+      },
+      "options": [
+        {
+          "value": "auto",
+          "label": {
+            "fr": "Par défaut",
+            "en": "Default"
+          }
+        },
+        {
+          "value": "slide",
+          "label": {
+            "fr": "Glisse depuis le bord le plus proche",
+            "en": "Slide in from the nearest edge"
+          }
+        },
+        {
+          "value": "slideLeft",
+          "label": {
+            "fr": "Glisse depuis la gauche",
+            "en": "Slide in from the left"
+          }
+        },
+        {
+          "value": "slideRight",
+          "label": {
+            "fr": "Glisse depuis la droite",
+            "en": "Slide in from the right"
+          }
+        },
+        {
+          "value": "slideTop",
+          "label": {
+            "fr": "Glisse depuis le haut",
+            "en": "Slide in from the top"
+          }
+        },
+        {
+          "value": "slideBottom",
+          "label": {
+            "fr": "Glisse depuis le bas",
+            "en": "Slide in from the bottom"
+          }
+        },
+        {
+          "value": "fade",
+          "label": {
+            "fr": "Apparaît en fondu",
+            "en": "Fade in"
+          }
+        },
+        {
+          "value": "jiggle",
+          "label": {
+            "fr": "Arrive avec un rebond",
+            "en": "Jiggle in"
+          }
+        },
+        {
+          "value": "pop",
+          "label": {
+            "fr": "Surgit en zoom",
+            "en": "Pop in"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Instantané",
+            "en": "Instant"
+          }
+        }
+      ]
+    },
+    {
+      "key": "transitionOut",
+      "type": "select",
+      "default": "same",
+      "rare": true,
+      "label": {
+        "fr": "Comment il part",
+        "en": "How it leaves"
+      },
+      "help": {
+        "fr": "« Comme l'arrivée » la joue à l'envers.",
+        "en": "\"Same\" plays the entrance backwards."
+      },
+      "options": [
+        {
+          "value": "same",
+          "label": {
+            "fr": "Comme l'arrivée",
+            "en": "Same as how it enters"
+          }
+        },
+        {
+          "value": "slide",
+          "label": {
+            "fr": "Glisse vers le bord le plus proche",
+            "en": "Slide out to the nearest edge"
+          }
+        },
+        {
+          "value": "slideLeft",
+          "label": {
+            "fr": "Glisse vers la gauche",
+            "en": "Slide out to the left"
+          }
+        },
+        {
+          "value": "slideRight",
+          "label": {
+            "fr": "Glisse vers la droite",
+            "en": "Slide out to the right"
+          }
+        },
+        {
+          "value": "slideTop",
+          "label": {
+            "fr": "Glisse vers le haut",
+            "en": "Slide out to the top"
+          }
+        },
+        {
+          "value": "slideBottom",
+          "label": {
+            "fr": "Glisse vers le bas",
+            "en": "Slide out to the bottom"
+          }
+        },
+        {
+          "value": "fade",
+          "label": {
+            "fr": "Disparaît en fondu",
+            "en": "Fade out"
+          }
+        },
+        {
+          "value": "jiggle",
+          "label": {
+            "fr": "Rebondit, puis s'efface",
+            "en": "Jiggle, then fade"
+          }
+        },
+        {
+          "value": "pop",
+          "label": {
+            "fr": "Disparaît en zoom",
+            "en": "Pop out"
+          }
+        },
+        {
+          "value": "none",
+          "label": {
+            "fr": "Instantané",
+            "en": "Instant"
+          }
+        }
+      ]
+    },
+    {
+      "key": "transitionSeconds",
+      "type": "number",
+      "default": 0.5,
+      "rare": true,
+      "min": 0.2,
+      "max": 2,
+      "step": 0.1,
+      "unit": {
+        "fr": "secondes",
+        "en": "seconds"
+      },
+      "label": {
+        "fr": "Durée du mouvement",
+        "en": "Length of the movement"
+      }
     }
   ],
   "mcp": [
@@ -379,6 +599,138 @@
           }
         }
       }
+    },
+    {
+      "name": "mascot_animation_get",
+      "readOnly": true,
+      "description": "Read how the mascot moves and speaks: the idle and talking animations (mode, number of pictures, speed, size), the reading speed that sets how long it talks, and its voice (none, blips, voice of the computer, own sound) with its settings. Pictures and sound files cannot be read or set here: they are uploads of the site.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "mascot_animation_update",
+      "description": "Change how the mascot talks and sounds. Reading speed (how long it talks for a sentence), the speed of the idle and talking animations, the voice mode and its settings. It cannot upload pictures or sounds: switching an animation to a mode needs its pictures to exist already. Only the fields you give are changed.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "readingSpeed": {
+            "type": "string",
+            "enum": [
+              "slow",
+              "normal",
+              "fast"
+            ],
+            "description": "How fast a sentence is read, which sets how long the mascot talks."
+          },
+          "talkMinSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Shortest talking time in seconds (default 2)."
+          },
+          "talkMaxSeconds": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 30,
+            "description": "Longest talking time in seconds (default 12)."
+          },
+          "idleFps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "Pictures per second of the idle animation made of several pictures (default 8)."
+          },
+          "talkFps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "Pictures per second of the talking animation made of several pictures (default 8)."
+          },
+          "idlePlayOnce": {
+            "type": "boolean",
+            "description": "Play the idle animation once, then stop on its last picture."
+          },
+          "voiceMode": {
+            "type": "string",
+            "enum": [
+              "none",
+              "blips",
+              "speech",
+              "custom"
+            ],
+            "description": "none = silent, blips = short sounds, speech = the voice of the computer, custom = the sound file chosen in the settings."
+          },
+          "volume": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Volume in percent (default 40)."
+          },
+          "blipsPreset": {
+            "type": "string",
+            "enum": [
+              "soft",
+              "squeaky",
+              "deep",
+              "robotic",
+              "bubbly",
+              "custom"
+            ]
+          },
+          "blipsPitch": {
+            "type": "string",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          },
+          "blipsSpeed": {
+            "type": "string",
+            "enum": [
+              "slow",
+              "normal",
+              "fast"
+            ]
+          },
+          "blipsVariation": {
+            "type": "string",
+            "enum": [
+              "none",
+              "some",
+              "lots"
+            ]
+          },
+          "speechLanguage": {
+            "type": "string",
+            "maxLength": 12,
+            "description": "Language code such as fr or en, or empty for the language of the page."
+          },
+          "speechVoice": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Part of the name of a voice of the computer, for example Google. Empty = automatic."
+          },
+          "speechSpeed": {
+            "type": "string",
+            "enum": [
+              "slow",
+              "normal",
+              "fast"
+            ]
+          },
+          "speechPitch": {
+            "type": "string",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          }
+        }
+      }
     }
   ],
   "overlayElements": [
@@ -416,8 +768,217 @@
             "en": "How long each sentence stays on screen, from 4 to 60 seconds."
           },
           "example": "10"
+        },
+        {
+          "id": "visibility",
+          "type": "choice",
+          "default": "always",
+          "label": {
+            "fr": "Quand elle se montre",
+            "en": "When it shows"
+          },
+          "choices": [
+            {
+              "value": "always",
+              "label": {
+                "fr": "Toujours",
+                "en": "Always"
+              }
+            },
+            {
+              "value": "speaking",
+              "label": {
+                "fr": "Seulement quand elle parle",
+                "en": "Only while it speaks"
+              }
+            }
+          ]
+        },
+        {
+          "id": "transitionIn",
+          "type": "choice",
+          "label": {
+            "fr": "Comment il arrive",
+            "en": "How it enters"
+          },
+          "choices": [
+            {
+              "value": "module",
+              "label": {
+                "fr": "Comme dans les réglages du module",
+                "en": "Like the module settings"
+              }
+            },
+            {
+              "value": "auto",
+              "label": {
+                "fr": "Par défaut",
+                "en": "Default"
+              }
+            },
+            {
+              "value": "slide",
+              "label": {
+                "fr": "Glisse depuis le bord le plus proche",
+                "en": "Slide in from the nearest edge"
+              }
+            },
+            {
+              "value": "slideLeft",
+              "label": {
+                "fr": "Glisse depuis la gauche",
+                "en": "Slide in from the left"
+              }
+            },
+            {
+              "value": "slideRight",
+              "label": {
+                "fr": "Glisse depuis la droite",
+                "en": "Slide in from the right"
+              }
+            },
+            {
+              "value": "slideTop",
+              "label": {
+                "fr": "Glisse depuis le haut",
+                "en": "Slide in from the top"
+              }
+            },
+            {
+              "value": "slideBottom",
+              "label": {
+                "fr": "Glisse depuis le bas",
+                "en": "Slide in from the bottom"
+              }
+            },
+            {
+              "value": "fade",
+              "label": {
+                "fr": "Apparaît en fondu",
+                "en": "Fade in"
+              }
+            },
+            {
+              "value": "jiggle",
+              "label": {
+                "fr": "Arrive avec un rebond",
+                "en": "Jiggle in"
+              }
+            },
+            {
+              "value": "pop",
+              "label": {
+                "fr": "Surgit en zoom",
+                "en": "Pop in"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "fr": "Instantané",
+                "en": "Instant"
+              }
+            }
+          ],
+          "default": "module"
+        },
+        {
+          "id": "transitionOut",
+          "type": "choice",
+          "label": {
+            "fr": "Comment il part",
+            "en": "How it leaves"
+          },
+          "choices": [
+            {
+              "value": "module",
+              "label": {
+                "fr": "Comme dans les réglages du module",
+                "en": "Like the module settings"
+              }
+            },
+            {
+              "value": "same",
+              "label": {
+                "fr": "Comme l'arrivée",
+                "en": "Same as how it enters"
+              }
+            },
+            {
+              "value": "slide",
+              "label": {
+                "fr": "Glisse vers le bord le plus proche",
+                "en": "Slide out to the nearest edge"
+              }
+            },
+            {
+              "value": "slideLeft",
+              "label": {
+                "fr": "Glisse vers la gauche",
+                "en": "Slide out to the left"
+              }
+            },
+            {
+              "value": "slideRight",
+              "label": {
+                "fr": "Glisse vers la droite",
+                "en": "Slide out to the right"
+              }
+            },
+            {
+              "value": "slideTop",
+              "label": {
+                "fr": "Glisse vers le haut",
+                "en": "Slide out to the top"
+              }
+            },
+            {
+              "value": "slideBottom",
+              "label": {
+                "fr": "Glisse vers le bas",
+                "en": "Slide out to the bottom"
+              }
+            },
+            {
+              "value": "fade",
+              "label": {
+                "fr": "Disparaît en fondu",
+                "en": "Fade out"
+              }
+            },
+            {
+              "value": "jiggle",
+              "label": {
+                "fr": "Rebondit, puis s'efface",
+                "en": "Jiggle, then fade"
+              }
+            },
+            {
+              "value": "pop",
+              "label": {
+                "fr": "Disparaît en zoom",
+                "en": "Pop out"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "fr": "Instantané",
+                "en": "Instant"
+              }
+            }
+          ],
+          "default": "module"
         }
       ]
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "mcp.mascot_phrases_list": "Liste les phrases de la mascotte, avec leur langue, leurs pages et leur état (publiée ou brouillon). À lire avant d'en proposer une. Lecture seule.",
+      "mcp.mascot_phrase_add": "Propose une phrase pour la mascotte. Elle est toujours enregistrée en brouillon : seule l'équipe du site la publie depuis l'administration.",
+      "mcp.mascot_animation_get": "Lit comment la mascotte bouge et parle : animations, durée de parole, voix. Les images et le fichier son se règlent dans l'administration. Lecture seule.",
+      "mcp.mascot_animation_update": "Change la durée de parole, la vitesse des animations et la voix de la mascotte. Ne peut pas envoyer d'images ni de sons. Seuls les champs donnés changent."
+    }
+  }
 }

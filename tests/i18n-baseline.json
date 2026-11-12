@@ -3,7 +3,7 @@
   "version": 1,
   "totals": {
     "manifest": 0,
-    "agentTools": 148,
+    "agentTools": 147,
     "localeFiles": 0,
     "frenchDefaults": 12
   },
@@ -27,7 +27,7 @@
     "idea-box": 3,
     "legal-pages": 3,
     "map": 3,
-    "mascot": 2,
+    "mascot": 1,
     "partnerships": 8,
     "planning": 1,
     "platform-links": 3,
