@@ -149,10 +149,14 @@ export const OVERLAY_JS = String.raw`(function () {
     if (c.el && c.keep) return true;
     return !!d.showUntil && now() < Date.parse(d.showUntil);
   }
+  function clearBox() { clearTimeout(clockTimer); box.replaceChildren(); box.hidden = true; }
   function render(d) {
     cur = d; clearTimeout(flip);
     var win = winnersShown(d);
-    if (!win && (!c.el || d.state === "none")) { box.replaceChildren(); return; }
+    // Rien à dire : rien à l'écran. On ne montre que le tirage OUVERT (inscriptions en cours) et les personnes TIRÉES (le temps prévu) ; fermé sans résultat, terminé ou absent : un cadre vide et transparent.
+    // L'overlay seul (hors page d'overlay) ne montre que les personnes tirées.
+    if (!win && (!c.el || d.state !== "open")) { clearBox(); return; }
+    box.hidden = false;
     var card = el("div", "dw-card", undefined, "panel"), body = el("div", "dw-body", undefined, "body");
     if (win) {
       body.appendChild(el("p", "dw-state", d.winners.length === 1 ? c.t.winner : c.t.winners, "status"));
@@ -162,14 +166,12 @@ export const OVERLAY_JS = String.raw`(function () {
       body.appendChild(el("p", "dw-foot", d.title, "foot"));
       if (!(c.el && c.keep) && d.showUntil) flip = setTimeout(function () { render(cur); }, Math.max(50, Date.parse(d.showUntil) - now() + 50));
     } else {
-      var head = el("p", "dw-state", d.state === "open" ? c.t.open : (d.state === "drawn" ? c.t.done : c.t.closed), "status");
-      if (d.state === "open" && d.until) { var clk = el("span", "dw-clock", clock(Date.parse(d.until) - now()), "clock"); clk.setAttribute("data-end", d.until); head.appendChild(clk); }
+      var head = el("p", "dw-state", c.t.open, "status");
+      if (d.until) { var clk = el("span", "dw-clock", clock(Date.parse(d.until) - now()), "clock"); clk.setAttribute("data-end", d.until); head.appendChild(clk); }
       body.appendChild(head);
       body.appendChild(el("h1", "dw-title", d.title, "title"));
-      if (d.state === "open") {
-        var how = d.keyword && d.site ? c.t.both : (d.keyword ? c.t.chat : c.t.site);
-        body.appendChild(el("p", "dw-how", how.replace("{keyword}", d.keyword || ""), "how"));
-      }
+      var how = d.keyword && d.site ? c.t.both : (d.keyword ? c.t.chat : c.t.site);
+      body.appendChild(el("p", "dw-how", how.replace("{keyword}", d.keyword || ""), "how"));
       body.appendChild(el("p", "dw-foot", plural(d.count, c.t.one, c.t.many), "foot"));
     }
     card.appendChild(body); box.replaceChildren(card);
@@ -177,6 +179,8 @@ export const OVERLAY_JS = String.raw`(function () {
   }
   function schedClock() { clearTimeout(clockTimer); if (box.querySelector("[data-end]") && !document.hidden) clockTimer = setTimeout(tickClock, 1000); }
   function tickClock() {
+    // L'heure de fin est passée : le tirage est fermé, l'écran se vide sans attendre la prochaine lecture.
+    if (cur && cur.state === "open" && cur.until && now() >= Date.parse(cur.until)) { render(Object.assign({}, cur, { state: "closed" })); schedule(300); return; }
     var ends = box.querySelectorAll("[data-end]");
     for (var i = 0; i < ends.length; i++) ends[i].textContent = clock(Date.parse(ends[i].getAttribute("data-end")) - now());
     schedClock();
@@ -207,7 +211,7 @@ export const OVERLAY_JS = String.raw`(function () {
         return r.json();
       })
       .then(function (j) {
-        if (j && j.empty) { box.replaceChildren(); rev = ""; cur = null; delay = Math.min(c.max, Math.max(delay, c.base) * 2); }
+        if (j && j.empty) { clearTimeout(flip); clearBox(); rev = ""; cur = null; delay = Math.min(c.max, Math.max(delay, c.base) * 2); }
         else if (j && j.unchanged) { delay = Math.min(c.max, Math.round(delay * 1.5)); }
         else if (j && j.data) { rev = String(j.rev); render(j.data); delay = c.base; }
         else throw new Error("shape");
@@ -265,10 +269,10 @@ export async function overlayPage(ctx, { query }) {
   const conf = {
     url: `/m/${ctx.instance.key}/direct?room=${P.DRAW.room}&channel=${P.DRAW.channel}&k=${encodeURIComponent(query.get("k"))}`,
     base: cfg.directMin, max: 30000, lang: ctx.locale, el, keep: el && query.get("opt-keep") === "1",
-    t: { winner: t("drawOvWinner"), winners: t("drawOvWinners"), open: t("drawOvOpen"), closed: t("drawOvClosed"), done: t("drawOvDone"), both: t("drawOvBoth"), chat: t("drawOvChat"), site: t("drawOvSiteOnly"), one: t("drawCountOne").replace("{n}", "{n}"), many: t("drawCountMany") },
+    t: { winner: t("drawOvWinner"), winners: t("drawOvWinners"), open: t("drawOvOpen"), both: t("drawOvBoth"), chat: t("drawOvChat"), site: t("drawOvSiteOnly"), one: t("drawCountOne").replace("{n}", "{n}"), many: t("drawCountMany") },
     ...(demo ? { demo: { v: 1, state: "open", title: t("drawDemoTitle"), keyword: "!cadeau", site: true, count: 42, until: null, winners: [], showUntil: null } } : {}),
   };
   const json = JSON.stringify(conf).replace(/</g, "\\u003c");
   const style = { accent: color(ctx.theme?.accent, "#e8a23b"), fg: color(ctx.theme?.fg, "#ffffff"), card: color(ctx.theme?.surface, "#1b1b1d"), font: ctx.theme?.font, el };
-  return { title: ctx.instance.name, html: `<div id="dw-box" role="status" aria-live="polite"${el ? ' data-ov-region="element"' : ""}></div>`, css: overlayCss(query, style), script: `window.__DW=${json};${OVERLAY_JS}` };
+  return { title: ctx.instance.name, html: `<div id="dw-box" role="status" aria-live="polite"${el ? ' data-ov-region="element"' : ""} hidden></div>`, css: overlayCss(query, style), script: `window.__DW=${json};${OVERLAY_JS}` };
 }

@@ -116,6 +116,8 @@ export function renderContent(ctx, p, data, now = new Date()) {
     mode: grid ? "days" : "list", days, count: p.id === "next" ? 1 + (p.more ?? 0) : fitCount(p, look), surface: SURFACE,
     allowData: !!p.demo, planningHref: null, channelUrl: null, vis: opts.covers ? data.vis ?? null : null,
   });
+  // Rien de prévu : rien à l'écran (pas de carte « aucun stream », pas de cadre). Le mode test montre toujours un exemple, pour placer l'élément.
+  if (!p.demo && (model.empty || (p.id === "next" && !model.next))) return "";
   const frag = renderFragment(look, model, ctx);
   return `<div class="pa pa-${esc(frag.id)}" data-density="${esc(opts.density)}" data-ov-part="planning"><style>${BASE_CSS}${minify(frag.css)}</style>${frag.html}</div>`;
 }
@@ -151,7 +153,7 @@ if(R.getBoundingClientRect().height>avail+1)R.classList.add('cut')}
 fit();window.addEventListener('resize',fit);
 var u=location.pathname+location.search+(location.search?'&':'?')+'frag=1',v=R.getAttribute('data-v'),n=0,wait=60000;
 function poll(){if(n++>=300)return;var x=new XMLHttpRequest();x.open('GET',u);x.responseType='json';x.timeout=15000;
-function done(j){if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.setAttribute('data-v',v);wait=60000;fit()}else wait=Math.min(600000,Math.round(wait*1.5));setTimeout(poll,wait)}
+function done(j){if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.parentNode.hidden=!j.html;R.setAttribute('data-v',v);wait=60000;fit()}else wait=Math.min(600000,Math.round(wait*1.5));setTimeout(poll,wait)}
 x.onload=function(){done(x.status===200?x.response:null)};x.onerror=x.ontimeout=function(){wait=Math.min(600000,wait*2);setTimeout(poll,wait)};x.send()}
 setTimeout(poll,wait)})();`;
 
@@ -178,7 +180,7 @@ export async function elementResponse(request, ctx, deps) {
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const light = p.style?.text !== "dark";
   const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("title"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
-    `<body${light && p.style?.surface !== "soft" ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"><div id="r" data-ov-part="content" data-v="${esc(v)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
+    `<body${light && p.style?.surface !== "soft" ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(v)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }
 

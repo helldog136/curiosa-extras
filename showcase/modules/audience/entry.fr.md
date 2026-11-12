@@ -42,4 +42,4 @@ La base de vos interactions de stream : un pseudo par personne sans compte, une 
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.8.1.
+Disponible depuis la version 1.0.0. Version actuelle : 1.8.2.

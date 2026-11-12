@@ -143,7 +143,7 @@ body.ov-shadow{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 
 const SCRIPT = `(function(){var R=document.getElementById('r'),u=location.pathname+location.search+(location.search?'&':'?')+'frag=1',v=R.getAttribute('data-v'),n=0,wait=120000;
 function poll(){if(n++>=200)return;fetch(u,{credentials:'omit',cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.setAttribute('data-v',v);wait=120000}else wait=Math.min(900000,Math.round(wait*1.5))}).catch(function(){wait=Math.min(900000,wait*2)}).then(function(){setTimeout(poll,wait)})}
+if(j&&j.v!==v){v=j.v;R.innerHTML=j.html;R.parentNode.hidden=!j.html;R.setAttribute('data-v',v);wait=120000}else wait=Math.min(900000,Math.round(wait*1.5))}).catch(function(){wait=Math.min(900000,wait*2)}).then(function(){setTimeout(poll,wait)})}
 setTimeout(poll,wait)})();`;
 
 const CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
@@ -162,7 +162,7 @@ export async function elementResponse(request, ctx, read) {
   const lang = String(ctx.locale ?? "en").replace(/[^A-Za-z-]/g, "").slice(0, 8) || "en";
   const shadow = p.style?.text !== "dark" && p.style?.surface !== "soft";
   const html = `<!doctype html><html lang="${esc(lang)}" data-ov-region="element"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(ctx.t("ovTitle"))}</title><style>:root{${tokensCss(p.style)}}${BASE}</style></head>` +
-    `<body${shadow ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"><div id="r" data-ov-part="content" data-v="${esc(vv)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
+    `<body${shadow ? ' class="ov-shadow"' : ""}><div id="p" data-ov-part="panel"${content ? "" : " hidden"}><div id="r" data-ov-part="content" data-v="${esc(vv)}">${content}</div></div><script>${SCRIPT}</script></body></html>`;
   return new Response(html, { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
 }
 

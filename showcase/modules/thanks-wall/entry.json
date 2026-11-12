@@ -20,7 +20,7 @@
     "fr": "Une page de remerciements pour votre communauté : des cartes avec photo, et une personne à l'honneur chaque mois. Les noms restent dans Contacts."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.2.3",
+  "moduleVersion": "1.2.4",
   "requires": [
     "contacts"
   ],
