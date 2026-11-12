@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.62.0 — 2026-11-12
+
+*En bref : l'Overlay alertes (1.4.0) affiche maintenant vos alertes Twitch, l'une après l'autre : follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains d'enthousiasme. Un onglet « Événements Twitch » règle chaque type (texte, durée, minimum), les rafales sont groupées et une pause retient les alertes sans en perdre. Il faut pour cela le module Activité Twitch (1.61.0) ; sans lui, rien ne change. Nouvelle permission : stockage.*
+
+*In short: the Alerts overlay (1.4.0) now shows your Twitch alerts, one after the other: follows, subscriptions, gifts, bits, raids, stream start and end, hype trains. A "Twitch events" tab sets each type (text, duration, minimum), bursts are grouped and a pause holds the alerts without losing any. It needs the module Twitch activity (1.61.0); without it nothing changes. New permission: storage.*
+
+### Nouveautés
+
+- **Les événements Twitch s'affichent en alertes**, l'une après l'autre : une alerte ne remplace jamais celle qui est à l'écran, et une courte pause (1 seconde par défaut) sépare deux alertes.
+- **Un onglet « Événements Twitch »** : pour chaque type, un interrupteur, le texte, la durée à l'écran et un minimum (bits, abonnements offerts, personnes). Trois styles de texte prêts à l'emploi, un test par type, une liste de pseudos à ignorer. Les messages écrits par le public restent cachés sauf si vous cochez « Afficher les messages joints aux alertes ».
+- **Les rafales deviennent une seule alerte** : les cadeaux d'une même personne (« Camille offre 5 abonnements »), les nombreux follows d'affilée (« 12 nouveaux follows »). Un raid, un abonnement ou des bits ne sont jamais retardés.
+- **Une pause qui ne perd rien** : les alertes sont retenues dans l'ordre et sortent à la reprise ; « Vider la file » retire ce qui attend et vide l'écran. Rien ne s'affiche deux fois après un redémarrage, et rien de ce qui attendait n'est perdu.
+- **Les deux boutons « Envoyer » de la page disent ce qu'ils font** (« Envoyer l'alerte de test », « Envoyer le faux Super Chat »). Votre assistant IA peut lire et changer les textes des alertes.
+- **Twitch events now show as alerts**, one after the other: an alert never replaces the one on screen, and a short pause (1 second by default) separates two alerts.
+- **A "Twitch events" tab**: for each type a switch, the text, the time on screen and a minimum (bits, gifted subs, viewers). Three ready-made text styles, a test per type, a list of names to ignore. Messages written by viewers stay hidden unless you tick "Show the messages that come with an alert".
+- **Bursts become one alert**: gifts by the same person ("Camille gifts 5 subs"), many follows in a row ("12 new followers"). A raid, a sub or bits are never delayed.
+- **A pause that loses nothing**: alerts are held in order and come out when you resume; "Empty the queue" drops what waits and clears the screen. Nothing is shown twice after a restart, and nothing that was waiting is lost.
+- **The two "Send" buttons of the page now say what they do** ("Send the test alert", "Send the fake Super Chat"). Your AI assistant can read and change the texts of the alerts.
+
+### Pour les développeurs
+
+- Alerts overlay 1.4.0: `twitch.mjs` (pure engine and per-overlay state: templates, `alertFor`, `groupBurst`, staging window, pause/held, ids already shown; collection `twitchAlerts`), `twitch-admin.mjs` (tab, edit window, actions, MCP `alert_templates_get` / `alert_template_update`). Topic `twitch.event` consumed (optional), service `alerts.queue` offered (`each`: `state`, `pause`, `resume`, `clear`). Permissions `storage` and `mcp` added; four settings on the new tab `twitch`.
+- The page changes ONLY when Twitch activity is installed (title, per-alert duration, pause, clear, queue for everything); otherwise it is byte for byte the page of before (non-regression goldens unchanged). A pushed alert can ask to replace the current one with `{ "queue": false }`. Détail : `docs/changelog-parts/alerts-twitch.md`.
+- Tests: `tests/alerts-twitch.test.mjs`; version and settings assertions of `tests/alerts-overlay-youtube.test.mjs` and `tests/overlay-elements-alerts.test.mjs` updated; `docs/TOPICS.md` lists the service `alerts.queue`.
+
 ## 1.61.0 — 2026-11-12
 
 *En bref : un nouveau module, Activité Twitch (1.0.0), reçoit ce qui se passe sur votre chaîne (follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains d'enthousiasme) et le garde dans un journal que vous pouvez chercher, tester et rejouer. Le Connecteur Twitch (1.4.0) peut demander trois accords de plus : après la mise à jour, autorisez de nouveau chez Twitch, une seule fois. Les alertes à l'écran arrivent dans la version suivante.*
