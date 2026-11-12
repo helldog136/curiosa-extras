@@ -1,4 +1,4 @@
-// Audience 1.8.0: what a plugged-in module may describe in its panel of the remote control, besides buttons and forms: a SWITCH (shows the current state), values and a heading on buttons,
+// Audience 1.9.0 adds, to a switch, groups of segmented choices and a folded explanation (tests at the end); 1.8.0: what a plugged-in module may describe in its panel of the remote control, besides buttons and forms: a SWITCH (shows the current state), values and a heading on buttons,
 // a small badge under the tab name and one note. Everything is text, bounded and checked here; the old panels (Polls) are not changed.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -49,9 +49,55 @@ test("the page script draws the switch with role=switch, aria-checked, a visible
 
 test("the page carries the word for 'working' in both languages, and the journal words for the bot gestures exist in both", async () => {
   const { fr, en } = await import("./helpers/audienceHarness.mjs");
-  for (const d of [fr, en]) for (const k of ["remoteBusy", "what_panel_pause", "what_panel_resume", "what_panel_addcom", "what_panel_undo", "what_panel_collabon", "what_panel_collaboff"]) assert.ok(d[k], k);
+  for (const d of [fr, en]) for (const k of ["remoteBusy", "what_panel_pause", "what_panel_resume", "what_panel_addcom", "what_panel_undo", "what_panel_collabon", "what_panel_collaboff", "what_panel_collabset", "remoteExplain", "remoteMore"]) assert.ok(d[k], k);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.equal(manifest.version, "1.8.3");
+  assert.equal(manifest.version, "1.9.0");
   assert.deepEqual(manifest.offers.map((o) => o.service), ["audience.session", "audience.draw"], "the contract of the services Audience offers is not changed");
   assert.deepEqual(manifest.requires, [{ service: "audience.remote", optional: true }], "the remote is still optional for plugged-in modules, and nothing else is required");
+});
+
+/* ───────────── 1.9.0: choices under a switch, a calm "off", a folded explanation ───────────── */
+
+test("a switch may carry groups of segmented choices: at most 3 groups of 2 to 5 options, bounded texts, one action and one value name each; the rest is dropped", () => {
+  const opt = (value, label, on) => ({ value, label, on });
+  const p = L.sanitizePanel({ ...base, toggles: [{ id: "collabon", label: "Mode", on: false, calm: true, more: "M".repeat(900), foldLabel: "F".repeat(60), choices: [
+    { id: "collabset", name: "timers", label: "L".repeat(50), hint: "H".repeat(120), options: [opt("pause", "Pause", true), opt("2", "1 in 2"), opt("3", "X".repeat(30)), opt(5, "1 in 5"), opt("6", "six"), opt("7", "seven")] },
+    { id: "collabset", name: "hours", label: "Stops after", folded: true, options: [opt("2", "2 h"), opt("0", "Never", "yes")] },
+    { id: "Bad Id", name: "x", label: "Nope", options: [opt("1", "a"), opt("2", "b")] },
+    { id: "collabset", name: "Bad-Name", label: "Nope", options: [opt("1", "a"), opt("2", "b")] },
+    { id: "collabset", name: "alone", label: "One option", options: [opt("1", "a")] },
+    { id: "collabset", name: "fourth", label: "Fourth", options: [opt("1", "a"), opt("2", "b")] },
+    { id: "collabset", name: "fifth", label: "Fifth", options: [opt("1", "a"), opt("2", "b")] },
+  ] }] });
+  const t = p.toggles[0];
+  assert.deepEqual([t.calm, t.more.length, t.foldLabel.length], [true, 400, 30]);
+  assert.deepEqual(t.choices.map((g) => g.name), ["timers", "hours", "fourth"], "3 groups at most; unusable ones are dropped before the cut");
+  const g = t.choices[0];
+  assert.deepEqual([g.id, g.label.length, g.hint.length, g.folded, g.options.length], ["collabset", 30, 80, false, 5]);
+  assert.deepEqual(g.options.map((o) => [o.value, o.label.length, o.on]), [["pause", 5, true], ["2", 6, false], ["3", 14, false], ["5", 6, false], ["6", 3, false]]);
+  assert.deepEqual([t.choices[1].folded, t.choices[1].options.map((o) => o.on)], [true, [false, false]], "`on` only when strictly true");
+});
+
+test("a switch without the new fields comes out exactly as before (same keys), and a panel without switches is unchanged", () => {
+  const p = L.sanitizePanel({ ...base, toggles: [{ id: "pause", label: "Bot answers", on: true, text: "On", hint: "Hint", values: { a: "1" }, choices: "no", more: "", calm: false }] });
+  assert.deepEqual(Object.keys(p.toggles[0]).sort(), ["hint", "id", "label", "on", "text", "values"]);
+  assert.deepEqual(L.sanitizeChoices(undefined), []); assert.deepEqual(L.sanitizeChoices([null, 3, {}]), []);
+  assert.equal(L.LIMITS.toggles, 3);
+});
+
+test("the page script draws the choices as a radio group of buttons (aria-checked, 'working' on the pressed one), a calm switch, and two folds that keep their state; no innerHTML", () => {
+  assert.match(C.REMOTE_JS, /setAttribute\("role", "radiogroup"\)/);
+  assert.match(C.REMOTE_JS, /setAttribute\("role", "radio"\)/);
+  assert.match(C.REMOTE_JS, /tg\.calm/);
+  assert.match(C.REMOTE_JS, /h\("details", "mo"\)/);
+  assert.match(C.REMOTE_JS, /setAttribute\("aria-expanded"/);
+  assert.match(C.REMOTE_JS, /q\.title = text/);
+  assert.match(C.REMOTE_JS, /ui\.fold\[fk\]/);
+  assert.doesNotMatch(C.REMOTE_JS, /innerHTML|insertAdjacentHTML|outerHTML|document\.write|eval\(|new Function/);
+});
+
+test("the journal has words for the choices gesture, and Audience still has no new route, permission or required service", async () => {
+  const { fr, en } = await import("./helpers/audienceHarness.mjs");
+  for (const d of [fr, en]) assert.ok(d.what_panel_collabset && d.remoteExplain);
+  assert.deepEqual(manifest.permissions, ["slots", "pages", "routes", "storage", "overlay", "admin", "mcp"]);
 });

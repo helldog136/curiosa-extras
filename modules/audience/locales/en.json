@@ -99,6 +99,7 @@
   "remoteLoading": "Loading the remote control…",
   "remoteFoot": "Secret address: do not share it.",
   "remoteBusy": "Working…",
+  "remoteExplain": "What does it do?",
   "remoteDone": "Done.",
   "remoteAgain": "tap again to confirm",
   "remoteNoPanels": "Nothing to drive yet. Install an activity module, like Polls.",
@@ -361,5 +362,6 @@
   "what_panel_addcom": "Chat command added",
   "what_panel_undo": "Chat command deleted",
   "what_panel_collabon": "Collaboration mode switched on",
-  "what_panel_collaboff": "Collaboration mode switched off"
+  "what_panel_collaboff": "Collaboration mode switched off",
+  "what_panel_collabset": "Collaboration mode choices saved"
 }

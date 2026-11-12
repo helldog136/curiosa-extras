@@ -314,6 +314,27 @@ kbd{display:none;font:600 11px/1 ui-monospace,monospace;padding:2px 5px;border-r
 .tg.off .tgs{color:var(--cur-fg);font-weight:700}
 .tg.off .tgs::before{content:"";display:inline-block;width:11px;height:12px;margin-right:7px;vertical-align:-1px;border-left:4px solid currentColor;border-right:4px solid currentColor;box-sizing:border-box}
 .tg:hover:not(:disabled){border-color:var(--cur-fg)}
+.tg.calm.off{border-color:var(--cur-line);background:var(--cur-surface)}
+.tg.calm.off .tgs{color:var(--cur-fg);font-weight:600}
+.tg.calm.off .tgs::before{content:"○ ";display:inline;width:auto;height:auto;margin:0;border:0;vertical-align:baseline}
+.tg.calm.on{border-color:var(--cur-accent);background:color-mix(in srgb,var(--cur-accent) 14%,var(--cur-surface))}
+.tg.calm.on .trk{background:var(--cur-accent)}
+.tg.calm.on .tgs{color:var(--cur-fg);font-weight:700}
+.tg.calm.on .tgs::before{content:"✓ ";color:var(--cur-accent)}
+.tg:focus-visible,.sgb:focus-visible,.qm:focus-visible,.mo summary:focus-visible{outline:3px solid var(--cur-focus);outline-offset:2px}
+.tgc{display:grid;gap:4px;min-width:0;margin:0;padding:0;border:0}
+.tgc .seglab{font-weight:600;font-size:.88em;color:var(--cur-muted)}
+.sgs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.sgb{min-height:48px;min-width:0;display:flex;align-items:center;justify-content:center;border-radius:var(--cur-radius);border:2px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-fg);font:inherit;font-weight:600;font-size:.88em;cursor:pointer;text-align:center;padding:0 2px;overflow-wrap:anywhere;touch-action:manipulation}
+.sgb[aria-checked=true]{border-color:var(--cur-accent);background:color-mix(in srgb,var(--cur-accent) 22%,var(--cur-surface));font-weight:800;box-shadow:inset 0 -5px 0 var(--cur-accent)}
+.sgb:disabled,.sgb[aria-busy=true]{cursor:wait}
+.mo{min-width:0}.mo summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600;font-size:.88em;color:var(--cur-muted);touch-action:manipulation}
+.mo[open] summary{color:var(--cur-fg)}
+.mop{margin:0;color:var(--cur-fg);font-size:.88em;overflow-wrap:anywhere;padding:6px 8px;border-radius:var(--cur-radius);border:1px solid var(--cur-line);background:var(--cur-surface)}.mop[hidden]{display:none}
+.tgh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
+.qm{min-width:44px;min-height:44px;border-radius:50%;border:2px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-fg);font:inherit;font-weight:800;cursor:pointer;touch-action:manipulation}
+.qm[aria-expanded=true]{border-color:var(--cur-accent)}.qh{display:grid;gap:4px;justify-items:end}.qh .mop{justify-self:stretch}
+.mo .tgc{margin-bottom:6px}
 .hint,.note{margin:0;color:var(--cur-muted);font-size:.86em}
 .gform{display:grid;gap:clamp(6px,1.2cqh,10px);min-width:0}
 .gform .form .in::placeholder{color:var(--cur-muted);opacity:.75}
@@ -381,7 +402,7 @@ export function remoteConfig(ctx, key, { dock = false } = {}) {
   return {
     k: key, dock, state: `/m/${ctx.instance.key}/remote-state?k=${encodeURIComponent(key)}`, press: `/m/${ctx.instance.key}/remote-press`, lang: ctx.locale,
     t: {
-      done: t("remoteDone"), busy: t("remoteBusy"), more: t("remoteMore"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
+      done: t("remoteDone"), busy: t("remoteBusy"), explain: t("remoteExplain"), more: t("remoteMore"), rooms: t("remoteRooms"), noRooms: t("remoteNoRooms"), noOne: t("remoteNoOne"),
       person: t("person_one"), people: t("person_many"), anon: t("anon"), mutedTag: t("mutedTag"), mute: t("remoteMute"), unmute: t("remoteUnmute"), clear: t("remoteClear"), 
       connected: t("remoteConnected"), offline: t("remoteOffline"), denied: t("remoteDenied"), connecting: t("remoteConnecting"),
       e_net: t("remoteErrNet"), e_gone: t("remoteErrGone"), e_failed: t("remoteErrFailed"), e_invalid: t("remoteErrInvalid"), e_limit: t("remoteErrLimit"),

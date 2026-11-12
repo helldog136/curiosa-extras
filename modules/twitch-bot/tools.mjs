@@ -58,7 +58,7 @@ function repeatChanges(a) {
 
 /** The collaboration mode as an assistant reads it (see collab.mjs). */
 const iso = (at) => (Number.isFinite(at) ? new Date(at).toISOString() : null);
-const collabView = (e) => ({ enabled: e.on, ...(e.on ? { since: iso(e.since), endsAt: iso(e.until), changedFrom: e.by } : {}), timers: e.mode === "pause" ? "paused" : `thinned out: 1 in ${e.ratio} is sent`, commandDelayFactor: e.factor, muteOtherAutomaticMessages: e.quiet, autoEndHours: e.hours });
+const collabView = (e) => ({ enabled: e.on, ...(e.on ? { since: iso(e.since), endsAt: iso(e.until), changedFrom: e.by } : {}), timers: e.mode === "pause" ? "paused" : `thinned out: 1 in ${e.ratio} is sent`, timersChoice: e.mode === "pause" ? "pause" : "every_n", timersEveryN: e.mode === "pause" ? null : e.ratio, commandDelayFactor: e.factor, muteOtherAutomaticMessages: e.quiet, autoEndHours: e.hours, autoStopHours: e.hours });
 
 const rewardView = (r, names) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, actionName: names.get(r.action) ?? null, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
 const fieldsOf = (a, cur = {}) => ({ title: a.name ?? cur.title, cost: a.costPoints ?? cur.cost, cooldown: a.delaySeconds ?? cur.cooldown ?? 0, prompt: a.helpText ?? cur.prompt ?? "", needsInput: a.viewerWritesMessage ?? cur.needsInput ?? false, action: a.action ?? cur.action, reply: a.chatReply ?? cur.reply ?? "" });
@@ -117,8 +117,11 @@ export default {
   },
   async collaboration_mode_set(ctx, args) {
     const before = CO.choicesOf(await st.readState(ctx));
-    if (["mode", "ratio", "commandDelayFactor", "muteOtherAutomaticMessages", "autoEndHours"].some((k) => args[k] !== undefined)) {
-      const r = CO.check({ mode: args.mode, ratio: args.ratio, factor: args.commandDelayFactor, hours: args.autoEndHours, quiet: args.muteOtherAutomaticMessages === undefined ? undefined : args.muteOtherAutomaticMessages === true }, before);
+    // `timers` + `n` (pause, or one out of n) is the current way; `mode` + `ratio` are the older names and still work. `autoStopHours` is the current name of `autoEndHours`.
+    const timers = args.timers === undefined ? undefined : args.timers === "pause" ? "pause" : args.timers === "every_n" ? String(args.n ?? before.ratio) : "?";
+    const hours = args.autoStopHours !== undefined ? args.autoStopHours : args.autoEndHours;
+    if (["timers", "mode", "ratio", "commandDelayFactor", "muteOtherAutomaticMessages"].some((k) => args[k] !== undefined) || hours !== undefined) {
+      const r = CO.check({ ...(timers !== undefined ? { timers } : { mode: args.mode, ratio: args.ratio }), factor: args.commandDelayFactor, hours, quiet: args.muteOtherAutomaticMessages === undefined ? undefined : args.muteOtherAutomaticMessages === true }, before);
       if (!r.ok) throw expose(Object.values(r.errors).map((code) => ctx.t(`co_e_${code}`)).join(" "));
       await CO.saveChoices(ctx, r.value);
     }

@@ -7,11 +7,15 @@
 //     and the chat answer of a reward, which is then refunded), and an automatic end after `hours` hours (a safety net so that the mode is not left on by mistake).
 // The module has no thank-you for a follow, a raid or a subscription and no automatic message about the game or the title: there is nothing else to mute.
 // The switch is remembered as { on, since, by, until }; the choices as { mode, ratio, factor, quiet, hours }. `by` is where the last change came from.
+// For the person the timers choice is ONE notion with four values (TIMERS): "pause", or one send out of 2, 3 or 5 ("2", "3", "5"); it is stored as { mode, ratio } (the form stored since 1.14.0, still read as is).
+// The automatic end is a number of hours kept as before (0 to 24); the remote control offers a short list of it (HOURS_LIST).
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbouring files (otherwise the old code would stay cached after an update)
 const st = await import(`./state.mjs${v}`);
 
 export const MODES = ["thin", "pause"];
-export const RATIOS = [2, 3];
+export const RATIOS = [2, 3, 5];
+export const TIMERS = ["pause", "2", "3", "5"];
+export const HOURS_LIST = [2, 4, 6, 0];   // what the remote control offers (0 = never); any whole number from 0 to 24 is still valid and is kept
 export const FACTOR = { min: 1, max: 5 };
 export const HOURS = { min: 0, max: 24 };
 export const DEFAULTS = { mode: "thin", ratio: 3, factor: 1, quiet: false, hours: 6 };
@@ -31,6 +35,11 @@ export function choicesOf(state) {
     hours: int(c.hours, HOURS.min, HOURS.max, DEFAULTS.hours),
   };
 }
+
+/** The timers choice as one value: "pause", "2", "3" or "5" (from the stored { mode, ratio }). */
+export const timersOf = (c) => (c.mode === "pause" ? "pause" : String(c.ratio));
+/** The stored { mode, ratio } of one timers value (null when the value is not one of TIMERS). */
+export const fromTimers = (x, cur = DEFAULTS) => (String(x) === "pause" ? { mode: "pause", ratio: cur.ratio } : RATIOS.includes(Number(x)) ? { mode: "thin", ratio: Number(x) } : null);
 
 /** What counts right now: { on, since, by, until, ...choices }. A mode whose automatic end has passed is off, even before anybody wrote it down. Pure: reads nothing, writes nothing. */
 export function effective(state, now = Date.now()) {
@@ -83,10 +92,15 @@ export async function saveChoices(ctx, next, { now = Date.now() } = {}) {
 /** Checks the values of the form (strings). Rends { ok: true, value } or { ok: false, errors: { field: code } } (the codes are turned into sentences by the page). */
 export function check(values, cur = DEFAULTS) {
   const errors = {};
-  const mode = values.mode === undefined ? cur.mode : String(values.mode);
-  if (!MODES.includes(mode)) errors.collabMode = "mode";
-  const ratio = values.ratio === undefined ? cur.ratio : Number(values.ratio);
-  if (!RATIOS.includes(ratio)) errors.collabRatio = "ratio";
+  let mode = values.mode === undefined ? cur.mode : String(values.mode);
+  let ratio = values.ratio === undefined ? cur.ratio : Number(values.ratio);
+  if (values.timers !== undefined) {   // the one-value form ("pause", "2", "3", "5") wins over the two older fields
+    const t = fromTimers(values.timers, { ...cur, ratio });
+    if (t) ({ mode, ratio } = t); else errors.collabTimers = "timers";
+  } else {
+    if (!MODES.includes(mode)) errors.collabMode = "mode";
+    if (!RATIOS.includes(ratio)) errors.collabRatio = "ratio";
+  }
   const num = (raw, def) => (raw === undefined ? def : String(raw).trim() === "" ? def : Number(raw));
   const factor = num(values.factor, cur.factor);
   if (!Number.isInteger(factor) || factor < FACTOR.min || factor > FACTOR.max) errors.collabFactor = "factor";
@@ -98,3 +112,18 @@ export function check(values, cur = DEFAULTS) {
 
 /** The delay of a command while the mode is on: multiplied by the factor (never above a day). */
 export const stretch = (seconds, e) => (e?.on && e.factor > 1 ? Math.min(86_400, seconds * e.factor) : seconds);
+
+/** "5 h 20", "2 h", "40 min": the time left, rounded up to the minute (for a sentence that says when the mode stops). */
+export function leftText(t, ms) {
+  const m = Math.max(1, Math.ceil(ms / 60_000)), h = Math.floor(m / 60), r = m % 60;
+  return h === 0 ? t("co_left_m", { m }) : r === 0 ? t("co_left_h", { h }) : t("co_left_hm", { h, m: r });
+}
+
+/** The few words that say what the timers do ("timers paused" / "timers 1 in 3"). */
+export const timersText = (t, c) => (c.mode === "pause" ? t("co_t_pause") : t("co_t_thin", { n: c.ratio }));
+
+/** The state line of the remote control: says exactly what is active now ("On — timers 1 in 3 — stops in 5 h 20"). */
+export function stateLine(t, e, now = Date.now()) {
+  if (!e.on) return t("co_line_off");
+  return t("co_line_on", { timers: timersText(t, e), end: e.until ? t("co_line_end", { left: leftText(t, e.until - now) }) : t("co_line_noend") });
+}

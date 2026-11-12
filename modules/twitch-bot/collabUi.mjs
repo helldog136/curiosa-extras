@@ -1,5 +1,5 @@
-// The collaboration mode on the administration page: one line under the status bar (state, since when, one button) and, under it, the two choices that matter (what happens to the timers,
-// and how many still go out) with the rare ones folded under "More options". The mode itself lives in collab.mjs.
+// The collaboration mode on the administration page: one line under the status bar (state, since when, one button) and, under it, the one choice that matters (what the timers do: paused,
+// or one out of 2, 3 or 5 still goes out) with the rare ones folded under "More options". The remote control offers the same choices. The mode itself lives in collab.mjs.
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbouring files (otherwise the old code would stay cached after an update)
 const C = await import(`./collab.mjs${v}`);
 const K = await import(`./adminkit.mjs${v}`);
@@ -21,14 +21,13 @@ export function bar(ctx, s, e) {
   return K.statusBar(ctx, { kind: e.on ? "warn" : "builtin", pill: t(e.on ? "co_pill_on" : "co_pill_off"), texts, buttons: button });
 }
 
-/** The choices form. Two visible fields; the rest is folded (R4, R7). */
+/** The choices form. One visible field; the rest is folded (R4, R7). */
 export function form(ctx, e) {
   const t = ctx.t;
   return {
     type: "adminForm", action: "collabSave", title: t("co_form_title"), submitLabel: t("co_save_btn"),
     fields: [
-      { name: "collabMode", label: t("co_f_mode"), kind: "segmented", value: e.mode, options: [{ value: "thin", label: t("co_o_thin") }, { value: "pause", label: t("co_o_pause") }] },
-      { name: "collabRatio", label: t("co_f_ratio"), kind: "segmented", value: String(e.ratio), options: C.RATIOS.map((n) => ({ value: String(n), label: t("co_o_ratio", { n }) })), help: t("co_f_ratio_help") },
+      { name: "collabTimers", label: t("co_f_timers"), kind: "segmented", value: C.timersOf(e), options: C.TIMERS.map((x) => ({ value: x, label: x === "pause" ? t("co_o_pause") : t("co_o_ratio", { n: x }) })) },
       { name: "collabFactor", label: t("co_f_factor"), kind: "number", value: e.factor, placeholder: String(C.DEFAULTS.factor), min: C.FACTOR.min, max: C.FACTOR.max, step: 1, unit: t("co_unit_times"), help: t("co_f_factor_help"), folded: true },
       { name: "collabQuiet", label: t("co_f_quiet"), kind: "switch", value: e.quiet ? "on" : "", help: t("co_f_quiet_help"), folded: true },
       { name: "collabHours", label: t("co_f_hours"), kind: "number", value: e.hours, placeholder: String(C.DEFAULTS.hours), min: C.HOURS.min, max: C.HOURS.max, step: 1, unit: t("co_unit_hours"), help: t("co_f_hours_help"), folded: true },
