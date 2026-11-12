@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 const version = new URL(import.meta.url).search;
 const oauth = await import(new URL(`./oauth.mjs${version}`, import.meta.url).href);
 const store = await import(new URL(`./store.mjs${version}`, import.meta.url).href);
+const health = await import(new URL(`./health.mjs${version}`, import.meta.url).href);
 const { REWARD_ROUTES } = await import(new URL(`./rewards.mjs${version}`, import.meta.url).href);
 const { timing, within } = oauth;
 const { LOGIN } = store;
@@ -109,7 +110,7 @@ export function check(args) {
 }
 
 /* ───────────── Mémoire du processus (bornée) ───────────── */
-const mem = { tokens: new Map(), inflight: new Map(), cache: new Map(), good: new Map() };
+const mem = { tokens: new Map(), inflight: new Map(), cache: new Map(), good: new Map(), backoff: new Map() };
 export const resetHelix = () => { for (const m of Object.values(mem)) m.clear(); };
 const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 24);
 const appKey = (c) => hash(`${c.clientId}|${c.secret}`);
@@ -188,18 +189,28 @@ export async function appCall(ctx, c, req, priority = "interactive") {
  * Jeton du compte connecté `doc` (document de twitchConnections) : celui qu'on a s'il vaut encore 2 minutes, sinon renouvelé AVANT l'appel avec le secret.
  * `usedAccess` : le jeton que Twitch vient de refuser (401) — on renouvelle seulement si personne ne l'a déjà fait. Renouvellement fusionné par compte.
  */
-async function userToken(ctx, c, docId, usedAccess) {
+export async function userToken(ctx, c, docId, usedAccess) {
   const doc = await ctx.api.store.get(docId);
   const d = doc?.data;
   if (!d?.access || d.status === "reconnect" || d.clientId !== c.clientId) return { error: "auth" };
   if (usedAccess ? d.access !== usedAccess : d.expiresAt - Date.now() > 120_000) return { token: d.access, doc: d };
+  // Backoff: after a temporary refresh failure (Twitch down, rate limit) the next attempts wait 30 s, 1 min, 2 min... up to 15 min, instead of asking on every call.
+  const wait = mem.backoff.get(docId);
+  if (wait && wait.until > Date.now()) return { error: wait.error };
   return share(`refresh|${docId}`, async () => {
     const cur = (await ctx.api.store.get(docId))?.data;
     if (!cur) return { error: "auth" };
     if (usedAccess && cur.access !== usedAccess) return { token: cur.access, doc: cur };
     const r = await oauth.refreshTokens(ctx.api.net, { clientId: c.clientId, secret: c.secret, refresh: cur.refresh });
-    if (r.error === "invalid") { await ctx.api.store.update(docId, { ...cur, status: "reconnect" }); return { error: "auth" }; }
-    if (r.error) return { error: r.error };
+    if (r.error === "invalid") { mem.backoff.delete(docId); await health.record(ctx, docId, { state: "renew", reason: "revoked" }); return { error: "auth" }; }
+    if (r.error === "app") { await health.record(ctx, docId, { state: "app", reason: "refused" }); return { error: "config" }; }
+    if (r.error) {
+      const n = (mem.backoff.get(docId)?.n ?? 0) + 1;
+      mem.backoff.set(docId, { n, until: Date.now() + Math.min(15 * 60_000, 30_000 * 2 ** (n - 1)), error: r.error });
+      cap(mem.backoff, 100);
+      return { error: r.error };
+    }
+    mem.backoff.delete(docId);
     noteGood(oauth.ID_HOST);
     const next = { ...cur, access: r.tokens.access, refresh: r.tokens.refresh, expiresAt: r.tokens.expiresAt, status: "ok" };
     await ctx.api.store.update(docId, next);
@@ -212,12 +223,12 @@ export async function userCall(ctx, c, docId, req, priority = "interactive") {
   let t = await userToken(ctx, c, docId);
   for (let attempt = 0; attempt < 2; attempt++) {
     if (t.error) return { error: t.error };
-    if (req.scopes.some((s) => !Array.isArray(t.doc.scopes) || !t.doc.scopes.includes(s))) return { error: "scope" };
+    const lacking = req.scopes.filter((s) => !Array.isArray(t.doc.scopes) || !t.doc.scopes.includes(s));
+    if (lacking.length) { await health.noteScope(ctx, docId, lacking); return { error: "scope" }; }   // recorded: the page then asks for the permission
     const r = await helix(ctx, c, t.token, req, priority);
     if (!r.unauthorized) return r;
     if (attempt === 0) { t = await userToken(ctx, c, docId, t.token); continue; }
-    const cur = (await ctx.api.store.get(docId))?.data;
-    if (cur) await ctx.api.store.update(docId, { ...cur, status: "reconnect" });
+    await health.record(ctx, docId, { state: "renew", reason: "refused" });   // two refusals in a row, even after a refresh: the authorization is no longer accepted
     return { error: "auth" };
   }
   return { error: "auth" };

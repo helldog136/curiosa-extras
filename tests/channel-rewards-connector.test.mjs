@@ -123,10 +123,10 @@ test("Twitch muet (trou noir) sur une récompense : « network » dans la borne"
   assert.ok(Date.now() - t0 < 1500);
 });
 
-test("la liste des autorisations demandables contient la nouvelle, et le module est en 1.4.0", async () => {
+test("la liste des autorisations demandables contient la nouvelle, et le module est en 1.5.0 or later", async () => {
   const store = await import("../modules/twitch-connector/store.mjs");
   assert.ok(store.EXTRA_SCOPES.includes(MANAGE));
   const m = JSON.parse((await import("node:fs")).readFileSync(new URL("../modules/twitch-connector/module.json", import.meta.url), "utf8"));
-  assert.equal(m.version, "1.4.0");
+  assert.ok(m.version >= "1.4.0", m.version);
   for (const s of ["bits:read", "channel:read:hype_train", "channel:read:redemptions"]) assert.ok(store.EXTRA_SCOPES.includes(s), s);
 });

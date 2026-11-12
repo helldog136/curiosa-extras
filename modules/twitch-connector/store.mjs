@@ -71,6 +71,9 @@ export const wantsOf = async (ctx, channel, slot) => (await all(ctx, COL.wants, 
 export async function wantedScopes(ctx, channel, slot) {
   const out = new Set();
   for (const d of await wantsOf(ctx, channel, slot)) for (const s of d.data.scopes ?? []) if (EXTRA_SCOPES.includes(s)) out.add(s);
+  // permissions a module tried to use and found missing (recorded by the request path, see health.mjs) count as wanted until they are granted
+  const own = (await conns(ctx)).find((d) => d.data.slot === slotOf(slot) && d.data.channel === channel);
+  for (const s of own?.data.health?.need ?? []) if (EXTRA_SCOPES.includes(s)) out.add(s);
   return [...out].sort();
 }
 export async function want(ctx, { channel, consumer, slot, scopes, returnTo }) {

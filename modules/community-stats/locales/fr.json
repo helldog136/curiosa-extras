@@ -49,7 +49,7 @@
   "evoNone": "Pas encore assez d'historique pour comparer.",
   "percentSuffix": " %",
   "reason_auth": "{platform} demande votre autorisation : ouvrez votre module {platform} et reconnectez votre compte.",
-  "reason_auth_twitch": "Twitch demande votre autorisation : cliquez sur « Connecter ma chaîne ».",
+  "reason_auth_twitch": "L'autorisation Twitch est à renouveler : ouvrez le Connecteur Twitch et cliquez sur « Autoriser de nouveau avec Twitch ».",
   "reason_rate": "{platform} demande de patienter un peu. Rien à faire : le chiffre reviendra tout seul.",
   "reason_network": "{platform} ne répond pas pour l'instant. Rien à faire : le chiffre reviendra tout seul.",
   "reason_hidden": "{platform} cache ce chiffre : rendez-le public dans votre compte {platform}.",

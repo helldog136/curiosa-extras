@@ -35,11 +35,21 @@ const streamOut = (s) => ({
 const gameOut = (g) => ({ game: g.game, streams: g.streams, hoursLive: g.hoursLive, averageViewers: g.avgViewers, peakViewers: g.peakViewers, viewerHours: g.hoursWatched, followersGained: g.followersGained, followersPerHour: g.followersPerHour });
 const SORTS = { followers_per_hour: (g) => g.followersPerHour, hours_live: (g) => g.hoursLive, viewer_hours: (g) => g.hoursWatched, peak_viewers: (g) => g.peakViewers, average_viewers: (g) => g.avgViewers, streams: (g) => g.streams };
 
+/** Why followers may be missing: { connectionProblem } when the Twitch authorization is not usable, else nothing. Read from the connector, no network. */
+const authProblem = async (ctx, credentialsOf) => {
+  try {
+    const acc = await (await credentialsOf(ctx)).account();
+    if (acc.error || acc.status === "ok" || acc.status === "none" && acc.ready === false) return {};
+    const what = { none: "the channel is not connected to Twitch", reconnect: "Twitch no longer accepts the authorization of the channel (revoked, expired or password changed)", more: "a Twitch permission needed for followers is missing" }[acc.status];
+    return what ? { connectionProblem: `Follower figures are frozen: ${what}. Only the owner can fix it: open the Twitch connector page in the admin and click 'Authorize again with Twitch'.` } : {};
+  } catch { return {}; }
+};
+
 export const tools = (credentialsOf) => ({
   async twitch_streams(ctx, args) {
     const { from, days } = periodFrom(args, 30), limit = int(args?.limit, 1, 100, 20);
     const { sessions, truncated } = await live.listSessions(ctx, { since: from, limit });
-    return { channel: (await credentialsOf(ctx)).channel || null, period: { from: iso(from), days }, count: sessions.length, truncated, ...(sessions.length ? {} : { note: await emptyNote(ctx, "Streams", from) }),
+    return { channel: (await credentialsOf(ctx)).channel || null, period: { from: iso(from), days }, count: sessions.length, truncated, ...(await authProblem(ctx, credentialsOf)), ...(sessions.length ? {} : { note: await emptyNote(ctx, "Streams", from) }),
       units: "durations in minutes, viewerHours = sum of viewers x hours (hours watched by the audience), followers = net change during the stream (null when the channel is not connected)", streams: sessions.map(streamOut) };
   },
 
