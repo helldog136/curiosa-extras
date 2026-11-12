@@ -26,6 +26,7 @@ const rewards = await import(`./rewards.mjs${v}`);
 const kit = await import(`./adminkit.mjs${v}`);
 const { migrateTimers } = await import(`./timersMigrate.mjs${v}`);
 const remote = await import(`./remote.mjs${v}`);
+const collab = await import(`./collab.mjs${v}`);
 
 export default {
   routes: {
@@ -46,7 +47,7 @@ export default {
       run: async (ctx) => {
         const s = settingsOf(ctx);
         const d = await diagnoseFast(ctx, s).catch(() => null);
-        const work = [sources.warm(ctx, d?.channel ?? null)];
+        const work = [sources.warm(ctx, d?.channel ?? null), collab.current(ctx).catch(() => {})];   // (4) the collaboration mode ends by itself when its time has come
         if (d?.code === "ready") work.push(processTimers(ctx, null, { tick: true }).catch(() => {}));
         if ((await st.readState(ctx).catch(() => ({}))).rewardsOn === true) work.push(reconcile(ctx, { force: true }).catch(() => {}));
         await Promise.all(work);

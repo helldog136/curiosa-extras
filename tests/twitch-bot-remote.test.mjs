@@ -22,7 +22,7 @@ const botPanel = (panels) => panels.find((p) => p.id === "id-bot");
 
 test("manifest: the bot offers audience.remote (one panel per bot), declares its journal events, adds no permission, no route and no right", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.13.0"); assert.equal(manifest.minCore, "0.6.7");
+  assert.equal(manifest.version, "1.14.0"); assert.equal(manifest.minCore, "0.6.7");
   assert.deepEqual(manifest.offers, [{ service: "audience.remote", version: 1, each: true }]);
   assert.deepEqual(manifest.permissions, ["routes", "storage", "admin", "topics", "mcp"], "no new permission");
   assert.ok(!manifest.requires.some((x) => x.service === "audience.remote"), "no dependency on Audience: the bot works without it");
@@ -42,7 +42,7 @@ test("without Audience there is no panel and nothing else changes; with Audience
   const p = botPanel(panels);
   assert.ok(p, "the panel appears with both installed");
   assert.deepEqual([p.title, p.tab, p.badge, p.alert], ["Twitch bot", "Bot", "", false]);
-  assert.equal(p.toggles.length, 1);
+  assert.equal(p.toggles.length, 2, "the emergency switch, then the collaboration mode");
   assert.deepEqual(p.toggles[0], { id: "pause", label: "Bot answers", on: true, text: "On, answering your chat", hint: "Paused: no replies, timers or reward reactions.", values: {} });
   assert.equal(p.forms.length, 1); assert.equal(p.forms[0].id, "addcom");
   assert.deepEqual(p.forms[0].fields.map((f) => [f.name, f.required, f.type, f.example]), [["name", true, "text", "hello"], ["text", true, "text", "Welcome, make yourself at home"]], "two fields, each with an example");

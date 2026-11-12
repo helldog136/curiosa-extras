@@ -3,6 +3,7 @@
 //   describe({ locale })              → { ok: true, panel }   one switch (the bot answers / is paused), a two-field form to add a command, "undo" buttons for the last additions
 //   press({ action, values, locale }) → { ok, message?, error?, field? }
 //     pause / resume   the existing emergency stop (state.mjs: `muted`), the one the administration shows; honoured by every path that writes in the chat (see README)
+//     collabon / collaboff   the collaboration mode (collab.mjs): the bot talks less on its own while you stream with other people; the choices are those saved in the administration
 //     addcom           a text-only command: name + reply, everything else is the default of the bot (everyone, usual delays, enabled)
 //     undo             removes a command added from here, only while nobody changed it since
 // Nothing here is reachable without the secret address: the only caller is Audience, after it checked the address (see its README).
@@ -13,10 +14,13 @@ const { loadConfig, loadConfigCached, saveCommand, removeCustom, norm, NAME_RE }
 const { used } = await import(`./variables.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
 const { noSources } = await import(`./sources.mjs${v}`);
+const CO = await import(`./collab.mjs${v}`);
 
 export const RECENT_MAX = 3;
 /** The error field name the page puts the message under for the switch. */
 const SWITCH_FIELD = "tg";
+/** The second switch of the panel (collaboration mode): Audience names its error field after the position of the switch. */
+const COLLAB_FIELD = "tg1";
 
 const no = (error, message, field) => ({ ok: false, error, message, ...(field ? { field } : {}) });
 /** What makes a quick-added command "still the one we added": if the person changed anything in the administration, the undo button disappears. */
@@ -37,14 +41,17 @@ export async function describe(ctx) {
   const code = state.sub?.code;
   const problem = !paused && !!code && !["listening", "pending"].includes(code);
   const recent = await recentOf(ctx, state);
+  const co = await CO.current(ctx);
   return {
     ok: true,
     panel: {
       title: t("rc_title"), tab: t("rc_tab"),
-      badge: paused ? t("rc_badge_paused") : "", alert: paused,
+      badge: paused ? t("rc_badge_paused") : co.on ? t("rc_badge_collab") : "", alert: paused,
       state: problem ? { text: t("rc_not_listening"), tone: "idle" } : null,
       // The switch shows the CURRENT state; the action it carries says the state we want, so a second tap never undoes the first.
-      toggles: [{ id: paused ? "resume" : "pause", label: t("rc_switch"), on: !paused, text: t(paused ? "rc_state_paused" : "rc_state_on"), hint: t("rc_switch_hint") }],
+      toggles: [{ id: paused ? "resume" : "pause", label: t("rc_switch"), on: !paused, text: t(paused ? "rc_state_paused" : "rc_state_on"), hint: t("rc_switch_hint") },
+        // Same rule: the switch shows the CURRENT state, its action says the state we want.
+        { id: co.on ? "collaboff" : "collabon", label: t("rc_collab"), on: co.on, text: co.on ? t("rc_collab_on", { fx: co.mode === "pause" ? t("co_fx_pause") : t("co_fx_thin", { n: co.ratio }) }) : t("rc_collab_off"), }],
       forms: [{
         id: "addcom", title: t("rc_add_title"), submit: t("rc_add_btn"),
         fields: [
@@ -71,6 +78,17 @@ async function setPaused(ctx, paused) {
     return no("failed", t("rc_e_switch"), SWITCH_FIELD);
   }
   return { ok: true, message: t(paused ? "rc_paused_done" : "rc_resumed_done") };
+}
+
+async function setCollab(ctx, on) {
+  const t = ctx.t;
+  try {
+    await CO.setOn(ctx, on, "remote");
+    if ((await CO.current(ctx)).on !== on) throw new Error("not saved");
+  } catch {
+    return no("failed", t("rc_e_collab"), COLLAB_FIELD);
+  }
+  return { ok: true, message: t(on ? "co_on_done" : "co_off_done") };
 }
 
 async function quickAdd(ctx, values) {
@@ -120,6 +138,8 @@ export async function press(ctx, a) {
     switch (a?.action) {
       case "pause": return await setPaused(ctx, true);
       case "resume": return await setPaused(ctx, false);
+      case "collabon": return await setCollab(ctx, true);
+      case "collaboff": return await setCollab(ctx, false);
       case "addcom": return await quickAdd(ctx, values);
       case "undo": return await undo(ctx, values);
       default: return no("invalid", ctx.t("rc_e_invalid"));   // including "panic": "stop everything" closes polls and sign-ups, it does not silence the bot

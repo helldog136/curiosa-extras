@@ -353,7 +353,7 @@ test("journal : bouton « Vider le journal » petit et secondaire dans l'en-têt
 test("import Nightbot : plus aucune trace (écran, analyseur, droit, outils, textes, stockage) ; les outils de commandes et de timers restent avec leurs périodes", () => {
   for (const f of ["nightbot.mjs", "importAdmin.mjs"]) assert.equal(fs.existsSync(`${DIR}/${f}`), false, f);
   assert.ok(!manifest.rights.some((r) => /nightbot/i.test(r.id)), "plus de droit nightbot.import");
-  assert.deepEqual(manifest.mcp.map((m) => m.name), ["bot_commands_list", "bot_command_create", "bot_command_update", "rewards_list", "reward_create", "reward_simulate", "reward_update", "timers_list", "timer_create", "timer_update"]);
+  assert.deepEqual(manifest.mcp.map((m) => m.name), ["bot_commands_list", "bot_command_create", "bot_command_update", "rewards_list", "reward_create", "reward_simulate", "reward_update", "timers_list", "timer_create", "timer_update", "collaboration_mode_set"]);
   for (const k of ["bot_command_create", "bot_command_update", "timer_create", "timer_update"]) for (const p of ["activeFrom", "activeUntil", "yearly"]) assert.ok(manifest.mcp.find((m) => m.name === k).input.properties[p], `${k}.${p}`);
   assert.ok(manifest.mcp.find((m) => m.name === "bot_command_update").input.properties.clearPeriod);
   assert.ok(!/nightbot/i.test(JSON.stringify([manifest.description, manifest.privacy, manifest.rights, manifest.mcp])), "plus un mot sur l'import dans le manifeste");
@@ -441,7 +441,7 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.13.0");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.14.0");
 });
 
 /* ───────────── "Started by": the timer and the chat | the timer only ───────────── */

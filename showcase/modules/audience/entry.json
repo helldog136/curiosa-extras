@@ -21,7 +21,7 @@
     "fr": "La base de vos interactions de stream : un pseudo par personne sans compte, une télécommande et un tirage au sort."
   },
   "since": "1.0.0",
-  "moduleVersion": "1.8.2",
+  "moduleVersion": "1.8.3",
   "requires": [],
   "worksWith": [
     "polls",

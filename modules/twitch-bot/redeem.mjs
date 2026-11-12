@@ -7,6 +7,7 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const R = await import(`./rewards.mjs${v}`);
+const collab = await import(`./collab.mjs${v}`);
 const A = await import(`./actions.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { diagnose, diagnoseFast, sendChat } = await import(`./listen.mjs${v}`);
@@ -72,9 +73,12 @@ export const clearJournal = (ctx) => st.serial(ctx, "redeem", async () => { for 
 
 /* ───────────── Valider ou rembourser ───────────── */
 
+/** Collaboration mode is on and asks to mute the automatic messages of the bot (see collab.mjs). */
+const quiet = async (ctx) => { try { const e = collab.effective(await st.readState(ctx)); return e.on && e.quiet; } catch { return false; } };
 async function notice(ctx, s, text) {
   if (!s.rewardsNotice) return;
   if (await st.isMuted(ctx).catch(() => false)) return;   // paused (emergency stop): nothing is written in the chat, not even this notice
+  if (await quiet(ctx)) return;   // collaboration mode with "mute the other automatic messages": not this notice either
   try { const d = await diagnose(ctx, s, { declare: false }); if (d.code === "ready") await sendChat(ctx, d, text); } catch { /* le message est un plus */ }
 }
 
@@ -147,7 +151,8 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
       // action du bot : répondre dans le chat (texte de la récompense, pseudo nettoyé ; jamais le message du viewer)
       const d = await chatP;
       const text = render(reward.reply, { utilisateur: pseudo(red.name || red.login), recompense: reward.title }, s.prefix);
-      if (d.code !== "ready" || !text) doc = verdict(doc, "CANCELED", "chat_not_ready");
+      if (await quiet(ctx)) doc = verdict(doc, "CANCELED", "collab");   // collaboration mode, "mute the other automatic messages": no answer in the chat, the points are given back
+      else if (d.code !== "ready" || !text) doc = verdict(doc, "CANCELED", "chat_not_ready");
       else { const sent = await sendChat(ctx, d, text); if (sent.sent) { st.rememberSent(ctx, sent.messageId); doc = verdict(doc, "FULFILLED", "ok"); } else doc = verdict(doc, "CANCELED", "send_failed"); }
     }
     await write(ctx, doc);

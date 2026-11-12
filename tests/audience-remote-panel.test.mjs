@@ -43,15 +43,15 @@ test("the page script draws the switch with role=switch, aria-checked, a visible
   assert.match(C.REMOTE_JS, /setAttribute\("role", "switch"\)/);
   assert.match(C.REMOTE_JS, /setAttribute\("aria-checked"/);
   assert.match(C.REMOTE_JS, /st\.textContent = T\.busy/);
-  assert.match(C.REMOTE_JS, /ui\.errors\[t\.pid \+ ":tg"\]/);
+  assert.match(C.REMOTE_JS, /ui\.errors\[key\]/);
   assert.doesNotMatch(C.REMOTE_JS, /innerHTML|insertAdjacentHTML|outerHTML|document\.write|eval\(|new Function/);
 });
 
 test("the page carries the word for 'working' in both languages, and the journal words for the bot gestures exist in both", async () => {
   const { fr, en } = await import("./helpers/audienceHarness.mjs");
-  for (const d of [fr, en]) for (const k of ["remoteBusy", "what_panel_pause", "what_panel_resume", "what_panel_addcom", "what_panel_undo"]) assert.ok(d[k], k);
+  for (const d of [fr, en]) for (const k of ["remoteBusy", "what_panel_pause", "what_panel_resume", "what_panel_addcom", "what_panel_undo", "what_panel_collabon", "what_panel_collaboff"]) assert.ok(d[k], k);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.equal(manifest.version, "1.8.2");
+  assert.equal(manifest.version, "1.8.3");
   assert.deepEqual(manifest.offers.map((o) => o.service), ["audience.session", "audience.draw"], "the contract of the services Audience offers is not changed");
   assert.deepEqual(manifest.requires, [{ service: "audience.remote", optional: true }], "the remote is still optional for plugged-in modules, and nothing else is required");
 });

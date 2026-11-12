@@ -86,7 +86,7 @@ const noise = async (w) => post(w, chatMsg("bonjour"));   // un évènement quel
 
 test("manifeste : valide, versions, onglet ajouté, besoin FACULTATIF du pont, droit, sujets, outils MCP ≤ 64 caractères et écritures non accordées d'office", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.13.0");
+  assert.equal(manifest.version, "1.14.0");
   assert.equal(manifest.minCore, "0.6.7");
   assert.deepEqual(manifest.requires.find((x) => x.service === "home-assistant.bridge"), { service: "home-assistant.bridge", optional: true });
   assert.ok(manifest.requires.filter((x) => !x.optional).every((x) => x.service.startsWith("twitch.")), "seul Twitch est indispensable");
@@ -953,4 +953,24 @@ test("paused bot: a reward writes nothing in the chat and starts nothing at home
   tick(); const d = await redeem(w, home);
   assert.equal(handed, 1);
   assert.notEqual((await byRid(w, d.id)).reason, "muted");
+});
+
+/* ───────────── 1.14.0: collaboration mode, "mute the other automatic messages" ───────────── */
+
+test("collaboration mode with the other automatic messages muted: a reward that makes the bot answer is refunded without a word, the refund notice stays silent; without that choice, nothing changes", async () => {
+  const CO = await import("../modules/twitch-bot/collab.mjs");
+  const w = await setup({ settings: { rewardsNotice: true } });
+  const chat = await mk(w, { title: "Merci", action: "chat:repondre", reply: "Merci {utilisateur} !" });
+  await CO.setOn(w.ctx, true, "admin");   // on, but the choice "mute" is off: the answer goes out
+  tick(); const a = await redeem(w, chat);
+  assert.deepEqual(w.tw.chat, ["Merci Viewer !"]); assert.equal(w.tw.settled.get(a.id), "FULFILLED");
+  await CO.saveChoices(w.ctx, { ...CO.DEFAULTS, quiet: true });
+  tick(); const b = await redeem(w, chat);
+  assert.deepEqual(w.tw.chat, ["Merci Viewer !"], "no new message");
+  assert.equal(w.tw.settled.get(b.id), "CANCELED", "the points are given back");
+  assert.equal((await byRid(w, b.id)).reason, "collab");
+  assert.equal(fr.rw_reason_collab, "le mode collaboration est activé"); assert.equal(en.rw_reason_collab, "collaboration mode is on");
+  await CO.setOn(w.ctx, false, "admin");
+  tick(); const c = await redeem(w, chat);
+  assert.equal(w.tw.settled.get(c.id), "FULFILLED", "off: back to normal");
 });

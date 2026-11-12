@@ -15,6 +15,7 @@ const st = await import(`./state.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const { diagnose, sendChat } = await import(`./listen.mjs${v}`);
 const { compose } = await import(`./engine.mjs${v}`);
+const collab = await import(`./collab.mjs${v}`);
 const { migrateTimers, needsMigration } = await import(`./timersMigrate.mjs${v}`);
 
 export const MAX_TIMERS = MAX_REPEATS;
@@ -22,6 +23,8 @@ export const LIMITS = { minutes: REPEAT_LIMITS.minutes, lines: REPEAT_LIMITS.lin
 export const WHEN = REPEAT_WHEN;
 const FLUSH_MS = 10_000, READY_MS = 60_000, FAIL_MS = 30_000, CACHE_MS = 10_000;
 const rec = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
+/** What is written down for one timer (the thinning counter only while it counts something). */
+const pack = (x) => ({ lastAt: x.lastAt, lines: x.lines, ...(x.closed ? { closed: true } : {}), ...(x.thin > 0 ? { thin: x.thin, thinSince: x.thinSince } : {}) });
 
 /** Les commandes qui ont une répétition ACTIVE, d'après la configuration seule (sans interroger les autres modules) : [{ key, repeat, period }]. Une commande désactivée n'y est pas. */
 export function repeatEntries(cfg) {
@@ -51,15 +54,15 @@ async function load(ctx, m) {
   m.loaded = (async () => {
     const r = (await ctx.api.store.list("botTimers", { limit: 1 }))[0];
     const items = r?.data?.items && typeof r.data.items === "object" ? r.data.items : {};
-    for (const [id, x] of Object.entries(items)) if (Number.isFinite(x?.lastAt) && Number.isInteger(x?.lines)) m.items.set(id, { lastAt: x.lastAt, lines: Math.max(0, x.lines), ...(x.closed === true ? { closed: true } : {}) });
+    for (const [id, x] of Object.entries(items)) if (Number.isFinite(x?.lastAt) && Number.isInteger(x?.lines)) m.items.set(id, { lastAt: x.lastAt, lines: Math.max(0, x.lines), ...(x.closed === true ? { closed: true } : {}), ...(Number.isInteger(x.thin) && x.thin > 0 && Number.isFinite(x.thinSince) ? { thin: x.thin, thinSince: x.thinSince } : {}) });
   })().catch(() => {});
   return m.loaded;
 }
 async function flush(ctx, m, ids, now) {
   m.flushedAt = now; m.dirty = false;
   const items = {};
-  for (const [id, x] of m.items) if (!id.includes(":")) items[id] = { lastAt: x.lastAt, lines: x.lines, ...(x.closed ? { closed: true } : {}) };
-  for (const id of ids) { const x = m.items.get(id); if (x) items[id] = { lastAt: x.lastAt, lines: x.lines, ...(x.closed ? { closed: true } : {}) }; }
+  for (const [id, x] of m.items) if (!id.includes(":")) items[id] = pack(x);
+  for (const id of ids) { const x = m.items.get(id); if (x) items[id] = pack(x); }
   for (const id of [...m.items.keys()]) if (!ids.includes(id) && id.includes(":")) m.items.delete(id);   // une répétition retirée ne laisse rien derrière elle (les états des anciens timers, sans « : », sont gardés tant que la migration n'est pas vérifiée)
   await st.serial(ctx, "timers", async () => {
     const r = (await ctx.api.store.list("botTimers", { limit: 1 }))[0];
@@ -131,11 +134,28 @@ async function pass(ctx, chat, { now, commandSent, tick }) {
       d = d ?? (await readyNow(ctx, s, m, now));
       if (d.code !== "ready" || (!tick && chat.broadcasterId !== d.broadcasterId)) result = { sent: false, why: "not_ready" };
       else {
-        muted = await st.isMuted(ctx);
-        if (muted) { for (const x of timers) { const it = m.items.get(x.id); if (it) { it.lastAt = now; it.lines = 0; } } m.dirty = true; result = { sent: false, why: "muted" }; }   // pas de rafale au retour de l'arrêt d'urgence
+        const state = await st.readState(ctx), cs = collab.effective(state, now);
+        const restart = () => { for (const x of timers) { const it = m.items.get(x.id); if (it) { it.lastAt = now; it.lines = 0; } } m.dirty = true; };
+        muted = state.muted === true;
+        if (muted) { restart(); result = { sent: false, why: "muted" }; }   // pas de rafale au retour de l'arrêt d'urgence
+        else if (cs.on && cs.mode === "pause") { restart(); result = { sent: false, why: "collab_paused" }; }   // collaboration mode, "pause": same, no burst when it ends
         else {
-          const pick = due.find((x) => x.when !== "live" || liveNow === true);
+          // Collaboration mode, "thin out": each timer that is due counts one; only the 2nd (or 3rd) one goes out, the others start their wait again. The counter is per timer and written down.
+          // (This module has no priority flag on a timer: every timer is treated the same way.)
+          if (!cs.on) for (const it of m.items.values()) if (it.thin !== undefined) { delete it.thin; delete it.thinSince; m.dirty = true; }   // the mode is off: the counters start again next time
+          let pick = null, thinned = 0;
+          for (const x of due) {
+            if (x.when === "live" && liveNow !== true) continue;
+            const it = m.items.get(x.id);
+            if (cs.on && cs.mode === "thin") {
+              if (it.thinSince !== cs.since) { it.thin = 0; it.thinSince = cs.since; }   // a new run of the mode: a new count
+              it.thin += 1; m.dirty = true;
+              if (it.thin < cs.ratio) { it.lastAt = now; it.lines = 0; thinned += 1; continue; }
+            }
+            pick = x; break;
+          }
           if (pick) result = await deliver(ctx, s, d, pick, { now, ids });
+          else if (thinned) result = { sent: false, why: "collab_thinned" };
         }
       }
     }
