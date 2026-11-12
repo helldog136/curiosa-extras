@@ -4,6 +4,23 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.72.0 — 2026-11-12
+
+*En bref : l'élément « Prochain stream » des pages d'overlay (Planning 2.7.6) n'a plus qu'un seul cadre, remplit la zone que vous lui donnez et s'écrit à la taille d'une télé.*
+
+*In short: the "Next stream" element of overlay pages (Planning 2.7.6) now has a single frame, fills the area you give it and is written at TV size.*
+
+### Nouveautés
+
+- **Un cadre au lieu de deux.** Seul le panneau du style de la page est dessiné ; le contenu le remplit et reste centré, quelle que soit la taille du cadre.
+- **Lisible sur une télé.** Le plus petit texte fait au moins 24 px, le titre et l'heure sont plus grands, et tout grandit avec le cadre. Un cadre très petit montre moins de lignes au lieu d'un texte minuscule.
+- **One frame instead of two.** Only the panel of the page style is drawn; the content fills it and stays centred, whatever the frame size.
+- **Readable on a TV.** The smallest text is at least 24 px, the title and the time are bigger, and everything grows with the frame. A very small frame shows fewer lines instead of tiny text.
+
+### Pour les développeurs
+
+- Planning 2.7.6: `modules/planning/overlay.mjs` only, no manifest or data change. See `docs/changelog-parts/next-stream-fill.md`. Tests: `tests/planning-overlay.test.mjs`; captures `docs/captures/next-stream-fill/`.
+
 ## 1.71.0 — 2026-11-12
 
 *En bref : Partenariats (2.3.0) ouvre l'ajout et la modification d'un partenaire dans une fenêtre au-dessus de la page, et permet enfin de supprimer un partenaire. Les onglets du module (Réglages, Général, Historique) ne ressemblent plus à ceux du partenaire. Pour Curiosa 0.6.7 ou plus.*
