@@ -66,3 +66,24 @@ Under "More options" of the edit window of each type (the three of them are fold
 - **Skins**: the picture is `[data-ov-part="image"]` in an overlay page element and `.al-img` in the module's own overlay; colours still come from the `--ov-*` tokens. A skin that does not know the part `image` simply leaves it at its default look.
 - Tools for assistants: `alert_template_update` also takes `sound` and `animation`.
 - Not done: custom sound files (core), text-to-speech and a rich animation engine (out of scope, stay external).
+
+## Viewer texts, voice and moderation (version 1.6.0)
+
+**What a type shows.** In the edit window of a type, under "More options": *What is shown* is the text (default), a picture alone (a GIF sent for the type, shown alone and framed as the part `media` of the card) or a video alone. Six videos can be added in the tab "Videos" (settings of type video, MP4 or WebM, kept on the site) and a type picks one; "Play the sound of the video" lets the video use its own sound. The six ways to get a card are therefore: GIF alone, video alone, GIF with a synthesised sound (choose the sound of the type), video with its own sound, text with a sound, text only. The core accepts images and videos as uploads, **not audio**: personal sound files are possible only inside a video. A real audio upload needs a small change in the core (signature check for ogg/mp3/wav/m4a in the uploads service and an upload field in forms); it is not done here.
+
+**Viewer texts.** For resubs, bits and rewards, the type can show the message the viewer wrote, after the sentence, cut at a limit you choose (20 to 250, default 140). Always plain text. A type without a viewer message (follow, sub, gift, raid, stream start and end) never shows one; the hype train line has no viewer text in Twitch's data, so none is shown. The older setting "Show the messages that come with an alert" still decides for a type until that type chooses.
+
+**Voice (text to speech).** The overlay page uses the browser's own `speechSynthesis`: no service, no key, nothing sent out. The tab "Viewer texts and voice" holds the switch (off by default), the voice, the speed, the volume, and, folded, the pitch, the language, the longest reading and "read the name". Each type chooses what is read: nothing, the sentence, the viewer text or both. The alert stays on screen long enough for the reading. The page tells the site which voices it sees (route `tts-report`), so the administration lists them and says in plain words: voice ready, no voice, no support, or no page has reported yet.
+
+Honest limits, **not verified on a live OBS** (the tests use a fake `speechSynthesis`; a headless Chromium here has the API but no voice):
+- OBS's browser (CEF) lists the voices of the computer. On Windows they are the system voices; on some builds or machines the list is empty and nothing is read. The page then shows the alert normally.
+- Browsers may refuse sound before a first interaction (autoplay policy). OBS browser sources usually allow it, but if no sound is heard, check the option of OBS for the source (and "Control audio via OBS" for the audio of the page).
+- Voices differ from one computer to another; a voice name saved in the administration may not exist elsewhere (the language is then used).
+
+**Dock controls.** The OBS dock of Twitch activity (1.3.0) has three switches that say their state (Alerts, Voice, Mute voice), "Stop speech", "Skip alert", the queue buttons, and the texts waiting with "Accept anyway" and "Dismiss". They go through the service `alerts.queue` (version 2); the page obeys within its next read (about 1.5 seconds). Mute stops the speech at once and stays until unmuted, also after a restart.
+
+**Moderation (basic).** Before a viewer text is shown or read: links, long runs of capital letters, repeated characters or words, and an optional list of blocked words (any case or accent, simple look-alike symbols undone, spread-out letters caught for words of five letters or more). The list is **empty by default**; the structural rules are on. A refused text makes the alert show **without the text** and nothing of the text is read (default), or the **whole alert waits** for your decision. Refused texts appear in the tab and in the dock with the plain reason; "Accept anyway" shows the alert again with its text (once), "Dismiss" keeps it hidden. The journal of Twitch activity marks the line. This is a **simple filter, not a replacement for Twitch AutoMod**: it can miss things and can refuse harmless texts (a blocked word inside a longer word of five letters or more, for example).
+
+**For assistants** (off by default): `voice_moderation_get`, `voice_moderation_update` and `held_text_decide`. Nothing is deleted.
+
+Tests: `tests/alerts-twitch-voice.test.mjs` (moderation, media, texts, voice, controls, the real page with a fake `speechSynthesis`, the administration with the ergonomics kit, the tools).

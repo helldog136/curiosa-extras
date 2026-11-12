@@ -23,7 +23,32 @@ const SOUND_SCRIPT = `
         var ac=null,SND={chime:[[880,0,.18],[1320,.12,.32]],bell:[[1046,0,.7]],pop:[[420,0,.09]],fanfare:[[523,0,.14],[659,.14,.14],[784,.28,.14],[1046,.42,.42]]};
         function beep(name){try{var A=window.AudioContext||window.webkitAudioContext;if(!A||!SND[name]||!c.volume)return;ac=ac||new A();var t=ac.currentTime,v=c.volume/100*.25;SND[name].forEach(function(n){var o=ac.createOscillator(),g=ac.createGain();o.type=name==="pop"?"square":"sine";o.frequency.value=n[0];g.gain.setValueAtTime(.0001,t+n[1]);g.gain.exponentialRampToValueAtTime(v,t+n[1]+.02);g.gain.exponentialRampToValueAtTime(.0001,t+n[1]+n[2]);o.connect(g);g.connect(ac.destination);o.start(t+n[1]);o.stop(t+n[1]+n[2]+.05)})}catch(e){}}`;
 /** The picture of a type, only an address of the site itself (checked here as well as on the server); the way of entering is remembered on the card for the transition. */
-const IMAGE_SCRIPT = (ov, fx) => `${fx ? "card._anim=e.anim||\"\";" : ""}if(e.image&&/^\\/uploads\\/[0-9a-f-]{36}\\.(png|jpg|webp|gif)$/.test(e.image)){var im=document.createElement("img");${ov ? 'im.setAttribute("data-ov-part","image");' : 'im.className="al-img";'}im.src=e.image;im.alt="";card.append(im)}`;
+const UPLOAD = (ext) => `/^\\/uploads\\/[0-9a-f-]{36}\\.(${ext})$/`;
+/** What the page draws for an alert of Twitch activity, in pieces. The way of entering is remembered on the card; a GIF or a video of the site stands alone; otherwise the picture (if any) goes above the text. */
+const ANIM_SCRIPT = (fx) => `${fx ? "card._anim=e.anim||\"\";" : ""}shownCard=card;`;
+const MEDIA_SCRIPT = (ov) => `var mc=null;
+          if(e.video&&${UPLOAD("mp4|webm")}.test(e.video)){mc=document.createElement("video");mc.src=e.video;mc.muted=!e.videoSound;mc.autoplay=true;mc.playsInline=true;mc.setAttribute("aria-label",e.message);if(mc.play){var pp=mc.play();if(pp&&pp.catch)pp.catch(function(){mc.muted=true;try{mc.play()}catch(x){}})}}
+          else if(e.image&&${UPLOAD("png|jpg|webp|gif")}.test(e.image)){mc=document.createElement("img");mc.src=e.image;mc.alt=e.message}
+          if(mc){${ov ? 'mc.setAttribute("data-ov-part","media");card.setAttribute("data-ov-media","1");' : 'mc.className="al-media";card.className+=" al-media-card";'}card.append(mc)}`;
+const PICTURE_SCRIPT = (ov) => `if(e.image&&${UPLOAD("png|jpg|webp|gif")}.test(e.image)){var im=document.createElement("img");${ov ? 'im.setAttribute("data-ov-part","image");' : 'im.className="al-img";'}im.src=e.image;im.alt="";card.append(im)}`;
+/**
+ * The voice: the browser's own speech synthesis (Web Speech API), no service, no key. What is read comes from the server (`e.say`, already moderated); whether it is read, and how, comes from
+ * the state the page polls (`ctl`): on, muted, voice, language, rate, pitch, volume, and two counters ("stop speaking", "skip this alert"). Voices belong to the system: the page tells the
+ * server which it sees (route tts-report) so the administration can offer them; with no voice or no support nothing is read and nothing breaks.
+ */
+const VOICE_SCRIPT = `
+        var shownCard=null,ctlv={stop:null,skip:null,tts:{on:false,muted:false}},syn=window.speechSynthesis,canSay=!!(syn&&typeof SpeechSynthesisUtterance!=="undefined");
+        function hush(){try{if(canSay)syn.cancel()}catch(x){}}
+        function skipNow(){if(!busy)return;clearTimeout(timer);done()}
+        function applyCtl(x){if(!x)return;var first=ctlv.stop===null;if(!first){if(x.stop!==ctlv.stop)hush();if(x.skip!==ctlv.skip)skipNow()}ctlv.stop=x.stop;ctlv.skip=x.skip;ctlv.tts=x.tts||ctlv.tts;if(!ctlv.tts.on||ctlv.tts.muted)hush()}
+        function speak(e){var t=ctlv.tts;if(!e.say||!canSay||!t||!t.on||t.muted)return;try{var u=new SpeechSynthesisUtterance(e.say),vs=syn.getVoices(),v=null,i,want=(t.lang||c.lang||"").toLowerCase();
+          if(t.voice)for(i=0;i<vs.length;i++)if(vs[i].name===t.voice){v=vs[i];break}
+          if(!v&&want)for(i=0;i<vs.length;i++)if(vs[i].lang&&vs[i].lang.toLowerCase().indexOf(want.slice(0,2))===0){v=vs[i];break}
+          if(v){u.voice=v;u.lang=v.lang}else if(want)u.lang=want;
+          u.rate=t.rate||1;u.pitch=t.pitch===undefined?1:t.pitch;u.volume=(t.volume===undefined?80:t.volume)/100;syn.speak(u)}catch(x){}}
+        function report(){if(!c.reportUrl)return;var tries=0;function send(){var vs=[];try{if(canSay)vs=syn.getVoices().slice(0,60).map(function(v){return{n:v.name,l:v.lang}})}catch(x){}fetch(c.reportUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({supported:canSay,voices:vs})}).catch(function(){})}
+          (function wait(){if(!canSay||syn.getVoices().length||tries++>8)return send();setTimeout(wait,500)})()}
+        setTimeout(report,800);`;
 const KINDS = ["follow", "sub", "raid", "test", "alert"];
 /** Les alertes venues du sujet `live.event` (leurs titres ne sont pas acceptés par `push`). */
 const LIVE_KINDS = ["superchat", "supersticker", "member", "gift"];
@@ -131,7 +156,7 @@ export async function pullLive(ctx, now = Date.now()) {
 }
 
 /** How the Twitch engine writes and filters: the language, the default duration, the viewers' texts, the ignore list, the burst window. */
-export const twitchEnv = (ctx, now = Date.now()) => ({ t: ctx.t, locale: ctx.locale, seconds: 0, showText: ctx.setting("twitchText") === true, ignore: tw.ignoreOf(ctx.setting("ignoreNames")), groupMs: Math.min(tw.LIMITS.groupMs.max, Math.max(0, Math.trunc(Number(ctx.setting("groupSeconds") ?? 5)) * 1000 || 0)), now });
+export const twitchEnv = (ctx, now = Date.now()) => ({ t: ctx.t, locale: ctx.locale, seconds: 0, showText: ctx.setting("twitchText") === true, ignore: tw.ignoreOf(ctx.setting("ignoreNames")), groupMs: Math.min(tw.LIMITS.groupMs.max, Math.max(0, Math.trunc(Number(ctx.setting("groupSeconds") ?? 5)) * 1000 || 0)), baseSeconds: Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6)), videos: tw.videosOf(ctx.setting), onFlag: (item, reason, state) => { tw.journalFlag(ctx, item.id, reason, state); }, now });
 
 async function collectLive(ctx, st, now) {
   const key = ctx.instance.key;
@@ -197,7 +222,9 @@ export default {
     async pull(request, ctx) {
       if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
       const r = await pullLive(ctx);
-      return Response.json({ ok: true, sent: r.sent }, { headers: { "Cache-Control": "no-store" } });
+      const body = { ok: true, sent: r.sent };
+      if (new URL(request.url).searchParams.get("ctl") === "1") body.ctl = await tw.ctlOf(ctx).catch(() => null);
+      return Response.json(body, { headers: { "Cache-Control": "no-store" } });
     },
 
     // Le flux d'un LECTEUR (élément de page d'overlay) : `after` est SON repère (`now` pour un lecteur neuf). Rien n'est consommé ; `pull=1` va aussi chercher le sujet `live.event`
@@ -206,7 +233,19 @@ export default {
       if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
       const params = new URL(request.url).searchParams;
       if (params.get("pull") === "1") await pullLive(ctx);
-      return Response.json(readFeed(ctx.instance.key, params.get("after")), { headers: { "Cache-Control": "no-store" } });
+      const body = readFeed(ctx.instance.key, params.get("after"));
+      if (params.get("ctl") === "1") body.ctl = await tw.ctlOf(ctx).catch(() => null);
+      return Response.json(body, { headers: { "Cache-Control": "no-store" } });
+    },
+
+    // The page says which voices it sees (OBS browser: the voices of the computer, often none). Small, bounded, nothing secret.
+    async "tts-report"(request, ctx) {
+      if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: { Allow: "POST" } });
+      const raw = await request.text();
+      if (raw.length > 8000) return new Response("Too large", { status: 413 });
+      let body; try { body = JSON.parse(raw); } catch { return new Response("Bad request", { status: 400 }); }
+      await tw.saveReport(ctx, body);
+      return Response.json({ ok: true });
     },
 
     // Pousser une alerte : jeton obligatoire, corps JSON borné, texte seulement.
@@ -259,6 +298,7 @@ export default {
       duration,
       neon: ctx.setting("visual") !== "plain",
       labels: Object.fromEntries([...KINDS, ...(tx ? tw.TWITCH_KINDS.filter((k) => !KINDS.includes(k)) : []), ...(pull ? LIVE_KINDS : [])].map((k) => [k, ctx.t(`kind_${k}`)])),
+      ...(tx ? { lang: ctx.locale, reportUrl: `/m/${ctx.instance.key}/tts-report` } : {}),
       ...(sounds ? { volume: Math.min(100, Math.max(0, Math.trunc(Number(ctx.setting("soundVolume") ?? 50)) || 0)) } : {}),
       ...(tx ? { between: Math.min(tw.LIMITS.gapMs.max, Math.max(0, Math.trunc(Number(ctx.setting("minGapSeconds") ?? 1)) * 1000 || 0)) } : {}),
       ...(pull && !ov ? { pullUrl: `/m/${ctx.instance.key}/pull`, pullMs: 5000, queueMax: LIMITS.queue } : {}),
@@ -298,18 +338,18 @@ ${withDetail ? `        ${S.detail}{font-size:1rem;color:${ov ? "var(--ov-fg,var
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
       script: queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
-        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds ? SOUND_SCRIPT : ""}
-        function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? IMAGE_SCRIPT(ov, fx) : ""}${sounds ? "if(e.sound)beep(e.sound);" : ""}
-          ${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
+        stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds ? SOUND_SCRIPT : ""}${tx ? VOICE_SCRIPT : ""}
+        function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? ANIM_SCRIPT(fx) : ""}${sounds ? "if(e.sound)beep(e.sound);" : ""}${tx ? "speak(e);" : ""}
+          ${tx ? `if(e.present==="media"&&(e.video||e.image)){${MEDIA_SCRIPT(ov)}}else{${PICTURE_SCRIPT(ov)}` : ""}${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
-          if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}
+          if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}${tx ? "}" : ""}
           ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
-        ${tx ? "function done(){stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}" : "function done(){stage.replaceChildren();busy=false;next()}"}
+        ${tx ? "function done(){shownCard=null;stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}" : "function done(){stage.replaceChildren();busy=false;next()}"}
         function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}
         ${tx ? "function show(e){if(e.control===\"clear\"){q=[];clearTimeout(timer);stage.replaceChildren();busy=false;return}if(e.queued!==false){" : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
-${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":""),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
+${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":"")${tx ? '+"&ctl=1"' : ""},{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;${tx ? "applyCtl(d.ctl);" : ""}d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
         poll()})();` : `        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}};
-        var gap=c.pullMs;function pull(){fetch(c.pullUrl,{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000},function(){gap=30000}).then(function(){setTimeout(pull,gap)})}
+        var gap=c.pullMs;${tx ? `function pull(){fetch(c.pullUrl+"?ctl=1",{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000;return r.ok?r.json():null},function(){gap=30000;return null}).then(function(d){if(d)applyCtl(d.ctl)},function(){}).then(function(){setTimeout(pull,gap)})}` : `function pull(){fetch(c.pullUrl,{cache:"no-store"}).then(function(r){gap=r.ok?c.pullMs:30000},function(){gap=30000}).then(function(){setTimeout(pull,gap)})}`}
         setTimeout(pull,1000)})();`}` : `(function(){var c=${json},stage=document.getElementById("al-stage"),timer;
         stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}
         function show(e){var card=document.createElement("div");card.className="al-card"+(c.neon?" neon":"");
@@ -341,9 +381,17 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       pause: (ctx) => tw.pause(ctx),
       resume: (ctx) => tw.resume(ctx, (a) => emit(ctx.instance.key, a)),
       clear: (ctx) => tw.clearQueue(ctx, (a) => emit(ctx.instance.key, a)),
+      // version 2: the voice, the speech and the texts of viewers (for the dock). Nothing here shows more than the dock may see: names and the flagged text.
+      voice: (ctx) => tw.voiceState(ctx),
+      mute: (ctx, input) => tw.setMuted(ctx, input?.muted !== false),
+      voiceOn: (ctx, input) => tw.setVoiceOn(ctx, input?.on === true),
+      stopSpeech: (ctx) => tw.stopSpeech(ctx),
+      skip: (ctx) => tw.skipAlert(ctx),
+      texts: (ctx) => tw.textsList(ctx),
+      decide: (ctx, input) => tw.decideText(ctx, String(input?.id ?? ""), input?.action === "accept" ? "accept" : "dismiss", (a) => emit(ctx.instance.key, a)),
     },
   },
-  mcp: adminTw.tools(),
+  mcp: adminTw.tools((key, a) => emit(key, a)),
 
   adminActions: {
     ...adminTw.actions(emit),

@@ -17,6 +17,6 @@ export default async function (h) {
   ];
   for (const [min, ev] of lines.reverse()) {
     const at = t0 - min * 60_000, id = `demo-${min}`;
-    await ctx.api.store.add("events", { id, at, receivedAt: at, source: "twitch", ...ev }, { key: id });
+    await ctx.api.store.add("events", { id, at, receivedAt: at, source: "twitch", ...ev, ...(min === 11 ? { flag: { reason: "link", state: "hidden", at } } : {}) }, { key: id });
   }
 }

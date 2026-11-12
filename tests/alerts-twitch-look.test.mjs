@@ -144,7 +144,7 @@ test("admin: thumbnails and a preview of the cards, a sample evening goes throug
   assert.ok(html.includes(`src="${PIC}"`) && html.includes("etoile_nord sends 500 bits"));
   assert.ok(!/<script|onerror|javascript:/i.test(html));
   const dlg = (await def.adminPanel(w.ctx, { query: { edit: "cheer" } })).find((b) => b.presentation === "dialog");
-  assert.deepEqual(dlg.fields.filter((f) => f.folded).map((f) => f.name).sort(), ["anim", "image", "sound"]);
+  assert.deepEqual(dlg.fields.filter((f) => f.folded).map((f) => f.name).sort(), ["anim", "image", "present", "sound", "tts", "video", "videoSound", "viewer", "viewerMax"]);
   const quiet = (await def.adminPanel(world().ctx, { query: { edit: "raid" } })).find((b) => b.presentation === "dialog");
   assert.ok(quiet.fields.filter((f) => f.folded).every((f) => !f.value), "nothing chosen: the folded options stay shut");
   const got = []; globalThis.__curiosaAlertsBus.on(w.key, (e) => got.push(e));
@@ -167,5 +167,5 @@ test("manifest: files permission, two settings (sounds off by default, volume ad
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   for (const x of tw.SOUNDS) assert.ok(en[`tw_sound_${x}`] && fr[`tw_sound_${x}`], x);
   for (const x of tw.ANIMS) assert.ok(en[`tw_anim_${x || "module"}`] && fr[`tw_anim_${x || "module"}`], x);
-  assert.equal(manifest.version, "1.5.0");
+  assert.equal(manifest.version, "1.6.0");
 });
