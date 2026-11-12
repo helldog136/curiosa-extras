@@ -73,7 +73,7 @@ await write("1-anim-start", "Mascot: Animation (first visit)", await mk({}), "an
 await write("2-anim-frames", "Mascot: Animation (pictures added)", await mk({ anim }), "animation");
 {
   const ctx = await mk({ anim });
-  const err = await K.def.adminActions.saveAnim.run(ctx, { which: "idle", mode: "frames", fps: "99" });
+  const err = await K.def.adminActions.saveAnim.run(ctx, { which: "idle", mode: "gif", gif: "https://elsewhere.example.org/wave.gif" });
   await write("3-anim-error", "Mascot: Animation (an error)", ctx, "animation", { errors: err.errors });
 }
 await write("4-voice-none", "Mascot: Voice (none)", await mk({ anim }), "voice");
