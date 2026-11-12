@@ -12,7 +12,8 @@ Your site receives what happens on your channel. It keeps a journal you can read
 ## Why you will like it
 
 - Nothing is lost when your site restarts: each event is stored once, even if Twitch sends it twice.
-- You see at once if your site stopped listening, and what to do.
+- You see at once if your site stopped listening, and what to do. You are also warned by e-mail.
+- After a gap, the follows and subs you missed are looked up and marked.
 - Only public names and amounts are kept, for 30 days by default.
 
 ## How it looks
@@ -41,4 +42,4 @@ Your site receives what happens on your channel. It keeps a journal you can read
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.1.0.
+Available since version 1.0.0. Current version: 1.2.0.

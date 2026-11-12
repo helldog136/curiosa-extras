@@ -41,4 +41,4 @@ A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, 
 
 ## Since version 1.0.0
 
-Available since version 1.0.0. Current version: 1.4.0.
+Available since version 1.0.0. Current version: 1.4.1.

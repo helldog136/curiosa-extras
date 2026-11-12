@@ -166,5 +166,12 @@
   "dock_err_unknown": "This line no longer exists.",
   "dock_err_site": "The site does not answer. Trying again.",
   "dock_clear_confirm": "Empty the waiting alerts and the screen?",
-  "dock_listening_off": "Your site is not listening to Twitch right now. Open the page of the module."
+  "dock_listening_off": "Your site is not listening to Twitch right now. Open the page of the module.",
+  "health_silent": "No event for {n} hours while you are live. A quiet stream is normal: click Check now to be sure.",
+  "catchup_note": "After a gap, {n} lines were added from Twitch ({when}) and are marked possibly missed.",
+  "health_mail_off": "To be warned by e-mail when listening stops, set up the e-mail of your site first.",
+  "mail_subject_problem": "Your site no longer receives your Twitch events",
+  "mail_body_problem": "What happens: {what}\nSince: {since}\nWhat to do: open the page of the module, then follow the sentence at the top.\n{link}\nNothing is lost on Twitch's side, but follows and subs you miss are looked up once listening is back.",
+  "mail_subject_back": "Your site receives your Twitch events again",
+  "mail_body_back": "All is back since {since}. Nothing to do.\n{link}"
 }

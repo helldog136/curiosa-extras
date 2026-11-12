@@ -41,4 +41,4 @@ Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements,
 
 ## Depuis la version 1.0.0
 
-Disponible depuis la version 1.0.0. Version actuelle : 1.4.0.
+Disponible depuis la version 1.0.0. Version actuelle : 1.4.1.

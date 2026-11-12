@@ -83,10 +83,10 @@ const cache = new Map();   // instance → { at, limit, items }  (the consumers 
 /** `exports["twitch.event"]`: the newest lines first. Types switched off are not hidden: they were on when the line arrived. */
 export async function topicItems(ctx, opts = {}, now = Date.now()) {
   const limit = Math.min(LIMITS.topic, Math.max(1, Math.trunc(Number(opts.limit)) || LIMITS.topicDefault));
-  const k = ctx.instance.key, hit = cache.get(k);
+  const k = ctx.instance.key, hit = cache.get(k), rev = st.memoryOf(ctx).rev ?? 0;
   let items;
-  if (hit && now - hit.at < 1000 && hit.limit >= limit) items = hit.items;
-  else { items = (await st.recent(ctx, limit)).map(toItem); cache.set(k, { at: now, limit, items }); }
+  if (hit && hit.rev === rev && now - hit.at < 1000 && hit.limit >= limit) items = hit.items;
+  else { items = (await st.recent(ctx, limit)).map(toItem); cache.set(k, { at: now, limit, items, rev }); }
   const from = opts.from instanceof Date ? opts.from.getTime() : undefined, to = opts.to instanceof Date ? opts.to.getTime() : undefined;
   return items.filter((i) => (from === undefined || Date.parse(i.at) >= from) && (to === undefined || Date.parse(i.at) <= to)).slice(0, limit);
 }

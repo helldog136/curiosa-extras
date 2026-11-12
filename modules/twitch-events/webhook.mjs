@@ -4,7 +4,8 @@ const v = new URL(import.meta.url).search; // the version of the module spreads 
 const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { ensureListening } = await import(`./listen.mjs${v}`);
+const cycle = await import(`./cycle.mjs${v}`);
+const { learnSub } = await import(`./catchup.mjs${v}`);
 
 export const LIMITS = { perMinute: 600, badPerMinute: 30 };
 const reply = (status, body = null) => new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -46,7 +47,7 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
     if (body.kind === "revocation") {
       const done = (async () => {
         await st.updateState(ctx, (d) => { d.revoked = { status: body.status, type: body.type, at: now }; });
-        await ensureListening(ctx, settingsOf(ctx)).catch(() => {});   // the authorisation may have come back meanwhile
+        await cycle.check(ctx, settingsOf(ctx), { now }).catch(() => {});   // the authorisation may have come back meanwhile
       })().catch(() => {});
       return { response: reply(204), done };
     }
@@ -64,11 +65,13 @@ export async function handle(request, ctx, { now = Date.now() } = {}) {
     } else if (ev.kind === "hype_begin") m.hype = { level: ev.level };
     else if (ev.kind === "hype_end") m.hype = null;
     const r = await st.record(ctx, v1.id, ev, { now });
+    if (r.stored && ev.kind === "sub" && ev.login) learnSub(ctx, ev.login).catch(() => {});   // a sub we saw is not "new" for a later catch-up
     const done = r.stored ? st.updateState(ctx, (d) => { d.last = { ...(d.last ?? {}), [ev.kind]: ev.at }; d.lastEventAt = now; if (ev.kind === "online") d.liveSince = ev.at; if (ev.kind === "offline") d.liveSince = null; }).catch(() => {}) : none;
     return { response: reply(204), done };
   } catch (e) {
     if (marked) st.memoryOf(ctx).seen.delete(marked);   // not stored: Twitch will deliver it again, and it must not be taken for a duplicate
     console.error(`[twitch-events] ${ctx.instance.key}: webhook failed (${e?.message ?? e})`);
-    return { response: reply(500, "Error"), done: none };
+    // 503 + Retry-After rather than 500: a site that is restarting or being updated asks Twitch to try again soon (the message is stored once, whenever it comes)
+    return { response: new Response("Unavailable", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", "Retry-After": "30" } }), done: none };
   }
 }
