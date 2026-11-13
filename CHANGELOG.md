@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.78.0 — 2026-11-13
+
+*En bref : les modules disent où se ranger. Dans le menu d'administration, Twitch, Discord et YouTube ont maintenant leur place sous Réseaux › Twitch, Réseaux › Discord et Réseaux › YouTube, et y sont épinglés d'office. Prend effet avec Curiosa 0.13.0 ; sur un Curiosa plus ancien, rien ne change. Aucune nouvelle permission, rien à régler.*
+
+*In short: the modules say where they belong. In the administration menu, Twitch, Discord and YouTube now sit under Networks › Twitch, Networks › Discord and Networks › YouTube, pinned by default. Needs Curiosa 0.13.0; on an older Curiosa nothing changes. No new permission, nothing to set up.*
+
+### Nouveautés
+
+- **Réseaux › Twitch.** Connecteur Twitch, Ma Chaîne Twitch, Statut du live, Activité Twitch, Overlay alertes (OBS), Bot Twitch, Raid Twitch, dans cet ordre.
+- **Réseaux › Discord.** Discord, Annonces Discord. **Réseaux › YouTube.** Connecteur YouTube, Chaîne YouTube, Actions du live YouTube.
+- Vous pouvez toujours désépingler une entrée : votre choix l'emporte. Les modules de lien vers un profil (Instagram, Bluesky, Kick…) et les autres outils gardent leur place.
+- **Networks › Twitch.** Twitch connector, My Twitch channel, Live status, Twitch activity, Alerts overlay (OBS), Twitch bot, Twitch raid, in that order.
+- **Networks › Discord.** Discord, Discord announcements. **Networks › YouTube.** YouTube connector, YouTube channel, YouTube live actions.
+- You can still unpin an entry: your choice wins. Profile-link modules (Instagram, Bluesky, Kick…) and the other tools keep their place.
+
+### Pour les développeurs
+
+- Douze modules déclarent `adminMenu` et `adminMenuOrder` dans `module.json` (cœur 0.13.0, pas de changement de `minCore` : un cœur plus ancien ignore les clés ; `menuGroup` reste le repli). Montée de version corrective de chacun : Connecteur Twitch 1.5.1, Ma Chaîne Twitch 2.4.1, Statut du live 1.4.6, Activité Twitch 1.3.1, Overlay alertes 1.8.1, Bot Twitch 1.17.1, Raid Twitch 2.5.1, Discord 1.3.1, Annonces Discord 1.2.3, Connecteur YouTube 1.3.3, Chaîne YouTube 1.4.3, Actions du live YouTube 1.1.3. Voir `docs/changelog-parts/admin-menu-networks.md`. Test : `admin-menu`.
+
 ## 1.77.0 — 2026-11-13
 
 *En bref : votre bot Twitch peut répondre quand un message contient un mot (« quoi » donne « Feur »), et une commande ou un mot peut aussi montrer une image, un GIF ou une vidéo, ou jouer un son, sur votre stream. Les fichiers viennent d'une seule bibliothèque, dans l'onglet Médias de l'overlay alertes. Bot Twitch (1.17.0) et Overlay alertes (1.8.0). Aucune nouvelle permission, rien à régler.*
