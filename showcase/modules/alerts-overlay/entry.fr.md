@@ -1,6 +1,6 @@
 ## Ce que ça fait
 
-Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme.
+Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains de la hype.
 
 - Ajoutez l'adresse de l'overlay comme source navigateur dans OBS.
 - Envoyez une alerte de test d'un seul bouton.

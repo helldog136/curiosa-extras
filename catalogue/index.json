@@ -12,13 +12,13 @@
         },
         "fr": {
           "name": "Overlay alertes (OBS)",
-          "description": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
+          "description": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains de la hype."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.78.0",
-      "version": "1.8.1",
+      "version": "1.8.2",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔",
@@ -2623,7 +2623,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.78.0",
-      "version": "1.17.1",
+      "version": "1.18.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2789,13 +2789,13 @@
         },
         "fr": {
           "name": "Activité Twitch",
-          "description": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme, tient un journal et donne un dock OBS."
+          "description": "Reçoit les follows, abonnements, bits, raids et trains de la hype, tient un journal et donne un dock OBS."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-events",
       "ref": "v1.78.0",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",

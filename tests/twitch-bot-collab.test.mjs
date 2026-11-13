@@ -530,7 +530,7 @@ test("assistant tool: timers pause / every_n with n (2, 3 or 5) and autoStopHour
 });
 
 test("manifest: version, history events, no new permission, route or right; the tick task settles the automatic end", async () => {
-  assert.equal(manifest.version, "1.17.1"); assert.equal(manifest.minCore, "0.6.7");
+  assert.equal(manifest.version, "1.18.0"); assert.equal(manifest.minCore, "0.6.7");
   for (const k of ["collab.on", "collab.off"]) assert.ok(manifest.logEvents.some((e) => e.key === k && e.label.fr && e.label.en), k);
   assert.deepEqual(manifest.permissions, ["routes", "storage", "admin", "topics", "mcp"]);
   assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage", "timers.manage"]);

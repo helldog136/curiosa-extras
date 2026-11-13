@@ -14,7 +14,7 @@ const act = (w, name, v) => A.actions[name](w.ctx, v);
 const withWord = async (o = {}) => { const w = world({ locale: "en", services: svc(), ...o }); const r = await act(w, "createWord", { words: "quoi, koi", text: "Feur", role: "everyone" }); assert.ok(r.ok, JSON.stringify(r)); return w; };
 
 test("manifest: 1.17.0, optional alerts.show, advanced valve setting, FR/EN parity", () => {
-  assert.equal(manifest.version, "1.17.1");
+  assert.equal(manifest.version, "1.18.0");
   assert.deepEqual(manifest.requires.find((r) => r.service === "alerts.show"), { service: "alerts.show", min: 1, optional: true });
   const s = manifest.settings.find((x) => x.key === "wordsPerMinute"); assert.deepEqual([s.default, s.advanced, s.min, s.max], [6, true, 1, 30]);
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());

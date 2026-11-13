@@ -41,9 +41,11 @@ export const TYPES = [
     id: "hype", default: true, scopes: [HYPE], kinds: ["hype_begin", "hype_progress", "hype_end"],
     subs: ["begin", "progress", "end"].map((p) => ({ type: `channel.hype_train.${p}`, version: "2", cond: (b) => ({ broadcaster_user_id: b }) })),
   },
-  { id: "redeem", default: false, scopes: [REDEEM], subs: [{ type: "channel.channel_points_custom_reward_redemption.add", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["redeem"] },
+  { id: "redeem", default: false, optional: true, scopes: [REDEEM], subs: [{ type: "channel.channel_points_custom_reward_redemption.add", version: "1", cond: (b) => ({ broadcaster_user_id: b }) }], kinds: ["redeem"] },
 ];
 export const TYPE_IDS = TYPES.map((t) => t.id);
+/** Types the Twitch bot already covers: their trouble never turns the whole page red. */
+export const isOptional = (id) => TYPES.find((t) => t.id === id)?.optional === true;
 export const typeOf = (id) => TYPES.find((t) => t.id === id) ?? null;
 /** Every kind of event (what the journal and the topic carry) and the type (switch) it belongs to. */
 export const KINDS = TYPES.flatMap((t) => t.kinds);
@@ -178,9 +180,11 @@ export function classify(rows, wanted, callback) {
     const same = mine.filter((s) => s.type === w.type && String(s.version) === w.version && sameCondition(s.condition, w.condition));
     const good = same.find((s) => s.status === "enabled"), pending = same.find((s) => s.status === "webhook_callback_verification_pending");
     const keep = good ?? pending;
-    if (keep) { keepIds.add(String(keep.id)); out.push({ ...w, state: good ? "enabled" : "pending", id: String(keep.id), status: String(keep.status) }); }
+    // `elsewhere`: another subscription of the same application (another callback address, for instance the Twitch bot's) already covers this type and condition.
+    const elsewhere = (Array.isArray(rows) ? rows : []).some((s) => s && s.transport?.callback !== callback && s.type === w.type && String(s.version) === w.version && sameCondition(s.condition, w.condition));
+    if (keep) { keepIds.add(String(keep.id)); out.push({ ...w, state: good ? "enabled" : "pending", id: String(keep.id), status: String(keep.status), createdAt: Date.parse(keep.created_at) || null, ...(elsewhere ? { elsewhere } : {}) }); }
     else if (same.length) out.push({ ...w, state: "failed", status: String(same[0].status ?? "") });
-    else out.push({ ...w, state: "missing" });
+    else out.push({ ...w, state: "missing", ...(elsewhere ? { elsewhere } : {}) });
   }
   return { wanted: out, stale: mine.filter((s) => !keepIds.has(String(s.id))).map((s) => String(s.id)), total: mine.length };
 }

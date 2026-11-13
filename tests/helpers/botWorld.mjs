@@ -20,7 +20,7 @@ export const CHAT = es.SCOPES.own;
 export function world(o = {}) {
   S.resetMemory(); SRC.resetSources();
   const tw = {
-    mainStatus: "ok", mainScopes: [...CHAT], botStatus: "none", botScopes: [], ready: true, subs: [], chat: [], calls: [], wants: [], chatReply: null, listDown: false, createStatus: 202,
+    mainStatus: "ok", mainScopes: [...CHAT], botStatus: "none", botScopes: [], ready: true, subs: [], chat: [], calls: [], wants: [], links: [], chatReply: null, listDown: false, createStatus: 202,
     live: { channel: "emma", configured: true, known: true, live: true, title: "Soirée détente", game: "Zelda", startedAt: new Date(NOW - 95 * 60_000).toISOString() },
     ...o.tw,
   };
@@ -47,7 +47,7 @@ export function world(o = {}) {
           return { ok: true, channel: "emma", ready: tw.ready, https: true, status: bot ? tw.botStatus : tw.mainStatus, login: bot ? "monbot" : "emma", userId: bot ? "555" : "100", scopes: bot ? tw.botScopes : tw.mainScopes, wanted: [], adminPath: "/admin/instances/tw1", ...(o.result && !bot ? { result: o.result } : {}) };
         },
         wantScopes: (a) => { tw.wants.push(a); return { ok: true }; },
-        connectLink: (a) => ({ ok: true, url: a.slot === "bot" ? "https://id.twitch.tv/oauth2/authorize?bot=1" : "https://id.twitch.tv/oauth2/authorize?main=1" }),
+        connectLink: (a) => (tw.links.push(a), tw.noLink ? { ok: true, url: null, reason: "https" } : { ok: true, url: a.slot === "bot" ? "https://id.twitch.tv/oauth2/authorize?bot=1" : "https://id.twitch.tv/oauth2/authorize?main=1" }),
         disconnect: () => ({ ok: true, reached: true }),
         request: (a) => {
           if (a.channel && a.channel !== "emma") return { ok: false, error: "other_channel" };
