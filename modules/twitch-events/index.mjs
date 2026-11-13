@@ -9,7 +9,8 @@ const admin = await import(`./admin.mjs${v}`);
 const pub = await import(`./publish.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const { default: tools } = await import(`./tools.mjs${v}`);
-const { stopListening } = await import(`./listen.mjs${v}`);
+const { stopListening, diagnose } = await import(`./listen.mjs${v}`);
+const declareNow = (ctx) => diagnose(ctx, settingsOf(ctx), { declare: true });
 const cycle = await import(`./cycle.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const dockapi = await import(`./dockapi.mjs${v}`);
@@ -64,7 +65,11 @@ export default {
   adminActions: admin.actions,
   mcp: tools,
   hooks: {
-    async onInstanceCreate(ctx) { try { await st.ensureSecret(ctx); } catch { /* created at the first check */ } },
+    async onInstanceCreate(ctx) {
+      try { await st.ensureSecret(ctx); } catch { /* created at the first check */ }
+      // The permissions of the types that are on are declared at once, not only when a page is opened (the connector adds them to its authorization).
+      try { await declareNow(ctx); } catch { /* the minute check declares them */ }
+    },
     async onInstanceDelete(ctx) { await stopListening(ctx, settingsOf(ctx)); },
   },
 };

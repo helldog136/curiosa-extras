@@ -5,13 +5,13 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.8.1",
+  "version": "1.8.2",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.10.0",
   "description": {
     "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
-    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme."
+    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains de la hype."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -526,7 +526,7 @@
       "topic": "twitch.event",
       "label": {
         "en": "Your Twitch events: follows, subs, gifts, bits, raids, hype trains (from Twitch activity, if installed)",
-        "fr": "Vos événements Twitch : follows, abonnements, cadeaux, bits, raids, trains d'enthousiasme (fournis par Activité Twitch, s'il est installé)"
+        "fr": "Vos événements Twitch : follows, abonnements, cadeaux, bits, raids, trains de la hype (fournis par Activité Twitch, s'il est installé)"
       },
       "schema": [
         {

@@ -441,7 +441,7 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.17.1");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.18.0");
 });
 
 /* ───────────── "Started by": the timer and the chat | the timer only ───────────── */

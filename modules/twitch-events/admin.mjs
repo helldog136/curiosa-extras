@@ -19,10 +19,20 @@ const num = (ctx, n) => new Intl.NumberFormat(ctx.locale).format(n);
 
 /* ───────────── Status line ───────────── */
 
-async function connectLinks(ctx, d) {
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+/** The main button of the page: an accent link, the same as the one of the Twitch bot. */
+const primary = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
+/**
+ * The button that sends the person to Twitch. `force`: the connector offers the link even when it believes the connection is fine (it only knows the permissions
+ * a page has declared), and `scopes` carries exactly what is missing. When the connector gives no link, the way to its page stays: there is always a button.
+ */
+async function connectLinks(ctx, d, missing = d.missing ?? []) {
   if (!d.channel) return [];
-  const r = (await ctx.api.services.callAll(API, "connectLink", { channel: d.channel, slot: "main" })).find((x) => x.ok && x.value?.ok);
-  return r?.value?.url ? [{ type: "links", items: [{ label: ctx.t("connect_btn"), href: r.value.url }] }] : [];
+  const args = { channel: d.channel, slot: "main", force: true, scopes: missing, returnTo: `/admin/instances/${ctx.instance.id}` };
+  let r = null;
+  try { r = (await ctx.api.services.callAll(API, "connectLink", args)).find((x) => x.ok && x.value?.ok); } catch { r = null; }
+  if (r?.value?.url) return [primary(ctx.t("connect_btn"), r.value.url)];
+  return d.main?.adminPath ? [primary(ctx.t("connect_fallback"), d.main.adminPath)] : [];
 }
 async function alertsLink(ctx) {
   let list = [];
@@ -35,7 +45,7 @@ async function alertsLink(ctx) {
 export function problemText(ctx, code, d = {}, state = {}) {
   const t = ctx.t;
   if (code === "need_more") {
-    const names = (d.missing ?? state.listen?.missing ?? []).map((s) => (SCOPE_KEY[s] ? t(SCOPE_KEY[s]) : s));
+    const names = (d.missingCore ?? state.listen?.missing ?? []).map((s) => (SCOPE_KEY[s] ? t(SCOPE_KEY[s]) : s));
     return t("listen_need_more", { list: names.join(", ") || "…" });
   }
   return t(`listen_${code}`, { detail: state.rejected?.reason ?? "" });
@@ -43,7 +53,8 @@ export function problemText(ctx, code, d = {}, state = {}) {
 
 async function statusBlocks(ctx, d, state) {
   const t = ctx.t, listen = state.listen ?? {};
-  const code = d.code !== "ready" ? d.code : listen.code ?? "unknown";
+  let code = d.code !== "ready" ? d.code : listen.code ?? "unknown";
+  if (code === "need_more" && d.code === "ready" && !d.blockedCore?.length) code = "unknown";   // granted since the last check: no alarm while the page re-checks
   const out = [];
   const typesOn = Object.values(st.enabledOf(state)).filter(Boolean).length;
   if (code === "listening") {
@@ -51,7 +62,7 @@ async function statusBlocks(ctx, d, state) {
     out.push({ type: "banner", tone: "success", text: `${t("status_listening", { n: typesOn })} ${last}` });
   } else {
     out.push({ type: "banner", tone: "warning", text: problemText(ctx, code, d, state) });
-    if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push({ type: "markdown", text: t("connect_steps") }, ...(await connectLinks(ctx, d)));
+    if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push(...(await connectLinks(ctx, d, d.missingCore)));
     else if (code === "creds_missing" && d.main?.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) });
     else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
   }
@@ -69,7 +80,12 @@ async function statusBlocks(ctx, d, state) {
 
 export async function panel(ctx, { query } = {}) {
   const t = ctx.t, s = settingsOf(ctx);
-  const [d, state, lines] = await Promise.all([diagnose(ctx, s, { declare: false }), st.readState(ctx), st.recent(ctx, 300)]);
+  let [d, state, lines] = await Promise.all([diagnose(ctx, s, { declare: false }), st.readState(ctx), st.recent(ctx, 300)]);
+  // Back from Twitch with the permission granted: check at once, so the warning goes away without a click.
+  if (d.code === "ready" && ["need_more", "need_reconnect", "need_connect"].includes(state.listen?.code) && !d.blockedCore.length) {
+    await cycle.check(ctx, s, { settle: true }).catch(() => null);
+    [d, state] = await Promise.all([diagnose(ctx, s, { declare: false }), st.readState(ctx)]);
+  }
   const enabled = st.enabledOf(state);
   const rows = lines.map((l) => [
     fmtDate(ctx, l.at),
@@ -78,14 +94,18 @@ export async function panel(ctx, { query } = {}) {
     { text: detail(ctx, l), title: l.text ? `${detail(ctx, l)} — ${l.text}` : undefined },
   ]);
   const typeRows = es.TYPES.map((ty) => {
-    const code = state.types?.[ty.id]?.code ?? "unknown";
+    const entry = state.types?.[ty.id] ?? {}, code = entry.code ?? "unknown";
     const on = enabled[ty.id] === true;
-    const label = !on ? t("state_off") : t(`state_${code}`) ;
+    const waited = code === "pending" && entry.since ? Math.max(1, Math.round((Date.now() - entry.since) / 60_000)) : 0;
+    const label = !on ? t("state_off") : waited ? t("state_pending_since", { n: waited }) : t(`state_${code}`);
     const tone = !on ? "neutral" : code === "listening" ? "ok" : ["pending", "unknown"].includes(code) ? "info" : "warn";
+    const mark = !on ? "" : code === "listening" ? "✓ " : tone === "warn" ? "! " : "… ";   // colour, text AND a sign
+    const why = on && code === "pending" && entry.reason ? t(`reason_${entry.reason}`) : undefined;
     const perms = ty.scopes.length ? ty.scopes.map((x) => t(SCOPE_KEY[x])).join(", ") : t("scope_none");
-    return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, t(`type_${ty.id}_help`), perms, { text: label, badge: tone },
+    return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, perms, { text: `${mark}${label}`, badge: tone, ...(why ? { title: why } : {}) },
       { text: on ? t("on") : t("off"), switch: { on, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: t("on"), offText: t("off") } }];
   });
+  const typesCheck = (d.code !== "ready" ? d.code : state.listen?.code ?? "unknown") === "listening";   // otherwise the status area above has the button
   return [
     { type: "markdown", text: t("page_intro") },
     ...(await statusBlocks(ctx, d, state)),
@@ -96,8 +116,9 @@ export async function panel(ctx, { query } = {}) {
     { type: "copy", tab: "dock", label: t("dock_copy_label"), text: dockapi.dockUrl(ctx, await dockapi.dockSecret(ctx)) },
     { type: "table", tab: "dock", columns: [t("dock_renew_title")], rows: [[t("dock_renew_help")]], rowIds: ["dock"], pageSize: 0, rowActions: [{ label: t("dock_renew_btn"), action: "renewDock", confirm: t("dock_renew_confirm"), danger: true }] },
     { type: "markdown", tab: "types", text: t("types_intro") },
-    { type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), fields: [] },
-    { type: "table", tab: "types", columns: [t("col_type"), t("col_what"), t("col_permission"), t("col_state"), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0,
+    ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "types" })) : []),
+    ...(typesCheck ? [{ type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), fields: [] }] : []),
+    { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), t("col_state"), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0,
       rowActions: [{ label: t("test_btn"), action: "test" }] },
   ];
 }

@@ -48,6 +48,12 @@ export async function twitch(ctx, channel, req) {
 }
 
 const need = (s) => (s.replyAs === "bot" ? { main: es.SCOPES.ownerForBot, bot: es.SCOPES.bot } : { main: es.SCOPES.own, bot: [] });
+/** The permissions a slot still lacks, for the connector link (the rewards ones only once the owner switched them on). */
+export const missingFor = async (ctx, s, d, slot) => {
+  const n = need(s);
+  const want = slot === "bot" ? n.bot : (await readState(ctx)).rewardsOn === true ? [...n.main, ...es.REWARD_SCOPES] : n.main;
+  return lacks(slot === "bot" ? d.bot : d.main, want);
+};
 const lacks = (acc, scopes) => scopes.filter((x) => !(acc?.scopes ?? []).includes(x));
 
 /** Dit au Connecteur Twitch ce dont le bot a besoin pour cette chaîne (il l'ajoute à ses autorisations) — idempotent. */

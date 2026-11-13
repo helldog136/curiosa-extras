@@ -6,7 +6,7 @@ const { catalog, loadConfig, proposeNetwork, saveCommand, saveSourced, removeCus
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const src = await import(`./sources.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
-const { diagnose, ensureListening, ensureRedeemListening } = await import(`./listen.mjs${v}`);
+const { diagnose, ensureListening, ensureRedeemListening, missingFor } = await import(`./listen.mjs${v}`);
 const { shownFor, used } = await import(`./variables.mjs${v}`);
 const { reopenLabel, parsePeriodValue, periodError } = await import(`./period.mjs${v}`);
 const { saveError } = await import(`./errors.mjs${v}`);
@@ -32,7 +32,7 @@ const panelAnchor = (ctx) => `panel-${ctx.instance.key}-${PANEL_ID}`.replace(/[^
 const partnerHref = (ctx) => `/admin/entries/{id}#${panelAnchor(ctx)}`;
 
 /** Le bouton « Autoriser chez Twitch » : un lien (adresse construite par Chaîne Twitch) habillé aux couleurs de l'administration. */
-const button = (label, href) => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
+const button = (label, href, title = "") => ({ type: "html", html: `<p><a data-twitch-connect href="${esc(href)}"${title ? ` title="${esc(title)}"` : ""} style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` });
 
 /* ───────────── Messages d'erreur d'enregistrement ───────────── */
 
@@ -54,11 +54,19 @@ export async function context(ctx, { declare = true } = {}) {
 
 /* ───────────── Le haut de page : UNE ligne d'état et l'arrêt d'urgence ───────────── */
 
-async function connectBlocks(ctx, d, slot) {
+/**
+ * The button to Twitch. `force` and the missing `scopes`: the connector offers the link even when it believes the connection is fine; without a link there is still a way to its page.
+ * First connection: the plain verb; otherwise "Authorize again with Twitch". The steps are in the tooltip.
+ */
+async function connectBlocks(ctx, d, slot, { first = false, scopes = [] } = {}) {
   if (!d.channel) return [];
-  const r = (await ctx.api.services.callAll(SERVICE, "connectLink", { channel: d.channel, slot })).find((x) => x.ok && x.value?.ok);
+  let r = null;
+  try { r = (await ctx.api.services.callAll(SERVICE, "connectLink", { channel: d.channel, slot, force: true, scopes, returnTo: `/admin/instances/${ctx.instance.id}` })).find((x) => x.ok && x.value?.ok); } catch { r = null; }
+  const tip = ctx.t(slot === "bot" ? "connect_bot_tip" : "connect_tip");
   const url = r?.value?.url;
-  return url ? [button(ctx.t(slot === "bot" ? "connect_bot_btn" : "connect_btn"), url)] : [];
+  if (url) return [button(ctx.t(first ? (slot === "bot" ? "connect_bot_btn" : "connect_btn") : "connect_again_btn"), url, tip)];
+  const page = (slot === "bot" ? d.bot : d.main)?.adminPath ?? d.main?.adminPath;
+  return page ? [button(ctx.t("connect_fallback"), page, tip)] : [];
 }
 
 const PROBLEM_TONE = "warning";
@@ -92,8 +100,8 @@ async function listenBlocks(ctx, ctxInfo, state) {
   if (code === "listening") return out;
   const failure = sub.failure ? ` ${t(`listen_failure_${sub.failure}`)}` : "";
   out.push({ type: "banner", tone: PROBLEM_TONE, text: `${t(`listen_${code}`, { detail: sub.detail ?? "" })}${failure}` });
-  if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push({ type: "markdown", text: t("connect_steps") }, ...(await connectBlocks(ctx, d, "main")));
-  else if (["bot_need_connect", "bot_reconnect", "bot_more"].includes(code)) out.push({ type: "markdown", text: t("connect_bot_steps") }, ...(await connectBlocks(ctx, d, "bot")));
+  if (["need_connect", "need_reconnect", "need_more"].includes(code)) out.push(...(await connectBlocks(ctx, d, "main", { first: code === "need_connect", scopes: await missingFor(ctx, s, d, "main") })));
+  else if (["bot_need_connect", "bot_reconnect", "bot_more"].includes(code)) out.push(...(await connectBlocks(ctx, d, "bot", { first: code === "bot_need_connect", scopes: await missingFor(ctx, s, d, "bot") })));
   else if (code === "creds_missing" && d.main?.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: d.main.adminPath }) });
   else if (code === "no_channel") out.push({ type: "markdown", text: t("no_channel_steps") });
   return out;

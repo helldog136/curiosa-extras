@@ -3,7 +3,7 @@
 Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vous pouvez lire, chercher et rejouer.
 
 - Les follows, abonnements, réabonnements, abonnements offerts, bits et raids.
-- Le début et la fin de votre direct, et les trains d'enthousiasme.
+- Le début et la fin de votre direct, et les trains de la hype.
 - Une liste avec une recherche, un filtre par type et un bouton de test pour chaque type.
 - Allumez ou éteignez chaque type. La page vous dit quand l'accord de Twitch est nécessaire.
 - Le journal est partagé avec vos autres modules, comme les alertes dans OBS.
@@ -36,7 +36,7 @@ Votre site reçoit ce qui se passe sur votre chaîne. Il tient un journal que vo
 
 - Nécessite : [Connecteur Twitch](entry:twitch-connector), [Ma Chaîne Twitch](entry:twitch-channel).
 - Votre site a besoin d'une adresse publique sécurisée (https) pour que Twitch puisse le joindre.
-- La première fois, Twitch vous demande d'accepter quelques accords de plus (bits, trains d'enthousiasme).
+- La première fois, Twitch vous demande d'accepter quelques accords de plus (bits, trains de la hype).
 - Votre assistant IA peut lire le journal, vérifier l'écoute et rejouer une alerte.
 - Ce qu'il ajoute à votre site : un accès pour votre assistant IA.
 
