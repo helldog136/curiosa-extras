@@ -23,8 +23,8 @@ function world({ settings = {}, uploads = [], items = [] } = {}) {
   return { key, ctx, state };
 }
 
-test("manifest: 1.7.0, core 0.10.0 asked for, no sound slots (the field is in the window of the type)", () => {
-  assert.equal(manifest.version, "1.7.0"); assert.equal(manifest.minCore, "0.10.0");
+test("manifest: 1.8.0, core 0.10.0 asked for, no sound slots (the field is in the window of the type)", () => {
+  assert.equal(manifest.version, "1.8.0"); assert.equal(manifest.minCore, "0.10.0");
   assert.ok(!manifest.settings.some((s) => s.type === "audio"), "the direct field replaces six slots");
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   for (const k of ["tw_f_audio", "tw_f_audio_help", "tw_err_audio"]) assert.ok(en[k] && fr[k], k);

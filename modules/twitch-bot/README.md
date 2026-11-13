@@ -192,3 +192,13 @@ When you stream with other people in a **shared chat**, the bot should not fill 
 - **History.** Each change is written in the site's history ("Collaboration mode switched on (admin)", with `admin`, `remote`, `assistant` or `auto` for the end by the clock) and the page and the remote say where the last change came from.
 - **Who can use it.** Whoever opens the administration, the secret address of the remote control, or an assistant to which you gave the `collaboration_mode_set` tool (a write tool, off by default).
 - **Data.** Nothing to migrate: the switch and the choices are two small entries in the state of the bot; the thinning counters are in the timers state. `minCore` unchanged.
+
+## Words and "On stream" (1.17.0)
+
+- **Words.** A word trigger answers when a chat message contains a word, without any `!` (the classic: "quoi" gets "Feur"). It lives in the same table as the commands, with the badge "Word" and the filter chip of the same name. Matching is a **whole word**, capitals, accents, punctuation and links ignored: "quoi", "QUOI", "quoi ?!" match; "quoicoubeh", "quoiii" and "pourquoi" do not. The folded option "Inside words" matches inside words. No pattern is exposed.
+- First time: "Add an example" opens the window of a word with "quoi" and "Feur" already written.
+- **Never triggered by**: a message that starts with the command sign, the bot's own messages and echoes of its own texts, known bots, another channel's messages (shared chat), the account that speaks for the bot, a person who may not trigger it, a trigger in its wait, the emergency stop, a stream that is off (setting "Answer only while I am live"). Collaboration mode keeps words quiet unless the trigger is ticked "Also answer in collaboration mode".
+- **Anti-spam**: wait of 30 s for everyone and 60 s per person (per trigger), a valve of 6 automatic answers per minute for the whole bot (advanced setting), and "One time out of" N (1 to 20).
+- **On stream.** Folded in the window of a command or a word: a picture, GIF or video and/or a sound, for 2 to 60 seconds. The files come from the **Media** tab of the alerts overlay (one place to send and name them); the bot only picks one. The media go through the alerts queue (pause, skip, "Empty the queue"). Without the alerts overlay the choice says so and the command only answers in the chat. A media never writes in the chat.
+- **Assistants.** `bot_commands_list`, `bot_command_create` and `bot_command_update` handle `kind: "word"` and `onStreamPicture`, `onStreamSound` (names from the library, never uploads). Write tools stay off by default.
+- Not covered: channel point rewards (their action list is closed; a media there is a later step).

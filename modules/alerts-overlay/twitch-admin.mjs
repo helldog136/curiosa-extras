@@ -76,8 +76,6 @@ export async function panel(ctx, { query = {} } = {}) {
     { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
     { type: "adminForm", action: "clearQueue", submitLabel: t("q_clear_btn"), fields: [] },
     ...(await viewersBlocks(ctx, cfg)),
-    { type: "markdown", tab: "media", text: t("md_intro") },
-    { type: "markdown", tab: "media", text: t("md_limits") },
   ];
 }
 

@@ -97,3 +97,7 @@ Core 0.10.0 accepts sounds as uploads (MP3, Ogg, WAV, M4A, AAC; 10 MB at most, c
 - Browsers refuse sound before a first interaction (autoplay). The overlay iframe of the core carries `allow="autoplay"`; in a plain OBS browser source it usually plays. If nothing is heard, check the OBS source option for audio. Not verified on a live OBS.
 - Assistants can see that a type has a sound file (`hasSoundFile`), never its address, and cannot send sounds (the upload tool stays images only).
 - Needs Curiosa 0.10.0.
+
+## Media library (version 1.8.0)
+
+The **Media** tab holds the pictures, GIFs and sounds you send (name, type, search, edit, delete) next to the six video fields. Other modules pick from this library through the service `alerts.show` (`list`, `show { visual, sound, seconds }`): the Twitch bot uses it for the "On stream" choice of commands and words. A media goes through the same queue as the alerts (pause holds it, skip and "Empty the queue" stop it) and stays on screen 2 to 60 seconds (default: the alert duration; a sound alone: 4 s, no card). A video plays with its own sound; sounds use the volume of the sounds setting. At most 30 media a minute are accepted. With an empty library the page is unchanged; after adding the first media, refresh the browser source in OBS.

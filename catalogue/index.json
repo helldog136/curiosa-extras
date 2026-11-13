@@ -18,7 +18,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.76.0",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔",
@@ -29,6 +29,10 @@
         {
           "service": "alerts.queue",
           "version": 2,
+          "each": true
+        },
+        {
+          "service": "alerts.show",
           "each": true
         }
       ],
@@ -2619,7 +2623,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.76.0",
-      "version": "1.16.0",
+      "version": "1.17.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2648,6 +2652,10 @@
         },
         {
           "service": "audience.draw",
+          "optional": true
+        },
+        {
+          "service": "alerts.show",
           "optional": true
         }
       ],

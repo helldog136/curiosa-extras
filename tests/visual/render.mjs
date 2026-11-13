@@ -34,6 +34,10 @@ const need = (name) => { for (const base of [process.env.PLAYWRIGHT_MODULE, `${C
 const { chromium } = need("playwright");
 
 const A = await import("../../modules/twitch-bot/admin.mjs");
+const WD = await import("../../modules/twitch-bot/words.mjs");
+const MDB = await import("../../modules/twitch-bot/media.mjs");
+const OV = (await import("../../modules/alerts-overlay/index.mjs")).default;
+const OVM = await import("../../modules/alerts-overlay/media.mjs");
 const RA = await import("../../modules/twitch-bot/rewardsAdmin.mjs");
 const es = await import("../../modules/twitch-bot/eventsub.mjs");
 const S = await import("../../modules/twitch-bot/state.mjs");
@@ -122,6 +126,30 @@ async function commandsWorld(locale) {
   await A.actions.check(w.ctx);
   return w;
 }
+/** Words and "On stream": the commands world plus a fake alerts overlay with a small library (no word yet: the empty state). */
+async function wordsWorld(locale, { examples = true } = {}) {
+  const fr = locale === "fr";
+  const items = [{ id: "m1", name: fr ? "Applaudissements" : "Applause", kind: "picture" }, { id: "m2", name: fr ? "Danse du chat" : "Cat dance", kind: "picture" }, { id: "video:1", name: fr ? "Vidéo 1" : "Video 1", kind: "video" }, { id: "m3", name: fr ? "Ding" : "Ding", kind: "sound" }, { id: "tone:bell", name: fr ? "Cloche" : "Bell", kind: "sound" }];
+  const w = world({ locale, services: { "alerts.show": { list: () => ({ items }), show: () => ({ ok: true, state: "shown" }) } }, followers: null });
+  const env = { src: await SRC.gather(w.ctx, "chaine_demo"), t: w.ctx.t, prefix: "!", library: () => MDB.library(w.ctx) };
+  for (const [name, text] of fr ? [["discord", "Rejoignez-nous sur Discord."], ["lurk", "{utilisateur} se met en mode lurk."]] : [["discord", "Join us on Discord."], ["lurk", "{utilisateur} is lurking."]]) await C.saveCommand(w.ctx, { kind: "custom" }, { name, text, enabled: true }, env);
+  await C.saveCommand(w.ctx, { kind: "custom" }, { name: fr ? "merci" : "thanks", text: fr ? "Merci à tous." : "Thank you all.", enabled: true, media: { visual: "m1", sound: "m3", seconds: 6 } }, env);
+  if (examples) {
+    await WD.saveWord(w.ctx, {}, { words: "quoi", text: "Feur", enabled: true }, env);
+    await WD.saveWord(w.ctx, {}, { words: fr ? "bravo, gg" : "gg, well played", text: "", media: { visual: "m2", sound: "tone:bell", seconds: 5 }, role: "everyone", enabled: true }, env);
+    await WD.saveWord(w.ctx, {}, { words: fr ? "bonjour, salut" : "hello, hi", text: fr ? "Bonjour {utilisateur}, bienvenue." : "Hello {utilisateur}, welcome.", chance: 3, mode: "contains", role: "subscribers", enabled: false }, env);
+  }
+  SRC.resetSources();
+  return w;
+}
+/** The Media tab of the alerts overlay: a few invented files. */
+async function mediaWorld(locale) {
+  const n = (i, ext) => `/uploads/0000000${i}-0123-4567-89ab-0123456789ab.${ext}`;
+  const ctx = fakeCtx({ key: "al", moduleId: "alerts-overlay", locale, defaultLocale: "fr", locales: ["fr", "en"], messages: messages("alerts-overlay", locale), settings: { pushToken: "x", video1: n(5, "mp4") }, uploads: [1, 2, 3].map((i) => ({ url: n(i, i === 3 ? "mp3" : "gif"), by: "u1" })) });
+  const fr = locale === "fr";
+  for (const [name, kind, i, ext] of [[fr ? "Applaudissements" : "Applause", "picture", 1, "gif"], [fr ? "Danse du chat" : "Cat dance", "picture", 2, "gif"], [fr ? "Ding" : "Ding", "sound", 3, "mp3"]]) await OVM.add(ctx, { name, kind, url: n(i, ext) });
+  return ctx;
+}
 async function rewardsWorld(locale) {
   S.resetMemory(); SRC.resetSources(); R.resetRewards(); J.resetRedeem(); J.resetSims();
   const tw = fakeRewardsApi(), ha = fakeHaBridge();
@@ -177,6 +205,19 @@ scene("rewards-new", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.c
 scene("rewards-edit", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.context(c.rw.ctx, { declare: false }), { rewardEdit: c.rw.rows[0].id }), tab: "rewards", dialog: true }));
 scene("rewards-rename", async (c) => ({ blocks: await RA.blocks(c.rw.ctx, await A.context(c.rw.ctx, { declare: false }), { actionEdit: "perso:lancer-l-aspirateur" }), tab: "rewards", dialog: true }));
 
+scene("words-empty", async (c) => ({ blocks: await A.panel(c.wd0.ctx, { query: {} }), tab: "use" }));
+scene("words-list", async (c) => ({ blocks: await A.panel(c.wd.ctx, { query: {} }), tab: "use" }));
+scene("words-new", async (c) => ({ blocks: await A.panel(c.wd.ctx, { query: { new: "word" } }), tab: "use", dialog: true }));
+scene("words-edit-open", async (c) => ({ blocks: await A.panel(c.wd.ctx, { query: { edit: c.wordKey("quoi") } }), tab: "use", dialog: true, script: "document.querySelectorAll('[role=dialog] details').forEach(d=>d.open=true)" }));
+scene("words-error", async (c) => {
+  const res = await A.actions.createWord(c.wd.ctx, { words: "Quoi", text: "x", role: "everyone" });
+  assert.ok(res.errors?.words, JSON.stringify(res));
+  return { blocks: await A.panel(c.wd.ctx, { query: { new: "word" } }), tab: "use", dialog: true, script: `${SHOW_ERRORS}\nshowErrors(${JSON.stringify({ ...res.errors, ...(await A.actions.createWord(c.wd.ctx, { words: "zz", text: "x", role: "everyone", chance: "50" })).errors })});` };
+});
+scene("words-no-overlay", async (c) => ({ blocks: await A.panel(c.wdDown.ctx, { query: { new: "word" } }), tab: "use", dialog: true, script: "document.querySelectorAll('[role=dialog] details').forEach(d=>d.open=true)" }));
+scene("media-tab", async (c) => ({ blocks: await OV.adminPanel(c.md, { query: { tab: "media" } }), tab: "media", tabs: [["media", c.locale === "fr" ? "Médias" : "Media"]], title: c.locale === "fr" ? "Overlay alertes (OBS)" : "Alerts overlay (OBS)" }));
+scene("media-add", async (c) => ({ blocks: await OV.adminPanel(c.md, { query: { tab: "media", add: "picture" } }), tab: "media", tabs: [["media", c.locale === "fr" ? "Médias" : "Media"]], title: c.locale === "fr" ? "Overlay alertes (OBS)" : "Alerts overlay (OBS)", dialog: true }));
+
 const TABS = (locale) => manifest.tabs.map((t) => [t.id, t.label[locale]]).concat([["settings", locale === "fr" ? "Réglages" : "Settings"]]);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ["--no-sandbox"] });
 const problems = [];
@@ -184,12 +225,14 @@ try {
   for (const locale of ["fr", "en"]) {
     const cmd = await commandsWorld(locale), rw = await rewardsWorld(locale);
     const list = (await C.loadConfig(cmd.ctx)).data.custom;
-    const ctx = { locale, cmd, rw, key: (name) => `custom:${list.find((x) => x.name === name).id}`, partnerKey: "partner:p1" };
+    const wd = await wordsWorld(locale), wd0 = await wordsWorld(locale, { examples: false }), wdDown = world({ locale, followers: null }), md = await mediaWorld(locale);
+    const wlist = (await C.loadConfig(wd.ctx)).data.words;
+    const ctx = { locale, cmd, rw, wd, wd0, wdDown, md, wordKey: (word) => `word:${wlist.find((x) => x.words.includes(word)).id}`, key: (name) => `custom:${list.find((x) => x.name === name).id}`, partnerKey: "partner:p1" };
     for (const [name, fn] of Object.entries(SCENES)) {
       if (ONLY.length && !ONLY.includes(name)) continue;
       const s = await fn(ctx);
       for (const theme of ["light", "dark"]) {
-        const html = page({ locale, theme, tab: s.tab, blocks: s.blocks, tabs: TABS(locale), title: manifest.name[locale], lead: manifest.description[locale] });
+        const html = page({ locale, theme, tab: s.tab, blocks: s.blocks, tabs: s.tabs ?? TABS(locale), title: s.title ?? manifest.name[locale], lead: manifest.description[locale] });
         for (const width of [1280, 390]) {
           const context = await browser.newContext({ viewport: { width, height: width === 1280 ? 900 : 844 }, colorScheme: theme, deviceScaleFactor: 1, locale: locale === "fr" ? "fr-FR" : "en-US" });
           const p = await context.newPage();

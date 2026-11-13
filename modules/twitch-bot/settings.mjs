@@ -29,6 +29,7 @@ export function settingsOf(ctx) {
     cdGlobal: int(ctx.setting("cooldownGlobal"), 0, 3600, 20),
     cdUser: int(ctx.setting("cooldownUser"), 0, 3600, 60),
     maxPerWindow: int(ctx.setting("maxPer30s"), 1, 18, 12),
+    wordsPerMinute: int(ctx.setting("wordsPerMinute"), 1, 30, 6),   // the safety valve of the automatic answers (words), the whole bot together
     toleranceMin: int(ctx.setting("toleranceMinutes"), 1, 10, 10),
     // Récompenses (points de chaîne) : message de remboursement dans le chat, modérateurs désignés pour !stop, attente maximale d'un résultat, clés d'action ajoutées à la main
     rewardsNotice: ctx.setting("rewardsNotice") === true,

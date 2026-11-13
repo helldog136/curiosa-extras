@@ -990,10 +990,10 @@ test("page : créer une commande — la fenêtre est là, une erreur dit quoi fa
   const b = await A.panel(ctx, { query: { new: "1" } });
   const form = formsOf(b, "create")[0];
   assert.deepEqual([form.presentation, form.title, form.submitLabel, form.cancelHref, form.tab], ["dialog", fr.new_title, fr.new_btn, "?tab=use", undefined]);
-  assert.deepEqual(form.fields.map((f) => f.name), ["name", "text", "role", "aliases", "cdGlobal", "cdUser", "period", "repeatOn", "repeatEvery", "repeatLines", "repeatWhen", "timerOnly"]);
+  assert.deepEqual(form.fields.map((f) => f.name), ["name", "text", "role", "mediaVisual", "aliases", "cdGlobal", "cdUser", "period", "repeatOn", "repeatEvery", "repeatLines", "repeatWhen", "timerOnly"]);
   assert.equal(form.fields.find((f) => f.name === "role").options.length, 4);
   assert.deepEqual(shownFields(form).map((f) => f.name), ["name", "text", "role"], "trois champs visibles");
-  assert.deepEqual(foldedFields(form).map((f) => f.name), ["aliases", "cdGlobal", "cdUser", "period", "repeatOn", "repeatEvery", "repeatLines", "repeatWhen", "timerOnly"], "le reste sous « Plus d'options »");
+  assert.deepEqual(foldedFields(form).map((f) => f.name), ["mediaVisual", "aliases", "cdGlobal", "cdUser", "period", "repeatOn", "repeatEvery", "repeatLines", "repeatWhen", "timerOnly"], "le reste sous « Plus d'options »");
   assert.equal(foldedFields(form).some((f) => (f.value ?? "") !== "" && f.value !== "0" && f.value !== "off"), false, "rien de réglé : « Plus d'options » reste fermé");
   assert.match(form.fields.find((f) => f.name === "text").help, /\{utilisateur\} \{cible\}.*\{jeu\} \{titre\} \{uptime\} \{followers\} \{viewers\} \{prochain_stream\}/, "les morceaux disponibles sont dits dans l'aide du texte");
   const v = { name: "merch", aliases: "", text: "Boutique", role: "everyone", cdGlobal: "", cdUser: "" };
@@ -1084,7 +1084,7 @@ test("MCP : lister / créer / modifier ; JAMAIS activés par défaut ; lecture s
   assert.deepEqual(Object.keys(tools).sort(), manifest.mcp.map((a) => a.name).sort(), "tout ce qui est déclaré est implémenté, et inversement");
   assert.ok(!/secret|password|token|clientSecret/i.test(JSON.stringify(manifest.mcp)));
   assert.equal(manifest.mcp[1].input.properties.delayAllSeconds.maximum, 3600);
-  assert.deepEqual(manifest.mcp[1].input.required, ["name", "text"]);
+  assert.deepEqual(manifest.mcp[1].input.required, [], "name and text are checked in the code: a word needs words instead of a name");
 });
 
 test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et modifier appliquent les mêmes règles que l'administration (variables, collisions)", async () => {
@@ -1116,8 +1116,8 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.16.0", "0.6.7", "twitch", "multiple", 6]);
-  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.17.0", "0.6.7", "twitch", "multiple", 6]);
+  assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }, { service: "alerts.show", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
   assert.deepEqual(manifest.consumes.map((x) => x.topic).sort(), ["ha.result", "ha.state", "planning.slot", "social.link", "social.stat"]);

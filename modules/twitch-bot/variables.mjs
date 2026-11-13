@@ -14,10 +14,11 @@ export const RICH = ["chaine", "viewers", ...WITH_ARG];
 export const ARGS = Array.from({ length: 9 }, (_, i) => String(i + 1)).flatMap((n) => [n, `${n}:`]);
 export const PERSON = ["cible", "requete", "query", "compteur", ...ARGS];
 /** Variables propres à un type de commande (en plus des communes). */
-export const EXTRA = { custom: [...RICH, ...PERSON], builtin: [], partner: ["partenaire", "adresse"], network: ["reseau", "lien"], group: ["liste"], reward: ["recompense"], timer: RICH };
+export const EXTRA = { custom: [...RICH, ...PERSON], builtin: [], partner: ["partenaire", "adresse"], network: ["reseau", "lien"], group: ["liste"], reward: ["recompense"], timer: RICH, word: RICH };
 export const allowedFor = (kind) => [...(kind === "timer" ? COMMON.filter((x) => x !== "utilisateur") : COMMON), ...(EXTRA[kind] ?? [])];
 /** Ce que l'on montre à la personne (la liste complète est trop longue à lire). */
-export const shownFor = (kind) => (kind === "custom" ? ["utilisateur", "cible", "requete", "1", "2", "1:", "compteur", "jeu", "titre", "uptime", "followers", "viewers", "prochain_stream", "chaine", "heure", "date", "aleatoire", "calcul", "urlfetch"]
+export const shownFor = (kind) => (kind === "word" ? ["utilisateur", "jeu", "titre", "uptime", "followers", "viewers", "prochain_stream", "chaine", "heure", "date", "aleatoire", "calcul"]
+  : kind === "custom" ? ["utilisateur", "cible", "requete", "1", "2", "1:", "compteur", "jeu", "titre", "uptime", "followers", "viewers", "prochain_stream", "chaine", "heure", "date", "aleatoire", "calcul", "urlfetch"]
   : allowedFor(kind));
 export const MAX_TEMPLATE = 450;
 export const MAX_NEST = 3;

@@ -12,6 +12,8 @@ const RA = await import(`./rewardsAdmin.mjs${v}`);
 const A = await import(`./actions.mjs${v}`);
 const PER = await import(`./period.mjs${v}`);
 const CO = await import(`./collab.mjs${v}`);
+const W = await import(`./words.mjs${v}`);
+const MD = await import(`./media.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 const pad = (n) => String(n).padStart(2, "0");
@@ -31,6 +33,29 @@ const view = (c) => ({
   state: c.state, ...(c.why ? { reason: c.why } : {}), ...periodView(c.period), ...(c.reopen ? { reopensOn: `${c.reopen.y}-${String(c.reopen.m).padStart(2, "0")}-${String(c.reopen.d).padStart(2, "0")}` } : {}), delayAllSeconds: c.cdGlobal, delayPerPersonSeconds: c.cdUser,
   ...(c.kind === "partner" || c.kind === "network" ? { source: c.label } : {}),
 });
+/** What a command or a word also puts on screen, as an assistant reads it (names, never addresses). */
+const onStreamView = (m, lib) => (m ? { onStream: { picture_or_video: m.visual ? lib.items.find((x) => x.id === m.visual)?.name ?? null : null, sound: m.sound ? lib.items.find((x) => x.id === m.sound)?.name ?? null : null, seconds: m.seconds ?? null } } : {});
+const wordView = (w, lib) => ({
+  kind: "word", words: w.words, match: w.mode === "contains" ? "inside words" : "whole word", text: w.text || null, enabled: w.enabled, role: w.role, state: w.state,
+  delayAllSeconds: w.cdGlobal ?? W.DEFAULTS.cdGlobal, delayPerPersonSeconds: w.cdUser ?? W.DEFAULTS.cdUser, answersOneTimeOutOf: w.chance, alsoInCollaborationMode: w.collab, ...onStreamView(w.media, lib),
+});
+/** onStream / clearOnStream of the tools → the `media` field (names are turned into ids; an unknown name is explained). */
+async function mediaChange(a) {
+  if (a.clearOnStream === true) return { media: null };
+  if (a.onStreamPicture === undefined && a.onStreamSound === undefined && a.onStreamSeconds === undefined) return {};
+  const lib = await MD.library(a.ctx);
+  if (!lib.available) throw expose("The alerts overlay is not installed: nothing can be shown on stream.");
+  const o = { visual: a.onStreamPicture, sound: a.onStreamSound, seconds: a.onStreamSeconds }, find = (ref, kinds) => { const m = MD.pick(lib, ref); if (!m || !kinds.includes(m.kind)) throw expose(`No ${kinds.includes("sound") ? "sound" : "picture or video"} named "${ref}" in the media library. Available: ${lib.items.filter((x) => kinds.includes(x.kind)).map((x) => x.name).join(", ") || "none"}.`); return m.id; };
+  return { media: { visual: o.visual ? find(o.visual, ["picture", "video"]) : "", sound: o.sound ? find(o.sound, ["sound"]) : "", seconds: o.seconds ?? "" } };
+}
+const wordChanges = (a) => {
+  const f = {};
+  if (a.words !== undefined) f.words = a.words;
+  if (a.match !== undefined) f.mode = a.match === "inside_words" ? "contains" : "whole";
+  for (const [k, to] of [["text", "text"], ["role", "role"], ["enabled", "enabled"], ["delayAllSeconds", "cdGlobal"], ["delayPerPersonSeconds", "cdUser"], ["alsoInCollaborationMode", "collab"]]) if (a[k] !== undefined) f[to] = a[k];
+  if (a.answerOneTimeOutOf !== undefined) f.chance = a.answerOneTimeOutOf;
+  return f;
+};
 const changes = (a) => {
   const f = {};
   if (a.newName !== undefined) f.name = a.newName;
@@ -130,21 +155,38 @@ export default {
   },
   async bot_commands_list(ctx, args) {
     const info = await context(ctx, { declare: false });
+    const lib = await info.library();
     const list = info.list.filter((c) => !args.kind || c.kind === args.kind);
-    return { prefix: info.s.prefix, muted: await st.isMuted(ctx), collaborationMode: collabView(await CO.current(ctx)), commands: list.map(view) };
+    const words = !args.kind || args.kind === "word" ? info.words.map((w) => wordView(w, lib)) : [];
+    return { prefix: info.s.prefix, muted: await st.isMuted(ctx), collaborationMode: collabView(await CO.current(ctx)), commands: (args.kind === "word" ? [] : list.map((c) => ({ ...view(c), ...onStreamView(c.media, lib) }))).concat(words), onStreamLibrary: lib.available ? lib.items.map((m) => ({ name: m.name, kind: m.kind })) : null };
   },
   async bot_command_create(ctx, args) {
     const info = await context(ctx, { declare: false });
-    const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}), ...repeatChanges(args), ...periodOf(ctx, args) }, info.env);
+    const media = await mediaChange({ ...args, ctx });
+    if (args.kind === "word") {
+      const r = await W.saveWord(ctx, {}, { words: args.words, text: args.text ?? "", enabled: args.enabled !== false, ...wordChanges({ ...args, text: undefined, words: undefined, enabled: undefined }), ...media }, info.env);
+      if (r.ok === false) throw expose(saveError(ctx, r));
+      return { created: true, words: W.parseWords(args.words).words };
+    }
+    if (!args.name) throw expose("Give a name (without the prefix) for a command, or kind: \"word\" with words.");
+    const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}), ...repeatChanges(args), ...periodOf(ctx, args), ...media }, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
     return { created: true, name: String(args.name).replace(info.s.prefix, "").toLowerCase() };
   },
   async bot_command_update(ctx, args) {
     const info = await context(ctx, { declare: false });
     const word = String(args.name).toLowerCase().replace(info.s.prefix, "");
-    const c = info.list.find((x) => x.name === word || x.aliases.includes(word));
-    if (!c) throw expose(`no command named "${word}"`);
-    const f = { ...changes(args), ...periodOf(ctx, args) };
+    const c = args.kind === "word" ? null : info.list.find((x) => x.name === word || x.aliases.includes(word));
+    if (!c) {
+      const w = args.kind === "command" ? null : info.words.find((x) => x.words.some((y) => W.fold(y) === W.fold(args.name)));
+      if (!w) throw expose(`no command or word named "${word}"`);
+      const f = { ...wordChanges(args), ...(await mediaChange({ ...args, ctx })) };
+      if (!Object.keys(f).length) throw expose("nothing to change");
+      const r = await W.saveWord(ctx, { id: w.id }, f, info.env);
+      if (r.ok === false) throw expose(saveError(ctx, r));
+      return { updated: true, words: f.words ? W.parseWords(f.words).words : w.words };
+    }
+    const f = { ...changes(args), ...periodOf(ctx, args), ...(await mediaChange({ ...args, ctx })) };
     if (!Object.keys(f).length) throw expose("nothing to change");
     const r = c.kind === "partner" || c.kind === "network" ? await saveSourced(ctx, c.kind, c.id, f, info.env) : await saveCommand(ctx, { kind: c.kind, id: c.id }, f, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));

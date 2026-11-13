@@ -181,12 +181,12 @@ test("fenêtre d'une commande : 3 champs visibles (Nom, Ce que le bot répond, Q
   const form = formOfBlocks(b, "create");
   assert.deepEqual([form.presentation, form.title, form.submitLabel, form.cancelHref], ["dialog", fr.new_title, "Créer la commande", "?tab=use"]);
   assert.deepEqual(shownFields(form).map((f) => f.name), ["name", "text", "role"]);
-  assert.deepEqual(foldedFields(form).map((f) => f.name).sort(), ["aliases", "cdGlobal", "cdUser", "period", "repeatEvery", "repeatLines", "repeatOn", "repeatWhen", "timerOnly"]);
+  assert.deepEqual(foldedFields(form).map((f) => f.name).sort(), ["aliases", "cdGlobal", "cdUser", "mediaVisual", "period", "repeatEvery", "repeatLines", "repeatOn", "repeatWhen", "timerOnly"]);
   assert.deepEqual(shownFields(form).map((f) => f.label), ["Nom", "Ce que le bot répond", "Qui peut l'utiliser"]);
   assert.deepEqual([form.fields.find((f) => f.name === "role").kind, form.fields.find((f) => f.name === "role").options.map((o) => o.label)], ["segmented", ["Tout le monde", "Personnes abonnées", "Modération", "Vous seulement"]], "2 à 4 choix : des boutons côte à côte (R19)");
   assert.equal(form.fields.find((f) => f.name === "text").example, "Rejoignez-nous sur Discord, {utilisateur}.");
   assert.equal(b.some((x) => x.type === "adminForm" && x.action === "create") && (await A.panel(owner.ctx, { query: {} })).some((x) => x.action === "create"), false, "sans « Nouvelle commande », pas de fenêtre");
-  assert.deepEqual(b.filter((x) => !x.tab && x.type === "links").map((x) => x.items), [[{ label: fr.new_open, href: "?tab=use&new=1", presentation: "dialog" }]], "le bouton « Nouvelle commande » ouvre la fenêtre");
+  assert.deepEqual(b.filter((x) => !x.tab && x.type === "links").map((x) => x.items), [[{ label: fr.new_open, href: "?tab=use&new=1", presentation: "dialog" }, { label: fr.word_new_open, href: "?tab=use&new=word", presentation: "dialog" }, { label: fr.word_ex_btn, href: "?tab=use&new=word&example=1", presentation: "dialog" }]], "le bouton « Nouvelle commande » ouvre la fenêtre");
   const key = `custom:${(await C.loadConfig(owner.ctx)).data.custom.find((c) => c.name === "alive").id}`;
   const e = await A.panel(owner.ctx, { query: { edit: key } });
   const save = formOfBlocks(e, "save");
@@ -441,7 +441,7 @@ test("le script de la page : sert par la route du module, sans réseau ni eval, 
   assert.match(boot, /\/m\/bot\/kit\?v=[0-9a-f]{10}/);
   assert.match(boot, /onload="/);
   assert.ok(!/<script/i.test(boot), "le cœur n'exécute pas les balises script d'un bloc : une image démarre le script");
-  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.16.0");
+  assert.ok(Object.keys(manifest).includes("version") && manifest.version === "1.17.0");
 });
 
 /* ───────────── "Started by": the timer and the chat | the timer only ───────────── */
