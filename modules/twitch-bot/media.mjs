@@ -2,44 +2,59 @@
 // by id and asks the overlay to show it. Without the alerts overlay, the choice is hidden and the command only answers in the chat. Nothing here is mandatory.
 export const SERVICE = "alerts.show";
 export const SECONDS = { min: 2, max: 60 };
+/** Several pictures or videos for one command or word: at most 12; one is picked each time, at random (never the same twice in a row) or in turn (the overlay does the picking and keeps the turn). */
+export const VISUALS_MAX = 12;
 
 /** The library as { available, items: [{ id, name, kind: picture | video | sound, builtin? }] }; `available: false` when no alerts overlay answers. Never throws. */
 export async function library(ctx) {
   try {
     const r = await ctx.api.services.call(SERVICE, "list", {});
     const items = r?.ok && Array.isArray(r.value?.items) ? r.value.items.filter((m) => m && typeof m.id === "string" && typeof m.name === "string").slice(0, 300) : null;
-    return items ? { available: true, items } : { available: false, items: [] };
+    if (!items) return { available: false, items: [] };
+    // version 2 of the service keeps files sent in OUR window (gallery) and gives the address of each file
+    let v2 = false;
+    try { v2 = (await ctx.api.services.providers(SERVICE)).some((p) => p.version >= 2); } catch { v2 = false; }
+    if (!v2) return { available: true, items };
+    let urls = new Map();
+    try { const f = await ctx.api.services.call(SERVICE, "files", {}); if (f?.ok) urls = new Map((f.value?.items ?? []).filter((x) => typeof x?.id === "string" && typeof x?.url === "string").map((x) => [x.id, x.url])); } catch { urls = new Map(); }
+    return { available: true, gallery: true, items: items.map((m) => (urls.has(m.id) ? { ...m, url: urls.get(m.id) } : m)) };
   } catch { return { available: false, items: [] }; }
 }
 
 /** A saved choice, read with care: { visual?, sound?, seconds? } or null. */
 export function readMedia(m) {
   if (!m || typeof m !== "object" || Array.isArray(m)) return null;
-  const visual = typeof m.visual === "string" && m.visual ? m.visual.slice(0, 80) : "", sound = typeof m.sound === "string" && m.sound ? m.sound.slice(0, 80) : "";
+  const many = Array.isArray(m.visuals) ? [...new Set(m.visuals.filter((x) => typeof x === "string" && x).map((x) => x.slice(0, 80)))].slice(0, VISUALS_MAX) : [];
+  const visual = many.length ? many[0] : typeof m.visual === "string" && m.visual ? m.visual.slice(0, 80) : "", sound = typeof m.sound === "string" && m.sound ? m.sound.slice(0, 80) : "";
   const seconds = Number.isInteger(m.seconds) && m.seconds >= SECONDS.min && m.seconds <= SECONDS.max ? m.seconds : null;
-  return visual || sound ? { ...(visual ? { visual } : {}), ...(sound ? { sound } : {}), ...(seconds ? { seconds } : {}) } : null;
+  return visual || sound ? { ...(visual ? { visual } : {}), ...(many.length >= 2 ? { visuals: many, pick: m.pick === "rotate" ? "rotate" : "random" } : {}), ...(sound ? { sound } : {}), ...(seconds ? { seconds } : {}) } : null;
 }
 
 /** Checks the choice of a form or a tool against the library. Rends { ok: true, value } (value null = nothing) or { ok: false, code, field? }. */
 export function checkMedia(raw, lib) {
   if (raw === null || raw === undefined) return { ok: true, value: null };
-  const visual = String(raw.visual ?? "").trim(), sound = String(raw.sound ?? "").trim();
+  const list = Array.isArray(raw.visuals);
+  const ids = list ? [...new Set(raw.visuals.map((x) => String(x ?? "").trim()).filter(Boolean))] : [];
+  const visual = list ? (ids[0] ?? "") : String(raw.visual ?? "").trim(), sound = String(raw.sound ?? "").trim();
+  if (ids.length > VISUALS_MAX) return { ok: false, code: "media_limit", field: "mediaFiles" };
   const sec = raw.seconds === undefined || raw.seconds === null || String(raw.seconds).trim() === "" ? null : Number(raw.seconds);
   if (!visual && !sound) return { ok: true, value: null };
-  if (!lib.available) return { ok: false, code: "media_absent", field: visual ? "mediaVisual" : "mediaSound" };
+  const vf = list ? "mediaFiles" : "mediaVisual";
+  if (!lib.available) return { ok: false, code: "media_absent", field: visual ? vf : "mediaSound" };
   const find = (id) => lib.items.find((m) => m.id === id);
-  if (visual && !["picture", "video"].includes(find(visual)?.kind)) return { ok: false, code: "media_missing", field: "mediaVisual" };
+  for (const id of list ? ids : visual ? [visual] : []) if (!["picture", "video"].includes(find(id)?.kind)) return { ok: false, code: "media_missing", field: vf };
   if (sound && find(sound)?.kind !== "sound") return { ok: false, code: "media_missing", field: "mediaSound" };
   if (sec !== null && !(Number.isInteger(sec) && sec >= SECONDS.min && sec <= SECONDS.max)) return { ok: false, code: "media_seconds", field: "mediaSeconds" };
-  return { ok: true, value: { ...(visual ? { visual } : {}), ...(sound ? { sound } : {}), ...(sec !== null ? { seconds: sec } : {}) } };
+  const rule = ids.length >= 2 ? { visuals: ids, pick: raw.pick === "rotate" ? "rotate" : "random" } : {};
+  return { ok: true, value: { ...(visual ? { visual } : {}), ...rule, ...(sound ? { sound } : {}), ...(sec !== null ? { seconds: sec } : {}) } };
 }
 
 /** Asks the overlay to show the media. Rends { ok, state } or { ok: false, code }. Never throws: the chat answer never depends on the screen. */
-export async function showOnStream(ctx, media) {
+export async function showOnStream(ctx, media, { key = "" } = {}) {
   const m = readMedia(media);
   if (!m) return { ok: false, code: "none" };
   try {
-    const r = await ctx.api.services.call(SERVICE, "show", m);
+    const r = await ctx.api.services.call(SERVICE, "show", m.visuals ? { ...m, key: String(key).slice(0, 80) } : m);
     return r?.ok && r.value?.ok ? { ok: true, state: r.value.state } : { ok: false, code: r?.value?.code ?? r?.reason ?? "unavailable" };
   } catch { return { ok: false, code: "unavailable" }; }
 }
@@ -49,7 +64,7 @@ export function nameOf(media, lib) {
   const m = readMedia(media);
   if (!m) return "";
   const one = (id) => (id ? lib.items.find((x) => x.id === id)?.name ?? "?" : "");
-  return [one(m.visual), one(m.sound)].filter(Boolean).join(" + ");
+  return [one(m.visual) + (m.visuals ? ` +${m.visuals.length - 1}` : ""), one(m.sound)].filter((x) => x && x !== "+0").join(" + ");
 }
 
 const fold = (x) => String(x ?? "").normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().replace(/\s+/g, " ").trim();

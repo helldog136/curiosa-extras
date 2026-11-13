@@ -410,7 +410,11 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
     // The media library for the other modules (the Twitch bot): `list` gives the files by name, `show` puts one on screen through the same queue as the alerts.
     "alerts.show": {
       list: async (ctx) => ({ items: (await md.list(ctx)).map(({ id, name, kind, builtin }) => ({ id, name, kind, ...(builtin ? { builtin: true } : {}) })) }),
+      // version 2: the address of each uploaded picture or video (for a gallery that picks "from the site"); `list` still gives no address
+      files: async (ctx) => ({ items: (await md.list(ctx, { tones: false })).filter((m) => m.url && m.kind !== "sound" && !m.id.startsWith("video:")).map(({ id, name, kind, url }) => ({ id, name, kind, url })) }),
       show: (ctx, input) => md.show(ctx, input, (a) => emit(ctx.instance.key, a)),
+      // version 2: files just sent in the window of another module are kept HERE and named (listed in `callerRights`: the person is carried, core 0.14.0)
+      add: (ctx, input) => md.addMany(ctx, input?.items),
     },
     // What each Twitch event type shows (picture, GIF, video, sound), read and changed by Twitch activity. `set` carries the person (callerRights) so the files are kept HERE.
     "alerts.reaction": {

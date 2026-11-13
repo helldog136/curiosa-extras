@@ -4,6 +4,30 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.81.0 — 2026-11-13
+
+*En bref : une commande ou un mot déclencheur du Bot Twitch peut montrer plusieurs images, GIF ou vidéos à l'écran : une est choisie à chaque fois, au hasard ou à tour de rôle.*
+
+*In short: a Twitch bot command or word trigger can show several pictures, GIFs or videos on screen: one is picked each time, at random or in turn.*
+
+### Nouveautés
+
+- **Plusieurs fichiers par commande.** Dans la fenêtre d'une commande ou d'un mot, sous « Plus d'options », la même grille que pour les réactions d'Activité Twitch : envoyez plusieurs images, GIF ou vidéos d'un coup (jusqu'à 12), ou prenez-les dans la bibliothèque d'Overlay alertes.
+- **Au hasard sans jamais deux fois de suite, ou à tour de rôle.** Un seul choix, « Ordre d'affichage ». Avec un seul fichier, rien ne change.
+- **Les fichiers envoyés vont dans la bibliothèque d'Overlay alertes**, qui les garde et leur donne un nom (« Image 3 », « Clip 4 »). La bibliothèque accepte aussi des vidéos.
+- **Votre assistant IA** peut donner plusieurs noms à une commande (`onStreamPictures`) ; les outils d'écriture restent éteints par défaut.
+- **Several files per command.** In the window of a command or a word, under "More options", the same grid as for the Twitch activity reactions: send several pictures, GIFs or videos at once (up to 12) or take them from the Alerts overlay library.
+- **At random without ever repeating twice in a row, or in turn.** One choice, "Order". With a single file nothing changes.
+- **Files you send go into the Alerts overlay library**, which keeps and names them ("Picture 3", "Clip 4"). The library also accepts videos.
+- **Your AI assistant** can give several names to a command (`onStreamPictures`); the write tools stay off by default.
+
+### Pour les développeurs
+
+- Bot Twitch 1.19.0 (`minCore` 0.14.0) et Overlay alertes 1.10.0. Service `alerts.show` version 2 : `add` (dans `callerRights` : l'overlay garde et nomme les fichiers envoyés dans la fenêtre du bot), `files` (adresse des fichiers de la bibliothèque, en lecture seule ; `list` ne donne toujours aucune adresse), `show` accepte `visuals` + `pick` + `key`. L'overlay choisit et garde le tour par commande dans son état.
+- Une liste d'un fichier est le choix unique d'avant, enregistré et envoyé à l'identique. Avec un overlay plus ancien que 1.10.0, la fenêtre garde l'ancien choix simple.
+- Pas fait : plusieurs sons par commande ; retirer une commande ne libère pas les fichiers de la bibliothèque (partagée).
+- Test : `bot-media-lists`.
+
 ## 1.80.0 — 2026-11-13
 
 *En bref : mettre un GIF sur un follow se fait maintenant depuis Activité Twitch, onglet Types : « Modifier », glisser des fichiers, « Enregistrer la réaction ». Plusieurs images, GIF ou vidéos par type : une est choisie au hasard à chaque fois.*

@@ -725,5 +725,11 @@
   "connect_fallback": "Open the Twitch connector",
   "connect_tip": "At Twitch, sign in with your channel's account, then click “Authorize”. You come back here.",
   "connect_bot_tip": "At Twitch, sign in with the bot's account (not yours), then click “Authorize”.",
-  "rw_connect_tip": "At Twitch, click “Authorize”. The chat keeps working meanwhile."
+  "rw_connect_tip": "At Twitch, click “Authorize”. The chat keeps working meanwhile.",
+  "f_media_pick": "Order",
+  "f_media_pick_help": "At random, never twice in a row.",
+  "media_pick_random": "At random",
+  "media_pick_rotate": "In turn",
+  "err_media_limit": "At most 12 files. Remove one, for example the last.",
+  "reason_media_limit": "Too many files for one command."
 }

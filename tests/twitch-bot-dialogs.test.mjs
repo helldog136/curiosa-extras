@@ -77,8 +77,8 @@ test("les listes sont des tableaux du cœur : recherche dès le départ, même c
 });
 
 test("version et compatibilité : 1.12.0 ; le cœur 0.6.7 est nécessaire (un bouton « Nouvelle … » en fenêtre y est un lien `?…`)", () => {
-  assert.equal(manifest.version, "1.18.0");
-  assert.equal(manifest.minCore, "0.6.7");
+  assert.equal(manifest.version, "1.19.0");
+  assert.equal(manifest.minCore, "0.14.0");
   assert.equal(manifest.dataVersion, 6, "aucune migration : mêmes données, mêmes réglages");
   const keys = manifest.settings.map((s) => s.key);
   assert.ok(["prefix", "onlyWhenLive", "timezone", "chatManage"].every((k) => keys.includes(k)), "mêmes réglages");
