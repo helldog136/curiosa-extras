@@ -487,6 +487,7 @@ export const REMOTE_JS = String.raw`(function () {
     var lab = h("span", "tgl", tg.label), st = h("span", "tgs", tg.text), trk = h("span", "trk"); trk.setAttribute("aria-hidden", "true"); trk.appendChild(h("i", "knob"));
     b.appendChild(lab); b.appendChild(st); b.appendChild(trk);
     var hid = "tgh" + (++seq), eid = "tge" + seq, ids = [];
+    if (tg.card) { lab.id = "tgt" + seq; wrap.className += " tgcard " + (tg.on ? "on" : "off") + (tg.calm ? " calm" : ""); wrap.setAttribute("role", "group"); wrap.setAttribute("aria-labelledby", lab.id); }   // the card is a group named by its title
     if (tg.hint) ids.push(hid); if (err) { ids.push(eid); b.setAttribute("aria-invalid", "true"); }
     if (ids.length) b.setAttribute("aria-describedby", ids.join(" "));
     b.addEventListener("click", function () {
@@ -499,16 +500,18 @@ export const REMOTE_JS = String.raw`(function () {
     wrap.appendChild(b);
     if (tg.hint) { var hn = h("p", "hint", tg.hint); hn.id = hid; wrap.appendChild(hn); }
     var groups = tg.choices || [], shown = groups.filter(function (g) { return !g.folded; }), tucked = groups.filter(function (g) { return g.folded; });
-    shown.forEach(function (g, gi) { wrap.appendChild(choiceEl(t, g, key, gi === 0 ? tg.more : "")); });
-    if (!shown.length && tg.more) wrap.appendChild(helpEl(tg.more, key));
+    var host = tg.card ? h("div", "tgin") : wrap;   // in a card the choices sit inside it, under the switch
+    shown.forEach(function (g, gi) { host.appendChild(choiceEl(t, g, key, gi === 0 ? tg.more : "")); });
+    if (!shown.length && tg.more) host.appendChild(helpEl(tg.more, key));
     if (tucked.length) {   // the rare choices: one fold that remembers its state across redraws
       var fk = key + ":more", mo = h("details", "mo"); if (ui.fold && ui.fold[fk]) mo.open = true;
       mo.addEventListener("toggle", function () { ui.fold = ui.fold || {}; ui.fold[fk] = mo.open; });
       mo.appendChild(h("summary", "", tg.foldLabel || T.more));
       tucked.forEach(function (g) { mo.appendChild(choiceEl(t, g, key, "")); });
-      wrap.appendChild(mo);
+      host.appendChild(mo);
     }
-    var er = h("p", "err", err || ""); er.id = eid; er.hidden = !err; er.setAttribute("role", "alert"); wrap.appendChild(er);
+    var er = h("p", "err", err || ""); er.id = eid; er.hidden = !err; er.setAttribute("role", "alert"); host.appendChild(er);
+    if (host !== wrap) wrap.appendChild(host);
     return wrap;
   }
   /* Segmented buttons under a switch (2 to 5 options, one selected): a tap sends the group's action with its value, the state line above says the result. */
@@ -527,7 +530,7 @@ export const REMOTE_JS = String.raw`(function () {
     fs.appendChild(hd); if (hb) fs.appendChild(hb.lastChild);
     var row = h("div", "sgs"); row.setAttribute("data-n", String(g.options.length));
     g.options.forEach(function (o) {
-      var ob = h("button", "sgb", o.label); ob.type = "button"; ob.setAttribute("role", "radio"); ob.setAttribute("aria-checked", o.on ? "true" : "false"); ob.setAttribute("data-fk", "ch:" + g.id + ":" + g.name + ":" + o.value);
+      var ob = h("button", "sgb", o.label); ob.type = "button"; ob.setAttribute("role", "radio"); ob.setAttribute("aria-checked", o.on ? "true" : "false"); ob.setAttribute("data-fk", "ch:" + g.id + ":" + g.name + ":" + o.value); if (o.title) ob.title = o.title;
       var busy = false;   // not disabled while it works: a disabled button loses the keyboard focus, and the choice must keep it when the panel is drawn again
       ob.addEventListener("click", function () {
         if (busy || o.on) return;

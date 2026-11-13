@@ -15,13 +15,14 @@ for (const [name, width, height, dock] of [["phone-390", 390, 900, false], ["doc
   await page.waitForSelector(".tab"); await page.click('[data-tab^="p:id-bot"]'); await page.waitForSelector(".tg");
   const shot = (n) => page.screenshot({ path: path.join(OUT, `${n}-${name}-${scheme}-${locale}.png`) });
   const card = '.tg[data-in$=":tg1"]';
-  await shot("1-off");
+  await shot("1-off-default-prepared");
   await page.locator(".sgb").nth(3).click(); await page.waitForTimeout(700);
+  await shot("2-off-one-in-5-prepared");
   await page.locator(card).click(); await page.waitForSelector(card + '[aria-checked="true"]'); await page.waitForTimeout(500);
-  await shot("2-on-one-in-5");
+  await shot("3-on-one-in-5-active");
   await page.locator(".sgb").nth(0).click(); await page.waitForTimeout(700);
   await page.locator(".tgw", { has: page.locator(card) }).locator(".qm").click(); await page.locator(".mo summary").click(); await page.waitForTimeout(300);
-  await shot("3-on-paused-all-open");
+  await shot("4-on-paused-all-open");
   await ctx.close(); await srv.close();
 }
 await closeBrowser();

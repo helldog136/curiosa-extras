@@ -224,7 +224,10 @@ export function sanitizePanel(raw) {
     // Optional, since 1.9.0: `calm` (the "off" state is the normal one: drawn neutral, not as a warning), `more` (a longer explanation behind a "What does it do?" fold),
     // and `choices`: groups of segmented buttons under the switch. Each group sends its own action with { [name]: value }; `folded` groups wait under one "more options" fold (`foldLabel`).
     ...(b.calm === true ? { calm: true } : {}), ...(clean(b.more, 400) ? { more: clean(b.more, 400) } : {}), ...(clean(b.foldLabel, 30) ? { foldLabel: clean(b.foldLabel, 30) } : {}),
-    ...(sanitizeChoices(b.choices).length ? { choices: sanitizeChoices(b.choices) } : {}),   // a switch without these fields comes out exactly as before 1.9.0
+    ...(sanitizeChoices(b.choices, b.card === true ? 40 : 30).length ? { choices: sanitizeChoices(b.choices, b.card === true ? 40 : 30) } : {}),   // a switch without these fields comes out exactly as before 1.9.0
+    // Optional, since 1.11.0: `card` draws the choices and their fold INSIDE one bordered card with the switch (the choices belong to the switch, they are not a section of their own):
+    // the chosen option is drawn "prepared" (outlined, with a check) while the switch is off and filled while it is on; group labels may then be 40 characters (they state a condition).
+    ...(b.card === true ? { card: true } : {}),
   }));
   const forms = (Array.isArray(raw.forms) ? raw.forms : []).slice(0, LIMITS.forms).map(sanitizeForm).filter(Boolean);
   // `badge`: a few words under the tab name (for example "Paused"); `alert` makes the tab stand out; `note`: one small line at the bottom of the panel.
@@ -232,10 +235,11 @@ export function sanitizePanel(raw) {
 }
 
 /** Groups of segmented choices under a switch: a few options each, one selected, the action to send. Everything else is dropped. */
-export function sanitizeChoices(raw) {
-  return (Array.isArray(raw) ? raw : []).filter((g) => isObj(g) && ID_RE.test(String(g.id ?? "")) && /^[a-z][a-z0-9_]{0,19}$/.test(String(g.name ?? "")) && clean(g.label, 30)).map((g) => ({
-    id: String(g.id), name: String(g.name), label: clean(g.label, 30), hint: clean(g.hint, 80), folded: g.folded === true,
-    options: (Array.isArray(g.options) ? g.options : []).filter((o) => isObj(o) && (typeof o.value === "string" || typeof o.value === "number") && clean(o.label, 14)).slice(0, LIMITS.choiceOptions).map((o) => ({ value: clean(String(o.value), 20), label: clean(o.label, 14), on: o.on === true })),
+export function sanitizeChoices(raw, labelMax = 30) {
+  return (Array.isArray(raw) ? raw : []).filter((g) => isObj(g) && ID_RE.test(String(g.id ?? "")) && /^[a-z][a-z0-9_]{0,19}$/.test(String(g.name ?? "")) && clean(g.label, labelMax)).map((g) => ({
+    id: String(g.id), name: String(g.name), label: clean(g.label, labelMax), hint: clean(g.hint, 80), folded: g.folded === true,
+    // `title` (since 1.11.0): the tooltip of one option, where the short label is not enough ("Timers: 1 time in 3").
+    options: (Array.isArray(g.options) ? g.options : []).filter((o) => isObj(o) && (typeof o.value === "string" || typeof o.value === "number") && clean(o.label, 14)).slice(0, LIMITS.choiceOptions).map((o) => ({ value: clean(String(o.value), 20), label: clean(o.label, 14), on: o.on === true, ...(clean(o.title, 60) ? { title: clean(o.title, 60) } : {}) })),
   })).filter((g) => g.options.length >= 2).slice(0, LIMITS.choiceGroups);
 }
 
