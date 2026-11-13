@@ -279,7 +279,7 @@ test("tools for assistants: read the voice and moderation, change them (bounded)
 });
 
 test("manifest: 1.8.0, optional journal, video settings (six, own tab), viewers tab, FR and EN texts in parity", () => {
-  assert.equal(manifest.version, "1.8.0");
+  assert.equal(manifest.version, "1.8.1");
   assert.deepEqual(manifest.requires, [{ service: "twitch.journal", optional: true }]);
   assert.equal(manifest.settings.filter((s) => s.type === "video" && s.tab === "media").length, 6);
   assert.deepEqual(manifest.tabs.map((t) => t.id), ["twitch", "viewers", "media"]);

@@ -31,7 +31,7 @@ afterEach(() => {});
 
 test("manifeste : version mineure, consomme live.event (schéma), permission topics, réglage « texte des messages » éteint par défaut, parité fr/en", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.equal(manifest.version, "1.8.0");
+  assert.equal(manifest.version, "1.8.1");
   assert.deepEqual(manifest.consumes.map((c) => c.topic), ["live.event", "twitch.event"]);
   assert.ok(manifest.permissions.includes("topics"));
   assert.deepEqual((manifest.requires ?? []).filter((r) => !r.optional), [], "aucune dépendance forte");

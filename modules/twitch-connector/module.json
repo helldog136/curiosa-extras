@@ -6,7 +6,9 @@
     "en": "Twitch connector",
     "fr": "Connecteur Twitch"
   },
-  "version": "1.5.0",
+  "version": "1.5.1",
+  "adminMenu": "Réseaux.Twitch",
+  "adminMenuOrder": 10,
   "platform": "twitch",
   "description": {
     "en": "Links your site to Twitch once for everything that touches Twitch. Guided setup in 5 minutes, with a “Copy” button.",

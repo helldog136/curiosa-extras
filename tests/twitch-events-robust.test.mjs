@@ -192,7 +192,7 @@ async function signed(ctx, id) {
 }
 
 test("manifest: permission mail, two settings (one advanced), one-minute watch, FR and EN texts", async () => {
-  assert.equal(manifest.version, "1.3.0");
+  assert.equal(manifest.version, "1.3.1");
   assert.ok(manifest.permissions.includes("mail"));
   assert.deepEqual(manifest.settings.map((s) => s.key), ["retentionDays", "channel", "healthMail", "silentHours"]);
   assert.equal(manifest.settings.find((s) => s.key === "silentHours").advanced, true);
