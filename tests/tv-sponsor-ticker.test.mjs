@@ -12,8 +12,8 @@ const en = JSON.parse(fs.readFileSync(path.join(ROOT, "modules/sponsor-ticker/lo
 const tk = (await import("../modules/sponsor-ticker/index.mjs")).default;
 
 const CARDS = {
-  rich: [{ id: "a", name: "Etoile Nord Outdoor and Camping Supplies", text: "A long sentence about what the sponsor does and why their discount is worth a look, written to need two lines at least.", url: "https://etoile-nord.example/promo", code: "LUNEDOUCE", publishedAt: new Date().toISOString() }],
-  short: [{ id: "b", name: "Lune Douce", url: "https://lune-douce.example" }],
+  rich: [{ id: "a", name: "Etoile Nord Outdoor and Camping Supplies", text: "A long sentence about what the sponsor does and why their discount is worth a look, written to need two lines at least.", url: "https://etoile-nord.example/promo", page: "https://example.test/sponsors/etoile-nord", code: "LUNEDOUCE", publishedAt: new Date().toISOString() }],
+  short: [{ id: "b", name: "Lune Douce", url: "https://lune-douce.example", page: "https://example.test/sponsors/lune-douce" }],
 };
 const ctx = (cards) => fakeCtx({ key: "ticker", name: "Sponsors", locale: "en", messages: en, topics: { "sponsor.card": cards, "core.entry": [] } });
 const render = (cards) => async (q) => {
