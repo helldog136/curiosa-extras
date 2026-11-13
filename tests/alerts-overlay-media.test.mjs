@@ -25,9 +25,9 @@ function world(settings = {}, uploads = [{ url: GIF, by: "u1" }, { url: WAV, by:
 const add = (w, name, kind, file) => w.A.addMedia(w.ctx, { name, kind, file });
 
 test("manifest: 1.8.0, offers alerts.show (read-only list), tab renamed Media, FR/EN parity of the new texts", () => {
-  assert.equal(manifest.version, "1.9.0");
+  assert.equal(manifest.version, "1.10.0");
   const o = manifest.offers.find((x) => x.service === "alerts.show");
-  assert.deepEqual([o.version, o.each, o.readOnly], [1, true, ["list"]]);
+  assert.deepEqual([o.version, o.each, o.readOnly], [2, true, ["list", "files"]]);
   assert.deepEqual(manifest.tabs.find((t) => t.id === "media").label, { en: "Media", fr: "Médias" });
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
   for (const k of Object.keys(en).filter((k) => k.startsWith("md_"))) assert.ok(fr[k], k);

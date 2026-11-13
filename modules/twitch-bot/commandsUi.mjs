@@ -117,8 +117,15 @@ export function mediaFields(ctx, lib, m) {
     const own = lib.items.filter((x) => kinds.includes(x.kind));
     return [{ value: "", label: t("media_nothing") }, ...own.map((x) => ({ value: x.id, label: x.name })), ...(id && !own.some((x) => x.id === id) ? [{ value: id, label: t("media_gone") }] : [])];
   };
+  // overlay version 2: one gallery (pictures, GIFs, videos; several at once; up to 12) and the order; the same widget as the reaction window of Twitch activity
+  const files = lib.gallery ? [
+    { name: "mediaFiles", label: t("f_media_visual"), kind: "gallery", accept: ["image", "video"], max: MD.VISUALS_MAX, help: t("f_media_help"), folded: true,
+      value: JSON.stringify((m?.visuals ?? (m?.visual ? [m.visual] : [])).map((id) => lib.items.find((x) => x.id === id)?.url).filter(Boolean).map((src) => ({ src }))),
+      library: lib.items.filter((x) => x.url && ["picture", "video"].includes(x.kind)).slice(0, 500).map((x) => ({ label: x.name, value: x.url, kind: x.kind === "video" ? "video" : "image" })) },
+    { name: "mediaPick", label: t("f_media_pick"), kind: "segmented", value: m?.pick === "rotate" ? "rotate" : "random", help: t("f_media_pick_help"), options: [{ value: "random", label: t("media_pick_random") }, { value: "rotate", label: t("media_pick_rotate") }], folded: true },
+  ] : [{ name: "mediaVisual", label: t("f_media_visual"), kind: "select", value: m?.visual ?? "", options: pick(["picture", "video"], m?.visual), help: t("f_media_help"), folded: true }];
   return [
-    { name: "mediaVisual", label: t("f_media_visual"), kind: "select", value: m?.visual ?? "", options: pick(["picture", "video"], m?.visual), help: t("f_media_help"), folded: true },
+    ...files,
     { name: "mediaSound", label: t("f_media_sound"), kind: "select", value: m?.sound ?? "", options: pick(["sound"], m?.sound), folded: true },
     { name: "mediaSeconds", label: t("f_media_seconds"), kind: "number", value: m?.seconds ?? "", placeholder: "6", min: MD.SECONDS.min, max: MD.SECONDS.max, step: 1, unit: t("unit_seconds"), help: t("f_media_seconds_help"), folded: true },
   ];

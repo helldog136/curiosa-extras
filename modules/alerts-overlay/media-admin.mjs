@@ -4,12 +4,12 @@ const v = new URL(import.meta.url).search; // the version of the module spreads 
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 
 const TAB = "media";
-const BADGE = { picture: "accent", sound: "info" };
+const BADGE = { picture: "accent", sound: "info", video: "warn" };
 const ERR = { name: "md_err_name", dup: "md_err_dup", file: "md_err_file", full: "md_err_full", unknown: "md_err_unknown", seconds: "md_err_name", busy: "md_err_busy" };
 
 /** The blocks of the tab (the video fields are the settings of the tab, drawn by the core). */
 export async function blocks(ctx, { query = {} } = {}) {
-  const t = ctx.t, items = (await md.list(ctx, { tones: false })).filter((m) => m.kind !== "video");
+  const t = ctx.t, items = (await md.list(ctx, { tones: false })).filter((m) => !m.id.startsWith("video:"));
   const add = query.add === "picture" || query.add === "sound" ? query.add : null;
   const edit = typeof query.media === "string" ? items.find((m) => m.id === query.media) : null;
   const rows = items.map((m) => [

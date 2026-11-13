@@ -278,5 +278,7 @@
   "md_err_file": "Envoyez un fichier avec le bouton, par exemple un PNG, un GIF ou un MP3.",
   "md_err_full": "La bibliothèque est pleine ({max} fichiers). Supprimez-en avant d'en ajouter.",
   "md_err_unknown": "Ce fichier n'existe plus.",
-  "md_err_busy": "Trop de fichiers montrés en une minute. Réessayez dans un instant."
+  "md_err_busy": "Trop de fichiers montrés en une minute. Réessayez dans un instant.",
+  "md_auto_picture": "Image {n}",
+  "md_auto_video": "Clip {n}"
 }

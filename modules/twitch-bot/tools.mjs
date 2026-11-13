@@ -34,7 +34,7 @@ const view = (c) => ({
   ...(c.kind === "partner" || c.kind === "network" ? { source: c.label } : {}),
 });
 /** What a command or a word also puts on screen, as an assistant reads it (names, never addresses). */
-const onStreamView = (m, lib) => (m ? { onStream: { picture_or_video: m.visual ? lib.items.find((x) => x.id === m.visual)?.name ?? null : null, sound: m.sound ? lib.items.find((x) => x.id === m.sound)?.name ?? null : null, seconds: m.seconds ?? null } } : {});
+const onStreamView = (m, lib) => (m ? { onStream: { picture_or_video: m.visual ? lib.items.find((x) => x.id === m.visual)?.name ?? null : null, ...(m.visuals ? { pictures_or_videos: m.visuals.map((id) => lib.items.find((x) => x.id === id)?.name ?? null), pick: m.pick === "rotate" ? "in turn" : "at random, never twice in a row" } : {}), sound: m.sound ? lib.items.find((x) => x.id === m.sound)?.name ?? null : null, seconds: m.seconds ?? null } } : {});
 const wordView = (w, lib) => ({
   kind: "word", words: w.words, match: w.mode === "contains" ? "inside words" : "whole word", text: w.text || null, enabled: w.enabled, role: w.role, state: w.state,
   delayAllSeconds: w.cdGlobal ?? W.DEFAULTS.cdGlobal, delayPerPersonSeconds: w.cdUser ?? W.DEFAULTS.cdUser, answersOneTimeOutOf: w.chance, alsoInCollaborationMode: w.collab, ...onStreamView(w.media, lib),
@@ -42,10 +42,16 @@ const wordView = (w, lib) => ({
 /** onStream / clearOnStream of the tools → the `media` field (names are turned into ids; an unknown name is explained). */
 async function mediaChange(a) {
   if (a.clearOnStream === true) return { media: null };
-  if (a.onStreamPicture === undefined && a.onStreamSound === undefined && a.onStreamSeconds === undefined) return {};
+  if (a.onStreamPicture === undefined && a.onStreamPictures === undefined && a.onStreamSound === undefined && a.onStreamSeconds === undefined) return {};
   const lib = await MD.library(a.ctx);
   if (!lib.available) throw expose("The alerts overlay is not installed: nothing can be shown on stream.");
   const o = { visual: a.onStreamPicture, sound: a.onStreamSound, seconds: a.onStreamSeconds }, find = (ref, kinds) => { const m = MD.pick(lib, ref); if (!m || !kinds.includes(m.kind)) throw expose(`No ${kinds.includes("sound") ? "sound" : "picture or video"} named "${ref}" in the media library. Available: ${lib.items.filter((x) => kinds.includes(x.kind)).map((x) => x.name).join(", ") || "none"}.`); return m.id; };
+  if (a.onStreamPictures !== undefined) {
+    // several pictures, GIFs or videos: names turned into ids, one is picked each time (at random, never twice in a row, or in turn)
+    const names = Array.isArray(a.onStreamPictures) ? a.onStreamPictures : [];
+    if (names.length > MD.VISUALS_MAX) throw expose(`At most ${MD.VISUALS_MAX} pictures or videos for one command.`);
+    return { media: { visuals: names.map((x) => find(x, ["picture", "video"])), pick: a.onStreamPick === "rotate" ? "rotate" : "random", sound: o.sound ? find(o.sound, ["sound"]) : "", seconds: o.seconds ?? "" } };
+  }
   return { media: { visual: o.visual ? find(o.visual, ["picture", "video"]) : "", sound: o.sound ? find(o.sound, ["sound"]) : "", seconds: o.seconds ?? "" } };
 }
 const wordChanges = (a) => {

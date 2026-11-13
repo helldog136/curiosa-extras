@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.7",
+  "minCore": "0.14.0",
   "id": "twitch-bot",
   "name": {
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.18.0",
+  "version": "1.19.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",
@@ -740,6 +740,23 @@
             "maxLength": 80,
             "description": "Also show a picture, GIF or video on stream through the alerts overlay: its NAME (or id) in the media library (read onStreamLibrary in bot_commands_list). An assistant cannot upload a file. Refused when the alerts overlay is not installed."
           },
+          "onStreamPictures": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "description": "Several pictures, GIFs or videos for the same command, by NAME (or id) in the media library: one is shown each time, at random without repeating twice in a row (or in turn with onStreamPick). At most 12. Replaces onStreamPicture."
+          },
+          "onStreamPick": {
+            "type": "string",
+            "enum": [
+              "random",
+              "rotate"
+            ],
+            "description": "With onStreamPictures: random (default, never the same twice in a row) or rotate (in turn)."
+          },
           "onStreamSound": {
             "type": "string",
             "maxLength": 80,
@@ -903,6 +920,23 @@
             "type": "string",
             "maxLength": 80,
             "description": "Also show a picture, GIF or video on stream through the alerts overlay: its NAME (or id) in the media library (read onStreamLibrary in bot_commands_list). An assistant cannot upload a file. Refused when the alerts overlay is not installed."
+          },
+          "onStreamPictures": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "description": "Several pictures, GIFs or videos for the same command, by NAME (or id) in the media library: one is shown each time, at random without repeating twice in a row (or in turn with onStreamPick). At most 12. Replaces onStreamPicture."
+          },
+          "onStreamPick": {
+            "type": "string",
+            "enum": [
+              "random",
+              "rotate"
+            ],
+            "description": "With onStreamPictures: random (default, never the same twice in a row) or rotate (in turn)."
           },
           "onStreamSound": {
             "type": "string",
