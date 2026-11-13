@@ -58,7 +58,7 @@ export async function describe(ctx) {
           // the tooltip of each button says what happens to the timers, and, for the prepared one, that it is used at the next switch-on.
           choices: [
             { id: "collabset", name: "timers", label: t("rc_collab_timers"),
-              options: CO.TIMERS.map((x) => { const what = t(x === "pause" ? "rc_opt_pause" : "rc_opt_ratio", { n: x }), on = CO.timersOf(co) === x; return { value: x, label: x === "pause" ? t("rc_o_pause") : t("co_o_ratio", { n: x }), on, title: on && !co.on ? t("rc_opt_prepared", { what }) : what }; }) },
+              options: CO.TIMERS.map((x) => { const what = x === "pause" ? t("rc_opt_pause") : t("rc_opt_ratio", { n: x }), on = CO.timersOf(co) === x; return { value: x, label: x === "pause" ? t("rc_o_pause") : t("co_o_ratio", { n: x }), on, title: on && !co.on ? t("rc_opt_prepared", { what }) : what }; }) },
             { id: "collabset", name: "hours", label: t("rc_collab_hours"), folded: true,
               options: CO.HOURS_LIST.map((h) => ({ value: String(h), label: h === 0 ? t("rc_o_never") : t("rc_o_hours", { h }), on: co.hours === h })) },
           ] }],
