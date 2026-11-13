@@ -4,6 +4,34 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.79.0 — 2026-11-13
+
+*En bref : quand Twitch réclame un accord de plus, le bouton « Autoriser de nouveau avec Twitch » est toujours là (Activité Twitch et Bot Twitch), et un abonnement bloqué sur « en attente de Twitch » se répare tout seul. En français, le train de la hype s'écrit maintenant « train de la hype ».*
+
+*In short: when Twitch asks for one more permission, the "Authorize again with Twitch" button is always there (Twitch activity and Twitch bot), and a subscription stuck on "waiting for Twitch" repairs itself. In French, the hype train is now written « train de la hype ».*
+
+### Nouveautés
+
+- **Le bouton d'autorisation ne manque plus.** Un cadre rouge disait de cliquer sur le bouton alors qu'il n'y avait que « Vérifier maintenant ». Le bouton « Autoriser de nouveau avec Twitch » est de retour dans Activité Twitch et dans Bot Twitch (chat, compte du bot, récompenses), avec les accords manquants déjà dans le lien.
+- **Au retour de Twitch, l'alerte disparaît toute seule.** La page revérifie à l'ouverture.
+- **« Récompense en points » ne rend plus la page rouge.** Le Bot Twitch gère déjà les récompenses : ce type, éteint par défaut, n'affiche son état que dans l'onglet Types.
+- **Un type en attente de Twitch depuis 3 minutes est recréé, une fois.** L'onglet Types dit « En attente de Twitch depuis N min », la raison est dans l'info-bulle, et chaque changement d'un type est écrit dans le journal du site.
+- **Textes plus courts**, étapes dans les info-bulles ; le tableau des types perd la colonne « Ce que ça couvre » (son texte est l'info-bulle du type).
+- **Train de la hype.** Le français dit « train de la hype » partout (Activité Twitch, Overlay alertes) ; l'anglais ne change pas.
+- **The authorization button is no longer missing.** A red box told you to click the button while only "Check now" was there. "Authorize again with Twitch" is back in Twitch activity and in the Twitch bot (chat, bot account, rewards), with the missing permissions already in the link.
+- **Back from Twitch, the warning goes by itself.** The page checks again when it opens.
+- **"Channel point reward" no longer turns the page red.** The Twitch bot already handles rewards: this type, off by default, only shows its state in the Types tab.
+- **A type waiting for Twitch for 3 minutes is created again, once.** The Types tab says "Waiting for Twitch for N min", the reason is in the tooltip, and each change of a type is written to the site log.
+- **Shorter texts**, steps in tooltips; the types table loses its "What it covers" column (its text is the tooltip of the type).
+- **Hype train.** French now says « train de la hype » everywhere (Twitch activity, Alerts overlay); English is unchanged.
+
+### Pour les développeurs
+
+- Activité Twitch 1.4.0, Bot Twitch 1.18.0, Overlay alertes 1.8.2. Les pages appelaient `connectLink` sans `force` ni accords manquants : le Connecteur répond « connecté » (pas de lien) quand sa propre liste d'accords voulus, remplie seulement quand une page les déclare, est satisfaite. Maintenant : `force: true`, `scopes`, `returnTo`, et un lien vers la page du Connecteur à défaut.
+- Activité Twitch : types `optional` (récompenses en points) hors verdict ; âge d'un abonnement en attente pris sur `created_at` de Twitch ; recréation une fois par 15 minutes ; événements de journal `type.state` et `type.recreated` ; accords déclarés à la création de l'instance.
+- Pas fait : rafraîchissement automatique de l'onglet Types pendant l'attente (demande une fonction du cœur : les pages n'exécutent aucun script). Le bouton « Vérifier maintenant » reste le bouton principal du cœur (pas de variante secondaire).
+- Test : `twitch-authorize-button`.
+
 ## 1.78.0 — 2026-11-13
 
 *En bref : les modules disent où se ranger. Dans le menu d'administration, Twitch, Discord et YouTube ont maintenant leur place sous Réseaux › Twitch, Réseaux › Discord et Réseaux › YouTube, et y sont épinglés d'office. Prend effet avec Curiosa 0.13.0 ; sur un Curiosa plus ancien, rien ne change. Aucune nouvelle permission, rien à régler.*
