@@ -58,22 +58,38 @@ export async function diagnose(ctx, s, { declare = true, now = Date.now() } = {}
   if (!isPublicSite(ctx.api.siteUrl)) return { code: "site_private", ...base };
   const missing = lacks(main, need);
   const blocked = es.TYPES.filter((t) => enabled[t.id] && lacks(main, t.scopes).length).map((t) => t.id);
-  return { code: "ready", ...base, broadcasterId: main.userId, missing, blocked };
+  // The red box and the verdict only count the types the bot does not already cover (`optional`); the others still show their own state in their row.
+  const blockedCore = blocked.filter((id) => !es.isOptional(id));
+  const missingCore = lacks(main, es.scopesFor(Object.fromEntries(es.TYPES.filter((t) => enabled[t.id] && !t.optional).map((t) => [t.id, true]))));
+  return { code: "ready", ...base, broadcasterId: main.userId, missing, missingCore, blocked, blockedCore };
 }
 
 const FAIL = { auth: "need_reconnect", scope: "need_more", config: "creds_missing", rate: "twitch_busy", network: "twitch_down" };
 const RANK = { refused: 6, need_more: 6, need_reconnect: 6, twitch_down: 5, twitch_busy: 4, pending: 3, listening: 1 };
 const worst = (a, b) => ((RANK[a] ?? 2) >= (RANK[b] ?? 2) ? a : b);
 
-/** Writes the result in the state: the global code and the code of each type. `since` keeps the date from which the code has been "listening". */
-async function note(ctx, code, types = {}, extra = {}) {
+/**
+ * Writes the result in the state: the global code and the code of each type. `since` keeps the date from which the code has been "listening".
+ * `info[id]` = { since, reason } for a type that waits for Twitch. One log line per CHANGE of a type (no secret, no viewer data).
+ */
+async function note(ctx, code, types = {}, extra = {}, info = {}) {
   const now = Date.now();
+  const changes = [];
   await st.updateState(ctx, (d) => {
-    const before = d.listen ?? {};
+    const before = d.listen ?? {}, was = d.types ?? {};
     d.listen = { code, at: now, ...(code === "listening" ? { since: before.code === "listening" && before.since ? before.since : now } : {}), ...extra };
-    d.types = Object.fromEntries(es.TYPES.map((t) => [t.id, { code: types[t.id] ?? (code === "listening" ? "off" : code), at: now }]));
+    d.types = Object.fromEntries(es.TYPES.map((t) => {
+      const c = types[t.id] ?? (code === "listening" ? "off" : code);
+      if ((was[t.id]?.code ?? "off") !== c) changes.push([t.id, c]);
+      return [t.id, { code: c, at: now, ...(info[t.id]?.since ? { since: info[t.id].since } : {}), ...(info[t.id]?.reason ? { reason: info[t.id].reason } : {}) }];
+    }));
   });
+  for (const [id, c] of changes) {
+    try { await ctx.api.log?.write?.({ action: "type.state", target: id, data: { type: id, state: c, ...(info[id]?.reason ? { reason: info[id].reason } : {}) } }); } catch { /* the log never breaks a check */ }
+  }
 }
+export const HEAL_MS = 3 * 60_000;       // a subscription pending longer than this is deleted and created again
+const HEAL_AGAIN_MS = 15 * 60_000;       // …but only once in this time: after that it is reported, not hammered
 const allCode = (code) => Object.fromEntries(es.TYPE_IDS.map((id) => [id, code]));
 
 /**
@@ -85,7 +101,8 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
   if (d.code !== "ready") { await note(ctx, d.code, d.code === "creds_missing" || d.code === "need_connect" ? allCode(d.code) : {}); return { code: d.code }; }
   const callback = callbackOf(ctx);
   const secret = await st.ensureSecret(ctx, { renew });
-  const mark = (code, types, extra) => note(ctx, code, types, { missing: d.missing, ...extra }).then(() => ({ code, types }));
+  const info = {};
+  const mark = (code, types, extra) => note(ctx, code, types, { missing: d.missingCore, ...extra }, info).then(() => ({ code, types }));
   // 1. Everything the application has at Twitch (pages of 100; ours are recognised by the callback address).
   const rows = [];
   let after;
@@ -110,15 +127,23 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
   for (const w of cls.wanted) {
     if (w.state === "enabled") { put(w.typeId, "listening"); continue; }
     if (w.state === "pending") {
-      const age = Date.now() - (((await st.readState(ctx)).pendingSince ?? {})[w.type] ?? Date.now());
-      if (age < 10 * 60_000) { put(w.typeId, "pending"); continue; }
-      await twitch(ctx, d.channel, es.deleteRequest(w.id));   // pending for ten minutes: Twitch could not reach the address; start again
+      const s0 = await st.readState(ctx);
+      // The age comes from Twitch (`created_at`), so a subscription made before a restart or by an older version still ages; ours is the fallback.
+      const first = (s0.pendingSince ?? {})[w.type];
+      const since = Number.isFinite(w.createdAt) ? w.createdAt : first ?? now;
+      if (!Number.isFinite(w.createdAt) && !first) await st.updateState(ctx, (x) => { x.pendingSince = { ...(x.pendingSince ?? {}), [w.type]: now }; });
+      const age = now - since, healedAt = (s0.healed ?? {})[w.type];
+      const reason = w.elsewhere ? "elsewhere" : age < HEAL_MS ? "waiting" : s0.verifiedAt && now - s0.verifiedAt < 30 * 60_000 ? "unconfirmed" : "unreachable";
+      if (age < HEAL_MS || (healedAt && now - healedAt < HEAL_AGAIN_MS)) { put(w.typeId, "pending"); info[w.typeId] = { since, reason }; continue; }
+      await twitch(ctx, d.channel, es.deleteRequest(w.id));   // pending for 3 minutes: start again, once
+      await st.updateState(ctx, (x) => { x.healed = { ...(x.healed ?? {}), [w.type]: now }; });
+      try { await ctx.api.log?.write?.({ action: "type.recreated", target: w.typeId, data: { type: w.typeId, waitedMin: Math.round(age / 60_000), reason } }); } catch { /* the log never breaks a check */ }
     }
     if (busy) { put(w.typeId, "twitch_busy"); continue; }
     const made = await twitch(ctx, d.channel, es.createRequest(w, { callback, secret }));
     if (!made.ok) { put(w.typeId, FAIL[made.error] ?? "twitch_down"); busy = made.error === "rate"; continue; }
     const r = es.readCreate(made);
-    if (r.ok || r.code === "exists") { put(w.typeId, "pending"); await st.updateState(ctx, (x) => { x.pendingSince = { ...(x.pendingSince ?? {}), [w.type]: Date.now() }; }); }
+    if (r.ok || r.code === "exists") { put(w.typeId, "pending"); if (r.code === "exists") info[w.typeId] = { since: now, reason: "elsewhere" }; await st.updateState(ctx, (x) => { x.pendingSince = { ...(x.pendingSince ?? {}), [w.type]: Date.now() }; }); }
     else { put(w.typeId, r.code === "denied" ? "need_more" : r.code === "busy" ? "twitch_busy" : r.code === "refused" ? "refused" : "twitch_down"); busy = busy || r.code === "busy"; }
   }
   // 3. A person waiting in front of the screen: Twitch verifies the address right after accepting; a few seconds are enough for it to be "enabled".
@@ -132,10 +157,12 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
     }
   }
   let code = "listening";
-  const active = Object.entries(types).filter(([, c]) => c !== "off");
+  const on = Object.entries(types).filter(([, c]) => c !== "off");
+  const core = on.filter(([id]) => !es.isOptional(id));
+  const active = core.length ? core : on;   // a type the bot already covers never decides alone, unless it is all that is on
   if (!active.length) code = "nothing_on";
   else for (const [, c] of active) code = worst(code, c);
-  if (code === "listening" && d.blocked.length) code = "need_more";
+  if (code === "listening" && d.blockedCore.length) code = "need_more";
   await st.updateState(ctx, (x) => { if (code === "listening") delete x.pendingSince; });
   return mark(code, types);
 }

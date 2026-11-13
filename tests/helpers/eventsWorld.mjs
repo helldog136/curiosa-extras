@@ -27,17 +27,24 @@ const ALL = ["moderator:read:followers", "channel:read:subscriptions", "bits:rea
 /** `o.scopes`: permissions granted to the account; `o.status`: "ok" | "reconnect" | "none"; `o.siteUrl`; `o.locale`; `o.settings`. */
 export function world(o = {}) {
   S.resetMemory(); P.forgetCache();
-  const tw = { status: "ok", scopes: [...ALL], subs: [], calls: [], wants: [], createStatus: 202, listDown: false, seq: 0, ...o.tw };
+  const tw = { status: "ok", scopes: [...ALL], subs: [], calls: [], wants: [], links: [], createStatus: 202, listDown: false, seq: 0, ...o.tw };
   const queue = { paused: false, held: 0, calls: [], voice: { on: false, muted: false }, texts: [], ...o.queue };
   const ctx = fakeCtx({
     key: "ev", moduleId: "twitch-events", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: (o.locale ?? "fr") === "en" ? en : fr,
-    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions,
+    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions, logEvents: manifest.logEvents ?? [],
     serviceInstances: {
       "twitch.api": [{ instance: "emma", name: "emma", methods: {
         account: (a) => (a?.channel && a.channel !== "emma_test" ? { ok: false, error: "other_channel" } : { ok: true, channel: "emma_test", ready: true, https: true, status: tw.status, login: "emma_test", userId: B, scopes: tw.scopes, adminPath: "/admin/instances/connector" }),
         status: () => ({ ready: true, missing: [] }),
         wantScopes: (a) => { tw.wants.push(a); return { ok: true }; },
-        connectLink: () => ({ ok: true, url: "https://id.twitch.tv/oauth2/authorize?x=1" }),
+        // Like the real connector: no link when it believes all is fine (it only knows what was declared with wantScopes) unless `force`; `scopes` add to what is wanted.
+        connectLink: (a) => {
+          tw.links.push(a);
+          const wanted = [...new Set([...tw.wants.flatMap((w) => w.scopes ?? []), ...(a?.scopes ?? [])])].sort();
+          const more = wanted.some((x) => !tw.scopes.includes(x));
+          if (tw.status === "ok" && !more && a?.force !== true) return { ok: true, url: null, reason: "connected" };
+          return { ok: true, url: `https://id.twitch.tv/oauth2/authorize?x=1&scope=${encodeURIComponent([...new Set([...tw.scopes, ...wanted])].sort().join(" "))}` };
+        },
         request: (a) => {
           if (a.channel && a.channel !== "emma_test") return { ok: false, error: "other_channel" };
           tw.calls.push(a);

@@ -6,13 +6,13 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.3.1",
+  "version": "1.4.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
   "description": {
     "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",
-    "fr": "Reçoit les follows, abonnements, bits, raids et trains d'enthousiasme, tient un journal et donne un dock OBS."
+    "fr": "Reçoit les follows, abonnements, bits, raids et trains de la hype, tient un journal et donne un dock OBS."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -46,7 +46,7 @@
       "topic": "twitch.event",
       "label": {
         "en": "What happens on your Twitch channel: follows, subs, gifts, bits, raids, stream start and end, hype trains",
-        "fr": "Ce qui se passe sur votre chaîne Twitch : follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains d'enthousiasme"
+        "fr": "Ce qui se passe sur votre chaîne Twitch : follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains de la hype"
       }
     }
   ],
@@ -152,6 +152,44 @@
     "en": "The journal keeps, for each event, the public display name (who follows, subscribes, gifts, cheers or raids), the amount, tier or count, and the public message of a resub or bits. A line may note that its message is hidden. Nothing else about people. Lines go after the retention you choose (30 days by default), test lines after a day. Only your team reads it. If listening stops, one e-mail goes to the site owner, with no viewer data.",
     "fr": "Le journal garde, pour chaque événement, le pseudo public (qui suit, offre un abonnement, envoie des bits ou raide), le montant, le niveau ou le nombre, et le message public d'un réabonnement ou de bits. Une ligne peut noter que son message est masqué. Rien d'autre sur les personnes. Les lignes partent après la durée choisie (30 jours par défaut), les tests après un jour. Seule votre équipe le lit. Si l'écoute s'arrête, un e-mail part à la personne propriétaire, sans donnée de public."
   },
+  "logEvents": [
+    {
+      "key": "type.state",
+      "label": {
+        "en": "Type {type}: {state}",
+        "fr": "Type {type} : {state}"
+      },
+      "fields": [
+        {
+          "key": "type"
+        },
+        {
+          "key": "state"
+        },
+        {
+          "key": "reason"
+        }
+      ]
+    },
+    {
+      "key": "type.recreated",
+      "label": {
+        "en": "Type {type}: waiting for Twitch for {waitedMin} min, created again",
+        "fr": "Type {type} : en attente de Twitch depuis {waitedMin} min, recréé"
+      },
+      "fields": [
+        {
+          "key": "type"
+        },
+        {
+          "key": "waitedMin"
+        },
+        {
+          "key": "reason"
+        }
+      ]
+    }
+  ],
   "mcp": [
     {
       "name": "twitch_events_list",

@@ -106,10 +106,13 @@ function rewardForm(ctx, info, namedList, homeInstalled, doc) {
   };
 }
 
-async function connectButton(ctx, channel) {
-  const r = (await ctx.api.services.callAll(SERVICE, "connectLink", { channel, slot: "main" })).find((x) => x.ok && x.value?.ok);
-  const url = r?.value?.url;
-  return url ? [{ type: "html", html: `<p><a data-twitch-connect href="${esc(url)}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(ctx.t("rw_connect_btn"))}</a></p>` }] : [];
+/** The button to Twitch for the rewards: forced, with the permission of the rewards, and never absent (without a link: the connector's page). */
+async function connectButton(ctx, channel, { first = false, adminPath = "" } = {}) {
+  let r = null;
+  try { r = (await ctx.api.services.callAll(SERVICE, "connectLink", { channel, slot: "main", force: true, scopes: ["channel:manage:redemptions"], returnTo: `/admin/instances/${ctx.instance.id}` })).find((x) => x.ok && x.value?.ok); } catch { r = null; }
+  const url = r?.value?.url ?? (adminPath || null);
+  const label = r?.value?.url ? ctx.t(first ? "rw_connect_btn" : "connect_again_btn") : ctx.t("connect_fallback");
+  return url ? [{ type: "html", html: `<p><a data-twitch-connect href="${esc(url)}" title="${esc(ctx.t("rw_connect_tip"))}" style="display:inline-block;padding:.65rem 1.25rem;border-radius:.75rem;background:var(--v-accent);color:var(--v-accent-fg);font-weight:600;text-decoration:none">${esc(label)}</a></p>` }] : [];
 }
 
 /** L'état de la maison en une ligne (R25) : ce que dit le Connecteur Home Assistant. */
@@ -177,8 +180,7 @@ export async function blocks(ctx, info, query = {}) {
     out.push(stepsBlock(ctx, { on: true, acc, house: await houseInfo(ctx) }));
     out.push({ type: "banner", tone: "warning", text: t(`rw_access_${acc.code}`) });
     if (["need_connect", "need_reconnect", "need_scope"].includes(acc.code)) {
-      out.push({ type: "markdown", text: t("rw_connect_steps") });
-      if (info.d.channel) out.push(...(await connectButton(ctx, info.d.channel)));
+      if (info.d.channel) out.push(...(await connectButton(ctx, info.d.channel, { first: acc.code === "need_connect", adminPath: info.d.main?.adminPath })));
     } else if (acc.code === "creds_missing" && acc.adminPath) out.push({ type: "markdown", text: t("creds_steps", { href: acc.adminPath }) });
     out.push(...journalBlocks(ctx, s, await J.journal(ctx), names, advanced));
     return tab(out);

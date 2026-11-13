@@ -93,7 +93,7 @@ test("an expired token and a revoked subscription: said clearly, repaired, and w
   assert.equal(down.code, "need_reconnect");
   const page = await eventsMod.adminPanel(w.ctx, { query: {} });
   assert.ok(page.some((b) => b.type === "banner" && /expired/i.test(b.text)));
-  assert.ok(page.some((b) => b.type === "links" && b.items[0].label === "Allow again at Twitch"));
+  assert.ok(page.some((b) => b.type === "html" && /data-twitch-connect.*Authorize again with Twitch/s.test(b.html)));
   await C.check(w.ctx, S0, { now: NOW + 15 * 60_000 });
   assert.equal(w.ctx.calls.mail.length, 1);
   // the person reconnects; someone followed meanwhile

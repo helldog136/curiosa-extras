@@ -836,8 +836,8 @@ test("page : « Le bot écoute : oui / non », avec pourquoi et quoi faire, en m
   const creds = await A.panel(world({ tw: { ready: false } }).ctx, { query: {} });
   assert.match(textOf(creds), /\[Connecteur Twitch\]\(\/admin\/instances\/tw1\)/, "le lien mène à la page où régler l'application Twitch (celle que donne le Connecteur)");
   const guide = await A.panel(world({ tw: { mainStatus: "none" } }).ctx, { query: {} });
-  assert.match(textOf(guide), /Twitch doit d'abord vous demander votre accord/);
-  assert.match(textOf(guide), /Autoriser le bot chez Twitch/);
+  assert.ok(!textOf(guide).includes("Twitch doit d'abord"), "no filler sentence: the button and its tooltip say it");
+  assert.match(guide.find((x) => x.type === "html" && x.html.includes("data-twitch-connect")).html, /Autoriser le bot chez Twitch/);
   const failed = world({ result: { code: "wrongAccount", login: "intrus" }, tw: { mainStatus: "none" } });
   assert.match(textOf(await A.panel(failed.ctx, { query: {} })), /compte « intrus »/);
 });
@@ -1116,7 +1116,7 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.17.1", "0.6.7", "twitch", "multiple", 6]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.18.0", "0.6.7", "twitch", "multiple", 6]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }, { service: "alerts.show", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
