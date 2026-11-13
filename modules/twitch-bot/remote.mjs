@@ -4,7 +4,7 @@
 //   press({ action, values, locale }) → { ok, message?, error?, field? }
 //     pause / resume   the existing emergency stop (state.mjs: `muted`), the one the administration shows; honoured by every path that writes in the chat (see README)
 //     collabon / collaboff   the collaboration mode (collab.mjs): the bot talks less on its own while you stream with other people, with the choices kept in the state (the same as the administration)
-//     collabset        the choices of the mode, from the switch card itself: what the timers do (pause, or 1 in 2, 3 or 5) and the automatic end (2, 4, 6 hours, never); saved for next time, applied at once when the mode is on
+//     collabset        the choices of the mode, from the switch card itself (drawn inside the card, under the label "when the mode is on"): what the timers do (pause, or 1 in 2, 3 or 5) and the automatic end (2, 4, 6 hours, never); saved for next time, applied at once when the mode is on
 //     addcom           a text-only command: name + reply, everything else is the default of the bot (everyone, usual delays, enabled)
 //     undo             removes a command added from here, only while nobody changed it since
 // Nothing here is reachable without the secret address: the only caller is Audience, after it checked the address (see its README).
@@ -53,9 +53,12 @@ export async function describe(ctx) {
       toggles: [{ id: paused ? "resume" : "pause", label: t("rc_switch"), on: !paused, text: t(paused ? "rc_state_paused" : "rc_state_on"), more: t("rc_switch_hint") },
         // Same rule: the switch shows the CURRENT state, its action says the state we want. The card says only the state (text); what it does is in the "?" bubble (more), and lets the person choose.
         { id: co.on ? "collaboff" : "collabon", label: t("rc_collab"), on: co.on, calm: true, text: CO.stateLine(t, co, Date.now()), more: t("rc_collab_more"), foldLabel: t("rc_collab_fold"),
+          card: true,
+          // The choices belong to the card and say WHEN they apply (label: "when the mode is on"). The chosen one is a prepared choice while the mode is off (the page draws it outlined) and the active one while it is on;
+          // the tooltip of each button says what happens to the timers, and, for the prepared one, that it is used at the next switch-on.
           choices: [
             { id: "collabset", name: "timers", label: t("rc_collab_timers"),
-              options: CO.TIMERS.map((x) => ({ value: x, label: x === "pause" ? t("rc_o_pause") : t("co_o_ratio", { n: x }), on: CO.timersOf(co) === x })) },
+              options: CO.TIMERS.map((x) => { const what = x === "pause" ? t("rc_opt_pause") : t("rc_opt_ratio", { n: x }), on = CO.timersOf(co) === x; return { value: x, label: x === "pause" ? t("rc_o_pause") : t("co_o_ratio", { n: x }), on, title: on && !co.on ? t("rc_opt_prepared", { what }) : what }; }) },
             { id: "collabset", name: "hours", label: t("rc_collab_hours"), folded: true,
               options: CO.HOURS_LIST.map((h) => ({ value: String(h), label: h === 0 ? t("rc_o_never") : t("rc_o_hours", { h }), on: co.hours === h })) },
           ] }],

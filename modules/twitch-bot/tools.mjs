@@ -58,7 +58,7 @@ function repeatChanges(a) {
 
 /** The collaboration mode as an assistant reads it (see collab.mjs). */
 const iso = (at) => (Number.isFinite(at) ? new Date(at).toISOString() : null);
-const collabView = (e) => ({ enabled: e.on, ...(e.on ? { since: iso(e.since), endsAt: iso(e.until), changedFrom: e.by } : {}), timers: e.mode === "pause" ? "paused" : `thinned out: 1 in ${e.ratio} is sent`, timersChoice: e.mode === "pause" ? "pause" : "every_n", timersEveryN: e.mode === "pause" ? null : e.ratio, commandDelayFactor: e.factor, muteOtherAutomaticMessages: e.quiet, autoEndHours: e.hours, autoStopHours: e.hours });
+const collabView = (e) => ({ enabled: e.on, ...(e.on ? { since: iso(e.since), endsAt: iso(e.until), changedFrom: e.by } : {}), timers: e.mode === "pause" ? "paused" : `thinned out: 1 in ${e.ratio} is sent`, timersApplyNow: e.on, timersChoice: e.mode === "pause" ? "pause" : "every_n", timersEveryN: e.mode === "pause" ? null : e.ratio, commandDelayFactor: e.factor, muteOtherAutomaticMessages: e.quiet, autoEndHours: e.hours, autoStopHours: e.hours });
 
 const rewardView = (r, names) => ({ name: r.title, costPoints: r.cost, delaySeconds: r.cooldown, helpText: r.prompt, viewerWritesMessage: r.needsInput, action: r.action, actionName: names.get(r.action) ?? null, state: R.statusOf(r), ...(r.action === R.BOT_ACTION ? { chatReply: r.reply } : {}) });
 const fieldsOf = (a, cur = {}) => ({ title: a.name ?? cur.title, cost: a.costPoints ?? cur.cost, cooldown: a.delaySeconds ?? cur.cooldown ?? 0, prompt: a.helpText ?? cur.prompt ?? "", needsInput: a.viewerWritesMessage ?? cur.needsInput ?? false, action: a.action ?? cur.action, reply: a.chatReply ?? cur.reply ?? "" });

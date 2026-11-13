@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.15.0",
+  "version": "1.16.0",
   "platform": "twitch",
   "description": {
     "en": "Your site answers the commands in your Twitch chat, and handles timers, channel point rewards and an emergency stop.",
@@ -1081,7 +1081,7 @@
     {
       "name": "collaboration_mode_set",
       "default": false,
-      "description": "Switch the collaboration mode of the Twitch bot on or off, for when the owner streams with other people in a shared chat and the bot should talk less on its own. While it is on, the chat timers are paused or sent one time out of 2, 3 or 5 (counted per timer) and, if asked, command delays are longer and other automatic messages are muted. Commands typed by viewers still answer. 'enabled' is required; the other fields change the saved choices (the same ones as on the bot page and the remote control). It sends no message. The change is written in the site history as made by the assistant. The state is in bot_commands_list (collaborationMode).",
+      "description": "Switch the collaboration mode of the Twitch bot on or off, for when the owner streams with other people in a shared chat and the bot should talk less on its own. While it is on, the chat timers are paused or sent one time out of 2, 3 or 5 (counted per timer) and, if asked, command delays are longer and other automatic messages are muted. Commands typed by viewers still answer. The timers choice only applies while the mode is on: set while it is off, it is saved and used at the next switch-on. 'enabled' is required; the other fields change the saved choices (the same ones as on the bot page and the remote control). It sends no message. The change is written in the site history as made by the assistant. The state is in bot_commands_list (collaborationMode).",
       "input": {
         "type": "object",
         "required": [
@@ -1098,7 +1098,7 @@
               "pause",
               "every_n"
             ],
-            "description": "What the timers do while the mode is on: 'pause' (nothing goes out) or 'every_n' (one due message out of n goes out, see n)."
+            "description": "What the timers do when the mode is on (not before): 'pause' (nothing goes out) or 'every_n' (one due message out of n goes out, see n). While the mode is off it is only saved for the next switch-on."
           },
           "n": {
             "type": "integer",
@@ -1302,7 +1302,7 @@
   ],
   "i18n": {
     "fr": {
-      "mcp.collaboration_mode_set": "Active ou désactive le mode collaboration du bot Twitch, pour quand la personne diffuse avec d'autres dans un chat partagé et que le bot doit parler moins tout seul. Activé, les timers du chat sont mis en pause ou partent une fois sur 2, 3 ou 5 (compte fait par timer) et, si demandé, les attentes des commandes sont plus longues et les autres messages automatiques coupés. Les commandes tapées par le public répondent toujours. « enabled » est obligatoire ; les autres champs changent les choix enregistrés (les mêmes que sur la page du bot et la télécommande). L'outil n'envoie aucun message. Le changement est écrit dans l'historique du site comme fait par l'assistant. L'état se lit dans bot_commands_list (collaborationMode)."
+      "mcp.collaboration_mode_set": "Active ou désactive le mode collaboration du bot Twitch, pour quand la personne diffuse avec d'autres dans un chat partagé et que le bot doit parler moins tout seul. Activé, les timers du chat sont mis en pause ou partent une fois sur 2, 3 ou 5 (compte fait par timer) et, si demandé, les attentes des commandes sont plus longues et les autres messages automatiques coupés. Les commandes tapées par le public répondent toujours. Le choix des timers ne s'applique que lorsque le mode est activé : donné pendant qu'il est désactivé, il est enregistré et utilisé à la prochaine activation. « enabled » est obligatoire ; les autres champs changent les choix enregistrés (les mêmes que sur la page du bot et la télécommande). L'outil n'envoie aucun message. Le changement est écrit dans l'historique du site comme fait par l'assistant. L'état se lit dans bot_commands_list (collaborationMode)."
     }
   }
 }
