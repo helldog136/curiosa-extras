@@ -35,6 +35,18 @@ export const TTS_MODES = ["off", "sentence", "text", "both"];
 /** The types that can carry a text written by the viewer (Twitch gives one for these only: a resub message, a cheer message, the text of a reward). */
 export const VIEWER_TYPES = ["resub", "cheer", "redeem"];
 export const TTS_LIMITS = { rate: [0.5, 2], pitch: [0, 2], volume: [0, 100], max: [20, 300], viewerMax: [20, 250] };
+/** Several pictures, GIFs or videos for one reaction (alerts.reaction, 1.9.0): at most 12; one is picked each time, at random (never the same twice in a row) or in turn. */
+export const VARIANT_MAX = 12;
+export const PICK = ["random", "rotate"];
+/** Which of `n` variants comes next. `last` = the index shown last (or -1). Random never repeats the previous one when there are two or more; `rng` is injectable for tests. */
+export function chooseIndex({ n, mode = "random", last = -1, rng = Math.random }) {
+  if (!(n > 1)) return 0;
+  if (mode === "rotate") return (Number.isInteger(last) && last >= 0 ? last + 1 : 0) % n;
+  const pool = n - (Number.isInteger(last) && last >= 0 && last < n ? 1 : 0);
+  let k = Math.min(pool - 1, Math.floor(Math.max(0, Math.min(0.999999, rng())) * pool));
+  if (pool < n && k >= last) k += 1;
+  return k;
+}
 export const LIMITS = { template: 120, seconds: { min: 2, max: 60 }, min: 1_000_000, maxAgeMs: 5 * 60_000, maxAgeMissedMs: 60 * 60_000, seenKeep: 400, held: 50, texts: 50, ignore: 50, groupFollows: 3, gapMs: { min: 0, max: 30_000 }, groupMs: { min: 0, max: 30_000 } };
 
 /** The type (switch) of an item of the topic; null for something we do not know. */
@@ -68,6 +80,11 @@ export function varsOf(item, locale = "en") {
 
 /* ───────────── Configuration (per type) ───────────── */
 
+/** The list of variants of a type and its pick rule: written only when there is something to say, so a configuration without them stays exactly as it was. */
+const variantsPart = (r) => {
+  const variants = Array.isArray(r.variants) ? [...new Set(r.variants.filter((u) => typeof u === "string" && (IMAGE_RE.test(u) || VIDEO_RE.test(u))))].slice(0, VARIANT_MAX) : [];
+  return variants.length || r.pick === "rotate" ? { variants, pick: PICK.includes(r.pick) ? r.pick : "random" } : {};
+};
 /** A saved configuration, made safe: unknown types dropped, switches boolean, template bounded, numbers in range. */
 export function normaliseConfig(raw) {
   const out = { types: {}, preset: PRESETS.includes(raw?.preset) ? raw.preset : "" };
@@ -86,6 +103,7 @@ export function normaliseConfig(raw) {
       present: PRESENT.includes(r.present) ? r.present : "text",
       video: Number.isInteger(r.video) && r.video >= 1 && r.video <= VIDEO_SLOTS ? r.video : Number.isInteger(Number(r.video)) && Number(r.video) >= 1 && Number(r.video) <= VIDEO_SLOTS ? Number(r.video) : 0,
       videoSound: r.videoSound === true,
+      ...variantsPart(r),
       viewer: VIEWER_TYPES.includes(id) ? (typeof r.viewer === "boolean" ? r.viewer : null) : false,   // null = follows the older setting "Show the messages that come with an alert"
       viewerMax: bound(r.viewerMax, TTS_LIMITS.viewerMax, 140),
       tts: TTS_MODES.includes(r.tts) ? r.tts : "off",
@@ -105,7 +123,13 @@ const boundF = (v, [lo, hi], def) => { const n = Number(v); return Number.isFini
 export const ignoreOf = (text) => new Set(String(text ?? "").toLowerCase().split(/[\s,;]+/).map((s) => s.replace(/^@/, "")).filter((s) => /^[a-z0-9_]{2,25}$/.test(s)).slice(0, LIMITS.ignore));
 
 /** The look of a type: its picture, its sound and its way of entering (each only when chosen). */
-const look = (cfg, env = {}) => {
+const look = (cfg, env = {}, type = "") => {
+  // several variants (alerts.reaction): one is picked; a video url plays alone, a picture url is shown alone (the text is hidden, as for a GIF alone)
+  if (cfg.variants?.length) {
+    const u = cfg.variants[Math.min(cfg.variants.length - 1, Math.max(0, env.pick ? env.pick(type, cfg.variants.length, cfg.pick) : 0))];
+    const snd = cfg.audio ? { audio: cfg.audio } : cfg.sound && cfg.sound !== "none" ? { sound: cfg.sound } : {};
+    return { ...(VIDEO_RE.test(u) ? { present: "media", video: u, ...(cfg.videoSound ? { videoSound: true } : {}) } : { present: "media", image: u }), ...snd, ...(cfg.anim ? { anim: cfg.anim } : {}) };
+  }
   // a video alone replaces the picture; a picture alone (a GIF) hides the text; otherwise the text, with its optional picture
   const video = cfg.present === "video" && cfg.video ? env.videos?.[cfg.video - 1] : null;
   const media = video && VIDEO_RE.test(video) ? { present: "media", video, ...(cfg.videoSound ? { videoSound: true } : {}) } : cfg.present === "gif" && cfg.image ? { present: "media" } : null;
@@ -129,7 +153,7 @@ export const speechSeconds = (say, rate = 1) => Math.ceil((say.length * 0.075) /
  * `text(typeId, phase)` gives the default template and `title(phase)` the title of a hype train line; `now` is for the age limit.
  * Tests and replays (`item.test`, `item.replay`) skip the switches, the minimums, the ignore list and the age limit: a person who asks to see an alert sees it.
  */
-export function alertFor(item, { config, ignore = new Set(), showText = false, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], now = Date.now() }) {
+export function alertFor(item, { config, ignore = new Set(), showText = false, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick, now = Date.now() }) {
   const type = typeOf(item);
   if (!type) return { skip: "unknown" };
   const forced = item.test === true || item.replay === true, cfg = config.types[type];
@@ -148,7 +172,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
   if (item.anonymous === true) vars.name = text("anonymous");
   const message = fillTemplate(cfg.template || text(type), vars);
   if (!message) return { skip: "empty" };
-  const env = { text, videos };
+  const env = { text, videos, pick };
   // The text written by the viewer: shown only if this type asks for it (or, for the older setting, if that one is ticked), cut, then looked at by the moderation.
   const asks = VIEWER_TYPES.includes(type) && (cfg.viewer ?? showText) === true;
   const raw = asks ? mod.cut(clean(item.text, 250), cfg.viewerMax) : "";
@@ -157,7 +181,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
     const say = sayOf(cfg, config, env, message, detail, vars.name);
     let secs = cfg.seconds || seconds || 0;
     if (say) secs = Math.min(LIMITS.seconds.max, Math.max(secs || baseSeconds || 6, speechSeconds(say, config.tts.rate)));
-    return { kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg, env), ...(say ? { say } : {}), ...(reason && !detail ? { flag: reason } : {}), queued: true, id: String(item.id ?? "") };
+    return { kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg, env, type), ...(say ? { say } : {}), ...(reason && !detail ? { flag: reason } : {}), queued: true, id: String(item.id ?? "") };
   };
   const base = { type, group: type === "gift" || type === "follow" };
   if (!reason) return { alert: build(raw), ...base };
@@ -171,7 +195,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
  * Groups a burst that waited in the staging area: gifts by the same person (same tier) become one alert with the sum; three or more follows become "N new followers".
  * `staged`: [{ alert, item, type }]; returns the alerts to show, in order. Each group keeps the place of its first member.
  */
-export function groupBurst(staged, { config, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [] }) {
+export function groupBurst(staged, { config, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick }) {
   const out = [], gifts = new Map(), follows = staged.filter((s) => s.type === "follow");
   const groupFollows = follows.length >= LIMITS.groupFollows;
   let followSlot = null;
@@ -187,24 +211,24 @@ export function groupBurst(staged, { config, locale = "en", text, title, seconds
       followSlot.n += 1;
     } else out.push(s.alert);
   }
-  const env = { text, videos };
+  const env = { text, videos, pick };
   const done = (cfg, message, name, id, extra = {}) => {
     const say = sayOf(cfg, config, env, message, "", name);
     let secs = cfg.seconds || seconds || 0;
     if (say) secs = Math.min(LIMITS.seconds.max, Math.max(secs || baseSeconds || 6, speechSeconds(say, config.tts.rate)));
-    return { kind: extra.kind, message, ...(secs ? { duration: secs } : {}), ...look(cfg, env), ...(say ? { say } : {}), queued: true, id };
+    return { kind: extra.kind, message, ...(secs ? { duration: secs } : {}), ...look(cfg, env, extra.type), ...(say ? { say } : {}), queued: true, id };
   };
   return out.map((o) => {
     if (o.alert || o.message) return o;
     if (o.n !== undefined) {
       const cfg = config.types.follow;
-      return done(cfg, fillTemplate(text("follow_many"), { name: clean(o.first.name, 60), count: num(o.n, locale) }), clean(o.first.name, 60), `group-${o.first.id}`, { kind: KIND.follow });
+      return done(cfg, fillTemplate(text("follow_many"), { name: clean(o.first.name, 60), count: num(o.n, locale) }), clean(o.first.name, 60), `group-${o.first.id}`, { kind: KIND.follow, type: "follow" });
     }
     // a (merged) gift: the alert is rebuilt with the total
     const cfg = config.types.gift, item = o.item;
     const vars = varsOf({ ...item, count: o.count }, locale);
     if (item.anonymous === true) vars.name = text("anonymous");
-    return done(cfg, fillTemplate(cfg.template || text("gift"), vars), vars.name, `gift-${item.id}`, { kind: KIND.gift });
+    return done(cfg, fillTemplate(cfg.template || text("gift"), vars), vars.name, `gift-${item.id}`, { kind: KIND.gift, type: "gift" });
   });
 }
 
@@ -212,6 +236,8 @@ export function groupBurst(staged, { config, locale = "en", text, title, seconds
 
 const states = (globalThis.__curiosaAlertsTwitch ??= new Map());   // overlay key → { seen: Set, staged: [], held: [], paused, loaded, config, configAt, dirty }
 export const resetTwitchState = () => states.clear();
+/** The picker of one overlay: remembers (in the state, so a restart keeps it) which variant of each type came last. */
+export const pickerOf = (s, rng = Math.random) => (type, n, mode) => { const last = Number.isInteger(s.picks?.[type]?.last) ? s.picks[type].last : -1; const i = chooseIndex({ n, mode, last, rng }); (s.picks ??= {})[type] = { last: i }; return i; };
 const chain = new Map();
 const serial = (key, fn) => { const run = (chain.get(key) ?? Promise.resolve()).catch(() => {}).then(fn); chain.set(key, run); return run; };
 const COL = "twitchAlerts";
@@ -219,6 +245,21 @@ const one = async (ctx, name) => (await ctx.api.store.list(COL, { limit: 20 })).
 async function save(ctx, name, data) {
   const r = await one(ctx, name);
   if (r) await ctx.api.store.update(r.id, { name, ...data }); else await ctx.api.store.add(COL, { name, ...data });
+}
+
+/** Every upload of the site that a configuration points at (pictures, videos, sounds of the types). */
+export const usedUrls = (config) => new Set(TYPES.flatMap((id) => { const c = config.types[id]; return [c.image, c.audio, ...(c.variants ?? [])].filter(Boolean); }));
+/**
+ * Lets a file go (files.remove) only when nothing of this module still points at it: a file may be held by the media library AND by one or several types.
+ * Call it AFTER the new configuration or library row is saved. Never throws.
+ */
+export async function releaseFile(ctx, url) {
+  if (!url) return { ok: true, removed: false };
+  try {
+    const lib = (await ctx.api.store.list("mediaLib", { limit: 200 })).some((r) => r?.data?.url === url);
+    if (lib || usedUrls(await loadConfig(ctx)).has(url)) return { ok: true, removed: false, kept: true };
+    return (await ctx.api.files?.remove?.(url)) ?? { ok: true, removed: false };
+  } catch { return { ok: false }; }
 }
 
 /** The configuration of the types (stored), read at most every 10 seconds. */
@@ -238,7 +279,7 @@ export async function saveConfig(ctx, config) {
 }
 export function stateOf(ctx) {
   const k = ctx.instance.key;
-  if (!states.has(k)) states.set(k, { seen: new Set(), staged: [], held: [], texts: [], ttsMuted: false, stop: 0, skip: 0, paused: false, loaded: null, config: null, configAt: 0 });
+  if (!states.has(k)) states.set(k, { seen: new Set(), staged: [], held: [], texts: [], ttsMuted: false, stop: 0, skip: 0, picks: {}, paused: false, loaded: null, config: null, configAt: 0 });
   const s = states.get(k);
   states.delete(k); states.set(k, s);
   while (states.size > 50) states.delete(states.keys().next().value);
@@ -251,14 +292,14 @@ export async function loadState(ctx) {
     s.loaded = (async () => {
       try {
         const d = (await one(ctx, "state"))?.data;
-        if (d) { for (const id of Array.isArray(d.seen) ? d.seen : []) s.seen.add(String(id)); s.paused = d.paused === true; s.held = (Array.isArray(d.held) ? d.held : []).slice(-LIMITS.held); s.texts = (Array.isArray(d.texts) ? d.texts : []).slice(-LIMITS.texts); s.ttsMuted = d.ttsMuted === true; s.stop = Number(d.stop) || 0; s.skip = Number(d.skip) || 0; }
+        if (d) { for (const id of Array.isArray(d.seen) ? d.seen : []) s.seen.add(String(id)); s.paused = d.paused === true; s.held = (Array.isArray(d.held) ? d.held : []).slice(-LIMITS.held); s.texts = (Array.isArray(d.texts) ? d.texts : []).slice(-LIMITS.texts); s.ttsMuted = d.ttsMuted === true; s.stop = Number(d.stop) || 0; s.skip = Number(d.skip) || 0; s.picks = d.picks && typeof d.picks === "object" ? d.picks : {}; }
       } catch { /* a fresh start is fine */ }
     })();
   }
   await s.loaded;
   return s;
 }
-const persist = (ctx, s) => serial(ctx.instance.key, () => save(ctx, "state", { seen: [...s.seen].slice(-LIMITS.seenKeep), paused: s.paused, held: s.held.slice(-LIMITS.held), texts: s.texts.slice(-LIMITS.texts), ttsMuted: s.ttsMuted, stop: s.stop, skip: s.skip })).catch(() => {});
+const persist = (ctx, s) => serial(ctx.instance.key, () => save(ctx, "state", { seen: [...s.seen].slice(-LIMITS.seenKeep), paused: s.paused, held: s.held.slice(-LIMITS.held), texts: s.texts.slice(-LIMITS.texts), ttsMuted: s.ttsMuted, stop: s.stop, skip: s.skip, picks: s.picks })).catch(() => {});
 const remember = (s, key) => { s.seen.add(key); while (s.seen.size > LIMITS.seenKeep) s.seen.delete(s.seen.values().next().value); };
 
 /* ───────────── The queue controls (for the admin page, the dock and the service `alerts.queue`) ───────────── */
@@ -388,7 +429,7 @@ export async function pullTwitch(ctx, emit, env) {
   try { const r = await ctx.api.topics.collect(TOPIC, { limit: 200 }); /* the most the topic gives: a burst of up to 200 lines between two reads is not lost */ items = Array.isArray(r) ? r : []; } catch { items = []; }
   const config = await loadConfig(ctx, now);
   const t = env.t, text = (id) => t(`tw_text_${id}`), title = (phase) => t(`tw_title_${phase}`);
-  const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], now };
+  const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: pickerOf(s, env.rng), now };
   let changed = false;
   const stagedIds = new Set(s.staged.map((x) => x.key));
   const fresh = [];
@@ -423,7 +464,7 @@ export async function pullTwitch(ctx, emit, env) {
     s.staged = s.staged.filter((x) => x.readyAt > now);
     for (const x of ready) remember(s, x.key);
     changed = true;
-    const grouped = groupBurst(ready, { config, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [] });
+    const grouped = groupBurst(ready, { config, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: shared.pick });
     fresh.push(...grouped);
   }
   let sent = 0;

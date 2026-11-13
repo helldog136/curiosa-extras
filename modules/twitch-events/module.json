@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.6.0",
+  "minCore": "0.14.0",
   "id": "twitch-events",
   "name": {
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
@@ -38,6 +38,11 @@
     },
     {
       "service": "alerts.queue",
+      "optional": true
+    },
+    {
+      "service": "alerts.reaction",
+      "min": 1,
       "optional": true
     }
   ],

@@ -431,6 +431,11 @@ export function adminPageErgonomicsProblems(blocks, opts = {}) {
         if (WEAK_BUTTONS.test(sa.label ?? "")) add("R3", `the destructive button « ${sa.label} » of the form ${name}: write a precise verb and object (« Delete the partner »)`);
         if (typeof sa.confirm !== "string" || sa.confirm.trim() === "") add("R24", `the destructive button « ${sa.label ?? sa.action} » of the form ${name} has no \`confirm\` text: say what will be lost`);
       }
+      // (core 0.14.0) The non-destructive extra buttons next to the main one: a precise verb and object ("Test the alert"), never one more main button. A gallery is ONE field for R4.
+      for (const a of Array.isArray(b.extraActions) ? b.extraActions : []) {
+        if (WEAK_BUTTONS.test(a?.label ?? "")) add("R3", `the extra button « ${a?.label} » of the form ${name}: write a precise verb and object (« Test the alert »)`);
+        if (a?.label === b.submitLabel) add("R3", `the extra button « ${a?.label} » of the form ${name} has the label of the main button: only ONE main button`);
+      }
       if (TOGGLE_RE.test(b.submitLabel ?? "")) add("R17", `le bouton « ${b.submitLabel} » : un interrupteur montre l'état`);
       for (const f of shown) {
         for (const p of labelProblems(f.label ?? "")) add("R10", `champ « ${f.name} » : ${p}`);

@@ -101,3 +101,13 @@ Core 0.10.0 accepts sounds as uploads (MP3, Ogg, WAV, M4A, AAC; 10 MB at most, c
 ## Media library (version 1.8.0)
 
 The **Media** tab holds the pictures, GIFs and sounds you send (name, type, search, edit, delete) next to the six video fields. Other modules pick from this library through the service `alerts.show` (`list`, `show { visual, sound, seconds }`): the Twitch bot uses it for the "On stream" choice of commands and words. A media goes through the same queue as the alerts (pause holds it, skip and "Empty the queue" stop it) and stays on screen 2 to 60 seconds (default: the alert duration; a sound alone: 4 s, no card). A video plays with its own sound; sounds use the volume of the sounds setting. At most 30 media a minute are accepted. With an empty library the page is unchanged; after adding the first media, refresh the browser source in OBS.
+
+## Reaction service (version 1.9.0)
+
+`alerts.reaction` (version 1, one answer per overlay) lets Twitch activity set the on-screen reaction of an event type from its Types tab, without holding any file:
+
+- `list`, `get({ type })`, `media` read (summary per type, one type in full, the pictures and sounds of the library by name).
+- `set({ type, patch })` changes it; the method is listed in `callerRights`, so the files sent in that window are kept by THIS overlay (core 0.14.0, `files.claim` receives the person). Patch keys: `variants` (up to 12 uploads, pictures or videos), `pick` (`random` or `rotate`), `text`, `sound`, `audio`, `seconds`, `videoSound`. Errors are codes per field.
+- `test({ type, patch })` shows a sample alert built with the typed values, saved or not.
+
+One source of truth: the per-type settings of the Twitch events tab. A saved single picture is a list of one (nothing is migrated, the alert is byte-identical). With several variants one is picked per alert: at random, never the same twice in a row, or in turn; the position is kept in the stored state and restarts when the list changes. A file held by the library and by one or more types is let go only when the last holder lets go (`releaseFile`).

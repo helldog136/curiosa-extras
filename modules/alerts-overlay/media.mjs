@@ -73,7 +73,7 @@ export async function remove(ctx, id) {
   const row = (await rowsOf(ctx)).find((r) => r.data.id === id);
   if (!row) return { code: "unknown" };
   await ctx.api.store.remove(row.id);
-  await ctx.api.files?.remove?.(row.data.url);
+  await tw.releaseFile(ctx, row.data.url);   // kept when a reaction still uses the file
   return { ok: true, name: row.data.name };
 }
 

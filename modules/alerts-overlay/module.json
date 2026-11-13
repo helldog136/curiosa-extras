@@ -5,10 +5,10 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.8.2",
+  "version": "1.9.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
-  "minCore": "0.10.0",
+  "minCore": "0.14.0",
   "description": {
     "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
     "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains de la hype."
@@ -897,6 +897,23 @@
         "en": "The pictures, GIFs, videos and sounds of your library, shown on screen on demand (for the Twitch bot)",
         "fr": "Les images, GIF, vidéos et sons de votre bibliothèque, montrés à l'écran à la demande (pour le Bot Twitch)"
       }
+    },
+    {
+      "service": "alerts.reaction",
+      "version": 1,
+      "each": true,
+      "readOnly": [
+        "list",
+        "get",
+        "media"
+      ],
+      "callerRights": [
+        "set"
+      ],
+      "label": {
+        "en": "What each Twitch event shows on screen: pictures, GIFs, videos, sound (for Twitch activity)",
+        "fr": "Ce que chaque événement Twitch montre à l'écran : images, GIF, vidéos, son (pour Activité Twitch)"
+      }
     }
   ],
   "privacy": {
@@ -908,7 +925,7 @@
       "name": "alert_templates_get",
       "readOnly": true,
       "default": false,
-      "description": "Read how the Twitch alerts of the overlay are written. For each type (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) whether it is on, its text template (null = the default sentence), its duration in seconds (null = the module default) and its minimum (bits, gifted subs, viewers or points; null = none), its sound and animation, whether a picture is set, the words a template may use (name, count, amount, tier, months, viewers, level, title, text, total, each written between braces in a text), and the state of the queue (paused, held alerts).",
+      "description": "Read how the Twitch alerts of the overlay are written. For each type (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) whether it is on, its text template (null = the default sentence), its duration in seconds (null = the module default) and its minimum (bits, gifted subs, viewers or points; null = none), its sound and animation, whether a picture is set (and, when a reaction holds several pictures or videos, how many and the pick rule: random or rotate), the words a template may use (name, count, amount, tier, months, viewers, level, title, text, total, each written between braces in a text), and the state of the queue (paused, held alerts).",
       "input": {
         "type": "object",
         "properties": {}
