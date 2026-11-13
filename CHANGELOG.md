@@ -4,6 +4,38 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.80.0 — 2026-11-13
+
+*En bref : mettre un GIF sur un follow se fait maintenant depuis Activité Twitch, onglet Types : « Modifier », glisser des fichiers, « Enregistrer la réaction ». Plusieurs images, GIF ou vidéos par type : une est choisie au hasard à chaque fois.*
+
+*In short: putting a GIF on a follow is now done from Twitch activity, tab Types: "Edit", drop files, "Save the reaction". Several pictures, GIFs or videos per type: one is picked at random each time.*
+
+### Nouveautés
+
+- **Une colonne « Réaction » dans l'onglet Types.** Elle dit ce qui s'affiche à l'écran pour chaque type : Texte, GIF, 3 GIF · Au hasard, Vidéo + son. « Modifier » ouvre une fenêtre au-dessus de la page.
+- **Une seule grille de fichiers.** Envoyez plusieurs images, GIF ou vidéos d'un coup (jusqu'à 12), ou choisissez-les dans la bibliothèque d'Overlay alertes. Le chemin court : Modifier, ajouter les fichiers, Enregistrer la réaction.
+- **Au hasard, sans jamais deux fois de suite, ou à tour de rôle.** Un seul choix, « Ordre d'affichage », sans pourcentages. Avec un seul fichier, rien ne change par rapport à avant.
+- **Tester la réaction** montre l'alerte avec ce qui est écrit dans la fenêtre, enregistré ou non. Sous « Plus d'options » : la phrase, un son (de l'overlay ou votre fichier), la durée, le son des vidéos.
+- **Sans Overlay alertes**, une seule ligne le dit (« Overlay alertes : à ajouter ») avec le lien du Catalogue, sans bouton qui ne marche pas.
+- **Les étapes avant la première alerte** : un petit tableau « Twitch autorisé · À l'écoute · Overlay alertes ajouté », avec le lien de chaque étape à faire.
+- **L'onglet Types se met à jour tout seul** pendant qu'un type attend Twitch ; « Vérifier maintenant » devient un bouton discret.
+- **A GIF on a follow, in three clicks.** The Types tab has a "Reaction" column (Text, GIF, 3 GIFs · At random, Video + sound); "Edit" opens a window with one gallery: send several pictures, GIFs or videos at once (up to 12) or pick them from the Alerts overlay library, then "Save the reaction".
+- **At random without ever repeating, or in turn.** One choice, "Order", no percentages. With a single file nothing changes.
+- **Test the reaction** plays the alert with what is typed, saved or not. Under "More options": the sentence, a sound (built-in or your own file), the time on screen, the sound of videos.
+- **Without Alerts overlay**, one line says so ("Alerts overlay: to add") with the Catalogue link, and no dead button.
+- **The steps before the first alert**: a small table "Twitch authorized · Listening · Alerts overlay added" with the link of each missing step.
+- **The Types tab refreshes by itself** while a type waits for Twitch; "Check now" becomes a quiet button.
+
+### Pour les développeurs
+
+- Activité Twitch 1.5.0 et Overlay alertes 1.9.0, tous deux `minCore` 0.14.0 (champ `gallery`, `extraActions`, `refreshWhile`, `submitStyle`).
+- Nouveau service `alerts.reaction` (v1, `each`) d'Overlay alertes : `list`, `get`, `media` en lecture ; `set` est dans `callerRights` (les fichiers envoyés dans la fenêtre d'Activité Twitch sont gardés par Overlay alertes : `files.claim` reçoit la personne) ; `test` construit l'alerte avec les valeurs saisies sans rien enregistrer. Les erreurs sont des codes par champ.
+- Source unique : les réglages par type d'Overlay alertes. Une image seule enregistrée est une liste d'une variante (aucune migration, alerte identique octet pour octet). `variants` et `pick` ne sont écrits que s'il y a quelque chose à dire. Choix mémorisé dans l'état, remis à zéro à chaque modification de la liste.
+- Un fichier tenu par la bibliothèque et par des types n'est libéré que par son dernier détenteur (`releaseFile`) : corrige aussi l'ancienne fenêtre et la suppression d'un média de la bibliothèque, qui pouvaient effacer un fichier encore utilisé.
+- L'outil MCP `alert_templates_get` donne le nombre d'images/vidéos et la règle quand un type en a plusieurs.
+- Pas de case « élément placé dans une page d'overlay » dans la liste d'étapes : aucun service du cœur ne le dit.
+- Test : `reaction-ux`. Kit d'ergonomie et ERGONOMIE-ADMIN.md recopiés du cœur 0.14.0.
+
 ## 1.79.0 — 2026-11-13
 
 *En bref : quand Twitch réclame un accord de plus, le bouton « Autoriser de nouveau avec Twitch » est toujours là (Activité Twitch et Bot Twitch), et un abonnement bloqué sur « en attente de Twitch » se répare tout seul. En français, le train de la hype s'écrit maintenant « train de la hype ».*

@@ -9,6 +9,7 @@ const { diagnose, declareScopes } = await import(`./listen.mjs${v}`);
 const cycle = await import(`./cycle.mjs${v}`);
 const { API } = await import(`./channel.mjs${v}`);
 const dockapi = await import(`./dockapi.mjs${v}`);
+const rx = await import(`./reaction.mjs${v}`);
 const { TONE, detail, who } = await import(`./describe.mjs${v}`);
 export { TONE, detail, who };
 
@@ -87,6 +88,13 @@ export async function panel(ctx, { query } = {}) {
     [d, state] = await Promise.all([diagnose(ctx, s, { declare: false }), st.readState(ctx)]);
   }
   const enabled = st.enabledOf(state);
+  const al = await rx.alertsState(ctx), sums = al.state === "ready" ? await rx.summaries(ctx) : null, ready = al.state === "ready" && !!sums;
+  const editing = ready && typeof query?.reaction === "string" ? await rx.dialog(ctx, query.reaction) : null;
+  const code0 = d.code !== "ready" ? d.code : state.listen?.code ?? "unknown";
+  const authorized = !["need_connect", "need_reconnect", "need_more", "creds_missing", "no_channel"].includes(code0);
+  const authLink = authorized ? [] : await connectLinks(ctx, d);
+  const steps = await rx.checklist(ctx, { authorized, listening: code0 === "listening", authorizeHref: (/href="([^"]+)"/.exec(authLink[0]?.html ?? "")?.[1] ?? "").replace(/&amp;/g, "&") || null });
+  const waiting = es.TYPES.some((ty) => enabled[ty.id] === true && (state.types?.[ty.id]?.code ?? "unknown") === "pending");
   const rows = lines.map((l) => [
     fmtDate(ctx, l.at),
     { text: t(`kind_${l.kind}`), badge: TONE[l.kind] ?? "neutral" },
@@ -103,12 +111,14 @@ export async function panel(ctx, { query } = {}) {
     const why = on && code === "pending" && entry.reason ? t(`reason_${entry.reason}`) : undefined;
     const perms = ty.scopes.length ? ty.scopes.map((x) => t(SCOPE_KEY[x])).join(", ") : t("scope_none");
     return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, perms, { text: `${mark}${label}`, badge: tone, ...(why ? { title: why } : {}) },
+      ...(ready ? [{ text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),   // no column of identical dashes when the overlay is missing (R14)
       { text: on ? t("on") : t("off"), switch: { on, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: t("on"), offText: t("off") } }];
   });
   const typesCheck = (d.code !== "ready" ? d.code : state.listen?.code ?? "unknown") === "listening";   // otherwise the status area above has the button
   return [
     { type: "markdown", text: t("page_intro") },
     ...(await statusBlocks(ctx, d, state)),
+    ...(steps ? [steps] : []),
     await alertsLink(ctx),
     { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
       rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
@@ -117,9 +127,12 @@ export async function panel(ctx, { query } = {}) {
     { type: "table", tab: "dock", columns: [t("dock_renew_title")], rows: [[t("dock_renew_help")]], rowIds: ["dock"], pageSize: 0, rowActions: [{ label: t("dock_renew_btn"), action: "renewDock", confirm: t("dock_renew_confirm"), danger: true }] },
     { type: "markdown", tab: "types", text: t("types_intro") },
     ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "types" })) : []),
-    ...(typesCheck ? [{ type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), fields: [] }] : []),
-    { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), t("col_state"), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0,
-      rowActions: [{ label: t("test_btn"), action: "test" }] },
+    ...(waiting ? [{ type: "refreshWhile", tab: "types", pending: true, everySeconds: 3 }] : []),
+    ...(typesCheck ? [{ type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), submitStyle: "secondary", fields: [] }] : []),
+    ...(al.state !== "ready" ? [{ type: "links", tab: "types", items: [{ label: t(al.state === "old" ? "rx_state_old" : "rx_state_absent"), href: al.adminPath }] }] : []),
+    ...(editing ? [editing] : []),
+    { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), t("col_state"), ...(ready ? [t("col_reaction")] : []), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0, truncate: ready ? [1, 3] : [1], searchable: true, searchPlaceholder: t("search_types"),
+      rowActions: ready ? [{ label: t("rx_edit_btn"), href: "?tab=types&reaction={id}", presentation: "dialog" }, { label: t("test_btn"), action: "test", inMenu: true }] : [{ label: t("test_btn"), action: "test" }] },
   ];
 }
 
@@ -127,6 +140,7 @@ export async function panel(ctx, { query } = {}) {
 
 const fail = (ctx, key, vars) => ({ error: ctx.t(key, vars) });
 export const actions = {
+  ...rx.actions,
   async check(ctx) {
     const r = await cycle.check(ctx, settingsOf(ctx), { settle: true });
     return r.code === "listening" ? { ok: ctx.t("check_ok") } : { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };

@@ -20,6 +20,7 @@ const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const adminTw = await import(new URL(`./twitch-admin.mjs${v}`, import.meta.url).href);
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 const adminMd = await import(new URL(`./media-admin.mjs${v}`, import.meta.url).href);
+const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 /** Sounds: small synthesised notes (the page makes them, nothing is loaded). [frequency Hz, start s, length s]. Played only when the person switched sounds on. */
 const SOUND_SCRIPT = `
         var ac=null,SND={chime:[[880,0,.18],[1320,.12,.32]],bell:[[1046,0,.7]],pop:[[420,0,.09]],fanfare:[[523,0,.14],[659,.14,.14],[784,.28,.14],[1046,.42,.42]]};
@@ -410,6 +411,14 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
     "alerts.show": {
       list: async (ctx) => ({ items: (await md.list(ctx)).map(({ id, name, kind, builtin }) => ({ id, name, kind, ...(builtin ? { builtin: true } : {}) })) }),
       show: (ctx, input) => md.show(ctx, input, (a) => emit(ctx.instance.key, a)),
+    },
+    // What each Twitch event type shows (picture, GIF, video, sound), read and changed by Twitch activity. `set` carries the person (callerRights) so the files are kept HERE.
+    "alerts.reaction": {
+      list: (ctx) => rx.list(ctx),
+      get: (ctx, input) => rx.get(ctx, String(input?.type ?? "")),
+      media: (ctx) => rx.media(ctx),
+      set: (ctx, input) => rx.set(ctx, String(input?.type ?? ""), input?.patch ?? {}),
+      test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg) => adminTw.sampleAlert(c, id, Date.now(), cfg), emit: (a) => emit(ctx.instance.key, a) }),
     },
   },
   mcp: adminTw.tools((key, a) => emit(key, a)),
