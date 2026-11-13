@@ -6,7 +6,9 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
+  "adminMenu": "Réseaux.Twitch",
+  "adminMenuOrder": 40,
   "platform": "twitch",
   "description": {
     "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",

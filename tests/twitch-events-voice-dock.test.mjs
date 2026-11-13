@@ -71,5 +71,5 @@ test("the page: three switches that show their state in words, stop and skip but
   for (const key of DK.KEYS) { assert.ok(en[`dock_${key}`] && fr[`dock_${key}`], key); assert.deepEqual((en[`dock_${key}`].match(/\{\w+\}/g) ?? []).sort(), (fr[`dock_${key}`].match(/\{\w+\}/g) ?? []).sort(), key); }
   for (const r of ["word", "link", "caps", "repeat"]) assert.ok(en[`flag_reason_${r}`] && fr[`flag_reason_${r}`]);
   for (const st of ["hidden", "held", "accepted", "dismissed"]) assert.ok(en[`d_flag_${st}`] && fr[`d_flag_${st}`]);
-  assert.equal(manifest.version, "1.3.0");
+  assert.equal(manifest.version, "1.3.1");
 });

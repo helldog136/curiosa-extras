@@ -5,7 +5,9 @@
     "en": "YouTube channel",
     "fr": "Chaîne YouTube"
   },
-  "version": "1.4.2",
+  "version": "1.4.3",
+  "adminMenu": "Réseaux.YouTube",
+  "adminMenuOrder": 20,
   "platform": "youtube",
   "description": {
     "en": "Showcases your YouTube channel: its most popular recent video, your videos in the site's feed, your counts.",
