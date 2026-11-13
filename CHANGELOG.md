@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.76.0 — 2026-11-13
+
+*En bref : dans le bandeau sponsor, le QR code occupe toute la hauteur du bandeau et mène à la page de votre site qui présente le sponsor, jamais directement au lien de parrainage. Overlay sponsors (1.4.0) et Sponsors (1.1.0). Rien à régler, aucune nouvelle permission.*
+
+*In short: in the sponsor banner, the QR code fills the full height of the banner and leads to the page of your site that presents the sponsor, never straight to the referral link. Sponsor ticker (1.4.0) and Sponsors (1.1.0). Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Un QR code bien plus grand.** Il prend toute la hauteur du bandeau, avec des carrés nets, donc il se scanne depuis le canapé. Le nom, le code et le résumé se raccourcissent avec « … » (le texte complet est dans l'info-bulle) ; sur un cadre étroit, le résumé disparaît avant le QR code.
+- **Le QR code mène à votre site.** Il ouvre la page du sponsor sur votre site, où se trouvent la présentation, le code promo et le bouton vers le lien de parrainage. Si l'adresse publique de votre site n'est pas réglée, aucun QR code n'est affiché plutôt qu'un mauvais.
+- **Sans QR code, rien ne change.**
+- **A much larger QR code.** It fills the full height of the banner, with crisp squares, so it scans from the couch. The name, code and summary are cut with "…" (the full text is in the tooltip); in a narrow frame, the summary goes before the QR code does.
+- **The QR code leads to your site.** It opens the sponsor page on your site, where the presentation, the promo code and the button to the referral link are. If the public address of your site is not set, no QR code is shown rather than a wrong one.
+- **Without a QR code, nothing changes.**
+
 ## 1.75.0 — 2026-11-13
 
 *En bref : sur la télécommande, le choix des timers est dans la carte du mode collaboration, sous l'interrupteur, avec le titre « Timers quand le mode est activé ». Désactivé, le bouton choisi est seulement préparé ; activé, il est plein et la ligne d'état dit ce qui est actif. Bot Twitch (1.16.0) et Participation (1.11.0). Rien à régler, aucune nouvelle permission.*
