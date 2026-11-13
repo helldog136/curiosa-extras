@@ -36,6 +36,7 @@ export default {
           name: e.title,
           text: e.summary || undefined,
           url: safeLink(e.url) ?? `${site}${e.path}`,
+          page: `${site}${e.path}`, // the page of THIS site that presents the sponsor (what a QR code must lead to)
           code: e.code ?? undefined,
           logo: safeLink(e.cover) ?? safeLink(partner?.logo),
           publishedAt: e.publishedAt ? e.publishedAt.toISOString() : undefined,

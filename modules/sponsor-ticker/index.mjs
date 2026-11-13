@@ -41,6 +41,37 @@ export function shortDomain(url, max = 22) {
   return host.slice(0, max - tail - 1) + "\u2026" + host.slice(-tail);
 }
 
+/** What the QR code encodes: the link itself, never another one. Only redundant parts go (a lone trailing slash after the host, an upper-case scheme/host, a default port),
+ *  so a shorter payload may fit a smaller QR version (bigger modules on screen). Path, query string (tracking included) and `www.` are kept: they may matter to the sponsor. The shorter of the two spellings wins. */
+export function qrPayload(url) {
+  const raw = String(url ?? "").trim();
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return raw;
+    let n = u.href;
+    if (u.pathname === "/" && !u.search && !u.hash && n.endsWith("/")) n = n.slice(0, -1);
+    return Buffer.byteLength(n) <= Buffer.byteLength(raw) ? n : raw;
+  } catch (e) { return raw; }
+}
+
+/** True for an address that is only reachable from the machine itself (the core's default `http://localhost:3000` when the site address is not set). */
+const isLocalHost = (h) => h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h === "[::1]" || /^127\./.test(h) || h === "0.0.0.0";
+
+/** What a QR code must lead to: the page of THIS site that presents the sponsor (never the referral link, which the visitor reaches from that page).
+ *  `page`: an absolute address on the site, or a site path; `site`: the public address of the site. Returns the shortest form (scheme and host in lower case, path only: no query string, no fragment),
+ *  or null when the site address is unknown (local default) or `page` is not on the site: then NO QR is shown rather than a wrong one. */
+export function qrTarget(page, site) {
+  try {
+    const base = new URL(String(site ?? ""));
+    if ((base.protocol !== "https:" && base.protocol !== "http:") || isLocalHost(base.hostname)) return null;
+    const raw = String(page ?? "").trim();
+    if (!raw) return null;
+    const u = new URL(raw.startsWith("/") && !raw.startsWith("//") ? base.origin + raw : raw);
+    if (u.origin !== base.origin) return null;
+    return qrPayload(u.origin + u.pathname);
+  } catch (e) { return null; }
+}
+
 /** Texte posé sur la couleur d'accent : noir ou blanc, le plus contrasté (utile quand l'accent est choisi à la main, donc hors thème). */
 export function onAccent(hex) {
   const lum = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
@@ -75,13 +106,14 @@ export default {
       const site = ctx.api.siteUrl;
       const [cards, entries] = await Promise.all([ctx.api.topics.collect("sponsor.card", { limit: 60 }), ctx.api.topics.collect("core.entry", { limit: 60 })]);
       const raw = [
-        ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
+        ...cards.map((c) => ({ id: `s:${c.id ?? c.name}`, name: String(c.name), text: String(c.text ?? ""), url: safeLink(c.url), page: c.page ?? null, code: c.code ?? null, logo: safeImage(c.logo), publishedAt: c.publishedAt ?? null })),
         // Les entrées sans code ni lien ne sont pas des sponsors : on ne garde que ce qui a de quoi être montré.
-        ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
+        ...entries.filter((e) => e.code || e.url).map((e) => ({ id: `e:${e.path}`, name: String(e.title), text: String(e.summary ?? ""), url: safeLink(e.url) ?? `${site}${e.path}`, page: e.path ? `${site}${e.path}` : null, code: e.code ?? null, logo: safeImage(e.cover), publishedAt: e.publishedAt ?? null })),
       ];
       // Mode test d'une page d'overlay (?demo=1) : sans aucun sponsor, une carte d'exemple pour voir le bandeau.
-      if (!raw.length && new URL(request.url).searchParams.get("demo") === "1") raw.push({ id: "demo", name: ctx.t("demoName"), text: ctx.t("demoText"), url: "https://example.com/promo", code: "CODE10", logo: null, publishedAt: null });
-      const items = await Promise.all(raw.map(async (i) => ({ ...i, qrSvg: i.url ? await ctx.api.qr(i.url) : null })));
+      if (!raw.length && new URL(request.url).searchParams.get("demo") === "1") raw.push({ id: "demo", name: ctx.t("demoName"), text: ctx.t("demoText"), url: "https://example.com/promo", page: `${site}/`, code: "CODE10", logo: null, publishedAt: null });
+      // The QR leads to the page of this site that presents the sponsor, never straight to the referral link (`url`): the visitor meets the presentation first and follows the link from there.
+      const items = await Promise.all(raw.map(async ({ page, ...i }) => { const qrUrl = qrTarget(page, site); return { ...i, qrUrl, qrSvg: qrUrl ? await ctx.api.qr(qrUrl) : null }; }));
       return Response.json({ items }, { headers: { "cache-control": "no-store" } });
     },
   },
@@ -136,6 +168,22 @@ export default {
         [data-ov-part="logo"],[data-ov-part="qr"]{border-radius:min(var(--ov-radius,8px),8px)}
         [data-ov-part="panel"]{border:1px solid var(--ov-border,transparent)}
         [data-ov-part="title"],[data-ov-part="text"],[data-ov-part="code"],[data-ov-part="label"]{text-shadow:0 1px 3px rgba(0,0,0,.35)}` : "";
+    // QR code shown: it fills the FULL HEIGHT of the card (a square, flush with the top and bottom edges, white quiet zone inside it, crisp whole-pixel modules).
+    // QR code off: none of this is emitted, the page is byte for byte what it was.
+    const showQr = cfg.showQr;
+    const qrCss = showQr ? `
+        /* Full-height QR: the card is as high as its text, the QR is a square of that height at the right end; the diagonal cut is a fixed size so it never eats the QR or the text. */
+        .ticker-card{--tk-sk:calc(22px*var(--ov-tv,1));clip-path:polygon(var(--tk-sk) 0,100% 0,calc(100% - var(--tk-sk)) 100%,0 100%);padding-right:var(--tk-sk)}
+        .ticker-card--qr .ticker-qr{position:relative;align-self:stretch;flex:none;width:auto;height:auto;padding:0;border-radius:0;overflow:hidden;margin-left:calc(16px*var(--ov-tv,1))}
+        .ticker-card--qr .ticker-qr svg{position:absolute;display:block;shape-rendering:crispEdges}
+        .ticker-card--qr .ticker-text-col{min-width:0}
+        .tv-d .ticker-logo{display:none}` : "";
+    const qrBuild = showQr
+      ? `if(c.showQr&&s.qrUrl&&s.qrSvg){card.classList.add("ticker-card--qr");var q=el("div","ticker-qr"),mm=/viewBox="0 0 (\\d+) \\d+"/.exec(s.qrSvg),dm=shortDomain(s.qrUrl);q.innerHTML=s.qrSvg;if(mm)q.setAttribute("data-n",mm[1]);q.setAttribute("role","img");if(dm)q.setAttribute("aria-label",dm);card.append(q);col.querySelectorAll(".ticker-name,.ticker-blurb,.ticker-code").forEach(function(n){n.title=n.textContent})}`
+      : `if(c.showQr&&s.url&&s.qrSvg){card.append(el("div","ticker-divider"));var w=el("div","ticker-qr-wrap"),q=el("div","ticker-qr");q.innerHTML=s.qrSvg;w.append(q);var dm=shortDomain(s.url);if(dm)w.append(el("div","ticker-domain",dm));card.append(w)}`;
+    // Whole pixels per module (quiet zone of 2 modules inside the square), centred on whole pixels: no blur, no distortion.
+    const qrSize = showQr ? `function sizeQr(card){var q=card.querySelector(".ticker-qr"),sv=q&&q.firstChild,n=q?+q.getAttribute("data-n"):0;if(!n||!sv||sv.nodeType!==1)return true;q.style.width="0px";var h=card.clientHeight,k=0,ok=false;while(k++<4){q.style.width=h+"px";var h2=card.clientHeight;if(h2===h){ok=true;break}h=h2}var side=Math.floor(Math.min(q.clientWidth,q.clientHeight)),ppm=Math.floor(side/(n+4)),px=ppm>=1?ppm*n:side*n/(n+4),off=Math.floor((side-px)/2);sv.style.cssText="width:"+px+"px;height:"+px+"px;left:"+off+"px;top:"+off+"px";return ok}
+        ` : "";
     // Les morceaux de la carte reçoivent leur data-ov-part au fur et à mesure (la page reste celle de l'overlay, une seule source).
     const elementScript = element ? `
         (function(){var map={"ticker-card":"panel","ticker-name":"title","ticker-blurb":"text","ticker-code":"code","ticker-badge":"label","ticker-logo":"logo","ticker-qr":"qr","ticker-domain":"caption"},root=document.getElementById("tk-slider");
@@ -178,7 +226,7 @@ export default {
         .ticker-card--broadcast .ticker-shine{display:none}
         @keyframes tickerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
         @keyframes tickerShine{0%{transform:translateX(-160%)}55%,100%{transform:translateX(430%)}}
-        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}}${elementCss}`,
+        @media (prefers-reduced-motion:reduce){.ticker-card,.ticker-shine{animation:none}}${elementCss}${qrCss}`,
       script: `(function(){var c=${json},slider=document.getElementById("tk-slider"),items=[],last=null,hold;
         // Hasard : Math.random, ou un petit générateur à graine en mode développeur (?seed=N).
         var rnd=Math.random;if(c.seed!==null){var a=c.seed>>>0;rnd=function(){a=(a+0x6d2b79f5)>>>0;var t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
@@ -200,15 +248,16 @@ export default {
           if(s.code)col.append(el("div","ticker-code","CODE "+s.code));
           if(s.text)col.append(el("div","ticker-blurb",s.text));
           card.append(col);
-          if(c.showQr&&s.url&&s.qrSvg){card.append(el("div","ticker-divider"));var w=el("div","ticker-qr-wrap"),q=el("div","ticker-qr");q.innerHTML=s.qrSvg;w.append(q);var dm=shortDomain(s.url);if(dm)w.append(el("div","ticker-domain",dm));card.append(w)}
+          ${qrBuild}
           card.append(el("div","ticker-shine"));return card}
         // La carte doit toujours tenir dans la source navigateur : on essaie 3 largeurs de texte et on garde celle qui laisse le titre le plus lisible une fois mise à l'échelle.
         var cur=null;
-        ${element ? `function fitTv(card){var lim=window.innerHeight*.96,i=0,st=["tv-a","tv-b","tv-c"];card.classList.remove.apply(card.classList,st);while(i<st.length&&card.offsetHeight>lim)card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1")}
-        ` : ""}function fit(card){${element ? "if(c.tv)return fitTv(card);" : ""}var col=card.querySelector(".ticker-text-col"),nm=card.querySelector(".ticker-name"),best=null,vw=window.innerWidth,vh=window.innerHeight;
-          function apply(w){col.style.maxWidth=w+"px";nm.style.cssText="white-space:nowrap;font-size:22px";var t=fitTitle(nm.scrollWidth,w);nm.style.cssText=t.size===22?"":"font-size:"+t.size+"px";return {w:w,t:t,s:fitScale(card.offsetWidth,card.offsetHeight,vw,vh)}}
+        ${qrSize}${element ? (showQr ? `function fitTv(card){var lim=window.innerHeight*.96,tvf=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ov-tv"))||1,col=card.querySelector(".ticker-text-col"),i=0,st=["tv-a","tv-b","tv-c","tv-d"];card.classList.remove.apply(card.classList,st);function chk(){return !sizeQr(card)||card.offsetHeight>lim||col.clientWidth<150*tvf}while(i<st.length&&chk())card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1");sizeQr(card)}
+        ` : `function fitTv(card){var lim=window.innerHeight*.96,i=0,st=["tv-a","tv-b","tv-c"];card.classList.remove.apply(card.classList,st);while(i<st.length&&card.offsetHeight>lim)card.classList.add(st[i++]);slider.style.setProperty("--tk-s","1")}
+        `) : ""}function fit(card){${element ? "if(c.tv)return fitTv(card);" : ""}var col=card.querySelector(".ticker-text-col"),nm=card.querySelector(".ticker-name"),best=null,vw=window.innerWidth,vh=window.innerHeight;
+          function apply(w){col.style.maxWidth=w+"px";nm.style.cssText="white-space:nowrap;font-size:22px";var t=fitTitle(nm.scrollWidth,w);nm.style.cssText=t.size===22?"":"font-size:"+t.size+"px";${showQr ? "sizeQr(card);" : ""}return {w:w,t:t,s:fitScale(card.offsetWidth,card.offsetHeight,vw,vh)}}
           [430,330,250].forEach(function(w){if(best&&best.s>=1)return;var r=apply(w);r.score=r.t.size*r.s;if(!best||r.score>best.score*1.03)best=r});
-          apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")}
+          apply(best.w);slider.style.setProperty("--tk-s",best.s<1?String(best.s):"1")${showQr ? ";sizeQr(card)" : ""}}
         window.addEventListener("resize",function(){if(cur)fit(cur)});
         function cycle(){load().then(function(){var s=pick();if(s){last=s.id;cur=build(s);slider.replaceChildren(cur);fit(cur);go("in");clearTimeout(hold);hold=setTimeout(function(){go("out")},c.hold*1000)}
           setTimeout(cycle,Math.max(c.period,c.hold+2)*1000)})}

@@ -134,8 +134,9 @@ test("mention : une mention multi-lignes reste entièrement dans la citation", (
 test("sponsor.card : champs de la carte, repli sur l'URL de la page, date ISO, étiquettes", async () => {
   const ctx = ctxFor("en", { entries: [entry({ code: "PROMO10", cover: "https://img.test/a.png", url: "https://shop.test/?ref=me", publishedAt: date, tags: ["jeux"] }), entry({ id: "e2", title: "Sans lien", summary: "", path: "/sponsors/x" })] });
   const cards = await def.exports["sponsor.card"](ctx, { limit: 5 });
-  assert.deepEqual(cards[0], { id: "e1", name: "Marque", text: "Un résumé", url: "https://shop.test/?ref=me", code: "PROMO10", logo: "https://img.test/a.png", publishedAt: "2026-05-01T10:00:00.000Z", tags: ["jeux"] });
+  assert.deepEqual(cards[0], { id: "e1", name: "Marque", text: "Un résumé", url: "https://shop.test/?ref=me", page: "https://example.test/sponsors/marque", code: "PROMO10", logo: "https://img.test/a.png", publishedAt: "2026-05-01T10:00:00.000Z", tags: ["jeux"] });
   assert.equal(cards[1].url, "https://example.test/sponsors/x");
+  assert.equal(cards[1].page, "https://example.test/sponsors/x", "the page of this site that presents the sponsor, whatever the referral link is");
   assert.equal(cards[1].text, undefined, "résumé vide → absent");
   assert.equal(cards[1].code, undefined);
   assert.equal(cards[1].logo, undefined);

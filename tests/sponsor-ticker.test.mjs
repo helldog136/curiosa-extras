@@ -185,22 +185,23 @@ test("items : aucune source → liste vide en JSON, jamais mise en cache", async
   assert.deepEqual(body, { items: [] });
 });
 
-test("items : cartes sponsor.card — id, valeurs absentes → null, QR de l'URL, logo filtré", async () => {
+test("items : cartes sponsor.card — id, valeurs absentes → null, QR de la page du site (jamais du lien), logo filtré", async () => {
   const { ctx, body } = await itemsOf({
     "sponsor.card": [
-      { id: "a", name: "Acme", text: "Super", url: "https://acme.test", code: "ACME10", logo: "https://img.test/l.png", publishedAt: "2026-01-01T00:00:00.000Z" },
+      { id: "a", name: "Acme", text: "Super", url: "https://acme.test/?ref=me", page: "https://example.test/sponsors/acme", code: "ACME10", logo: "https://img.test/l.png", publishedAt: "2026-01-01T00:00:00.000Z" },
       { name: "Sans id", logo: "javascript:alert(1)" },
-      { id: "c", name: "Upload", logo: "/uploads/x.png", url: "https://c.test" },
+      { id: "c", name: "Upload", logo: "/uploads/x.png", url: "https://c.test", page: "https://elsewhere.test/sponsors/c" },
       { id: "d", name: "Data", logo: "data:image/png;base64,AAAA" },
     ],
   });
   const [a, b, c, d] = body.items;
-  assert.deepEqual(a, { id: "s:a", name: "Acme", text: "Super", url: "https://acme.test", code: "ACME10", logo: "https://img.test/l.png", publishedAt: "2026-01-01T00:00:00.000Z", qrSvg: '<svg data-qr="https://acme.test"></svg>' });
+  assert.deepEqual(a, { id: "s:a", name: "Acme", text: "Super", url: "https://acme.test/?ref=me", code: "ACME10", logo: "https://img.test/l.png", publishedAt: "2026-01-01T00:00:00.000Z", qrUrl: "https://example.test/sponsors/acme", qrSvg: '<svg data-qr="https://example.test/sponsors/acme"></svg>' });
   assert.equal(b.id, "s:Sans id", "sans id : repli sur le nom");
-  assert.deepEqual([b.text, b.url, b.code, b.logo, b.publishedAt, b.qrSvg], ["", null, null, null, null, null]);
+  assert.deepEqual([b.text, b.url, b.code, b.logo, b.publishedAt, b.qrUrl, b.qrSvg], ["", null, null, null, null, null, null]);
   assert.equal(c.logo, "/uploads/x.png");
   assert.equal(d.logo, null, "data: refusé");
-  assert.deepEqual(ctx.calls.qr, ["https://acme.test", "https://c.test"], "un QR seulement pour ce qui a une URL");
+  assert.deepEqual(ctx.calls.qr, ["https://example.test/sponsors/acme"], "one QR, only for a page of this site: never the referral link, never another site");
+  assert.equal(c.qrSvg, null, "a page on another site is not a QR target");
 });
 
 test("items : entrées core.entry — seules celles avec code ou lien, URL de repli = page du site", async () => {
@@ -214,6 +215,8 @@ test("items : entrées core.entry — seules celles avec code ou lien, URL de re
   assert.deepEqual(body.items.map((i) => i.id), ["e:/codes/b", "e:/links/c"]);
   const [code, link] = body.items;
   assert.equal(code.url, "https://example.test/codes/b");
+  assert.equal(code.qrUrl, "https://example.test/codes/b");
+  assert.equal(link.qrUrl, "https://example.test/links/c", "the QR leads to the entry page on the site, not to the external link");
   assert.equal(code.code, "XYZ"); assert.equal(code.logo, "/uploads/c.png");
   assert.equal(link.url, "https://ext.test/p"); assert.equal(link.logo, null); assert.equal(link.code, null);
 });
@@ -300,7 +303,7 @@ test("script : les aides pures sont recopiées telles quelles dans la page et la
   const box = { URL };
   vm.runInNewContext(`${shortDomain.toString()};${fitScale.toString()};${fitTitle.toString()};out={d:shortDomain("https://www.un-nom-de-domaine-vraiment-tres-long-exemple.com"),s:fitScale(680,96,340,100),t:fitTitle(827,430)}`, box);
   assert.deepEqual(JSON.parse(JSON.stringify(box.out)), { d: shortDomain("https://www.un-nom-de-domaine-vraiment-tres-long-exemple.com"), s: fitScale(680, 96, 340, 100), t: fitTitle(827, 430) });
-  assert.match(out.script, /shortDomain\(s\.url\)/);
+  assert.match(out.script, /shortDomain\(s\.qrUrl\)/);
   assert.ok(!out.script.includes("function domain("), "plus de légende coupée à 74 px");
 });
 
@@ -347,7 +350,7 @@ test("échappement : noms, textes, codes et domaines venus du serveur ne passent
   assert.match(s, /el\("div","ticker-name",s\.name\)/);
   assert.match(s, /el\("div","ticker-blurb",s\.text\)/);
   assert.match(s, /el\("div","ticker-code","CODE "\+s\.code\)/);
-  assert.match(s, /el\("div","ticker-domain",dm\)/);
+  assert.match(s, /setAttribute\("aria-label",dm\)/);
   assert.equal(shortDomain("https://<img src=x onerror=alert(1)>.test"), "", "URL invalide : pas de légende");
   assert.ok(!shortDomain("https://a.test/<script>").includes("<"));
 });

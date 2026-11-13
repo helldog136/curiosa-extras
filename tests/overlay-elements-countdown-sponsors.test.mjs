@@ -32,7 +32,7 @@ const initialOf = (out) => JSON.parse(out.script.match(/bootOverlay\(window,docu
 const get = (url) => new Request(`https://example.test${url}`);
 
 // ── Déclaration ─────────────────────────────────────────────────────────────────────────────────────────────────────
-for (const [name, manifest, def, id, minCore, version] of [["Compte à rebours", cdManifest, cd, "countdown", "0.11.0", "1.3.0"], ["Overlay sponsors", tkManifest, tk, "sponsors", "0.11.0", "1.3.0"]]) {
+for (const [name, manifest, def, id, minCore, version] of [["Compte à rebours", cdManifest, cd, "countdown", "0.11.0", "1.3.0"], ["Overlay sponsors", tkManifest, tk, "sponsors", "0.11.0", "1.4.0"]]) {
   test(`${name} : manifeste valide, minCore ${minCore}, un élément « ${id} » qui garde ses proportions`, () => {
     const r = parseManifest(manifest);
     assert.ok(r.ok, r.ok ? "" : r.error);
