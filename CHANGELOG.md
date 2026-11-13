@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.75.0 — 2026-11-13
+
+*En bref : sur la télécommande, le choix des timers est dans la carte du mode collaboration, sous l'interrupteur, avec le titre « Timers quand le mode est activé ». Désactivé, le bouton choisi est seulement préparé ; activé, il est plein et la ligne d'état dit ce qui est actif. Bot Twitch (1.16.0) et Participation (1.11.0). Rien à régler, aucune nouvelle permission.*
+
+*In short: on the remote control, the timers choice is inside the collaboration card, under the switch, titled "Timers when the mode is on". While off, the chosen button is only prepared; while on, it is filled and the state line says what is active. Twitch bot (1.16.0) and Audience (1.11.0). Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Une seule carte.** L'interrupteur, sa ligne d'état, les boutons des timers et « Plus d'options » sont dans la même carte. Le titre dit quand le choix s'applique : « Timers quand le mode est activé ».
+- **Désactivé, le choix est préparé.** Contour en pointillés et petite coche ; l'info-bulle dit qu'il sera utilisé à l'activation. Activé, le bouton est plein et la ligne dit « Activé — timers 1 sur 3 — s'arrête dans 5 h 20 ».
+- **Mêmes mots sur la page du bot et pour votre assistant IA.**
+- **One card.** The switch, its state line, the timers buttons and "More options" are in the same card. The title says when the choice applies: "Timers when the mode is on".
+- **While off, the choice is prepared.** Dashed outline and a small check; the tooltip says it is used at switch-on. While on, the button is filled and the line says "On — timers 1 in 3 — stops in 5 h 20".
+- **Same words on the bot page and for your AI assistant.**
+
+### Pour les développeurs
+
+- Twitch bot 1.16.0: `card: true` and option `title` in the remote panel, labels `rc_collab_timers` / `rc_collab_hours` / `co_f_timers`, MCP texts and `timersApplyNow`. Audience 1.11.0: additive toggle field `card` and option field `title` (output unchanged without them). No data migration. See `docs/changelog-parts/bot-collab-scope.md`. Tests: `twitch-bot-remote-browser`, `twitch-bot-collab`, `audience-remote-panel`; captures `docs/captures/ergonomie-collab-scope/`.
+
 ## 1.74.0 — 2026-11-12
 
 *En bref : les éléments des pages d'overlay suivent l'échelle de texte TV de Curiosa (0.11.0) : aucun texte sous 24 px à l'écran, quel que soit le cadre, et la taille de texte que vous choisissez s'applique exactement. Les fenêtres de modification des partenaires ont leur bouton « Supprimer le partenaire » (Curiosa 0.12.0). Compteurs, remerciements, jeux proposés, sponsors, raids, compte à rebours, prochain événement, sondage, chiffres de la chaîne, avis, tirage au sort, mascotte et planning ; Partenariats 2.4.0.*
