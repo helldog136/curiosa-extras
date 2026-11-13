@@ -7,6 +7,8 @@ const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 export const COLLECTION = "mediaLib";
 export const LIMITS = { items: 100, name: 40, perMinute: 30, soundOnlySeconds: 4 };
 export const KINDS = ["picture", "video", "sound"];
+/** At most this many files in one `visuals` list of `show` (several GIFs or videos for one command: one is picked each time). */
+export const VISUALS_MAX = 12;
 /** The synthesised sounds of the page, offered next to the sound files (nothing is uploaded for them). */
 export const TONES = tw.SOUNDS.filter((x) => x !== "none");
 
@@ -16,8 +18,8 @@ export const fold = (x) => String(x ?? "").normalize("NFKD").replace(/\p{M}+/gu,
 export const cleanName = (x) => clean(x, LIMITS.name);
 const newId = () => `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-const rowsOf = async (ctx) => (await ctx.api.store.list(COLLECTION, { limit: 200 })).filter((r) => r?.data && typeof r.data.id === "string" && ["picture", "sound"].includes(r.data.kind));
-const urlRe = { picture: tw.IMAGE_RE, sound: tw.AUDIO_RE };
+const rowsOf = async (ctx) => (await ctx.api.store.list(COLLECTION, { limit: 200 })).filter((r) => r?.data && typeof r.data.id === "string" && ["picture", "sound", "video"].includes(r.data.kind));
+const urlRe = { picture: tw.IMAGE_RE, sound: tw.AUDIO_RE, video: tw.VIDEO_RE };
 
 /** The files of the library, as the service lists them: [{ id, name, kind, url, builtin? }], videos and synthesised sounds included, sorted by kind then name. */
 export async function list(ctx, { tones = true } = {}) {
@@ -46,7 +48,7 @@ const taken = (items, name, exceptId) => items.some((m) => m.id !== exceptId && 
 
 /** Adds a file the person has just sent. `kind`: picture | sound. Rends { ok, id } or { code } (name, dup, file, full). The file is KEPT by this module (files.claim). */
 export async function add(ctx, { name, kind, url }) {
-  if (!["picture", "sound"].includes(kind)) return { code: "file" };
+  if (!["picture", "sound", "video"].includes(kind)) return { code: "file" };
   const n = cleanName(name);
   if (!n) return { code: "name" };
   const all = await list(ctx, { tones: false });
@@ -60,6 +62,29 @@ export async function add(ctx, { name, kind, url }) {
   await ctx.api.store.add(COLLECTION, { id, name: n, kind, url: clean0 });
   return { ok: true, id };
 }
+/**
+ * Several files just sent in another module's window (service `alerts.show`, method `add`, carried with the person): each is kept by this overlay and named. A file that is already in the
+ * library is not added twice. `items`: [{ src, label? }]. Rends { ok: true, ids: { [src]: id } } or { ok: false, code, src? } ("limit", "file", "full").
+ */
+export async function addMany(ctx, items) {
+  const entries = (Array.isArray(items) ? items : []).map((x) => ({ src: String(typeof x === "string" ? x : x?.src ?? "").trim().replace(/\?.*$/, ""), label: cleanName(typeof x === "object" ? x?.label : "") }));
+  if (!entries.length || entries.length > VISUALS_MAX) return { ok: false, code: "limit" };
+  const ids = {};
+  for (const [i, it] of entries.entries()) {
+    const kind = tw.IMAGE_RE.test(it.src) ? "picture" : tw.VIDEO_RE.test(it.src) ? "video" : null;
+    if (!kind) return { ok: false, code: "file", src: it.src };
+    const have = (await list0(ctx)).find((m) => m.url === it.src);
+    if (have) { ids[it.src] = have.id; continue; }
+    let name = it.label, k = 0;
+    const all = await list(ctx);
+    while (!name || taken(all, name)) { k += 1; name = ctx.t(kind === "video" ? "md_auto_video" : "md_auto_picture", { n: all.length + k + i }); }
+    const r = await add(ctx, { name, kind, url: it.src });
+    if (!r.ok) return { ok: false, code: r.code, src: it.src };
+    ids[it.src] = r.id;
+  }
+  return { ok: true, ids };
+}
+const list0 = (ctx) => list(ctx, { tones: false });
 export async function rename(ctx, id, name) {
   const row = (await rowsOf(ctx)).find((r) => r.data.id === id);
   if (!row) return { code: "unknown" };
@@ -105,8 +130,19 @@ export function alertOf({ visual, sound, seconds, secondsDefault }) {
 export async function show(ctx, input, emit, now = Date.now()) {
   const items = await list(ctx);
   const ask = (id) => (id === undefined || id === null || id === "" ? null : items.find((m) => m.id === String(id)) ?? false);
-  const visual = ask(input?.visual), sound = ask(input?.sound);
-  const missing = [visual === false ? String(input.visual) : null, sound === false ? String(input.sound) : null].filter(Boolean);
+  // several pictures or videos for one command: one is picked (at random, never the same twice in a row, or in turn); a list of one is the old `visual`
+  let pickedId = input?.visual;
+  if (Array.isArray(input?.visuals) && input.visuals.length) {
+    const ids = [...new Set(input.visuals.map(String))];
+    if (ids.length > VISUALS_MAX) return { ok: false, code: "limit" };
+    const gone = ids.filter((id) => !["picture", "video"].includes(items.find((m) => m.id === id)?.kind));
+    if (gone.length) return { ok: false, code: "missing", missing: gone };
+    const s = tw.stateOf(ctx), key = `media:${String(input?.key ?? "").slice(0, 80) || "default"}`;
+    const mode = input?.pick === "rotate" ? "rotate" : "random";
+    pickedId = ids[tw.pickerOf(s, input?.rng)(key, ids.length, mode)];
+  }
+  const visual = ask(pickedId), sound = ask(input?.sound);
+  const missing = [visual === false ? String(pickedId) : null, sound === false ? String(input.sound) : null].filter(Boolean);
   if (missing.length) return { ok: false, code: "missing", missing };
   if (visual && visual.kind === "sound") return { ok: false, code: "missing", missing: [visual.id] };
   if (sound && sound.kind !== "sound") return { ok: false, code: "missing", missing: [sound.id] };

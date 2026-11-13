@@ -725,5 +725,11 @@
   "connect_fallback": "Ouvrir le Connecteur Twitch",
   "connect_tip": "Chez Twitch, connectez-vous avec le compte de votre chaîne, puis cliquez sur « Autoriser ». Vous revenez ici.",
   "connect_bot_tip": "Chez Twitch, connectez-vous avec le compte du bot (pas le vôtre), puis cliquez sur « Autoriser ».",
-  "rw_connect_tip": "Chez Twitch, cliquez sur « Autoriser ». Le chat continue de fonctionner."
+  "rw_connect_tip": "Chez Twitch, cliquez sur « Autoriser ». Le chat continue de fonctionner.",
+  "f_media_pick": "Ordre d'affichage",
+  "f_media_pick_help": "Au hasard, jamais deux fois de suite.",
+  "media_pick_random": "Au hasard",
+  "media_pick_rotate": "À tour de rôle",
+  "err_media_limit": "12 fichiers au plus. Retirez-en un, par exemple le dernier.",
+  "reason_media_limit": "Trop de fichiers pour une commande."
 }

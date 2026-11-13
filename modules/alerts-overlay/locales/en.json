@@ -278,5 +278,7 @@
   "md_err_file": "Send a file with the button, for example a PNG, GIF or MP3.",
   "md_err_full": "The library is full ({max} files). Delete some before adding more.",
   "md_err_unknown": "This file does not exist (any more).",
-  "md_err_busy": "Too many files shown in a minute. Try again in a moment."
+  "md_err_busy": "Too many files shown in a minute. Try again in a moment.",
+  "md_auto_picture": "Picture {n}",
+  "md_auto_video": "Clip {n}"
 }

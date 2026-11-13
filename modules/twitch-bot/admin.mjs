@@ -48,8 +48,8 @@ export async function context(ctx, { declare = true } = {}) {
   const cfg = (await loadConfig(ctx)).data;
   const list = catalog(cfg, sources, ctx.t, { timeZone: s.timeZone });
   let lib = null;   // the library of the alerts overlay is only asked when something needs it (a media is being saved)
-  const library = () => (lib ??= MD.library(ctx));
-  return { s, d, sources, cfg, list, words: W.wordCatalog(cfg), library, env: { src: sources, t: ctx.t, prefix: s.prefix, library } };
+  const library = (o) => (o?.fresh ? (lib = MD.library(ctx)) : (lib ??= MD.library(ctx)));   // `fresh`: asked again after the overlay kept new files
+  return { ctx, s, d, sources, cfg, list, words: W.wordCatalog(cfg), library, env: { src: sources, t: ctx.t, prefix: s.prefix, library } };
 }
 
 /* ───────────── Le haut de page : UNE ligne d'état et l'arrêt d'urgence ───────────── */
@@ -210,7 +210,7 @@ const FIELD_OF = { period: "period", timer_minutes: "repeatEvery", timer_lines: 
 const WORD_FIELD = { words_empty: "words", words_many: "words", word_bad: "words", word_taken: "words", reply_or_media: "text", chance: "chance", role: "role", mode: "mode" };
 /** The errors of a word go under their field (R22). */
 const wordFailed = (ctx, r) => { const f = WORD_FIELD[r.code] ?? (r.code.startsWith("text_") ? "text" : r.code === "delay" ? r.field : r.code.startsWith("media_") ? r.field : null); return f ? { errors: { [f]: saveError(ctx, r) } } : { error: saveError(ctx, r) }; };
-const failed = (ctx, r) => (FIELD_OF[r.code] ? { errors: { [FIELD_OF[r.code]]: saveError(ctx, r) } } : { error: saveError(ctx, r) });
+const failed = (ctx, r) => (FIELD_OF[r.code] ? { errors: { [FIELD_OF[r.code]]: saveError(ctx, r) } } : r.code?.startsWith("media_") && r.field === "mediaFiles" ? { errors: { mediaFiles: saveError(ctx, r) } } : { error: saveError(ctx, r) });
 const can = (ctx) => typeof ctx.can === "function" && ctx.can("timers.manage") === true;
 /**
  * Les champs « Répéter automatiquement » du formulaire (interrupteur, durée en secondes, minimum de lignes, quand) → { repeat } ou { bad }. Rien n'est envoyé quand le formulaire n'a pas ces champs
@@ -240,6 +240,23 @@ function timerOnlyCheck(ctx, fields, cur) {
 }
 /** The media fields of a form → { media } (null = cleared), or {} when the form has none or no alerts overlay answers (the saved choice then stays as it is). */
 async function mediaOf(info, v) {
+  if (v.mediaFiles !== undefined) {
+    // the gallery: addresses of files. Those already in the library are found there; the new ones are kept and named by the overlay (service add, carried with the person).
+    const lib = await info.library();
+    if (!lib.available) return {};
+    let raw = [];
+    try { const p = JSON.parse(String(v.mediaFiles || "[]")); raw = Array.isArray(p) ? p : []; } catch { raw = []; }
+    const srcs = raw.map((x) => String(typeof x === "string" ? x : x?.src ?? "")).filter(Boolean).slice(0, 60);
+    const byUrl = new Map(lib.items.filter((m) => m.url).map((m) => [m.url, m.id]));
+    const fresh = srcs.filter((u) => !byUrl.has(u));
+    if (fresh.length) {
+      const r = await info.ctx.api.services.call(MD.SERVICE, "add", { items: fresh.map((src) => ({ src })) }, { asCaller: true });
+      if (r?.ok && r.value?.ok) for (const [src, id] of Object.entries(r.value.ids ?? {})) byUrl.set(src, id);
+      await info.library({ fresh: true });
+    }
+    // an address that could not be kept stays as it is and is refused as "not in the library", under the gallery
+    return { media: { visuals: srcs.map((u) => byUrl.get(u) ?? u), pick: v.mediaPick, sound: v.mediaSound ?? "", seconds: v.mediaSeconds ?? "" } };
+  }
   if (v.mediaVisual === undefined && v.mediaSound === undefined) return {};
   if (!(await info.library()).available) return {};
   return { media: { visual: v.mediaVisual ?? "", sound: v.mediaSound ?? "", seconds: v.mediaSeconds ?? "" } };

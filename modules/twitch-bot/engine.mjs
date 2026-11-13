@@ -215,7 +215,7 @@ export async function processChat(ctx, chat, { now = Date.now(), state = null, d
     return log("error", `send_${sent.code}`, { detail: sent.detail ?? null });
   }
   st.rememberSent(ctx, sent.messageId); st.rememberSaid(ctx, message, now);
-  if (cmd.media) await media.showOnStream(ctx, cmd.media);   // after the answer, never instead of it: a missing overlay or media changes nothing in the chat
+  if (cmd.media) await media.showOnStream(ctx, cmd.media, { key: cmd.key ?? cmd.name });   // after the answer, never instead of it: a missing overlay or media changes nothing in the chat
   // The reply is gone: the counter and the journal are written now (one after the other, in order).
   if (counts) { const w = st.setCounter(ctx, cmd.key, next).catch(() => {}); if (deferLog) logs.push(w); else await w; }
   // Ce que les gens tapent n'est jamais gardé : si la réponse reprend leurs mots, le journal n'en garde pas le texte.
@@ -264,7 +264,7 @@ async function processWords(ctx, s, chat, text, { now, state, deferLog, random }
   if (!st.takeSlot(ctx, "words", { max: s.wordsPerMinute, windowMs: 60_000, now })) return log("refused", "rate");
   if (!hit.text) {   // a media alone: nothing is written in the chat
     st.checkCooldown(ctx, delays);
-    const shown = await media.showOnStream(ctx, hit.media);
+    const shown = await media.showOnStream(ctx, hit.media, { key: hit.key });
     if (!shown.ok) { st.releaseCooldown(ctx, delays); st.giveBackSlot(ctx, "words"); return log("error", `media_${shown.code}`); }
     return log("sent", "ok", { text: ctx.t("log_media_only") });
   }
@@ -278,6 +278,6 @@ async function processWords(ctx, s, chat, text, { now, state, deferLog, random }
   const sent = await sendChat(ctx, diag, message);
   if (!sent.sent) { giveBack(); return log("error", `send_${sent.code}`, { detail: sent.detail ?? null }); }
   st.rememberSent(ctx, sent.messageId); st.rememberSaid(ctx, message, now);
-  if (hit.media) await media.showOnStream(ctx, hit.media);
+  if (hit.media) await media.showOnStream(ctx, hit.media, { key: hit.key });
   return log("sent", "ok", { text: message.slice(0, 160) });
 }
