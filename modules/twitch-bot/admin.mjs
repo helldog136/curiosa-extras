@@ -18,6 +18,8 @@ const RA = await import(`./rewardsAdmin.mjs${v}`);
 const TA = await import(`./timersAdmin.mjs${v}`);
 const CO = await import(`./collab.mjs${v}`);
 const COU = await import(`./collabUi.mjs${v}`);
+const W = await import(`./words.mjs${v}`);
+const MD = await import(`./media.mjs${v}`);
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const cut = (v, n) => { const s = String(v ?? ""); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
@@ -45,7 +47,9 @@ export async function context(ctx, { declare = true } = {}) {
   const sources = await src.gather(ctx, d.channel ?? null);
   const cfg = (await loadConfig(ctx)).data;
   const list = catalog(cfg, sources, ctx.t, { timeZone: s.timeZone });
-  return { s, d, sources, cfg, list, env: { src: sources, t: ctx.t, prefix: s.prefix } };
+  let lib = null;   // the library of the alerts overlay is only asked when something needs it (a media is being saved)
+  const library = () => (lib ??= MD.library(ctx));
+  return { s, d, sources, cfg, list, words: W.wordCatalog(cfg), library, env: { src: sources, t: ctx.t, prefix: s.prefix, library } };
 }
 
 /* ───────────── Le haut de page : UNE ligne d'état et l'arrêt d'urgence ───────────── */
@@ -127,6 +131,10 @@ async function editBlocks(ctx, info, key, query) {
   const [kind, ...rest] = String(key).split(":");
   const id = rest.join(":");
   const tab = tabOf(query);
+  if (kind === "word") {
+    const w = info.words.find((x) => x.key === key);
+    return w ? [CU.wordForm(ctx, info, { mode: "edit", view: w, key, tab })] : [{ type: "banner", tone: "warning", text: t("edit_unknown") }];
+  }
   const c = list.find((x) => x.key === key);
   let proposal = null, item = null;
   if (!c && kind === "network") { item = sources.networks.items.find((n) => n.key === id); if (item) proposal = proposeNetwork(item, list, t); }
@@ -143,6 +151,7 @@ async function editBlocks(ctx, info, key, query) {
 }
 
 function newBlocks(ctx, info, query) {
+  if (query?.new === "word") return [CU.wordForm(ctx, info, { mode: "new", view: query.example ? { ...W.examples(ctx.t)[0], role: "everyone" } : { words: [], text: "", role: "everyone" }, tab: tabOf(query) })];
   return [CU.commandForm(ctx, info, { mode: "new", kind: "custom", tab: tabOf(query), varsHelp: varsHelp(ctx.t, "custom"), view: { name: "", text: "", role: "everyone", aliases: [], vars: {} } })];
 }
 
@@ -162,6 +171,7 @@ function botAccountBlocks(ctx, info) {
 export async function panel(ctx, { query }) {
   const t = ctx.t;
   const info = await context(ctx);
+  info.lib = await info.library();
   let state = await st.readState(ctx);
   // Tout est prêt mais l'écoute n'est pas (ou plus) vérifiée : on la vérifie à l'ouverture de la page (au plus une fois toutes les 2 minutes, et 5 secondes après un « en attente »), pour ne pas faire cliquer pour rien.
   const sub = state.sub ?? {};
@@ -175,7 +185,8 @@ export async function panel(ctx, { query }) {
   const edit = typeof query?.edit === "string" ? query.edit : "";
   if (edit) blocks.push(...(await editBlocks(ctx, info, edit, query)));
   else if (query?.new) blocks.push(...newBlocks(ctx, info, query));
-  blocks.push({ type: "heading", text: t("summary_title") }, { type: "markdown", text: t("summary_help") }, CU.newLink(ctx), CU.commandsTable(ctx, info));
+  blocks.push({ type: "heading", text: t("summary_title") }, { type: "markdown", text: t("summary_help") }, CU.newLink(ctx, { example: !info.words.length }));
+  blocks.push(CU.commandsTable(ctx, info));
   const add = CU.addChooser(ctx, info, { partnerHref: partnerHref(ctx) });
   if (add) blocks.push(add);
   blocks.push(CU.logBlock(ctx, info.s, await st.readLog(ctx)));
@@ -188,6 +199,9 @@ export async function panel(ctx, { query }) {
 
 /** Une erreur d'enregistrement : sous le champ quand on sait lequel (la période), sinon en haut. */
 const FIELD_OF = { period: "period", timer_minutes: "repeatEvery", timer_lines: "repeatLines", timer_many: "repeatOn", repeat_kind: "repeatOn", timer_only: "timerOnly" };
+const WORD_FIELD = { words_empty: "words", words_many: "words", word_bad: "words", word_taken: "words", reply_or_media: "text", chance: "chance", role: "role", mode: "mode" };
+/** The errors of a word go under their field (R22). */
+const wordFailed = (ctx, r) => { const f = WORD_FIELD[r.code] ?? (r.code.startsWith("text_") ? "text" : r.code === "delay" ? r.field : r.code.startsWith("media_") ? r.field : null); return f ? { errors: { [f]: saveError(ctx, r) } } : { error: saveError(ctx, r) }; };
 const failed = (ctx, r) => (FIELD_OF[r.code] ? { errors: { [FIELD_OF[r.code]]: saveError(ctx, r) } } : { error: saveError(ctx, r) });
 const can = (ctx) => typeof ctx.can === "function" && ctx.can("timers.manage") === true;
 /**
@@ -216,6 +230,13 @@ function timerOnlyCheck(ctx, fields, cur) {
   const rep = fields.repeat ?? cur;
   return rep ? null : { errors: { timerOnly: ctx.t("err_timer_only") } };
 }
+/** The media fields of a form → { media } (null = cleared), or {} when the form has none or no alerts overlay answers (the saved choice then stays as it is). */
+async function mediaOf(info, v) {
+  if (v.mediaVisual === undefined && v.mediaSound === undefined) return {};
+  if (!(await info.library()).available) return {};
+  return { media: { visual: v.mediaVisual ?? "", sound: v.mediaSound ?? "", seconds: v.mediaSeconds ?? "" } };
+}
+const wordFields = async (info, v) => ({ words: v.words ?? "", text: v.text ?? "", role: v.role || "everyone", mode: v.mode === "contains" ? "contains" : "whole", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "", chance: v.chance ?? "", collab: v.collab === "on", ...(await mediaOf(info, v)) });
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };
 const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled === "on" } : {}), name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
 
@@ -253,7 +274,7 @@ export const actions = {
     const cur = info.list.find((x) => x.key === key);
     const rep = repeatOf(ctx, v, cur?.repeat ?? null);
     if (rep.bad) return rep.bad;
-    const fields = { ...fieldsFrom(v), ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(kind === "custom" && v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
+    const fields = { ...fieldsFrom(v), ...(await mediaOf(info, v)), ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(kind === "custom" && v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
     if (v.resetText === "on" && (kind === "builtin" || kind === "group") && cur?.defaultText !== undefined) fields.text = cur.defaultText;   // « Rétablir le texte d'origine »
     const bad = timerOnlyCheck(ctx, fields, cur?.repeat ?? null);
     if (bad) return bad;
@@ -268,16 +289,33 @@ export const actions = {
     if (per.bad) return per.bad;
     const rep = repeatOf(ctx, v, null);
     if (rep.bad) return rep.bad;
-    const fields = { ...fieldsFrom(v), enabled: true, ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
+    const fields = { ...fieldsFrom(v), enabled: true, ...(await mediaOf(info, v)), ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
     const bad = timerOnlyCheck(ctx, fields, null);
     if (bad) return bad;
     const r = await saveCommand(ctx, { kind: "custom" }, fields, info.env);
     return r.ok === false ? failed(ctx, r) : { ok: ctx.t("created") };
   },
   /** L'interrupteur de la liste DIT l'état voulu (`enabled` : « 1 » ou « 0 ») : un double clic ne défait rien. Sans `enabled` (ancien appel), l'état est inversé. */
+  async createWord(ctx, v) {
+    const info = await context(ctx, { declare: false });
+    const r = await W.saveWord(ctx, {}, { ...(await wordFields(info, v)), enabled: true }, info.env);
+    return r.ok === false ? wordFailed(ctx, r) : { ok: ctx.t("word_created") };
+  },
+  async saveWord(ctx, v) {
+    const info = await context(ctx, { declare: false });
+    const r = await W.saveWord(ctx, { id: parseKey(v.id).id }, await wordFields(info, v), info.env);
+    return r.ok === false ? wordFailed(ctx, r) : { ok: ctx.t("saved") };
+  },
   async toggle(ctx, v) {
     const info = await context(ctx, { declare: false });
     const { kind, id } = parseKey(v.id);
+    if (kind === "word") {
+      const w = info.words.find((x) => x.key === v.id);
+      if (!w) return { error: ctx.t("err_unknown") };
+      const want = v.enabled === undefined ? !w.enabled : String(v.enabled) === "1";
+      const r = await W.saveWord(ctx, { id }, { enabled: want }, info.env);
+      return r.ok === false ? { error: saveError(ctx, r) } : { ok: ctx.t(want ? "word_on" : "word_off", { word: w.name }) };
+    }
     const c = info.list.find((x) => x.key === v.id);
     if (!c) return { error: ctx.t("err_unknown") };
     const want = v.enabled === undefined ? !c.enabled : String(v.enabled) === "1";
@@ -288,6 +326,7 @@ export const actions = {
   async remove(ctx, v) {
     const raw = String(v.id ?? "");
     const { kind, id } = raw.includes(":") ? parseKey(raw) : { kind: "custom", id: raw };
+    if (kind === "word") { const w = await W.removeWord(ctx, id); return w.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("word_deleted") }; }
     if (kind !== "custom") return { error: ctx.t("delete_own_only") };
     const r = await removeCustom(ctx, id);
     return r.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("deleted") };

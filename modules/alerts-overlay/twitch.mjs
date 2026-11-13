@@ -331,6 +331,15 @@ export async function resume(ctx, emit) {
   await persist(ctx, s);
   return { paused: false, released: out.length };
 }
+/** Shows an alert made by another module of the site (a media from the library): held when the alerts are paused (it comes out on resume, in order), otherwise sent to the pages. Rends "shown" or "held". */
+export async function showOrHold(ctx, alert, emit) {
+  const s = await loadState(ctx);
+  if (!s.paused) { emit(alert); return "shown"; }
+  s.held.push(alert);
+  if (s.held.length > LIMITS.held) s.held.shift();
+  await persist(ctx, s);
+  return "held";
+}
 /** Empties what waits (held and staged alerts) and tells the pages to empty their own queue and the card on screen. */
 export async function clearQueue(ctx, emit) {
   const s = await loadState(ctx);

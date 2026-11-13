@@ -15,6 +15,8 @@ const st = await import(`./state.mjs${v}`);
 const { diagnoseFast, sendChat } = await import(`./listen.mjs${v}`);
 const { handleKill } = await import(`./kill.mjs${v}`);
 const collab = await import(`./collab.mjs${v}`);
+const W = await import(`./words.mjs${v}`);
+const media = await import(`./media.mjs${v}`);
 
 /* ───────────── Les valeurs des variables ───────────── */
 
@@ -132,10 +134,11 @@ export function needsOf(cmd) {
  * `now`: for tests. `state`: the state the caller already read (saves one read). `deferLog`: the reply goes out, then the journal is written while the caller carries on;
  * the promise of that write is in `result.logged` (the caller awaits it before it returns: nothing is lost).
  */
-export async function processChat(ctx, chat, { now = Date.now(), state = null, deferLog = false } = {}) {
+export async function processChat(ctx, chat, { now = Date.now(), state = null, deferLog = false, random = Math.random } = {}) {
   const s = settingsOf(ctx);
   const text = chat.text.trim();
-  if (!s.prefix || !text.startsWith(s.prefix)) return { handled: false, why: "not_command" };
+  // Not a command: it may still contain a word that triggers an answer (words.mjs). A message that starts with the command sign is never a word trigger.
+  if (!s.prefix || !text.startsWith(s.prefix)) return processWords(ctx, s, chat, text, { now, state, deferLog, random });
   const word = norm(text.slice(s.prefix.length).split(/\s+/)[0] ?? "", "");
   if (!word) return { handled: false, why: "no_word" };
   // Jamais de réponse à un message venu d'ailleurs, à un bot connu ou à l'un de nos propres messages (pas de boucle) : en silence.
@@ -211,9 +214,70 @@ export async function processChat(ctx, chat, { now = Date.now(), state = null, d
     st.releaseCooldown(ctx, delays); st.giveBackSendSlot(ctx);
     return log("error", `send_${sent.code}`, { detail: sent.detail ?? null });
   }
-  st.rememberSent(ctx, sent.messageId);
+  st.rememberSent(ctx, sent.messageId); st.rememberSaid(ctx, message, now);
+  if (cmd.media) await media.showOnStream(ctx, cmd.media);   // after the answer, never instead of it: a missing overlay or media changes nothing in the chat
   // The reply is gone: the counter and the journal are written now (one after the other, in order).
   if (counts) { const w = st.setCounter(ctx, cmd.key, next).catch(() => {}); if (deferLog) logs.push(w); else await w; }
   // Ce que les gens tapent n'est jamais gardé : si la réponse reprend leurs mots, le journal n'en garde pas le texte.
   return log("sent", "ok", usesChatWords(cmd.text) ? {} : { text: message.slice(0, 160) });
+}
+
+/* ───────────── Word triggers ───────────── */
+
+/**
+ * A chat message that is not a command: does it contain a word of a trigger? Silent for everything that is not a match (no reading beyond the cached configuration).
+ * Guards, in this order: another channel's message, our own message, a known bot, no trigger matches; then, for a match only: the bot is ready, the emergency stop, "only while live",
+ * who may trigger it, collaboration mode (word triggers stay quiet unless the trigger says otherwise), the wait of the trigger, "1 time out of N", the valve of the whole bot.
+ * Only what was answered or failed is written in the journal (a word said all the time would drown it).
+ */
+async function processWords(ctx, s, chat, text, { now, state, deferLog, random }) {
+  if (!text || chat.foreign) return { handled: false, why: "foreign" };
+  if (st.isOwnMessage(ctx, chat.messageId) || st.saidRecently(ctx, text, now)) return { handled: false, why: "own" };
+  if (s.bots.has(chat.login)) return { handled: false, why: "bot" };
+  const cfg = (await loadConfigCached(ctx)).data;
+  const triggers = W.wordCatalog(cfg).filter((w) => w.enabled);
+  if (!triggers.length) return { handled: false, why: "not_command" };
+  const msg = W.prepare(text);
+  const hit = triggers.find((w) => W.matches(w, msg));
+  if (!hit) return { handled: false, why: "not_command" };
+  const refuse = (reason) => ({ handled: true, result: "refused", reason });
+  const diag = await diagnoseFast(ctx, s);
+  if (diag.code !== "ready") return refuse("not_ready");
+  if (chat.broadcasterId !== diag.broadcasterId) return { handled: false, why: "other_channel" };
+  if (s.replyAs === "bot" && chat.chatterId === diag.senderId) return { handled: false, why: "own" };   // the account that speaks for the bot never triggers a word
+  const stateDoc = state ?? await st.readState(ctx);
+  if (stateDoc.muted === true) return refuse("muted");
+  if (s.onlyWhenLive) { const live = await src.liveGate(ctx, diag.channel ?? null); if (!live?.known || !live.live) return refuse("offline"); }
+  if (levelOf(chat) < ROLE_LEVEL[hit.role]) return refuse("role");
+  const cs = collab.effective(stateDoc, now);
+  if (cs.on && !hit.collab) return refuse("quiet");   // collaboration mode: an answer nobody asked for stays quiet
+  const delays = { command: hit.key, user: chat.chatterId, globalSec: collab.stretch(hit.cdGlobal ?? W.DEFAULTS.cdGlobal, cs), userSec: collab.stretch(hit.cdUser ?? W.DEFAULTS.cdUser, cs), now };
+  const wait = st.checkCooldown(ctx, { ...delays, reserve: false });
+  if (wait) return refuse("cooldown");
+  if (hit.chance > 1 && Math.floor(random() * hit.chance) !== 0) return refuse("chance");
+  const log = async (result, reason, extra = {}) => {
+    const written = st.addLog(ctx, { user: chat.login, command: `💬 ${hit.name}`, result, reason, ...extra });
+    if (deferLog) { const out = { handled: true, result, reason, ...extra }; Object.defineProperty(out, "logged", { value: written.catch(() => {}), enumerable: false }); return out; }
+    await written;
+    return { handled: true, result, reason, ...extra };
+  };
+  if (!st.takeSlot(ctx, "words", { max: s.wordsPerMinute, windowMs: 60_000, now })) return log("refused", "rate");
+  if (!hit.text) {   // a media alone: nothing is written in the chat
+    st.checkCooldown(ctx, delays);
+    const shown = await media.showOnStream(ctx, hit.media);
+    if (!shown.ok) { st.releaseCooldown(ctx, delays); st.giveBackSlot(ctx, "words"); return log("error", `media_${shown.code}`); }
+    return log("sent", "ok", { text: ctx.t("log_media_only") });
+  }
+  if (!st.takeSendSlot(ctx, { max: s.maxPerWindow, windowMs: 30_000, now })) { st.giveBackSlot(ctx, "words"); return log("refused", "rate"); }
+  st.checkCooldown(ctx, delays);
+  const entry = { text: hit.text, vars: {}, kind: "word" };
+  const sources = await src.gather(ctx, diag.channel ?? null, [...needsOf(entry)]);
+  const message = await compose(ctx, s, entry, chat.name || chat.login, { channel: diag.channel ?? null, sources, list: [], now });
+  const giveBack = () => { st.releaseCooldown(ctx, delays); st.giveBackSendSlot(ctx); st.giveBackSlot(ctx, "words"); };
+  if (!message) { giveBack(); return refuse("empty"); }
+  const sent = await sendChat(ctx, diag, message);
+  if (!sent.sent) { giveBack(); return log("error", `send_${sent.code}`, { detail: sent.detail ?? null }); }
+  st.rememberSent(ctx, sent.messageId); st.rememberSaid(ctx, message, now);
+  if (hit.media) await media.showOnStream(ctx, hit.media);
+  return log("sent", "ok", { text: message.slice(0, 160) });
 }

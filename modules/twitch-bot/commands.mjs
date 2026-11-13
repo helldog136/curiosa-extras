@@ -7,6 +7,7 @@ const v = new URL(import.meta.url).search; // la version du module se propage au
 const { checkTemplate, used, allowedFor } = await import(`./variables.mjs${v}`);
 const { parsePeriod, readPeriod, isOpen, nextOpening } = await import(`./period.mjs${v}`);
 const { memoryOf } = await import(`./state.mjs${v}`);
+const { readMedia, checkMedia, library: mediaLibrary } = await import(`./media.mjs${v}`);
 
 export const ROLES = ["everyone", "subscribers", "mods", "owner"];
 export const ROLE_LEVEL = { everyone: 0, subscribers: 1, mods: 2, owner: 3 };
@@ -75,13 +76,14 @@ export function parseDelay(v) {
 
 /* ───────────── Le document de configuration ───────────── */
 
-export const emptyConfig = () => ({ v: 1, custom: [], builtin: {}, partners: {}, networks: {}, group: {}, timers: [] });
+export const emptyConfig = () => ({ v: 1, custom: [], builtin: {}, partners: {}, networks: {}, group: {}, timers: [], words: [] });
 const rec = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 /** Relit le document avec prudence : une forme inattendue ne casse rien. */
 export function readConfig(data) {
   const d = rec(data), c = emptyConfig();
   c.custom = Array.isArray(d.custom) ? d.custom.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];
   c.timers = Array.isArray(d.timers) ? d.timers.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];
+  c.words = Array.isArray(d.words) ? d.words.filter((x) => x && typeof x === "object" && typeof x.id === "string") : [];   // word triggers (see words.mjs): absent = none, no migration
   for (const k of ["builtin", "partners", "networks", "group"]) c[k] = rec(d[k]);
   return c;
 }
@@ -158,7 +160,7 @@ export function checkRepeat(f, current = null) {
   return { ok: true, value: { minutes, lines, when, enabled: f.enabled === undefined ? current?.enabled !== false : f.enabled === true } };
 }
 const small = (v) => (Number.isInteger(v) && v >= 0 && v <= MAX_DELAY ? v : null);
-const base = (o, extra) => ({ period: readPeriod(o.period), repeat: readRepeat(o.repeat), aliases: Array.isArray(o.aliases) ? o.aliases : [], role: roleOf(o.role), cdGlobal: small(o.cdGlobal), cdUser: small(o.cdUser), ...extra });
+const base = (o, extra) => ({ period: readPeriod(o.period), repeat: readRepeat(o.repeat), aliases: Array.isArray(o.aliases) ? o.aliases : [], role: roleOf(o.role), media: readMedia(o.media), cdGlobal: small(o.cdGlobal), cdUser: small(o.cdUser), ...extra });
 
 /**
  * La liste de TOUTES les commandes, avec leur état.
@@ -256,8 +258,9 @@ const errorOf = (code, extra = {}) => ({ ok: false, code, ...extra });
  * Vérifie et applique des champs à une commande. `fields` : { enabled?, name?, aliases?, text?, role?, cdGlobal?, cdUser? } (seuls les champs présents changent).
  * `ref` : { kind, id } (id absent pour créer une commande « custom »). `src` : sources (partenaires, réseaux). Rend { ok: true, key } ou { ok: false, code, … }.
  */
-export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
-  return mutate(ctx, (cfg) => {
+export async function saveCommand(ctx, ref, fields, env) {
+  const { prefix = "!", src, t } = env;
+  return mutate(ctx, async (cfg) => {
     const list = catalog(cfg, src, t);
     const f = fields ?? {};
     const kind = ref.kind;
@@ -276,7 +279,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     let item = current;
     if (!item && (kind === "partner" || kind === "network")) return errorOf("unknown");
     const key = `${kind}:${id}`;
-    const draft = { enabled: item?.enabled ?? true, name: item?.name ?? "", aliases: item?.aliases ?? [], text: item?.text ?? "", role: item?.role ?? "everyone", cdGlobal: item?.cdGlobal ?? null, cdUser: item?.cdUser ?? null, period: item?.period ?? null, repeat: item?.repeat ?? null };
+    const draft = { enabled: item?.enabled ?? true, name: item?.name ?? "", aliases: item?.aliases ?? [], text: item?.text ?? "", role: item?.role ?? "everyone", cdGlobal: item?.cdGlobal ?? null, cdUser: item?.cdUser ?? null, period: item?.period ?? null, repeat: item?.repeat ?? null, media: item?.media ?? null };
     if (f.enabled !== undefined) draft.enabled = f.enabled === true;
     if (f.name !== undefined) {
       const n = norm(f.name, prefix);
@@ -289,6 +292,11 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     if (f.role !== undefined) { if (!ROLES.includes(f.role)) return errorOf("role"); draft.role = f.role; }
     for (const [field, k] of [["cdGlobal", "cdGlobal"], ["cdUser", "cdUser"]]) if (f[field] !== undefined) { const d = parseDelay(f[field]); if (d.error) return errorOf("delay"); draft[k] = d.value; }
     if (f.period !== undefined) { const p = parsePeriod(f.period); if (!p.ok) return errorOf("period", { field: p.field, reason: p.reason, month: p.month, day: p.day, year: p.year }); draft.period = p.value; }
+    if (f.media !== undefined) {
+      const m = checkMedia(f.media, f.media === null ? { available: true, items: [] } : await (env.library?.() ?? mediaLibrary(ctx)));
+      if (!m.ok) return errorOf(m.code, { field: m.field });
+      draft.media = m.value;
+    }
     if (f.repeat !== undefined) {
       if (kind === "partner" && f.repeat) return errorOf("repeat_kind");
       if (f.repeat === null) draft.repeat = null;
@@ -312,13 +320,13 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     const clash = collisions(list.filter((c) => !(creating && c.key === key)), key, [draft.name, ...draft.aliases]);
     if (clash.length) return errorOf("collision", { word: clash[0].word, with: clash[0].with.name, withLabel: clash[0].with.label, withKind: clash[0].with.kind });
 
-    const rec0 = { enabled: draft.enabled, name: draft.name, aliases: draft.aliases, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}) };
+    const rec0 = { enabled: draft.enabled, name: draft.name, aliases: draft.aliases, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}), ...(draft.media ? { media: draft.media } : {}) };
     if (kind === "custom") {
       const entry = { id, ...rec0, text: draft.text, ...(timerOnly ? { timerOnly: true } : {}), ...(current?.title ? { title: current.title } : {}) };
       if (creating) cfg.custom.push(entry); else cfg.custom = cfg.custom.map((c) => (c.id === id ? entry : c));
     } else if (kind === "builtin") {
       const def = BUILTINS.find((b) => b.id === id);
-      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}) };
+      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}), ...(draft.media ? { media: draft.media } : {}) };
       if (draft.name !== def.name) o.name = draft.name;
       if (JSON.stringify(draft.aliases) !== JSON.stringify(def.aliases)) o.aliases = draft.aliases;
       if (f.text !== undefined && draft.text !== current.defaultText) o.text = draft.text;
@@ -327,7 +335,7 @@ export async function saveCommand(ctx, ref, fields, { prefix = "!", src, t }) {
     } else if (kind === "partner") cfg.partners[id] = { ...rec0, text: draft.text, title: current.label };
     else if (kind === "network") cfg.networks[id] = { ...rec0, text: draft.text, title: current.label };
     else if (kind === "group") {
-      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, name: draft.name, aliases: draft.aliases, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}) };
+      const o = { enabled: draft.enabled, role: draft.role, cdGlobal: draft.cdGlobal, cdUser: draft.cdUser, name: draft.name, aliases: draft.aliases, ...(draft.period ? { period: draft.period } : {}), ...(draft.repeat ? { repeat: draft.repeat } : {}), ...(draft.media ? { media: draft.media } : {}) };
       if (f.text !== undefined && draft.text !== current.defaultText) o.text = draft.text;
       cfg.group = o;
     } else return errorOf("unknown");

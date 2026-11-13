@@ -23,6 +23,16 @@ export function saveError(ctx, r) {
     case "too_many": return t("err_too_many");
     case "source_missing": return t("err_source_missing");
     case "period": return periodError(ctx, r);
+    case "words_empty": return t("err_words_empty");
+    case "words_many": return t("err_words_many");
+    case "word_bad": return t("err_word_bad", { value: r.value ?? "" });
+    case "word_taken": return t("err_word_taken", { word: r.word, with: r.with });
+    case "reply_or_media": return t("err_reply_or_media");
+    case "chance": return t("err_chance");
+    case "too_many_words": return t("err_too_many_words");
+    case "media_absent": return t("err_media_absent");
+    case "media_missing": return t("err_media_missing");
+    case "media_seconds": return t("err_media_seconds");
     case "timer_name": return t("err_timer_name");
     case "timer_dup": return t("err_timer_dup");
     case "timer_minutes": return t("err_timer_minutes");

@@ -122,6 +122,26 @@ export function takeSendSlot(ctx, { max, windowMs, now = Date.now() }) {
 }
 export function giveBackSendSlot(ctx) { of(ctx).sends.pop(); }
 
+/** A second, separate valve: at most `max` uses of the `bucket` in `windowMs` (the automatic answers of word triggers). Rends true when one more passes (and counts it). */
+export function takeSlot(ctx, bucket, { max, windowMs, now = Date.now() }) {
+  const m = of(ctx);
+  m.slots ??= new Map();
+  const l = (m.slots.get(bucket) ?? []).filter((t) => now - t < windowMs);
+  m.slots.set(bucket, l);
+  if (l.length >= max) return false;
+  l.push(now);
+  return true;
+}
+export function giveBackSlot(ctx, bucket) { of(ctx).slots?.get(bucket)?.pop(); }
+/** The texts the bot sent itself in the last seconds: a message that says the same thing right after is the bot hearing itself (it never triggers a word). */
+export function rememberSaid(ctx, text, now = Date.now()) {
+  const m = of(ctx);
+  m.said ??= new Map();
+  m.said.set(String(text).trim().toLowerCase(), now);
+  if (m.said.size > 100) for (const [k, t] of m.said) if (now - t > 30_000) m.said.delete(k);
+}
+export const saidRecently = (ctx, text, now = Date.now(), ms = 20_000) => now - (of(ctx).said?.get(String(text).trim().toLowerCase()) ?? -Infinity) < ms;
+
 /** Ce message a-t-il déjà été traité ? (Twitch peut renvoyer le même.) Le marque comme vu. Garde 10 minutes, 2000 identifiants au plus. */
 export function seenBefore(ctx, id, now = Date.now()) {
   const m = of(ctx);

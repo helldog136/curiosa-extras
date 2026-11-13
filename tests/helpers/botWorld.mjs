@@ -38,7 +38,7 @@ export function world(o = {}) {
   const ctx = fakeCtx({
     key: "bot", moduleId: "twitch-bot", locale: "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.locale === "en" ? en : fr, logEvents: readJson("module.json").logEvents ?? [], settings, siteUrl: o.siteUrl ?? "https://site.example.org", topics, instances,
     can: o.can,
-    services: o.draw ? { "audience.draw": o.draw } : {},
+    services: { ...(o.draw ? { "audience.draw": o.draw } : {}), ...(o.services ?? {}) },
     serviceInstances: {
       "twitch.api": [{ instance: "emma", name: "emma", methods: {
         account: (a) => {
