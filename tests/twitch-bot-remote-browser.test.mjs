@@ -193,6 +193,22 @@ for (const [name, opts] of [["dock 280 px dark", { viewport: [280, 420], dock: t
       for (let i = 0; i < 4; i++) { const r = await segs.nth(i).boundingBox(); assert.ok(r.height >= 44 && r.width >= 44, `choice ${i}: ${r.width}x${r.height}`); assert.ok(r.x >= 0 && r.x + r.width <= opts.viewport[0] + 0.5); }
       const sw = await h.page.locator(CARD).boundingBox(); assert.ok(sw.height >= 44 && sw.x >= 0 && sw.x + sw.width <= opts.viewport[0] + 0.5);
       assert.equal(await segs.nth(2).getAttribute("aria-checked"), "true", "the default (1 in 3) is selected");
+      // 1.16.0: the choices live INSIDE the card, under the switch, and say when they apply (structure, not prose)
+      const card = own(h);
+      assert.equal(await card.getAttribute("role"), "group"); assert.equal(await card.evaluate((e) => document.getElementById(e.getAttribute("aria-labelledby")).textContent), "Collaboration mode", "the card is a group named by its title");
+      assert.equal(await card.evaluate((e) => e.classList.contains("tgcard") && e.classList.contains("off")), true);
+      assert.equal(await card.locator(".tgc").count(), 2, "both groups (timers, automatic end) are inside the card");
+      assert.equal(await h.page.locator(".tgc").count(), 2, "and nowhere else");
+      assert.equal(await card.locator(".tgc").first().getAttribute("role"), "radiogroup"); assert.equal(await card.locator(".tgc").first().getAttribute("aria-label"), "Timers when the mode is on");
+      assert.equal(await card.locator(".tgc .seglab").first().innerText(), "Timers when the mode is on");
+      assert.equal(await card.locator(".mo").count(), 1, "the fold is inside the card"); assert.equal(await card.locator(".mo .seglab").first().textContent(), "When the mode is on, stops after");
+      assert.equal(await h.page.locator(".seglab", { hasText: /^Timers$/ }).count(), 0, "no separate section titled Timers");
+      assert.deepEqual(await segs.evaluateAll((l) => l.map((e) => [e.getAttribute("role"), e.getAttribute("aria-disabled"), e.disabled])), Array(4).fill(["radio", null, false]), "never disabled: choosing while off is allowed");
+      assert.deepEqual(await segs.evaluateAll((l) => l.map((e) => e.title)), ["Timers paused", "Timers: 1 time in 2", "Timers: 1 time in 3, used when you switch the mode on", "Timers: 1 time in 5"]);
+      const chosen = (sel) => h.page.evaluate((s) => { const e = document.querySelector(s), c = getComputedStyle(e); return { style: c.borderTopStyle, bg: c.backgroundColor, shadow: c.boxShadow, after: getComputedStyle(e, "::after").content, w: e.getBoundingClientRect().width }; }, sel);
+      const prepared = await chosen('.sgb[aria-checked="true"]');
+      assert.equal(prepared.style, "dashed", "off: the chosen button is outlined (prepared)"); assert.equal(prepared.shadow, "none", "off: no accent bar");
+      assert.equal(prepared.bg, "rgba(0, 0, 0, 0)", "off: not the accent fill"); assert.match(prepared.after, /✓/, "off: a small check says it is the chosen one");
       // the off state is not drawn like a warning (the emergency switch, when paused, keeps its amber)
       const colours = await h.page.evaluate((sel) => { const c = getComputedStyle(document.querySelector(sel)); const w = getComputedStyle(document.documentElement).getPropertyValue("--cur-warn").trim(); return { border: c.borderTopColor, warn: w }; }, CARD);
       assert.notEqual(colours.border, colours.warn);
@@ -201,6 +217,10 @@ for (const [name, opts] of [["dock 280 px dark", { viewport: [280, 420], dock: t
       await h.page.waitForSelector(CARD + '[aria-checked="true"]');
       assert.equal(await cardText(h).then((x) => x.split("\n").filter(Boolean).at(-1)), "✓ On — timers 1 in 3 — stops in 6 h".replace("✓ ", ""), "text");
       assert.equal(await pseudo(h, CARD + " .tgs", "::before"), '"✓ "', "on: a check mark and the words");
+      const active = await chosen('.sgb[aria-checked="true"]');
+      assert.equal(active.style, "solid", "on: the chosen button gets the accent filled style"); assert.notEqual(active.shadow, "none"); assert.notEqual(active.bg, "rgba(0, 0, 0, 0)"); assert.ok(active.after === "none" || active.after === "normal" || active.after === '""', "on: no 'prepared' check");
+      assert.equal(await own(h).evaluate((e) => e.classList.contains("on") && !e.classList.contains("off")), true);
+      assert.equal(await segs.nth(2).getAttribute("title"), "Timers: 1 time in 3", "on: the tooltip no longer says 'used when you switch the mode on'");
       assert.equal(await flat(h), true);
       const cut = await h.page.evaluate(() => [...document.querySelectorAll(".tgl, .tgs, .sgb, .seglab, .hint, .mo summary")].filter((e) => e.offsetParent && e.scrollWidth > e.clientWidth + 1).map((e) => e.className + ": " + e.textContent));
       assert.deepEqual(cut, [], "no label is cut");
@@ -273,6 +293,10 @@ test("in French the collaboration card says the same with 'vous' and short words
   const h = await openCard({ locale: "fr", viewport: [280, 420], dock: true });
   try {
     assert.match(await cardText(h), /Mode collaboration[\s\S]*Désactivé — le bot parle comme d'habitude/);
+    assert.equal(await own(h).locator(".tgc .seglab").first().innerText(), "Timers quand le mode est activé");
+    assert.equal(await own(h).locator(".mo .seglab").first().textContent(), "Quand le mode est activé, arrêt après");
+    assert.equal(await own(h).locator(".tgc").first().getAttribute("aria-label"), "Timers quand le mode est activé");
+    assert.equal(await h.page.locator('.sgb[aria-checked="true"]').first().getAttribute("title"), "Timers : 1 fois sur 3, utilisé à l'activation");
     assert.deepEqual(await h.page.locator(".tgc").first().locator(".sgb").allInnerTexts(), ["Pause", "1 sur 2", "1 sur 3", "1 sur 5"]);
     await h.page.locator(CARD).click(); await h.page.waitForSelector(CARD + '[aria-checked="true"]');
     assert.match(await cardText(h), /Activé — timers 1 sur 3 — s'arrête dans 6 h/);

@@ -335,6 +335,14 @@ kbd{display:none;font:600 11px/1 ui-monospace,monospace;padding:2px 5px;border-r
 .qm{min-width:44px;min-height:44px;border-radius:50%;border:2px solid var(--cur-line);background:var(--cur-surface);color:var(--cur-fg);font:inherit;font-weight:800;cursor:pointer;touch-action:manipulation}
 .qm[aria-expanded=true]{border-color:var(--cur-accent)}.qh{display:grid;gap:4px;justify-items:end}.qh .mop{justify-self:stretch}
 .mo .tgc{margin-bottom:6px}
+/* A switch drawn as a card (toggle.card): the switch is the header, its choices and fold sit inside. The border and the fill carry the state; the chosen option is only "prepared" (dashed, with a check) while it is off. */
+.tgcard{border-radius:var(--cur-radius);border:2px solid var(--cur-line);background:var(--cur-surface);gap:0}
+.tgcard.on{border-color:var(--cur-accent);background:color-mix(in srgb,var(--cur-accent) 10%,var(--cur-surface))}
+.tgcard.off:not(.calm){border-color:var(--cur-warn)}
+.tgcard .tg.tg.tg{border-color:transparent;background:transparent}
+.tgin{display:grid;gap:2px;min-width:0;padding:0 10px 6px}
+.tgcard.off .sgb[aria-checked=true]{position:relative;border-style:dashed;border-color:var(--cur-accent);background:transparent;box-shadow:none;font-weight:700}
+.tgcard.off .sgb[aria-checked=true]::after{content:"✓" / "";position:absolute;top:1px;right:5px;font-size:.8em;line-height:1;font-weight:800;color:var(--cur-accent)}
 .hint,.note{margin:0;color:var(--cur-muted);font-size:.86em}
 .gform{display:grid;gap:clamp(6px,1.2cqh,10px);min-width:0}
 .gform .form .in::placeholder{color:var(--cur-muted);opacity:.75}

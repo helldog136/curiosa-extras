@@ -1,5 +1,6 @@
 // Audience 1.9.0 adds, to a switch, groups of segmented choices and a folded explanation (tests at the end); 1.8.0: what a plugged-in module may describe in its panel of the remote control, besides buttons and forms: a SWITCH (shows the current state), values and a heading on buttons,
 // a small badge under the tab name and one note. Everything is text, bounded and checked here; the old panels (Polls) are not changed.
+import fs from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { L, R, C, manifest } from "./helpers/audienceHarness.mjs";
@@ -51,7 +52,7 @@ test("the page carries the word for 'working' in both languages, and the journal
   const { fr, en } = await import("./helpers/audienceHarness.mjs");
   for (const d of [fr, en]) for (const k of ["remoteBusy", "what_panel_pause", "what_panel_resume", "what_panel_addcom", "what_panel_undo", "what_panel_collabon", "what_panel_collaboff", "what_panel_collabset", "remoteExplain", "remoteMore"]) assert.ok(d[k], k);
   assert.deepEqual(Object.keys(fr).sort(), Object.keys(en).sort());
-  assert.equal(manifest.version, "1.10.0");
+  assert.equal(manifest.version, "1.11.0");
   assert.deepEqual(manifest.offers.map((o) => o.service), ["audience.session", "audience.draw"], "the contract of the services Audience offers is not changed");
   assert.deepEqual(manifest.requires, [{ service: "audience.remote", optional: true }], "the remote is still optional for plugged-in modules, and nothing else is required");
 });
@@ -83,6 +84,34 @@ test("a switch without the new fields comes out exactly as before (same keys), a
   assert.deepEqual(Object.keys(p.toggles[0]).sort(), ["hint", "id", "label", "on", "text", "values"]);
   assert.deepEqual(L.sanitizeChoices(undefined), []); assert.deepEqual(L.sanitizeChoices([null, 3, {}]), []);
   assert.equal(L.LIMITS.toggles, 3);
+});
+
+/* ───────────── 1.11.0: the choices inside a card (toggle.card), a tooltip per option ───────────── */
+
+test("`card` (strictly true) keeps the choices inside the switch card and allows 40-character group labels; `title` is a 60-character tooltip per option; without them the output is exactly the old one", () => {
+  const opts = (extra) => [{ value: "a", label: "Pause", on: true, ...extra }, { value: "b", label: "1 in 2" }];
+  const mk = (card, extra) => L.sanitizePanel({ ...base, toggles: [{ id: "collabon", label: "Mode", on: false, calm: true, ...(card === undefined ? {} : { card }), choices: [{ id: "collabset", name: "timers", label: "L".repeat(50), options: opts(extra) }] }] }).toggles[0];
+  const plain = mk(undefined), asked = mk(true, { title: "T".repeat(90) });
+  assert.equal(plain.card, undefined); assert.equal("card" in plain, false);
+  assert.equal(plain.choices[0].label.length, 30, "a switch without `card` keeps the 30-character label");
+  assert.equal("title" in plain.choices[0].options[0], false);
+  assert.equal(asked.card, true); assert.equal(asked.choices[0].label.length, 40);
+  assert.equal(asked.choices[0].options[0].title.length, 60); assert.equal("title" in asked.choices[0].options[1], false);
+  assert.equal(mk("true").card, undefined, "strictly true only");
+  assert.deepEqual(plain, mk(false), "card:false is the old output, byte for byte");
+  assert.equal(JSON.stringify(L.sanitizeChoices([{ id: "x", name: "n", label: "Label", options: opts() }])), JSON.stringify(L.sanitizeChoices([{ id: "x", name: "n", label: "Label", options: opts() }], 30)));
+});
+
+test("the page script draws a card as a group named by its title, with the choices and the folds inside it, a prepared choice while off, and never disables a choice", () => {
+  assert.match(C.REMOTE_JS, /tg\.card/);
+  assert.match(C.REMOTE_JS, /setAttribute\("role", "group"\)/);
+  assert.match(C.REMOTE_JS, /setAttribute\("aria-labelledby", lab\.id\)/);
+  assert.match(C.REMOTE_JS, /h\("div", "tgin"\)/);
+  assert.match(C.REMOTE_JS, /ob\.title = o\.title/);
+  assert.doesNotMatch(C.REMOTE_JS, /ob\.disabled|ob\.setAttribute\("aria-disabled", "true"\)/);
+  const css = fs.readFileSync(new URL("../modules/audience/remote.mjs", import.meta.url), "utf8");
+  assert.match(css, /\.tgcard\.off \.sgb\[aria-checked=true\]\{[^}]*border-style:dashed/, "off: the chosen option is outlined, not filled");
+  assert.doesNotMatch(css, /\.tgcard\.off \.sgb\[aria-checked=true\]\{[^}]*box-shadow:inset/);
 });
 
 test("the page script draws the choices as a radio group of buttons (aria-checked, 'working' on the pressed one), a calm switch, and two folds that keep their state; no innerHTML", () => {

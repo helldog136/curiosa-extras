@@ -349,13 +349,15 @@ test("page: ergonomics (field budget, labels, helps) and the same page in French
   await add(ctx, "salut", { repeat: undefined, minutes: 5 });
   await CO.setOn(ctx, true, "admin");
   assertAdminPageErgonomics(await A.panel(ctx, { query: {} }), { errors: [] });
-  const keys = Object.keys(en).filter((k) => k.startsWith("co_") || k.startsWith("rc_collab") || k === "rc_badge_collab" || k === "rc_e_collab" || k === "rw_reason_collab");
-  assert.ok(keys.length >= 36);
+  const keys = Object.keys(en).filter((k) => k.startsWith("co_") || k.startsWith("rc_collab") || k.startsWith("rc_opt_") || k === "rc_badge_collab" || k === "rc_e_collab" || k === "rw_reason_collab");
+  assert.ok(keys.length >= 39);
   for (const k of keys) {
     assert.ok(k in fr, `fr has ${k}`);
     assert.deepEqual([...en[k].matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort(), [...fr[k].matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort(), `variables of ${k}`);
     for (const [lang, d] of [["en", en], ["fr", fr]]) { assert.deepEqual(forbiddenWords(d[k], "twitch-bot"), [], `${lang} ${k}`); assert.deepEqual(toneProblems(d[k], lang), [], `${lang} ${k}`); }
   }
+  for (const k of ["rc_collab_timers", "rc_collab_hours"]) for (const d of [en, fr]) { assert.deepEqual(labelProblems(d[k]), [], k); assert.ok(d[k].length <= 40, `${k} fits a card label`); }
+  assert.match(en.co_f_timers, /when the mode is on/i); assert.match(fr.co_f_timers, /quand le mode est activé/i);
   for (const k of ["co_f_timers", "co_f_factor", "co_f_quiet", "co_f_hours", "co_start_btn", "co_stop_btn", "co_pill_on"]) for (const d of [en, fr]) assert.deepEqual(labelProblems(d[k]), [], k);
   for (const k of ["co_off_text", "co_f_factor_help", "co_f_quiet_help", "co_f_hours_help"]) for (const d of [en, fr]) assert.ok(d[k].length <= 60, `${k} (${d[k].length})`);
 });
@@ -388,13 +390,26 @@ test("remote card: it says what it does when off and on, shows what is active, o
   assert.match(c.more, /Commands typed by your viewers still get their answer/, "what it does is in the \"?\" bubble");
   assert.equal(c.foldLabel, "More options");
   const [timers, hours] = c.choices;
-  assert.deepEqual([timers.id, timers.name, timers.label, timers.folded, timers.options.map((o) => [o.value, o.label, o.on])], ["collabset", "timers", "Timers", false, [["pause", "Pause", false], ["2", "1 in 2", false], ["3", "1 in 3", true], ["5", "1 in 5", false]]]);
+  assert.deepEqual([timers.id, timers.name, timers.label, timers.folded, timers.options.map((o) => [o.value, o.label, o.on])], ["collabset", "timers", "Timers when the mode is on", false, [["pause", "Pause", false], ["2", "1 in 2", false], ["3", "1 in 3", true], ["5", "1 in 5", false]]]);
+  // since 1.16.0 the choices are INSIDE the card and the label says when they apply; each button has a tooltip, the chosen one says it is used at the next switch-on
+  assert.equal(c.card, true);
+  assert.deepEqual(timers.options.map((o) => o.title), ["Timers paused", "Timers: 1 time in 2", "Timers: 1 time in 3, used when you switch the mode on", "Timers: 1 time in 5"]);
+  assert.equal(hours.label, "When the mode is on, stops after");
   assert.deepEqual([timers.hint, c.choices[1].hint], ["", ""], "no helper sentence under the choices");
   assert.deepEqual([hours.name, hours.folded, hours.options.map((o) => [o.value, o.label, o.on])], ["hours", true, [["2", "2 h", false], ["4", "4 h", false], ["6", "6 h", true], ["0", "Never", false]]]);
   // what is active now, in the state line
   await w.press("collabon");
   c = await card();
   assert.equal(c.text, "On — timers 1 in 3 — stops in 6 h"); assert.equal(c.on, true);
+  assert.equal(c.choices[0].options.find((o) => o.on).title, "Timers: 1 time in 3", "while on, the chosen one is the active one: no 'used at the next switch-on'");
+});
+
+test("in French the card words state the same condition (label, not a sentence of filler), and the tooltips name the timers", async () => {
+  const w = await remoteWorld({ locale: "fr" });
+  const c = (await w.panels()).find((x) => x.id === "id-bot").toggles[1];
+  assert.deepEqual([c.label, c.text, c.choices[0].label, c.choices[1].label], ["Mode collaboration", "Désactivé — le bot parle comme d'habitude", "Timers quand le mode est activé", "Quand le mode est activé, arrêt après"]);
+  assert.deepEqual(c.choices[0].options.map((o) => o.title), ["Timers en pause", "Timers : 1 fois sur 2", "Timers : 1 fois sur 3, utilisé à l'activation", "Timers : 1 fois sur 5"]);
+  assert.equal(c.hint ?? "", "");
 });
 
 test("remote card: a choice made while off is kept for next time; while on it applies at once, shows in the state line and moves the end; nothing restarts", async () => {
@@ -472,6 +487,18 @@ test("assistant tool: collaboration_mode_set is a write tool, off by default; it
   assert.deepEqual(CO.choicesOf(await S.readState(ctx)).ratio, 2, "choices are kept for the next time");
 });
 
+test("assistant text: the timers choice only applies when the mode is on (tool, parameter, French text, and the read-back says whether it applies now)", async () => {
+  const t = manifest.mcp.find((x) => x.name === "collaboration_mode_set");
+  assert.match(t.description, /timers choice only applies while the mode is on[^.]*saved and used at the next switch-on/);
+  assert.match(t.input.properties.timers.description, /when the mode is on \(not before\)[\s\S]*only saved for the next switch-on/);
+  assert.match(manifest.i18n.fr["mcp.collaboration_mode_set"], /choix des timers ne s'applique que lorsque le mode est activé[^.]*enregistré et utilisé à la prochaine activation/);
+  const { ctx } = fresh();
+  let r = await tools.collaboration_mode_set(ctx, { enabled: false, timers: "pause" });
+  assert.deepEqual([r.collaborationMode.enabled, r.collaborationMode.timersChoice, r.collaborationMode.timersApplyNow], [false, "pause", false], "saved while off: not in effect");
+  r = await tools.collaboration_mode_set(ctx, { enabled: true });
+  assert.deepEqual([r.collaborationMode.timersChoice, r.collaborationMode.timersApplyNow], ["pause", true]);
+});
+
 test("assistant tool: timers pause / every_n with n (2, 3 or 5) and autoStopHours; the older mode, ratio and autoEndHours still work; bad values are refused in words", async () => {
   const t = manifest.mcp.find((x) => x.name === "collaboration_mode_set");
   assert.deepEqual(t.input.properties.timers.enum, ["pause", "every_n"]);
@@ -503,7 +530,7 @@ test("assistant tool: timers pause / every_n with n (2, 3 or 5) and autoStopHour
 });
 
 test("manifest: version, history events, no new permission, route or right; the tick task settles the automatic end", async () => {
-  assert.equal(manifest.version, "1.15.0"); assert.equal(manifest.minCore, "0.6.7");
+  assert.equal(manifest.version, "1.16.0"); assert.equal(manifest.minCore, "0.6.7");
   for (const k of ["collab.on", "collab.off"]) assert.ok(manifest.logEvents.some((e) => e.key === k && e.label.fr && e.label.en), k);
   assert.deepEqual(manifest.permissions, ["routes", "storage", "admin", "topics", "mcp"]);
   assert.deepEqual(manifest.rights.map((x) => x.id), ["rewards.manage", "timers.manage"]);
