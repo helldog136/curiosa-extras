@@ -55,7 +55,7 @@ test("onglets : « Utiliser » est renommé avec le nom de ce qu'on y fait (FR +
     assert.ok(parseManifest(m).ok, dir);
     assert.deepEqual(label(m, "use"), { fr, en }, dir);
     // Un module qui range un bloc de son panneau dans un autre onglet (clé `tab` d'un bloc, cœur 0.2.5) demande le 0.2.5.
-    const expected = TV_SCALE.includes(dir) ? "0.11.0" : dir === "modules/twitch-channel" ? "0.8.0" : dir === "modules/twitch-bot" || dir === "modules/stream-story" || dir === "modules/partnerships" ? "0.6.7" : CORE_060.includes(dir) || NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
+    const expected = TV_SCALE.includes(dir) ? "0.11.0" : dir === "modules/twitch-channel" ? "0.8.0" : dir === "modules/twitch-bot" ? "0.14.0" : dir === "modules/stream-story" || dir === "modules/partnerships" ? "0.6.7" : CORE_060.includes(dir) || NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : dir === "modules/twitch-raid" ? "0.2.12" : VISITOR_API.includes(dir) ? "0.2.6" : BLOCKS_IN_TABS.includes(dir) ? "0.2.5" : "0.2.2";
     assert.equal(m.minCore, expected, `${dir} : les onglets demandent le cœur ${expected}`);
     assert.ok(m.tabs.filter((t) => t.id !== "use" && !["settings", "sources", "general"].includes(t.id)).length <= 3, dir);
   }
@@ -97,7 +97,7 @@ test("onglets : un module qui place un bloc du panneau dans un onglet demande le
   for (const dir of BLOCKS_IN_TABS) {
     const m = read(dir);
     assert.ok(parseManifest(m).ok, dir);
-    assert.equal(m.minCore, TV_SCALE.includes(dir) ? "0.11.0" : dir === "modules/twitch-bot" ? "0.6.7" : NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
+    assert.equal(m.minCore, TV_SCALE.includes(dir) ? "0.11.0" : dir === "modules/twitch-bot" ? "0.14.0" : NATIVE_ADMIN.includes(dir) ? "0.6.0" : OVERLAY_ELEMENTS.includes(dir) ? "0.5.0" : RAWG_AMBIGUOUS.includes(dir) ? "0.2.10" : "0.2.5", `${dir} : la clé \`tab\` d'un bloc est ignorée par un cœur plus ancien`);
     const code = fs.readdirSync(new URL(`../${dir}/`, import.meta.url), { recursive: true }).filter((f) => /\.mjs$/.test(f))
       .map((f) => fs.readFileSync(new URL(`../${dir}/${f}`, import.meta.url), "utf8")).join("\n");
     const known = new Set(["settings", "sources", "general", ...(m.tabs ?? []).map((t) => t.id)]);
