@@ -6,7 +6,9 @@
     "en": "Live status",
     "fr": "Statut du live"
   },
-  "version": "1.4.5",
+  "version": "1.4.6",
+  "adminMenu": "Réseaux.Twitch",
+  "adminMenuOrder": 30,
   "menuGroup": "tools",
   "platform": "twitch",
   "main": "index.mjs",

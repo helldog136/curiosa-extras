@@ -167,5 +167,5 @@ test("manifest: files permission, two settings (sounds off by default, volume ad
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   for (const x of tw.SOUNDS) assert.ok(en[`tw_sound_${x}`] && fr[`tw_sound_${x}`], x);
   for (const x of tw.ANIMS) assert.ok(en[`tw_anim_${x || "module"}`] && fr[`tw_anim_${x || "module"}`], x);
-  assert.equal(manifest.version, "1.8.0");
+  assert.equal(manifest.version, "1.8.1");
 });

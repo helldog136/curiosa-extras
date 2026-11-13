@@ -5,7 +5,9 @@
     "en": "YouTube connector",
     "fr": "Connecteur YouTube"
   },
-  "version": "1.3.2",
+  "version": "1.3.3",
+  "adminMenu": "Réseaux.YouTube",
+  "adminMenuOrder": 10,
   "platform": "youtube",
   "description": {
     "en": "Keeps your site's YouTube access code in one place. It reads channel counts and the chat of your live.",

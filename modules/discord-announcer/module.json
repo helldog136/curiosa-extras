@@ -5,7 +5,8 @@
     "en": "Discord announcements",
     "fr": "Annonces Discord"
   },
-  "version": "1.2.2",
+  "version": "1.2.3",
+  "adminMenu": "Réseaux.Discord",
   "menuGroup": "connections",
   "platform": "discord",
   "description": {
