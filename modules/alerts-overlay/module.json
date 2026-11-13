@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.7.0",
+  "version": "1.8.0",
   "minCore": "0.10.0",
   "description": {
     "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
@@ -863,8 +863,8 @@
     {
       "id": "media",
       "label": {
-        "en": "Videos",
-        "fr": "Vidéos"
+        "en": "Media",
+        "fr": "Médias"
       },
       "panel": true
     }
@@ -882,6 +882,18 @@
       "label": {
         "en": "The queue of the alerts on screen (pause, resume, empty, voice, skip, texts held)",
         "fr": "La file des alertes à l'écran (pause, reprise, vidage, voix, passer, textes retenus)"
+      }
+    },
+    {
+      "service": "alerts.show",
+      "version": 1,
+      "each": true,
+      "readOnly": [
+        "list"
+      ],
+      "label": {
+        "en": "The pictures, GIFs, videos and sounds of your library, shown on screen on demand (for the Twitch bot)",
+        "fr": "Les images, GIF, vidéos et sons de votre bibliothèque, montrés à l'écran à la demande (pour le Bot Twitch)"
       }
     }
   ],

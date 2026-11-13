@@ -4,6 +4,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.77.0 — 2026-11-13
+
+*En bref : votre bot Twitch peut répondre quand un message contient un mot (« quoi » donne « Feur »), et une commande ou un mot peut aussi montrer une image, un GIF ou une vidéo, ou jouer un son, sur votre stream. Les fichiers viennent d'une seule bibliothèque, dans l'onglet Médias de l'overlay alertes. Bot Twitch (1.17.0) et Overlay alertes (1.8.0). Aucune nouvelle permission, rien à régler.*
+
+*In short: your Twitch bot can answer when a message contains a word ("quoi" gets "Feur"), and a command or a word can also show a picture, a GIF or a video, or play a sound, on your stream. The files come from one library, in the Media tab of the alerts overlay. Twitch bot (1.17.0) and Alerts overlay (1.8.0). No new permission, nothing to set up.*
+
+### Nouveautés
+
+- **Des mots qui déclenchent une réponse.** Dans le tableau des commandes, « Nouveau mot » : le ou les mots, une réponse, qui peut le déclencher. Mots entiers seulement, majuscules et accents ignorés. Attentes de 30 s et 60 s, six réponses automatiques par minute au plus, « une fois sur N », silencieux en mode collaboration. « Ajouter un exemple » ouvre la fenêtre avec « quoi » et « Feur » déjà écrits.
+- **À l'écran.** Sous « Plus d'options » d'une commande ou d'un mot : une image, un GIF ou une vidéo et/ou un son, de 2 à 60 secondes. Les médias attendent dans la file des alertes (pause, passer, vider).
+- **Une bibliothèque de médias** dans l'overlay alertes (nom, recherche, suppression). Sans l'overlay alertes, le choix le dit et la commande répond seulement dans le chat.
+- **Votre assistant IA** lit et écrit les mots et « À l'écran » par leur nom (outils d'écriture éteints par défaut).
+- **Words that trigger an answer.** In the commands table, "New word": the word(s), a reply, who may trigger it. Whole words only, capitals and accents ignored. Waits of 30 s and 60 s, six automatic answers a minute at most, "one time out of N", quiet in collaboration mode. "Add an example" opens the window with "quoi" and "Feur" already written.
+- **On stream.** Under "More options" of a command or a word: a picture, GIF or video and/or a sound, for 2 to 60 seconds. Media wait in the alert queue (pause, skip, empty).
+- **One media library** in the alerts overlay (name, search, delete). Without the alerts overlay, the choice says so and the command only answers in the chat.
+- **Your AI assistant** reads and writes words and "On stream" by name (write tools stay off by default).
+
+### Pour les développeurs
+
+- Overlay alertes 1.8.0 : service `alerts.show` v1 (`list` en lecture seule, `show`), bibliothèque `mediaLib`, onglet Médias ; le code de la page pour la file, les sons et les médias n'existe que si la bibliothèque n'est pas vide. Bot Twitch 1.17.0 : `words.mjs`, `media.mjs` (service facultatif), réglage avancé `wordsPerMinute`, arguments MCP additifs. Aucune migration. Voir `docs/changelog-parts/bot-words-media.md`. Tests : `twitch-bot-words`, `twitch-bot-words-admin`, `alerts-overlay-media` ; captures `docs/captures/ergonomie-bot-words/`.
+
 ## 1.76.0 — 2026-11-13
 
 *En bref : dans le bandeau sponsor, le QR code occupe toute la hauteur du bandeau et mène à la page de votre site qui présente le sponsor, jamais directement au lien de parrainage. Overlay sponsors (1.4.0) et Sponsors (1.1.0). Rien à régler, aucune nouvelle permission.*
