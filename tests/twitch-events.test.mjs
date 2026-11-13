@@ -244,12 +244,12 @@ test("admin page: journal table with search and filters, types with switches, st
   await S.ensureSecret(ctx);
   await deliver(ctx, TYPES.resub, EV.resub);
   const blocks = await mod.adminPanel(ctx, { query: {} });
-  const table = blocks.find((b) => b.type === "table" && !b.tab);
+  const table = blocks.find((b) => b.type === "table" && !b.tab && b.filters);
   assert.equal(table.searchable, true); assert.ok(table.filters.length === 1);
   assert.equal(table.rows[0][1].badge, "accent"); assert.match(table.rows[0][1].text, /Réabonnement/);
   assert.match(table.rows[0][3].text, /12 mois/);
   const types = blocks.find((b) => b.tab === "types" && b.type === "table");
-  assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r[3].switch));
+  assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r.at(-1).switch));
   assert.equal(blocks.find((b) => b.type === "links")?.items[0].href, "/admin/instances/alerts");
   assert.ok(blocks.some((b) => b.type === "banner"));
 });

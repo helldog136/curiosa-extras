@@ -150,7 +150,7 @@ export async function changeModeration(ctx, ch) {
 /** Changes one type: { on?, template?, seconds?, min? }. Validates; returns { ok } or { error / errors }. */
 export async function changeType(ctx, id, ch) {
   if (!tw.TYPES.includes(id)) return fail(ctx, "tw_err_type");
-  const cfg = await tw.loadConfig(ctx), cur = cfg.types[id], next = { ...cur };
+  const cfg = await tw.loadConfig(ctx), cur = cfg.types[id], next = { ...cur }, released = [];
   if (ch.on !== undefined) next.on = ch.on === true;
   if (ch.template !== undefined) {
     const text = String(ch.template).trim();
@@ -180,28 +180,28 @@ export async function changeType(ctx, id, ch) {
   if (ch.image !== undefined) {
     const url = String(ch.image ?? "").trim().replace(/\?.*$/, "");
     if (url === "") {
-      if (cur.image) await ctx.api.files?.remove?.(cur.image);
+      if (cur.image) released.push(cur.image);
       next.image = "";
     } else if (url !== cur.image) {
       // The picture must be one the site holds: uploaded by this person a moment ago, then KEPT by this module (and the previous one is let go).
       if (!tw.IMAGE_RE.test(url)) return { errors: { image: ctx.t("tw_err_image") } };
       const claim = typeof ctx.api.files?.claim === "function" ? await ctx.api.files.claim(url) : { ok: false };
       if (!claim.ok) return { errors: { image: ctx.t("tw_err_image") } };
-      if (cur.image) await ctx.api.files.remove(cur.image);
+      if (cur.image) released.push(cur.image);
       next.image = url;
     }
   }
   if (ch.audio !== undefined) {
     const url = String(ch.audio ?? "").trim().replace(/\?.*$/, "");
     if (url === "") {
-      if (cur.audio) await ctx.api.files?.remove?.(cur.audio);
+      if (cur.audio) released.push(cur.audio);
       next.audio = "";
     } else if (url !== cur.audio) {
       // The sound must be one the site holds: uploaded by this person a moment ago, then KEPT by this module (and the previous one is let go).
       if (!tw.AUDIO_RE.test(url)) return { errors: { audio: ctx.t("tw_err_audio") } };
       const claim = typeof ctx.api.files?.claim === "function" ? await ctx.api.files.claim(url) : { ok: false };
       if (!claim.ok) return { errors: { audio: ctx.t("tw_err_audio") } };
-      if (cur.audio) await ctx.api.files.remove(cur.audio);
+      if (cur.audio) released.push(cur.audio);
       next.audio = url;
     }
   }
@@ -225,18 +225,21 @@ export async function changeType(ctx, id, ch) {
     if (n < lo || n > hi) return { errors: { viewerMax: ctx.t("tw_err_viewer_max", { min: lo, max: hi }) } };
     next.viewerMax = n;
   }
-  if (next.present === "video" && !next.video) return { errors: { video: ctx.t("tw_err_video") } };
+  // a picture changed here wins over a list of variants (the list is released, but for the new picture)
+  if (ch.image !== undefined && next.image !== cur.image && cur.variants?.length) { released.push(...cur.variants.filter((u) => u !== next.image)); delete next.variants; delete next.pick; }
+  if (next.present === "video" && !next.video && !next.variants?.length) return { errors: { video: ctx.t("tw_err_video") } };
   if (next.present === "gif" && !next.image) return { errors: { image: ctx.t("tw_err_gif") } };
   await tw.saveConfig(ctx, { ...cfg, preset: ch.template !== undefined ? "" : cfg.preset, types: { ...cfg.types, [id]: next } });
+  for (const u of new Set(released)) await tw.releaseFile(ctx, u);
   return { ok: ctx.t("tw_saved", { type: typeName(ctx, id) }) };
 }
 
 /** The sample alert of a type, written with the current text (a test goes through the same path as a real alert, minus the switches and minimums). */
-export async function sampleAlert(ctx, id, now = Date.now()) {
+export async function sampleAlert(ctx, id, now = Date.now(), configOverride = null) {
   const sample = SAMPLE[id];
   if (!sample) return null;
-  const cfg = await tw.loadConfig(ctx, now);
-  const r = tw.alertFor({ ...sample, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, now });
+  const cfg = configOverride ?? await tw.loadConfig(ctx, now);
+  const r = tw.alertFor({ ...sample, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: tw.pickerOf(tw.stateOf(ctx)), now });
   return r.alert ?? null;
 }
 
@@ -285,7 +288,7 @@ export function actions(emit) {
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 /** Tools for assistants: read the texts of the alerts, change one type. Never a deletion. */
 export function tools(emit) {
-  const view = (cfg, id) => ({ type: id, enabled: cfg.types[id].on, text: cfg.types[id].template || null, durationSeconds: cfg.types[id].seconds || null, minimum: tw.MINIMUM[id] ? cfg.types[id].min || null : undefined, sound: cfg.types[id].sound, animation: cfg.types[id].anim || "default", hasPicture: !!cfg.types[id].image, hasSoundFile: !!cfg.types[id].audio });
+  const view = (cfg, id) => ({ type: id, enabled: cfg.types[id].on, text: cfg.types[id].template || null, durationSeconds: cfg.types[id].seconds || null, minimum: tw.MINIMUM[id] ? cfg.types[id].min || null : undefined, sound: cfg.types[id].sound, animation: cfg.types[id].anim || "default", hasPicture: !!cfg.types[id].image, hasSoundFile: !!cfg.types[id].audio, ...(cfg.types[id].variants?.length ? { variants: { pictures: cfg.types[id].variants.filter((u) => !tw.VIDEO_RE.test(u)).length, videos: cfg.types[id].variants.filter((u) => tw.VIDEO_RE.test(u)).length, pick: cfg.types[id].pick } } : {}) });
   const self = {
     async alert_templates_get(ctx) {
       const cfg = await tw.loadConfig(ctx), q = await tw.queueState(ctx);

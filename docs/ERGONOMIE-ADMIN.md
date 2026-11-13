@@ -108,6 +108,8 @@ Le cœur fournit ces briques **une fois**, pour ses pages **et** pour les module
 | Options rares repliées avec un résumé | R2, R7 | `MoreOptions` | réglage `rare`, champ `folded` |
 | 2 à 4 choix en boutons côte à côte | R19 | `Segmented` | réglage `display: "segmented"`, champ `kind: "segmented"` |
 | Modifier un élément de la liste dans une fenêtre au-dessus de la page (pas dans une section en haut) | R2, R3, R16, R22, R24 | `EditDialog` (sur `ModalWindow`, la fenêtre de la fiche d'une extension) | `rowActions[].presentation: "dialog"`, `adminForm.presentation: "dialog"` (avec `cancelHref`) |
+| Plusieurs fichiers (photos, vidéos, sons) : un champ, grille, ajout multiple, retrait, ordre au clavier | R4, R6, R22, R28 | `GalleryField` | champ `kind: "gallery"` (`accept`, `max`, `min`, `itemLabel`, `library`) |
+| Bouton secondaire non destructif à côté du bouton principal (« Tester ») | R3 | `ExtraActionButton` | `adminForm.extraActions: [{ label, action }]` |
 | Exemple et erreur sous le champ | R11, R22 | `Field` : `example`, `error` | réglage `example`, champ `example`, `errors` d'une action |
 | Mot de passe, identifiant, code à usage unique | R22, R28 | `PasswordInput`, `UsernameHint` | réglage `secret` (clé d'un service) ; règles dans [FORMULAIRES-AUTHENTIFICATION.md](FORMULAIRES-AUTHENTIFICATION.md) |
 
