@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.14.0",
+  "minCore": "0.15.0",
   "id": "twitch-bot",
   "name": {
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.19.0",
+  "version": "1.20.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",
@@ -224,7 +224,8 @@
     "storage",
     "admin",
     "topics",
-    "mcp"
+    "mcp",
+    "instances.setup"
   ],
   "rights": [
     {

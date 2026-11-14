@@ -1116,14 +1116,14 @@ test("MCP : lister montre toutes les commandes et l'arrêt d'urgence ; créer et
 
 test("manifeste : valide, 1.2.2, minCore 0.2.2 (onglets, réglage « choix parmi »), plateforme Twitch, dépend du Connecteur Twitch (v3) et de Ma Chaîne Twitch seulement (aucune dépendance forte à Sponsors ni Planning), consomme les sujets optionnels", () => {
   const r = parseManifest(manifest); assert.ok(r.ok, r.ok ? "" : r.error);
-  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.19.0", "0.14.0", "twitch", "multiple", 6]);
+  assert.deepEqual([manifest.id, manifest.version, manifest.minCore, manifest.platform, manifest.instances, manifest.dataVersion], ["twitch-bot", "1.20.0", "0.15.0", "twitch", "multiple", 6]);
   assert.deepEqual(manifest.requires, [{ service: "twitch.api", min: 3 }, { service: "twitch.live" }, { service: "home-assistant.bridge", optional: true }, { service: "audience.draw", min: 1, optional: true }, { service: "alerts.show", min: 1, optional: true }]);
   assert.deepEqual(manifest.settings.find((s) => s.key === "channel"), { ...manifest.settings.find((s) => s.key === "channel"), type: "choice", source: { kind: "providers", service: "twitch.live" }, fromText: true, refersTo: "channel", optional: true, advanced: true });
   assert.equal(typeof def.migrations[2], "function"); assert.equal(typeof def.migrations[3], "function"); assert.equal(typeof def.migrations[4], "function");
   assert.deepEqual(manifest.consumes.map((x) => x.topic).sort(), ["ha.result", "ha.state", "planning.slot", "social.link", "social.stat"]);
   assert.deepEqual(manifest.provides.map((x) => x.topic), ["home.actions"]);
   assert.ok(!manifest.requires.some((x) => /sponsor|planning|social/.test(x.service)), "Sponsors, Planning et les réseaux ne sont jamais requis");
-  assert.deepEqual([...manifest.permissions].sort(), ["admin", "mcp", "routes", "storage", "topics"]);
+  assert.deepEqual([...manifest.permissions].sort(), ["admin", "instances.setup", "mcp", "routes", "storage", "topics"]);
   assert.ok(source.includes("ctx.api.store") && source.includes("ctx.api.topics.collect") && source.includes("routes:") && source.includes("adminPanel") && source.includes("mcp:"));
   assert.equal(manifest.page, false);
   assert.ok(manifest.privacy.fr && manifest.privacy.en);

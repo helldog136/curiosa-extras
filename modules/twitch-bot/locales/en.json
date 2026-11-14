@@ -731,5 +731,10 @@
   "media_pick_random": "At random",
   "media_pick_rotate": "In turn",
   "err_media_limit": "At most 12 files. Remove one, for example the last.",
-  "reason_media_limit": "Too many files for one command."
+  "reason_media_limit": "Too many files for one command.",
+  "media_setup_btn": "Set up Alerts overlay",
+  "media_setup_ok": "Alerts overlay is set up. Close this window and open it again to choose a file.",
+  "media_setup_denied": "Only the administration team can set up Alerts overlay.",
+  "media_setup_err": "Alerts overlay could not be set up. Open the Extensions page and use Set up on Alerts overlay.",
+  "media_suggest_reason": "shows a picture, a GIF or a video on stream for a command"
 }

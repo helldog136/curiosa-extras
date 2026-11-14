@@ -137,8 +137,8 @@ test("save from the window: new files go through the overlay (asCaller), library
   assert.ok(tooMany.errors?.mediaFiles || tooMany.error);
 });
 
-test("manifests and texts: bot 1.19.0 asks core 0.14.0, overlay 1.10.0; FR/EN parity of the new keys", () => {
-  assert.deepEqual([botMan.version, botMan.minCore, alMan.version], ["1.19.0", "0.14.0", "1.10.0"]);
+test("manifests and texts: bot 1.20.0 asks core 0.15.0, overlay 1.10.0; FR/EN parity of the new keys", () => {
+  assert.deepEqual([botMan.version, botMan.minCore, alMan.version], ["1.20.0", "0.15.0", "1.10.0"]);
   assert.deepEqual(Object.keys(botEn).sort(), Object.keys(botFr).sort());
   const alFr = JSON.parse(fs.readFileSync(new URL("../modules/alerts-overlay/locales/fr.json", import.meta.url), "utf8"));
   assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());
