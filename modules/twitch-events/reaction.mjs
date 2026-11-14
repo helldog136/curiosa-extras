@@ -7,15 +7,26 @@ export const SERVICE = "alerts.reaction";
 export const MAX = 12;
 export const WORDS = ["name", "count", "amount", "tier", "months", "viewers", "level", "title", "text", "total"];
 export const CATALOGUE = "/admin/catalogue";
+export const OVERLAY_PAGES = "/admin/overlay-pages";
 
-/** Where the alerts overlay stands: { state: "ready" | "old" | "absent", adminPath }. `old`: a copy exists but does not offer the service yet (update it). */
+/** The installed module that offers the service but has no copy yet, as the core lists it (core 0.15.0, permission `instances.setup`): { module, name } or null. Never throws. */
+export async function pendingSetUp(ctx) {
+  try {
+    const list = await ctx.api.instances?.pending?.({ locale: ctx.locale });
+    return (Array.isArray(list) ? list : []).find((p) => Array.isArray(p?.services) && p.services.includes(SERVICE)) ?? null;
+  } catch { return null; }
+}
+
+/** Where the alerts overlay stands: { state: "ready" | "old" | "setup" | "absent", adminPath }. `old`: a copy exists but does not offer the service yet (update it). `setup`: installed, no copy: one click sets it up. */
 export async function alertsState(ctx) {
   let providers = [];
   try { providers = await ctx.api.services.providers(SERVICE); } catch { providers = []; }
   let copy = null;
   try { copy = (await ctx.api.instances.list({ module: "alerts-overlay" }))?.[0] ?? null; } catch { copy = null; }
   if (providers.length) return { state: "ready", adminPath: copy?.adminPath ?? CATALOGUE };
-  return { state: copy ? "old" : "absent", adminPath: copy?.adminPath ?? CATALOGUE };
+  if (copy) return { state: "old", adminPath: copy.adminPath ?? CATALOGUE };
+  const pending = await pendingSetUp(ctx);
+  return { state: pending ? "setup" : "absent", adminPath: CATALOGUE, ...(pending ? { name: pending.name } : {}) };
 }
 const call = async (ctx, method, args, opts) => {
   try { const r = await ctx.api.services.call(SERVICE, method, args, opts); return r?.ok ? r.value : null; } catch { return null; }
@@ -80,6 +91,15 @@ export async function dialog(ctx, id, { query } = {}) {
 }
 
 export const actions = {
+  /** One click: creates the copy of the installed alerts overlay (core 0.15.0). The page comes back with the confirmation next to the prerequisites; a refusal says what to do. */
+  async setUpAlerts(ctx, values = {}) {
+    const back = values.from === "types" ? "?tab=types&setup=done" : "?setup=done";
+    const pending = await pendingSetUp(ctx);
+    if (!pending) return (await alertsState(ctx)).state === "setup" ? { error: ctx.t("cl_setup_err") } : { redirect: back };
+    const r = await ctx.api.instances?.setUp?.(pending.module);
+    if (r?.ok) return { redirect: back };
+    return { error: ctx.t(r?.reason === "denied" || r?.reason === "no-person" ? "cl_setup_denied" : "cl_setup_err") };
+  },
   /** Saves through the service, carrying the person so the overlay keeps the new files. */
   async saveReaction(ctx, values) {
     const id = String(values.id ?? "");
@@ -100,15 +120,30 @@ export const actions = {
   },
 };
 
-/** What the first tab says about the way to the screen: the steps and where each one stands (null when all is in place). Whether the element sits in an overlay page cannot be read from here: no step for it. */
+/**
+ * What the first tab says about the way to the screen: the steps and where each one stands (null when all is in place).
+ * Whether the element sits in an overlay page cannot be read from here (the core exposes no overlay page to a module): that step has a link and NO state, never a checkmark.
+ * With the overlay installed but without a copy, the button of the step sits right under the table (see `setUpBlocks`).
+ */
 export async function checklist(ctx, { authorized, listening, authorizeHref }) {
-  const a = await alertsState(ctx), t = ctx.t, added = a.state !== "absent";
+  const a = await alertsState(ctx), t = ctx.t, added = a.state === "ready" || a.state === "old";
   if (authorized && listening && added) return null;
   const done = (ok) => ({ text: ok ? t("cl_done") : t("cl_todo"), badge: ok ? "ok" : "warn" });
-  return { type: "table", columns: [t("cl_col_step"), t("cl_col_state"), t("cl_col_action")], pageSize: 0, truncate: [0], rowIds: ["authorized", "listening", "overlay"],
-    rows: [
-      [t("cl_authorized"), done(authorized), !authorized && authorizeHref ? { text: t("cl_authorize_link"), href: authorizeHref } : ""],
-      [t("cl_listening"), done(listening), ""],
-      [t("cl_overlay"), done(added), added ? "" : { text: t("cl_add_link"), href: CATALOGUE }],
-    ] };
+  const rows = [
+    [t("cl_authorized"), done(authorized), !authorized && authorizeHref ? { text: t("cl_authorize_link"), href: authorizeHref } : ""],
+    [t("cl_listening"), done(listening), ""],
+    [t("cl_overlay"), done(added), added || a.state === "setup" ? "" : { text: t("cl_add_link"), href: CATALOGUE }],
+    ...(a.state === "ready" ? [[t("cl_placed"), { text: "—", title: t("cl_placed_title") }, { text: t("cl_placed_link"), href: OVERLAY_PAGES }]] : []),
+  ];
+  return { type: "table", columns: [t("cl_col_step"), t("cl_col_state"), t("cl_col_action")], pageSize: 0, truncate: [0], rowIds: rows.map((_, i) => ["authorized", "listening", "overlay", "placed"][i]), rows };
+}
+
+/** The one-click blocks under the table: the button when the overlay is installed without a copy, the core's install suggestion when it is not installed, the confirmation after the click. */
+export async function setUpBlocks(ctx, state, query, tab) {
+  const t = ctx.t, out = [], at = tab ? { tab } : {};
+  const here = tab === "types" ? query?.tab === "types" : query?.tab !== "types";
+  if (query?.setup === "done" && here && (state === "ready" || state === "old")) out.push({ type: "banner", ...at, tone: "success", text: t("cl_setup_done"), href: OVERLAY_PAGES });
+  if (state === "setup") out.push({ type: "adminForm", ...at, action: "setUpAlerts", submitLabel: t("cl_setup_btn"), submitStyle: "secondary", fields: [{ name: "from", kind: "hidden", label: "from", value: tab ?? "" }] });
+  if (state === "absent" && !tab) out.push({ type: "suggestInstall", service: SERVICE, min: 1, reason: t("cl_suggest_reason") });
+  return out;
 }

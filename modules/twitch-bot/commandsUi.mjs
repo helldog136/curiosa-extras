@@ -131,6 +131,9 @@ export function mediaFields(ctx, lib, m) {
   ];
 }
 
+/** The button of the window when the alerts overlay is installed but has no copy: one click sets it up (the answer shows beside the buttons, what was typed stays). */
+const setUpButton = (ctx, lib) => (lib?.setUp ? { extraActions: [{ label: ctx.t("media_setup_btn"), action: "setUpAlerts" }] } : {});
+
 /**
  * The form of a word, in a window: Words, Reply, Who can trigger it (3 visible). Folded: what it shows on stream, how it matches, the waits, "1 time out of N", collaboration mode.
  * `view`: the trigger (or an empty one); `mode`: "new" | "edit".
@@ -139,6 +142,7 @@ export function wordForm(ctx, info, { mode, view, key, tab = "use" }) {
   const t = ctx.t, edit = mode === "edit", s = info.s;
   return {
     type: "adminForm", presentation: "dialog", action: edit ? "saveWord" : "createWord", title: edit ? t("word_edit_title", { word: view.words[0] }) : t("word_new_title"), submitLabel: t(edit ? "word_save_btn" : "word_new_btn"), cancelHref: tabHref(tab),
+    ...setUpButton(ctx, info.lib),
     fields: [
       ...(edit ? [{ name: "id", kind: "hidden", label: "id", value: key }] : []),
       { name: "words", label: t("f_words"), value: (view.words ?? []).join(", "), required: true, help: t("f_words_help"), example: t("f_words_example") },
@@ -171,6 +175,7 @@ export function commandForm(ctx, info, { mode, view, key, unsaved = false, kind,
   const title = !edit ? t(tab === "timers" ? "tm_add_title" : "new_title") : adding ? t("tm_adding_title", { name: label }) : tab === "timers" ? t("tm_edit_title", { name: label }) : t("edit_title", { command: `${s.prefix}${view.name}` });
   return {
     type: "adminForm", presentation: "dialog", action: edit ? "save" : "create", title, submitLabel: t(submit), cancelHref: tabHref(tab), ...(tab !== "use" ? { tab } : {}),
+    ...(timerOnly ? {} : setUpButton(ctx, info.lib)),
     fields: [
       ...(edit ? [{ name: "id", kind: "hidden", label: "id", value: key }, { name: "key", kind: "hidden", label: "key", value: key }] : []),
       ...(unsaved ? [{ name: "enabled", kind: "hidden", label: "enabled", value: "on" }] : []),

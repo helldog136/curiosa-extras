@@ -2628,7 +2628,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-bot",
       "ref": "v1.81.0",
-      "version": "1.19.0",
+      "version": "1.20.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2637,7 +2637,7 @@
         "home.actions"
       ],
       "requires": {
-        "core": "0.14.0"
+        "core": "0.15.0"
       },
       "offers": [
         {
@@ -2800,7 +2800,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-events",
       "ref": "v1.81.0",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2809,7 +2809,7 @@
         "twitch.event"
       ],
       "requires": {
-        "core": "0.14.0"
+        "core": "0.15.0"
       },
       "offers": [
         "twitch.journal"
