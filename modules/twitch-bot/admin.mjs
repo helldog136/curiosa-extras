@@ -197,6 +197,8 @@ export async function panel(ctx, { query }) {
   blocks.push(CU.commandsTable(ctx, info));
   const add = CU.addChooser(ctx, info, { partnerHref: partnerHref(ctx) });
   if (add) blocks.push(add);
+  // No alerts overlay at all: the core's install suggestion (installs it with its first copy, owner only, can be dismissed). Installed without a copy: the button of the windows.
+  if (!info.lib.available && !info.lib.setUp) blocks.push({ type: "suggestInstall", service: MD.SERVICE, min: 1, reason: t("media_suggest_reason") });
   blocks.push(CU.logBlock(ctx, info.s, await st.readLog(ctx)));
   blocks.push(...(await TA.blocks(ctx, info, query ?? {})));
   blocks.push(...(await RA.blocks(ctx, info, query ?? {})));
@@ -270,6 +272,11 @@ const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled 
  * de réussite ou d'erreur s'affiche sous le bouton cliqué ; une réussite dans une fenêtre la ferme et marque la ligne enregistrée : la personne reste où elle est.
  */
 export const actions = {
+  /** One click from a command or word window: the installed alerts overlay gets its copy. The window stays open with what was typed. */
+  async setUpAlerts(ctx) {
+    const r = await MD.setUpOverlay(ctx);
+    return r.ok ? { ok: ctx.t("media_setup_ok") } : { error: ctx.t(r.denied ? "media_setup_denied" : "media_setup_err") };
+  },
   async mute(ctx) { await st.setMuted(ctx, true); return { ok: ctx.t("muted_done") }; },
   async unmute(ctx) { await st.setMuted(ctx, false); return { ok: ctx.t("unmuted_done") }; },
   /** Collaboration mode: one press switches it on or off with the saved choices (a repeated press changes nothing). */

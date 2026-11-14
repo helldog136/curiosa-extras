@@ -5,8 +5,30 @@ export const SECONDS = { min: 2, max: 60 };
 /** Several pictures or videos for one command or word: at most 12; one is picked each time, at random (never the same twice in a row) or in turn (the overlay does the picking and keeps the turn). */
 export const VISUALS_MAX = 12;
 
-/** The library as { available, items: [{ id, name, kind: picture | video | sound, builtin? }] }; `available: false` when no alerts overlay answers. Never throws. */
+/** The installed alerts overlay that has no copy yet, as the core lists it (core 0.15.0, permission `instances.setup`): { module, name } or null. Never throws. */
+export async function pendingSetUp(ctx) {
+  try {
+    const list = await ctx.api.instances?.pending?.({ locale: ctx.locale });
+    return (Array.isArray(list) ? list : []).find((p) => Array.isArray(p?.services) && p.services.includes(SERVICE)) ?? null;
+  } catch { return null; }
+}
+
+/** The library, and when no overlay answers, `setUp`: the installed overlay one click can set up (or null). Never throws. */
 export async function library(ctx) {
+  const lib = await loadLibrary(ctx);
+  return lib.available ? lib : { ...lib, setUp: await pendingSetUp(ctx) };
+}
+
+/** One click: creates the copy of the installed alerts overlay. Rends { ok: true } or { ok: false, denied }. */
+export async function setUpOverlay(ctx) {
+  const p = await pendingSetUp(ctx);
+  if (!p) return { ok: false, denied: false };
+  const r = await ctx.api.instances?.setUp?.(p.module);
+  return r?.ok ? { ok: true } : { ok: false, denied: r?.reason === "denied" || r?.reason === "no-person" };
+}
+
+/** The library as { available, items: [{ id, name, kind: picture | video | sound, builtin? }] }; `available: false` when no alerts overlay answers. Never throws. */
+async function loadLibrary(ctx) {
   try {
     const r = await ctx.api.services.call(SERVICE, "list", {});
     const items = r?.ok && Array.isArray(r.value?.items) ? r.value.items.filter((m) => m && typeof m.id === "string" && typeof m.name === "string").slice(0, 300) : null;

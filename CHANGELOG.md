@@ -4,6 +4,28 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.82.0 — 2026-11-14
+
+*En bref : quand Overlay alertes est installé mais pas encore mis en place, Activité Twitch et le Bot Twitch proposent un bouton qui le met en place d'un clic.*
+
+*In short: when Alerts overlay is installed but not set up yet, Twitch activity and the Twitch bot offer a button that sets it up in one click.*
+
+### Nouveautés
+
+- **Un bouton « Mettre en place Overlay alertes ».** Dans Activité Twitch, sous la liste des étapes (et dans l'onglet Types) ; dans le Bot Twitch, à côté du bouton principal de la fenêtre d'une commande ou d'un mot. Il fait ce que fait « Mettre en place » sur la page des extensions, réservé à l'administration, et l'action est notée au journal du site.
+- **Le tableau se met à jour tout seul.** Après le clic, la page confirme « Overlay alertes est mis en place » et l'étape passe à « Fait ».
+- **Overlay alertes pas installé :** le site propose de l'installer d'un clic, avec sa première mise en place (proposition du cœur). Trop ancien : le lien vers sa page reste.
+- **Une étape « Alertes placées dans une page d'overlay ».** Un lien vers les pages d'overlay, sans état : le site ne peut pas savoir si l'élément est placé, donc aucune coche n'est affichée.
+- **A button "Set up Alerts overlay".** In Twitch activity, under the steps (and in the Types tab); in the Twitch bot, next to the main button of a command or word window. It does what "Set up" does on the extensions page, for the administration only, and the action is written to the site log.
+- **The table updates itself.** After the click the page says "Alerts overlay is set up" and the step turns to "Done".
+- **Alerts overlay not installed:** the site offers to install it in one click, with its first set-up (a core suggestion). Too old: the link to its page stays.
+- **A step "Alerts placed in an overlay page".** A link to the overlay pages, with no state: the site cannot tell whether the element is placed, so no checkmark is shown.
+
+### Pour les développeurs
+
+- Activité Twitch 1.6.0 et Bot Twitch 1.20.0 : `minCore` 0.15.0 et permission `instances.setup` (`ctx.api.instances.pending` / `setUp`, cœur 0.15.0). Aucune installation ni mise à jour de code par un module ; absent : bloc `suggestInstall`.
+- Test : `one-click-overlay`. Captures : `docs/captures/ergonomie-overlay-setup/`.
+
 ## 1.81.0 — 2026-11-13
 
 *En bref : une commande ou un mot déclencheur du Bot Twitch peut montrer plusieurs images, GIF ou vidéos à l'écran : une est choisie à chaque fois, au hasard ou à tour de rôle.*

@@ -39,7 +39,7 @@ async function alertsLink(ctx) {
   let list = [];
   try { list = await ctx.api.instances.list({ module: "alerts-overlay" }); } catch { list = []; }
   const a = Array.isArray(list) ? list[0] : null;
-  return a ? { type: "links", items: [{ label: ctx.t("alerts_link"), href: a.adminPath }] } : { type: "markdown", text: ctx.t("alerts_absent") };
+  return a ? { type: "links", items: [{ label: ctx.t("alerts_link"), href: a.adminPath }] } : (await rx.alertsState(ctx)).state === "setup" ? null : { type: "markdown", text: ctx.t("alerts_absent") };
 }
 
 /** Why it does not listen yet, in a sentence, and what to do. */
@@ -119,7 +119,9 @@ export async function panel(ctx, { query } = {}) {
     { type: "markdown", text: t("page_intro") },
     ...(await statusBlocks(ctx, d, state)),
     ...(steps ? [steps] : []),
-    await alertsLink(ctx),
+    ...(await rx.setUpBlocks(ctx, al.state, query)),
+    ...(await rx.setUpBlocks(ctx, al.state, query, "types")),
+    ...[await alertsLink(ctx)].filter(Boolean),
     { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
       rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
     { type: "markdown", tab: "dock", text: t("dock_intro") },
@@ -129,7 +131,7 @@ export async function panel(ctx, { query } = {}) {
     ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "types" })) : []),
     ...(waiting ? [{ type: "refreshWhile", tab: "types", pending: true, everySeconds: 3 }] : []),
     ...(typesCheck ? [{ type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), submitStyle: "secondary", fields: [] }] : []),
-    ...(al.state !== "ready" ? [{ type: "links", tab: "types", items: [{ label: t(al.state === "old" ? "rx_state_old" : "rx_state_absent"), href: al.adminPath }] }] : []),
+    ...(al.state !== "ready" && al.state !== "setup" ? [{ type: "links", tab: "types", items: [{ label: t(al.state === "old" ? "rx_state_old" : "rx_state_absent"), href: al.adminPath }] }] : []),
     ...(editing ? [editing] : []),
     { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), t("col_state"), ...(ready ? [t("col_reaction")] : []), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0, truncate: ready ? [1, 3] : [1], searchable: true, searchPlaceholder: t("search_types"),
       rowActions: ready ? [{ label: t("rx_edit_btn"), href: "?tab=types&reaction={id}", presentation: "dialog" }, { label: t("test_btn"), action: "test", inMenu: true }] : [{ label: t("test_btn"), action: "test" }] },

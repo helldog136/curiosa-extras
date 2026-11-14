@@ -31,7 +31,7 @@ export function world(o = {}) {
   const queue = { paused: false, held: 0, calls: [], voice: { on: false, muted: false }, texts: [], ...o.queue };
   const ctx = fakeCtx({
     key: "ev", moduleId: "twitch-events", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: (o.locale ?? "fr") === "en" ? en : fr,
-    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: manifest.permissions, logEvents: manifest.logEvents ?? [],
+    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: o.permissions ?? manifest.permissions, requires: manifest.requires, installedModules: o.installedModules, ...(o.person !== undefined ? { person: o.person } : {}), logEvents: manifest.logEvents ?? [],
     serviceInstances: {
       "twitch.api": [{ instance: "emma", name: "emma", methods: {
         account: (a) => (a?.channel && a.channel !== "emma_test" ? { ok: false, error: "other_channel" } : { ok: true, channel: "emma_test", ready: true, https: true, status: tw.status, login: "emma_test", userId: B, scopes: tw.scopes, adminPath: "/admin/instances/connector" }),

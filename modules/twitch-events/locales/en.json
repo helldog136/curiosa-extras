@@ -266,5 +266,13 @@
   "cl_done": "Done",
   "cl_todo": "To do",
   "cl_authorize_link": "Authorize with Twitch →",
-  "cl_add_link": "Add Alerts overlay →"
+  "cl_add_link": "Add Alerts overlay →",
+  "cl_setup_btn": "Set up Alerts overlay",
+  "cl_setup_done": "Alerts overlay is set up.",
+  "cl_setup_err": "Alerts overlay could not be set up. Open the Extensions page and use Set up on Alerts overlay.",
+  "cl_setup_denied": "Only the administration team can set up Alerts overlay.",
+  "cl_placed": "Alerts placed in an overlay page",
+  "cl_placed_link": "Open the overlay pages →",
+  "cl_placed_title": "This page cannot tell whether the element is in an overlay page. Check it there.",
+  "cl_suggest_reason": "shows your Twitch events as alerts on screen"
 }
