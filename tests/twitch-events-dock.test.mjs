@@ -217,7 +217,7 @@ function runPage(html, { dispatch }) {
 
 test("the whole script: reads the data with the key, shows the lines, says 'reconnecting' with a growing wait when the site stops, and comes back by itself", async () => {
   const { ctx, k } = await site({ locale: "en" });
-  await deliver(ctx, TYPES.follow, EV.follow, { id: "f1" });
+  await deliver(ctx, TYPES.follow, { ...EV.follow, followed_at: new Date().toISOString() }, { id: "f1", at: Date.now(), now: Date.now() });
   const html = await (await call(ctx, "dock", k)).text();
   let down = false;
   const page = runPage(html, { dispatch: async (u, init) => { if (down) throw new Error("offline"); const path = new URL(u).pathname.split("/").pop(); const r = await mod.routes[path](new Request(u, init), ctx); return { ok: r.ok, status: r.status, json: () => r.json() }; } });
