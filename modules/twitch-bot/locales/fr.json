@@ -731,5 +731,10 @@
   "media_pick_random": "Au hasard",
   "media_pick_rotate": "À tour de rôle",
   "err_media_limit": "12 fichiers au plus. Retirez-en un, par exemple le dernier.",
-  "reason_media_limit": "Trop de fichiers pour une commande."
+  "reason_media_limit": "Trop de fichiers pour une commande.",
+  "media_setup_btn": "Mettre en place Overlay alertes",
+  "media_setup_ok": "Overlay alertes est mis en place. Fermez cette fenêtre et rouvrez-la pour choisir un fichier.",
+  "media_setup_denied": "Seule l'administration peut mettre en place Overlay alertes.",
+  "media_setup_err": "Overlay alertes n'a pas pu être mis en place. Ouvrez la page des extensions et utilisez « Mettre en place » sur Overlay alertes.",
+  "media_suggest_reason": "affiche une image, un GIF ou une vidéo à l'écran pour une commande"
 }

@@ -131,7 +131,7 @@ test("test button: builds the alert with what is typed, saved or not; nothing is
 test("manifests: the service is offered with callerRights (set) and read-only reads; Twitch activity asks for it as optional; core 0.14.0; FR/EN parity", () => {
   const o = alMan.offers.find((x) => x.service === "alerts.reaction");
   assert.deepEqual([o.version, o.each, o.callerRights, o.readOnly], [1, true, ["set"], ["list", "get", "media"]]);
-  assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.14.0"); assert.equal(evMan.minCore, "0.14.0");
+  assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.14.0"); assert.equal(evMan.minCore, "0.15.0");
   assert.deepEqual(evMan.requires.find((x) => x.service === "alerts.reaction"), { service: "alerts.reaction", min: 1, optional: true });
   assert.deepEqual(Object.keys(evEn).sort(), Object.keys(evFr).sort()); assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
@@ -220,7 +220,7 @@ test("checklist: ticks for Twitch authorized, listening and the overlay added, e
   const ok = both({});
   assert.equal(await evRx.checklist(ok.ev, { authorized: true, listening: true }), null);
   const t2 = await evRx.checklist(ok.ev, { authorized: true, listening: false });
-  assert.deepEqual(t2.rows.map((r) => r[1].badge), ["ok", "warn", "ok"]);
+  assert.deepEqual(t2.rows.map((r) => r[1].badge), ["ok", "warn", "ok", undefined], "the placement step has a link and no state");
   const page = await evMod.adminPanel(w.ev, { query: {} });
   assert.ok(page.some((b) => b.type === "table" && b.columns.includes("Step")));
   assertAdminPageErgonomics(page);

@@ -1,12 +1,12 @@
 {
   "apiVersion": 2,
-  "minCore": "0.14.0",
+  "minCore": "0.15.0",
   "id": "twitch-events",
   "name": {
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.5.0",
+  "version": "1.6.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
@@ -26,7 +26,8 @@
     "routes",
     "topics",
     "mcp",
-    "mail"
+    "mail",
+    "instances.setup"
   ],
   "requires": [
     {
