@@ -1133,7 +1133,8 @@
             "description": "sha256 of the file, 64 hexadecimal characters."
           }
         }
-      }
+      },
+      "default": false
     },
     {
       "name": "reaction_media_upload_chunk",
@@ -1163,12 +1164,13 @@
             "description": "The piece as plain base64 (no data: prefix), 933336 characters at most."
           }
         }
-      }
+      },
+      "default": false
     },
     {
       "name": "reaction_media_upload_finish",
       "uploads": true,
-      "description": "Finishes an upload: the site checks the size, the sha256 and the real content (format, codec, duration, size), then adds the file to the media library, marked as added by the assistant. Returns its name and id. Calling it again returns the same file. Use the name in reaction_set, or in a Twitch bot command (onStreamPictures).",
+      "description": "Finishes an upload: the site checks the size, the sha256 and the real content (format, codec, duration, size), then adds the file to the media library, marked as added by the assistant. Returns its name, id, duration, size and, for a video, whether it is transparent (WebM with alpha). Calling it again returns the same file. Use the name in reaction_set, or in a Twitch bot command (onStreamPictures).",
       "input": {
         "type": "object",
         "required": [
@@ -1179,17 +1181,42 @@
             "type": "string",
             "maxLength": 64,
             "description": "The upload returned by reaction_media_upload_begin."
+          },
+          "poster": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Optional, for a video: name or id of a picture already in the library that stands for it (a still frame you exported, uploaded first like any picture)."
           }
         }
-      }
+      },
+      "default": false
     },
     {
       "name": "reaction_media_list",
       "readOnly": true,
-      "description": "Lists the media library of the alerts overlay: name, id, kind (picture, video, sound), size and duration when known, who added it (person or assistant) and which Twitch event reactions use it. Also the built-in sounds.",
+      "description": "Lists the media library of the alerts overlay: name, id, kind (picture, video, sound), size, duration, dimensions and transparency when known, its poster picture, who added it (person or assistant) and which Twitch event reactions use it. Also the built-in sounds.",
       "input": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "reaction_media_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Deletes a file of the media library (by name or id) and the file itself. Refused while a Twitch event reaction uses it: remove it there first with reaction_set. A Twitch bot command that shows it stops showing it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "media"
+        ],
+        "properties": {
+          "media": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Library name or id."
+          }
+        }
       }
     },
     {
@@ -1287,7 +1314,8 @@
             "description": "The event shows an alert."
           }
         }
-      }
+      },
+      "default": false
     },
     {
       "name": "reaction_test",
@@ -1315,26 +1343,8 @@
             "description": "The Twitch event: follow, sub, resub, gift, cheer, raid, online, offline, hype or redeem."
           }
         }
-      }
-    },
-    {
-      "name": "reaction_media_delete",
-      "destructive": true,
-      "default": false,
-      "description": "Deletes a file of the media library (by name or id) and the file itself. Refused while a Twitch event reaction uses it: remove it there first with reaction_set. A Twitch bot command that shows it stops showing it.",
-      "input": {
-        "type": "object",
-        "required": [
-          "media"
-        ],
-        "properties": {
-          "media": {
-            "type": "string",
-            "maxLength": 80,
-            "description": "Library name or id."
-          }
-        }
-      }
+      },
+      "default": false
     }
   ],
   "i18n": {

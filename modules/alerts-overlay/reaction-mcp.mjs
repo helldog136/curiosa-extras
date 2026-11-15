@@ -30,7 +30,7 @@ async function usage(ctx) {
   }
   return by;
 }
-const view = (m, used) => ({ id: m.id, name: m.name, kind: m.kind, ...(m.url ? { address: m.url } : {}), addedBy: m.by === "assistant" ? "assistant" : "person", ...(m.bytes ? { bytes: m.bytes } : {}), ...(m.seconds ? { durationSeconds: m.seconds } : {}), ...(m.width ? { width: m.width, height: m.height } : {}), usedByReactions: used.get(m.url) ?? [] });
+const view = (m, used) => ({ id: m.id, name: m.name, kind: m.kind, ...(m.url ? { address: m.url } : {}), addedBy: m.by === "assistant" ? "assistant" : "person", ...(m.bytes ? { bytes: m.bytes } : {}), ...(m.seconds ? { durationSeconds: m.seconds } : {}), ...(m.width ? { width: m.width, height: m.height } : {}), ...(m.kind === "video" && m.by === "assistant" ? { transparent: m.transparent === true } : {}), ...(m.poster ? { poster: m.poster } : {}), usedByReactions: used.get(m.url) ?? [] });
 
 async function reactionView(ctx, type) {
   const cfg = await tw.loadConfig(ctx), c = cfg.types[type], videos = tw.videosOf(ctx.setting);
@@ -75,25 +75,32 @@ export function tools(emit) {
       return { received: r.received, total: r.total, complete: r.complete, next: r.complete ? "Call reaction_media_upload_finish." : `Send piece ${a.index + 1}.` };
     },
     async reaction_media_upload_finish(ctx, a, actor) {
+      // optional still picture that stands for the video (already in the library: upload it first like any picture); checked before the file is finished
+      const posterOf = async () => (a.poster === undefined || a.poster === "" ? null : find((await md.list(ctx, { tones: false })).filter((m) => !m.id.startsWith("video:")), a.poster, ["picture"], "picture"));
+      const poster = await posterOf();
       const r = await upload(ctx).finish({ upload: a.upload });
       if (!r.ok) throw refused(r);
       const lib = await md.list(ctx, { tones: false });
       const have = lib.find((m) => m.url === r.url);
       if (have) return { id: have.id, name: have.name, kind: have.kind, already: true };
+      if (poster && r.kind !== "video") { await ctx.api.files.remove(r.url); throw expose("A poster only goes with a video. Finish again without poster: start a new upload."); }
       let name = md.cleanName(r.label) || md.cleanName(ctx.t(r.kind === "video" ? "md_auto_video" : "md_auto_picture", { n: lib.length + 1 }));
       for (let k = 2; (await md.list(ctx)).some((m) => md.fold(m.name) === md.fold(name)); k++) name = md.cleanName(`${md.cleanName(r.label).slice(0, 36)} ${k}`);
-      const row = await md.addOwned(ctx, { name, kind: KIND_OF[r.kind], url: r.url, meta: { by: "assistant", assistant: String(actor?.name ?? "").slice(0, 60), bytes: r.bytes, seconds: r.durationSeconds, width: r.width, height: r.height } });
+      const row = await md.addOwned(ctx, { name, kind: KIND_OF[r.kind], url: r.url, meta: { assistant: String(actor?.name ?? "").slice(0, 60), bytes: r.bytes, seconds: r.durationSeconds, width: r.width, height: r.height, transparent: r.alpha === true, ...(poster ? { posterId: poster.id } : {}) } });
       if (!row.ok) { await ctx.api.files.remove(r.url); throw expose(row.code === "full" ? `The library is full (${md.LIMITS.items} files). Nothing was kept.` : "The file could not be added to the library. Nothing was kept."); }
-      return { id: row.id, name, kind: KIND_OF[r.kind], bytes: r.bytes, durationSeconds: r.durationSeconds, width: r.width, height: r.height, next: "Put it on an event with reaction_set (media: [name]), then reaction_test. The Twitch bot can show it too (onStreamPictures)." };
+      return { id: row.id, name, kind: KIND_OF[r.kind], bytes: r.bytes, durationSeconds: r.durationSeconds, width: r.width, height: r.height, ...(r.kind === "video" ? { transparent: r.alpha === true } : {}), ...(poster ? { poster: poster.name } : {}), next: "Put it on an event with reaction_set (media: [name]), then reaction_test. The Twitch bot can show it too (onStreamPictures)." };
     },
     async reaction_media_list(ctx) {
       const used = await usage(ctx);
       const items = (await md.list(ctx, { tones: false })).filter((m) => !m.id.startsWith("video:"));
-      return { items: items.map((m) => view(m, used)), max: md.LIMITS.items, builtInSounds: md.TONES };
+      const names = new Map(items.map((m) => [m.id, m.name]));
+      return { items: items.map((m) => view({ ...m, poster: m.posterId ? names.get(m.posterId) : undefined }, used)), max: md.LIMITS.items, builtInSounds: md.TONES };
     },
     async reaction_media_delete(ctx, a) {
       const items = (await md.list(ctx, { tones: false })).filter((m) => !m.id.startsWith("video:"));
       const m = find(items, a.media, ["picture", "video", "sound"], "file");
+      const posterFor = items.filter((x) => x.posterId === m.id).map((x) => x.name);
+      if (posterFor.length) throw expose(`"${m.name}" is the poster of: ${posterFor.join(", ")}. Delete those videos first, or keep it.`);
       const types = (await usage(ctx)).get(m.url) ?? [];
       if (types.length) throw expose(`"${m.name}" is still used by the reaction of: ${types.join(", ")}. Remove it from those reactions first with reaction_set, then delete it.`);
       const r = await md.remove(ctx, m.id);

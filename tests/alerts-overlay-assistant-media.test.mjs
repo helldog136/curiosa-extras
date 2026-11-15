@@ -38,8 +38,8 @@ test("manifest: 1.11.0, eight new tools; the three upload tools declare uploads 
   assert.equal(manifest.version, "1.11.0");
   const tools = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
   for (const name of NEW) { assert.ok(tools[name], name); assert.ok(manifest.i18n.fr[`mcp.${name}`], `fr ${name}`); assert.equal(typeof def.mcp[name], "function", name); }
-  for (const name of UPLOADS) assert.deepEqual([tools[name].uploads, tools[name].readOnly, tools[name].default], [true, undefined, undefined], name);
-  for (const name of ["reaction_set", "reaction_test"]) assert.equal(tools[name].default, undefined, `${name} writes: off by default`);
+  for (const name of UPLOADS) assert.deepEqual([tools[name].uploads, tools[name].readOnly, tools[name].default], [true, undefined, false], name);
+  for (const name of ["reaction_set", "reaction_test"]) assert.equal(tools[name].default, false, `${name} writes: off by default`);
   assert.deepEqual([tools.reaction_media_delete.destructive, tools.reaction_media_delete.default], [true, false]);
   assert.equal(tools.reaction_media_list.readOnly, true); assert.equal(tools.reaction_get.readOnly, true);
   assert.ok(manifest.permissions.includes("files"));
@@ -124,4 +124,21 @@ test("Media tab: 'Added by the assistant' is a pill on those rows only; without 
   assert.deepEqual(t.columns, [fr.md_col_name, fr.md_col_type, "Origine"]);
   assert.deepEqual(t.rows.find((r) => r[0].text === "Assistant clip")[2], { text: "Ajouté par l'assistant", badge: "info" });
   assert.deepEqual(t.rows.find((r) => r[0].text === "Mine")[2], { text: "" }, "no label for the ordinary case (R14)");
+});
+
+test("for compositions: a transparent WebM is reported, size and duration too, and a library picture can be the poster of a video", async () => {
+  const w = world();
+  const { done: still } = await upload(w, "Glow still", file("tiny.gif"));
+  const b = await w.M.reaction_media_upload_begin(w.ctx, { name: "Glow", bytes: file("alpha-vp9.webm").length, sha256: sha(file("alpha-vp9.webm")) }, w.actor);
+  w.ctx.putUpload(b.upload, file("alpha-vp9.webm"));
+  await assert.rejects(w.M.reaction_media_upload_finish(w.ctx, { upload: b.upload, poster: "Nope" }, w.actor), exposed(/No picture named "Nope"/));
+  const done = await w.M.reaction_media_upload_finish(w.ctx, { upload: b.upload, poster: "glow STILL" }, w.actor);
+  assert.deepEqual([done.transparent, done.poster, done.durationSeconds, done.width, done.height], [true, "Glow still", 1, 64, 36]);
+  const opaque = (await upload(w, "Plain", file("tiny-vp9.webm"))).done;
+  assert.equal(opaque.transparent, false);
+  const list = (await w.M.reaction_media_list(w.ctx, {})).items;
+  const glow = list.find((m) => m.name === "Glow");
+  assert.deepEqual([glow.transparent, glow.poster, glow.durationSeconds, glow.width, glow.height], [true, "Glow still", 1, 64, 36]);
+  assert.equal(list.find((m) => m.name === "Glow still").transparent, undefined, "pictures carry no transparency flag");
+  await assert.rejects(w.M.reaction_media_delete(w.ctx, { media: still.id }, w.actor), exposed(/poster of: Glow/));
 });
