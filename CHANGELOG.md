@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.84.0 — 2026-11-15
+
+*En bref : dans le bandeau sponsor, le QR code est plus grand et plus net : moins de blanc autour, des carrés plus gros, il ne bouge plus. Overlay sponsors 1.4.1. Rien à régler, aucune nouvelle permission.*
+
+*In short: in the sponsor banner, the QR code is bigger and sharper: less white around it, bigger squares, and it no longer moves. Sponsor ticker 1.4.1. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Moins de blanc autour du QR code.** La marge blanche ne fait plus que deux carrés du code, et le QR code touche le haut et le bas du bandeau.
+- **Des carrés plus gros et nets.** Chaque carré fait un nombre entier de pixels et le bandeau grandit de quelques pixels si besoin (jamais au-delà de son cadre) : 4 px au lieu de 3 pour une adresse courte, 3 px au lieu de 2 pour une adresse longue, sans flou.
+- **Le QR code ne bouge plus.** Le bandeau cesse de flotter tant qu'un QR code est affiché, et l'éclat lumineux ne passe plus dessus : il se scanne plus facilement.
+- **Less white around the QR code.** The white margin is now only two squares of the code, and the QR code touches the top and bottom of the banner.
+- **Bigger, sharper squares.** Each square is a whole number of pixels and the banner grows by a few pixels if needed (never beyond its frame): 4 px instead of 3 for a short address, 3 px instead of 2 for a long one, without blur.
+- **The QR code no longer moves.** The banner stops floating while a QR code is shown, and the light sweep no longer crosses it, so it scans more easily.
+
+### Pour les développeurs
+
+- Sponsor ticker 1.4.1 : `qrPlan` (géométrie du cadre blanc en pixels entiers), `QR_QUIET` = 2. Test : `sponsor-ticker-qr-decode` décode le QR code généré par le cœur (décodeur jsQR, Apache-2.0, dans `tests/helpers/`).
+
 ## 1.83.0 — 2026-11-15
 
 *En bref : dans Activité Twitch, les raids et les récompenses en points ne restent plus bloqués sur « En attente de Twitch », et chaque type qui n'écoute pas dit pourquoi.*
