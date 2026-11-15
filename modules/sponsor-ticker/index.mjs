@@ -54,6 +54,19 @@ export function qrPayload(url) {
   } catch (e) { return raw; }
 }
 
+/** Quiet zone of the QR plate, in modules (the QR standard asks 4; 2 on a white plate flush with a dark card still decodes, see tests/sponsor-ticker-qr-decode.test.mjs). */
+export const QR_QUIET = 2;
+
+/** Whole-pixel geometry of the QR plate. `h`: the height the card has without the QR; `N`: modules per side including the quiet zone; `lim`: the most height the frame allows.
+ *  The plate is `ppm` px per module (a whole number, the smallest that reaches `h`, or the largest that fits `lim`) and at least `h` high; `whole` is false when the frame is too low for it
+ *  (the plate then keeps the height `h` and the modules get a fractional size). Runs in the overlay page as well (injected with toString), so it stays self-contained. */
+export function qrPlan(h, N, lim) {
+  const up = Math.ceil(h / N);
+  const ppm = up * N <= lim ? up : Math.max(1, Math.floor(h / N));
+  const side = Math.max(h, ppm * N);
+  return { ppm, side, whole: ppm * N === side };
+}
+
 /** True for an address that is only reachable from the machine itself (the core's default `http://localhost:3000` when the site address is not set). */
 const isLocalHost = (h) => h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h === "[::1]" || /^127\./.test(h) || h === "0.0.0.0";
 
@@ -174,15 +187,24 @@ export default {
     const qrCss = showQr ? `
         /* Full-height QR: the card is as high as its text, the QR is a square of that height at the right end; the diagonal cut is a fixed size so it never eats the QR or the text. */
         .ticker-card{--tk-sk:calc(22px*var(--ov-tv,1));clip-path:polygon(var(--tk-sk) 0,100% 0,calc(100% - var(--tk-sk)) 100%,0 100%);padding-right:var(--tk-sk)}
-        .ticker-card--qr .ticker-qr{position:relative;align-self:stretch;flex:none;width:auto;height:auto;padding:0;border-radius:0;overflow:hidden;margin-left:calc(16px*var(--ov-tv,1))}
+        .ticker-card--qr{animation:none}
+        .ticker-card--qr .ticker-qr{position:relative;z-index:1;align-self:stretch;flex:none;width:auto;height:auto;padding:0;border-radius:0;overflow:hidden;margin-left:calc(16px*var(--ov-tv,1))}
         .ticker-card--qr .ticker-qr svg{position:absolute;display:block;shape-rendering:crispEdges}
         .ticker-card--qr .ticker-text-col{min-width:0}
         .tv-d .ticker-logo{display:none}` : "";
     const qrBuild = showQr
       ? `if(c.showQr&&s.qrUrl&&s.qrSvg){card.classList.add("ticker-card--qr");var q=el("div","ticker-qr"),mm=/viewBox="0 0 (\\d+) \\d+"/.exec(s.qrSvg),dm=shortDomain(s.qrUrl);q.innerHTML=s.qrSvg;if(mm)q.setAttribute("data-n",mm[1]);q.setAttribute("role","img");if(dm)q.setAttribute("aria-label",dm);card.append(q);col.querySelectorAll(".ticker-name,.ticker-blurb,.ticker-code").forEach(function(n){n.title=n.textContent})}`
       : `if(c.showQr&&s.url&&s.qrSvg){card.append(el("div","ticker-divider"));var w=el("div","ticker-qr-wrap"),q=el("div","ticker-qr");q.innerHTML=s.qrSvg;w.append(q);var dm=shortDomain(s.url);if(dm)w.append(el("div","ticker-domain",dm));card.append(w)}`;
-    // Whole pixels per module (quiet zone of 2 modules inside the square), centred on whole pixels: no blur, no distortion.
-    const qrSize = showQr ? `function sizeQr(card){var q=card.querySelector(".ticker-qr"),sv=q&&q.firstChild,n=q?+q.getAttribute("data-n"):0;if(!n||!sv||sv.nodeType!==1)return true;q.style.width="0px";var h=card.clientHeight,k=0,ok=false;while(k++<4){q.style.width=h+"px";var h2=card.clientHeight;if(h2===h){ok=true;break}h=h2}var side=Math.floor(Math.min(q.clientWidth,q.clientHeight)),ppm=Math.floor(side/(n+4)),px=ppm>=1?ppm*n:side*n/(n+4),off=Math.floor((side-px)/2);sv.style.cssText="width:"+px+"px;height:"+px+"px;left:"+off+"px;top:"+off+"px";return ok}
+    // Sizing of the QR plate. The plate is a square as high as the card (flush with its top and bottom edges), the quiet zone is exactly QR_QUIET modules, every module is a whole number of px,
+    // and the card is made just high enough (never above 96 % of the frame) to hold that plate: no spare white margin, no fractional module. The svg is then moved to a whole device pixel
+    // (the slider is centred, so its own position is usually fractional, which blurs the modules). If the frame is too low for a whole-pixel plate, the plate keeps the card height and the modules get a fractional size (still the same quiet zone, edges kept crisp by crispEdges).
+    const qrSize = showQr ? `var QZ=${QR_QUIET};function snapQr(q,sv,off){var sl=document.getElementById("tk-slider");if(!sl||(parseFloat(sl.style.getPropertyValue("--tk-s"))||1)!==1)return;var t=sl.style.transform,tr=sl.style.transition,d=window.devicePixelRatio||1;sl.style.transition="none";sl.style.transform="none";var r=q.getBoundingClientRect();sl.style.transform=t;void getComputedStyle(sl).transform;sl.style.transition=tr;var x=r.left+off,y=r.top+off;sv.style.left=(off+Math.round(x*d)/d-x)+"px";sv.style.top=(off+Math.round(y*d)/d-y)+"px"}
+        function sizeQr(card){var q=card.querySelector(".ticker-qr"),sv=q&&q.firstChild,n=q?+q.getAttribute("data-n"):0;if(!n||!sv||sv.nodeType!==1)return true;
+          var N=n+2*QZ,bb=getComputedStyle(card).boxSizing==="border-box"?card.offsetHeight-card.clientHeight:0,lim=c.tv?Math.floor(window.innerHeight*.96)-bb:1e9,ok=false,k=0,ppm=1,side=0;
+          card.style.minHeight="";q.style.width="0px";var H=card.clientHeight;
+          function plan(h){var r=qrPlan(h,N,lim);ppm=r.ppm;side=r.side}
+          while(k++<4){plan(H);card.style.minHeight=side+bb+"px";q.style.width=side+"px";var h2=card.clientHeight;if(h2===side){ok=true;break}H=h2}
+          var whole=ppm*N===side,px=whole?ppm*n:side*n/N,off=whole?ppm*QZ:side*QZ/N;sv.style.cssText="width:"+px+"px;height:"+px+"px;left:"+off+"px;top:"+off+"px";snapQr(q,sv,off);return ok}
         ` : "";
     // Les morceaux de la carte reçoivent leur data-ov-part au fur et à mesure (la page reste celle de l'overlay, une seule source).
     const elementScript = element ? `
@@ -234,6 +256,7 @@ export default {
         ${fitTitle.toString()}
         ${fitScale.toString()}
         ${shortDomain.toString()}
+        ${showQr ? qrPlan.toString() : ""}
         ${ovTransition.toString()}
         if(c.tr.ms!==600){slider.style.setProperty("--tr-ms",c.tr.ms+"ms");slider.style.setProperty("--tr-fade",Math.round(c.tr.ms*.78)+"ms")}
         function go(phase){return ovTransition(slider,phase,phase==="in"?c.tr.in:c.tr.out,{ms:c.tr.ms,side:"right",base:"scale("+(slider.style.getPropertyValue("--tk-s")||1)+")"})}
