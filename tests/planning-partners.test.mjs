@@ -143,7 +143,9 @@ test("VIE PRIVÉE : jamais d'e-mail, de téléphone, de note, de photo ni de res
   const el = await def.routes["element/:slug"](new Request("https://site.test/m/pl/element/week?ov-w=1000&ov-h=600"), ctxOf(items, { params: { slug: "week" } }));
   seen.push(await el.text());
   const img = ctxOf(items, { siteName: "Site" });
+  // The slots are 3 and 6 hours from now: late on a Sunday they fall in next week, so look at both weeks.
   const week = await def.routes.image(new Request("https://site.test/m/pl/image"), img).catch(() => null);
+  await def.routes.image(new Request("https://site.test/m/pl/image?week=1"), img).catch(() => null);
   seen.push(JSON.stringify(img.calls?.png ?? []));
   void week;
   for (const html of seen) {
