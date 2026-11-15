@@ -5,7 +5,7 @@ const es = await import(`./eventsub.mjs${v}`);
 const st = await import(`./state.mjs${v}`);
 const pub = await import(`./publish.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
-const { diagnose, declareScopes } = await import(`./listen.mjs${v}`);
+const { diagnose, declareScopes, retryType } = await import(`./listen.mjs${v}`);
 const cycle = await import(`./cycle.mjs${v}`);
 const { API } = await import(`./channel.mjs${v}`);
 const dockapi = await import(`./dockapi.mjs${v}`);
@@ -49,7 +49,22 @@ export function problemText(ctx, code, d = {}, state = {}) {
     const names = (d.missingCore ?? state.listen?.missing ?? []).map((s) => (SCOPE_KEY[s] ? t(SCOPE_KEY[s]) : s));
     return t("listen_need_more", { list: names.join(", ") || "…" });
   }
+  if (code === "pending" || code === "taken") {
+    // Name the types that hold the verdict (the optional ones never do): "Waiting for Twitch to confirm: Raid."
+    const names = es.TYPES.filter((ty) => !ty.optional && (state.types?.[ty.id]?.code ?? "") === code).map((ty) => t(`type_${ty.id}`));
+    if (names.length) return t(code === "pending" ? "listen_pending_types" : "listen_taken", { list: names.join(", ") });
+  }
   return t(`listen_${code}`, { detail: state.rejected?.reason ?? "" });
+}
+
+/** The sentence for the stored reason of a type; Twitch's own answer (code and message) goes in when it refused. */
+export const reasonOf = (ctx, entry) => ctx.t(`reason_${entry.reason}`, { detail: entry.detail ?? "" });
+
+/** One sentence per type that is on and does not listen: the real reason, visible without hovering (R9 words). */
+export function reasonLines(ctx, state, enabled) {
+  const t = ctx.t;
+  return es.TYPES.filter((ty) => enabled[ty.id] === true && state.types?.[ty.id]?.code !== "listening" && state.types?.[ty.id]?.reason)
+    .map((ty) => `- ${t("types_why", { type: t(`type_${ty.id}`), reason: reasonOf(ctx, state.types[ty.id]) })}`);
 }
 
 async function statusBlocks(ctx, d, state) {
@@ -108,7 +123,7 @@ export async function panel(ctx, { query } = {}) {
     const label = !on ? t("state_off") : waited ? t("state_pending_since", { n: waited }) : t(`state_${code}`);
     const tone = !on ? "neutral" : code === "listening" ? "ok" : ["pending", "unknown"].includes(code) ? "info" : "warn";
     const mark = !on ? "" : code === "listening" ? "✓ " : tone === "warn" ? "! " : "… ";   // colour, text AND a sign
-    const why = on && code === "pending" && entry.reason ? t(`reason_${entry.reason}`) : undefined;
+    const why = on && code !== "listening" && entry.reason ? reasonOf(ctx, entry) : undefined;
     const perms = ty.scopes.length ? ty.scopes.map((x) => t(SCOPE_KEY[x])).join(", ") : t("scope_none");
     return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, perms, { text: `${mark}${label}`, badge: tone, ...(why ? { title: why } : {}) },
       ...(ready ? [{ text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),   // no column of identical dashes when the overlay is missing (R14)
@@ -129,12 +144,13 @@ export async function panel(ctx, { query } = {}) {
     { type: "table", tab: "dock", columns: [t("dock_renew_title")], rows: [[t("dock_renew_help")]], rowIds: ["dock"], pageSize: 0, rowActions: [{ label: t("dock_renew_btn"), action: "renewDock", confirm: t("dock_renew_confirm"), danger: true }] },
     { type: "markdown", tab: "types", text: t("types_intro") },
     ...(d.code === "ready" && d.missing.length && !d.missingCore.length ? (await connectLinks(ctx, d, d.missing)).map((b) => ({ ...b, tab: "types" })) : []),
+    ...(reasonLines(ctx, state, enabled).length ? [{ type: "markdown", tab: "types", text: reasonLines(ctx, state, enabled).join("\n") }] : []),
     ...(waiting ? [{ type: "refreshWhile", tab: "types", pending: true, everySeconds: 3 }] : []),
     ...(typesCheck ? [{ type: "adminForm", tab: "types", action: "check", submitLabel: t("check_btn"), submitStyle: "secondary", fields: [] }] : []),
     ...(al.state !== "ready" && al.state !== "setup" ? [{ type: "links", tab: "types", items: [{ label: t(al.state === "old" ? "rx_state_old" : "rx_state_absent"), href: al.adminPath }] }] : []),
     ...(editing ? [editing] : []),
     { type: "table", tab: "types", columns: [t("col_type"), t("col_permission"), t("col_state"), ...(ready ? [t("col_reaction")] : []), t("col_on")], rows: typeRows, rowIds: es.TYPES.map((x) => x.id), pageSize: 0, truncate: ready ? [1, 3] : [1], searchable: true, searchPlaceholder: t("search_types"),
-      rowActions: ready ? [{ label: t("rx_edit_btn"), href: "?tab=types&reaction={id}", presentation: "dialog" }, { label: t("test_btn"), action: "test", inMenu: true }] : [{ label: t("test_btn"), action: "test" }] },
+      rowActions: ready ? [{ label: t("rx_edit_btn"), href: "?tab=types&reaction={id}", presentation: "dialog" }, { label: t("test_btn"), action: "test", inMenu: true }, { label: t("retry_btn"), action: "retry", inMenu: true }] : [{ label: t("test_btn"), action: "test" }, { label: t("retry_btn"), action: "retry", inMenu: true }] },
   ];
 }
 
@@ -157,6 +173,17 @@ export const actions = {
     const r = await cycle.check(ctx, s).catch(() => null);
     if (on && d.code === "ready" && r && r.code === "need_more") return { ok: ctx.t("switch_need_more", { type: ctx.t(`type_${id}`) }) };
     return { ok: ctx.t(on ? "switch_on" : "switch_off", { type: ctx.t(`type_${id}`) }) };
+  },
+  /** "Try again" for one type: our subscriptions of that type are deleted and created again, and the answer says what became of it. */
+  async retry(ctx, values) {
+    const id = String(values.id ?? "");
+    if (!es.typeOf(id)) return fail(ctx, "err_unknown_type");
+    const r = await retryType(ctx, settingsOf(ctx), id);
+    const type = ctx.t(`type_${id}`);
+    if (!r.ok) return { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };
+    if (r.state === "listening") return { ok: ctx.t("retry_listening", { type }) };
+    if (r.state === "taken") return { error: ctx.t("retry_taken", { type }) };
+    return { ok: ctx.t("retry_waiting", { type }) };
   },
   async test(ctx, values) {
     const r = await pub.sendTest(ctx, String(values.id ?? ""));

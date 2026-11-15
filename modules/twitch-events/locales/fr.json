@@ -209,7 +209,7 @@
   "reason_waiting": "Twitch n'a pas encore confirmé.",
   "reason_unconfirmed": "Twitch n'a pas confirmé celui-ci, les autres sont bons. Il est recréé une fois.",
   "reason_unreachable": "Twitch n'arrive pas à joindre l'adresse de votre site.",
-  "reason_elsewhere": "Un autre module détient déjà cet abonnement chez Twitch.",
+  "reason_elsewhere": "Un autre module reçoit déjà ceci de Twitch : rien n'arrive sur cette page.",
   "col_reaction": "Réaction",
   "search_types": "Rechercher un type",
   "rx_edit_btn": "Modifier",
@@ -274,5 +274,17 @@
   "cl_placed": "Alertes placées dans une page d'overlay",
   "cl_placed_link": "Ouvrir les pages d'overlay →",
   "cl_placed_title": "Cette page ne peut pas savoir si l'élément est dans une page d'overlay. Vérifiez-le là-bas.",
-  "cl_suggest_reason": "affiche vos événements Twitch en alertes à l'écran"
+  "cl_suggest_reason": "affiche vos événements Twitch en alertes à l'écran",
+  "listen_pending_types": "En attente de la confirmation de Twitch : {list}.",
+  "listen_taken": "Un autre module reçoit déjà ceci de Twitch : {list}. Rien n'arrive sur cette page.",
+  "state_taken": "Pris ailleurs",
+  "reason_failed_revoked": "Twitch l'a arrêté, car l'autorisation a été retirée. Reconnectez-vous à Twitch.",
+  "reason_failed_unreachable": "Twitch l'a arrêté, car votre site n'a pas répondu à temps. Il est recréé.",
+  "reason_failed_other": "Twitch l'a arrêté. Il est recréé.",
+  "types_why": "{type} : {reason}",
+  "retry_btn": "Réessayer",
+  "retry_listening": "Terminé : {type} est maintenant écouté.",
+  "retry_waiting": "Relancé : {type} attend la réponse de Twitch.",
+  "retry_taken": "Un autre module reçoit déjà {type} de Twitch. Éteignez-le d'abord là-bas.",
+  "reason_create_failed": "Twitch a refusé de le démarrer. Sa réponse : {detail}."
 }
