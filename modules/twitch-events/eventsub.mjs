@@ -14,6 +14,7 @@
 //     started_at, expires_at, ended_at, cooldown_ends_at, all_time_high_level, is_shared_train, type "regular" | "golden_kappa" | "treasure";
 //   - webhook transport: https on port 443, secret of 10 to 100 ASCII characters, HMAC-SHA256 over id + timestamp + raw body ("sha256=" prefix), message types notification /
 //     webhook_callback_verification / revocation, delivery "at least once", revocation statuses user_removed / authorization_revoked / notification_failures_exceeded / version_removed.
+//   - listing: Twitch fills every condition field of a type, the unused ones with "" (channel.raid: from_broadcaster_user_id ""; redemption: reward_id ""): see sameCondition;
 // NOT VERIFIED (no live Twitch was available): the exact behaviour of an app access token for these subscriptions (the docs say "app access token where the broadcaster has granted that scope"),
 // the number of failures before Twitch revokes a subscription, the redelivery schedule, and channel.channel_points_custom_reward_redemption.add (copied from Twitch bot: v1, condition broadcaster_user_id).
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -166,7 +167,16 @@ export const webhookPath = (instanceKey) => `/m/${instanceKey}/webhook`;
 export const listRequest = (after) => ({ as: "app", method: "GET", path: "eventsub/subscriptions", query: { first: 100, ...(after ? { after } : {}) } });
 export const createRequest = ({ type, version, condition }, { callback, secret }) => ({ as: "app", method: "POST", path: "eventsub/subscriptions", body: { type, version, condition, transport: { method: "webhook", callback, secret } } });
 export const deleteRequest = (id) => ({ as: "app", method: "DELETE", path: "eventsub/subscriptions", query: { id } });
-const sameCondition = (a, b) => { const x = a ?? {}, y = b ?? {}, kx = Object.keys(x).sort(), ky = Object.keys(y).sort(); return kx.length === ky.length && kx.every((k, i) => k === ky[i] && String(x[k]) === String(y[k])); };
+/**
+ * Same condition? Twitch lists EVERY condition field of a type and fills the unused ones with "" (recorded: channel.raid comes back as
+ * { from_broadcaster_user_id: "", to_broadcaster_user_id: "123" }, the channel point redemption with reward_id: ""), while we only send the fields we use.
+ * An empty field therefore counts as absent, on both sides; comparing the keys as they are made raid and channel points "never ours": created again, refused as a duplicate, "waiting" for ever.
+ */
+export const sameCondition = (a, b) => {
+  const strip = (c) => Object.fromEntries(Object.entries(c && typeof c === "object" ? c : {}).filter(([, v]) => v !== "" && v !== null && v !== undefined).map(([k, v]) => [k, String(v)]));
+  const x = strip(a), y = strip(b), kx = Object.keys(x).sort(), ky = Object.keys(y).sort();
+  return kx.length === ky.length && kx.every((k, i) => k === ky[i] && x[k] === y[k]);
+};
 
 /**
  * Among the subscriptions of the Twitch application, which are ours (same callback address), and how is each wanted one doing?
@@ -183,26 +193,35 @@ export function classify(rows, wanted, callback) {
     // `elsewhere`: another subscription of the same application (another callback address, for instance the Twitch bot's) already covers this type and condition.
     const elsewhere = (Array.isArray(rows) ? rows : []).some((s) => s && s.transport?.callback !== callback && s.type === w.type && String(s.version) === w.version && sameCondition(s.condition, w.condition));
     if (keep) { keepIds.add(String(keep.id)); out.push({ ...w, state: good ? "enabled" : "pending", id: String(keep.id), status: String(keep.status), createdAt: Date.parse(keep.created_at) || null, ...(elsewhere ? { elsewhere } : {}) }); }
-    else if (same.length) out.push({ ...w, state: "failed", status: String(same[0].status ?? "") });
+    else if (same.length) out.push({ ...w, state: "failed", status: String(same[0].status ?? ""), failure: failureCode(same[0].status) });
     else out.push({ ...w, state: "missing", ...(elsewhere ? { elsewhere } : {}) });
   }
   return { wanted: out, stale: mine.filter((s) => !keepIds.has(String(s.id))).map((s) => String(s.id)), total: mine.length };
 }
 
-/** Why Twitch cut a subscription, as a code the page can explain. */
+/**
+ * Why Twitch cut a subscription, as a code the page can explain (statuses of the Twitch reference):
+ * authorization_revoked / user_removed → "revoked" (the permission was withdrawn); notification_failures_exceeded / webhook_callback_verification_failed → "unreachable" (our address did not answer
+ * in time, or not at all); version_removed and the rest → "other".
+ */
 export function failureCode(status) {
   const s = String(status ?? "");
-  if (/authorization_revoked|user_removed/.test(s)) return "revoked";
+  if (/authorization_revoked|user_removed|moderator_removed/.test(s)) return "revoked";
   if (/notification_failures_exceeded|webhook_callback_verification_failed/.test(s)) return "unreachable";
   return "other";
 }
 
-/** The answer to a creation: { ok: true, id } | { ok: false, code: "exists" | "denied" | "refused" | "busy" | "twitch", detail? }. */
+/**
+ * The answer to a creation: { ok: true, id } | { ok: false, code: "exists" | "denied" | "refused" | "busy" | "twitch", status, detail? }.
+ * `status` (HTTP code) and `detail` (Twitch's own message, cleaned and cut, never a secret) are kept for every refusal: the page and the log say what Twitch answered.
+ */
 export function readCreate(res) {
-  if (res.status === 202 || res.status === 200) { const id = res.json?.data?.[0]?.id; return typeof id === "string" ? { ok: true, id } : { ok: false, code: "twitch" }; }
-  if (res.status === 409) return { ok: false, code: "exists" };
-  if (res.status === 401 || res.status === 403) return { ok: false, code: "denied" };
-  if (res.status === 429) return { ok: false, code: "busy" };
-  if (res.status >= 400 && res.status < 500) return { ok: false, code: "refused", detail: clean(res.json?.message, 200) };
-  return { ok: false, code: "twitch" };
+  const status = Number.isInteger(res.status) ? res.status : 0, detail = clean(res.json?.message, 200);
+  const more = { status, ...(detail ? { detail } : {}) };
+  if (res.status === 202 || res.status === 200) { const id = res.json?.data?.[0]?.id; return typeof id === "string" ? { ok: true, id } : { ok: false, code: "twitch", ...more }; }
+  if (res.status === 409) return { ok: false, code: "exists", ...more };
+  if (res.status === 401 || res.status === 403) return { ok: false, code: "denied", ...more };
+  if (res.status === 429) return { ok: false, code: "busy", ...more };
+  if (res.status >= 400 && res.status < 500) return { ok: false, code: "refused", ...more };
+  return { ok: false, code: "twitch", ...more };
 }
