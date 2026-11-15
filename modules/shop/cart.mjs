@@ -1,8 +1,9 @@
 // Shop (EXPERIMENTAL prototype): the cart. A piece is reserved as soon as it enters the cart; the cart expires after
 // `cartMinutes` (5) without payment started, and the timer restarts on every change. All functions take `now` for tests.
-import { LIMITS, cartMs, hashToken, newToken, isToken } from "./lib.mjs";
-import * as D from "./data.mjs";
-import * as S from "./stock.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { LIMITS, cartMs, hashToken, newToken, isToken } = await import(`./lib.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const S = await import(`./stock.mjs${v}`);
 
 const isLive = (cart, now) => cart && cart.status === "open" && cart.expiresAt > now;
 

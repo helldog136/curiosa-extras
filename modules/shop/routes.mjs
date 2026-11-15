@@ -1,11 +1,12 @@
 // Shop (EXPERIMENTAL prototype): public routes /m/<instance>/<name>. The cart cookie holds a random token (160 bits);
 // only its hash is stored. A public page cannot read cookies, so the cart is read through GET `cart` by scripts/shop.js.
 // Protections: method check, honeypot, per-visitor and global limits, bounded sizes, same answer for unknown things.
-import { LIMITS, HOUR, limited, visitorOf, isToken, idOk, num, currencyOf, mailReady } from "./lib.mjs";
-import * as D from "./data.mjs";
-import * as C from "./cart.mjs";
-import * as O from "./orders.mjs";
-import * as P from "./payments.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { LIMITS, HOUR, limited, visitorOf, isToken, idOk, num, currencyOf, mailReady } = await import(`./lib.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const C = await import(`./cart.mjs${v}`);
+const O = await import(`./orders.mjs${v}`);
+const P = await import(`./payments.mjs${v}`);
 
 const json = (body, status = 200, extra = {}) => Response.json(body, { status, headers: { "cache-control": "no-store", ...extra } });
 const COOKIE = "shop_cart";

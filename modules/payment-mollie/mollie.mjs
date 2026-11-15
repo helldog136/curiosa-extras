@@ -1,7 +1,8 @@
 // Mollie payments (EXPERIMENTAL prototype): the calls to Mollie, through the core's network client (timeouts, pauses on "too many requests", no retry of a POST).
 // Shapes follow Mollie's own reference, read on 2026-11-15 (docs.mollie.com: create payment, get payment, create refund, webhooks, handling payment status).
 // The key never appears in a log, an error or an answer: it is only put in the Authorization header.
-import { keyMode } from "./lib.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { keyMode } = await import(`./lib.mjs${v}`);
 
 const BASE = "https://api.mollie.com/v2";
 export const keyOf = (ctx) => String(ctx.setting("mollieCode") ?? "").trim();

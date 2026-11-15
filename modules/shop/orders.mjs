@@ -1,9 +1,10 @@
 // Shop (EXPERIMENTAL prototype): checkout with the manual payment provider, and the order life cycle.
 // Real payment providers are NOT in this prototype: "paid" is set by the seller (bank transfer, cash on pickup).
-import { LIMITS, NEXT_STATES, manualHoldMs, currencyOf, includedTax, clean, validEmail, newToken, isToken } from "./lib.mjs";
-import * as D from "./data.mjs";
-import * as S from "./stock.mjs";
-import { cartIsLive } from "./cart.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { LIMITS, NEXT_STATES, manualHoldMs, currencyOf, includedTax, clean, validEmail, newToken, isToken } = await import(`./lib.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const S = await import(`./stock.mjs${v}`);
+const { cartIsLive } = await import(`./cart.mjs${v}`);
 
 const event = (state, now, by = "system") => ({ s: state, at: new Date(now).toISOString(), by });
 const newNumber = (now) => `N-${new Date(now).toISOString().slice(2, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 9000) + 1000)}`;

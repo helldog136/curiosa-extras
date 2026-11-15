@@ -8,7 +8,8 @@
 // Every reader that sees the same prefix computes the same accepted set, so two buyers of the last piece cannot both win.
 // Assumption NOT verified against the real core store: ids / creation times are totally ordered and a document
 // is visible to every reader as soon as `add` returns (see docs/ideas/BOUTIQUE.md, section 7b).
-import { LIMITS, withLock } from "./lib.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { LIMITS, withLock } = await import(`./lib.mjs${v}`);
 
 export const keyOf = (productId, variantId) => `${productId}:${variantId}`;
 /** Seats for a variant: unlimited, one-of-a-kind, or counted. */

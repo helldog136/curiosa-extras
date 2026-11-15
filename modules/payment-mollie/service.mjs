@@ -1,6 +1,7 @@
 // Mollie payments (EXPERIMENTAL prototype): the service "payment.provider" (version 1). Contract: docs/ideas/BOUTIQUE.md, section 14.
-import { isPublicSite, toValue, fromValue, MAX_AMOUNT, keyMode, clean, paymentId, withLock } from "./lib.mjs";
-import * as M from "./mollie.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { isPublicSite, toValue, fromValue, MAX_AMOUNT, keyMode, clean, paymentId, withLock } = await import(`./lib.mjs${v}`);
+const M = await import(`./mollie.mjs${v}`);
 
 const LOCALES = { en: "en_GB", fr: "fr_FR", nl: "nl_NL", de: "de_DE" };
 

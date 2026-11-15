@@ -1,6 +1,7 @@
 // Shop (EXPERIMENTAL prototype): products, carts, orders in ctx.api.store.
 // Collections: products, reservations (see stock.mjs), carts, orders.
-import { LIMITS, hashToken, clean, num, idOk, parseMoney } from "./lib.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { LIMITS, hashToken, clean, num, idOk, parseMoney } = await import(`./lib.mjs${v}`);
 
 const view = (r) => ({ id: r.id, at: r.createdAt, ...r.data });
 

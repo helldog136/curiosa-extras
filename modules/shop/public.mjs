@@ -1,9 +1,10 @@
 // Shop (EXPERIMENTAL prototype): the public page (catalogue) and the private order page. Everything a person typed goes through esc().
-import { esc, formatMoney, currencyOf, isToken, num, mailReady } from "./lib.mjs";
-import * as D from "./data.mjs";
-import * as S from "./stock.mjs";
-import * as P from "./payments.mjs";
-import { ORDER_STATES } from "./lib.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { esc, formatMoney, currencyOf, isToken, num, mailReady } = await import(`./lib.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const S = await import(`./stock.mjs${v}`);
+const P = await import(`./payments.mjs${v}`);
+const { ORDER_STATES } = await import(`./lib.mjs${v}`);
 
 const CSS = `.sh{max-width:56rem;display:grid;gap:1rem}.sh *{box-sizing:border-box}
 .sh-grid{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,16rem),1fr))}

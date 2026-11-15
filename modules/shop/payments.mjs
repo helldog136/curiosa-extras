@@ -1,9 +1,10 @@
 // Shop (EXPERIMENTAL prototype): online payment through ANY module that offers the service "payment.provider" (contract: docs/ideas/BOUTIQUE.md, section 14).
 // The shop knows no provider by name. It never receives card data (the customer pays on the provider's own page) and never trusts a notification:
 // a notification only carries the provider's own reference; the real state is always asked back from the provider.
-import { LIMITS, onlineHoldMs, isToken } from "./lib.mjs";
-import * as D from "./data.mjs";
-import * as O from "./orders.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { LIMITS, onlineHoldMs, isToken } = await import(`./lib.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const O = await import(`./orders.mjs${v}`);
 
 export const PROVIDER = "payment.provider";
 const FINAL_BAD = ["failed", "canceled", "expired"];

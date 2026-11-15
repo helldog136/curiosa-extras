@@ -1,5 +1,6 @@
 // Mollie payments (EXPERIMENTAL prototype): the setup page. Three steps with their state, no key ever shown.
-import * as S from "./service.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const S = await import(`./service.mjs${v}`);
 
 export async function adminPanel(ctx) {
   const d = S.describe(ctx);

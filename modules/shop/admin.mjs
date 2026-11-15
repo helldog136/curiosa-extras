@@ -1,10 +1,11 @@
 // Shop (EXPERIMENTAL prototype): administration. Three views in one panel: orders (opens first), products, product sheet / order sheet.
 // Not yet audited against docs/ERGONOMIE-ADMIN.md (see README): no dialog editing, no inline stock edit, no wizard.
-import { esc, formatMoney, currencyOf, idOk, num, ORDER_STATES, NEXT_STATES, mailReady } from "./lib.mjs";
-import * as D from "./data.mjs";
-import * as S from "./stock.mjs";
-import * as O from "./orders.mjs";
-import * as P from "./payments.mjs";
+const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
+const { esc, formatMoney, currencyOf, idOk, num, ORDER_STATES, NEXT_STATES, mailReady } = await import(`./lib.mjs${v}`);
+const D = await import(`./data.mjs${v}`);
+const S = await import(`./stock.mjs${v}`);
+const O = await import(`./orders.mjs${v}`);
+const P = await import(`./payments.mjs${v}`);
 
 const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 const one = (x) => (typeof x === "string" ? x : Array.isArray(x) ? String(x[0] ?? "") : "");
