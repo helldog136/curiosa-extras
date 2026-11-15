@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import { pathToFileURL } from "node:url";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { El } from "./helpers/remoteDom.mjs";
 import { vevent, calendar, feedTopics } from "./helpers/icalFeed.mjs";
@@ -135,6 +136,29 @@ test("coverage: every overlay element declared in the repository is either check
   for (const [k, why] of Object.entries(EXEMPT)) assert.ok(why.length > 30, `${k}: say why`);
 });
 
+// With core 0.17.0 the core adopts its appearance kit into every element that follows the style (a background on the containers, tokens forced on every
+// node). Checked in a REAL Chromium when the core under test has the kit and a browser is available: the idle page must still paint nothing.
+let kit = null;
+try {
+  const core = path.resolve(process.env.CURIOSA_DIR ?? process.cwd());
+  const K = await import(pathToFileURL(path.join(core, "src/core/overlays/appearance.ts")).href);
+  const lib = await import(pathToFileURL(path.join(core, "scripts/visual/lib/playwright.mjs")).href);
+  kit = { css: K.lookCss(K.appliedLook({ preset: "readable" }, { style: { text: "light", background: "transparent" }, skin: false }, true)), chromium: lib.loadPlaywright().chromium, exe: lib.chromiumPath(), args: lib.CHROMIUM_ARGS, browser: null };
+} catch { kit = null; }
+test.after(async () => { await kit?.browser?.close(); });
+async function paintedWithKit(html) {
+  kit.browser ??= await kit.chromium.launch({ executablePath: kit.exe, args: kit.args });
+  const ctx = await kit.browser.newContext({ javaScriptEnabled: false, viewport: { width: 900, height: 300 } });
+  try {
+    const p = await ctx.newPage();
+    await p.setContent(html);
+    return await p.evaluate((css) => {
+      const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; document.documentElement.setAttribute("data-ov-look", "1");
+      return [...document.querySelectorAll("html, body, body *")].filter((n) => { const st = getComputedStyle(n), r = n.getBoundingClientRect(); if (st.display === "none" || st.visibility === "hidden" || r.width === 0 || r.height === 0) return false; for (let x = n; x && x.nodeType === 1; x = x.parentElement) if (getComputedStyle(x).opacity === "0") return false; return (st.backgroundColor !== "rgba(0, 0, 0, 0)" && st.backgroundColor !== "transparent") || st.backgroundImage !== "none" || (parseFloat(st.borderTopWidth) > 0 && st.borderTopColor !== "rgba(0, 0, 0, 0)") || st.boxShadow !== "none"; }).map((n) => n.id || n.getAttribute("data-ov-part") || n.tagName);
+    }, kit.css);
+  } finally { await ctx.close(); }
+}
+
 for (const [key, run] of Object.entries(IDLE)) {
   test(`idle: ${key} shows nothing (no text, no placeholder, empty hidden frame); the editor preview still shows a sample`, async () => {
     const r = await run();
@@ -144,5 +168,6 @@ for (const [key, run] of Object.entries(IDLE)) {
       assert.notEqual(visibleText(r.demo), "", `${key}: the preview must show a sample`);
       if (r.panel) assert.ok(!panelHidden(r.demo, r.panel), `${key}: the preview panel is visible`);
     }
+    if (kit) assert.deepEqual(await paintedWithKit(r.idle), [], `${key}: with the core appearance kit (0.17.0), the idle page paints nothing`);
   });
 }
