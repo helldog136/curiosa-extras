@@ -91,9 +91,10 @@ test("la page, l'accueil : un rond avec la photo DU SITE, texte alternatif vide,
   assert.ok(list.includes(`/m/pl/photo/${Ph.idOf("etoile_nord")}`) && !/jtvnw/.test(list), "liste d'accueil");
 });
 
+// The slot starts in 6 minutes (not 3 hours): late on a Sunday, 3 hours from now is next week.
 test("overlay, aperçu et image de la semaine : le nom seul, jamais de photo", async () => {
   seed("Étoile du Nord", "etoile_nord");
-  const items = [slot("a", 3, { partners: ["etoile_nord"] })];
+  const items = [slot("a", 0.1, { partners: ["etoile_nord"] })];
   const base = ctxOf(items);
   await def.page(base); await Ph.settled(); P.resetPartners();
   assert.equal((await docs(base)).length, 1);
