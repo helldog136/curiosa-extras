@@ -65,7 +65,7 @@ No live Twitch was available when this was written. Event fields were read in th
 how many failures make Twitch revoke a subscription, the redelivery schedule, and the reward redemption type. The tests use a fake Twitch that signs like the real one.
 See "Robustness" below for what is recovered after a gap and what cannot be.
 
-## The OBS dock (version 1.1.0)
+## The OBS dock (version 1.1.0, narrow layout 1.8.0)
 
 A compact page for **OBS > Docks > Custom browser docks**, with the same secret address as the raid docks of the Twitch raid module (`/m/<key>/dock?k=…`, no session of the administration needed in OBS). Address and instructions: tab **OBS dock** of the module, one field with a copy button, and **New address** (asks for confirmation, the old dock stops at once: reload the dock in OBS).
 
@@ -75,6 +75,8 @@ A compact page for **OBS > Docks > Custom browser docks**, with the same secret 
 - **Replay**: re-queues the alert with the same data as a new journal line flagged `replay` (who/when are the journal's). **It works even if the type is switched off** (a manual replay is a wish). De-bounced (a double click sends one alert; the button says "Replayed ✓"), rate limited (10 a minute), refused when no alerts overlay is installed (the buttons are disabled and the page says why). The only MCP route to replay stays `twitch_event_replay`.
 - **Pause alerts / Resume**: **holds** the alerts of the alerts overlay (they are kept in order and come out when you resume; nothing is lost), **Empty the queue** (asks first) and **Test** (a menu of types), through the service `alerts.queue` of the alerts overlay (optional: without it these buttons are disabled).
 - **Privacy**: only display names, amounts and counts leave the module; never a token, a secret or an e-mail (a test checks the whole answer). Wrong keys are counted: 30 a minute, then 429 before any comparison; the data route answers 90 reads a minute, the actions 40.
+- **Narrow layout (1.8.0)**: built for an OBS dock of 220 to 360 px, still fine wide or very short. Each row has two lines (name and detail, then type and time) and ONE 44 px replay button; the type pill is never cut, the name is cut with "…" only when needed (full text in the tooltip). The period and the type are two lists (no tabs or chips to scroll sideways). The controls (Alerts, Voice, Mute voice, Stop speech, Skip alert, Empty the queue, Test) are icon buttons with a name and a tooltip, folded under a "Controls" button (folded by default, remembered in the dock; words and states appear from 520 px). A "Paused" pill stays visible in the title when alerts are held. The notice is one short line; when the site is not listening it is a link to the page of the module. Under 420 px high the title and filters scroll away with the list, which starts in view.
+- **The "not listening" notice** only shows for a real problem (permission missing, Twitch or the site not answering, connection missing). Never checked yet (just after an update), "pending" and "nothing on" no longer count, as in the badge of the administration.
 - Code: `dock.mjs` (page, one script, nonce policy, nothing from another site), `dockapi.mjs` (address, data, actions), `dockpure.mjs` (functions run by the page AND by the tests), `dockkit.mjs` (copy of the look helpers of `twitch-raid/dock.mjs`; a test fails if the tokens drift), `describe.mjs` (how a line is written, shared with the admin page).
 
 ## Robustness (version 1.2.0)

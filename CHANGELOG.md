@@ -4,6 +4,29 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.86.0 — 2026-11-15
+
+*En bref : le dock OBS d'Activité Twitch devient lisible dans un dock étroit (220 à 360 px) : la liste des événements passe en premier, les commandes se replient. Activité Twitch 1.8.0. Rien à régler, aucune nouvelle permission.*
+
+*In short: the OBS dock of Twitch activity is now readable in a narrow dock (220 to 360 px): the event list comes first and the controls fold away. Twitch activity 1.8.0. Nothing to set up, no new permission.*
+
+### Nouveautés
+
+- **Des lignes lisibles.** Chaque ligne montre le nom, le détail, le type (jamais coupé) et l'heure, avec un seul bouton « Rejouer » de 44 px. Un nom trop long est coupé avec « … » et complet dans l'info-bulle.
+- **Les commandes se replient.** Alertes, Voix, Couper la voix, Arrêter la lecture, Passer l'alerte, Vider la file et Tester sont des boutons à icône (avec nom et info-bulle) sous un bouton « Contrôles », replié au départ et mémorisé. Une pastille « En pause » reste visible dans le titre.
+- **Plus de défilement sur le côté.** La période et le type sont deux listes ; aucun onglet ni pastille ne dépasse.
+- **Un dock très court** démarre sur la liste.
+- **Un avis plus juste et plus court.** « Twitch n'est pas écouté. Ouvrez le module » est un lien, et n'apparaît plus juste après une mise à jour ni pendant une mise en place.
+- **Readable rows.** Each row shows the name, the detail, the type (never cut) and the time, with a single 44 px "Replay" button. A long name is cut with "…" and complete in the tooltip.
+- **Controls fold away.** Alerts, Voice, Mute voice, Stop speech, Skip alert, Empty the queue and Test are icon buttons (with a name and tooltip) under a "Controls" button, folded at first and remembered. A "Paused" pill stays visible in the title.
+- **No more sideways scrolling.** The period and the type are two lists; no tab or chip overflows.
+- **A very short dock** starts on the list.
+- **A fairer, shorter notice.** "Not listening to Twitch. Open the module" is a link, and no longer shows just after an update or during a set-up.
+
+### Pour les développeurs
+
+- Activité Twitch 1.8.0 : `dock.mjs` (mise en page, icônes SVG, contrôles repliables), `relTime(…, compact)`, `listenProblem` dans `dockapi.mjs`. Test navigateur : `twitch-events-dock-layout` (220 à 900 px, 200 à 900 px de haut, clair et sombre, EN et FR).
+
 ## 1.84.0 — 2026-11-15
 
 *En bref : dans le bandeau sponsor, le QR code est plus grand et plus net : moins de blanc autour, des carrés plus gros, il ne bouge plus. Overlay sponsors 1.4.1. Rien à régler, aucune nouvelle permission.*
