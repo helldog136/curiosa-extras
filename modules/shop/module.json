@@ -1,0 +1,168 @@
+{
+  "apiVersion": 2,
+  "id": "shop",
+  "name": {
+    "en": "Shop (experimental)",
+    "fr": "Boutique (expérimental)"
+  },
+  "version": "0.1.0",
+  "menuGroup": "tools",
+  "minCore": "0.6.0",
+  "description": {
+    "en": "Experimental prototype, not for release. A small shop with a catalogue and stock kept by reservations. The cart holds items for 5 minutes. Orders are paid by hand.",
+    "fr": "Prototype expérimental, pas destiné à être publié. Une petite boutique avec un catalogue et un stock tenu par réservations. Le panier garde les articles 5 minutes. Les commandes se paient à la main."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "🛍️",
+  "main": "index.mjs",
+  "type": "widget",
+  "instances": "single",
+  "page": true,
+  "basePath": "shop",
+  "privacy": {
+    "en": "When you place an order, your name, e-mail address and delivery address are saved; only the site team reads them. A private page, open only with the long link you receive, shows your order. A small cookie keeps your cart for one hour; it holds no personal data.",
+    "fr": "Quand vous passez une commande, votre nom, votre adresse e-mail et votre adresse de livraison sont enregistrés ; seule l'équipe du site les lit. Une page privée, ouverte avec le long lien que vous recevez, montre votre commande. Un petit témoin garde votre panier pendant une heure ; il ne contient aucune donnée personnelle."
+  },
+  "permissions": [
+    "pages",
+    "routes",
+    "storage",
+    "admin"
+  ],
+  "settings": [
+    {
+      "key": "currency",
+      "type": "select",
+      "default": "EUR",
+      "label": {
+        "en": "Currency",
+        "fr": "Devise"
+      },
+      "options": [
+        {
+          "value": "EUR",
+          "label": {
+            "en": "EUR",
+            "fr": "EUR"
+          }
+        },
+        {
+          "value": "USD",
+          "label": {
+            "en": "USD",
+            "fr": "USD"
+          }
+        },
+        {
+          "value": "GBP",
+          "label": {
+            "en": "GBP",
+            "fr": "GBP"
+          }
+        },
+        {
+          "value": "CHF",
+          "label": {
+            "en": "CHF",
+            "fr": "CHF"
+          }
+        },
+        {
+          "value": "CAD",
+          "label": {
+            "en": "CAD",
+            "fr": "CAD"
+          }
+        },
+        {
+          "value": "AUD",
+          "label": {
+            "en": "AUD",
+            "fr": "AUD"
+          }
+        }
+      ]
+    },
+    {
+      "key": "announcement",
+      "type": "text",
+      "translatable": true,
+      "optional": true,
+      "label": {
+        "en": "Announcement bar",
+        "fr": "Barre d'annonce"
+      },
+      "example": {
+        "en": "Free pickup on Saturdays",
+        "fr": "Retrait gratuit le samedi"
+      }
+    },
+    {
+      "key": "lowStock",
+      "type": "number",
+      "default": 2,
+      "label": {
+        "en": "Low stock alert",
+        "fr": "Alerte de stock bas"
+      },
+      "help": {
+        "en": "Warns at this number of pieces or fewer.",
+        "fr": "Prévient à partir de ce nombre de pièces."
+      }
+    },
+    {
+      "key": "cartMinutes",
+      "type": "number",
+      "default": 5,
+      "advanced": true,
+      "label": {
+        "en": "Cart holds the items for (minutes)",
+        "fr": "Durée de garde du panier (minutes)"
+      }
+    },
+    {
+      "key": "manualHoldHours",
+      "type": "number",
+      "default": 24,
+      "advanced": true,
+      "label": {
+        "en": "Items held for a manual payment (hours)",
+        "fr": "Durée de garde pour un paiement manuel (heures)"
+      }
+    }
+  ],
+  "rights": [
+    {
+      "id": "manage",
+      "label": {
+        "en": "manage the shop",
+        "fr": "gérer la boutique"
+      },
+      "help": {
+        "en": "Edit products, update orders.",
+        "fr": "Modifier les produits, suivre les commandes."
+      },
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    },
+    {
+      "id": "email.view",
+      "label": {
+        "en": "see customers' contact details",
+        "fr": "voir les coordonnées des clients"
+      },
+      "help": {
+        "en": "Without it, no name or address is shown.",
+        "fr": "Sans ce droit, aucun nom ni adresse."
+      },
+      "sensitive": true,
+      "default": {
+        "admin": true,
+        "editor": false
+      }
+    }
+  ]
+}

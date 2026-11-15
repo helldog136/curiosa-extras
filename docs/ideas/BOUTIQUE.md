@@ -157,3 +157,23 @@ Only search results were read, not the full official pages. Treat every figure a
 - **PayPal, manual transfer:** not researched yet.
 
 Design consequence (assumption, to validate): the shop treats any provider webhook as a **notification only** and asks the provider module to re-fetch the payment status (`payment.provider.status`). This works for signed and unsigned webhooks and keeps the shop independent of each provider's signing scheme.
+
+## 11. Prototype status (`modules/shop/`, version 0.1.0, 2026-11-15)
+
+Throwaway code on this branch only. Not released, not in `catalogue/index.json` (so `node scripts/build-index.mjs --check` reports an out-of-date index on this branch **on purpose**; do not regenerate it unless the module is ever meant to be published).
+
+**What exists:** products with variants and tax rate, stock modes (counted, one of a kind, unlimited), stock by reservation documents, cart with the 5-minute timer restarting on every change, checkout without an account, manual payment, 24 h hold, late-payment handling (`paid_to_resolve`, never an automatic refund), order states, seller administration (orders, products, low-stock banner), public page, private tracking page, cart script, daily-style clean-up task, EN/FR texts.
+
+**Checked (commands run on 2026-11-15):**
+- `CURIOSA_DIR=../Curiosa node scripts/test.mjs tests/shop.test.mjs`: 27 tests pass. They include 20 simultaneous buyers of the last piece (exactly one wins, losers leave nothing behind), 25 randomised rounds of simultaneous buyers (never more held than in stock), cart expiry and timer restart, price and tax snapshot, idempotent payment events, late payment with all-or-nothing re-reservation, routes (methods, honeypot, rate limits, cookie flags), escaping, rights, French page.
+- `tests/conformance.test.mjs` (the core's suite, run on every module): 0 failures, including `admin.ergonomics` for this module.
+- A browser run (Chromium, 1280 px and 390 px) against a throwaway server using the real module code and an in-memory store: add to cart, countdown, stale page cannot take the one-of-a-kind item, fresh page shows it sold out, remove, errors under the fields with focus on the first, checkout to the private page, no horizontal scroll, controls at least 44 px high. Screenshots were looked at.
+
+**NOT verified:**
+- The reservation algorithm on the **real core storage**. It relies on creation order being total and on a new document being visible to every reader at once; the in-memory store guarantees both, the real one is unknown. Also unknown: whether the core runs several processes. This is the first thing to test against a real core before trusting the design.
+- No real core was started: page rendering, the `scripts` mechanism, CSP and the admin blocks were not seen in the real site. The administration page was only built as blocks and tested as data, not looked at.
+- Ergonomics rules R1 to R32 are **not** met in full: no edit dialog, no inline stock editing, no payment wizard, no screenshots of the administration. A real delivery needs the "Ergonomics" section.
+- No payment provider, no e-mail, no shipping prices, no data retention or erasure (D12), no photos, no tax rate list (a rate is typed per product), no link with `contacts`.
+- Small known flaws: field errors stay visible after the field is corrected; the stock note on the shop page does not refresh without reloading; opening the payment page does not yet restart the timer (`cart.touch` exists but is not wired); the `Secure` cookie flag was not exercised over plain HTTP.
+
+**Findings for the core:** a public `page()` cannot read cookies, so a per-visitor cart needs a route plus a page script; the store has no atomic operation (see 7b); mail limits (D11).
