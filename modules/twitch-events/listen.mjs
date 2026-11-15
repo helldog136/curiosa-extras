@@ -64,8 +64,22 @@ export async function diagnose(ctx, s, { declare = true, now = Date.now() } = {}
   return { code: "ready", ...base, broadcasterId: main.userId, missing, missingCore, blocked, blockedCore };
 }
 
+/** "403 Forbidden: …": what Twitch answered to a creation, in one short line (no secret is ever in it). */
+export const refusalText = (r) => [r.status || "", r.detail ?? ""].filter((x) => x !== "").join(" ").slice(0, 220);
+/** Keeps the last refusal of each wanted subscription and writes ONE log line when it changes (not every minute). */
+async function refused(ctx, w, r) {
+  const text = refusalText(r);
+  let changed = false;
+  await st.updateState(ctx, (x) => {
+    const was = x.createErrors?.[w.type];
+    if (!was || was.text !== text) changed = true;
+    x.createErrors = { ...(x.createErrors ?? {}), [w.type]: { text, status: r.status ?? 0, at: Date.now() } };
+  });
+  if (changed) { try { await ctx.api.log?.write?.({ action: "type.create_failed", target: w.typeId, data: { type: w.typeId, subscription: w.type, status: r.status ?? 0 } }); } catch { /* the log never breaks a check */ } }
+}
+
 const FAIL = { auth: "need_reconnect", scope: "need_more", config: "creds_missing", rate: "twitch_busy", network: "twitch_down" };
-const RANK = { refused: 6, need_more: 6, need_reconnect: 6, twitch_down: 5, twitch_busy: 4, pending: 3, listening: 1 };
+const RANK = { refused: 6, need_more: 6, need_reconnect: 6, twitch_down: 5, twitch_busy: 4, taken: 3, pending: 3, listening: 1 };
 const worst = (a, b) => ((RANK[a] ?? 2) >= (RANK[b] ?? 2) ? a : b);
 
 /**
@@ -81,7 +95,7 @@ async function note(ctx, code, types = {}, extra = {}, info = {}) {
     d.types = Object.fromEntries(es.TYPES.map((t) => {
       const c = types[t.id] ?? (code === "listening" ? "off" : code);
       if ((was[t.id]?.code ?? "off") !== c) changes.push([t.id, c]);
-      return [t.id, { code: c, at: now, ...(info[t.id]?.since ? { since: info[t.id].since } : {}), ...(info[t.id]?.reason ? { reason: info[t.id].reason } : {}) }];
+      return [t.id, { code: c, at: now, ...(info[t.id]?.since ? { since: info[t.id].since } : {}), ...(info[t.id]?.reason ? { reason: info[t.id].reason } : {}), ...(info[t.id]?.detail ? { detail: info[t.id].detail } : {}) }];
     }));
   });
   for (const [id, c] of changes) {
@@ -125,7 +139,13 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
   for (const t of es.TYPES) { if (d.enabled[t.id] && d.blocked.includes(t.id)) types[t.id] = "need_more"; else if (!d.enabled[t.id]) types[t.id] = "off"; }
   let busy = false;
   for (const w of cls.wanted) {
-    if (w.state === "enabled") { put(w.typeId, "listening"); continue; }
+    if (w.state === "enabled") {
+      put(w.typeId, "listening");
+      if ((await st.readState(ctx)).failures?.[w.type]) await st.updateState(ctx, (x) => { delete x.failures[w.type]; });
+      continue;
+    }
+    // Cut by Twitch (permission withdrawn, address unreachable…): remembered, so that the page says WHY while the new one waits for its confirmation.
+    if (w.state === "failed") await st.updateState(ctx, (x) => { x.failures = { ...(x.failures ?? {}), [w.type]: { code: w.failure, status: w.status, at: now } }; });
     if (w.state === "pending") {
       const s0 = await st.readState(ctx);
       // The age comes from Twitch (`created_at`), so a subscription made before a restart or by an older version still ages; ours is the fallback.
@@ -133,7 +153,8 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
       const since = Number.isFinite(w.createdAt) ? w.createdAt : first ?? now;
       if (!Number.isFinite(w.createdAt) && !first) await st.updateState(ctx, (x) => { x.pendingSince = { ...(x.pendingSince ?? {}), [w.type]: now }; });
       const age = now - since, healedAt = (s0.healed ?? {})[w.type];
-      const reason = w.elsewhere ? "elsewhere" : age < HEAL_MS ? "waiting" : s0.verifiedAt && now - s0.verifiedAt < 30 * 60_000 ? "unconfirmed" : "unreachable";
+      const fail = s0.failures?.[w.type], failed = fail && now - fail.at < 30 * 60_000 ? `failed_${fail.code}` : null;
+      const reason = w.elsewhere ? "elsewhere" : failed ?? (age < HEAL_MS ? "waiting" : s0.verifiedAt && now - s0.verifiedAt < 30 * 60_000 ? "unconfirmed" : "unreachable");
       if (age < HEAL_MS || (healedAt && now - healedAt < HEAL_AGAIN_MS)) { put(w.typeId, "pending"); info[w.typeId] = { since, reason }; continue; }
       await twitch(ctx, d.channel, es.deleteRequest(w.id));   // pending for 3 minutes: start again, once
       await st.updateState(ctx, (x) => { x.healed = { ...(x.healed ?? {}), [w.type]: now }; });
@@ -143,8 +164,16 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
     const made = await twitch(ctx, d.channel, es.createRequest(w, { callback, secret }));
     if (!made.ok) { put(w.typeId, FAIL[made.error] ?? "twitch_down"); busy = made.error === "rate"; continue; }
     const r = es.readCreate(made);
-    if (r.ok || r.code === "exists") { put(w.typeId, "pending"); if (r.code === "exists") info[w.typeId] = { since: now, reason: "elsewhere" }; await st.updateState(ctx, (x) => { x.pendingSince = { ...(x.pendingSince ?? {}), [w.type]: Date.now() }; }); }
-    else { put(w.typeId, r.code === "denied" ? "need_more" : r.code === "busy" ? "twitch_busy" : r.code === "refused" ? "refused" : "twitch_down"); busy = busy || r.code === "busy"; }
+    // Every refusal is remembered with Twitch's own words (HTTP code + message): the page shows it and the log keeps one line per CHANGE.
+    if (!r.ok) await refused(ctx, w, r);
+    // 409: Twitch already holds a subscription with this type and condition that is NOT ours (otherwise the list would have shown it as ours): its events go to the other address, not here.
+    // That is not "waiting for Twitch": nothing will ever be confirmed for us. Say so.
+    if (r.code === "exists") { put(w.typeId, "taken"); info[w.typeId] = { since: now, reason: "elsewhere", detail: refusalText(r) }; }
+    else if (r.ok) { put(w.typeId, "pending"); const fail = (await st.readState(ctx)).failures?.[w.type]; if (fail && now - fail.at < 30 * 60_000) info[w.typeId] = { since: now, reason: `failed_${fail.code}` }; await st.updateState(ctx, (x) => { x.pendingSince = { ...(x.pendingSince ?? {}), [w.type]: Date.now() }; delete x.createErrors?.[w.type]; }); }
+    else {
+      put(w.typeId, r.code === "denied" ? "need_more" : r.code === "busy" ? "twitch_busy" : r.code === "refused" ? "refused" : "twitch_down"); busy = busy || r.code === "busy";
+      info[w.typeId] = { since: now, reason: "create_failed", detail: refusalText(r) };
+    }
   }
   // 3. A person waiting in front of the screen: Twitch verifies the address right after accepting; a few seconds are enough for it to be "enabled".
   if (settle && Object.values(types).includes("pending")) {
@@ -165,6 +194,25 @@ export async function ensureListening(ctx, s, { renew = false, settle = false, n
   if (code === "listening" && d.blockedCore.length) code = "need_more";
   await st.updateState(ctx, (x) => { if (code === "listening") delete x.pendingSince; });
   return mark(code, types);
+}
+
+/**
+ * "Try again" for ONE type: deletes OUR subscriptions of that type at Twitch, forgets how long they waited and why they were cut, and makes one pass that creates them again.
+ * Never touches another address's subscriptions. Returns { ok: false, code } when it cannot start (see diagnose), else { ok: true, state: the code of the type after the pass }.
+ */
+export async function retryType(ctx, s, typeId, { now = Date.now() } = {}) {
+  const ty = es.typeOf(typeId);
+  if (!ty) return { ok: false, code: "unknown" };
+  const d = await diagnose(ctx, s, { declare: false, now });
+  if (d.code !== "ready") return { ok: false, code: d.code };
+  const callback = callbackOf(ctx), names = ty.subs.map((x) => x.type);
+  const list = await twitch(ctx, d.channel, es.listRequest());
+  if (!list.ok) return { ok: false, code: "twitch_down" };
+  for (const row of Array.isArray(list.json?.data) ? list.json.data : []) if (row?.transport?.callback === callback && names.includes(row.type)) await twitch(ctx, d.channel, es.deleteRequest(String(row.id)));
+  await st.updateState(ctx, (x) => { for (const n of names) { delete x.healed?.[n]; delete x.pendingSince?.[n]; delete x.failures?.[n]; } });
+  const r = await (await import(`./cycle.mjs${v}`)).check(ctx, s, { now, settle: true });
+  const state = await st.readState(ctx);
+  return { ok: true, code: r.code, state: state.types?.[typeId]?.code ?? "unknown", reason: state.types?.[typeId]?.reason ?? null };
 }
 
 /** Removes our subscriptions at Twitch and our permission requests (instance deleted). Never throws. */
