@@ -338,7 +338,7 @@ export default {
     const node = (v, part, cls, extra = "") => `var ${v}=document.createElement("div");${ov ? `${v}.setAttribute("data-ov-part","${part}");` : `${v}.className="${cls}"${extra};`}`;
     return {
       title: ctx.instance.name,
-      html: `<div id="al-stage" style="${ov ? `${ovTokens(q)};` : ""}--al-accent:${accent};--al-bg:${t.surface};--al-fg:${t.fg}">${sample}</div>`,
+      html: `<div id="al-stage"${ov ? ' data-ov-region="element"' : ""} style="${ov ? `${ovTokens(q)};` : ""}--al-accent:${accent};--al-bg:${t.surface};--al-fg:${t.fg}">${sample}</div>`,
       css: `
         html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
         #al-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
