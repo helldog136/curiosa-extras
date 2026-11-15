@@ -19,6 +19,7 @@
 | D12 | **Data retention:** keep what the law requires the seller to keep; everything else is configurable by the seller and by the customer. Because the module cannot know the legal duties of every country, it carries **no hard-coded legal duration**: a per-country table of required retention is data, each row marked "checked by a human on <date>" with its source, and a country without a checked row defaults to "keep order lines, never delete automatically" plus a notice to ask an accountant. Personal contact data (address, phone, e-mail) that is not required is erased after a delay chosen by the seller. The customer can ask, from the private tracking page, to erase their personal data; the module erases what is not required and tells what it must keep and why. **Needs a human legal review before any real sale** (privacy law versus accounting duties differ per country). | Owner |
 | D13 | **Admin layout:** three tabs. **Orders** (opens first): one table, live search, state filters (To prepare, Shipped, To resolve, All), late-paid orders highlighted in colour and text, empty state offers "Add a product". **Products**: searchable table, product sheet in a dialog with 5 visible fields (name, photos, price, stock, variants), the rest under "More options", stock editable in the row with a low-stock alert. **Settings**: at most 7 simple settings (currency, shipping zones and prices, pickup, tax rates, announcement bar, data retention; hold durations in advanced), working with defaults. Manual orders work without any payment provider; connecting one is a wizard of at most 3 steps. Rules R1 to R32 apply and the PR will need the ergonomics section when the time comes. | Owner |
 | D14 | **Guest checkout, no customer accounts.** Name, e-mail and address at checkout, a private tracking link as confirmation (model: `commissions`). The cart needs a small functional cookie, declared in the module's privacy statement; whether it needs a consent banner is a legal question, not concluded here. Customer accounts, if ever, come much later. | Owner |
+| D15 | **Every shop owner has their own contract and their own keys with each payment provider.** There is no Curiosa platform account, no commission and no money passing through the project or its servers (Connect / OAuth marketplace modes are refused: they would need a central application with legal duties). A provider module asks for the owner's own key (a secret setting), starts in test mode, and the owner switches to the live key themselves. | Owner, from self-hosting |
 | D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
@@ -216,3 +217,29 @@ Read in the core source or the docs, not all run:
 | PDF invoices, HTML mail (later) | not offered | Later, after the legal review; not decided. |
 
 **So the only core change the first deliveries need is the mail allowance.** Everything else is either done, worked around inside the module, or belongs to a later delivery.
+
+## 13. Payment providers when every site is self-hosted (2026-11-15)
+
+### Consequences of "each owner has their own contract" (D15)
+
+1. **The money goes straight from the customer to the owner's provider account.** Curiosa never holds funds, never needs a platform account and takes nothing.
+2. **The owner opens the provider account themselves** and passes the provider's own checks (identity, business details, bank account). Nothing in the module can speed that up; it only explains it, and manual payment (bank transfer, cash on pickup) works meanwhile, so a shop is never blocked by the provider's checks.
+3. **A provider module is a form for the owner's own key**, in three steps at most (rule R8): (1) a link to open the provider account, (2) paste the test key, (3) a test payment with the result shown; then a clearly worded switch to the live key. A banner "Test mode" stays on the shop administration until the live key is in.
+4. **The provider's fees and rules are the owner's.** The shop shows no fee. The module's page points to the provider's own price list; it does not promise any figure.
+5. **Which provider is possible depends on the owner's country and activity.** Not verified per country. The module only says which providers are installed; the provider tells the owner whether their account is accepted.
+6. **No key ever goes through a conversation or a repository.** Keys are secret settings (they never leave memory, per `docs/MODULES.md`). Tests use an invented key and a fake provider server only.
+
+### The webhook problem of self-hosting
+
+Mollie's documentation says the webhook address must be reachable from Mollie, so `localhost` does not work, and that live mode needs HTTPS ([webhook docs](https://docs.mollie.com/docs/webhooks), [next-gen webhooks](https://docs.mollie.com/reference/webhooks-new.md)). A site on a home connection, a NAS without a public address, or behind a router with no forwarding therefore cannot receive notifications. Two consequences for the design:
+
+- **A notification is only a nudge** (already decided in section 5): the shop asks the provider for the payment's real state.
+- **A fallback that needs no incoming connection:** when the customer comes back from the provider's page, and in a scheduled task every few minutes for open payments, the provider module asks for the state itself. A shop on a private address still works, only a few minutes later. The module tells the owner whether its public address works (a "reachable from the internet" check) instead of failing silently.
+
+### Test and live keys, as far as verified
+
+Mollie's authentication page says each website profile has a Live key and a Test key, to use the Test key while building and the Live key for real payments; keys beginning `test_` and `live_` come from partner documentation, not from Mollie's own reference ([authentication](https://docs.mollie.com/docs/authentication)). The page also says the key is shown only when it is created. **Not verified:** whether live payments require the account checks to be finished first, the checks themselves, and the same details for Stripe and PayPal.
+
+### What the first provider delivery will and will not prove
+
+Built and tested against a **fake provider server** that follows the documented flow (create payment, redirect, notification with only an identifier, state fetch, refund). That proves our side of the contract: idempotency, amounts, late payments, the polling fallback. It does **not** prove that Mollie accepts our calls: that needs the owner's own free test account and key, entered through a secure form, and a run in test mode.
