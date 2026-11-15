@@ -1,7 +1,7 @@
 // Shop (EXPERIMENTAL prototype): public routes /m/<instance>/<name>. The cart cookie holds a random token (160 bits);
 // only its hash is stored. A public page cannot read cookies, so the cart is read through GET `cart` by scripts/shop.js.
 // Protections: method check, honeypot, per-visitor and global limits, bounded sizes, same answer for unknown things.
-import { LIMITS, HOUR, limited, visitorOf, isToken, idOk, num, currencyOf } from "./lib.mjs";
+import { LIMITS, HOUR, limited, visitorOf, isToken, idOk, num, currencyOf, mailReady } from "./lib.mjs";
 import * as D from "./data.mjs";
 import * as C from "./cart.mjs";
 import * as O from "./orders.mjs";
@@ -21,6 +21,7 @@ async function cart(request, ctx) {
 }
 async function add(request, ctx) {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  if (!(await mailReady(ctx))) return json({ ok: false, reason: "closed" }, 503);               // no way to write to a customer: nothing is reserved
   const f = await form(request);
   if (!f) return json({ ok: false, reason: "invalid" }, 400);
   if (String(f.get("website") ?? "")) return json({ ok: true });                                     // honeypot
@@ -45,6 +46,7 @@ async function remove(request, ctx) {
 }
 async function checkout(request, ctx) {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  if (!(await mailReady(ctx))) return json({ ok: false, reason: "closed" }, 503);
   const f = await form(request);
   if (!f) return json({ ok: false, reason: "invalid" }, 400);
   if (String(f.get("website") ?? "")) return json({ ok: true });

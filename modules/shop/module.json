@@ -25,10 +25,11 @@
     "fr": "Quand vous passez une commande, votre nom, votre adresse e-mail et votre adresse de livraison sont enregistrés ; seule l'équipe du site les lit. Une page privée, ouverte avec le long lien que vous recevez, montre votre commande. Un petit témoin garde votre panier pendant une heure ; il ne contient aucune donnée personnelle."
   },
   "permissions": [
+    "admin",
+    "mail",
     "pages",
     "routes",
-    "storage",
-    "admin"
+    "storage"
   ],
   "settings": [
     {

@@ -1,5 +1,5 @@
 // Shop (EXPERIMENTAL prototype): the public page (catalogue) and the private order page. Everything a person typed goes through esc().
-import { esc, formatMoney, currencyOf, isToken, num } from "./lib.mjs";
+import { esc, formatMoney, currencyOf, isToken, num, mailReady } from "./lib.mjs";
 import * as D from "./data.mjs";
 import * as S from "./stock.mjs";
 import * as P from "./payments.mjs";
@@ -24,6 +24,7 @@ const stockNote = (ctx, a) => (a.available === Infinity ? "" : a.available <= 0 
 export async function page(ctx, { segments = [] } = {}) {
   if (segments[0] === "track" && segments.length === 2) return trackPage(ctx, segments[1]);
   if (segments.length) return { notFound: true };
+  if (!(await mailReady(ctx))) return { title: ctx.t("pageTitle"), description: ctx.t("pageDescription"), blocks: [{ type: "html", html: `${style()}<div class="sh"><p class="sh-card" role="status">${esc(ctx.t("closedForMail"))}</p></div>` }] };
   const currency = currencyOf(ctx), products = await D.listProducts(ctx, { published: true });
   const base = `/m/${ctx.instance.key}`;
   const announcement = String(ctx.setting("announcement") ?? "").trim();
@@ -41,7 +42,7 @@ export async function page(ctx, { segments = [] } = {}) {
   }
   const t = JSON.stringify({ cart: ctx.t("cartTitle"), empty: ctx.t("cartEmpty"), remove: ctx.t("remove"), total: ctx.t("total"), left: ctx.t("timeLeft"), expired: ctx.t("cartExpired"),
     name: ctx.t("fName"), email: ctx.t("fEmail"), address: ctx.t("fAddress"), order: ctx.t("placeOrder"), sold: ctx.t("soldOutNow"), errName: ctx.t("errName"), errEmail: ctx.t("errEmail"), errAddress: ctx.t("errAddress"),
-    rate: ctx.t("errRate"), generic: ctx.t("errGeneric"), qty: ctx.t("qtyLimit") });
+    rate: ctx.t("errRate"), generic: ctx.t("errGeneric"), qty: ctx.t("qtyLimit"), closed: ctx.t("closedForMail") });
   const html = `${style()}<div class="sh">${announcement ? `<p class="sh-card" role="status">${esc(announcement)}</p>` : ""}`
     + (cards.length ? `<div class="sh-grid">${cards.join("")}</div>` : `<p class="sh-card">${esc(ctx.t("noProducts"))}</p>`)
     + `<section id="shop-cart" class="sh-card" aria-live="polite" data-base="${esc(base)}" data-t="${esc(t)}"></section></div>`;

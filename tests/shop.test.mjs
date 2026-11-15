@@ -20,8 +20,8 @@ const O = await import("../modules/shop/orders.mjs");
 const P = await import("../modules/shop/public.mjs");
 
 let n = 0;
-function mk({ rights = ["manage", "email.view"], settings = {}, locale = "en" } = {}) {
-  const ctx = fakeCtx({ key: `sh${++n}`, basePath: "shop", moduleId: "shop", locale, defaultLocale: "en", locales: ["en", "fr"], messages: locale === "en" ? en : fr, settings, site: { name: "Atelier", tagline: "", logo: null } });
+function mk({ rights = ["manage", "email.view"], settings = {}, locale = "en", mailConfigured = true } = {}) {
+  const ctx = fakeCtx({ mailConfigured, key: `sh${++n}`, basePath: "shop", moduleId: "shop", locale, defaultLocale: "en", locales: ["en", "fr"], messages: locale === "en" ? en : fr, settings, site: { name: "Atelier", tagline: "", logo: null } });
   ctx.api.store = memStore();
   ctx.instance.id = `id${n}`;
   const set = new Set(rights);
@@ -370,6 +370,27 @@ test("admin actions: errors are shown under the field with an example; a saved p
   assert.ok((await def.adminActions.markPaid(ctx, { id: o.r.orderId })).ok);
   assert.ok((await def.adminActions.setState(ctx, { id: o.r.orderId, state: "shipped", tracking: "TRK-2" })).ok);
   assert.ok((await def.adminActions.setState(ctx, { id: o.r.orderId, state: "paid" })).errors.state);
+});
+
+// ── No e-mail, no shop ──────────────────────────────────────────────────────────────────────────────────────────
+test("without a way to send e-mail the shop is closed: no page to buy from, no cart, no order; existing orders can still be followed", async () => {
+  const on = mk();
+  const p = await product(on, { onHand: "3" });
+  const { r } = await ordered(on, p);
+  const off = mk({ mailConfigured: false });
+  off.api.store = on.api.store;                                   // the same shop, the site's e-mail having stopped working
+  const page = await def.page(off, { segments: [] });
+  assert.match(page.blocks[0].html, /closed for now/); assert.doesNotMatch(page.blocks[0].html, /sh-add|Add to cart|Plush fox/); assert.equal(page.scripts, undefined);
+  const addReq = () => post("add", { productId: p.id, variantId: "v1", qty: "1" });
+  const res = await def.routes.add(addReq(), off);
+  assert.equal(res.status, 503); assert.equal((await res.json()).reason, "closed");
+  assert.equal((await def.routes.checkout(post("checkout", good, { cookie: "shop_cart=" + "a".repeat(32) }), off)).status, 503);
+  assert.equal((await S.availability(off, p, p.variants[0], Date.now())).available, 2, "nothing was reserved by the refused request");
+  assert.match(JSON.stringify(await def.adminPanel(off, { query: {} })), /the shop is closed/i);
+  assert.match((await def.page(off, { segments: ["track", r.token] })).blocks[0].html, /Waiting for payment/, "a customer who already ordered can still follow the order");
+  assert.equal((await def.routes.add(addReq(), on)).status, 200, "it opens again by itself once e-mail works");
+  assert.doesNotMatch(JSON.stringify(await def.adminPanel(on, { query: {} })), /the shop is closed/i);
+  assert.ok(readJson("module.json").permissions.includes("mail"));
 });
 
 // ── Housekeeping ────────────────────────────────────────────────────────────────────────────────────────────────

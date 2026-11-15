@@ -111,5 +111,8 @@
   "payState_failed": "failed",
   "payState_canceled": "cancelled by the customer",
   "payState_expired": "expired",
-  "onlineHoldSetting": "Items held during an online payment (minutes)"
+  "onlineHoldSetting": "Items held during an online payment (minutes)",
+  "closedForMail": "The shop is closed for now. Please come back later.",
+  "needMailBanner": "The shop is closed: the site cannot send e-mail yet. It opens by itself once e-mail is set up.",
+  "mailSetLink": "Set up e-mail sending"
 }

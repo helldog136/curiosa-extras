@@ -111,5 +111,8 @@
   "payState_failed": "échoué",
   "payState_canceled": "annulé par le client",
   "payState_expired": "expiré",
-  "onlineHoldSetting": "Durée de garde pendant un paiement en ligne (minutes)"
+  "onlineHoldSetting": "Durée de garde pendant un paiement en ligne (minutes)",
+  "closedForMail": "La boutique est fermée pour le moment. Revenez plus tard.",
+  "needMailBanner": "La boutique est fermée : le site ne sait pas encore envoyer d'e-mails. Elle s'ouvre toute seule dès que c'est réglé.",
+  "mailSetLink": "Régler l'envoi d'e-mails"
 }

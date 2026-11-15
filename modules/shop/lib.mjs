@@ -103,3 +103,11 @@ export async function withLock(key, fn) {
   await prev;
   try { return await fn(); } finally { release(); if (LOCKS.get(key) === tail) LOCKS.delete(key); }
 }
+
+/**
+ * The shop opens only where the site can send e-mail (decision D17: an order without any way to write to the customer is not accepted).
+ * `configured()` says a mail server is set up; a send can still fail later, which the e-mail delivery will handle. Never throws.
+ */
+export async function mailReady(ctx) {
+  try { return (await ctx.api.mail?.configured?.()) === true; } catch { return false; }
+}

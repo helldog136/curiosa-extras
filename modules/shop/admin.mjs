@@ -1,6 +1,6 @@
 // Shop (EXPERIMENTAL prototype): administration. Three views in one panel: orders (opens first), products, product sheet / order sheet.
 // Not yet audited against docs/ERGONOMIE-ADMIN.md (see README): no dialog editing, no inline stock edit, no wizard.
-import { esc, formatMoney, currencyOf, idOk, num, ORDER_STATES, NEXT_STATES } from "./lib.mjs";
+import { esc, formatMoney, currencyOf, idOk, num, ORDER_STATES, NEXT_STATES, mailReady } from "./lib.mjs";
 import * as D from "./data.mjs";
 import * as S from "./stock.mjs";
 import * as O from "./orders.mjs";
@@ -22,6 +22,7 @@ async function overview(ctx) {
   const manage = can(ctx, "manage"), currency = currencyOf(ctx);
   const [products, orders] = await Promise.all([D.listProducts(ctx), D.listOrders(ctx)]);
   const blocks = [];
+  if (!(await mailReady(ctx))) blocks.push({ type: "banner", tone: "warning", text: ctx.t("needMailBanner") }, { type: "links", items: [{ label: ctx.t("mailSetLink"), href: "/admin/settings" }] });
   const low = num(ctx.setting("lowStock"), 2, 0, 100);
   const lowList = [];
   const stockOf = new Map();
