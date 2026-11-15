@@ -67,9 +67,9 @@ test("the page: three switches that show their state in words, stop and skip but
   for (const id of ["pause", "voice", "mute"]) assert.match(html, new RegExp(`role="switch" id="${id}" aria-checked`), id);
   for (const id of ["stopspeech", "skip", "heldlist"]) assert.match(html, new RegExp(`id="${id}"`), id);
   assert.match(html, /\.decide\{min-width:44px;min-height:44px/); assert.match(html, /\.ctl button\{?|\.ctl button,/);
-  assert.ok(!/https?:\/\/(?!site\.example\.org)/.test(html.replace(/xmlns="[^"]*"/g, "")), "nothing third party");
+  assert.ok(!/https?:\/\/(?!site\.example\.org)/.test(html.replace(/xmlns="[^"]*"/g, "").replace(/http:\/\/www\.w3\.org\/2000\/svg/g, "")), "nothing third party");
   for (const key of DK.KEYS) { assert.ok(en[`dock_${key}`] && fr[`dock_${key}`], key); assert.deepEqual((en[`dock_${key}`].match(/\{\w+\}/g) ?? []).sort(), (fr[`dock_${key}`].match(/\{\w+\}/g) ?? []).sort(), key); }
   for (const r of ["word", "link", "caps", "repeat"]) assert.ok(en[`flag_reason_${r}`] && fr[`flag_reason_${r}`]);
   for (const st of ["hidden", "held", "accepted", "dismissed"]) assert.ok(en[`d_flag_${st}`] && fr[`d_flag_${st}`]);
-  assert.equal(manifest.version, "1.7.0");
+  assert.equal(manifest.version, "1.8.0");
 });

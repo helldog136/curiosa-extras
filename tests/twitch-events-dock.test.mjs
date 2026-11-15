@@ -137,7 +137,7 @@ test("the page: strict policy with a nonce, no inline handler, nothing from anot
     const nonce = /script-src 'nonce-([^']+)'/.exec(csp)[1];
     assert.ok(html.includes(`<script nonce="${nonce}">`) && html.includes(`<style nonce="${nonce}">`));
     assert.ok(!/\son[a-z]+=/i.test(html.replace(/<script[\s\S]*<\/script>/, "")), "no inline handler");
-    assert.ok(!/https?:\/\/(?!site\.example\.org)/.test(html), "nothing is loaded from another site");
+    assert.ok(!/https?:\/\/(?!site\.example\.org)/.test(html.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, "")), "nothing is loaded from another site (the SVG namespace of the icons is a name, not an address)");
     assert.ok(!/innerHTML|document\.write|eval\(/.test(html));
     assert.match(html, /<h1>/); assert.match(html, /aria-label=/); assert.match(html, /<label class="sr" for="q">/);
     assert.match(html, new RegExp(`<html lang="${locale}"`));
@@ -147,6 +147,7 @@ test("the page: strict policy with a nonce, no inline handler, nothing from anot
     const css = fs.readFileSync(new URL("../modules/twitch-events/dock.mjs", import.meta.url), "utf8").match(/export const CSS = `([\s\S]*?)`;/)[1];
     assert.ok(!/#[0-9a-fA-F]{3,8}\b|\brgb\(|font-family/.test(css), "the stylesheet writes no colour and no font: only the tokens of the administration");
     assert.ok(/min-height:44px/.test(css) && /\.row\{[^}]*height:52px/.test(css));
+    assert.ok(!/overflow-x:(auto|scroll)/.test(css.replace(/\.top\{[^}]*\}/, "")), "no strip scrolls sideways");
   }
 });
 
@@ -193,7 +194,7 @@ function runPage(html, { dispatch }) {
     return e;
   };
   const byId = {};
-  const doc = { body: mk("body"), getElementById: (id) => (byId[id] ??= mk()), createElement: mk, querySelectorAll: () => [] };
+  const doc = { body: mk("body"), getElementById: (id) => (byId[id] ??= mk()), createElement: mk, createElementNS: (ns, tag) => mk(tag), querySelectorAll: () => [] };
   const fetched = [];
   const win = {
     document: doc, JSON, Math, Date, Number, String, Promise, Object, Array, Error, Intl, encodeURIComponent, AbortController,
@@ -225,8 +226,8 @@ test("the whole script: reads the data with the key, shows the lines, says 'reco
   assert.ok(page.fetched[0].url.includes(`/m/ev/dock-data?k=${k}&lang=en&scope=`), "the first read carries the key");
   const rows = page.el("list").children;
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].children.length, 4, "badge, who and detail, time, replay button");
-  const btn = rows[0].children[3];
+  assert.equal(rows[0].children.length, 2, "the text block (name and detail, type and time) and ONE replay button");
+  const btn = rows[0].children[1];
   assert.equal(btn.disabled, false, "the alerts overlay is linked");
   assert.ok(btn.attrs["aria-label"].includes("Etoile_Nord"));
   assert.equal(page.el("updated").textContent, en.dock_updated);
@@ -272,7 +273,14 @@ test("admin: the OBS dock tab says where to copy the address and how to add it i
   assert.ok(renew.rowActions[0].confirm.length > 20 && renew.rowActions[0].danger === true);
   assert.equal(manifest.tabs.find((t) => t.id === "dock").panel, true);
   assert.ok(manifest.requires.some((r) => r.service === "alerts.queue" && r.optional === true));
-  assert.equal(manifest.version, "1.7.0");
+  assert.equal(manifest.version, "1.8.0");
   const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   for (const locale of ["en", "fr"]) assertAdminPageErgonomics(await mod.adminPanel((await site({ locale })).ctx, { query: {} }));
+});
+
+test("data: the 'not listening' notice is for a real problem only (never checked, pending, nothing on and listening are not problems)", async () => {
+  const { ctx } = await site();
+  const listening = async (listen) => { await S.updateState(ctx, (d) => { if (listen === undefined) delete d.listen; else d.listen = { code: listen, at: NOW }; }); return (await D.payload(ctx, { now: NOW })).listening; };
+  for (const ok of [undefined, "listening", "pending", "nothing_on"]) assert.equal(await listening(ok), true, `${ok} shows no notice`);
+  for (const bad of ["need_reconnect", "need_more", "twitch_down", "creds_missing", "need_connect", "refused", "taken"]) assert.equal(await listening(bad), false, `${bad} shows the notice`);
 });

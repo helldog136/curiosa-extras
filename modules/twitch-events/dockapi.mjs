@@ -80,6 +80,10 @@ export async function heldTexts(ctx, limit = 20) {
   return out.sort((a, b) => b.at - a.at).slice(0, limit);
 }
 
+/** The notice "not listening" is for a real problem only. Same rule as the badge of the administration: "listening", "pending" (a minute after a change), "nothing on" and "never checked yet"
+ *  (just after an update, before the first pass) are not problems. The code of the whole module already ignores the types another module receives (raid and rewards included). */
+export const listenProblem = (code) => Boolean(code) && !["listening", "pending", "nothing_on"].includes(code);
+
 /* ───────────── What the page reads ───────────── */
 /** `scope`: "stream" (since the stream started, when we know it), "day" (24 h) or "all" (what the journal keeps). */
 export async function payload(ctx, { scope = "day", now = Date.now() } = {}) {
@@ -92,7 +96,7 @@ export async function payload(ctx, { scope = "day", now = Date.now() } = {}) {
   const vc = q.linked ? await voice(ctx) : { available: false, on: false, muted: false };
   const texts = q.linked && vc.available ? await heldTexts(ctx) : [];
   return {
-    now, scope: sc, live, liveSince: live ? state.liveSince : null, listening: state.listen?.code === "listening",
+    now, scope: sc, live, liveSince: live ? state.liveSince : null, listening: !listenProblem(state.listen?.code),
     events: lines.map((l) => ({ id: l.id, kind: l.kind, label: t(`kind_${l.kind}`), tone: admin.TONE[l.kind] ?? "neutral", name: admin.who(ctx, l), detail: admin.detail(ctx, l), at: l.at, test: l.source === "test", replay: l.source === "replay" })),
     alerts: { linked: q.linked, paused: q.paused, held: q.held, voice: vc, texts },
     types: es.TYPES.map((x) => ({ id: x.id, name: t(`type_${x.id}`) })),
