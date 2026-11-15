@@ -11,6 +11,7 @@
 | D3 | The product model is **generic from day one** so that later versions can add **downloadable digital content**, **voluntary donations** and **ticketing** without migrating data. | Owner |
 | D4 | Payments are **separate modules, one per provider**, offering one common service that the shop consumes. The shop depends on no specific provider. | Owner |
 | D5 | Card data never passes through Curiosa: hosted payment pages only. | Owner mission |
+| D7 | **Feature target: the level of SumUp's free online store** (section 10). The module itself takes no commission; only the payment provider's own fee applies (to verify per provider). | Owner |
 | D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
@@ -105,4 +106,29 @@ Principle: **the module helps, it never certifies.** Anything below needs a huma
 
 ## 10. Research log
 
-Nothing researched on the web yet. Provider documentation and fees will be listed here with sources, separating what was checked from what is assumed.
+### SumUp Online Store (feature benchmark)
+
+Checked on 2026-11-15 from SumUp's own UK pages ([online store](https://sumup.com/en-gb/online-store), [2021 press release](https://www.sumup.com/en-gb/press/sumup-online-store-revamp-powers-new-wave-of-smart-tools-for-small-business/)). The pages are marketing text: they name features without detail, and the press release is from 2021.
+
+Stated by SumUp: item catalogue, templates / fonts / colours and a theme editor, custom domain, shipping methods, in-store pickup, shipment tracking, discount codes, sales promotions, cross-selling, announcement bar, inventory management with restock alerts, order summary, real-time reports, secure online payments, sharing product links on social media. Fees on the UK page: 0 to create, 0 per month, 2.5 % per transaction; an Irish pricing page shows 1.69 % for pay-as-you-go digital payments (a third-party review, less reliable, mentions refund and chargeback charges). **No Belgian figure was found.**
+
+**Not stated** (do not assume): variants, taxes, customer e-mails, digital goods, product limits, shipping zones or rates.
+
+How the benchmark maps to this exploration:
+
+| SumUp feature | Shop module | Where |
+|---|---|---|
+| Item catalogue, images | yes | delivery 1 |
+| Templates, colours, fonts | the site's own skins; the shop adds no theme editor | core |
+| Custom domain | the site's own domain | core |
+| Shipping methods, pickup, tracking | zones with a flat price, a pickup option, a tracking number typed by hand | delivery 2 |
+| Inventory + restock alerts | counted / single / unlimited stock, low-stock alert | delivery 2 |
+| Order summary, reports | order list with search and state filters, simple totals | delivery 2 |
+| Discount codes, sales promotions | codes (percent or amount, limited uses, dates) | delivery 5 |
+| Announcement bar | optional banner on the shop page | delivery 1 |
+| Cross-selling | "goes well with" products on a product page | delivery 5 |
+| Secure online payments | `payment.provider` service and provider modules | delivery 3 |
+
+### Payment providers
+
+Not researched yet (Mollie, Stripe, PayPal, manual transfer): API, webhook signature, Belgian fees.
