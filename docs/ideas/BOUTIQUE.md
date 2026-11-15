@@ -12,6 +12,7 @@
 | D4 | Payments are **separate modules, one per provider**, offering one common service that the shop consumes. The shop depends on no specific provider. | Owner |
 | D5 | Card data never passes through Curiosa: hosted payment pages only. | Owner mission |
 | D7 | **Feature target: the level of SumUp's free online store** (section 10). The module itself takes no commission; only the payment provider's own fee applies (to verify per provider). | Owner |
+| D8 | **Slicing agreed**: (1) catalogue, variants, stock with low-stock alert, announcement bar, shop page and cart; (2) shipping zones + pickup + tracking number, order list, payment; (3) discount codes, promotions, cross-selling, reports. The first delivery must be **designed with the later ones in mind** (order lines, price snapshots, stock reservation, discount hooks), even though they are not built yet. | Owner |
 | D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
@@ -93,7 +94,7 @@ Principle: **the module helps, it never certifies.** Anything below needs a huma
 - Confirm a raw request body is available to routes (webhook signatures).
 - A way for a module to declare an HTTP route that is exempt from the visitor rate limiter, if any exists.
 
-## 9. Planned slicing (to refine)
+## 9. Planned slicing (superseded in part by D8; to refine)
 
 | # | Delivery | Effort | Risk |
 |---|---|---|---|
@@ -129,6 +130,12 @@ How the benchmark maps to this exploration:
 | Cross-selling | "goes well with" products on a product page | delivery 5 |
 | Secure online payments | `payment.provider` service and provider modules | delivery 3 |
 
-### Payment providers
+### Payment providers (first pass, 2026-11-15, search snippets only)
 
-Not researched yet (Mollie, Stripe, PayPal, manual transfer): API, webhook signature, Belgian fees.
+Only search results were read, not the full official pages. Treat every figure as **to re-check on the live pricing page for the seller's country before use**.
+
+- **Mollie.** Its own Bancontact pages state a flat 0.39 EUR per successful transaction ([mollie.com/payments/bancontact](https://mollie.com/payments/bancontact)); a third-party blog gives a different figure, so it is discarded. Flow described in Mollie's docs ([docs.mollie.com](https://docs.mollie.com/docs/online-payments), [webhooks](https://docs.mollie.com/docs/webhooks)): create a payment with a `webhookUrl`, get a checkout link, redirect the customer with a GET; the return redirect is **not** proof of payment. A classic webhook carries only the payment id, so the handler fetches the payment from the API and acts on its status ([Hookdeck guide](https://hookdeck.com/webhooks/platforms/guide-to-mollie-webhooks-features-and-best-practices), third party). Sources disagree on signatures: classic webhooks are said to be unsigned, while Mollie's "next-gen webhooks" page mentions signature verification ([docs.mollie.com/reference/webhooks-new](https://docs.mollie.com/reference/webhooks-new.md)). **To verify in the official docs.**
+- **Stripe.** Standard EU cards 1.5 % + 0.25 EUR, premium EU cards 1.9 % + 0.25 EUR, from an EEA pricing page dated 2023 ([support.stripe.com](https://support.stripe.com/questions/pricing-updates-for-businesses-based-in-the-european-economic-area-(eea))). Bancontact is available through Checkout ([stripe.com Bancontact](https://stripe.com/en-dk/payment-method/bancontact)); no Belgian Bancontact fee found. Webhook signing (`Stripe-Signature`): **not checked**.
+- **PayPal, manual transfer:** not researched yet.
+
+Design consequence (assumption, to validate): the shop treats any provider webhook as a **notification only** and asks the provider module to re-fetch the payment status (`payment.provider.status`). This works for signed and unsigned webhooks and keeps the shop independent of each provider's signing scheme.
