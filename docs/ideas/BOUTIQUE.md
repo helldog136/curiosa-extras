@@ -15,6 +15,7 @@
 | D8 | **Slicing agreed**: (1) catalogue, variants, stock with low-stock alert, announcement bar, shop page and cart; (2) shipping zones + pickup + tracking number, order list, payment; (3) discount codes, promotions, cross-selling, reports. The first delivery must be **designed with the later ones in mind** (order lines, price snapshots, stock reservation, discount hooks), even though they are not built yet. | Owner |
 | D9 | **Stock is reserved when an item goes into the cart. The cart expires after 5 minutes if no payment has been started**; the reserved pieces then go back on sale. What happens once a payment is started, and a payment arriving after expiry, are still open (section 7). | Owner |
 | D10 | **Cart timer resets to 5 minutes on every cart change** and when the payment page is opened; the remaining time is shown. **Hold once payment starts:** card, Bancontact, PayPal: until the provider reports failure or expiry, 30 minutes at most; manual bank transfer: 24 hours (configurable), then released. Limits against stock hoarding: max quantity per cart, carts per visitor per hour, global cap of reserved pieces (imperfect without customer accounts). | Owner |
+| D11 | **E-mail:** the core mail limits will be raised (core change, to be made in the core repository, not here), and the shop still keeps its own **outgoing queue**: when the limit is reached, order e-mails wait and go out in batches, retried later, never lost. The private tracking link stays the reference confirmation; e-mail is a complement. Seller notifications can be grouped into one digest when several orders arrive together. | Owner |
 | D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
@@ -88,11 +89,11 @@ Principle: **the module helps, it never certifies.** Anything below needs a huma
 2. Shipping: flat price per country zone, or "contact me for shipping" only? (to ask)
 3. Late payment after the hold ended: order accepted if the piece is still free, otherwise state `paid_to_resolve` and the seller decides the refund, never automatic (proposed; the owner agreed on the durations, not yet explicitly on this rule). Risk to handle: bots filling carts to block stock (limits per cart, per visitor, per hour).
 4. Customers: stored in the shop only, or linked to the `contacts` module?
-5. E-mail volume limit of the core (section 2).
+5. ~~E-mail volume limit of the core~~ settled by D11 (exact new limits still to set in the core).
 
 ## 8. Possible core needs (not changed, only described)
 
-- Higher or configurable mail limits and HTML mails for transactional messages.
+- **Raise the mail limits** (agreed by the owner). Suggestion to discuss: a separate "transactional" allowance, for example 60 per hour per instance and 200 per hour for the site (numbers are a guess, to size against typical SMTP provider limits), plus an optional simple HTML format. Without it the shop's queue (D11) still works, just slower.
 - Confirm a raw request body is available to routes (webhook signatures).
 - A way for a module to declare an HTTP route that is exempt from the visitor rate limiter, if any exists.
 
