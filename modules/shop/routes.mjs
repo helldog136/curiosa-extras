@@ -5,6 +5,7 @@ import { LIMITS, HOUR, limited, visitorOf, isToken, idOk, num, currencyOf } from
 import * as D from "./data.mjs";
 import * as C from "./cart.mjs";
 import * as O from "./orders.mjs";
+import * as P from "./payments.mjs";
 
 const json = (body, status = 200, extra = {}) => Response.json(body, { status, headers: { "cache-control": "no-store", ...extra } });
 const COOKIE = "shop_cart";
@@ -50,9 +51,28 @@ async function checkout(request, ctx) {
   if (limited(`co|${ctx.instance.key}|${visitorOf(request)}`, LIMITS.ordersPerVisitorPerHour, HOUR)) return json({ ok: false, reason: "rate" }, 429);
   const token = cookieOf(request);
   if (!token) return json({ ok: false, reason: "expired" }, 409);
-  const r = await O.checkout(ctx, token, { name: f.get("name"), email: f.get("email"), address: f.get("address") });
+  const provider = await P.pickProvider(ctx, String(f.get("provider") ?? ""));
+  const r = await O.checkout(ctx, token, { name: f.get("name"), email: f.get("email"), address: f.get("address") }, Date.now(), { holdMs: P.holdFor(ctx, provider) });
   if (!r.ok) return json({ ok: false, reason: r.reason, errors: r.errors }, r.errors ? 400 : 409);
   const base = ctx.instance.basePath ? `/${ctx.instance.basePath}` : "";
-  return json({ ok: true, url: `${base}/track/${r.token}` });
+  const tracking = `${base}/track/${r.token}`;
+  if (!provider) return json({ ok: true, url: tracking });
+  const pay = await P.startPayment(ctx, r.order, r.token, provider);
+  return json({ ok: true, url: pay.ok ? pay.url : tracking, online: pay.ok });     // the page script follows `url` (the provider's own payment page)
 }
-export default { cart, add, remove, checkout };
+/** Another payment page for an order still waiting (the first one failed, was cancelled or was closed). Works without JavaScript: answers with a redirect to the tracking page. */
+async function pay(request, ctx) {
+  if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const f = await form(request);
+  const token = String(f?.get("t") ?? "");
+  const back = (t) => new Response(null, { status: 303, headers: { location: `${ctx.instance.basePath ? `/${ctx.instance.basePath}` : ""}/track/${t}`, "cache-control": "no-store" } });
+  if (!f || !isToken(token)) return new Response("Not found", { status: 404 });
+  if (limited(`pay|${ctx.instance.key}|${visitorOf(request)}`, LIMITS.ordersPerVisitorPerHour * 2, HOUR)) return new Response("Too many requests", { status: 429 });
+  const order = await D.findOrderByToken(ctx, token);
+  if (!order) return new Response("Not found", { status: 404 });
+  if (order.state === "awaiting_payment" && order.holdUntil > Date.now() && ["failed", "canceled", "expired"].includes(order.payment?.state ?? "failed")) {
+    await P.startPayment(ctx, order, token, await P.pickProvider(ctx, order.payment?.providerId));
+  }
+  return back(token);
+}
+export default { cart, add, remove, checkout, pay };

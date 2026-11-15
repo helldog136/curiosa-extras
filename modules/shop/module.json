@@ -130,6 +130,16 @@
         "en": "Items held for a manual payment (hours)",
         "fr": "Durée de garde pour un paiement manuel (heures)"
       }
+    },
+    {
+      "key": "onlineHoldMinutes",
+      "type": "number",
+      "default": 30,
+      "advanced": true,
+      "label": {
+        "en": "Items held during an online payment (minutes)",
+        "fr": "Durée de garde pendant un paiement en ligne (minutes)"
+      }
     }
   ],
   "rights": [
@@ -163,6 +173,19 @@
         "admin": true,
         "editor": false
       }
+    }
+  ],
+  "offers": [
+    {
+      "service": "payment.consumer",
+      "version": 1
+    }
+  ],
+  "requires": [
+    {
+      "service": "payment.provider",
+      "min": 1,
+      "optional": true
     }
   ]
 }

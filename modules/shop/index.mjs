@@ -8,6 +8,7 @@ const O = await import(`./orders.mjs${v}`);
 const P = await import(`./public.mjs${v}`);
 const R = (await import(`./routes.mjs${v}`)).default;
 const A = await import(`./admin.mjs${v}`);
+const Pay = await import(`./payments.mjs${v}`);
 
 /** Housekeeping, safe to replay: dead carts, old dead reservations, orders whose hold ended. */
 export async function cleanup(ctx, now = Date.now()) {
@@ -20,6 +21,7 @@ export default {
   adminPanel: A.adminPanel,
   adminActions: A.adminActions,
   adminBadge: A.adminBadge,
-  tasks: { cleanup: { everyMinutes: 5, run: (ctx) => cleanup(ctx) } },
+  services: { "payment.consumer": { notify: (ctx, args) => Pay.consumer.notify(ctx, args) } },
+  tasks: { cleanup: { everyMinutes: 5, run: (ctx) => cleanup(ctx) }, payments: { everyMinutes: 5, run: (ctx) => Pay.pollOpenPayments(ctx) } },
   hooks: { async onInstanceDelete(ctx) { L.forgetInstance(ctx.instance.key); } },
 };

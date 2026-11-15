@@ -250,3 +250,51 @@ Built and tested against a **fake provider server** that follows the documented 
 - There is **no install-time prerequisite mechanism in the core** (searched the manifest schema and `MODULES.md`). `twitch-events` installs normally, then `diagnose()` calls its own `isPublicSite(ctx.api.siteUrl)` (https, real domain name, no IP address, no `localhost`, `.local` or `.lan`, default port) and reports the state `site_private`: "Twitch cannot reach your site: it needs a public secure address (https)". Its README says "needs a public https address: yes (the page says so)".
 - The same helper is copied into more than one module. A third copy in the shop would be the cue for a **small generic core addition** (for example `ctx.api.siteIsPublic`), optionally with a "needs a public address" line on the extension sheet. Not indispensable: a copy in the module works. Not requested yet.
 - A shop needs a public address anyway (customers must reach it); only live mode additionally needs https. That is why test mode can stay open on a private site.
+
+## 14. The payment contract, as built and tested against a fake Mollie (2026-11-15)
+
+Code: `modules/payment-mollie/` (new, version 0.1.0, experimental), `modules/shop/payments.mjs`, `tests/payment-mollie.test.mjs`, `tests/helpers/fakeMollie.mjs`. Same status as the shop: throwaway, not in the catalogue index, never run against Mollie itself.
+
+### Two services, no module knows another by name
+
+| Service | Offered by | Used by | Declared as |
+|---|---|---|---|
+| `payment.provider` v1 (`each: true`: every provider answers for itself) | each provider extension | the shop | the shop `requires` it **optionally**; a provider never forces the shop to be installed, and the shop works without any provider (manual payment) |
+| `payment.consumer` v1 | the shop | providers, from their notification address | each provider `requires` it **optionally** |
+
+Tests assert both declarations, that the shop's code never contains a provider name, and that the provider imports nothing from the shop.
+
+### `payment.provider` v1
+
+All amounts are integers in the smallest unit; every answer is plain data and never contains a secret.
+
+- `describe()` → `{ id, name, mode: "test" | "live", ready, problems: ["no_key" | "bad_key" | "site_private"], publicSite }`. Real mode is not ready on a non-public address (D16); test mode is.
+- `createCheckout({ idempotencyKey, amount, currency, description, returnUrl, metadata: { orderId }, locale })` → `{ ok: true, providerRef, checkoutUrl, expiresAt }` or `{ ok: false, reason: "not_ready" | "invalid" | "amount" | "currency" | "rejected" | "rejected_key" | "unavailable" }`. The provider keeps the idempotency key itself (Mollie's pages say nothing about an idempotency header) and a lock makes two simultaneous identical requests create one payment.
+- `getStatus({ providerRef })` → `{ ok: true, state: "open" | "pending" | "paid" | "canceled" | "expired" | "failed", amount, currency, paidAt, refunded }` or `{ ok: false, reason: "unknown" | "unavailable" | "invalid" }`. A status or amount it does not recognise is an error, never a guess.
+- `refund({ providerRef, amount, currency, reason, idempotencyKey })` → `{ ok, refundRef, state }`. Only a person ever asks (no screen yet); never automatic.
+
+### `payment.consumer` v1
+
+- `notify({ providerRef })`. The shop looks the reference up, **asks the provider for the real state**, and applies it. An unknown reference is answered "ok, unknown". At most one read per payment per 5 seconds, so a flood of forged calls costs nothing. If the provider cannot be asked, the call fails so that the provider answers "try again later".
+
+### What the shop does with a state (`modules/shop/payments.mjs`)
+
+`paid` → the same `markPaid` as the manual path, with the amount and currency checked, one event id per payment (`<ref>:paid`), so a replay changes nothing; late payment follows decision D10. `failed`, `canceled`, `expired` → the order keeps waiting until its hold ends and the customer can ask for another payment page (5 at most). A wrong amount never marks an order paid and flags it. A payment for a cancelled order flags it. **Nothing is ever refunded automatically.**
+
+### Mollie facts used, from Mollie's own reference (read 2026-11-15)
+
+Base `https://api.mollie.com/v2`; bearer key, `test_` or `live_`; `amount` is `{ currency, value }` with a string value; create answers 201 with `id`, `status` and `_links.checkout.href`; seven statuses, of which `paid`, `canceled`, `expired` and `failed` are final; `webhookUrl` cannot be `localhost`; the notification is a POST with one form field `id`, **no status and no signature**, only `200 OK` is expected, 10 calls over about 26 hours, an unknown id should still be answered 200; refunds cannot exceed the remaining amount and two identical refunds in a row give 409. Open payments expire after a time that depends on the method: **Bancontact 1 hour**, cards and iDEAL 15 minutes, PayPal 6 hours, bank transfer about 12 days. Mollie itself advises not to predict expiry.
+
+**Consequence:** with a 30-minute hold and a one-hour Bancontact page, a customer can pay after our hold ended. That case is real, not theoretical, and the late-payment rule (D10) covers it. Cancelling the unpaid payment at Mollie when our hold ends would help; Mollie's cancel call was not among the pages read, so it is **not** built.
+
+Not stated in the pages read, so assumed in the fake: the exact text of the 401 answer, and that a refund on an unpaid payment is a 422.
+
+### Checked
+
+- `tests/payment-mollie.test.mjs`: 17 tests pass, including webhook answers (405, 400, 413, 200 for unknown, 503 only when the state is unreadable), forged and repeated notifications, no incoming connection at all (polling), return to the tracking page, failed payment and retry, late payment with the piece free or taken, wrong amount, payment after cancellation, provider down at checkout, the access code never leaving the provider's header.
+- **The tests were checked against deliberate defects:** removing the amount check, the idempotency lookup, or the re-reading of the real state each makes the matching tests fail; the code was restored afterwards.
+- The core's conformance suite, run on every module, passes for both modules (one name clash was found and fixed: a secret setting called `apiKey` already exists in `youtube-connector`, so ours is `mollieCode`).
+
+### NOT checked
+
+Against Mollie itself (needs the owner's own free test account, D16). In a running core: the setup page and the shop's administration were tested as data, not looked at. No screen for refunds. The customer cannot choose between several providers (the first ready one is used). No e-mail. No cancellation at Mollie. The text of the setup page has not been reviewed against the ergonomics rules by a person.

@@ -1,0 +1,18 @@
+{
+  "title": "Paiements Mollie",
+  "readyLive": "Prêt : les paiements réels sont actifs.",
+  "readyTest": "Mode test : aucun argent réel n'est utilisé.",
+  "problem_no_key": "Ajoutez votre code d'accès Mollie dans les réglages pour commencer.",
+  "problem_bad_key": "Le code d'accès semble incorrect. Il commence par test_ ou live_.",
+  "problem_site_private": "Les paiements réels demandent une adresse publique sécurisée (https) pour votre site.",
+  "step1": "Ouvrez votre propre compte Mollie.",
+  "step2": "Collez votre code d'accès Mollie dans les réglages.",
+  "siteOk": "Votre site a une adresse publique sécurisée.",
+  "sitePrivate": "Votre site n'est pas encore public. Mollie ne peut pas le prévenir des paiements, la boutique les vérifie donc elle-même.",
+  "openMollie": "Ouvrir Mollie",
+  "testPayment": "Faire un paiement de test",
+  "openTest": "Ouvrir la page du paiement de test",
+  "testOnlyTestKey": "Un paiement de test demande un code d'accès de test.",
+  "testFailed": "Le paiement de test n'a pas pu être créé. Vérifiez votre code d'accès.",
+  "testCreated": "Paiement de test créé. Ouvrez-le ci-dessous."
+}

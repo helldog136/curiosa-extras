@@ -16,6 +16,9 @@ export const LIMITS = {
   maxPrice: 10_000_000,      // 100 000.00
   maxStock: 100_000,
   purgeBatch: 200,
+  paymentAttempts: 5,         // payment pages created for one order
+  notifyMinGapMs: 5000,       // one provider notification per payment per 5 seconds is enough: it only triggers a state read
+  pollBatch: 20, pollMinGapMs: 120_000, pollWindowMs: 3 * 24 * 3_600_000,
 };
 export const ORDER_STATES = ["awaiting_payment", "paid", "paid_to_resolve", "preparing", "shipped", "delivered", "cancelled", "expired"];
 /** Allowed manual moves made by the seller. `paid` is reached through markPaid (it re-checks the stock). */
@@ -80,6 +83,7 @@ export function limited(bucket, max, windowMs, now = Date.now()) {
 export function forgetInstance(key) { for (const k of [...memory.keys()]) if (k.split("|")[1] === key) memory.delete(k); }
 
 export const cartMs = (ctx) => num(ctx.setting("cartMinutes"), 5, 1, 60) * MIN;
+export const onlineHoldMs = (ctx) => num(ctx.setting("onlineHoldMinutes"), 30, 5, 120) * MIN;
 export const manualHoldMs = (ctx) => num(ctx.setting("manualHoldHours"), 24, 1, 168) * HOUR;
 export const currencyOf = (ctx) => (CURRENCIES.includes(ctx.setting("currency")) ? ctx.setting("currency") : "EUR");
 

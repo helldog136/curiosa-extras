@@ -2,6 +2,8 @@
 import { esc, formatMoney, currencyOf, isToken, num } from "./lib.mjs";
 import * as D from "./data.mjs";
 import * as S from "./stock.mjs";
+import * as P from "./payments.mjs";
+import { ORDER_STATES } from "./lib.mjs";
 
 const CSS = `.sh{max-width:56rem;display:grid;gap:1rem}.sh *{box-sizing:border-box}
 .sh-grid{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,16rem),1fr))}
@@ -47,13 +49,23 @@ export async function page(ctx, { segments = [] } = {}) {
 }
 
 async function trackPage(ctx, token) {
-  const order = isToken(token) ? await D.findOrderByToken(ctx, token) : null;
+  let order = isToken(token) ? await D.findOrderByToken(ctx, token) : null;
   if (!order) return { notFound: true };
+  // Coming back from the payment page: ask the provider for the real state (at most every 20 s per order, never the customer's word).
+  if (order.payment?.providerRef && ["open", "pending"].includes(order.payment.state) && ["awaiting_payment", "expired"].includes(order.state) && Date.now() - (order.payment.checkedAt ?? 0) > 20_000) {
+    try { await P.refreshOrder(ctx, order); order = (await D.findOrderByToken(ctx, token)) ?? order; } catch { /* the page still shows what we know */ }
+  }
   const money = (c) => formatMoney(c, order.currency, ctx.locale);
   const lines = order.lines.map((l) => `<li><span>${esc(l.qty)} × ${esc(l.title)}${l.label ? ` (${esc(l.label)})` : ""}</span><span>${esc(money(l.sum))}</span></li>`).join("");
-  const hist = order.history.map((h) => `<li>${esc(ctx.t(`state_${h.s}`))} <time>${esc(h.at.slice(0, 16).replace("T", " "))}</time></li>`).join("");
+  const pay = order.payment, waiting = order.state === "awaiting_payment" && order.holdUntil > Date.now();
+  const payBlock = !pay || !waiting ? "" : ["failed", "canceled", "expired"].includes(pay.state)
+    ? `<p role="status">${esc(ctx.t("payFailed"))}</p><form method="post" action="/m/${esc(ctx.instance.key)}/pay"><input type="hidden" name="t" value="${esc(token)}"><button class="sh-btn" type="submit">${esc(ctx.t("tryAgain"))}</button></form>`
+    : `<p><a class="sh-btn" style="display:inline-block;text-decoration:none;line-height:1.6" href="${esc(pay.checkoutUrl)}" rel="noopener">${esc(ctx.t("payNow"))}</a></p><p class="sh-muted">${esc(ctx.t("payPending"))}</p>`;
+  const startFailed = order.state === "awaiting_payment" && !pay && order.history.some((h) => h.s === "payment_start_failed")
+    ? `<p role="status">${esc(ctx.t("payStartFailed"))}</p><form method="post" action="/m/${esc(ctx.instance.key)}/pay"><input type="hidden" name="t" value="${esc(token)}"><button class="sh-btn" type="submit">${esc(ctx.t("tryAgain"))}</button></form>` : "";
+  const hist = order.history.filter((h) => ORDER_STATES.includes(h.s)).map((h) => `<li>${esc(ctx.t(`state_${h.s}`))} <time>${esc(h.at.slice(0, 16).replace("T", " "))}</time></li>`).join("");
   const html = `${style()}<div class="sh"><section class="sh-card"><h3>${esc(ctx.t("orderNumber", { n: order.number }))}</h3><p role="status"><strong>${esc(ctx.t(`state_${order.state}`))}</strong></p>`
-    + (order.state === "awaiting_payment" ? `<p class="sh-muted">${esc(ctx.t("awaitingHelp"))}</p>` : "")
+    + (order.state === "awaiting_payment" && !pay ? `<p class="sh-muted">${esc(ctx.t("awaitingHelp"))}</p>` : "") + payBlock + startFailed
     + `<ul class="sh-lines">${lines}</ul><p><strong>${esc(ctx.t("total"))} ${esc(money(order.total))}</strong>${order.includedTax ? ` <span class="sh-muted">${esc(ctx.t("includesTax", { amount: money(order.includedTax) }))}</span>` : ""}</p>`
     + (order.tracking ? `<p>${esc(ctx.t("trackingNumber"))} <strong>${esc(order.tracking)}</strong></p>` : "")
     + `<ul class="sh-lines">${hist}</ul></section></div>`;

@@ -13,7 +13,7 @@ const newNumber = (now) => `N-${new Date(now).toISOString().slice(2, 10).replace
  * Reservations are extended to the hold (24 h by default) and tied to the order.
  * Returns { ok, token, orderId } | { ok: false, errors } | { ok: false, reason }.
  */
-export async function checkout(ctx, cartToken, form, now = Date.now()) {
+export async function checkout(ctx, cartToken, form, now = Date.now(), { holdMs } = {}) {
   const cart = isToken(cartToken) ? await D.findCart(ctx, cartToken) : null;
   if (!cartIsLive(cart, now)) return { ok: false, reason: "expired" };
   if (!cart.lines.length) return { ok: false, reason: "empty" };
@@ -35,16 +35,16 @@ export async function checkout(ctx, cartToken, form, now = Date.now()) {
     lines.push({ rid: l.rid, productId: product.id, variantId: variant.id, kind: product.kind, title: product.title, label: variant.label, qty: l.qty, unit: variant.price, sum, taxRate: product.taxRate ?? 0, includedTax: lineTax });
     total += sum; tax += lineTax;
   }
-  const holdUntil = now + manualHoldMs(ctx);
+  const holdUntil = now + (holdMs ?? manualHoldMs(ctx));
   const token = newToken();
   const orderId = await D.addOrder(ctx, {
     number: newNumber(now), state: "awaiting_payment", provider: "manual", currency: currencyOf(ctx), lines, total, includedTax: tax,
-    customer: { name, email, address }, holdUntil, paidEventIds: [], tracking: "", privateNote: "", history: [event("awaiting_payment", now, "customer")], lang: ctx.locale,
+    customer: { name, email, address }, holdUntil, payment: null, flag: "", paidEventIds: [], tracking: "", privateNote: "", history: [event("awaiting_payment", now, "customer")], lang: ctx.locale,
   }, token);
   for (const l of lines) await S.extend(ctx, l.rid, holdUntil, now, { orderId });
   cart.status = "ordered";
   await D.saveCart(ctx, cart);
-  return { ok: true, token, orderId };
+  return { ok: true, token, orderId, order: await D.getOrder(ctx, orderId) };
 }
 
 /**

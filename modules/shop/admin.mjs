@@ -4,6 +4,7 @@ import { esc, formatMoney, currencyOf, idOk, num, ORDER_STATES, NEXT_STATES } fr
 import * as D from "./data.mjs";
 import * as S from "./stock.mjs";
 import * as O from "./orders.mjs";
+import * as P from "./payments.mjs";
 
 const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 const one = (x) => (typeof x === "string" ? x : Array.isArray(x) ? String(x[0] ?? "") : "");
@@ -30,6 +31,11 @@ async function overview(ctx) {
     if (p.status === "published" && a.available !== Infinity && a.available <= low) lowList.push(`${p.title}${v.label ? ` (${v.label})` : ""}: ${a.available}`);
   }
   if (lowList.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("lowStockBanner", { list: lowList.slice(0, 5).join(", ") }) });
+  const providers = await P.readyProviders(ctx);
+  if (!providers.length) blocks.push({ type: "suggestInstall", service: "payment.provider", reason: ctx.t("suggestProviderReason") });
+  else if (providers.some((p) => p.mode === "test")) blocks.push({ type: "banner", tone: "warning", text: ctx.t("testModeBanner") });
+  const flagged = orders.filter((o) => o.flag).length;
+  if (flagged) blocks.push({ type: "banner", tone: "warning", text: ctx.t("flaggedBanner", { n: flagged }) });
   const toResolve = orders.filter((o) => o.state === "paid_to_resolve").length;
   if (toResolve) blocks.push({ type: "banner", tone: "warning", text: ctx.t("toResolveBanner", { n: toResolve }) });
 
@@ -82,8 +88,9 @@ async function orderSheet(ctx, id) {
   const manage = can(ctx, "manage"), money = (c) => formatMoney(c, o.currency, ctx.locale);
   const blocks = [{ type: "heading", text: ctx.t("orderNumber", { n: o.number }) }, { type: "links", items: [{ label: ctx.t("back"), href: "?" }] }];
   if (o.state === "paid_to_resolve") blocks.push({ type: "banner", tone: "warning", text: ctx.t("resolveHelp") });
+  if (o.flag) blocks.push({ type: "banner", tone: "warning", text: ctx.t(`flag_${o.flag}`) });
   blocks.push({ type: "table", columns: [ctx.t("colProduct"), ctx.t("colQty"), ctx.t("colTotal")], rows: o.lines.map((l) => [`${l.title}${l.label ? ` (${l.label})` : ""}`, String(l.qty), money(l.sum)]) });
-  blocks.push({ type: "markdown", text: `**${ctx.t("total")}** ${money(o.total)}${o.includedTax ? ` · ${ctx.t("includesTax", { amount: money(o.includedTax) })}` : ""}  \n**${ctx.t("colState")}** ${ctx.t(`state_${o.state}`)}${can(ctx, "email.view") ? `  \n**${ctx.t("fEmail")}** ${o.customer.email}  \n**${ctx.t("fAddress")}** ${o.customer.address.replace(/\n/g, ", ")}` : ""}${o.tracking ? `  \n**${ctx.t("trackingNumber")}** ${o.tracking}` : ""}` });
+  blocks.push({ type: "markdown", text: `**${ctx.t("total")}** ${money(o.total)}${o.includedTax ? ` · ${ctx.t("includesTax", { amount: money(o.includedTax) })}` : ""}  \n**${ctx.t("colState")}** ${ctx.t(`state_${o.state}`)}${can(ctx, "email.view") ? `  \n**${ctx.t("fEmail")}** ${o.customer.email}  \n**${ctx.t("fAddress")}** ${o.customer.address.replace(/\n/g, ", ")}` : ""}${o.tracking ? `  \n**${ctx.t("trackingNumber")}** ${o.tracking}` : ""}${o.payment ? `  \n**${ctx.t("paymentLine")}** ${o.payment.providerName} (${ctx.t(o.payment.mode === "live" ? "modeLive" : "modeTest")}) · ${ctx.t(`payState_${o.payment.state}`)}` : ""}` });
   if (!manage) return blocks;
   if (o.state === "awaiting_payment" || o.state === "expired") blocks.push({ type: "adminForm", action: "markPaid", submitLabel: ctx.t("markPaid"), fields: [{ name: "id", kind: "hidden", value: o.id }] });
   const next = NEXT_STATES[o.state] ?? [];
@@ -117,5 +124,5 @@ export const adminActions = {
   },
 };
 export async function adminBadge(ctx) {
-  return (await D.listOrders(ctx)).filter((o) => o.state === "paid" || o.state === "paid_to_resolve").length;
+  return (await D.listOrders(ctx)).filter((o) => o.state === "paid" || o.state === "paid_to_resolve" || o.flag).length;
 }

@@ -1,0 +1,18 @@
+{
+  "title": "Mollie payments",
+  "readyLive": "Ready: real payments are on.",
+  "readyTest": "Test mode: no real money is used.",
+  "problem_no_key": "Add your Mollie access code in the settings to start.",
+  "problem_bad_key": "The access code does not look right. It starts with test_ or live_.",
+  "problem_site_private": "Real payments need a public secure address (https) for your site.",
+  "step1": "Open your own Mollie account.",
+  "step2": "Paste your Mollie access code in the settings.",
+  "siteOk": "Your site has a public secure address.",
+  "sitePrivate": "Your site is not public yet. Mollie cannot tell it about payments, so the shop checks them itself.",
+  "openMollie": "Open Mollie",
+  "testPayment": "Make a test payment",
+  "openTest": "Open the test payment page",
+  "testOnlyTestKey": "A test payment needs a test access code.",
+  "testFailed": "The test payment could not be created. Check your access code.",
+  "testCreated": "Test payment created. Open it below."
+}

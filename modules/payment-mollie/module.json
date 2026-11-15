@@ -1,0 +1,63 @@
+{
+  "apiVersion": 2,
+  "id": "payment-mollie",
+  "name": {
+    "en": "Mollie payments",
+    "fr": "Paiements Mollie"
+  },
+  "version": "0.1.0",
+  "menuGroup": "connections",
+  "minCore": "0.6.0",
+  "description": {
+    "en": "Experimental prototype, not for release. Lets a shop take online payments through your own Mollie account. Payments go straight to you.",
+    "fr": "Prototype expérimental, pas destiné à être publié. Permet à une boutique d'accepter des paiements en ligne avec votre propre compte Mollie. L'argent va directement chez vous."
+  },
+  "author": "Helldog136",
+  "license": "Curiosa License 1.0",
+  "icon": "💳",
+  "main": "index.mjs",
+  "type": "utility",
+  "instances": "single",
+  "page": false,
+  "privacy": {
+    "en": "The shop sends Mollie the amount, the currency and the order number. Your customer enters their payment details on Mollie's own page, never on this site. No name, e-mail address or postal address is sent by this module.",
+    "fr": "La boutique envoie à Mollie le montant, la devise et le numéro de commande. Votre client saisit ses données de paiement sur la page de Mollie, jamais sur ce site. Ce module n'envoie ni nom, ni adresse e-mail, ni adresse postale."
+  },
+  "permissions": [
+    "routes",
+    "storage",
+    "admin"
+  ],
+  "offers": [
+    {
+      "service": "payment.provider",
+      "version": 1,
+      "each": true
+    }
+  ],
+  "requires": [
+    {
+      "service": "payment.consumer",
+      "min": 1,
+      "optional": true
+    }
+  ],
+  "settings": [
+    {
+      "key": "mollieCode",
+      "type": "secret",
+      "label": {
+        "en": "Mollie access code",
+        "fr": "Code d'accès Mollie"
+      },
+      "help": {
+        "en": "Starts with test_ or live_. Never shown again.",
+        "fr": "Commence par test_ ou live_. Jamais réaffiché."
+      },
+      "example": {
+        "en": "test_ followed by letters and digits",
+        "fr": "test_ suivi de lettres et de chiffres"
+      }
+    }
+  ]
+}
