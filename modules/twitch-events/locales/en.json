@@ -209,7 +209,7 @@
   "reason_waiting": "Twitch has not confirmed yet.",
   "reason_unconfirmed": "Twitch has not confirmed this one, the others are fine. It is created again once.",
   "reason_unreachable": "Twitch cannot reach your site's address.",
-  "reason_elsewhere": "Another module already holds this subscription at Twitch.",
+  "reason_elsewhere": "Another module already receives this from Twitch, so nothing reaches this page.",
   "col_reaction": "Reaction",
   "search_types": "Search the types",
   "rx_edit_btn": "Edit",
@@ -274,5 +274,17 @@
   "cl_placed": "Alerts placed in an overlay page",
   "cl_placed_link": "Open the overlay pages →",
   "cl_placed_title": "This page cannot tell whether the element is in an overlay page. Check it there.",
-  "cl_suggest_reason": "shows your Twitch events as alerts on screen"
+  "cl_suggest_reason": "shows your Twitch events as alerts on screen",
+  "listen_pending_types": "Waiting for Twitch to confirm: {list}.",
+  "listen_taken": "Another module already receives this from Twitch: {list}. Nothing reaches this page.",
+  "state_taken": "Held elsewhere",
+  "reason_failed_revoked": "Twitch stopped it because the permission was withdrawn. Connect again to Twitch.",
+  "reason_failed_unreachable": "Twitch stopped it because your site did not answer in time. It is created again.",
+  "reason_failed_other": "Twitch stopped it. It is created again.",
+  "types_why": "{type}: {reason}",
+  "retry_btn": "Try again",
+  "retry_listening": "Done: {type} is now listening.",
+  "retry_waiting": "Started again: {type} waits for Twitch's answer.",
+  "retry_taken": "Another module already receives {type} from Twitch. Switch it off there first.",
+  "reason_create_failed": "Twitch refused to start it. Its answer: {detail}."
 }

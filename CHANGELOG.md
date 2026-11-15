@@ -4,6 +4,27 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.83.0 — 2026-11-15
+
+*En bref : dans Activité Twitch, les raids et les récompenses en points ne restent plus bloqués sur « En attente de Twitch », et chaque type qui n'écoute pas dit pourquoi.*
+
+*In short: in Twitch activity, raids and channel point rewards are no longer stuck on "Waiting for Twitch", and every type that does not listen says why.*
+
+### Correctifs
+
+- **Raids et récompenses en points enfin écoutés.** Le module ne reconnaissait pas ses propres écoutes de ces deux types, les supprimait et les recréait chaque minute : elles restaient « en attente » et leurs événements se perdaient. C'est corrigé.
+- **La vraie raison, écrite sur la page.** Pour chaque type qui n'écoute pas : pas encore confirmé par Twitch, arrêté par Twitch (autorisation retirée ou adresse du site injoignable), déjà reçu par un autre module, ou refusé par Twitch avec sa réponse.
+- **Un bouton « Réessayer » par type**, dans le menu de la ligne : il relance seulement l'écoute de ce type.
+- **Un type facultatif ne bloque plus le verdict** quand un autre module le reçoit déjà.
+- **Raids and channel point rewards are finally listened to.** The module did not recognise its own listeners for these two types, deleted them and created them again every minute: they stayed "waiting" and their events were lost. Fixed.
+- **The real reason, written on the page.** For each type that does not listen: not confirmed by Twitch yet, stopped by Twitch (permission withdrawn or site address unreachable), already received by another module, or refused by Twitch with its answer.
+- **A "Try again" button per type**, in the row menu: it restarts the listening of that type only.
+- **An optional type no longer holds the verdict** when another module already receives it.
+
+### Pour les développeurs
+
+- Activité Twitch 1.7.0 : `sameCondition` ignore les champs vides que Twitch ajoute aux conditions (`from_broadcaster_user_id: ""`, `reward_id: ""`) ; état `taken` (409) ; `retryType` ; ligne de journal `type.create_failed`. Le faux Twitch des tests répond maintenant comme le vrai (conditions complètes, `created_at`, 409 sur doublon).
+
 ## 1.82.0 — 2026-11-14
 
 *En bref : quand Overlay alertes est installé mais pas encore mis en place, Activité Twitch et le Bot Twitch proposent un bouton qui le met en place d'un clic.*

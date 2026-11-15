@@ -24,6 +24,17 @@ export const NOW = Date.parse("2026-11-12T20:00:00Z");
 export const B = "100";
 const ALL = ["moderator:read:followers", "channel:read:subscriptions", "bits:read", "channel:read:hype_train", "channel:read:redemptions"];
 
+/**
+ * Twitch lists EVERY condition field of a type and fills the unused ones with "" (recorded shape, e.g. channel.raid { from_broadcaster_user_id: "", to_broadcaster_user_id: "100" }).
+ * The fake does the same: a fake that stored the condition as sent hid the bug where raid and channel points never matched.
+ */
+export const FULL_CONDITION = {
+  "channel.raid": ["from_broadcaster_user_id", "to_broadcaster_user_id"],
+  "channel.channel_points_custom_reward_redemption.add": ["broadcaster_user_id", "reward_id"],
+  "channel.follow": ["broadcaster_user_id", "moderator_user_id"],
+};
+export const twitchCondition = (type, c) => Object.fromEntries((FULL_CONDITION[type] ?? Object.keys(c)).map((k) => [k, c[k] === undefined ? "" : String(c[k])]));
+
 /** `o.scopes`: permissions granted to the account; `o.status`: "ok" | "reconnect" | "none"; `o.siteUrl`; `o.locale`; `o.settings`. */
 export function world(o = {}) {
   S.resetMemory(); P.forgetCache();
@@ -54,8 +65,11 @@ export function world(o = {}) {
           if (a.method === "GET") return tw.listDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.subs } };
           if (a.method === "DELETE") { const id = [].concat(a.query.id)[0]; tw.subs = tw.subs.filter((s) => s.id !== id); return { ok: true, status: 204, json: null }; }
           if (a.method === "POST") {
-            if (tw.createStatus !== 202) return { ok: true, status: tw.createStatus, json: { message: "nope" } };
-            const sub = { id: `sub${++tw.seq}`, status: tw.autoEnable ? "enabled" : "webhook_callback_verification_pending", type: a.body.type, version: a.body.version, condition: a.body.condition, transport: { method: "webhook", callback: a.body.transport.callback } };
+            if (tw.createStatus !== 202) return { ok: true, status: tw.createStatus, json: { error: "Error", status: tw.createStatus, message: tw.createMessage ?? "nope" } };
+            const condition = twitchCondition(a.body.type, a.body.condition);
+            // Twitch refuses a second subscription of the same application with the same type, version and condition (409), whatever the callback address.
+            if (tw.subs.some((x) => x.type === a.body.type && String(x.version) === String(a.body.version) && JSON.stringify(x.condition) === JSON.stringify(condition))) return { ok: true, status: 409, json: { error: "Conflict", status: 409, message: "subscription already exists" } };
+            const sub = { id: `sub${++tw.seq}`, status: tw.autoEnable && !(tw.neverVerify ?? []).includes(a.body.type) ? "enabled" : "webhook_callback_verification_pending", type: a.body.type, version: a.body.version, condition, transport: { method: "webhook", callback: a.body.transport.callback }, created_at: new Date(tw.clock?.() ?? Date.now()).toISOString(), cost: 1 };
             tw.subs.push(sub); tw.lastSecret = a.body.transport.secret;
             return { ok: true, status: 202, json: { data: [sub] } };
           }

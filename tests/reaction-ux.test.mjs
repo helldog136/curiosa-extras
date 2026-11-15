@@ -147,7 +147,7 @@ test("Types tab: a Reaction column (one line per row), Edit in a window, the tes
   const col = table.columns.indexOf("Reaction"); assert.ok(col > 0);
   assert.equal(table.rows[0][col].text, "2 GIFs · At random + sound"); assert.equal(table.rows[1][col].text, "Text");
   assert.equal(table.searchable, true);
-  assert.deepEqual(table.rowActions.map((a) => [a.label, a.presentation ?? "", !!a.inMenu]), [["Edit", "dialog", false], ["Send a test", "", true]]);
+  assert.deepEqual(table.rowActions.map((a) => [a.label, a.presentation ?? "", !!a.inMenu]), [["Edit", "dialog", false], ["Send a test", "", true], ["Try again", "", true]]);
   assert.ok(!blocks.some((b) => b.tab === "types" && b.type === "links"), "no state line when the overlay is there");
   const open = await evMod.adminPanel(w.ev, { query: { tab: "types", reaction: "follow" } });
   const f = form(open);
