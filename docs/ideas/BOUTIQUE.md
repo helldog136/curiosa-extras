@@ -11,6 +11,7 @@
 | D3 | The product model is **generic from day one** so that later versions can add **downloadable digital content**, **voluntary donations** and **ticketing** without migrating data. | Owner |
 | D4 | Payments are **separate modules, one per provider**, offering one common service that the shop consumes. The shop depends on no specific provider. | Owner |
 | D5 | Card data never passes through Curiosa: hosted payment pages only. | Owner mission |
+| D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
 
@@ -79,7 +80,7 @@ Principle: **the module helps, it never certifies.** Anything below needs a huma
 
 ## 7. Open questions
 
-1. Tax handling in v1: prices entered tax-inclusive with an optional rate per product, no computation? (proposed)
+1. ~~Tax handling in v1~~ settled by D6.
 2. Shipping: flat price per country zone, or "contact me for shipping" only? (to ask)
 3. Stock reservation duration during payment (proposed: 30 minutes, configurable).
 4. Customers: stored in the shop only, or linked to the `contacts` module?
