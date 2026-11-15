@@ -2,6 +2,7 @@
 // a test per type, and the pause / empty buttons. Also the two tools for assistants. The engine itself is in twitch.mjs.
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbour files (otherwise the old code would stay cached after an update)
 const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
+const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 
 const BADGE = { follow: "ok", sub: "accent", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype: "warn", redeem: "neutral" };
 const SAMPLE = {
@@ -235,11 +236,13 @@ export async function changeType(ctx, id, ch) {
 }
 
 /** The sample alert of a type, written with the current text (a test goes through the same path as a real alert, minus the switches and minimums). */
-export async function sampleAlert(ctx, id, now = Date.now(), configOverride = null) {
+export async function sampleAlert(ctx, id, now = Date.now(), configOverride = null, extra = {}) {
   const sample = SAMPLE[id];
   if (!sample) return null;
   const cfg = configOverride ?? await tw.loadConfig(ctx, now);
-  const r = tw.alertFor({ ...sample, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: tw.pickerOf(tw.stateOf(ctx)), now });
+  // (1.12.0) the placed texts: the saved ones, or those of the window being tested (`extra.compose`); `extra.pick` forces the file to show
+  const compose = extra.compose !== undefined ? extra.compose : cp.composerOf(ctx, await cp.allByKey(ctx));
+  const r = tw.alertFor({ ...sample, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: extra.pick ?? tw.pickerOf(tw.stateOf(ctx)), compose, now });
   return r.alert ?? null;
 }
 

@@ -843,6 +843,238 @@
           "default": "module"
         }
       ]
+    },
+    {
+      "id": "alerts-stage",
+      "label": {
+        "en": "Large alerts",
+        "fr": "Alertes en grand"
+      },
+      "description": {
+        "en": "The same alerts in a frame you size freely, the whole screen by default: a picture with its placed text shows at its real size.",
+        "fr": "Les mêmes alertes dans un cadre que vous dimensionnez librement, tout l'écran par défaut : une image avec son texte placé s'affiche à sa vraie taille."
+      },
+      "fit": "fluid",
+      "minSize": {
+        "width": 320,
+        "height": 180
+      },
+      "followsStyle": true,
+      "demo": true,
+      "options": [
+        {
+          "id": "kinds",
+          "type": "choice",
+          "label": {
+            "en": "Alerts shown",
+            "fr": "Alertes affichées"
+          },
+          "help": {
+            "en": "Use two elements to show channel alerts and live donations in two places.",
+            "fr": "Utilisez deux éléments pour montrer les alertes de la chaîne et les dons du direct à deux endroits."
+          },
+          "choices": [
+            {
+              "value": "all",
+              "label": {
+                "en": "All alerts",
+                "fr": "Toutes les alertes"
+              }
+            },
+            {
+              "value": "channel",
+              "label": {
+                "en": "Channel alerts (follow, sub, raid)",
+                "fr": "Alertes de la chaîne (follow, sub, raid)"
+              }
+            },
+            {
+              "value": "live",
+              "label": {
+                "en": "Live donations and memberships",
+                "fr": "Dons et adhésions du direct"
+              }
+            }
+          ],
+          "default": "all"
+        },
+        {
+          "id": "transitionIn",
+          "type": "choice",
+          "label": {
+            "fr": "Comment il arrive",
+            "en": "How it enters"
+          },
+          "choices": [
+            {
+              "value": "module",
+              "label": {
+                "fr": "Comme dans les réglages du module",
+                "en": "Like the module settings"
+              }
+            },
+            {
+              "value": "auto",
+              "label": {
+                "fr": "Par défaut",
+                "en": "Default"
+              }
+            },
+            {
+              "value": "slide",
+              "label": {
+                "fr": "Glisse depuis le bord le plus proche",
+                "en": "Slide in from the nearest edge"
+              }
+            },
+            {
+              "value": "slideLeft",
+              "label": {
+                "fr": "Glisse depuis la gauche",
+                "en": "Slide in from the left"
+              }
+            },
+            {
+              "value": "slideRight",
+              "label": {
+                "fr": "Glisse depuis la droite",
+                "en": "Slide in from the right"
+              }
+            },
+            {
+              "value": "slideTop",
+              "label": {
+                "fr": "Glisse depuis le haut",
+                "en": "Slide in from the top"
+              }
+            },
+            {
+              "value": "slideBottom",
+              "label": {
+                "fr": "Glisse depuis le bas",
+                "en": "Slide in from the bottom"
+              }
+            },
+            {
+              "value": "fade",
+              "label": {
+                "fr": "Apparaît en fondu",
+                "en": "Fade in"
+              }
+            },
+            {
+              "value": "jiggle",
+              "label": {
+                "fr": "Arrive avec un rebond",
+                "en": "Jiggle in"
+              }
+            },
+            {
+              "value": "pop",
+              "label": {
+                "fr": "Surgit en zoom",
+                "en": "Pop in"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "fr": "Instantané",
+                "en": "Instant"
+              }
+            }
+          ],
+          "default": "module"
+        },
+        {
+          "id": "transitionOut",
+          "type": "choice",
+          "label": {
+            "fr": "Comment il part",
+            "en": "How it leaves"
+          },
+          "choices": [
+            {
+              "value": "module",
+              "label": {
+                "fr": "Comme dans les réglages du module",
+                "en": "Like the module settings"
+              }
+            },
+            {
+              "value": "same",
+              "label": {
+                "fr": "Comme l'arrivée",
+                "en": "Same as how it enters"
+              }
+            },
+            {
+              "value": "slide",
+              "label": {
+                "fr": "Glisse vers le bord le plus proche",
+                "en": "Slide out to the nearest edge"
+              }
+            },
+            {
+              "value": "slideLeft",
+              "label": {
+                "fr": "Glisse vers la gauche",
+                "en": "Slide out to the left"
+              }
+            },
+            {
+              "value": "slideRight",
+              "label": {
+                "fr": "Glisse vers la droite",
+                "en": "Slide out to the right"
+              }
+            },
+            {
+              "value": "slideTop",
+              "label": {
+                "fr": "Glisse vers le haut",
+                "en": "Slide out to the top"
+              }
+            },
+            {
+              "value": "slideBottom",
+              "label": {
+                "fr": "Glisse vers le bas",
+                "en": "Slide out to the bottom"
+              }
+            },
+            {
+              "value": "fade",
+              "label": {
+                "fr": "Disparaît en fondu",
+                "en": "Fade out"
+              }
+            },
+            {
+              "value": "jiggle",
+              "label": {
+                "fr": "Rebondit, puis s'efface",
+                "en": "Jiggle, then fade"
+              }
+            },
+            {
+              "value": "pop",
+              "label": {
+                "fr": "Disparaît en zoom",
+                "en": "Pop out"
+              }
+            },
+            {
+              "value": "none",
+              "label": {
+                "fr": "Instantané",
+                "en": "Instant"
+              }
+            }
+          ],
+          "default": "module"
+        }
+      ]
     }
   ],
   "tabs": [
