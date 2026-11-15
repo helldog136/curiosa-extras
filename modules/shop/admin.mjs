@@ -30,11 +30,13 @@ async function overview(ctx) {
   for (const p of products) for (const v of p.variants) {
     const a = await S.availability(ctx, p, v);
     stockOf.set(`${p.id}:${v.id}`, a);
-    if (p.status === "published" && a.available !== Infinity && a.available <= low) lowList.push(`${p.title}${v.label ? ` (${v.label})` : ""}: ${a.available}`);
+    if (p.status === "published" && v.stockMode === "tracked" && a.available !== Infinity && a.available <= low) lowList.push(`${p.title}${v.label ? ` (${v.label})` : ""}: ${a.available}`);
   }
   if (lowList.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("lowStockBanner", { list: lowList.slice(0, 5).join(", ") }) });
   const providers = await P.readyProviders(ctx);
-  if (!providers.length) blocks.push({ type: "suggestInstall", service: "payment.provider", reason: ctx.t("suggestProviderReason") });
+  const installed = providers.length ? [] : await P.installedProviders(ctx);
+  if (!providers.length && installed.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("providerNotReady") }, { type: "links", items: installed.map((x) => ({ label: ctx.t("openProvider", { name: x.name }), href: `/admin/instances/${x.id}` })) });
+  else if (!providers.length) blocks.push({ type: "suggestInstall", service: "payment.provider", reason: ctx.t("suggestProviderReason") });
   else if (providers.some((p) => p.mode === "test")) blocks.push({ type: "banner", tone: "warning", text: ctx.t("testModeBanner") });
   const flagged = orders.filter((o) => o.flag).length;
   if (flagged) blocks.push({ type: "banner", tone: "warning", text: ctx.t("flaggedBanner", { n: flagged }) });
@@ -74,7 +76,7 @@ async function productSheet(ctx, id) {
       { name: "price", label: ctx.t("fPrice"), required: true, value: v0 ? centsToText(v0.price) : "", example: "12.50" },
       { name: "stockMode", label: ctx.t("fStockMode"), kind: "segmented", value: v0?.stockMode ?? "tracked", options: [{ value: "tracked", label: ctx.t("modeTracked") }, { value: "single", label: ctx.t("modeSingle") }, { value: "unlimited", label: ctx.t("modeUnlimited") }] },
       { name: "onHand", label: ctx.t("fOnHand"), kind: "number", min: 0, max: 100000, value: String(v0?.onHand ?? 1), unit: ctx.t("pieces") },
-      { name: "published", label: ctx.t("fPublished"), kind: "switch", value: p?.status === "published" ? "on" : "", folded: true },
+      { name: "published", label: ctx.t("fPublished"), kind: "switch", value: !p || p.status === "published" ? "on" : "", folded: true },   // a new product is on sale: a draft hidden under "More options" would never show up
       { name: "description", label: ctx.t("fDescription"), kind: "textarea", value: p?.description ?? "", folded: true },
       { name: "taxRate", label: ctx.t("fTaxRate"), kind: "number", min: 0, max: 100, step: 0.01, unit: "%", value: p ? String((p.taxRate ?? 0) / 100) : "", folded: true },
       { name: "firstLabel", label: ctx.t("fFirstLabel"), value: p && p.variants.length > 1 ? v0.label : "", folded: true },

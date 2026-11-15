@@ -299,3 +299,36 @@ Not stated in the pages read, so assumed in the fake: the exact text of the 401 
 ### NOT checked
 
 Against Mollie itself (needs the owner's own free test account, D16). In a running core: the setup page and the shop's administration were tested as data, not looked at. No screen for refunds. The customer cannot choose between several providers (the first ready one is used). No e-mail. No cancellation at Mollie. The text of the setup page has not been reviewed against the ergonomics rules by a person.
+
+## 15. Run in a real core (2026-11-15)
+
+A real Curiosa 0.15.0 (`next dev`), an empty throwaway database, the first-run wizard walked with invented data, both extensions installed with the core's own installer from a local git copy, pages opened in Chromium at 1280 and 390 px, screenshots looked at. Nothing was sent anywhere: the e-mail setting was a dummy server name, no Mollie key was entered (a made-up string that does not look like a key, to see the state), and the mail and payment calls were never made.
+
+### What the real core showed
+
+- The catalogue lists the two extensions; the shop's sheet reads correctly.
+- **Install path.** The core's installer reported a real defect that the conformance suite only advises about: neighbour files were imported statically, which breaks the hot update (an update would keep old code in memory). Fixed in both extensions (neighbours are imported with the module version, as `commissions` does) and re-installed without warnings.
+- **No first copy from `installModule` alone.** The installer does not create an instance; the catalogue flow does it through `ensureDefaultInstance` (I called that function, as the catalogue flow does, and it created one for each extension). So the owner's rule "an installed extension creates its first copy by itself" holds through the catalogue flow, not through the bare installer. Worth knowing for the core change that is in progress.
+- **The core's own catalogue refuses a `file:` repository inside its index** (`recognized.ts` drops it), so a local catalogue cannot point at a local clone; the custom-repository path and `CURIOSA_ALLOW_LOCAL_MODULES=1` are the way to test locally.
+- **Without e-mail (D17): closed, as asked.** The public page says "The shop is closed for now. Please come back later." with no product and no cart; the administration shows the closed banner with a link. With a mail setting, the shop opens.
+- **The whole buying path works:** two products created through the real admin form (name, price, stock mode, number: four visible fields, the rest under "More options"), both listed on the shop page with the site's own theme (dark here, accent colour picked up), the cart script served and run by the core (no console error), an order placed, the private tracking page shown, the order and the reduced stock visible in the admin, with search boxes, state filters and coloured state pills. On a phone width: no horizontal scroll, readable.
+- **Mollie setup page:** before any code the core itself opens the extension on its settings tab with "Still to fill in: Mollie access code"; after a wrong code, the setup page says so and shows three lines, ending with the public-address check (correctly "not public" for `http://localhost`).
+
+### Defects found by looking, and fixed
+
+1. A new product was a **draft hidden under "More options"**, so nothing appeared in the shop after creating one. A new product is now on sale by default.
+2. The **low-stock alert named one-of-a-kind pieces** ("1 left" is always true for them). Excluded.
+3. With an extension installed but not ready, the shop's admin said nothing (the core's install suggestion disappears once a provider exists). Now: "A payment extension is installed but not ready. Open it to finish." with a link to it.
+4. The Mollie setup page ticked "Open your own Mollie account" as soon as a code was typed. Only checkable lines carry a tick now.
+
+### Seen and NOT fixed (for the owner)
+
+- "Pieces in stock" stays visible when the stock is "One of a kind" or "Unlimited", where it means nothing (a static form cannot hide a field).
+- The "back" button of the product form is an arrow with no text (rendered by the core from `cancelHref`).
+- The admin list shows the **available** quantity (stock minus what is held), under the title "In stock": a seller may expect the number in hand.
+- The "open your own Mollie account" link is only visible once a code is filled, because the core shows the settings tab first. A real first-run helper would put that link in the field's help.
+- No product photo, no edit dialog, no stock editing in the list, no tax-rate list: ergonomics rules R1 to R32 are still not met in full.
+
+### Still not checked
+
+Mollie itself; e-mails (not built); several providers; the order sheet and the product edit screen in the real core (only the creation form and the lists were seen); dark and light variants of the admin; a core with several processes.

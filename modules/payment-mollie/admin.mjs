@@ -9,7 +9,7 @@ export async function adminPanel(ctx) {
     { type: "heading", text: ctx.t("title") },
     { type: "banner", tone: d.ready ? "success" : "warning", text: ctx.t(d.ready ? (d.mode === "live" ? "readyLive" : "readyTest") : `problem_${d.problems[0]}`) },
     { type: "markdown", text: [
-      `${tick(Boolean(ctx.setting("mollieCode")))} ${ctx.t("step1")}`,
+      ctx.t("step1"),
       `${tick(d.problems.every((p) => p !== "no_key" && p !== "bad_key"))} ${ctx.t("step2")}`,
       `${tick(d.publicSite)} ${ctx.t(d.publicSite ? "siteOk" : "sitePrivate")}`,
     ].join("  \n") },

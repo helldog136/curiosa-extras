@@ -331,9 +331,11 @@ test("admin: empty states say what to do, lists are searchable, stock and paid-t
   const tables = empty.filter((b) => b.type === "table");
   assert.equal(tables.length, 2); assert.ok(tables.every((t) => t.searchable === true && t.empty));
   const p = await product(ctx, { onHand: "1" });
+  await product(ctx, { title: "Hand-made owl", stockMode: "single" });
   const { r } = await ordered(ctx, p);
   const blocks = await def.adminPanel(ctx, { query: {} });
-  assert.ok(blocks.some((b) => b.type === "banner" && /Low stock/.test(b.text)));
+  const low = blocks.find((b) => b.type === "banner" && /Low stock/.test(b.text));
+  assert.ok(low); assert.doesNotMatch(low.text, /owl/, "a one-of-a-kind piece is always \"1 left\": no alert for it");
   assert.equal(await def.adminBadge(ctx), 0);
   await O.markPaid(ctx, r.orderId, {}, T0 + 5000);
   assert.equal(await def.adminBadge(ctx), 1);

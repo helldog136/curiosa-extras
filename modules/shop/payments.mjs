@@ -22,6 +22,10 @@ export async function readyProviders(ctx) {
   }
   return out;
 }
+/** Providers installed on the site, ready or not: [{ id, name }] (id = the extension's page in the administration). */
+export async function installedProviders(ctx) {
+  try { return (await ctx.api.services.providers(PROVIDER)).slice(0, 10).map((p) => ({ id: String(p.id), name: String(p.name ?? "").slice(0, 60) })); } catch { return []; }
+}
 export async function pickProvider(ctx, wantedId) {
   const ready = await readyProviders(ctx);
   return ready.find((p) => p.id === wantedId) ?? ready[0] ?? null;

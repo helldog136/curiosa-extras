@@ -377,6 +377,9 @@ test("if the provider cannot start a payment the order is kept and the customer 
     assert.equal(mo.payment, null); assert.ok(Math.abs(mo.holdUntil - Date.now() - 24 * 3_600_000) < 5000, "manual payment: 24 hours");
     const a = JSON.stringify(await shopDef.adminPanel(none.shop, { query: {} }));
     assert.match(a, /suggestInstall/); assert.match(a, /payment\.provider/);
+    const unready = wired({ key: "" });                     // installed, but its access code is still empty
+    const u = JSON.stringify(await shopDef.adminPanel(unready.shop, { query: {} }));
+    assert.match(u, /installed but not ready/); assert.match(u, /\/admin\/instances\/id-mollie\d+/); assert.doesNotMatch(u, /suggestInstall/);
     assert.match(JSON.stringify(await shopDef.adminPanel(shop, { query: {} })), /Test mode/);
   });
 });
