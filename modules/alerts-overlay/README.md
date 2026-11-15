@@ -34,6 +34,10 @@ The module offers the **Alerts** element ("keeps its proportions", 640 × 260) i
 - Position and size settings do not exist here: the element fills the frame given by the overlay page.
 - **Nothing changes for the current overlay**: same address, same page, same settings. The limit of one read of the `live.event` topic every 2 seconds applies per overlay, however many pages show it.
 
+## Skins and the "Opaque" background reach the card (version 1.10.1)
+
+The element's stage carries `data-ov-region="element"`: an overlay skin and the "Opaque" background of the page now give their background to the alert card (before, the card stayed transparent under a skin and semi-transparent on an "Opaque" page). Nothing else changes. With core 0.17.0, the appearance tab of each element (readability, background, outline) applies too, with or without this version.
+
 ## How it enters and leaves (version 1.3.0, core 0.6.0)
 
 Under "More options": by default an alert zooms in lightly and fades out, exactly as before. Pick another way for each direction: slide from the left, right, top or bottom, fade, jiggle or pop, or none; "Same as how it enters" (the default for leaving) plays the entrance backwards. The length of the movement goes from 0.2 to 2 seconds; the alert stays on screen for the display time in between. The choices exist as module settings and as options of the element (default: like the module settings). With reduced motion on the device, any movement becomes a short fade. With every choice on "Default", the page is exactly the previous one. The shared code is `scripts/overlay-transition.mjs`, copied to `transition.mjs` by `node scripts/gen-transition.mjs`.

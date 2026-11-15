@@ -4,6 +4,22 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.85.0 — 2026-11-15
+
+*En bref : les alertes prennent enfin le fond d'un skin d'overlay ou du fond « Opaque » de la page. Overlay alertes 1.10.1. Rien à régler, aucune nouvelle permission.*
+
+*In short: alerts finally take the background of an overlay skin or of the page's "Opaque" background. Alerts overlay 1.10.1. Nothing to set up, no new permission.*
+
+### Corrections
+
+- **Les alertes suivent le skin et le fond « Opaque ».** Dans une page d'overlay avec un skin, la carte d'une alerte restait transparente ; avec le fond « Opaque », elle restait à moitié transparente. Elle prend maintenant le fond du skin ou le fond plein de la page.
+- **Alerts follow the skin and the "Opaque" background.** In an overlay page with a skin, an alert card stayed transparent; with the "Opaque" background, it stayed half transparent. It now takes the skin's background or the page's solid background.
+
+### Pour les développeurs
+
+- Alerts overlay 1.10.1 : `#al-stage` porte `data-ov-region="element"` en mode élément (les jetons du skin et de « Opaque » visent ce nœud). L'overlay propre du module ne change pas. Test réel dans Chromium : `alerts-overlay-region`.
+- `overlay-idle` : avec un cœur 0.17.0 (kit d'apparence) et Chromium, chaque élément au repos est aussi rendu avec le kit et ne doit rien peindre.
+
 ## 1.84.0 — 2026-11-15
 
 *En bref : dans le bandeau sponsor, le QR code est plus grand et plus net : moins de blanc autour, des carrés plus gros, il ne bouge plus. Overlay sponsors 1.4.1. Rien à régler, aucune nouvelle permission.*
