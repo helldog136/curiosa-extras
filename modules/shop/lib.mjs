@@ -82,3 +82,20 @@ export function forgetInstance(key) { for (const k of [...memory.keys()]) if (k.
 export const cartMs = (ctx) => num(ctx.setting("cartMinutes"), 5, 1, 60) * MIN;
 export const manualHoldMs = (ctx) => num(ctx.setting("manualHoldHours"), 24, 1, 168) * HOUR;
 export const currencyOf = (ctx) => (CURRENCIES.includes(ctx.setting("currency")) ? ctx.setting("currency") : "EUR");
+
+/**
+ * One-at-a-time per key, inside this process. The real store stamps a document with its creation time BEFORE the write is
+ * committed, and the production database uses several connections, so two simultaneous "add then read" steps can miss each
+ * other (measured: see docs/ideas/BOUTIQUE.md section 12). Running the reservation steps of one variant one after the other
+ * removes that. It protects ONE process only; the core runs one process per data volume (one container per volume).
+ * The map lives on `globalThis` because a module update reloads this file under a new version and would otherwise get a new, empty map.
+ */
+const LOCKS = (globalThis[Symbol.for("curiosa.shop.locks")] ??= new Map());
+export async function withLock(key, fn) {
+  const prev = LOCKS.get(key) ?? Promise.resolve();
+  let release;
+  const tail = prev.then(() => new Promise((r) => { release = r; }));
+  LOCKS.set(key, tail);
+  await prev;
+  try { return await fn(); } finally { release(); if (LOCKS.get(key) === tail) LOCKS.delete(key); }
+}

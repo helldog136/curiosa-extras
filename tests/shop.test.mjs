@@ -121,6 +121,19 @@ test("unlimited stock never sells out, a seller restock frees pieces", async () 
   assert.equal(await D.setOnHand(ctx, p.id, p.variants[0].id, -1), false);
 });
 
+test("the per-variant lock runs steps one after the other, survives errors, and is shared across module reloads", async () => {
+  const order = [];
+  const step = (name, ms, fail = false) => L.withLock("k", async () => { order.push(`${name}:start`); await new Promise((r) => setTimeout(r, ms)); order.push(`${name}:end`); if (fail) throw new Error("boom"); });
+  const results = await Promise.allSettled([step("a", 20), step("b", 5, true), step("c", 1)]);
+  assert.deepEqual(order, ["a:start", "a:end", "b:start", "b:end", "c:start", "c:end"]);
+  assert.deepEqual(results.map((r) => r.status), ["fulfilled", "rejected", "fulfilled"]);
+  const other = await import("../modules/shop/lib.mjs?v=2");                // a module update loads the file again under a new version
+  const seen = [];
+  await Promise.all([L.withLock("z", async () => { seen.push("old:start"); await new Promise((r) => setTimeout(r, 15)); seen.push("old:end"); }), other.withLock("z", async () => { seen.push("new"); })]);
+  assert.deepEqual(seen, ["old:start", "old:end", "new"]);
+  await Promise.all([L.withLock("x", async () => {}), L.withLock("y", async () => {})]);
+});
+
 // ── Cart timer ──────────────────────────────────────────────────────────────────────────────────────────────────
 test("a cart releases its pieces after 5 minutes, and every change restarts the 5 minutes", async () => {
   const ctx = mk();

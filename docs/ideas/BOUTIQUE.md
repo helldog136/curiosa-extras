@@ -170,10 +170,49 @@ Throwaway code on this branch only. Not released, not in `catalogue/index.json` 
 - A browser run (Chromium, 1280 px and 390 px) against a throwaway server using the real module code and an in-memory store: add to cart, countdown, stale page cannot take the one-of-a-kind item, fresh page shows it sold out, remove, errors under the fields with focus on the first, checkout to the private page, no horizontal scroll, controls at least 44 px high. Screenshots were looked at.
 
 **NOT verified:**
-- The reservation algorithm on the **real core storage**. It relies on creation order being total and on a new document being visible to every reader at once; the in-memory store guarantees both, the real one is unknown. Also unknown: whether the core runs several processes. This is the first thing to test against a real core before trusting the design.
+- ~~The reservation algorithm on the real core storage~~ tested in section 12: the first version **oversold**; the version with a lock does not, in one process. Still unknown: behaviour with several processes (see section 12).
 - No real core was started: page rendering, the `scripts` mechanism, CSP and the admin blocks were not seen in the real site. The administration page was only built as blocks and tested as data, not looked at.
 - Ergonomics rules R1 to R32 are **not** met in full: no edit dialog, no inline stock editing, no payment wizard, no screenshots of the administration. A real delivery needs the "Ergonomics" section.
 - No payment provider, no e-mail, no shipping prices, no data retention or erasure (D12), no photos, no tax rate list (a rate is typed per product), no link with `contacts`.
 - Small known flaws: field errors stay visible after the field is corrected; the stock note on the shop page does not refresh without reloading; opening the payment page does not yet restart the timer (`cart.touch` exists but is not wired); the `Secure` cookie flag was not exercised over plain HTTP.
 
 **Findings for the core:** a public `page()` cannot read cookies, so a per-visitor cart needs a route plus a page script; the store has no atomic operation (see 7b); mail limits (D11).
+
+## 12. Reservation on the real core store, and core needs (2026-11-15)
+
+### What was measured
+
+Real core code (`src/core/services/store.ts`, Prisma, SQLite, migrations applied to a throwaway database), invented data, script `scripts/shop-real-store-stress.mjs` (usage in its header). One round = one product with capacity 1, 2 or 3 and 30 simultaneous buyers each adding one piece to a cart; an oversale is a round where more buyers got the piece than the capacity.
+
+| Version of the reservation step | Database connections | Rounds x buyers | Oversold rounds |
+|---|---|---|---|
+| add, read in order, keep if it fits (as first built) | pool (production setting) | 60 x 20 | **9** |
+| same | pool | 100 x 30 (control run, lock switched off) | **11** (210 pieces sold for 199 in stock) |
+| same | 1 (setting of the core's own tests) | 60 x 20 | 0 |
+| **same, steps of one variant run one after the other (lock in the module)** | pool | 150 x 30 and 100 x 30 | **0** (exactly 199 pieces sold for 199 in stock) |
+| same, with the lock | 1 | 150 x 30 and 100 x 30 | **0** |
+
+**Why it failed.** The store stamps a document with its creation time and id *before* the write is committed, and in production several connections write at once. A document can therefore get an earlier place in the order than another one and become visible later; the other buyer has already read the list without it and kept the piece. The in-memory store used by the unit tests cannot show this, and the core's own database helper uses a single connection, so it would not show it either. **Suggestion for the core:** let its database test helper offer a multi-connection mode.
+
+**Fix in the module, no core change:** `withLock` in `modules/shop/lib.mjs` runs the reservation steps of one variant one after the other inside the process. The lock lives on `globalThis` so that a module update (which reloads the files under a new version) shares it. Unit test: `tests/shop.test.mjs`.
+
+**Limit, stated plainly.** The lock protects one process. The core starts one `next start` process per data volume and its own notes say "one container per volume" (`scripts/docker-entrypoint.mjs`, `docs/ideas/update-paths.md`), so this holds for the normal setup, but a deployment with several processes on one database would oversell again. Not tested, not supported.
+
+### Core functions the shop needs, checked one by one
+
+Read in the core source or the docs, not all run:
+
+| Need | State | Verdict |
+|---|---|---|
+| Provider webhooks: raw body for signatures, no `Origin` header, POST | `src/app/m/[instance]/[...path]/route.ts` hands the untouched `Request` to the module, rejects a write only when an `Origin` names another host, and applies no rate limit of its own | OK, nothing to add (the signature check itself is not written yet) |
+| Calling provider APIs: POST, headers, idempotency key, timeout | `ctx.api.net.request` supports method, headers and body, never retries a POST, 20 s at most, text answers | OK |
+| Provider modules calling the shop without forcing its installation | optional `requires` is never installed by itself; `offers.each` lets every provider instance answer | OK on paper (design, not yet built) |
+| Scheduled clean-up | tasks every minute at the earliest | OK |
+| Fresh stock on the shop page | `page()` is rendered on every request (`force-dynamic`) | OK |
+| Cart per visitor | a public `page()` cannot read cookies | Worked around: route plus page script |
+| Atomic stock | no atomic operation in the store | Worked around by the lock. **Optional hardening, generic:** `store.addIfAbsent(collection, key, data)`, an atomic insert when no record has that key. Polls (one vote per person) and promo codes (usage limits) have the same need. Not indispensable now; build only if several processes ever become supported. |
+| Order e-mails | 10 per hour per instance, 40 per site, text only | **Indispensable before real sales** (agreed in D11): a separate, higher allowance for transactional mail. HTML mail is optional. |
+| Private downloads for digital products (later) | uploads are served publicly with a one-year cache; a module cannot read files itself | Needed **only** for the digital delivery (later). Generic: a core function to deliver a stored file after a check made by the module (press kit and deliverables could use it). Not for delivery 1 or 2. |
+| PDF invoices, HTML mail (later) | not offered | Later, after the legal review; not decided. |
+
+**So the only core change the first deliveries need is the mail allowance.** Everything else is either done, worked around inside the module, or belongs to a later delivery.

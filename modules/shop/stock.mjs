@@ -8,7 +8,7 @@
 // Every reader that sees the same prefix computes the same accepted set, so two buyers of the last piece cannot both win.
 // Assumption NOT verified against the real core store: ids / creation times are totally ordered and a document
 // is visible to every reader as soon as `add` returns (see docs/ideas/BOUTIQUE.md, section 7b).
-import { LIMITS } from "./lib.mjs";
+import { LIMITS, withLock } from "./lib.mjs";
 
 export const keyOf = (productId, variantId) => `${productId}:${variantId}`;
 /** Seats for a variant: unlimited, one-of-a-kind, or counted. */
@@ -54,7 +54,10 @@ export async function availability(ctx, product, variant, now = Date.now()) {
  * Try to hold `qty` pieces. Returns { ok: true, id } or { ok: false, reason: "sold_out" | "busy", available }.
  * `state`/`expiresAt` let the order flow re-reserve a piece that has been released.
  */
-export async function reserve(ctx, { cartId, product, variant, qty, expiresAt, now = Date.now(), orderId = null }) {
+export function reserve(ctx, args) {
+  return withLock(`${ctx.instance.key}|${keyOf(args.product.id, args.variant.id)}`, () => reserveNow(ctx, args));
+}
+async function reserveNow(ctx, { cartId, product, variant, qty, expiresAt, now = Date.now(), orderId = null }) {
   const cap = capacityOf(variant);
   if (cap !== Infinity && cap < 1) return { ok: false, reason: "sold_out", available: 0 };
   const id = await ctx.api.store.add("reservations", { cartId, orderId, productId: product.id, variantId: variant.id, qty, state: "held", expiresAt, at: now }, { key: keyOf(product.id, variant.id) });

@@ -17,7 +17,7 @@ No online payment, no e-mails, no shipping prices, no discount codes, no photos,
 
 ## How the stock stays right
 
-Buyers never change a counter. The stock you type is the number in hand; what is available is that number minus the reservations that are valid. A reservation is a small record. When two people want the last piece, both records are added, then each person reads all the records in order and keeps theirs only if it fits. Only the first one fits. This is tested with simultaneous purchases in memory. It has not been proven on the real storage of the core.
+Buyers never change a counter. The stock you type is the number in hand; what is available is that number minus the reservations that are valid. A reservation is a small record. When two people want the last piece, both records are added, then each person reads all the records in order and keeps theirs only if it fits. Only the first one fits. This is tested with simultaneous purchases, in memory and on the real storage of the core (`scripts/shop-real-store-stress.mjs`). On the real storage the steps of one product must run one after the other: the module does it with a lock, which holds for one process only.
 
 ## Test
 
