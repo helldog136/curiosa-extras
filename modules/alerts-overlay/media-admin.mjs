@@ -12,9 +12,12 @@ export async function blocks(ctx, { query = {} } = {}) {
   const t = ctx.t, items = (await md.list(ctx, { tones: false })).filter((m) => !m.id.startsWith("video:"));
   const add = query.add === "picture" || query.add === "sound" ? query.add : null;
   const edit = typeof query.media === "string" ? items.find((m) => m.id === query.media) : null;
+  // (1.11.0) "Added by the assistant": a pill only on those rows, and the column only when there is one (R14: the ordinary case has no label).
+  const byAssistant = items.some((m) => m.by === "assistant");
   const rows = items.map((m) => [
     { text: m.name, title: m.name, ...(m.kind === "picture" ? { image: { src: m.url, alt: t("md_alt", { name: m.name }) } } : {}) },
     { text: t(`md_type_${m.kind}`), badge: BADGE[m.kind] },
+    ...(byAssistant ? [m.by === "assistant" ? { text: t("md_by_assistant"), badge: "info" } : { text: "" }] : []),
   ]);
   const dialog = add ? [{
     type: "adminForm", tab: TAB, presentation: "dialog", action: "addMedia", cancelHref: `?tab=${TAB}`, title: t(`md_new_${add}_title`), submitLabel: t(`md_new_${add}_btn`),
@@ -31,7 +34,7 @@ export async function blocks(ctx, { query = {} } = {}) {
     { type: "markdown", tab: TAB, text: t("md_intro") },
     { type: "links", tab: TAB, items: [{ label: t("md_add_picture"), href: `?tab=${TAB}&add=picture`, presentation: "dialog" }, { label: t("md_add_sound"), href: `?tab=${TAB}&add=sound`, presentation: "dialog" }] },
     ...(items.length
-      ? [{ type: "table", tab: TAB, columns: [t("md_col_name"), t("md_col_type")], rows, rowIds: items.map((m) => m.id), searchable: true, searchPlaceholder: t("md_search"), filters: [{ column: 1, allLabel: t("md_all") }], truncate: [0], pageSize: 50,
+      ? [{ type: "table", tab: TAB, columns: [t("md_col_name"), t("md_col_type"), ...(byAssistant ? [t("md_col_origin")] : [])], rows, rowIds: items.map((m) => m.id), searchable: true, searchPlaceholder: t("md_search"), filters: [{ column: 1, allLabel: t("md_all") }], truncate: [0], pageSize: 50,
         rowActions: [{ label: t("md_edit_btn"), href: `?tab=${TAB}&media={id}`, presentation: "dialog" }, { label: t("md_show_btn"), action: "showMedia", inMenu: true }, { label: t("md_delete_btn"), action: "removeMedia", inMenu: true, danger: true, confirm: t("md_delete_confirm") }] }]
       : [{ type: "markdown", tab: TAB, text: t("md_empty") }]),
     ...dialog,

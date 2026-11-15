@@ -21,6 +21,7 @@ const adminTw = await import(new URL(`./twitch-admin.mjs${v}`, import.meta.url).
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 const adminMd = await import(new URL(`./media-admin.mjs${v}`, import.meta.url).href);
 const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
+const rxMcp = await import(new URL(`./reaction-mcp.mjs${v}`, import.meta.url).href);
 /** Sounds: small synthesised notes (the page makes them, nothing is loaded). [frequency Hz, start s, length s]. Played only when the person switched sounds on. */
 const SOUND_SCRIPT = `
         var ac=null,SND={chime:[[880,0,.18],[1320,.12,.32]],bell:[[1046,0,.7]],pop:[[420,0,.09]],fanfare:[[523,0,.14],[659,.14,.14],[784,.28,.14],[1046,.42,.42]]};
@@ -425,7 +426,7 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg) => adminTw.sampleAlert(c, id, Date.now(), cfg), emit: (a) => emit(ctx.instance.key, a) }),
     },
   },
-  mcp: adminTw.tools((key, a) => emit(key, a)),
+  mcp: { ...adminTw.tools((key, a) => emit(key, a)), ...rxMcp.tools((key, a) => emit(key, a)) },
 
   adminActions: {
     ...adminTw.actions(emit),
