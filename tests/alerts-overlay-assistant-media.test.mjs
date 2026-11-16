@@ -35,7 +35,7 @@ async function upload(w, name, buf, { pieces = false } = {}) {
 const exposed = (re) => (e) => e.expose === true && re.test(e.message);
 
 test("manifest: 1.11.0, eight new tools; the three upload tools declare uploads and are off by default; delete is destructive; FR texts", () => {
-  assert.equal(manifest.version, "1.13.0");
+  assert.equal(manifest.version, "1.14.0");
   const tools = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
   for (const name of NEW) { assert.ok(tools[name], name); assert.ok(manifest.i18n.fr[`mcp.${name}`], `fr ${name}`); assert.equal(typeof def.mcp[name], "function", name); }
   for (const name of UPLOADS) assert.deepEqual([tools[name].uploads, tools[name].readOnly, tools[name].default], [true, undefined, false], name);

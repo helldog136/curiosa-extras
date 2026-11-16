@@ -42,7 +42,7 @@ export async function get(ctx, type) {
   return {
     ok: true, type, max: LIMITS.variants, words: tw.VARS, variants: variantsOf(c, videos).filter((u) => !(c.present === "video" && !c.variants?.length)).map((src) => ({ src })), legacyVideo: c.present === "video" && !c.variants?.length && !!c.video,
     pick: c.pick ?? "random", text: c.template, textDefault: ctx.t(`tw_text_${type}`), sound: c.sound === "none" ? "" : c.sound, audio: c.audio, seconds: c.seconds, videoSound: c.videoSound, ...summaryOf(c, videos), editPath: ctx.instance.basePath,
-    compose: cp.available(ctx), compositions: cp.available(ctx) ? await cp.forPlace(ctx, `event:${type}`) : {},
+    compose: cp.available(ctx), ...(cp.videoReady(ctx) ? { composeVideo: true } : {}), compositions: cp.available(ctx) ? await cp.forPlace(ctx, `event:${type}`) : {},
     ...moreOf(ctx, type, c),
   };
 }

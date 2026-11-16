@@ -4,6 +4,33 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.90.0 — 2026-11-16
+
+*En bref : « Placer le texte » marche aussi sur les vidéos d'une réaction. L'alerte dure le temps de la vidéo, ou la durée choisie. Overlay alertes 1.14.0, Activité Twitch 1.11.0. Demande le cœur 0.21.0 pour les vidéos ; sans lui, rien ne change.*
+
+*In short: "Place the text" now works on the videos of a reaction too. The alert lasts as long as the video, or the length you choose. Alerts overlay 1.14.0, Twitch activity 1.11.0. Videos need core 0.21.0; without it, nothing changes.*
+
+### Nouveautés
+
+- **Le texte sur une vidéo.** Dans la fenêtre d'une réaction, chaque vidéo a maintenant « Placer le texte », comme les images. « Lire » joue l'alerte dans l'éditeur.
+- **La durée de l'alerte.** Une alerte avec une vidéo placée dure le temps de la vidéo. Vous pouvez aussi choisir une durée, de 2 à 60 secondes.
+- **Le son.** L'interrupteur « Son des vidéos » de la réaction fait toujours entendre la vidéo. L'éditeur a aussi son propre réglage.
+- **Plus fluide dans OBS.** La vidéo de l'alerte suivante se charge pendant l'alerte en cours. Une seule vidéo joue à la fois.
+- **Text on a video.** In the window of a reaction, each video now has "Place the text", like the pictures. "Play" plays the alert in the editor.
+- **The length of the alert.** An alert with a placed video lasts as long as the video. You can also choose a length, from 2 to 60 seconds.
+- **Sound.** The "Sound of the videos" switch of the reaction still makes the video heard. The editor also has its own setting.
+- **Smoother in OBS.** The video of the next alert loads during the current alert. Only one video plays at a time.
+
+### Ce qui ne change pas
+
+- **Vos vidéos restent telles quelles.** Une vidéo sans texte placé s'affiche seule, comme avant.
+- **Your videos stay as they are.** A video without a placed text shows alone, as before.
+
+### Pour les développeurs
+
+- Overlay alertes 1.14.0 : `alerts.reaction.get` ajoute `composeVideo: true` quand le cœur a la fonction `video` (`ctx.overlay.features`) ; une alerte composée prend la durée de sa composition (plus longue seulement pour la voix) ; « Son des vidéos » allume le son de la composition ; la page charge d'avance l'arrière-plan de l'alerte suivante (`CuriosaCompose.preload`), seulement quand elle porte des compositions.
+- Activité Twitch 1.11.0 : option `video: true` du champ `gallery` quand l'overlay dit `composeVideo`. Tests : `alerts-overlay-compose-video`.
+
 ## 1.89.0 — 2026-11-16
 
 *En bref : la réaction d'un événement Twitch se règle à un seul endroit, la fenêtre « Réaction » d'Activité Twitch. L'onglet « Événements Twitch » d'Overlay alertes devient un résumé avec « Régler dans Activité Twitch → ». Statut du live passe dans Réseaux, au-dessus de Twitch et YouTube. Overlay alertes 1.13.0, Activité Twitch 1.10.0, Statut du live 1.4.7. Rien à régler.*

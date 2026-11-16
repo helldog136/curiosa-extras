@@ -93,6 +93,8 @@ export function composeOptionOf(ctx, id, cur) {
     variables: words.map((w) => ({ token: w, label: t(`rx_var_${w}`), sample: samples[w] })),
     phrase: { label: t("rx_compose_phrase"), sample: fillSample(cur.text || cur.textDefault, samples).replace(/\s+/g, " ").trim() },
     formats: ["media", "16:9", "9:16", "1:1", "4:3", "21:9"], defaultFormat: "media", maxBoxes: 4, testAction: "testReaction",
+    // (1.11.0) videos too, when the overlay plays them as the core's editor says (Alerts overlay 1.14.0 on core 0.21.0)
+    ...(cur.composeVideo === true ? { video: true } : {}),
   };
 }
 

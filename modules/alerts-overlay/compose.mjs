@@ -14,6 +14,8 @@ export const resetComposeCache = () => cache.clear();
 /** Whether the core of the site can check and draw compositions. */
 export const available = (ctx) => typeof ctx?.overlay?.composeScript === "function" && typeof ctx.overlay.checkComposition === "function";
 export const keyOf = (place, src) => `${place}|${src}`;
+/** (1.14.0) Whether the core also places text on VIDEOS (core 0.21.0: how they play, their sound, the alert as long as the video). */
+export const videoReady = (ctx) => available(ctx) && Array.isArray(ctx.overlay.features) && ctx.overlay.features.includes("video");
 
 async function rowsOf(ctx, now = Date.now()) {
   const k = ctx.instance.key, c = cache.get(k);
