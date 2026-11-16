@@ -38,12 +38,17 @@
         },
         {
           "service": "alerts.reaction",
+          "version": 2,
           "each": true
         }
       ],
       "needs": [
         {
           "service": "twitch.journal",
+          "optional": true
+        },
+        {
+          "service": "alerts.reaction.editor",
           "optional": true
         }
       ]
@@ -1004,7 +1009,7 @@
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/game-suggestions",
       "ref": "v1.88.0",
-      "version": "1.10.0",
+      "version": "1.9.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🎮",
@@ -2812,7 +2817,8 @@
         "core": "0.15.0"
       },
       "offers": [
-        "twitch.journal"
+        "twitch.journal",
+        "alerts.reaction.editor"
       ],
       "needs": [
         {

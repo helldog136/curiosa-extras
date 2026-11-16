@@ -17,11 +17,12 @@ let core = null;
 try { core = await import("@/core/modules/menuPath"); } catch { /* older core */ }
 
 // Where each network module sits: [path, order]. The order is undefined when the module keeps the default (100).
-// Twitch reads as the stream goes: connection, channel, status, activity, alerts, bot, raid.
+// Twitch reads as the stream goes: connection, channel, activity, alerts, bot, raid.
+// Live status shows Twitch AND YouTube lives: it sits in Networks itself, above the network groups, not inside Twitch.
 const EXPECTED = {
   "twitch-connector": ["Réseaux.Twitch", 10],
   "twitch-channel": ["Réseaux.Twitch", 20],
-  "live-status": ["Réseaux.Twitch", 30],
+  "live-status": ["Réseaux", undefined],
   "twitch-events": ["Réseaux.Twitch", 40],
   "alerts-overlay": ["Réseaux.Twitch", 50],
   "twitch-bot": ["Réseaux.Twitch", 60],
@@ -73,14 +74,25 @@ test("the network modules declare exactly the expected menu place", () => {
   }
 });
 
+test("a module under a network group is about that network only (a module for several networks sits in Networks itself)", () => {
+  // `platform` of the module, or the networks it reads: a module that needs both Twitch and YouTube services is not a Twitch module.
+  const NETWORK_SERVICES = { twitch: /^twitch\./, youtube: /^youtube\./, discord: /^discord\./ };
+  for (const [id, m] of Object.entries(manifests)) {
+    if (!m.adminMenu) continue;
+    const parts = m.adminMenu.split(".").map((p) => p.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase());
+    const reads = Object.entries(NETWORK_SERVICES).filter(([, re]) => (m.requires ?? []).some((r) => re.test(r.service))).map(([n]) => n);
+    if (reads.length > 1) assert.equal(parts.length, 1, `${id} reads ${reads.join(" and ")}: it belongs in Networks, not in one network group`);
+  }
+});
+
 test("no other module declares a menu path (profile-link modules and tools keep their section)", () => {
   const others = Object.entries(manifests).filter(([id, m]) => !(id in EXPECTED) && (m.adminMenu !== undefined || m.adminMenuOrder !== undefined || m.adminMenuLabels !== undefined)).map(([id]) => id);
   assert.deepEqual(others, []);
 });
 
-test("inside Twitch the order reads: connection, channel, status, activity, alerts, bot, raid; a module keeps its section as a fallback for an older core", () => {
+test("inside Twitch the order reads: connection, channel, activity, alerts, bot, raid; a module keeps its section as a fallback for an older core", () => {
   const twitch = Object.entries(EXPECTED).filter(([, [menu]]) => menu === "Réseaux.Twitch").sort((a, b) => a[1][1] - b[1][1]).map(([id]) => id);
-  assert.deepEqual(twitch, ["twitch-connector", "twitch-channel", "live-status", "twitch-events", "alerts-overlay", "twitch-bot", "twitch-raid"]);
+  assert.deepEqual(twitch, ["twitch-connector", "twitch-channel", "twitch-events", "alerts-overlay", "twitch-bot", "twitch-raid"]);
   // An old core ignores the path and still uses menuGroup: keep it where it already was.
   assert.equal(manifests["twitch-raid"].menuGroup, "tools");
   assert.equal(manifests["live-status"].menuGroup, "tools");
@@ -99,7 +111,8 @@ test("with the core's tree builder, the entries land once, in the expected group
     assert.equal(nets.title, locale === "fr" ? "Réseaux" : "Networks");
     assert.deepEqual(nets.children.map((c) => c.title), ["Twitch", "YouTube", "Discord"].sort((a, b) => core.KNOWN_GROUPS.findIndex((g) => g.en === a) - core.KNOWN_GROUPS.findIndex((g) => g.en === b)));
     const ofGroup = (t) => nets.children.find((c) => c.title === t).entries.map((e) => e.id);
-    assert.deepEqual(ofGroup("Twitch"), ["twitch-connector", "twitch-channel", "live-status", "twitch-events", "alerts-overlay", "twitch-bot", "twitch-raid"]);
+    assert.deepEqual(ofGroup("Twitch"), ["twitch-connector", "twitch-channel", "twitch-events", "alerts-overlay", "twitch-bot", "twitch-raid"]);
+    assert.deepEqual(nets.entries.map((e) => e.id), ["live-status"], "Live status (Twitch and YouTube) sits in Networks itself, before the network groups");
     assert.deepEqual(ofGroup("Discord"), ["discord", "discord-announcer"]);
     assert.deepEqual(ofGroup("YouTube"), ["youtube-connector", "youtube-channel", "youtube-live-actions"]);
     assert.equal(nets.count, items.length, "each entry appears once");

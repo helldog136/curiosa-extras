@@ -9,6 +9,9 @@ const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 // (1.12.0, additive) `get` also gives `compose` (whether the core can place text), `compositions` ({ [src]: composition }) and `words`; `set` and `test` take
 // `patch.compositions` ({ [src]: composition | null }, only when the window could place text) and `test` takes `patch.composeFor` (the file to show).
 // A caller that sends no `compositions` changes none (an older Twitch activity keeps every placed text); a file taken out of the list loses its text.
+// (1.13.0, version 2, additive) `get` also gives what only the "Twitch events" tab used to edit: the minimum, the animation, what is read aloud and the viewer text
+// (`min`, `anim`, `tts`, `viewer`, `viewerMax`, with their choices and bounds); `set` and `test` take them in `patch`. A version 1 caller sends none of them and changes none.
+// With an editor of the reactions active (service `alerts.reaction.editor`, Twitch activity 1.10.0), the "Twitch events" tab shows a summary and links there: one editor per type.
 
 export const LIMITS = { variants: tw.VARIANT_MAX };
 const srcOf = (x) => String(typeof x === "string" ? x : x?.src ?? "").trim().replace(/\?.*$/, "");
@@ -40,6 +43,18 @@ export async function get(ctx, type) {
     ok: true, type, max: LIMITS.variants, words: tw.VARS, variants: variantsOf(c, videos).filter((u) => !(c.present === "video" && !c.variants?.length)).map((src) => ({ src })), legacyVideo: c.present === "video" && !c.variants?.length && !!c.video,
     pick: c.pick ?? "random", text: c.template, textDefault: ctx.t(`tw_text_${type}`), sound: c.sound === "none" ? "" : c.sound, audio: c.audio, seconds: c.seconds, videoSound: c.videoSound, ...summaryOf(c, videos), editPath: ctx.instance.basePath,
     compose: cp.available(ctx), compositions: cp.available(ctx) ? await cp.forPlace(ctx, `event:${type}`) : {},
+    ...moreOf(ctx, type, c),
+  };
+}
+/** (version 2) The settings of a type that only the "Twitch events" tab of this overlay used to edit, with their choices and bounds. */
+export function moreOf(ctx, type, c) {
+  return {
+    version: 2,
+    min: tw.MINIMUM[type] ? c.min || 0 : null, minMax: tw.LIMITS.min,
+    anim: c.anim ?? "", anims: tw.ANIMS.slice(),
+    tts: c.tts ?? "off", ttsModes: tw.TTS_MODES.slice(),
+    viewer: tw.VIEWER_TYPES.includes(type) ? (c.viewer === null || c.viewer === undefined ? ctx.setting("twitchText") === true : c.viewer === true) : null,
+    viewerMax: tw.VIEWER_TYPES.includes(type) ? c.viewerMax ?? 140 : null, viewerMaxLimits: tw.TTS_LIMITS.viewerMax.slice(),
   };
 }
 /** What can be picked "from the site": the pictures and sounds of the Media tab, by name (the files this overlay already owns). */
@@ -67,6 +82,18 @@ export function validate(ctx, type, patch, cur) {
     if (n !== 0 && (!Number.isInteger(n) || n < tw.LIMITS.seconds.min || n > tw.LIMITS.seconds.max)) errors.seconds = "range"; else next.seconds = n;
   }
   if (patch.videoSound !== undefined) next.videoSound = patch.videoSound === true;
+  // (version 2) what only the "Twitch events" tab used to edit
+  if (patch.min !== undefined && tw.MINIMUM[type]) {
+    const raw = String(patch.min ?? "").trim(), n = raw === "" ? 0 : Number(raw);
+    if (!Number.isInteger(n) || n < 0 || n > tw.LIMITS.min) errors.min = "range"; else next.min = n;
+  }
+  if (patch.anim !== undefined) { if (tw.ANIMS.includes(patch.anim)) next.anim = patch.anim; else errors.anim = "choice"; }
+  if (patch.tts !== undefined) { const m = patch.tts === "" ? "off" : patch.tts; if (tw.TTS_MODES.includes(m)) next.tts = m; else errors.tts = "choice"; }
+  if (patch.viewer !== undefined && tw.VIEWER_TYPES.includes(type)) next.viewer = patch.viewer === true;
+  if (patch.viewerMax !== undefined && tw.VIEWER_TYPES.includes(type)) {
+    const raw = String(patch.viewerMax ?? "").trim(), n = raw === "" ? 140 : Number(raw), [lo, hi] = tw.TTS_LIMITS.viewerMax;
+    if (!Number.isInteger(n) || n < lo || n > hi) errors.viewerMax = "range"; else next.viewerMax = n;
+  }
   if (patch.variants !== undefined) {
     const raw = Array.isArray(patch.variants) ? patch.variants : [];
     const urls = [...new Set(raw.map(srcOf).filter(Boolean))];

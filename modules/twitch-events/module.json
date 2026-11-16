@@ -6,7 +6,7 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.9.0",
+  "version": "1.10.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
@@ -316,6 +316,17 @@
       "label": {
         "en": "The journal of Twitch events: marks a line whose viewer text was hidden or held",
         "fr": "Le journal des événements Twitch : marque une ligne dont le texte du public a été masqué ou retenu"
+      }
+    },
+    {
+      "service": "alerts.reaction.editor",
+      "version": 1,
+      "readOnly": [
+        "editor"
+      ],
+      "label": {
+        "en": "The place where the reaction of each Twitch event is set (for the Alerts overlay)",
+        "fr": "L'endroit où se règle la réaction de chaque événement Twitch (pour Overlay alertes)"
       }
     }
   ]

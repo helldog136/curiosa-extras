@@ -17,7 +17,7 @@ test("service twitch.journal: marks a line with a reason and a state of closed l
   const { ctx } = await site({ locale: "en" });
   await deliver(ctx, TYPES.cheer, EV.cheer, { id: "c1" });
   const svc = mod.services["twitch.journal"];
-  assert.deepEqual(manifest.offers.map((o) => o.service), ["twitch.journal"]);
+  assert.deepEqual(manifest.offers.map((o) => o.service), ["twitch.journal", "alerts.reaction.editor"]);
   assert.deepEqual(await svc.flag(ctx, { id: "c1", reason: "link", state: "hidden" }), { ok: true });
   assert.equal((await S.byId(ctx, "c1")).flag.reason, "link");
   const line = (await S.recent(ctx, 5))[0];
@@ -71,5 +71,5 @@ test("the page: three switches that show their state in words, stop and skip but
   for (const key of DK.KEYS) { assert.ok(en[`dock_${key}`] && fr[`dock_${key}`], key); assert.deepEqual((en[`dock_${key}`].match(/\{\w+\}/g) ?? []).sort(), (fr[`dock_${key}`].match(/\{\w+\}/g) ?? []).sort(), key); }
   for (const r of ["word", "link", "caps", "repeat"]) assert.ok(en[`flag_reason_${r}`] && fr[`flag_reason_${r}`]);
   for (const st of ["hidden", "held", "accepted", "dismissed"]) assert.ok(en[`d_flag_${st}`] && fr[`d_flag_${st}`]);
-  assert.equal(manifest.version, "1.9.0");
+  assert.equal(manifest.version, "1.10.0");
 });
