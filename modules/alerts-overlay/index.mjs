@@ -41,6 +41,8 @@ const MEDIA_SCRIPT = (ov) => `var mc=null;
  */
 const COMPOSE_DRAW = 'if(e.compose&&window.CuriosaCompose){card=document.createElement("div");card.className="al-cmp";card._cmp=e.compose;card._anim=e.anim||"";shownCard=card}else ';
 const COMPOSE_MOUNT = "if(card._cmp)window.CuriosaCompose.mount(card,card._cmp,{seconds:secs});";
+/** (1.14.0) The backdrop of the alert that waits next is loaded while this one shows (one at a time), so a video starts without a black gap. */
+const NEXT_AHEAD = "function ahead(){var n=q[0];if(n&&n.compose&&window.CuriosaCompose&&window.CuriosaCompose.preload)window.CuriosaCompose.preload(n.compose)}function next(){if(!busy){var e=q.shift();if(e){busy=true;draw(e)}}ahead()}";
 const COMPOSE_DONE = 'var cr=stage.querySelector(\'[data-ov-region="composition"]\');if(cr&&window.CuriosaCompose)window.CuriosaCompose.unmount(cr);';
 /** A sound file of the site, played once per alert at the volume of the sounds; it stops with the card (skip, next alert). Same condition as the synthesised sounds. */
 const AUDIO_SCRIPT = `
@@ -376,7 +378,7 @@ ${ctx.overlay.composeCss()}
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}${tx ? "}" : ""}
           ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${cmp ? COMPOSE_MOUNT : ""}${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
         ${tx ? `function done(){if(typeof stopFile==='function')stopFile();shownCard=null;${cmp ? COMPOSE_DONE : ""}stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}` : "function done(){stage.replaceChildren();busy=false;next()}"}
-        function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}
+        ${cmp ? NEXT_AHEAD : "function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}"}
         ${tx ? `function show(e){if(e.control==="clear"){q=[];clearTimeout(timer);${audioOn ? "if(typeof stopFile==='function')stopFile();" : ""}stage.replaceChildren();busy=false;return}if(e.queued!==false){` : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
 ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":"")${tx ? '+"&ctl=1"' : ""},{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;${tx ? "applyCtl(d.ctl);" : ""}d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
         poll()})();` : `        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}};

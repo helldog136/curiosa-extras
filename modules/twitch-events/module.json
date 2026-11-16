@@ -6,7 +6,7 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.10.0",
+  "version": "1.11.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
