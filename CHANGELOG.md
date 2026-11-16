@@ -4,6 +4,21 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.87.0 — 2026-11-16
+
+*En bref : votre assistant IA peut ajouter à l'Overlay alertes une vidéo, un GIF, une image ou un son qu'il a créé, le mettre sur un événement Twitch et le tester. Overlay alertes 1.11.0, Bot Twitch 1.20.1. Il faut le cœur 0.18.0, et les droits d'écriture restent désactivés tant que vous ne les cochez pas.*
+
+*In short: your AI assistant can add to the Alerts overlay a video, GIF, picture or sound it made, put it on a Twitch event and test it. Alerts overlay 1.11.0, Twitch bot 1.20.1. Needs core 0.18.0, and the writing rights stay off until you tick them.*
+
+### Nouveautés
+
+- **Des vidéos faites par votre assistant.** Il envoie le fichier, le site vérifie son contenu (webm ou mp4 de 30 s et 1920 × 1080 au plus), puis le range dans la bibliothèque Médias.
+- **Sur un follow, un raid ou un abonnement.** L'assistant choisit les fichiers d'un événement, leur ordre, le texte, la durée et le son, puis envoie une alerte de test aux pages d'overlay ouvertes.
+- **Vous gardez la main.** Dans Assistants IA, cochez outil par outil ce que l'assistant peut faire. Dans l'onglet Médias, ses fichiers portent la pastille « Ajouté par l'assistant » et se suppriment comme les autres.
+- **Videos made by your assistant.** It sends the file, the site checks its content (webm or mp4, 30 s and 1920 × 1080 at most), then files it in the Media library.
+- **On a follow, a raid or a sub.** The assistant picks the files of an event, their order, the text, the duration and the sound, then sends a test alert to the open overlay pages.
+- **You stay in control.** In AI assistants, tick tool by tool what the assistant may do. In the Media tab, its files carry the "Added by the assistant" pill and are deleted like the others.
+
 ## 1.86.0 — 2026-11-15
 
 *En bref : le dock OBS d'Activité Twitch devient lisible dans un dock étroit (220 à 360 px) : la liste des événements passe en premier, les commandes se replient. Activité Twitch 1.8.0. Rien à régler, aucune nouvelle permission.*
