@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.14.0",
+  "version": "1.15.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.14.0",
@@ -1577,6 +1577,253 @@
         }
       },
       "default": false
+    },
+    {
+      "name": "composition_places",
+      "readOnly": true,
+      "description": "List where text can be placed on alert media: one place per Twitch event type (event:follow, event:sub…), with its files (address, kind picture/gif/video, width, height, durationSeconds, transparent, poster, hasComposition) and the automatic values its texts may use ({name}, {amount}…). Start here.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "event",
+              "show"
+            ],
+            "description": "Only these places."
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_get",
+      "readOnly": true,
+      "description": "Read the composition (text placed on a file) of one file of one place, or a starting point when there is none, with its texts filled with examples. A composition: v 1, format, backdrop (src, fit, focus, play, sound), duration, 1 to 4 boxes (x, y, w, h in percent of the frame, size in px of a 1080-high frame, look, outline, in/out animations).",
+      "input": {
+        "type": "object",
+        "required": [
+          "place",
+          "src"
+        ],
+        "properties": {
+          "place": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "src": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_set",
+      "default": false,
+      "description": "Save the text placed on one file of one place. composition is a JSON text. Every problem is listed at once, in plain words, and nothing is saved then. dryRun: true checks and completes it (still picture and length of a video) without saving. Look at composition_preview before saving. Off until the owner grants it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "place",
+          "src",
+          "composition"
+        ],
+        "properties": {
+          "place": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "src": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "composition": {
+            "type": "string",
+            "maxLength": 8000,
+            "description": "The composition as a JSON text (one object, v: 1). Start from composition_get."
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "true: check only, save nothing."
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_preview",
+      "readOnly": true,
+      "description": "Return an approximate PICTURE of a composition, drawn by the site (server font, still frame of a video), with per box the size reached, the lines, an overflow flag and the contrast. Either the saved one (place, src) or one you send (composition, not saved). 20 a minute. LOOK at it, adjust, try again.",
+      "input": {
+        "type": "object",
+        "required": [
+          "place",
+          "src"
+        ],
+        "properties": {
+          "place": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "src": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "composition": {
+            "type": "string",
+            "maxLength": 8000,
+            "description": "The composition as a JSON text (one object, v: 1). Start from composition_get."
+          },
+          "at": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 60,
+            "description": "The moment shown, in seconds (default: once every text is in)."
+          },
+          "sample": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "long"
+            ],
+            "description": "long: very long name and huge amounts, to see shrinking and cutting."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 320,
+            "maximum": 1280,
+            "description": "Width of the picture in px (default 960; 1280 for the kit)."
+          },
+          "background": {
+            "type": "string",
+            "enum": [
+              "checker",
+              "dark",
+              "light"
+            ],
+            "description": "What shows through transparent parts (default checker)."
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_render_kit",
+      "readOnly": true,
+      "description": "Return a self-contained HTML page that draws the composition exactly as OBS does (same engine), to open in YOUR OWN headless browser: it reads the files from this site, plays the video, and #t=2.5 in the address freezes a moment. Use it when the approximate picture is not enough.",
+      "input": {
+        "type": "object",
+        "required": [
+          "place",
+          "src"
+        ],
+        "properties": {
+          "place": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "src": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "composition": {
+            "type": "string",
+            "maxLength": 8000,
+            "description": "The composition as a JSON text (one object, v: 1). Start from composition_get."
+          },
+          "sample": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "long"
+            ],
+            "description": "long: very long name and huge amounts, to see shrinking and cutting."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 320,
+            "maximum": 1280,
+            "description": "Width of the picture in px (default 960; 1280 for the kit)."
+          },
+          "background": {
+            "type": "string",
+            "enum": [
+              "checker",
+              "dark",
+              "light"
+            ],
+            "description": "What shows through transparent parts (default checker)."
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_copy",
+      "default": false,
+      "description": "Copy the text boxes of one placement onto another file (same place or another): the target keeps its own backdrop; between videos the playback goes along. Off until the owner grants it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "fromPlace",
+          "fromSrc",
+          "toPlace",
+          "toSrc"
+        ],
+        "properties": {
+          "fromPlace": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "fromSrc": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "toPlace": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "toSrc": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_remove",
+      "destructive": true,
+      "default": false,
+      "description": "Remove the text placed on one file of one place: the file then shows alone, as before. The file stays on the reaction. Never granted by default.",
+      "input": {
+        "type": "object",
+        "required": [
+          "place",
+          "src"
+        ],
+        "properties": {
+          "place": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A place from composition_places, e.g. \"event:sub\"."
+          },
+          "src": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          }
+        }
+      }
     }
   ],
   "i18n": {
@@ -1593,7 +1840,14 @@
       "mcp.reaction_get": "Lit la réaction d'un type d'événement Twitch : fichiers, ordre, texte, durée et son.",
       "mcp.reaction_set": "Change la réaction d'un type d'événement Twitch : fichiers de la bibliothèque, ordre, texte, durée et son.",
       "mcp.reaction_test": "Envoie une alerte de test de ce type d'événement aux pages d'overlay ouvertes. Rien n'atteint Twitch.",
-      "mcp.reaction_media_delete": "Supprime un fichier de la bibliothèque. Refusé tant qu'une réaction l'utilise."
+      "mcp.reaction_media_delete": "Supprime un fichier de la bibliothèque. Refusé tant qu'une réaction l'utilise.",
+      "mcp.composition_places": "Liste où placer du texte sur les médias des alertes : une place par type d'événement Twitch (event:follow, event:sub…), avec ses fichiers (adresse, sorte, taille, durée, transparence, image fixe, composition existante) et les valeurs automatiques permises ({name}, {amount}…). Commencez ici.",
+      "mcp.composition_get": "Lit la composition (le texte placé) d'un fichier d'une place, ou un point de départ s'il n'y en a pas, avec ses textes remplis d'exemples. Une composition : v 1, format, arrière-plan (src, cadrage, point central, lecture, son), durée, 1 à 4 zones (x, y, w, h en pourcentage du cadre, taille en px d'un cadre de 1080 de haut, lisibilité, contour, animations).",
+      "mcp.composition_set": "Enregistre le texte placé sur un fichier d'une place. composition est un texte JSON. Tous les problèmes sont listés d'un coup, en clair, et rien n'est alors enregistré. dryRun : true vérifie et complète (image fixe et durée d'une vidéo) sans enregistrer. Regardez composition_preview avant. Désactivé tant que la personne ne l'accorde pas.",
+      "mcp.composition_preview": "Rend une IMAGE approchée d'une composition, dessinée par le site (police du serveur, image fixe d'une vidéo), avec pour chaque zone la taille obtenue, les lignes, le débordement et le contraste. Celle enregistrée (place, src) ou celle envoyée (composition, non enregistrée). 20 par minute. Regardez-la, ajustez, recommencez.",
+      "mcp.composition_render_kit": "Rend une page HTML autonome qui dessine la composition exactement comme OBS (même moteur), à ouvrir dans VOTRE propre navigateur sans tête : elle lit les fichiers du site, joue la vidéo, et #t=2.5 dans l'adresse fige un instant. Pour quand l'image approchée ne suffit pas.",
+      "mcp.composition_copy": "Copie les zones de texte d'un placement sur un autre fichier (même place ou autre) : la cible garde son arrière-plan ; entre vidéos, la lecture suit. Désactivé tant que la personne ne l'accorde pas.",
+      "mcp.composition_remove": "Retire le texte placé sur un fichier d'une place : le fichier s'affiche alors seul, comme avant. Le fichier reste sur la réaction. Jamais accordé par défaut."
     }
   },
   "requires": [

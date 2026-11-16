@@ -33,6 +33,9 @@ async function rowsOf(ctx, now = Date.now()) {
 /** Whether this overlay holds at least one composition (the page then carries the engine; otherwise it is byte for byte the page of before). */
 export async function hasAny(ctx) { return available(ctx) && (await rowsOf(ctx)).size > 0; }
 
+/** (1.15.0) The rows of a place (with `updatedAt` and `by`), for the assistant tools. */
+export async function rowsFor(ctx, place) { return [...(await rowsOf(ctx)).values()].filter((r) => r.place === place); }
+
 /** The compositions of a place, by file: { [src]: composition }. */
 export async function forPlace(ctx, place) {
   const out = {};

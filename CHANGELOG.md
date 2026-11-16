@@ -4,6 +4,25 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.91.0 — 2026-11-16
+
+*En bref : votre assistant IA peut placer le texte sur les images et les vidéos de vos alertes, en regardant une image du résultat. Vous affinez ensuite dans l'éditeur. Overlay alertes 1.15.0. Demande le cœur 0.25.0 ; les droits d'écriture restent désactivés tant que vous ne les cochez pas.*
+
+*In short: your AI assistant can place the text on the pictures and videos of your alerts, while looking at a picture of the result. You then fine-tune in the editor. Alerts overlay 1.15.0. Needs core 0.25.0; the writing rights stay off until you tick them.*
+
+### Nouveautés
+
+- **L'assistant place le texte.** Il lit les fichiers de chaque réaction, propose un placement, et le vérifie avant d'enregistrer.
+- **Il regarde le résultat.** Le site lui dessine une image approchée de l'alerte. Il peut aussi ouvrir une page exacte dans son propre navigateur.
+- **Vous gardez la main.** Enregistrer, copier un placement ou le retirer sont des droits à cocher dans Assistants IA. Retirer n'est jamais accordé par défaut.
+- **The assistant places the text.** It reads the files of each reaction, proposes a placement and checks it before saving.
+- **It looks at the result.** The site draws it an approximate picture of the alert. It can also open an exact page in its own browser.
+- **You stay in control.** Saving, copying a placement or removing it are rights to tick in AI assistants. Removing is never granted by default.
+
+### Pour les développeurs
+
+- Overlay alertes 1.15.0 : outils MCP `composition_places`, `composition_get`, `composition_set` (désactivé par défaut, `dryRun`, JSON en texte, toutes les erreurs en clair), `composition_preview` (image, 20 par minute), `composition_render_kit`, `composition_copy` (désactivé par défaut), `composition_remove` (destructif). Descriptions EN et FR. Tests : `alerts-overlay-compose-mcp` (vrais fichiers, image décodée).
+
 ## 1.90.0 — 2026-11-16
 
 *En bref : « Placer le texte » marche aussi sur les vidéos d'une réaction. L'alerte dure le temps de la vidéo, ou la durée choisie. Overlay alertes 1.14.0, Activité Twitch 1.11.0. Demande le cœur 0.21.0 pour les vidéos ; sans lui, rien ne change.*
