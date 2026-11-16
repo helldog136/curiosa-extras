@@ -13,7 +13,11 @@
 
 ## What it does not do yet
 
-No online payment, no e-mails, no shipping prices, no discount codes, no photos, no download or ticket products, no customer data cleanup, no link with the Contacts module. The administration page has not been checked against the ergonomics rules in `docs/ERGONOMIE-ADMIN.md`: products open on their own page instead of a dialog, and stock is edited in the product form, not in the list.
+No shipping prices (online payment is a separate extension, see `payment-mollie`), no discount codes, no photos, no download or ticket products, no customer data cleanup, no link with the Contacts module. The administration page has not been checked against the ergonomics rules in `docs/ERGONOMIE-ADMIN.md`: products open on their own page instead of a dialog, and stock is edited in the product form, not in the list.
+
+## E-mails
+
+The shop only opens where the site can send e-mail. Each event writes **one** message into an outbox: the confirmation with the private link (the only message that holds it), then "payment received", "shipped" (with the tracking number) and "cancelled". The owner gets a single summary at most once an hour, ten minutes after the first event, with order numbers only. The core limits how many e-mails a site may send per hour: when it is reached, the rest waits in order and goes out later, nothing is lost. A real failure is retried with growing delays and given up after six tries or three days. A sent or given-up message keeps no address and no text.
 
 ## How the stock stays right
 

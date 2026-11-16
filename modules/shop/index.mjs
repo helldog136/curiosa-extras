@@ -9,10 +9,11 @@ const P = await import(`./public.mjs${v}`);
 const R = (await import(`./routes.mjs${v}`)).default;
 const A = await import(`./admin.mjs${v}`);
 const Pay = await import(`./payments.mjs${v}`);
+const Mail = await import(`./mail.mjs${v}`);
 
 /** Housekeeping, safe to replay: dead carts, old dead reservations, orders whose hold ended. */
 export async function cleanup(ctx, now = Date.now()) {
-  return { carts: await C.sweepCarts(ctx, now), reservations: await S.purgeDead(ctx, now), expiredOrders: await O.expireOrders(ctx, now) };
+  return { carts: await C.sweepCarts(ctx, now), reservations: await S.purgeDead(ctx, now), expiredOrders: await O.expireOrders(ctx, now), mailLog: await Mail.purge(ctx, now) };
 }
 
 export default {
@@ -22,6 +23,6 @@ export default {
   adminActions: A.adminActions,
   adminBadge: A.adminBadge,
   services: { "payment.consumer": { notify: (ctx, args) => Pay.consumer.notify(ctx, args) } },
-  tasks: { cleanup: { everyMinutes: 5, run: (ctx) => cleanup(ctx) }, payments: { everyMinutes: 5, run: (ctx) => Pay.pollOpenPayments(ctx) } },
+  tasks: { cleanup: { everyMinutes: 5, run: (ctx) => cleanup(ctx) }, payments: { everyMinutes: 5, run: (ctx) => Pay.pollOpenPayments(ctx) }, mail: { everyMinutes: 2, run: (ctx) => Mail.flush(ctx) } },
   hooks: { async onInstanceDelete(ctx) { L.forgetInstance(ctx.instance.key); } },
 };

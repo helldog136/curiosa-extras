@@ -4,6 +4,7 @@ const v = new URL(import.meta.url).search;   // the module's version travels to 
 const { LIMITS, NEXT_STATES, manualHoldMs, currencyOf, includedTax, clean, validEmail, newToken, isToken } = await import(`./lib.mjs${v}`);
 const D = await import(`./data.mjs${v}`);
 const S = await import(`./stock.mjs${v}`);
+const M = await import(`./mail.mjs${v}`);
 const { cartIsLive } = await import(`./cart.mjs${v}`);
 
 const event = (state, now, by = "system") => ({ s: state, at: new Date(now).toISOString(), by });
@@ -75,6 +76,8 @@ export async function markPaid(ctx, orderId, { eventId = "", amount, currency, b
   if (eventId) order.paidEventIds = [...order.paidEventIds, eventId].slice(-20);
   order.history = [...order.history, event(order.state, now, by)].slice(-30);
   await D.saveOrder(ctx, order);
+  if (order.state === "paid") { await M.customerMail(ctx, order, "paid", {}, now); await M.noteOwner(ctx, order, "paid", now); }
+  else await M.noteOwner(ctx, order, "to_resolve", now);
   return { ok: true, state: order.state };
 }
 
@@ -89,6 +92,7 @@ export async function setState(ctx, orderId, next, { tracking = "", note = "", b
   order.state = next;
   order.history = [...order.history, event(next, now, by)].slice(-30);
   await D.saveOrder(ctx, order);
+  if (next === "shipped" || next === "cancelled") await M.customerMail(ctx, order, next, {}, now);
   return { ok: true, state: next };
 }
 
@@ -105,4 +109,13 @@ export async function expireOrders(ctx, now = Date.now()) {
     n++;
   }
   return n;
+}
+
+/** After an order is placed (and its payment page asked for, if any): the customer's confirmation with the tracking link, a line for the owner's digest, a first try at sending. */
+export async function afterPlaced(ctx, orderId, token, now = Date.now()) {
+  const order = await D.getOrder(ctx, orderId);
+  if (!order) return;
+  await M.onPlaced(ctx, order, token, now);
+  await M.noteOwner(ctx, order, "placed", now);
+  M.flushSoon(ctx);
 }

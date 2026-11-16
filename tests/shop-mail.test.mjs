@@ -1,0 +1,296 @@
+// Order e-mails and their queue: written first, sent from an outbox, one per event, waiting (never lost) when the core's hourly limit is reached,
+// retried with growing delays, an owner digest at most once an hour, and no personal data left behind once a message is sent or given up. Invented data only.
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { memStore } from "./helpers/contactsStore.mjs";
+
+const DIR = new URL("../modules/shop", import.meta.url).pathname;
+const en = JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8")), fr = JSON.parse(fs.readFileSync(`${DIR}/locales/fr.json`, "utf8"));
+const def = (await import("../modules/shop/index.mjs")).default;
+const D = await import("../modules/shop/data.mjs");
+const C = await import("../modules/shop/cart.mjs");
+const O = await import("../modules/shop/orders.mjs");
+const M = await import("../modules/shop/mail.mjs");
+const L = await import("../modules/shop/lib.mjs");
+
+let n = 0;
+const MIN = 60_000, HOUR = 3_600_000;
+function mk({ settings = {}, mailResult = { ok: true }, mailConfigured = true, locale = "en", store } = {}) {
+  const ctx = fakeCtx({ key: `ml${++n}`, basePath: "shop", moduleId: "shop", locale, defaultLocale: "en", locales: ["en", "fr"], messages: locale === "fr" ? fr : en, settings, mailResult, mailConfigured, site: { name: "Atelier", tagline: "", logo: null } });
+  ctx.api.store = store ?? memStore({ start: Date.now() - 24 * HOUR });
+  ctx.instance.id = `inst${n}`;
+  ctx.can = () => true;
+  return ctx;
+}
+let addr = 0;
+const form = () => ({ name: "Camille", email: `camille${++addr}@example.org`, address: "1 Example street, 1000 Brussels, Belgium" });
+async function product(ctx, over = {}) {
+  const r = D.normaliseProduct({ title: "Plush fox", price: "12.50", stockMode: "tracked", onHand: "50", published: "on", ...over });
+  return D.getProduct(ctx, await D.saveProduct(ctx, null, r.value));
+}
+/** A customer orders (cart, checkout, then what the checkout route does after the order exists). */
+async function order(ctx, p, f = form(), now = Date.now()) {
+  const c = await C.addToCart(ctx, null, { productId: p.id, variantId: p.variants[0].id, qty: 1 }, now);
+  const r = await O.checkout(ctx, c.token, f, now);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  await O.afterPlaced(ctx, r.orderId, r.token, now);
+  return { ...r, email: f.email };
+}
+const sent = (ctx) => ctx.calls.mail;
+const outbox = (ctx) => ctx.api.store.page("outbox", { order: "asc", limit: 100 }).then((p) => p.items);
+const log = (ctx) => ctx.api.store.page("outlog", { order: "asc", limit: 100 }).then((p) => p.items);
+
+test("an order writes the customer's confirmation with the tracking link, and one digest line for the owner; both go out at once when allowed", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  assert.equal(sent(ctx).length, 1, "the customer's e-mail goes at once; the owner's digest waits a few minutes so that a burst makes one");
+  await M.flush(ctx, Date.now() + 11 * MIN);
+  const mails = sent(ctx);
+  assert.equal(mails.length, 2);
+  const mine = mails.find((m) => m.to === o.email), owner = mails.find((m) => m.to === "owner");
+  assert.ok(mine && owner);
+  assert.match(mine.subject, /Your order N-\d{6}-\d{4} at Atelier/);
+  assert.ok(mine.text.includes(`https://example.test/shop/track/${o.token}`), "the tracking link");
+  assert.match(mine.text, /Total: €12\.50/); assert.match(mine.text, /ignore this message/);
+  assert.match(owner.text, /New orders \(1\): N-\d{6}-\d{4}/); assert.match(owner.text, /\/admin\/instances\/inst\d+/);
+  assert.doesNotMatch(owner.text + owner.subject, /Camille|camille|Example street|@/, "the digest holds no personal data");
+  assert.equal((await outbox(ctx)).length, 0, "nothing waits any more");
+  assert.equal((await log(ctx)).length, 2);
+  assert.doesNotMatch(JSON.stringify(await log(ctx)), /camille|example\.org|track\/|Example street/, "the log keeps no address, link or text");
+  assert.equal((await D.getOrder(ctx, o.orderId)).state, "awaiting_payment", "the order never depended on the e-mail");
+});
+test("the same event writes one line in the outbox, however many times it is replayed", async () => {
+  const early = mk();
+  const q = await product(early);
+  const c = await C.addToCart(early, null, { productId: q.id, variantId: "v1", qty: 1 }, Date.now());
+  const placed = await O.checkout(early, c.token, form(), Date.now());
+  const fresh = await D.getOrder(early, placed.orderId);
+  for (let i = 0; i < 4; i++) await M.onPlaced(early, fresh, placed.token);
+  assert.equal(await early.api.store.count("outbox"), 1, "four replays before any sending: still one line waiting");
+});
+test("the same event sends one e-mail only, however many times it is replayed", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  const order1 = await D.getOrder(ctx, o.orderId);
+  await M.settle();
+  for (let i = 0; i < 3; i++) await M.onPlaced(ctx, order1, o.token);
+  await M.flush(ctx);
+  assert.equal(sent(ctx).filter((m) => m.to === o.email).length, 1);
+  await M.customerMail(ctx, order1, "paid"); await M.customerMail(ctx, order1, "paid");
+  await M.flush(ctx);
+  assert.equal(sent(ctx).filter((m) => m.to === o.email).length, 2, "one for placed, one for paid");
+});
+test("the e-mail is written in the order's language, with the matching path", async () => {
+  const ctx = mk({ locale: "fr" });
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  const mine = sent(ctx).find((m) => m.to === o.email);
+  assert.match(mine.subject, /^Votre commande N-/); assert.match(mine.text, /Bonjour Camille/);
+  assert.ok(mine.text.includes(`https://example.test/fr/shop/track/${o.token}`), "French pages live under /fr");
+  assert.match(mine.text, /Total : /);
+});
+test("when the core's hourly limit is reached the pass stops, nothing is lost or counted as a failure, and the rest goes out in order next time", async () => {
+  let allowed = 2;
+  const delivered = [];
+  const ctx = mk({ mailResult: (m) => { if (allowed-- > 0) { delivered.push(m.to); return { ok: true }; } return { ok: false, reason: "rate_limited" }; } });
+  const p = await product(ctx);
+  const t0 = Date.now(), orders = [];
+  for (let i = 0; i < 5; i++) orders.push(await order(ctx, p, form(), t0 + i));
+  await M.settle();
+  assert.equal(delivered.length, 2, "two went out, then the limit");
+  const r = await M.flush(ctx, t0 + 1000);
+  assert.equal(r.sent, 0, "still limited: nothing goes out");
+  const waiting = await outbox(ctx);
+  assert.equal(waiting.length, 3, "the three others wait, in order");
+  assert.ok(waiting.every((w) => w.data.attempts === 0 && w.data.nextAt > t0), "waiting is not a failure and nothing is retried before its time");
+  allowed = 100;
+  const later = await M.flush(ctx, t0 + 11 * MIN);
+  assert.equal(later.failed, 0);
+  assert.equal((await outbox(ctx)).length, 0, "everything went out");
+  assert.deepEqual(delivered.filter((a) => a !== "owner"), orders.map((o) => o.email), "each customer once, in the order of the orders");
+});
+test("a real failure is retried with growing delays and given up after six tries; the address and text are erased; the owner is told", async () => {
+  const ctx = mk({ mailResult: { ok: false, reason: "failed" } });
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  const t0 = Date.now();
+  let calls = sent(ctx).length;
+  assert.equal((await M.flush(ctx, t0 + 60_000)).sent, 0); assert.equal(sent(ctx).length, calls, "not before its time");
+  const days = [t0 + 6 * MIN, t0 + 2 * HOUR, t0 + 5 * HOUR, t0 + 20 * HOUR, t0 + 50 * HOUR, t0 + 80 * HOUR];
+  for (const when of days) await M.flush(ctx, when);
+  assert.equal((await outbox(ctx)).length, 0, "given up, so no longer in the outbox");
+  const lines = await log(ctx);
+  assert.ok(lines.some((l) => l.data.state === "failed" && l.data.reason === "failed"));
+  assert.doesNotMatch(JSON.stringify(lines), /example\.org|track\//, "no address and no link kept");
+  const stats = await M.stats(ctx, t0 + 81 * HOUR);
+  assert.ok(stats.failed >= 1);
+  assert.match(JSON.stringify(await def.adminPanel(ctx, { query: {} })), /could not be sent/);
+  assert.equal((await D.getOrder(ctx, o.orderId)).state, "awaiting_payment");
+});
+test("an address the mail server refuses is given up at once; an unreadable one too", async () => {
+  const ctx = mk({ mailResult: { ok: false, reason: "invalid" } });
+  const p = await product(ctx);
+  await order(ctx, p);
+  await M.settle();
+  const lines = await log(ctx);
+  assert.ok(lines.some((l) => l.data.state === "failed" && l.data.reason === "invalid" && l.data.attempts === 0));
+  assert.equal((await outbox(ctx)).length, 0);
+});
+test("a throwing mail server is a failure like any other, never a crash of the order", async () => {
+  const ctx = mk({ mailResult: () => { throw new Error("boom"); } });
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  assert.equal((await D.getOrder(ctx, o.orderId)).state, "awaiting_payment");
+  const waiting = await outbox(ctx);
+  assert.ok(waiting.length >= 1 && waiting.every((w) => w.data.attempts === 1));
+});
+test("without a mail setting nothing is sent and no try is used up; when it comes back the backlog goes out", async () => {
+  const store = memStore({ start: Date.now() - 24 * HOUR });
+  const on = mk({ store });
+  const p = await product(on);
+  const o = await order(on, p);
+  await M.settle();
+  const off = mk({ store, mailConfigured: false });
+  const t = Date.now();
+  await M.customerMail(off, await D.getOrder(off, o.orderId), "paid");
+  const r = await M.flush(off, t + MIN);
+  assert.equal(r.sent, 0); assert.equal(sent(off).length, 0);
+  const waiting = await outbox(off);
+  assert.equal(waiting.length, 1); assert.equal(waiting[0].data.attempts, 0);
+  assert.equal((await M.flush(on, t + 2 * MIN)).sent, 1);
+});
+test("the owner gets one digest per hour at most, with order numbers only", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const t0 = Date.now(), burst = [];
+  for (let i = 0; i < 5; i++) burst.push(await order(ctx, p, form(), t0 + i));
+  await M.settle();
+  const owners = () => sent(ctx).filter((m) => m.to === "owner");
+  assert.equal(owners().length, 0, "not yet: the digest waits a few minutes");
+  await M.flush(ctx, t0 + 11 * MIN);
+  assert.equal(owners().length, 1, "five orders, one message");
+  assert.match(owners()[0].text, /New orders \(5\)/);
+  assert.match(owners()[0].subject, /5 order update/);
+  const second = [await order(ctx, p, form(), t0 + 12 * MIN), await order(ctx, p, form(), t0 + 13 * MIN)];
+  await M.flush(ctx, t0 + 30 * MIN);
+  assert.equal(owners().length, 1, "still within the hour: it waits");
+  await M.flush(ctx, t0 + 72 * MIN);
+  assert.equal(owners().length, 2, "the next digest, after the hour");
+  assert.match(owners()[1].text, /New orders \(2\)/);
+  await M.flush(ctx, t0 + 3 * HOUR);
+  assert.equal(owners().length, 2, "nothing new, nothing sent");
+  assert.ok(second.length === 2 && burst.length === 5);
+  const off = mk({ settings: { notifyOwner: false } });
+  await order(off, await product(off));
+  await M.settle();
+  assert.equal(sent(off).filter((m) => m.to === "owner").length, 0, "switched off");
+  assert.equal((await off.api.store.count("mailevents")), 0, "and nothing piles up");
+});
+test("payment, shipping and cancellation each write one message; only the first one holds the tracking link", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const a = await order(ctx, p), b = await order(ctx, p);
+  await M.settle();
+  const t = Date.now();
+  await O.markPaid(ctx, a.orderId, {}, t); await O.markPaid(ctx, a.orderId, {}, t + 1);
+  await O.setState(ctx, a.orderId, "shipped", { tracking: "TRK-9" }, t + 2);
+  await O.setState(ctx, b.orderId, "cancelled", {}, t + 3);
+  await M.flush(ctx, t + 11 * MIN);
+  const forA = sent(ctx).filter((m) => m.to === a.email), forB = sent(ctx).filter((m) => m.to === b.email);
+  assert.deepEqual(forA.map((m) => m.subject.replace(/N-\d{6}-\d{4}/, "N")), ["Your order N at Atelier", "Payment received for order N", "Your order N is on its way"]);
+  assert.match(forA[2].text, /Tracking number: TRK-9/);
+  assert.match(forB[1].subject, /was cancelled/);
+  assert.equal(forA.filter((m) => m.text.includes("/track/")).length, 1, "the link is sent once");
+  assert.equal(forB.filter((m) => m.text.includes("/track/")).length, 1);
+  assert.match(sent(ctx).filter((m) => m.to === "owner").map((m) => m.text).join("\n"), /Paid \(1\)/);
+});
+test("a paid order that needs a person goes to the owner's digest, never to the customer", async () => {
+  const ctx = mk();
+  const p = await product(ctx, { onHand: "1" });
+  const o = await order(ctx, p);
+  await M.settle();
+  const t = Date.now();
+  await O.expireOrders(ctx, t + 25 * HOUR);
+  const take = await C.addToCart(ctx, null, { productId: p.id, variantId: "v1", qty: 1 }, t + 25 * HOUR);
+  assert.equal(take.ok, true);
+  const r = await O.markPaid(ctx, o.orderId, {}, t + 25 * HOUR + MIN);
+  assert.equal(r.state, "paid_to_resolve");
+  const before = sent(ctx).length;
+  await M.flush(ctx, t + 27 * HOUR);
+  const more = sent(ctx).slice(before);
+  assert.ok(more.some((m) => m.to === "owner" && /to resolve \(1\)/.test(m.text)));
+  assert.ok(!more.some((m) => m.to === o.email), "no message to the customer about it");
+});
+test("nobody can use the shop to flood an address: at most 12 messages a day to one address", async () => {
+  const ctx = mk();
+  const results = [];
+  for (let i = 0; i < 15; i++) results.push((await M.customerMail(ctx, { id: `o${i}`, number: `N-${i}`, customer: { name: "Camille", email: "etoile_nord@example.org" }, total: 1250, currency: "EUR", lang: "en" }, "paid")).ok);
+  assert.equal(results.filter(Boolean).length, 12);
+  assert.equal((await ctx.api.store.count("outbox")), 12);
+});
+test("manual payment instructions go into the confirmation and the tracking page; an online payment says so instead", async () => {
+  const ctx = mk({ settings: { manualPayment: "Bank transfer to BE00 TEST, quote the order number" } });
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  const mine = sent(ctx).find((m) => m.to === o.email);
+  assert.match(mine.text, /How to pay:\nBank transfer to BE00 TEST/);
+  const page = (await def.page(ctx, { segments: ["track", o.token] })).blocks[0].html;
+  assert.match(page, /Bank transfer to BE00 TEST/);
+  const online = await M.customerMail(ctx, { id: "x1", number: "N-1", customer: { name: "Camille", email: "lune_douce@example.org" }, total: 1250, currency: "EUR", lang: "en", payment: { providerRef: "tr_x" } }, "placed", { token: "a".repeat(32) });
+  assert.equal(online.ok, true);
+  await M.flush(ctx);
+  assert.match(sent(ctx).find((m) => m.to === "lune_douce@example.org").text, /Pay securely online/);
+  const plain = mk();
+  const q = await order(plain, await product(plain));
+  await M.settle();
+  assert.match(sent(plain).find((m) => m.to === q.email).text, /We will tell you how to pay/);
+});
+test("an e-mail unsent after three days is given up; two passes at once send each message once; old log lines are cleaned", async () => {
+  const ctx = mk({ mailConfigured: true });
+  const p = await product(ctx);
+  const t0 = Date.now();
+  const f = form();
+  const c = await C.addToCart(ctx, null, { productId: p.id, variantId: "v1", qty: 1 }, t0);
+  const r = await O.checkout(ctx, c.token, f, t0);
+  await M.onPlaced(ctx, await D.getOrder(ctx, r.orderId), r.token, t0);
+  const [x, y] = await Promise.all([M.flush(ctx, t0), M.flush(ctx, t0)]);
+  assert.equal(x.sent + y.sent, 1, "one message, sent once");
+  assert.equal(sent(ctx).filter((m) => m.to === f.email).length, 1);
+  const stale = mk({ mailResult: { ok: false, reason: "rate_limited" } });
+  const s1 = await order(stale, await product(stale));
+  await M.settle();
+  const r2 = await M.flush(stale, Date.now() + 4 * 24 * HOUR);
+  assert.equal(r2.failed >= 1, true);
+  assert.ok((await log(stale)).some((l) => l.data.reason === "too_old"));
+  assert.ok(s1.token);
+  assert.ok((await ctx.api.store.count("outlog")) >= 1);
+  await M.purge(ctx, t0 + 15 * 24 * HOUR);
+  assert.equal((await ctx.api.store.count("outlog")), 0, "old log lines are gone");
+});
+test("the checkout route keeps the order and writes the e-mail even if the mail server is down; a scheduled pass sends it", async () => {
+  let down = true;
+  const ctx = mk({ mailResult: () => (down ? { ok: false, reason: "failed" } : { ok: true }) });
+  const p = await product(ctx);
+  const post = (route, fields, cookie) => { const fd = new FormData(); for (const [k, v] of Object.entries(fields)) fd.set(k, v); return new Request(`https://example.test/m/x/${route}`, { method: "POST", body: fd, headers: { "x-forwarded-for": "203.0.113.77", accept: "application/json", ...(cookie ? { cookie } : {}) } }); };
+  const add = await def.routes.add(post("add", { productId: p.id, variantId: "v1", qty: "1" }), ctx);
+  const cookie = /shop_cart=([a-z2-7]{32})/.exec(add.headers.get("set-cookie"))[1];
+  const f = form();
+  const res = await def.routes.checkout(post("checkout", f, `shop_cart=${cookie}`), ctx);
+  assert.equal(res.status, 200); assert.match((await res.json()).url, /^\/shop\/track\//);
+  await M.settle();
+  assert.equal((await D.listOrders(ctx)).length, 1, "the order exists");
+  assert.ok((await outbox(ctx)).some((w) => w.data.to === f.email), "its e-mail is waiting");
+  down = false;
+  assert.equal(def.tasks.mail.everyMinutes, 2);
+  await def.tasks.mail.run(ctx);
+  assert.equal(sent(ctx).filter((m) => m.to === f.email && m.text.includes("/track/")).length >= 1, true);
+});

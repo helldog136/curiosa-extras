@@ -59,8 +59,9 @@ async function checkout(request, ctx) {
   if (!r.ok) return json({ ok: false, reason: r.reason, errors: r.errors }, r.errors ? 400 : 409);
   const base = ctx.instance.basePath ? `/${ctx.instance.basePath}` : "";
   const tracking = `${base}/track/${r.token}`;
-  if (!provider) return json({ ok: true, url: tracking });
+  if (!provider) { await O.afterPlaced(ctx, r.orderId, r.token); return json({ ok: true, url: tracking }); }
   const pay = await P.startPayment(ctx, r.order, r.token, provider);
+  await O.afterPlaced(ctx, r.orderId, r.token);
   return json({ ok: true, url: pay.ok ? pay.url : tracking, online: pay.ok });     // the page script follows `url` (the provider's own payment page)
 }
 /** Another payment page for an order still waiting (the first one failed, was cancelled or was closed). Works without JavaScript: answers with a redirect to the tracking page. */

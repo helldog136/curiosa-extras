@@ -67,7 +67,7 @@ async function trackPage(ctx, token) {
     ? `<p role="status">${esc(ctx.t("payStartFailed"))}</p><form method="post" action="/m/${esc(ctx.instance.key)}/pay"><input type="hidden" name="t" value="${esc(token)}"><button class="sh-btn" type="submit">${esc(ctx.t("tryAgain"))}</button></form>` : "";
   const hist = order.history.filter((h) => ORDER_STATES.includes(h.s)).map((h) => `<li>${esc(ctx.t(`state_${h.s}`))} <time>${esc(h.at.slice(0, 16).replace("T", " "))}</time></li>`).join("");
   const html = `${style()}<div class="sh"><section class="sh-card"><h3>${esc(ctx.t("orderNumber", { n: order.number }))}</h3><p role="status"><strong>${esc(ctx.t(`state_${order.state}`))}</strong></p>`
-    + (order.state === "awaiting_payment" && !pay ? `<p class="sh-muted">${esc(ctx.t("awaitingHelp"))}</p>` : "") + payBlock + startFailed
+    + (order.state === "awaiting_payment" && !pay ? `<p class="sh-muted">${esc(ctx.t("awaitingHelp"))}</p>${String(ctx.setting("manualPayment") ?? "").trim() ? `<p style="white-space:pre-line">${esc(String(ctx.setting("manualPayment")).trim())}</p>` : ""}` : "") + payBlock + startFailed
     + `<ul class="sh-lines">${lines}</ul><p><strong>${esc(ctx.t("total"))} ${esc(money(order.total))}</strong>${order.includedTax ? ` <span class="sh-muted">${esc(ctx.t("includesTax", { amount: money(order.includedTax) }))}</span>` : ""}</p>`
     + (order.tracking ? `<p>${esc(ctx.t("trackingNumber"))} <strong>${esc(order.tracking)}</strong></p>` : "")
     + `<ul class="sh-lines">${hist}</ul></section></div>`;

@@ -5,6 +5,7 @@ const v = new URL(import.meta.url).search;   // the module's version travels to 
 const { LIMITS, onlineHoldMs, isToken } = await import(`./lib.mjs${v}`);
 const D = await import(`./data.mjs${v}`);
 const O = await import(`./orders.mjs${v}`);
+const M = await import(`./mail.mjs${v}`);
 
 export const PROVIDER = "payment.provider";
 const FINAL_BAD = ["failed", "canceled", "expired"];
@@ -65,7 +66,7 @@ export async function applyStatus(ctx, order, status, now = Date.now()) {
   order.payment.checkedAt = now;
   if (status.state === "paid") {
     if (order.state === "cancelled") {          // money arrived for an order the seller cancelled: nothing automatic, a person decides
-      if (order.flag !== "paid_after_cancel") { order.flag = "paid_after_cancel"; order.history = [...order.history, event("paid_after_cancel", now)].slice(-30); }
+      if (order.flag !== "paid_after_cancel") { order.flag = "paid_after_cancel"; order.history = [...order.history, event("paid_after_cancel", now)].slice(-30); await M.noteOwner(ctx, order, "flag", now); }
       order.payment.state = "paid";
       await D.saveOrder(ctx, order);
       return { ok: true, state: order.state, flagged: true };
@@ -77,6 +78,7 @@ export async function applyStatus(ctx, order, status, now = Date.now()) {
       fresh.flag = "payment_mismatch";
       fresh.history = [...fresh.history, event("payment_mismatch", now)].slice(-30);
       await D.saveOrder(ctx, fresh);
+      await M.noteOwner(ctx, fresh, "flag", now);
       return { ok: false, reason: "amount_mismatch" };
     }
     if (fresh.payment.state !== "paid") { fresh.payment.state = "paid"; await D.saveOrder(ctx, fresh); }
@@ -114,6 +116,7 @@ export const consumer = {
     if (seen.size > 2000) for (const [k, t] of seen) if (now - t > 60_000) seen.delete(k);
     const r = await refreshOrderByRef(ctx, order, ref, now);
     if (!r.ok && r.reason === "provider_unavailable") throw new Error("provider_unavailable");
+    M.flushSoon(ctx);
     return { ok: true, known: true, state: r.state };
   },
 };

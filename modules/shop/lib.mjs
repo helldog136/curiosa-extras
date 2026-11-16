@@ -4,6 +4,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const MIN = 60_000;
 export const HOUR = 3_600_000;
+export const DAY = 24 * HOUR;
 
 export const LIMITS = {
   products: 500, variantsPerProduct: 20, title: 120, description: 2000, label: 60, address: 400, name: 80, email: 200, note: 1000, tracking: 80,
@@ -16,6 +17,10 @@ export const LIMITS = {
   maxPrice: 10_000_000,      // 100 000.00
   maxStock: 100_000,
   purgeBatch: 200,
+  mailBatch: 10,                       // e-mails sent in one pass
+  mailMaxAgeMs: 3 * 24 * 3_600_000,    // an e-mail still unsent after 3 days is given up
+  mailsPerAddressPerDay: 12,           // nobody can use the shop to flood an address someone typed
+  ownerMailEveryMs: 3_600_000, ownerGroupMs: 10 * 60_000, ownerEventsMax: 200, logKeepMs: 14 * 24 * 3_600_000,
   paymentAttempts: 5,         // payment pages created for one order
   notifyMinGapMs: 5000,       // one provider notification per payment per 5 seconds is enough: it only triggers a state read
   pollBatch: 20, pollMinGapMs: 120_000, pollWindowMs: 3 * 24 * 3_600_000,

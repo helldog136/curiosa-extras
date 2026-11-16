@@ -141,6 +141,36 @@
         "en": "Items held during an online payment (minutes)",
         "fr": "Durée de garde pendant un paiement en ligne (minutes)"
       }
+    },
+    {
+      "key": "manualPayment",
+      "type": "textarea",
+      "optional": true,
+      "label": {
+        "en": "How to pay by hand",
+        "fr": "Comment payer à la main"
+      },
+      "help": {
+        "en": "Shown when no online payment is set up.",
+        "fr": "Affiché si aucun paiement en ligne n'est prêt."
+      },
+      "example": {
+        "en": "Bank transfer to BE00 0000 0000 0000, with the order number",
+        "fr": "Virement sur BE00 0000 0000 0000, avec le numéro de commande"
+      }
+    },
+    {
+      "key": "notifyOwner",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "E-mail me about new orders",
+        "fr": "Me prévenir des nouvelles commandes par e-mail"
+      },
+      "help": {
+        "en": "At most one summary per hour.",
+        "fr": "Un seul récapitulatif par heure au plus."
+      }
     }
   ],
   "rights": [

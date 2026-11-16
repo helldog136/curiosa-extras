@@ -21,7 +21,7 @@
 | D14 | **Guest checkout, no customer accounts.** Name, e-mail and address at checkout, a private tracking link as confirmation (model: `commissions`). The cart needs a small functional cookie, declared in the module's privacy statement; whether it needs a consent banner is a legal question, not concluded here. Customer accounts, if ever, come much later. | Owner |
 | D15 | **Every shop owner has their own contract and their own keys with each payment provider.** There is no Curiosa platform account, no commission and no money passing through the project or its servers (Connect / OAuth marketplace modes are refused: they would need a central application with legal duties). A provider module asks for the owner's own key (a secret setting), starts in test mode, and the owner switches to the live key themselves. | Owner, from self-hosting |
 | D16 | **First provider is validated against a fake provider server** (no account, no key); a real test-mode run is a later step and needs the owner's own free test account entered through a secure form. **A public https address is a prerequisite**, handled like the Twitch activity module: no install gate in the core (none exists), the module shows a clear blocking state (site not reachable, it needs a public secure address) and refuses live mode until `ctx.api.siteUrl` is a public https address. Test mode works anywhere, and the polling fallback covers the missing notifications. | Owner |
-| D17 | **No e-mail, no shop.** The shop is closed (no catalogue page to buy from, no cart, no order) while the site cannot send e-mail; the administration says so with a link to the e-mail settings, and the shop opens again by itself. Orders already placed stay followable. The check is `ctx.api.mail.configured()` (a server is set up); a later send failure is for the e-mail delivery to handle. The e-mails themselves (confirmation, queue of D11) are **not built yet**: today the rule only closes the shop. | Owner |
+| D17 | **No e-mail, no shop.** The shop is closed (no catalogue page to buy from, no cart, no order) while the site cannot send e-mail; the administration says so with a link to the e-mail settings, and the shop opens again by itself. Orders already placed stay followable. The check is `ctx.api.mail.configured()` (a server is set up); a later send failure is for the e-mail delivery to handle. The e-mails themselves are built (section 16). | Owner |
 | D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
@@ -332,3 +332,37 @@ A real Curiosa 0.15.0 (`next dev`), an empty throwaway database, the first-run w
 ### Still not checked
 
 Mollie itself; e-mails (not built); several providers; the order sheet and the product edit screen in the real core (only the creation form and the lists were seen); dark and light variants of the admin; a core with several processes.
+
+## 16. Order e-mails and their queue (2026-11-16)
+
+Code: `modules/shop/mail.mjs`, hooks in `orders.mjs`, `payments.mjs`, `routes.mjs`, `admin.mjs`; tests `tests/shop-mail.test.mjs`.
+
+### How it works (decision D11 made real)
+
+- **The order is saved first.** Every message is written into an outbox (`outbox`, keyed by `<kind>:<order>`), and sent from there. A failure of the mail server never touches the order.
+- **Messages:** to the customer, *placed* (with the private tracking link and, if set, the "how to pay by hand" text of the new setting, or the online-payment sentence), *paid*, *shipped* (with the tracking number), *cancelled*; to the owner, one digest.
+- **One message per event and order**, however often the event is replayed: tested on the outbox itself and on what is sent.
+- **The core's hourly limit** (10 per instance, 40 per site today): when the core answers "rate limited", or no mail setting exists, the pass **stops, nothing is counted as a failure**, the first waiting message is retried 10 minutes later and the rest follows in the order of the orders. A real failure is retried after 5 min, 30 min, 2 h, 12 h, 24 h and given up at the sixth; anything unsent after 3 days is given up. An address the server refuses is given up at once. A pass that stops halfway can resend one message (at least once, noted in the code).
+- **The owner's digest** is written ten minutes after the first event, so a burst of orders makes one message, and at most once an hour. It holds counts and order numbers, **never a name, address or e-mail**, and mentions messages that could not be sent. A setting turns it off (and then nothing piles up).
+- **The tracking link is sent once**, in the first message; later ones point back to it (the link is not kept anywhere else, same choice as `commissions`).
+- **Third parties:** at most 12 messages a day to one address (a typed address is not a consent), and every confirmation says to ignore it if the order is not theirs.
+- **No personal data left:** once a message is sent or given up, its address and text are erased; a small log line (kind, order id, state, reason) stays 14 days. The administration shows a banner when something could not be sent, or has waited more than 15 minutes.
+- **Text only, in the customer's language** (the language of the order, with the matching path), as the core allows.
+
+### A bug found by the tests, and a decision changed by them
+
+- The per-address limit **never applied**: `DAY` was not defined in the shop's library, so the window was empty. Found by the test of the limit, fixed.
+- The first design sent the owner's digest at the first order, so a burst made one message *plus* a second one an hour later. The ten-minute grouping window came out of that test.
+
+### Checked
+
+- 16 tests in `tests/shop-mail.test.mjs`, the whole suite and the core's conformance pass. **Deliberate defects were caught:** counting the limit as a failure, keeping the address in the log, removing the hourly gap of the digest, removing the protection against writing the same message twice. (The last one was first *not* caught, because a second protection at sending hid it; the test now looks at the outbox itself.)
+- **Real core, real mail path** (a small local SMTP receiver, nothing relayed): twelve customers ordered within a minute; the core's own limit let **10 messages** through, **4 stayed in the outbox** with no try used up and a retry in 10 minutes, the log lines held no address, link or text, and the received message read correctly (`€` included, tracking link `http://localhost:3100/shop/track/...`). The 14 owner events were waiting for the digest.
+
+### NOT checked
+
+The digest and the retries over real time in the real core (they need 10 minutes and an hour); a real mail failure there (the core's limit was already reached); French mails in the real core; any real mail provider; the two administration banners in the real core.
+
+### Open for the owner
+
+A customer who loses the first message cannot get the link again: it is not stored. `commissions` solves it with an action of the team that makes a new link and sends it. The same here would be small and safe.

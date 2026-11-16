@@ -403,6 +403,6 @@ test("cleanup removes dead carts and old reservations, and can be replayed", asy
   const later = T0 + 3 * 3_600_000;
   const first = await cleanup(ctx, later);
   assert.equal(first.carts, 1); assert.equal(first.reservations, 0, "already removed with the cart");
-  assert.deepEqual(await cleanup(ctx, later), { carts: 0, reservations: 0, expiredOrders: 0 });
+  assert.deepEqual(await cleanup(ctx, later), { carts: 0, reservations: 0, expiredOrders: 0, mailLog: 0 });
   assert.equal(await ctx.api.store.count("reservations"), 0);
 });

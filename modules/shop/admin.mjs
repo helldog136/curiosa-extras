@@ -6,6 +6,7 @@ const D = await import(`./data.mjs${v}`);
 const S = await import(`./stock.mjs${v}`);
 const O = await import(`./orders.mjs${v}`);
 const P = await import(`./payments.mjs${v}`);
+const Mail = await import(`./mail.mjs${v}`);
 
 const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 const one = (x) => (typeof x === "string" ? x : Array.isArray(x) ? String(x[0] ?? "") : "");
@@ -33,6 +34,9 @@ async function overview(ctx) {
     if (p.status === "published" && v.stockMode === "tracked" && a.available !== Infinity && a.available <= low) lowList.push(`${p.title}${v.label ? ` (${v.label})` : ""}: ${a.available}`);
   }
   if (lowList.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("lowStockBanner", { list: lowList.slice(0, 5).join(", ") }) });
+  const mailStats = await Mail.stats(ctx);
+  if (mailStats.failed) blocks.push({ type: "banner", tone: "warning", text: ctx.t("mailFailedBanner", { n: mailStats.failed }) });
+  else if (mailStats.oldest !== null && Date.now() - mailStats.oldest > 15 * 60_000) blocks.push({ type: "banner", tone: "info", text: ctx.t("mailWaitingBanner", { n: mailStats.waiting }) });
   const providers = await P.readyProviders(ctx);
   const installed = providers.length ? [] : await P.installedProviders(ctx);
   if (!providers.length && installed.length) blocks.push({ type: "banner", tone: "warning", text: ctx.t("providerNotReady") }, { type: "links", items: installed.map((x) => ({ label: ctx.t("openProvider", { name: x.name }), href: `/admin/instances/${x.id}` })) });
@@ -119,11 +123,13 @@ export const adminActions = {
   async markPaid(ctx, values) {
     if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");
     const r = await O.markPaid(ctx, values.id, { eventId: `manual:${values.id}` });
+    Mail.flushSoon(ctx);
     return r.ok ? { ok: ctx.t(r.state === "paid_to_resolve" ? "paidToResolve" : "markedPaid"), redirect: `?order=${values.id}` } : fail(ctx, "saveFailed");
   },
   async setState(ctx, values) {
     if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");
     const r = await O.setState(ctx, values.id, ORDER_STATES.includes(values.state) ? values.state : "", { tracking: values.tracking, note: values.note });
+    Mail.flushSoon(ctx);
     return r.ok ? { ok: ctx.t("saved"), redirect: `?order=${values.id}` } : { errors: { state: ctx.t("errTransition") } };
   },
 };
