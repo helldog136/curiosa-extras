@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.15.0",
+  "version": "1.16.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.14.0",
@@ -1120,11 +1120,12 @@
     },
     {
       "service": "alerts.show",
-      "version": 2,
+      "version": 3,
       "each": true,
       "readOnly": [
         "list",
-        "files"
+        "files",
+        "compositions"
       ],
       "label": {
         "en": "The pictures, GIFs, videos and sounds of your library, shown on screen on demand (for the Twitch bot)",

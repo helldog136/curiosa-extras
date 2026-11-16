@@ -203,3 +203,8 @@ When you stream with other people in a **shared chat**, the bot should not fill 
 - **Alerts overlay installed but not set up (1.20.0, core 0.15.0).** The window of a command or a word then has a "Set up Alerts overlay" button beside its main button (the administration team; permission `instances.setup`); what was typed stays. When the overlay is not installed, the page shows the core's install suggestion.
 - **Assistants.** `bot_commands_list`, `bot_command_create` and `bot_command_update` handle `kind: "word"` and `onStreamPicture`, `onStreamSound` (names from the library, never uploads). Write tools stay off by default.
 - Not covered: channel point rewards (their action list is closed; a media there is a later step).
+
+## Placed texts on what a command shows (1.21.0)
+
+With Alerts overlay 1.16.0 (service `alerts.show` version 3) and core 0.19.0 or later, the gallery of a command or a word offers "Place the text" (the core's editor; videos too with core 0.21.0). The automatic values are the bot's: `{user}` (who typed the command), `{target}` (the first word after it, @ removed) and `{args}` (every word after it); a word offers `{user}`. A box "The bot's answer" shows the chat answer. The placements are checked before the command is saved (an error shows under the gallery), then kept by the overlay under the place `show:<instance key>:<custom|word|builtin…>:<id>`; deleting a command forgets them. At run time the bot sends the place, the values and its answer; the overlay draws. `bot_commands_list` gives each command that shows pictures its `screenPlace`, the place the assistant's `composition_*` tools use. Without the overlay, or with an older one, nothing changes.
+
