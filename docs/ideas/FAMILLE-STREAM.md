@@ -1,46 +1,47 @@
-# La famille « Interaction en stream » (idée née du module Sondages)
+# The "Interaction on stream" family (an idea born from the Polls module)
 
-Principe : la communauté participe depuis son téléphone (une page publique, sans compte, sans application), la streameuse pilote depuis son téléphone ou son ordinateur (une page de commande très simple, grands boutons), et tout ce qui doit se voir à l'écran passe par une **source navigateur OBS** transparente (même mécanique que les overlays existants). Aucun argent réel, aucune donnée inutile, tout se purge seul.
+Principle: the community takes part from its phones (a public page, no account, no app), the streamer drives from a phone or a computer (a very simple control page, big buttons), and everything that must be seen on screen goes through a transparent **OBS browser source** (the same mechanism as the existing overlays). No real money, no needless data, everything purges itself.
 
-## La base commune (à construire une fois, utilisée par tous)
-Aujourd'hui chaque module devrait réinventer : l'identité anonyme d'un participant, la limite de votes, le pseudo, la modération, le direct sur l'overlay, la télécommande de la streameuse, la purge RGPD. Proposition : un petit module fournisseur **« Participation »** (`audience`, service `audience.session`) qui possède ces briques, et que les modules ci-dessous appellent :
-- **identité anonyme** : un jeton aléatoire dans le navigateur, jamais un cookie de suivi ; pseudo choisi par la personne (liste de mots interdits modifiable, pseudo unique par session) ; possibilité de se lier à une fiche Contacts seulement si la personne le demande ;
-- **limites** : débit, un participant = une voix, anti-doublons sans garder d'adresse IP en clair ;
-- **télécommande** : une page secrète « En direct » pour lancer, arrêter, passer au suivant, avec de gros boutons ;
-- **direct** : mise à jour de l'overlay et de la page publique par interrogation douce et bornée (pas de boucle serrée), avec repli lisible ;
-- **journal d'audit** minimal (qui a décidé quoi, quand) et **purge** automatique à la lecture (pas de minuteur de fond) ;
-- **mode modération** : mettre un participant en sourdine, vider une salle.
-Les modules qui en dépendent restent utilisables seuls (repli simple) tant que la base n'est pas installée ; Emma n'a rien à comprendre : « Participation » s'installe toute seule quand elle active un module qui en a besoin.
+## The common base (built once, used by all)
+Otherwise each module would reinvent: the anonymous identity of a participant, the vote limit, the name, the moderation, the live view on the overlay, the streamer's remote control, the GDPR purge. Proposal: a small provider module **"Participation"** (`audience`, service `audience.session`) that owns these bricks, and that the modules below call:
+- **anonymous identity**: a random token in the browser, never a tracking cookie; a name chosen by the person (editable list of forbidden words, one name per session); linking to a Contacts card only if the person asks for it;
+- **limits**: rate, one participant = one vote, no duplicates without keeping an IP address in clear;
+- **remote control**: a secret "Live" page to start, stop and go to the next one, with big buttons;
+- **live view**: the overlay and the public page are updated by gentle, bounded polling (no tight loop), with a readable fallback;
+- a minimal **audit log** (who decided what, when) and an automatic **purge** on read (no background timer);
+- **moderation mode**: mute a participant, empty a room.
 
-## Les concepts
+The modules that use it stay usable alone (simple fallback) while the base is not installed. **Participation is not installed automatically**: Polls and Daily game declare `audience.session` as an **optional** need, and the core never installs an optional need by itself (see "Optional need" in the core's `docs/MODULES.md`). Each of them offers it instead with the core's one-click install suggestion (`suggestInstall`).
 
-1. **Tombola / tirage au sort (`giveaway`)** : les gens s'inscrivent sur la page (un pseudo) ou la streameuse colle une liste ; elle lance le tirage : un **tambour ou une urne animée** à l'écran (désactivée si mouvement réduit), un ou plusieurs gagnants, une **réserve** si le gagnant est absent (« tirer à nouveau » en un clic), exclusions (modérateurs, anciens gagnants). Le plus : un **tirage vérifiable** — avant de commencer, le module publie une empreinte (hash) d'un nombre secret ; après le tirage, il révèle le nombre : n'importe qui peut recalculer le résultat et constater qu'il n'a pas été truqué. Règlement du jeu en un clic (modèle, avec lien vers les mentions légales), date limite, purge des inscrits après N jours. Rien n'est promis sur le plan légal : un rappel clair sur les règles de la plateforme et du pays.
-2. **Roue du hasard (`wheel`)** : une roue personnalisée (jeux à lancer, gages, récompenses, questions) avec poids par case, couleurs lisibles, résultat affiché à l'écran et gardé dans un historique ; la roue peut être **cliquée par la streameuse ou par le chat** (vote « qui lance ? »). Idéale pour le « quel jeu ce soir » et les gages. Partage son moteur de tirage avec la tombola.
-3. **Décisions du chat (rondes) (`polls` v2)** : le sondage devient une **boucle** : « toutes les 10 minutes, le chat décide » ; compte à rebours de manche, vainqueur appliqué automatiquement (affiché à l'écran), historique des décisions, égalités départagées au hasard et dites à l'écran. Possibilité de **sondage rapide en un geste** (« A ou B ? » depuis la télécommande).
-4. **Quiz en direct (`quiz`)** : la streameuse prépare des questions à l'avance (texte, image, 2 à 4 réponses, durée) ; en direct, elle pousse la question, les participants répondent sur leur téléphone, le **classement s'affiche à l'écran** (rapidité + justesse, sans pression : pas de classement honteux, on affiche le top 5). Modes : « question surprise », « quiz de fin de stream », « devine le jeu à partir d'un détail ».
-5. **Bingo de stream (`bingo`)** : une grille de 25 événements probables (« le streamer râle », « le chat spamme un emote », « mort en moins de 5 min »), générée au hasard pour chaque participant depuis un **modèle préparé** ; la streameuse valide les événements en direct d'un appui ; le premier à compléter une ligne gagne. Très utile pour les longs streams, les speedruns, les soirées de découverte de jeux ; zéro compte, résultats en direct.
-6. **Prédictions (sans argent) (`predictions`)** : « Va-t-elle battre le boss en moins de 10 essais ? » Les participants parient des **points virtuels non convertibles** (jamais d'argent réel, aucun achat, rien d'échangeable) ; classement mensuel des meilleures prévisions. Insiste sur la différence avec les paris : le module le dit en clair et ne propose aucune boutique de points.
-7. **Mur de questions (`ama`)** : pour les streams discussion, IRL et AMA : les participants posent des questions, les autres **votent pour celles qui comptent**, la streameuse choisit « la suivante » et la question s'affiche à l'écran ; filtre anti-spam, mots bloqués, une question par minute, « déjà répondu » classé à part, export du Q&R pour en faire un article FAQ.
-8. **Jauge d'objectif (`goal-bar`)** : une barre à l'écran (« 100 votes pour débloquer le quiz bonus », « 50 messages pour la danse de la victoire ») alimentée à la main, par les votes d'un sondage ou par les inscrits d'une tombola ; paliers avec récompenses, effet discret à chaque palier. Peut afficher un objectif de followers saisi à la main ou lu depuis les statistiques de la communauté.
-9. **Subathon / minuteur évolutif (`subathon`)** : un compte à rebours qui **s'allonge** quand des choses arrivent (ajout manuel de temps en un bouton, ou après un vote de la communauté) avec plafond, journal, pause et reprise ; s'appuie sur le module Compte à rebours pour l'affichage, sans en dupliquer les règles.
-10. **Chasse au mot secret (`secret-word`)** : la streameuse dit un mot ou un code pendant le stream ; les participants le tapent sur le site pour gagner un point ou débloquer une page bonus (s'appuie sur le module des codes existant plutôt que de le remplacer) ; palmarès à la fin du mois.
-11. **Cartes de présence (« Qui est là ? ») (`presence`)** : les participants se « signalent » d'un geste ; un petit mur de pseudos à l'écran (ou un compteur) pour dire bonjour ; sert aussi de **liste d'inscription** au bingo, au quiz ou à la tombola.
-12. **Bibliothèque de sons et d'alertes déclenchables par la communauté** : à voir plus tard (demande des garde-fous de volume et d'abus).
+## The concepts
 
-## Pourquoi cette famille est cohérente
-- Un seul endroit pour la télécommande et pour la modération : la streameuse apprend UN geste.
-- Les mêmes limites de sécurité partout (une voix, pas de cookie de suivi, purge).
-- Chaque module reste simple, utile seul, et peut se combiner (un objectif qui se débloque grâce à un sondage, une tombola réservée à ceux qui ont joué au quiz).
+1. **Giveaway / draw (`giveaway`)**: people sign up on the page (a name) or the streamer pastes a list; the streamer starts the draw: an **animated drum or urn** on screen (off with reduced motion), one or more winners, a **reserve** if the winner is absent ("draw again" in one click), exclusions (moderators, former winners). The bonus: a **verifiable draw**: before starting, the module publishes a fingerprint (hash) of a secret number; after the draw, it reveals the number: anyone can compute the result again and see that it was not rigged. Rules of the game in one click (a template, with a link to the legal notice), a deadline, purge of the entrants after N days. Nothing is promised legally: a clear reminder of the rules of the platform and of the country.
+2. **Wheel of fortune (`wheel`)**: a custom wheel (games to play, dares, rewards, questions) with a weight per slice, readable colours, the result shown on screen and kept in a history; the wheel can be **spun by the streamer or by the chat** (a "who spins?" vote). Ideal for "which game tonight" and dares. Shares its draw engine with the giveaway.
+3. **Chat decisions (rounds) (`polls` v2)**: the poll becomes a **loop**: "every 10 minutes, the chat decides"; a round countdown, the winner applied automatically (shown on screen), a history of decisions, ties broken at random and said on screen. A **quick poll in one gesture** ("A or B?") from the remote control.
+4. **Live quiz (`quiz`)**: the streamer prepares questions in advance (text, picture, 2 to 4 answers, duration); live, the streamer pushes the question, participants answer on their phones, the **ranking shows on screen** (speed + accuracy, without pressure: no shaming ranking, the top 5 is shown). Modes: "surprise question", "end-of-stream quiz", "guess the game from a detail".
+5. **Stream bingo (`bingo`)**: a grid of 25 likely events ("the streamer grumbles", "the chat spams an emote", "dies in less than 5 min"), drawn at random for each participant from a **prepared template**; the streamer confirms the events live with one tap; the first to complete a line wins. Very useful for long streams, speedruns and game discovery evenings; no account, live results.
+6. **Predictions (no money) (`predictions`)**: "Will the boss fall in fewer than 10 tries?" Participants bet **virtual points that cannot be converted** (never real money, no purchase, nothing exchangeable); a monthly ranking of the best forecasts. Insists on the difference with betting: the module says so plainly and offers no point shop.
+7. **Question wall (`ama`)**: for talk, IRL and AMA streams: participants ask questions, the others **vote for the ones that matter**, the streamer chooses "the next one" and the question shows on screen; anti-spam filter, blocked words, one question a minute, "already answered" kept apart, export of the Q&A to turn it into a FAQ article.
+8. **Goal bar (`goal-bar`)**: a bar on screen ("100 votes to unlock the bonus quiz", "50 messages for the victory dance") fed by hand, by the votes of a poll or by the entrants of a giveaway; steps with rewards, a discreet effect at each step. Can show a follower goal typed by hand or read from the community statistics.
+9. **Subathon / growing timer (`subathon`)**: a countdown that **gets longer** when things happen (time added by hand with one button, or after a community vote) with a cap, a log, pause and resume; relies on the Countdown module for the display, without duplicating its rules.
+10. **Secret word hunt (`secret-word`)**: the streamer says a word or a code during the stream; participants type it on the site to win a point or unlock a bonus page (relies on the existing codes module rather than replacing it); a ranking at the end of the month.
+11. **Presence cards ("Who is here?") (`presence`)**: participants "check in" with one gesture; a small wall of names on screen (or a counter) to say hello; also serves as a **sign-up list** for the bingo, the quiz or the giveaway.
+12. **Library of sounds and alerts the community can trigger**: later (needs safeguards for volume and abuse).
 
-## Garde-fous éthiques et légaux (à écrire noir sur blanc dans l'admin)
-- Aucun argent réel, aucune mise, aucun point convertible ou achetable. Les « prédictions » ne sont pas des paris.
-- Tombola : règlement, âge, pays, règles de la plateforme de diffusion ; le module aide mais ne remplace pas un avis juridique. Le tirage vérifiable est un moyen de prouver l'équité, pas de la garantir.
-- Données : pseudo + jeton anonyme, purge automatique, aucune adresse IP en clair, suppression à la demande.
-- Modération : tout contenu écrit par un visiteur (pseudo, question) passe par une liste de mots interdits, une limite de débit et un moyen de le retirer en un clic.
+## Why this family holds together
+- One place for the remote control and for moderation: the streamer learns ONE gesture.
+- The same safety limits everywhere (one vote, no tracking cookie, purge).
+- Each module stays simple, useful alone, and can be combined (a goal unlocked by a poll, a giveaway reserved for those who played the quiz).
 
-## Ordre de construction proposé
-1. **Base « Participation »** (avec Sondages v2 : rondes et télécommande) — c'est le socle.
-2. **Tombola** (la plus demandée, et la plus visible) + **Roue** (même moteur de tirage).
-3. **Bingo** et **Quiz** (les deux « jeux » du chat).
-4. **Mur de questions** et **Jauge d'objectif**.
-5. **Subathon**, **Mot secret**, **Présence**, **Prédictions**.
+## Ethical and legal safeguards (to be written plainly in the admin)
+- No real money, no stake, no convertible or purchasable points. "Predictions" are not bets.
+- Giveaway: rules, age, country, rules of the streaming platform; the module helps but does not replace legal advice. The verifiable draw is a way to prove fairness, not to guarantee it.
+- Data: name + anonymous token, automatic purge, no IP address in clear, deletion on request.
+- Moderation: everything a visitor writes (name, question) goes through a list of forbidden words, a rate limit and a way to remove it in one click.
+
+## Proposed building order
+1. **The "Participation" base** (with Polls v2: rounds and remote control): the foundation.
+2. **Giveaway** (the most requested, and the most visible) + **Wheel** (same draw engine).
+3. **Bingo** and **Quiz** (the two chat "games").
+4. **Question wall** and **Goal bar**.
+5. **Subathon**, **Secret word**, **Presence**, **Predictions**.

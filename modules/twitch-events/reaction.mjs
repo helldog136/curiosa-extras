@@ -4,6 +4,8 @@ const v = new URL(import.meta.url).search; // the version of the module spreads 
 const es = await import(`./eventsub.mjs${v}`);
 
 export const SERVICE = "alerts.reaction";
+/** (1.10.0) The service this module offers: "the reactions are set here". The alerts overlay then shows a summary with a link instead of its own editor (one editor per type). */
+export const EDITOR = "alerts.reaction.editor";
 export const MAX = 12;
 export const WORDS = ["name", "count", "amount", "tier", "months", "viewers", "level", "title", "text", "total"];
 /** (1.x, "Place the text") The automatic values each type offers in a placed text, shown as chips with an example (never with braces). */
@@ -58,6 +60,7 @@ export function errorsOf(ctx, errors = {}) {
     audio: { file: t("rx_err_audio"), kept: t("rx_err_kept") },
     text: { words: t("rx_err_words", { vars: WORDS.map((w) => `{${w}}`).join(" ") }), long: t("rx_err_long") },
     seconds: { range: t("rx_err_seconds") }, sound: { choice: t("rx_err_choice") }, pick: { choice: t("rx_err_choice") },
+    min: { range: t("rx_err_min") }, anim: { choice: t("rx_err_choice") }, tts: { choice: t("rx_err_choice") }, viewerMax: { range: t("rx_err_viewer_max") },
   };
   for (const [field, code] of Object.entries(errors)) out[field] = map[field]?.[code] ?? t("rx_err_choice");
   return out;
@@ -72,6 +75,13 @@ export function patchOf(values) {
   // Placed texts: only when the core's window could place them (it says so with `variants__compose`); otherwise an older core sent none and nothing changes.
   if (values.variants__compose === "1") patch.compositions = Object.fromEntries(list.filter((x) => x && typeof x === "object").map((x) => [String(x.src ?? ""), x.compose && typeof x.compose === "object" ? x.compose : null]).filter(([src]) => variants.some((v) => v.src === src)));
   if (/^\/uploads\/[0-9a-f-]{36}\.[a-z0-9]{3,4}$/.test(String(values.variants__composeFor ?? ""))) patch.composeFor = String(values.variants__composeFor);
+  // (1.10.0) The settings of version 2 of the service: only when the window showed them (`more`), so an older overlay never receives them.
+  if (values.more === "2") {
+    if (values.min !== undefined) patch.min = String(values.min ?? "");
+    if (values.anim !== undefined) patch.anim = String(values.anim ?? "");
+    if (values.tts !== undefined) patch.tts = String(values.tts ?? "");
+    if (values.viewerMax !== undefined) { patch.viewer = values.viewer === "on"; patch.viewerMax = String(values.viewerMax ?? ""); }
+  }
   return patch;
 }
 
@@ -107,8 +117,45 @@ export async function dialog(ctx, id, { query } = {}) {
       { name: "audio", kind: "audio", folded: true, label: t("rx_f_audio"), value: cur.audio ?? "", help: t("rx_f_audio_help") },
       { name: "seconds", kind: "number", folded: true, label: t("rx_f_seconds"), min: 2, max: 60, step: 1, unit: t("rx_unit_seconds"), value: cur.seconds || "", placeholder: t("rx_f_seconds_default") },
       { name: "videoSound", kind: "switch", folded: true, label: t("rx_f_video_sound"), value: cur.videoSound ? "on" : "" },
+      ...moreFields(ctx, id, cur),
     ],
   };
+}
+
+/**
+ * (1.10.0) What only the "Twitch events" tab of the alerts overlay used to edit (minimum, animation, voice, viewer text): here when the overlay offers version 2 of the service,
+ * so this window is the only editor of a type. All folded (R7). An older overlay gives none of it: nothing is shown and nothing is sent.
+ */
+export function moreFields(ctx, id, cur) {
+  if (!(Number(cur?.version) >= 2)) return [];
+  const t = ctx.t, out = [{ name: "more", kind: "hidden", label: "more", value: "2" }];
+  if (cur.min !== null && cur.min !== undefined) out.push({ name: "min", kind: "number", folded: true, label: t(`rx_f_min_${id}`), min: 0, max: cur.minMax ?? 1000000, step: 1, value: cur.min || "", placeholder: t("rx_f_min_default"), help: t("rx_f_min_help") });
+  const anims = (Array.isArray(cur.anims) ? cur.anims : []).filter((x) => ANIMS.includes(x));
+  if (anims.length) out.push({ name: "anim", kind: "select", folded: true, label: t("rx_f_anim"), value: anims.includes(cur.anim) ? cur.anim : "", options: anims.map((x) => ({ value: x, label: t(`rx_anim_${x || "module"}`) })) });
+  const modes = (Array.isArray(cur.ttsModes) ? cur.ttsModes : []).filter((x) => TTS.includes(x));
+  // "off" is the empty choice: the folded panel stays shut until something is chosen
+  if (modes.length) out.push({ name: "tts", kind: "select", folded: true, label: t("rx_f_tts"), value: cur.tts === "off" ? "" : cur.tts ?? "", options: modes.map((x) => ({ value: x === "off" ? "" : x, label: t(`rx_tts_${x}`) })), help: t("rx_f_tts_help") });
+  if (cur.viewer !== null && cur.viewer !== undefined) {
+    const [lo, hi] = Array.isArray(cur.viewerMaxLimits) ? cur.viewerMaxLimits : [20, 250];
+    out.push({ name: "viewer", kind: "switch", folded: true, label: t("rx_f_viewer"), value: cur.viewer ? "on" : "", help: t("rx_f_viewer_help") },
+      { name: "viewerMax", kind: "number", folded: true, label: t("rx_f_viewer_max"), min: lo, max: hi, step: 1, unit: t("rx_unit_chars"), value: cur.viewerMax === 140 ? "" : cur.viewerMax ?? "", placeholder: t("rx_f_viewer_max_default") });
+  }
+  return out;
+}
+/** The animations and voice modes this window has words for; a value the overlay adds later is simply not offered here. */
+export const ANIMS = ["", "slide", "slideLeft", "slideRight", "slideTop", "slideBottom", "fade", "jiggle", "pop", "none"];
+export const TTS = ["off", "sentence", "text", "both"];
+
+/**
+ * (1.10.0) The service `alerts.reaction.editor`: tells the alerts overlay whether this window edits ITS copy (the service call without a provider reaches the first copy),
+ * and where the window is. Read only.
+ */
+export async function editorInfo(ctx, args = {}) {
+  let providers = [];
+  try { providers = await ctx.api.services.providers(SERVICE); } catch { providers = []; }
+  const target = providers.find((p) => p.master) ?? providers[0] ?? null;
+  const asked = String(args?.instance ?? "");
+  return { edits: !!target && (!asked || target.key === asked), path: `/admin/instances/${encodeURIComponent(ctx.instance.id)}`, name: ctx.instance.name };
 }
 
 export const actions = {

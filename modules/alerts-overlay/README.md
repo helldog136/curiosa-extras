@@ -106,6 +106,13 @@ Core 0.10.0 accepts sounds as uploads (MP3, Ogg, WAV, M4A, AAC; 10 MB at most, c
 
 The **Media** tab holds the pictures, GIFs and sounds you send (name, type, search, edit, delete) next to the six video fields. Other modules pick from this library through the service `alerts.show` (`list`, `show { visual, sound, seconds }`): the Twitch bot uses it for the "On stream" choice of commands and words. A media goes through the same queue as the alerts (pause holds it, skip and "Empty the queue" stop it) and stays on screen 2 to 60 seconds (default: the alert duration; a sound alone: 4 s, no card). A video plays with its own sound; sounds use the volume of the sounds setting. At most 30 media a minute are accepted. With an empty library the page is unchanged; after adding the first media, refresh the browser source in OBS.
 
+## One editor per event type (version 1.13.0)
+
+When **Twitch activity 1.10.0** (or anything that offers the optional service `alerts.reaction.editor`) is active and writes to this copy, the "Twitch events" tab no longer has its own edit window: its table is a summary (type, what is shown with the display order when there are several files, the switch "Shown") with **"Set in Twitch activity →"** on each row, which opens the Reaction window of that type there. The text styles, the preview, "What the stream sees" and the queue stay here. Without such an editor (alerts sent by another tool, YouTube only, an older Twitch activity, or a second copy of this overlay, since Twitch activity writes to the first one), the full editor stays in this tab. The settings stay owned by this overlay either way: nothing is migrated.
+
+- **How the overlay knows**: `ctx.api.services.providers("alerts.reaction.editor")` lists only active instances of an installed module (optional need, never installed by itself); the editor's method `editor({ instance })` then answers `{ edits, path, name }`, `edits` being true only for the copy its window writes to. Any other answer, an error or no answer keeps the full editor.
+- **`alerts.reaction` version 2** (additive): `get` also gives `version: 2`, `min` (null for a type without a minimum), `minMax`, `anim` and `anims`, `tts` and `ttsModes`, `viewer` and `viewerMax` (null outside resub, cheer and redeem) and `viewerMaxLimits`; `set` and `test` accept `patch.min`, `anim`, `tts`, `viewer`, `viewerMax` (error codes `range` and `choice`). A version 1 caller sends none of them and changes none.
+
 ## Reaction service (version 1.9.0)
 
 `alerts.reaction` (version 1, one answer per overlay) lets Twitch activity set the on-screen reaction of an event type from its Types tab, without holding any file:

@@ -4,6 +4,33 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.89.0 — 2026-11-16
+
+*En bref : la réaction d'un événement Twitch se règle à un seul endroit, la fenêtre « Réaction » d'Activité Twitch. L'onglet « Événements Twitch » d'Overlay alertes devient un résumé avec « Régler dans Activité Twitch → ». Statut du live passe dans Réseaux, au-dessus de Twitch et YouTube. Overlay alertes 1.13.0, Activité Twitch 1.10.0, Statut du live 1.4.7. Rien à régler.*
+
+*In short: the reaction of a Twitch event is set in one place, the "Reaction" window of Twitch activity. The "Twitch events" tab of the Alerts overlay becomes a summary with "Set in Twitch activity →". Live status moves to Networks, above Twitch and YouTube. Alerts overlay 1.13.0, Twitch activity 1.10.0, Live status 1.4.7. Nothing to set up.*
+
+### Nouveautés
+
+- **Un seul endroit par événement.** La fenêtre « Réaction » d'Activité Twitch règle aussi le minimum, l'arrivée à l'écran, la lecture à voix haute et le texte du public, sous « Plus d'options ».
+- **Un résumé dans Overlay alertes.** Avec Activité Twitch, l'onglet « Événements Twitch » montre pour chaque type ce qui s'affiche, et son interrupteur. Le bouton « Régler dans Activité Twitch → » ouvre la bonne fenêtre.
+- **Statut du live dans Réseaux.** Il montre vos directs Twitch et YouTube : il est maintenant juste sous Réseaux, et le groupe Twitch ne contient que des modules Twitch.
+- **One place per event.** The "Reaction" window of Twitch activity also sets the minimum, how the alert enters, what is read aloud and the viewer text, under "More options".
+- **A summary in the Alerts overlay.** With Twitch activity, the "Twitch events" tab shows what each type displays, and its switch. The "Set in Twitch activity →" button opens the right window.
+- **Live status in Networks.** It shows your Twitch and YouTube lives: it now sits right under Networks, and the Twitch group holds only Twitch modules.
+
+### Ce qui ne change pas
+
+- **Vos réglages restent où ils sont.** Overlay alertes garde les réactions, ses fichiers et sa file. Sans Activité Twitch, par exemple avec des alertes envoyées par un autre outil, l'onglet « Événements Twitch » garde sa fenêtre complète.
+- **Your settings stay where they are.** The Alerts overlay keeps the reactions, its files and its queue. Without Twitch activity, for example with alerts sent by another tool, the "Twitch events" tab keeps its full window.
+
+### Pour les développeurs
+
+- Overlay alertes 1.13.0 : `alerts.reaction` version 2 (additive : `get` donne `min`, `anim`, `tts`, `viewer`, `viewerMax` et leurs choix ; `set` et `test` les acceptent ; un appelant version 1 n'en change aucun). Besoin facultatif `alerts.reaction.editor` : le résumé n'apparaît que si `providers` liste un éditeur actif ET que sa méthode `editor({ instance })` dit écrire dans cette copie ; sinon l'éditeur complet reste.
+- Activité Twitch 1.10.0 : offre `alerts.reaction.editor` (méthode `editor`, lecture seule) ; la fenêtre n'envoie les réglages de la version 2 que si elle les a montrés (champ caché `more`).
+- Statut du live 1.4.7 : `adminMenu: "Réseaux"` (sans ordre). Un cœur plus ancien que 0.13.0 l'ignore et garde la rubrique Outils (`menuGroup`). Test : un module qui lit deux réseaux ne se range pas dans le groupe d'un seul.
+- Tests : `one-editor` (avec et sans Activité Twitch, ancienne Activité Twitch, deuxième copie d'Overlay alertes, éditeur qui ne répond pas, overlay version 1). Captures : `tests/visual/render-one-editor.mjs`.
+
 ## 1.88.0 — 2026-11-16
 
 *En bref : placez la phrase d'une alerte sur son image ou son GIF, à l'endroit choisi, avec « Placer le texte ». Nouvel élément d'overlay « Alertes en grand ». Overlay alertes 1.12.0, Activité Twitch 1.9.0. Demande le cœur 0.19.0 pour placer le texte ; sans lui, rien ne change.*
