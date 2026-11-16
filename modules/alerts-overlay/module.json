@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.12.0",
+  "version": "1.13.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.14.0",
@@ -1136,7 +1136,7 @@
     },
     {
       "service": "alerts.reaction",
-      "version": 1,
+      "version": 2,
       "each": true,
       "readOnly": [
         "list",
@@ -1147,8 +1147,8 @@
         "set"
       ],
       "label": {
-        "en": "What each Twitch event shows on screen: pictures, GIFs, videos, sound (for Twitch activity)",
-        "fr": "Ce que chaque événement Twitch montre à l'écran : images, GIF, vidéos, son (pour Activité Twitch)"
+        "en": "What each Twitch event shows on screen: pictures, GIFs, videos, sentence, sound, minimum, voice (for Twitch activity)",
+        "fr": "Ce que chaque événement Twitch montre à l'écran : images, GIF, vidéos, phrase, son, minimum, voix (pour Activité Twitch)"
       }
     }
   ],
@@ -1600,6 +1600,14 @@
     {
       "service": "twitch.journal",
       "optional": true
+    },
+    {
+      "service": "alerts.reaction.editor",
+      "optional": true,
+      "label": {
+        "en": "Set the reaction of each Twitch event in one place (Twitch activity)",
+        "fr": "Régler la réaction de chaque événement Twitch à un seul endroit (Activité Twitch)"
+      }
     }
   ]
 }
