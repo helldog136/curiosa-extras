@@ -40,7 +40,7 @@ export async function get(ctx, type) {
 export async function media(ctx) {
   const items = await md.list(ctx, { tones: false });
   return {
-    pictures: items.filter((m) => m.kind === "picture").map((m) => ({ label: m.name, value: m.url, kind: "image" })),
+    pictures: items.filter((m) => m.kind === "picture" || m.kind === "video").map((m) => ({ label: m.name, value: m.url, kind: m.kind === "video" ? "video" : "image" })),
     sounds: items.filter((m) => m.kind === "sound").map((m) => ({ label: m.name, value: m.url, kind: "audio" })),
     tones: tw.SOUNDS.filter((x) => x !== "none"),
   };
