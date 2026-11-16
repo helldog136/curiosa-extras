@@ -5,6 +5,10 @@
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbour files
 const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
+const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
+// (1.12.0, additive) `get` also gives `compose` (whether the core can place text), `compositions` ({ [src]: composition }) and `words`; `set` and `test` take
+// `patch.compositions` ({ [src]: composition | null }, only when the window could place text) and `test` takes `patch.composeFor` (the file to show).
+// A caller that sends no `compositions` changes none (an older Twitch activity keeps every placed text); a file taken out of the list loses its text.
 
 export const LIMITS = { variants: tw.VARIANT_MAX };
 const srcOf = (x) => String(typeof x === "string" ? x : x?.src ?? "").trim().replace(/\?.*$/, "");
@@ -25,7 +29,8 @@ export function summaryOf(cfg, videos = []) {
 
 export async function list(ctx) {
   const cfg = await tw.loadConfig(ctx), videos = tw.videosOf(ctx.setting);
-  return { types: tw.TYPES.map((id) => ({ type: id, enabled: cfg.types[id].on, ...summaryOf(cfg.types[id], videos) })), max: LIMITS.variants };
+  const placed = cp.available(ctx) ? await Promise.all(tw.TYPES.map(async (id) => Object.keys(await cp.forPlace(ctx, `event:${id}`)).length)) : [];
+  return { types: tw.TYPES.map((id, i) => ({ type: id, enabled: cfg.types[id].on, ...summaryOf(cfg.types[id], videos), ...(placed[i] ? { placed: placed[i] } : {}) })), max: LIMITS.variants };
 }
 /** One type, for its window. `editPath` is where this overlay's own page is (for a link back). */
 export async function get(ctx, type) {
@@ -34,6 +39,7 @@ export async function get(ctx, type) {
   return {
     ok: true, type, max: LIMITS.variants, words: tw.VARS, variants: variantsOf(c, videos).filter((u) => !(c.present === "video" && !c.variants?.length)).map((src) => ({ src })), legacyVideo: c.present === "video" && !c.variants?.length && !!c.video,
     pick: c.pick ?? "random", text: c.template, textDefault: ctx.t(`tw_text_${type}`), sound: c.sound === "none" ? "" : c.sound, audio: c.audio, seconds: c.seconds, videoSound: c.videoSound, ...summaryOf(c, videos), editPath: ctx.instance.basePath,
+    compose: cp.available(ctx), compositions: cp.available(ctx) ? await cp.forPlace(ctx, `event:${type}`) : {},
   };
 }
 /** What can be picked "from the site": the pictures and sounds of the Media tab, by name (the files this overlay already owns). */
@@ -85,6 +91,14 @@ export async function set(ctx, type, patch) {
   const cfg = await tw.loadConfig(ctx), cur = cfg.types[type];
   const r = validate(ctx, type, patch ?? {}, cur);
   if (r.errors) return { ok: false, errors: r.errors };
+  // placed texts: checked against the files the type will have, before anything is saved
+  const place = `event:${type}`, files = variantsOf(r.next, tw.videosOf(ctx.setting));
+  let placed = {};
+  if (patch?.compositions && typeof patch.compositions === "object" && cp.available(ctx)) {
+    const c = cp.check(ctx, patch.compositions, { files, variables: tw.VARS });
+    if (!c.ok) return { ok: false, errors: { variants: "compose" } };
+    placed = c.value;
+  }
   const had = new Set([cur.image, cur.audio, ...(cur.variants ?? [])].filter(Boolean));
   const want = [...new Set([r.next.image, r.next.audio, ...(r.next.variants ?? [])].filter(Boolean))].filter((u) => !had.has(u));
   const errors = {};
@@ -98,7 +112,8 @@ export async function set(ctx, type, patch) {
   await tw.saveConfig(ctx, { ...cfg, preset: patch.text !== undefined ? "" : cfg.preset, types: { ...cfg.types, [type]: r.next } });
   const now = new Set([r.next.image, r.next.audio, ...(r.next.variants ?? [])].filter(Boolean));
   for (const u of had) if (!now.has(u)) await tw.releaseFile(ctx, u);
-  return { ok: true, ...summaryOf(r.next, tw.videosOf(ctx.setting)) };
+  await cp.save(ctx, place, placed, { files });
+  return { ok: true, ...summaryOf(r.next, tw.videosOf(ctx.setting)), placed: Object.keys(await cp.forPlace(ctx, place)).length };
 }
 const stateOf = (ctx) => tw.stateOf(ctx);
 
@@ -112,7 +127,18 @@ export async function test(ctx, type, patch, { sample, emit }) {
     if (r.errors) return { ok: false, errors: r.errors };
     types = { ...cfg.types, [type]: r.next };
   }
-  const a = await sample(ctx, type, { ...cfg, types });
+  // the placed texts of the window (not saved) and the file it asks to see
+  let extra = {};
+  if (cp.available(ctx) && patch && (patch.compositions || patch.composeFor)) {
+    const files = variantsOf(types[type], tw.videosOf(ctx.setting));
+    const c = cp.check(ctx, patch.compositions ?? {}, { files, variables: tw.VARS });
+    if (!c.ok) return { ok: false, errors: { variants: "compose" } };
+    const byKey = await cp.allByKey(ctx);
+    for (const [src, comp] of Object.entries(c.value)) { if (comp) byKey.set(cp.keyOf(`event:${type}`, src), comp); else byKey.delete(cp.keyOf(`event:${type}`, src)); }
+    const at = files.indexOf(String(patch.composeFor ?? ""));
+    extra = { compose: cp.composerOf(ctx, byKey), ...(at >= 0 ? { pick: () => at } : {}) };
+  }
+  const a = await sample(ctx, type, { ...cfg, types }, extra);
   if (!a) return { ok: false, code: "type" };
   emit(a);
   return { ok: true };

@@ -22,6 +22,7 @@ const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 const adminMd = await import(new URL(`./media-admin.mjs${v}`, import.meta.url).href);
 const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 const rxMcp = await import(new URL(`./reaction-mcp.mjs${v}`, import.meta.url).href);
+const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 /** Sounds: small synthesised notes (the page makes them, nothing is loaded). [frequency Hz, start s, length s]. Played only when the person switched sounds on. */
 const SOUND_SCRIPT = `
         var ac=null,SND={chime:[[880,0,.18],[1320,.12,.32]],bell:[[1046,0,.7]],pop:[[420,0,.09]],fanfare:[[523,0,.14],[659,.14,.14],[784,.28,.14],[1046,.42,.42]]};
@@ -34,6 +35,13 @@ const MEDIA_SCRIPT = (ov) => `var mc=null;
           if(e.video&&${UPLOAD("mp4|webm")}.test(e.video)){mc=document.createElement("video");mc.src=e.video;mc.muted=!e.videoSound;mc.autoplay=true;mc.playsInline=true;mc.setAttribute("aria-label",e.message);if(mc.play){var pp=mc.play();if(pp&&pp.catch)pp.catch(function(){mc.muted=true;try{mc.play()}catch(x){}})}}
           else if(e.image&&${UPLOAD("png|jpg|webp|gif")}.test(e.image)){mc=document.createElement("img");mc.src=e.image;mc.alt=e.message}
           if(mc){${ov ? 'mc.setAttribute("data-ov-part","media");card.setAttribute("data-ov-media","1");' : 'mc.className="al-media";card.className+=" al-media-card";'}card.append(mc)}`;
+/**
+ * (1.12.0) An alert with a placed text (`e.compose`, filled by the server): the core's engine draws it in a frame of its own (never a card: the appearance kit gives
+ * it no panel), whole inside the element, with transparent bands. Present only when the overlay holds a composition and the core has the engine.
+ */
+const COMPOSE_DRAW = 'if(e.compose&&window.CuriosaCompose){card=document.createElement("div");card.className="al-cmp";card._cmp=e.compose;card._anim=e.anim||"";shownCard=card}else ';
+const COMPOSE_MOUNT = "if(card._cmp)window.CuriosaCompose.mount(card,card._cmp,{seconds:secs});";
+const COMPOSE_DONE = 'var cr=stage.querySelector(\'[data-ov-region="composition"]\');if(cr&&window.CuriosaCompose)window.CuriosaCompose.unmount(cr);';
 /** A sound file of the site, played once per alert at the volume of the sounds; it stops with the card (skip, next alert). Same condition as the synthesised sounds. */
 const AUDIO_SCRIPT = `
         var fileSnd=null;
@@ -75,7 +83,7 @@ const color = (v, def) => (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) 
 
 // ── Élément de page d'overlay (cœur 0.5.0) ────────────────────────────────────────────────────────────────────────────────
 /** Les paramètres `ov-*` que le cœur ajoute à l'adresse de l'élément : présents (`ov-fit=scale`), la page est celle de l'ÉLÉMENT ; sinon c'est l'overlay du module, tel qu'avant. */
-const elementQuery = (opts) => { const q = opts?.query; return q && typeof q.get === "function" && q.get("ov-fit") === "scale" ? q : null; };
+const elementQuery = (opts) => { const q = opts?.query; return q && typeof q.get === "function" && (q.get("ov-fit") === "scale" || q.get("ov-fit") === "fluid") ? q : null; };
 /** Option « Alertes montrées » : toutes (défaut), celles de la chaîne (follow, sub, raid…), ou celles du direct YouTube (dons, adhésions). */
 const OV_ONLY = { all: null, channel: KINDS, live: LIVE_KINDS };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -188,7 +196,7 @@ async function collectLive(ctx, st, now) {
   fresh.sort((a, b) => a.at - b.at);
   const out = fresh.slice(-LIMITS.perPull);
   for (const f of out) emit(key, f.alert);
-  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), twitchEnv(ctx, now)).catch(() => 0);
+  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), { ...twitchEnv(ctx, now), compose: cp.composerOf(ctx, await cp.allByKey(ctx).catch(() => new Map())) }).catch(() => 0);
   return { sent: out.length + sentTwitch };
 }
 export const listeners = (key) => bus.listenerCount(key);
@@ -281,6 +289,8 @@ export default {
   // Cet overlay n'a pas d'adresse secrète à part (l'adresse est celle de l'overlay) : rien de plus à ajouter ici.
   overlayElements: {
     alerts: (ctx, request) => ({ url: `/overlays/${ctx.instance.key}${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
+    // (1.12.0) "Large alerts": the same alerts in a frame the person sizes freely (the whole canvas by default), so a placed text shows at its real size.
+    "alerts-stage": (ctx, request) => ({ url: `/overlays/${ctx.instance.key}${/^[a-z]{2}(-[A-Za-z]{2,4})?$/.test(request?.lang ?? "") ? `?lang=${request.lang}` : ""}` }),
   },
 
   // Overlay du module (`/overlays/<clé>`), et, avec les paramètres `ov-*` du cœur, la page de l'ÉLÉMENT : même rendu, même fichier, rien de dupliqué.
@@ -296,6 +306,8 @@ export default {
     // The media library (pictures, GIFs, sounds, videos) shown for other modules: the page then has the queue, the media and the sounds, even without Twitch activity. Empty library: the page is what it was.
     const media = await md.hasMedia(ctx);
     if (media) tx = true;
+    // Placed texts (1.12.0): the engine of the core joins the page only when there is one to draw; otherwise the page is byte for byte the page of before.
+    const cmp = tx && (await cp.hasAny(ctx).catch(() => false));
     if (tx) pull = true;
     const duration = Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6));
     const kinds = ov && Object.hasOwn(OV_ONLY, q.get("opt-kinds") ?? "") ? q.get("opt-kinds") : "all";
@@ -349,19 +361,21 @@ ${!ov || cfg.neon ? `        ${ov ? S.card : ".al-card.neon"}{box-shadow:0 0 28p
 ${!ov || cfg.neon ? `        ${ov ? `${S.card} ${S.kind}` : ".al-card.neon .al-kind"}{text-shadow:0 0 12px var(--al-accent)}
 ` : ""}        ${S.msg}{font-size:1.15rem;color:${ov ? "var(--ov-fg,var(--al-fg))" : "var(--al-fg)"}}
 ${withDetail ? `        ${S.detail}{font-size:1rem;color:${ov ? "var(--ov-fg,var(--al-fg))" : "var(--al-fg)"};opacity:.85;max-width:32rem;overflow-wrap:anywhere}
+` : ""}${cmp ? `        .al-cmp{position:absolute;inset:0}
+${ctx.overlay.composeCss()}
 ` : ""}${tx ? `        ${ov ? '[data-ov-part="image"]' : ".al-img"}{width:96px;height:96px;object-fit:cover;border-radius:${ov ? "var(--ov-radius,12px)" : "12px"}}
         ${ov ? '[data-ov-part="media"]' : ".al-media"}{display:block;max-width:calc(100vw - 8rem);max-height:calc(100vh - 8rem);object-fit:contain;border-radius:${ov ? "var(--ov-radius,12px)" : "12px"}}
 ` : ""}        @keyframes alPop{0%{opacity:0;transform:scale(.85)}10%{opacity:1;transform:scale(1)}90%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.95)}}`,
       // Sans « Actions du live YouTube » : le script d'avant, à l'identique. Avec : une file (50 au plus, la plus vieille part la première) pour que plusieurs dons de suite
       // s'affichent l'un après l'autre au lieu de se remplacer ; les alertes poussées (push) remplacent toujours la carte à l'écran, comme avant.
-      script: queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
+      script: (cmp ? ctx.overlay.composeScript() + "\n" : "") + (queued ? `(function(){var c=${json},stage=document.getElementById("al-stage"),timer,q=[],busy=false;
         stage.style.setProperty("--al-dur",c.duration+"s");${fxScript}${sounds || media ? SOUND_SCRIPT : ""}${audioOn ? AUDIO_SCRIPT : ""}${tx ? VOICE_SCRIPT : ""}
         function draw(e){${node("card", "card", "al-card", `+(c.neon?" neon":"")`)}${tx ? ANIM_SCRIPT(fx) : ""}${sounds || media ? "if(e.sound)beep(e.sound,e.own);" : ""}${audioOn ? "playFile(e);" : ""}${media ? SOUND_ONLY : ""}${tx ? "speak(e);" : ""}
-          ${tx ? `if(e.present==="media"&&(e.video||e.image)){${MEDIA_SCRIPT(ov)}}else{${PICTURE_SCRIPT(ov)}` : ""}${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
+          ${tx ? `${cmp ? COMPOSE_DRAW : ""}if(e.present==="media"&&(e.video||e.image)){${MEDIA_SCRIPT(ov)}}else{${PICTURE_SCRIPT(ov)}` : ""}${node("k", "kind", "al-kind")}k.textContent=${tx ? "e.title||" : ""}c.labels[e.kind]||c.labels.alert;
           ${node("m", "message", "al-msg")}m.textContent=e.message;card.append(k,m);
           if(e.detail){${node("d", "detail", "al-detail")}d.textContent=e.detail;card.append(d)}${tx ? "}" : ""}
-          ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
-        ${tx ? "function done(){if(typeof stopFile==='function')stopFile();shownCard=null;stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}" : "function done(){stage.replaceChildren();busy=false;next()}"}
+          ${tx ? "var secs=e.duration||c.duration;" : ""}stage.replaceChildren(card);${cmp ? COMPOSE_MOUNT : ""}${fx ? `fx(card,"in");hold(card,done${tx ? ",secs" : ""})` : `clearTimeout(timer);timer=setTimeout(done,${tx ? "secs" : "c.duration"}*1000)`}}
+        ${tx ? `function done(){if(typeof stopFile==='function')stopFile();shownCard=null;${cmp ? COMPOSE_DONE : ""}stage.replaceChildren();if(c.between>0){setTimeout(function(){busy=false;next()},c.between)}else{busy=false;next()}}` : "function done(){stage.replaceChildren();busy=false;next()}"}
         function next(){if(busy)return;var e=q.shift();if(e){busy=true;draw(e)}}
         ${tx ? `function show(e){if(e.control==="clear"){q=[];clearTimeout(timer);${audioOn ? "if(typeof stopFile==='function')stopFile();" : ""}stage.replaceChildren();busy=false;return}if(e.queued!==false){` : "function show(e){if(e.queued){"}if(q.length>=c.queueMax)q.shift();q.push(e);next()}else{busy=true;draw(e)}}
 ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?after="+encodeURIComponent(cur)+(c.feedPull?"&pull=1":"")${tx ? '+"&ctl=1"' : ""},{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){cur=d.cursor;gap=c.feedMs;${tx ? "applyCtl(d.ctl);" : ""}d.events.forEach(function(e){if(${tx ? "e.control||" : ""}!c.only||c.only.indexOf(e.kind)>=0)show(e)})}).catch(function(){gap=15000}).then(function(){setTimeout(poll,gap)})}
@@ -373,7 +387,7 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
           var k=document.createElement("div");k.className="al-kind";k.textContent=c.labels[e.kind]||c.labels.alert;
           var m=document.createElement("div");m.className="al-msg";m.textContent=e.message;card.append(k,m);
           stage.replaceChildren(card);${fx ? "fx(card,\"in\");hold(card,function(){stage.replaceChildren()})" : "clearTimeout(timer);timer=setTimeout(function(){stage.replaceChildren()},c.duration*1000)"}}
-        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}}})();`,
+        var es=new EventSource(c.eventsUrl);es.onmessage=function(ev){try{show(JSON.parse(ev.data))}catch(e){}}})();`),
     };
   },
 
@@ -423,7 +437,7 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       get: (ctx, input) => rx.get(ctx, String(input?.type ?? "")),
       media: (ctx) => rx.media(ctx),
       set: (ctx, input) => rx.set(ctx, String(input?.type ?? ""), input?.patch ?? {}),
-      test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg) => adminTw.sampleAlert(c, id, Date.now(), cfg), emit: (a) => emit(ctx.instance.key, a) }),
+      test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg, extra) => adminTw.sampleAlert(c, id, Date.now(), cfg, extra), emit: (a) => emit(ctx.instance.key, a) }),
     },
   },
   mcp: { ...adminTw.tools((key, a) => emit(key, a)), ...rxMcp.tools((key, a) => emit(key, a)) },
