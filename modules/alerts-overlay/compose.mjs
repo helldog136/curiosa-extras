@@ -5,7 +5,12 @@
 // The checker, the filling of the texts and the engine of the page come from the core (`ctx.overlay`, core 0.19.0): an older core has none, and nothing here
 // does anything (the alert stays "media alone").
 export const COLLECTION = "compositions";
-export const PLACE_RE = /^event:[a-z]{2,12}$/;
+export const PLACE_RE = /^(event:[a-z]{2,12}|show:[a-z0-9-]{1,40}:[a-z]{2,10}:[A-Za-z0-9_-]{1,40})$/;
+/** (1.16.0) The place of a media another module shows (`alerts.show`): "<its instance key>:<its kind>:<its id>", e.g. "twitch-bot:custom:k3x9". */
+export const SHOW_RE = /^[a-z0-9-]{1,40}:[a-z]{2,10}:[A-Za-z0-9_-]{1,40}$/;
+/** (1.16.0) The places other modules declared (`alerts.show.place`, or the first `show` of a command): { place, label, files, variables, phrase }. */
+export const PLACES = "composePlaces";
+const TOKEN_RE = /^[a-z][a-zA-Z0-9_]{0,23}$/;
 const SRC_RE = /^\/uploads\/[0-9a-f-]{36}\.(png|jpg|webp|gif|mp4|webm)$/;
 const cache = (globalThis.__curiosaAlertsCompose ??= new Map());   // overlay key → { at, rows: Map<key, row> }
 const TTL = 10_000;
@@ -97,3 +102,39 @@ export async function allByKey(ctx) {
   for (const [k, r] of await rowsOf(ctx)) out.set(k, r.composition);
   return out;
 }
+
+/* ───────────── (1.16.0) Places of other modules (the Twitch bot's commands and words) ───────────── */
+
+const clean = (x, max) => String(x ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+/** A place declaration, bounded: label 80, 12 files of this site, 20 automatic values, a sample sentence of 200. Null when the place is not valid. */
+export function readPlace(input) {
+  const show = String(input?.place ?? "");
+  if (!SHOW_RE.test(show)) return null;
+  const files = [...new Set((Array.isArray(input?.files) ? input.files : []).map(String).filter((s) => SRC_RE.test(s)))].slice(0, 12);
+  const variables = [...new Set((Array.isArray(input?.variables) ? input.variables : []).map(String).filter((t) => TOKEN_RE.test(t)))].slice(0, 20);
+  return { place: `show:${show}`, label: clean(input?.label, 80) || show, files, variables, phrase: clean(input?.phrase, 200) };
+}
+async function placeRows(ctx) {
+  try { return (await ctx.api.store.list(PLACES, { limit: 500 })).filter((r) => r?.data && typeof r.data.place === "string"); } catch { return []; }
+}
+/** Every declared place: [{ place, label, files, variables, phrase, updatedAt }]. */
+export async function showPlaces(ctx) { return (await placeRows(ctx)).map((r) => r.data); }
+export async function showPlace(ctx, place) { return (await placeRows(ctx)).find((r) => r.data.place === place)?.data ?? null; }
+/** Declares (or updates) a place; nothing is written when it did not change (a command shown often costs one read). The compositions of files no longer listed go. */
+export async function declarePlace(ctx, decl, now = Date.now()) {
+  const rows = await placeRows(ctx), cur = rows.find((r) => r.data.place === decl.place);
+  const data = { ...decl, updatedAt: new Date(now).toISOString() };
+  const same = cur && JSON.stringify([cur.data.label, cur.data.files, cur.data.variables, cur.data.phrase]) === JSON.stringify([decl.label, decl.files, decl.variables, decl.phrase]);
+  if (same) return false;
+  try { if (cur) await ctx.api.store.update(cur.id, data); else await ctx.api.store.add(PLACES, data); } catch { return false; }
+  // a file taken out of a command loses its text
+  const placed = await forPlace(ctx, decl.place);
+  if (Object.keys(placed).some((src) => !decl.files.includes(src))) await save(ctx, decl.place, {}, { files: decl.files, now });
+  return true;
+}
+/** Forgets a place and its texts (the command or the word was deleted). */
+export async function forgetPlace(ctx, place) {
+  for (const r of await placeRows(ctx)) if (r.data.place === place) { try { await ctx.api.store.remove(r.id); } catch { /* gone */ } }
+  await save(ctx, place, {}, { files: [] });
+}
+

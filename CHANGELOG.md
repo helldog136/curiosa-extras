@@ -4,6 +4,31 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.92.0 — 2026-11-16
+
+*En bref : « Placer le texte » arrive dans les commandes et les mots du Bot Twitch qui montrent une image ou une vidéo. Le texte peut reprendre le pseudo de la personne qui tape la commande. Bot Twitch 1.21.0, Overlay alertes 1.16.0. Rien ne change sans l'Overlay alertes.*
+
+*In short: "Place the text" comes to the Twitch bot's commands and words that show a picture or a video. The text can use the name of the person who typed the command. Twitch bot 1.21.0, Alerts overlay 1.16.0. Nothing changes without the Alerts overlay.*
+
+### Nouveautés
+
+- **Le texte sur ce qu'une commande montre.** Dans la fenêtre d'une commande ou d'un mot, chaque image ou vidéo a « Placer le texte », comme dans les réactions.
+- **Les valeurs du bot.** Le texte peut reprendre le pseudo, la cible (le premier mot après la commande) ou tous les mots après la commande.
+- **L'assistant aussi.** Votre assistant IA voit ces commandes et peut y placer le texte, avec les mêmes droits que pour les réactions.
+- **Text on what a command shows.** In the window of a command or a word, each picture or video has "Place the text", as in reactions.
+- **The bot's values.** The text can use the name, the target (the first word after the command) or every word after the command.
+- **The assistant too.** Your AI assistant sees these commands and can place text on them, with the same rights as for reactions.
+
+### Ce qui ne change pas
+
+- **Sans l'Overlay alertes, rien ne change.** La commande répond dans le chat comme avant ; une commande sans texte placé montre son image seule.
+- **Without the Alerts overlay, nothing changes.** The command answers in the chat as before; a command without placed text shows its picture alone.
+
+### Pour les développeurs
+
+- Overlay alertes 1.16.0 : service `alerts.show` version 3 (`compositions`, `place`, `forget` ; `show` reçoit `place`, `vars`, `text`), lieux `show:<instance>:<type>:<id>` dans la collection `composePlaces`, outils `composition_*` sur ces lieux.
+- Bot Twitch 1.21.0 : option `compose` de la galerie (valeurs `user`, `target`, `args`), vérification avant l'enregistrement, `forget` à la suppression, `screenPlace` dans `bot_commands_list`. Tests : `bot-compose`.
+
 ## 1.91.0 — 2026-11-16
 
 *En bref : votre assistant IA peut placer le texte sur les images et les vidéos de vos alertes, en regardant une image du résultat. Vous affinez ensuite dans l'éditeur. Overlay alertes 1.15.0. Demande le cœur 0.25.0 ; les droits d'écriture restent désactivés tant que vous ne les cochez pas.*

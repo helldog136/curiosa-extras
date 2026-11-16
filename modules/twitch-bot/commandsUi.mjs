@@ -110,7 +110,21 @@ export const newLink = (ctx, { example = false } = {}) => ({ type: "links", item
  * Three folded fields: the picture or video, the sound, the seconds. `lib`: the library of the alerts overlay ({ available, items }). Without the overlay one line says so (and nothing is saved from
  * these fields). `m`: the saved choice.
  */
-export function mediaFields(ctx, lib, m) {
+/**
+ * (1.21.0) The `compose` option of the gallery ("Place the text", alerts overlay 1.16.0 and core 0.19.0 or later): the automatic values of a command (who typed it,
+ * the first word after it, every word after it) or of a word (who wrote it), and the bot's answer as the sentence. Videos too when the core can.
+ */
+export function composeOption(ctx, lib, kind) {
+  const t = ctx.t;
+  return {
+    variables: MD.PLACE_WORDS[kind === "word" ? "word" : "command"].map((w) => ({ token: w, label: t(`media_var_${w}`), sample: t(`media_sample_${w}`) })),
+    phrase: { label: t("media_compose_phrase"), sample: t("media_compose_sample") },
+    formats: ["media", "16:9", "9:16", "1:1", "4:3", "21:9"], defaultFormat: "media", maxBoxes: 4,
+    ...(lib.compose?.video ? { video: true } : {}),
+  };
+}
+
+export function mediaFields(ctx, lib, m, { key = "", kind = "command" } = {}) {
   const t = ctx.t;
   if (!lib?.available) return [{ name: "mediaVisual", label: t("f_media_visual"), kind: "select", value: "", options: [{ value: "", label: t("media_absent") }], folded: true }];
   const pick = (kinds, id) => {
@@ -120,8 +134,9 @@ export function mediaFields(ctx, lib, m) {
   // overlay version 2: one gallery (pictures, GIFs, videos; several at once; up to 12) and the order; the same widget as the reaction window of Twitch activity
   const files = lib.gallery ? [
     { name: "mediaFiles", label: t("f_media_visual"), kind: "gallery", accept: ["image", "video"], max: MD.VISUALS_MAX, help: t("f_media_help"), folded: true,
-      value: JSON.stringify((m?.visuals ?? (m?.visual ? [m.visual] : [])).map((id) => lib.items.find((x) => x.id === id)?.url).filter(Boolean).map((src) => ({ src }))),
-      library: lib.items.filter((x) => x.url && ["picture", "video"].includes(x.kind)).slice(0, 500).map((x) => ({ label: x.name, value: x.url, kind: x.kind === "video" ? "video" : "image" })) },
+      value: JSON.stringify((m?.visuals ?? (m?.visual ? [m.visual] : [])).map((id) => lib.items.find((x) => x.id === id)?.url).filter(Boolean).map((src) => ({ src, ...(lib.compose?.places?.[key]?.[src] ? { compose: lib.compose.places[key][src] } : {}) }))),
+      library: lib.items.filter((x) => x.url && ["picture", "video"].includes(x.kind)).slice(0, 500).map((x) => ({ label: x.name, value: x.url, kind: x.kind === "video" ? "video" : "image" })),
+      ...(lib.compose ? { compose: composeOption(ctx, lib, kind) } : {}) },
     { name: "mediaPick", label: t("f_media_pick"), kind: "segmented", value: m?.pick === "rotate" ? "rotate" : "random", help: t("f_media_pick_help"), options: [{ value: "random", label: t("media_pick_random") }, { value: "rotate", label: t("media_pick_rotate") }], folded: true },
   ] : [{ name: "mediaVisual", label: t("f_media_visual"), kind: "select", value: m?.visual ?? "", options: pick(["picture", "video"], m?.visual), help: t("f_media_help"), folded: true }];
   return [
@@ -148,7 +163,7 @@ export function wordForm(ctx, info, { mode, view, key, tab = "use" }) {
       { name: "words", label: t("f_words"), value: (view.words ?? []).join(", "), required: true, help: t("f_words_help"), example: t("f_words_example") },
       { name: "text", label: t("f_reply"), kind: "textarea", value: view.text ?? "", help: t("f_reply_help", { vars: shownVars() }), example: t("f_reply_example") },
       { name: "role", label: t("f_role"), kind: "segmented", value: view.role ?? "everyone", options: roleOptions(t).filter((o) => o.value !== "owner") },
-      ...mediaFields(ctx, info.lib, view.media),
+      ...mediaFields(ctx, info.lib, view.media, { key: edit ? key : "", kind: "word" }),
       { name: "mode", label: t("f_match"), kind: "segmented", value: view.mode === "contains" ? "contains" : "", options: [{ value: "", label: t("f_match_whole") }, { value: "contains", label: t("f_match_inside") }], help: t("f_match_help"), folded: true },
       { name: "cdGlobal", label: t("f_wait_all"), kind: "number", value: view.cdGlobal ?? "", placeholder: String(W.DEFAULTS.cdGlobal), min: 0, max: 3600, step: 1, unit: t("unit_seconds"), help: t("f_cd_help", { n: W.DEFAULTS.cdGlobal }), folded: true },
       { name: "cdUser", label: t("f_wait_user"), kind: "number", value: view.cdUser ?? "", placeholder: String(W.DEFAULTS.cdUser), min: 0, max: 3600, step: 1, unit: t("unit_seconds"), help: t("f_cd_help", { n: W.DEFAULTS.cdUser }), folded: true },
@@ -182,7 +197,7 @@ export function commandForm(ctx, info, { mode, view, key, unsaved = false, kind,
       { name: "name", label: t("f_name"), value: view.name ?? "", required: true, help: t("f_name_help", { prefix: s.prefix }) },
       { name: "text", label: t("f_text"), kind: "textarea", value: view.text ?? "", required: true, help: varsHelp || t("f_text_help"), example: t("f_text_example") },
       ...(timerOnly ? [] : [{ name: "role", label: t("f_role"), kind: "segmented", value: view.role ?? "everyone", options: roleOptions(t) }]),   // une commande réservée au timer n'a personne à qui la permettre
-      ...(timerOnly || !info.lib ? [] : mediaFields(ctx, info.lib, view.media)),
+      ...(timerOnly || !info.lib ? [] : mediaFields(ctx, info.lib, view.media, { key: edit ? key : "", kind: "command" })),
       { name: "aliases", label: t("f_aliases"), value: (view.aliases ?? []).join(", "), help: t("f_aliases_help"), folded: true },
       { name: "cdGlobal", label: t("f_wait_all"), kind: "number", value: view.cdGlobal ?? "", placeholder: String(s.cdGlobal), min: 0, max: 3600, step: 1, unit: t("unit_seconds"), help: t("f_cd_help", { n: s.cdGlobal }), folded: true },
       { name: "cdUser", label: t("f_wait_user"), kind: "number", value: view.cdUser ?? "", placeholder: String(s.cdUser), min: 0, max: 3600, step: 1, unit: t("unit_seconds"), help: t("f_cd_help", { n: s.cdUser }), folded: true },

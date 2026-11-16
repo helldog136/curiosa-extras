@@ -24,6 +24,28 @@ const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 const rxMcp = await import(new URL(`./reaction-mcp.mjs${v}`, import.meta.url).href);
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 const cpMcp = await import(new URL(`./compose-mcp.mjs${v}`, import.meta.url).href);
+/**
+ * (1.16.0) A caller declares the place of one of its commands (`alerts.show.place`): its label, its files (addresses of this library), the automatic values its texts
+ * may use, a sample sentence, and, when its window could place text, `compositions` ({ [src]: composition | null }). `check: true` only checks. Every file must
+ * be in the library (the caller added new ones with `add` first). Rends { ok: true, placed } or { ok: false, code, errors? }.
+ */
+async function placeOfCaller(ctx, input) {
+  const decl = cp.readPlace(input);
+  if (!decl) return { ok: false, code: "place" };
+  const lib = new Set((await md.list(ctx, { tones: false })).map((m) => m.url).filter(Boolean));
+  const outside = decl.files.filter((src) => !lib.has(src));
+  if (outside.length) return { ok: false, code: "file", files: outside };
+  let value = {};
+  if (input?.compositions && typeof input.compositions === "object" && cp.available(ctx)) {
+    const c = cp.check(ctx, input.compositions, { files: decl.files, variables: decl.variables });
+    if (!c.ok) return { ok: false, code: "compose", errors: c.errors };
+    value = c.value;
+  }
+  if (input?.check === true) return { ok: true, placed: Object.values(value).filter(Boolean).length };
+  await cp.declarePlace(ctx, decl);
+  if (input?.compositions && typeof input.compositions === "object" && cp.available(ctx)) await cp.save(ctx, decl.place, value, { files: decl.files });
+  return { ok: true, placed: Object.keys(await cp.forPlace(ctx, decl.place)).length };
+}
 /** Sounds: small synthesised notes (the page makes them, nothing is loaded). [frequency Hz, start s, length s]. Played only when the person switched sounds on. */
 const SOUND_SCRIPT = `
         var ac=null,SND={chime:[[880,0,.18],[1320,.12,.32]],bell:[[1046,0,.7]],pop:[[420,0,.09]],fanfare:[[523,0,.14],[659,.14,.14],[784,.28,.14],[1046,.42,.42]]};
@@ -433,6 +455,27 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       show: (ctx, input) => md.show(ctx, input, (a) => emit(ctx.instance.key, a)),
       // version 2: files just sent in the window of another module are kept HERE and named (listed in `callerRights`: the person is carried, core 0.14.0)
       add: (ctx, input) => md.addMany(ctx, input?.items),
+      // version 3 (1.16.0): the text placed on the files of a caller's command ("Place the text" in the bot's window). `show` takes `place`, `vars`, `text`.
+      // `place` → { compositions: { [src]: composition } }; `prefix` (the caller's instance key) → { places: { "<kind>:<id>": { [src]: composition } } }, one read for a whole window
+      compositions: async (ctx, input) => {
+        const out = { compose: cp.available(ctx), video: cp.videoReady(ctx) };
+        if (!cp.available(ctx)) return { ...out, compositions: {}, places: {} };
+        const prefix = String(input?.prefix ?? "");
+        if (/^[a-z0-9-]{1,40}$/.test(prefix)) {
+          const places = {};
+          for (const [k, c] of await cp.allByKey(ctx)) {
+            const [place, src] = k.split("|");
+            if (!place.startsWith(`show:${prefix}:`)) continue;
+            const key = place.slice(`show:${prefix}:`.length);
+            (places[key] ??= {})[src] = c;
+          }
+          return { ...out, places };
+        }
+        const decl = cp.readPlace({ place: input?.place });
+        return { ...out, compositions: decl ? await cp.forPlace(ctx, decl.place) : {} };
+      },
+      place: (ctx, input) => placeOfCaller(ctx, input),
+      forget: async (ctx, input) => { const decl = cp.readPlace({ place: input?.place }); if (!decl) return { ok: false, code: "place" }; await cp.forgetPlace(ctx, decl.place); return { ok: true }; },
     },
     // What each Twitch event type shows (picture, GIF, video, sound), read and changed by Twitch activity. `set` carries the person (callerRights) so the files are kept HERE.
     "alerts.reaction": {
