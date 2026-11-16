@@ -6,6 +6,7 @@ const st = await import(`./state.mjs${v}`);
 const pub = await import(`./publish.mjs${v}`);
 const { settingsOf } = await import(`./settings.mjs${v}`);
 const { diagnose } = await import(`./listen.mjs${v}`);
+const rw = await import(`./rewards.mjs${v}`);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 export default {
@@ -43,5 +44,17 @@ export default {
       return { ok: true, testIds: r.ids };
     }
     throw expose("Give either id (a line to replay) or testType (a sample to send).");
+  },
+  /** (1.12.0) The rewards of the channel and their reaction (read only; the reactions are set with the alerts overlay's reaction_set, type redeem + reward). */
+  async twitch_events_rewards(ctx) {
+    const list = await rw.list(ctx), c = await rw.creator(ctx);
+    const reaction = (row) => ({ images: row.images ?? 0, videos: row.videos ?? 0, sound: row.sound === true, order: row.pick === "rotate" ? "round_robin" : row.pick ? "random" : null, ...(row.placed ? { filesWithPlacedText: row.placed } : {}) });
+    return {
+      readFromTwitch: list.twitch.ok, ...(list.twitch.ok ? {} : { whyNotFromTwitch: { scope: "the permission to read the rewards is missing (switch on Channel points in the Event types tab, then authorize)", na: "the channel has no channel points (not Affiliate nor Partner)", no_channel: "no Twitch channel is set up", twitch: "Twitch did not answer" }[list.twitch.code] ?? "unknown", note: "Only the rewards seen in the journal and those with a reaction are listed." }),
+      alertsOverlay: list.overlay ? "ready" : "absent or too old (version 3 of its reactions needed)",
+      rewards: list.items.map((it) => ({ id: it.id, title: it.title, cost: it.cost, ...(it.gone ? { deletedOnTwitch: true } : { enabledOnTwitch: it.enabled !== false, pausedOnTwitch: it.paused === true }), alert: it.row?.on ?? true, ownReaction: !!it.row?.own, ...(it.row?.own ? { reaction: reaction(it.row) } : {}) })),
+      allOtherRewards: list.others ? { alert: list.others.on !== false, reaction: reaction(list.others) } : null,
+      canCreateFromAdmin: c.can, ...(c.can ? {} : { whyNotCreate: c.code }),
+    };
   },
 };

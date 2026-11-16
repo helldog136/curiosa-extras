@@ -57,11 +57,12 @@ const actionName = (ctx, names, key, { snap, advanced = false } = {}) => {
 /** Ce que la maison dit d'une action : 'unmapped' (pas encore de script relié), 'ok', ou null. */
 const linkOf = (state, key) => (R.isHome(key) ? A.linkOf(state, key) : null);
 /** La couleur de la pastille « ce qui se passe » : toujours accompagnée du mot écrit. */
-const toneOf = (key) => (key === A.BOT_ACTION ? "info" : key.startsWith("lumieres:") ? "accent" : key === A.VOICE_ACTION ? "ok" : "warn");
+const toneOf = (key) => (key === A.BOT_ACTION ? "info" : key === A.ALERT_ACTION ? "neutral" : key.startsWith("lumieres:") ? "accent" : key === A.VOICE_ACTION ? "ok" : "warn");
 
 /** « Que se passe-t-il ? » pour une action déjà choisie : la valeur du choix (et la couleur, pour les lumières). */
 export function whatOf(action) {
   if (action === A.BOT_ACTION) return { what: "chat" };
+  if (action === A.ALERT_ACTION) return { what: "alert" };
   if (action === A.VOICE_ACTION) return { what: "voice" };
   const m = /^lumieres:([a-z]+)$/.exec(String(action));
   if (m && A.COLORS.includes(m[1])) return { what: "lights", color: m[1] };
@@ -74,6 +75,7 @@ function whatOptions(ctx, namedList, homeInstalled, current) {
     { value: "lights", label: `${t("rw_w_lights")}${need}` },
     { value: "voice", label: `${t("rw_w_voice")}${need}` },
     { value: "custom", label: `${t("rw_w_custom")}${need}` },
+    { value: "alert", label: t("rw_w_alert") },
     ...namedList.map((a) => ({ value: `named:${a.key}`, label: `${t("rw_w_mine", { name: a.label })}${need}` })),
   ];
   if (current?.startsWith("named:") && !out.some((o) => o.value === current)) out.push({ value: current, label: t("rw_action_unknown") });   // une action qui n'est plus dans la liste : on la garde visible plutôt que d'en choisir une autre sans le dire
@@ -292,6 +294,7 @@ async function validate(ctx, s, x, exceptId) {
   if (!what) raw.action = String(x.action ?? "").trim();
   else if (what === "chat") raw.action = A.BOT_ACTION;
   else if (what === "voice") raw.action = A.VOICE_ACTION;
+  else if (what === "alert") raw.action = A.ALERT_ACTION;
   else if (what === "lights") { const c = String(x.color ?? "").trim() || "rouge"; if (A.COLORS.includes(c)) raw.action = A.lightKey(c); else errors.color = "color"; }
   else if (what === "custom") {
     const p = await A.plan(ctx, s, x.actionName, { wantedKey: s.showKeys ? x.actionKey : "", rewardKeys: rewards.map((r) => r.action) });

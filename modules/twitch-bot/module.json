@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.21.0",
+  "version": "1.22.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",
@@ -49,6 +49,20 @@
       "service": "audience.remote",
       "version": 1,
       "each": true
+    },
+    {
+      "service": "twitch.rewards",
+      "version": 1,
+      "readOnly": [
+        "status"
+      ],
+      "callerRights": [
+        "create"
+      ],
+      "label": {
+        "en": "Create a channel point reward on Twitch that shows an alert only (for Twitch activity)",
+        "fr": "Créer sur Twitch une récompense de points de chaîne qui montre seulement une alerte (pour Activité Twitch)"
+      }
     }
   ],
   "dataVersion": 6,
@@ -1458,6 +1472,18 @@
       "fields": [
         {
           "key": "by"
+        }
+      ]
+    },
+    {
+      "key": "reward.created",
+      "label": {
+        "fr": "Récompense {title} créée sur Twitch depuis Activité Twitch",
+        "en": "Reward {title} created on Twitch from Twitch activity"
+      },
+      "fields": [
+        {
+          "key": "title"
         }
       ]
     }

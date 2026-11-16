@@ -7,6 +7,21 @@ const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 const adminTw = await import(new URL(`./twitch-admin.mjs${v}`, import.meta.url).href);
+const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
+
+/**
+ * (1.17.0) `reward` of reaction_get / reaction_set / reaction_test (type redeem only): the Twitch id of a reward, or the exact title of a reward that already has a row
+ * here (any case). An unknown title is refused with the list; an unknown id is accepted for reaction_set (a first reaction for that reward).
+ */
+export async function rewardOf(ctx, a, { create = false } = {}) {
+  if (a.reward === undefined || a.reward === "") return null;
+  if (a.type !== "redeem") throw expose('reward only goes with type "redeem" (channel point rewards).');
+  const ref = String(a.reward).trim(), rows = [...(await rw.byId(ctx)).values()];
+  const hit = rows.find((r) => r.rid === ref) ?? rows.find((r) => r.title && r.title.toLowerCase() === ref.toLowerCase());
+  if (hit) return hit;
+  if (create && rw.validId(ref)) return { rid: ref, title: "", cost: 0, on: true, cfg: null };
+  throw expose(`No reward "${ref}" has a reaction here. Rewards with a reaction: ${rows.map((r) => `${r.title || "?"} (${r.rid})`).join(", ") || "none"}. Twitch activity's twitch_events_rewards gives the id of every reward of the channel.`);
+}
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 const KIND_OF = { image: "picture", video: "video", audio: "sound" };
@@ -28,12 +43,21 @@ async function usage(ctx) {
     const c = cfg.types[type];
     for (const u of [...rx.variantsOf(c, videos), c.audio].filter(Boolean)) by.set(u, [...(by.get(u) ?? []), type]);
   }
+  for (const r of (await rw.byId(ctx)).values()) if (r.cfg) for (const u of [...rx.variantsOf(r.cfg, videos), r.cfg.audio].filter(Boolean)) by.set(u, [...(by.get(u) ?? []), `redeem (${r.title || r.rid})`]);
   return by;
 }
 const view = (m, used) => ({ id: m.id, name: m.name, kind: m.kind, ...(m.url ? { address: m.url } : {}), addedBy: m.by === "assistant" ? "assistant" : "person", ...(m.bytes ? { bytes: m.bytes } : {}), ...(m.seconds ? { durationSeconds: m.seconds } : {}), ...(m.width ? { width: m.width, height: m.height } : {}), ...(m.kind === "video" && m.by === "assistant" ? { transparent: m.transparent === true } : {}), ...(m.poster ? { poster: m.poster } : {}), usedByReactions: used.get(m.url) ?? [] });
 
-async function reactionView(ctx, type) {
-  const cfg = await tw.loadConfig(ctx), c = cfg.types[type], videos = tw.videosOf(ctx.setting);
+async function reactionView(ctx, type, reward = null) {
+  const cfg = await tw.loadConfig(ctx), videos = tw.videosOf(ctx.setting);
+  if (reward) {
+    const row = await rw.one(ctx, reward.rid);
+    if (!row?.cfg) return { type, reward: { id: reward.rid, title: row?.title || reward.title || null, cost: row?.cost || null }, enabled: row ? row.on : true, ownReaction: false, note: "This reward shows the reaction of all the other rewards (reaction_get without reward). reaction_set with this reward gives it its own." };
+    return { ...(await viewOf(ctx, type, row.cfg, videos)), reward: { id: row.rid, title: row.title || null, cost: row.cost || null }, enabled: row.on, ownReaction: true };
+  }
+  return viewOf(ctx, type, cfg.types[type], videos);
+}
+async function viewOf(ctx, type, c, videos) {
   const lib = await md.list(ctx, { tones: false }), byUrl = new Map(lib.map((m) => [m.url, m]));
   const media = rx.variantsOf(c, videos).map((u) => (byUrl.get(u) ? { name: byUrl.get(u).name, id: byUrl.get(u).id, kind: byUrl.get(u).kind } : { name: null, kind: tw.VIDEO_RE.test(u) ? "video" : "picture", note: "not in the library (added in the Twitch activity window)" }));
   const soundFile = c.audio ? byUrl.get(c.audio) : null;
@@ -109,10 +133,14 @@ export function tools(emit) {
     },
     async reaction_get(ctx, a) {
       if (!tw.TYPES.includes(a.type)) throw expose(`Unknown type. Use one of: ${TYPE_LIST}.`);
-      return { ...(await reactionView(ctx, a.type)), words: tw.VARS, maxMedia: rx.LIMITS.variants };
+      const reward = await rewardOf(ctx, a);
+      const out = { ...(await reactionView(ctx, a.type, reward)), words: tw.VARS, maxMedia: rx.LIMITS.variants };
+      if (a.type === "redeem" && !reward) out.rewardsWithOwnReaction = [...(await rw.byId(ctx)).values()].map((r) => ({ id: r.rid, title: r.title || null, ownReaction: !!r.cfg, enabled: r.on }));
+      return out;
     },
     async reaction_set(ctx, a) {
       if (!tw.TYPES.includes(a.type)) throw expose(`Unknown type. Use one of: ${TYPE_LIST}.`);
+      const reward = await rewardOf(ctx, a, { create: true });
       const patch = {};
       const lib = await md.list(ctx, { tones: false });
       if (a.media !== undefined) {
@@ -130,23 +158,26 @@ export function tools(emit) {
         else { patch.audio = find(lib, s, ["sound"], "sound").url; patch.sound = ""; }
       }
       if (!Object.keys(patch).length && a.enabled === undefined) throw expose("Give at least one of: media, order, text, durationSeconds, sound, videoSound, enabled.");
+      if (reward && a.enabled !== undefined) patch.on = a.enabled === true;
       if (Object.keys(patch).length) {
-        const r = await rx.set(ctx, a.type, patch);
+        const r = reward ? await rx.setReward(ctx, reward.rid, {}, patch) : await rx.set(ctx, a.type, patch);
+        if (r.code === "full") throw expose(`At most ${rw.MAX} rewards can have their own reaction.`);
         if (!r.ok) {
           const e = r.errors ?? {};
           const say = { words: `The text uses a word that does not exist. Words you can use between braces: ${tw.VARS.map((x) => `{${x}}`).join(", ")}.`, long: `The text is too long: ${tw.LIMITS.template} characters at most.`, range: `durationSeconds must be 0 (default) or between ${tw.LIMITS.seconds.min} and ${tw.LIMITS.seconds.max}.`, limit: `At most ${rx.LIMITS.variants} files.`, kept: "A file could not be kept by the overlay. Upload it again with reaction_media_upload_begin.", file: "A file is not a picture, GIF or video of this site.", choice: "Unknown choice." };
           throw expose(Object.values(e).map((c) => say[c] ?? "A value was refused.").join(" ") || "The change was refused.");
         }
       }
-      if (a.enabled !== undefined) {
+      if (a.enabled !== undefined && !reward) {
         const r = await adminTw.changeType(ctx, a.type, { on: a.enabled === true });
         if (r?.error || r?.errors) throw expose("The event could not be switched on or off.");
       }
-      return reactionView(ctx, a.type);
+      return reactionView(ctx, a.type, reward);
     },
     async reaction_test(ctx, a) {
       if (!tw.TYPES.includes(a.type)) throw expose(`Unknown type. Use one of: ${TYPE_LIST}.`);
-      const r = await rx.test(ctx, a.type, {}, { sample: (c, id, cfg) => adminTw.sampleAlert(c, id, Date.now(), cfg), emit: (x) => emit(ctx.instance.key, { ...x, test: true }) });
+      const reward = await rewardOf(ctx, a);
+      const r = await rx.test(ctx, a.type, {}, { sample: (c, id, cfg, extra) => adminTw.sampleAlert(c, id, Date.now(), cfg, extra), emit: (x) => emit(ctx.instance.key, { ...x, test: true }), ...(reward ? { reward: reward.rid, info: { title: reward.title, cost: reward.cost } } : {}) });
       if (!r.ok) throw expose("This event cannot be tested.");
       return { sent: true, note: "A test alert with a sample name was sent to the overlay pages that are open now (in OBS or a browser). It waits its turn in the queue; nothing reaches Twitch." };
     },

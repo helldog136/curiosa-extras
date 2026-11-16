@@ -223,8 +223,9 @@ export async function userCall(ctx, c, docId, req, priority = "interactive") {
   let t = await userToken(ctx, c, docId);
   for (let attempt = 0; attempt < 2; attempt++) {
     if (t.error) return { error: t.error };
-    const lacking = req.scopes.filter((s) => !Array.isArray(t.doc.scopes) || !t.doc.scopes.includes(s));
-    if (lacking.length) { await health.noteScope(ctx, docId, lacking); return { error: "scope" }; }   // recorded: the page then asks for the permission
+    // "a|b": one of these permissions is enough (1.6.0, reading the rewards); the first one is the one asked for when none is there
+    const lacking = req.scopes.filter((s) => !s.split("|").some((x) => Array.isArray(t.doc.scopes) && t.doc.scopes.includes(x)));
+    if (lacking.length) { await health.noteScope(ctx, docId, lacking.map((s) => s.split("|")[0])); return { error: "scope" }; }   // recorded: the page then asks for the permission
     const r = await helix(ctx, c, t.token, req, priority);
     if (!r.unauthorized) return r;
     if (attempt === 0) { t = await userToken(ctx, c, docId, t.token); continue; }

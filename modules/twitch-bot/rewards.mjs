@@ -10,7 +10,7 @@ const A = await import(`./actions.mjs${v}`);
 
 export const MAX_REWARDS = es.LIMITS.maxRewards;
 // Les actions (clés, noms, actions nommées) sont dans actions.mjs ; ils restent exportés d'ici pour ceux qui les ont toujours pris ici.
-export const { ACTION_RE, BOT_ACTION, KNOWN, labelKey, isHome, needsInputFor } = A;
+export const { ACTION_RE, BOT_ACTION, ALERT_ACTION, KNOWN, labelKey, isHome, needsInputFor } = A;
 /** Les clés permises dans la liste : les actions de base, celles de l'ancien réglage « Autres actions » (les invalides sont écartées) et les actions nommées (`named` : leurs clés). */
 export const allowedKeys = (s, named = []) => [...new Set([...KNOWN.map((k) => k.key), ...(s.extraActions ?? []).filter((k) => ACTION_RE.test(k)), ...named.filter((k) => ACTION_RE.test(k))])];
 

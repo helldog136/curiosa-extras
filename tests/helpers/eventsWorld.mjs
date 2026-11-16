@@ -61,6 +61,8 @@ export function world(o = {}) {
           tw.calls.push(a);
           if (a.path === "channels/followers") return tw.helixDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.followers ?? [], pagination: {} } };
           if (a.path === "subscriptions") return tw.helixDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.subscribers ?? [], pagination: {}, total: (tw.subscribers ?? []).length } };
+          // (1.12.0) the rewards of the channel: the fake Twitch of the rewards (fakeRewards.mjs) behind the connector's own permission check, with THIS account's permissions
+          if (a.path.startsWith("channel_points/custom_rewards") && tw.rewardsApi) { tw.rewardsApi.state.scopes = tw.scopes; return tw.rewardsApi.request(a); }
           if (a.path !== "eventsub/subscriptions") return { ok: false, error: "forbidden" };
           if (a.method === "GET") return tw.listDown ? { ok: false, error: "network" } : { ok: true, status: 200, json: { data: tw.subs } };
           if (a.method === "DELETE") { const id = [].concat(a.query.id)[0]; tw.subs = tw.subs.filter((s) => s.id !== id); return { ok: true, status: 204, json: null }; }
@@ -124,6 +126,8 @@ export const EV = {
   offline: { broadcaster_user_id: B, broadcaster_user_login: "emma_test", broadcaster_user_name: "Emma_Test" },
   hypeBegin: { id: "h1", broadcaster_user_id: B, level: 1, total: 600, progress: 600, goal: 1800, top_contributions: [{ user_id: "7", user_login: "etoile_nord", user_name: "Etoile_Nord", type: "bits", total: 300 }], started_at: "2026-11-12T19:30:00Z", expires_at: "2026-11-12T19:35:00Z", all_time_high_level: 4, all_time_high_total: 9000, is_shared_train: false, type: "regular" },
   hypeProgress: (level) => ({ id: "h1", broadcaster_user_id: B, level, total: 600 * level, progress: 100, goal: 2000, top_contributions: [], started_at: "2026-11-12T19:30:00Z", expires_at: "2026-11-12T19:35:00Z", is_shared_train: false, type: "regular" }),
+  // (1.12.0) a redemption as Twitch sends it (channel.channel_points_custom_reward_redemption.add v1): the reward with its id, title, cost and prompt
+  redeem: (reward = { id: "92af127c-7326-4483-a52b-b0da0be61c01", title: "Hydrate", cost: 500, prompt: "Drink some water" }, input = "") => ({ id: "17fa2df1-ad76-4804-bfa5-a40ef63efe63", broadcaster_user_id: B, broadcaster_user_login: "emma_test", broadcaster_user_name: "Emma_Test", user_id: "8", user_login: "lune_douce", user_name: "Lune_Douce", user_input: input, status: "unfulfilled", reward, redeemed_at: "2026-11-12T19:59:30Z" }),
   hypeEnd: { id: "h1", broadcaster_user_id: B, level: 3, total: 5000, top_contributions: [], started_at: "2026-11-12T19:30:00Z", ended_at: "2026-11-12T19:40:00Z", cooldown_ends_at: "2026-11-12T20:40:00Z", is_shared_train: false, type: "regular" },
 };
 export const TYPES = { follow: "channel.follow", sub: "channel.subscribe", resub: "channel.subscription.message", gift: "channel.subscription.gift", cheer: "channel.cheer", raid: "channel.raid", online: "stream.online", offline: "stream.offline" };

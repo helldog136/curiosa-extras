@@ -23,6 +23,7 @@ const adminMd = await import(new URL(`./media-admin.mjs${v}`, import.meta.url).h
 const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 const rxMcp = await import(new URL(`./reaction-mcp.mjs${v}`, import.meta.url).href);
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
+const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
 const cpMcp = await import(new URL(`./compose-mcp.mjs${v}`, import.meta.url).href);
 /**
  * (1.16.0) A caller declares the place of one of its commands (`alerts.show.place`): its label, its files (addresses of this library), the automatic values its texts
@@ -221,7 +222,7 @@ async function collectLive(ctx, st, now) {
   fresh.sort((a, b) => a.at - b.at);
   const out = fresh.slice(-LIMITS.perPull);
   for (const f of out) emit(key, f.alert);
-  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), { ...twitchEnv(ctx, now), compose: cp.composerOf(ctx, await cp.allByKey(ctx).catch(() => new Map())) }).catch(() => 0);
+  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), { ...twitchEnv(ctx, now), compose: cp.composerOf(ctx, await cp.allByKey(ctx).catch(() => new Map())), rewards: await rw.byId(ctx).catch(() => null) }).catch(() => 0);
   return { sent: out.length + sentTwitch };
 }
 export const listeners = (key) => bus.listenerCount(key);
@@ -480,10 +481,13 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
     // What each Twitch event type shows (picture, GIF, video, sound), read and changed by Twitch activity. `set` carries the person (callerRights) so the files are kept HERE.
     "alerts.reaction": {
       list: (ctx) => rx.list(ctx),
-      get: (ctx, input) => rx.get(ctx, String(input?.type ?? "")),
+      // (version 3) `reward` (a Twitch reward id) with the type "redeem": the reaction of that reward; `title` and `cost` are what the caller knows of it
+      get: (ctx, input) => rx.get(ctx, String(input?.type ?? ""), input?.type === "redeem" && input?.reward ? String(input.reward) : ""),
       media: (ctx) => rx.media(ctx),
-      set: (ctx, input) => rx.set(ctx, String(input?.type ?? ""), input?.patch ?? {}),
-      test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg, extra) => adminTw.sampleAlert(c, id, Date.now(), cfg, extra), emit: (a) => emit(ctx.instance.key, a) }),
+      set: (ctx, input) => (input?.type === "redeem" && input?.reward ? rx.setReward(ctx, String(input.reward), { title: input.title, cost: input.cost }, input?.patch ?? {}) : rx.set(ctx, String(input?.type ?? ""), input?.patch ?? {})),
+      test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg, extra) => adminTw.sampleAlert(c, id, Date.now(), cfg, extra), emit: (a) => emit(ctx.instance.key, a), ...(input?.type === "redeem" && input?.reward ? { reward: String(input.reward), info: { title: input.title, cost: input.cost } } : {}) }),
+      rewards: (ctx) => rx.rewards(ctx),
+      forget: (ctx, input) => rx.forgetReward(ctx, String(input?.reward ?? "")),
     },
   },
   mcp: { ...adminTw.tools((key, a) => emit(key, a)), ...rxMcp.tools((key, a) => emit(key, a)), ...cpMcp.tools() },

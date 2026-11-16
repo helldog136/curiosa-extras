@@ -208,3 +208,7 @@ When you stream with other people in a **shared chat**, the bot should not fill 
 
 With Alerts overlay 1.16.0 (service `alerts.show` version 3) and core 0.19.0 or later, the gallery of a command or a word offers "Place the text" (the core's editor; videos too with core 0.21.0). The automatic values are the bot's: `{user}` (who typed the command), `{target}` (the first word after it, @ removed) and `{args}` (every word after it); a word offers `{user}`. A box "The bot's answer" shows the chat answer. The placements are checked before the command is saved (an error shows under the gallery), then kept by the overlay under the place `show:<instance key>:<custom|word|builtin…>:<id>`; deleting a command forgets them. At run time the bot sends the place, the values and its answer; the overlay draws. `bot_commands_list` gives each command that shows pictures its `screenPlace`, the place the assistant's `composition_*` tools use. Without the overlay, or with an older one, nothing changes.
 
+
+## Rewards for an alert only (version 1.22.0)
+
+The service `twitch.rewards` (version 1) lets Twitch activity create a channel point reward from its Rewards tab: `status()` (can it be created, and if not why) and `create({ title, cost })` (the person's right "rewards.manage" carried, journal line `reward.created`). The reward is one of this module's rewards with the action "Show the alert only" (`alerte:seule`): nothing happens in the chat or at home, its redemptions skip Twitch's request queue, and one that still arrives unfulfilled is fulfilled, never refunded.
