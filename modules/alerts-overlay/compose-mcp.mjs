@@ -1,4 +1,4 @@
-// MCP tools on compositions (1.15.0, core 0.24.0): an AI assistant places the text on the pictures, GIFs and videos of a reaction, LOOKS at an approximate
+// MCP tools on compositions (1.15.0, core 0.25.0): an AI assistant places the text on the pictures, GIFs and videos of a reaction, LOOKS at an approximate
 // picture of the result (made by the site with sharp), opens an exact page in its own browser, and iterates; the owner fine-tunes in the visual editor.
 //
 //   composition_places   read   the places (one per Twitch event type), their files (with sizes, length, transparency, still picture) and automatic values
@@ -29,7 +29,7 @@ const previews = (globalThis.__curiosaAlertsPreviews ??= new Map());   // access
 
 const ready = (ctx, feature) => {
   if (!cp.available(ctx)) throw expose("This site's core cannot place text yet: it must be updated to 0.19.0 or later.");
-  if (feature && !(ctx.overlay.features ?? []).includes(feature)) throw expose(`This site's core cannot do this yet: it must be updated to 0.24.0 or later (feature "${feature}").`);
+  if (feature && !(ctx.overlay.features ?? []).includes(feature)) throw expose(`This site's core cannot do this yet: it must be updated to 0.25.0 or later (feature "${feature}").`);
 };
 const placeOf = (place) => {
   const m = /^event:([a-z]+)$/.exec(String(place ?? ""));

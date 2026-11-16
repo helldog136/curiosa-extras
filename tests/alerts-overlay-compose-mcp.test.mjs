@@ -167,7 +167,7 @@ test("an older core: clear words, nothing breaks", async () => {
     const c2 = fakeCtx({ key: "old2", locale: "en", messages: en, permissions: manifest.permissions });
     const { features, ...kit } = c2.overlay;
     c2.overlay = { ...kit, features: ["video"] };
-    await fails(tools.composition_preview(c2, { place: "event:sub", src: PIC }, actor), /0\.24\.0 or later/);
+    await fails(tools.composition_preview(c2, { place: "event:sub", src: PIC }, actor), /0\.25\.0 or later/);
     assert.ok(features);
   }
 });

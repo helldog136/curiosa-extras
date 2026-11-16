@@ -6,9 +6,9 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 ## 1.91.0 — 2026-11-16
 
-*En bref : votre assistant IA peut placer le texte sur les images et les vidéos de vos alertes, en regardant une image du résultat. Vous affinez ensuite dans l'éditeur. Overlay alertes 1.15.0. Demande le cœur 0.24.0 ; les droits d'écriture restent désactivés tant que vous ne les cochez pas.*
+*En bref : votre assistant IA peut placer le texte sur les images et les vidéos de vos alertes, en regardant une image du résultat. Vous affinez ensuite dans l'éditeur. Overlay alertes 1.15.0. Demande le cœur 0.25.0 ; les droits d'écriture restent désactivés tant que vous ne les cochez pas.*
 
-*In short: your AI assistant can place the text on the pictures and videos of your alerts, while looking at a picture of the result. You then fine-tune in the editor. Alerts overlay 1.15.0. Needs core 0.24.0; the writing rights stay off until you tick them.*
+*In short: your AI assistant can place the text on the pictures and videos of your alerts, while looking at a picture of the result. You then fine-tune in the editor. Alerts overlay 1.15.0. Needs core 0.25.0; the writing rights stay off until you tick them.*
 
 ### Nouveautés
 
