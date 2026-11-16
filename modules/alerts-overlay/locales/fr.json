@@ -280,5 +280,7 @@
   "md_err_unknown": "Ce fichier n'existe plus.",
   "md_err_busy": "Trop de fichiers montrés en une minute. Réessayez dans un instant.",
   "md_auto_picture": "Image {n}",
-  "md_auto_video": "Clip {n}"
+  "md_auto_video": "Clip {n}",
+  "md_by_assistant": "Ajouté par l'assistant",
+  "md_col_origin": "Origine"
 }

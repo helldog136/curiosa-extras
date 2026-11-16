@@ -6,7 +6,7 @@
     "en": "Twitch bot",
     "fr": "Bot Twitch"
   },
-  "version": "1.20.0",
+  "version": "1.20.1",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 60,
   "platform": "twitch",
@@ -739,7 +739,7 @@
           "onStreamPicture": {
             "type": "string",
             "maxLength": 80,
-            "description": "Also show a picture, GIF or video on stream through the alerts overlay: its NAME (or id) in the media library (read onStreamLibrary in bot_commands_list). An assistant cannot upload a file. Refused when the alerts overlay is not installed."
+            "description": "Also show a picture, GIF or video on stream through the alerts overlay: its NAME (or id) in the media library (read onStreamLibrary in bot_commands_list). To add a file you made, upload it first with the reaction_media_upload_begin tool of the alerts overlay (when the owner allows it). Refused when the alerts overlay is not installed."
           },
           "onStreamPictures": {
             "type": "array",
@@ -920,7 +920,7 @@
           "onStreamPicture": {
             "type": "string",
             "maxLength": 80,
-            "description": "Also show a picture, GIF or video on stream through the alerts overlay: its NAME (or id) in the media library (read onStreamLibrary in bot_commands_list). An assistant cannot upload a file. Refused when the alerts overlay is not installed."
+            "description": "Also show a picture, GIF or video on stream through the alerts overlay: its NAME (or id) in the media library (read onStreamLibrary in bot_commands_list). To add a file you made, upload it first with the reaction_media_upload_begin tool of the alerts overlay (when the owner allows it). Refused when the alerts overlay is not installed."
           },
           "onStreamPictures": {
             "type": "array",
