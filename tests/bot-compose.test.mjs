@@ -149,7 +149,8 @@ test("a word, an older overlay, a video length; the assistant sees the bot's pla
   if ((b.al.overlay.features ?? []).includes("video")) {
     const set = await tools.composition_set(b.al, { place, src: VID, composition: JSON.stringify(comp(VID, [{ id: "t1", content: { kind: "custom", text: "GG {user}" } }], { backdrop: { src: VID, play: "once" }, duration: { mode: "fixed", seconds: 9 } })) }, { name: "Camille assistant" });
     assert.equal(set.saved, true);
-    await assert.rejects(tools.composition_set(b.al, { place, src: VID, composition: JSON.stringify(comp(VID, [{ id: "t1", content: { kind: "custom", text: "{target}" } }])) }, { name: "x" }), /uses \{target\}; this place knows \{user\}/);
+    // plain words with a core that explains (0.25.0), the path and the code with an older one
+    await assert.rejects(tools.composition_set(b.al, { place, src: VID, composition: JSON.stringify(comp(VID, [{ id: "t1", content: { kind: "custom", text: "{target}" } }])) }, { name: "x" }), b.al.overlay.explainErrors ? /uses \{target\}; this place knows \{user\}/ : /boxes\[0\]\.content\.text: variable/);
     const events = [], on = (e) => events.push(e);
     globalThis.__curiosaAlertsBus.on(b.al.instance.key, on);
     try { await say(b.bot, "gg", { name: "lune_douce", login: "lune_douce" }); await new Promise((ok) => setTimeout(ok, 20)); } finally { globalThis.__curiosaAlertsBus.off(b.al.instance.key, on); }
