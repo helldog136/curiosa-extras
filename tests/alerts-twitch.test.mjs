@@ -256,11 +256,11 @@ test("service alerts.queue and the tools for assistants", async () => {
   await assert.rejects(def.mcp.alert_template_update(w.ctx, { type: "nope" }), (e) => e.expose === true);
   await assert.rejects(def.mcp.alert_template_update(w.ctx, { type: "gift" }), (e) => e.expose === true);
   assert.deepEqual(manifest.mcp.map((m) => m.name), Object.keys(def.mcp));
-  assert.ok(manifest.mcp.filter((m) => !m.readOnly).every((m) => m.default === false && (!m.destructive || m.name === "reaction_media_delete")));
+  assert.ok(manifest.mcp.filter((m) => !m.readOnly).every((m) => m.default === false && (!m.destructive || ["reaction_media_delete", "composition_remove"].includes(m.name))));
 });
 
 test("manifest: version, tab, four more settings (one advanced), the topic and its schema, FR and EN texts", () => {
-  assert.equal(manifest.version, "1.14.0");
+  assert.equal(manifest.version, "1.15.0");
   const t = manifest.consumes.find((c) => c.topic === "twitch.event");
   assert.ok(t.schema.find((f) => f.key === "id" && f.required) && t.schema.find((f) => f.key === "at" && f.type === "datetime"));
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
