@@ -26,6 +26,14 @@ export function samples(kind, now = Date.now()) {
   };
   return S[kind] ? { ...S[kind], at: now } : null;
 }
+/** (1.12.0) The test of ONE reward: a redemption of it with an invented name, so the overlay shows that reward's reaction. Same limits as a test of a type. */
+export async function sendRewardTest(ctx, reward, { now = Date.now() } = {}) {
+  if (!reward || !es.REWARD_ID.test(String(reward.id ?? ""))) return { ok: false, code: "unknown" };
+  if (!st.allow(ctx, "tests", { max: LIMITS.testsPerMinute, windowMs: 60_000, now })) return { ok: false, code: "rate" };
+  const id = rid("test");
+  await st.record(ctx, id, { ...samples("redeem", now), rewardId: reward.id, title: String(reward.title ?? "").slice(0, 80) || "Hydrate", amount: Number(reward.cost) > 0 ? Number(reward.cost) : 500 }, { source: "test", now });
+  return { ok: true, ids: [id] };
+}
 /** The kinds a "Test" button of a type sends. */
 export const testKinds = (typeId) => (typeId === "hype" ? ["hype_begin", "hype_end"] : es.typeOf(typeId)?.kinds ?? []);
 
@@ -72,7 +80,7 @@ export function toItem(d) {
     id: String(d.id), type: d.kind, at: new Date(Number.isFinite(d.at) ? d.at : Date.now()).toISOString(),
     test: d.source === "test", replay: d.source === "replay", missed: d.missed === true,
   };
-  for (const k of ["name", "login", "tier", "text", "title", "trainType", "streamType"]) if (typeof d[k] === "string" && d[k]) o[k] = d[k];
+  for (const k of ["name", "login", "tier", "text", "title", "trainType", "streamType", "rewardId"]) if (typeof d[k] === "string" && d[k]) o[k] = d[k];
   for (const k of ["months", "streak", "count", "cumulative", "amount", "viewers", "level", "total", "goal", "progress", "bestLevel"]) if (num(d[k]) !== undefined) o[k] = d[k];
   for (const k of ["anonymous", "gifted", "shared"]) if (d[k] === true) o[k] = true;
   if (Array.isArray(d.top) && d.top.length) o.contributors = d.top.map((c) => c.name).filter(Boolean).slice(0, 3);

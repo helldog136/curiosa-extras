@@ -17,6 +17,8 @@ const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
+const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
+const { rewardOf } = await import(new URL(`./reaction-mcp.mjs${v}`, import.meta.url).href);
 
 const expose = (message) => Object.assign(new Error(message), { expose: true });
 /** The automatic values each event type offers in a placed text (the same table as the window of Twitch activity, TYPE_WORDS). */
@@ -36,8 +38,11 @@ async function placeOf(ctx, place) {
   const p = String(place ?? "");
   const m = /^event:([a-z]+)$/.exec(p);
   if (m && tw.TYPES.includes(m[1])) return { place: p, kind: "event", type: m[1] };
+  // (1.17.0) the own reaction of a channel point reward
+  const r = /^event:redeem:([A-Za-z0-9-]{8,64})$/.exec(p);
+  if (r) { const row = await rw.one(ctx, r[1]); if (row?.cfg) return { place: p, kind: "event", type: "redeem", row }; throw expose(`The reward ${r[1]} has no reaction of its own: give it one with reaction_set (type redeem, reward), then place the text.`); }
   if (p.startsWith("show:")) { const decl = await cp.showPlace(ctx, p); if (decl) return { place: p, kind: "show", decl }; }
-  throw expose(`"${place}" is not a place. Places are "event:<type>" (type one of: ${tw.TYPES.join(", ")}) and the "show:…" places of bot commands; read composition_places.`);
+  throw expose(`"${place}" is not a place. Places are "event:<type>" (type one of: ${tw.TYPES.join(", ")}), "event:redeem:<reward id>" and the "show:…" places of bot commands; read composition_places.`);
 }
 /** The automatic values of a place. */
 const wordsOf = (P) => (P.kind === "event" ? PLACE_WORDS[P.type] ?? [] : P.decl.variables ?? []);
@@ -47,7 +52,7 @@ async function filesOf(ctx, P) {
   const lib = await md.list(ctx, { tones: false }), byUrl = new Map(lib.map((m) => [m.url, m])), byId = new Map(lib.map((m) => [m.id, m]));
   const placed = await cp.forPlace(ctx, P.place);
   const rows = new Map((await cp.rowsFor(ctx, P.place)).map((r) => [r.src, r]));
-  const srcs = P.kind === "event" ? rx.variantsOf((await tw.loadConfig(ctx)).types[P.type], tw.videosOf(ctx.setting)) : (P.decl.files ?? []).filter((src) => byUrl.has(src));
+  const srcs = P.kind === "event" ? rx.variantsOf(P.row?.cfg ?? (await tw.loadConfig(ctx)).types[P.type], tw.videosOf(ctx.setting)) : (P.decl.files ?? []).filter((src) => byUrl.has(src));
   return srcs.map((src) => {
     const m = byUrl.get(src), poster = m?.posterId ? byId.get(m.posterId) : null;
     const kind = tw.VIDEO_RE.test(src) ? "video" : /\.gif$/.test(src) ? "gif" : "picture";
@@ -66,7 +71,7 @@ const fileIn = (files, src, place) => {
 const phraseOf = async (ctx, P, values) => {
   if (P.kind === "show") return String(P.decl.phrase ?? "") || (values.user ?? "");
   const cfg = await tw.loadConfig(ctx);
-  return tw.fillTemplate(cfg.types[P.type].template || ctx.t(`tw_text_${P.type}`), values);
+  return tw.fillTemplate((P.row?.cfg ?? cfg.types[P.type]).template || ctx.t(`tw_text_${P.type}`), { ...values, ...(P.row?.title ? { title: P.row.title } : {}) });
 };
 const samples = (P, long) => Object.fromEntries(wordsOf(P).map((w) => [w, (long ? LONG : SAMPLES)[w] ?? (long ? LONG.name : SAMPLES.name)]));
 
@@ -131,6 +136,13 @@ function rateLimit(actor, now = Date.now()) {
   list.push(now); previews.set(key, list);
 }
 export const resetPreviewLimits = () => previews.clear();
+/** (1.17.0) `reward` (id or exact title) with the place "event:redeem": the place of that reward's own reaction. */
+async function withReward(ctx, a, key = "place", rewardKey = "reward") {
+  if (a[rewardKey] === undefined || a[rewardKey] === "") return a;
+  if (a[key] !== "event:redeem") throw expose(`${rewardKey} only goes with the place "event:redeem".`);
+  const row = await rewardOf(ctx, { type: "redeem", reward: a[rewardKey] });
+  return { ...a, [key]: tw.rewardPlace(row.rid) };
+}
 
 export function tools() {
   return {
@@ -145,7 +157,14 @@ export function tools() {
             place: P.place, kind: "event", label: ctx.t(`tw_type_${type}`) !== `tw_type_${type}` ? ctx.t(`tw_type_${type}`) : type, enabled: cfg.types[type].on, files: await filesOf(ctx, P),
             automaticValues: wordsOf(P).map((w) => ({ token: `{${w}}`, means: LABELS[w], example: SAMPLES[w] })),
             sentence: cfg.types[type].template || ctx.t(`tw_text_${type}`),
+            ...(type === "redeem" ? { note: "The reaction of every reward that has none of its own (all the other rewards)." } : {}),
           });
+        }
+        // (1.17.0) the rewards that have their own reaction
+        for (const row of (await rw.byId(ctx)).values()) {
+          if (!row.cfg) continue;
+          const P = { place: tw.rewardPlace(row.rid), kind: "event", type: "redeem", row };
+          places.push({ place: P.place, kind: "event", label: row.title || row.rid, reward: { id: row.rid, title: row.title || null, cost: row.cost || null }, enabled: row.on, files: await filesOf(ctx, P), automaticValues: wordsOf(P).map((w) => ({ token: `{${w}}`, means: LABELS[w], example: SAMPLES[w] })), sentence: row.cfg.template || ctx.t("tw_text_redeem") });
         }
       }
       // (1.16.0) the commands and words of the Twitch bot that show media (declared when saved in the bot, or at their first show)
@@ -161,6 +180,7 @@ export function tools() {
       };
     },
     async composition_get(ctx, a) {
+      a = await withReward(ctx, a);
       ready(ctx);
       const P = await placeOf(ctx, a.place), files = await filesOf(ctx, P), file = fileIn(files, a.src, a.place);
       const saved = (await cp.forPlace(ctx, a.place))[file.src] ?? null;
@@ -176,6 +196,7 @@ export function tools() {
       };
     },
     async composition_set(ctx, a, actor) {
+      a = await withReward(ctx, a);
       ready(ctx);
       const P = await placeOf(ctx, a.place), files = await filesOf(ctx, P), file = fileIn(files, a.src, a.place);
       if (file.kind === "video" && !(ctx.overlay.features ?? []).includes("video")) throw expose("This site's core places text on pictures and GIFs only: it must be updated to 0.21.0 or later for videos.");
@@ -186,6 +207,7 @@ export function tools() {
       return { ok: true, saved: true, composition: value, warnings, note: "Saved. The owner can fine-tune it in Twitch activity > the reaction window > Edit the text. reaction_test shows it on the overlay." };
     },
     async composition_preview(ctx, a, actor) {
+      a = await withReward(ctx, a);
       ready(ctx, "preview");
       const r = await toRender(ctx, a);
       rateLimit(actor);
@@ -199,6 +221,7 @@ export function tools() {
       });
     },
     async composition_render_kit(ctx, a) {
+      a = await withReward(ctx, a);
       ready(ctx, "preview");
       const r = await toRender(ctx, a);
       const html = ctx.overlay.renderKit(r.resolved, { siteUrl: ctx.api.siteUrl, width: a.width ?? 1280, background: a.background ?? "checker", media: r.file.width ? { width: r.file.width, height: r.file.height } : null, title: `${a.place} · ${r.file.name ?? r.file.src}` });
@@ -208,6 +231,7 @@ export function tools() {
       };
     },
     async composition_copy(ctx, a, actor) {
+      a = await withReward(ctx, await withReward(ctx, a, "fromPlace", "fromReward"), "toPlace", "toReward");
       ready(ctx);
       const fromP = await placeOf(ctx, a.fromPlace), toP = await placeOf(ctx, a.toPlace);
       const fromFile = fileIn(await filesOf(ctx, fromP), a.fromSrc, a.fromPlace);
@@ -221,6 +245,7 @@ export function tools() {
       return { ok: true, copied: { from: `${a.fromPlace} ${fromFile.src}`, to: `${a.toPlace} ${toFile.src}` }, composition: value, warnings: [...notes, ...warningsOf(value)] };
     },
     async composition_remove(ctx, a) {
+      a = await withReward(ctx, a);
       ready(ctx);
       const P = await placeOf(ctx, a.place), files = await filesOf(ctx, P), file = fileIn(files, a.src, a.place);
       if (!(await cp.forPlace(ctx, a.place))[file.src]) return { ok: true, removed: false, note: "There was no text placed on this file." };

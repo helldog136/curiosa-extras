@@ -114,8 +114,8 @@ test("FR and EN: same keys for the new texts, no colon at the end, short", () =>
 });
 
 test("manifests: the permission, core 0.15.0, the versions", () => {
-  assert.deepEqual([evMan.version, evMan.minCore, evMan.permissions.includes("instances.setup")], ["1.11.0", "0.15.0", true]);
-  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.21.0", "0.15.0", true]);
+  assert.deepEqual([evMan.version, evMan.minCore, evMan.permissions.includes("instances.setup")], ["1.12.0", "0.15.0", true]);
+  assert.deepEqual([botMan.version, botMan.minCore, botMan.permissions.includes("instances.setup")], ["1.22.0", "0.15.0", true]);
 });
 
 /* ───────────── Twitch bot ───────────── */

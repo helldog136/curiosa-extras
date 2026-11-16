@@ -1,6 +1,8 @@
 // Les appels aux points de chaîne (récompenses personnalisées) permis aux autres modules, avec le jeton DE LA CHAÎNE (jamais celui d'un compte bot).
 // Chaque appel a une forme de requête et de corps fermée et bornée. Les détails de Twitch non vérifiés sont listés en tête de modules/twitch-bot/eventsub.mjs.
 export const SCOPE = "channel:manage:redemptions";
+/** (1.6.0) Reading the rewards of the channel: either permission is enough ("a|b" = one of them, see helix.mjs). Without `only_manageable_rewards`, every reward of the channel. */
+export const READ = "channel:read:redemptions|channel:manage:redemptions";
 const digits = (x) => /^[0-9]{1,20}$/.test(x);
 const rid = (x) => /^[A-Za-z0-9-]{8,64}$/.test(x);
 const single = (test) => (v) => v.length === 1 && test(v[0]);
@@ -22,7 +24,7 @@ const FIELDS = {
 const BASE = "channel_points/custom_rewards";
 /** route → [autorisations, forme de la requête, validation du corps (absente = pas de corps permis)] */
 export const REWARD_ROUTES = new Map([
-  [`GET ${BASE}`, [[SCOPE], query({ only_manageable_rewards: single((x) => x === "true"), id: single(rid) })]],
+  [`GET ${BASE}`, [[READ], query({ only_manageable_rewards: single((x) => x === "true"), id: single(rid) })]],
   [`POST ${BASE}`, [[SCOPE], query(), (b) => typeof b.title === "string" && int(1, 1e9)(b.cost) && only(b, FIELDS)]],
   [`PATCH ${BASE}`, [[SCOPE], (q) => query({ id: single(rid) })(q) && !!q.id, (b) => Object.keys(b).length > 0 && only(b, FIELDS)]],
   [`DELETE ${BASE}`, [[SCOPE], (q) => query({ id: single(rid) })(q) && !!q.id]],

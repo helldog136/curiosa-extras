@@ -4,6 +4,46 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.93.0 — 2026-11-16
+
+*En bref : une réaction différente pour chaque récompense de points de chaîne, dans le nouvel onglet « Récompenses » d'Activité Twitch. Une nouvelle récompense peut se créer d'ici avec le Bot Twitch. Activité Twitch 1.12.0, Overlay alertes 1.17.0, Bot Twitch 1.22.0, Connecteur Twitch 1.6.0. Les réactions déjà réglées ne changent pas.*
+
+*In short: a different reaction for each channel point reward, in the new "Rewards" tab of Twitch activity. A new reward can be created from there with the Twitch bot. Twitch activity 1.12.0, Alerts overlay 1.17.0, Twitch bot 1.22.0, Twitch connector 1.6.0. The reactions already set do not change.*
+
+### Nouveautés
+
+- **Une réaction par récompense.** L'onglet « Récompenses » liste vos récompenses de points de chaîne. Chacune peut avoir ses images, GIF, vidéos, sa phrase et son texte placé.
+- **Toutes les autres récompenses.** La première ligne garde la réaction actuelle. Elle sert pour chaque récompense qui n'a pas la sienne.
+- **Un interrupteur par récompense.** Il allume ou éteint l'alerte de cette récompense seulement.
+- **Ajouter une récompense.** Un nom et un coût suffisent : le Bot Twitch la crée sur Twitch, puis la fenêtre de sa réaction s'ouvre.
+- **Supprimée sur Twitch.** Une récompense supprimée sur Twitch garde sa ligne tant qu'elle a une réaction. Vous pouvez retirer cette réaction.
+- **L'aperçu.** Avec le cœur 0.27.0, la fenêtre d'une réaction montre l'aperçu de l'alerte. Il suit la phrase pendant que vous l'écrivez.
+- **One reaction per reward.** The "Rewards" tab lists your channel point rewards. Each one can have its pictures, GIFs, videos, sentence and placed text.
+- **All other rewards.** The first line keeps the current reaction. It is used by every reward that has none of its own.
+- **One switch per reward.** It turns the alert of that reward only on or off.
+- **Add a reward.** A name and a cost are enough: the Twitch bot creates it on Twitch, then the window of its reaction opens.
+- **Deleted on Twitch.** A reward deleted on Twitch keeps its line while it has a reaction. You can remove that reaction.
+- **The preview.** With core 0.27.0, the window of a reaction shows the alert preview. It follows the sentence as you write it.
+
+### Ce qui ne change pas
+
+- **Vos réactions actuelles.** La réaction des points de chaîne devient « Toutes les autres récompenses », à l'identique.
+- **Sans le Bot Twitch.** L'onglet marche ; seule la création d'une récompense demande le bot, et la page le dit en une ligne.
+- **Your current reactions.** The channel points reaction becomes "All other rewards", unchanged.
+- **Without the Twitch bot.** The tab works; only creating a reward needs the bot, and the page says so in one line.
+
+### Pour votre assistant IA
+
+- **Une récompense précise.** `reaction_get`, `reaction_set` et `reaction_test` prennent `reward` (son identifiant ou son titre exact) avec le type `redeem`. Les outils `composition_*` aussi, et `composition_places` liste les récompenses.
+- **La liste des récompenses.** Le nouvel outil de lecture `twitch_events_rewards` d'Activité Twitch donne chaque récompense et sa réaction. Les outils d'écriture restent désactivés tant que vous ne les cochez pas.
+- **One precise reward.** `reaction_get`, `reaction_set` and `reaction_test` take `reward` (its id or exact title) with the type `redeem`. So do the `composition_*` tools, and `composition_places` lists the rewards.
+- **The list of rewards.** Twitch activity's new read tool `twitch_events_rewards` gives each reward and its reaction. The writing tools stay off until you tick them.
+
+### Pour les développeurs
+
+- Overlay alertes 1.17.0 : service `alerts.reaction` version 3 (`rewards`, `forget`, `reward` dans `get`/`set`/`test`, `patch.on`), collection `rewardReactions`, lieux `event:redeem:<id>`, champ `rewardId` du sujet `twitch.event`.
+- Activité Twitch 1.12.0 : onglet `rewards`, `rewardId` dans le journal et le sujet, besoin facultatif `twitch.rewards`, option `phraseField` de la galerie. Bot Twitch 1.22.0 : service `twitch.rewards` (`status`, `create` en `callerRights`), action `alerte:seule` (file d'attente sautée), événement de journal `reward.created`. Connecteur Twitch 1.6.0 : lecture des récompenses avec « read » ou « manage ». Tests : `reward-reactions`.
+
 ## 1.92.0 — 2026-11-16
 
 *En bref : « Placer le texte » arrive dans les commandes et les mots du Bot Twitch qui montrent une image ou une vidéo. Le texte peut reprendre le pseudo de la personne qui tape la commande. Bot Twitch 1.21.0, Overlay alertes 1.16.0. Rien ne change sans l'Overlay alertes.*

@@ -62,3 +62,7 @@ Sur-ensemble de la version 2 offerte par « Chaîne Twitch » 1.7 : les appels d
 ## Health of the connections (1.5.0)
 
 "Connected" means that Twitch accepts the authorization **now**: the connector asks Twitch (validate, then refresh when needed) when its page opens, every 10 minutes from a task, and at once when a module is refused. A connection is `ok`, `renew` (revoked, expired, password changed, other application), `scopes` (a permission a module needs is missing; listed in plain words) or `app` (Twitch refuses the application ID or secret). The page shows one banner and one button "Authorize again with Twitch"; the menu shows a red dot; the site log gets one line per change; the owner gets one e-mail per problem after 10 minutes and one when all is back (setting "E-mail me when Twitch needs a new authorization"). The service `twitch.api` offers `health` (read only) and `report` for modules; the MCP tool `connector_twitch_status` tells an assistant the same.
+
+## Reading the rewards (version 1.6.0)
+
+`GET channel_points/custom_rewards` is allowed with either "read the redemptions" or "manage the redemptions" (Twitch accepts both): Twitch activity lists every reward of the channel with the permission its type "Channel points" already has. When neither is granted, the permission asked for is "read the redemptions". Every write still needs "manage".

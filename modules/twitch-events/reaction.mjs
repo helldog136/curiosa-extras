@@ -85,34 +85,53 @@ export function patchOf(values) {
   return patch;
 }
 
+/** (1.12.0) The reward of a reaction window (hidden fields): { reward, title, cost }, null for a type, false for a value that is not a reward id. */
+export function rewardOfForm(values, id) {
+  const r = String(values.reward ?? "");
+  if (!r) return null;
+  if (id !== "redeem" || !es.REWARD_ID.test(r)) return false;
+  const cost = Math.trunc(Number(values.rewardCost));
+  return { reward: r, title: String(values.rewardTitle ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 45), cost: Number.isFinite(cost) && cost > 0 ? cost : 0 };
+}
+
 /** The `compose` option of the gallery ("Place the text"), for a type: its automatic values with an example, and the sentence as the editor shows it. */
-export function composeOptionOf(ctx, id, cur) {
+export function composeOptionOf(ctx, id, cur, reward = null) {
   const t = ctx.t, words = TYPE_WORDS[id] ?? [];
   const samples = Object.fromEntries(WORDS.map((w) => [w, t(`rx_sample_${w}`)]));
+  // (1.12.0) a reward's window: its own title and cost are the examples
+  if (reward?.title) samples.title = reward.title;
+  if (reward?.cost) samples.amount = new Intl.NumberFormat(ctx.locale).format(reward.cost);
   return {
     variables: words.map((w) => ({ token: w, label: t(`rx_var_${w}`), sample: samples[w] })),
     phrase: { label: t("rx_compose_phrase"), sample: fillSample(cur.text || cur.textDefault, samples).replace(/\s+/g, " ").trim() },
     formats: ["media", "16:9", "9:16", "1:1", "4:3", "21:9"], defaultFormat: "media", maxBoxes: 4, testAction: "testReaction",
+    // (1.12.0, core 0.27.0) the preview under the files follows the sentence as it is typed (an older core ignores the key)
+    phraseField: "text",
     // (1.11.0) videos too, when the overlay plays them as the core's editor says (Alerts overlay 1.14.0 on core 0.21.0)
     ...(cur.composeVideo === true ? { video: true } : {}),
   };
 }
 
 /** The window of one type. `null` when the type is unknown or the overlay does not answer. */
-export async function dialog(ctx, id, { query } = {}) {
+export async function dialog(ctx, id, { reward = null } = {}) {
   const t = ctx.t;
   if (!es.typeOf(id)) return null;
-  const [cur, media] = await Promise.all([call(ctx, "get", { type: id }), call(ctx, "media", {})]);
-  if (!cur?.ok) return null;
+  // (1.12.0) the window of ONE reward (`reward`: { id, title, cost }), from the Rewards tab; the type `redeem` alone is "all the other rewards"
+  const own = id === "redeem" && reward?.id ? reward : null;
+  const [cur, media] = await Promise.all([call(ctx, "get", { type: id, ...(own ? { reward: own.id } : {}) }), call(ctx, "media", {})]);
+  if (!cur?.ok || (own && cur.reward !== own.id)) return null;
   const sounds = ["", ...(media?.tones ?? [])];
+  const tab = reward ? "rewards" : "types";
+  const title = own ? t("rx_title_reward", { reward: own.title }) : id === "redeem" ? t("rx_title_others") : t("rx_title", { type: t(`type_${id}`) });
   return {
-    type: "adminForm", tab: "types", presentation: "dialog", action: "saveReaction", cancelHref: "?tab=types", title: t("rx_title", { type: t(`type_${id}`) }), submitLabel: t("rx_save_btn"),
+    type: "adminForm", tab, presentation: "dialog", action: "saveReaction", cancelHref: `?tab=${tab}`, title, submitLabel: t("rx_save_btn"),
     extraActions: [{ label: t("rx_test_btn"), action: "testReaction" }],
     fields: [
       { name: "id", kind: "hidden", label: "id", value: id },
+      ...(own ? [{ name: "reward", kind: "hidden", label: "reward", value: own.id }, { name: "rewardTitle", kind: "hidden", label: "rewardTitle", value: own.title }, { name: "rewardCost", kind: "hidden", label: "rewardCost", value: String(own.cost ?? 0) }] : []),
       { name: "variants", kind: "gallery", accept: ["image", "video"], max: cur.max ?? MAX, label: t("rx_f_files"), help: t("rx_f_files_help"), value: JSON.stringify((cur.variants ?? []).map((x) => ({ src: x.src, ...(cur.compositions?.[x.src] ? { compose: cur.compositions[x.src] } : {}) }))), library: (media?.pictures ?? []).slice(0, 500),
         // "Place the text" on the pictures (core 0.19.0; an older core ignores the key): only when the alerts overlay can keep placed texts
-        ...(cur.compose === true ? { compose: composeOptionOf(ctx, id, cur) } : {}) },
+        ...(cur.compose === true ? { compose: composeOptionOf(ctx, id, cur, own) } : {}) },
       { name: "pick", kind: "segmented", label: t("rx_f_pick"), help: t("rx_f_pick_help"), value: cur.pick === "rotate" ? "rotate" : "random", options: [{ value: "random", label: t("rx_pick_random") }, { value: "rotate", label: t("rx_pick_rotate") }] },
       { name: "text", folded: true, label: t("rx_f_text"), value: cur.text ?? "", placeholder: cur.textDefault ?? "", example: cur.textDefault ?? "", help: t("rx_f_text_help") },
       { name: "sound", kind: "select", folded: true, label: t("rx_f_sound"), value: cur.sound ?? "", options: sounds.map((x) => ({ value: x, label: x ? t(`rx_tone_${x}`) : t("rx_sound_none") })) },
@@ -174,16 +193,20 @@ export const actions = {
   async saveReaction(ctx, values) {
     const id = String(values.id ?? "");
     if (!es.typeOf(id)) return { error: ctx.t("err_unknown_type") };
-    const r = await ctx.api.services.call(SERVICE, "set", { type: id, patch: patchOf(values) }, { asCaller: true });
+    const rw = rewardOfForm(values, id);
+    if (rw === false) return { error: ctx.t("rw_err_unknown") };
+    const r = await ctx.api.services.call(SERVICE, "set", { type: id, patch: patchOf(values), ...(rw ?? {}) }, { asCaller: true });
     if (!r?.ok) return { error: ctx.t("rx_err_unavailable") };
-    if (!r.value?.ok) return r.value?.errors ? { errors: errorsOf(ctx, r.value.errors) } : { error: ctx.t("err_unknown_type") };
-    return { ok: ctx.t("rx_saved", { type: ctx.t(`type_${id}`) }) };
+    if (!r.value?.ok) return r.value?.errors ? { errors: errorsOf(ctx, r.value.errors) } : { error: ctx.t(r.value?.code === "full" ? "rw_err_full" : "err_unknown_type") };
+    return { ok: rw ? ctx.t("rw_saved", { reward: rw.title || rw.reward }) : ctx.t("rx_saved", { type: ctx.t(`type_${id}`) }) };
   },
   /** Tests what is typed in the window, saved or not: the overlay builds the alert through the same path as "Send a test". */
   async testReaction(ctx, values) {
     const id = String(values.id ?? "");
     if (!es.typeOf(id)) return { error: ctx.t("err_unknown_type") };
-    const r = await ctx.api.services.call(SERVICE, "test", { type: id, patch: patchOf(values) });
+    const rw = rewardOfForm(values, id);
+    if (rw === false) return { error: ctx.t("rw_err_unknown") };
+    const r = await ctx.api.services.call(SERVICE, "test", { type: id, patch: patchOf(values), ...(rw ?? {}) });
     if (!r?.ok) return { error: ctx.t("rx_err_unavailable") };
     if (!r.value?.ok) return r.value?.errors ? { errors: errorsOf(ctx, r.value.errors) } : { error: ctx.t("err_unknown_type") };
     return { ok: ctx.t("rx_test_ok") };
