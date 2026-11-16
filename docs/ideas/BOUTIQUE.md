@@ -394,3 +394,7 @@ An empty stock field was read as zero and would have emptied the stock silently 
 - **No product photo yet** (planned with delivery 1); the order sheet is still a page, not a window; the "other options" of a product are a small free-text format ("Large | 24.00 | 3"), which breaks R6 (one notion, one control): it needs a repeatable control the core does not offer.
 - Captures asked by section 9 of the rules that were **not** taken: the dark variant of the administration, an error shown in the real core (the number field refuses letters natively; the server-side messages are only tested as data), the "everything open" view of the product window.
 - No review by a person of the wording.
+
+## 18. Upload limits of AI assistants (2026-11-16)
+
+Not a shop topic, but it came up while planning product photos. The analysis and the request for the core are in [CORE-UPLOAD-LIMITS.md](CORE-UPLOAD-LIMITS.md): the hourly counters of an access can already be reset and changed; the 3 MB image size and the daily site quota (100 images or 60 MB per 24 hours) cannot, and nothing can be lifted for a few minutes. A reset of the daily count and a time-boxed, owner-only lift are proposed there, as a change for the core repository (read, not run, not applied). Product photos in the shop do not depend on it: they would be sent from the product window with its own file field, not through an assistant.
