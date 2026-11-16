@@ -90,3 +90,13 @@ export async function saveOrder(ctx, order) {
 }
 export const addOrder = (ctx, data, token) => ctx.api.store.add("orders", data, { key: hashToken("order", token) });
 export const removeOrder = (ctx, id) => ctx.api.store.remove(id);
+
+/** Gives the order a new tracking token: the old link stops working at once (the store key is the token's hash). Returns the new token and the old hash. */
+export async function rotateOrderToken(ctx, order, token) {
+  const { id, at, ...data } = order;
+  const row = await ctx.api.store.get(id);
+  if (!row) return null;
+  await ctx.api.store.update(id, data, { key: hashToken("order", token) });
+  return { oldKey: row.key };
+}
+export async function restoreOrderKey(ctx, orderId, key) { const row = await ctx.api.store.get(orderId); return row ? ctx.api.store.update(orderId, row.data, { key }) : false; }

@@ -17,11 +17,12 @@ const L = await import("../modules/shop/lib.mjs");
 
 let n = 0;
 const MIN = 60_000, HOUR = 3_600_000;
-function mk({ settings = {}, mailResult = { ok: true }, mailConfigured = true, locale = "en", store } = {}) {
+function mk({ settings = {}, mailResult = { ok: true }, mailConfigured = true, locale = "en", store, rights } = {}) {
   const ctx = fakeCtx({ key: `ml${++n}`, basePath: "shop", moduleId: "shop", locale, defaultLocale: "en", locales: ["en", "fr"], messages: locale === "fr" ? fr : en, settings, mailResult, mailConfigured, site: { name: "Atelier", tagline: "", logo: null } });
   ctx.api.store = store ?? memStore({ start: Date.now() - 24 * HOUR });
   ctx.instance.id = `inst${n}`;
-  ctx.can = () => true;
+  const allowed = rights ? new Set(rights) : null;
+  ctx.can = (r) => (allowed ? allowed.has(r) : true);
   return ctx;
 }
 let addr = 0;
@@ -293,4 +294,66 @@ test("the checkout route keeps the order and writes the e-mail even if the mail 
   assert.equal(def.tasks.mail.everyMinutes, 2);
   await def.tasks.mail.run(ctx);
   assert.equal(sent(ctx).filter((m) => m.to === f.email && m.text.includes("/track/")).length >= 1, true);
+});
+
+test("the team sends a new tracking link: the old one dies, the new one goes out by e-mail, and the order is the same", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  const before = sent(ctx).length;
+  assert.equal((await def.page(ctx, { segments: ["track", o.token] })).notFound, undefined, "the first link works");
+  const r = await def.adminActions.resendLink(ctx, { id: o.orderId });
+  assert.ok(r.ok, JSON.stringify(r));
+  await M.settle(); await M.flush(ctx);
+  const mail = sent(ctx).slice(before).find((m) => m.to === o.email);
+  assert.ok(mail, "an e-mail went to the customer"); assert.match(mail.subject, /New link for your order/);
+  const fresh = /\/shop\/track\/([a-z2-7]{32})/.exec(mail.text)[1];
+  assert.notEqual(fresh, o.token);
+  assert.equal((await def.page(ctx, { segments: ["track", o.token] })).notFound, true, "the old link no longer opens anything");
+  const page = await def.page(ctx, { segments: ["track", fresh] });
+  assert.match(page.blocks[0].html, /Waiting for payment/);
+  assert.equal((await D.getOrder(ctx, o.orderId)).id, o.orderId, "same order, same number");
+  assert.ok(!mail.text.includes(o.token), "the dead link is not repeated");
+  await O.markPaid(ctx, o.orderId, {}, Date.now()); await M.flush(ctx);
+  assert.ok(sent(ctx).some((m) => m.to === o.email && /Payment received/.test(m.subject)), "later e-mails still follow the order");
+});
+test("new links: each one goes out even on the same day, at most five a day for one order, and a refusal leaves the old link working", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  const t = Date.now();
+  for (let i = 0; i < 5; i++) assert.equal((await O.resendLink(ctx, o.orderId, t + i * MIN)).ok, true, `link ${i + 1}`);
+  await M.flush(ctx, t + 10 * MIN);
+  assert.equal(sent(ctx).filter((m) => m.to === o.email && /New link/.test(m.subject)).length, 5, "five different messages, none swallowed as a replay");
+  const refused = await O.resendLink(ctx, o.orderId, t + 6 * MIN);
+  assert.deepEqual(refused, { ok: false, reason: "limit" });
+  assert.match((await def.adminActions.resendLink(ctx, { id: o.orderId })).error, /Too many new links/);
+  assert.equal((await O.resendLink(ctx, o.orderId, t + 25 * HOUR)).ok, true, "the next day it works again");
+  assert.deepEqual(await O.resendLink(ctx, "nope"), { ok: false, reason: "unknown" });
+});
+test("if the message cannot be written the customer keeps the old link (never left with neither)", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  await M.settle();
+  const address = (await D.getOrder(ctx, o.orderId)).customer.email;
+  for (let i = 0; i < L.LIMITS.mailsPerAddressPerDay; i++) await M.customerMail(ctx, { id: `x${i}`, number: `N-${i}`, customer: { name: "Camille", email: address }, total: 100, currency: "EUR", lang: "en" }, "paid");
+  const r = await O.resendLink(ctx, o.orderId);
+  assert.deepEqual(r, { ok: false, reason: "mail" });
+  assert.equal((await def.page(ctx, { segments: ["track", o.token] })).notFound, undefined, "the old link still opens the order");
+  assert.equal(((await D.getOrder(ctx, o.orderId)).linkResends ?? []).length, 0, "and the refused try is not counted");
+  assert.match((await def.adminActions.resendLink(ctx, { id: o.orderId })).error, /could not be written/);
+});
+test("only people who manage the shop can send a new link, and the order sheet offers it with its warning", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const o = await order(ctx, p);
+  const viewer = mk({ rights: [] }); viewer.api.store = ctx.api.store;
+  assert.ok((await def.adminActions.resendLink(viewer, { id: o.orderId })).error);
+  assert.equal((await def.page(ctx, { segments: ["track", o.token] })).notFound, undefined, "nothing changed");
+  const sheet = JSON.stringify(await def.adminPanel(ctx, { query: { order: o.orderId } }));
+  assert.match(sheet, /Send a new tracking link/); assert.match(sheet, /previous link stops working/); assert.match(sheet, /"submitStyle":"secondary"/);
+  assert.doesNotMatch(JSON.stringify(await def.adminPanel(viewer, { query: { order: o.orderId } })), /Send a new tracking link/);
 });

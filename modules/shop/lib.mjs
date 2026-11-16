@@ -17,6 +17,7 @@ export const LIMITS = {
   maxPrice: 10_000_000,      // 100 000.00
   maxStock: 100_000,
   purgeBatch: 200,
+  linkResendsPerDay: 5,
   mailBatch: 10,                       // e-mails sent in one pass
   mailMaxAgeMs: 3 * 24 * 3_600_000,    // an e-mail still unsent after 3 days is given up
   mailsPerAddressPerDay: 12,           // nobody can use the shop to flood an address someone typed

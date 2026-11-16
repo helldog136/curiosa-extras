@@ -137,5 +137,12 @@
   "digestFlag": "Paiements à vérifier ({n}) : {list}",
   "digestFailed": "{n} e-mail(s) n'ont pas pu être envoyés aux clients.",
   "mailFailedBanner": "{n} e-mail(s) n'ont pas pu être envoyés ces derniers jours. Vérifiez vos réglages d'e-mail.",
-  "mailWaitingBanner": "{n} e-mail(s) attendent. Ils partent dès que la limite par heure le permet."
+  "mailWaitingBanner": "{n} e-mail(s) attendent. Ils partent dès que la limite par heure le permet.",
+  "mail_link_subject": "Nouveau lien pour votre commande {number}",
+  "mail_link_body": "Bonjour {name},\n\nVoici un nouveau lien pour suivre votre commande {number} chez {site} : {url}\nLe lien précédent ne fonctionne plus. Gardez celui-ci.\n\nSi vous n'attendiez pas ce message, ignorez-le.",
+  "resendLink": "Envoyer un nouveau lien de suivi",
+  "linkWarning": "Le lien précédent cesse de fonctionner.",
+  "linkSent": "Un nouveau lien a été envoyé. Le précédent ne fonctionne plus.",
+  "linkNotSent": "L'e-mail n'a pas pu être préparé. Le lien précédent fonctionne toujours.",
+  "linkLimit": "Trop de nouveaux liens aujourd'hui pour cette commande. Réessayez demain."
 }

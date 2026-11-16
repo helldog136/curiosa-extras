@@ -14,7 +14,7 @@ const { LIMITS, DAY, limited, withLock, formatMoney } = await import(`./lib.mjs$
 
 const RETRY_LIMITED_MS = 10 * 60_000;
 const BACKOFF_MS = [5 * 60_000, 30 * 60_000, 2 * 3_600_000, 12 * 3_600_000, 24 * 3_600_000];   // after the 1st..5th real failure; the 6th gives up
-const KINDS = ["placed", "paid", "shipped", "cancelled"];
+const KINDS = ["placed", "paid", "shipped", "cancelled", "link"];
 
 // Texts are written in the CUSTOMER's language (the one of the order), not the one of the person who clicks in the administration.
 const tables = new Map();
@@ -42,8 +42,8 @@ const configured = async (ctx) => { try { return (await ctx.api.mail?.configured
 const addressKey = (a) => String(a).toLowerCase();
 
 // ── Writing into the outbox ─────────────────────────────────────────────────────────────────────────────────────
-async function enqueue(ctx, { kind, orderId, to, subject, text }, now) {
-  const key = `${kind}:${orderId}`;
+async function enqueue(ctx, { kind, orderId, to, subject, text, key: given }, now) {
+  const key = given ?? `${kind}:${orderId}`;
   if (await ctx.api.store.getByKey("outbox", key) || await ctx.api.store.getByKey("outlog", key)) return { ok: true, already: true };
   await ctx.api.store.add("outbox", { kind, orderId, to, subject, text, attempts: 0, nextAt: now, at: now }, { key });
   return { ok: true };
@@ -58,6 +58,7 @@ export async function customerMail(ctx, order, kind, extra = {}, now = Date.now(
     const money = formatMoney(order.total, order.currency, lang);
     const vars = { name: order.customer.name, number: order.number, site, total: money, tracking: order.tracking || "" };
     let extraText = "";
+    if (kind === "link") vars.url = `${ctx.api.siteUrl}${pathPrefix(ctx, lang)}/track/${extra.token}`;
     if (kind === "placed") {
       vars.url = `${ctx.api.siteUrl}${pathPrefix(ctx, lang)}/track/${extra.token}`;
       const manual = String(ctx.setting("manualPayment") ?? "").trim();
@@ -65,7 +66,7 @@ export async function customerMail(ctx, order, kind, extra = {}, now = Date.now(
     }
     if (kind === "shipped") extraText = order.tracking ? await say(ctx, lang, "mailShippedTracking", vars) : "";
     const body = await say(ctx, lang, `mail_${kind}_body`, { ...vars, extra: extraText });
-    return await enqueue(ctx, { kind, orderId: order.id, to: order.customer.email, subject: await say(ctx, lang, `mail_${kind}_subject`, vars), text: body }, now);
+    return await enqueue(ctx, { kind, orderId: order.id, key: extra.key, to: order.customer.email, subject: await say(ctx, lang, `mail_${kind}_subject`, vars), text: body }, now);
   } catch { return { ok: false, reason: "error" }; }
 }
 export const onPlaced = (ctx, order, token, now) => customerMail(ctx, order, "placed", { token }, now);

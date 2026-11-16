@@ -101,6 +101,8 @@ async function orderSheet(ctx, id) {
   blocks.push({ type: "markdown", text: `**${ctx.t("total")}** ${money(o.total)}${o.includedTax ? ` · ${ctx.t("includesTax", { amount: money(o.includedTax) })}` : ""}  \n**${ctx.t("colState")}** ${ctx.t(`state_${o.state}`)}${can(ctx, "email.view") ? `  \n**${ctx.t("fEmail")}** ${o.customer.email}  \n**${ctx.t("fAddress")}** ${o.customer.address.replace(/\n/g, ", ")}` : ""}${o.tracking ? `  \n**${ctx.t("trackingNumber")}** ${o.tracking}` : ""}${o.payment ? `  \n**${ctx.t("paymentLine")}** ${o.payment.providerName} (${ctx.t(o.payment.mode === "live" ? "modeLive" : "modeTest")}) · ${ctx.t(`payState_${o.payment.state}`)}` : ""}` });
   if (!manage) return blocks;
   if (o.state === "awaiting_payment" || o.state === "expired") blocks.push({ type: "adminForm", action: "markPaid", submitLabel: ctx.t("markPaid"), fields: [{ name: "id", kind: "hidden", value: o.id }] });
+  blocks.push({ type: "markdown", text: ctx.t("linkWarning") });
+  blocks.push({ type: "adminForm", action: "resendLink", submitLabel: ctx.t("resendLink"), submitStyle: "secondary", fields: [{ name: "id", kind: "hidden", value: o.id }] });
   const next = NEXT_STATES[o.state] ?? [];
   if (next.length) blocks.push({
     type: "adminForm", action: "setState", submitLabel: ctx.t("saveState"),
@@ -125,6 +127,12 @@ export const adminActions = {
     const r = await O.markPaid(ctx, values.id, { eventId: `manual:${values.id}` });
     Mail.flushSoon(ctx);
     return r.ok ? { ok: ctx.t(r.state === "paid_to_resolve" ? "paidToResolve" : "markedPaid"), redirect: `?order=${values.id}` } : fail(ctx, "saveFailed");
+  },
+  async resendLink(ctx, values) {
+    if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");
+    const r = await O.resendLink(ctx, values.id);
+    if (r.ok) return { ok: ctx.t("linkSent"), redirect: `?order=${values.id}` };
+    return fail(ctx, r.reason === "limit" ? "linkLimit" : "linkNotSent");
   },
   async setState(ctx, values) {
     if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");

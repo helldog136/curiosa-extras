@@ -119,3 +119,21 @@ export async function afterPlaced(ctx, orderId, token, now = Date.now()) {
   await M.noteOwner(ctx, order, "placed", now);
   M.flushSoon(ctx);
 }
+
+/**
+ * The team sends the customer a NEW tracking link (the first message was lost): the old link dies, the new one goes out through the same outbox.
+ * If the message cannot be written, the old link is given back, so the customer is never left with neither. At most 5 a day for one order.
+ */
+export async function resendLink(ctx, orderId, now = Date.now()) {
+  const order = await D.getOrder(ctx, orderId);
+  if (!order) return { ok: false, reason: "unknown" };
+  const recent = (order.linkResends ?? []).filter((t) => now - t < 24 * 3_600_000);
+  if (recent.length >= LIMITS.linkResendsPerDay) return { ok: false, reason: "limit" };
+  const token = newToken();
+  const rotated = await D.rotateOrderToken(ctx, { ...order, linkResends: [...recent, now] }, token);
+  if (!rotated) return { ok: false, reason: "unknown" };
+  const queued = await M.customerMail(ctx, order, "link", { token, key: `link:${order.id}:${now}` }, now);
+  if (!queued.ok) { await D.saveOrder(ctx, order); await D.restoreOrderKey(ctx, order.id, rotated.oldKey); return { ok: false, reason: "mail" }; }   // the old link and the old count come back
+  M.flushSoon(ctx);
+  return { ok: true };
+}

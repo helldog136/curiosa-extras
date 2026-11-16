@@ -137,5 +137,12 @@
   "digestFlag": "Payments to check ({n}): {list}",
   "digestFailed": "{n} e-mail(s) could not be sent to customers.",
   "mailFailedBanner": "{n} e-mail(s) could not be sent in the last days. Check your e-mail settings.",
-  "mailWaitingBanner": "{n} e-mail(s) are waiting. They go out as soon as the hourly limit allows."
+  "mailWaitingBanner": "{n} e-mail(s) are waiting. They go out as soon as the hourly limit allows.",
+  "mail_link_subject": "New link for your order {number}",
+  "mail_link_body": "Hello {name},\n\nHere is a new link to follow your order {number} at {site}: {url}\nThe previous link no longer works. Keep this one.\n\nIf you did not expect this message, you can ignore it.",
+  "resendLink": "Send a new tracking link",
+  "linkWarning": "The previous link stops working.",
+  "linkSent": "A new link has been sent. The previous one no longer works.",
+  "linkNotSent": "The e-mail could not be written. The previous link still works.",
+  "linkLimit": "Too many new links today for this order. Try again tomorrow."
 }
