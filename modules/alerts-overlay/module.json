@@ -851,8 +851,8 @@
         "fr": "Alertes en grand"
       },
       "description": {
-        "en": "The same alerts in a frame you size freely, the whole screen by default: a picture with its placed text shows at its real size.",
-        "fr": "Les mêmes alertes dans un cadre que vous dimensionnez librement, tout l'écran par défaut : une image avec son texte placé s'affiche à sa vraie taille."
+        "en": "The same alerts in a frame of any size. A picture with its placed text shows at its real size.",
+        "fr": "Les mêmes alertes dans un cadre libre. Une image avec son texte placé s'affiche à sa vraie taille."
       },
       "fit": "fluid",
       "minSize": {

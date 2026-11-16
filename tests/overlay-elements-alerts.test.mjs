@@ -44,7 +44,7 @@ test("manifeste : valide au sens du cœur 0.5.0, un élément « alertes » (gar
   assert.equal(manifestJson.version, "1.11.0");
   assert.equal(manifestJson.minCore, "0.14.0");
   const [el, ...others] = manifestJson.overlayElements;
-  assert.equal(others.length, 0);
+  assert.deepEqual(others.map((e) => [e.id, e.fit]), [["alerts-stage", "fluid"]], "1.12.0: « Alertes en grand », a free frame for placed texts");
   assert.equal(el.id, "alerts");
   assert.equal(el.fit, "scale");
   assert.deepEqual(el.size, { width: 640, height: 260 });

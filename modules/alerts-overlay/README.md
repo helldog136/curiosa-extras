@@ -131,3 +131,14 @@ Your AI assistant can add a video, GIF, picture or sound it made to the media li
 | `reaction_media_delete` | Deletes a library file and the file itself; refused while an event uses it. |
 
 The Media tab shows "Added by the assistant" on those files; you can delete them there like any other. The Twitch bot shows the same files by name (`onStreamPictures`). On a core older than 0.18.0 the upload tools answer that the core must be updated.
+
+## Placed texts and "Large alerts" (version 1.12.0, core 0.19.0)
+
+"Place the text" (the composition editor of the core, opened from the window of a reaction in Twitch activity) writes the sentence of an alert ON its picture or GIF, where the person chose. One placement per file of a reaction; "Apply to the other files" copies it.
+
+- **Storage**: a collection of its own, `compositions` (`{ key: "event:<type>|<src>", place, src, composition, updatedAt, by }`), never the configuration: an older version of this module saving its settings cannot wipe them, it simply shows the media alone. A file taken out of a reaction loses its text.
+- **Service `alerts.reaction`** (additive, no version change for callers): `get` adds `compose` (whether the core can place text) and `compositions` (`{ [src]: composition }`); `list` adds `placed` per type; `set` and `test` accept `patch.compositions` (`{ [src]: composition | null }`, only sent when the core's window could place text) and `test` accepts `patch.composeFor` (the file to show). Every composition is checked by the core (`ctx.overlay.checkComposition`): the backdrop must be the file it belongs to, a file of the reaction, and only the words of the alerts may be used; otherwise `{ errors: { variants: "compose" } }` and nothing is saved.
+- **Alerts**: an alert of a file that has a placed text carries `compose`, its texts filled on the server (`ctx.overlay.resolveComposition`); the page draws it with the core's engine, in `data-ov-region="composition"` (never a card), whole inside the element. Without any composition the page is byte for byte the page of 1.10.1 (test `alerts-overlay-compose`, golden hashes).
+- **"Large alerts"** (`alerts-stage`, `fit: "fluid"`): the same page in a frame the person sizes freely, so a 16:9 picture with its text shows at its real size. It follows the common style and the appearance kit, and is empty and transparent between two alerts.
+- On a core older than 0.19.0: no "Place the text", nothing stored, media alone. Videos: step 2 (the data already accepts them).
+
