@@ -142,8 +142,13 @@ const look = (cfg, env = {}, type = "") => {
 export function withCompose(alert, type, message, vars, env = {}) {
   const src = alert.present === "media" ? alert.image || alert.video || "" : "";
   if (!src || typeof env.compose !== "function") return alert;
-  const c = env.compose(`event:${type}`, src, message, vars);
-  return c ? { ...alert, compose: c } : alert;
+  let c = env.compose(`event:${type}`, src, message, vars);
+  if (!c) return alert;
+  // (1.14.0) a video: the switch "Sound of the videos" of the reaction still turns its sound on; the length the composition gives (the video's own, or
+  // chosen) is the alert's, longer only when the voice needs more time to read
+  if (alert.video && alert.videoSound && c.backdrop && !c.backdrop.sound) c = { ...c, backdrop: { ...c.backdrop, sound: true } };
+  const secs = c.duration && Number.isFinite(c.duration.seconds) ? Math.min(LIMITS.seconds.max, Math.max(LIMITS.seconds.min, Math.round(c.duration.seconds))) : 0;
+  return { ...alert, compose: c, ...(secs ? { duration: alert.say && alert.duration > secs ? alert.duration : secs } : {}) };
 }
 const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** What is read aloud for an alert (empty = nothing): the sentence and/or the viewer text, as the type asks, the name replaced when "read the name" is off, cut at the maximum. */
