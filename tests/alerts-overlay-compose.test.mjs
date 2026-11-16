@@ -22,6 +22,8 @@ const cp = OLD ? null : await import("../modules/alerts-overlay/compose.mjs");
 const rxEvents = OLD ? null : await import("../modules/twitch-events/reaction.mjs");
 const enEvents = JSON.parse(fs.readFileSync(new URL("../modules/twitch-events/locales/en.json", import.meta.url), "utf8"));
 const frEvents = JSON.parse(fs.readFileSync(new URL("../modules/twitch-events/locales/fr.json", import.meta.url), "utf8"));
+/** The core under test has the composition kit (0.19.0); with an older core only the "nothing changes" checks run. */
+const COMPOSE = !!fakeCtx({ key: "probe" }).overlay;
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
 const U = (n, ext) => `/uploads/${String(n).padStart(8, "0")}-0123-4567-89ab-0123456789ab.${ext}`;
 const PIC = U(1, "png"), GIF = U(2, "gif"), VID = U(3, "webm");
@@ -71,7 +73,7 @@ test("migration: without a composition, the page is byte for byte the page of 1.
   assert.deepEqual([hash(out.html), hash(out.css), hash(out.script)], GOLDEN["gifs,page,neon"]);
 });
 
-if (!OLD) {
+if (!OLD && COMPOSE) {
   // ── 2. The service: compositions in their own collection, additive, a file taken out loses its text ─────────────────────
   test("alerts.reaction: get and set carry placed texts; they live in the collection `compositions`, never in the configuration", async () => {
     const w = world();
@@ -207,7 +209,7 @@ function busyPng(w, h, bright) {
   const ih = Buffer.alloc(13); ih.writeUInt32BE(w, 0); ih.writeUInt32BE(h, 4); ih.set([8, 2, 0, 0, 0], 8);
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ih), chunk("IDAT", zlib.deflateSync(px)), chunk("IEND", Buffer.alloc(0))]);
 }
-test("real browser: the alert shows the picture with its text placed and readable, whole in the Alerts element and full size in Large alerts", { skip: OLD ? "golden" : pw ? false : "Chromium or playwright not found", timeout: 90000 }, async () => {
+test("real browser: the alert shows the picture with its text placed and readable, whole in the Alerts element and full size in Large alerts", { skip: OLD ? "golden" : !COMPOSE ? "core without ctx.overlay (before 0.19.0)" : pw ? false : "Chromium or playwright not found", timeout: 90000 }, async () => {
   const w = world({ settings: { durationSeconds: 30 }, config: CONFIGS.gifs });
   await svc("alerts.reaction").set(w.ctx, { type: "follow", patch: { variants: [PIC, GIF], pick: "rotate", compositions: {
     [PIC]: comp(PIC, [{ id: "t1", look: "readable" }]),
