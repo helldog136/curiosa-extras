@@ -86,6 +86,7 @@ const IDLE = {
 /** Elements that cannot be "idle", and why. */
 const EXEMPT = {
   "alerts-overlay/alerts": "event-driven: a card exists only while an alert plays; the stage is empty and transparent otherwise (overlay-elements-alerts.test.mjs: 'sans ov-demo, la scène est vide')",
+  "alerts-overlay/alerts-stage": "the same page as the Alerts element in a free frame: event-driven, the stage is empty and transparent between two alerts (alerts-overlay-compose.test.mjs)",
   "countdown/countdown": "hidden until an event is chosen and hidden again after its end message (hideAt); starts with `hidden` (countdown-client.test.mjs)",
   "polls/poll": "the box is empty when there is no poll (`empty` answer); a finished poll shows its final results on purpose (polls-overlay-element.test.mjs)",
   "maze-overlay/maze": "a generative scene that always plays: it has no data to wait for, so no idle state",

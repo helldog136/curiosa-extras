@@ -6,6 +6,9 @@ const es = await import(`./eventsub.mjs${v}`);
 export const SERVICE = "alerts.reaction";
 export const MAX = 12;
 export const WORDS = ["name", "count", "amount", "tier", "months", "viewers", "level", "title", "text", "total"];
+/** (1.x, "Place the text") The automatic values each type offers in a placed text, shown as chips with an example (never with braces). */
+export const TYPE_WORDS = { follow: ["name"], sub: ["name", "tier"], resub: ["name", "months", "tier", "text"], gift: ["name", "count", "tier", "total"], cheer: ["name", "amount", "text"], raid: ["name", "viewers"], online: ["title"], offline: [], hype: ["level", "total"], redeem: ["name", "title", "amount", "text"] };
+const fillSample = (template, samples) => String(template ?? "").replace(/\{([^{}]*)\}/g, (_, w) => samples[w] ?? "");
 export const CATALOGUE = "/admin/catalogue";
 export const OVERLAY_PAGES = "/admin/overlay-pages";
 
@@ -42,6 +45,7 @@ export function summaryText(ctx, s) {
   const t = ctx.t, n = (s?.images ?? 0) + (s?.videos ?? 0);
   if (!s) return "—";
   let base = !n ? t("rx_sum_text") : s.videos && s.images ? t("rx_sum_media", { n }) : s.videos ? (s.videos === 1 ? t("rx_sum_video") : t("rx_sum_videos", { n })) : s.images === 1 ? t("rx_sum_gif") : t("rx_sum_gifs", { n });
+  if (s.placed) base += `, ${s.placed === 1 ? t("rx_sum_placed_one") : t("rx_sum_placed", { n: s.placed })}`;
   if (s.pick) base += ` · ${t(`rx_pick_${s.pick}`)}`;
   return s.sound ? `${base} + ${t("rx_sum_sound")}` : base;
 }
@@ -50,7 +54,7 @@ export function summaryText(ctx, s) {
 export function errorsOf(ctx, errors = {}) {
   const t = ctx.t, out = {};
   const map = {
-    variants: { limit: t("rx_err_limit", { max: MAX }), file: t("rx_err_file"), kept: t("rx_err_kept") },
+    variants: { limit: t("rx_err_limit", { max: MAX }), file: t("rx_err_file"), kept: t("rx_err_kept"), compose: t("rx_err_compose") },
     audio: { file: t("rx_err_audio"), kept: t("rx_err_kept") },
     text: { words: t("rx_err_words", { vars: WORDS.map((w) => `{${w}}`).join(" ") }), long: t("rx_err_long") },
     seconds: { range: t("rx_err_seconds") }, sound: { choice: t("rx_err_choice") }, pick: { choice: t("rx_err_choice") },
@@ -64,7 +68,22 @@ export function patchOf(values) {
   let list = [];
   try { const p = JSON.parse(String(values.variants ?? "[]")); list = Array.isArray(p) ? p : []; } catch { list = []; }
   const variants = list.map((x) => ({ src: String(typeof x === "string" ? x : x?.src ?? "") })).filter((x) => /^\/uploads\/[0-9a-f-]{36}\.[a-z0-9]{3,4}$/.test(x.src)).slice(0, 60);
-  return { variants, pick: values.pick === "rotate" ? "rotate" : "random", text: String(values.text ?? ""), sound: String(values.sound ?? ""), audio: String(values.audio ?? ""), seconds: String(values.seconds ?? ""), videoSound: values.videoSound === "on" };
+  const patch = { variants, pick: values.pick === "rotate" ? "rotate" : "random", text: String(values.text ?? ""), sound: String(values.sound ?? ""), audio: String(values.audio ?? ""), seconds: String(values.seconds ?? ""), videoSound: values.videoSound === "on" };
+  // Placed texts: only when the core's window could place them (it says so with `variants__compose`); otherwise an older core sent none and nothing changes.
+  if (values.variants__compose === "1") patch.compositions = Object.fromEntries(list.filter((x) => x && typeof x === "object").map((x) => [String(x.src ?? ""), x.compose && typeof x.compose === "object" ? x.compose : null]).filter(([src]) => variants.some((v) => v.src === src)));
+  if (/^\/uploads\/[0-9a-f-]{36}\.[a-z0-9]{3,4}$/.test(String(values.variants__composeFor ?? ""))) patch.composeFor = String(values.variants__composeFor);
+  return patch;
+}
+
+/** The `compose` option of the gallery ("Place the text"), for a type: its automatic values with an example, and the sentence as the editor shows it. */
+export function composeOptionOf(ctx, id, cur) {
+  const t = ctx.t, words = TYPE_WORDS[id] ?? [];
+  const samples = Object.fromEntries(WORDS.map((w) => [w, t(`rx_sample_${w}`)]));
+  return {
+    variables: words.map((w) => ({ token: w, label: t(`rx_var_${w}`), sample: samples[w] })),
+    phrase: { label: t("rx_compose_phrase"), sample: fillSample(cur.text || cur.textDefault, samples).replace(/\s+/g, " ").trim() },
+    formats: ["media", "16:9", "9:16", "1:1", "4:3", "21:9"], defaultFormat: "media", maxBoxes: 4, testAction: "testReaction",
+  };
 }
 
 /** The window of one type. `null` when the type is unknown or the overlay does not answer. */
@@ -79,7 +98,9 @@ export async function dialog(ctx, id, { query } = {}) {
     extraActions: [{ label: t("rx_test_btn"), action: "testReaction" }],
     fields: [
       { name: "id", kind: "hidden", label: "id", value: id },
-      { name: "variants", kind: "gallery", accept: ["image", "video"], max: cur.max ?? MAX, label: t("rx_f_files"), help: t("rx_f_files_help"), value: JSON.stringify((cur.variants ?? []).map((x) => ({ src: x.src }))), library: (media?.pictures ?? []).slice(0, 500) },
+      { name: "variants", kind: "gallery", accept: ["image", "video"], max: cur.max ?? MAX, label: t("rx_f_files"), help: t("rx_f_files_help"), value: JSON.stringify((cur.variants ?? []).map((x) => ({ src: x.src, ...(cur.compositions?.[x.src] ? { compose: cur.compositions[x.src] } : {}) }))), library: (media?.pictures ?? []).slice(0, 500),
+        // "Place the text" on the pictures (core 0.19.0; an older core ignores the key): only when the alerts overlay can keep placed texts
+        ...(cur.compose === true ? { compose: composeOptionOf(ctx, id, cur) } : {}) },
       { name: "pick", kind: "segmented", label: t("rx_f_pick"), help: t("rx_f_pick_help"), value: cur.pick === "rotate" ? "rotate" : "random", options: [{ value: "random", label: t("rx_pick_random") }, { value: "rotate", label: t("rx_pick_rotate") }] },
       { name: "text", folded: true, label: t("rx_f_text"), value: cur.text ?? "", placeholder: cur.textDefault ?? "", example: cur.textDefault ?? "", help: t("rx_f_text_help") },
       { name: "sound", kind: "select", folded: true, label: t("rx_f_sound"), value: cur.sound ?? "", options: sounds.map((x) => ({ value: x, label: x ? t(`rx_tone_${x}`) : t("rx_sound_none") })) },

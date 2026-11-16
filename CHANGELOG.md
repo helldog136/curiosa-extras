@@ -4,6 +4,35 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.88.0 — 2026-11-16
+
+*En bref : placez la phrase d'une alerte sur son image ou son GIF, à l'endroit choisi, avec « Placer le texte ». Nouvel élément d'overlay « Alertes en grand ». Overlay alertes 1.12.0, Activité Twitch 1.9.0. Demande le cœur 0.19.0 pour placer le texte ; sans lui, rien ne change.*
+
+*In short: place the sentence of an alert on its picture or GIF, where you choose, with "Place the text". New overlay element "Large alerts". Alerts overlay 1.12.0, Twitch activity 1.9.0. Placing text needs core 0.19.0; without it, nothing changes.*
+
+### Nouveautés
+
+- **Placer le texte.** Dans la fenêtre d'une réaction (Activité Twitch, onglet Types), chaque image ou GIF a un bouton « Placer le texte ». Faites glisser la phrase, choisissez sa taille, puis « Utiliser ce placement » et enregistrez la réaction.
+- **Un placement par fichier.** Chaque image d'une réaction a son propre placement. « Appliquer aux autres fichiers » copie le placement sur les autres images.
+- **Vos propres mots.** « Un texte à vous » accepte des valeurs comme le pseudo, le montant ou les mois, selon le type d'événement.
+- **Le tableau le dit.** La colonne « Réaction » indique par exemple « 3 GIF, 2 avec texte ».
+- **Alertes en grand.** Un nouvel élément pour vos pages d'overlay : les mêmes alertes dans un cadre libre, tout l'écran si vous voulez, pour voir une image et son texte à leur vraie taille. Il est vide entre deux alertes.
+- **Place the text.** In the window of a reaction (Twitch activity, Types tab), each picture or GIF has a "Place the text" button. Drag the sentence, choose its size, then "Use this placement" and save the reaction.
+- **One placement per file.** Each picture of a reaction has its own placement. "Apply to the other files" copies it onto the other pictures.
+- **Your own words.** "Your own text" accepts values such as the name, the amount or the months, depending on the event type.
+- **The table says it.** The "Reaction" column says for example "3 GIF, 2 with text".
+- **Large alerts.** A new element for your overlay pages: the same alerts in a free frame, the whole screen if you want, to see a picture and its text at their real size. It is empty between two alerts.
+
+### Ce qui ne change pas
+
+- **Vos réactions restent telles quelles.** Une image ou un GIF sans texte placé s'affiche seul, comme avant. L'élément « Alertes » garde sa taille.
+- **Your reactions stay as they are.** A picture or a GIF without a placed text shows alone, as before. The "Alerts" element keeps its size.
+
+### Pour les développeurs
+
+- Overlay alertes 1.12.0 : collection `compositions` (`event:<type>|<src>`), jamais dans la configuration ; service `alerts.reaction` étendu sans rupture (`compose`, `compositions`, `placed`, `patch.compositions`, `patch.composeFor`) ; alertes avec `compose` rempli par le serveur ; moteur du cœur (`ctx.overlay`) dans la page seulement s'il y a une composition (sinon page identique à 1.10.1, empreintes) ; élément `alerts-stage` (`fluid`).
+- Activité Twitch 1.9.0 : option `compose` du champ `gallery` (valeurs par type, `TYPE_WORDS`), compositions envoyées seulement si le cœur marque le champ (`variants__compose`). Tests : `alerts-overlay-compose` (dont Chromium réel sur image claire et sombre).
+
 ## 1.87.0 — 2026-11-16
 
 *En bref : votre assistant IA peut ajouter à l'Overlay alertes une vidéo, un GIF, une image ou un son qu'il a créé, le mettre sur un événement Twitch et le tester. Overlay alertes 1.11.0, Bot Twitch 1.20.1. Il faut le cœur 0.18.0, et les droits d'écriture restent désactivés tant que vous ne les cochez pas.*

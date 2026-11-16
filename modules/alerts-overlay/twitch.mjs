@@ -135,6 +135,16 @@ const look = (cfg, env = {}, type = "") => {
   const media = video && VIDEO_RE.test(video) ? { present: "media", video, ...(cfg.videoSound ? { videoSound: true } : {}) } : cfg.present === "gif" && cfg.image ? { present: "media" } : null;
   return { ...(cfg.image && !(media && media.video) ? { image: cfg.image } : {}), ...(media ?? {}), ...(cfg.audio ? { audio: cfg.audio } : cfg.sound && cfg.sound !== "none" ? { sound: cfg.sound } : {}), ...(cfg.anim ? { anim: cfg.anim } : {}) };
 };
+/**
+ * (1.12.0) The text placed on the picture of the alert ("Place the text"): the composition of THIS file of THIS type, its texts filled on the server (the page
+ * only sets them with textContent). Nothing when the person made none, or the core cannot draw them (`env.compose` absent): the media shows alone, as before.
+ */
+export function withCompose(alert, type, message, vars, env = {}) {
+  const src = alert.present === "media" ? alert.image || alert.video || "" : "";
+  if (!src || typeof env.compose !== "function") return alert;
+  const c = env.compose(`event:${type}`, src, message, vars);
+  return c ? { ...alert, compose: c } : alert;
+}
 const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** What is read aloud for an alert (empty = nothing): the sentence and/or the viewer text, as the type asks, the name replaced when "read the name" is off, cut at the maximum. */
 export function sayOf(cfg, config, env, message, detail, name) {
@@ -153,7 +163,7 @@ export const speechSeconds = (say, rate = 1) => Math.ceil((say.length * 0.075) /
  * `text(typeId, phase)` gives the default template and `title(phase)` the title of a hype train line; `now` is for the age limit.
  * Tests and replays (`item.test`, `item.replay`) skip the switches, the minimums, the ignore list and the age limit: a person who asks to see an alert sees it.
  */
-export function alertFor(item, { config, ignore = new Set(), showText = false, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick, now = Date.now() }) {
+export function alertFor(item, { config, ignore = new Set(), showText = false, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick, compose, now = Date.now() }) {
   const type = typeOf(item);
   if (!type) return { skip: "unknown" };
   const forced = item.test === true || item.replay === true, cfg = config.types[type];
@@ -172,7 +182,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
   if (item.anonymous === true) vars.name = text("anonymous");
   const message = fillTemplate(cfg.template || text(type), vars);
   if (!message) return { skip: "empty" };
-  const env = { text, videos, pick };
+  const env = { text, videos, pick, compose };
   // The text written by the viewer: shown only if this type asks for it (or, for the older setting, if that one is ticked), cut, then looked at by the moderation.
   const asks = VIEWER_TYPES.includes(type) && (cfg.viewer ?? showText) === true;
   const raw = asks ? mod.cut(clean(item.text, 250), cfg.viewerMax) : "";
@@ -181,7 +191,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
     const say = sayOf(cfg, config, env, message, detail, vars.name);
     let secs = cfg.seconds || seconds || 0;
     if (say) secs = Math.min(LIMITS.seconds.max, Math.max(secs || baseSeconds || 6, speechSeconds(say, config.tts.rate)));
-    return { kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg, env, type), ...(say ? { say } : {}), ...(reason && !detail ? { flag: reason } : {}), queued: true, id: String(item.id ?? "") };
+    return withCompose({ kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg, env, type), ...(say ? { say } : {}), ...(reason && !detail ? { flag: reason } : {}), queued: true, id: String(item.id ?? "") }, type, message, vars, env);
   };
   const base = { type, group: type === "gift" || type === "follow" };
   if (!reason) return { alert: build(raw), ...base };
@@ -195,7 +205,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
  * Groups a burst that waited in the staging area: gifts by the same person (same tier) become one alert with the sum; three or more follows become "N new followers".
  * `staged`: [{ alert, item, type }]; returns the alerts to show, in order. Each group keeps the place of its first member.
  */
-export function groupBurst(staged, { config, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick }) {
+export function groupBurst(staged, { config, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick, compose }) {
   const out = [], gifts = new Map(), follows = staged.filter((s) => s.type === "follow");
   const groupFollows = follows.length >= LIMITS.groupFollows;
   let followSlot = null;
@@ -211,24 +221,25 @@ export function groupBurst(staged, { config, locale = "en", text, title, seconds
       followSlot.n += 1;
     } else out.push(s.alert);
   }
-  const env = { text, videos, pick };
-  const done = (cfg, message, name, id, extra = {}) => {
+  const env = { text, videos, pick, compose };
+  const done = (cfg, message, name, id, extra = {}, vars = {}) => {
     const say = sayOf(cfg, config, env, message, "", name);
     let secs = cfg.seconds || seconds || 0;
     if (say) secs = Math.min(LIMITS.seconds.max, Math.max(secs || baseSeconds || 6, speechSeconds(say, config.tts.rate)));
-    return { kind: extra.kind, message, ...(secs ? { duration: secs } : {}), ...look(cfg, env, extra.type), ...(say ? { say } : {}), queued: true, id };
+    return withCompose({ kind: extra.kind, message, ...(secs ? { duration: secs } : {}), ...look(cfg, env, extra.type), ...(say ? { say } : {}), queued: true, id }, extra.type, message, vars, env);
   };
   return out.map((o) => {
     if (o.alert || o.message) return o;
     if (o.n !== undefined) {
       const cfg = config.types.follow;
-      return done(cfg, fillTemplate(text("follow_many"), { name: clean(o.first.name, 60), count: num(o.n, locale) }), clean(o.first.name, 60), `group-${o.first.id}`, { kind: KIND.follow, type: "follow" });
+      const fv = { name: clean(o.first.name, 60), count: num(o.n, locale) };
+      return done(cfg, fillTemplate(text("follow_many"), fv), fv.name, `group-${o.first.id}`, { kind: KIND.follow, type: "follow" }, fv);
     }
     // a (merged) gift: the alert is rebuilt with the total
     const cfg = config.types.gift, item = o.item;
     const vars = varsOf({ ...item, count: o.count }, locale);
     if (item.anonymous === true) vars.name = text("anonymous");
-    return done(cfg, fillTemplate(cfg.template || text("gift"), vars), vars.name, `gift-${item.id}`, { kind: KIND.gift, type: "gift" });
+    return done(cfg, fillTemplate(cfg.template || text("gift"), vars), vars.name, `gift-${item.id}`, { kind: KIND.gift, type: "gift" }, vars);
   });
 }
 
@@ -429,7 +440,7 @@ export async function pullTwitch(ctx, emit, env) {
   try { const r = await ctx.api.topics.collect(TOPIC, { limit: 200 }); /* the most the topic gives: a burst of up to 200 lines between two reads is not lost */ items = Array.isArray(r) ? r : []; } catch { items = []; }
   const config = await loadConfig(ctx, now);
   const t = env.t, text = (id) => t(`tw_text_${id}`), title = (phase) => t(`tw_title_${phase}`);
-  const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: pickerOf(s, env.rng), now };
+  const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: pickerOf(s, env.rng), compose: env.compose, now };
   let changed = false;
   const stagedIds = new Set(s.staged.map((x) => x.key));
   const fresh = [];
@@ -464,7 +475,7 @@ export async function pullTwitch(ctx, emit, env) {
     s.staged = s.staged.filter((x) => x.readyAt > now);
     for (const x of ready) remember(s, x.key);
     changed = true;
-    const grouped = groupBurst(ready, { config, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: shared.pick });
+    const grouped = groupBurst(ready, { config, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: shared.pick, compose: env.compose });
     fresh.push(...grouped);
   }
   let sent = 0;
