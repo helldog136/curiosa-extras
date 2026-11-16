@@ -115,3 +115,19 @@ The **Media** tab holds the pictures, GIFs and sounds you send (name, type, sear
 - `test({ type, patch })` shows a sample alert built with the typed values, saved or not.
 
 One source of truth: the per-type settings of the Twitch events tab. A saved single picture is a list of one (nothing is migrated, the alert is byte-identical). With several variants one is picked per alert: at random, never the same twice in a row, or in turn; the position is kept in the stored state and restarts when the list changes. A file held by the library and by one or more types is let go only when the last holder lets go (`releaseFile`).
+
+## Files made by your AI assistant (version 1.11.0, core 0.18.0)
+
+Your AI assistant can add a video, GIF, picture or sound it made to the media library, then put it on a Twitch event. Every tool that writes is off by default: tick it in Admin > AI assistants, for this overlay.
+
+| Tool | What it does |
+|---|---|
+| `reaction_media_upload_begin` | `name`, `bytes`, `sha256`. Returns `upload`, a one-time address to PUT the bytes (`curl -T clip.webm "<address>"`, 8 MB per request, `?offset=` for more) and the number of base64 pieces otherwise. |
+| `reaction_media_upload_chunk` | `upload`, `index`, `data`: one base64 piece of 700 000 bytes, in order. |
+| `reaction_media_upload_finish` | `upload`, optional `poster` (a library picture for a video). The site checks the real content: webm (VP8, VP9, AV1) or mp4 (H.264) up to 25 MB, 30 s and 1920x1080; pictures 5 MB; sounds 10 MB; nothing glued after the end. Returns name, id, duration, size and `transparent` for a video. |
+| `reaction_media_list` | The library: kind, size, duration, dimensions, transparency, poster, added by a person or the assistant, used by which events. |
+| `reaction_get` / `reaction_set` | One event type (`follow`, `sub`, `resub`, `gift`, `cheer`, `raid`, `online`, `offline`, `hype`, `redeem`): `media` (library names, 12 at most), `order` (`random`, `round_robin`), `text`, `durationSeconds`, `sound` (`off`, a built-in sound or a library sound), `videoSound`, `enabled`. |
+| `reaction_test` | Sends one test alert of that type to the open overlay pages. Nothing reaches Twitch. |
+| `reaction_media_delete` | Deletes a library file and the file itself; refused while an event uses it. |
+
+The Media tab shows "Added by the assistant" on those files; you can delete them there like any other. The Twitch bot shows the same files by name (`onStreamPictures`). On a core older than 0.18.0 the upload tools answer that the core must be updated.

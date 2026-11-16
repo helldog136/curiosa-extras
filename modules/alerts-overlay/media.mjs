@@ -24,7 +24,7 @@ const urlRe = { picture: tw.IMAGE_RE, sound: tw.AUDIO_RE, video: tw.VIDEO_RE };
 /** The files of the library, as the service lists them: [{ id, name, kind, url, builtin? }], videos and synthesised sounds included, sorted by kind then name. */
 export async function list(ctx, { tones = true } = {}) {
   const t = ctx.t;
-  const own = (await rowsOf(ctx)).filter((r) => urlRe[r.data.kind].test(String(r.data.url ?? ""))).map((r) => ({ id: r.data.id, name: cleanName(r.data.name) || r.data.id, kind: r.data.kind, url: r.data.url }));
+  const own = (await rowsOf(ctx)).filter((r) => urlRe[r.data.kind].test(String(r.data.url ?? ""))).map((r) => ({ id: r.data.id, name: cleanName(r.data.name) || r.data.id, kind: r.data.kind, url: r.data.url, ...(r.data.by === "assistant" ? { by: "assistant", bytes: r.data.bytes, seconds: r.data.seconds, width: r.data.width, height: r.data.height, transparent: r.data.transparent === true, posterId: typeof r.data.posterId === "string" ? r.data.posterId : undefined } : {}) }));
   const videos = tw.videosOf(ctx.setting).flatMap((url, i) => (url ? [{ id: `video:${i + 1}`, name: t("tw_video_slot", { n: i + 1 }), kind: "video", url }] : []));
   const sounds = tones ? TONES.map((x) => ({ id: `tone:${x}`, name: t(`tw_sound_${x}`), kind: "sound", builtin: true })) : [];
   const order = (a) => KINDS.indexOf(a.kind);
@@ -60,6 +60,23 @@ export async function add(ctx, { name, kind, url }) {
   if (!claim.ok) return { code: "file" };
   const id = newId();
   await ctx.api.store.add(COLLECTION, { id, name: n, kind, url: clean0 });
+  return { ok: true, id };
+}
+/**
+ * (1.11.0) A file an AI assistant sent through the core (already OWNED by this overlay: no claim). `meta`: { assistant, bytes, seconds, width, height, transparent, posterId }
+ * (`posterId`: a picture of the library that stands for a video before it plays).
+ * Rends { ok, id } or { code } (name, dup, file, full).
+ */
+export async function addOwned(ctx, { name, kind, url, meta = {} }) {
+  if (!["picture", "sound", "video"].includes(kind) || !urlRe[kind].test(String(url ?? ""))) return { code: "file" };
+  const n = cleanName(name);
+  if (!n) return { code: "name" };
+  if ((await list(ctx, { tones: false })).length >= LIMITS.items) return { code: "full" };
+  if (taken(await list(ctx), n)) return { code: "dup" };
+  if (!(await ctx.api.files?.owns?.(url))) return { code: "file" };
+  const num = (x) => (Number.isFinite(x) && x > 0 ? x : undefined);
+  const id = newId();
+  await ctx.api.store.add(COLLECTION, { id, name: n, kind, url, by: "assistant", assistant: String(meta.assistant ?? "").slice(0, 60), bytes: num(meta.bytes), seconds: num(meta.seconds), width: num(meta.width), height: num(meta.height), transparent: meta.transparent === true, ...(typeof meta.posterId === "string" ? { posterId: meta.posterId } : {}) });
   return { ok: true, id };
 }
 /**

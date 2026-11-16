@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.10.1",
+  "version": "1.11.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.14.0",
@@ -1103,6 +1103,248 @@
           }
         }
       }
+    },
+    {
+      "name": "reaction_media_upload_begin",
+      "uploads": true,
+      "description": "Starts adding a video, GIF, picture or sound you made to the media library of the alerts overlay. Give its library name, its exact size in bytes and its sha256. Accepted: webm (VP8/VP9/AV1) or mp4 (H.264, +faststart) up to 25 MB, 30 s and 1920x1080; png, jpeg, webp or gif up to 5 MB; mp3, ogg, wav, m4a or aac up to 10 MB. Returns an upload, a one-time https address to PUT the bytes (curl -T file \"address\", 8 MB per request), or the number of base64 pieces for reaction_media_upload_chunk. Then call reaction_media_upload_finish. The upload expires after 30 minutes.",
+      "input": {
+        "type": "object",
+        "required": [
+          "name",
+          "bytes",
+          "sha256"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Name in the library, unique, for example \"Raid confetti\"."
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26214400,
+            "description": "Exact size of the file in bytes."
+          },
+          "sha256": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "sha256 of the file, 64 hexadecimal characters."
+          }
+        }
+      },
+      "default": false
+    },
+    {
+      "name": "reaction_media_upload_chunk",
+      "uploads": true,
+      "description": "Sends one base64 piece of an upload started with reaction_media_upload_begin, when you cannot use the https address. Pieces are 700000 bytes before base64 (split -b 700000), numbered from 0, sent in order; only the last one may be shorter. A piece can be sent again.",
+      "input": {
+        "type": "object",
+        "required": [
+          "upload",
+          "index",
+          "data"
+        ],
+        "properties": {
+          "upload": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The upload returned by reaction_media_upload_begin."
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Number of the piece, from 0."
+          },
+          "data": {
+            "type": "string",
+            "description": "The piece as plain base64 (no data: prefix), 933336 characters at most."
+          }
+        }
+      },
+      "default": false
+    },
+    {
+      "name": "reaction_media_upload_finish",
+      "uploads": true,
+      "description": "Finishes an upload: the site checks the size, the sha256 and the real content (format, codec, duration, size), then adds the file to the media library, marked as added by the assistant. Returns its name, id, duration, size and, for a video, whether it is transparent (WebM with alpha). Calling it again returns the same file. Use the name in reaction_set, or in a Twitch bot command (onStreamPictures).",
+      "input": {
+        "type": "object",
+        "required": [
+          "upload"
+        ],
+        "properties": {
+          "upload": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The upload returned by reaction_media_upload_begin."
+          },
+          "poster": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Optional, for a video: name or id of a picture already in the library that stands for it (a still frame you exported, uploaded first like any picture)."
+          }
+        }
+      },
+      "default": false
+    },
+    {
+      "name": "reaction_media_list",
+      "readOnly": true,
+      "description": "Lists the media library of the alerts overlay: name, id, kind (picture, video, sound), size, duration, dimensions and transparency when known, its poster picture, who added it (person or assistant) and which Twitch event reactions use it. Also the built-in sounds.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "reaction_media_delete",
+      "destructive": true,
+      "default": false,
+      "description": "Deletes a file of the media library (by name or id) and the file itself. Refused while a Twitch event reaction uses it: remove it there first with reaction_set. A Twitch bot command that shows it stops showing it.",
+      "input": {
+        "type": "object",
+        "required": [
+          "media"
+        ],
+        "properties": {
+          "media": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Library name or id."
+          }
+        }
+      }
+    },
+    {
+      "name": "reaction_get",
+      "readOnly": true,
+      "description": "Reads the reaction of one Twitch event type on the alerts overlay: whether it is on, its pictures, GIFs and videos (by library name), the order when there are several (random or round_robin), its text, duration, sound and whether a video plays its own sound.",
+      "input": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype",
+              "redeem"
+            ],
+            "description": "The Twitch event: follow, sub, resub, gift, cheer, raid, online, offline, hype or redeem."
+          }
+        }
+      }
+    },
+    {
+      "name": "reaction_set",
+      "description": "Changes the reaction of one Twitch event type: media (list of library names or ids, pictures, GIFs or videos, 12 at most; an empty list goes back to text only), order (random or round_robin), text (words between braces from reaction_get), durationSeconds (0 = default, else 2 to 60), sound (off, chime, bell, pop, fanfare, or the name of a sound of the library), videoSound (true: the video plays its own sound), enabled. Only what you give changes. Nothing is shown on screen; use reaction_test.",
+      "input": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype",
+              "redeem"
+            ],
+            "description": "The Twitch event: follow, sub, resub, gift, cheer, raid, online, offline, hype or redeem."
+          },
+          "media": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string"
+            },
+            "description": "Library names or ids, in order."
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "random",
+              "round_robin"
+            ],
+            "description": "With several files: random (never twice in a row) or round_robin (in turn)."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Sentence shown, for example \"Thanks {name} for the follow\". Empty: the default sentence."
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60,
+            "description": "0 = default, else 2 to 60."
+          },
+          "sound": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "off, chime, bell, pop, fanfare, or a sound name of the library."
+          },
+          "videoSound": {
+            "type": "boolean",
+            "description": "A video plays its own sound."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "The event shows an alert."
+          }
+        }
+      },
+      "default": false
+    },
+    {
+      "name": "reaction_test",
+      "description": "Sends one TEST alert of this Twitch event type to the alerts overlay pages open now (OBS or a browser), with a sample name, exactly as a real event would look. It waits its turn in the queue. Nothing reaches Twitch.",
+      "input": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype",
+              "redeem"
+            ],
+            "description": "The Twitch event: follow, sub, resub, gift, cheer, raid, online, offline, hype or redeem."
+          }
+        }
+      },
+      "default": false
     }
   ],
   "i18n": {
@@ -1111,7 +1353,15 @@
       "mcp.alert_template_update": "Change un type d'alerte Twitch : allumé ou éteint, texte, durée ou minimum. Ne supprime rien.",
       "mcp.voice_moderation_get": "Lit la voix et la modération basique des alertes Twitch, et les textes en attente de décision.",
       "mcp.voice_moderation_update": "Change la voix (lecture à voix haute) et la modération basique des alertes Twitch. N'envoie rien à l'écran.",
-      "mcp.held_text_decide": "Accepte ou écarte un texte du public que la modération a caché ou retenu. Ne supprime rien."
+      "mcp.held_text_decide": "Accepte ou écarte un texte du public que la modération a caché ou retenu. Ne supprime rien.",
+      "mcp.reaction_media_upload_begin": "Commence l'ajout d'une vidéo, d'un GIF, d'une image ou d'un son que vous avez créé à la bibliothèque de l'overlay d'alertes.",
+      "mcp.reaction_media_upload_chunk": "Envoie un morceau en base64 d'un ajout commencé, quand l'adresse https n'est pas utilisable.",
+      "mcp.reaction_media_upload_finish": "Termine un ajout : le site vérifie le fichier puis le range dans la bibliothèque, marqué comme ajouté par l'assistant.",
+      "mcp.reaction_media_list": "Liste la bibliothèque de l'overlay d'alertes : genre, taille, durée, qui l'a ajouté et quelles réactions l'utilisent.",
+      "mcp.reaction_get": "Lit la réaction d'un type d'événement Twitch : fichiers, ordre, texte, durée et son.",
+      "mcp.reaction_set": "Change la réaction d'un type d'événement Twitch : fichiers de la bibliothèque, ordre, texte, durée et son.",
+      "mcp.reaction_test": "Envoie une alerte de test de ce type d'événement aux pages d'overlay ouvertes. Rien n'atteint Twitch.",
+      "mcp.reaction_media_delete": "Supprime un fichier de la bibliothèque. Refusé tant qu'une réaction l'utilise."
     }
   },
   "requires": [
