@@ -37,9 +37,17 @@ async function loadLibrary(ctx) {
     let v2 = false;
     try { v2 = (await ctx.api.services.providers(SERVICE)).some((p) => p.version >= 2); } catch { v2 = false; }
     if (!v2) return { available: true, items };
+    // version 3 (alerts overlay 1.16.0): "Place the text" on the pictures and videos of a command, the placements of this bot read in one call
+    let compose = null;
+    try {
+      if ((await ctx.api.services.providers(SERVICE)).some((p) => p.version >= 3)) {
+        const c = await ctx.api.services.call(SERVICE, "compositions", { prefix: ctx.instance.key });
+        if (c?.ok && c.value?.compose === true) compose = { video: c.value.video === true, places: c.value.places && typeof c.value.places === "object" ? c.value.places : {} };
+      }
+    } catch { compose = null; }
     let urls = new Map();
     try { const f = await ctx.api.services.call(SERVICE, "files", {}); if (f?.ok) urls = new Map((f.value?.items ?? []).filter((x) => typeof x?.id === "string" && typeof x?.url === "string").map((x) => [x.id, x.url])); } catch { urls = new Map(); }
-    return { available: true, gallery: true, items: items.map((m) => (urls.has(m.id) ? { ...m, url: urls.get(m.id) } : m)) };
+    return { available: true, gallery: true, items: items.map((m) => (urls.has(m.id) ? { ...m, url: urls.get(m.id) } : m)), ...(compose ? { compose } : {}) };
   } catch { return { available: false, items: [] }; }
 }
 
@@ -71,12 +79,27 @@ export function checkMedia(raw, lib) {
   return { ok: true, value: { ...(visual ? { visual } : {}), ...rule, ...(sound ? { sound } : {}), ...(sec !== null ? { seconds: sec } : {}) } };
 }
 
-/** Asks the overlay to show the media. Rends { ok, state } or { ok: false, code }. Never throws: the chat answer never depends on the screen. */
-export async function showOnStream(ctx, media, { key = "" } = {}) {
+/** (1.21.0) The automatic values a placed text may use: for a command, who typed it, the first word after it and every word after it; for a word, who wrote it. */
+export const PLACE_WORDS = { command: ["user", "target", "args"], word: ["user"] };
+/** The place of a command or a word for the alerts overlay: "<this bot's instance key>:<its key>" (custom:k3x9, word:z81…). */
+export const placeKey = (ctx, key) => `${ctx.instance.key}:${String(key ?? "")}`.slice(0, 120);
+/** The values the overlay fills a placed text with, at the moment the command runs (already plain text; the overlay bounds them again). */
+export function placeVars(kind, { user = "", args = [] } = {}) {
+  const words = (Array.isArray(args) ? args : []).map(String);
+  return kind === "word" ? { user: String(user) } : { user: String(user), target: (words[0] ?? "").replace(/^@/, ""), args: words.join(" ") };
+}
+
+/**
+ * Asks the overlay to show the media. Rends { ok, state } or { ok: false, code }. Never throws: the chat answer never depends on the screen.
+ * (1.21.0) `place`: { key (custom:…, word:…), kind ("command" | "word"), vars, text, label }: the overlay (version 3) puts the text placed on the picked file, filled with
+ * these values; an older overlay ignores it.
+ */
+export async function showOnStream(ctx, media, { key = "", place = null } = {}) {
   const m = readMedia(media);
   if (!m) return { ok: false, code: "none" };
   try {
-    const r = await ctx.api.services.call(SERVICE, "show", m.visuals ? { ...m, key: String(key).slice(0, 80) } : m);
+    const at = place && place.key ? { place: placeKey(ctx, place.key), vars: place.vars ?? {}, text: String(place.text ?? "").slice(0, 200), label: String(place.label ?? "").slice(0, 80), variables: PLACE_WORDS[place.kind === "word" ? "word" : "command"] } : {};
+    const r = await ctx.api.services.call(SERVICE, "show", { ...(m.visuals ? { ...m, key: String(key).slice(0, 80) } : m), ...at });
     return r?.ok && r.value?.ok ? { ok: true, state: r.value.state } : { ok: false, code: r?.value?.code ?? r?.reason ?? "unavailable" };
   } catch { return { ok: false, code: "unavailable" }; }
 }
@@ -92,3 +115,19 @@ export function nameOf(media, lib) {
 const fold = (x) => String(x ?? "").normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
 /** A file asked for by id OR by name (case and accents ignored), for the assistants, who read names. */
 export const pick = (lib, ref) => { const s = String(ref ?? "").trim(); return lib.items.find((m) => m.id === s) ?? lib.items.find((m) => fold(m.name) === fold(s)) ?? null; };
+
+/**
+ * (1.21.0) Saves the texts placed in a window (`compositions`: { [src]: composition | null }) for the command or word `key`, with its files (addresses) and its
+ * label. `check: true` only checks. Rends { ok: true } or { ok: false, code } ("compose": a placed text is not valid; "file"; "unavailable"). Never throws.
+ */
+export async function savePlace(ctx, { key, kind, label, files, phrase, compositions, check = false }) {
+  try {
+    const r = await ctx.api.services.call(SERVICE, "place", { place: placeKey(ctx, key), label, files, variables: PLACE_WORDS[kind === "word" ? "word" : "command"], phrase, ...(compositions ? { compositions } : {}), ...(check ? { check: true } : {}) });
+    return r?.ok && r.value?.ok ? { ok: true } : { ok: false, code: r?.value?.code ?? "unavailable" };
+  } catch { return { ok: false, code: "unavailable" }; }
+}
+/** (1.21.0) The command or the word is gone: its placed texts go too. Never throws. */
+export async function forgetPlace(ctx, key) {
+  try { await ctx.api.services.call(SERVICE, "forget", { place: placeKey(ctx, key) }); } catch { /* the overlay is gone: nothing to forget */ }
+}
+

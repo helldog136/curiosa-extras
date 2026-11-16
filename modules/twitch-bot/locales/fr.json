@@ -736,5 +736,14 @@
   "media_setup_ok": "Overlay alertes est mis en place. Fermez cette fenêtre et rouvrez-la pour choisir un fichier.",
   "media_setup_denied": "Seule l'administration peut mettre en place Overlay alertes.",
   "media_setup_err": "Overlay alertes n'a pas pu être mis en place. Ouvrez la page des extensions et utilisez « Mettre en place » sur Overlay alertes.",
-  "media_suggest_reason": "affiche une image, un GIF ou une vidéo à l'écran pour une commande"
+  "media_suggest_reason": "affiche une image, un GIF ou une vidéo à l'écran pour une commande",
+  "media_var_user": "Pseudo",
+  "media_var_target": "Cible",
+  "media_var_args": "Mots après la commande",
+  "media_sample_user": "etoile_nord",
+  "media_sample_target": "lune_douce",
+  "media_sample_args": "lune_douce bravo",
+  "media_compose_phrase": "La réponse du bot",
+  "media_compose_sample": "Merci etoile_nord",
+  "media_compose_err": "Un texte placé n'est pas valide. Ouvrez Modifier le texte sur le fichier, par exemple pour retirer une zone."
 }

@@ -263,6 +263,25 @@ async function mediaOf(info, v) {
   if (!(await info.library()).available) return {};
   return { media: { visual: v.mediaVisual ?? "", sound: v.mediaSound ?? "", seconds: v.mediaSeconds ?? "" } };
 }
+/** (1.21.0) The texts placed in the window ("Place the text"): { files, compositions: { [src]: composition | null } }, only when the core marked the gallery (an older core sends no mark: nothing changes). */
+function placedOf(v) {
+  if (v.mediaFiles__compose !== "1") return null;
+  let raw = [];
+  try { const p = JSON.parse(String(v.mediaFiles || "[]")); raw = Array.isArray(p) ? p : []; } catch { raw = []; }
+  const files = raw.map((x) => String(typeof x === "string" ? x : x?.src ?? "")).filter(Boolean).slice(0, MD.VISUALS_MAX);
+  const compositions = Object.fromEntries(raw.filter((x) => x && typeof x === "object" && files.includes(String(x.src))).map((x) => [String(x.src), x.compose && typeof x.compose === "object" ? x.compose : null]));
+  return { files, compositions };
+}
+/** Checks the placed texts before anything is saved (the error goes under the gallery), then saves them once the command or word has its key. */
+async function placeCheck(ctx, placed, kind, v) {
+  if (!placed) return null;
+  const r = await MD.savePlace(ctx, { key: `${kind === "word" ? "word" : "custom"}:new`, kind, label: "", files: placed.files, phrase: String(v.text ?? ""), compositions: placed.compositions, check: true });
+  return r.ok || r.code === "unavailable" ? null : { errors: { mediaFiles: ctx.t("media_compose_err") } };
+}
+async function placeSave(ctx, placed, kind, key, label, v) {
+  if (!placed || !key) return;
+  await MD.savePlace(ctx, { key, kind, label, files: placed.files, phrase: String(v.text ?? ""), compositions: placed.compositions });
+}
 const wordFields = async (info, v) => ({ words: v.words ?? "", text: v.text ?? "", role: v.role || "everyone", mode: v.mode === "contains" ? "contains" : "whole", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "", chance: v.chance ?? "", collab: v.collab === "on", ...(await mediaOf(info, v)) });
 const parseKey = (k) => { const [kind, ...r] = String(k ?? "").split(":"); return { kind, id: r.join(":") }; };
 const fieldsFrom = (v) => ({ ...(v.enabled !== undefined ? { enabled: v.enabled === "on" } : {}), name: v.name, aliases: v.aliases ?? "", text: v.text, role: v.role || "everyone", cdGlobal: v.cdGlobal ?? "", cdUser: v.cdUser ?? "" });
@@ -310,8 +329,11 @@ export const actions = {
     if (v.resetText === "on" && (kind === "builtin" || kind === "group") && cur?.defaultText !== undefined) fields.text = cur.defaultText;   // « Rétablir le texte d'origine »
     const bad = timerOnlyCheck(ctx, fields, cur?.repeat ?? null);
     if (bad) return bad;
+    const placed = placedOf(v), badPlace = await placeCheck(ctx, placed, "command", v);
+    if (badPlace) return badPlace;
     const r = kind === "partner" || kind === "network" ? await saveSourced(ctx, kind, id, fields, info.env) : await saveCommand(ctx, { kind, id }, fields, info.env);
     if (r.ok === false) return failed(ctx, r);
+    await placeSave(ctx, placed, "command", key, `${info.s.prefix}${v.name ?? cur?.name ?? ""}`, v);
     if (v.counterReset === "on" && kind === "custom" && cur) await st.setCounter(ctx, cur.key, 0);   // « Remettre le compteur à zéro »
     return { ok: ctx.t("saved") };
   },
@@ -324,19 +346,31 @@ export const actions = {
     const fields = { ...fieldsFrom(v), enabled: true, ...(await mediaOf(info, v)), ...(per.period !== undefined ? { period: per.period } : {}), ...(rep.repeat ? { repeat: rep.repeat } : {}), ...(v.repeatEvery !== undefined ? { timerOnly: v.timerOnly === "on" } : {}) };
     const bad = timerOnlyCheck(ctx, fields, null);
     if (bad) return bad;
+    const placed = placedOf(v), badPlace = await placeCheck(ctx, placed, "command", v);
+    if (badPlace) return badPlace;
     const r = await saveCommand(ctx, { kind: "custom" }, fields, info.env);
-    return r.ok === false ? failed(ctx, r) : { ok: ctx.t("created") };
+    if (r.ok === false) return failed(ctx, r);
+    await placeSave(ctx, placed, "command", r.key, `${info.s.prefix}${v.name ?? ""}`, v);
+    return { ok: ctx.t("created") };
   },
   /** L'interrupteur de la liste DIT l'état voulu (`enabled` : « 1 » ou « 0 ») : un double clic ne défait rien. Sans `enabled` (ancien appel), l'état est inversé. */
   async createWord(ctx, v) {
     const info = await context(ctx, { declare: false });
+    const placed = placedOf(v), badPlace = await placeCheck(ctx, placed, "word", v);
+    if (badPlace) return badPlace;
     const r = await W.saveWord(ctx, {}, { ...(await wordFields(info, v)), enabled: true }, info.env);
-    return r.ok === false ? wordFailed(ctx, r) : { ok: ctx.t("word_created") };
+    if (r.ok === false) return wordFailed(ctx, r);
+    await placeSave(ctx, placed, "word", r.key, String(v.words ?? "").split(/[,\n]/)[0].trim(), v);
+    return { ok: ctx.t("word_created") };
   },
   async saveWord(ctx, v) {
     const info = await context(ctx, { declare: false });
+    const placed = placedOf(v), badPlace = await placeCheck(ctx, placed, "word", v);
+    if (badPlace) return badPlace;
     const r = await W.saveWord(ctx, { id: parseKey(v.id).id }, await wordFields(info, v), info.env);
-    return r.ok === false ? wordFailed(ctx, r) : { ok: ctx.t("saved") };
+    if (r.ok === false) return wordFailed(ctx, r);
+    await placeSave(ctx, placed, "word", r.key ?? v.id, String(v.words ?? "").split(/[,\n]/)[0].trim(), v);
+    return { ok: ctx.t("saved") };
   },
   async toggle(ctx, v) {
     const info = await context(ctx, { declare: false });
@@ -358,9 +392,10 @@ export const actions = {
   async remove(ctx, v) {
     const raw = String(v.id ?? "");
     const { kind, id } = raw.includes(":") ? parseKey(raw) : { kind: "custom", id: raw };
-    if (kind === "word") { const w = await W.removeWord(ctx, id); return w.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("word_deleted") }; }
+    if (kind === "word") { const w = await W.removeWord(ctx, id); if (w.ok !== false) await MD.forgetPlace(ctx, `word:${id}`); return w.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("word_deleted") }; }
     if (kind !== "custom") return { error: ctx.t("delete_own_only") };
     const r = await removeCustom(ctx, id);
+    if (r.ok !== false) await MD.forgetPlace(ctx, `custom:${id}`);   // its placed texts go with it
     return r.ok === false ? { error: ctx.t("err_unknown") } : { ok: ctx.t("deleted") };
   },
   /** « Ouvrir la fiche du partenaire » : la commande d'un partenaire se règle dans sa fiche (R30). */

@@ -2,6 +2,7 @@
 // (the Twitch bot) pick a media by its id through the service `alerts.show` and never hold a file themselves: ONE place to send and name media, the files stay owned by this module.
 // What a media does on screen goes through the same queue as the alerts (waiting turn, pause, skip, "Empty the queue"), so everything the page already honours keeps working.
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbour files
+const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 
 export const COLLECTION = "mediaLib";
@@ -172,6 +173,39 @@ export async function show(ctx, input, emit, now = Date.now()) {
   }
   if (!valve(ctx.instance.key, now)) return { ok: false, code: "busy" };
   const secondsDefault = Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6));
-  const state = await tw.showOrHold(ctx, alertOf({ visual, sound, seconds, secondsDefault }), emit);
+  let alert = alertOf({ visual, sound, seconds, secondsDefault });
+  // (version 3) the text placed on this file for THIS command (`place`), filled with the caller's values (`vars`) and sentence (`text`); the caller draws nothing
+  if (visual && input?.place !== undefined) alert = await withPlaced(ctx, alert, visual, input, now);
+  const state = await tw.showOrHold(ctx, alert, emit);
   return { ok: true, state };
+}
+
+const VAR_RE = /^[a-z][a-zA-Z0-9_]{0,23}$/;
+/** The automatic values a caller sends: 20 at most, plain text of 200 characters at most (the page sets them with textContent). */
+export function readVars(raw) {
+  const out = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [k, v] of Object.entries(raw).slice(0, 20)) if (VAR_RE.test(k) && (typeof v === "string" || typeof v === "number")) out[k] = String(v).replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, 200);
+  return out;
+}
+/**
+ * (1.16.0) An alert of `alerts.show` gets the composition of its file in the caller's place, when there is one: { place: "<instance>:<kind>:<id>", vars, text,
+ * label?, variables? }. The first show of a command also declares its place (so the assistant tools see it) when it says which values it fills. Never throws.
+ */
+async function withPlaced(ctx, alert, visual, input, now) {
+  try {
+    if (!cp.available(ctx)) return alert;
+    const decl = cp.readPlace({ place: input.place, label: input.label, files: [visual.url, ...(Array.isArray(input.files) ? input.files : [])], variables: input.variables, phrase: input.text });
+    if (!decl) return alert;
+    if (Array.isArray(input.variables)) {
+      const known = await cp.showPlace(ctx, decl.place);
+      if (!known) await cp.declarePlace(ctx, decl, now);
+      else if (!known.files.includes(visual.url) && known.files.length < 12) await cp.declarePlace(ctx, { ...known, files: [...known.files, visual.url] }, now);
+    }
+    const c = (await cp.forPlace(ctx, decl.place))[visual.url];
+    if (!c) return alert;
+    const resolved = ctx.overlay.resolveComposition(c, { phrase: String(input.text ?? "").slice(0, 200), values: readVars(input.vars) });
+    const secs = c.duration && Number.isFinite(c.duration.seconds) ? Math.min(60, Math.max(2, Math.round(c.duration.seconds))) : 0;
+    return { ...alert, compose: resolved, ...(secs ? { duration: secs } : {}) };
+  } catch { return alert; }
 }

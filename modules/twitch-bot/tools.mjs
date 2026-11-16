@@ -39,6 +39,17 @@ const wordView = (w, lib) => ({
   kind: "word", words: w.words, match: w.mode === "contains" ? "inside words" : "whole word", text: w.text || null, enabled: w.enabled, role: w.role, state: w.state,
   delayAllSeconds: w.cdGlobal ?? W.DEFAULTS.cdGlobal, delayPerPersonSeconds: w.cdUser ?? W.DEFAULTS.cdUser, answersOneTimeOutOf: w.chance, alsoInCollaborationMode: w.collab, ...onStreamView(w.media, lib),
 });
+/** (1.21.0) Where an assistant places text on the pictures of a command or a word (alerts overlay 1.16.0: composition_* tools with this place). */
+const placeView = (ctx, key, m, lib) => (lib.compose && m && (m.visual || m.visuals) ? { screenPlace: `show:${MD.placeKey(ctx, key)}` } : {});
+/** After a tool saved a command or a word that shows pictures, its place is declared to the overlay (so composition_places lists it). */
+async function declare(ctx, key, kind, label, text, lib) {
+  if (!lib.compose || !key) return;
+  const fresh = await (await context(ctx, { declare: false })).library({ fresh: true });
+  const cmd = kind === "word" ? (await context(ctx, { declare: false })).words.find((w) => w.key === key) : (await context(ctx, { declare: false })).list.find((c) => c.key === key);
+  const ids = cmd?.media ? (cmd.media.visuals ?? (cmd.media.visual ? [cmd.media.visual] : [])) : [];
+  const files = ids.map((id) => fresh.items.find((x) => x.id === id)?.url).filter(Boolean);
+  if (files.length) await MD.savePlace(ctx, { key, kind, label, files, phrase: String(text ?? "") });
+}
 /** onStream / clearOnStream of the tools → the `media` field (names are turned into ids; an unknown name is explained). */
 async function mediaChange(a) {
   if (a.clearOnStream === true) return { media: null };
@@ -163,8 +174,8 @@ export default {
     const info = await context(ctx, { declare: false });
     const lib = await info.library();
     const list = info.list.filter((c) => !args.kind || c.kind === args.kind);
-    const words = !args.kind || args.kind === "word" ? info.words.map((w) => wordView(w, lib)) : [];
-    return { prefix: info.s.prefix, muted: await st.isMuted(ctx), collaborationMode: collabView(await CO.current(ctx)), commands: (args.kind === "word" ? [] : list.map((c) => ({ ...view(c), ...onStreamView(c.media, lib) }))).concat(words), onStreamLibrary: lib.available ? lib.items.map((m) => ({ name: m.name, kind: m.kind })) : null };
+    const words = !args.kind || args.kind === "word" ? info.words.map((w) => ({ ...wordView(w, lib), ...placeView(ctx, w.key, w.media, lib) })) : [];
+    return { prefix: info.s.prefix, muted: await st.isMuted(ctx), collaborationMode: collabView(await CO.current(ctx)), commands: (args.kind === "word" ? [] : list.map((c) => ({ ...view(c), ...onStreamView(c.media, lib), ...placeView(ctx, c.key, c.media, lib) }))).concat(words), onStreamLibrary: lib.available ? lib.items.map((m) => ({ name: m.name, kind: m.kind })) : null };
   },
   async bot_command_create(ctx, args) {
     const info = await context(ctx, { declare: false });
@@ -172,12 +183,14 @@ export default {
     if (args.kind === "word") {
       const r = await W.saveWord(ctx, {}, { words: args.words, text: args.text ?? "", enabled: args.enabled !== false, ...wordChanges({ ...args, text: undefined, words: undefined, enabled: undefined }), ...media }, info.env);
       if (r.ok === false) throw expose(saveError(ctx, r));
-      return { created: true, words: W.parseWords(args.words).words };
+      if (media.media) await declare(ctx, r.key, "word", W.parseWords(args.words).words[0], args.text, await info.library());
+      return { created: true, words: W.parseWords(args.words).words, ...(media.media && (await info.library()).compose ? { screenPlace: `show:${MD.placeKey(ctx, r.key)}` } : {}) };
     }
     if (!args.name) throw expose("Give a name (without the prefix) for a command, or kind: \"word\" with words.");
     const r = await saveCommand(ctx, { kind: "custom" }, { name: args.name, text: args.text, aliases: args.aliases ?? [], role: args.role ?? "everyone", enabled: args.enabled !== false, ...(args.delayAllSeconds !== undefined ? { cdGlobal: args.delayAllSeconds } : {}), ...(args.delayPerPersonSeconds !== undefined ? { cdUser: args.delayPerPersonSeconds } : {}), ...repeatChanges(args), ...periodOf(ctx, args), ...media }, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
-    return { created: true, name: String(args.name).replace(info.s.prefix, "").toLowerCase() };
+    if (media.media) await declare(ctx, r.key, "command", `${info.s.prefix}${String(args.name).replace(info.s.prefix, "").toLowerCase()}`, args.text, await info.library());
+    return { created: true, name: String(args.name).replace(info.s.prefix, "").toLowerCase(), ...(media.media && (await info.library()).compose ? { screenPlace: `show:${MD.placeKey(ctx, r.key)}` } : {}) };
   },
   async bot_command_update(ctx, args) {
     const info = await context(ctx, { declare: false });
@@ -190,12 +203,14 @@ export default {
       if (!Object.keys(f).length) throw expose("nothing to change");
       const r = await W.saveWord(ctx, { id: w.id }, f, info.env);
       if (r.ok === false) throw expose(saveError(ctx, r));
+      if (f.media) await declare(ctx, w.key, "word", w.words[0], f.text ?? w.text, await info.library());
       return { updated: true, words: f.words ? W.parseWords(f.words).words : w.words };
     }
     const f = { ...changes(args), ...periodOf(ctx, args), ...(await mediaChange({ ...args, ctx })) };
     if (!Object.keys(f).length) throw expose("nothing to change");
     const r = c.kind === "partner" || c.kind === "network" ? await saveSourced(ctx, c.kind, c.id, f, info.env) : await saveCommand(ctx, { kind: c.kind, id: c.id }, f, info.env);
     if (r.ok === false) throw expose(saveError(ctx, r));
+    if (f.media) await declare(ctx, c.key, "command", `${info.s.prefix}${f.name ?? c.name}`, f.text ?? c.text, await info.library());
     return { updated: true, name: f.name ? String(f.name).toLowerCase().replace(info.s.prefix, "") : c.name };
   },
   async rewards_list(ctx) {

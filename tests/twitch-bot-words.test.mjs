@@ -113,7 +113,7 @@ test("a word with a media only writes nothing in the chat; with a reply, it show
   let w = await setup({}, [{ words: "applause", media: { visual: "m1", sound: "m2", seconds: 8 } }], ov);
   const r = await say(w, "applause !");
   assert.equal(r.result, "sent"); assert.equal(sent(w.tw).length, 0);
-  assert.deepEqual(ov.shown, [{ visual: "m1", sound: "m2", seconds: 8 }]);
+  assert.deepEqual(ov.shown.map(({ place, vars, text, label, variables, ...rest }) => rest), [{ visual: "m1", sound: "m2", seconds: 8 }]); assert.ok(ov.shown.every((x) => typeof x.place === "string"), "(1.21.0) where it shows, for a placed text; an older overlay ignores it");
   const ov2 = overlay({ show: () => ({ ok: false, code: "missing" }) });
   w = await setup({}, [{ words: "quoi", text: "Feur", media: { visual: "m1" } }], ov2);
   assert.equal((await say(w, "quoi")).result, "sent"); assert.deepEqual(sent(w.tw), ["Feur"]);
@@ -131,7 +131,7 @@ test("a command with On stream: answers, then shows; saved through the same chec
   const r = await C.saveCommand(w.ctx, { kind: "custom" }, { name: "merci", text: "Merci", media: { visual: "video:1" } }, e);
   assert.ok(r.ok);
   assert.equal((await say(w, "!merci", {}, NOW)).result, "sent");
-  assert.deepEqual(ov.shown, [{ visual: "video:1" }]);
+  assert.deepEqual(ov.shown.map(({ place, vars, text, label, variables, ...rest }) => rest), [{ visual: "video:1" }]); assert.ok(ov.shown.every((x) => typeof x.place === "string"), "(1.21.0) where it shows, for a placed text; an older overlay ignores it");
   assert.equal((await C.saveCommand(w.ctx, { kind: "custom", id: r.key.slice(7) }, { media: null }, e)).ok, true);
   await say(w, "!merci", { chatterId: "9" }, NOW + 100_000);
   assert.equal(ov.shown.length, 1, "cleared");
