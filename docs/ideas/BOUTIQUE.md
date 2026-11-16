@@ -366,3 +366,31 @@ The digest and the retries over real time in the real core (they need 10 minutes
 ### Open for the owner
 
 A customer who loses the first message cannot get the link again: it is not stored. `commissions` solves it with an action of the team that makes a new link and sends it. The same here would be small and safe.
+
+## 17. Administration, first ergonomics pass (2026-11-16)
+
+Against `docs/ERGONOMIE-ADMIN.md`. Code: `modules/shop/admin.mjs`, `data.mjs`; tests in `tests/shop.test.mjs`.
+
+### Done
+
+- **Windows instead of a form pushed into the page (R2, R3, R16, R24).** A product opens in a window above the list (`presentation: "dialog"`, address `?edit=`), with one precise main button ("Save the product"), a **separate** red "Delete the product" whose confirmation says what is lost ("Orders already placed keep their lines"), and a cancel address. The list stays behind with its search and place; the saved row shows "Saved.". On a phone the window is full screen.
+- **Stock in one field (D13).** A second row action, "Change stock", opens a window with one number (plus a choice of option only when there are several). The list shows what is *available*; what a visitor holds is untouched by the change.
+- **On-sale switch in the row (R17).** The action says the state wanted and never flips, so a double click cannot undo itself; the shop page follows at once. People who cannot manage see a plain label.
+- **Delete (R3, R24).** Refused while the product is in a live cart or an order waiting for payment (with the reason and what to do instead); otherwise gone, and placed orders keep their own copy of the lines.
+- **Only what has a meaning is shown:** "Pieces in stock" disappears for an existing one-of-a-kind or unlimited product (saving without it keeps the number in hand); the "on sale" field left the window (the list has the switch; a new product is on sale; saving a window never changes the state of an existing one); the low-stock alert ignores one-of-a-kind pieces.
+- **Visible fields:** 4 in the window for a new product, the rest under "More options", closed by default.
+
+### Bugs the tests caught on the way
+
+An empty stock field was read as zero and would have emptied the stock silently (now an error under the field, with an example). A product saved from the window could have been put back on sale or taken off by the missing field. Both fixed and tested.
+
+### Checked
+
+- 5 new groups of tests (windows and their flags, absent fields, stock, switch, delete) and the core's conformance, including `admin.ergonomics`, pass. Two deliberate defects (delete without the busy check, a switch that flips) are caught.
+- **In the real core:** the window opens above the list with `?edit=` in the address, saves and closes, the list shows the new price and "Saved."; the stock window saves and the list shows the available number; the switch takes the owl off the shop page and back; the delete confirmation shows its text. Looked at: the edit window, the delete confirmation, and the new-product window at 1280 and 390 px.
+
+### Rules still not met, and not checked
+
+- **No product photo yet** (planned with delivery 1); the order sheet is still a page, not a window; the "other options" of a product are a small free-text format ("Large | 24.00 | 3"), which breaks R6 (one notion, one control): it needs a repeatable control the core does not offer.
+- Captures asked by section 9 of the rules that were **not** taken: the dark variant of the administration, an error shown in the real core (the number field refuses letters natively; the server-side messages are only tested as data), the "everything open" view of the product window.
+- No review by a person of the wording.

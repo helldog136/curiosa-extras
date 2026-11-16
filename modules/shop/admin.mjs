@@ -16,8 +16,9 @@ const centsToText = (c) => `${Math.floor(c / 100)}.${String(c % 100).padStart(2,
 export async function adminPanel(ctx, { query } = {}) {
   const q = query && typeof query === "object" ? query : {};
   if (idOk(one(q.order))) return orderSheet(ctx, one(q.order));
-  if (one(q.edit) === "new" || idOk(one(q.edit))) return productSheet(ctx, one(q.edit));
-  return overview(ctx);
+  // A product or its stock is edited in a window above the list (the list keeps its search and place); the address stays the source of truth.
+  const dialog = one(q.edit) === "new" || idOk(one(q.edit)) ? await productDialog(ctx, one(q.edit)) : idOk(one(q.stock)) ? await stockDialog(ctx, one(q.stock)) : [];
+  return [...dialog, ...(await overview(ctx))];
 }
 
 async function overview(ctx) {
@@ -58,36 +59,53 @@ async function overview(ctx) {
   blocks.push({
     type: "table", columns: [ctx.t("colProduct"), ctx.t("colPrice"), ctx.t("colStock"), ctx.t("colStatus")], searchable: true, filters: [{ column: 3 }], truncate: [0], pageSize: 50,
     empty: ctx.t("productsEmpty"), rowIds: products.map((p) => p.id),
-    rows: products.map((p) => [p.title, formatMoney(p.variants[0].price, currency, ctx.locale), p.variants.map((v) => { const a = stockOf.get(`${p.id}:${v.id}`); return a.available === Infinity ? "∞" : String(a.available); }).join(" / "), { text: ctx.t(p.status === "published" ? "published" : "draft"), badge: p.status === "published" ? "ok" : "neutral" }]),
-    rowActions: [{ label: ctx.t("edit"), href: "?edit={id}" }],
+    rows: products.map((p) => [p.title, formatMoney(p.variants[0].price, currency, ctx.locale), p.variants.map((v) => { const a = stockOf.get(`${p.id}:${v.id}`); return a.available === Infinity ? "∞" : String(a.available); }).join(" / "), manage ? { text: ctx.t(p.status === "published" ? "published" : "draft"), switch: { on: p.status === "published", action: "setPublished", label: ctx.t("onSaleSwitch", { name: p.title }), onText: ctx.t("published"), offText: ctx.t("draft") } } : { text: ctx.t(p.status === "published" ? "published" : "draft"), badge: p.status === "published" ? "ok" : "neutral" }]),
+    rowActions: manage ? [{ label: ctx.t("edit"), href: "?edit={id}", presentation: "dialog" }, { label: ctx.t("changeStock"), href: "?stock={id}", presentation: "dialog" }] : [],
   });
-  if (manage) blocks.push({ type: "links", items: [{ label: ctx.t("addProduct"), href: "?edit=new" }] });
+  if (manage) blocks.push({ type: "links", items: [{ label: ctx.t("addProduct"), href: "?edit=new", presentation: "dialog" }] });
   return blocks;
 }
 
-async function productSheet(ctx, id) {
+async function productDialog(ctx, id) {
   const p = id === "new" ? null : await D.getProduct(ctx, id);
-  if (id !== "new" && !p) return [{ type: "banner", tone: "warning", text: ctx.t("notFound") }, { type: "links", items: [{ label: ctx.t("back"), href: "?" }] }];
-  const manage = can(ctx, "manage"), v0 = p?.variants[0];
+  if (id !== "new" && !p) return [{ type: "banner", tone: "warning", text: ctx.t("notFound") }];
+  if (!can(ctx, "manage")) return [];
+  const v0 = p?.variants[0];
   const more = p?.variants.slice(1).map((v) => `${v.label} | ${centsToText(v.price)} | ${v.onHand}`).join("\n") ?? "";
-  const blocks = [{ type: "heading", text: ctx.t(p ? "editProduct" : "newProduct") }];
-  if (!manage) { blocks.push({ type: "banner", tone: "info", text: ctx.t("readOnly") }); return blocks; }
-  blocks.push({
-    type: "adminForm", action: "saveProduct", submitLabel: ctx.t("saveProduct"), cancelHref: "?",
+  const counted = !p || v0.stockMode === "tracked";            // "pieces in stock" means nothing for a one-of-a-kind or unlimited product that already exists
+  return [{
+    type: "adminForm", presentation: "dialog", action: "saveProduct", cancelHref: "?", title: ctx.t(p ? "editProduct" : "newProduct"), submitLabel: ctx.t("saveProduct"),
+    ...(p ? { secondaryAction: { label: ctx.t("deleteProduct"), action: "deleteProduct", confirm: ctx.t("deleteConfirm") } } : {}),
     fields: [
       { name: "id", kind: "hidden", value: p?.id ?? "" },
       { name: "title", label: ctx.t("fTitle"), required: true, value: p?.title ?? "", example: ctx.t("exTitle") },
       { name: "price", label: ctx.t("fPrice"), required: true, value: v0 ? centsToText(v0.price) : "", example: "12.50" },
       { name: "stockMode", label: ctx.t("fStockMode"), kind: "segmented", value: v0?.stockMode ?? "tracked", options: [{ value: "tracked", label: ctx.t("modeTracked") }, { value: "single", label: ctx.t("modeSingle") }, { value: "unlimited", label: ctx.t("modeUnlimited") }] },
-      { name: "onHand", label: ctx.t("fOnHand"), kind: "number", min: 0, max: 100000, value: String(v0?.onHand ?? 1), unit: ctx.t("pieces") },
-      { name: "published", label: ctx.t("fPublished"), kind: "switch", value: !p || p.status === "published" ? "on" : "", folded: true },   // a new product is on sale: a draft hidden under "More options" would never show up
+      ...(counted ? [{ name: "onHand", label: ctx.t("fOnHand"), kind: "number", min: 0, max: 100000, value: String(v0?.onHand ?? 1), unit: ctx.t("pieces") }] : []),
       { name: "description", label: ctx.t("fDescription"), kind: "textarea", value: p?.description ?? "", folded: true },
-      { name: "taxRate", label: ctx.t("fTaxRate"), kind: "number", min: 0, max: 100, step: 0.01, unit: "%", value: p ? String((p.taxRate ?? 0) / 100) : "", folded: true },
+      { name: "taxRate", label: ctx.t("fTaxRate"), kind: "number", min: 0, max: 100, step: 0.01, unit: "%", value: p && p.taxRate ? String(p.taxRate / 100) : "", folded: true },
       { name: "firstLabel", label: ctx.t("fFirstLabel"), value: p && p.variants.length > 1 ? v0.label : "", folded: true },
       { name: "variants", label: ctx.t("fVariants"), kind: "textarea", value: more, example: "Large | 24.00 | 3", folded: true },
     ],
-  });
-  return blocks;
+  }];
+}
+
+/** One field and one click: the quickest way to say "I made five more". */
+async function stockDialog(ctx, id) {
+  const p = await D.getProduct(ctx, id);
+  if (!p) return [{ type: "banner", tone: "warning", text: ctx.t("notFound") }];
+  if (!can(ctx, "manage")) return [];
+  if (p.variants.every((v) => v.stockMode === "unlimited")) return [{ type: "banner", tone: "info", text: ctx.t("noStockLimit") }];
+  const first = p.variants.find((v) => v.stockMode !== "unlimited");
+  const pick = p.variants.filter((v) => v.stockMode !== "unlimited");
+  return [{
+    type: "adminForm", presentation: "dialog", action: "saveStock", cancelHref: "?", title: ctx.t("stockTitle", { name: p.title }), submitLabel: ctx.t("saveStock"),
+    fields: [
+      { name: "id", kind: "hidden", value: p.id },
+      ...(pick.length > 1 ? [{ name: "variant", label: ctx.t("fVariantPick"), kind: "select", value: first.id, options: pick.map((v) => ({ value: v.id, label: `${v.label || p.title} (${v.onHand})` })) }] : [{ name: "variant", kind: "hidden", value: first.id }]),
+      { name: "onHand", label: ctx.t("fOnHand"), kind: "number", min: 0, max: 100000, value: String(first.onHand), unit: ctx.t("pieces") },
+    ],
+  }];
 }
 
 async function orderSheet(ctx, id) {
@@ -120,7 +138,33 @@ export const adminActions = {
     const r = D.normaliseProduct(values, existing);
     if (r.errors) return { errors: Object.fromEntries(Object.entries(r.errors).map(([k, code]) => [k, ctx.t(`err_${code.startsWith("line") ? "variants" : code === "too many" ? "variants" : code}`, { line: code.replace("line ", "") })])) };
     const saved = await D.saveProduct(ctx, id || null, r.value);
-    return saved ? { ok: ctx.t("saved"), redirect: "?" } : fail(ctx, "saveFailed");
+    return saved ? { ok: ctx.t("saved") } : fail(ctx, "saveFailed");     // no redirect: the core closes the window on a success and marks the saved row
+  },
+  async saveStock(ctx, values) {
+    if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");
+    const raw = String(values.onHand ?? "").trim();
+    const n = Number(raw);
+    if (raw === "" || !Number.isInteger(n) || n < 0 || n > 100000) return { errors: { onHand: ctx.t("err_stock") } };   // an empty field is not zero: it would silently empty the stock
+    const ok = await D.setOnHand(ctx, values.id, idOk(values.variant) ? values.variant : "v1", n);
+    return ok ? { ok: ctx.t("saved") } : fail(ctx, "saveFailed");
+  },
+  /** Take a product on or off sale from the list: the action says the state wanted, it never flips (a double click cannot undo itself). */
+  async setPublished(ctx, values) {
+    if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");
+    const p = await D.getProduct(ctx, values.id);
+    if (!p) return fail(ctx, "notFound");
+    const { id, at, ...data } = p;
+    await ctx.api.store.update(id, { ...data, status: values.enabled === "1" ? "published" : "draft" });
+    return { ok: ctx.t("saved") };
+  },
+  async deleteProduct(ctx, values) {
+    if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");
+    const p = await D.getProduct(ctx, values.id);
+    if (!p) return { ok: ctx.t("deleted") };
+    const now = Date.now();
+    for (const v of p.variants) if ((await S.readAll(ctx, p.id, v.id)).some((r) => r.data.state === "held" && r.data.expiresAt > now)) return fail(ctx, "errDeleteBusy");   // in a cart or an order waiting for payment
+    await ctx.api.store.remove(p.id);                                    // placed orders keep their own copy of the lines
+    return { ok: ctx.t("deleted") };
   },
   async markPaid(ctx, values) {
     if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");

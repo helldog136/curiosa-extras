@@ -144,5 +144,15 @@
   "linkWarning": "Le lien précédent cesse de fonctionner.",
   "linkSent": "Un nouveau lien a été envoyé. Le précédent ne fonctionne plus.",
   "linkNotSent": "L'e-mail n'a pas pu être préparé. Le lien précédent fonctionne toujours.",
-  "linkLimit": "Trop de nouveaux liens aujourd'hui pour cette commande. Réessayez demain."
+  "linkLimit": "Trop de nouveaux liens aujourd'hui pour cette commande. Réessayez demain.",
+  "deleteProduct": "Supprimer le produit",
+  "deleteConfirm": "Supprimer ce produit ? Il quitte la boutique. Les commandes déjà passées gardent leurs lignes.",
+  "deleted": "Supprimé.",
+  "changeStock": "Changer le stock",
+  "saveStock": "Enregistrer le stock",
+  "stockTitle": "Stock de {name}",
+  "fVariantPick": "Option",
+  "noStockLimit": "Ce produit n'a pas de limite de stock.",
+  "onSaleSwitch": "{name} en vente",
+  "errDeleteBusy": "Ce produit est dans un panier ou une commande en attente de paiement. Retirez-le plutôt de la vente."
 }

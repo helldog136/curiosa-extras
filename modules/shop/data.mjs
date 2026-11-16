@@ -23,7 +23,7 @@ export function normaliseProduct(values, existing) {
   const price = parseMoney(values.price);
   if (price === null || price === 0) errors.price = "price";
   const mode = ["tracked", "single", "unlimited"].includes(values.stockMode) ? values.stockMode : "tracked";
-  const onHand = mode === "single" ? 1 : mode === "unlimited" ? 0 : num(values.onHand, NaN, 0, LIMITS.maxStock);
+  const onHand = mode === "single" ? 1 : mode === "unlimited" ? 0 : values.onHand === undefined && existing ? (existing.variants[0].onHand ?? 0) : num(values.onHand, NaN, 0, LIMITS.maxStock);   // the field is absent for a product that is not counted: keep what is there
   if (mode === "tracked" && !Number.isFinite(onHand)) errors.onHand = "stock";
   const taxRate = values.taxRate === undefined || values.taxRate === "" ? 0 : Math.round(Number(String(values.taxRate).replace(",", ".")) * 100);
   if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 10_000) errors.taxRate = "tax";
@@ -40,7 +40,7 @@ export function normaliseProduct(values, existing) {
   if (variants.length > LIMITS.variantsPerProduct) errors.variants = "too many";
   if (variants.length > 1) variants[0].label = clean(values.firstLabel, LIMITS.label) || "Default";
   if (Object.keys(errors).length) return { errors };
-  return { value: { kind: "physical", title, description: clean(values.description, LIMITS.description, true), status: values.published === "on" ? "published" : "draft", taxRate, variants } };
+  return { value: { kind: "physical", title, description: clean(values.description, LIMITS.description, true), status: values.published === undefined ? (existing?.status ?? "published") : values.published === "on" ? "published" : "draft", taxRate, variants } };
 }
 export async function saveProduct(ctx, id, value) {
   if (id) { const ok = await ctx.api.store.update(id, value); return ok ? id : null; }

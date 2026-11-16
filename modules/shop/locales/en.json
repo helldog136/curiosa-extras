@@ -144,5 +144,15 @@
   "linkWarning": "The previous link stops working.",
   "linkSent": "A new link has been sent. The previous one no longer works.",
   "linkNotSent": "The e-mail could not be written. The previous link still works.",
-  "linkLimit": "Too many new links today for this order. Try again tomorrow."
+  "linkLimit": "Too many new links today for this order. Try again tomorrow.",
+  "deleteProduct": "Delete the product",
+  "deleteConfirm": "Delete this product? It leaves the shop. Orders already placed keep their lines.",
+  "deleted": "Deleted.",
+  "changeStock": "Change stock",
+  "saveStock": "Save the stock",
+  "stockTitle": "Stock of {name}",
+  "fVariantPick": "Option",
+  "noStockLimit": "This product has no stock limit.",
+  "onSaleSwitch": "{name} on sale",
+  "errDeleteBusy": "This product is in a cart or an order waiting for payment. Take it off sale instead."
 }

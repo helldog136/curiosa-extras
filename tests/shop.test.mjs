@@ -363,7 +363,7 @@ test("admin actions: errors are shown under the field with an example; a saved p
   const bad = await def.adminActions.saveProduct(ctx, { title: "", price: "zero", stockMode: "tracked", onHand: "x" });
   assert.match(bad.errors.title, /for example/); assert.match(bad.errors.price, /12\.50/); assert.match(bad.errors.onHand, /for example/);
   const ok = await def.adminActions.saveProduct(ctx, { title: "Plush fox", price: "12.50", stockMode: "tracked", onHand: "3", published: "on" });
-  assert.equal(ok.redirect, "?");
+  assert.ok(ok.ok); assert.equal(ok.redirect, undefined, "no redirect: the core closes the window and marks the saved row");
   assert.equal((await D.listProducts(ctx, { published: true })).length, 1);
   const id = (await D.listProducts(ctx))[0].id;
   assert.ok((await def.adminActions.saveProduct(ctx, { id, title: "Plush fox", price: "13", stockMode: "tracked", onHand: "9", published: "on" })).ok);
@@ -372,6 +372,106 @@ test("admin actions: errors are shown under the field with an example; a saved p
   assert.ok((await def.adminActions.markPaid(ctx, { id: o.r.orderId })).ok);
   assert.ok((await def.adminActions.setState(ctx, { id: o.r.orderId, state: "shipped", tracking: "TRK-2" })).ok);
   assert.ok((await def.adminActions.setState(ctx, { id: o.r.orderId, state: "paid" })).errors.state);
+});
+
+// ── Administration: windows, stock in one field, on-sale switch, deletion ───────────────────────────────────────────
+const tableOf = (blocks, title) => blocks.filter((b) => b.type === "table").find((b) => b.columns[0] === title);
+test("the window has no on-sale field (the list has the switch): a new product is on sale, an existing one keeps its state", async () => {
+  const ctx = mk();
+  const form = (await def.adminPanel(ctx, { query: { edit: "new" } })).find((b) => b.type === "adminForm");
+  assert.ok(!form.fields.some((f) => f.name === "published"));
+  assert.equal(D.normaliseProduct({ title: "T", price: "1", onHand: "1" }).value.status, "published", "new: on sale");
+  const draft = await product(ctx, { published: "" });
+  const r = await def.adminActions.saveProduct(ctx, { id: draft.id, title: "Plush fox", price: "13", stockMode: "tracked", onHand: "3" });
+  assert.ok(r.ok);
+  assert.equal((await D.getProduct(ctx, draft.id)).status, "draft", "saving the window does not put a draft on sale");
+  const live = await product(ctx);
+  await def.adminActions.saveProduct(ctx, { id: live.id, title: "Plush fox", price: "14", stockMode: "tracked", onHand: "3" });
+  assert.equal((await D.getProduct(ctx, live.id)).status, "published");
+});
+test("a product opens in a window above the list: precise button, one separate destructive action that says what is lost, the list stays", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const sheet = await def.adminPanel(ctx, { query: { edit: p.id } });
+  const form = sheet.find((b) => b.type === "adminForm");
+  assert.equal(form.presentation, "dialog"); assert.equal(form.cancelHref, "?"); assert.equal(form.submitLabel, "Save the product");
+  assert.equal(form.secondaryAction.label, "Delete the product"); assert.equal(form.secondaryAction.action, "deleteProduct");
+  assert.match(form.secondaryAction.confirm, /Orders already placed keep their lines/);
+  assert.ok(form.fields.filter((f) => f.kind !== "hidden" && !f.folded).length <= 5);
+  assert.ok(tableOf(sheet, "Product") && tableOf(sheet, "Order"), "the lists are still there beneath the window");
+  const fresh = (await def.adminPanel(ctx, { query: { edit: "new" } })).find((b) => b.type === "adminForm");
+  assert.equal(fresh.secondaryAction, undefined, "nothing to delete in a new product");
+  assert.equal(fresh.title, "New product");
+  const list = tableOf(await def.adminPanel(ctx, { query: {} }), "Product");
+  assert.deepEqual(list.rowActions.map((a) => [a.label, a.presentation]), [["Edit", "dialog"], ["Change stock", "dialog"]]);
+  const add = (await def.adminPanel(ctx, { query: {} })).filter((b) => b.type === "links").flatMap((b) => b.items).find((i) => i.label === "Add a product");
+  assert.equal(add.presentation, "dialog");
+});
+test("'pieces in stock' only appears where it means something, and saving without it keeps the number in hand", async () => {
+  const ctx = mk();
+  const one = await product(ctx, { title: "Hand-made owl", stockMode: "single" });
+  const unl = await product(ctx, { title: "Sticker", stockMode: "unlimited" });
+  const counted = await product(ctx, { onHand: "7" });
+  const has = async (p) => (await def.adminPanel(ctx, { query: { edit: p.id } })).find((b) => b.type === "adminForm").fields.some((f) => f.name === "onHand");
+  assert.deepEqual([await has(one), await has(unl), await has(counted)], [false, false, true]);
+  const r = await def.adminActions.saveProduct(ctx, { id: one.id, title: "Hand-made owl", price: "40", stockMode: "tracked", published: "on" });
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.equal((await D.getProduct(ctx, one.id)).variants[0].onHand, 1, "no number typed: the one that was there is kept, no hidden error");
+});
+test("stock in one field: a window with one number, the right option, checked bounds, only for people who manage", async () => {
+  const ctx = mk();
+  const p = await product(ctx, { onHand: "3", variants: "Large | 24.00 | 2" });
+  const form = (await def.adminPanel(ctx, { query: { stock: p.id } })).find((b) => b.type === "adminForm");
+  assert.equal(form.presentation, "dialog"); assert.equal(form.submitLabel, "Save the stock"); assert.match(form.title, /Stock of Plush fox/);
+  assert.equal(form.fields.filter((f) => f.kind !== "hidden").length, 2, "an option to pick and a number");
+  const single = await product(ctx, { title: "Mug", onHand: "4" });
+  assert.equal((await def.adminPanel(ctx, { query: { stock: single.id } })).find((b) => b.type === "adminForm").fields.filter((f) => f.kind !== "hidden").length, 1, "one field, one click");
+  assert.ok((await def.adminActions.saveStock(ctx, { id: p.id, variant: p.variants[1].id, onHand: "9" })).ok);
+  assert.deepEqual((await D.getProduct(ctx, p.id)).variants.map((v) => v.onHand), [3, 9], "only the chosen option changed");
+  for (const bad of ["-1", "2.5", "abc", "", "100001"]) assert.match((await def.adminActions.saveStock(ctx, { id: p.id, variant: "v1", onHand: bad })).errors.onHand, /whole number/, bad);
+  const viewer = mk({ rights: [] }); viewer.api.store = ctx.api.store;
+  assert.ok((await def.adminActions.saveStock(viewer, { id: p.id, variant: "v1", onHand: "50" })).error);
+  assert.equal((await D.getProduct(ctx, p.id)).variants[0].onHand, 3);
+  const unl = await product(ctx, { title: "Sticker", stockMode: "unlimited" });
+  assert.match(JSON.stringify(await def.adminPanel(ctx, { query: { stock: unl.id } })), /no stock limit/);
+  const held = await C.addToCart(ctx, null, { productId: single.id, variantId: "v1", qty: 3 }, Date.now());
+  assert.equal(held.ok, true);
+  assert.ok((await def.adminActions.saveStock(ctx, { id: single.id, variant: "v1", onHand: "10" })).ok);
+  assert.equal((await S.availability(ctx, await D.getProduct(ctx, single.id), { id: "v1", stockMode: "tracked", onHand: 10 }, Date.now())).available, 7, "what a visitor holds is still held");
+});
+test("on sale or not, from the list: the switch says the state wanted, never flips, and the shop follows at once", async () => {
+  const ctx = mk();
+  const p = await product(ctx);
+  const cell = () => tableOf(ctx._last, "Product").rows[0][3];
+  ctx._last = await def.adminPanel(ctx, { query: {} });
+  assert.equal(cell().switch.action, "setPublished"); assert.equal(cell().switch.on, true); assert.match(cell().switch.label, /Plush fox on sale/);
+  assert.ok((await def.adminActions.setPublished(ctx, { id: p.id, enabled: "0" })).ok);
+  assert.ok((await def.adminActions.setPublished(ctx, { id: p.id, enabled: "0" })).ok, "a double click does not undo itself");
+  assert.equal((await D.getProduct(ctx, p.id)).status, "draft");
+  assert.doesNotMatch((await def.page(ctx, { segments: [] })).blocks[0].html, /Plush fox/);
+  assert.equal((await C.addToCart(ctx, null, { productId: p.id, variantId: "v1", qty: 1 }, Date.now())).reason, "unknown");
+  assert.ok((await def.adminActions.setPublished(ctx, { id: p.id, enabled: "1" })).ok);
+  assert.match((await def.page(ctx, { segments: [] })).blocks[0].html, /Plush fox/);
+  const viewer = mk({ rights: [] }); viewer.api.store = ctx.api.store;
+  assert.equal(tableOf(await def.adminPanel(viewer, { query: {} }), "Product").rows[0][3].switch, undefined, "no switch for someone who cannot change it");
+  assert.ok((await def.adminActions.setPublished(viewer, { id: p.id, enabled: "0" })).error);
+});
+test("deleting a product: refused while it is in a cart or an order waiting, otherwise gone, and placed orders keep their lines", async () => {
+  const ctx = mk();
+  const p = await product(ctx), q = await product(ctx, { title: "Plush hare" });
+  const o = await ordered(ctx, p);
+  const busy = await def.adminActions.deleteProduct(ctx, { id: p.id });
+  assert.match(busy.error, /waiting for payment/); assert.ok(await D.getProduct(ctx, p.id), "still there");
+  await O.markPaid(ctx, o.r.orderId, {}, Date.now());
+  assert.ok((await def.adminActions.deleteProduct(ctx, { id: p.id })).ok, "paid: nothing is held any more, it can go");
+  assert.equal(await D.getProduct(ctx, p.id), null);
+  assert.match((await def.page(ctx, { segments: ["track", o.r.token] })).blocks[0].html, /Plush fox/, "the placed order still shows its lines");
+  const inCart = await C.addToCart(ctx, null, { productId: q.id, variantId: "v1", qty: 1 }, Date.now());
+  assert.equal(inCart.ok, true);
+  assert.match((await def.adminActions.deleteProduct(ctx, { id: q.id })).error, /cart or an order/);
+  assert.ok((await def.adminActions.deleteProduct(ctx, { id: "nope" })).ok, "already gone is not an error");
+  const viewer = mk({ rights: [] }); viewer.api.store = ctx.api.store;
+  assert.ok((await def.adminActions.deleteProduct(viewer, { id: q.id })).error);
 });
 
 // ── No e-mail, no shop ──────────────────────────────────────────────────────────────────────────────────────────
