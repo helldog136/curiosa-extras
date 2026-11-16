@@ -130,7 +130,7 @@ test("test button: builds the alert with what is typed, saved or not; nothing is
 
 test("manifests: the service is offered with callerRights (set) and read-only reads; Twitch activity asks for it as optional; core 0.14.0; FR/EN parity", () => {
   const o = alMan.offers.find((x) => x.service === "alerts.reaction");
-  assert.deepEqual([o.version, o.each, o.callerRights, o.readOnly], [2, true, ["set"], ["list", "get", "media"]]);
+  assert.deepEqual([o.version, o.each, o.callerRights, o.readOnly], [3, true, ["set"], ["list", "get", "media", "rewards"]]);
   assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.14.0"); assert.equal(evMan.minCore, "0.15.0");
   assert.deepEqual(evMan.requires.find((x) => x.service === "alerts.reaction"), { service: "alerts.reaction", min: 1, optional: true });
   assert.deepEqual(Object.keys(evEn).sort(), Object.keys(evFr).sort()); assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());

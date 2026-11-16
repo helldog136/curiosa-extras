@@ -38,6 +38,15 @@ export const TTS_LIMITS = { rate: [0.5, 2], pitch: [0, 2], volume: [0, 100], max
 /** Several pictures, GIFs or videos for one reaction (alerts.reaction, 1.9.0): at most 12; one is picked each time, at random (never the same twice in a row) or in turn. */
 export const VARIANT_MAX = 12;
 export const PICK = ["random", "rotate"];
+/**
+ * (1.17.0) A reaction PER channel point reward: its own collection (never the configuration, which `normaliseConfig` rebuilds key by key and an older version
+ * would wipe). Row: { rid (the Twitch reward id), title, cost, on, cfg (the settings of a type, or null: the reaction of all the other rewards), updatedAt }.
+ * The reward of a redemption is `item.rewardId` (Twitch activity 1.12.0); without it, or without a row, the reaction of the type `redeem` shows, as before.
+ */
+export const REWARD_COL = "rewardReactions";
+export const REWARD_ID = /^[A-Za-z0-9-]{8,64}$/;
+/** The place of the placed texts of a reward's own reaction (the compositions of the type stay on `event:redeem`). */
+export const rewardPlace = (rid) => `event:redeem:${rid}`;
 /** Which of `n` variants comes next. `last` = the index shown last (or -1). Random never repeats the previous one when there are two or more; `rng` is injectable for tests. */
 export function chooseIndex({ n, mode = "random", last = -1, rng = Math.random }) {
   if (!(n > 1)) return 0;
@@ -139,10 +148,10 @@ const look = (cfg, env = {}, type = "") => {
  * (1.12.0) The text placed on the picture of the alert ("Place the text"): the composition of THIS file of THIS type, its texts filled on the server (the page
  * only sets them with textContent). Nothing when the person made none, or the core cannot draw them (`env.compose` absent): the media shows alone, as before.
  */
-export function withCompose(alert, type, message, vars, env = {}) {
+export function withCompose(alert, type, message, vars, env = {}, place = `event:${type}`) {
   const src = alert.present === "media" ? alert.image || alert.video || "" : "";
   if (!src || typeof env.compose !== "function") return alert;
-  let c = env.compose(`event:${type}`, src, message, vars);
+  let c = env.compose(place, src, message, vars);
   if (!c) return alert;
   // (1.14.0) a video: the switch "Sound of the videos" of the reaction still turns its sound on; the length the composition gives (the video's own, or
   // chosen) is the alert's, longer only when the voice needs more time to read
@@ -168,14 +177,19 @@ export const speechSeconds = (say, rate = 1) => Math.ceil((say.length * 0.075) /
  * `text(typeId, phase)` gives the default template and `title(phase)` the title of a hype train line; `now` is for the age limit.
  * Tests and replays (`item.test`, `item.replay`) skip the switches, the minimums, the ignore list and the age limit: a person who asks to see an alert sees it.
  */
-export function alertFor(item, { config, ignore = new Set(), showText = false, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick, compose, now = Date.now() }) {
+export function alertFor(item, { config, ignore = new Set(), showText = false, locale = "en", text, title, seconds = 0, baseSeconds = 0, videos = [], pick, compose, rewards = null, now = Date.now() }) {
   const type = typeOf(item);
   if (!type) return { skip: "unknown" };
-  const forced = item.test === true || item.replay === true, cfg = config.types[type];
+  const forced = item.test === true || item.replay === true;
+  // (1.17.0) a redemption of a reward that has its own row: its switch, and its own reaction when it has one (otherwise the reaction of all the other rewards)
+  const rid = type === "redeem" && typeof item.rewardId === "string" && REWARD_ID.test(item.rewardId) ? item.rewardId : "";
+  const own = rid && rewards instanceof Map ? rewards.get(rid) ?? null : null;
+  const cfg = own?.cfg ?? config.types[type];
+  const place = own?.cfg ? rewardPlace(rid) : `event:${type}`, pickKey = own?.cfg ? `redeem:${rid}` : type;
   const at = Date.parse(item.at ?? "");
   // a line Twitch activity found after a gap (`missed`) may be older: it is still worth saying "thank you" within the hour
   if (!forced && (!Number.isFinite(at) || now - at > (item.missed === true ? LIMITS.maxAgeMissedMs : LIMITS.maxAgeMs) || at - now > 60_000)) return { skip: "old" };
-  if (!forced && !cfg.on) return { skip: "off" };
+  if (!forced && (own ? own.on === false : !config.types[type].on)) return { skip: "off" };
   if (item.type === "hype_progress" && !forced && false) return { skip: "off" };
   if (type === "sub" && item.gifted === true && !forced) return { skip: "gifted" };   // the gift line announces them
   const who = [item.login, item.name].map((s) => String(s ?? "").toLowerCase());
@@ -196,7 +210,7 @@ export function alertFor(item, { config, ignore = new Set(), showText = false, l
     const say = sayOf(cfg, config, env, message, detail, vars.name);
     let secs = cfg.seconds || seconds || 0;
     if (say) secs = Math.min(LIMITS.seconds.max, Math.max(secs || baseSeconds || 6, speechSeconds(say, config.tts.rate)));
-    return withCompose({ kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg, env, type), ...(say ? { say } : {}), ...(reason && !detail ? { flag: reason } : {}), queued: true, id: String(item.id ?? "") }, type, message, vars, env);
+    return withCompose({ kind: KIND[type], message, ...(detail ? { detail } : {}), ...(phase ? { title: title(phase) } : {}), ...(secs ? { duration: secs } : {}), ...look(cfg, env, pickKey), ...(say ? { say } : {}), ...(reason && !detail ? { flag: reason } : {}), queued: true, id: String(item.id ?? "") }, type, message, vars, env, place);
   };
   const base = { type, group: type === "gift" || type === "follow" };
   if (!reason) return { alert: build(raw), ...base };
@@ -265,6 +279,17 @@ async function save(ctx, name, data) {
 
 /** Every upload of the site that a configuration points at (pictures, videos, sounds of the types). */
 export const usedUrls = (config) => new Set(TYPES.flatMap((id) => { const c = config.types[id]; return [c.image, c.audio, ...(c.variants ?? [])].filter(Boolean); }));
+/** (1.17.0) Every upload the reactions of the rewards point at (read from their rows; a row that cannot be read keeps nothing from being kept: the list is then empty). */
+export async function rewardUrls(ctx) {
+  const out = new Set();
+  try {
+    for (const r of await ctx.api.store.list(REWARD_COL, { limit: 500 })) {
+      const c = r?.data?.cfg;
+      if (c && typeof c === "object") for (const u of [c.image, c.audio, ...(Array.isArray(c.variants) ? c.variants : [])]) if (typeof u === "string" && u) out.add(u);
+    }
+  } catch { /* none */ }
+  return out;
+}
 /**
  * Lets a file go (files.remove) only when nothing of this module still points at it: a file may be held by the media library AND by one or several types.
  * Call it AFTER the new configuration or library row is saved. Never throws.
@@ -273,7 +298,7 @@ export async function releaseFile(ctx, url) {
   if (!url) return { ok: true, removed: false };
   try {
     const lib = (await ctx.api.store.list("mediaLib", { limit: 200 })).some((r) => r?.data?.url === url);
-    if (lib || usedUrls(await loadConfig(ctx)).has(url)) return { ok: true, removed: false, kept: true };
+    if (lib || usedUrls(await loadConfig(ctx)).has(url) || (await rewardUrls(ctx)).has(url)) return { ok: true, removed: false, kept: true };
     return (await ctx.api.files?.remove?.(url)) ?? { ok: true, removed: false };
   } catch { return { ok: false }; }
 }
@@ -445,7 +470,7 @@ export async function pullTwitch(ctx, emit, env) {
   try { const r = await ctx.api.topics.collect(TOPIC, { limit: 200 }); /* the most the topic gives: a burst of up to 200 lines between two reads is not lost */ items = Array.isArray(r) ? r : []; } catch { items = []; }
   const config = await loadConfig(ctx, now);
   const t = env.t, text = (id) => t(`tw_text_${id}`), title = (phase) => t(`tw_title_${phase}`);
-  const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: pickerOf(s, env.rng), compose: env.compose, now };
+  const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: pickerOf(s, env.rng), compose: env.compose, rewards: env.rewards ?? null, now };
   let changed = false;
   const stagedIds = new Set(s.staged.map((x) => x.key));
   const fresh = [];

@@ -27,6 +27,7 @@ const kit = await import(`./adminkit.mjs${v}`);
 const { migrateTimers } = await import(`./timersMigrate.mjs${v}`);
 const remote = await import(`./remote.mjs${v}`);
 const collab = await import(`./collab.mjs${v}`);
+const rewardsService = await import(`./rewardsService.mjs${v}`);
 
 export default {
   routes: {
@@ -73,7 +74,11 @@ export default {
   mcp: tools,
 
   // The panel of the remote control (phone and OBS dock) of Audience, when it is installed: pause the bot, add a command. Audience checks its secret address before it calls us (see remote.mjs).
-  services: { "audience.remote": { describe: (ctx) => remote.describe(ctx), press: (ctx, a) => remote.press(ctx, a) } },
+  services: {
+    "audience.remote": { describe: (ctx) => remote.describe(ctx), press: (ctx, a) => remote.press(ctx, a) },
+    // (1.22.0) Twitch activity creates a channel point reward for a reaction ("Add a reward"), through this module's own path (see rewardsService.mjs)
+    "twitch.rewards": { status: (ctx) => rewardsService.status(ctx), create: (ctx, a) => rewardsService.create(ctx, a) },
+  },
 
   // Données 2 : la chaîne tapée à la main (un pseudo) est notée, avec l'instance de Ma Chaîne Twitch qui l'a, pour le réglage devenu un choix (voir channel.mjs).
   // Données 3 : l'ancien réglage « Autres actions » et les actions déjà portées par des récompenses deviennent des actions nommées (le mot est le nom) ; rien ne change pour les récompenses.
