@@ -102,8 +102,8 @@ test("formulaire : la question simple, quatre choix lisibles, huit couleurs, un 
   const shown = f.filter((x) => x.kind !== "hidden" && !x.folded).map((x) => x.name);
   assert.deepEqual(shown, ["title", "cost", "what"], "chemin court : trois champs visibles, le reste sous « Plus d'options » (R2, R4)");
   assert.ok(f.filter((x) => x.folded).every((x) => ["reply", "color", "actionName", "cooldown", "prompt", "needsInput"].includes(x.name)));
-  assert.deepEqual(what.options.map((o) => o.label), ["Répondre dans le chat", "Changer la couleur des lumières", "Lire son message à voix haute", "Autre chose chez moi", "Vos actions : Lancer l'aspirateur"]);
-  assert.deepEqual(what.options.map((o) => o.value), ["chat", "lights", "voice", "custom", "named:perso:lancer-l-aspirateur"]);
+  assert.deepEqual(what.options.map((o) => o.label), ["Répondre dans le chat", "Changer la couleur des lumières", "Lire son message à voix haute", "Autre chose chez moi", "Montrer l'alerte seulement", "Vos actions : Lancer l'aspirateur"]);
+  assert.deepEqual(what.options.map((o) => o.value), ["chat", "lights", "voice", "custom", "alert", "named:perso:lancer-l-aspirateur"]);
   assert.deepEqual(f.find((x) => x.name === "color").options.map((o) => o.label), ["Rouge", "Vert", "Bleu", "Jaune", "Orange", "Violet", "Rose", "Blanc"]);
   assert.equal(f.find((x) => x.name === "actionName").label, "Nom de la nouvelle action");
   assert.ok(!f.some((x) => x.name === "action" || x.name === "actionKey"), "ni liste de clés brutes, ni champ de clé hors mode avancé");

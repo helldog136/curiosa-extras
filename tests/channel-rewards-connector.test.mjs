@@ -9,7 +9,7 @@ import { connector, connectorModule, connectorCallback } from "./helpers/twitchC
 const oauth = await import("../modules/twitch-connector/oauth.mjs");
 const helix = await import("../modules/twitch-connector/helix.mjs");
 const OWN = connectorCallback();
-const MANAGE = "channel:manage:redemptions";
+const MANAGE = "channel:manage:redemptions", READ = "channel:read:redemptions";
 const realFetch = globalThis.fetch, saved = { ...oauth.timing };
 let tw, rw, extra;
 beforeEach(() => {
@@ -26,7 +26,9 @@ beforeEach(() => {
       const h = Object.fromEntries(Object.entries(init.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]));
       const tok = tw.access.get(String(h.authorization ?? "").replace(/^Bearer /, ""));
       if (!tok?.valid) return new Response("{}", { status: 401 });
-      if (!tok.scopes.includes(MANAGE)) return new Response(JSON.stringify({ message: "Missing scope" }), { status: 401 });
+      // Twitch: reading the rewards takes either permission, every write takes "manage"
+      const need = (init.method ?? "GET") === "GET" ? [MANAGE, READ] : [MANAGE];
+      if (!need.some((x) => tok.scopes.includes(x))) return new Response(JSON.stringify({ error: "Unauthorized", status: 401, message: `Missing scope: ${need.join(" or ")}` }), { status: 401 });
       const q = {}; for (const [k, v] of u.searchParams) (q[k] ??= []).push(v);
       const r = rw.request({ as: "user", method: init.method, path: u.pathname.replace("/helix/", ""), query: q, body: init.body ? JSON.parse(init.body) : undefined });
       return new Response(r.json === null ? null : JSON.stringify(r.json), { status: r.status, headers: { "content-type": "application/json" } });
@@ -90,6 +92,24 @@ test("autorisation : sans « gérer les échanges » l'appel est refusé (scope)
   assert.equal(made.json.data[0].title, "Rouge");
   const dump = JSON.stringify([made, await C.methods.account({ channel: "machaine" }), await C.methods.connections()]);
   assert.ok(!/at_\d|rt_\d|SEC-RET/.test(dump), "aucun jeton ni secret");
+});
+
+test("1.6.0: reading the rewards needs only « read the redemptions »; writing still needs « manage »; the missing one asked is « read »", async () => {
+  const C = connector({});
+  await connect(C, [READ]);
+  const calls = () => tw.log.filter((c) => c.path.includes("channel_points")).length;
+  assert.deepEqual(helix.check(u("GET", "channel_points/custom_rewards", { broadcaster_id: B })).scopes, [`${READ}|${MANAGE}`]);
+  const list = await C.methods.request(u("GET", "channel_points/custom_rewards", { broadcaster_id: B }));
+  assert.equal(list.status, 200);
+  assert.deepEqual(list.json.data, []);
+  assert.deepEqual(await C.methods.request(u("POST", "channel_points/custom_rewards", { broadcaster_id: B }, { title: "Rouge", cost: 500 })), { ok: false, error: "scope" });
+  assert.equal(calls(), 1, "the write never left");
+  const C2 = connector({});
+  await connect(C2, ["moderator:read:followers"]);
+  assert.deepEqual(await C2.methods.request(u("GET", "channel_points/custom_rewards", { broadcaster_id: B })), { ok: false, error: "scope" });
+  const health = JSON.stringify(await C2.methods.connections());
+  assert.match(health, new RegExp(READ), "the permission asked for is the reading one");
+  assert.doesNotMatch(health, /\|/, "never the « a|b » form");
 });
 
 test("compte sans points de chaîne : Twitch répond 403, le Connecteur le rend tel quel (à l'appelant de le dire en mots simples)", async () => {

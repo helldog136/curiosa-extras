@@ -6,7 +6,7 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.11.0",
+  "version": "1.12.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
@@ -45,6 +45,15 @@
       "service": "alerts.reaction",
       "min": 1,
       "optional": true
+    },
+    {
+      "service": "twitch.rewards",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "Create a channel point reward from here (Twitch bot)",
+        "fr": "Créer une récompense de points de chaîne d'ici (Bot Twitch)"
+      }
     }
   ],
   "provides": [
@@ -69,6 +78,14 @@
       "label": {
         "en": "Event types",
         "fr": "Types"
+      },
+      "panel": true
+    },
+    {
+      "id": "rewards",
+      "label": {
+        "en": "Rewards",
+        "fr": "Récompenses"
       },
       "panel": true
     },
@@ -300,13 +317,24 @@
           }
         }
       }
+    },
+    {
+      "name": "twitch_events_rewards",
+      "readOnly": true,
+      "default": false,
+      "description": "List the channel point rewards of the Twitch channel with their reaction on the alerts overlay: id, title, cost, whether the reward is enabled or paused on Twitch, whether it was deleted on Twitch but still has a reaction (deletedOnTwitch), whether it shows an alert (alert), whether it has its own reaction (ownReaction: files, order, sound) or shows the reaction of all the other rewards. Also the reaction of all the other rewards, and whether a new reward can be created from the admin (with the Twitch bot). Use an id or the exact title as reward in reaction_set of the alerts overlay.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
     }
   ],
   "i18n": {
     "fr": {
       "mcp.twitch_events_list": "Liste les derniers événements de la chaîne Twitch (follows, abonnements, cadeaux, bits, raids…), du plus récent au plus ancien.",
       "mcp.twitch_events_status": "Dit si le site écoute vraiment Twitch : état, autorisations manquantes, dernier événement de chaque type.",
-      "mcp.twitch_event_replay": "Rejoue une alerte du journal avec les mêmes données, ou envoie un exemple de test d'un type. Borné, ne supprime rien."
+      "mcp.twitch_event_replay": "Rejoue une alerte du journal avec les mêmes données, ou envoie un exemple de test d'un type. Borné, ne supprime rien.",
+      "mcp.twitch_events_rewards": "Liste les récompenses de points de chaîne avec leur réaction sur l'overlay d'alertes : titre, coût, état sur Twitch, alerte activée, réaction propre ou celle des autres récompenses."
     }
   },
   "offers": [

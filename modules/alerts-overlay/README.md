@@ -152,3 +152,7 @@ The Media tab shows "Added by the assistant" on those files; you can delete them
 - **"Large alerts"** (`alerts-stage`, `fit: "fluid"`): the same page in a frame the person sizes freely, so a 16:9 picture with its text shows at its real size. It follows the common style and the appearance kit, and is empty and transparent between two alerts.
 - On a core older than 0.19.0: no "Place the text", nothing stored, media alone. On 0.19.0: pictures and GIFs only.
 
+
+## One reaction per channel point reward (version 1.17.0)
+
+A redemption whose reward has its own row (collection `rewardReactions`: `rid`, `title`, `cost`, `on`, `cfg`) shows ITS reaction (files, order, sentence, sound, placed texts at the place `event:redeem:<reward id>`) and follows ITS switch; any other redemption, or one without `rewardId` (an older Twitch activity), shows the reaction of the type `redeem`, exactly as before. The rows never touch the configuration (an older version ignores them). Service `alerts.reaction` version 3 (additive): `rewards`, `forget({ reward })`, and `reward` (+ `title`, `cost`) in `get`, `set`, `test`. A file used by a reward's reaction is never let go. MCP: `reaction_get`, `reaction_set`, `reaction_test` take `reward` (id or exact title) with type `redeem`; the `composition_*` tools take `reward` with the place `event:redeem`, and `composition_places` lists the rewards' places.

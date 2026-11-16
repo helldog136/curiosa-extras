@@ -10,6 +10,7 @@ const cycle = await import(`./cycle.mjs${v}`);
 const { API } = await import(`./channel.mjs${v}`);
 const dockapi = await import(`./dockapi.mjs${v}`);
 const rx = await import(`./reaction.mjs${v}`);
+const rwAdmin = await import(`./rewardsAdmin.mjs${v}`);
 const { TONE, detail, who } = await import(`./describe.mjs${v}`);
 export { TONE, detail, who };
 
@@ -126,7 +127,8 @@ export async function panel(ctx, { query } = {}) {
     const why = on && code !== "listening" && entry.reason ? reasonOf(ctx, entry) : undefined;
     const perms = ty.scopes.length ? ty.scopes.map((x) => t(SCOPE_KEY[x])).join(", ") : t("scope_none");
     return [{ text: t(`type_${ty.id}`), title: t(`type_${ty.id}_help`) }, perms, { text: `${mark}${label}`, badge: tone, ...(why ? { title: why } : {}) },
-      ...(ready ? [{ text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),   // no column of identical dashes when the overlay is missing (R14)
+      // (1.12.0) channel points: the cell leads to the Rewards tab, where each reward has its own reaction (R25)
+      ...(ready ? [ty.id === "redeem" ? { text: `${rx.summaryText(ctx, sums[ty.id])}${sums[ty.id]?.rewards ? ` · ${t("rw_count", { n: sums[ty.id].rewards })}` : ""}`, href: "?tab=rewards", title: t("rw_count_title") } : { text: rx.summaryText(ctx, sums[ty.id]), title: t("rx_cell_title") }] : []),   // no column of identical dashes when the overlay is missing (R14)
       { text: on ? t("on") : t("off"), switch: { on, action: "setEnabled", label: t("switch_label", { type: t(`type_${ty.id}`) }), onText: t("on"), offText: t("off") } }];
   });
   const typesCheck = (d.code !== "ready" ? d.code : state.listen?.code ?? "unknown") === "listening";   // otherwise the status area above has the button
@@ -139,6 +141,7 @@ export async function panel(ctx, { query } = {}) {
     ...[await alertsLink(ctx)].filter(Boolean),
     { type: "table", columns: [t("col_when"), t("col_type"), t("col_who"), t("col_detail")], rows, rowIds: lines.map((l) => l.id), searchable: true, searchPlaceholder: t("search"), filters: [{ column: 1, allLabel: t("filter_all") }], truncate: [3], pageSize: 50, empty: t("empty"),
       rowActions: [{ label: t("replay_btn"), action: "replay" }, { label: t("remove_btn"), action: "remove", danger: true, confirm: t("remove_confirm") }] },
+    ...(await rwAdmin.blocks(ctx, { query: query ?? {}, ready, enabled: enabled.redeem === true })),
     { type: "markdown", tab: "dock", text: t("dock_intro") },
     { type: "copy", tab: "dock", label: t("dock_copy_label"), text: dockapi.dockUrl(ctx, await dockapi.dockSecret(ctx)) },
     { type: "table", tab: "dock", columns: [t("dock_renew_title")], rows: [[t("dock_renew_help")]], rowIds: ["dock"], pageSize: 0, rowActions: [{ label: t("dock_renew_btn"), action: "renewDock", confirm: t("dock_renew_confirm"), danger: true }] },
@@ -159,6 +162,7 @@ export async function panel(ctx, { query } = {}) {
 const fail = (ctx, key, vars) => ({ error: ctx.t(key, vars) });
 export const actions = {
   ...rx.actions,
+  ...rwAdmin.actions,
   async check(ctx) {
     const r = await cycle.check(ctx, settingsOf(ctx), { settle: true });
     return r.code === "listening" ? { ok: ctx.t("check_ok") } : { error: problemText(ctx, r.code, await diagnose(ctx, settingsOf(ctx), { declare: false }), await st.readState(ctx)) };

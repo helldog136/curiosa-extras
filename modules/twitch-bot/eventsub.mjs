@@ -203,8 +203,10 @@ export function classifyRedeem(json, { callback, broadcasterId }) {
 const rewardQuery = (broadcasterId, extra = {}) => ({ broadcaster_id: String(broadcasterId), ...extra });
 const base = "channel_points/custom_rewards";
 /** Le corps d'une récompense pour Twitch. `r` : { title, cost, prompt, needsInput, cooldown (secondes) } ; `paused` s'ajoute à la modification. */
+/** (1.22.0) The action "show the alert only" (actions.mjs ALERT_ACTION): its redemptions skip Twitch's request queue. */
+export const ALERT_ONLY = "alerte:seule";
 export function rewardBody(r, extra = {}) {
-  return { title: r.title, cost: r.cost, prompt: r.prompt ?? "", is_enabled: true, is_user_input_required: r.needsInput === true, is_global_cooldown_enabled: r.cooldown > 0, global_cooldown_seconds: r.cooldown > 0 ? r.cooldown : 1, should_redemptions_skip_request_queue: false, ...extra };
+  return { title: r.title, cost: r.cost, prompt: r.prompt ?? "", is_enabled: true, is_user_input_required: r.needsInput === true, is_global_cooldown_enabled: r.cooldown > 0, global_cooldown_seconds: r.cooldown > 0 ? r.cooldown : 1, should_redemptions_skip_request_queue: r.action === ALERT_ONLY, ...extra };
 }
 export const rewardRequests = {
   list: (b) => ({ as: "user", slot: "main", method: "GET", path: base, query: rewardQuery(b, { only_manageable_rewards: "true" }) }),

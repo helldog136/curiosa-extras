@@ -136,7 +136,8 @@ export async function processRedemption(ctx, red, { now = Date.now() } = {}) {
     const doc0 = { rid: red.id, rewardTid: red.rewardId, title: reward.title, action: reward.action, ...(an ? { an } : {}), user: red.login, name: red.name, at: now, status: "new", todo: null, reason: null, attempts: 0 };
     const id = await ctx.api.store.add(COL, doc0, { key: red.id });
     let doc = { id, ...doc0 };
-    if (waiting >= MAX_WAITING) doc = verdict(doc, "CANCELED", "busy");
+    if (reward.action === A.ALERT_ACTION) doc = verdict(doc, "FULFILLED", "ok");   // (1.22.0) the alert is the whole point: never refunded (normally it skips the queue and never comes here)
+    else if (waiting >= MAX_WAITING) doc = verdict(doc, "CANCELED", "busy");
     else if (await st.isMuted(ctx)) doc = verdict(doc, "CANCELED", "muted");   // paused (emergency stop): no chat answer, no action at home; the points are given back
     else if (R.isHome(reward.action)) {
       const text = reward.action === "tts:lire" ? clean(red.input, 300) : undefined;
@@ -268,6 +269,7 @@ export async function simulate(ctx, s, rewardId, { text = "", now = Date.now(), 
   const ref = `test-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const doc0 = { rid: ref, test: true, rewardTid: reward.tid, title: reward.title, action: reward.action, user: "Test", name: "Test", at: now, status: "new", todo: null, reason: null, attempts: 0 };
   const add = async (over) => { const doc = { ...doc0, ...over }; const id = await ctx.api.store.add(COL, doc, { key: ref }); return { id, ...doc }; };
+  if (reward.action === A.ALERT_ACTION) { await add({ status: "done", reason: "ok", preview: true }); return { ok: true, mode: "preview", text: ctx.t("act_alerte_seule") }; }
   if (!R.isHome(reward.action)) {
     const out = render(reward.reply, { utilisateur: "Test", recompense: reward.title }, s.prefix);
     await add({ status: "done", reason: "ok", preview: true });

@@ -89,6 +89,8 @@ export function verify({ secret, headers, rawBody, now = Date.now(), maxAgeMs = 
 /** Text from outside: normalised, without control or direction characters, spaces collapsed, bounded. Always rendered as plain text by consumers. */
 export const clean = (v, max) => (typeof v === "string" ? v.normalize("NFKC").replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "");
 const login = (v) => { const s = clean(v, 40).toLowerCase(); return /^[a-z0-9_]{1,25}$/.test(s) ? s : ""; };
+/** (1.12.0) A Twitch reward id (a UUID at Twitch; bounded and plain here). */
+export const REWARD_ID = /^[A-Za-z0-9-]{8,64}$/;
 const int = (v, min = 0, max = 1_000_000_000) => (Number.isInteger(v) && v >= min && v <= max ? v : null);
 const tierOf = (t) => ({ 1000: "1", 2000: "2", 3000: "3" })[String(t)] ?? null;
 const ms = (v) => { const t = Date.parse(typeof v === "string" ? v : ""); return Number.isFinite(t) ? t : null; };
@@ -155,7 +157,9 @@ export function normalise(subType, event, deliveredAt) {
     }
     case "channel.channel_points_custom_reward_redemption.add": {
       const o = who(); if (!o.name) return null;
-      return out({ kind: "redeem", ...o, title: clean(e.reward?.title, 80), amount: int(e.reward?.cost, 0, 1_000_000_000) ?? 0, text: clean(e.user_input, 200) }, ms(e.redeemed_at));
+      // (1.12.0) the id of the reward: the alerts overlay shows the reaction of THAT reward when it has one
+      const rid = typeof e.reward?.id === "string" && REWARD_ID.test(e.reward.id) ? e.reward.id : "";
+      return out({ kind: "redeem", ...o, ...(rid ? { rewardId: rid } : {}), title: clean(e.reward?.title, 80), amount: int(e.reward?.cost, 0, 1_000_000_000) ?? 0, text: clean(e.user_input, 200) }, ms(e.redeemed_at));
     }
     default: return null;
   }

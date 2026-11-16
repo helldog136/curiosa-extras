@@ -7,6 +7,7 @@ const v = new URL(import.meta.url).search; // the version of the module spreads 
 const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
+const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
 
 const BADGE = { follow: "ok", sub: "accent", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype: "warn", redeem: "neutral" };
 const SAMPLE = {
@@ -282,7 +283,10 @@ export async function sampleAlert(ctx, id, now = Date.now(), configOverride = nu
   const cfg = configOverride ?? await tw.loadConfig(ctx, now);
   // (1.12.0) the placed texts: the saved ones, or those of the window being tested (`extra.compose`); `extra.pick` forces the file to show
   const compose = extra.compose !== undefined ? extra.compose : cp.composerOf(ctx, await cp.allByKey(ctx));
-  const r = tw.alertFor({ ...sample, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: extra.pick ?? tw.pickerOf(tw.stateOf(ctx)), compose, now });
+  // (1.17.0) the test of one reward: its id, title and cost, and the rows of the rewards (the saved ones, or those of the window being tested)
+  const one = id === "redeem" && extra.reward ? { rewardId: extra.reward.id, ...(extra.reward.title ? { title: extra.reward.title } : {}), ...(extra.reward.cost ? { amount: extra.reward.cost } : {}) } : {};
+  const rewards = extra.rewards ?? (id === "redeem" ? await rw.byId(ctx) : null);
+  const r = tw.alertFor({ ...sample, ...one, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: extra.pick ?? tw.pickerOf(tw.stateOf(ctx)), compose, rewards, now });
   return r.alert ?? null;
 }
 

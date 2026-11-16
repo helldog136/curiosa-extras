@@ -9,15 +9,18 @@ const st = await import(`./state.mjs${v}`);
 export const ACTION_RE = /^[a-z0-9][a-z0-9:_-]{0,39}$/;
 export const BOT_ACTION = "chat:repondre";
 export const VOICE_ACTION = "tts:lire";
+/** (1.22.0) "Show the alert only": nothing happens in the chat or at home, the reward exists for its reaction on the alerts overlay (Twitch activity). Its redemptions skip
+ * Twitch's request queue (they arrive fulfilled), so nothing waits to be validated or refunded. Created from Twitch activity through the service `twitch.rewards`. */
+export const ALERT_ACTION = "alerte:seule";
 export const COLORS = ["rouge", "vert", "bleu", "jaune", "orange", "violet", "rose", "blanc"];
 export const lightKey = (color) => `lumieres:${color}`;
 /** Les actions de base. `home` : demande le Connecteur Home Assistant ; `input` : la personne qui prend la récompense écrit un message ; l'intitulé vient des textes `act_<clé avec _>`. */
 export const KNOWN = [
   ...COLORS.map((c) => ({ key: lightKey(c), home: true })),
-  { key: VOICE_ACTION, home: true, input: true }, { key: BOT_ACTION, home: false },
+  { key: VOICE_ACTION, home: true, input: true }, { key: BOT_ACTION, home: false }, { key: ALERT_ACTION, home: false },
 ];
 export const labelKey = (key) => `act_${key.replace(/[^a-z0-9]/g, "_")}`;
-export const isHome = (key) => key !== BOT_ACTION;
+export const isHome = (key) => key !== BOT_ACTION && key !== ALERT_ACTION;
 export const needsInputFor = (key) => key === VOICE_ACTION;
 
 /** Les actions nommées : 50 au plus (c'est aussi la taille du sujet `home.actions`), un nom de 60 caractères au plus, une clé fabriquée sur le modèle `perso:<nom>`. */

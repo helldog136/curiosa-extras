@@ -5,7 +5,7 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.16.0",
+  "version": "1.17.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
   "minCore": "0.14.0",
@@ -607,6 +607,10 @@
         {
           "key": "total",
           "type": "number"
+        },
+        {
+          "key": "rewardId",
+          "type": "string"
         }
       ]
     }
@@ -1137,19 +1141,20 @@
     },
     {
       "service": "alerts.reaction",
-      "version": 2,
+      "version": 3,
       "each": true,
       "readOnly": [
         "list",
         "get",
-        "media"
+        "media",
+        "rewards"
       ],
       "callerRights": [
         "set"
       ],
       "label": {
-        "en": "What each Twitch event shows on screen: pictures, GIFs, videos, sentence, sound, minimum, voice (for Twitch activity)",
-        "fr": "Ce que chaque événement Twitch montre à l'écran : images, GIF, vidéos, phrase, son, minimum, voix (pour Activité Twitch)"
+        "en": "What each Twitch event shows on screen: pictures, GIFs, videos, sentence, sound, minimum, voice; one reaction per channel point reward (for Twitch activity)",
+        "fr": "Ce que chaque événement Twitch montre à l'écran : images, GIF, vidéos, phrase, son, minimum, voix ; une réaction par récompense de points de chaîne (pour Activité Twitch)"
       }
     }
   ],
@@ -1455,7 +1460,7 @@
     {
       "name": "reaction_get",
       "readOnly": true,
-      "description": "Reads the reaction of one Twitch event type on the alerts overlay: whether it is on, its pictures, GIFs and videos (by library name), the order when there are several (random or round_robin), its text, duration, sound and whether a video plays its own sound.",
+      "description": "Reads the reaction of one Twitch event type on the alerts overlay: whether it is on, its pictures, GIFs and videos (by library name), the order when there are several (random or round_robin), its text, duration, sound and whether a video plays its own sound. For redeem, give reward to read the reaction of one channel point reward; without it, the reaction of all the other rewards and the list of rewards that have their own.",
       "input": {
         "type": "object",
         "required": [
@@ -1477,13 +1482,18 @@
               "redeem"
             ],
             "description": "The Twitch event: follow, sub, resub, gift, cheer, raid, online, offline, hype or redeem."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with type redeem: one channel point reward, by its Twitch id or the exact title of a reward that already has a reaction here (from reaction_get of redeem, or twitch_events_rewards of Twitch activity). Without it: all the other rewards."
           }
         }
       }
     },
     {
       "name": "reaction_set",
-      "description": "Changes the reaction of one Twitch event type: media (list of library names or ids, pictures, GIFs or videos, 12 at most; an empty list goes back to text only), order (random or round_robin), text (words between braces from reaction_get), durationSeconds (0 = default, else 2 to 60), sound (off, chime, bell, pop, fanfare, or the name of a sound of the library), videoSound (true: the video plays its own sound), enabled. Only what you give changes. Nothing is shown on screen; use reaction_test.",
+      "description": "Changes the reaction of one Twitch event type: media (list of library names or ids, pictures, GIFs or videos, 12 at most; an empty list goes back to text only), order (random or round_robin), text (words between braces from reaction_get), durationSeconds (0 = default, else 2 to 60), sound (off, chime, bell, pop, fanfare, or the name of a sound of the library), videoSound (true: the video plays its own sound), enabled. With type redeem and reward, it sets the reaction of that one channel point reward (enabled: whether that reward shows an alert). Only what you give changes. Nothing is shown on screen; use reaction_test.",
       "input": {
         "type": "object",
         "required": [
@@ -1545,6 +1555,11 @@
           "enabled": {
             "type": "boolean",
             "description": "The event shows an alert."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with type redeem: one channel point reward, by its Twitch id or the exact title of a reward that already has a reaction here (from reaction_get of redeem, or twitch_events_rewards of Twitch activity). Without it: all the other rewards."
           }
         }
       },
@@ -1552,7 +1567,7 @@
     },
     {
       "name": "reaction_test",
-      "description": "Sends one TEST alert of this Twitch event type to the alerts overlay pages open now (OBS or a browser), with a sample name, exactly as a real event would look. It waits its turn in the queue. Nothing reaches Twitch.",
+      "description": "Sends one TEST alert of this Twitch event type to the alerts overlay pages open now (OBS or a browser), with a sample name, exactly as a real event would look. With type redeem and reward, the test shows that reward's reaction. It waits its turn in the queue. Nothing reaches Twitch.",
       "input": {
         "type": "object",
         "required": [
@@ -1574,6 +1589,11 @@
               "redeem"
             ],
             "description": "The Twitch event: follow, sub, resub, gift, cheer, raid, online, offline, hype or redeem."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with type redeem: one channel point reward, by its Twitch id or the exact title of a reward that already has a reaction here (from reaction_get of redeem, or twitch_events_rewards of Twitch activity). Without it: all the other rewards."
           }
         }
       },
@@ -1582,7 +1602,7 @@
     {
       "name": "composition_places",
       "readOnly": true,
-      "description": "List where text can be placed on alert media: one place per Twitch event type (event:follow, event:sub…), with its files (address, kind picture/gif/video, width, height, durationSeconds, transparent, poster, hasComposition) and the automatic values its texts may use ({name}, {amount}…). Start here.",
+      "description": "List where text can be placed on alert media: one place per Twitch event type (event:follow, event:sub…) and one per channel point reward that has its own reaction (event:redeem:<reward id>), with its files (address, kind picture/gif/video, width, height, durationSeconds, transparent, poster, hasComposition) and the automatic values its texts may use ({name}, {amount}…). Start here.",
       "input": {
         "type": "object",
         "properties": {
@@ -1610,13 +1630,18 @@
         "properties": {
           "place": {
             "type": "string",
-            "maxLength": 40,
-            "description": "A place from composition_places, e.g. \"event:sub\"."
+            "maxLength": 80,
+            "description": "A place from composition_places, e.g. \"event:sub\" or \"event:redeem:<reward id>\"."
           },
           "src": {
             "type": "string",
             "maxLength": 80,
             "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
           }
         }
       }
@@ -1635,8 +1660,8 @@
         "properties": {
           "place": {
             "type": "string",
-            "maxLength": 40,
-            "description": "A place from composition_places, e.g. \"event:sub\"."
+            "maxLength": 80,
+            "description": "A place from composition_places, e.g. \"event:sub\" or \"event:redeem:<reward id>\"."
           },
           "src": {
             "type": "string",
@@ -1651,6 +1676,11 @@
           "dryRun": {
             "type": "boolean",
             "description": "true: check only, save nothing."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
           }
         }
       }
@@ -1668,8 +1698,8 @@
         "properties": {
           "place": {
             "type": "string",
-            "maxLength": 40,
-            "description": "A place from composition_places, e.g. \"event:sub\"."
+            "maxLength": 80,
+            "description": "A place from composition_places, e.g. \"event:sub\" or \"event:redeem:<reward id>\"."
           },
           "src": {
             "type": "string",
@@ -1709,6 +1739,11 @@
               "light"
             ],
             "description": "What shows through transparent parts (default checker)."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
           }
         }
       }
@@ -1726,8 +1761,8 @@
         "properties": {
           "place": {
             "type": "string",
-            "maxLength": 40,
-            "description": "A place from composition_places, e.g. \"event:sub\"."
+            "maxLength": 80,
+            "description": "A place from composition_places, e.g. \"event:sub\" or \"event:redeem:<reward id>\"."
           },
           "src": {
             "type": "string",
@@ -1761,6 +1796,11 @@
               "light"
             ],
             "description": "What shows through transparent parts (default checker)."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
           }
         }
       }
@@ -1780,7 +1820,7 @@
         "properties": {
           "fromPlace": {
             "type": "string",
-            "maxLength": 40,
+            "maxLength": 80,
             "description": "A place from composition_places, e.g. \"event:sub\"."
           },
           "fromSrc": {
@@ -1790,13 +1830,23 @@
           },
           "toPlace": {
             "type": "string",
-            "maxLength": 40,
+            "maxLength": 80,
             "description": "A place from composition_places, e.g. \"event:sub\"."
           },
           "toSrc": {
             "type": "string",
             "maxLength": 80,
             "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "fromReward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
+          },
+          "toReward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
           }
         }
       }
@@ -1815,13 +1865,18 @@
         "properties": {
           "place": {
             "type": "string",
-            "maxLength": 40,
-            "description": "A place from composition_places, e.g. \"event:sub\"."
+            "maxLength": 80,
+            "description": "A place from composition_places, e.g. \"event:sub\" or \"event:redeem:<reward id>\"."
           },
           "src": {
             "type": "string",
             "maxLength": 80,
             "description": "The file's address from composition_places, e.g. \"/uploads/….webm\"."
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Only with the place \"event:redeem\": one channel point reward (Twitch id or exact title) that has its own reaction."
           }
         }
       }
@@ -1838,11 +1893,11 @@
       "mcp.reaction_media_upload_chunk": "Envoie un morceau en base64 d'un ajout commencé, quand l'adresse https n'est pas utilisable.",
       "mcp.reaction_media_upload_finish": "Termine un ajout : le site vérifie le fichier puis le range dans la bibliothèque, marqué comme ajouté par l'assistant.",
       "mcp.reaction_media_list": "Liste la bibliothèque de l'overlay d'alertes : genre, taille, durée, qui l'a ajouté et quelles réactions l'utilisent.",
-      "mcp.reaction_get": "Lit la réaction d'un type d'événement Twitch : fichiers, ordre, texte, durée et son.",
-      "mcp.reaction_set": "Change la réaction d'un type d'événement Twitch : fichiers de la bibliothèque, ordre, texte, durée et son.",
-      "mcp.reaction_test": "Envoie une alerte de test de ce type d'événement aux pages d'overlay ouvertes. Rien n'atteint Twitch.",
+      "mcp.reaction_get": "Lit la réaction d'un type d'événement Twitch : fichiers, ordre, texte, durée et son. Pour redeem, reward lit la réaction d'une récompense de points de chaîne.",
+      "mcp.reaction_set": "Change la réaction d'un type d'événement Twitch : fichiers de la bibliothèque, ordre, texte, durée et son. Pour redeem, reward règle une seule récompense de points de chaîne.",
+      "mcp.reaction_test": "Envoie une alerte de test de ce type d'événement aux pages d'overlay ouvertes, ou d'une récompense avec reward. Rien n'atteint Twitch.",
       "mcp.reaction_media_delete": "Supprime un fichier de la bibliothèque. Refusé tant qu'une réaction l'utilise.",
-      "mcp.composition_places": "Liste où placer du texte sur les médias des alertes : une place par type d'événement Twitch (event:follow, event:sub…), avec ses fichiers (adresse, sorte, taille, durée, transparence, image fixe, composition existante) et les valeurs automatiques permises ({name}, {amount}…). Commencez ici.",
+      "mcp.composition_places": "Liste où placer du texte sur les médias des alertes : une place par type d'événement Twitch (event:follow, event:sub…) et une par récompense de points de chaîne qui a sa propre réaction (event:redeem:<id>), avec ses fichiers (adresse, sorte, taille, durée, transparence, image fixe, composition existante) et les valeurs automatiques permises ({name}, {amount}…). Commencez ici.",
       "mcp.composition_get": "Lit la composition (le texte placé) d'un fichier d'une place, ou un point de départ s'il n'y en a pas, avec ses textes remplis d'exemples. Une composition : v 1, format, arrière-plan (src, cadrage, point central, lecture, son), durée, 1 à 4 zones (x, y, w, h en pourcentage du cadre, taille en px d'un cadre de 1080 de haut, lisibilité, contour, animations).",
       "mcp.composition_set": "Enregistre le texte placé sur un fichier d'une place. composition est un texte JSON. Tous les problèmes sont listés d'un coup, en clair, et rien n'est alors enregistré. dryRun : true vérifie et complète (image fixe et durée d'une vidéo) sans enregistrer. Regardez composition_preview avant. Désactivé tant que la personne ne l'accorde pas.",
       "mcp.composition_preview": "Rend une IMAGE approchée d'une composition, dessinée par le site (police du serveur, image fixe d'une vidéo), avec pour chaque zone la taille obtenue, les lignes, le débordement et le contraste. Celle enregistrée (place, src) ou celle envoyée (composition, non enregistrée). 20 par minute. Regardez-la, ajustez, recommencez.",
