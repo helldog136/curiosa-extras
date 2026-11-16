@@ -282,5 +282,17 @@
   "md_auto_picture": "Image {n}",
   "md_auto_video": "Clip {n}",
   "md_by_assistant": "Ajouté par l'assistant",
-  "md_col_origin": "Origine"
+  "md_col_origin": "Origine",
+  "tw_col_shown": "Ce qui s'affiche",
+  "tw_editor_btn": "Régler dans Activité Twitch →",
+  "tw_pick_random": "Au hasard",
+  "tw_pick_rotate": "À tour de rôle",
+  "tw_sum_gif": "GIF",
+  "tw_sum_gifs": "{n} GIF",
+  "tw_sum_video": "Vidéo",
+  "tw_sum_videos": "{n} vidéos",
+  "tw_sum_media": "{n} fichiers",
+  "tw_sum_sound": "son",
+  "tw_sum_placed": "{n} avec texte",
+  "tw_sum_placed_one": "1 avec texte"
 }

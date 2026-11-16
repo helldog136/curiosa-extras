@@ -17,6 +17,7 @@ const dockapi = await import(`./dockapi.mjs${v}`);
 const dock = await import(`./dock.mjs${v}`);
 const kit = await import(`./dockkit.mjs${v}`);
 const flag = await import(`./flag.mjs${v}`);
+const rx = await import(`./reaction.mjs${v}`);
 
 export default {
   routes: {
@@ -58,7 +59,8 @@ export default {
     purge: { everyMinutes: 60, run: async (ctx) => { await st.purge(ctx, { retentionDays: settingsOf(ctx).retentionDays }); } },
   },
   // The alerts overlay marks here the lines whose viewer text it hid or held (see flag.mjs). Optional on its side: without this module it simply does not mark.
-  services: { "twitch.journal": { flag: (ctx, input) => flag.mark(ctx, input) } },
+  // (1.10.0) "The reactions are set here": the alerts overlay shows a summary with a link to the Types tab instead of a second editor.
+  services: { "twitch.journal": { flag: (ctx, input) => flag.mark(ctx, input) }, [rx.EDITOR]: { editor: (ctx, input) => rx.editorInfo(ctx, input) } },
   exports: { [pub.TOPIC]: (ctx, opts) => pub.topicItems(ctx, opts) },
   async adminBadge(ctx) { const state = await st.readState(ctx); const c = state.listen?.code; return (c && !["listening", "pending", "nothing_on"].includes(c)) || state.health?.code === "silent" ? 1 : 0; },
   adminPanel: admin.panel,
