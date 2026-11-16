@@ -214,6 +214,6 @@ test("manifests: Twitch activity offers the editor service (read only), the over
   assert.ok(alMan.requires.every((r) => r.optional === true), "the overlay installs and works alone");
   assert.equal(alMan.offers.find((o) => o.service === "alerts.reaction").version, 2);
   assert.deepEqual(evMan.requires.find((r) => r.service === "alerts.reaction"), { service: "alerts.reaction", min: 1, optional: true }, "an older overlay still works with Twitch activity");
-  assert.deepEqual([alMan.version, evMan.version], ["1.13.0", "1.10.0"]);
+  assert.deepEqual([alMan.version, evMan.version], ["1.14.0", "1.11.0"]);
   for (const m of ["al", "ev"]) assert.deepEqual(Object.keys(msgs[m].en).sort(), Object.keys(msgs[m].fr).sort(), m);
 });
