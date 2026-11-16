@@ -100,7 +100,7 @@ test("service add: several files sent at once are kept and named by the overlay 
   assert.deepEqual((await svc.add(b.al, { items: Array.from({ length: 13 }, (_, i) => ({ src: U(i + 20, "gif") })) })).code, "limit");
   assert.deepEqual((await svc.add(b.al, { items: [{ src: U(77, "gif") }] })).code, "file", "a file nobody just sent is refused by the claim");
   const o = alMan.offers.find((x) => x.service === "alerts.show");
-  assert.deepEqual([o.version, o.callerRights, o.readOnly], [2, ["add"], ["list", "files"]]);
+  assert.deepEqual([o.version, o.callerRights, o.readOnly], [3, ["add"], ["list", "files", "compositions"]]);
 });
 
 test("window of a command: gallery + order folded (old overlay: the old single choice); sound and seconds stay", async () => {
@@ -138,7 +138,7 @@ test("save from the window: new files go through the overlay (asCaller), library
 });
 
 test("manifests and texts: bot 1.20.0 asks core 0.15.0, overlay 1.10.0; FR/EN parity of the new keys", () => {
-  assert.deepEqual([botMan.version, botMan.minCore, alMan.version], ["1.20.1", "0.15.0", "1.15.0"]);
+  assert.deepEqual([botMan.version, botMan.minCore, alMan.version], ["1.21.0", "0.15.0", "1.16.0"]);
   assert.deepEqual(Object.keys(botEn).sort(), Object.keys(botFr).sort());
   const alFr = JSON.parse(fs.readFileSync(new URL("../modules/alerts-overlay/locales/fr.json", import.meta.url), "utf8"));
   assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());
