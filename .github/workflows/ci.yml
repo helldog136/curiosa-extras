@@ -3,6 +3,9 @@ on:
   push:
     branches: [dev, master]
   pull_request:
+# Hardening: the job only reads the repository; the default token gets no write access.
+permissions:
+  contents: read
 # Les modules sont testés contre un cœur PUBLIÉ, pas contre une branche de travail :
 #  - « publié » (bloquant) : la dernière version stable du cœur (étiquette vX.Y.Z). C'est celle que les sites installent ; un module
 #    qui exige une capacité pas encore publiée doit attendre la publication du cœur (voir docs/ideas/CAPACITES.md).
