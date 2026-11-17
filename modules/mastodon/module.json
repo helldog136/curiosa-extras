@@ -6,7 +6,7 @@
     "en": "Mastodon",
     "fr": "Mastodon"
   },
-  "version": "1.2.1",
+  "version": "1.2.2",
   "platform": "mastodon",
   "description": {
     "en": "Shows your Mastodon button in the site header and shares your follower and post counts.",

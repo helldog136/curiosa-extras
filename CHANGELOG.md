@@ -4,6 +4,22 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.94.0 — 2026-11-17
+
+*En bref : Mastodon 1.2.2 vérifie mieux l'adresse du serveur avant de lui demander vos chiffres. Rien à régler.*
+
+*In short: Mastodon 1.2.2 checks the server address better before asking it for your numbers. Nothing to set.*
+
+### Corrections
+
+- **Mastodon : adresse du serveur mieux vérifiée.** Avant chaque demande, le site vérifie où mène le nom du serveur, à chaque étape. S'il mène à un réseau privé, le site ne le contacte pas et le dit dans l'onglet Statistiques.
+- **Mastodon: server address checked better.** Before each request, the site checks where the server name leads, at every step. If it leads to a private network, the site does not contact it and says so in the Statistics tab.
+
+### Pour les développeurs
+
+- **Mastodon 1.2.2** : chaque étape (première demande et chaque redirection) résout le nom du serveur et refuse toute adresse non publique (privée, boucle locale, lien local, CGNAT, multicast, IPv6 locale, IPv4 encapsulée). Tests avec un faux résolveur (`tests/helpers/fakeResolver.mjs`).
+- **CI** : le jeton du workflow de tests est en lecture seule (`permissions: contents: read`), et le cœur testé reconstruit son pilote SQLite (`npm rebuild better-sqlite3`, nécessaire dès le cœur 0.29.0, sans effet avant).
+
 ## 1.93.0 — 2026-11-16
 
 *En bref : une réaction différente pour chaque récompense de points de chaîne, dans le nouvel onglet « Récompenses » d'Activité Twitch. Une nouvelle récompense peut se créer d'ici avec le Bot Twitch. Activité Twitch 1.12.0, Overlay alertes 1.17.0, Bot Twitch 1.22.0, Connecteur Twitch 1.6.0. Les réactions déjà réglées ne changent pas.*
