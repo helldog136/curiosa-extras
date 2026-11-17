@@ -48,7 +48,8 @@ jobs:
           path: core
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm ci --ignore-scripts && npx prisma generate
+      # npm rebuild better-sqlite3: the SQLite driver of cores built on Prisma 7 (a native module that --ignore-scripts skips); nothing to do on older cores
+      - run: npm ci --ignore-scripts && npm rebuild better-sqlite3 && npx prisma generate
         working-directory: core
       - run: node scripts/build-index.mjs --check
       - run: node scripts/showcase-check.mjs
