@@ -72,9 +72,9 @@ test("channel point rewards on without their permission: the row says it and the
   const page = await mod.adminPanel(w.ctx, { query: {} });
   assert.equal(warnings(page).length, 0);
   const b = authorize(page);
-  assert.equal(b.length, 1); assert.equal(b[0].tab, "types");
-  const row = page.find((x) => x.tab === "types" && x.type === "table").rows.find((x) => x[0].text === fr.type_redeem);
-  assert.match(row[2].text, /Accord à donner/); assert.equal(row[2].badge, "warn");
+  assert.equal(b.length, 1); assert.equal(b[0].tab, "twitch");
+  const row = page.find((x) => x.tab === "twitch" && x.type === "table").rows.find((x) => x[0].text === fr.type_redeem);
+  assert.match(row[1].text, /Accord à donner/); assert.equal(row[1].badge, "warn");   // (1.18.0) the permission column went into the tooltip of the name
 });
 
 test("after the permission is granted, the page checks again by itself and the warning goes", async () => {
@@ -103,8 +103,8 @@ test("a subscription pending for 3 minutes is deleted and created again ONCE, th
   await C.check(w.ctx, { retentionDays: 30 }, { now: NOW + 60_000 });
   assert.equal(dels() - d0, first.length, "not again");
   const page = await mod.adminPanel(w.ctx, { query: {} });
-  const row = page.find((x) => x.tab === "types" && x.type === "table").rows.find((x) => x[0].text === fr.type_raid);
-  assert.match(row[2].text, /En attente de Twitch depuis \d+ min/); assert.ok(row[2].title, "the reason is in the tooltip");
+  const row = page.find((x) => x.tab === "twitch" && x.type === "table").rows.find((x) => x[0].text === fr.type_raid);
+  assert.match(row[1].text, /En attente de Twitch depuis \d+ min/); assert.ok(row[1].title, "the reason is in the tooltip");
   const log = w.ctx.calls.log ?? [];
   const raidLines = log.filter((l) => l.action === "type.state" && l.target === "raid");
   assert.equal(raidLines.length, 1, "one line for the change, not one per minute");

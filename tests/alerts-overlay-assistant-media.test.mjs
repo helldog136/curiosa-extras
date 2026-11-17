@@ -35,7 +35,7 @@ async function upload(w, name, buf, { pieces = false } = {}) {
 const exposed = (re) => (e) => e.expose === true && re.test(e.message);
 
 test("manifest: 1.11.0, eight new tools; the three upload tools declare uploads and are off by default; delete is destructive; FR texts", () => {
-  assert.equal(manifest.version, "1.17.0");
+  assert.equal(manifest.version, "1.18.0");
   const tools = Object.fromEntries(manifest.mcp.map((t) => [t.name, t]));
   for (const name of NEW) { assert.ok(tools[name], name); assert.ok(manifest.i18n.fr[`mcp.${name}`], `fr ${name}`); assert.equal(typeof def.mcp[name], "function", name); }
   for (const name of UPLOADS) assert.deepEqual([tools[name].uploads, tools[name].readOnly, tools[name].default], [true, undefined, false], name);
@@ -66,7 +66,7 @@ test("a video for the follow: upload (PUT address), put it on the event, read it
   // the Twitch bot reads the same library by name (service alerts.show)
   assert.ok((await def.services["alerts.show"].list(w.ctx)).items.some((m) => m.name === "Follow confetti" && m.kind === "video"));
   // and the Twitch activity window can pick it "from the site"
-  assert.ok((await def.services["alerts.reaction"].media(w.ctx)).pictures.some((p) => p.label === "Follow confetti" && p.kind === "video"));
+  assert.ok((await (await import("../modules/alerts-overlay/index.mjs")).reactionService.media(w.ctx)).pictures.some((p) => p.label === "Follow confetti" && p.kind === "video"));
 });
 
 test("base64 pieces work too (mp4, gif, a sound), and a sound of the library can be the sound of an event", async () => {

@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { browser, closeBrowser, serve } from "./helpers/dockBrowser.mjs";
-import { world, deliver, EV, TYPES, S, D, mod } from "./helpers/eventsWorld.mjs";
+import { world, deliver, EV, TYPES, S, D, mod, seedQueue, TWO } from "./helpers/eventsWorld.mjs";
 import { moduleAdminTheme } from "@/core/adminTheme";
 
 const b = await browser();
@@ -22,8 +22,10 @@ const LONG = "etoile_nord_de_la_grande_ourse_bleue";
 const KINDS = [["follow", "follow"], ["sub", "sub"], ["resub", "resub"], ["gift", "gift"], ["cheer", "cheer"], ["raid", "raid"], ["online", "online"], ["offline", "offline"]];
 
 async function site({ locale, n, problem = false, paused = false }) {
-  const w = world({ alerts: true, voice: true, locale, ...(paused ? { queue: { paused: true, held: 3 } } : {}) });
+  const w = world({ alerts: true, voice: true, locale });
   w.ctx.api.adminTheme = (o) => moduleAdminTheme(o);
+  // (1.18.0) the queue is the overlay's own: paused with 3 alerts held
+  if (paused) { await seedQueue(w.ctx, { held: 3 }); await TWO.pause(w.ctx); }
   await S.ensureSecret(w.ctx);
   for (let i = n - 1; i >= 0; i--) {   // oldest first, as they arrive
     const [key, ev] = KINDS[i % KINDS.length], name = i === 1 ? LONG : NAMES[i % NAMES.length] + (i >= NAMES.length ? i : "");

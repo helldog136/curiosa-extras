@@ -177,7 +177,7 @@ test("silence while live warns by e-mail at once and the page says it", async ()
 test("graceful: the webhook asks Twitch to try again (503, Retry-After) when the site cannot store, never loses an event, and answers 204 to a replay", async () => {
   const { ctx } = world(); await S.ensureSecret(ctx);
   const add = ctx.api.store.add;
-  ctx.api.store.add = async (c, ...r) => { if (c === "events") throw new Error("updating"); return add(c, ...r); };
+  ctx.api.store.add = async (c, ...r) => { if (c === S.COL) throw new Error("updating"); return add(c, ...r); };
   const bad = await mod.routes.webhook(await signed(ctx, "m1"), ctx);
   assert.equal(bad.status, 503); assert.equal(bad.headers.get("retry-after"), "30");
   ctx.api.store.add = add;
@@ -191,11 +191,12 @@ async function signed(ctx, id) {
   return new Request("https://site.example.org/m/ev/webhook", { method: "POST", body, headers: { "twitch-eventsub-message-id": id, "twitch-eventsub-message-type": "notification", "twitch-eventsub-message-timestamp": ts, "twitch-eventsub-message-signature": es.sign(secret, id, ts, body) } });
 }
 
-test("manifest: permission mail, two settings (one advanced), one-minute watch, FR and EN texts", async () => {
-  assert.equal(manifest.version, "1.12.0");
+test("manifest: permission mail, the channel setting (advanced), one-minute watch, FR and EN texts", async () => {
+  // (1.18.0) the Twitch part of the alerts overlay: the channel stays a setting; retention, e-mails and silence are options of the first tab (twitch/settings.mjs)
+  assert.equal(manifest.version, "1.18.0");
   assert.ok(manifest.permissions.includes("mail"));
-  assert.deepEqual(manifest.settings.map((s) => s.key), ["retentionDays", "channel", "healthMail", "silentHours"]);
-  assert.equal(manifest.settings.find((s) => s.key === "silentHours").advanced, true);
+  assert.ok(manifest.settings.some((s) => s.key === "channel" && s.advanced === true && s.type === "choice"));
+  for (const k of ["retentionDays", "healthMail", "silentHours"]) assert.ok(!manifest.settings.some((s) => s.key === k), k);
   const { fr, en } = await import("./helpers/eventsWorld.mjs");
   for (const k of ["health_silent", "catchup_note", "health_mail_off", "mail_subject_problem", "mail_body_problem", "mail_subject_back", "mail_body_back"]) assert.ok(en[k] && fr[k], k);
 });

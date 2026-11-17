@@ -24,7 +24,7 @@ function world({ key = `vid${++n}`, settings = {}, items = [] } = {}) {
   const ctx = fakeCtx({ key, locale: "en", messages: JSON.parse(fs.readFileSync(`${DIR}/locales/en.json`, "utf8")), settings: { pushToken: "secret", groupSeconds: 0, minGapSeconds: 0, ...settings }, instances: [{ id: "te", key: "events", module: "twitch-events", basePath: "", name: "Twitch activity", adminPath: "/admin/instances/te" }], uploads: [{ url: PIC, by: "u1" }, { url: VID, by: "u1" }, { url: VID2, by: "u1" }], topics: { "twitch.event": () => state.items.slice() }, permissions: manifest.permissions });
   return { key, ctx, state };
 }
-const R = () => def.services["alerts.reaction"];
+const R = () => mod.reactionService;   // (1.18.0) the former service `alerts.reaction`, now internal: same methods, same answers
 const vcomp = (src, extra = {}) => ({ v: 1, backdrop: { src, play: "once" }, duration: { mode: "media", seconds: 9 }, boxes: [{ id: "t1" }], ...extra });
 const item = (type, o = {}) => ({ id: `i${++n}`, type, at: new Date().toISOString(), name: "etoile_nord", login: "etoile_nord", ...o });
 async function pull(w) {

@@ -1,32 +1,26 @@
-// END TO END, both modules together, with a FAKE TWITCH that signs like the real one: Twitch → signed webhook → journal → topic `twitch.event` → alerts overlay → the alerts the
+// END TO END (1.18.0: one module, the alerts overlay with its Twitch part; formerly Twitch activity and the overlay together), with a FAKE TWITCH that signs like the real one: Twitch → signed webhook → journal → topic `twitch.event` → alerts overlay → the alerts the
 // pages receive. A busy evening: follow, sub, resub, a gift bomb (the gift and its 25 gifted subs), raid, bits, hype train; the same message delivered twice; the site restarting in
 // the middle (memory of both modules lost, storage kept); an expired token and its repair; a revoked subscription; a burst of 150 follows.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { world, deliver, EV, TYPES, NOW, S, P, L, C, mod as eventsMod } from "./helpers/eventsWorld.mjs";
 
 const ADIR = new URL("../modules/alerts-overlay", import.meta.url).pathname;
 const tw = await import("../modules/alerts-overlay/twitch.mjs");
 const alertsMod = await import("../modules/alerts-overlay/index.mjs");
-const aManifest = JSON.parse(fs.readFileSync(`${ADIR}/module.json`, "utf8"));
-const aEn = JSON.parse(fs.readFileSync(`${ADIR}/locales/en.json`, "utf8"));
 const S0 = { channel: "", retentionDays: 30, silentHours: 3, healthMail: true };
 let n = 0;
 
-/** A site with both modules: the alerts overlay reads the topic through the events module, like the core does (the topic lives in the events module's storage). */
+/**
+ * (1.18.0) ONE module: the Twitch part and the overlay are the same copy (`actx` is the context of the events world). The overlay reads its own journal exactly as the
+ * module does at run time (index.mjs `twitchItems`), and marks it through the same path (the journal mark that index.mjs registers).
+ */
 async function site() {
   const w = world({ alerts: true, locale: "en" });
   await S.ensureSecret(w.ctx);
-  const key = `e2e${++n}`;
-  const shown = [];
-  const actx = fakeCtx({
-    key, locale: "en", messages: aEn, settings: { groupSeconds: 5, minGapSeconds: 0 }, instances: [{ id: "te", key: "ev", module: "twitch-events", basePath: "", name: "Twitch activity", adminPath: "/admin/instances/te" }], permissions: aManifest.permissions,
-    services: { "twitch.journal": { flag: (a) => eventsMod.services["twitch.journal"].flag(w.ctx, a) } },
-    topics: { "twitch.event": async () => (await P.topicItems(w.ctx, { limit: 200 }, Date.now())).map((i) => ({ ...i, source: { instance: "ev" } })) },
-  });
-  const pull = (now) => tw.pullTwitch(actx, (a) => shown.push(a), alertsMod.twitchEnv(actx, now));
+  const shown = [], actx = w.ctx;
+  const pull = async (now) => tw.pullTwitch(actx, (a) => shown.push(a), { ...alertsMod.twitchEnv(actx, now), items: await alertsMod.twitchItems(actx) });
   return { ...w, actx, shown, pull };
 }
 const T = (ms) => NOW + ms;

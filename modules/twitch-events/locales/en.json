@@ -397,5 +397,8 @@
   "rw_e_need_scope": "Allow the Twitch bot to manage your rewards, then try again.",
   "rw_e_need_connect": "Connect your channel in the Twitch bot, then try again.",
   "rw_e_need_reconnect": "Reconnect your channel in the Twitch bot, then try again.",
-  "rw_e_twitch": "Twitch did not answer. Try again in a moment."
+  "rw_e_twitch": "Twitch did not answer. Try again in a moment.",
+  "moved_banner": "Twitch activity now lives in Alerts overlay (OBS): journal, dock, reactions and settings were taken over.",
+  "moved_link": "Open Alerts overlay (OBS) →",
+  "moved_remove": "Paste the new dock address in OBS, then remove this extension from its General tab."
 }

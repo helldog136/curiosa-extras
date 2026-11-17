@@ -101,7 +101,7 @@ test("a storage failure answers 503 with Retry-After and the message is NOT take
   const { ctx } = world();
   await S.ensureSecret(ctx);
   const add = ctx.api.store.add;
-  ctx.api.store.add = async (c, ...r) => { if (c === "events") throw new Error("disk full"); return add(c, ...r); };
+  ctx.api.store.add = async (c, ...r) => { if (c === S.COL) throw new Error("disk full"); return add(c, ...r); };
   const bad = await deliver(ctx, TYPES.follow, EV.follow, { id: "retry-1" });
   assert.equal(bad.status, 503);
   ctx.api.store.add = add;
@@ -248,9 +248,9 @@ test("admin page: journal table with search and filters, types with switches, st
   assert.equal(table.searchable, true); assert.ok(table.filters.length === 1);
   assert.equal(table.rows[0][1].badge, "accent"); assert.match(table.rows[0][1].text, /Réabonnement/);
   assert.match(table.rows[0][3].text, /12 mois/);
-  const types = blocks.find((b) => b.tab === "types" && b.type === "table");
-  assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r.at(-1).switch));
-  assert.equal(blocks.find((b) => b.type === "links")?.items[0].href, "/admin/instances/alerts");
+  // (1.18.0) the types are in the Twitch events tab of the alerts overlay, with two switches: Received (listening) and Shown (the alert on screen)
+  const types = blocks.find((b) => b.tab === "twitch" && b.type === "table");
+  assert.equal(types.rows.length, es.TYPES.length); assert.ok(types.rows.every((r) => r.at(-1).switch?.action === "setType" && r.at(-2).switch?.action === "setEnabled"));
   assert.ok(blocks.some((b) => b.type === "banner"));
 });
 
@@ -264,7 +264,7 @@ test("admin actions: switch says the state wanted, test, replay, remove", async 
   assert.match(on.ok, /accord de Twitch/);
   assert.ok(tw.wants.at(-1).scopes.includes("bits:read"));
   assert.ok((await mod.adminActions.setEnabled(ctx, { id: "zzz", enabled: "1" })).error);
-  assert.ok((await mod.adminActions.test(ctx, { id: "follow" })).ok);
+  assert.ok((await mod.adminActions.testEvent(ctx, { id: "follow" })).ok);
   const id = (await S.recent(ctx, 1))[0].id;
   assert.ok((await mod.adminActions.replay(ctx, { id })).ok);
   assert.ok((await mod.adminActions.replay(ctx, { id: "x" })).error);
@@ -288,9 +288,11 @@ test("MCP tools: read the journal, status, bounded replay", async () => {
   assert.equal((await mod.mcp.twitch_event_replay(ctx, { testType: "raid" })).ok, true);
   await assert.rejects(mod.mcp.twitch_event_replay(ctx, {}), (e) => e.expose === true);
   await assert.rejects(mod.mcp.twitch_event_replay(ctx, { id: "nope" }), (e) => e.expose === true);
-  const names = manifest.mcp.map((m) => m.name);
-  assert.deepEqual(names, Object.keys(mod.mcp));
-  assert.ok(manifest.mcp.filter((m) => !m.readOnly).every((m) => m.default === false && !m.destructive));
+  // (1.18.0) the four tools of Twitch activity are tools of the alerts overlay now, same names
+  const names = manifest.mcp.map((m) => m.name).filter((n) => n.startsWith("twitch_event"));
+  assert.deepEqual(names, ["twitch_events_list", "twitch_events_status", "twitch_event_replay", "twitch_events_rewards"]);
+  for (const n of names) assert.equal(typeof mod.mcp[n], "function", n);
+  assert.ok(manifest.mcp.filter((m) => names.includes(m.name) && !m.readOnly).every((m) => m.default === false && !m.destructive));
 });
 
 test("instance deletion removes our subscriptions and permission requests, nothing else", async () => {
@@ -309,7 +311,7 @@ test("admin page passes the page ergonomics (R3 R4 R9 R10 R11 R14 R15 R17 R22), 
     const { ctx } = world({ locale, alerts: true });
     await S.ensureSecret(ctx);
     const errors = [];
-    for (const [a, v] of [["setEnabled", { id: "zzz" }], ["replay", { id: "zzz" }], ["remove", { id: "zzz" }], ["test", { id: "zzz" }]]) errors.push((await mod.adminActions[a](ctx, v)).error);
+    for (const [a, v] of [["setEnabled", { id: "zzz" }], ["replay", { id: "zzz" }], ["remove", { id: "zzz" }], ["testEvent", { id: "zzz" }]]) errors.push((await mod.adminActions[a](ctx, v)).error);
     assertAdminPageErgonomics(await mod.adminPanel(ctx, { query: {} }), { errors });
     for (const k of ["follow", "sub", "gift", "cheer", "raid", "online"]) await deliver(ctx, TYPES[k], EV[k === "sub" ? "sub" : k]);
     await P.sendTest(ctx, "hype");
