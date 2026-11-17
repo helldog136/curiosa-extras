@@ -24,8 +24,8 @@
   "requires": [],
   "worksWith": [
     "twitch-channel",
-    "twitch-events",
-    "youtube-live-actions"
+    "youtube-live-actions",
+    "twitch-connector"
   ],
   "status": "stable",
   "screenshots": [

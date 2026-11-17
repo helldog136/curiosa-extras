@@ -1,40 +1,30 @@
-// Reaction of an event type (Overlay alertes 1.9.0 service `alerts.reaction` + Activité Twitch 1.5.0 window): list of variants, random pick, files kept by the overlay, fallback without it.
+// Reaction of an event type (Overlay alertes 1.9.0 + Activité Twitch 1.5.0 window; 1.18.0: one module, the window and the reactions are the overlay's own): list of
+// variants, random pick, files kept by the overlay.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
-import { world as evWorld, A as evAdmin, mod as evMod } from "./helpers/eventsWorld.mjs";
+import { world as evWorld, mod as evMod, en as evEn, fr as evFr } from "./helpers/eventsWorld.mjs";
 import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
-const AL = new URL("../modules/alerts-overlay", import.meta.url).pathname, EV = new URL("../modules/twitch-events", import.meta.url).pathname;
+const AL = new URL("../modules/alerts-overlay", import.meta.url).pathname;
 const json = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
 const alMan = json(`${AL}/module.json`), alEn = json(`${AL}/locales/en.json`), alFr = json(`${AL}/locales/fr.json`);
-const evMan = json(`${EV}/module.json`), evEn = json(`${EV}/locales/en.json`), evFr = json(`${EV}/locales/fr.json`);
 const tw = await import("../modules/alerts-overlay/twitch.mjs");
 const md = await import("../modules/alerts-overlay/media.mjs");
 const rx = await import("../modules/alerts-overlay/reaction.mjs");
-const adminTw = await import("../modules/alerts-overlay/twitch-admin.mjs");
-const alDef = (await import("../modules/alerts-overlay/index.mjs")).default;
-const evRx = await import("../modules/twitch-events/reaction.mjs");
+const alIndex = await import("../modules/alerts-overlay/index.mjs");
+const alDef = alIndex.default;
+const evRx = await import("../modules/alerts-overlay/twitch/reaction.mjs");
 
 const U = (n, ext) => `/uploads/${String(n).padStart(8, "0")}-0123-4567-89ab-0123456789ab.${ext}`;
 const G = (n) => U(n, "gif"), V = (n) => U(100 + n, "mp4"), P = (n) => U(200 + n, "png"), WAV = U(300, "mp3");
-let n = 0;
-/** An overlay and a Twitch activity that talk through the real service code of the overlay (the person is carried, as the core 0.14.0 does with asCaller). */
-function both({ uploads = [], locale = "en", noOverlay = false } = {}) {
+/** (1.18.0) ONE copy of the overlay on a site with Twitch: the window of Twitch activity and the reactions are the same module (`al` and `ev` are the same context). */
+function both({ uploads = [], locale = "en" } = {}) {
   tw.resetTwitchState(); md.resetValve();
-  const al = fakeCtx({ key: `rx${++n}`, moduleId: "alerts-overlay", locale: "en", messages: alEn, settings: { pushToken: "x" }, permissions: alMan.permissions, uploads });
-  const sent = []; globalThis.__curiosaAlertsBus?.on?.(al.instance.key, (e) => sent.push(e));
-  const w = evWorld({ locale });
-  const svc = alDef.services["alerts.reaction"], calls = [];
-  const methods = Object.fromEntries(Object.keys(svc).map((k) => [k, (args) => { calls.push(k); return svc[k](al, args); }]));
-  if (!noOverlay) {
-    const base = w.ctx.api.services;
-    w.ctx.api.services = { ...base, providers: async (name) => (name === "alerts.reaction" ? [{ id: "id-al", key: "al", name: "Alerts", module: "alerts-overlay", version: 1, each: true, master: true }] : base.providers(name)),
-      call: async (name, method, args, opts) => { if (name !== "alerts.reaction") return base.call(name, method, args, opts); calls.push(`${method}${opts?.asCaller ? ":asCaller" : ""}`); try { return { ok: true, value: await svc[method](al, args) }; } catch { return { ok: false, reason: "failed" }; } } };
-    w.ctx.api.instances = { ...w.ctx.api.instances, list: async () => [{ id: "al", key: "al", adminPath: "/admin/instances/al" }] };
-  }
-  return { al, ev: w.ctx, calls, sent };
+  const w = evWorld({ locale, uploads });
+  const sent = []; globalThis.__curiosaAlertsBus?.on?.(w.ctx.instance.key, (e) => sent.push(e));
+  return { al: w.ctx, ev: w.ctx, sent };
 }
 const form = (blocks) => blocks.find((b) => b.presentation === "dialog" && b.action === "saveReaction");
 const val = (id, over = {}) => ({ id, variants: "[]", pick: "random", text: "", sound: "", audio: "", seconds: "", ...over });
@@ -122,34 +112,32 @@ test("test button: builds the alert with what is typed, saved or not; nothing is
   const w = both({ uploads: [{ url: G(1), by: "u1" }] });
   const got = [];
   globalThis.__curiosaAlertsBus.on(w.al.instance.key, (e) => got.push(e));
-  const r = await alDef.services["alerts.reaction"].test(w.al, { type: "follow", patch: { variants: [{ src: G(1) }], text: "Hi {name}" } });
+  const r = await alIndex.reactionService.test(w.al, { type: "follow", patch: { variants: [{ src: G(1) }], text: "Hi {name}" } });
   assert.ok(r.ok); assert.equal(got.at(-1).image, G(1));
   assert.equal((await tw.loadConfig(w.al)).types.follow.image, ""); assert.equal(w.al.calls.files.filter((c) => c.op === "claim").length, 0);
-  assert.deepEqual((await alDef.services["alerts.reaction"].test(w.al, { type: "follow", patch: { text: "Hi {nope}" } })).errors, { text: "words" });
+  assert.deepEqual((await alIndex.reactionService.test(w.al, { type: "follow", patch: { text: "Hi {nope}" } })).errors, { text: "words" });
 });
 
-test("manifests: the service is offered with callerRights (set) and read-only reads; Twitch activity asks for it as optional; core 0.14.0; FR/EN parity", () => {
-  const o = alMan.offers.find((x) => x.service === "alerts.reaction");
-  assert.deepEqual([o.version, o.each, o.callerRights, o.readOnly], [3, true, ["set"], ["list", "get", "media", "rewards"]]);
-  assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.14.0"); assert.equal(evMan.minCore, "0.15.0");
-  assert.deepEqual(evMan.requires.find((x) => x.service === "alerts.reaction"), { service: "alerts.reaction", min: 1, optional: true });
-  assert.deepEqual(Object.keys(evEn).sort(), Object.keys(evFr).sort()); assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());
+test("manifests: one module, no reaction service between modules; core 0.15.0; FR/EN parity", () => {
+  assert.ok(!alMan.offers.some((x) => ["alerts.reaction", "alerts.reaction.editor"].includes(x.service)), "the protocol between the two halves is gone");
+  assert.ok(alMan.permissions.includes("files")); assert.equal(alMan.minCore, "0.15.0");
+  assert.deepEqual(Object.keys(alEn).sort(), Object.keys(alFr).sort());
   const vars = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
-  for (const k of Object.keys(evEn).filter((k) => k.startsWith("rx_") || k.startsWith("cl_"))) assert.equal(vars(evEn[k]), vars(evFr[k]), k);
+  for (const k of Object.keys(alEn).filter((k) => k.startsWith("rx_") || k.startsWith("cl_"))) assert.equal(vars(alEn[k]), vars(alFr[k]), k);
 });
 
 test("Types tab: a Reaction column (one line per row), Edit in a window, the test in the menu; the window has a gallery and the order, the rest folded", async () => {
   const w = both({ uploads: [{ url: G(1), by: "u1" }, { url: G(2), by: "u1" }] });
   await rx.set(w.al, "follow", { variants: [G(1), G(2)], sound: "chime" });
   await rx.set(w.al, "raid", { variants: [V(1)].slice(0, 0) });
-  const blocks = await evMod.adminPanel(w.ev, { query: { tab: "types" } });
-  const table = blocks.find((b) => b.tab === "types" && b.type === "table");
+  const blocks = await evMod.adminPanel(w.ev, { query: { tab: "twitch" } });
+  const table = blocks.find((b) => b.tab === "twitch" && b.type === "table");
   const col = table.columns.indexOf("Reaction"); assert.ok(col > 0);
   assert.equal(table.rows[0][col].text, "2 GIFs · At random + sound"); assert.equal(table.rows[1][col].text, "Text");
   assert.equal(table.searchable, true);
   assert.deepEqual(table.rowActions.map((a) => [a.label, a.presentation ?? "", !!a.inMenu]), [["Edit", "dialog", false], ["Send a test", "", true], ["Try again", "", true]]);
-  assert.ok(!blocks.some((b) => b.tab === "types" && b.type === "links"), "no state line when the overlay is there");
-  const open = await evMod.adminPanel(w.ev, { query: { tab: "types", reaction: "follow" } });
+  assert.ok(!blocks.some((b) => b.tab === "twitch" && b.type === "links"), "no state line when the overlay is there");
+  const open = await evMod.adminPanel(w.ev, { query: { tab: "twitch", reaction: "follow" } });
   const f = form(open);
   assert.ok(f.cancelHref && f.extraActions.length === 1 && f.submitLabel === "Save the reaction");
   const visible = f.fields.filter((x) => x.kind !== "hidden" && !x.folded);
@@ -159,23 +147,23 @@ test("Types tab: a Reaction column (one line per row), Edit in a window, the tes
   assert.deepEqual(f.fields.find((x) => x.name === "pick").options.map((o) => o.label), ["At random", "In turn"]);
   assertAdminPageErgonomics(open);
   assertAdminPageErgonomics(blocks);
-  assert.ok(!(await evMod.adminPanel(w.ev, { query: { tab: "types", reaction: "zzz" } })).some((b) => b.action === "saveReaction"), "an unknown type opens nothing");
+  assert.ok(!(await evMod.adminPanel(w.ev, { query: { tab: "twitch", reaction: "zzz" } })).some((b) => b.action === "saveReaction"), "an unknown type opens nothing");
 });
 
 test("FR: the window and the column in French, same shape", async () => {
   const w = both({ locale: "fr", uploads: [{ url: G(1), by: "u1" }] });
   await rx.set(w.al, "follow", { variants: [G(1)] });
-  const open = await evMod.adminPanel(w.ev, { query: { tab: "types", reaction: "follow" } });
+  const open = await evMod.adminPanel(w.ev, { query: { tab: "twitch", reaction: "follow" } });
   assert.equal(form(open).submitLabel, "Enregistrer la réaction"); assert.deepEqual(form(open).fields.find((x) => x.name === "pick").options.map((o) => o.label), ["Au hasard", "À tour de rôle"]);
   assertAdminPageErgonomics(open);
-  assert.equal((await evMod.adminPanel(w.ev, { query: { tab: "types" } })).find((b) => b.tab === "types" && b.type === "table").rows[0].some((c) => c?.text === "GIF"), true);
+  assert.equal((await evMod.adminPanel(w.ev, { query: { tab: "twitch" } })).find((b) => b.tab === "twitch" && b.type === "table").rows[0].some((c) => c?.text === "GIF"), true);
 });
 
-test("save from Twitch activity: carries the person (asCaller), the overlay keeps the files; errors come back under their field with an example", async () => {
+test("save from the window: carries the person (asCaller), the overlay keeps the files; errors come back under their field with an example", async () => {
   const w = both({ uploads: [G(1), G(2), G(3)].map((url) => ({ url, by: "u1" })) });
   const A = evMod.adminActions;
   const ok = await A.saveReaction(w.ev, val("follow", { variants: gal(G(1), G(2), G(3)), pick: "rotate", sound: "chime", seconds: "8" }));
-  assert.match(ok.ok, /reaction saved/); assert.ok(w.calls.includes("set:asCaller"));
+  assert.match(ok.ok, /reaction saved/);
   const cfg = (await tw.loadConfig(w.al)).types.follow;
   assert.deepEqual([cfg.variants, cfg.pick, cfg.sound, cfg.seconds], [[G(1), G(2), G(3)], "rotate", "chime", 8]);
   assert.equal(w.al.calls.files.filter((c) => c.op === "claim" && c.result.ok).length, 3);
@@ -187,7 +175,7 @@ test("save from Twitch activity: carries the person (asCaller), the overlay keep
   assert.deepEqual((await A.saveReaction(w.ev, val("follow", { variants: "not json" }))).ok !== undefined, true, "a broken list is read as empty, never a crash");
 });
 
-test("test from Twitch activity: sends the typed values to the overlay without saving", async () => {
+test("test from the window: sends the typed values to the overlay without saving", async () => {
   const w = both({ uploads: [{ url: G(1), by: "u1" }] });
   const got = []; globalThis.__curiosaAlertsBus.on(w.al.instance.key, (e) => got.push(e));
   const r = await evMod.adminActions.testReaction(w.ev, val("follow", { variants: gal(G(1)) }));
@@ -195,35 +183,14 @@ test("test from Twitch activity: sends the typed values to the overlay without s
   assert.match((await evMod.adminActions.testReaction(w.ev, val("follow", { seconds: "1" }))).errors.seconds, /2 to 60/);
 });
 
-test("without the overlay: one state line with a link, no dead Edit button, no summary; actions answer in plain words", async () => {
-  const w = both({ noOverlay: true });
-  w.ev.api.instances = { ...w.ev.api.instances, list: async () => [] };
-  const blocks = await evMod.adminPanel(w.ev, { query: { tab: "types", reaction: "follow" } });
-  const line = blocks.find((b) => b.tab === "types" && b.type === "links");
-  assert.deepEqual([line.items[0].label, line.items[0].href], ["Alerts overlay: to add", "/admin/catalogue"]);
-  const table = blocks.find((b) => b.tab === "types" && b.type === "table");
-  assert.ok(table.rowActions.every((a) => a.presentation !== "dialog")); assert.ok(!table.columns.includes("Reaction"), "no column of identical dashes"); assert.ok(table.rows.every((r) => r.length === table.columns.length));
-  assert.ok(!blocks.some((b) => b.action === "saveReaction"), "no window without the overlay");
-  assert.match((await evMod.adminActions.saveReaction(w.ev, val("follow"))).error, /does not answer/);
-  assertAdminPageErgonomics(blocks);
-  const old = both({ noOverlay: true }); // a copy exists but is too old to offer the service
-  old.ev.api.instances = { ...old.ev.api.instances, list: async () => [{ id: "al", key: "al", adminPath: "/admin/instances/al" }] };
-  const l2 = (await evMod.adminPanel(old.ev, { query: { tab: "types" } })).find((b) => b.tab === "types" && b.type === "links");
-  assert.deepEqual([l2.items[0].label, l2.items[0].href], ["Alerts overlay: to update", "/admin/instances/al"]);
-});
-
-test("checklist: ticks for Twitch authorized, listening and the overlay added, each with its link; nothing when all is done", async () => {
-  const w = both({ noOverlay: true }); w.ev.api.instances = { ...w.ev.api.instances, list: async () => [] };
+test("checklist: ticks for Twitch authorized and listening, each with its link, and the placement step; nothing when all is done", async () => {
+  const w = both({});
   const t1 = await evRx.checklist(w.ev, { authorized: false, listening: false, authorizeHref: "https://id.example.org/auth" });
-  assert.deepEqual(t1.rows.map((r) => [r[0], r[1].text, r[1].badge]), [["Twitch authorized", "To do", "warn"], ["Listening to Twitch", "To do", "warn"], ["Alerts overlay added", "To do", "warn"]]);
-  assert.equal(t1.rows[0][2].href, "https://id.example.org/auth"); assert.equal(t1.rows[2][2].href, "/admin/catalogue");
-  const ok = both({});
-  assert.equal(await evRx.checklist(ok.ev, { authorized: true, listening: true }), null);
-  const t2 = await evRx.checklist(ok.ev, { authorized: true, listening: false });
-  assert.deepEqual(t2.rows.map((r) => r[1].badge), ["ok", "warn", "ok", undefined], "the placement step has a link and no state");
-  const page = await evMod.adminPanel(w.ev, { query: {} });
-  assert.ok(page.some((b) => b.type === "table" && b.columns.includes("Step")));
-  assertAdminPageErgonomics(page);
+  assert.deepEqual(t1.rows.map((r) => [r[0], r[1].text, r[1].badge]), [["Twitch authorized", "To do", "warn"], ["Listening to Twitch", "To do", "warn"], ["Alerts placed in an overlay page", "—", undefined]]);
+  assert.equal(t1.rows[0][2].href, "https://id.example.org/auth"); assert.equal(t1.rows[2][2].href, "/admin/overlay-pages");
+  assert.equal(await evRx.checklist(w.ev, { authorized: true, listening: true }), null);
+  const t2 = await evRx.checklist(w.ev, { authorized: true, listening: false });
+  assert.deepEqual(t2.rows.map((r) => r[1].badge), ["ok", "warn", undefined], "the placement step has a link and no state");
 });
 
 test("summary wording: Text, GIF, 3 GIFs · at random, Video, files + sound, '—' without the service", () => {

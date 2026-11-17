@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
-import { world, deliver, EV, TYPES, NOW, S, P, D, DK, DP, mod, manifest, fr, en } from "./helpers/eventsWorld.mjs";
+import { seedQueue, TWO, world, deliver, EV, TYPES, NOW, S, P, D, DK, DP, mod, manifest, fr, en } from "./helpers/eventsWorld.mjs";
 
 const get = (ctx, path, now) => mod.routes[path](new Request(`https://site.example.org/m/ev/${path}`), ctx);
 const url = (path, k, extra = "") => `https://site.example.org/m/ev/${path}?k=${encodeURIComponent(k)}${extra}`;
@@ -75,7 +75,7 @@ test("data: newest first, the scopes (this stream, 24 h, all), flags, plain publ
   assert.equal((await D.payload(offline, { scope: "stream", now: NOW })).live, false);
 });
 
-test("replay: same data, flagged, once for a double click, rate limited, works for a switched-off type, refused without the alerts overlay", async () => {
+test("replay: same data, flagged, once for a double click, rate limited, works for a switched-off type", async () => {
   const { ctx, k } = await site();
   await deliver(ctx, TYPES.follow, EV.follow, { id: "f1" });
   await S.updateState(ctx, (d) => { d.enabled = { follow: false }; });
@@ -87,10 +87,8 @@ test("replay: same data, flagged, once for a double click, rate limited, works f
   assert.deepEqual(await act(ctx, k, { action: "replay", id: "nope" }), { ok: false, code: "unknown" });
   assert.deepEqual(await act(ctx, k, { action: "bogus" }), { ok: false, code: "bad" });
   assert.deepEqual(await act(ctx, k, null), { ok: false, code: "bad" });
-  const { ctx: bare, k: kb } = await site({ alerts: false });
-  await deliver(bare, TYPES.follow, EV.follow, { id: "f2" });
-  assert.deepEqual(await act(bare, kb, { action: "replay", id: "f2" }), { ok: false, code: "no_alerts" });
-  assert.equal((await D.payload(bare, { now: NOW })).alerts.linked, false);
+  // (1.18.0) the dock lives in the alerts overlay: its queue is always there
+  assert.equal((await D.payload(ctx, { now: NOW })).alerts.linked, true);
 });
 
 test("replay: rate limit (10 a minute) and action limit (40 a minute) answer a plain code", async () => {
@@ -105,19 +103,18 @@ test("replay: rate limit (10 a minute) and action limit (40 a minute) answer a p
   assert.equal(limited, 10);
 });
 
-test("pause holds, resume releases, empty drops: through the alerts queue, with its numbers; absent overlay: refused", async () => {
-  const { ctx, k, queue } = await site({ queue: { held: 3 } });
+test("pause holds, resume releases, empty drops: the queue of the overlay itself, with its numbers", async () => {
+  const { ctx, k } = await site();
+  await seedQueue(ctx, { held: 3 });
   const p = await act(ctx, k, { action: "pause" });
   assert.deepEqual([p.ok, p.paused, p.held], [true, true, 3]);
   assert.equal((await D.payload(ctx, { now: NOW })).alerts.paused, true);
   const r = await act(ctx, k, { action: "resume" });
   assert.deepEqual([r.ok, r.paused, r.released], [true, false, 3]);
-  queue.held = 2;
+  await seedQueue(ctx, { held: 2 });
   const c = await act(ctx, k, { action: "clear" });
   assert.deepEqual([c.ok, c.dropped], [true, 2]);
-  assert.deepEqual(queue.calls, ["pause", "resume", "clear"]);
-  const { ctx: bare, k: kb } = await site({ alerts: false });
-  for (const a of ["pause", "resume", "clear", "test"]) assert.deepEqual(await act(bare, kb, { action: a, type: "follow" }), { ok: false, code: "no_alerts" }, a);
+  assert.deepEqual(await TWO.queueState(ctx), { paused: false, held: 0, staged: 0 });
 });
 
 test("test: sends the realistic sample of a type; unknown type refused", async () => {
@@ -266,14 +263,14 @@ test("the whole script: a key that is no longer good stops the dock with one pla
 test("admin: the OBS dock tab says where to copy the address and how to add it in OBS; New address asks for confirmation and says what happens", async () => {
   const { ctx, k } = await site({ locale: "en" });
   const blocks = await mod.adminPanel(ctx, { query: {} });
-  const copy = blocks.find((b) => b.type === "copy" && b.tab === "dock");
+  // (1.18.0) the dock is in the first tab of the alerts overlay, under its own heading (the overlay has four tabs already)
+  const copy = blocks.find((b) => b.type === "copy" && !b.tab && /\/dock\?k=/.test(b.text));
   assert.equal(copy.text, `https://site.example.org/m/ev/dock?k=${k}`);
-  assert.match(blocks.find((b) => b.type === "markdown" && b.tab === "dock").text, /Custom browser docks/);
-  const renew = blocks.find((b) => b.type === "table" && b.tab === "dock");
+  assert.ok(blocks.some((b) => b.type === "heading" && !b.tab && b.text === "OBS dock"));
+  assert.match(blocks.find((b) => b.type === "markdown" && !b.tab && /Custom browser docks/.test(b.text)).text, /Custom browser docks/);
+  const renew = blocks.find((b) => b.type === "table" && !b.tab && b.rowIds?.[0] === "dock");
   assert.ok(renew.rowActions[0].confirm.length > 20 && renew.rowActions[0].danger === true);
-  assert.equal(manifest.tabs.find((t) => t.id === "dock").panel, true);
-  assert.ok(manifest.requires.some((r) => r.service === "alerts.queue" && r.optional === true));
-  assert.equal(manifest.version, "1.12.0");
+  assert.equal(manifest.version, "1.18.0");
   const { assertAdminPageErgonomics } = await import("./helpers/ergonomics.mjs");
   for (const locale of ["en", "fr"]) assertAdminPageErgonomics(await mod.adminPanel((await site({ locale })).ctx, { query: {} }));
 });

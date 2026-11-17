@@ -1,13 +1,13 @@
 // The "Twitch events" tab of the alerts overlay and the queue controls: the types with a switch each, an edit window per type (text, duration, minimum), ready-made text styles,
 // a test per type, and the pause / empty buttons. Also the two tools for assistants. The engine itself is in twitch.mjs.
-// (1.13.0) ONE editor per type: when an editor of the reactions is active (service `alerts.reaction.editor`, Twitch activity 1.10.0) and edits THIS copy, the table is a summary
-// (type, what is shown with its display order, switch) with "Set in Twitch activity →" on each row, and the edit window of this tab is not offered. Without it (alerts sent by another tool,
-// YouTube only, an older Twitch activity), the full editor stays here. The settings stay owned by this overlay either way: nothing is migrated.
+// (1.18.0) ONE editor per type. The copy that listens to Twitch (twitch/home.mjs) shows the table of the Twitch part instead (type, state, reaction window, the
+// switches "Received" and "Shown"), so this tab gives only the ready-made styles, the preview and the sample evening (`twitch: "events"`). Another copy of the overlay
+// keeps this full editor (`twitch: "editor"`). A site without Twitch shows none of it (`twitch: "none"`): only the queue buttons of the first tab.
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbour files (otherwise the old code would stay cached after an update)
 const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
-const rx = await import(new URL(`./reaction.mjs${v}`, import.meta.url).href);
 const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
+const opts = await import(new URL(`./options.mjs${v}`, import.meta.url).href);
 
 const BADGE = { follow: "ok", sub: "accent", resub: "accent", gift: "accent", cheer: "warn", raid: "info", online: "ok", offline: "neutral", hype: "warn", redeem: "neutral" };
 const SAMPLE = {
@@ -27,44 +27,36 @@ function previewHtml(ctx, cfg, shown) {
   });
   return cards.length ? `<div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin:0 0 12px">${cards.join("")}</div>` : "";
 }
-export const EDITOR = "alerts.reaction.editor";
-/**
- * The editor of the reactions that edits THIS copy, or null: { path, name }. Asked through the core (`providers` lists only ACTIVE instances of an installed module, version ≥ 1),
- * then to the editor itself, which says whether its window writes to this copy (with several copies of the overlay, it writes to the first one). Never throws.
- */
-export async function editorOf(ctx) {
-  try {
-    if (typeof ctx.api.services?.providers !== "function") return null;
-    const list = await ctx.api.services.providers(EDITOR);
-    if (!Array.isArray(list) || !list.length) return null;
-    const r = await ctx.api.services.call(EDITOR, "editor", { instance: ctx.instance.key });
-    const v = r?.ok ? r.value : null;
-    return v?.edits === true && typeof v.path === "string" && /^\/admin\/[A-Za-z0-9/_-]+$/.test(v.path) ? { path: v.path, name: String(v.name ?? "") } : null;
-  } catch { return null; }
-}
-/** "GIF", "3 GIF, 2 with text · In turn + sound": what a row of the summary says when the type has files, from the same summary as the service. */
-function shownText(ctx, s) {
-  const t = ctx.t, n = s.images + s.videos;
-  let base = s.videos && s.images ? t("tw_sum_media", { n }) : s.videos ? (s.videos === 1 ? t("tw_sum_video") : t("tw_sum_videos", { n })) : s.images === 1 ? t("tw_sum_gif") : t("tw_sum_gifs", { n });
-  if (s.placed) base += `, ${s.placed === 1 ? t("tw_sum_placed_one") : t("tw_sum_placed", { n: s.placed })}`;
-  if (s.pick) base += ` · ${t(`tw_pick_${s.pick}`)}`;   // the display order, only when there are several files (as in Twitch activity)
-  return s.sound ? `${base} + ${t("tw_sum_sound")}` : base;
-}
-const hasProvider = async (ctx) => { try { return (await ctx.api.instances.list({ module: "twitch-events" }))?.[0] ?? null; } catch { return null; } };
-
 /** Whether the viewer text shows for a type: its own choice, or (when never chosen) the older setting. */
-const viewerOn = (c, ctx) => (c.viewer === null ? ctx.setting("twitchText") === true : c.viewer);
+const viewerOn = (c, ctx) => (c.viewer === null ? opts.get(ctx, "twitchText") === true : c.viewer);
 const typeName = (ctx, id) => ctx.t(`tw_type_${id}`);
 /** What a person sees as the minimum of a type: "500 bits", "3 subs", "20 viewers", or nothing. */
 const minText = (ctx, id, n) => (!tw.MINIMUM[id] || !n ? "" : ctx.t(`tw_min_${id}`, { n }));
 
-/** The blocks of the tab. */
-export async function panel(ctx, { query = {} } = {}) {
-  const t = ctx.t, cfg = await tw.loadConfig(ctx), q = await tw.queueState(ctx);
-  const here = await hasProvider(ctx);
+/** The form of the Twitch options of this overlay (1.18.0: settings until 1.17.0, moved here so a site without Twitch never sees them; see options.mjs). */
+function optionsForm(ctx, o) {
+  const t = ctx.t;
+  return { type: "adminForm", tab: "twitch", action: "saveTwitchOptions", title: t("two_title"), submitLabel: t("two_save_btn"), submitStyle: "secondary", fields: [
+    { name: "twitchSounds", kind: "switch", label: t("two_sounds"), value: o.twitchSounds ? "on" : "", help: t("two_sounds_help") },
+    { name: "twitchText", kind: "switch", label: t("two_text"), value: o.twitchText ? "on" : "", help: t("two_text_help") },
+    { name: "ignoreNames", kind: "text", label: t("two_ignore"), value: o.ignoreNames, example: t("two_ignore_example"), help: t("two_ignore_help") },
+    { name: "groupSeconds", kind: "number", folded: true, label: t("two_group"), min: 0, max: 30, step: 1, unit: t("tw_unit_seconds"), value: o.groupSeconds, help: t("two_group_help") },
+  ] };
+}
+
+/** The blocks of the tab. `twitch`: "events" (the Twitch part holds the type table), "editor" (this tab's own editor), "none" (no Twitch on the site). */
+export async function panel(ctx, { query = {}, twitch = "editor" } = {}) {
+  const t = ctx.t, q = await tw.queueState(ctx);
+  // the queue, at the top of the first tab
+  const queueBlocks = [
+    { type: "banner", tone: q.paused ? "warning" : "info", text: q.paused ? t("q_paused", { n: q.held }) : t("q_running", { n: q.staged }) },
+    { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
+    { type: "adminForm", action: "clearQueue", submitLabel: t("q_clear_btn"), fields: [] },
+  ];
+  if (twitch === "none") return queueBlocks;
+  const cfg = await tw.loadConfig(ctx), o = await opts.load(ctx);
   const videos = tw.videosOf(ctx.setting);
-  const editor = await editorOf(ctx);
-  const edit = !editor && tw.TYPES.includes(query.edit) ? query.edit : null;
+  const edit = twitch === "editor" && tw.TYPES.includes(query.edit) ? query.edit : null;
   const shown = Object.fromEntries(await Promise.all(tw.TYPES.map(async (id) => [id, (await sampleAlert(ctx, id))?.message ?? ""])));
   const rows = tw.TYPES.map((id) => {
     const c = cfg.types[id];
@@ -72,15 +64,6 @@ export async function panel(ctx, { query = {} } = {}) {
     return [{ text: typeName(ctx, id), badge: BADGE[id] }, { text: shown[id] || c.template || t(`tw_text_${id}`), title: c.template || t("tw_default_note"), ...(c.image ? { image: { src: c.image, alt: t("tw_image_alt", { type: typeName(ctx, id) }) } } : {}) }, c.seconds ? t("tw_seconds", { n: c.seconds }) : "", minText(ctx, id, c.min),
       { text: c.on ? t("tw_on") : t("tw_off"), switch: { on: c.on, action: "setType", label: t("tw_switch_label", { type: typeName(ctx, id) }), onText: t("tw_on"), offText: t("tw_off") } }];
   });
-  // (1.13.0) the summary when the reactions are set in Twitch activity
-  const placed = editor && cp.available(ctx) ? await Promise.all(tw.TYPES.map(async (id) => Object.keys(await cp.forPlace(ctx, `event:${id}`)).length)) : [];
-  const summaryRows = editor ? tw.TYPES.map((id, i) => {
-    const c = cfg.types[id], s = { ...rx.summaryOf(c, videos), placed: placed[i] ?? 0 }, first = rx.variantsOf(c, videos).find((u) => tw.IMAGE_RE.test(u));
-    // a text alone says its sentence (with a sample name); files say how many, with or without placed text and sound
-    const sentence = shown[id] || c.template || t(`tw_text_${id}`), files = s.images + s.videos;
-    return [{ text: typeName(ctx, id), badge: BADGE[id] }, { text: files ? shownText(ctx, s) : s.sound ? `${sentence} + ${t("tw_sum_sound")}` : sentence, title: sentence, ...(first ? { image: { src: first, alt: t("tw_image_alt", { type: typeName(ctx, id) }) } } : {}) },
-      { text: c.on ? t("tw_on") : t("tw_off"), switch: { on: c.on, action: "setType", label: t("tw_switch_label", { type: typeName(ctx, id) }), onText: t("tw_on"), offText: t("tw_off") } }];
-  }) : null;
   const fields = edit ? [
     { name: "id", kind: "hidden", label: "id", value: edit },
     { name: "template", label: t("tw_f_template"), value: cfg.types[edit].template, placeholder: t(`tw_text_${edit}`), example: t(`tw_text_${edit}`), help: t("tw_f_template_help") },
@@ -102,21 +85,15 @@ export async function panel(ctx, { query = {} } = {}) {
     ...(tw.MINIMUM[edit] ? [{ name: "min", kind: "number", label: t(`tw_f_min_${edit}`), min: 1, max: tw.LIMITS.min, step: 1, value: cfg.types[edit].min || "", placeholder: t("tw_f_min_default"), help: t("tw_f_min_help") }] : []),
   ] : [];
   return [
-    { type: "markdown", tab: "twitch", text: t("tw_intro") },
-    ...(editor ? [] : [here ? { type: "links", tab: "twitch", items: [{ label: t("tw_linked"), href: here.adminPath }] } : { type: "markdown", tab: "twitch", text: t("tw_absent") }]),
+    ...(twitch === "editor" ? [{ type: "markdown", tab: "twitch", text: t("tw_intro") }] : []),
     { type: "adminForm", tab: "twitch", action: "applyPreset", title: t("tw_preset_title"), submitLabel: t("tw_preset_btn"), fields: [{ name: "preset", kind: "segmented", label: t("tw_preset"), value: cfg.preset || "simple", options: tw.PRESETS.map((p) => ({ value: p, label: t(`tw_preset_${p}`) })) }] },
     ...(previewHtml(ctx, cfg, shown) ? [{ type: "html", tab: "twitch", html: previewHtml(ctx, cfg, shown) }] : []),
     { type: "adminForm", tab: "twitch", action: "simulate", submitLabel: t("tw_simulate_btn"), fields: [] },
     ...(edit ? [{ type: "adminForm", tab: "twitch", presentation: "dialog", action: "saveType", cancelHref: "?tab=twitch", title: t("tw_edit_title", { type: typeName(ctx, edit) }), submitLabel: t("tw_save_btn"), fields }] : []),
-    editor
-      ? { type: "table", tab: "twitch", columns: [t("tw_col_type"), t("tw_col_shown"), t("tw_col_on")], rows: summaryRows, rowIds: tw.TYPES.slice(), truncate: [1], pageSize: 0, searchable: true, searchPlaceholder: t("tw_search"),
-        rowActions: [{ label: t("tw_editor_btn"), href: `${editor.path}?tab=types&reaction={id}` }, { label: t("tw_test_btn"), action: "testType", inMenu: true }] }
-      : { type: "table", tab: "twitch", columns: [t("tw_col_type"), t("tw_col_text"), t("tw_col_duration"), t("tw_col_min"), t("tw_col_on")], rows, rowIds: tw.TYPES.slice(), truncate: [1], pageSize: 0, searchable: true, searchPlaceholder: t("tw_search"),
-        rowActions: [{ label: t("tw_edit_btn"), href: "?tab=twitch&edit={id}", presentation: "dialog" }, { label: t("tw_test_btn"), action: "testType", inMenu: true }] },
-    // the queue, at the top of the first tab
-    { type: "banner", tone: q.paused ? "warning" : "info", text: q.paused ? t("q_paused", { n: q.held }) : t("q_running", { n: q.staged }) },
-    { type: "adminForm", action: q.paused ? "resume" : "pause", submitLabel: q.paused ? t("q_resume_btn") : t("q_pause_btn"), fields: [] },
-    { type: "adminForm", action: "clearQueue", submitLabel: t("q_clear_btn"), fields: [] },
+    ...(twitch === "editor" ? [{ type: "table", tab: "twitch", columns: [t("tw_col_type"), t("tw_col_text"), t("tw_col_duration"), t("tw_col_min"), t("tw_col_on")], rows, rowIds: tw.TYPES.slice(), truncate: [1], pageSize: 0, searchable: true, searchPlaceholder: t("tw_search"),
+      rowActions: [{ label: t("tw_edit_btn"), href: "?tab=twitch&edit={id}", presentation: "dialog" }, { label: t("tw_test_btn"), action: "testType", inMenu: true }] }] : []),
+    optionsForm(ctx, o),
+    ...queueBlocks,
     ...(await viewersBlocks(ctx, cfg)),
   ];
 }
@@ -286,7 +263,7 @@ export async function sampleAlert(ctx, id, now = Date.now(), configOverride = nu
   // (1.17.0) the test of one reward: its id, title and cost, and the rows of the rewards (the saved ones, or those of the window being tested)
   const one = id === "redeem" && extra.reward ? { rewardId: extra.reward.id, ...(extra.reward.title ? { title: extra.reward.title } : {}), ...(extra.reward.cost ? { amount: extra.reward.cost } : {}) } : {};
   const rewards = extra.rewards ?? (id === "redeem" ? await rw.byId(ctx) : null);
-  const r = tw.alertFor({ ...sample, ...one, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: ctx.setting("twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: extra.pick ?? tw.pickerOf(tw.stateOf(ctx)), compose, rewards, now });
+  const r = tw.alertFor({ ...sample, ...one, id: `test-${now}`, at: new Date(now).toISOString(), test: true }, { config: cfg, ignore: new Set(), showText: opts.get(ctx, "twitchText") === true, locale: ctx.locale, text: (k) => ctx.t(`tw_text_${k}`), title: (p) => ctx.t(`tw_title_${p}`), seconds: 0, pick: extra.pick ?? tw.pickerOf(tw.stateOf(ctx)), compose, rewards, now });
   return r.alert ?? null;
 }
 
@@ -317,6 +294,14 @@ export function actions(emit) {
       if (!a) return fail(ctx, "tw_err_type");
       emit(ctx.instance.key, a);
       return { ok: ctx.t("tw_test_ok") };
+    },
+    /** (1.18.0) The four Twitch options of this overlay (settings until 1.17.0): the number within its bounds, the error under its field. */
+    async saveTwitchOptions(ctx, values) {
+      const raw = String(values.groupSeconds ?? "").trim(), n = Number(raw);
+      if (raw !== "" && (!Number.isInteger(n) || n < opts.LIMITS.group[0] || n > opts.LIMITS.group[1])) return { errors: { groupSeconds: ctx.t("two_err_group", { min: opts.LIMITS.group[0], max: opts.LIMITS.group[1] }) } };
+      if (String(values.ignoreNames ?? "").length > opts.LIMITS.ignore) return { errors: { ignoreNames: ctx.t("two_err_ignore") } };
+      await opts.save(ctx, { twitchSounds: values.twitchSounds === "on", twitchText: values.twitchText === "on", ignoreNames: String(values.ignoreNames ?? ""), ...(raw === "" ? {} : { groupSeconds: n }) });
+      return { ok: ctx.t("two_saved") };
     },
     async applyPreset(ctx, values) {
       const p = String(values.preset ?? "");

@@ -1,4 +1,28 @@
-# Twitch activity (`twitch-events`)
+# Twitch activity (`twitch-events`) — moved into Alerts overlay (OBS)
+
+**Since Alerts overlay (OBS) 1.18.0, Twitch activity is part of that module.** This version, **1.13.0**, is the bridge: it works exactly as 1.12.0 until the overlay
+takes it over, then it is retired. Read the overlay's README, section "Twitch activity is part of this module".
+
+- It offers `twitch.events.handover` (version 1): `release({ by })` deletes its own subscriptions at Twitch, withdraws its permission wish and marks it retired;
+  `export({ after, limit })` gives its journal page by page, with its state (switches, dock key, live state, catch-up baseline; never the secret shared with Twitch) and
+  its options; `flag` marks a viewer text as `twitch.journal` did. It no longer offers `twitch.journal` nor `alerts.reaction.editor`, and its four MCP tools are the
+  overlay's now (same names, under the overlay's key).
+- Retired: no task runs, its webhook answers 410, its topic is empty, its page says where everything went (with a link), its OBS dock address redirects to the overlay's
+  dock with the same key. Remove it afterwards from its General tab; its data is then set aside by the core, as for any removal.
+
+## The order on a site that has both
+
+1. Update **Twitch activity** to 1.13.0 (nothing changes for the person).
+2. Update **Alerts overlay (OBS)** to 1.18.0. Within a minute (or at once when its page is opened) it takes over the journal, the switches, the options and the dock key,
+   and listens to Twitch at its own address.
+3. In OBS, replace the dock address by the one of the overlay's first tab (same key). Tick again the four tools `alerts-overlay__twitch_event*` for the assistants that had them.
+4. Remove Twitch activity.
+
+The other order works too: the overlay 1.18.0 waits (it keeps showing Twitch activity's alerts) and asks to update Twitch activity.
+
+---
+
+The rest is the documentation of 1.12.0, unchanged.
 
 Receives what happens on your Twitch channel (follows, subscriptions, resubs, gifted subs, bits, incoming raids, stream start and end, hype trains, and optionally channel point rewards),
 keeps it in a **persistent journal**, and offers it to the other modules as the topic **`twitch.event`**. It never depends on its consumers (alerts, thanks wall, story, statistics...):

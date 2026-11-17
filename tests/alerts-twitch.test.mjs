@@ -204,7 +204,8 @@ test("admin tab: types table with switches, search, edit window with errors unde
     const table = blocks.find((b) => b.type === "table" && b.tab === "twitch");
     assert.equal(table.rows.length, 10); assert.equal(table.searchable, true); assert.ok(table.rows.every((r) => r[4].switch));
     assert.ok(blocks.some((b) => b.type === "adminForm" && b.action === "pause") && blocks.some((b) => b.action === "clearQueue"));
-    assert.equal(blocks.find((b) => b.type === "links" && b.tab === "twitch").items[0].href, "/admin/instances/te");
+    // (1.18.0) Twitch activity 1.12.0 still installed (no hand-over service): the page says to update it, with its link; the full editor stays meanwhile
+    assert.equal(blocks.find((b) => b.type === "links" && !b.tab).items[0].href, "/admin/instances/te");
     const dlg = (await def.adminPanel(w.ctx, { query: { edit: "cheer" } })).find((b) => b.presentation === "dialog");
     assert.equal(dlg.fields.filter((f) => f.kind !== "hidden" && !f.folded).length, 3, "text, time, minimum: the rest is folded under More options"); assert.equal(dlg.fields.filter((f) => f.folded).length, 10); assert.equal(dlg.cancelHref, "?tab=twitch");
     assert.equal((await def.adminPanel(w.ctx, { query: { edit: "follow" } })).find((b) => b.presentation === "dialog").fields.filter((f) => f.kind !== "hidden" && !f.folded).length, 2, "no minimum for a follow");
@@ -260,13 +261,14 @@ test("service alerts.queue and the tools for assistants", async () => {
 });
 
 test("manifest: version, tab, four more settings (one advanced), the topic and its schema, FR and EN texts", () => {
-  assert.equal(manifest.version, "1.17.0");
+  assert.equal(manifest.version, "1.18.0");
   const t = manifest.consumes.find((c) => c.topic === "twitch.event");
   assert.ok(t.schema.find((f) => f.key === "id" && f.required) && t.schema.find((f) => f.key === "at" && f.type === "datetime"));
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());
   for (const id of tw.TYPES) for (const k of [`tw_type_${id}`, `tw_text_${id}`, `tw_preset_short_${id}`, `tw_preset_thanks_${id}`]) assert.ok(en[k] && fr[k], k);
   for (const k of tw.TWITCH_KINDS.filter((x) => x.startsWith("tw_"))) assert.ok(en[`kind_${k}`] && fr[`kind_${k}`], k);
-  assert.ok(manifest.settings.filter((s) => s.tab === "twitch").length === 6);
+  // (1.18.0) no setting in the Twitch tab any more: its options are a form of the tab (a site without Twitch never sees the tab); pause and volume went to Settings
+  assert.equal(manifest.settings.filter((s) => s.tab === "twitch").length, 0);
   for (const p of tw.PRESETS.filter((x) => x !== "simple")) for (const id of tw.TYPES) assert.deepEqual(tw.unknownWords(en[`tw_preset_${p}_${id}`]), [], `${p} ${id}`);
 });

@@ -4,6 +4,38 @@ Ce que chaque version de ce dépôt change pour vous. Chaque version est une ét
 
 **Comment c'est écrit** : pour quelqu'un qui n'est pas technicien. Un point = une à trois phrases, qui disent ce que ça change pour vous.
 
+## 1.95.0 — 2026-11-17
+
+*En bref : Activité Twitch fait maintenant partie d'Overlay alertes : une seule extension pour vos événements Twitch et leurs alertes. Overlay alertes 1.18.0 reprend tout seul le journal, les interrupteurs, les options et l'adresse du dock d'Activité Twitch 1.13.0. Sans Twitch, Overlay alertes ne montre plus rien de Twitch.*
+
+*In short: Twitch activity is now part of Alerts overlay: one extension for your Twitch events and their alerts. Alerts overlay 1.18.0 takes over the journal, the switches, the options and the dock address of Twitch activity 1.13.0 by itself. Without Twitch, Alerts overlay shows nothing about Twitch any more.*
+
+### Nouveautés
+
+- **Une seule extension.** Le journal, l'état de l'écoute et le dock OBS sont dans le premier onglet d'Overlay alertes. Les types d'événements et leurs réactions sont dans l'onglet « Événements Twitch ».
+- **Un seul tableau des types.** Chaque type a deux interrupteurs : « Réception » (votre site écoute Twitch) et « Affiché » (l'alerte à l'écran). La fenêtre « Réaction » reste la même.
+- **La reprise est automatique.** Mettez d'abord Activité Twitch en 1.13.0, puis Overlay alertes en 1.18.0. En une minute, tout est repris et l'écoute continue sans rien perdre.
+- **Sans Twitch, rien de Twitch.** Sur un site sans Twitch, Overlay alertes n'a plus d'onglet Twitch, Récompenses ou Voix. Rien de Twitch n'est installé avec lui.
+- **One extension.** The journal, the state of the listening and the OBS dock are in the first tab of Alerts overlay. The event types and their reactions are in the "Twitch events" tab.
+- **One table of types.** Each type has two switches: "Received" (your site listens to Twitch) and "Shown" (the alert on screen). The "Reaction" window stays the same.
+- **The takeover is automatic.** First update Twitch activity to 1.13.0, then Alerts overlay to 1.18.0. Within a minute everything is taken over and the listening goes on without losing anything.
+- **Without Twitch, nothing about Twitch.** On a site without Twitch, Alerts overlay no longer has a Twitch, Rewards or Voice tab. Nothing Twitch is installed with it.
+
+### Ce que vous refaites
+
+- **Le dock OBS change d'adresse.** Copiez la nouvelle adresse depuis le premier onglet d'Overlay alertes et collez-la dans OBS. La clé ne change pas ; l'ancienne adresse mène à la nouvelle tant qu'Activité Twitch est installée.
+- **Les outils de l'assistant IA.** Les quatre outils du journal Twitch s'appellent maintenant `alerts-overlay__twitch_events_…`. Cochez-les à nouveau pour l'accès qui les avait.
+- **Retirer Activité Twitch.** Une fois la reprise faite, sa page le dit. Retirez-la depuis son onglet Général.
+- **The OBS dock changes address.** Copy the new address from the first tab of Alerts overlay and paste it in OBS. The key does not change; the old address leads to the new one while Twitch activity is installed.
+- **The AI assistant tools.** The four tools of the Twitch journal are now named `alerts-overlay__twitch_events_…`. Tick them again for the access that had them.
+- **Remove Twitch activity.** Once the takeover is done, its page says so. Remove it from its General tab.
+
+### Pour les développeurs
+
+- **Alerts overlay 1.18.0** (core 0.15.0) : le code de Twitch activity vit dans `modules/alerts-overlay/twitch/` (une seule copie écoute, la première ; modes `on`, `waiting`, `guest`, `off` dans `twitch/home.mjs`). Le protocole entre les deux modules disparaît : plus de service `alerts.reaction` ni `alerts.reaction.editor`, plus d'`editorOf` ; les mêmes méthodes sont appelées directement (`twitch/reaction.mjs`). Toujours offerts : `alerts.show` v3, `alerts.queue` v2, `twitch.journal` v1, le sujet `twitch.event` ; tous les besoins Twitch sont facultatifs. Données version 2 : les quatre options Twitch (`twitchSounds`, `twitchText`, `ignoreNames`, `groupSeconds`) passent des réglages au stockage (`legacySettings`, `options.mjs`).
+- **Twitch activity 1.13.0** (pont) : service `twitch.events.handover` (`release`, `export`, `flag`) ; une fois repris, plus de tâche, webhook 410, sujet vide, page « déplacé », dock redirigé vers celui de l'overlay. Ses outils MCP et ses services `twitch.journal` et `alerts.reaction.editor` passent à l'overlay.
+- **Tests** : `alerts-twitch-merge` rejoue la mise à jour depuis le vrai code de v1.94.0 (les deux modules, remplis), vérifie la reprise, les réactions et alertes identiques, le site sans Twitch, une seconde copie, les contrats publics (outils, services). Les tests de Twitch activity visent maintenant `alerts-overlay/twitch/`.
+
 ## 1.94.0 — 2026-11-17
 
 *En bref : Mastodon 1.2.2 vérifie mieux l'adresse du serveur avant de lui demander vos chiffres. Rien à régler.*

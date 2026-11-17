@@ -4,6 +4,11 @@
 // Quelque chose POUSSE une alerte : POST /m/<clé>/push avec `Authorization: Bearer <jeton>` et { kind, message, username? }.
 // Le module ne connaît ni Twitch ni aucun outil : il affiche ce qu'on lui envoie.
 //
+// (1.18.0) Le module « Activité Twitch » (twitch-events) est fondu ici : l'écoute de Twitch (EventSub par adresse signée), le journal, le dock OBS, les réactions par
+// type et par récompense vivent dans `twitch/` (voir twitch/home.mjs : une seule copie écoute, la première ; sans connexion Twitch sur le site, rien de Twitch ne
+// s'affiche ni ne tourne). Le protocole entre les deux modules (service `alerts.reaction`, `alerts.reaction.editor`, `twitch.journal` consommé) a disparu :
+// les mêmes fonctions sont appelées directement. La reprise des données d'Activité Twitch se fait une fois (service `twitch.events.handover` de sa version 1.13.0).
+//
 // Deuxième source, FACULTATIVE (1.1.0) : le sujet `live.event`, que « Actions du live YouTube » publie (Super Chat, Super Sticker, adhésions). Le sujet se lit à la demande, jamais en arrière-plan :
 // la page de l'overlay (ouverte dans OBS) vient chercher les nouveautés toutes les 5 secondes (route `pull`, au plus une lecture toutes les 2 secondes par overlay) ; sans page ouverte, rien
 // ne tourne. Sans « Actions du live YouTube » sur le site, la page ne demande rien : l'overlay se comporte exactement comme avant.
@@ -25,6 +30,24 @@ const rxMcp = await import(new URL(`./reaction-mcp.mjs${v}`, import.meta.url).hr
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
 const cpMcp = await import(new URL(`./compose-mcp.mjs${v}`, import.meta.url).href);
+const alertOpts = await import(new URL(`./options.mjs${v}`, import.meta.url).href);
+// (1.18.0) The Twitch part (formerly the module Twitch activity)
+const home = await import(new URL(`./twitch/home.mjs${v}`, import.meta.url).href);
+const evWebhook = await import(new URL(`./twitch/webhook.mjs${v}`, import.meta.url).href);
+const evAdmin = await import(new URL(`./twitch/admin.mjs${v}`, import.meta.url).href);
+const evPub = await import(new URL(`./twitch/publish.mjs${v}`, import.meta.url).href);
+const evSt = await import(new URL(`./twitch/state.mjs${v}`, import.meta.url).href);
+const { default: evTools } = await import(new URL(`./twitch/tools.mjs${v}`, import.meta.url).href);
+const evListen = await import(new URL(`./twitch/listen.mjs${v}`, import.meta.url).href);
+const evCycle = await import(new URL(`./twitch/cycle.mjs${v}`, import.meta.url).href);
+const evOpt = await import(new URL(`./twitch/settings.mjs${v}`, import.meta.url).href);
+const evDockApi = await import(new URL(`./twitch/dockapi.mjs${v}`, import.meta.url).href);
+const evDock = await import(new URL(`./twitch/dock.mjs${v}`, import.meta.url).href);
+const evKit = await import(new URL(`./twitch/dockkit.mjs${v}`, import.meta.url).href);
+const evFlag = await import(new URL(`./twitch/flag.mjs${v}`, import.meta.url).href);
+const evRx = await import(new URL(`./twitch/reaction.mjs${v}`, import.meta.url).href);
+/** (1.18.0) What each Twitch event type and each reward shows: the methods of the former service `alerts.reaction` (version 3), same inputs and answers, now internal. */
+export const reactionService = evRx.methods;
 /**
  * (1.16.0) A caller declares the place of one of its commands (`alerts.show.place`): its label, its files (addresses of this library), the automatic values its texts
  * may use, a sample sentence, and, when its window could place text, `compositions` ({ [src]: composition | null }). `check: true` only checks. Every file must
@@ -99,8 +122,6 @@ const KINDS = ["follow", "sub", "raid", "test", "alert"];
 const LIVE_KINDS = ["superchat", "supersticker", "member", "gift"];
 /** Modules dont la présence active la lecture du sujet `live.event` par la page de l'overlay. */
 const LIVE_PROVIDERS = ["youtube-live-actions"];
-/** The module whose presence makes the overlay page read the topic `twitch.event` (the topic is read on demand, like `live.event`). */
-const TWITCH_PROVIDERS = ["twitch-events"];
 export const LIMITS = { queue: 50, seen: 400, maxAgeMs: 120_000, throttleMs: 2000, name: 40, message: 200, detail: 140, perPull: 20 };
 const clean = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 /** Le texte venu d'ailleurs (sujet `live.event`) : normalisé, sans caractère de contrôle ni de sens d'écriture, espaces réduits, borné. */
@@ -201,7 +222,7 @@ export async function pullLive(ctx, now = Date.now()) {
 }
 
 /** How the Twitch engine writes and filters: the language, the default duration, the viewers' texts, the ignore list, the burst window. */
-export const twitchEnv = (ctx, now = Date.now()) => ({ t: ctx.t, locale: ctx.locale, seconds: 0, showText: ctx.setting("twitchText") === true, ignore: tw.ignoreOf(ctx.setting("ignoreNames")), groupMs: Math.min(tw.LIMITS.groupMs.max, Math.max(0, Math.trunc(Number(ctx.setting("groupSeconds") ?? 5)) * 1000 || 0)), baseSeconds: Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6)), videos: tw.videosOf(ctx.setting), onFlag: (item, reason, state) => { tw.journalFlag(ctx, item.id, reason, state); }, now });
+export const twitchEnv = (ctx, now = Date.now()) => ({ t: ctx.t, locale: ctx.locale, seconds: 0, showText: alertOpts.get(ctx, "twitchText") === true, ignore: tw.ignoreOf(alertOpts.get(ctx, "ignoreNames")), groupMs: Math.min(tw.LIMITS.groupMs.max, Math.max(0, Math.trunc(Number(alertOpts.get(ctx, "groupSeconds") ?? 5)) * 1000 || 0)), baseSeconds: Math.min(60, Math.max(2, Number(ctx.setting("durationSeconds")) || 6)), videos: tw.videosOf(ctx.setting), onFlag: (item, reason, state) => { tw.journalFlag(ctx, item.id, reason, state); }, now });
 
 async function collectLive(ctx, st, now) {
   const key = ctx.instance.key;
@@ -222,10 +243,48 @@ async function collectLive(ctx, st, now) {
   fresh.sort((a, b) => a.at - b.at);
   const out = fresh.slice(-LIMITS.perPull);
   for (const f of out) emit(key, f.alert);
-  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), { ...twitchEnv(ctx, now), compose: cp.composerOf(ctx, await cp.allByKey(ctx).catch(() => new Map())), rewards: await rw.byId(ctx).catch(() => null) }).catch(() => 0);
+  await alertOpts.load(ctx);
+  const sentTwitch = await tw.pullTwitch(ctx, (a) => emit(key, a), { ...twitchEnv(ctx, now), items: await twitchItems(ctx), compose: cp.composerOf(ctx, await cp.allByKey(ctx).catch(() => new Map())), rewards: await rw.byId(ctx).catch(() => null) }).catch(() => 0);
   return { sent: out.length + sentTwitch };
 }
 export const listeners = (key) => bus.listenerCount(key);
+
+/**
+ * (1.18.0) Where the Twitch lines of this copy come from: the copy that listens reads its own journal (the same items as its topic, marked as its own); while
+ * Twitch activity has not handed over yet, the topic of Twitch activity only; another copy reads the topic (offered by the copy that listens); no Twitch: nothing.
+ * Returns the reader for `pullTwitch` (undefined = the topic, as before).
+ */
+export async function twitchItems(ctx) {
+  const m = await home.mode(ctx);
+  if (m === "on") return async () => (await evPub.topicItems(ctx, { limit: 200 })).map((i) => ({ ...i, source: { instance: ctx.instance.key, module: home.MODULE } }));
+  if (m === "waiting") return async () => (await ctx.api.topics.collect(tw.TOPIC, { limit: 200 })).filter((i) => i?.source?.module !== home.MODULE);
+  if (m === "off") return async () => [];
+  return undefined;
+}
+/** The journal mark of a viewer text (hidden, held, decided): the copy that listens marks its own journal; while waiting, Twitch activity's (its hand-over service). */
+tw.setJournalMark(async (ctx, input) => {
+  const m = await home.mode(ctx);
+  if (m === "on") return evFlag.mark(ctx, input);
+  if (m === "waiting") return ctx.api.services.call(home.HANDOVER, "flag", input);
+  return null;
+});
+/** The Twitch part answers only on the copy that listens (or is about to); elsewhere a plain "not found". */
+const notHere = () => new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
+/** Runs an action or a tool with the options read first: the Twitch options of the overlay (options.mjs) and those of the listening (twitch/settings.mjs). */
+const withOptions = (fn) => async (ctx, ...rest) => { await Promise.all([evOpt.loadOptions(ctx), alertOpts.load(ctx)]); return fn(ctx, ...rest); };
+const allWithOptions = (o) => Object.fromEntries(Object.entries(o).map(([k, fn]) => [k, withOptions(fn)]));
+/** The blocks of the page while Twitch activity has not handed over: one line, and what to do. Taken over at once when it can. */
+async function waitingBlocks(ctx) {
+  const t = ctx.t, r = await home.takeOver(ctx).catch(() => ({ done: false, code: "failed" }));
+  if (r.done) return null;
+  const old = await home.oldOne(ctx);
+  return [{ type: "banner", tone: "warning", text: t(r.code === "old" ? "ho_need_update" : "ho_waiting") }, ...(old?.adminPath ? [{ type: "links", items: [{ label: t("ho_open_old"), href: old.adminPath }] }] : [])];
+}
+/** One line on a copy that does not listen to Twitch: where the listening is. */
+async function guestBlocks(ctx) {
+  const path = await home.homePath(ctx);
+  return path ? [{ type: "links", tab: "twitch", items: [{ label: ctx.t("ho_guest_link"), href: path }] }] : [];
+}
 
 /** Compare sans fuite de temps. */
 const sameToken = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
@@ -309,7 +368,73 @@ export default {
       emit(ctx.instance.key, { kind, message, ...(username ? { username } : {}), ...(body?.queue === false ? { queued: false } : {}) });
       return Response.json({ ok: true, listeners: listeners(ctx.instance.key) });
     },
+
+    // (1.18.0, formerly Twitch activity) The address Twitch calls. Public by nature; only a request signed with our secret is accepted. The copy that listens only.
+    async webhook(request, ctx) {
+      if (!(await home.isHome(ctx))) return notHere();
+      await evOpt.loadOptions(ctx);
+      return (await evWebhook.handle(request, ctx)).response;
+    },
+    // The OBS dock (secret address `?k=…`, no session needed): the page, what it reads, what it can ask for. See twitch/dock.mjs and twitch/dockapi.mjs.
+    async dock(request, ctx) {
+      if (!(await home.isHome(ctx))) return notHere();
+      const m = await evDockApi.secretMatches(ctx, evDockApi.keyOf(request));
+      if (m.limited) return new Response("Too many requests", { status: 429, headers: evKit.jsonHeaders });
+      if (!m.ok) return evKit.deniedPage(ctx, ctx.t("dock_denied"), evKit.wantsScheme(request.url));
+      const k = encodeURIComponent(evDockApi.keyOf(request));
+      return evDock.dockPage(ctx, { dataUrl: `/m/${ctx.instance.key}/dock-data?k=${k}&lang=${encodeURIComponent(ctx.locale)}`, actUrl: `/m/${ctx.instance.key}/dock-act?k=${k}&lang=${encodeURIComponent(ctx.locale)}`, scheme: evKit.wantsScheme(request.url) });
+    },
+    async "dock-data"(request, ctx) {
+      if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
+      if (!(await home.isHome(ctx))) return notHere();
+      const m = await evDockApi.secretMatches(ctx, evDockApi.keyOf(request));
+      if (m.limited) return new Response("{}", { status: 429, headers: evKit.jsonHeaders });
+      if (!m.ok) return new Response(JSON.stringify({ denied: true }), { status: 403, headers: evKit.jsonHeaders });
+      if (!evSt.allow(ctx, "dockData", { max: evDockApi.LIMITS.dataPerMinute, windowMs: 60_000 })) return new Response("{}", { status: 429, headers: evKit.jsonHeaders });
+      const scope = new URL(request.url).searchParams.get("scope") ?? "day";
+      return new Response(JSON.stringify(await evDockApi.payload(ctx, { scope })), { headers: evKit.jsonHeaders });
+    },
+    async "dock-act"(request, ctx) {
+      if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: { Allow: "POST" } });
+      if (!(await home.isHome(ctx))) return notHere();
+      const m = await evDockApi.secretMatches(ctx, evDockApi.keyOf(request));
+      if (m.limited) return new Response("{}", { status: 429, headers: evKit.jsonHeaders });
+      if (!m.ok) return new Response(JSON.stringify({ ok: false, code: "denied" }), { status: 403, headers: evKit.jsonHeaders });
+      const raw = await request.text();
+      let body = null; try { body = raw.length <= 2000 ? JSON.parse(raw) : null; } catch { body = null; }
+      return new Response(JSON.stringify(await evDockApi.act(ctx, body)), { headers: evKit.jsonHeaders });
+    },
   },
+
+  // (1.18.0, formerly Twitch activity) Every minute, on the copy that listens: the hand-over from Twitch activity (once), then the subscriptions checked and repaired,
+  // a catch-up after a gap and the health of the listening. Nothing runs on a site without Twitch, nor on another copy.
+  tasks: {
+    listen: { everyMinutes: 1, run: async (ctx) => {
+      const m = await home.mode(ctx);
+      if (m === "waiting") { const r = await home.takeOver(ctx); if (!r.done) return; if ((await home.mode(ctx)) !== "on") return; } else if (m !== "on") return;
+      await evOpt.loadOptions(ctx);
+      await evCycle.check(ctx, evOpt.settingsOf(ctx));
+    } },
+    // Old lines go (retention, tests, size cap).
+    purge: { everyMinutes: 60, run: async (ctx) => { if (!(await home.isHome(ctx))) return; await evOpt.loadOptions(ctx); await evSt.purge(ctx, { retentionDays: evOpt.settingsOf(ctx).retentionDays }); } },
+  },
+  exports: { [evPub.TOPIC]: async (ctx, o) => ((await home.mode(ctx)) === "on" ? evPub.topicItems(ctx, o) : []) },
+  async adminBadge(ctx) {
+    if ((await home.mode(ctx)) !== "on") return 0;
+    const state = await evSt.readState(ctx), c = state.listen?.code;
+    return (c && !["listening", "pending", "nothing_on"].includes(c)) || state.health?.code === "silent" ? 1 : 0;
+  },
+  hooks: {
+    async onInstanceCreate(ctx) {
+      if ((await home.mode(ctx)) !== "on") return;
+      try { await evSt.ensureSecret(ctx); } catch { /* created at the first check */ }
+      // The permissions of the types that are on are declared at once (the connector adds them to its authorization).
+      try { await evListen.diagnose(ctx, evOpt.settingsOf(ctx), { declare: true }); } catch { /* the minute check declares them */ }
+    },
+    async onInstanceDelete(ctx) { if ((await home.handoverOf(ctx).catch(() => null)) || (await evSt.readState(ctx).catch(() => ({}))).secret) { await evOpt.loadOptions(ctx); await evListen.stopListening(ctx, evOpt.settingsOf(ctx)); } },
+  },
+  // (1.18.0) Data version 2: the four Twitch options (settings until 1.17.0) move to the store, so a site without Twitch never sees them (options.mjs).
+  migrations: { 2: async (ctx) => { await alertOpts.migrateFromSettings(ctx); } },
 
   // Élément de page d'overlay « alertes » (cœur 0.5.0) : l'adresse de l'élément est celle de l'overlay du module, avec la langue. Le cœur y ajoute `ov-*` et `opt-*`.
   // Cet overlay n'a pas d'adresse secrète à part (l'adresse est celle de l'overlay) : rien de plus à ajouter ici.
@@ -327,8 +452,10 @@ export default {
     try { pull = (await Promise.all(LIVE_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.length > 0); } catch { pull = false; }
     // Twitch activity installed: the page also reads the topic `twitch.event`, queues every alert, and honours a title, a duration, a pause between alerts and "empty the queue".
     // Without it the page is byte for byte the page of before (see the non-regression test).
+    // (1.18.0) "Twitch activity installed" became "this site has Twitch": the copy that listens, another copy on a Twitch site, or Twitch activity still there.
     let tx = false;
-    try { tx = (await Promise.all(TWITCH_PROVIDERS.map((m) => ctx.api.instances.list({ module: m })))).some((l) => Array.isArray(l) && l.some((i) => TWITCH_PROVIDERS.includes(i?.module))); } catch { tx = false; }
+    try { tx = await home.twitchShown(ctx); } catch { tx = false; }
+    await alertOpts.load(ctx);
     // The media library (pictures, GIFs, sounds, videos) shown for other modules: the page then has the queue, the media and the sounds, even without Twitch activity. Empty library: the page is what it was.
     const media = await md.hasMedia(ctx);
     if (media) tx = true;
@@ -342,7 +469,7 @@ export default {
     // Twitch activity: the look of each type (picture, sound, way of entering) comes from the configuration; sounds only if the person switched them on.
     const twcfg = tx ? await tw.loadConfig(ctx).catch(() => null) : null;
     const anyAnim = !!twcfg && Object.values(twcfg.types).some((x) => x.anim);
-    const sounds = tx && ctx.setting("twitchSounds") === true;
+    const sounds = tx && alertOpts.get(ctx, "twitchSounds") === true;
     const audioOn = media || (sounds && !!twcfg && Object.values(twcfg.types).some((x) => x.audio));   // a sound file is only worth its code if a type has one
     const fx = tr.in !== "auto" || tr.out !== "auto" || anyAnim;
     const cfg = {
@@ -420,14 +547,25 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
   async adminPanel(ctx, { query } = {}) {
     const base = `${ctx.api.siteUrl}/m/${ctx.instance.key}/push`;
     const hasToken = !!String(ctx.setting("pushToken") ?? "").trim();
+    await alertOpts.load(ctx);
+    // (1.18.0) The Twitch part: the listening's blocks on the copy that listens; the overlay's own editor elsewhere on a Twitch site; nothing without Twitch.
+    let m = await home.mode(ctx);
+    const waiting = m === "waiting" ? await waitingBlocks(ctx) : null;
+    if (m === "waiting" && !waiting) m = await home.mode(ctx);
+    const shown = await home.twitchShown(ctx, m);
+    const ev = m === "on" ? await evAdmin.panel(ctx, { query: query ?? {} }) : [];
     return [
+      ...(waiting ?? []),
+      ...ev,
+      ...(m === "guest" && shown ? await guestBlocks(ctx) : []),
       { type: "heading", text: ctx.t("adminTitle") },
       { type: "markdown", text: ctx.t("adminHelp") },
       { type: "copy", label: "POST", text: `curl -X POST ${base} -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"kind":"follow","message":"Alex","username":"alex"}'` },
       ...(hasToken ? [] : [{ type: "markdown", text: ctx.t("noToken") }]),
       { type: "adminForm", action: "test", title: ctx.t("testTitle"), submitLabel: ctx.t("testSubmit"), fields: [] },
       ...(await youtubeBlocks(ctx)),
-      ...(await adminTw.panel(ctx, { query: query ?? {} })),
+      // the queue (first tab, after the push address, as before) and the Twitch events tab of the overlay
+      ...(await adminTw.panel(ctx, { query: query ?? {}, twitch: m === "on" ? "events" : shown ? "editor" : "none" })),
       ...(await adminMd.blocks(ctx, { query: query ?? {} })),
     ];
   },
@@ -478,21 +616,13 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       place: (ctx, input) => placeOfCaller(ctx, input),
       forget: async (ctx, input) => { const decl = cp.readPlace({ place: input?.place }); if (!decl) return { ok: false, code: "place" }; await cp.forgetPlace(ctx, decl.place); return { ok: true }; },
     },
-    // What each Twitch event type shows (picture, GIF, video, sound), read and changed by Twitch activity. `set` carries the person (callerRights) so the files are kept HERE.
-    "alerts.reaction": {
-      list: (ctx) => rx.list(ctx),
-      // (version 3) `reward` (a Twitch reward id) with the type "redeem": the reaction of that reward; `title` and `cost` are what the caller knows of it
-      get: (ctx, input) => rx.get(ctx, String(input?.type ?? ""), input?.type === "redeem" && input?.reward ? String(input.reward) : ""),
-      media: (ctx) => rx.media(ctx),
-      set: (ctx, input) => (input?.type === "redeem" && input?.reward ? rx.setReward(ctx, String(input.reward), { title: input.title, cost: input.cost }, input?.patch ?? {}) : rx.set(ctx, String(input?.type ?? ""), input?.patch ?? {})),
-      test: (ctx, input) => rx.test(ctx, String(input?.type ?? ""), input?.patch ?? {}, { sample: (c, id, cfg, extra) => adminTw.sampleAlert(c, id, Date.now(), cfg, extra), emit: (a) => emit(ctx.instance.key, a), ...(input?.type === "redeem" && input?.reward ? { reward: String(input.reward), info: { title: input.title, cost: input.cost } } : {}) }),
-      rewards: (ctx) => rx.rewards(ctx),
-      forget: (ctx, input) => rx.forgetReward(ctx, String(input?.reward ?? "")),
-    },
+    // (1.18.0, formerly Twitch activity) The journal of Twitch events: marks a line whose viewer text was hidden or held. Kept for the modules that use it.
+    "twitch.journal": { flag: (ctx, input) => evFlag.mark(ctx, input) },
   },
-  mcp: { ...adminTw.tools((key, a) => emit(key, a)), ...rxMcp.tools((key, a) => emit(key, a)), ...cpMcp.tools() },
+  mcp: allWithOptions({ ...adminTw.tools((key, a) => emit(key, a)), ...rxMcp.tools((key, a) => emit(key, a)), ...cpMcp.tools(), ...evTools }),
 
-  adminActions: {
+  adminActions: allWithOptions({
+    ...evAdmin.actions,
     ...adminTw.actions(emit),
     ...adminMd.actions(emit),
     // Un faux Super Chat, mis en forme comme un vrai (montant dans la monnaie du site, texte seulement si le réglage est coché).
@@ -506,5 +636,7 @@ ${ov ? `        var cur="now",gap=c.feedMs;function poll(){fetch(c.feedUrl+"?aft
       emit(ctx.instance.key, { kind: "test", message: ctx.t("testMessage") });
       return { ok: ctx.t("okTest") };
     },
-  },
+  }),
 };
+// (1.18.0) What the Twitch part needs of the overlay, given once (no import back): how to show an alert, and how a test alert is built.
+home.wire({ emit, sample: (ctx, id, now, cfg, extra) => adminTw.sampleAlert(ctx, id, now, cfg, extra) });

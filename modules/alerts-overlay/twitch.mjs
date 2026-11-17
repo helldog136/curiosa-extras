@@ -432,9 +432,14 @@ export async function clearQueue(ctx, emit) {
   return { cleared: true, dropped };
 }
 
-/** Tells the journal of Twitch activity (when it is there) that a text was hidden, held, accepted or dismissed, so its page can mark the line. Never blocks, never fails. */
+/**
+ * Tells the Twitch journal that a text was hidden, held, accepted or dismissed, so its page can mark the line. Never blocks, never fails. (1.18.0) The journal is
+ * this overlay's own (index.mjs gives `markJournal`); without it (an older setup, a test), nothing is marked.
+ */
+const journal = (globalThis.__curiosaAlertsJournalMark ??= { mark: null });
+export const setJournalMark = (fn) => { journal.mark = typeof fn === "function" ? fn : null; };
 export function journalFlag(ctx, id, reason, state) {
-  try { Promise.resolve(ctx.api.services.call("twitch.journal", "flag", { id: String(id), reason, state })).catch(() => {}); } catch { /* the journal is optional */ }
+  try { if (journal.mark) Promise.resolve(journal.mark(ctx, { id: String(id), reason, state })).catch(() => {}); } catch { /* the journal is optional */ }
 }
 
 /* ───────────── What the overlay page reports about the voice (voices it sees, support) ───────────── */
@@ -467,7 +472,8 @@ export async function pullTwitch(ctx, emit, env) {
   const s = await loadState(ctx);
   const now = env.now ?? Date.now();
   let items = [];
-  try { const r = await ctx.api.topics.collect(TOPIC, { limit: 200 }); /* the most the topic gives: a burst of up to 200 lines between two reads is not lost */ items = Array.isArray(r) ? r : []; } catch { items = []; }
+  // (1.18.0) `env.items`: the lines the overlay gives itself (the copy that listens reads its own journal); otherwise the topic, as before
+  try { const r = typeof env.items === "function" ? await env.items() : await ctx.api.topics.collect(TOPIC, { limit: 200 }); /* the most the topic gives: a burst of up to 200 lines between two reads is not lost */ items = Array.isArray(r) ? r : []; } catch { items = []; }
   const config = await loadConfig(ctx, now);
   const t = env.t, text = (id) => t(`tw_text_${id}`), title = (phase) => t(`tw_title_${phase}`);
   const shared = { config, ignore: env.ignore, showText: env.showText, locale: env.locale, text, title, seconds: env.seconds, baseSeconds: env.baseSeconds, videos: env.videos ?? [], pick: pickerOf(s, env.rng), compose: env.compose, rewards: env.rewards ?? null, now };
@@ -476,7 +482,8 @@ export async function pullTwitch(ctx, emit, env) {
   const fresh = [];
   for (const item of items.slice().sort((a, b) => Date.parse(a.at ?? "") - Date.parse(b.at ?? ""))) {
     if (typeof item?.id !== "string" || !item.id || item.id.length > 100) continue;
-    const key = `${item.source?.instance ?? ""}|${item.id}`;
+    // (1.18.0) a line taken over from Twitch activity (`from`, given by the copy that listens: the topic schema is full) keeps the key it had there: never shown twice
+    const key = `${typeof item.from === "string" && item.from ? item.from : item.source?.instance ?? ""}|${item.id}`;
     if (s.seen.has(key) || stagedIds.has(key)) continue;
     const r = alertFor(item, shared);
     if (r.held) {

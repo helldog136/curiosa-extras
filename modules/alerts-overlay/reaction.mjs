@@ -7,6 +7,7 @@ const tw = await import(new URL(`./twitch.mjs${v}`, import.meta.url).href);
 const md = await import(new URL(`./media.mjs${v}`, import.meta.url).href);
 const cp = await import(new URL(`./compose.mjs${v}`, import.meta.url).href);
 const rw = await import(new URL(`./rewards.mjs${v}`, import.meta.url).href);
+const opts = await import(new URL(`./options.mjs${v}`, import.meta.url).href);
 // (1.12.0, additive) `get` also gives `compose` (whether the core can place text), `compositions` ({ [src]: composition }) and `words`; `set` and `test` take
 // `patch.compositions` ({ [src]: composition | null }, only when the window could place text) and `test` takes `patch.composeFor` (the file to show).
 // A caller that sends no `compositions` changes none (an older Twitch activity keeps every placed text); a file taken out of the list loses its text.
@@ -59,7 +60,7 @@ export function moreOf(ctx, type, c) {
     min: tw.MINIMUM[type] ? c.min || 0 : null, minMax: tw.LIMITS.min,
     anim: c.anim ?? "", anims: tw.ANIMS.slice(),
     tts: c.tts ?? "off", ttsModes: tw.TTS_MODES.slice(),
-    viewer: tw.VIEWER_TYPES.includes(type) ? (c.viewer === null || c.viewer === undefined ? ctx.setting("twitchText") === true : c.viewer === true) : null,
+    viewer: tw.VIEWER_TYPES.includes(type) ? (c.viewer === null || c.viewer === undefined ? opts.get(ctx, "twitchText") === true : c.viewer === true) : null,
     viewerMax: tw.VIEWER_TYPES.includes(type) ? c.viewerMax ?? 140 : null, viewerMaxLimits: tw.TTS_LIMITS.viewerMax.slice(),
   };
 }

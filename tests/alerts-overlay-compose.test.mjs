@@ -37,7 +37,9 @@ function world({ settings = {}, locale = "en", items = [], overlay, config, key 
   if (config) ctx.api.store.add("twitchAlerts", { name: "config", ...config });
   return { key, ctx, state };
 }
-const svc = (name) => def.services[name];
+// (1.18.0) `alerts.reaction` is internal now (index.mjs `reactionService`): same methods, same answers
+const svc = (name) => (name === "alerts.reaction" ? alertsIndex.reactionService : def.services[name]);
+const alertsIndex = await import("../modules/alerts-overlay/index.mjs");
 const item = (type, o = {}) => ({ id: `i${++n}`, type, at: new Date(NOW - 1000).toISOString(), name: "etoile_nord", login: "etoile_nord", ...o });
 const comp = (src, boxes = [{ id: "t1" }]) => ({ v: 1, backdrop: { src }, boxes });
 const QUERY = (fit) => new URLSearchParams(`ov-w=${fit === "scale" ? 640 : 1280}&ov-h=${fit === "scale" ? 260 : 720}&ov-fit=${fit}&ov-lang=fr&ov-text=light&ov-surface=transparent&ov-corners=round`);

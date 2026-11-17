@@ -1,6 +1,6 @@
-// One reaction per channel point reward (Twitch activity 1.12.0, Alerts overlay 1.17.0, Twitch bot 1.22.0, Twitch connector 1.6.0).
-// Three real modules talk through their real service code: Twitch activity (the Rewards tab), the alerts overlay (`alerts.reaction` version 3, the reactions and
-// the alerts), the Twitch bot (`twitch.rewards`, the creation on Twitch). Twitch itself is the fake of fakeRewards.mjs: full Twitch reward shapes, rewards made by
+// One reaction per channel point reward (Twitch activity 1.12.0, Alerts overlay 1.17.0, Twitch bot 1.22.0, Twitch connector 1.6.0; 1.18.0: Twitch activity is
+// part of the alerts overlay). Two real modules talk through their real service code: the alerts overlay (the Rewards tab, the reactions and the alerts) and the
+// Twitch bot (`twitch.rewards`, the creation on Twitch). Twitch itself is the fake of fakeRewards.mjs: full Twitch reward shapes, rewards made by
 // hand on Twitch (listed, never manageable), the connector's permission check (reading takes "read" or "manage", writing "manage"), 403 without channel points.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -12,16 +12,17 @@ import { assertAdminPageErgonomics } from "./helpers/ergonomics.mjs";
 
 const json = (p) => JSON.parse(fs.readFileSync(new URL(p, import.meta.url), "utf8"));
 const alMan = json("../modules/alerts-overlay/module.json"), alEn = json("../modules/alerts-overlay/locales/en.json");
-const evMan = json("../modules/twitch-events/module.json"), evEn = json("../modules/twitch-events/locales/en.json"), evFr = json("../modules/twitch-events/locales/fr.json");
+const evMan = alMan, evEn = alEn, evFr = json("../modules/alerts-overlay/locales/fr.json");
 const botMan = json("../modules/twitch-bot/module.json"), botEn = json("../modules/twitch-bot/locales/en.json"), botFr = json("../modules/twitch-bot/locales/fr.json");
 const tw = await import("../modules/alerts-overlay/twitch.mjs");
 const rx = await import("../modules/alerts-overlay/reaction.mjs");
 const rwo = await import("../modules/alerts-overlay/rewards.mjs");
 const cp = await import("../modules/alerts-overlay/compose.mjs");
 const md = await import("../modules/alerts-overlay/media.mjs");
-const alDef = (await import("../modules/alerts-overlay/index.mjs")).default;
-const evRw = await import("../modules/twitch-events/rewards.mjs");
-const evRx = await import("../modules/twitch-events/reaction.mjs");
+const alIndex = await import("../modules/alerts-overlay/index.mjs");
+const alDef = alIndex.default;
+const evRw = await import("../modules/alerts-overlay/twitch/rewards.mjs");
+const evRx = await import("../modules/alerts-overlay/twitch/reaction.mjs");
 const botDef = (await import("../modules/twitch-bot/index.mjs")).default;
 const botEs = await import("../modules/twitch-bot/eventsub.mjs");
 const botR = await import("../modules/twitch-bot/rewards.mjs");
@@ -44,8 +45,6 @@ let n = 0;
 function sites(o = {}) {
   tw.resetTwitchState(); rwo.resetRewardCache(); evRw.resetRewardsCache(); cp.resetComposeCache(); md.resetValve(); botR.resetRewards(); botS.resetMemory(); botJ.resetRedeem();
   const api = fakeRewardsApi({ foreign: [{ id: HYD, title: "Hydrate", cost: 500 }, { id: CONF, title: "Confettis", cost: 1000, is_paused: true }], ...o.api });
-  const al = fakeCtx({ key: `al${++n}`, moduleId: "alerts-overlay", locale: "en", messages: alEn, settings: { pushToken: "x" }, permissions: alMan.permissions, uploads: o.uploads ?? [] });
-  const sent = []; globalThis.__curiosaAlertsBus?.on?.(al.instance.key, (e) => sent.push(e));
   const botAcct = { ok: true, channel: "emma_test", ready: true, https: true, status: "ok", login: "emma_test", userId: "100", scopes: o.botScopes ?? [...botEs.SCOPES.own, ...botEs.REWARD_SCOPES], wanted: [], adminPath: "/admin/instances/tw1" };
   const bot = fakeCtx({
     key: "bot", moduleId: "twitch-bot", locale: "en", messages: botEn, siteUrl: "https://site.example.org", settings: { onlyWhenLive: true }, logEvents: botMan.logEvents,
@@ -56,12 +55,15 @@ function sites(o = {}) {
     },
   });
   bot.can = (right) => o.can !== false && right === "rewards.manage";
-  const w = evWorld({ locale: o.locale ?? "en", tw: { rewardsApi: api, ...(o.scopes ? { scopes: o.scopes } : {}) } });
+  // (1.18.0) the overlay and the former Twitch activity are ONE copy: `al` and `ev` are the same context
+  const w = evWorld({ locale: o.locale ?? "en", uploads: o.uploads ?? [], tw: { rewardsApi: api, ...(o.scopes ? { scopes: o.scopes } : {}) } });
+  const al = w.ctx;
+  const sent = []; globalThis.__curiosaAlertsBus?.on?.(al.instance.key, (e) => sent.push(e));
   const base = w.ctx.api.services, calls = [];
-  const svc = { "alerts.reaction": o.noOverlay ? null : [alDef.services["alerts.reaction"], al], "twitch.rewards": o.noBot ? null : [botDef.services["twitch.rewards"], bot] };
+  const svc = { "twitch.rewards": o.noBot ? null : [botDef.services["twitch.rewards"], bot] };
   w.ctx.api.services = {
     ...base,
-    providers: async (name) => (svc[name] ? [{ id: `id-${name}`, key: name, name, module: name, version: name === "alerts.reaction" ? 3 : 1, each: true, master: true }] : base.providers(name)),
+    providers: async (name) => (name in svc ? (svc[name] ? [{ id: `id-${name}`, key: name, name, module: name, version: 1, each: true, master: true }] : []) : base.providers(name)),
     call: async (name, method, args, opts) => {
       if (!(name in svc)) return base.call(name, method, args, opts);
       calls.push(`${name}.${method}${opts?.asCaller ? ":asCaller" : ""}`);
@@ -69,7 +71,6 @@ function sites(o = {}) {
       try { return { ok: true, value: await svc[name][0][method](svc[name][1], args) }; } catch { return { ok: false, reason: "failed" }; }
     },
   };
-  w.ctx.api.instances = { ...w.ctx.api.instances, list: async () => (o.noOverlay ? [] : [{ id: "al", key: "al", adminPath: "/admin/instances/al" }]) };
   return { api, al, bot, ev: w.ctx, tw: w.tw, sent, calls };
 }
 const tab = async (s, query = {}) => (await evMod.adminPanel(s.ev, { query: { tab: "rewards", ...query } })).filter((b) => b.tab === "rewards");
@@ -168,7 +169,7 @@ test("overlay service: the files of a reward are kept HERE, released when it let
 test("overlay service: the test of a reward shows that reward's reaction with its title and cost; nothing saved", async () => {
   const s = sites({ uploads: [G(1), G(2)].map((url) => ({ url, by: "u1" })) });
   await rx.set(s.al, "redeem", { variants: [G(1)] });
-  const svc = alDef.services["alerts.reaction"], claims = () => s.al.calls.files.filter((c) => c.op === "claim").length, before = claims();
+  const svc = alIndex.reactionService, claims = () => s.al.calls.files.filter((c) => c.op === "claim").length, before = claims();
   assert.ok((await svc.test(s.al, { type: "redeem", reward: HYD, title: "Hydrate", cost: 500, patch: { variants: [{ src: G(2) }], text: "{title} for {name}" } })).ok);
   const a = s.sent.at(-1);
   assert.deepEqual([a.image, a.message], [G(2), "Hydrate for lune_douce"]);
@@ -205,7 +206,7 @@ test("rewards list without the permission to read them: the connector refuses be
   assert.deepEqual(list.items.map((x) => [x.id, x.title, x.gone]), [[HYD, "Hydrate", false]], "never called gone when Twitch could not be read");
   await enableRedeem(s);
   const blocks = await tab(s);
-  assert.ok(blocks.some((b) => b.type === "links" && b.items[0].label === evEn.rw_scope && b.items[0].href === "?tab=types"));
+  assert.ok(blocks.some((b) => b.type === "links" && b.items[0].label === evEn.rw_scope && b.items[0].href === "?tab=twitch"));
   // a channel without channel points (Twitch 403)
   const na = sites({ api: { affiliate: false } });
   assert.deepEqual((await evRw.list(na.ev)).twitch, { ok: false, code: "na" });
@@ -234,13 +235,13 @@ test("Rewards tab: one sentence, Add a reward, a searchable table with All other
   assert.match(t.rowActions[0].href, /reaction=\{id\}/);
   assertAdminPageErgonomics(blocks);
   // the Types tab: the channel points cell leads here
-  const types = (await evMod.adminPanel(s.ev, { query: { tab: "types" } })).find((b) => b.tab === "types" && b.type === "table");
+  const types = (await evMod.adminPanel(s.ev, { query: { tab: "twitch" } })).find((b) => b.tab === "twitch" && b.type === "table");
   const col = types.columns.indexOf("Reaction"), row = types.rows[types.rowIds.indexOf("redeem")];
   assert.equal(row[col].href, "?tab=rewards");
   assert.match(row[col].text, /own: 1$/);
 });
 
-test("Rewards tab: the empty state says what to do; without the bot one line with a link; bot without the permission: a link to authorize it; old overlay: update it", async () => {
+test("Rewards tab: the empty state says what to do; without the bot one line with a link; bot without the permission: a link to authorize it", async () => {
   const empty = sites({ api: { foreign: [] } });
   await enableRedeem(empty);
   const t = tableOf(await tab(empty));
@@ -255,13 +256,7 @@ test("Rewards tab: the empty state says what to do; without the bot one line wit
   assert.ok(wb.some((b) => b.type === "links" && b.items[0].label === evEn.rw_add_need_scope && /tab=rewards$/.test(b.items[0].href)));
   const off = sites();
   assert.ok((await tab(off)).some((b) => b.type === "links" && b.items[0].label === evEn.rw_type_off), "Channel points switched off: say where to switch them on");
-  const old = sites();
-  const svc = alDef.services["alerts.reaction"];
-  const v2 = { ...svc }; delete v2.rewards;
-  old.ev.api.services.call = ((call) => async (name, method, args, opts) => (name === "alerts.reaction" && method === "rewards" ? { ok: false, reason: "no-method" } : call(name, method, args, opts)))(old.ev.api.services.call);
-  const ob = await tab(old);
-  assert.ok(ob.some((b) => b.type === "links" && b.items[0].label === evEn.rw_overlay_old));
-  assert.ok(!ob.some((b) => b.type === "table"));
+  // (1.18.0) "old overlay: update it" is gone: the reactions are the overlay's own
 });
 
 test("reaction window of a reward: its title, the gallery with the preview following the sentence, the reward carried in hidden fields; save and test go to THAT reward", async () => {
@@ -279,7 +274,6 @@ test("reaction window of a reward: its title, the gallery with the preview follo
   const values = { id: "redeem", reward: HYD, rewardTitle: "Hydrate", rewardCost: "500", variants: JSON.stringify([{ src: G(2) }]), pick: "random", text: "", sound: "", audio: "", seconds: "" };
   const saved = await evMod.adminActions.saveReaction(s.ev, values);
   assert.equal(saved.ok, "Reaction of “Hydrate” saved.");
-  assert.ok(s.calls.includes("alerts.reaction.set:asCaller"));
   assert.deepEqual((await rwo.one(s.al, HYD)).cfg.image, G(2));
   assert.equal((await tw.loadConfig(s.al)).types.redeem.image, "", "the type is untouched");
   assert.ok((await evMod.adminActions.testReaction(s.ev, values)).ok);
@@ -289,7 +283,7 @@ test("reaction window of a reward: its title, the gallery with the preview follo
   const others = dialogOf(await tab(s, { reaction: "*" }));
   assert.equal(others.title, evEn.rx_title_others);
   assert.ok(!others.fields.some((x) => x.name === "reward"));
-  const fromTypes = dialogOf((await evMod.adminPanel(s.ev, { query: { tab: "types", reaction: "redeem" } })).filter((b) => b.tab === "types"));
+  const fromTypes = dialogOf((await evMod.adminPanel(s.ev, { query: { tab: "twitch", reaction: "redeem" } })).filter((b) => b.tab === "twitch"));
   assert.equal(fromTypes.title, evEn.rx_title_others);
 });
 

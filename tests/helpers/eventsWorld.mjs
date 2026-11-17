@@ -1,24 +1,37 @@
-// The fake world of Twitch activity: a site with the Twitch connector (channel "emma_test", user id 100) and a FAKE TWITCH that signs its deliveries exactly like the real one.
+// The fake world of the Twitch part of the alerts overlay (1.18.0, formerly the module Twitch activity): a site with the Twitch connector (channel "emma_test", user id 100)
+// and a FAKE TWITCH that signs its deliveries exactly like the real one. `mod` is the overlay's module (index.mjs); the files of the Twitch part are in alerts-overlay/twitch/.
 import fs from "node:fs";
 import { fakeCtx } from "./fakeCtx.mjs";
 
-const DIR = new URL("../../modules/twitch-events", import.meta.url).pathname;
+const DIR = new URL("../../modules/alerts-overlay", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${DIR}/${p}`, "utf8"));
 export const fr = readJson("locales/fr.json"), en = readJson("locales/en.json");
 export const manifest = readJson("module.json");
-export const es = await import("../../modules/twitch-events/eventsub.mjs");
-export const S = await import("../../modules/twitch-events/state.mjs");
-export const W = await import("../../modules/twitch-events/webhook.mjs");
-export const L = await import("../../modules/twitch-events/listen.mjs");
-export const P = await import("../../modules/twitch-events/publish.mjs");
-export const D = await import("../../modules/twitch-events/dockapi.mjs");
-export const DK = await import("../../modules/twitch-events/dock.mjs");
-export const DP = await import("../../modules/twitch-events/dockpure.mjs");
-export const A = await import("../../modules/twitch-events/admin.mjs");
-export const C = await import("../../modules/twitch-events/cycle.mjs");
-export const CU = await import("../../modules/twitch-events/catchup.mjs");
-export const HE = await import("../../modules/twitch-events/health.mjs");
-export const mod = (await import("../../modules/twitch-events/index.mjs")).default;
+export const es = await import("../../modules/alerts-overlay/twitch/eventsub.mjs");
+export const S = await import("../../modules/alerts-overlay/twitch/state.mjs");
+export const W = await import("../../modules/alerts-overlay/twitch/webhook.mjs");
+export const L = await import("../../modules/alerts-overlay/twitch/listen.mjs");
+export const P = await import("../../modules/alerts-overlay/twitch/publish.mjs");
+export const D = await import("../../modules/alerts-overlay/twitch/dockapi.mjs");
+export const DK = await import("../../modules/alerts-overlay/twitch/dock.mjs");
+export const DP = await import("../../modules/alerts-overlay/twitch/dockpure.mjs");
+export const A = await import("../../modules/alerts-overlay/twitch/admin.mjs");
+export const C = await import("../../modules/alerts-overlay/twitch/cycle.mjs");
+export const CU = await import("../../modules/alerts-overlay/twitch/catchup.mjs");
+export const HE = await import("../../modules/alerts-overlay/twitch/health.mjs");
+export const O = await import("../../modules/alerts-overlay/twitch/settings.mjs");
+export const AO = await import("../../modules/alerts-overlay/options.mjs");
+export const mod = (await import("../../modules/alerts-overlay/index.mjs")).default;
+/** (1.18.0) The queue of the overlay is this module's own (alerts-overlay/twitch.mjs): the dock no longer calls a service. */
+export const TWO = await import("../../modules/alerts-overlay/twitch.mjs");
+/** Seeds the queue of the overlay copy of `ctx`: `held` alerts waiting, the viewer `texts` flagged, the voice (`on` is the setting of the voice, `muted` the dock's switch). */
+export async function seedQueue(ctx, { held = 0, texts = [], voice = null } = {}) {
+  const s = await TWO.loadState(ctx);
+  s.held = Array.from({ length: held }, (_, i) => ({ kind: "follow", message: `held ${i}`, queued: true, id: `h${i}` }));
+  s.texts = texts.map((x) => ({ ...x }));
+  if (voice) { s.ttsMuted = voice.muted === true; const cfg = await TWO.loadConfig(ctx); await TWO.saveConfig(ctx, { ...cfg, tts: { ...cfg.tts, on: voice.on === true } }); }
+  return s;
+}
 
 export const NOW = Date.parse("2026-11-12T20:00:00Z");
 export const B = "100";
@@ -35,14 +48,20 @@ export const FULL_CONDITION = {
 };
 export const twitchCondition = (type, c) => Object.fromEntries((FULL_CONDITION[type] ?? Object.keys(c)).map((k) => [k, c[k] === undefined ? "" : String(c[k])]));
 
-/** `o.scopes`: permissions granted to the account; `o.status`: "ok" | "reconnect" | "none"; `o.siteUrl`; `o.locale`; `o.settings`. */
+/**
+ * `o.scopes`: permissions granted to the account; `o.status`: "ok" | "reconnect" | "none"; `o.siteUrl`; `o.locale`; `o.settings`.
+ * (1.18.0, for the upgrade tests) `o.key`, `o.moduleId`, `o.manifest`, `o.messages` (another module on the same site), `o.twFake` (the SAME fake Twitch as another world),
+ * `o.keepMemory` (no reset of the in-memory states), `o.legacy` (settings of an older version, `ctx.legacy`).
+ */
 export function world(o = {}) {
-  S.resetMemory(); P.forgetCache();
-  const tw = { status: "ok", scopes: [...ALL], subs: [], calls: [], wants: [], links: [], createStatus: 202, listDown: false, seq: 0, ...o.tw };
+  if (!o.keepMemory) { S.resetMemory(); P.forgetCache(); O.resetOptions(); AO.resetOptions(); TWO.resetTwitchState(); }
+  const tw = o.twFake ?? { status: "ok", scopes: [...ALL], subs: [], calls: [], wants: [], links: [], createStatus: 202, listDown: false, seq: 0, ...o.tw };
+  const man = o.manifest ?? manifest;
   const queue = { paused: false, held: 0, calls: [], voice: { on: false, muted: false }, texts: [], ...o.queue };
   const ctx = fakeCtx({
-    key: "ev", moduleId: "twitch-events", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: (o.locale ?? "fr") === "en" ? en : fr,
-    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: o.permissions ?? manifest.permissions, requires: manifest.requires, installedModules: o.installedModules, ...(o.person !== undefined ? { person: o.person } : {}), logEvents: manifest.logEvents ?? [],
+    key: o.key ?? "ev", moduleId: o.moduleId ?? "alerts-overlay", locale: o.locale ?? "fr", defaultLocale: "fr", locales: ["fr", "en"], messages: o.messages ?? ((o.locale ?? "fr") === "en" ? en : fr), ...(o.legacy ? { legacy: o.legacy } : {}),
+    mailConfigured: o.mailConfigured !== false, settings: { retentionDays: 30, ...o.settings }, siteUrl: o.siteUrl ?? "https://site.example.org", timezone: "Europe/Paris", permissions: o.permissions ?? man.permissions, requires: man.requires, installedModules: o.installedModules, ...(o.person !== undefined ? { person: o.person } : {}), ...(o.uploads ? { uploads: o.uploads } : {}), logEvents: man.logEvents ?? [],
+    ...(o.services ? { services: o.services } : {}),
     serviceInstances: {
       "twitch.api": [{ instance: "emma", name: "emma", methods: {
         account: (a) => (a?.channel && a.channel !== "emma_test" ? { ok: false, error: "other_channel" } : { ok: true, channel: "emma_test", ready: true, https: true, status: tw.status, login: "emma_test", userId: B, scopes: tw.scopes, adminPath: "/admin/instances/connector" }),
@@ -79,6 +98,7 @@ export function world(o = {}) {
         },
       } }],
       "twitch.live": [{ instance: "emma", name: "emma", methods: { channel: () => ({ channel: "emma_test", ready: true }) } }],
+      ...(o.extraServices ?? {}),
       ...(o.alerts ? { "alerts.queue": [{ instance: "alerts", name: "Alerts", methods: {
         state: () => ({ paused: queue.paused, held: queue.held, staged: 0 }),
         pause: () => { queue.calls.push("pause"); queue.paused = true; return { paused: true, held: queue.held }; },
@@ -96,7 +116,7 @@ export function world(o = {}) {
         } : {}),
       } }] } : {}),
     },
-    instances: o.alerts ? [{ id: "i1", key: "alerts", module: "alerts-overlay", name: "Alerts", adminPath: "/admin/instances/alerts" }] : [],
+    instances: o.instances ?? (o.alerts ? [{ id: "i1", key: "alerts", module: "alerts-overlay", name: "Alerts", adminPath: "/admin/instances/alerts" }] : []),
   });
   return { ctx, tw, queue };
 }

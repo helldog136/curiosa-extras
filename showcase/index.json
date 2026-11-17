@@ -422,8 +422,8 @@
         "fr": "Activité Twitch"
       },
       "pitch": {
-        "en": "Your site receives the follows, subs, bits, raids and hype trains of your channel and keeps a journal.",
-        "fr": "Votre site reçoit les follows, abonnements, bits, raids et trains de la hype de votre chaîne et tient un journal."
+        "en": "Moved into Alerts overlay (OBS) 1.18.0, which takes over its journal and settings. Keep it only until then.",
+        "fr": "Fondu dans Overlay alertes (OBS) 1.18.0, qui reprend son journal et ses réglages. Gardez-le jusque-là seulement."
       },
       "tags": [
         "twitch",
