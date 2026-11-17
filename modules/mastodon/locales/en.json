@@ -7,5 +7,6 @@
   "err_hidden": "This Mastodon server does not show its numbers publicly. Ask its administrator, or untick “Follow my statistics”.",
   "err_rate": "This Mastodon server is limiting requests for now: nothing to do, it will resume by itself.",
   "err_network": "This Mastodon server is not answering right now: nothing to do, we try again automatically.",
-  "err_config_account": "This Mastodon server cannot find this account: check your profile address in Settings."
+  "err_config_account": "This Mastodon server cannot find this account: check your profile address in Settings.",
+  "err_config_private": "This server address leads to a private network, so the site does not contact it. Check your profile address in Settings."
 }

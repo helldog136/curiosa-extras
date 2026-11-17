@@ -4,6 +4,7 @@ import test, { afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fakeCtx } from "./helpers/fakeCtx.mjs";
+import { fakeResolver, PUBLIC_V4 } from "./helpers/fakeResolver.mjs";
 
 const root = new URL("../modules/", import.meta.url).pathname;
 const SETTINGS = { bluesky: { profile: "nom.bsky.social" }, mastodon: { profile: "https://mastodon.example/@nom" }, github: { profile: "helldog" }, discord: { profile: "abcDEF" }, reddit: { profile: "https://www.reddit.com/r/mon_sub" } };
@@ -21,6 +22,7 @@ for (const id of Object.keys(SETTINGS)) {
     const saved = { ...timing };
     try {
       mod.resetCache?.();
+      if (mod.hooks && "resolve" in mod.hooks) mod.hooks.resolve = fakeResolver({ "mastodon.example": PUBLIC_V4 });   // Mastodon checks where the name leads first
       Object.assign(timing, { sharedMs: 120 });
       const ctx = fakeCtx({ key: "inst", locale: "fr", messages: JSON.parse(fs.readFileSync(`${root}${id}/locales/fr.json`, "utf8")), name: "Mon compte", settings: SETTINGS[id], siteUrl: "https://site.example" });
       const stat = () => mod.default.exports["social.stat"](ctx, { locale: "fr", limit: 50, tags: [] });
@@ -32,6 +34,6 @@ for (const id of Object.keys(SETTINGS)) {
       const c = await within(stat());
       assert.notEqual(c, HUNG, "ne doit plus attendre l'ancienne promesse");
       assert.ok(c.length && c.every((x) => !x.error && Number.isInteger(x.value)), JSON.stringify(c));
-    } finally { Object.assign(timing, saved); }
+    } finally { Object.assign(timing, saved); if (mod.hooks && "resolve" in mod.hooks) mod.hooks.resolve = null; }
   });
 }
