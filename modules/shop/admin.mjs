@@ -2,6 +2,7 @@
 // Not yet audited against docs/ERGONOMIE-ADMIN.md (see README): no dialog editing, no inline stock edit, no wizard.
 const v = new URL(import.meta.url).search;   // the module's version travels to the neighbour files, so an update never keeps old code in memory
 const { esc, formatMoney, currencyOf, idOk, num, ORDER_STATES, NEXT_STATES, mailReady } = await import(`./lib.mjs${v}`);
+const L = await import(`./lib.mjs${v}`);
 const D = await import(`./data.mjs${v}`);
 const S = await import(`./stock.mjs${v}`);
 const O = await import(`./orders.mjs${v}`);
@@ -61,7 +62,7 @@ async function overview(ctx) {
   blocks.push({
     type: "table", columns: [ctx.t("colProduct"), ctx.t("colPrice"), ctx.t("colStock"), ctx.t("colStatus")], searchable: true, filters: [{ column: 3 }], truncate: [0], pageSize: 50,
     empty: ctx.t("productsEmpty"), rowIds: products.map((p) => p.id),
-    rows: products.map((p) => [p.title, formatMoney(p.variants[0].price, currency, ctx.locale), p.variants.map((v) => { const a = stockOf.get(`${p.id}:${v.id}`); return a.available === Infinity ? "∞" : String(a.available); }).join(" / "), manage ? { text: ctx.t(p.status === "published" ? "published" : "draft"), switch: { on: p.status === "published", action: "setPublished", label: ctx.t("onSaleSwitch", { name: p.title }), onText: ctx.t("published"), offText: ctx.t("draft") } } : { text: ctx.t(p.status === "published" ? "published" : "draft"), badge: p.status === "published" ? "ok" : "neutral" }]),
+    rows: products.map((p) => [p.photos?.length ? { text: p.title, image: { src: `${p.photos[0].src}?c=1_1_0.5_0.5_ffffff`, alt: p.photos[0].alt || p.title } } : p.title, formatMoney(p.variants[0].price, currency, ctx.locale), p.variants.map((v) => { const a = stockOf.get(`${p.id}:${v.id}`); return a.available === Infinity ? "∞" : String(a.available); }).join(" / "), manage ? { text: ctx.t(p.status === "published" ? "published" : "draft"), switch: { on: p.status === "published", action: "setPublished", label: ctx.t("onSaleSwitch", { name: p.title }), onText: ctx.t("published"), offText: ctx.t("draft") } } : { text: ctx.t(p.status === "published" ? "published" : "draft"), badge: p.status === "published" ? "ok" : "neutral" }]),
     rowActions: manage ? [{ label: ctx.t("edit"), href: "?edit={id}", presentation: "dialog" }, { label: ctx.t("changeStock"), href: "?stock={id}", presentation: "dialog" }] : [],
   });
   if (manage) blocks.push({ type: "links", items: [{ label: ctx.t("addProduct"), href: "?edit=new", presentation: "dialog" }] });
@@ -111,6 +112,7 @@ async function productDialog(ctx, id) {
       { name: "id", kind: "hidden", value: p?.id ?? "" },
       { name: "title", label: ctx.t("fTitle"), required: true, value: p?.title ?? "", example: ctx.t("exTitle") },
       { name: "price", label: ctx.t("fPrice"), required: true, value: v0 ? centsToText(v0.price) : "", example: "12.50" },
+      { name: "photos", label: ctx.t("fPhotos"), kind: "gallery", accept: ["image"], max: L.LIMITS.photos, itemLabel: true, value: JSON.stringify((p?.photos ?? []).map((x) => ({ src: x.src, label: x.alt }))) },
       { name: "stockMode", label: ctx.t("fStockMode"), kind: "segmented", value: v0?.stockMode ?? "tracked", options: [{ value: "tracked", label: ctx.t("modeTracked") }, { value: "single", label: ctx.t("modeSingle") }, { value: "unlimited", label: ctx.t("modeUnlimited") }] },
       ...(counted ? [{ name: "onHand", label: ctx.t("fOnHand"), kind: "number", min: 0, max: 100000, value: String(v0?.onHand ?? 1), unit: ctx.t("pieces") }] : []),
       { name: "description", label: ctx.t("fDescription"), kind: "textarea", value: p?.description ?? "", folded: true },
@@ -168,8 +170,17 @@ export const adminActions = {
     const existing = id ? await D.getProduct(ctx, id) : null;
     const r = D.normaliseProduct(values, existing);
     if (r.errors) return { errors: Object.fromEntries(Object.entries(r.errors).map(([k, code]) => [k, ctx.t(`err_${code.startsWith("line") ? "variants" : code === "too many" ? "variants" : code}`, { line: code.replace("line ", "") })])) };
+    // Photos: keep (claim) the new files, then release the ones taken out. A file that cannot be kept is said under the field, nothing is saved.
+    const before = new Set((existing?.photos ?? []).map((x) => x.src)), after = new Set(r.value.photos.map((x) => x.src));
+    for (const ph of r.value.photos) {
+      if (before.has(ph.src)) continue;
+      const c = await ctx.api.files.claim(ph.src);
+      if (!c.ok && !(await ctx.api.files.owns(ph.src))) return { errors: { photos: ctx.t("errPhotoKept") } };
+    }
     const saved = await D.saveProduct(ctx, id || null, r.value);
-    return saved ? { ok: ctx.t("saved") } : fail(ctx, "saveFailed");     // no redirect: the core closes the window on a success and marks the saved row
+    if (!saved) return fail(ctx, "saveFailed");
+    for (const src of before) if (!after.has(src)) await ctx.api.files.remove(src);
+    return { ok: ctx.t("saved") };     // no redirect: the core closes the window on a success and marks the saved row
   },
   async saveShipping(ctx, values) {
     if (!can(ctx, "manage")) return fail(ctx, "noRight");
@@ -202,6 +213,7 @@ export const adminActions = {
     const now = Date.now();
     for (const v of p.variants) if ((await S.readAll(ctx, p.id, v.id)).some((r) => r.data.state === "held" && r.data.expiresAt > now)) return fail(ctx, "errDeleteBusy");   // in a cart or an order waiting for payment
     await ctx.api.store.remove(p.id);                                    // placed orders keep their own copy of the lines
+    for (const ph of p.photos ?? []) await ctx.api.files.remove(ph.src);   // and the photos go with the product (nothing else uses them)
     return { ok: ctx.t("deleted") };
   },
   async markPaid(ctx, values) {

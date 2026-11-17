@@ -429,3 +429,18 @@ The "no shipping" and "one price" windows in the real core (only tested as data)
 ### Seen in passing (not caused by the shop)
 
 The core's development server (Next.js 16.4.1) prints, on every start, a notice that this version "is affected by a known security vulnerability" with a command to upgrade, and the notice is also shown as an "Insight" badge on every page in development mode. I did not read the advisory and did not upgrade anything; it is for whoever maintains the core to look at.
+
+## 20. Product photos (lot 2)
+
+**Decision D19.** A product has up to 8 photos, chosen with the core's gallery field (one field, a description under each image). The first photo is the cover.
+
+- **Only the site's own uploads.** A photo address must look like `/uploads/<id>.png|jpg|webp|gif`: no other folder, no crop suffix, no outside address, no video, no vector drawing. The core already checks this; the shop checks again because the data can also arrive from elsewhere.
+- **Files are kept and released by the shop.** On save, each new file is claimed (`files.claim`; `files.owns` if it was already ours); if a file cannot be kept, the error appears under the field and nothing is saved. A photo taken out is released after the save succeeded. Deleting a product releases all its photos. A save from a window that does not carry the field leaves the photos alone.
+- **Orders never hold a photo.** An order keeps title, option and price only, so deleting a photo never breaks an old order.
+- **Shop page.** The cover is shown 4:3 through the core's cached crop address, with its description (the product title when none), lazy loading and fixed width/height (no jump). Up to four small links open the other photos. A product without photo shows no empty box.
+- **Administration.** The list shows a square thumbnail before the name. The product window still has 5 visible fields (photos are the fifth); the rest stays under "More options".
+- Permission `files` added; minimum core raised to 0.14.0 (gallery field).
+
+**Checked:** 8 tests (field flags, address rules, claim and refusal, release on removal, no claim when reordering, release on delete, escaping on the shop page, no empty box, list thumbnail, order holds no photo); three deliberate defects (no release, delete keeps files, always claim) are each caught. Full suite: 6324 tests, 0 failures.
+
+**Not checked yet:** the real core (upload through the gallery field, display on the shop page and in the list, files really gone after deletion, acceptance of the crop address in the table image cell), and the phone/desktop screenshots.

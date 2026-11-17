@@ -16,6 +16,22 @@ export async function getProduct(ctx, id) {
   return r && r.data && Array.isArray(r.data.variants) && r.data.title !== undefined ? view(r) : null;
 }
 /** Validate and normalise what the seller typed. Returns { value } or { errors }. Only kind "physical" is enabled in this prototype. */
+const UPLOAD = /^\/uploads\/[0-9a-f-]{36}\.(?:png|jpg|webp|gif)$/;
+/** The gallery field posts a JSON list of { src, label }. Only the site's own uploaded images are accepted (the core checks too, but an action never trusts its input). */
+export function parsePhotos(text) {
+  let list;
+  try { list = JSON.parse(String(text ?? "[]")); } catch { return { ok: false }; }
+  if (!Array.isArray(list) || list.length > LIMITS.photos) return { ok: false };
+  const seen = new Set(), out = [];
+  for (const it of list) {
+    const src = typeof it === "string" ? it : it?.src;
+    if (typeof src !== "string" || !UPLOAD.test(src)) return { ok: false };
+    if (seen.has(src)) continue;
+    seen.add(src);
+    out.push({ src, alt: clean(typeof it === "object" ? it.label : "", LIMITS.photoAlt) });
+  }
+  return { ok: true, list: out };
+}
 export function normaliseProduct(values, existing) {
   const errors = {};
   const title = clean(values.title, LIMITS.title);
@@ -39,8 +55,10 @@ export function normaliseProduct(values, existing) {
   }
   if (variants.length > LIMITS.variantsPerProduct) errors.variants = "too many";
   if (variants.length > 1) variants[0].label = clean(values.firstLabel, LIMITS.label) || "Default";
+  let photos = existing?.photos ?? [];
+  if (values.photos !== undefined) { const r = parsePhotos(values.photos); if (r.ok) photos = r.list; else errors.photos = "photos"; }
   if (Object.keys(errors).length) return { errors };
-  return { value: { kind: "physical", title, description: clean(values.description, LIMITS.description, true), status: values.published === undefined ? (existing?.status ?? "published") : values.published === "on" ? "published" : "draft", taxRate, variants } };
+  return { value: { kind: "physical", photos, title, description: clean(values.description, LIMITS.description, true), status: values.published === undefined ? (existing?.status ?? "published") : values.published === "on" ? "published" : "draft", taxRate, variants } };
 }
 export async function saveProduct(ctx, id, value) {
   if (id) { const ok = await ctx.api.store.update(id, value); return ok ? id : null; }

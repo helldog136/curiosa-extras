@@ -186,5 +186,8 @@
   "fCountry": "Pays de livraison",
   "countryPick": "Choisissez un pays",
   "errCountry": "Choisissez un pays où nous livrons.",
-  "zone_home_form": "Dans votre pays"
+  "zone_home_form": "Dans votre pays",
+  "fPhotos": "Photos",
+  "errPhotoKept": "Une photo n'a pas pu être gardée. Ajoutez-la de nouveau.",
+  "err_photos": "Vérifiez les photos : 8 images au plus."
 }

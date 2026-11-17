@@ -15,6 +15,10 @@
 
 No weight-based rates or carriers (online payment is a separate extension, see `payment-mollie`), no discount codes, no photos, no download or ticket products, no customer data cleanup, no link with the Contacts module. The administration page has not been checked against the ergonomics rules in `docs/ERGONOMIE-ADMIN.md`: products open on their own page instead of a dialog, and stock is edited in the product form, not in the list.
 
+## Photos
+
+Up to 8 photos per product (first = cover), each with a short description. Files are kept when saved and released when removed or when the product is deleted.
+
 ## Shipping
 
 The seller chooses: one price for everyone, three fixed zones (your country, Europe, the rest of the world, a zone left empty is not delivered), or no shipping (pickup only, the default, nothing is charged until you decide). In zone mode the customer picks a country in the cart and sees the price before paying. The price is copied into every order.

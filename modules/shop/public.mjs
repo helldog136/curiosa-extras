@@ -10,7 +10,7 @@ const { ORDER_STATES } = await import(`./lib.mjs${v}`);
 const CSS = `.sh{max-width:56rem;display:grid;gap:1rem}.sh *{box-sizing:border-box}
 .sh-grid{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,16rem),1fr))}
 .sh-card{border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-fg);padding:1rem;display:grid;gap:.5rem;align-content:start}
-.sh-card h3{margin:0;font-size:1.05rem;overflow-wrap:anywhere}.sh-muted{color:var(--v-muted);margin:0;overflow-wrap:anywhere}
+.sh-ph{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--v-bg)}.sh-th{display:flex;gap:.4rem;flex-wrap:wrap}.sh-th img{width:3rem;height:3rem;object-fit:cover;border-radius:6px;display:block}.sh-th a{display:block;border-radius:6px}.sh-th a:focus-visible{outline:3px solid var(--v-accent);outline-offset:2px}\n.sh-card h3{margin:0;font-size:1.05rem;overflow-wrap:anywhere}.sh-muted{color:var(--v-muted);margin:0;overflow-wrap:anywhere}
 .sh-var{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
 .sh-btn{min-height:44px;padding:.6rem 1.2rem;font:inherit;font-weight:600;border:1px solid transparent;border-radius:999px;background:var(--v-accent);color:var(--v-accent-fg);cursor:pointer}
 .sh-btn:disabled{opacity:.6;cursor:not-allowed}.sh-btn-quiet{background:transparent;color:var(--v-fg);border-color:var(--v-line)}
@@ -40,7 +40,10 @@ export async function page(ctx, { segments = [] } = {}) {
         + `<span>${esc(v.label || "")} <strong>${esc(formatMoney(v.price, currency, ctx.locale))}</strong>${note ? ` <span class="sh-badge">${esc(note)}</span>` : ""}</span>`
         + `<button class="sh-btn" type="submit"${a.available <= 0 ? " disabled" : ""}>${esc(ctx.t("addToCart"))}</button></form>`);
     }
-    cards.push(`<article class="sh-card"><h3>${esc(p.title)}</h3>${p.description ? `<p class="sh-muted">${esc(p.description)}</p>` : ""}${rows.join("")}</article>`);
+    const photos = p.photos ?? [];
+    const first = photos[0] ? `<img class="sh-ph" src="${esc(photos[0].src)}?c=1.3333_1_0.5_0.5_ffffff" alt="${esc(photos[0].alt || p.title)}" loading="lazy" width="640" height="480">` : "";
+    const more = photos.length > 1 ? `<div class="sh-th">${photos.slice(1, 5).map((x, i) => `<a href="${esc(x.src)}"><img src="${esc(x.src)}?c=1_1_0.5_0.5_ffffff" alt="${esc(x.alt || `${p.title} ${i + 2}`)}" loading="lazy" width="48" height="48"></a>`).join("")}</div>` : "";
+    cards.push(`<article class="sh-card">${first}${more}<h3>${esc(p.title)}</h3>${p.description ? `<p class="sh-muted">${esc(p.description)}</p>` : ""}${rows.join("")}</article>`);
   }
   const cfg = await Ship.readConfig(ctx);
   const shipData = JSON.stringify({ mode: cfg.mode, info: cfg.pickupInfo, countries: cfg.mode === "zones" ? Ship.countryOptions(ctx.locale).filter(([c]) => Ship.quote(cfg, c).ok) : [] });

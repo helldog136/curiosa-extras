@@ -8,6 +8,7 @@ export const DAY = 24 * HOUR;
 
 export const LIMITS = {
   products: 500, variantsPerProduct: 20, title: 120, description: 2000, label: 60, address: 400, name: 80, email: 200, note: 1000, tracking: 80,
+  photos: 8, photoAlt: 120,   // photos per product, characters of the description of a photo
   maxPerLine: 5,            // pieces of one variant in one cart (a "single" variant is always 1)
   linesPerCart: 20,
   cartsPerVisitorPerHour: 6, // new carts

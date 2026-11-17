@@ -7,7 +7,7 @@
   },
   "version": "0.1.0",
   "menuGroup": "tools",
-  "minCore": "0.12.0",
+  "minCore": "0.14.0",
   "description": {
     "en": "Experimental prototype, not for release. A small shop with a catalogue and stock kept by reservations. The cart holds items for 5 minutes. Orders are paid by hand.",
     "fr": "Prototype expérimental, pas destiné à être publié. Une petite boutique avec un catalogue et un stock tenu par réservations. Le panier garde les articles 5 minutes. Les commandes se paient à la main."
@@ -26,6 +26,7 @@
   },
   "permissions": [
     "admin",
+    "files",
     "mail",
     "pages",
     "routes",
