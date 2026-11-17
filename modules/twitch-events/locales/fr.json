@@ -397,5 +397,8 @@
   "rw_e_need_scope": "Autorisez le Bot Twitch à gérer vos récompenses, puis réessayez.",
   "rw_e_need_connect": "Connectez votre chaîne dans le Bot Twitch, puis réessayez.",
   "rw_e_need_reconnect": "Reconnectez votre chaîne dans le Bot Twitch, puis réessayez.",
-  "rw_e_twitch": "Twitch n'a pas répondu. Réessayez dans un moment."
+  "rw_e_twitch": "Twitch n'a pas répondu. Réessayez dans un moment.",
+  "moved_banner": "Activité Twitch vit maintenant dans Overlay alertes (OBS) : journal, dock, réactions et réglages ont été repris.",
+  "moved_link": "Ouvrir Overlay alertes (OBS) →",
+  "moved_remove": "Collez la nouvelle adresse du dock dans OBS, puis retirez cette extension depuis son onglet Général."
 }

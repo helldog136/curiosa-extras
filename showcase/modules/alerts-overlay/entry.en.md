@@ -5,7 +5,7 @@ A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, 
 - Add the overlay address as a browser source in OBS.
 - Send a test alert with one button.
 - Choose the accent colour and how many seconds an alert stays.
-- Show your Twitch events with Twitch activity: one text, duration and minimum for each type.
+- With Twitch, receive your events in a journal, with an OBS dock. Each type and each reward has its reaction.
 - Alerts wait their turn, and gifts or follows in a burst become one alert.
 - Give each type a picture, a sound and its own way of entering, and preview them before going live.
 - Give each type your own sound file.
@@ -34,7 +34,6 @@ A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, 
 ## Works well with
 
 - [My Twitch channel](entry:twitch-channel)
-- [Twitch activity](entry:twitch-events)
 - [YouTube live actions](entry:youtube-live-actions)
 
 ## Good to know

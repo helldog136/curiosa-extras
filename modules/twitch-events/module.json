@@ -6,13 +6,13 @@
     "en": "Twitch activity",
     "fr": "Activité Twitch"
   },
-  "version": "1.12.0",
+  "version": "1.13.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 40,
   "platform": "twitch",
   "description": {
-    "en": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",
-    "fr": "Reçoit les follows, abonnements, bits, raids et trains de la hype, tient un journal et donne un dock OBS."
+    "en": "Bridge version: hands its journal and settings over once, then stops listening. Remove it afterwards.",
+    "fr": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter. Retirez-la ensuite."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -25,7 +25,6 @@
     "admin",
     "routes",
     "topics",
-    "mcp",
     "mail",
     "instances.setup"
   ],
@@ -231,130 +230,16 @@
       ]
     }
   ],
-  "mcp": [
-    {
-      "name": "twitch_events_list",
-      "readOnly": true,
-      "default": false,
-      "description": "List the latest events of the Twitch channel from the journal, newest first: follow, sub, resub, gift, cheer (bits), raid, online, offline, hype_begin, hype_progress, hype_end, redeem. Each has id, type, at (ISO date), name, and when relevant tier, months, count, amount (bits), viewers, text (the viewer's public message), level. Use it to answer 'who followed or subscribed lately?'. Test lines are left out unless includeTests is true.",
-      "input": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "follow",
-              "sub",
-              "resub",
-              "gift",
-              "cheer",
-              "raid",
-              "online",
-              "offline",
-              "hype_begin",
-              "hype_progress",
-              "hype_end",
-              "redeem"
-            ],
-            "description": "Only this kind of event."
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100,
-            "description": "How many lines (20 by default)."
-          },
-          "sinceMinutes": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 525600,
-            "description": "Only events from the last N minutes."
-          },
-          "includeTests": {
-            "type": "boolean",
-            "description": "Also return test and replay lines."
-          }
-        }
-      }
-    },
-    {
-      "name": "twitch_events_status",
-      "readOnly": true,
-      "default": false,
-      "description": "Tell whether the site is really listening to Twitch: the overall state (listening, pending, need_more = a Twitch permission to give again, need_reconnect, site_private, ...), the Twitch permissions still missing, the state and last event of each type, the number of journal lines, the retention, whether the alerts overlay is installed, the health (a problem, since when, whether the owner was warned by e-mail) and the last catch-up after a gap. Use it first when the owner says 'my alerts did not show'.",
-      "input": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "twitch_event_replay",
-      "default": false,
-      "description": "Show an alert again or test one. Give 'id' (a line of the journal, see twitch_events_list) to replay it with the same data, flagged as a replay; or 'testType' (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) to send a realistic sample with an invented name. Works even if the type is switched off. At most 10 replays and 20 tests a minute; replaying the same line twice within 3 seconds sends it once. It writes only a flagged line of the journal; nothing is deleted.",
-      "input": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "maxLength": 100,
-            "description": "Id of the journal line to replay."
-          },
-          "testType": {
-            "type": "string",
-            "enum": [
-              "follow",
-              "sub",
-              "resub",
-              "gift",
-              "cheer",
-              "raid",
-              "online",
-              "offline",
-              "hype",
-              "redeem"
-            ],
-            "description": "Type of sample to send."
-          }
-        }
-      }
-    },
-    {
-      "name": "twitch_events_rewards",
-      "readOnly": true,
-      "default": false,
-      "description": "List the channel point rewards of the Twitch channel with their reaction on the alerts overlay: id, title, cost, whether the reward is enabled or paused on Twitch, whether it was deleted on Twitch but still has a reaction (deletedOnTwitch), whether it shows an alert (alert), whether it has its own reaction (ownReaction: files, order, sound) or shows the reaction of all the other rewards. Also the reaction of all the other rewards, and whether a new reward can be created from the admin (with the Twitch bot). Use an id or the exact title as reward in reaction_set of the alerts overlay.",
-      "input": {
-        "type": "object",
-        "properties": {}
-      }
-    }
-  ],
-  "i18n": {
-    "fr": {
-      "mcp.twitch_events_list": "Liste les derniers événements de la chaîne Twitch (follows, abonnements, cadeaux, bits, raids…), du plus récent au plus ancien.",
-      "mcp.twitch_events_status": "Dit si le site écoute vraiment Twitch : état, autorisations manquantes, dernier événement de chaque type.",
-      "mcp.twitch_event_replay": "Rejoue une alerte du journal avec les mêmes données, ou envoie un exemple de test d'un type. Borné, ne supprime rien.",
-      "mcp.twitch_events_rewards": "Liste les récompenses de points de chaîne avec leur réaction sur l'overlay d'alertes : titre, coût, état sur Twitch, alerte activée, réaction propre ou celle des autres récompenses."
-    }
-  },
   "offers": [
     {
-      "service": "twitch.journal",
-      "version": 1,
-      "label": {
-        "en": "The journal of Twitch events: marks a line whose viewer text was hidden or held",
-        "fr": "Le journal des événements Twitch : marque une ligne dont le texte du public a été masqué ou retenu"
-      }
-    },
-    {
-      "service": "alerts.reaction.editor",
+      "service": "twitch.events.handover",
       "version": 1,
       "readOnly": [
-        "editor"
+        "export"
       ],
       "label": {
-        "en": "The place where the reaction of each Twitch event is set (for the Alerts overlay)",
-        "fr": "L'endroit où se règle la réaction de chaque événement Twitch (pour Overlay alertes)"
+        "en": "Hands the journal and settings of Twitch activity over to Alerts overlay (OBS) 1.18.0, once",
+        "fr": "Donne une fois le journal et les réglages d'Activité Twitch à Overlay alertes (OBS) 1.18.0"
       }
     }
   ]
