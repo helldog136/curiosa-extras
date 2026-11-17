@@ -7,6 +7,7 @@ import { fakeCtx } from "./helpers/fakeCtx.mjs";
 import { problemsOf, problemsOfList } from "./helpers/socialStatContract.mjs";
 import { parseManifest } from "@/core/modules/manifest";
 import { makeConnector, connectorApi } from "./helpers/fakeYoutube.mjs";
+import { fakeResolver, PUBLIC_V4, PUBLIC_V6 } from "./helpers/fakeResolver.mjs";
 
 const root = new URL("../modules/", import.meta.url).pathname;
 const readJson = (p) => JSON.parse(fs.readFileSync(`${root}${p}`, "utf8"));
@@ -15,8 +16,10 @@ const realFetch = globalThis.fetch, realNow = Date.now;
 const calls = [];
 let answer = () => new Response("{}", { status: 404 });
 const reply = (status, body = {}, headers = {}) => new Response(status === 204 || (status >= 300 && status < 400) ? null : JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
-beforeEach(() => { calls.length = 0; answer = () => reply(404); globalThis.fetch = async (url, init = {}) => { calls.push({ url: String(url), init }); const r = await answer(String(url), init); if (r instanceof Error) throw r; return r; }; });
-afterEach(() => { globalThis.fetch = realFetch; Date.now = realNow; });
+// Mastodon checks where a server name leads before calling it: the invented servers resolve to public addresses here.
+const publicNames = () => fakeResolver({ "mastodon.example": [PUBLIC_V4, PUBLIC_V6], "autre.example": PUBLIC_V4, "mastodon.social": PUBLIC_V4 });
+beforeEach(() => { calls.length = 0; answer = () => reply(404); if (mods?.mastodon) mods.mastodon.mod.hooks.resolve = publicNames(); globalThis.fetch = async (url, init = {}) => { calls.push({ url: String(url), init }); const r = await answer(String(url), init); if (r instanceof Error) throw r; return r; }; });
+afterEach(() => { globalThis.fetch = realFetch; Date.now = realNow; if (mods?.mastodon) mods.mastodon.mod.hooks.resolve = null; });
 
 const YT = "UC" + "a".repeat(22);
 // Chaque plateforme : réglages, adresse appelée, réponse correcte → éléments attendus, et le code HTTP qui doit donner chaque erreur.

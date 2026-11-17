@@ -1,5 +1,7 @@
 // Mastodon — réseau social de Curiosa. Il fournit son bouton au cœur (sujet `social.link`, pour l'en-tête du site) et ses propres chiffres (sujet `social.stat`).
 // Réglage : un identifiant ou l'adresse du profil. Rien n'est affiché tant qu'il n'est pas réglé ; seule une adresse https du bon site est acceptée.
+import { lookup as dnsLookup } from "node:dns/promises";
+import { isIP } from "node:net";
 // ═══ DÉBUT du bloc « adresse du profil » — GÉNÉRÉ par scripts/social-networks.mjs (node scripts/gen-social.mjs) : ne le modifiez pas à la main ═══
 const NAME = "Mastodon";
 const ICON = "mastodon";
@@ -122,8 +124,8 @@ const whyNot = (ctx, item, r) => ctx.t(item.error === "config" ? `err_config_${r
 const wanted = (ctx) => ctx.setting("trackStats") !== false;   // activé par défaut : des chiffres publics, aucune clé à fournir
 
 /**
- * Adresse publique acceptable : https uniquement, sans identifiants ni port, et jamais une machine locale ou privée (le serveur du site va l'appeler : pas de requête vers le réseau interne).
- * Même garde-fou que le planning ; les redirections sont suivies à la main, chaque étape revérifiée.
+ * Public address check: https only, no credentials or port, never a local or private machine (the site's server calls it: no request to the internal network).
+ * Redirects are followed by hand and every hop is checked again, including the addresses its name resolves to (see `resolvesToPublic`).
  */
 export function isPublicHttpsUrl(value) {
   let url;
@@ -131,13 +133,64 @@ export function isPublicHttpsUrl(value) {
   if (url.protocol !== "https:" || url.username || url.password || url.port) return false;
   const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false;
-  if (host.includes(":")) return !/^(::1?$|f[cd]|fe80)/.test(host);   // IPv6 : pas de boucle locale / privée / lien local
-  const ip = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ip) {
-    const [a, b] = [Number(ip[1]), Number(ip[2])];
-    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224) return false;
-  }
+  if (isIP(host)) return !isPrivateAddress(host);
   return host.includes(".");
+}
+
+/** The 8 groups of an IPv6 address as numbers (null if unreadable). Handles "::" and a trailing IPv4 part (::ffff:1.2.3.4). */
+function ipv6Groups(a) {
+  let s = a.split("%")[0];
+  const v4 = /(\d+\.\d+\.\d+\.\d+)$/.exec(s);
+  if (v4) {
+    const b = v4[1].split(".").map(Number);
+    s = `${s.slice(0, -v4[1].length)}${((b[0] << 8) | b[1]).toString(16)}:${((b[2] << 8) | b[3]).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [], tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  const parts = [...head, ...Array(Math.max(fill, 0)).fill("0"), ...tail];
+  if (parts.length !== 8 || !parts.every((x) => /^[0-9a-f]{1,4}$/.test(x))) return null;
+  return parts.map((x) => parseInt(x, 16));
+}
+/**
+ * True for any address the site must never call: private, loopback, link-local (169.254.x.x, cloud metadata), shared (100.64.0.0/10), reserved,
+ * documentation, multicast, IPv6 unique local (fc00::/7), link-local (fe80::/10) and every IPv6 form that wraps an IPv4 address.
+ * Only ordinary public unicast addresses pass. An unreadable value is refused.
+ */
+export function isPrivateAddress(ip) {
+  const a = String(ip ?? "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  const v = isIP(a);
+  if (v === 4) {
+    const [p, q, r] = a.split(".").map(Number);
+    return p === 0 || p === 10 || p === 127 || (p === 100 && q >= 64 && q <= 127) || (p === 169 && q === 254) || (p === 172 && q >= 16 && q <= 31)
+      || (p === 192 && q === 0 && (r === 0 || r === 2)) || (p === 192 && q === 88 && r === 99) || (p === 192 && q === 168) || (p === 198 && (q === 18 || q === 19))
+      || (p === 198 && q === 51 && r === 100) || (p === 203 && q === 0 && r === 113) || p >= 224;
+  }
+  if (v === 6) {
+    const g = ipv6Groups(a);
+    if (!g) return true;
+    // an IPv4 address carried in IPv6 (mapped ::ffff:a.b.c.d, compatible ::a.b.c.d, translated 64:ff9b::/96): judged as that IPv4 address
+    const embedded = g.slice(0, 5).every((x) => x === 0) && (g[5] === 0xffff || g[5] === 0) || (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0));
+    if (embedded && !(g[5] === 0 && g[6] === 0 && g[7] <= 1)) return isPrivateAddress(`${g[6] >> 8}.${g[6] & 255}.${g[7] >> 8}.${g[7] & 255}`);
+    if ((g[0] & 0xe000) !== 0x2000) return true;   // only global unicast (2000::/3) is public: ::, ::1, fc00::/7, fe80::/10, ff00::/8… are refused
+    return (g[0] === 0x2001 && g[1] === 0x0db8) || (g[0] === 0x2001 && g[1] < 0x200) || g[0] === 0x2002 || (g[0] === 0x3fff && g[1] < 0x1000);   // documentation, Teredo and protocol range, 6to4
+  }
+  return true;
+}
+
+/** For tests: replaces the name resolution (never a real network). `resolve(host)` gives a list of addresses (strings or { address }). */
+export const hooks = { resolve: null };
+const systemResolve = (host) => dnsLookup(host, { all: true, verbatim: true });
+/** "public" when every address the name resolves to is public, "private" when one of them is not, "unknown" when the name does not resolve. */
+async function resolvesToPublic(host) {
+  const h = String(host).toLowerCase().replace(/^\[|\]$/g, "");
+  if (isIP(h)) return isPrivateAddress(h) ? "private" : "public";
+  let found;
+  try { found = await (hooks.resolve ?? systemResolve)(h); } catch { return "unknown"; }
+  const list = (Array.isArray(found) ? found : [found]).map((x) => (typeof x === "string" ? x : x?.address)).filter(Boolean);
+  if (!list.length) return "unknown";
+  return list.some(isPrivateAddress) ? "private" : "public";
 }
 function targetOf(ctx) {
   const p = profile(ctx.setting("profile"));
@@ -148,10 +201,13 @@ function targetOf(ctx) {
   const host = u.hostname.toLowerCase();
   return { host, acct: m[2] ? `${m[1]}@${m[2]}` : m[1], account: `${m[1]}@${host}`, url: p.url };
 }
+/** The response, or null (unreachable, too many redirects, a redirect to a non-public address), or "private" when the account's own server resolves to a private address. */
 async function getPublic(first) {
   let current = first;
   for (let hop = 0; hop <= 2; hop++) {
     if (!isPublicHttpsUrl(current)) return null;
+    const where = await resolvesToPublic(new URL(current).hostname);
+    if (where !== "public") return where === "private" && hop === 0 ? "private" : null;
     const res = await get(current, { redirect: "manual", headers: { Accept: "application/json", "User-Agent": "Curiosa-statistics" } });
     const location = res.status >= 300 && res.status < 400 ? res.headers?.get?.("location") : null;
     if (!location) return res;
@@ -162,6 +218,7 @@ async function getPublic(first) {
 /** `GET /api/v1/accounts/lookup?acct=…` sur le serveur du compte : abonnés et publications. */
 const measure = (ctx, t) => lookup(`${t.host}|${t.acct.toLowerCase()}`, async () => {
   const res = await getPublic(`https://${t.host}/api/v1/accounts/lookup?acct=${encodeURIComponent(t.acct)}`);
+  if (res === "private") return { error: "config", reason: "private" };
   if (!res) return { error: "network" };
   if (res.status === 429) return { error: "rate" };
   if (res.status === 401 || res.status === 403) return { error: "hidden" };   // serveur qui n'ouvre pas ses chiffres au public
