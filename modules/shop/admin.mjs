@@ -7,6 +7,7 @@ const S = await import(`./stock.mjs${v}`);
 const O = await import(`./orders.mjs${v}`);
 const P = await import(`./payments.mjs${v}`);
 const Mail = await import(`./mail.mjs${v}`);
+const Ship = await import(`./shipping.mjs${v}`);
 
 const can = (ctx, right) => typeof ctx.can === "function" && ctx.can(right) === true;
 const one = (x) => (typeof x === "string" ? x : Array.isArray(x) ? String(x[0] ?? "") : "");
@@ -17,7 +18,7 @@ export async function adminPanel(ctx, { query } = {}) {
   const q = query && typeof query === "object" ? query : {};
   if (idOk(one(q.order))) return orderSheet(ctx, one(q.order));
   // A product or its stock is edited in a window above the list (the list keeps its search and place); the address stays the source of truth.
-  const dialog = one(q.edit) === "new" || idOk(one(q.edit)) ? await productDialog(ctx, one(q.edit)) : idOk(one(q.stock)) ? await stockDialog(ctx, one(q.stock)) : [];
+  const dialog = one(q.edit) === "new" || idOk(one(q.edit)) ? await productDialog(ctx, one(q.edit)) : idOk(one(q.stock)) ? await stockDialog(ctx, one(q.stock)) : Ship.MODES.includes(one(q.shipping)) ? await shippingDialog(ctx, one(q.shipping)) : [];
   return [...dialog, ...(await overview(ctx))];
 }
 
@@ -55,6 +56,7 @@ async function overview(ctx) {
     rows: orders.slice().sort((a, b) => b.at - a.at).map((o) => [`${o.number}${can(ctx, "email.view") ? ` · ${o.customer.name}` : ""}`, { text: ctx.t(`state_${o.state}`), badge: BADGE[o.state] ?? "neutral" }, formatMoney(o.total, o.currency, ctx.locale), o.at.toISOString().slice(0, 10)]),
     rowActions: [{ label: ctx.t("open"), href: "?order={id}" }],
   });
+  blocks.push(...(await shippingSection(ctx, manage, currency)));
   blocks.push({ type: "heading", text: ctx.t("productsTitle") });
   blocks.push({
     type: "table", columns: [ctx.t("colProduct"), ctx.t("colPrice"), ctx.t("colStock"), ctx.t("colStatus")], searchable: true, filters: [{ column: 3 }], truncate: [0], pageSize: 50,
@@ -64,6 +66,35 @@ async function overview(ctx) {
   });
   if (manage) blocks.push({ type: "links", items: [{ label: ctx.t("addProduct"), href: "?edit=new", presentation: "dialog" }] });
   return blocks;
+}
+
+/** Where the seller says how delivery is charged: the present setup in one line, and one window per mode (each window shows only what that mode needs). */
+async function shippingSection(ctx, manage, currency) {
+  const cfg = await Ship.readConfig(ctx), money = (c) => formatMoney(c, currency, ctx.locale);
+  let summary;
+  if (cfg.mode === "flat") summary = ctx.t("shipSummaryFlat", { price: money(cfg.flat) });
+  else if (cfg.mode === "zones") summary = ctx.t("shipSummaryZones", { zones: Ship.ZONES.map((z) => `${ctx.t(`zone_${z}`, { country: cfg.homeCountry })} ${cfg.prices[z] === null ? ctx.t("shipUndelivered") : money(cfg.prices[z])}`).join(" · ") });
+  else summary = ctx.t("shipSummaryNone");
+  const blocks = [{ type: "heading", text: ctx.t("shippingTitle") }];
+  if (!cfg.configured) blocks.push({ type: "banner", tone: "warning", text: ctx.t("shipNotSetUp") });
+  blocks.push({ type: "markdown", text: `**${summary}**` });
+  if (manage) blocks.push({ type: "links", items: Ship.MODES.map((m) => ({ label: ctx.t(`shipMode_${m}`), href: `?shipping=${m}`, presentation: "dialog" })) });
+  return blocks;
+}
+
+async function shippingDialog(ctx, mode) {
+  if (!can(ctx, "manage")) return [];
+  const cfg = await Ship.readConfig(ctx), cents = (c) => (c === null || c === undefined ? "" : centsToText(c));
+  const tax = { name: "taxRate", label: ctx.t("fShipTax"), kind: "number", min: 0, max: 100, step: 0.01, unit: "%", value: cfg.taxRate ? String(cfg.taxRate / 100) : "", folded: true };
+  const fields = [{ name: "mode", kind: "hidden", value: mode }];
+  if (mode === "flat") fields.push({ name: "flat", label: ctx.t("fShipPrice"), required: true, value: cfg.mode === "flat" ? cents(cfg.flat) : "", example: "5.00" }, tax);
+  if (mode === "zones") fields.push(
+    { name: "homeCountry", label: ctx.t("fHomeCountry"), kind: "select", required: true, value: cfg.homeCountry, options: [{ value: "", label: ctx.t("countryPick") }, ...Ship.countryOptions(ctx.locale).map(([c, n]) => ({ value: c, label: n }))] },
+    { name: "price_home", label: ctx.t("zone_home_form"), value: cents(cfg.prices.home), example: "5.00", help: ctx.t("shipEmptyHelp") },
+    { name: "price_europe", label: ctx.t("zone_europe"), value: cents(cfg.prices.europe), example: "9.00", help: ctx.t("shipEmptyHelp") },
+    { name: "price_world", label: ctx.t("zone_world"), value: cents(cfg.prices.world), example: "15.00", help: ctx.t("shipEmptyHelp") }, tax);
+  if (mode === "none") fields.push({ name: "pickupInfo", label: ctx.t("fPickupInfo"), kind: "textarea", value: cfg.pickupInfo, example: ctx.t("exPickup") });
+  return [{ type: "adminForm", presentation: "dialog", action: "saveShipping", cancelHref: "?", title: ctx.t(`shipMode_${mode}`), submitLabel: ctx.t("saveShipping"), fields }];
 }
 
 async function productDialog(ctx, id) {
@@ -116,7 +147,7 @@ async function orderSheet(ctx, id) {
   if (o.state === "paid_to_resolve") blocks.push({ type: "banner", tone: "warning", text: ctx.t("resolveHelp") });
   if (o.flag) blocks.push({ type: "banner", tone: "warning", text: ctx.t(`flag_${o.flag}`) });
   blocks.push({ type: "table", columns: [ctx.t("colProduct"), ctx.t("colQty"), ctx.t("colTotal")], rows: o.lines.map((l) => [`${l.title}${l.label ? ` (${l.label})` : ""}`, String(l.qty), money(l.sum)]) });
-  blocks.push({ type: "markdown", text: `**${ctx.t("total")}** ${money(o.total)}${o.includedTax ? ` · ${ctx.t("includesTax", { amount: money(o.includedTax) })}` : ""}  \n**${ctx.t("colState")}** ${ctx.t(`state_${o.state}`)}${can(ctx, "email.view") ? `  \n**${ctx.t("fEmail")}** ${o.customer.email}  \n**${ctx.t("fAddress")}** ${o.customer.address.replace(/\n/g, ", ")}` : ""}${o.tracking ? `  \n**${ctx.t("trackingNumber")}** ${o.tracking}` : ""}${o.payment ? `  \n**${ctx.t("paymentLine")}** ${o.payment.providerName} (${ctx.t(o.payment.mode === "live" ? "modeLive" : "modeTest")}) · ${ctx.t(`payState_${o.payment.state}`)}` : ""}` });
+  blocks.push({ type: "markdown", text: `**${ctx.t("total")}** ${money(o.total)}${o.includedTax ? ` · ${ctx.t("includesTax", { amount: money(o.includedTax) })}` : ""}  \n${o.shipping ? `**${ctx.t("shipLabel")}** ${o.shipping.pickup ? ctx.t("shipPickup") : `${o.shipping.price === 0 ? ctx.t("shipFree") : money(o.shipping.price)}${o.shipping.country ? ` (${o.shipping.country})` : ""}`}  \n` : ""}**${ctx.t("colState")}** ${ctx.t(`state_${o.state}`)}${can(ctx, "email.view") ? `  \n**${ctx.t("fEmail")}** ${o.customer.email}  \n**${ctx.t("fAddress")}** ${o.customer.address ? o.customer.address.replace(/\n/g, ", ") : ctx.t("shipPickup")}` : ""}${o.tracking ? `  \n**${ctx.t("trackingNumber")}** ${o.tracking}` : ""}${o.payment ? `  \n**${ctx.t("paymentLine")}** ${o.payment.providerName} (${ctx.t(o.payment.mode === "live" ? "modeLive" : "modeTest")}) · ${ctx.t(`payState_${o.payment.state}`)}` : ""}` });
   if (!manage) return blocks;
   if (o.state === "awaiting_payment" || o.state === "expired") blocks.push({ type: "adminForm", action: "markPaid", submitLabel: ctx.t("markPaid"), fields: [{ name: "id", kind: "hidden", value: o.id }] });
   blocks.push({ type: "markdown", text: ctx.t("linkWarning") });
@@ -139,6 +170,13 @@ export const adminActions = {
     if (r.errors) return { errors: Object.fromEntries(Object.entries(r.errors).map(([k, code]) => [k, ctx.t(`err_${code.startsWith("line") ? "variants" : code === "too many" ? "variants" : code}`, { line: code.replace("line ", "") })])) };
     const saved = await D.saveProduct(ctx, id || null, r.value);
     return saved ? { ok: ctx.t("saved") } : fail(ctx, "saveFailed");     // no redirect: the core closes the window on a success and marks the saved row
+  },
+  async saveShipping(ctx, values) {
+    if (!can(ctx, "manage")) return fail(ctx, "noRight");
+    const r = Ship.normaliseConfig(String(values.mode ?? ""), values);
+    if (r.errors) return { errors: Object.fromEntries(Object.entries(r.errors).map(([k, code]) => [k, ctx.t(`errShip_${code}`)])) };
+    await Ship.saveConfig(ctx, r.value);
+    return { ok: ctx.t("saved") };
   },
   async saveStock(ctx, values) {
     if (!can(ctx, "manage") || !idOk(values.id)) return fail(ctx, "noRight");

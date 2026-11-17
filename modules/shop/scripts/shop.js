@@ -1,5 +1,10 @@
 // Shop (EXPERIMENTAL prototype): cart panel. Texts come from the server (data-t); user data is only ever set as text, never as markup.
 (function () {
+  // The page is first server-rendered, then "woken up" by the framework. Touching the content before that makes the framework see a different page than the one it expects,
+  // so everything waits until the page is complete (the cart is an enhancement: nothing is lost by starting a moment later).
+  function whenAwake(fn) { if (document.readyState === "complete") setTimeout(fn, 250); else window.addEventListener("load", function () { setTimeout(fn, 250); }); }
+  whenAwake(start);
+  function start() {
   var root = document.getElementById("shop-cart");
   if (!root) return;
   var base = root.dataset.base, T = {};
@@ -9,6 +14,9 @@
   function money(c) { try { return new Intl.NumberFormat(document.documentElement.lang || undefined, { style: "currency", currency: currency }).format(c / 100); } catch (e) { return (c / 100).toFixed(2) + " " + currency; } }
   function clock(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
   function say(text, bad) { var m = root.querySelector(".sh-msg"); if (m) { m.textContent = text || ""; m.className = "sh-msg" + (bad ? " sh-err" : ""); } }
+  var SHIP = { mode: "none", countries: [], info: "" };
+  try { SHIP = JSON.parse(root.dataset.ship || "{}"); } catch (e) { /* the default: pickup */ }
+  var country = "";
   function render(cart) {
     currency = cart.currency || currency; left = cart.secondsLeft || 0;
     root.textContent = "";
@@ -18,17 +26,32 @@
     cart.lines.forEach(function (l) {
       var b = el("button", { type: "button", "class": "sh-btn sh-btn-quiet", text: T.remove, "aria-label": T.remove + " " + l.title });
       b.addEventListener("click", function () { post("remove", { rid: l.rid }); });
-      ul.appendChild(el("li", {}, [el("span", { text: l.qty + " × " + l.title + (l.label ? " (" + l.label + ")" : "") }), el("span", { text: money(l.sum) }), b]));
+      ul.appendChild(el("li", {}, [el("span", { text: l.qty + " \u00d7 " + l.title + (l.label ? " (" + l.label + ")" : "") }), el("span", { text: money(l.sum) }), b]));
     });
     root.appendChild(ul);
-    root.appendChild(el("p", {}, [el("strong", { text: T.total + " " + money(cart.total) })]));
+    var ship = cart.shipping || { ok: true, price: 0, pickup: true };
+    if (SHIP.mode === "zones") {
+      var sel = el("select", { "class": "sh-in", id: "sh-country", name: "country", "aria-label": T.country });
+      sel.appendChild(el("option", { value: "", text: T.countryPick }));
+      SHIP.countries.forEach(function (c) { var o = el("option", { value: c[0], text: c[1] }); if (c[0] === country) o.selected = true; sel.appendChild(o); });
+      sel.addEventListener("change", function () { country = sel.value; load(); });
+      root.appendChild(el("p", {}, [el("label", { "for": "sh-country", text: T.country }), sel]));
+    }
+    var shipText = ship.ok ? (ship.pickup ? T.shipPickup + (ship.info ? ": " + ship.info : "") : (ship.price === 0 ? T.shipFree : T.shipLabel + " " + money(ship.price))) : (ship.reason === "undelivered" ? T.shipNone : (SHIP.mode === "zones" ? T.countryPick : ""));
+    if (shipText) root.appendChild(el("p", { "class": ship.ok ? "sh-muted" : "sh-err", role: "status", text: shipText }));
+    root.appendChild(el("p", {}, [el("strong", { text: T.total + " " + money(cart.grand != null ? cart.grand : cart.total) })]));
     root.appendChild(el("p", { "class": "sh-muted", id: "sh-left", text: T.left + " " + clock(left) }));
     var f = el("form", { novalidate: "novalidate" });
     [["name", "text", T.name], ["email", "email", T.email]].forEach(function (d) { f.appendChild(field(d[0], d[1], d[2])); });
-    var ta = el("textarea", { "class": "sh-in", id: "sh-address", name: "address", rows: "3", required: "required" });
-    f.appendChild(el("p", {}, [el("label", { "for": "sh-address", text: T.address }), ta, el("span", { "class": "sh-err", id: "sh-err-address", role: "alert" })]));
+    if (SHIP.mode !== "none") {
+      var ta = el("textarea", { "class": "sh-in", id: "sh-address", name: "address", rows: "3", required: "required" });
+      f.appendChild(el("p", {}, [el("label", { "for": "sh-address", text: T.address }), ta, el("span", { "class": "sh-err", id: "sh-err-address", role: "alert" })]));
+    }
+    f.appendChild(el("span", { "class": "sh-err", id: "sh-err-country", role: "alert" }));
     f.appendChild(el("input", { "class": "sh-hp", type: "text", name: "website", tabindex: "-1", autocomplete: "off", "aria-hidden": "true" }));
-    f.appendChild(el("button", { "class": "sh-btn", type: "submit", text: T.order }));
+    var go = el("button", { "class": "sh-btn", type: "submit", text: T.order });
+    if (!ship.ok) go.disabled = true;
+    f.appendChild(go);
     f.addEventListener("submit", function (e) { e.preventDefault(); checkout(f); });
     root.appendChild(f);
     root.appendChild(el("p", { "class": "sh-msg", role: "status" }));
@@ -38,20 +61,20 @@
     var fd = new FormData(); Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
     return fetch(base + "/" + route, { method: "POST", body: fd, credentials: "same-origin", headers: { accept: "application/json" } })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { status: r.status, body: b }; }); })
-      .then(function (r) { if (done) return done(r); if (r.body.cart) render(r.body.cart); if (r.body.reason === "closed") say(T.closed, true); else if (r.body.reason === "sold_out") say(T.sold, true); else if (r.body.reason === "quantity") say(T.qty, true); else if (r.body.reason === "rate") say(T.rate, true); else if (!r.body.ok && r.body.reason) say(T.generic, true); })
+      .then(function (r) { if (done) return done(r); if (r.body.cart) load(); if (r.body.reason === "closed") say(T.closed, true); else if (r.body.reason === "sold_out") say(T.sold, true); else if (r.body.reason === "quantity") say(T.qty, true); else if (r.body.reason === "rate") say(T.rate, true); else if (!r.body.ok && r.body.reason) say(T.generic, true); })
       .catch(function () { say(T.generic, true); });
   }
   function checkout(f) {
-    ["name", "email", "address"].forEach(function (k) { var s = document.getElementById("sh-err-" + k); if (s) s.textContent = ""; });
-    var data = {}; new FormData(f).forEach(function (v, k) { data[k] = v; });
+    ["name", "email", "address", "country"].forEach(function (k) { var s = document.getElementById("sh-err-" + k); if (s) s.textContent = ""; });
+    var data = {}; new FormData(f).forEach(function (v, k) { data[k] = v; }); data.country = country;
     post("checkout", data, function (r) {
       if (r.body.ok && r.body.url) { window.location.href = r.body.url; return; }
       var errs = r.body.errors || {}, first = null;
-      Object.keys(errs).forEach(function (k) { var s = document.getElementById("sh-err-" + k); if (s) { s.textContent = T["err" + k.charAt(0).toUpperCase() + k.slice(1)] || T.generic; first = first || document.getElementById(k === "address" ? "sh-address" : "sh-" + k); } });
+      Object.keys(errs).forEach(function (k) { var s = document.getElementById("sh-err-" + k); if (s) { s.textContent = T["err" + k.charAt(0).toUpperCase() + k.slice(1)] || T.generic; first = first || document.getElementById(k === "address" ? "sh-address" : k === "country" ? "sh-country" : "sh-" + k); } });
       if (first) first.focus(); else { say(r.body.reason === "expired" ? T.expired : r.body.reason === "closed" ? T.closed : T.generic, true); load(); }
     });
   }
-  function load() { return fetch(base + "/cart", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(render).catch(function () {}); }
+  function load() { return fetch(base + "/cart?country=" + encodeURIComponent(country), { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(render).catch(function () {}); }
   document.addEventListener("submit", function (e) {
     var f = e.target; if (!f.classList || !f.classList.contains("sh-add")) return;
     e.preventDefault();
@@ -60,4 +83,5 @@
   });
   timer = setInterval(function () { if (left > 0) { left -= 1; var c = document.getElementById("sh-left"); if (c) c.textContent = T.left + " " + clock(left); if (left === 0) load(); } }, 1000);
   load();
+  }
 })();

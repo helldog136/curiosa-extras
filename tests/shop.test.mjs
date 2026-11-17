@@ -13,6 +13,7 @@ const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
 const def = (await import("../modules/shop/index.mjs")).default;
 const { cleanup } = await import("../modules/shop/index.mjs");
 const L = await import("../modules/shop/lib.mjs");
+const Ship = await import("../modules/shop/shipping.mjs");
 const D = await import("../modules/shop/data.mjs");
 const S = await import("../modules/shop/stock.mjs");
 const C = await import("../modules/shop/cart.mjs");
@@ -28,7 +29,7 @@ function mk({ rights = ["manage", "email.view"], settings = {}, locale = "en", m
   ctx.can = (r) => set.has(r);
   return ctx;
 }
-const MIN = 60_000, T0 = Date.parse("2026-11-16T10:00:00Z");
+const MIN = 60_000, T0 = Date.now();   // "now": the shop compares holds with the real clock, so a fixed date would turn these tests into a calendar bomb
 async function product(ctx, over = {}) {
   const r = D.normaliseProduct({ title: "Plush fox", price: "12.50", stockMode: "tracked", onHand: "3", published: "on", ...over });
   assert.ok(r.value, JSON.stringify(r.errors));
@@ -47,6 +48,12 @@ test("manifest is valid, texts exist in English and French with the same keys", 
   const vars = (s) => (s.match(/\{[a-z]+\}/g) ?? []).sort().join();
   for (const k of Object.keys(en)) assert.equal(vars(en[k]), vars(fr[k]), k);
   assert.match(m.description.en, /xperimental/);
+});
+test("the page script waits until the page is awake before touching it (the framework would otherwise see a different page than the one it expects)", () => {
+  const src = fs.readFileSync(`${DIR}/scripts/shop.js`, "utf8");
+  assert.match(src, /readyState === "complete"/); assert.match(src, /addEventListener\("load"/); assert.match(src, /whenAwake\(start\)/);
+  assert.ok(src.indexOf("whenAwake(start)") < src.indexOf("function start()"), "nothing runs before the page is complete");
+  assert.doesNotMatch(src.slice(0, src.indexOf("function start()")), /getElementById|document\.body|appendChild/, "no DOM access outside start()");
 });
 test("the page script never writes user data as HTML", () => {
   const src = fs.readFileSync(`${DIR}/scripts/shop.js`, "utf8");
@@ -190,6 +197,7 @@ async function ordered(ctx, p, now = T0, form = good) {
 }
 test("checkout validates the form, snapshots prices and tax, holds the pieces 24 h and keeps only token hashes", async () => {
   const ctx = mk({ settings: { currency: "EUR" } });
+  await Ship.saveConfig(ctx, Ship.normaliseConfig("flat", { flat: "0" }).value);      // delivery asks for an address (the default, pickup, does not)
   const p = await product(ctx, { taxRate: "21", price: "12.10" });
   const c = await C.addToCart(ctx, null, lineOf(p), T0);
   const bad = await O.checkout(ctx, c.token, { name: "", email: "x", address: "a" }, T0 + 1000);

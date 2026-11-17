@@ -7,6 +7,7 @@ const D = await import(`./data.mjs${v}`);
 const C = await import(`./cart.mjs${v}`);
 const O = await import(`./orders.mjs${v}`);
 const P = await import(`./payments.mjs${v}`);
+const Ship = await import(`./shipping.mjs${v}`);
 
 const json = (body, status = 200, extra = {}) => Response.json(body, { status, headers: { "cache-control": "no-store", ...extra } });
 const COOKIE = "shop_cart";
@@ -17,8 +18,10 @@ const withCookie = (ctx, token, body, status = 200) => json(body, status, isToke
 
 async function cart(request, ctx) {
   if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
-  const v = await C.viewCart(ctx, cookieOf(request));
-  return json({ ...v, currency: currencyOf(ctx) });
+  const view = await C.viewCart(ctx, cookieOf(request));
+  const cfg = await Ship.readConfig(ctx), country = new URL(request.url).searchParams.get("country") ?? "";
+  const ship = Ship.quote(cfg, country);
+  return json({ ...view, currency: currencyOf(ctx), shipping: ship, grand: ship.ok ? view.total + ship.price : null });
 }
 async function add(request, ctx) {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -55,7 +58,7 @@ async function checkout(request, ctx) {
   const token = cookieOf(request);
   if (!token) return json({ ok: false, reason: "expired" }, 409);
   const provider = await P.pickProvider(ctx, String(f.get("provider") ?? ""));
-  const r = await O.checkout(ctx, token, { name: f.get("name"), email: f.get("email"), address: f.get("address") }, Date.now(), { holdMs: P.holdFor(ctx, provider) });
+  const r = await O.checkout(ctx, token, { name: f.get("name"), email: f.get("email"), address: f.get("address"), country: f.get("country") }, Date.now(), { holdMs: P.holdFor(ctx, provider) });
   if (!r.ok) return json({ ok: false, reason: r.reason, errors: r.errors }, r.errors ? 400 : 409);
   const base = ctx.instance.basePath ? `/${ctx.instance.basePath}` : "";
   const tracking = `${base}/track/${r.token}`;

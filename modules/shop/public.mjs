@@ -4,6 +4,7 @@ const { esc, formatMoney, currencyOf, isToken, num, mailReady } = await import(`
 const D = await import(`./data.mjs${v}`);
 const S = await import(`./stock.mjs${v}`);
 const P = await import(`./payments.mjs${v}`);
+const Ship = await import(`./shipping.mjs${v}`);
 const { ORDER_STATES } = await import(`./lib.mjs${v}`);
 
 const CSS = `.sh{max-width:56rem;display:grid;gap:1rem}.sh *{box-sizing:border-box}
@@ -41,12 +42,14 @@ export async function page(ctx, { segments = [] } = {}) {
     }
     cards.push(`<article class="sh-card"><h3>${esc(p.title)}</h3>${p.description ? `<p class="sh-muted">${esc(p.description)}</p>` : ""}${rows.join("")}</article>`);
   }
-  const t = JSON.stringify({ cart: ctx.t("cartTitle"), empty: ctx.t("cartEmpty"), remove: ctx.t("remove"), total: ctx.t("total"), left: ctx.t("timeLeft"), expired: ctx.t("cartExpired"),
+  const cfg = await Ship.readConfig(ctx);
+  const shipData = JSON.stringify({ mode: cfg.mode, info: cfg.pickupInfo, countries: cfg.mode === "zones" ? Ship.countryOptions(ctx.locale).filter(([c]) => Ship.quote(cfg, c).ok) : [] });
+  const t = JSON.stringify({ shipLabel: ctx.t("shipLabel"), shipFree: ctx.t("shipFree"), shipPickup: ctx.t("shipPickup"), shipNone: ctx.t("shipNone"), country: ctx.t("fCountry"), countryPick: ctx.t("countryPick"), errCountry: ctx.t("errCountry"), cart: ctx.t("cartTitle"), empty: ctx.t("cartEmpty"), remove: ctx.t("remove"), total: ctx.t("total"), left: ctx.t("timeLeft"), expired: ctx.t("cartExpired"),
     name: ctx.t("fName"), email: ctx.t("fEmail"), address: ctx.t("fAddress"), order: ctx.t("placeOrder"), sold: ctx.t("soldOutNow"), errName: ctx.t("errName"), errEmail: ctx.t("errEmail"), errAddress: ctx.t("errAddress"),
     rate: ctx.t("errRate"), generic: ctx.t("errGeneric"), qty: ctx.t("qtyLimit"), closed: ctx.t("closedForMail") });
   const html = `${style()}<div class="sh">${announcement ? `<p class="sh-card" role="status">${esc(announcement)}</p>` : ""}`
     + (cards.length ? `<div class="sh-grid">${cards.join("")}</div>` : `<p class="sh-card">${esc(ctx.t("noProducts"))}</p>`)
-    + `<section id="shop-cart" class="sh-card" aria-live="polite" data-base="${esc(base)}" data-t="${esc(t)}"></section></div>`;
+    + `<section id="shop-cart" class="sh-card" aria-live="polite" data-base="${esc(base)}" data-t="${esc(t)}" data-ship="${esc(shipData)}"></section></div>`;
   return { title: ctx.t("pageTitle"), description: ctx.t("pageDescription"), blocks: [{ type: "html", html }], scripts: ["shop.js"] };
 }
 
@@ -58,7 +61,9 @@ async function trackPage(ctx, token) {
     try { await P.refreshOrder(ctx, order); order = (await D.findOrderByToken(ctx, token)) ?? order; } catch { /* the page still shows what we know */ }
   }
   const money = (c) => formatMoney(c, order.currency, ctx.locale);
-  const lines = order.lines.map((l) => `<li><span>${esc(l.qty)} × ${esc(l.title)}${l.label ? ` (${esc(l.label)})` : ""}</span><span>${esc(money(l.sum))}</span></li>`).join("");
+  const sh = order.shipping;
+  const shipLine = !sh ? "" : sh.pickup ? `<li><span>${esc(ctx.t("shipPickup"))}</span><span></span></li>` : `<li><span>${esc(ctx.t("shipLabel"))}${sh.country ? ` (${esc(sh.country)})` : ""}</span><span>${esc(sh.price === 0 ? ctx.t("shipFree") : money(sh.price))}</span></li>`;
+  const lines = order.lines.map((l) => `<li><span>${esc(l.qty)} × ${esc(l.title)}${l.label ? ` (${esc(l.label)})` : ""}</span><span>${esc(money(l.sum))}</span></li>`).join("") + shipLine;
   const pay = order.payment, waiting = order.state === "awaiting_payment" && order.holdUntil > Date.now();
   const payBlock = !pay || !waiting ? "" : ["failed", "canceled", "expired"].includes(pay.state)
     ? `<p role="status">${esc(ctx.t("payFailed"))}</p><form method="post" action="/m/${esc(ctx.instance.key)}/pay"><input type="hidden" name="t" value="${esc(token)}"><button class="sh-btn" type="submit">${esc(ctx.t("tryAgain"))}</button></form>`

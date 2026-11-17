@@ -5,6 +5,7 @@ const { LIMITS, NEXT_STATES, manualHoldMs, currencyOf, includedTax, clean, valid
 const D = await import(`./data.mjs${v}`);
 const S = await import(`./stock.mjs${v}`);
 const M = await import(`./mail.mjs${v}`);
+const Ship = await import(`./shipping.mjs${v}`);
 const { cartIsLive } = await import(`./cart.mjs${v}`);
 
 const event = (state, now, by = "system") => ({ s: state, at: new Date(now).toISOString(), by });
@@ -23,7 +24,10 @@ export async function checkout(ctx, cartToken, form, now = Date.now(), { holdMs 
   const name = clean(form.name, LIMITS.name), email = clean(form.email, LIMITS.email).toLowerCase(), address = clean(form.address, LIMITS.address, true);
   if (!name) errors.name = "name";
   if (!validEmail(email)) errors.email = "email";
-  if (address.length < 5) errors.address = "address";
+  const cfg = await Ship.readConfig(ctx);
+  const ship = Ship.quote(cfg, String(form.country ?? ""));
+  if (!ship.ok) errors.country = ship.reason === "undelivered" ? "undelivered" : "country";
+  if (!ship.pickup && address.length < 5) errors.address = "address";   // a pickup order needs no address
   if (Object.keys(errors).length) return { ok: false, errors };
 
   const lines = [];
@@ -37,10 +41,12 @@ export async function checkout(ctx, cartToken, form, now = Date.now(), { holdMs 
     lines.push({ rid: l.rid, productId: product.id, variantId: variant.id, kind: product.kind, title: product.title, label: variant.label, qty: l.qty, unit: variant.price, sum, taxRate: product.taxRate ?? 0, includedTax: lineTax });
     total += sum; tax += lineTax;
   }
+  const shipping = { mode: ship.mode, zone: ship.zone ?? null, country: ship.country ?? "", pickup: ship.pickup, price: ship.price, includedTax: ship.tax };
+  total += ship.price; tax += ship.tax;                      // the price is copied: a later change of the shipping setup never touches this order
   const holdUntil = now + (holdMs ?? manualHoldMs(ctx));
   const token = newToken();
   const orderId = await D.addOrder(ctx, {
-    number: newNumber(now), state: "awaiting_payment", provider: "manual", currency: currencyOf(ctx), lines, total, includedTax: tax,
+    number: newNumber(now), state: "awaiting_payment", provider: "manual", currency: currencyOf(ctx), lines, shipping, total, includedTax: tax,
     customer: { name, email, address }, holdUntil, payment: null, flag: "", paidEventIds: [], tracking: "", privateNote: "", history: [event("awaiting_payment", now, "customer")], lang: ctx.locale,
   }, token);
   for (const l of lines) await S.extend(ctx, l.rid, holdUntil, now, { orderId });

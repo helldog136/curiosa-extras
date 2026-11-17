@@ -22,6 +22,7 @@
 | D15 | **Every shop owner has their own contract and their own keys with each payment provider.** There is no Curiosa platform account, no commission and no money passing through the project or its servers (Connect / OAuth marketplace modes are refused: they would need a central application with legal duties). A provider module asks for the owner's own key (a secret setting), starts in test mode, and the owner switches to the live key themselves. | Owner, from self-hosting |
 | D16 | **First provider is validated against a fake provider server** (no account, no key); a real test-mode run is a later step and needs the owner's own free test account entered through a secure form. **A public https address is a prerequisite**, handled like the Twitch activity module: no install gate in the core (none exists), the module shows a clear blocking state (site not reachable, it needs a public secure address) and refuses live mode until `ctx.api.siteUrl` is a public https address. Test mode works anywhere, and the polling fallback covers the missing notifications. | Owner |
 | D17 | **No e-mail, no shop.** The shop is closed (no catalogue page to buy from, no cart, no order) while the site cannot send e-mail; the administration says so with a link to the e-mail settings, and the shop opens again by itself. Orders already placed stay followable. The check is `ctx.api.mail.configured()` (a server is set up); a later send failure is for the e-mail delivery to handle. The e-mails themselves are built (section 16). | Owner |
+| D18 | **Shipping is chosen by the seller, in three modes**, with nothing mandatory: **one price** for everybody, **three fixed zones** (the seller's own country, Europe, the rest of the world; a zone left empty is not delivered), or **no shipping** (pickup only, with an optional note on how to pick up; the default, so that nothing is charged and no address is asked until the seller says so). The customer chooses a country in the cart only in zone mode, sees the price before paying; the price is copied into each order. Editable zones, weight-based rates and carriers are left for later. | Owner |
 | D6 | **Prices are tax-inclusive.** The seller enters their own tax rates (a small list in the shop settings, e.g. "Standard", "Reduced", "None"); each product or variant picks one. The module shows the included tax amount on the order for information only, with no per-country rules, and states no legal conclusion. Exact rounding rules and invoice wording need a human accounting review. | Owner |
 
 ## 2. What the core already gives us (read, not yet tested)
@@ -398,3 +399,33 @@ An empty stock field was read as zero and would have emptied the stock silently 
 ## 18. Upload limits of AI assistants (2026-11-16)
 
 Not a shop topic, but it came up while planning product photos. The analysis and the request for the core are in [CORE-UPLOAD-LIMITS.md](CORE-UPLOAD-LIMITS.md): the hourly counters of an access can already be reset and changed; the 3 MB image size and the daily site quota (100 images or 60 MB per 24 hours) cannot, and nothing can be lifted for a few minutes. A reset of the daily count and a time-boxed, owner-only lift are proposed there, as a change for the core repository (read, not run, not applied). Product photos in the shop do not depend on it: they would be sent from the product window with its own file field, not through an assistant.
+
+## 19. Shipping (lot 1 of the V1 plan, 2026-11-17)
+
+Code: `modules/shop/shipping.mjs`, hooks in `orders.mjs`, `routes.mjs`, `public.mjs`, `admin.mjs`, `scripts/shop.js`; tests `tests/shop-shipping.test.mjs`.
+
+### What exists
+
+- **Setup in the administration**, as a "Shipping" section above the products: the present setup in one line, a warning until it has been chosen, and three links that each open **a window showing only what that mode needs** (one price: 1 field; by zone: your country and three prices, 4 visible fields; no shipping: one note). An optional tax rate included in the shipping (for information) is under "More options".
+- **In the cart:** a country list (only in zone mode, only the countries that are delivered, named in the language of the page), the shipping line, and the total to pay; the button waits for a country that is delivered. A country nobody delivers to is not in the list, and is refused with a clear error if someone forces it.
+- **In the order:** the price is copied (mode, zone, country, price, tax), the total includes it, the online payment asks for the whole amount, and the tracking page, the owner's order sheet and the confirmation e-mail all show it. A pickup order stores no address unless one was typed.
+- **Zones:** "Europe" = the EU, the rest of the EEA, the United Kingdom, Switzerland, the micro-states, the western Balkans, Moldova and Ukraine (a plain list in the code, tested for consistency with the country list); everything else is "the rest of the world"; the seller's own country is always the home zone, even outside Europe.
+
+### Bugs found by the work
+
+- Two older tests depended on **the date of the day** (a fixed date that had become the past): they would have failed from the next day on. Their "now" is now the real now.
+- Starting the cart script before the framework had "woken up" the page made it see a different page than the one it expected (the browser console showed a hydration warning, visible as a red "1 Issue" badge in development mode, only on the shop page). The script now waits for the page to be complete; checked in the real core: no warning with the script running.
+- The first zone price was labelled "Inside …" at first setup (the label followed a country not chosen yet): it now reads "In your country".
+
+### Checked
+
+- 11 new tests (and the rest of the suite) pass, including the core's conformance and ergonomics check. Three deliberate defects are caught: shipping missing from the total, an undelivered zone accepted at price 0, the page offering every country.
+- **In the real core**: the warning "Shipping is not set up" and the pickup-only line before any setup; the "By zone" window with a country list, three prices and the rest of the world left empty; the summary after saving; on the shop page, in desktop and phone width, the country list without the United States, France giving shipping 9.00 and total 11.00 with a Sticker at 2.00, Belgium giving 5.00; an empty form refused under the fields (the address is needed for a delivery); the order placed, its tracking page showing "Shipping (BE)" and the total, and the owner's list showing the total with the shipping. Looked at: the zones window, the cart with the country at 1280 and 390 px.
+
+### Not checked, and left out
+
+The "no shipping" and "one price" windows in the real core (only tested as data); the French pages in the real core; the dark administration; free shipping above an amount; editable zones; weight-based rates; carriers; the shipping tax rate beyond a single rate; a country list in a language other than English or French (names come from the platform).
+
+### Seen in passing (not caused by the shop)
+
+The core's development server (Next.js 16.4.1) prints, on every start, a notice that this version "is affected by a known security vulnerability" with a command to upgrade, and the notice is also shown as an "Insight" badge on every page in development mode. I did not read the advisory and did not upgrade anything; it is for whoever maintains the core to look at.
