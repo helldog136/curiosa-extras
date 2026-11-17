@@ -279,10 +279,11 @@ test("tools for assistants: read the voice and moderation, change them (bounded)
 });
 
 test("manifest: 1.8.0, optional journal, video settings (six, own tab), viewers tab, FR and EN texts in parity", () => {
-  assert.equal(manifest.version, "1.17.0");
-  assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.journal", true], ["alerts.reaction.editor", true]]);
+  assert.equal(manifest.version, "1.18.0");
+  // (1.18.0) the Twitch part is inside: every Twitch need is optional (a site without Twitch installs nothing more)
+  assert.deepEqual(manifest.requires.map((r) => [r.service, r.optional]), [["twitch.api", true], ["twitch.live", true], ["twitch.rewards", true], ["twitch.events.handover", true]]);
   assert.equal(manifest.settings.filter((s) => s.type === "video" && s.tab === "media").length, 6);
-  assert.deepEqual(manifest.tabs.map((t) => t.id), ["twitch", "viewers", "media"]);
+  assert.deepEqual(manifest.tabs.map((t) => t.id), ["twitch", "rewards", "viewers", "media"]);
   assert.ok(manifest.privacy.en.length <= 500 && manifest.privacy.fr.length <= 500);
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   assert.deepEqual(Object.keys(en).sort(), Object.keys(fr).sort());

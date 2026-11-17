@@ -4,26 +4,29 @@
     {
       "id": "alerts-overlay",
       "name": "Alerts overlay (OBS)",
-      "description": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
+      "description": "A pop-up for OBS that shows your alerts one by one. With Twitch, it receives your events, keeps a journal and gives an OBS dock.",
       "i18n": {
         "en": {
           "name": "Alerts overlay (OBS)",
-          "description": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains."
+          "description": "A pop-up for OBS that shows your alerts one by one. With Twitch, it receives your events, keeps a journal and gives an OBS dock."
         },
         "fr": {
           "name": "Overlay alertes (OBS)",
-          "description": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains de la hype."
+          "description": "Une fenêtre pour OBS qui montre vos alertes une par une. Avec Twitch, elle reçoit vos événements, tient un journal et donne un dock OBS."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/alerts-overlay",
       "ref": "v1.94.0",
-      "version": "1.17.0",
+      "version": "1.18.0",
       "apiVersion": 2,
       "author": "Helldog136",
       "icon": "🔔",
+      "provides": [
+        "twitch.event"
+      ],
       "requires": {
-        "core": "0.14.0"
+        "core": "0.15.0"
       },
       "offers": [
         {
@@ -36,19 +39,24 @@
           "version": 3,
           "each": true
         },
-        {
-          "service": "alerts.reaction",
-          "version": 3,
-          "each": true
-        }
+        "twitch.journal"
       ],
       "needs": [
         {
-          "service": "twitch.journal",
+          "service": "twitch.api",
+          "min": 3,
           "optional": true
         },
         {
-          "service": "alerts.reaction.editor",
+          "service": "twitch.live",
+          "optional": true
+        },
+        {
+          "service": "twitch.rewards",
+          "optional": true
+        },
+        {
+          "service": "twitch.events.handover",
           "optional": true
         }
       ]
@@ -2792,21 +2800,21 @@
     {
       "id": "twitch-events",
       "name": "Twitch activity",
-      "description": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock.",
+      "description": "Bridge version: hands its journal and settings over once, then stops listening. Remove it afterwards.",
       "i18n": {
         "en": {
           "name": "Twitch activity",
-          "description": "Receives the follows, subs, bits, raids and hype trains of your channel, keeps a journal and gives an OBS dock."
+          "description": "Bridge version: hands its journal and settings over once, then stops listening. Remove it afterwards."
         },
         "fr": {
           "name": "Activité Twitch",
-          "description": "Reçoit les follows, abonnements, bits, raids et trains de la hype, tient un journal et donne un dock OBS."
+          "description": "Version de passage : donne une fois son journal et ses réglages, puis arrête d'écouter. Retirez-la ensuite."
         }
       },
       "repo": "https://github.com/helldog136/curiosa-extras",
       "subdir": "modules/twitch-events",
       "ref": "v1.94.0",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "platform": "twitch",
       "apiVersion": 2,
       "author": "Helldog136",
@@ -2818,8 +2826,7 @@
         "core": "0.15.0"
       },
       "offers": [
-        "twitch.journal",
-        "alerts.reaction.editor"
+        "twitch.events.handover"
       ],
       "needs": [
         {

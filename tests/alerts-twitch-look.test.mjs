@@ -160,12 +160,14 @@ test("admin: thumbnails and a preview of the cards, a sample evening goes throug
   }
 });
 
+const opts = await import("../modules/alerts-overlay/options.mjs");
 test("manifest: files permission, two settings (sounds off by default, volume advanced), FR and EN texts for every sound and way of entering", () => {
   assert.ok(manifest.permissions.includes("files"));
   const s = Object.fromEntries(manifest.settings.map((x) => [x.key, x]));
-  assert.equal(s.twitchSounds.default, false); assert.equal(s.soundVolume.advanced, true);
+  // (1.18.0) "Play a sound" is an option of the Twitch tab (options.mjs), off by default; the volume stays an advanced setting
+  assert.equal(opts.DEFAULTS.twitchSounds, false); assert.ok(manifest.legacySettings.some((x) => x.key === "twitchSounds")); assert.equal(s.soundVolume.advanced, true);
   const en = readJson("locales/en.json"), fr = readJson("locales/fr.json");
   for (const x of tw.SOUNDS) assert.ok(en[`tw_sound_${x}`] && fr[`tw_sound_${x}`], x);
   for (const x of tw.ANIMS) assert.ok(en[`tw_anim_${x || "module"}`] && fr[`tw_anim_${x || "module"}`], x);
-  assert.equal(manifest.version, "1.17.0");
+  assert.equal(manifest.version, "1.18.0");
 });

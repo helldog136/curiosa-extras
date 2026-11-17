@@ -106,7 +106,7 @@ test("set: every problem at once in plain words and nothing saved; dryRun comple
   assert.equal(row.data.by, "assistant:Camille assistant");
   assert.equal(row.data.composition.backdrop.play, "hold");
   // what the editor and the alert then see: the same placement
-  assert.equal((await def.services["alerts.reaction"].get(ctx, { type: "sub" })).compositions[VID].backdrop.poster, POSTER);
+  assert.equal((await (await import("../modules/alerts-overlay/index.mjs")).reactionService.get(ctx, { type: "sub" })).compositions[VID].backdrop.poster, POSTER);
   const places = await tools.composition_places(ctx, {});
   const vid = places.places.find((p) => p.place === "event:sub").files.find((f) => f.src === VID);
   assert.equal(vid.hasComposition, true); assert.equal(vid.by, "assistant:Camille assistant");
@@ -156,7 +156,7 @@ test("render kit, copy, remove: a page for the assistant's browser on the site's
   await fails(tools.composition_copy(ctx, { fromPlace: "event:sub", fromSrc: PIC, toPlace: "event:raid", toSrc: PIC2 }, actor), /uses \{tier\}; this place knows \{name\}, \{viewers\}/);
   const rm = await tools.composition_remove(ctx, { place: "event:raid", src: PIC2 });
   assert.equal(rm.removed, true);
-  assert.deepEqual((await def.services["alerts.reaction"].get(ctx, { type: "raid" })).variants.map((x) => x.src), [PIC2], "the file stays on the reaction");
+  assert.deepEqual((await (await import("../modules/alerts-overlay/index.mjs")).reactionService.get(ctx, { type: "raid" })).variants.map((x) => x.src), [PIC2], "the file stays on the reaction");
   assert.equal((await tools.composition_remove(ctx, { place: "event:raid", src: PIC2 })).removed, false);
 });
 

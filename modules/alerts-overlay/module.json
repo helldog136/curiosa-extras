@@ -5,13 +5,13 @@
     "en": "Alerts overlay (OBS)",
     "fr": "Overlay alertes (OBS)"
   },
-  "version": "1.17.0",
+  "version": "1.18.0",
   "adminMenu": "Réseaux.Twitch",
   "adminMenuOrder": 50,
-  "minCore": "0.14.0",
+  "minCore": "0.15.0",
   "description": {
-    "en": "A pop-up for OBS that shows your alerts one by one: follows, subs, gifts, bits, raids, hype trains.",
-    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements, cadeaux, bits, raids, trains de la hype."
+    "en": "A pop-up for OBS that shows your alerts one by one. With Twitch, it receives your events, keeps a journal and gives an OBS dock.",
+    "fr": "Une fenêtre pour OBS qui montre vos alertes une par une. Avec Twitch, elle reçoit vos événements, tient un journal et donne un dock OBS."
   },
   "author": "Helldog136",
   "license": "MIT",
@@ -26,7 +26,8 @@
     "admin",
     "mcp",
     "storage",
-    "files"
+    "files",
+    "mail"
   ],
   "settings": [
     {
@@ -110,7 +111,6 @@
         "en": "seconds",
         "fr": "secondes"
       },
-      "tab": "twitch",
       "label": {
         "en": "Pause between two alerts",
         "fr": "Pause entre deux alertes"
@@ -118,70 +118,6 @@
       "help": {
         "en": "Between 0 and 30 seconds.",
         "fr": "Entre 0 et 30 secondes."
-      }
-    },
-    {
-      "key": "ignoreNames",
-      "type": "text",
-      "optional": true,
-      "example": "etoile_nord, lune_douce",
-      "tab": "twitch",
-      "label": {
-        "en": "Names to ignore",
-        "fr": "Pseudos à ignorer"
-      },
-      "help": {
-        "en": "No alert for these Twitch names. Separate them with commas.",
-        "fr": "Pas d'alerte pour ces pseudos Twitch, séparés par des virgules."
-      }
-    },
-    {
-      "key": "twitchText",
-      "type": "boolean",
-      "default": false,
-      "tab": "twitch",
-      "label": {
-        "en": "Show the messages that come with an alert",
-        "fr": "Afficher les messages joints aux alertes"
-      },
-      "help": {
-        "en": "A resub or bits can come with a message written by your viewers. Unticked, only the name and the amount are shown. Ticked, the message is shown too, cut to 140 characters, always as plain text.",
-        "fr": "Un réabonnement ou des bits peuvent venir avec un message écrit par votre public. Décoché, seuls le pseudo et le montant s'affichent. Coché, le message s'affiche aussi, coupé à 140 caractères, toujours en texte brut."
-      }
-    },
-    {
-      "key": "groupSeconds",
-      "type": "number",
-      "default": 5,
-      "min": 0,
-      "max": 30,
-      "unit": {
-        "en": "seconds",
-        "fr": "secondes"
-      },
-      "advanced": true,
-      "tab": "twitch",
-      "label": {
-        "en": "Wait to group bursts",
-        "fr": "Attente pour grouper les rafales"
-      },
-      "help": {
-        "en": "Gifts from the same person and many follows in a row become one alert. 0 = never group.",
-        "fr": "Les cadeaux d'une même personne et les nombreux follows d'affilée deviennent une seule alerte. 0 = ne jamais grouper."
-      }
-    },
-    {
-      "key": "twitchSounds",
-      "type": "boolean",
-      "default": false,
-      "tab": "twitch",
-      "label": {
-        "en": "Play a sound with each alert",
-        "fr": "Jouer un son avec chaque alerte"
-      },
-      "help": {
-        "en": "Off by default. Pick the sound of each type in its edit window.",
-        "fr": "Éteint par défaut. Choisissez le son de chaque type dans sa fenêtre."
       }
     },
     {
@@ -195,7 +131,6 @@
         "fr": "%"
       },
       "advanced": true,
-      "tab": "twitch",
       "label": {
         "en": "Volume of the alert sounds",
         "fr": "Volume des sons d'alerte"
@@ -281,6 +216,25 @@
       "help": {
         "en": "MP4 or WebM. Short and light.",
         "fr": "MP4 ou WebM. Courte et légère."
+      }
+    },
+    {
+      "key": "channel",
+      "type": "choice",
+      "source": {
+        "kind": "providers",
+        "service": "twitch.live"
+      },
+      "refersTo": "channel",
+      "advanced": true,
+      "optional": true,
+      "label": {
+        "en": "Twitch channel to follow",
+        "fr": "Chaîne Twitch à suivre"
+      },
+      "help": {
+        "en": "Only asked when your site has several Twitch channels. Leave empty to use the first one.",
+        "fr": "Demandé seulement si votre site a plusieurs chaînes Twitch. Laissez vide pour utiliser la première."
       }
     },
     {
@@ -525,8 +479,8 @@
     {
       "topic": "twitch.event",
       "label": {
-        "en": "Your Twitch events: follows, subs, gifts, bits, raids, hype trains (from Twitch activity, if installed)",
-        "fr": "Vos événements Twitch : follows, abonnements, cadeaux, bits, raids, trains de la hype (fournis par Activité Twitch, s'il est installé)"
+        "en": "Your Twitch events: follows, subs, gifts, bits, raids, hype trains (from the copy of this overlay that listens to Twitch)",
+        "fr": "Vos événements Twitch : follows, abonnements, cadeaux, bits, raids, trains de la hype (de la copie de cet overlay qui écoute Twitch)"
       },
       "schema": [
         {
@@ -1091,6 +1045,14 @@
       "panel": true
     },
     {
+      "id": "rewards",
+      "label": {
+        "en": "Rewards",
+        "fr": "Récompenses"
+      },
+      "panel": true
+    },
+    {
       "id": "viewers",
       "label": {
         "en": "Viewer texts and voice",
@@ -1140,27 +1102,17 @@
       ]
     },
     {
-      "service": "alerts.reaction",
-      "version": 3,
-      "each": true,
-      "readOnly": [
-        "list",
-        "get",
-        "media",
-        "rewards"
-      ],
-      "callerRights": [
-        "set"
-      ],
+      "service": "twitch.journal",
+      "version": 1,
       "label": {
-        "en": "What each Twitch event shows on screen: pictures, GIFs, videos, sentence, sound, minimum, voice; one reaction per channel point reward (for Twitch activity)",
-        "fr": "Ce que chaque événement Twitch montre à l'écran : images, GIF, vidéos, phrase, son, minimum, voix ; une réaction par récompense de points de chaîne (pour Activité Twitch)"
+        "en": "The journal of Twitch events: marks a line whose viewer text was hidden or held",
+        "fr": "Le journal des événements Twitch : marque une ligne dont le texte du public a été masqué ou retenu"
       }
     }
   ],
   "privacy": {
-    "en": "For a few minutes, the overlay keeps the public name and amount of the Twitch events it is about to show, and the ids of the last alerts, so nothing shows twice. Alerts held during a pause are kept until you resume. Viewer texts that moderation hides or holds are kept (50 at most) until you decide. Uploaded pictures and videos stay on your site. It collects nothing from visitors.",
-    "fr": "Quelques minutes, l'overlay garde le pseudo public et le montant des événements Twitch à afficher, et les références des dernières alertes, pour que rien ne s'affiche deux fois. Les alertes retenues en pause sont gardées jusqu'à la reprise. Les textes du public que la modération cache ou retient sont gardés (50 au plus) jusqu'à votre choix. Images et vidéos envoyées restent sur votre site. Il ne collecte rien sur les personnes qui visitent le site."
+    "en": "For a few minutes, the overlay keeps the public name and amount of the events it shows, so nothing shows twice. Held alerts and viewer texts held by moderation (50 at most) wait for your choice. With Twitch, the journal keeps each event's public name, amount or tier and public message, for the retention you choose (30 days by default). Only your team reads it. If listening stops, the owner gets one e-mail, with no viewer data. Nothing is collected from visitors.",
+    "fr": "Quelques minutes, l'overlay garde le pseudo public et le montant des événements montrés, pour que rien ne s'affiche deux fois. Alertes et textes du public retenus (50 au plus) attendent votre choix. Avec Twitch, le journal garde pseudo public, montant ou niveau et message public de chaque événement, le temps choisi (30 jours par défaut). Seule votre équipe le lit. Si l'écoute s'arrête, un e-mail part à la personne propriétaire, sans donnée du public. Rien n'est collecté sur les visites."
   },
   "mcp": [
     {
@@ -1880,6 +1832,102 @@
           }
         }
       }
+    },
+    {
+      "name": "twitch_events_list",
+      "readOnly": true,
+      "default": false,
+      "description": "List the latest events of the Twitch channel from the journal, newest first: follow, sub, resub, gift, cheer (bits), raid, online, offline, hype_begin, hype_progress, hype_end, redeem. Each has id, type, at (ISO date), name, and when relevant tier, months, count, amount (bits), viewers, text (the viewer's public message), level. Use it to answer 'who followed or subscribed lately?'. Test lines are left out unless includeTests is true.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype_begin",
+              "hype_progress",
+              "hype_end",
+              "redeem"
+            ],
+            "description": "Only this kind of event."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many lines (20 by default)."
+          },
+          "sinceMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 525600,
+            "description": "Only events from the last N minutes."
+          },
+          "includeTests": {
+            "type": "boolean",
+            "description": "Also return test and replay lines."
+          }
+        }
+      }
+    },
+    {
+      "name": "twitch_events_status",
+      "readOnly": true,
+      "default": false,
+      "description": "Tell whether the site is really listening to Twitch: the overall state (listening, pending, need_more = a Twitch permission to give again, need_reconnect, site_private, ...), the Twitch permissions still missing, the state and last event of each type, the number of journal lines, the retention, whether the alerts overlay is installed, the health (a problem, since when, whether the owner was warned by e-mail) and the last catch-up after a gap. Use it first when the owner says 'my alerts did not show'.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "twitch_event_replay",
+      "default": false,
+      "description": "Show an alert again or test one. Give 'id' (a line of the journal, see twitch_events_list) to replay it with the same data, flagged as a replay; or 'testType' (follow, sub, resub, gift, cheer, raid, online, offline, hype, redeem) to send a realistic sample with an invented name. Works even if the type is switched off. At most 10 replays and 20 tests a minute; replaying the same line twice within 3 seconds sends it once. It writes only a flagged line of the journal; nothing is deleted.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Id of the journal line to replay."
+          },
+          "testType": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "sub",
+              "resub",
+              "gift",
+              "cheer",
+              "raid",
+              "online",
+              "offline",
+              "hype",
+              "redeem"
+            ],
+            "description": "Type of sample to send."
+          }
+        }
+      }
+    },
+    {
+      "name": "twitch_events_rewards",
+      "readOnly": true,
+      "default": false,
+      "description": "List the channel point rewards of the Twitch channel with their reaction on the alerts overlay: id, title, cost, whether the reward is enabled or paused on Twitch, whether it was deleted on Twitch but still has a reaction (deletedOnTwitch), whether it shows an alert (alert), whether it has its own reaction (ownReaction: files, order, sound) or shows the reaction of all the other rewards. Also the reaction of all the other rewards, and whether a new reward can be created from the admin (with the Twitch bot). Use an id or the exact title as reward in reaction_set of the alerts overlay.",
+      "input": {
+        "type": "object",
+        "properties": {}
+      }
     }
   ],
   "i18n": {
@@ -1903,21 +1951,143 @@
       "mcp.composition_preview": "Rend une IMAGE approchée d'une composition, dessinée par le site (police du serveur, image fixe d'une vidéo), avec pour chaque zone la taille obtenue, les lignes, le débordement et le contraste. Celle enregistrée (place, src) ou celle envoyée (composition, non enregistrée). 20 par minute. Regardez-la, ajustez, recommencez.",
       "mcp.composition_render_kit": "Rend une page HTML autonome qui dessine la composition exactement comme OBS (même moteur), à ouvrir dans VOTRE propre navigateur sans tête : elle lit les fichiers du site, joue la vidéo, et #t=2.5 dans l'adresse fige un instant. Pour quand l'image approchée ne suffit pas.",
       "mcp.composition_copy": "Copie les zones de texte d'un placement sur un autre fichier (même place ou autre) : la cible garde son arrière-plan ; entre vidéos, la lecture suit. Désactivé tant que la personne ne l'accorde pas.",
-      "mcp.composition_remove": "Retire le texte placé sur un fichier d'une place : le fichier s'affiche alors seul, comme avant. Le fichier reste sur la réaction. Jamais accordé par défaut."
+      "mcp.composition_remove": "Retire le texte placé sur un fichier d'une place : le fichier s'affiche alors seul, comme avant. Le fichier reste sur la réaction. Jamais accordé par défaut.",
+      "mcp.twitch_events_list": "Liste les derniers événements de la chaîne Twitch (follows, abonnements, cadeaux, bits, raids…), du plus récent au plus ancien.",
+      "mcp.twitch_events_status": "Dit si le site écoute vraiment Twitch : état, autorisations manquantes, dernier événement de chaque type.",
+      "mcp.twitch_event_replay": "Rejoue une alerte du journal avec les mêmes données, ou envoie un exemple de test d'un type. Borné, ne supprime rien.",
+      "mcp.twitch_events_rewards": "Liste les récompenses de points de chaîne avec leur réaction sur l'overlay d'alertes : titre, coût, état sur Twitch, alerte activée, réaction propre ou celle des autres récompenses."
     }
   },
   "requires": [
     {
-      "service": "twitch.journal",
-      "optional": true
-    },
-    {
-      "service": "alerts.reaction.editor",
+      "service": "twitch.api",
+      "min": 3,
       "optional": true,
       "label": {
-        "en": "Set the reaction of each Twitch event in one place (Twitch activity)",
-        "fr": "Régler la réaction de chaque événement Twitch à un seul endroit (Activité Twitch)"
+        "en": "Receive your Twitch events (Twitch connector)",
+        "fr": "Recevoir vos événements Twitch (Connecteur Twitch)"
       }
+    },
+    {
+      "service": "twitch.live",
+      "optional": true,
+      "label": {
+        "en": "Know which Twitch channel to follow (My Twitch channel)",
+        "fr": "Savoir quelle chaîne Twitch suivre (Ma chaîne Twitch)"
+      }
+    },
+    {
+      "service": "twitch.rewards",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "Create a channel point reward from here (Twitch bot)",
+        "fr": "Créer une récompense de points de chaîne d'ici (Bot Twitch)"
+      }
+    },
+    {
+      "service": "twitch.events.handover",
+      "min": 1,
+      "optional": true,
+      "label": {
+        "en": "Take over the journal and settings of Twitch activity, once",
+        "fr": "Reprendre une fois le journal et les réglages d'Activité Twitch"
+      }
+    }
+  ],
+  "dataVersion": 2,
+  "legacySettings": [
+    {
+      "key": "twitchSounds"
+    },
+    {
+      "key": "twitchText"
+    },
+    {
+      "key": "ignoreNames"
+    },
+    {
+      "key": "groupSeconds"
+    }
+  ],
+  "provides": [
+    {
+      "topic": "twitch.event",
+      "label": {
+        "en": "What happens on your Twitch channel: follows, subs, gifts, bits, raids, stream start and end, hype trains",
+        "fr": "Ce qui se passe sur votre chaîne Twitch : follows, abonnements, cadeaux, bits, raids, début et fin de direct, trains de la hype"
+      }
+    }
+  ],
+  "logEvents": [
+    {
+      "key": "type.state",
+      "label": {
+        "en": "Type {type}: {state}",
+        "fr": "Type {type} : {state}"
+      },
+      "fields": [
+        {
+          "key": "type"
+        },
+        {
+          "key": "state"
+        },
+        {
+          "key": "reason"
+        }
+      ]
+    },
+    {
+      "key": "type.create_failed",
+      "label": {
+        "en": "Type {type}: Twitch refused to start it (answer {status})",
+        "fr": "Type {type} : Twitch a refusé de le démarrer (réponse {status})"
+      },
+      "fields": [
+        {
+          "key": "type"
+        },
+        {
+          "key": "subscription"
+        },
+        {
+          "key": "status"
+        }
+      ]
+    },
+    {
+      "key": "type.recreated",
+      "label": {
+        "en": "Type {type}: waiting for Twitch for {waitedMin} min, created again",
+        "fr": "Type {type} : en attente de Twitch depuis {waitedMin} min, recréé"
+      },
+      "fields": [
+        {
+          "key": "type"
+        },
+        {
+          "key": "waitedMin"
+        },
+        {
+          "key": "reason"
+        }
+      ]
+    },
+    {
+      "key": "twitch.handover",
+      "label": {
+        "en": "Twitch activity taken over: {lines} journal lines",
+        "fr": "Activité Twitch reprise : {lines} lignes du journal"
+      },
+      "fields": [
+        {
+          "key": "from"
+        },
+        {
+          "key": "lines"
+        }
+      ]
     }
   ]
 }

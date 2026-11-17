@@ -5,7 +5,7 @@ Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements,
 - Ajoutez l'adresse de l'overlay comme source navigateur dans OBS.
 - Envoyez une alerte de test d'un seul bouton.
 - Choisissez la couleur d'accent et la durée d'affichage d'une alerte.
-- Montrez vos événements Twitch avec Activité Twitch : un texte, une durée et un minimum par type.
+- Avec Twitch, recevez vos événements dans un journal, avec un dock OBS. Chaque type et chaque récompense a sa réaction.
 - Les alertes attendent leur tour, et les cadeaux ou follows en rafale deviennent une seule alerte.
 - Donnez à chaque type une image, un son et sa façon d'arriver, et voyez le résultat avant le direct.
 - Donnez à chaque type votre propre fichier son.
@@ -34,7 +34,6 @@ Une fenêtre pour OBS qui montre vos alertes une par une : follows, abonnements,
 ## Ça marche bien avec
 
 - [Ma Chaîne Twitch](entry:twitch-channel)
-- [Activité Twitch](entry:twitch-events)
 - [Actions du live YouTube](entry:youtube-live-actions)
 
 ## Bon à savoir

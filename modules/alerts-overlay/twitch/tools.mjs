@@ -1,4 +1,4 @@
-// Tools for assistants (MCP): read the journal, read the health of the listening, replay a line or send a test. Replaying is the only write, bounded and never switched on by default.
+// (1.18.0: tools of the alerts overlay, formerly of Twitch activity; same names, inputs and answers.) Tools for assistants (MCP): read the journal, read the health of the listening, replay a line or send a test. Replaying is the only write, bounded and never switched on by default.
 // Never a deletion, never a secret, never a token. Everything returned is public data (display names, amounts).
 const v = new URL(import.meta.url).search; // the version of the module spreads to the neighbour files (otherwise the old code would stay cached after an update)
 const es = await import(`./eventsub.mjs${v}`);
@@ -19,8 +19,6 @@ export default {
   async twitch_events_status(ctx) {
     const state = await st.readState(ctx), s = settingsOf(ctx), enabled = st.enabledOf(state);
     const d = await diagnose(ctx, s, { declare: false });
-    let alerts = [];
-    try { alerts = await ctx.api.instances.list({ module: "alerts-overlay" }); } catch { alerts = []; }
     return {
       listening: d.code === "ready" ? state.listen?.code ?? "unknown" : d.code,
       listeningSince: state.listen?.since ? new Date(state.listen.since).toISOString() : null,
@@ -29,7 +27,7 @@ export default {
       types: es.TYPES.map((t) => ({ type: t.id, enabled: enabled[t.id] === true, state: enabled[t.id] ? state.types?.[t.id]?.code ?? "unknown" : "off", lastEventAt: Math.max(0, ...t.kinds.map((k) => state.last?.[k] ?? 0)) || null })).map((x) => ({ ...x, lastEventAt: x.lastEventAt ? new Date(x.lastEventAt).toISOString() : null })),
       health: { state: state.health?.code ?? "ok", since: state.health?.since ? new Date(state.health.since).toISOString() : null, warnedByMail: !!state.health?.notified, mailServer: state.health?.mail === "off" ? "not set up" : "ok or not needed" },
       lastCatchUp: state.catchup ? { at: new Date(state.catchup.at).toISOString(), addedFollows: state.catchup.follows, addedSubs: state.catchup.subs, skipped: state.catchup.skipped } : null,
-      journalLines: await st.count(ctx), retentionDays: s.retentionDays, alertsOverlayInstalled: alerts.length > 0,
+      journalLines: await st.count(ctx), retentionDays: s.retentionDays, alertsOverlayInstalled: true,   // (1.18.0) the listening lives in the alerts overlay itself
     };
   },
   async twitch_event_replay(ctx, a = {}) {
@@ -50,7 +48,7 @@ export default {
     const list = await rw.list(ctx), c = await rw.creator(ctx);
     const reaction = (row) => ({ images: row.images ?? 0, videos: row.videos ?? 0, sound: row.sound === true, order: row.pick === "rotate" ? "round_robin" : row.pick ? "random" : null, ...(row.placed ? { filesWithPlacedText: row.placed } : {}) });
     return {
-      readFromTwitch: list.twitch.ok, ...(list.twitch.ok ? {} : { whyNotFromTwitch: { scope: "the permission to read the rewards is missing (switch on Channel points in the Event types tab, then authorize)", na: "the channel has no channel points (not Affiliate nor Partner)", no_channel: "no Twitch channel is set up", twitch: "Twitch did not answer" }[list.twitch.code] ?? "unknown", note: "Only the rewards seen in the journal and those with a reaction are listed." }),
+      readFromTwitch: list.twitch.ok, ...(list.twitch.ok ? {} : { whyNotFromTwitch: { scope: "the permission to read the rewards is missing (switch on Channel points in the Twitch events tab, then authorize)", na: "the channel has no channel points (not Affiliate nor Partner)", no_channel: "no Twitch channel is set up", twitch: "Twitch did not answer" }[list.twitch.code] ?? "unknown", note: "Only the rewards seen in the journal and those with a reaction are listed." }),
       alertsOverlay: list.overlay ? "ready" : "absent or too old (version 3 of its reactions needed)",
       rewards: list.items.map((it) => ({ id: it.id, title: it.title, cost: it.cost, ...(it.gone ? { deletedOnTwitch: true } : { enabledOnTwitch: it.enabled !== false, pausedOnTwitch: it.paused === true }), alert: it.row?.on ?? true, ownReaction: !!it.row?.own, ...(it.row?.own ? { reaction: reaction(it.row) } : {}) })),
       allOtherRewards: list.others ? { alert: list.others.on !== false, reaction: reaction(list.others) } : null,
